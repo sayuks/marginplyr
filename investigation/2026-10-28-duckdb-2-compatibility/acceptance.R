@@ -20,7 +20,8 @@ cases <- list(
     table <- arrow::Table$create(data)
     shapes <- list(table, arrow::record_batch(data),
       arrow::InMemoryDataset$create(table),
-      dplyr::select(table, dplyr::everything()))
+      dplyr::select(table, dplyr::everything()),
+      dplyr::filter(dplyr::select(table, dplyr::everything()), .data$value > 2L))
     for (i in seq_along(shapes)) {
       name <- paste0('registered_', i)
       duckdb::duckdb_register_arrow(con, name, shapes[[i]])
@@ -33,12 +34,14 @@ cases <- list(
       result <- result[order(result$sid, result$g, na.last = TRUE), ]
       stopifnot(identical(result$g, c('a', 'b', NA, NA)),
         identical(result$sid, c(1L, 1L, 1L, 2L)),
-        identical(as.numeric(result$total), c(6, 6, 8, 20)))
+        identical(as.numeric(result$total),
+          if (i == 5L) c(4, 6, 8, 18) else c(6, 6, 8, 20)))
       expansion <- expand_with_margins(source, .grouping = rollup(g),
         .margin_label = NULL, .id = 'sid')
       result <- dplyr::collect(expansion)
-      stopifnot(nrow(result) == 8L, sum(result$value) == 40,
-        sum(is.na(result$g[result$sid == 2L])) == 4L)
+      stopifnot(nrow(result) == if (i == 5L) 6L else 8L,
+        sum(result$value) == if (i == 5L) 36 else 40,
+        sum(is.na(result$g[result$sid == 2L])) == if (i == 5L) 3L else 4L)
     }
   }),
   export_null = function() with_connection(function(con) {
@@ -159,6 +162,21 @@ cases <- list(
       total = sum(value, na.rm = TRUE), .grouping = rollup(g)))
     expected <- if (utils::packageVersion('duckdb') >= '2.0.0') 1 else 0
     stopifnot(identical(as.numeric(result$total), rep(expected, 2L)))
+    source <- dplyr::tbl(con, dbplyr::sql("SELECT 'a' AS g, 12 AS value"))
+    expressions <- list(quote(sum(value, na.rm = TRUE) %/% 0),
+      quote(sum(value, na.rm = TRUE) %% 0))
+    for (expression in expressions) {
+      ordinary <- dplyr::summarize(source, outcome = !!expression)
+      margin <- summarize_with_margins(source, outcome = !!expression,
+        .grouping = rollup(g))
+      control <- tryCatch(dplyr::collect(ordinary), error = identity)
+      result <- tryCatch(dplyr::collect(margin), error = identity)
+      if (inherits(control, 'error')) {
+        stopifnot(inherits(result, 'error'), identical(class(result), class(control)))
+      } else {
+        stopifnot(identical(result$outcome, rep(control$outcome, 2L)))
+      }
+    }
     for (operator in c('//', '%')) {
       query <- paste('SELECT 12', operator, '0 AS value')
       result <- tryCatch(DBI::dbGetQuery(con, query), error = identity)

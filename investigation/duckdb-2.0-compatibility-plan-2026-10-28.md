@@ -1,6 +1,7 @@
 # DuckDB 2.0 互換性調査と検証計画
 
 Investigated: 2026-10-28
+Revised: 2026-10-28 — investigation/2026-10-28-duckdb-2-compatibility/README.md に実行結果と Arrow の戻り値の訂正を記録。
 Status: 計画のみ。実装、依存パッケージのインストール、テスト実行は未実施。
 
 ## 調査の読み方
@@ -228,3 +229,16 @@ Arrow 受け渡しの対応範囲と既存 reader 拒否が確認されたとき
 その client/engine/依存関係/OS の組合せに限って互換性確認済みとする。
 パッケージが従来対応していなかった新機能への対応は、この判定の前提にしない。
 2026-10-28 の計画作成時点では、この互換性判定は未実施だった。
+
+
+## Revisions (2026-10-28)
+
+[実行結果](2026-10-28-duckdb-2-compatibility/README.md) は、最新 main の
+`cb957d9be09440796defde808bf6f04006edd6dd` を取り込んだ後の比較を記録した。
+CRAN の正式 2.0.0 バイナリを確認でき、1.5.5／1.5.6／2.0.0 の比較と
+正式 2.0.0 での全体チェックを行った。Linux・Windows 等の未実行環境は同報告に明記した。
+
+Arrow 25.0.1 の `arrow::to_arrow()` は `RecordBatchReader` を返した。
+本ノートの「materialized Table」との対比は戻り値を取り違えていた。
+DuckDB 内部の結果の materialization と、利用者が `arrow::as_arrow_table()` で
+再利用可能な Table を作ることを分けて検証した。元の記録は上に残す。
