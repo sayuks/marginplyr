@@ -1,5 +1,7 @@
 test_that("SQLite expands a nine-dimension cube within compound-query limits", {
   skip_if_suggest_absent("RSQLite", "DBI")
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
   dimensions <- paste0("d", 1:9)
@@ -41,6 +43,11 @@ test_that("SQLite expands a nine-dimension cube within compound-query limits", {
     expect_identical(bag, control, info = sort)
     expect_identical(last_sent_queries()$sql,
                      as.character(dbplyr::sql_render(query)), info = sort)
+    if (identical(sort, "last")) {
+      saved <- dplyr::compute(query, name = "cube_saved")
+      expect_identical(DBI::dbListFields(con, "cube_saved"), names(expected))
+      expect_identical(as.data.frame(dplyr::collect(saved)), expected)
+    }
   }
 })
 
@@ -55,25 +62,28 @@ test_that("SQLite includes every anchor at the wide-plan threshold", {
   input <- dplyr::copy_to(con, data, "wide_included")
   for (count in c(498L, 499L, 500L, 501L)) {
     spec <- grouping_sets(!!!rep(list(grouping_set(g)), count))
+    id <- if (count == 498L) NULL else "sid"
     for (sort in c("none", "last", if (count == 500L) "first")) {
       for (empty in if (count == 500L) c(FALSE, TRUE) else FALSE) {
         source <- if (empty) dplyr::filter(input, FALSE) else input
         local <- if (empty) data[integer(), ] else data
         expected <- expand_with_margins(
           local, .by = fixed, .grouping = spec, .duplicates = "keep",
-          .margin_label = NULL, .id = "sid", .sort = sort
+          .margin_label = NULL, .id = id, .sort = sort
         )
         query <- expand_with_margins(
           source, .by = fixed, .grouping = spec, .duplicates = "keep",
-          .margin_label = NULL, .id = "sid", .sort = sort
+          .margin_label = NULL, .id = id, .sort = sort
         )
         info <- paste(count, sort, empty)
         actual <- as.data.frame(dplyr::collect(query))
         expect_identical(actual, expected, info = info)
-        expect_identical(actual$sid,
-                         if (empty) integer() else
-                           rep(seq_len(count), each = 2L),
-                         info = info)
+        if (!is.null(id)) {
+          expect_identical(actual$sid,
+                           if (empty) integer() else
+                             rep(seq_len(count), each = 2L),
+                           info = info)
+        }
         if (count != 500L) next
         saved <- dplyr::compute(query, name = "wide_saved", overwrite = TRUE)
         expect_identical(DBI::dbListFields(con, "wide_saved"), names(expected),
