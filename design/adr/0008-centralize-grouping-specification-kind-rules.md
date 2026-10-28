@@ -412,14 +412,14 @@ returns. Expansion reads that record instead of asking `grouping_arg_spec()`
 again, so the compilation passes read no nested argument at all — the deferred
 cache, kept to one call rather than held across calls.
 
-**Evaluations.** The following table includes the non-specification binding
-amendment below. Each is a count per call, not per pass.
+**Evaluations.** The following table includes the non-specification selection
+amendments below. Each is a count per call, not per pass.
 
 | The argument | Evaluations | Where |
 | --- | --- | --- |
 | A constructor call yielding a specification, and a bare name bound to a specification | 1 | the preflight |
 | A bare name that is a column and is bound to a specification of an admitted kind | 1 | the preflight, per ADR 0026, and then refused |
-| A non-column name bound to an ordinary selection | 1 | the preflight; the typed pass resolves the retained value |
+| A non-column name bound to an ordinary selection, or a constructor-shaped call returning one | 1 | the preflight; the typed pass resolves the retained value |
 | A column selection not already read by preflight | 1 per compilation pass — 2 where the plan is settled by names alone, 1 otherwise | each pass, against that pass's own proxy |
 | A call the spelling declines to evaluate, such as a caller's own function | 1 | the selection resolution that refuses it (#190) |
 
@@ -478,6 +478,35 @@ would erase the caller's external-name spelling and change tidyselect's
 interpretation of language objects and its deprecation diagnostics. Caching by
 name or on the source specification would share readings across independent
 argument occurrences or calls. Neither preserves this argument's budget.
+
+## Amendment: retain a constructor-shaped call's selection value (#946)
+
+A call recognized by a constructor spelling can return an ordinary selection:
+ADR 0019 runs the caller's actual function. The evaluation table above did not
+previously cover this shape. It now receives one caller-function invocation per
+argument occurrence and public call, in preflight. Selection resolution uses
+that first answer. A function returning `"a"` and then `"b"` selects `a`; a
+warning is signalled once, and an error only a second invocation would raise
+is never reached. A first-invocation error propagates unchanged.
+
+For an unqualified constructor call returning a selection, the selection
+quosure receives a child environment binding its head name to a function that
+returns the retained value without forcing its arguments. This preserves the
+call and its redundant parentheses for tidyselect diagnostics and resolves the
+answer as a value, including a returned selection predicate or language object.
+The caller's binding and source specification stay unchanged. Retention is per
+occurrence and call, as in the binding amendment above; names-only
+classification still reads the original expression, so this call receives no
+additional compilation pass. The first read stays before typed metadata
+acquisition. Actual nested specifications and selections not read by preflight
+keep their existing budgets, and no backend execution is added.
+
+**Considered options.** Re-evaluating the original call discards an answer
+already obtained and repeats caller effects. Injecting its answer as syntax
+would evaluate a returned language object and replace the caller's expression
+in selection diagnostics. Rebinding the caller's function would mutate an
+object the operation does not own. The per-argument child environment avoids
+those changes.
 
 ## Amendment: refuse a cyclic nested reference (#828)
 
