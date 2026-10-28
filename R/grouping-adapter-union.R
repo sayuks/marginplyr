@@ -58,12 +58,12 @@ sqlite_margin_input <- function(.data, backend, data_vars) {
   sql_margin_input_relation(.data, backend, data_vars)
 }
 
-# Render a SQL input with known columns, retaining window-order metadata and
-# keeping SQLite Boolean-word aliases outside opaque SQL. Expansion asks for
-# an enclosing SELECT so an unchanged branch can be a compound operand.
-sql_margin_input_relation <- function(.data, backend, data_vars,
-                                      enclose = FALSE) {
+# Render a SQL input with only its known public columns, retaining window-order
+# metadata and keeping SQLite Boolean-word aliases outside opaque SQL. The
+# enclosing SELECT keeps selection clauses inside each compound operand.
+sql_margin_input_relation <- function(.data, backend, data_vars) {
   input_order <- dbplyr::op_sort(.data)
+  input_anchor <- sql_margin_source_anchor(.data)
   # Keep Boolean-word names out of the opaque input SQL (#826).
   con <- dbplyr::remote_con(.data)
   boolean_columns <- if (inherits(con, "SQLiteConnection")) {
@@ -76,21 +76,31 @@ sql_margin_input_relation <- function(.data, backend, data_vars,
     backend = backend
   )
   if (length(boolean_columns) > 0L) {
-    .data <- dplyr::rename(
-      .data, dplyr::all_of(stats::setNames(boolean_columns, private_names))
-    )
-    data_vars <- as.character(dplyr::tbl_vars(.data))
+    if (inherits(.data, "marginplyr_sqlite_typed_result") &&
+          sqlite_typed_result_direct(.data)) {
+      # The companion already isolates source aliases; keep its output names
+      # private before SQLite can lose Boolean-word aliases in a subquery.
+      .data <- sqlite_boolean_query(
+        attr(.data, "marginplyr_typed_union"), source = NULL,
+        aliases = stats::setNames(private_names, boolean_columns),
+        public = FALSE
+      )
+    } else {
+      .data <- dplyr::rename(
+        .data, dplyr::all_of(stats::setNames(boolean_columns, private_names))
+      )
+    }
+    data_vars[match(boolean_columns, data_vars)] <- private_names
     if (".env" %in% data_vars) {
       # The generated rename projection renders before result-level quoting.
       .data <- sql_env_output_query(.data)
     }
   }
   input_sql <- dbplyr::sql_render(.data)
-  if (enclose) {
-    input_sql <- dbplyr::sql_query_select(
-      con, dbplyr::sql("*"), dbplyr::sql_query_wrap(con, input_sql)
-    )
-  }
+  input_sql <- dbplyr::sql_query_select(
+    con, dbplyr::escape(dbplyr::ident(data_vars), con = con),
+    dbplyr::sql_query_wrap(con, input_sql)
+  )
   relation <- dplyr::tbl(con, input_sql, vars = data_vars)
   if (length(boolean_columns) > 0L) {
     source <- relation$lazy_query
@@ -103,7 +113,32 @@ sql_margin_input_relation <- function(.data, backend, data_vars,
     }
     attr(relation, "marginplyr_boolean_input_query") <- source
   }
-  restore_input_window_order(relation, input_order)
+  relation <- restore_input_window_order(relation, input_order)
+  if (!is.null(input_anchor)) {
+    attr(relation, "marginplyr_input_anchor") <- list(
+      query = relation$lazy_query, anchor = input_anchor
+    )
+  }
+  relation
+}
+
+# Recover a direct SQLite result's zero-row public type anchor across input
+# enclosure. A changed lazy query no longer owns that anchor (ADR 0031).
+sql_margin_source_anchor <- function(.data) {
+  if (inherits(.data, "marginplyr_sqlite_typed_result") &&
+        sqlite_typed_result_direct(.data)) {
+    anchor <- attr(.data, "marginplyr_public_anchor")
+    aliases <- attr(.data, "marginplyr_boolean_aliases")
+    if (length(aliases) > 0L) {
+      anchor <- dplyr::rename(anchor, dplyr::all_of(aliases))
+    }
+    return(anchor)
+  }
+  input <- attr(.data, "marginplyr_input_anchor")
+  if (!is.null(input) && identical(.data$lazy_query, input$query)) {
+    return(input$anchor)
+  }
+  NULL
 }
 
 # A generic SQL backend has no schema-only prototype. SQLite consequently
@@ -115,6 +150,7 @@ sql_margin_input_relation <- function(.data, backend, data_vars,
 # executes only when the caller collects or computes the result (ADR 0020).
 sql_margin_type_anchor <- function(.data, branch, source_columns,
                                    declared_types = character()) {
+  .data <- sql_margin_source_anchor(.data) %||% .data
   branch_columns <- get_col_names(branch, dplyr::everything())
   source_columns <- intersect(
     setdiff(source_columns, names(declared_types)), branch_columns
@@ -864,11 +900,9 @@ expand_margin_union <- function(.data,
                                 set_id_name = NULL,
                                 identity_cols = character(),
                                 identity_missing = list()) {
-  if (backend$is_sql &&
-        inherits(dbplyr::remote_con(.data),
-                 c("SQLiteConnection", "duckdb_connection"))) {
+  if (backend$is_sql) {
     .data <- sql_margin_input_relation(
-      .data, backend, margin_col_names(.data), enclose = TRUE
+      .data, backend, margin_col_names(.data)
     )
   }
   if (identical(backend$kind, "arrow")) {

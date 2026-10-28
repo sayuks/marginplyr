@@ -25,6 +25,7 @@ sqlite_typed_result_needed <- function(operation, source_columns,
                                        declared_types) {
   live_sqlite_margin_result(operation) &&
     (length(declared_types) > 0L ||
+       !is.null(sql_margin_source_anchor(operation$data)) ||
        (length(source_columns) > 0L && margin_sorting(operation)))
 }
 
@@ -90,7 +91,12 @@ sqlite_typed_result <- function(operation, unsorted, ordered,
     declared_types = declared_types
   )
 
-  public_query <- ordered
+  public_query <- if (length(keys) == 0L &&
+                        !is.null(sql_margin_source_anchor(operation$data))) {
+    typed_union
+  } else {
+    ordered
+  }
   # A dropped source .env can remain in an intermediate projection.
   if (".env" %in% c(operation$data_vars, public_columns)) {
     ordered <- sql_env_output_query(ordered)
