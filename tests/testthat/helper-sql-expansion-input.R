@@ -110,15 +110,23 @@ check_expansion_shapes <- function(con) {
             local, .grouping = spec, .margin_label = label,
             .id = "set", .sort = sort
           )
-          query <- testthat::with_mocked_bindings(
+          build <- function() {
             expand_with_margins(
               input, .grouping = spec, .margin_label = label,
               .id = "set", .sort = sort
-            ),
-            dbSendQuery = function(...) stop("Unexpected construction query"),
-            dbExecute = function(...) stop("Unexpected construction command"),
-            .package = "DBI"
-          )
+            )
+          }
+          # ADR 0020 permits DuckDB's zero-row selection proxy.
+          query <- if (inherits(con, "duckdb_connection")) {
+            build()
+          } else {
+            testthat::with_mocked_bindings(
+              build(),
+              dbSendQuery = function(...) stop("Unexpected construction query"),
+              dbExecute = function(...) stop("Unexpected construction command"),
+              .package = "DBI"
+            )
+          }
           expect_selected_expansion(query, expected, sort)
         }
       }
