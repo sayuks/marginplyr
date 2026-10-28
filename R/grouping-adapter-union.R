@@ -69,6 +69,10 @@ sql_margin_input_relation <- function(.data, backend, data_vars,
       .data, dplyr::all_of(stats::setNames(boolean_columns, private_names))
     )
     data_vars <- as.character(dplyr::tbl_vars(.data))
+    if (".env" %in% data_vars) {
+      # The generated rename projection renders before result-level quoting.
+      .data <- sql_env_output_query(.data)
+    }
   }
   input_sql <- dbplyr::sql_render(.data)
   if (enclose) {
@@ -82,6 +86,10 @@ sql_margin_input_relation <- function(.data, backend, data_vars,
     relation <- dplyr::rename(
       relation, dplyr::all_of(stats::setNames(private_names, boolean_columns))
     )
+    if (".env" %in% data_vars) {
+      # Restoring Boolean names creates another projection before finalization.
+      relation <- sql_env_output_query(relation)
+    }
     attr(relation, "marginplyr_boolean_input_query") <- source
   }
   restore_input_window_order(relation, input_order)
