@@ -208,7 +208,7 @@ dtplyr_metadata_safe_step <- function(step) {
     return(identical(step[["vars"]], step[["parent"]][["vars"]]))
   }
   if (inherits(step, "dtplyr_step_call")) {
-    return(step[["fun"]] %in% c("setnames", "setcolorder", "setorder"))
+    return(step[["fun"]] %in% c("copy", "setnames", "setcolorder", "setorder"))
   }
   if (inherits(step, "dtplyr_step_subset")) {
     return(!is.null(dtplyr_metadata_subset_columns(step)))
@@ -251,10 +251,12 @@ dtplyr_selection_proxy <- function(.data, mutable = FALSE) {
   if (inherits(.data, "dtplyr_step_subset")) {
     parent <- dtplyr_selection_proxy(.data[["parent"]], mutable = mutable)
     columns <- dtplyr_metadata_subset_columns(.data)
-    return(data.table::as.data.table(stats::setNames(
-      lapply(columns, function(column) parent[[column]]),
-      .data[["vars"]]
-    )))
+    # The list converter refuses `.SD`; assign names only on the fresh proxy.
+    proxy <- data.table::as.data.table(
+      lapply(unname(columns), function(column) parent[[column]])
+    )
+    data.table::setnames(proxy, .data[["vars"]])
+    return(proxy)
   }
   if (mutable || !inherits(.data, "dtplyr_step_first")) {
     return(tryCatch(

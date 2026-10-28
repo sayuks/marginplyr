@@ -45,8 +45,17 @@ with_margin_column_aliases <- function(data, read, transform,
   rlang::set_names(result, renamed)
 }
 
+# Prepare local subclasses for operations on columns through dplyr's tibble
+# conversion. Bare data frames and lazy inputs retain their existing shape.
+margin_column_source <- function(data) {
+  if (!is.data.frame(data) || length(class(data)) == 1L) {
+    return(data)
+  }
+  dplyr::as_tibble(data, .name_repair = "minimal")
+}
+
 # Move known Margin columns to the front of an ungrouped result. Selection
-# validates dot-dot output names, so local inputs use temporary output aliases
+# validates dot-dot output names, so local inputs with those use output aliases
 # and Arrow and dtplyr use relocation when such names occur.
 reorder_margin_columns <- function(data, leading) {
   if (inherits(data, c("arrow_dplyr_query", "dtplyr_step")) &&
@@ -54,9 +63,13 @@ reorder_margin_columns <- function(data, leading) {
     # Arrow's relocate method captures its selection before tidy evaluation.
     return(do.call(dplyr::relocate, list(data, leading)))
   }
-  if (!is.data.frame(data)) {
+  if (!is.data.frame(data) ||
+        !any(margin_dot_dot_names(margin_col_names(data)))) {
     return(dplyr::select(data, dplyr::all_of(leading), dplyr::everything()))
   }
+  # An alias round-trip must not leave retained subclass metadata naming the
+  # aliases after the ordinary column names have been restored.
+  data <- margin_column_source(data)
   columns <- unique(c(leading, margin_col_names(data)))
   aliases <- stats::setNames(columns, seq_along(columns))
   result <- dplyr::select(data, dplyr::all_of(aliases))
@@ -78,11 +91,10 @@ margin_column_pronoun <- function(name) {
   rlang::call2("[[", rlang::sym(".data"), name)
 }
 
-# Evaluate a generated expression while its input columns cannot be mistaken
-# for R dot arguments or data.table special variables. `read` names the columns
-# the expression reads; `transform` receives their temporary names and returns
-# a result. `reserved` keeps its output names out of the alias set. Lazy inputs
-# retain lazy renaming and leave the caller's source untouched.
+# Evaluate a generated expression under names safe for R dot arguments and
+# data.table special variables. `read` names source and output columns.
+# `transform` receives their temporary names and returns a result; `reserved`
+# keeps its output names out of the alias set.
 margin_safe_column_reads <- function(.data, read, transform,
                                      reserved = character()) {
   if (is.data.frame(.data)) {
@@ -92,29 +104,35 @@ margin_safe_column_reads <- function(.data, read, transform,
     return(transform(.data, function(name) name))
   }
   special <- intersect(
-    read,
-    intersect(c(".N", ".I", ".SD", ".GRP", ".NGRP", ".BY",
-                ".SDall", ".xSD", ".iSD", ".ROW"), margin_col_names(.data))
+    read, c(".N", ".I", ".SD", ".SDall", ".GRP", ".NGRP", ".BY", ".ROW",
+            ".xSD", ".iSD")
   )
   if (length(special) == 0L) {
     return(transform(.data, function(name) name))
   }
+  data_vars <- margin_col_names(.data)
   aliases <- new_margin_internal_names(
     length(special),
-    used_names = c(get_col_names(.data, dplyr::everything()), reserved),
+    used_names = c(data_vars, reserved),
     prefix = "..marginplyr_dtplyr_column_"
   )
   names(aliases) <- special
-  renamed <- dplyr::rename(
-    .data, !!!rlang::set_names(rlang::syms(special), unname(aliases))
+  # An omitted summary dimension can be an output target absent from the input.
+  present <- intersect(special, data_vars)
+  # `step_setnames()` preserves dot-dot outputs that tidyselect refuses.
+  rename_columns <- utils::getFromNamespace("step_setnames", "dtplyr")
+  renamed <- rename_columns(
+    .data, present, unname(aliases[present]),
+    in_place = TRUE, rename_groups = TRUE
   )
   safe_name <- function(name) {
     if (name %in% special) unname(aliases[[name]]) else name
   }
   result <- transform(renamed, safe_name)
-  retained <- aliases[aliases %in% get_col_names(result, dplyr::everything())]
-  dplyr::rename(
-    result, !!!rlang::set_names(rlang::syms(unname(retained)), names(retained))
+  retained <- aliases[aliases %in% margin_col_names(result)]
+  rename_columns(
+    result, unname(retained), names(retained),
+    in_place = TRUE, rename_groups = TRUE
   )
 }
 

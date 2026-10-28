@@ -417,3 +417,205 @@ test_that("dtplyr .ROW nesting retains typed keys and deferred reads", {
     expect_identical(dplyr::collect(source), input)
   }
 })
+
+test_that("filtered dtplyr special columns retain nesting roles and values", {
+  skip_if_suggest_absent("dtplyr")
+  columns <- c(
+    ".SD", ".BY", ".N", ".I", ".GRP", ".NGRP", ".EACHI", ".NATURAL",
+    ".ROW", ".SDall", ".Last.updated", ".SDcols", "key", "check.names",
+    "keep.rownames", "stringsAsFactors", ".named", "T", "F"
+  )
+  for (column in columns) {
+    input <- tibble::tibble(
+      special = c("a", NA_character_, "a"), g = c("x", "y", "x"),
+      value = c(1L, 2L, 1L)
+    )
+    names(input)[1L] <- column
+    for (predicate in list(rlang::expr(TRUE), rlang::expr(value != 2L),
+                           rlang::expr(FALSE))) {
+      collected <- dplyr::filter(input, !!predicate)
+      source <- dplyr::filter(dtplyr::lazy_dt(input), !!predicate)
+      expect_identical(
+        inspect_grouping(source, .by = where(is.character),
+                         .grouping = rollup(where(is.integer))),
+        inspect_grouping(collected, .by = where(is.character),
+                         .grouping = rollup(where(is.integer)))
+      )
+      for (role in c("payload", "fixed", "dimension")) {
+        for (keep in c(FALSE, TRUE)) {
+          for (verb in list(nest_with_margins, nest_by_with_margins)) {
+            source <- dplyr::filter(dtplyr::lazy_dt(input), !!predicate)
+            run <- function(data) {
+              verb(
+                data, .by = if (identical(role, "fixed")) dplyr::all_of(column),
+                .grouping = if (identical(role, "dimension")) {
+                  rollup(dplyr::all_of(column))
+                } else {
+                  rollup(g)
+                },
+                .keep = keep, .margin_label = NULL, .id = "set", .sort = "last"
+              )
+            }
+            actual <- run(source)
+            if (identical(verb, nest_with_margins)) {
+              expect_s3_class(actual, "dtplyr_step")
+              actual <- dplyr::collect(actual)
+            } else {
+              expect_s3_class(actual, "rowwise_df")
+            }
+            expected <- run(collected)
+            info <- paste(column, rlang::as_label(predicate), role, keep)
+            expect_identical(names(actual), names(expected), info = info)
+            expect_special_nesting_rows(actual, expected, "last", info = info)
+            expect_identical(
+              sum(vapply(actual$data, nrow, integer(1))),
+              nrow(collected) * 2L, info = info
+            )
+            if (nrow(collected) == 0L) {
+              outer <- setdiff(names(actual), "data")
+              expect_identical(
+                lapply(actual[outer], vctrs::vec_ptype),
+                lapply(expected[outer], vctrs::vec_ptype), info = info
+              )
+              expect_identical(nrow(actual), nrow(expected), info = info)
+            }
+            expect_identical(dplyr::collect(source), collected, info = info)
+          }
+        }
+      }
+    }
+  }
+})
+
+test_that("filtered single .SD columns preserve empty nesting behavior", {
+  skip_if_suggest_absent("dtplyr")
+  for (rows in c(0L, 1L)) {
+    input <- tibble::tibble(.SD = rep("a", rows))
+    source <- dplyr::filter(dtplyr::lazy_dt(input), TRUE)
+    for (keep in c(FALSE, TRUE)) {
+      for (verb in list(nest_with_margins, nest_by_with_margins)) {
+        actual <- verb(source, .keep = keep)
+        if (identical(verb, nest_with_margins)) actual <- dplyr::collect(actual)
+        expected <- verb(input, .keep = keep)
+        expect_identical(names(actual), "data")
+        expect_identical(nrow(actual), nrow(expected))
+        expect_special_nesting_rows(actual, expected, "none")
+        if (rows == 0L && identical(verb, nest_by_with_margins)) {
+          expect_identical(actual$data[[1L]][[".SD"]], character())
+        }
+      }
+    }
+  }
+})
+
+test_that("dtplyr nesting protects internal and row-deletion column names", {
+  skip_if_suggest_absent("dtplyr")
+  for (column in c(".SDall", ".ROW")) {
+    for (size in c(0L, 1L, 3L)) {
+      input <- tibble::tibble(
+        special = rep(c("a", NA_character_, "a"), length.out = size),
+        g = rep(c("x", "y", "x"), length.out = size), value = seq_len(size)
+      )
+      names(input)[1L] <- column
+      for (role in c("payload", "fixed", "dimension")) {
+        for (keep in c(FALSE, TRUE)) {
+          for (verb in list(nest_with_margins, nest_by_with_margins)) {
+            source <- dtplyr::lazy_dt(input)
+            run <- function(data) {
+              verb(
+                data, .by = if (identical(role, "fixed")) dplyr::all_of(column),
+                .grouping = if (identical(role, "dimension")) {
+                  rollup(dplyr::all_of(column))
+                } else {
+                  rollup(g)
+                },
+                .keep = keep, .margin_label = NULL,
+                .id = "set", .sort = "last"
+              )
+            }
+            actual <- run(source)
+            if (identical(verb, nest_with_margins)) {
+              actual <- dplyr::collect(actual)
+            }
+            expected <- run(input)
+            expect_special_nesting_rows(actual, expected, "last")
+            expect_identical(dplyr::collect(source), input)
+          }
+        }
+      }
+    }
+  }
+})
+
+test_that("Margin verbs isolate immutable dtplyr input graphs at execution", {
+  skip_if_suggest_absent("dtplyr")
+  derivations <- list(
+    identity,
+    function(data) {
+      if (inherits(data, "dtplyr_step")) dplyr::compute(data) else data
+    },
+    function(data) dplyr::left_join(data, data, by = c("g", "value")),
+    function(data) dplyr::union_all(data, data)
+  )
+  for (derive in derivations) {
+    for (predicate in list(rlang::expr(TRUE), rlang::expr(value > 0L),
+                           rlang::expr(value > 1L), rlang::expr(FALSE))) {
+      for (verb in list(summarize_with_margins, expand_with_margins,
+                        nest_with_margins, nest_by_with_margins)) {
+        run <- function(data) {
+          if (identical(verb, summarize_with_margins)) {
+            return(verb(data, total = sum(value), .grouping = rollup(g),
+                        .margin_label = NULL))
+          }
+          verb(data, .grouping = rollup(g), .margin_label = NULL)
+        }
+        # dtplyr imports data.table; source integrity is the contract here.
+        input <- data.table::data.table(g = c("x", "y", "x"), value = 1:3)
+        before <- data.table::copy(input)
+        source <- derive(dplyr::filter(dtplyr::lazy_dt(input), !!predicate))
+        materialized <- derive(dplyr::filter(
+          tibble::as_tibble(before), !!predicate
+        ))
+        expected <- run(materialized)
+        actual <- run(source)
+        if (inherits(actual, "dtplyr_step")) {
+          expect_identical(input, before)
+          actual <- dplyr::collect(actual)
+        }
+        if ("data" %in% names(actual)) {
+          expect_special_nesting_rows(actual, expected, "none")
+        } else {
+          actual <- tibble::as_tibble(actual)
+          expected <- tibble::as_tibble(expected)
+          expect_identical(
+            actual[vctrs::vec_order(actual), , drop = FALSE],
+            expected[vctrs::vec_order(expected), , drop = FALSE]
+          )
+        }
+        expect_identical(input, before)
+        expect_identical(dplyr::collect(source), materialized)
+      }
+    }
+  }
+})
+
+test_that("dtplyr summaries create omitted .ROW dimensions under safe names", {
+  skip_if_suggest_absent("dtplyr")
+  for (size in c(0L, 1L, 3L)) {
+    for (label in list(NULL, "Total")) {
+      input <- tibble::tibble(
+        .ROW = rep(c("a", NA_character_, "a"), length.out = size),
+        value = seq_len(size)
+      )
+      source <- dtplyr::lazy_dt(input)
+      run <- function(data) {
+        summarize_with_margins(
+          data, total = sum(value), .grouping = rollup(.ROW),
+          .margin_label = label, .id = "set", .sort = "last"
+        )
+      }
+      expect_identical(dplyr::collect(run(source)), run(input))
+      expect_identical(dplyr::collect(source), input)
+    }
+  }
+})

@@ -233,3 +233,24 @@ step-input discovery. The single-parent walk and single isolated root described
 in the earlier evidence and test strategy are superseded by the graph traversal
 above. The field-unavailable policy, version floor, and grammar-error
 precedence remain as stated.
+
+## Amendment: isolate admitted immutable inputs at execution
+
+PR #959's supplemental audit established that `filter(TRUE)` over an immutable
+root can return the caller's table by reference. An immutable root therefore
+permits a Margin operation, but does not by itself isolate the operation's
+branches.
+
+After admission and typed metadata acquisition, a Margin operation wraps its
+dtplyr input in a deferred `copy` step. Each branch executes that copy before
+its generated reference writes. Construction reads no source rows; inspection
+adds no copy step, and Mutable inputs remain refused. This uses the copying
+permission the caller gave with `immutable = TRUE`, and changes none of the
+refused-input decision above.
+
+Setting only the step's `needs_copy` flag was rejected: dtplyr's cached
+`dtplyr_step_assign` compiles to its cache name without applying that flag, so
+branches could still share a writable table. The explicit step isolates that
+case as well as filtered, joined, and set-operation inputs.
+
+Evidence: [the supplemental audit on PR #959](https://github.com/sayuks/marginplyr/pull/959#issuecomment-6466562388).

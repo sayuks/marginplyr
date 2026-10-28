@@ -1301,8 +1301,9 @@ grouping_constructor_names <- function() {
 }
 
 # Reads a nonempty nested argument into a specification or a selection quosure.
-# A name outside the input can yield an ordinary selection; its preflight value
-# stays in that argument's environment for the typed pass (ADR 0008, #873).
+# A name outside the input or a constructor-shaped call can yield an ordinary
+# selection; its preflight value stays in that argument's environment for the
+# typed pass (ADR 0008).
 read_grouping_arg <- function(arg, data_vars) {
   expr <- nested_arg_expr(arg)
   env <- rlang::quo_get_env(arg)
@@ -1331,9 +1332,17 @@ read_grouping_arg <- function(arg, data_vars) {
   if (inherits(value, "margin_grouping_spec")) {
     return(list(quo = arg, nested = value))
   }
-  if (is.symbol(expr)) {
+  if (is.symbol(expr) || is_constructor_call) {
+    name <- if (is_constructor_call) {
+      static_call_name(expr)
+    } else {
+      rlang::as_string(expr)
+    }
+    # Keep the call spelling for tidyselect diagnostics, but answer from the
+    # preflight value without forcing the caller's arguments again.
+    retained <- if (is_constructor_call) function(...) value else value
     selection_env <- rlang::env(env)
-    rlang::env_bind(selection_env, !!rlang::as_string(expr) := value)
+    rlang::env_bind(selection_env, !!name := retained)
     selection$quo <- rlang::quo_set_env(arg, selection_env)
   }
   selection

@@ -38,6 +38,7 @@ Suggests:
     quarto (>= 1.4),
     RPostgres (>= 1.4.4),
     RSQLite,
+    sf,
     testthat (>= 3.0.0),
     tibble,
     tidyr,
