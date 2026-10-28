@@ -3058,7 +3058,12 @@ apply_windowed_shares <- function(result, requests, plan, set_id_name, kind,
   result <- drop_margin_columns(result, intersect(
     unname(denominator_names), margin_col_names(result)
   ))
-  dplyr::rename(result, dplyr::all_of(fixed_names))
+  result <- dplyr::rename(result, dplyr::all_of(fixed_names))
+  if (sql_window && length(fixed_names) > 0L) {
+    # PostgreSQL ORDER BY expressions read restored keys from their input.
+    result$lazy_query <- dbplyr::lazy_select_query(result$lazy_query)
+  }
+  result
 }
 
 # Select the one denominator value in a dtplyr partition at execution time.
