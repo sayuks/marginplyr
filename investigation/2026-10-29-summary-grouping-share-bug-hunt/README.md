@@ -164,10 +164,9 @@ not identify another denominator-calculation defect or justify a purity rule.
 
 ## Executable evidence and coverage
 
-Run from the checkout root in fresh R processes. Each retained script accepts
-an optional first argument naming a checkout to load; its default is the
-working directory. These six commands were independently replayed by the
-coordinating investigator and each exited **1** on the pinned baseline:
+Run from the checkout root in fresh R processes. These six commands were
+independently replayed by the coordinating investigator and each exited **1**
+on the pinned baseline:
 
 ```sh
 Rscript investigation/2026-10-29-summary-grouping-share-bug-hunt/summary/reproduce-rowwise-input.R
