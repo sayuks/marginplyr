@@ -598,12 +598,10 @@ nest_expanded_margins <- function(.data,
         )
 
         if (drop_set_col) {
-          result <- dplyr::select(result, -dplyr::all_of(safe_name(set_col)))
+          result <- drop_margin_columns(result, safe_name(set_col))
         }
         if (length(identity_cols) > 0L) {
-          result <- dplyr::select(
-            result, -dplyr::all_of(unname(identity_cols))
-          )
+          result <- drop_margin_columns(result, unname(identity_cols))
         }
         result
       },

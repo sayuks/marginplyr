@@ -1,7 +1,7 @@
-# Drop known internal columns without revalidating local public output names.
-# Lazy inputs keep their backend's projection behavior.
+# Drop known internal columns without revalidating local or dtplyr output names.
+# Other lazy inputs keep their backend's projection behavior.
 drop_margin_columns <- function(data, columns) {
-  if (is.data.frame(data)) {
+  if (is.data.frame(data) || inherits(data, "dtplyr_step")) {
     removals <- stats::setNames(rep(list(NULL), length(columns)), columns)
     return(dplyr::mutate(data, !!!removals))
   }

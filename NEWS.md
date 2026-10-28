@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Both nesting Margin verbs preserve list-column names such as `...` and `..1`
+  across grouping sets, identifiers, and Margin ordering (#950).
+
 * SQL Margin label collision checks now accept an `.env` grouping dimension
   and report actual observed collisions with the public column name (#930).
 
