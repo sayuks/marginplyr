@@ -152,3 +152,28 @@ test_that("DuckDB stateful shares retain partitions and repeated levels", {
                "not yet defined")
   expect_partition_shares(dplyr::collect(query))
 })
+
+test_that("duplicate Grand totals may differ while each self-share is one", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3))
+  counter <- 0L
+  stamp <- function(x) {
+    counter <<- counter + 1L
+    as.double(counter)
+  }
+  result <- summarize_with_margins(
+    data, value = stamp(x), fraction = share_of_total(value),
+    .grouping = grouping_sets(grouping_set(g), grouping_set(), grouping_set()),
+    .duplicates = "keep", .id = "set", .margin_label = NULL
+  )
+  totals <- result$set %in% c(2L, 3L)
+  denominators <- result$value[totals]
+  expect_identical(nrow(result), 4L)
+  expect_length(unique(denominators), 2L)
+  expect_identical(result$fraction[totals], c(1, 1))
+  possible_shares <- lapply(denominators, function(denominator) {
+    result$value[!totals] / denominator
+  })
+  expect_true(any(vapply(
+    possible_shares, identical, logical(1), y = result$fraction[!totals]
+  )))
+})

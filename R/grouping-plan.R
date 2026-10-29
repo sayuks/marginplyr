@@ -496,9 +496,10 @@ is_name_only_expr <- function(expr, env, data_vars) {
   if (call_name %in% selection_refused_operators()) {
     return(rlang::is_symbol(static_call_head(expr), call_name))
   }
-  # The `.data` pronoun. Asked after the name, so a pair of parentheses around
-  # the whole pronoun is already off it.
-  if (call_name %in% c("$", "[[") && is_data_pronoun(expr)) {
+  # Only a bare `$` or `[[` head reads tidyselect's `.data` pronoun.
+  if (call_name %in% c("$", "[[") &&
+        rlang::is_symbol(static_call_head(expr), call_name) &&
+        is_data_pronoun(expr)) {
     return(TRUE)
   }
   # Only bare heads use tidyselect's operand walk. An ordinary R call reads

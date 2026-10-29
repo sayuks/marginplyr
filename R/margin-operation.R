@@ -447,9 +447,11 @@ finalize_margin_operation <- function(operation, execution,
     )
     result <- combine_margin_branches(list(anchor, result))
   }
-  if (sql_env_column &&
+  if (operation$backend$is_sql &&
+        (sql_env_column ||
+           any(sql_name_needs_quoting(margin_col_names(result)))) &&
         !inherits(result, "marginplyr_sqlite_typed_result")) {
-    result <- sql_env_output_query(result)
+    result <- sql_quote_generated_columns(result)
   }
   if (sql_env_column &&
         inherits(dbplyr::remote_con(operation$data), "duckdb_connection")) {
@@ -491,7 +493,7 @@ order_margin_result <- function(operation, result, execution) {
   }
 
   rowwise <- margin_rowwise_sort_columns(result, operation$plan)
-  result <- with_margin_column_aliases(
+  result <- margin_safe_column_reads(
     result, c(key_id, operation$plan$by, operation$plan$dimensions),
     function(data, safe_name) {
       terms <- margin_order_terms(

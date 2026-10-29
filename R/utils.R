@@ -56,9 +56,19 @@ margin_column_source <- function(data) {
 
 # Move known Margin columns to the front of an ungrouped result. Selection
 # validates dot-dot output names, so local inputs with those use output aliases
-# and Arrow and dtplyr use relocation when such names occur.
+# and Arrow uses relocation when such names occur. dtplyr projects safe aliases
+# before restoring its public names.
 reorder_margin_columns <- function(data, leading) {
-  if (inherits(data, c("arrow_dplyr_query", "dtplyr_step")) &&
+  if (inherits(data, "dtplyr_step") &&
+        any(margin_dot_dot_names(margin_col_names(data)))) {
+    return(margin_safe_column_reads(
+      data, margin_col_names(data), function(source, safe_name) {
+        columns <- vapply(leading, safe_name, character(1), USE.NAMES = FALSE)
+        dplyr::select(source, dplyr::all_of(columns), dplyr::everything())
+      }
+    ))
+  }
+  if (inherits(data, "arrow_dplyr_query") &&
         any(margin_dot_dot_names(margin_col_names(data)))) {
     # Arrow's relocate method captures its selection before tidy evaluation.
     return(do.call(dplyr::relocate, list(data, leading)))
@@ -103,10 +113,11 @@ margin_safe_column_reads <- function(.data, read, transform,
   if (!inherits(.data, "dtplyr_step")) {
     return(transform(.data, function(name) name))
   }
-  special <- intersect(
-    read, c(".N", ".I", ".SD", ".SDall", ".GRP", ".NGRP", ".BY", ".ROW",
-            ".xSD", ".iSD")
-  )
+  special <- read[
+    margin_dot_dot_names(read) |
+      read %in% c(".N", ".I", ".SD", ".SDall", ".GRP", ".NGRP", ".BY", ".ROW",
+                  ".xSD", ".iSD")
+  ]
   if (length(special) == 0L) {
     return(transform(.data, function(name) name))
   }

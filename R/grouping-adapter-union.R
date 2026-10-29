@@ -58,12 +58,12 @@ sqlite_margin_input <- function(.data, backend, data_vars) {
   sql_margin_input_relation(.data, backend, data_vars)
 }
 
-# Render a SQL input with known columns, retaining window-order metadata and
-# keeping SQLite Boolean-word aliases outside opaque SQL. Expansion asks for
-# an enclosing SELECT so an unchanged branch can be a compound operand.
-sql_margin_input_relation <- function(.data, backend, data_vars,
-                                      enclose = FALSE) {
+# Render a SQL input with only its known public columns, retaining window-order
+# metadata and keeping SQLite Boolean-word aliases outside opaque SQL. The
+# enclosing SELECT keeps selection clauses inside each compound operand.
+sql_margin_input_relation <- function(.data, backend, data_vars) {
   input_order <- dbplyr::op_sort(.data)
+  input_anchor <- sql_margin_source_anchor(.data)
   # Keep Boolean-word names out of the opaque input SQL (#826).
   con <- dbplyr::remote_con(.data)
   boolean_columns <- if (inherits(con, "SQLiteConnection")) {
@@ -76,21 +76,31 @@ sql_margin_input_relation <- function(.data, backend, data_vars,
     backend = backend
   )
   if (length(boolean_columns) > 0L) {
-    .data <- dplyr::rename(
-      .data, dplyr::all_of(stats::setNames(boolean_columns, private_names))
-    )
-    data_vars <- as.character(dplyr::tbl_vars(.data))
+    if (inherits(.data, "marginplyr_sqlite_typed_result") &&
+          sqlite_typed_result_direct(.data)) {
+      # The companion already isolates source aliases; keep its output names
+      # private before SQLite can lose Boolean-word aliases in a subquery.
+      .data <- sqlite_boolean_query(
+        attr(.data, "marginplyr_typed_union"), source = NULL,
+        aliases = stats::setNames(private_names, boolean_columns),
+        public = FALSE
+      )
+    } else {
+      .data <- dplyr::rename(
+        .data, dplyr::all_of(stats::setNames(boolean_columns, private_names))
+      )
+    }
+    data_vars[match(boolean_columns, data_vars)] <- private_names
     if (".env" %in% data_vars) {
       # The generated rename projection renders before result-level quoting.
-      .data <- sql_env_output_query(.data)
+      .data <- sql_quote_generated_columns(.data)
     }
   }
   input_sql <- dbplyr::sql_render(.data)
-  if (enclose) {
-    input_sql <- dbplyr::sql_query_select(
-      con, dbplyr::sql("*"), dbplyr::sql_query_wrap(con, input_sql)
-    )
-  }
+  input_sql <- dbplyr::sql_query_select(
+    con, dbplyr::escape(dbplyr::ident(data_vars), con = con),
+    dbplyr::sql_query_wrap(con, input_sql)
+  )
   relation <- dplyr::tbl(con, input_sql, vars = data_vars)
   if (length(boolean_columns) > 0L) {
     source <- relation$lazy_query
@@ -99,11 +109,38 @@ sql_margin_input_relation <- function(.data, backend, data_vars,
     )
     if (".env" %in% data_vars) {
       # Restoring Boolean names creates another projection before finalization.
-      relation <- sql_env_output_query(relation)
+      relation <- sql_quote_generated_columns(relation)
     }
     attr(relation, "marginplyr_boolean_input_query") <- source
   }
-  restore_input_window_order(relation, input_order)
+  relation <- restore_input_window_order(relation, input_order)
+  if (!is.null(input_anchor)) {
+    attr(relation, "marginplyr_input_anchor") <- list(
+      query = relation$lazy_query, anchor = input_anchor
+    )
+  }
+  relation
+}
+
+# Recover a direct SQLite result's zero-row public type anchor across input
+# enclosure. A changed lazy query no longer owns that anchor (ADR 0031).
+sql_margin_source_anchor <- function(.data) {
+  if (inherits(.data, "marginplyr_sqlite_typed_result") &&
+        sqlite_typed_result_direct(.data)) {
+    anchor <- attr(.data, "marginplyr_public_anchor")
+    aliases <- attr(.data, "marginplyr_boolean_aliases")
+    if (length(aliases) > 0L) {
+      anchor <- dplyr::rename(anchor, dplyr::all_of(aliases))
+    }
+    attr(anchor, "marginplyr_declared_types") <-
+      attr(.data, "marginplyr_declared_types")
+    return(anchor)
+  }
+  input <- attr(.data, "marginplyr_input_anchor")
+  if (!is.null(input) && identical(.data$lazy_query, input$query)) {
+    return(input$anchor)
+  }
+  NULL
 }
 
 # A generic SQL backend has no schema-only prototype. SQLite consequently
@@ -115,6 +152,7 @@ sql_margin_input_relation <- function(.data, backend, data_vars,
 # executes only when the caller collects or computes the result (ADR 0020).
 sql_margin_type_anchor <- function(.data, branch, source_columns,
                                    declared_types = character()) {
+  .data <- sql_margin_source_anchor(.data) %||% .data
   branch_columns <- get_col_names(branch, dplyr::everything())
   source_columns <- intersect(
     setdiff(source_columns, names(declared_types)), branch_columns
@@ -177,16 +215,26 @@ check_branch_columns <- function(branches) {
 # A lazy branch list has to be combined two at a time, since no backend here
 # exposes an n-ary `union_all()`. Pairing adjacent branches and halving makes
 # the work O(n log n) rather than quadratic and, just as importantly, bounds the
-# nesting depth at log2(n): dtplyr builds one step object per pair, and
+# nesting depth logarithmically: dtplyr builds one step object per pair, and
 # collecting a left fold of 512 branches -- a cube over nine dimensions --
 # exhausts the C stack.
 #
 # Re-associating is safe because `UNION ALL` concatenates, so the row sequence
-# is the same however the pairs are bracketed. dbplyr flattens a union of
-# unions into one query, so the rendered SQL is a single `UNION ALL` over every
-# branch either way, with no subquery per pair.
+# is the same however the pairs are bracketed. SQLite retains SELECT
+# boundaries around compound operands. Other SQL backends let dbplyr flatten
+# unions into one compound query.
 union_margin_branches <- function(branches) {
+  sqlite <- inherits(branches[[1L]], "tbl_lazy") &&
+    inherits(dbplyr::remote_con(branches[[1L]]), "SQLiteConnection")
+  if (sqlite) {
+    # Keep a first-branch type anchor outermost (ADR 0031).
+    first <- branches[[1L]]
+    branches <- branches[-1L]
+  }
   while (length(branches) > 1L) {
+    if (sqlite) {
+      branches <- lapply(branches, sqlite_union_operand)
+    }
     n <- length(branches)
     pairs <- lapply(
       seq_len(n %/% 2L),
@@ -194,7 +242,22 @@ union_margin_branches <- function(branches) {
     )
     branches <- if (n %% 2L == 1L) c(pairs, branches[n]) else pairs
   }
+  if (sqlite) {
+    return(dplyr::union_all(
+      sqlite_union_operand(first), sqlite_union_operand(branches[[1L]])
+    ))
+  }
   branches[[1L]]
+}
+
+# Make a lazy SQLite branch a single SELECT operand without reading it.
+# A compound needs a SELECT boundary to prevent dbplyr from flattening it.
+sqlite_union_operand <- function(branch) {
+  if (inherits(branch$lazy_query, "lazy_union_query")) {
+    dplyr::filter(branch, TRUE)
+  } else {
+    branch
+  }
 }
 
 # The text an Absorbing backend marks an absorption with, which is the whole of
@@ -401,11 +464,11 @@ summarize_margin_branch <- function(.data,
     summarize_dots[[placeholder_name]] <- rlang::quo(dplyr::n())
   }
 
-  # An output named `.data` must reach dplyr's dynamic dots before argument
-  # matching. Other calls keep early injection so Arrow can recover the
-  # originating expression from its call when reporting an absorbing summary.
+  # Outputs matching all or part of `.data` must reach dynamic dots before
+  # backend argument matching. Other calls keep early injection so Arrow can
+  # recover the originating call when reporting an absorbing summary.
   run_summary <- function() {
-    if (".data" %in% names(summarize_dots)) {
+    if (any(names(summarize_dots) %in% c(".", ".d", ".da", ".dat", ".data"))) {
       return(dplyr::summarize(
         .data = .data,
         !!!summarize_dots,
@@ -864,11 +927,9 @@ expand_margin_union <- function(.data,
                                 set_id_name = NULL,
                                 identity_cols = character(),
                                 identity_missing = list()) {
-  if (backend$is_sql &&
-        inherits(dbplyr::remote_con(.data),
-                 c("SQLiteConnection", "duckdb_connection"))) {
+  if (backend$is_sql) {
     .data <- sql_margin_input_relation(
-      .data, backend, margin_col_names(.data), enclose = TRUE
+      .data, backend, margin_col_names(.data)
     )
   }
   if (identical(backend$kind, "arrow")) {

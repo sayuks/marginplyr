@@ -142,7 +142,7 @@ test_that("lazy branches nest logarithmically rather than linearly", {
   expect_identical(nrow(dplyr::collect(expanded)), 2048L)
 })
 
-test_that("a union-path query is one flat `UNION ALL` over every branch", {
+test_that("SQLite bounds compounds while other SQL unions stay flat", {
   skip_if_suggest_absent("RSQLite", "DBI")
 
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
@@ -165,15 +165,6 @@ test_that("a union-path query is one flat `UNION ALL` over every branch", {
   )
   sql <- as.character(dbplyr::sql_render(query))
 
-  # Every branch and the zero-row type anchor joins the same top-level `UNION
-  # ALL`, with none bracketed into a subquery of its own. Counting alone would
-  # not say that -- a nested union renders the same number of `UNION ALL`s,
-  # just inside a `FROM (...)` -- so what is counted is the ones outside every
-  # parenthesis.
-  #
-  # dbplyr flattens a union of unions, so this holds whichever way the branches
-  # are bracketed on the way in, and it is the property rather than the
-  # bracketing that is pinned here.
   plan <- compile_grouping_spec(
     spec,
     names(data),
@@ -181,7 +172,14 @@ test_that("a union-path query is one flat `UNION ALL` over every branch", {
   )
   set_count <- length(plan$sets)
   expect_identical(set_count, 8L)
-  expect_identical(count_top_level_unions(sql), set_count)
+  expect_identical(count_top_level_unions(sql), 1L)
+  generic <- summarize_with_margins(
+    dbplyr::tbl_lazy(data, con = dbplyr::simulate_dbi()),
+    total = sum(value, na.rm = TRUE), .grouping = spec
+  )
+  expect_identical(count_top_level_unions(
+    as.character(dbplyr::sql_render(generic))
+  ), set_count)
 
   remote_result <- query |>
     dplyr::collect() |>

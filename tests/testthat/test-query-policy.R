@@ -1077,6 +1077,125 @@ test_that("ordering numeric dictionary fixed keys reads no source rows", {
   }
 })
 
+check_special_sql_reads <- function(source, portable = FALSE) {
+  build <- function(special) {
+    for (sort in c("none", "first", "last")) {
+      for (plan in list(NULL, rollup(tidyselect::all_of("g")))) {
+        for (role in c("output", "identifier")) {
+          for (name in c(".", ".da", ".dat", "..0", "..00", "..01", "..-1")) {
+            output <- if (special && role == "output") name else "amount"
+            id <- if (role == "identifier") {
+              if (special) name else "sid"
+            } else {
+              if (portable) "sid" else NULL
+            }
+            query <- summarize_with_margins(
+              source, !!output := sum(.data$v, na.rm = TRUE), .grouping = plan,
+              .id = id, .sort = sort,
+              .duplicates = if (portable) "keep" else "drop"
+            )
+            dbplyr::sql_render(query)
+          }
+        }
+      }
+    }
+  }
+  control <- count_entry_point_invocations(build(FALSE))
+  if (inherits(dbplyr::remote_con(source), "SQLiteConnection")) {
+    expect_identical(control, 0L)
+  }
+  # DuckDB retains only its ordinary zero-row metadata read (ADR 0020).
+  expect_identical(count_entry_point_invocations(build(TRUE)), control)
+}
+
+test_that("SQLite special summary outputs add no construction read", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(con, data.frame(g = "a", v = 1))
+  check_special_sql_reads(source)
+})
+
+test_that("DuckDB special summary outputs add no construction read", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  source <- dplyr::copy_to(con, data.frame(g = "a", v = 1))
+  check_special_sql_reads(source)
+  check_special_sql_reads(source, portable = TRUE)
+})
+
+test_that("DuckDB structured missing labels keep the zero-row read budget", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection(array = "matrix")
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  for (expr in c("struct_pack(x := v)", "CAST([v, v + 1] AS INTEGER[2])")) {
+    source <- dplyr::tbl(con, dbplyr::sql(paste(
+      "SELECT", expr, "AS g FROM (VALUES (1), (2)) t(v)"
+    )))
+    # Backend instrumentation observes construction reads, per ADR 0020.
+    metadata <- count_entry_point_invocations(
+      dplyr::collect(utils::head(source, n = 0L))
+    )
+    expect_gt(metadata, 0L)
+    for (label in list(NULL, NA_character_)) {
+      expect_identical(count_entry_point_invocations({
+        query <- summarize_with_margins(
+          source, rows = dplyr::n(), .grouping = rollup(g),
+          .margin_label = label, .id = "sid", .duplicates = "keep"
+        )
+        dbplyr::sql_render(query)
+      }), metadata)
+      expect_identical(count_entry_point_invocations({
+        query <- expand_with_margins(
+          source, .grouping = rollup(g), .margin_label = label,
+          .id = "sid", .sort = "first"
+        )
+        dbplyr::sql_render(query)
+      }), metadata)
+    }
+  }
+})
+
+test_that("Arrow STRUCT missing labels construct without reading input", {
+  skip_if_suggest_absent("arrow")
+  type <- arrow::struct(x = arrow::int16(), y = arrow::utf8())
+  table <- arrow::Table$create(
+    g = arrow::Array$create(data.frame(x = 1L, y = "a"), type = type)
+  )
+  dataset <- arrow::InMemoryDataset$create(table)
+  inputs <- list(
+    table, arrow::as_record_batch(table), dataset,
+    dplyr::select(table, dplyr::everything()),
+    dplyr::select(dataset, dplyr::everything())
+  )
+  # Backend instrumentation observes both the read bound (ADR 0020) and
+  # the input schema snapshot (ADR 0002). The output also carries `sid`,
+  # so its sorting schema read is distinguishable from the input's `g` alone.
+  expect_gt(count_entry_point_invocations(dplyr::collect(table)), 0L)
+  schema_reads <- 0L
+  infer_schema <- getFromNamespace("infer_schema", "arrow")
+  testthat::local_mocked_bindings(
+    infer_schema = function(x) {
+      if (identical(names(x), "g")) {
+        schema_reads <<- schema_reads + 1L
+      }
+      infer_schema(x)
+    },
+    .package = "arrow"
+  )
+  for (source in inputs) {
+    for (label in list(NULL, NA_character_)) {
+      schema_reads <- 0L
+      expect_identical(count_entry_point_invocations(expand_with_margins(
+        source, .grouping = rollup(g), .margin_label = label,
+        .id = "sid", .sort = "last"
+      )), 0L)
+      expect_identical(schema_reads, 1L)
+    }
+  }
+})
+
 test_that("Arrow dot-dot expansion identifiers cause no construction reads", {
   skip_if_suggest_absent("arrow")
   for (empty in c(FALSE, TRUE)) {
