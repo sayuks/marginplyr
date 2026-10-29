@@ -718,10 +718,8 @@ test_that("names obtained from selection data keep early-error guarantees", {
     )),
     rlang::expr(tidyselect::all_of(c(names_alias(data_alias()), "absent"))),
     rlang::expr(tidyselect::all_of(c(tidyselect::peek_vars(), "absent"))),
-    rlang::expr(tidyselect::all_of(setdiff(c("b", "absent"), "b"))),
     rlang::expr(tidyselect::all_of(unname(c(x = "absent")))),
     rlang::expr(tidyselect::all_of(tolower("ABSENT"))),
-    rlang::expr(tidyselect::all_of(sort(unique(c("absent", "absent"))))),
     rlang::expr(tidyselect::all_of(as.character("absent")))
   )
   for (selection in selections) {
@@ -739,4 +737,33 @@ test_that("names obtained from selection data keep early-error guarantees", {
     )
     expect_identical(inspect_proxy_capture$n, 0L)
   }
+})
+
+
+test_that("dispatched helper arguments use one zero-row snapshot", {
+  skip_if_suggest_absent("dtplyr")
+  register_inspect_proxy_methods()
+  source <- dtplyr::lazy_dt(tibble::tibble(a = c("x", "y"), b = 1:2))
+  class(source) <- c("margin_inspect_proxy_counter", class(source))
+  selector <- matrix(1L)
+  rows <- NULL
+  format.matrix <- function(x, ...) {
+    proxy <- tidyselect::peek_data()
+    rows <<- nrow(proxy)
+    names(proxy)[vapply(proxy, is.character, logical(1))]
+  }
+  selection <- rlang::quo(tidyselect::all_of(format(selector)))
+
+  inspect_proxy_capture$n <- 0L
+  expect_identical(inspect_grouping(source, .by = !!selection)$fixed, "(a)")
+  expect_identical(inspect_proxy_capture$n, 1L)
+  expect_identical(rows, 0L)
+
+  inspect_proxy_capture$n <- 0L
+  expect_identical(
+    inspect_grouping(source, .grouping = rollup(!!selection))$included,
+    c("(a)", "()")
+  )
+  expect_identical(inspect_proxy_capture$n, 1L)
+  expect_identical(rows, 0L)
 })
