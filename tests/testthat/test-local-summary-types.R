@@ -9,11 +9,15 @@ test_that("an unnamed local summary refuses mixed frame and scalar values", {
     dplyr::summarise(data, mixed(dplyr::pick(x)), .by = "g"),
     "compatible vectors across groups"
   )
-  expect_error(
+  error <- expect_error(
     summarize_with_margins(
       data, mixed(dplyr::pick(x)), .grouping = grouping_set("g")
     ),
     "Can.t combine"
+  )
+  expect_match(
+    conditionMessage(error),
+    "Can't combine `mixed(dplyr::pick(x))`", fixed = TRUE
   )
 })
 
