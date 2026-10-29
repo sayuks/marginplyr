@@ -31,7 +31,6 @@ for(backend in c('local','dtplyr')) for(constructor in constructors) for(head in
  recognized <- head %in% c('bare','::',':::')
  expected_rejection <- result=='spec' && !recognized
  ok <- if(expected_rejection) inherits(actual,'marginplyr_error') && grepl('constructor call',conditionMessage(actual),fixed=TRUE) else identical(actual,expected)
- # Record the specific constructor refusal independently of its wording.
  if(expected_rejection) ok <- inherits(actual,'marginplyr_error') && grepl('Assign',conditionMessage(actual),fixed=TRUE)
  observations[[length(observations)+1L]] <- data.frame(backend,constructor,head,depth,result,consumer,calls=env$calls,match=ok,condition=if(inherits(actual,'error'))class(actual)[[1L]] else '',stringsAsFactors=FALSE)
 }
