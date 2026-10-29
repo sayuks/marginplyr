@@ -71,6 +71,23 @@ The command takes no options. It runs, in order:
 
 ### Observing one invocation
 
+During the source-tarball check, English progress lines report elapsed test
+time, completed files out of the discovered total, their percentage, and the
+last completed file. The percentage counts files, not runtime or passing tests;
+it does not estimate remaining time. A five-second heartbeat continues while
+a long file runs. The ordinary testthat check summary and the check process's
+terminal result remain the verdict.
+
+The local check supplies an archived reporter through
+`MARGINPLYR_REVIEW_PROGRESS_REPORTER` and an attempt-local event path through
+`MARGINPLYR_REVIEW_PROGRESS`. Without these, `tests/testthat.R` uses testthat's
+ordinary check reporter, including in CI. Only file completion adds an event;
+the check keeps testthat's buffered parallel reporting. `R6` belongs to
+`Config/Needs/review` because this local reporter needs it; package runtime and
+ordinary package tests do not call it directly.
+`Rscript tools/test-review-ready-progress.R` exercises the reporter and process
+boundary on passing and failing disposable packages.
+
 The Review-ready check can start child processes while it performs those steps.
 They belong to the one check; they are not the shell execution an agent starts
 to run it. A subagent is separate again: its work and any shell execution it
