@@ -1,5 +1,11 @@
 # marginplyr 0.1.0
 
+* Expansions keep active sf geometry keys and dimensions among the leading
+  Margin columns, including with Margin ordering (#993).
+
+* Portable summaries restore active sf geometry fixed keys through the
+  subclass rename method, keeping retained geometry metadata valid (#1000).
+
 * Portable summaries retain dynamic output names `.`, `.da`, and `.dat`
   without matching the backend `.data` argument (#970).
 

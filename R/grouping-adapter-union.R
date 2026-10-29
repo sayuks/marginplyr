@@ -763,7 +763,11 @@ summarize_margin_union <- function(.data,
             rlang::syms(unname(key_names[grouping_set])),
             grouping_set
           )
-          if (is.data.frame(result)) {
+          if (is.data.frame(result) &&
+                any(margin_dot_dot_names(c(names(result), grouping_set)))) {
+            # Generic name replacement cannot maintain subclass invariants.
+            # Use a column frame when tidyselect cannot rename these outputs.
+            result <- margin_column_source(result)
             result_names <- names(result)
             positions <- match(unname(key_names[grouping_set]), result_names)
             result_names[positions] <- grouping_set
