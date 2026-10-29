@@ -1,0 +1,4 @@
+DTPLYR detail actual: NA NA  expected: 1 2
+DUCKDB groups after compute: 0  summary: 6
+DUCKDB invalid index ordinary destination columns: sentinel
+DUCKDB invalid index margin destination columns: g,v,.env

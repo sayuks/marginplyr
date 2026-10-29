@@ -1,0 +1,60 @@
+CASES 576
+
+order_difference             pass value_difference
+              20              436              120
+, , status = order_difference
+
+                  shape
+scenario           materialized narrow_collapse narrow_filter narrow_open
+  dimension                   0               0             0           0
+  dimension_suffix            0               0             0           0
+  identifier                  0               0             0           0
+  private_id                  0               0             0           0
+  sort                        0               4             4           4
+  unrelated                   0               0             0           0
+                  shape
+scenario           projection table union_narrow withschema
+  dimension                 0     0            0          0
+  dimension_suffix          0     0            0          0
+  identifier                0     0            0          0
+  private_id                0     0            0          0
+  sort                      0     0            4          4
+  unrelated                 0     0            0          0
+
+, , status = pass
+
+                  shape
+scenario           materialized narrow_collapse narrow_filter narrow_open
+  dimension                  12               6             6           6
+  dimension_suffix           12               6             6           6
+  identifier                 12               6             6           6
+  private_id                 12               6             6           6
+  sort                       12               8             8           8
+  unrelated                  12              12            12          12
+                  shape
+scenario           projection table union_narrow withschema
+  dimension                12    12            6          6
+  dimension_suffix         12    12            6          6
+  identifier               12    12            6          6
+  private_id               12    12            6          6
+  sort                     12    12            8          8
+  unrelated                12    12           12         12
+
+, , status = value_difference
+
+                  shape
+scenario           materialized narrow_collapse narrow_filter narrow_open
+  dimension                   0               6             6           6
+  dimension_suffix            0               6             6           6
+  identifier                  0               6             6           6
+  private_id                  0               6             6           6
+  sort                        0               0             0           0
+  unrelated                   0               0             0           0
+                  shape
+scenario           projection table union_narrow withschema
+  dimension                 0     0            6          6
+  dimension_suffix          0     0            6          6
+  identifier                0     0            6          6
+  private_id                0     0            6          6
+  sort                      0     0            0          0
+  unrelated                 0     0            0          0

@@ -1,0 +1,13 @@
+$class
+[1] "rlang_error"
+
+$message
+[1] "`x` and `y` are not compatible.\n✖ Incompatible types for column `g`: logical vs character."
+
+$class
+[1] "expressionStackOverflowError"
+
+$message
+[1] "evaluation nested too deeply: infinite recursion / options(expressions=)?"
+
+[1] TRUE
