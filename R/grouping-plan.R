@@ -451,7 +451,7 @@ is_name_only_expr <- function(expr, env, data_vars) {
     return(TRUE)
   }
   if (!is.language(expr)) {
-    return(is.atomic(expr))
+    return(is.atomic(expr) && !is.object(expr))
   }
 
   # tidyselect refuses a formula in a selection on sight, in `stop_formula()`,
@@ -562,17 +562,19 @@ is_name_only_helper_arg <- function(expr,
   if (identical(fn, tidyselect::peek_vars)) {
     return(TRUE)
   }
+  # Ordinary S3 generics can dispatch on implicit classes even when every
+  # argument is unclassed. They, and set operations that call them, need the
+  # typed snapshot; internal generics below dispatch only on explicit classes.
   name_operations <- mget(c(
     "{", "(", "<-", "<<-", "=", "+", "-", "*", "/", ":", "!", "&", "|",
     "c", "list", "names", "length", "[", "[[", "$", "return",
-    "setdiff", "union", "intersect", "setequal", "unname", "unique",
-    "duplicated", "sort", "order", "rev", "rep", "rep.int", "rep_len",
+    "setequal", "unname", "order", "rep", "rep.int", "rep_len",
     "as.character", "as.integer", "as.numeric", "as.vector", "which", "match",
     "is.na", "is.null", "is.character", "is.numeric", "is.logical",
     "is.integer",
-    "seq", "seq.int", "seq_along", "seq_len", "tolower", "toupper", "trimws",
+    "seq.int", "seq_along", "seq_len", "tolower", "toupper", "trimws",
     "paste", "paste0", "sprintf", "substr", "substring", "gsub", "sub",
-    "grep", "grepl", "strsplit", "nchar", "nzchar", "unlist", "format"
+    "grep", "grepl", "strsplit", "nchar", "nzchar", "unlist"
   ), envir = baseenv(), inherits = FALSE)
   if (any(vapply(name_operations, identical, logical(1), fn))) {
     return(TRUE)
