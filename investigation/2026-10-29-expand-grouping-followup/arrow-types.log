@@ -1,0 +1,53 @@
+FIXTURE float16 Invalid: Cannot convert to Half Float
+ℹ You might want to try casting manually with `Array$create(...)$cast(...)`.
+FIXTURE dict_int32_FALSE NotImplemented: Extend
+FIXTURE dict_int32_TRUE NotImplemented: Extend
+FIXTURE dict_float64_FALSE NotImplemented: Extend
+FIXTURE dict_float64_TRUE NotImplemented: Extend
+FIXTURE dict_utf8_FALSE Invalid: invalid R type to convert to dictionary
+ℹ You might want to try casting manually with `Array$create(...)$cast(...)`.
+FIXTURE dict_utf8_TRUE Invalid: invalid R type to convert to dictionary
+ℹ You might want to try casting manually with `Array$create(...)$cast(...)`.
+
+both_error       pass
+       150       1902
+
+                both_error pass
+  binary                 0   54
+  bool                   0   54
+  date32                 0   54
+  date64                 0   54
+  decimal128             0   54
+  decimal256             0   54
+  duration_ns            0   54
+  duration_s             0   54
+  extension             12   42
+  fixed_binary           0   54
+  fixed_list            30   24
+  float32                0   54
+  float64                0   54
+  int16                  0   54
+  int32                  0   54
+  int64                  0   54
+  int8                   0   54
+  large_binary           0   54
+  large_list            30   24
+  large_utf8             0   54
+  list                  30   24
+  nan                    0   54
+  nested_struct         30   24
+  null                   0   54
+  struct                18   36
+  time32_ms              0   54
+  time32_s               0   54
+  time64_ns              0   54
+  time64_us              0   54
+  timestamp_ms           0   54
+  timestamp_ns           0   54
+  timestamp_s            0   54
+  timestamp_us           0   54
+  uint16                 0   54
+  uint32                 0   54
+  uint64                 0   54
+  uint8                  0   54
+  utf8                   0   54
