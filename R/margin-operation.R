@@ -390,6 +390,10 @@ finalize_margin_operation <- function(operation, execution,
 
   unsorted <- result
   result <- order_margin_result(operation, result, execution)
+  if (is.data.frame(result) && margin_sorting(operation)) {
+    # A subclass arrange method can move columns while ordering rows.
+    result <- reorder_margin_columns(result, margin_cols)
+  }
   needs_unsorted_anchor <- live_sqlite_margin_result(operation) &&
     !margin_sorting(operation) &&
     length(type_anchor_columns) > 0L &&

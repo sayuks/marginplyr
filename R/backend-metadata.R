@@ -10,16 +10,17 @@ get_col_names <- function(data, ...) {
   as.character(dplyr::tbl_vars(selected))
 }
 
-# A copy of a Mutable-step graph rooted in zero-row tables, used to acquire an
-# inspection selection proxy. The derived step may already hold a reference-
-# writing `:=` call, so changing its root's permission is too late; replacing
-# each copied root's source gives those calls isolated schema-only tables to
-# write to. Row-only predicates are removed because they cannot affect column
-# metadata. ADR 0029 records why Margin operations refuse rather than use this
-# rewrite.
+# A schema-only copy of a metadata-safe dtplyr graph. Its roots are isolated
+# zero-row tables and its row predicates are removed. The caller checks
+# metadata safety before using this rewrite (ADRs 0020 and 0029).
 zero_row_dtplyr_proxy_input <- function(.data) {
   stopifnot(inherits(.data, "dtplyr_step"))
+  if (inherits(.data, "dtplyr_step_assign")) {
+    return(zero_row_dtplyr_proxy_input(.data[["parent"]]))
+  }
   step <- .data
+  # Downstream steps inherit cached expressions independently of their parent.
+  step[["locals"]] <- list()
   inputs <- dtplyr_step_input_fields(step)
   if (length(inputs) > 0L) {
     for (field in inputs) {

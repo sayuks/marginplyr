@@ -40,7 +40,27 @@ dtplyr_margin_input <- function(.data, backend) {
     return(.data)
   }
   step_call <- utils::getFromNamespace("step_call", "dtplyr")
-  step_call(.data, "copy")
+  step_call(isolate_dtplyr_cached_inputs(.data), "copy")
+}
+
+# Isolate each cached-table reference in an admitted immutable dtplyr graph.
+# Saved cache bindings are rebuilt from the isolated parents so later caches
+# retain the same protection. This constructs deferred steps without row work.
+isolate_dtplyr_cached_inputs <- function(step) {
+  for (field in dtplyr_step_input_fields(step)) {
+    step[[field]] <- isolate_dtplyr_cached_inputs(step[[field]])
+    step[["locals"]] <- utils::modifyList(
+      step[["locals"]], step[[field]][["locals"]]
+    )
+  }
+  if (inherits(step, "dtplyr_step_assign")) {
+    dt_call <- utils::getFromNamespace("dt_call", "dtplyr")
+    step[["locals"]][[step[["name"]]]] <- dt_call(step[["parent"]])
+    step_call <- utils::getFromNamespace("step_call", "dtplyr")
+    # Copy before a downstream setnames()/setorder() can write to the alias.
+    return(step_call(step, "copy"))
+  }
+  step
 }
 
 # Preserve a prepared SQLite input as one relation before anchors and branches
@@ -763,7 +783,11 @@ summarize_margin_union <- function(.data,
             rlang::syms(unname(key_names[grouping_set])),
             grouping_set
           )
-          if (is.data.frame(result)) {
+          if (is.data.frame(result) &&
+                any(margin_dot_dot_names(c(names(result), grouping_set)))) {
+            # Generic name replacement cannot maintain subclass invariants.
+            # Use a column frame when tidyselect cannot rename these outputs.
+            result <- margin_column_source(result)
             result_names <- names(result)
             positions <- match(unname(key_names[grouping_set]), result_names)
             result_names[positions] <- grouping_set
