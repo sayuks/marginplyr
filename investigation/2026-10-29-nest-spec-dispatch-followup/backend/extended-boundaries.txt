@@ -1,0 +1,9 @@
+Arrow graph boundary calls 24 readers preserved 8
+Tracing function "dbSendQuery" in package "namespace:DBI"
+Untracing function "dbSendQuery" in package "namespace:DBI"
+SQL sqlite statements 0 all LIMIT 0 when present
+Tracing function "dbSendQuery" in package "namespace:DBI"
+Untracing function "dbSendQuery" in package "namespace:DBI"
+SQL duckdb statements 8 all LIMIT 0 when present
+SQL boundary calls 32
+Unsafe metadata refusals 12; callback calls 0

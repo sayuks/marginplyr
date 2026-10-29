@@ -1,0 +1,12 @@
+source ordinary collect:
+# A tibble: 2 × 2
+  g         v
+  <chr> <int>
+1 a         1
+2 b         2
+copied zero-row locals:
+$`_DT2`
+`_DT1`[v[[1L]] > 0L]
+
+raw isolated proxy error:
+<subscriptOutOfBoundsError in v[[1L]]: subscript out of bounds>

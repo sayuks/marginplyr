@@ -1,0 +1,6 @@
+altered calls 496 matched canonical scalar controls 492 errors 4
+[1] "local | nest_by_with_margins | matrix | ℹ In argument: `dplyr::all_of(leading)`.\nCaused by error in `dplyr::all_of()`:\n! Can't subset elements.\n✖ Subscript must be a simple vector, not a matrix."
+[2] "local | nest_by_with_margins | array | ℹ In argument: `dplyr::all_of(leading)`.\nCaused by error in `dplyr::all_of()`:\n! Can't subset elements.\n✖ Subscript must be a simple vector, not an array."
+[3] "dtplyr | nest_by_with_margins | matrix | ℹ In argument: `dplyr::all_of(leading)`.\nCaused by error in `dplyr::all_of()`:\n! Can't subset elements.\n✖ Subscript must be a simple vector, not a matrix."
+[4] "dtplyr | nest_by_with_margins | array | ℹ In argument: `dplyr::all_of(leading)`.\nCaused by error in `dplyr::all_of()`:\n! Can't subset elements.\n✖ Subscript must be a simple vector, not an array."
+PASS: only the separately reproduced empty rowwise dimensional-identifier defect was observed
