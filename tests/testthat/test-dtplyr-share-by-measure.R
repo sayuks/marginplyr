@@ -196,3 +196,20 @@ test_that(".BY across validation retains column and function mappings", {
     expect_identical(actual$x_max_share, c(1 / 3, 1, 1))
   }
 })
+
+test_that("caller functions keep their meaning during .BY aliasing", {
+  skip_if_suggest_absent("dtplyr")
+  input <- tibble::tibble(g = c("a", "b"), .BY = c(1, 3), x = c(2, 6))
+  dtplyr_share_input_name <- function(x) sum(x)
+  for (helper in c("share_of_parent", "share_of_total")) {
+    query <- summarize_with_margins(
+      dtplyr::lazy_dt(input), value = sum(x),
+      independent = dtplyr_share_input_name(x),
+      fraction = !!rlang::call2(helper, quote(value)), .grouping = rollup(g)
+    )
+    actual <- dplyr::collect(query)
+    expect_equal(actual$value, c(2, 6, 8))
+    expect_identical(actual$independent, c(2, 6, 8))
+    expect_identical(actual$fraction, c(0.25, 0.75, 1))
+  }
+})

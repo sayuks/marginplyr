@@ -1316,7 +1316,8 @@ rewrite_dtplyr_share_measure <- function(expr, alias) {
     return(expr)
   }
   name <- static_call_name(expr)
-  if (identical(name, "dtplyr_share_input_name")) {
+  if (identical(name, "dtplyr_share_input_name") &&
+        identical(static_call_ns(expr), "marginplyr")) {
     return(deparse(expr[[2L]]))
   }
   if (!is.null(name) && name %in% c("$", "@")) {
@@ -4113,11 +4114,8 @@ expression_data_symbols <- function(expr, bound = character(), lookup = NULL) {
       return(pronoun_index_symbols(expr, bound, lookup))
     }
     if (identical(pronoun, ".data")) {
-      if (identical(call_name, "$")) {
-        if (is_name_part(expr[[3L]])) {
-          return(rlang::as_name(expr[[3L]]))
-        }
-        return(static_character_value(expr[[3L]]))
+      if (identical(call_name, "$") && is_name_part(expr[[3L]])) {
+        return(rlang::as_name(expr[[3L]]))
       }
       # An evaluated index may read the mask and name a different column.
       # Unknown targets retain the lookup marker without running caller code.
