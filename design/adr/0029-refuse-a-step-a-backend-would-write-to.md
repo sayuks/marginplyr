@@ -254,3 +254,17 @@ branches could still share a writable table. The explicit step isolates that
 case as well as filtered, joined, and set-operation inputs.
 
 Evidence: [the supplemental audit on PR #959](https://github.com/sayuks/marginplyr/pull/959#issuecomment-6466562388).
+
+## Amendment: isolate cached aliases before derived writes
+
+#1003 establishes a limit of the outer deferred copy: a rename derived from a
+cached alias writes to that alias before the copy runs. Repeating the derived
+input across branches then attempts the same rename on an already renamed
+table.
+
+Margin preparation also places a deferred copy immediately after each cached
+alias in every contributing input. Saved bindings for later caches are rebuilt
+from those protected parents, so a saved rename or ordering cannot bypass the
+copy. The outer copy remains necessary for inputs without a cache. Construction
+evaluates no source rows and materializes no input; inspection retains its
+schema-only path, and Mutable steps remain refused.
