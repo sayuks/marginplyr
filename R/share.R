@@ -1279,6 +1279,56 @@ wrap_dtplyr_share_function <- function(fn, mapping, forwarded_args, call) {
   rlang::call2("~", validator)
 }
 
+# Alias the .BY input of a translated, validated dtplyr summary. Planning has
+# already checked caller expressions; translation has resolved column reads
+# and expanded across without exposing the private input name to either.
+protect_dtplyr_share_measure <- function(step) {
+  if (inherits(step, "dtplyr_step_group")) {
+    step$parent <- protect_dtplyr_share_measure(step$parent)
+    return(step)
+  }
+  validators <- c("check_dtplyr_share_source", "check_dtplyr_share_scalar",
+                  "check_dtplyr_share_ordinary")
+  if (!inherits(step, "dtplyr_step_subset") ||
+        !".BY" %in% step$parent$vars ||
+        !any(all.names(step$j) %in% validators)) {
+    return(step)
+  }
+  margin_safe_column_reads(
+    step$parent, ".BY",
+    function(source, safe_name) {
+      step$parent <- source
+      step$j <- rewrite_dtplyr_share_measure(step$j, safe_name(".BY"))
+      step
+    },
+    reserved = step$vars
+  )
+}
+
+# Replace translated .BY column reads while retaining literal field names and
+# captures. Freeze the generated across input-name read before aliasing so its
+# validation mapping continues to name the caller's selected column.
+rewrite_dtplyr_share_measure <- function(expr, alias) {
+  if (rlang::is_symbol(expr, ".BY")) {
+    return(rlang::sym(alias))
+  }
+  if (!rlang::is_call(expr)) {
+    return(expr)
+  }
+  name <- static_call_name(expr)
+  if (identical(name, "dtplyr_share_input_name")) {
+    return(deparse(expr[[2L]]))
+  }
+  if (!is.null(name) && name %in% c("$", "@")) {
+    args <- static_call_args(expr)
+    args[1L] <- list(rewrite_dtplyr_share_measure(args[[1L]], alias))
+    return(rebuild_static_call(expr, args))
+  }
+  rewrite_evaluated_call_parts(expr, function(part) {
+    rewrite_dtplyr_share_measure(part, alias)
+  })
+}
+
 check_dtplyr_share_scalar <- function(value,
                                       input,
                                       mapping,
@@ -4057,24 +4107,25 @@ expression_data_symbols <- function(expr, bound = character(), lookup = NULL) {
     # side to be wrong on.
     pronoun <- rlang::as_name(unparenthesized_value(expr[[2L]]))
     if (identical(pronoun, ".env")) {
-      return(character())
+      if (identical(call_name, "$")) {
+        return(character())
+      }
+      return(pronoun_index_symbols(expr, bound, lookup))
     }
     if (identical(pronoun, ".data")) {
-      # By subscript, because `.data[[, 1]]` puts an empty argument in the
-      # index position: `column <- expr[[3L]]` binds R's missing marker there
-      # and raises `missingArgError` on the first read of that name (#174). It
-      # names no column, which is what an unreadable index already answers.
-      if (is_name_part(expr[[3L]])) {
-        return(rlang::as_name(expr[[3L]]))
+      if (identical(call_name, "$")) {
+        if (is_name_part(expr[[3L]])) {
+          return(rlang::as_name(expr[[3L]]))
+        }
+        return(static_character_value(expr[[3L]]))
       }
-      if (
-        is.character(expr[[3L]]) &&
-          length(expr[[3L]]) == 1L &&
-          !is.na(expr[[3L]])
-      ) {
-        return(expr[[3L]])
+      # An evaluated index may read the mask and name a different column.
+      # Unknown targets retain the lookup marker without running caller code.
+      target <- static_character_value(expr[[3L]])
+      if (is.null(target)) {
+        target <- unresolved_lookup_name()
       }
-      return(character())
+      return(unique(c(target, pronoun_index_symbols(expr, bound, lookup))))
     }
   }
   # Any other `a$b` or `a@b` names `b` literally: the field or slot name is
@@ -4117,6 +4168,15 @@ expression_data_symbols <- function(expr, bound = character(), lookup = NULL) {
   # `across()` would make the walk depend on its own call position, which is
   # what left function definitions behaving differently in a head (#130).
   call_part_symbols(expr, bound, lookup)
+}
+
+# Reads evaluated inside a pronoun subscript, excluding the pronoun itself.
+# The target binding belongs to the pronoun; its indices retain this mask.
+pronoun_index_symbols <- function(expr, bound, lookup) {
+  unique(c(character(), unlist(lapply(
+    static_call_args(expr)[-1L], expression_data_symbols,
+    bound = bound, lookup = lookup
+  ), use.names = FALSE)))
 }
 
 # The reads of a call's own parts: its evaluated arguments, and its head when

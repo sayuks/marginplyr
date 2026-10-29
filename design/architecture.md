@@ -299,7 +299,7 @@ any of them.
 
 The exported helpers in this file are only context guards: reaching either
 body means the helper was called outside a Margin summary, so it always
-raises. The rest of the module is private and is reached through four entry
+raises. The rest of the module is private and is reached through five entry
 points, and no other:
 
 - `preflight_shares()`, called from the public verb's admission block
@@ -310,7 +310,10 @@ points, and no other:
   expressions into ordinary summaries plus planned share requests;
 - `wrap_share_sources()`, called from the same place immediately afterwards,
   which wraps each referenced source summary in the validator its backend can
-  execute; and
+  execute;
+- `protect_dtplyr_share_measure()`, called by the portable adapter after
+  dtplyr translation, which aliases an input measure named `.BY` while
+  preserving the source validator's selected-column mapping; and
 - `execute_shares()`, called by `execute_margin_summary()`, which
   receives the prepared Margin operation, the staged ordinary-summary result,
   all planned requests, and the verb's `.check_share_source`. It needs the
