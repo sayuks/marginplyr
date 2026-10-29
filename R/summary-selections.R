@@ -835,7 +835,7 @@ plan_summary_expressions <- function(dots,
                         summary_plan$cardinality)
         lapply(later, function(record) {
           source <- summary_plan$dots[[record$position]]
-          expr <- rlang::quo_get_expr(source)
+          expr <- record$dependency_expr
           record$symbols <- expression_data_symbols(expr, lookup = list(
             env = rlang::quo_get_env(source),
             mask = c(
@@ -1276,7 +1276,18 @@ local_summary_selection <- function(selection, env, group_vars,
   source_names <- names(data)[unname(selected)]
   if (!is.null(state)) {
     for (check in state$source_checks) {
-      check$symbols <- source_names
+      check$symbols <- if (is.na(check$across_input)) {
+        source_names
+      } else {
+        check$across_input
+      }
+      check$symbols <- unique(c(
+        check$symbols,
+        expression_data_symbols(check$dependency_expr, lookup = list(
+          env = env, mask = names(data),
+          rebound = lookup_rebound_names(check$dependency_expr)
+        ))
+      ))
       check_share_alias_reads(
         unlist(get("summary_aliases", envir = state, inherits = TRUE)[
           seq_len(state$position - 1L)

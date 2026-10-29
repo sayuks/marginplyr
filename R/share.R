@@ -976,7 +976,8 @@ share_cardinality_records <- function(analyses, requests) {
       source_summary = pair$source,
       share_kind = pair$kind,
       across_input = source_records[[1L]]$across_input,
-      across_function = source_records[[1L]]$across_function
+      across_function = source_records[[1L]]$across_function,
+      dependency_expr = source_records[[1L]]$dependency_expr
     )))
     seen_sources <- c(seen_sources, pair$source)
   }
@@ -1641,37 +1642,15 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
       } else {
         "expanded"
       }
-      selected_dependencies <- if (is_across_call(expr) &&
-                                     !nzchar(output_name) &&
-                                     length(output_names) > 0L) {
-        available <- unique(c(names(selection_proxy), preceding_names))
-        proxy <- vctrs::new_data_frame(
-          stats::setNames(rep(list(NA), length(available)), available),
-          n = 1L
-        )
-        intersect(
-          known_across_source_names(expr, env, proxy), preceding_names
-        )
-      } else {
-        character()
-      }
-      dependencies <- unique(c(
-        expression_alias_dependencies(
-          expr, preceding_names, env,
-          c(colnames(selection_proxy), preceding_names)
-        ),
-        selected_dependencies
+      available <- unique(c(names(selection_proxy), preceding_names))
+      proxy <- vctrs::new_data_frame(
+        stats::setNames(rep(list(NA), length(available)), available),
+        n = 1L
+      )
+      analyses[[i]] <- list(records = ordinary_summary_records(
+        expr, env, proxy, output_names, output_name,
+        eligibility, i, preceding_names
       ))
-      analyses[[i]] <- list(records = lapply(output_names, function(name) {
-        list(
-          name = name,
-          position = i,
-          eligibility = eligibility,
-          dependencies = dependencies,
-          across_input = NA_character_,
-          across_function = NA_integer_
-        )
-      }))
       preceding_names <- c(preceding_names, output_names)
       next
     }
@@ -1707,50 +1686,9 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
       )) "frame_candidate" else "expanded"
     }
 
-    selected_dependencies <- if (is_across_call(expr) &&
-                                   !nzchar(output_name)) {
-      selected <- if (defer_local) {
-        tryCatch(
-          known_across_source_names(expr, env, selection_proxy),
-          vctrs_error_subscript_oob = function(cnd) character()
-        )
-      } else {
-        known_across_source_names(expr, env, selection_proxy)
-      }
-      intersect(selected, preceding_names)
-    } else {
-      character()
-    }
-    dependencies <- unique(c(
-      expression_alias_dependencies(
-        expr, preceding_names, env,
-        c(colnames(selection_proxy), preceding_names)
-      ),
-      selected_dependencies
-    ))
-    provenance <- across_output_provenance(
-      expr,
-      env,
-      selection_proxy,
-      output_names,
-      expands_own_names = is_across_call(expr) && !nzchar(output_name)
-    )
-    across_inputs <- provenance$inputs
-    across_functions <- provenance$functions
-    records <- Map(
-      function(name, across_input, across_function) {
-        list(
-          name = name,
-          position = i,
-          eligibility = eligibility,
-          dependencies = dependencies,
-          across_input = across_input,
-          across_function = across_function
-        )
-      },
-      output_names,
-      across_inputs,
-      across_functions
+    records <- ordinary_summary_records(
+      expr, env, selection_proxy, output_names, output_name,
+      eligibility, i, preceding_names
     )
     analyses[[i]] <- list(records = records)
     # An argument name alone cannot establish a preceding alias dependency.
@@ -1760,6 +1698,58 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
   }
 
   analyses
+}
+
+# Records each known ordinary output against the aliases preceding its call.
+# The proxy includes those aliases when local selections have been deferred.
+# Unknown provenance retains the whole call's dependencies.
+ordinary_summary_records <- function(expr, env, proxy, output_names,
+                                     output_name, eligibility, position,
+                                     preceding_names) {
+  expands <- is_across_call(expr) && !nzchar(output_name) &&
+    length(output_names) > 0L
+  provenance <- across_output_provenance(
+    expr, env, proxy, output_names, expands_own_names = expands
+  )
+  selected <- if (expands) {
+    known_across_source_names(expr, env, proxy)
+  } else {
+    character()
+  }
+  Map(function(name, across_input, across_function) {
+    dependency_expr <- expr
+    inputs <- selected
+    if (!is.na(across_input)) {
+      parsed <- parse_across_arguments(expr)
+      args <- parsed$call_args
+      if (parsed$cols_index > 0L) {
+        args[[parsed$cols_index]] <- rlang::sym(across_input)
+      } else {
+        args$.cols <- rlang::sym(across_input)
+      }
+      if (is_known_function_list_call(parsed$fns, env)) {
+        args[parsed$fns_index] <- static_call_args(parsed$fns)[across_function]
+      }
+      dependency_expr <- rebuild_static_call(expr, args)
+      inputs <- across_input
+    }
+    dependencies <- unique(c(
+      expression_alias_dependencies(
+        dependency_expr, preceding_names, env,
+        c(colnames(proxy), preceding_names)
+      ),
+      intersect(inputs, preceding_names)
+    ))
+    list(
+      name = name,
+      position = position,
+      eligibility = eligibility,
+      dependencies = dependencies,
+      dependency_expr = dependency_expr,
+      across_input = across_input,
+      across_function = across_function
+    )
+  }, output_names, provenance$inputs, provenance$functions)
 }
 
 # Which selected column and which `.fns` entry produced each output name. Only
