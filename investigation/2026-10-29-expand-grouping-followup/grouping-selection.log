@@ -1,0 +1,3 @@
+       success external_error       mismatch
+          1474            349              0
+PASS selection expression differential: 1823 checked from 1834 generated; 11 injection ASTs excluded

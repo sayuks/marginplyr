@@ -1,0 +1,42 @@
+
+     error order_diff       pass value_diff
+       128         16        600         96
+, , status = error
+
+           shape
+scenario    aliased collapsed filtered inmemory materialized projected table
+  dimension       6         6        6        0            0         6     0
+  id             12        12       12        0            0        12     0
+  ordinary        0         0        0        0            0         0     0
+  sort            8         8        8        0            0         8     0
+  suffix          6         6        6        0            0         6     0
+
+, , status = order_diff
+
+           shape
+scenario    aliased collapsed filtered inmemory materialized projected table
+  dimension       0         0        0        0            0         0     0
+  id              0         0        0        0            0         0     0
+  ordinary        0         0        0        0            0         0     0
+  sort            4         4        4        0            0         4     0
+  suffix          0         0        0        0            0         0     0
+
+, , status = pass
+
+           shape
+scenario    aliased collapsed filtered inmemory materialized projected table
+  dimension       9         9        9       24           24         9    24
+  id              6         6        6       24           24         6    24
+  ordinary       24        24       24       24           24        24    24
+  sort           12        12       12       24           24        12    24
+  suffix          9         9        9       24           24         9    24
+
+, , status = value_diff
+
+           shape
+scenario    aliased collapsed filtered inmemory materialized projected table
+  dimension       9         9        9        0            0         9     0
+  id              6         6        6        0            0         6     0
+  ordinary        0         0        0        0            0         0     0
+  sort            0         0        0        0            0         0     0
+  suffix          9         9        9        0            0         9     0

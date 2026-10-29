@@ -1,0 +1,35 @@
+Arrow hidden sid contract: FALSE
+# A tibble: 4 × 3
+      g   sid row_id
+  <int> <int>  <int>
+1    NA     1      1
+2     9     1      1
+3    NA     2      2
+4     8     2      2
+Arrow hidden ..marginplyr_arrow_dimension_1 contract: FALSE
+# A tibble: 4 × 3
+      g   sid row_id
+  <int> <int>  <int>
+1     1     1      1
+2     2     1      2
+3     1     2      1
+4     2     2      2
+sf expected: geometry,g,sid,rid
+sf observed: g,sid,rid,geometry
+SQL Server no-grouping expansion:
+SELECT [g], [v]
+FROM (
+SELECT *
+FROM [df]
+ORDER BY [v]
+) AS [q01]
+                           Arrow hidden sid
+                                      FALSE
+Arrow hidden ..marginplyr_arrow_dimension_1
+                                      FALSE
+                          sf Margin columns
+                                      FALSE
+                       SQL Server enclosure
+                                      FALSE
+Error: The promised behavior failed in the cases printed above.
+Execution halted
