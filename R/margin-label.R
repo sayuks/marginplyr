@@ -167,7 +167,14 @@ validate_margin_label <- function(.data,
     )]
     unsupported <- missing_dimensions[!vapply(
       column_info$prototypes[missing_dimensions],
-      function(x) vctrs::vec_detect_missing(x)[[1L]],
+      function(x) {
+        # is.na.factor() checks missing codes without the recursive vctrs
+        # missingness proxy for factor matrices and arrays.
+        if (is.factor(x)) {
+          return(all(is.na(x)))
+        }
+        vctrs::vec_detect_missing(x)[[1L]]
+      },
       logical(1)
     )]
     if (length(unsupported) > 0L) {
