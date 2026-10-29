@@ -1286,3 +1286,53 @@ test_that("narrow Dataset expansion reads no source rows", {
     expect_identical(reads, 0L)
   }
 })
+
+test_that("DuckDB .env expansion and index validation add no reads", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  source <- dplyr::copy_to(
+    con, data.frame(g = c("a", "b"), v = c(1L, 2L), .env = c("x", "y"))
+  )
+  ordinary <- dplyr::select(source, tidyselect::all_of(c("g", "v")))
+  # ADR 0020 permits the existing zero-row type read.
+  baseline <- count_entry_point_invocations(
+    expand_with_margins(ordinary, .grouping = rollup(g), .margin_label = NULL)
+  )
+  expect_gt(baseline, 0L)
+  for (empty in c(FALSE, TRUE)) {
+    input <- if (empty) dplyr::filter(source, FALSE) else source
+    without_env <- dplyr::select(input, tidyselect::all_of(c("g", "v")))
+    for (role in c("payload", "dimension", "fixed", "identifier")) {
+      expect_identical(count_entry_point_invocations({
+        query <- switch(role,
+          payload = expand_with_margins(
+            input, .grouping = rollup(g), .margin_label = NULL
+          ),
+          dimension = expand_with_margins(
+            input, .grouping = rollup(tidyselect::all_of(".env")),
+            .margin_label = NULL
+          ),
+          fixed = expand_with_margins(
+            input, .by = tidyselect::all_of(".env"), .grouping = rollup(g),
+            .margin_label = NULL
+          ),
+          identifier = expand_with_margins(
+            without_env, .grouping = rollup(g), .margin_label = NULL,
+            .id = ".env"
+          )
+        )
+        query <- dplyr::arrange(dplyr::group_by(query, .data$g), .data$v)
+        dbplyr::sql_render(query)
+      }), baseline)
+      for (arg in c("indexes", "unique_indexes")) {
+        args <- list(x = query)
+        args[[arg]] <- list("absent_column")
+        # compute() counts once; its local validation executes nothing.
+        expect_identical(count_entry_point_invocations(
+          expect_error(do.call(dplyr::compute, args), "absent_column")
+        ), 1L)
+      }
+    }
+  }
+})
