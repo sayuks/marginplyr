@@ -3421,9 +3421,8 @@ grand_total_occurrence_ids <- function(plan) {
 
 # The denominator occurrence of every grouping set, in the shape
 # `parent_set_ids()` returns: `NA` where the row is its own denominator, and
-# otherwise the occurrence supplying it. Duplicate grand total occurrences
-# hold the same values, so any of them answers for every other set; which one
-# is used is not part of the contract.
+# otherwise the occurrence supplying it. Which Grand total occurrence is
+# used is not part of the contract (ADR 0017, amendment #919).
 total_set_ids <- function(plan) {
   result <- rep(NA_integer_, length(plan$sets))
   grand_total_ids <- grand_total_occurrence_ids(plan)

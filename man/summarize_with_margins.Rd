@@ -648,8 +648,7 @@ immediate less detailed \code{\link[=rollup]{rollup()}} level, so it requires on
 \code{\link[=rollup]{rollup()}}; composite dimensions move together, and duplicate occurrences
 skip identical sets when choosing the parent. \code{\link[=share_of_total]{share_of_total()}} divides by
 the Grand total set, so it accepts any Grouping specification whose plan
-contains one, including \code{\link[=cube]{cube()}}; duplicate grand total occurrences hold
-the same values and are interchangeable.
+contains one, including \code{\link[=cube]{cube()}}.
 
 Arrow inputs reject both after expression planning and common
 Margin-operation validation but before constructing a summary query. Other

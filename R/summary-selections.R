@@ -1748,6 +1748,7 @@ known_across_source_names <- function(expr, env, data_proxy) {
 # also single. `substitute()` reads a caller binding without forcing a promise;
 # active bindings are left unknown so prediction cannot run caller code.
 known_across_function_names <- function(parsed, env) {
+  parsed$fns <- unparenthesized_value(parsed$fns)
   if (is.null(parsed$fns) || is.function(parsed$fns) ||
         rlang::is_call(parsed$fns, "function") ||
         rlang::is_call(parsed$fns, "\\") ||

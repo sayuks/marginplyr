@@ -2231,7 +2231,7 @@ test_that("Total shares require a plan containing a Grand total set", {
   )
 })
 
-test_that("duplicate grand total occurrences are interchangeable", {
+test_that("duplicate Grand totals keep one denominator per detail row", {
   data <- data.frame(group = c("x", "y"), value = c(1, 3))
 
   result <- summarize_with_margins(
