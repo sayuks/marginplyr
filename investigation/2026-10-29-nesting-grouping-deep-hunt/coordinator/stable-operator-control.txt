@@ -1,0 +1,1 @@
+Both nesting verbs retained one cell with both integer columns and both source rows.

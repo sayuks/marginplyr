@@ -1,0 +1,3 @@
+scalar-shape comparisons: 40
+empty/nonempty combined-name checks: 196
+All comparisons passed.
