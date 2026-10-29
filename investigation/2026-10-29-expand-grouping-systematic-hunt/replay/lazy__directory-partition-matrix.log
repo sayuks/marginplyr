@@ -1,0 +1,37 @@
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l1dcachesize'. Detail: [errno 1] Operation not permitted
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l2cachesize'. Detail: [errno 1] Operation not permitted
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l3cachesize'. Detail: [errno 1] Operation not permitted
+      status   n
+1 ORDER_DIFF  16
+2       PASS 536
+3 VALUE_DIFF  96
+          shape     status  n
+1      arranged       PASS 72
+2      explicit ORDER_DIFF  4
+3      explicit       PASS 44
+4      explicit VALUE_DIFF 24
+5      filtered ORDER_DIFF  4
+6      filtered       PASS 44
+7      filtered VALUE_DIFF 24
+8        joined       PASS 72
+9  materialized       PASS 72
+10 project_full       PASS 72
+11        table       PASS 72
+12        union ORDER_DIFF  4
+13        union       PASS 44
+14        union VALUE_DIFF 24
+15  with_schema ORDER_DIFF  4
+16  with_schema       PASS 44
+17  with_schema VALUE_DIFF 24
+           scenario     status   n
+1         dimension       PASS  84
+2         dimension VALUE_DIFF  24
+3  dimension_suffix       PASS  84
+4  dimension_suffix VALUE_DIFF  24
+5                id       PASS  84
+6                id VALUE_DIFF  24
+7          id_stage       PASS  84
+8          id_stage VALUE_DIFF  24
+9              sort ORDER_DIFF  16
+10             sort       PASS  92
+11        unrelated       PASS 108

@@ -1,0 +1,20 @@
+pkgload::load_all(quiet = TRUE)
+# Public factor construction and dimensional assignment create this column.
+key <- factor('a')
+dim(key) <- c(1L, 1L)
+input <- tibble::tibble(g = key)
+expected <- dplyr::union_all(input, dplyr::mutate(input, g = vctrs::vec_init(g, 1L)))
+stopifnot(nrow(expected) == 2L, is.factor(expected$g), identical(dim(expected$g), c(2L, 1L)), identical(as.integer(expected$g), c(1L, NA_integer_)))
+cat('ordinary mutation/union control passed\n')
+included <- expand_with_margins(input, .grouping = grouping_set(g), .margin_label = NULL)
+stopifnot(identical(included, input))
+cat('included-only expansion control passed\n')
+actual <- tryCatch(expand_with_margins(input, .grouping = rollup(g), .margin_label = NULL), error = identity)
+if (inherits(actual, 'error')) cat('rollup error:', paste(class(actual), collapse = '/'), conditionMessage(actual), '\n')
+if ('--assert' %in% commandArgs(trailingOnly = TRUE)) stopifnot(identical(actual, expected))
+# Distinguish the factor proxy from a shaped integer column.
+numeric <- input
+numeric$g <- structure(as.integer(input$g), dim = dim(input$g))
+worked <- expand_with_margins(numeric, .grouping = rollup(g), .margin_label = NULL)
+stopifnot(nrow(worked) == 2L, identical(dim(worked$g), c(2L,1L)))
+cat('shaped integer expansion control passed\n')

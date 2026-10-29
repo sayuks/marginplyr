@@ -1,0 +1,4 @@
+ordinary mutation/union control passed
+included-only expansion control passed
+rollup error: expressionStackOverflowError/stackOverflowError/error/condition evaluation nested too deeply: infinite recursion / options(expressions=)?
+shaped integer expansion control passed

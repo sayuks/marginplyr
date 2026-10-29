@@ -1,0 +1,13 @@
+# A tibble: 2 × 3
+      g   sid   rid
+  <int> <int> <int>
+1     9     7    42
+2    NA     7    42
+# A tibble: 2 × 3
+      g   sid   rid
+  <int> <int> <int>
+1     9     1    42
+2    NA     2    42
+independent_directory_identifier_match: FALSE
+Error: identical(actual, expected) is not TRUE
+Execution halted

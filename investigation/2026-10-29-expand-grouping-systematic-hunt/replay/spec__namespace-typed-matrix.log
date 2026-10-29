@@ -1,0 +1,113 @@
+, , position = by, match = FALSE
+
+        backend
+mode     dtplyr local
+  direct     64    64
+  opaque      0     0
+
+, , position = cube, match = FALSE
+
+        backend
+mode     dtplyr local
+  direct     64    64
+  opaque      0     0
+
+, , position = grouping_set, match = FALSE
+
+        backend
+mode     dtplyr local
+  direct     64     0
+  opaque      0     0
+
+, , position = grouping_sets, match = FALSE
+
+        backend
+mode     dtplyr local
+  direct     64     0
+  opaque      0     0
+
+, , position = grouping_spec, match = FALSE
+
+        backend
+mode     dtplyr local
+  direct     64     0
+  opaque      0     0
+
+, , position = overlap, match = FALSE
+
+        backend
+mode     dtplyr local
+  direct     64    64
+  opaque      0     0
+
+, , position = rollup, match = FALSE
+
+        backend
+mode     dtplyr local
+  direct     64    64
+  opaque      0     0
+
+, , position = by, match = TRUE
+
+        backend
+mode     dtplyr local
+  direct      0     0
+  opaque     64    64
+
+, , position = cube, match = TRUE
+
+        backend
+mode     dtplyr local
+  direct      0     0
+  opaque     64    64
+
+, , position = grouping_set, match = TRUE
+
+        backend
+mode     dtplyr local
+  direct      0    64
+  opaque     64    64
+
+, , position = grouping_sets, match = TRUE
+
+        backend
+mode     dtplyr local
+  direct      0    64
+  opaque     64    64
+
+, , position = grouping_spec, match = TRUE
+
+        backend
+mode     dtplyr local
+  direct      0    64
+  opaque     64    64
+
+, , position = overlap, match = TRUE
+
+        backend
+mode     dtplyr local
+  direct      0     0
+  opaque     64    64
+
+, , position = rollup, match = TRUE
+
+        backend
+mode     dtplyr local
+  direct      0     0
+  opaque     64    64
+
+, , match = FALSE
+
+        kind
+mode     argument leaf
+  direct      264  440
+  opaque        0    0
+
+, , match = TRUE
+
+        kind
+mode     argument leaf
+  direct       72  120
+  opaque      336  560
+
+observations=1792

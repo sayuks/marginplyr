@@ -1,0 +1,15 @@
+suppressPackageStartupMessages({library(dplyr);library(arrow);pkgload::load_all(quiet=TRUE)})
+root<-tempfile();dir.create(file.path(root,'7'),recursive=TRUE)
+write_parquet(tibble(g=9L),file.path(root,'7','data.parquet'))
+input<-open_dataset(root,partitioning=DirectoryPartitioning$create(schema(sid=int32())),schema=schema(g=int32()))
+counter<-new.env(parent=emptyenv());counter$n<-0L
+record_entry<-function()counter$n<-counter$n+1L
+for(nm in c('collect','compute')) trace(nm,tracer=quote(record_entry()),where=asNamespace('dplyr'),print=FALSE)
+trace('as_arrow_table',tracer=quote(record_entry()),where=asNamespace('arrow'),print=FALSE)
+result<-expand_with_margins(input,.grouping=rollup(g),.margin_label=NULL,.id='sid',.sort='last')
+cat('CONSTRUCTION_EXECUTION_ENTRIES:',counter$n,'\n');stopifnot(counter$n==0L)
+dplyr::collect(result)
+cat('AFTER_EXPLICIT_COLLECT:',counter$n,'\n');stopifnot(counter$n>0L)
+for(nm in c('collect','compute'))untrace(nm,where=asNamespace('dplyr'))
+untrace('as_arrow_table',where=asNamespace('arrow'))
+unlink(root,recursive=TRUE)

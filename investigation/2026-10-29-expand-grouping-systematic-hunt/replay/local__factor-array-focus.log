@@ -1,0 +1,30 @@
+0/FALSE/matrix/NULL: ordinary union passed; expressionStackOverflowError
+0/FALSE/matrix/NA: ordinary union passed; expressionStackOverflowError
+0/FALSE/array/NULL: ordinary union passed; expressionStackOverflowError
+0/FALSE/array/NA: ordinary union passed; expressionStackOverflowError
+0/TRUE/matrix/NULL: ordinary union passed; expressionStackOverflowError
+0/TRUE/matrix/NA: ordinary union passed; expected refusal; actual expressionStackOverflowError
+0/TRUE/array/NULL: ordinary union passed; expressionStackOverflowError
+0/TRUE/array/NA: ordinary union passed; expected refusal; actual expressionStackOverflowError
+1/FALSE/matrix/NULL: ordinary union passed; expressionStackOverflowError
+1/FALSE/matrix/NA: ordinary union passed; expressionStackOverflowError
+1/FALSE/array/NULL: ordinary union passed; expressionStackOverflowError
+1/FALSE/array/NA: ordinary union passed; expressionStackOverflowError
+1/TRUE/matrix/NULL: ordinary union passed; expressionStackOverflowError
+1/TRUE/matrix/NA: ordinary union passed; expected refusal; actual expressionStackOverflowError
+1/TRUE/array/NULL: ordinary union passed; expressionStackOverflowError
+1/TRUE/array/NA: ordinary union passed; expected refusal; actual expressionStackOverflowError
+3/FALSE/matrix/NULL: ordinary union passed; expressionStackOverflowError
+3/FALSE/matrix/NA: ordinary union passed; expressionStackOverflowError
+3/FALSE/array/NULL: ordinary union passed; expressionStackOverflowError
+3/FALSE/array/NA: ordinary union passed; expressionStackOverflowError
+3/TRUE/matrix/NULL: ordinary union passed; expressionStackOverflowError
+3/TRUE/matrix/NA: ordinary union passed; expected refusal; actual expressionStackOverflowError
+3/TRUE/array/NULL: ordinary union passed; expressionStackOverflowError
+3/TRUE/array/NA: ordinary union passed; expected refusal; actual expressionStackOverflowError
+COUNTS
+
+expected refusal; actual expressionStackOverflowError
+                                                    6
+                         expressionStackOverflowError
+                                                   18

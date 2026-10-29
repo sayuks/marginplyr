@@ -1,0 +1,49 @@
+Warning in Ops.factor(g, 1) : ‘+’ not meaningful for factors
+Warning in Ops.factor(1, g) : ‘+’ not meaningful for factors
+Warning in Ops.factor(g, 1) : ‘+’ not meaningful for factors
+Warning in Ops.factor(1, g) : ‘+’ not meaningful for factors
+Warning in Ops.factor(.BY, 1) : ‘+’ not meaningful for factors
+Warning in Ops.factor(1, .BY) : ‘+’ not meaningful for factors
+Warning in Ops.factor(.BY, 1) : ‘+’ not meaningful for factors
+Warning in Ops.factor(1, .BY) : ‘+’ not meaningful for factors
+Warning in Ops.factor(.EACHI, 1) : ‘+’ not meaningful for factors
+Warning in Ops.factor(1, .EACHI) : ‘+’ not meaningful for factors
+Warning in Ops.factor(.EACHI, 1) : ‘+’ not meaningful for factors
+Warning in Ops.factor(1, .EACHI) : ‘+’ not meaningful for factors
+Warning in Ops.factor(left, right) : ‘+’ not meaningful for factors
+Warning in Ops.factor(left, right) : ‘+’ not meaningful for factors
+Warning in Ops.factor(left, right) : ‘+’ not meaningful for factors
+Warning in Ops.factor(left, right) : ‘+’ not meaningful for factors
+Warning in Ops.factor(.env, 1) : ‘+’ not meaningful for factors
+Warning in Ops.factor(1, .env) : ‘+’ not meaningful for factors
+Warning in Ops.factor(.env, 1) : ‘+’ not meaningful for factors
+Warning in Ops.factor(1, .env) : ‘+’ not meaningful for factors
+Warning in Ops.factor(.data, 1) : ‘+’ not meaningful for factors
+Warning in Ops.factor(1, .data) : ‘+’ not meaningful for factors
+Warning in Ops.factor(.data, 1) : ‘+’ not meaningful for factors
+Warning in Ops.factor(1, .data) : ‘+’ not meaningful for factors
+Warning in Ops.factor(`NA`, 1) : ‘+’ not meaningful for factors
+Warning in Ops.factor(1, `NA`) : ‘+’ not meaningful for factors
+Warning in Ops.factor(`NA`, 1) : ‘+’ not meaningful for factors
+Warning in Ops.factor(1, `NA`) : ‘+’ not meaningful for factors
+Warning in Ops.factor(`TRUE`, 1) : ‘+’ not meaningful for factors
+Warning in Ops.factor(1, `TRUE`) : ‘+’ not meaningful for factors
+Warning in Ops.factor(`TRUE`, 1) : ‘+’ not meaningful for factors
+Warning in Ops.factor(1, `TRUE`) : ‘+’ not meaningful for factors
+Warning in Ops.factor(`FALSE`, 1) : ‘+’ not meaningful for factors
+Warning in Ops.factor(1, `FALSE`) : ‘+’ not meaningful for factors
+Warning in Ops.factor(`FALSE`, 1) : ‘+’ not meaningful for factors
+Warning in Ops.factor(1, `FALSE`) : ‘+’ not meaningful for factors
+Warning in Ops.factor(..marginplyr_sort_1, 1) :
+  ‘+’ not meaningful for factors
+Warning in Ops.factor(1, ..marginplyr_sort_1) :
+  ‘+’ not meaningful for factors
+Warning in Ops.factor(..marginplyr_sort_1, 1) :
+  ‘+’ not meaningful for factors
+Warning in Ops.factor(1, ..marginplyr_sort_1) :
+  ‘+’ not meaningful for factors
+      attempted    source_error plan_comparable    plan_refused  expand_refused
+            840             418             226             196             196
+       expanded
+            226
+[1] 0
