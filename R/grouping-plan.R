@@ -484,7 +484,7 @@ is_name_only_expr <- function(expr, env, data_vars) {
   call_ns <- static_call_ns(expr)
   if (call_name %in% leaf_helpers &&
         (is.null(call_ns) || call_ns %in% c("tidyselect", "dplyr")) &&
-        selection_namespace_is_base(expr, env)) {
+        is_name_only_namespace(expr, env)) {
     return(all(vapply(
       static_call_args(expr),
       is_name_only_helper_arg,
@@ -621,16 +621,19 @@ selection_namespace_operator <- function(expr) {
   rlang::as_string(static_call_head(head))
 }
 
-# Whether a qualified head uses base namespace lookup without forcing a
-# caller promise or active binding. An unqualified head needs no such lookup;
-# `bound` names formals whose values cannot be established statically.
-selection_namespace_is_base <- function(expr, env, bound = character()) {
+# Whether namespace lookup is settled without column types or caller code.
+# An absent operator fails from names alone; an unqualified head needs no
+# lookup. `bound` names formals whose values cannot be established statically.
+is_name_only_namespace <- function(expr, env, bound = character()) {
   operator <- selection_namespace_operator(expr)
   if (is.null(operator)) {
     return(TRUE)
   }
   if (operator %in% bound || selection_binding_deferred(env, operator)) {
     return(FALSE)
+  }
+  if (!rlang::env_has(env, operator, inherit = TRUE)) {
+    return(TRUE)
   }
   identical(
     rlang::env_get(env, operator, default = NULL, inherit = TRUE),
@@ -647,7 +650,7 @@ selection_argument_function <- function(expr, env, bound) {
     return(NULL)
   }
   if (!is.null(namespace)) {
-    if (!selection_namespace_is_base(expr, env, bound) ||
+    if (!is_name_only_namespace(expr, env, bound) ||
           !namespace %in% loadedNamespaces()) {
       return(NULL)
     }

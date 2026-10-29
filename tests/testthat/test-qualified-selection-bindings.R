@@ -182,3 +182,33 @@ test_that("typed caller-qualified selections preserve their conditions", {
     }
   }
 })
+
+test_that("an absent namespace operator fails before typed metadata", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.frame(region = c("east", "west"), amount = 1:2)
+  calls <- 0L
+  caller <- function(x) {
+    calls <<- calls + 1L
+    x
+  }
+  source <- dplyr::mutate(dtplyr::lazy_dt(data), derived = caller(region))
+  for (operator in c("::", ":::")) {
+    selection <- rlang::new_quosure(rlang::call2(
+      rlang::call2(operator, quote(tidyselect), quote(all_of)), "region"
+    ), rlang::new_environment())
+    for (role in c("fixed", "dimension")) {
+      actual <- if (role == "fixed") {
+        expect_error(inspect_grouping(source, .by = !!selection))
+      } else {
+        expect_error(inspect_grouping(
+          source, .grouping = rollup(!!selection)
+        ))
+      }
+      expect_false(inherits(actual, "marginplyr_error"))
+      expect_match(conditionMessage(actual), "could not find function",
+                   fixed = TRUE)
+      expect_match(conditionMessage(actual), operator, fixed = TRUE)
+      expect_identical(calls, 0L)
+    }
+  }
+})
