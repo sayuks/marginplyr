@@ -1,0 +1,28 @@
+, , match = FALSE
+
+       result
+head    selection spec
+  ::           60    0
+  :::          60    0
+  bare          0    0
+  get           0    0
+  index         0    0
+
+, , match = TRUE
+
+       result
+head    selection spec
+  ::            0   60
+  :::           0   60
+  bare         60   60
+  get          60   60
+  index        60   60
+
+       calls
+head      1   2
+  ::     60  60
+  :::    60  60
+  bare  120   0
+  get   120   0
+  index 120   0
+observations=600

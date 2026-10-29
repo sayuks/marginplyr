@@ -1,0 +1,4 @@
+pkgload::load_all(quiet=TRUE)
+x<-factor(c('b','a',NA),levels=c('unused','b','a'));dim(x)<-c(3L,1L);d<-tibble::tibble(g=x,rid=1:3)
+probe<-function(nm,expr) {cat(nm,'\n');z<-tryCatch(force(expr),error=identity);if(inherits(z,'error'))cat(paste(class(z),collapse='/'),conditionMessage(z),'\n')else str(z)}
+probe('as.character',as.character(x));probe('vec_init',vctrs::vec_init(x,1L));probe('vec_detect_missing',vctrs::vec_detect_missing(x));probe('vec_ptype',vctrs::vec_ptype(x));probe('select',tidyselect::eval_select(quote(g),d));probe('arrange',dplyr::arrange(d,g));probe('group_by',dplyr::group_by(d,g));probe('ordinary omitted',dplyr::mutate(d,g=vctrs::vec_init(g,dplyr::n())));probe('margin one',expand_with_margins(d,.grouping=grouping_set(g),.margin_label=NULL));probe('margin text',expand_with_margins(d,.grouping=rollup(g)))

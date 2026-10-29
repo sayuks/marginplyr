@@ -1,0 +1,9 @@
+type cells 1782 signals 3
+$`hms/string/0/dimension/none`
+[1] "vctrs_error_ptype2 Can't combine `..1$g` <logical> and `..2$g` <character>."
+
+$`hms/string/0/dimension/first`
+[1] "vctrs_error_ptype2 Can't combine `..1$g` <logical> and `..2$g` <character>."
+
+$`hms/string/0/dimension/last`
+[1] "vctrs_error_ptype2 Can't combine `..1$g` <logical> and `..2$g` <character>."

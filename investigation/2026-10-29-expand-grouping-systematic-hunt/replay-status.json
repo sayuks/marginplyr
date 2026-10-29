@@ -1,0 +1,250 @@
+[
+  {
+    "script": "lazy/directory-partition-controls.R",
+    "arguments": [],
+    "expected_exit": 0,
+    "exit_code": 0,
+    "seconds": 1.71,
+    "log": "replay/lazy__directory-partition-controls.log"
+  },
+  {
+    "script": "lazy/directory-partition-matrix.R",
+    "arguments": [],
+    "expected_exit": 0,
+    "exit_code": 0,
+    "seconds": 44.94,
+    "log": "replay/lazy__directory-partition-matrix.log"
+  },
+  {
+    "script": "lazy/directory-partition-query-boundary.R",
+    "arguments": [],
+    "expected_exit": 0,
+    "exit_code": 0,
+    "seconds": 1.26,
+    "log": "replay/lazy__directory-partition-query-boundary.log"
+  },
+  {
+    "script": "lazy/dtplyr-graph-fuzz.R",
+    "arguments": [],
+    "expected_exit": 0,
+    "exit_code": 0,
+    "seconds": 18.19,
+    "log": "replay/lazy__dtplyr-graph-fuzz.log"
+  },
+  {
+    "script": "lazy/dtplyr-metadata-sweep.R",
+    "arguments": [],
+    "expected_exit": 0,
+    "exit_code": 0,
+    "seconds": 12.68,
+    "log": "replay/lazy__dtplyr-metadata-sweep.log"
+  },
+  {
+    "script": "lazy/reproduce-directory-partition.R",
+    "arguments": [],
+    "expected_exit": 0,
+    "exit_code": 0,
+    "seconds": 1.57,
+    "log": "replay/lazy__reproduce-directory-partition.log"
+  },
+  {
+    "script": "lazy/reproduce-directory-partition.R",
+    "arguments": [
+      "--assert"
+    ],
+    "expected_exit": 1,
+    "exit_code": 1,
+    "seconds": 1.05,
+    "log": "replay/lazy__reproduce-directory-partition-assert.log"
+  },
+  {
+    "script": "local/boundaries-corrected.R",
+    "arguments": [],
+    "expected_exit": 0,
+    "exit_code": 0,
+    "seconds": 2.63,
+    "log": "replay/local__boundaries-corrected.log"
+  },
+  {
+    "script": "local/factor-array-controls.R",
+    "arguments": [],
+    "expected_exit": 0,
+    "exit_code": 0,
+    "seconds": 1.3,
+    "log": "replay/local__factor-array-controls.log"
+  },
+  {
+    "script": "local/factor-array-focus.R",
+    "arguments": [],
+    "expected_exit": 0,
+    "exit_code": 0,
+    "seconds": 3.27,
+    "log": "replay/local__factor-array-focus.log"
+  },
+  {
+    "script": "local/factor-array-focus.R",
+    "arguments": [
+      "--assert"
+    ],
+    "expected_exit": 1,
+    "exit_code": 1,
+    "seconds": 2.56,
+    "log": "replay/local__factor-array-focus-assert.log"
+  },
+  {
+    "script": "local/factor-array-reproduce.R",
+    "arguments": [],
+    "expected_exit": 0,
+    "exit_code": 0,
+    "seconds": 1.15,
+    "log": "replay/local__factor-array-reproduce.log"
+  },
+  {
+    "script": "local/factor-array-reproduce.R",
+    "arguments": [
+      "--assert"
+    ],
+    "expected_exit": 1,
+    "exit_code": 1,
+    "seconds": 0.77,
+    "log": "replay/local__factor-array-reproduce-assert.log"
+  },
+  {
+    "script": "local/grouped-encoding-corrected.R",
+    "arguments": [],
+    "expected_exit": 0,
+    "exit_code": 0,
+    "seconds": 6.21,
+    "log": "replay/local__grouped-encoding-corrected.log"
+  },
+  {
+    "script": "local/reexpand.R",
+    "arguments": [],
+    "expected_exit": 0,
+    "exit_code": 0,
+    "seconds": 6.6,
+    "log": "replay/local__reexpand.log"
+  },
+  {
+    "script": "local/type-matrix-corrected.R",
+    "arguments": [],
+    "expected_exit": 0,
+    "exit_code": 0,
+    "seconds": 18.59,
+    "log": "replay/local__type-matrix-corrected.log"
+  },
+  {
+    "script": "root/independent-arrow.R",
+    "arguments": [],
+    "expected_exit": 0,
+    "exit_code": 0,
+    "seconds": 1.24,
+    "log": "replay/root__independent-arrow.log"
+  },
+  {
+    "script": "root/independent-arrow.R",
+    "arguments": [
+      "--assert"
+    ],
+    "expected_exit": 1,
+    "exit_code": 1,
+    "seconds": 0.86,
+    "log": "replay/root__independent-arrow-assert.log"
+  },
+  {
+    "script": "root/independent-capture.R",
+    "arguments": [],
+    "expected_exit": 0,
+    "exit_code": 0,
+    "seconds": 1.0,
+    "log": "replay/root__independent-capture.log"
+  },
+  {
+    "script": "root/independent-capture.R",
+    "arguments": [
+      "--assert"
+    ],
+    "expected_exit": 1,
+    "exit_code": 1,
+    "seconds": 0.68,
+    "log": "replay/root__independent-capture-assert.log"
+  },
+  {
+    "script": "root/independent-typed-namespace.R",
+    "arguments": [],
+    "expected_exit": 0,
+    "exit_code": 0,
+    "seconds": 0.9,
+    "log": "replay/root__independent-typed-namespace.log"
+  },
+  {
+    "script": "root/independent-typed-namespace.R",
+    "arguments": [
+      "--assert"
+    ],
+    "expected_exit": 1,
+    "exit_code": 1,
+    "seconds": 0.58,
+    "log": "replay/root__independent-typed-namespace-assert.log"
+  },
+  {
+    "script": "root/reexpansion.R",
+    "arguments": [],
+    "expected_exit": 0,
+    "exit_code": 0,
+    "seconds": 31.86,
+    "log": "replay/root__reexpansion.log"
+  },
+  {
+    "script": "spec/namespace-capture-matrix.R",
+    "arguments": [],
+    "expected_exit": 0,
+    "exit_code": 0,
+    "seconds": 9.64,
+    "log": "replay/spec__namespace-capture-matrix.log"
+  },
+  {
+    "script": "spec/namespace-typed-matrix.R",
+    "arguments": [],
+    "expected_exit": 0,
+    "exit_code": 0,
+    "seconds": 9.3,
+    "log": "replay/spec__namespace-typed-matrix.log"
+  },
+  {
+    "script": "spec/reproduce-namespace-capture.R",
+    "arguments": [],
+    "expected_exit": 0,
+    "exit_code": 0,
+    "seconds": 0.73,
+    "log": "replay/spec__reproduce-namespace-capture.log"
+  },
+  {
+    "script": "spec/reproduce-namespace-capture.R",
+    "arguments": [
+      "--assert"
+    ],
+    "expected_exit": 1,
+    "exit_code": 1,
+    "seconds": 0.66,
+    "log": "replay/spec__reproduce-namespace-capture-assert.log"
+  },
+  {
+    "script": "spec/reproduce-namespace-typed.R",
+    "arguments": [],
+    "expected_exit": 0,
+    "exit_code": 0,
+    "seconds": 0.66,
+    "log": "replay/spec__reproduce-namespace-typed.log"
+  },
+  {
+    "script": "spec/reproduce-namespace-typed.R",
+    "arguments": [
+      "--assert"
+    ],
+    "expected_exit": 1,
+    "exit_code": 1,
+    "seconds": 0.66,
+    "log": "replay/spec__reproduce-namespace-typed-assert.log"
+  }
+]

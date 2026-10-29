@@ -1,0 +1,3 @@
+actual included: amount | character(0)
+expected included: region | character(0)
+constructor result reads: 2

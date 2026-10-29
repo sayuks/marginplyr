@@ -1,0 +1,17 @@
+$included
+$included[[1]]
+[1] "amount"
+
+
+$reads
+[1] 2
+
+$included
+$included[[1]]
+[1] "region"
+
+
+$reads
+[1] 1
+
+independent_capture_match: FALSE

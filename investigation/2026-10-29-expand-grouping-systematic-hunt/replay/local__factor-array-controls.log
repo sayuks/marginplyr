@@ -1,0 +1,27 @@
+as.character
+ chr [1:3] "b" "a" NA
+vec_init
+ Factor[1, 1] w/ 3 levels "unused","b","a": NA
+vec_detect_missing
+expressionStackOverflowError/stackOverflowError/error/condition evaluation nested too deeply: infinite recursion / options(expressions=)?
+vec_ptype
+ Factor[0 , 1] w/ 3 levels "unused","b","a":
+select
+ Named int 1
+ - attr(*, "names")= chr "g"
+arrange
+expressionStackOverflowError/stackOverflowError/error/condition evaluation nested too deeply: infinite recursion / options(expressions=)?
+group_by
+expressionStackOverflowError/stackOverflowError/error/condition evaluation nested too deeply: infinite recursion / options(expressions=)?
+ordinary omitted
+tibble [3 × 2] (S3: tbl_df/tbl/data.frame)
+ $ g  : Factor[1:3, 1] w/ 3 levels "unused","b","a": NA NA NA
+ $ rid: int [1:3] 1 2 3
+margin one
+tibble [3 × 2] (S3: tbl_df/tbl/data.frame)
+ $ g  : Factor[1:3, 1] w/ 3 levels "unused","b","a": 2 3 NA
+ $ rid: int [1:3] 1 2 3
+margin text
+marginplyr_error/rlang_error/error/condition A non-missing `.margin_label` cannot label matrix or array grouping dimensions:
+ℹ `g`.
+ℹ A non-missing scalar label cannot represent a matrix or array key. Use `NULL` or `NA_character_` for a typed-missing label, or split the key into separate columns.

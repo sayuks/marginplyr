@@ -1,0 +1,12 @@
+grouped equivalence 216 signals 0
+list()
+PASS encoding data.frame none
+PASS encoding data.frame first
+PASS encoding data.frame last
+PASS encoding tibble none
+PASS encoding tibble first
+PASS encoding tibble last
+PASS encoding data.table none
+PASS encoding data.table first
+PASS encoding data.table last
+PASS canonical distinction

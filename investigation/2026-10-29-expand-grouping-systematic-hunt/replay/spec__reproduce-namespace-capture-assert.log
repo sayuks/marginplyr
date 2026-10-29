@@ -1,0 +1,5 @@
+actual included: amount | character(0)
+expected included: region | character(0)
+constructor result reads: 2
+Error: identical(actual$included, control$included) is not TRUE
+Execution halted

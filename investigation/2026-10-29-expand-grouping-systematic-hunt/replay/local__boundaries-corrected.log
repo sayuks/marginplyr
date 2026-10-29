@@ -1,0 +1,192 @@
+PASS zero data.frame 0  none
+PASS zero data.frame 0  first
+PASS zero data.frame 0  last
+PASS zero data.frame 0 sid none
+PASS zero data.frame 0 sid first
+PASS zero data.frame 0 sid last
+PASS zero data.frame 0 ..0 none
+PASS zero data.frame 0 ..0 first
+PASS zero data.frame 0 ..0 last
+PASS zero data.frame 0 ..-1 none
+PASS zero data.frame 0 ..-1 first
+PASS zero data.frame 0 ..-1 last
+PASS zero data.frame 0 .. 1 none
+PASS zero data.frame 0 .. 1 first
+PASS zero data.frame 0 .. 1 last
+PASS zero data.frame 0 .data none
+PASS zero data.frame 0 .data first
+PASS zero data.frame 0 .data last
+PASS zero data.frame 0 .env none
+PASS zero data.frame 0 .env first
+PASS zero data.frame 0 .env last
+PASS zero data.frame 1  none
+PASS zero data.frame 1  first
+PASS zero data.frame 1  last
+PASS zero data.frame 1 sid none
+PASS zero data.frame 1 sid first
+PASS zero data.frame 1 sid last
+PASS zero data.frame 1 ..0 none
+PASS zero data.frame 1 ..0 first
+PASS zero data.frame 1 ..0 last
+PASS zero data.frame 1 ..-1 none
+PASS zero data.frame 1 ..-1 first
+PASS zero data.frame 1 ..-1 last
+PASS zero data.frame 1 .. 1 none
+PASS zero data.frame 1 .. 1 first
+PASS zero data.frame 1 .. 1 last
+PASS zero data.frame 1 .data none
+PASS zero data.frame 1 .data first
+PASS zero data.frame 1 .data last
+PASS zero data.frame 1 .env none
+PASS zero data.frame 1 .env first
+PASS zero data.frame 1 .env last
+PASS zero data.frame 5  none
+PASS zero data.frame 5  first
+PASS zero data.frame 5  last
+PASS zero data.frame 5 sid none
+PASS zero data.frame 5 sid first
+PASS zero data.frame 5 sid last
+PASS zero data.frame 5 ..0 none
+PASS zero data.frame 5 ..0 first
+PASS zero data.frame 5 ..0 last
+PASS zero data.frame 5 ..-1 none
+PASS zero data.frame 5 ..-1 first
+PASS zero data.frame 5 ..-1 last
+PASS zero data.frame 5 .. 1 none
+PASS zero data.frame 5 .. 1 first
+PASS zero data.frame 5 .. 1 last
+PASS zero data.frame 5 .data none
+PASS zero data.frame 5 .data first
+PASS zero data.frame 5 .data last
+PASS zero data.frame 5 .env none
+PASS zero data.frame 5 .env first
+PASS zero data.frame 5 .env last
+PASS zero tbl_df 0  none
+PASS zero tbl_df 0  first
+PASS zero tbl_df 0  last
+PASS zero tbl_df 0 sid none
+PASS zero tbl_df 0 sid first
+PASS zero tbl_df 0 sid last
+PASS zero tbl_df 0 ..0 none
+PASS zero tbl_df 0 ..0 first
+PASS zero tbl_df 0 ..0 last
+PASS zero tbl_df 0 ..-1 none
+PASS zero tbl_df 0 ..-1 first
+PASS zero tbl_df 0 ..-1 last
+PASS zero tbl_df 0 .. 1 none
+PASS zero tbl_df 0 .. 1 first
+PASS zero tbl_df 0 .. 1 last
+PASS zero tbl_df 0 .data none
+PASS zero tbl_df 0 .data first
+PASS zero tbl_df 0 .data last
+PASS zero tbl_df 0 .env none
+PASS zero tbl_df 0 .env first
+PASS zero tbl_df 0 .env last
+PASS zero tbl_df 1  none
+PASS zero tbl_df 1  first
+PASS zero tbl_df 1  last
+PASS zero tbl_df 1 sid none
+PASS zero tbl_df 1 sid first
+PASS zero tbl_df 1 sid last
+PASS zero tbl_df 1 ..0 none
+PASS zero tbl_df 1 ..0 first
+PASS zero tbl_df 1 ..0 last
+PASS zero tbl_df 1 ..-1 none
+PASS zero tbl_df 1 ..-1 first
+PASS zero tbl_df 1 ..-1 last
+PASS zero tbl_df 1 .. 1 none
+PASS zero tbl_df 1 .. 1 first
+PASS zero tbl_df 1 .. 1 last
+PASS zero tbl_df 1 .data none
+PASS zero tbl_df 1 .data first
+PASS zero tbl_df 1 .data last
+PASS zero tbl_df 1 .env none
+PASS zero tbl_df 1 .env first
+PASS zero tbl_df 1 .env last
+PASS zero tbl_df 5  none
+PASS zero tbl_df 5  first
+PASS zero tbl_df 5  last
+PASS zero tbl_df 5 sid none
+PASS zero tbl_df 5 sid first
+PASS zero tbl_df 5 sid last
+PASS zero tbl_df 5 ..0 none
+PASS zero tbl_df 5 ..0 first
+PASS zero tbl_df 5 ..0 last
+PASS zero tbl_df 5 ..-1 none
+PASS zero tbl_df 5 ..-1 first
+PASS zero tbl_df 5 ..-1 last
+PASS zero tbl_df 5 .. 1 none
+PASS zero tbl_df 5 .. 1 first
+PASS zero tbl_df 5 .. 1 last
+PASS zero tbl_df 5 .data none
+PASS zero tbl_df 5 .data first
+PASS zero tbl_df 5 .data last
+PASS zero tbl_df 5 .env none
+PASS zero tbl_df 5 .env first
+PASS zero tbl_df 5 .env last
+PASS array 3x0 dimension none
+PASS array 3x0 dimension first
+PASS array 3x0 dimension last
+PASS array 3x0 fixed none
+PASS array 3x0 fixed first
+PASS array 3x0 fixed last
+PASS array 3x0 payload none
+PASS array 3x0 payload first
+PASS array 3x0 payload last
+PASS array 3x0x2 dimension none
+PASS array 3x0x2 dimension first
+PASS array 3x0x2 dimension last
+PASS array 3x0x2 fixed none
+PASS array 3x0x2 fixed first
+PASS array 3x0x2 fixed last
+PASS array 3x0x2 payload none
+PASS array 3x0x2 payload first
+PASS array 3x0x2 payload last
+PASS array 3x2x0 dimension none
+PASS array 3x2x0 dimension first
+PASS array 3x2x0 dimension last
+PASS array 3x2x0 fixed none
+PASS array 3x2x0 fixed first
+PASS array 3x2x0 fixed last
+PASS array 3x2x0 payload none
+PASS array 3x2x0 payload first
+PASS array 3x2x0 payload last
+PASS array 3x2x1x2 dimension none
+PASS array 3x2x1x2 dimension first
+PASS array 3x2x1x2 dimension last
+PASS array 3x2x1x2 fixed none
+PASS array 3x2x1x2 fixed first
+PASS array 3x2x1x2 fixed last
+PASS array 3x2x1x2 payload none
+PASS array 3x2x1x2 payload first
+PASS array 3x2x1x2 payload last
+PASS array 3x1x0x2 dimension none
+PASS array 3x1x0x2 dimension first
+PASS array 3x1x0x2 dimension last
+PASS array 3x1x0x2 fixed none
+PASS array 3x1x0x2 fixed first
+PASS array 3x1x0x2 fixed last
+PASS array 3x1x0x2 payload none
+PASS array 3x1x0x2 payload first
+PASS array 3x1x0x2 payload last
+PASS data.table g none
+PASS data.table g first
+PASS data.table g last
+PASS data.table ..0 none
+PASS data.table ..0 first
+PASS data.table ..0 last
+PASS data.table ..-1 none
+PASS data.table ..-1 first
+PASS data.table ..-1 last
+PASS data.table .. 1 none
+PASS data.table .. 1 first
+PASS data.table .. 1 last
+PASS data.table .data none
+PASS data.table .data first
+PASS data.table .data last
+PASS data.table .env none
+PASS data.table .env first
+PASS data.table .env last
+PASS data.table ..marginplyr_column_1 none
+PASS data.table ..marginplyr_column_1 first
+PASS data.table ..marginplyr_column_1 last
