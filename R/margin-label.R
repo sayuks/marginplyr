@@ -346,7 +346,9 @@ check_observed_label_collision <- function(data,
           )
         }
       )
-      names(checks) <- read_cols
+      names(checks) <- vapply(
+        read_cols, safe_name, character(1), USE.NAMES = FALSE
+      )
       dplyr::summarize(source, !!!checks)
     }
   )

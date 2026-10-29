@@ -1,5 +1,12 @@
 # marginplyr 0.1.0
 
+* dtplyr Margin verbs preserve `.SD` dimensions during opt-in observed Margin
+  label collision checks and report collisions under the caller's column names
+  (#1046).
+
+* dtplyr Parent and Total shares preserve `.ROW` share outputs and Grouping set
+  identifiers, including `across()` output names (#1048).
+
 * Qualified constructor-shaped Grouping selections retain the caller's first
   answer and conditions with one invocation per argument and public call
   (#1038).
