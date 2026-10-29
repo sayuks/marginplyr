@@ -12,28 +12,40 @@ test_that("projected dtplyr types ignore discarded source names", {
   }
   operations <- list(
     function(x) inspect_grouping(x, .by = flag, .grouping = rollup(value)),
-    function(x) inspect_grouping(
-      x, .by = where(is.logical), .grouping = rollup(value)
-    ),
-    function(x) inspect_grouping(
-      x, .by = flag, .grouping = rollup(where(is.integer))
-    ),
-    function(x) summarize_with_margins(
-      x, total = sum(value), .by = where(is.logical),
-      .grouping = rollup(where(is.integer)), .sort = "last"
-    ),
-    function(x) expand_with_margins(
-      x, .by = where(is.logical), .grouping = rollup(where(is.integer)),
-      .sort = "last"
-    ),
-    function(x) nest_with_margins(
-      x, .by = where(is.logical), .grouping = rollup(where(is.integer)),
-      .keep = TRUE, .sort = "last"
-    ),
-    function(x) nest_by_with_margins(
-      x, .by = where(is.logical), .grouping = rollup(where(is.integer)),
-      .keep = TRUE, .sort = "last"
-    )
+    function(x) {
+      inspect_grouping(
+        x, .by = where(is.logical), .grouping = rollup(value)
+      )
+    },
+    function(x) {
+      inspect_grouping(
+        x, .by = flag, .grouping = rollup(where(is.integer))
+      )
+    },
+    function(x) {
+      summarize_with_margins(
+        x, total = sum(value), .by = where(is.logical),
+        .grouping = rollup(where(is.integer)), .sort = "last"
+      )
+    },
+    function(x) {
+      expand_with_margins(
+        x, .by = where(is.logical), .grouping = rollup(where(is.integer)),
+        .sort = "last"
+      )
+    },
+    function(x) {
+      nest_with_margins(
+        x, .by = where(is.logical), .grouping = rollup(where(is.integer)),
+        .keep = TRUE, .sort = "last"
+      )
+    },
+    function(x) {
+      nest_by_with_margins(
+        x, .by = where(is.logical), .grouping = rollup(where(is.integer)),
+        .keep = TRUE, .sort = "last"
+      )
+    }
   )
   for (column in c("..1", "..2", "...")) {
     for (rows in c(0L, 1L, 3L)) {

@@ -95,9 +95,12 @@ isolated_dtplyr_proxy <- function(.data) {
 dtplyr_base_arithmetic_binding <- function(name, env) {
   while (!identical(env, emptyenv())) {
     if (exists(name, envir = env, inherits = FALSE)) {
-      return(!bindingIsActive(name, env) &&
-        identical(get(name, envir = env, inherits = FALSE),
-                  get(name, envir = baseenv())))
+      if (bindingIsActive(name, env)) {
+        return(FALSE)
+      }
+      return(identical(
+        get(name, envir = env, inherits = FALSE), get(name, envir = baseenv())
+      ))
     }
     env <- parent.env(env)
   }

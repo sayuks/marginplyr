@@ -49,7 +49,10 @@ test_that("inherited and nested active arithmetic is refused before lookup", {
           lookups <<- lookups + 1L
           get(operator, envir = baseenv())
         }, operator_env)
-        caller <- if (inherited) new.env(parent = operator_env) else operator_env
+        caller <- operator_env
+        if (inherited) {
+          caller <- new.env(parent = operator_env)
+        }
         arithmetic <- as.call(list(as.name(operator), quote(value), 1L))
         if (nested) {
           arithmetic <- as.call(list(as.name("*"), arithmetic, 2L))
