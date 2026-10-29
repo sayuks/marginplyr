@@ -215,16 +215,26 @@ check_branch_columns <- function(branches) {
 # A lazy branch list has to be combined two at a time, since no backend here
 # exposes an n-ary `union_all()`. Pairing adjacent branches and halving makes
 # the work O(n log n) rather than quadratic and, just as importantly, bounds the
-# nesting depth at log2(n): dtplyr builds one step object per pair, and
+# nesting depth logarithmically: dtplyr builds one step object per pair, and
 # collecting a left fold of 512 branches -- a cube over nine dimensions --
 # exhausts the C stack.
 #
 # Re-associating is safe because `UNION ALL` concatenates, so the row sequence
-# is the same however the pairs are bracketed. dbplyr flattens a union of
-# unions into one query, so the rendered SQL is a single `UNION ALL` over every
-# branch either way, with no subquery per pair.
+# is the same however the pairs are bracketed. SQLite retains SELECT
+# boundaries around compound operands. Other SQL backends let dbplyr flatten
+# unions into one compound query.
 union_margin_branches <- function(branches) {
+  sqlite <- inherits(branches[[1L]], "tbl_lazy") &&
+    inherits(dbplyr::remote_con(branches[[1L]]), "SQLiteConnection")
+  if (sqlite) {
+    # Keep a first-branch type anchor outermost (ADR 0031).
+    first <- branches[[1L]]
+    branches <- branches[-1L]
+  }
   while (length(branches) > 1L) {
+    if (sqlite) {
+      branches <- lapply(branches, sqlite_union_operand)
+    }
     n <- length(branches)
     pairs <- lapply(
       seq_len(n %/% 2L),
@@ -232,7 +242,22 @@ union_margin_branches <- function(branches) {
     )
     branches <- if (n %% 2L == 1L) c(pairs, branches[n]) else pairs
   }
+  if (sqlite) {
+    return(dplyr::union_all(
+      sqlite_union_operand(first), sqlite_union_operand(branches[[1L]])
+    ))
+  }
   branches[[1L]]
+}
+
+# Make a lazy SQLite branch a single SELECT operand without reading it.
+# A compound needs a SELECT boundary to prevent dbplyr from flattening it.
+sqlite_union_operand <- function(branch) {
+  if (inherits(branch$lazy_query, "lazy_union_query")) {
+    dplyr::filter(branch, TRUE)
+  } else {
+    branch
+  }
 }
 
 # The text an Absorbing backend marks an absorption with, which is the whole of
