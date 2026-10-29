@@ -1,0 +1,19 @@
+Selection boundary comparisons: 7140
+Raw signals: 0
+
+Identifier dimensional boundaries
+dims 0 sets 1 max id 0 PASS
+dims 1 sets 2 max id 1 PASS
+dims 2 sets 3 max id 3 PASS
+dims 30 sets 31 max id 1073741823 PASS
+dims 31 sets 32 max id 2147483647 PASS
+dims 32 sets 33 inspection NA and helper cap refusal TRUE
+dims 33 sets 34 inspection NA and helper cap refusal TRUE
+
+Typed dtplyr inspection and caller-state probes
+Typed dtplyr comparisons: 156
+
+Unrecognized nested factories and valid top-level controls
+Factory boundary assertions: 10
+
+Final checks: 7476 signals: 0

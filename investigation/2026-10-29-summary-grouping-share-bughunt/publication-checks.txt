@@ -1,0 +1,8 @@
+jarl check .: exit 0 (jarl.txt)
+LINTR_ERROR_ON_LINT=true Rscript -e 'pkgload::load_all(".", quiet=TRUE); lintr::lint_package()': exit 0 (package-lintr.txt)
+Rscript -e 'pkgload::load_all(".", quiet=TRUE); lintr::lint_dir("investigation/2026-10-29-summary-grouping-share-bughunt")': zero lints, exit 0 (artifact-lintr.txt)
+Rscript .github/scripts/verify-context-budget.R: exit 0 (context-budget.txt)
+Rscript .github/scripts/verify-doc-references.R: exit 0 (document-references.txt)
+The focused six-file package suite exited 0 (baseline-suite.txt).
+Expected failing investigation assertions are recorded separately in replay-status.json.
+The change is Repository-only; no Package-affecting Review-ready check was required.

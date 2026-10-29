@@ -1,0 +1,34 @@
+MINIMAL: one unnamed summary returns a frame in one group, a scalar in another
+Ordinary dplyr:
+Class: rlang_error, error, condition
+ℹ In argument: `mixed(x)`.
+Caused by error:
+! `mixed(x)` must return compatible vectors across groups.
+ℹ Result of type <data.frame<z:integer>> for group 1: `g = 1`.
+ℹ Result of type <integer> for group 2: `g = 2`.
+Margin summary:
+  g  z mixed(x)
+1 1  3       NA
+2 2 NA        3
+MIXED-SHAPE MATRIX: 42 ordinary refusals; 42 Margin summaries accepted
+NAMED CONTROL: both refused incompatible values
+HOMOGENEOUS CONTROLS: six scalar/frame comparisons passed
+EVALUATION CONTROL: 2 calls for two groups
+BETWEEN-SET CONTROL:
+Class: simpleError, error, condition
+Union branch 2 does not have the columns of branch 1.
+Only in branch 2: z
+Only in branch 1: mixed(x)
+WRAPPING CONTROL: ordinary dplyr after the same per-value wrapping
+  g  z mixed(x)
+1 1  3       NA
+2 2 NA        3
+VERSIONS
+R version 4.6.1 (2026-06-24)
+marginplyr 0.1.0
+dplyr 1.2.1
+tibble 3.3.1
+vctrs 0.7.3
+data.table 1.18.6.1
+Error: inherits(actual, "error") is not TRUE
+Execution halted

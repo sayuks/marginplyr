@@ -1,0 +1,61 @@
+Missed preceding share: share_of_total .env[[dplyr::first(first)]]
+      g total first derived
+1     a     1  0.25      10
+2     b     3  0.75      30
+3 Total     4  1.00      10
+Missed source alias: share_of_total .env[[if (previous > 0) "foo" else "bar"]]
+      g previous source fraction
+1     a        1     10        1
+2     b        3     10        1
+3 Total        4     10        1
+Missed preceding share: share_of_total (.env)[[dplyr::first(first)]]
+      g total first derived
+1     a     1  0.25      10
+2     b     3  0.75      30
+3 Total     4  1.00      10
+Missed source alias: share_of_total (.env)[[if (previous > 0) "foo" else "bar"]]
+      g previous source fraction
+1     a        1     10        1
+2     b        3     10        1
+3 Total        4     10        1
+Missed preceding share: share_of_total base::`[[`(.env, dplyr::first(first))
+      g total first derived
+1     a     1  0.25      10
+2     b     3  0.75      30
+3 Total     4  1.00      10
+Missed source alias: share_of_total base::`[[`(.env, if (previous > 0) "foo" else "bar")
+      g previous source fraction
+1     a        1     10        1
+2     b        3     10        1
+3 Total        4     10        1
+Missed preceding share: share_of_parent .env[[dplyr::first(first)]]
+      g total first derived
+1     a     1  0.25      10
+2     b     3  0.75      30
+3 Total     4  1.00      10
+Missed source alias: share_of_parent .env[[if (previous > 0) "foo" else "bar"]]
+      g previous source fraction
+1     a        1     10        1
+2     b        3     10        1
+3 Total        4     10        1
+Missed preceding share: share_of_parent (.env)[[dplyr::first(first)]]
+      g total first derived
+1     a     1  0.25      10
+2     b     3  0.75      30
+3 Total     4  1.00      10
+Missed source alias: share_of_parent (.env)[[if (previous > 0) "foo" else "bar"]]
+      g previous source fraction
+1     a        1     10        1
+2     b        3     10        1
+3 Total        4     10        1
+Missed preceding share: share_of_parent base::`[[`(.env, dplyr::first(first))
+      g total first derived
+1     a     1  0.25      10
+2     b     3  0.75      30
+3 Total     4  1.00      10
+Missed source alias: share_of_parent base::`[[`(.env, if (previous > 0) "foo" else "bar")
+      g previous source fraction
+1     a        1     10        1
+2     b        3     10        1
+3 Total        4     10        1
+Computed environment indices silently accepted: 12 ; all six independent environment controls passed.
