@@ -4114,6 +4114,9 @@ expression_data_symbols <- function(expr, bound = character(), lookup = NULL) {
       return(pronoun_index_symbols(expr, bound, lookup))
     }
     if (identical(pronoun, ".data")) {
+      if (rlang::is_missing(expr[[3L]])) {
+        return(pronoun_index_symbols(expr, bound, lookup))
+      }
       if (identical(call_name, "$") && is_name_part(expr[[3L]])) {
         return(rlang::as_name(expr[[3L]]))
       }
