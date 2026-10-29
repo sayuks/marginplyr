@@ -1,0 +1,14 @@
+Warning phase: 5 TRUE unsafe_scalar oracle Coercing 'character' RHS to 'integer' to match the type of column 1 named 'a'.
+Warning phase: 5 TRUE unsafe_scalar oracle NAs introduced by coercion
+Warning phase: 5 TRUE unsafe_callback oracle Coercing 'character' RHS to 'integer' to match the type of column 1 named 'a'.
+Warning phase: 5 TRUE unsafe_callback oracle NAs introduced by coercion
+Warning phase: 5 TRUE unsafe_repeated oracle Coercing 'character' RHS to 'integer' to match the type of column 1 named 'a'.
+Warning phase: 5 TRUE unsafe_repeated oracle NAs introduced by coercion
+Warning phase: 5 FALSE unsafe_scalar oracle Coercing 'character' RHS to 'integer' to match the type of column 1 named 'a'.
+Warning phase: 5 FALSE unsafe_scalar oracle NAs introduced by coercion
+Warning phase: 5 FALSE unsafe_callback oracle Coercing 'character' RHS to 'integer' to match the type of column 1 named 'a'.
+Warning phase: 5 FALSE unsafe_callback oracle NAs introduced by coercion
+Warning phase: 5 FALSE unsafe_repeated oracle Coercing 'character' RHS to 'integer' to match the type of column 1 named 'a'.
+Warning phase: 5 FALSE unsafe_repeated oracle NAs introduced by coercion
+There were 12 warnings (use warnings() to see them)
+Metadata inspections: 2016 expected refusals: 288 assertions: 6049 failures: 0

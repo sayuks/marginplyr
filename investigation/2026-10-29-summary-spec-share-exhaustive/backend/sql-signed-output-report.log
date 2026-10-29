@@ -1,0 +1,55 @@
+GRID sqlite populated none
+GRID sqlite populated single_empty
+GRID sqlite populated rollup
+GRID sqlite empty none
+GRID sqlite empty single_empty
+GRID sqlite empty rollup
+GRID duckdb_native populated none
+GRID duckdb_native populated single_empty
+GRID duckdb_native populated rollup
+GRID duckdb_native empty none
+GRID duckdb_native empty single_empty
+GRID duckdb_native empty rollup
+GRID duckdb_portable populated none
+GRID duckdb_portable populated single_empty
+GRID duckdb_portable populated rollup
+GRID duckdb_portable empty none
+GRID duckdb_portable empty single_empty
+GRID duckdb_portable empty rollup
+BASELINE 4c63bb917ed7ed31ff6aadf060a5eae7a32cd004
+VERSION marginplyr 0.1.0
+VERSION dplyr 1.2.1
+VERSION dbplyr 2.6.0
+VERSION rlang 1.3.0
+VERSION RSQLite 3.53.3
+VERSION duckdb 1.5.5
+CHECKS 1080 FAILURES 612 CONTROLS 93 CONTROL_FAILURES 0
+                 ok
+engine            FALSE TRUE
+  duckdb_native     180  180
+  duckdb_portable   216  144
+  sqlite            216  144
+      stage
+name   render
+  .. 1    204
+  ..+0    204
+  ..+1    204
+      ok
+name   FALSE TRUE
+  .. 1   204   12
+  ..-1     0  216
+  ..+0   204   12
+  ..+1   204   12
+  .env     0  216
+FAIL sqlite/populated/none/summary/..+0/none/render indexing '...' with non-positive index 0
+FAIL sqlite/populated/none/summary/..+0/first/render indexing '...' with non-positive index 0
+FAIL sqlite/populated/none/summary/..+0/last/render indexing '...' with non-positive index 0
+FAIL sqlite/populated/none/source/..+0/none/render indexing '...' with non-positive index 0
+FAIL sqlite/populated/none/source/..+0/first/render indexing '...' with non-positive index 0
+FAIL sqlite/populated/none/source/..+0/last/render indexing '...' with non-positive index 0
+FAIL sqlite/populated/none/share/..+0/none/render indexing '...' with non-positive index 0
+FAIL sqlite/populated/none/share/..+0/first/render indexing '...' with non-positive index 0
+FAIL sqlite/populated/none/share/..+0/last/render indexing '...' with non-positive index 0
+FAIL sqlite/populated/none/identifier/..+0/none/render indexing '...' with non-positive index 0
+FAIL sqlite/populated/none/identifier/..+0/first/render indexing '...' with non-positive index 0
+FAIL sqlite/populated/none/identifier/..+0/last/render indexing '...' with non-positive index 0

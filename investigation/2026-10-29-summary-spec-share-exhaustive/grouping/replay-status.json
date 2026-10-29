@@ -1,0 +1,30 @@
+{
+  "investigated": "2026-10-29",
+  "snapshot": "4c63bb917ed7ed31ff6aadf060a5eae7a32cd004",
+  "scripts": [
+    {
+      "script": "capture-probes.R",
+      "stdout_stderr": "capture-probes.log",
+      "terminal_session_id": 50844,
+      "exit_code": 0
+    },
+    {
+      "script": "algebra-probes.R",
+      "stdout_stderr": "algebra-probes.log",
+      "terminal_session_id": 52332,
+      "exit_code": 0
+    },
+    {
+      "script": "arrow-types.R",
+      "stdout_stderr": "arrow-types.log",
+      "terminal_session_id": 4696,
+      "exit_code": 0
+    },
+    {
+      "script": "metadata-probes.R",
+      "stdout_stderr": "metadata-probes.log",
+      "terminal_session_id": 3355,
+      "exit_code": 0
+    }
+  ]
+}

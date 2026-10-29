@@ -1,0 +1,231 @@
+parent identity source BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+parent identity derived BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+parent conditional_true source BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+parent conditional_true derived BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+parent conditional_value source BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+parent conditional_value derived BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+parent eval_quote source BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+parent eval_quote derived BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+parent evalq source BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+parent evalq derived BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+parent brace_argument source BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+parent brace_argument derived BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+parent invisible source BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+parent invisible derived BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+parent loop_body source BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+parent loop_body derived BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+total identity source BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+total identity derived BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+total conditional_true source BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+total conditional_true derived BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+total conditional_value source BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+total conditional_value derived BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+total eval_quote source BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+total eval_quote derived BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+total evalq source BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+total evalq derived BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+total brace_argument source BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+total brace_argument derived BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+total invisible source BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+total invisible derived BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+total loop_body source BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+total loop_body derived BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+parent removed_loop_index BYPASS
+total removed_loop_index BYPASS
+parent removed_formal source BYPASS
+parent removed_formal derived BYPASS
+total removed_formal source BYPASS
+total removed_formal derived BYPASS
+Dependency checks: 38 documented refusals missing: 38 controls passed: 9

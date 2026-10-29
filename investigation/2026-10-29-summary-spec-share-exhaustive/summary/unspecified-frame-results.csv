@@ -1,0 +1,73 @@
+"input","reversed","rewritten","mode","correct","calls","observed"
+"data.frame",FALSE,FALSE,"by",FALSE,2,"g | value(x) | z"
+"data.frame",FALSE,FALSE,"included-set",FALSE,2,"g | value(x) | z"
+"data.frame",FALSE,FALSE,"fixed-and-set",FALSE,2,"fixed | g | value(x) | z"
+"data.frame",FALSE,FALSE,"rollup",FALSE,3,"Union branch 2 does not have the columns of branch 1.
+Only in branch 2:
+Only in branch 1: value(x)"
+"data.frame",FALSE,TRUE,"by",FALSE,2,"g | value(dplyr::pick(x)$x) | z"
+"data.frame",FALSE,TRUE,"included-set",FALSE,2,"g | value(dplyr::pick(x)$x) | z"
+"data.frame",FALSE,TRUE,"fixed-and-set",FALSE,2,"fixed | g | value(dplyr::pick(x)$x) | z"
+"data.frame",FALSE,TRUE,"rollup",FALSE,3,"Union branch 2 does not have the columns of branch 1.
+Only in branch 2:
+Only in branch 1: value(dplyr::pick(x)$x)"
+"data.frame",TRUE,FALSE,"by",FALSE,2,"g | z | value(x)"
+"data.frame",TRUE,FALSE,"included-set",FALSE,2,"g | z | value(x)"
+"data.frame",TRUE,FALSE,"fixed-and-set",FALSE,2,"fixed | g | z | value(x)"
+"data.frame",TRUE,FALSE,"rollup",FALSE,3,"Union branch 2 does not have the columns of branch 1.
+Only in branch 2:
+Only in branch 1: value(x)"
+"data.frame",TRUE,TRUE,"by",FALSE,2,"g | z | value(dplyr::pick(x)$x)"
+"data.frame",TRUE,TRUE,"included-set",FALSE,2,"g | z | value(dplyr::pick(x)$x)"
+"data.frame",TRUE,TRUE,"fixed-and-set",FALSE,2,"fixed | g | z | value(dplyr::pick(x)$x)"
+"data.frame",TRUE,TRUE,"rollup",FALSE,3,"Union branch 2 does not have the columns of branch 1.
+Only in branch 2:
+Only in branch 1: value(dplyr::pick(x)$x)"
+"tibble",FALSE,FALSE,"by",FALSE,2,"g | value(x) | z"
+"tibble",FALSE,FALSE,"included-set",FALSE,2,"g | value(x) | z"
+"tibble",FALSE,FALSE,"fixed-and-set",FALSE,2,"fixed | g | value(x) | z"
+"tibble",FALSE,FALSE,"rollup",FALSE,3,"Union branch 2 does not have the columns of branch 1.
+Only in branch 2:
+Only in branch 1: value(x)"
+"tibble",FALSE,TRUE,"by",FALSE,2,"g | value(dplyr::pick(x)$x) | z"
+"tibble",FALSE,TRUE,"included-set",FALSE,2,"g | value(dplyr::pick(x)$x) | z"
+"tibble",FALSE,TRUE,"fixed-and-set",FALSE,2,"fixed | g | value(dplyr::pick(x)$x) | z"
+"tibble",FALSE,TRUE,"rollup",FALSE,3,"Union branch 2 does not have the columns of branch 1.
+Only in branch 2:
+Only in branch 1: value(dplyr::pick(x)$x)"
+"tibble",TRUE,FALSE,"by",FALSE,2,"g | z | value(x)"
+"tibble",TRUE,FALSE,"included-set",FALSE,2,"g | z | value(x)"
+"tibble",TRUE,FALSE,"fixed-and-set",FALSE,2,"fixed | g | z | value(x)"
+"tibble",TRUE,FALSE,"rollup",FALSE,3,"Union branch 2 does not have the columns of branch 1.
+Only in branch 2:
+Only in branch 1: value(x)"
+"tibble",TRUE,TRUE,"by",FALSE,2,"g | z | value(dplyr::pick(x)$x)"
+"tibble",TRUE,TRUE,"included-set",FALSE,2,"g | z | value(dplyr::pick(x)$x)"
+"tibble",TRUE,TRUE,"fixed-and-set",FALSE,2,"fixed | g | z | value(dplyr::pick(x)$x)"
+"tibble",TRUE,TRUE,"rollup",FALSE,3,"Union branch 2 does not have the columns of branch 1.
+Only in branch 2:
+Only in branch 1: value(dplyr::pick(x)$x)"
+"data.table",FALSE,FALSE,"by",FALSE,2,"g | value(x) | z"
+"data.table",FALSE,FALSE,"included-set",FALSE,2,"g | value(x) | z"
+"data.table",FALSE,FALSE,"fixed-and-set",FALSE,2,"fixed | g | value(x) | z"
+"data.table",FALSE,FALSE,"rollup",FALSE,3,"Union branch 2 does not have the columns of branch 1.
+Only in branch 2:
+Only in branch 1: value(x)"
+"data.table",FALSE,TRUE,"by",FALSE,2,"g | value(dplyr::pick(x)$x) | z"
+"data.table",FALSE,TRUE,"included-set",FALSE,2,"g | value(dplyr::pick(x)$x) | z"
+"data.table",FALSE,TRUE,"fixed-and-set",FALSE,2,"fixed | g | value(dplyr::pick(x)$x) | z"
+"data.table",FALSE,TRUE,"rollup",FALSE,3,"Union branch 2 does not have the columns of branch 1.
+Only in branch 2:
+Only in branch 1: value(dplyr::pick(x)$x)"
+"data.table",TRUE,FALSE,"by",FALSE,2,"g | z | value(x)"
+"data.table",TRUE,FALSE,"included-set",FALSE,2,"g | z | value(x)"
+"data.table",TRUE,FALSE,"fixed-and-set",FALSE,2,"fixed | g | z | value(x)"
+"data.table",TRUE,FALSE,"rollup",FALSE,3,"Union branch 2 does not have the columns of branch 1.
+Only in branch 2:
+Only in branch 1: value(x)"
+"data.table",TRUE,TRUE,"by",FALSE,2,"g | z | value(dplyr::pick(x)$x)"
+"data.table",TRUE,TRUE,"included-set",FALSE,2,"g | z | value(dplyr::pick(x)$x)"
+"data.table",TRUE,TRUE,"fixed-and-set",FALSE,2,"fixed | g | z | value(dplyr::pick(x)$x)"
+"data.table",TRUE,TRUE,"rollup",FALSE,3,"Union branch 2 does not have the columns of branch 1.
+Only in branch 2:
+Only in branch 1: value(dplyr::pick(x)$x)"

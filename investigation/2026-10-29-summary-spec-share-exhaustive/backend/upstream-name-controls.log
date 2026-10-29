@@ -1,0 +1,14 @@
+sqlite summary Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * "..." at location 1.
+sqlite identifier Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * "..." at location 1.
+duckdb summary Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * "..." at location 1.
+duckdb identifier Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * "..." at location 1.
+dt ungrouped .SD A column may not be called .SD. That has special meaning.
+UPSTREAM_CONTROLS 5 PASSED

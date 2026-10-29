@@ -1,0 +1,565 @@
+"case","difference"
+".../summary/none/drop/dt","Column 4 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../summary/none/drop/sqlite","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../summary/none/drop/duckdb","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../summary/none/keep/dt","Column 4 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../summary/none/keep/sqlite","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../summary/none/keep/duckdb","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../summary/last/drop/dt","Column 4 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../summary/last/drop/sqlite","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../summary/last/drop/duckdb","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../summary/last/keep/dt","Column 4 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../summary/last/keep/sqlite","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../summary/last/keep/duckdb","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../source/none/drop/dt","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../source/none/drop/sqlite","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../source/none/drop/duckdb","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../source/none/keep/dt","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../source/none/keep/sqlite","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../source/none/keep/duckdb","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../source/last/drop/dt","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../source/last/drop/sqlite","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../source/last/drop/duckdb","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../source/last/keep/dt","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../source/last/keep/sqlite","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../source/last/keep/duckdb","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../share/none/drop/dt","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../share/none/drop/sqlite","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../share/none/drop/duckdb","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../share/none/keep/dt","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../share/none/keep/sqlite","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../share/none/keep/duckdb","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../share/last/drop/dt","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../share/last/drop/sqlite","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../share/last/drop/duckdb","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../share/last/keep/dt","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../share/last/keep/sqlite","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../share/last/keep/duckdb","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../identifier/none/drop/dt","Column 3 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../identifier/none/drop/sqlite","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../identifier/none/drop/duckdb","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../identifier/none/keep/dt","Column 3 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../identifier/none/keep/sqlite","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../identifier/none/keep/duckdb","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../identifier/last/drop/dt","Column 3 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../identifier/last/drop/sqlite","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../identifier/last/drop/duckdb","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../identifier/last/keep/dt","Column 3 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../identifier/last/keep/sqlite","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+".../identifier/last/keep/duckdb","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"..+0/summary/none/drop/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! indexing '...' with non-positive index 0"
+"..+0/summary/none/drop/duckdb","indexing '...' with non-positive index 0"
+"..+0/summary/none/keep/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! indexing '...' with non-positive index 0"
+"..+0/summary/none/keep/duckdb","ℹ In index: 1.
+Caused by error:
+! indexing '...' with non-positive index 0"
+"..+0/summary/last/drop/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! indexing '...' with non-positive index 0"
+"..+0/summary/last/drop/duckdb","indexing '...' with non-positive index 0"
+"..+0/summary/last/keep/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! indexing '...' with non-positive index 0"
+"..+0/summary/last/keep/duckdb","ℹ In index: 1.
+Caused by error:
+! indexing '...' with non-positive index 0"
+"..+0/source/none/drop/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! indexing '...' with non-positive index 0"
+"..+0/source/none/drop/duckdb","indexing '...' with non-positive index 0"
+"..+0/source/none/keep/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! indexing '...' with non-positive index 0"
+"..+0/source/none/keep/duckdb","ℹ In index: 1.
+Caused by error:
+! indexing '...' with non-positive index 0"
+"..+0/source/last/drop/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! indexing '...' with non-positive index 0"
+"..+0/source/last/drop/duckdb","indexing '...' with non-positive index 0"
+"..+0/source/last/keep/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! indexing '...' with non-positive index 0"
+"..+0/source/last/keep/duckdb","ℹ In index: 1.
+Caused by error:
+! indexing '...' with non-positive index 0"
+"..+0/share/none/drop/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! indexing '...' with non-positive index 0"
+"..+0/share/none/drop/duckdb","indexing '...' with non-positive index 0"
+"..+0/share/none/keep/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! indexing '...' with non-positive index 0"
+"..+0/share/none/keep/duckdb","ℹ In index: 1.
+Caused by error:
+! indexing '...' with non-positive index 0"
+"..+0/share/last/drop/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! indexing '...' with non-positive index 0"
+"..+0/share/last/drop/duckdb","indexing '...' with non-positive index 0"
+"..+0/share/last/keep/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! indexing '...' with non-positive index 0"
+"..+0/share/last/keep/duckdb","ℹ In index: 1.
+Caused by error:
+! indexing '...' with non-positive index 0"
+"..+0/identifier/none/drop/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! indexing '...' with non-positive index 0"
+"..+0/identifier/none/drop/duckdb","indexing '...' with non-positive index 0"
+"..+0/identifier/none/keep/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! indexing '...' with non-positive index 0"
+"..+0/identifier/none/keep/duckdb","ℹ In index: 2.
+Caused by error:
+! indexing '...' with non-positive index 0"
+"..+0/identifier/last/drop/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! indexing '...' with non-positive index 0"
+"..+0/identifier/last/drop/duckdb","indexing '...' with non-positive index 0"
+"..+0/identifier/last/keep/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! indexing '...' with non-positive index 0"
+"..+0/identifier/last/keep/duckdb","ℹ In index: 2.
+Caused by error:
+! indexing '...' with non-positive index 0"
+"..+1/summary/none/drop/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+"..+1/summary/none/drop/duckdb","..1 used in an incorrect context, no ... to look in"
+"..+1/summary/none/keep/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+"..+1/summary/none/keep/duckdb","ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+"..+1/summary/last/drop/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+"..+1/summary/last/drop/duckdb","..1 used in an incorrect context, no ... to look in"
+"..+1/summary/last/keep/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+"..+1/summary/last/keep/duckdb","ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+"..+1/source/none/drop/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+"..+1/source/none/drop/duckdb","..1 used in an incorrect context, no ... to look in"
+"..+1/source/none/keep/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+"..+1/source/none/keep/duckdb","ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+"..+1/source/last/drop/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+"..+1/source/last/drop/duckdb","..1 used in an incorrect context, no ... to look in"
+"..+1/source/last/keep/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+"..+1/source/last/keep/duckdb","ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+"..+1/share/none/drop/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+"..+1/share/none/drop/duckdb","..1 used in an incorrect context, no ... to look in"
+"..+1/share/none/keep/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+"..+1/share/none/keep/duckdb","ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+"..+1/share/last/drop/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+"..+1/share/last/drop/duckdb","..1 used in an incorrect context, no ... to look in"
+"..+1/share/last/keep/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+"..+1/share/last/keep/duckdb","ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+"..+1/identifier/none/drop/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+"..+1/identifier/none/drop/duckdb","..1 used in an incorrect context, no ... to look in"
+"..+1/identifier/none/keep/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+"..+1/identifier/none/keep/duckdb","ℹ In index: 2.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+"..+1/identifier/last/drop/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+"..+1/identifier/last/drop/duckdb","..1 used in an incorrect context, no ... to look in"
+"..+1/identifier/last/keep/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+"..+1/identifier/last/keep/duckdb","ℹ In index: 2.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+".. 1/summary/none/drop/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+".. 1/summary/none/drop/duckdb","..1 used in an incorrect context, no ... to look in"
+".. 1/summary/none/keep/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+".. 1/summary/none/keep/duckdb","ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+".. 1/summary/last/drop/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+".. 1/summary/last/drop/duckdb","..1 used in an incorrect context, no ... to look in"
+".. 1/summary/last/keep/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+".. 1/summary/last/keep/duckdb","ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+".. 1/source/none/drop/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+".. 1/source/none/drop/duckdb","..1 used in an incorrect context, no ... to look in"
+".. 1/source/none/keep/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+".. 1/source/none/keep/duckdb","ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+".. 1/source/last/drop/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+".. 1/source/last/drop/duckdb","..1 used in an incorrect context, no ... to look in"
+".. 1/source/last/keep/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+".. 1/source/last/keep/duckdb","ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+".. 1/share/none/drop/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+".. 1/share/none/drop/duckdb","..1 used in an incorrect context, no ... to look in"
+".. 1/share/none/keep/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+".. 1/share/none/keep/duckdb","ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+".. 1/share/last/drop/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+".. 1/share/last/drop/duckdb","..1 used in an incorrect context, no ... to look in"
+".. 1/share/last/keep/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+".. 1/share/last/keep/duckdb","ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+".. 1/identifier/none/drop/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+".. 1/identifier/none/drop/duckdb","..1 used in an incorrect context, no ... to look in"
+".. 1/identifier/none/keep/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+".. 1/identifier/none/keep/duckdb","ℹ In index: 2.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+".. 1/identifier/last/drop/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+".. 1/identifier/last/drop/duckdb","..1 used in an incorrect context, no ... to look in"
+".. 1/identifier/last/keep/sqlite","ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+".. 1/identifier/last/keep/duckdb","ℹ In index: 2.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in"
+".SD/summary/none/drop/dt","A column may not be called .SD. That has special meaning."
+".SD/summary/none/keep/dt","A column may not be called .SD. That has special meaning."
+".SD/summary/last/drop/dt","A column may not be called .SD. That has special meaning."
+".SD/summary/last/keep/dt","A column may not be called .SD. That has special meaning."
+".SD/source/none/drop/dt","A column may not be called .SD. That has special meaning."
+".SD/source/none/keep/dt","A column may not be called .SD. That has special meaning."
+".SD/source/last/drop/dt","A column may not be called .SD. That has special meaning."
+".SD/source/last/keep/dt","A column may not be called .SD. That has special meaning."
+".SD/share/none/drop/dt","A column may not be called .SD. That has special meaning."
+".SD/share/none/keep/dt","A column may not be called .SD. That has special meaning."
+".SD/share/last/drop/dt","A column may not be called .SD. That has special meaning."
+".SD/share/last/keep/dt","A column may not be called .SD. That has special meaning."

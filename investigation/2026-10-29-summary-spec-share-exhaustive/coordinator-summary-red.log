@@ -1,0 +1,14 @@
+
+                FALSE
+  by               12
+  fixed-and-set    12
+  included-set     12
+  rollup           12
+Affected cases: 48 / 48
+Passing controls: 20 / 20
+Example detail schema: g | value(x) | z
+Example rollup outcome: Union branch 2 does not have the columns of branch 1.
+Only in branch 2:
+Only in branch 1: value(x)
+Error: all(results$correct) is not TRUE
+Execution halted

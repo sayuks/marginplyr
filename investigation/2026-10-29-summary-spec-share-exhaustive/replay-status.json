@@ -1,0 +1,42 @@
+[
+  {
+    "command": [
+      "Rscript",
+      "investigation/2026-10-29-summary-spec-share-exhaustive/summary/reproduce-unspecified-frame.R",
+      "--assert"
+    ],
+    "exit_code": 1,
+    "expected_exit_code": 1,
+    "log": "coordinator-summary-red.log"
+  },
+  {
+    "command": [
+      "Rscript",
+      "investigation/2026-10-29-summary-spec-share-exhaustive/share/scope-removal.R",
+      "--assert"
+    ],
+    "exit_code": 1,
+    "expected_exit_code": 1,
+    "log": "coordinator-removal-red.log"
+  },
+  {
+    "command": [
+      "Rscript",
+      "investigation/2026-10-29-summary-spec-share-exhaustive/share/environment-reparent.R",
+      "--assert"
+    ],
+    "exit_code": 1,
+    "expected_exit_code": 1,
+    "log": "coordinator-reparent-red.log"
+  },
+  {
+    "command": [
+      "Rscript",
+      "investigation/2026-10-29-summary-spec-share-exhaustive/backend/reproduce-sql-signed-outputs.R",
+      "--assert"
+    ],
+    "exit_code": 1,
+    "expected_exit_code": 1,
+    "log": "coordinator-sql-red.log"
+  }
+]

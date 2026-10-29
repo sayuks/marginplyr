@@ -1,0 +1,97 @@
+DIFF unspecified frame FALSE value-difference
+  g  z
+1 1 NA
+2 2  1
+  g value(x)  z
+1 1       NA NA
+2 2       NA  1
+DIFF unspecified tibble FALSE value-difference
+  g  z
+1 1 NA
+2 2  1
+  g value(x)  z
+1 1       NA NA
+2 2       NA  1
+DIFF unspecified frame_nocol FALSE value-difference
+  g
+1 1
+2 2
+  g value(x)
+1 1       NA
+2 2       NA
+DIFF unspecified frame_disjoint FALSE value-difference
+  g  w
+1 1 NA
+2 2  1
+  g value(x)  w
+1 1       NA NA
+2 2       NA  1
+DIFF unspecified packed FALSE value-difference
+  g                 z
+1 1 # A tibble: 2 × 1
+2 2                 v
+  g value(x)                 z
+1 1       NA # A tibble: 2 × 1
+2 2       NA                 v
+DIFF unspecified listcol FALSE value-difference
+  g    z
+1 1 NULL
+2 2    1
+  g value(x)    z
+1 1       NA NULL
+2 2       NA    1
+DIFF frame unspecified FALSE value-difference
+  g  z
+1 1  1
+2 2 NA
+  g  z value(x)
+1 1  1       NA
+2 2 NA       NA
+DIFF tibble unspecified FALSE value-difference
+  g  z
+1 1  1
+2 2 NA
+  g  z value(x)
+1 1  1       NA
+2 2 NA       NA
+DIFF frame_nocol unspecified FALSE value-difference
+  g
+1 1
+2 2
+  g value(x)
+1 1       NA
+2 2       NA
+DIFF frame_disjoint unspecified FALSE value-difference
+  g  w
+1 1  1
+2 2 NA
+  g  w value(x)
+1 1  1       NA
+2 2 NA       NA
+DIFF packed unspecified FALSE value-difference
+  g                 z
+1 1 # A tibble: 2 × 1
+2 2                 v
+  g                 z value(x)
+1 1 # A tibble: 2 × 1       NA
+2 2                 v       NA
+DIFF listcol unspecified FALSE value-difference
+  g    z
+1 1    1
+2 2 NULL
+  g    z value(x)
+1 1    1       NA
+2 2 NULL       NA
+Warning messages:
+1: In format.data.frame(if (omit) x[seq_len(n0), , drop = FALSE] else x,  :
+  corrupt data frame: columns will be truncated or padded with NAs
+2: In format.data.frame(if (omit) x[seq_len(n0), , drop = FALSE] else x,  :
+  corrupt data frame: columns will be truncated or padded with NAs
+3: In format.data.frame(if (omit) x[seq_len(n0), , drop = FALSE] else x,  :
+  corrupt data frame: columns will be truncated or padded with NAs
+4: In format.data.frame(if (omit) x[seq_len(n0), , drop = FALSE] else x,  :
+  corrupt data frame: columns will be truncated or padded with NAs
+
+    both-refused            equal value-difference
+            2040              260               12
+Shape comparisons: 2312

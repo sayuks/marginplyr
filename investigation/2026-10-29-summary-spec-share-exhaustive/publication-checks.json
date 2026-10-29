@@ -1,0 +1,30 @@
+[
+  {
+    "command": "jarl check .",
+    "exit_code": 0,
+    "log": "jarl.log"
+  },
+  {
+    "command": "LINTR_ERROR_ON_LINT=true Rscript -e 'pkgload::load_all(\".\",quiet=TRUE); lintr::lint_package()'",
+    "exit_code": 0,
+    "log": "package-lintr.log"
+  },
+  {
+    "command": "Rscript .github/scripts/verify-context-budget.R",
+    "exit_code": 0,
+    "context_bytes": 20008,
+    "baseline_bytes": 22005
+  },
+  {
+    "command": "Rscript .github/scripts/verify-doc-references.R",
+    "exit_code": 0,
+    "verified_paths": 248,
+    "maintained_documents": 351,
+    "exemptions": 6
+  },
+  {
+    "command": "NOT_CRAN=true Rscript -e 'data.table::setDTthreads(1L); devtools::test(filter=\"^(grouping-(interface|plan|backends)|summarize-operation|share(-backends)?|local-summary-types|share-lookup-environments|share-pronouns|share-computed-pronouns|margin-order|metamorphic-margin-semantics)$\", reporter=\"summary\")'",
+    "exit_code": 0,
+    "log": "existing-suite.log"
+  }
+]
