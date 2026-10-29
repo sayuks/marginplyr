@@ -1,3 +1,19 @@
+test_that("dtplyr shares validate cardinality with dot-dot fixed keys", {
+  skip_if_suggest_absent("dtplyr")
+  input <- tibble::tibble(`..0` = c("P", "P"), g = c("a", "b"), x = c(1, 3))
+  for (helper in c("share_of_parent", "share_of_total")) {
+    query <- summarize_with_margins(
+      dtplyr::lazy_dt(input), value = sum(x),
+      fraction = !!rlang::call2(helper, rlang::sym("value")),
+      .by = dplyr::all_of("..0"), .grouping = rollup(g), .sort = "last"
+    )
+    expect_s3_class(query, "dtplyr_step")
+    actual <- dplyr::collect(query)
+    expect_identical(actual[["..0"]], rep("P", 3L))
+    expect_identical(actual$fraction, c(0.25, 0.75, 1))
+  }
+})
+
 test_that("dtplyr contextual shares preserve every special fixed key", {
   skip_if_suggest_absent("dtplyr")
   for (column in c(".N", ".I", ".SD", ".GRP", ".NGRP", ".BY")) {

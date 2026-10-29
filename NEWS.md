@@ -1,5 +1,11 @@
 # marginplyr 0.1.0
 
+* Both share helpers preserve dtplyr fixed keys named `.`, `..0`, `..00`,
+  and `..01` through cardinality validation and denominator grouping (#999).
+
+* Generated local and dtplyr column reads protect admitted signed and
+  whitespace dot-dot names, including fixed keys and share sources (#1002).
+
 * Portable summaries retain dynamic output names `.`, `.da`, and `.dat`
   without matching the backend `.data` argument (#970).
 
