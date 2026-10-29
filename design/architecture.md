@@ -312,8 +312,9 @@ points, and no other:
   which wraps each referenced source summary in the validator its backend can
   execute;
 - `protect_dtplyr_share_measure()`, called by the portable adapter after
-  dtplyr translation, which aliases an input measure named `.BY` while
-  preserving the source validator's selected-column mapping; and
+  dtplyr translation, which aliases supported data.table special input
+  measures while preserving lexical ownership and the source validator's
+  selected-column mapping; and
 - `execute_shares()`, called by `execute_margin_summary()`, which
   receives the prepared Margin operation, the staged ordinary-summary result,
   all planned requests, and the verb's `.check_share_source`. It needs the
