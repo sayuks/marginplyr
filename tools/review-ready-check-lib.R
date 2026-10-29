@@ -315,7 +315,7 @@ review_ready_rcmdcheck_env <- function(required_suggests) {
     `_R_CHECK_SYSTEM_CLOCK_` = "false",
     NOT_CRAN = "true",
     TESTTHAT_PARALLEL = "true",
-    TESTTHAT_CPUS = "2",
+    TESTTHAT_CPUS = "4",
     MARGINPLYR_REQUIRED_SUGGESTS = paste(required_suggests, collapse = ",")
   )
 }
