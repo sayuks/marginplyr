@@ -1,0 +1,31 @@
+   name          helper  style actual_ok unchanged
+    .SD share_of_parent direct     FALSE      TRUE
+    .SD share_of_parent across     FALSE      TRUE
+    .SD  share_of_total direct     FALSE      TRUE
+    .SD  share_of_total across     FALSE      TRUE
+   .GRP share_of_parent direct     FALSE      TRUE
+   .GRP share_of_parent across     FALSE      TRUE
+   .GRP  share_of_total direct     FALSE      TRUE
+   .GRP  share_of_total across     FALSE      TRUE
+  .NGRP share_of_parent direct     FALSE      TRUE
+  .NGRP share_of_parent across     FALSE      TRUE
+  .NGRP  share_of_total direct     FALSE      TRUE
+  .NGRP  share_of_total across     FALSE      TRUE
+ .SDall share_of_parent direct     FALSE      TRUE
+ .SDall share_of_parent across     FALSE      TRUE
+ .SDall  share_of_total direct     FALSE      TRUE
+ .SDall  share_of_total across     FALSE      TRUE
+   .xSD share_of_parent direct     FALSE      TRUE
+   .xSD share_of_parent across     FALSE      TRUE
+   .xSD  share_of_total direct     FALSE      TRUE
+   .xSD  share_of_total across     FALSE      TRUE
+   .iSD share_of_parent direct     FALSE      TRUE
+   .iSD share_of_parent across     FALSE      TRUE
+   .iSD  share_of_total direct     FALSE      TRUE
+   .iSD  share_of_total across     FALSE      TRUE
+    .BY share_of_parent direct      TRUE      TRUE
+    .BY share_of_parent across      TRUE      TRUE
+    .BY  share_of_total direct      TRUE      TRUE
+    .BY  share_of_total across      TRUE      TRUE
+
+Failing candidates: 24 of 28 cases; .BY control passed.

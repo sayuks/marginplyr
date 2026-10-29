@@ -1,0 +1,1367 @@
+"name","role","share","style","status","local","actual","expected"
+".N","measure","none","direct","dt_error","","The column '.N' can't be grouped because it conflicts with the special .N variable. Try setnames(DT,'.N','N') first.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17)), row.names = c(NA, -5L), class = ""data.frame"")"
+".N","measure","none","across","dt_error","","The column '.N' can't be grouped because it conflicts with the special .N variable. Try setnames(DT,'.N','N') first.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17)), row.names = c(NA, -5L), class = ""data.frame"")"
+".N","measure","parent","direct","dt_error","","The column '.N' can't be grouped because it conflicts with the special .N variable. Try setnames(DT,'.N','N') first.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".N","measure","parent","across","dt_error","","The column '.N' can't be grouped because it conflicts with the special .N variable. Try setnames(DT,'.N','N') first.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".N","measure","total","direct","dt_error","","The column '.N' can't be grouped because it conflicts with the special .N variable. Try setnames(DT,'.N','N') first.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".N","measure","total","across","dt_error","","The column '.N' can't be grouped because it conflicts with the special .N variable. Try setnames(DT,'.N','N') first.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".N","dimension","none","direct","pass","","",""
+".N","dimension","none","across","pass","","",""
+".N","dimension","parent","direct","pass","","",""
+".N","dimension","parent","across","pass","","",""
+".N","dimension","total","direct","pass","","",""
+".N","dimension","total","across","pass","","",""
+".N","fixed","none","direct","pass","","",""
+".N","fixed","none","across","pass","","",""
+".N","fixed","parent","direct","pass","","",""
+".N","fixed","parent","across","pass","","",""
+".N","fixed","total","direct","pass","","",""
+".N","fixed","total","across","pass","","",""
+".N","source_output","none","direct","pass","","",""
+".N","source_output","none","across","pass","","",""
+".N","source_output","parent","direct","pass","","",""
+".N","source_output","parent","across","pass","","",""
+".N","source_output","total","direct","pass","","",""
+".N","source_output","total","across","pass","","",""
+".N","share_output","parent","direct","pass","","",""
+".N","share_output","parent","across","pass","","",""
+".N","share_output","total","direct","pass","","",""
+".N","share_output","total","across","pass","","",""
+".N","id","none","direct","pass","","",""
+".N","id","none","across","pass","","",""
+".N","id","parent","direct","pass","","",""
+".N","id","parent","across","pass","","",""
+".N","id","total","direct","pass","","",""
+".N","id","total","across","pass","","",""
+".SD","measure","none","direct","pass","","",""
+".SD","measure","none","across","pass","","",""
+".SD","measure","parent","direct","dt_error","","cannot change value of locked binding for '.SD'","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".SD","measure","parent","across","dt_error","","cannot change value of locked binding for '.SD'","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".SD","measure","total","direct","dt_error","","cannot change value of locked binding for '.SD'","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".SD","measure","total","across","dt_error","","cannot change value of locked binding for '.SD'","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".SD","dimension","none","direct","pass","","",""
+".SD","dimension","none","across","pass","","",""
+".SD","dimension","parent","direct","pass","","",""
+".SD","dimension","parent","across","pass","","",""
+".SD","dimension","total","direct","pass","","",""
+".SD","dimension","total","across","pass","","",""
+".SD","fixed","none","direct","pass","","",""
+".SD","fixed","none","across","pass","","",""
+".SD","fixed","parent","direct","pass","","",""
+".SD","fixed","parent","across","pass","","",""
+".SD","fixed","total","direct","pass","","",""
+".SD","fixed","total","across","pass","","",""
+".SD","source_output","none","direct","pass","","",""
+".SD","source_output","none","across","pass","","",""
+".SD","source_output","parent","direct","pass","","",""
+".SD","source_output","parent","across","pass","","",""
+".SD","source_output","total","direct","pass","","",""
+".SD","source_output","total","across","pass","","",""
+".SD","share_output","parent","direct","pass","","",""
+".SD","share_output","parent","across","pass","","",""
+".SD","share_output","total","direct","pass","","",""
+".SD","share_output","total","across","pass","","",""
+".SD","id","none","direct","pass","","",""
+".SD","id","none","across","pass","","",""
+".SD","id","parent","direct","pass","","",""
+".SD","id","parent","across","pass","","",""
+".SD","id","total","direct","pass","","",""
+".SD","id","total","across","pass","","",""
+".BY","measure","none","direct","pass","","",""
+".BY","measure","none","across","pass","","",""
+".BY","measure","parent","direct","pass","","",""
+".BY","measure","parent","across","pass","","",""
+".BY","measure","total","direct","pass","","",""
+".BY","measure","total","across","pass","","",""
+".BY","dimension","none","direct","pass","","",""
+".BY","dimension","none","across","pass","","",""
+".BY","dimension","parent","direct","pass","","",""
+".BY","dimension","parent","across","pass","","",""
+".BY","dimension","total","direct","pass","","",""
+".BY","dimension","total","across","pass","","",""
+".BY","fixed","none","direct","pass","","",""
+".BY","fixed","none","across","pass","","",""
+".BY","fixed","parent","direct","pass","","",""
+".BY","fixed","parent","across","pass","","",""
+".BY","fixed","total","direct","pass","","",""
+".BY","fixed","total","across","pass","","",""
+".BY","source_output","none","direct","pass","","",""
+".BY","source_output","none","across","pass","","",""
+".BY","source_output","parent","direct","pass","","",""
+".BY","source_output","parent","across","pass","","",""
+".BY","source_output","total","direct","pass","","",""
+".BY","source_output","total","across","pass","","",""
+".BY","share_output","parent","direct","pass","","",""
+".BY","share_output","parent","across","pass","","",""
+".BY","share_output","total","direct","pass","","",""
+".BY","share_output","total","across","pass","","",""
+".BY","id","none","direct","pass","","",""
+".BY","id","none","across","pass","","",""
+".BY","id","parent","direct","pass","","",""
+".BY","id","parent","across","pass","","",""
+".BY","id","total","direct","pass","","",""
+".BY","id","total","across","pass","","",""
+".I","measure","none","direct","dt_error","","The column '.I' can't be grouped because it conflicts with the special .I variable. Try setnames(DT,'.I','I') first.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17)), row.names = c(NA, -5L), class = ""data.frame"")"
+".I","measure","none","across","dt_error","","The column '.I' can't be grouped because it conflicts with the special .I variable. Try setnames(DT,'.I','I') first.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17)), row.names = c(NA, -5L), class = ""data.frame"")"
+".I","measure","parent","direct","dt_error","","The column '.I' can't be grouped because it conflicts with the special .I variable. Try setnames(DT,'.I','I') first.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".I","measure","parent","across","dt_error","","The column '.I' can't be grouped because it conflicts with the special .I variable. Try setnames(DT,'.I','I') first.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".I","measure","total","direct","dt_error","","The column '.I' can't be grouped because it conflicts with the special .I variable. Try setnames(DT,'.I','I') first.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".I","measure","total","across","dt_error","","The column '.I' can't be grouped because it conflicts with the special .I variable. Try setnames(DT,'.I','I') first.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".I","dimension","none","direct","pass","","",""
+".I","dimension","none","across","pass","","",""
+".I","dimension","parent","direct","pass","","",""
+".I","dimension","parent","across","pass","","",""
+".I","dimension","total","direct","pass","","",""
+".I","dimension","total","across","pass","","",""
+".I","fixed","none","direct","pass","","",""
+".I","fixed","none","across","pass","","",""
+".I","fixed","parent","direct","pass","","",""
+".I","fixed","parent","across","pass","","",""
+".I","fixed","total","direct","pass","","",""
+".I","fixed","total","across","pass","","",""
+".I","source_output","none","direct","pass","","",""
+".I","source_output","none","across","pass","","",""
+".I","source_output","parent","direct","pass","","",""
+".I","source_output","parent","across","pass","","",""
+".I","source_output","total","direct","pass","","",""
+".I","source_output","total","across","pass","","",""
+".I","share_output","parent","direct","pass","","",""
+".I","share_output","parent","across","pass","","",""
+".I","share_output","total","direct","pass","","",""
+".I","share_output","total","across","pass","","",""
+".I","id","none","direct","pass","","",""
+".I","id","none","across","pass","","",""
+".I","id","parent","direct","pass","","",""
+".I","id","parent","across","pass","","",""
+".I","id","total","direct","pass","","",""
+".I","id","total","across","pass","","",""
+".GRP","measure","none","direct","pass","","",""
+".GRP","measure","none","across","pass","","",""
+".GRP","measure","parent","direct","dt_error","","cannot change value of locked binding for '.GRP'","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".GRP","measure","parent","across","dt_error","","cannot change value of locked binding for '.GRP'","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".GRP","measure","total","direct","dt_error","","cannot change value of locked binding for '.GRP'","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".GRP","measure","total","across","dt_error","","cannot change value of locked binding for '.GRP'","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".GRP","dimension","none","direct","pass","","",""
+".GRP","dimension","none","across","pass","","",""
+".GRP","dimension","parent","direct","pass","","",""
+".GRP","dimension","parent","across","pass","","",""
+".GRP","dimension","total","direct","pass","","",""
+".GRP","dimension","total","across","pass","","",""
+".GRP","fixed","none","direct","pass","","",""
+".GRP","fixed","none","across","pass","","",""
+".GRP","fixed","parent","direct","pass","","",""
+".GRP","fixed","parent","across","pass","","",""
+".GRP","fixed","total","direct","pass","","",""
+".GRP","fixed","total","across","pass","","",""
+".GRP","source_output","none","direct","pass","","",""
+".GRP","source_output","none","across","pass","","",""
+".GRP","source_output","parent","direct","pass","","",""
+".GRP","source_output","parent","across","pass","","",""
+".GRP","source_output","total","direct","pass","","",""
+".GRP","source_output","total","across","pass","","",""
+".GRP","share_output","parent","direct","pass","","",""
+".GRP","share_output","parent","across","pass","","",""
+".GRP","share_output","total","direct","pass","","",""
+".GRP","share_output","total","across","pass","","",""
+".GRP","id","none","direct","pass","","",""
+".GRP","id","none","across","pass","","",""
+".GRP","id","parent","direct","pass","","",""
+".GRP","id","parent","across","pass","","",""
+".GRP","id","total","direct","pass","","",""
+".GRP","id","total","across","pass","","",""
+".NGRP","measure","none","direct","pass","","",""
+".NGRP","measure","none","across","pass","","",""
+".NGRP","measure","parent","direct","dt_error","","cannot change value of locked binding for '.NGRP'","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".NGRP","measure","parent","across","dt_error","","cannot change value of locked binding for '.NGRP'","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".NGRP","measure","total","direct","dt_error","","cannot change value of locked binding for '.NGRP'","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".NGRP","measure","total","across","dt_error","","cannot change value of locked binding for '.NGRP'","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".NGRP","dimension","none","direct","pass","","",""
+".NGRP","dimension","none","across","pass","","",""
+".NGRP","dimension","parent","direct","pass","","",""
+".NGRP","dimension","parent","across","pass","","",""
+".NGRP","dimension","total","direct","pass","","",""
+".NGRP","dimension","total","across","pass","","",""
+".NGRP","fixed","none","direct","pass","","",""
+".NGRP","fixed","none","across","pass","","",""
+".NGRP","fixed","parent","direct","pass","","",""
+".NGRP","fixed","parent","across","pass","","",""
+".NGRP","fixed","total","direct","pass","","",""
+".NGRP","fixed","total","across","pass","","",""
+".NGRP","source_output","none","direct","pass","","",""
+".NGRP","source_output","none","across","pass","","",""
+".NGRP","source_output","parent","direct","pass","","",""
+".NGRP","source_output","parent","across","pass","","",""
+".NGRP","source_output","total","direct","pass","","",""
+".NGRP","source_output","total","across","pass","","",""
+".NGRP","share_output","parent","direct","pass","","",""
+".NGRP","share_output","parent","across","pass","","",""
+".NGRP","share_output","total","direct","pass","","",""
+".NGRP","share_output","total","across","pass","","",""
+".NGRP","id","none","direct","pass","","",""
+".NGRP","id","none","across","pass","","",""
+".NGRP","id","parent","direct","pass","","",""
+".NGRP","id","parent","across","pass","","",""
+".NGRP","id","total","direct","pass","","",""
+".NGRP","id","total","across","pass","","",""
+".EACHI","measure","none","direct","pass","","",""
+".EACHI","measure","none","across","pass","","",""
+".EACHI","measure","parent","direct","pass","","",""
+".EACHI","measure","parent","across","pass","","",""
+".EACHI","measure","total","direct","pass","","",""
+".EACHI","measure","total","across","pass","","",""
+".EACHI","dimension","none","direct","pass","","",""
+".EACHI","dimension","none","across","pass","","",""
+".EACHI","dimension","parent","direct","pass","","",""
+".EACHI","dimension","parent","across","pass","","",""
+".EACHI","dimension","total","direct","pass","","",""
+".EACHI","dimension","total","across","pass","","",""
+".EACHI","fixed","none","direct","pass","","",""
+".EACHI","fixed","none","across","pass","","",""
+".EACHI","fixed","parent","direct","pass","","",""
+".EACHI","fixed","parent","across","pass","","",""
+".EACHI","fixed","total","direct","pass","","",""
+".EACHI","fixed","total","across","pass","","",""
+".EACHI","source_output","none","direct","pass","","",""
+".EACHI","source_output","none","across","pass","","",""
+".EACHI","source_output","parent","direct","pass","","",""
+".EACHI","source_output","parent","across","pass","","",""
+".EACHI","source_output","total","direct","pass","","",""
+".EACHI","source_output","total","across","pass","","",""
+".EACHI","share_output","parent","direct","pass","","",""
+".EACHI","share_output","parent","across","pass","","",""
+".EACHI","share_output","total","direct","pass","","",""
+".EACHI","share_output","total","across","pass","","",""
+".EACHI","id","none","direct","pass","","",""
+".EACHI","id","none","across","pass","","",""
+".EACHI","id","parent","direct","pass","","",""
+".EACHI","id","parent","across","pass","","",""
+".EACHI","id","total","direct","pass","","",""
+".EACHI","id","total","across","pass","","",""
+".NATURAL","measure","none","direct","pass","","",""
+".NATURAL","measure","none","across","pass","","",""
+".NATURAL","measure","parent","direct","pass","","",""
+".NATURAL","measure","parent","across","pass","","",""
+".NATURAL","measure","total","direct","pass","","",""
+".NATURAL","measure","total","across","pass","","",""
+".NATURAL","dimension","none","direct","pass","","",""
+".NATURAL","dimension","none","across","pass","","",""
+".NATURAL","dimension","parent","direct","pass","","",""
+".NATURAL","dimension","parent","across","pass","","",""
+".NATURAL","dimension","total","direct","pass","","",""
+".NATURAL","dimension","total","across","pass","","",""
+".NATURAL","fixed","none","direct","pass","","",""
+".NATURAL","fixed","none","across","pass","","",""
+".NATURAL","fixed","parent","direct","pass","","",""
+".NATURAL","fixed","parent","across","pass","","",""
+".NATURAL","fixed","total","direct","pass","","",""
+".NATURAL","fixed","total","across","pass","","",""
+".NATURAL","source_output","none","direct","pass","","",""
+".NATURAL","source_output","none","across","pass","","",""
+".NATURAL","source_output","parent","direct","pass","","",""
+".NATURAL","source_output","parent","across","pass","","",""
+".NATURAL","source_output","total","direct","pass","","",""
+".NATURAL","source_output","total","across","pass","","",""
+".NATURAL","share_output","parent","direct","pass","","",""
+".NATURAL","share_output","parent","across","pass","","",""
+".NATURAL","share_output","total","direct","pass","","",""
+".NATURAL","share_output","total","across","pass","","",""
+".NATURAL","id","none","direct","pass","","",""
+".NATURAL","id","none","across","pass","","",""
+".NATURAL","id","parent","direct","pass","","",""
+".NATURAL","id","parent","across","pass","","",""
+".NATURAL","id","total","direct","pass","","",""
+".NATURAL","id","total","across","pass","","",""
+".ROW","measure","none","direct","pass","","",""
+".ROW","measure","none","across","pass","","",""
+".ROW","measure","parent","direct","pass","","",""
+".ROW","measure","parent","across","pass","","",""
+".ROW","measure","total","direct","pass","","",""
+".ROW","measure","total","across","pass","","",""
+".ROW","dimension","none","direct","pass","","",""
+".ROW","dimension","none","across","pass","","",""
+".ROW","dimension","parent","direct","pass","","",""
+".ROW","dimension","parent","across","pass","","",""
+".ROW","dimension","total","direct","pass","","",""
+".ROW","dimension","total","across","pass","","",""
+".ROW","fixed","none","direct","pass","","",""
+".ROW","fixed","none","across","pass","","",""
+".ROW","fixed","parent","direct","pass","","",""
+".ROW","fixed","parent","across","pass","","",""
+".ROW","fixed","total","direct","pass","","",""
+".ROW","fixed","total","across","pass","","",""
+".ROW","source_output","none","direct","pass","","",""
+".ROW","source_output","none","across","pass","","",""
+".ROW","source_output","parent","direct","pass","","",""
+".ROW","source_output","parent","across","pass","","",""
+".ROW","source_output","total","direct","pass","","",""
+".ROW","source_output","total","across","pass","","",""
+".ROW","share_output","parent","direct","dt_error","",".ROW can only be used with := NULL to delete rows","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".ROW","share_output","parent","across","dt_error","",".ROW can only be used with := NULL to delete rows","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".ROW","share_output","total","direct","dt_error","",".ROW can only be used with := NULL to delete rows","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".ROW","share_output","total","across","dt_error","",".ROW can only be used with := NULL to delete rows","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".ROW","id","none","direct","pass","","",""
+".ROW","id","none","across","pass","","",""
+".ROW","id","parent","direct","dt_error","",".ROW can only be used with := NULL to delete rows","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".ROW","id","parent","across","dt_error","",".ROW can only be used with := NULL to delete rows","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".ROW","id","total","direct","dt_error","",".ROW can only be used with := NULL to delete rows","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".ROW","id","total","across","dt_error","",".ROW can only be used with := NULL to delete rows","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".SDall","measure","none","direct","pass","","",""
+".SDall","measure","none","across","pass","","",""
+".SDall","measure","parent","direct","dt_error","","cannot change value of locked binding for '.SDall'","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".SDall","measure","parent","across","dt_error","","cannot change value of locked binding for '.SDall'","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".SDall","measure","total","direct","dt_error","","cannot change value of locked binding for '.SDall'","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".SDall","measure","total","across","dt_error","","cannot change value of locked binding for '.SDall'","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".SDall","dimension","none","direct","pass","","",""
+".SDall","dimension","none","across","pass","","",""
+".SDall","dimension","parent","direct","pass","","",""
+".SDall","dimension","parent","across","pass","","",""
+".SDall","dimension","total","direct","pass","","",""
+".SDall","dimension","total","across","pass","","",""
+".SDall","fixed","none","direct","pass","","",""
+".SDall","fixed","none","across","pass","","",""
+".SDall","fixed","parent","direct","pass","","",""
+".SDall","fixed","parent","across","pass","","",""
+".SDall","fixed","total","direct","pass","","",""
+".SDall","fixed","total","across","pass","","",""
+".SDall","source_output","none","direct","pass","","",""
+".SDall","source_output","none","across","pass","","",""
+".SDall","source_output","parent","direct","pass","","",""
+".SDall","source_output","parent","across","pass","","",""
+".SDall","source_output","total","direct","pass","","",""
+".SDall","source_output","total","across","pass","","",""
+".SDall","share_output","parent","direct","pass","","",""
+".SDall","share_output","parent","across","pass","","",""
+".SDall","share_output","total","direct","pass","","",""
+".SDall","share_output","total","across","pass","","",""
+".SDall","id","none","direct","pass","","",""
+".SDall","id","none","across","pass","","",""
+".SDall","id","parent","direct","pass","","",""
+".SDall","id","parent","across","pass","","",""
+".SDall","id","total","direct","pass","","",""
+".SDall","id","total","across","pass","","",""
+".xSD","measure","none","direct","pass","","",""
+".xSD","measure","none","across","pass","","",""
+".xSD","measure","parent","direct","dt_error","","cannot change value of locked binding for '.xSD'","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".xSD","measure","parent","across","dt_error","","cannot change value of locked binding for '.xSD'","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".xSD","measure","total","direct","dt_error","","cannot change value of locked binding for '.xSD'","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".xSD","measure","total","across","dt_error","","cannot change value of locked binding for '.xSD'","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".xSD","dimension","none","direct","pass","","",""
+".xSD","dimension","none","across","pass","","",""
+".xSD","dimension","parent","direct","pass","","",""
+".xSD","dimension","parent","across","pass","","",""
+".xSD","dimension","total","direct","pass","","",""
+".xSD","dimension","total","across","pass","","",""
+".xSD","fixed","none","direct","pass","","",""
+".xSD","fixed","none","across","pass","","",""
+".xSD","fixed","parent","direct","pass","","",""
+".xSD","fixed","parent","across","pass","","",""
+".xSD","fixed","total","direct","pass","","",""
+".xSD","fixed","total","across","pass","","",""
+".xSD","source_output","none","direct","pass","","",""
+".xSD","source_output","none","across","pass","","",""
+".xSD","source_output","parent","direct","pass","","",""
+".xSD","source_output","parent","across","pass","","",""
+".xSD","source_output","total","direct","pass","","",""
+".xSD","source_output","total","across","pass","","",""
+".xSD","share_output","parent","direct","pass","","",""
+".xSD","share_output","parent","across","pass","","",""
+".xSD","share_output","total","direct","pass","","",""
+".xSD","share_output","total","across","pass","","",""
+".xSD","id","none","direct","pass","","",""
+".xSD","id","none","across","pass","","",""
+".xSD","id","parent","direct","pass","","",""
+".xSD","id","parent","across","pass","","",""
+".xSD","id","total","direct","pass","","",""
+".xSD","id","total","across","pass","","",""
+".iSD","measure","none","direct","pass","","",""
+".iSD","measure","none","across","pass","","",""
+".iSD","measure","parent","direct","dt_error","","cannot change value of locked binding for '.iSD'","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".iSD","measure","parent","across","dt_error","","cannot change value of locked binding for '.iSD'","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".iSD","measure","total","direct","dt_error","","cannot change value of locked binding for '.iSD'","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".iSD","measure","total","across","dt_error","","cannot change value of locked binding for '.iSD'","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".iSD","dimension","none","direct","pass","","",""
+".iSD","dimension","none","across","pass","","",""
+".iSD","dimension","parent","direct","pass","","",""
+".iSD","dimension","parent","across","pass","","",""
+".iSD","dimension","total","direct","pass","","",""
+".iSD","dimension","total","across","pass","","",""
+".iSD","fixed","none","direct","pass","","",""
+".iSD","fixed","none","across","pass","","",""
+".iSD","fixed","parent","direct","pass","","",""
+".iSD","fixed","parent","across","pass","","",""
+".iSD","fixed","total","direct","pass","","",""
+".iSD","fixed","total","across","pass","","",""
+".iSD","source_output","none","direct","pass","","",""
+".iSD","source_output","none","across","pass","","",""
+".iSD","source_output","parent","direct","pass","","",""
+".iSD","source_output","parent","across","pass","","",""
+".iSD","source_output","total","direct","pass","","",""
+".iSD","source_output","total","across","pass","","",""
+".iSD","share_output","parent","direct","pass","","",""
+".iSD","share_output","parent","across","pass","","",""
+".iSD","share_output","total","direct","pass","","",""
+".iSD","share_output","total","across","pass","","",""
+".iSD","id","none","direct","pass","","",""
+".iSD","id","none","across","pass","","",""
+".iSD","id","parent","direct","pass","","",""
+".iSD","id","parent","across","pass","","",""
+".iSD","id","total","direct","pass","","",""
+".iSD","id","total","across","pass","","",""
+".","measure","none","direct","dt_error","","only defined on a data frame with all numeric-alike variables","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17)), row.names = c(NA, -5L), class = ""data.frame"")"
+".","measure","none","across","pass","","",""
+".","measure","parent","direct","dt_error","","only defined on a data frame with all numeric-alike variables","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".","measure","parent","across","pass","","",""
+".","measure","total","direct","dt_error","","only defined on a data frame with all numeric-alike variables","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+".","measure","total","across","pass","","",""
+".","dimension","none","direct","pass","","",""
+".","dimension","none","across","pass","","",""
+".","dimension","parent","direct","pass","","",""
+".","dimension","parent","across","pass","","",""
+".","dimension","total","direct","pass","","",""
+".","dimension","total","across","pass","","",""
+".","fixed","none","direct","pass","","",""
+".","fixed","none","across","pass","","",""
+".","fixed","parent","direct","pass","","",""
+".","fixed","parent","across","pass","","",""
+".","fixed","total","direct","pass","","",""
+".","fixed","total","across","pass","","",""
+".","source_output","none","direct","pass","","",""
+".","source_output","none","across","pass","","",""
+".","source_output","parent","direct","pass","","",""
+".","source_output","parent","across","pass","","",""
+".","source_output","total","direct","pass","","",""
+".","source_output","total","across","pass","","",""
+".","share_output","parent","direct","pass","","",""
+".","share_output","parent","across","pass","","",""
+".","share_output","total","direct","pass","","",""
+".","share_output","total","across","pass","","",""
+".","id","none","direct","pass","","",""
+".","id","none","across","pass","","",""
+".","id","parent","direct","pass","","",""
+".","id","parent","across","pass","","",""
+".","id","total","direct","pass","","",""
+".","id","total","across","pass","","",""
+"..x","measure","none","direct","pass","","",""
+"..x","measure","none","across","pass","","",""
+"..x","measure","parent","direct","pass","","",""
+"..x","measure","parent","across","pass","","",""
+"..x","measure","total","direct","pass","","",""
+"..x","measure","total","across","pass","","",""
+"..x","dimension","none","direct","pass","","",""
+"..x","dimension","none","across","pass","","",""
+"..x","dimension","parent","direct","pass","","",""
+"..x","dimension","parent","across","pass","","",""
+"..x","dimension","total","direct","pass","","",""
+"..x","dimension","total","across","pass","","",""
+"..x","fixed","none","direct","pass","","",""
+"..x","fixed","none","across","pass","","",""
+"..x","fixed","parent","direct","pass","","",""
+"..x","fixed","parent","across","pass","","",""
+"..x","fixed","total","direct","pass","","",""
+"..x","fixed","total","across","pass","","",""
+"..x","source_output","none","direct","pass","","",""
+"..x","source_output","none","across","pass","","",""
+"..x","source_output","parent","direct","pass","","",""
+"..x","source_output","parent","across","pass","","",""
+"..x","source_output","total","direct","pass","","",""
+"..x","source_output","total","across","pass","","",""
+"..x","share_output","parent","direct","pass","","",""
+"..x","share_output","parent","across","pass","","",""
+"..x","share_output","total","direct","pass","","",""
+"..x","share_output","total","across","pass","","",""
+"..x","id","none","direct","pass","","",""
+"..x","id","none","across","pass","","",""
+"..x","id","parent","direct","pass","","",""
+"..x","id","parent","across","pass","","",""
+"..x","id","total","direct","pass","","",""
+"..x","id","total","across","pass","","",""
+"..g","measure","none","direct","pass","","",""
+"..g","measure","none","across","pass","","",""
+"..g","measure","parent","direct","pass","","",""
+"..g","measure","parent","across","pass","","",""
+"..g","measure","total","direct","pass","","",""
+"..g","measure","total","across","pass","","",""
+"..g","dimension","none","direct","pass","","",""
+"..g","dimension","none","across","pass","","",""
+"..g","dimension","parent","direct","pass","","",""
+"..g","dimension","parent","across","pass","","",""
+"..g","dimension","total","direct","pass","","",""
+"..g","dimension","total","across","pass","","",""
+"..g","fixed","none","direct","pass","","",""
+"..g","fixed","none","across","pass","","",""
+"..g","fixed","parent","direct","pass","","",""
+"..g","fixed","parent","across","pass","","",""
+"..g","fixed","total","direct","pass","","",""
+"..g","fixed","total","across","pass","","",""
+"..g","source_output","none","direct","pass","","",""
+"..g","source_output","none","across","pass","","",""
+"..g","source_output","parent","direct","pass","","",""
+"..g","source_output","parent","across","pass","","",""
+"..g","source_output","total","direct","pass","","",""
+"..g","source_output","total","across","pass","","",""
+"..g","share_output","parent","direct","pass","","",""
+"..g","share_output","parent","across","pass","","",""
+"..g","share_output","total","direct","pass","","",""
+"..g","share_output","total","across","pass","","",""
+"..g","id","none","direct","pass","","",""
+"..g","id","none","across","pass","","",""
+"..g","id","parent","direct","pass","","",""
+"..g","id","parent","across","pass","","",""
+"..g","id","total","direct","pass","","",""
+"..g","id","total","across","pass","","",""
+"..value","measure","none","direct","pass","","",""
+"..value","measure","none","across","pass","","",""
+"..value","measure","parent","direct","pass","","",""
+"..value","measure","parent","across","pass","","",""
+"..value","measure","total","direct","pass","","",""
+"..value","measure","total","across","pass","","",""
+"..value","dimension","none","direct","pass","","",""
+"..value","dimension","none","across","pass","","",""
+"..value","dimension","parent","direct","pass","","",""
+"..value","dimension","parent","across","pass","","",""
+"..value","dimension","total","direct","pass","","",""
+"..value","dimension","total","across","pass","","",""
+"..value","fixed","none","direct","pass","","",""
+"..value","fixed","none","across","pass","","",""
+"..value","fixed","parent","direct","pass","","",""
+"..value","fixed","parent","across","pass","","",""
+"..value","fixed","total","direct","pass","","",""
+"..value","fixed","total","across","pass","","",""
+"..value","source_output","none","direct","pass","","",""
+"..value","source_output","none","across","pass","","",""
+"..value","source_output","parent","direct","pass","","",""
+"..value","source_output","parent","across","pass","","",""
+"..value","source_output","total","direct","pass","","",""
+"..value","source_output","total","across","pass","","",""
+"..value","share_output","parent","direct","pass","","",""
+"..value","share_output","parent","across","pass","","",""
+"..value","share_output","total","direct","pass","","",""
+"..value","share_output","total","across","pass","","",""
+"..value","id","none","direct","pass","","",""
+"..value","id","none","across","pass","","",""
+"..value","id","parent","direct","pass","","",""
+"..value","id","parent","across","pass","","",""
+"..value","id","total","direct","pass","","",""
+"..value","id","total","across","pass","","",""
+"..1","measure","none","direct","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",""
+"..1","measure","none","across","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",""
+"..1","measure","parent","direct","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",""
+"..1","measure","parent","across","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",""
+"..1","measure","total","direct","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",""
+"..1","measure","total","across","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",""
+"..1","dimension","none","direct","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",""
+"..1","dimension","none","across","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",""
+"..1","dimension","parent","direct","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",""
+"..1","dimension","parent","across","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",""
+"..1","dimension","total","direct","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",""
+"..1","dimension","total","across","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",""
+"..1","fixed","none","direct","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",""
+"..1","fixed","none","across","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",""
+"..1","fixed","parent","direct","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",""
+"..1","fixed","parent","across","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",""
+"..1","fixed","total","direct","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",""
+"..1","fixed","total","across","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",""
+"..1","source_output","none","direct","dt_error","","Column 4 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17)), row.names = c(NA, -5L), class = ""data.frame"")"
+"..1","source_output","none","across","local_refusal","ℹ In argument: `dplyr::across(dplyr::all_of(""x""), sum, .names = ""..1"")`.
+Caused by error in `across()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",""
+"..1","source_output","parent","direct","dt_error","","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+"..1","source_output","parent","across","local_refusal","ℹ In argument: `dplyr::across(dplyr::all_of(""x""), sum, .names = ""..1"")`.
+ℹ In group 1: `f = ""P""`, `g = ""a""`.
+Caused by error in `dplyr::across()` at marginplyr/R/share.R:1441:5:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",""
+"..1","source_output","total","direct","dt_error","","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+"..1","source_output","total","across","local_refusal","ℹ In argument: `dplyr::across(dplyr::all_of(""x""), sum, .names = ""..1"")`.
+ℹ In group 1: `f = ""P""`, `g = ""a""`.
+Caused by error in `dplyr::across()` at marginplyr/R/share.R:1441:5:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",""
+"..1","share_output","parent","direct","dt_error","","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+"..1","share_output","parent","across","dt_error","","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+"..1","share_output","total","direct","dt_error","","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+"..1","share_output","total","across","dt_error","","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+"..1","id","none","direct","dt_error","","Column 3 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17)), row.names = c(NA, -5L), class = ""data.frame"")"
+"..1","id","none","across","dt_error","","Column 3 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17)), row.names = c(NA, -5L), class = ""data.frame"")"
+"..1","id","parent","direct","dt_error","","Column 3 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+"..1","id","parent","across","dt_error","","Column 3 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+"..1","id","total","direct","dt_error","","Column 3 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+"..1","id","total","across","dt_error","","Column 3 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+"...","measure","none","direct","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",""
+"...","measure","none","across","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",""
+"...","measure","parent","direct","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",""
+"...","measure","parent","across","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",""
+"...","measure","total","direct","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",""
+"...","measure","total","across","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",""
+"...","dimension","none","direct","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",""
+"...","dimension","none","across","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",""
+"...","dimension","parent","direct","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",""
+"...","dimension","parent","across","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",""
+"...","dimension","total","direct","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",""
+"...","dimension","total","across","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",""
+"...","fixed","none","direct","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",""
+"...","fixed","none","across","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",""
+"...","fixed","parent","direct","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",""
+"...","fixed","parent","across","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",""
+"...","fixed","total","direct","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",""
+"...","fixed","total","across","local_refusal","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",""
+"...","source_output","none","direct","dt_error","","Column 4 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17)), row.names = c(NA, -5L), class = ""data.frame"")"
+"...","source_output","none","across","local_refusal","ℹ In argument: `dplyr::across(dplyr::all_of(""x""), sum, .names = ""..."")`.
+Caused by error in `across()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",""
+"...","source_output","parent","direct","dt_error","","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+"...","source_output","parent","across","local_refusal","ℹ In argument: `dplyr::across(dplyr::all_of(""x""), sum, .names = ""..."")`.
+ℹ In group 1: `f = ""P""`, `g = ""a""`.
+Caused by error in `dplyr::across()` at marginplyr/R/share.R:1441:5:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",""
+"...","source_output","total","direct","dt_error","","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+"...","source_output","total","across","local_refusal","ℹ In argument: `dplyr::across(dplyr::all_of(""x""), sum, .names = ""..."")`.
+ℹ In group 1: `f = ""P""`, `g = ""a""`.
+Caused by error in `dplyr::across()` at marginplyr/R/share.R:1441:5:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",""
+"...","share_output","parent","direct","dt_error","","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+"...","share_output","parent","across","dt_error","","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+"...","share_output","total","direct","dt_error","","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+"...","share_output","total","across","dt_error","","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+"...","id","none","direct","dt_error","","Column 3 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17)), row.names = c(NA, -5L), class = ""data.frame"")"
+"...","id","none","across","dt_error","","Column 3 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17)), row.names = c(NA, -5L), class = ""data.frame"")"
+"...","id","parent","direct","dt_error","","Column 3 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+"...","id","parent","across","dt_error","","Column 3 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+"...","id","total","direct","dt_error","","Column 3 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+"...","id","total","across","dt_error","","Column 3 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.","structure(list(f = c(""P"", ""P"", ""P"", ""Q"", ""Q""), g = c(""a"", ""b"",  ""Total"", ""b"", ""Total""), set = c(1L, 1L, 2L, 1L, 2L), value = c(7,  11, 18, 17, 17), fraction = c(0.388888888888889, 0.611111111111111,  1, 1, 1)), row.names = c(NA, -5L), class = ""data.frame"")"
+"key","measure","none","direct","pass","","",""
+"key","measure","none","across","pass","","",""
+"key","measure","parent","direct","pass","","",""
+"key","measure","parent","across","pass","","",""
+"key","measure","total","direct","pass","","",""
+"key","measure","total","across","pass","","",""
+"key","dimension","none","direct","pass","","",""
+"key","dimension","none","across","pass","","",""
+"key","dimension","parent","direct","pass","","",""
+"key","dimension","parent","across","pass","","",""
+"key","dimension","total","direct","pass","","",""
+"key","dimension","total","across","pass","","",""
+"key","fixed","none","direct","pass","","",""
+"key","fixed","none","across","pass","","",""
+"key","fixed","parent","direct","pass","","",""
+"key","fixed","parent","across","pass","","",""
+"key","fixed","total","direct","pass","","",""
+"key","fixed","total","across","pass","","",""
+"key","source_output","none","direct","pass","","",""
+"key","source_output","none","across","pass","","",""
+"key","source_output","parent","direct","pass","","",""
+"key","source_output","parent","across","pass","","",""
+"key","source_output","total","direct","pass","","",""
+"key","source_output","total","across","pass","","",""
+"key","share_output","parent","direct","pass","","",""
+"key","share_output","parent","across","pass","","",""
+"key","share_output","total","direct","pass","","",""
+"key","share_output","total","across","pass","","",""
+"key","id","none","direct","pass","","",""
+"key","id","none","across","pass","","",""
+"key","id","parent","direct","pass","","",""
+"key","id","parent","across","pass","","",""
+"key","id","total","direct","pass","","",""
+"key","id","total","across","pass","","",""
+"keep.rownames","measure","none","direct","pass","","",""
+"keep.rownames","measure","none","across","pass","","",""
+"keep.rownames","measure","parent","direct","pass","","",""
+"keep.rownames","measure","parent","across","pass","","",""
+"keep.rownames","measure","total","direct","pass","","",""
+"keep.rownames","measure","total","across","pass","","",""
+"keep.rownames","dimension","none","direct","pass","","",""
+"keep.rownames","dimension","none","across","pass","","",""
+"keep.rownames","dimension","parent","direct","pass","","",""
+"keep.rownames","dimension","parent","across","pass","","",""
+"keep.rownames","dimension","total","direct","pass","","",""
+"keep.rownames","dimension","total","across","pass","","",""
+"keep.rownames","fixed","none","direct","pass","","",""
+"keep.rownames","fixed","none","across","pass","","",""
+"keep.rownames","fixed","parent","direct","pass","","",""
+"keep.rownames","fixed","parent","across","pass","","",""
+"keep.rownames","fixed","total","direct","pass","","",""
+"keep.rownames","fixed","total","across","pass","","",""
+"keep.rownames","source_output","none","direct","pass","","",""
+"keep.rownames","source_output","none","across","pass","","",""
+"keep.rownames","source_output","parent","direct","pass","","",""
+"keep.rownames","source_output","parent","across","pass","","",""
+"keep.rownames","source_output","total","direct","pass","","",""
+"keep.rownames","source_output","total","across","pass","","",""
+"keep.rownames","share_output","parent","direct","pass","","",""
+"keep.rownames","share_output","parent","across","pass","","",""
+"keep.rownames","share_output","total","direct","pass","","",""
+"keep.rownames","share_output","total","across","pass","","",""
+"keep.rownames","id","none","direct","pass","","",""
+"keep.rownames","id","none","across","pass","","",""
+"keep.rownames","id","parent","direct","pass","","",""
+"keep.rownames","id","parent","across","pass","","",""
+"keep.rownames","id","total","direct","pass","","",""
+"keep.rownames","id","total","across","pass","","",""
+"check.names","measure","none","direct","pass","","",""
+"check.names","measure","none","across","pass","","",""
+"check.names","measure","parent","direct","pass","","",""
+"check.names","measure","parent","across","pass","","",""
+"check.names","measure","total","direct","pass","","",""
+"check.names","measure","total","across","pass","","",""
+"check.names","dimension","none","direct","pass","","",""
+"check.names","dimension","none","across","pass","","",""
+"check.names","dimension","parent","direct","pass","","",""
+"check.names","dimension","parent","across","pass","","",""
+"check.names","dimension","total","direct","pass","","",""
+"check.names","dimension","total","across","pass","","",""
+"check.names","fixed","none","direct","pass","","",""
+"check.names","fixed","none","across","pass","","",""
+"check.names","fixed","parent","direct","pass","","",""
+"check.names","fixed","parent","across","pass","","",""
+"check.names","fixed","total","direct","pass","","",""
+"check.names","fixed","total","across","pass","","",""
+"check.names","source_output","none","direct","pass","","",""
+"check.names","source_output","none","across","pass","","",""
+"check.names","source_output","parent","direct","pass","","",""
+"check.names","source_output","parent","across","pass","","",""
+"check.names","source_output","total","direct","pass","","",""
+"check.names","source_output","total","across","pass","","",""
+"check.names","share_output","parent","direct","pass","","",""
+"check.names","share_output","parent","across","pass","","",""
+"check.names","share_output","total","direct","pass","","",""
+"check.names","share_output","total","across","pass","","",""
+"check.names","id","none","direct","pass","","",""
+"check.names","id","none","across","pass","","",""
+"check.names","id","parent","direct","pass","","",""
+"check.names","id","parent","across","pass","","",""
+"check.names","id","total","direct","pass","","",""
+"check.names","id","total","across","pass","","",""
+"stringsAsFactors","measure","none","direct","pass","","",""
+"stringsAsFactors","measure","none","across","pass","","",""
+"stringsAsFactors","measure","parent","direct","pass","","",""
+"stringsAsFactors","measure","parent","across","pass","","",""
+"stringsAsFactors","measure","total","direct","pass","","",""
+"stringsAsFactors","measure","total","across","pass","","",""
+"stringsAsFactors","dimension","none","direct","pass","","",""
+"stringsAsFactors","dimension","none","across","pass","","",""
+"stringsAsFactors","dimension","parent","direct","pass","","",""
+"stringsAsFactors","dimension","parent","across","pass","","",""
+"stringsAsFactors","dimension","total","direct","pass","","",""
+"stringsAsFactors","dimension","total","across","pass","","",""
+"stringsAsFactors","fixed","none","direct","pass","","",""
+"stringsAsFactors","fixed","none","across","pass","","",""
+"stringsAsFactors","fixed","parent","direct","pass","","",""
+"stringsAsFactors","fixed","parent","across","pass","","",""
+"stringsAsFactors","fixed","total","direct","pass","","",""
+"stringsAsFactors","fixed","total","across","pass","","",""
+"stringsAsFactors","source_output","none","direct","pass","","",""
+"stringsAsFactors","source_output","none","across","pass","","",""
+"stringsAsFactors","source_output","parent","direct","pass","","",""
+"stringsAsFactors","source_output","parent","across","pass","","",""
+"stringsAsFactors","source_output","total","direct","pass","","",""
+"stringsAsFactors","source_output","total","across","pass","","",""
+"stringsAsFactors","share_output","parent","direct","pass","","",""
+"stringsAsFactors","share_output","parent","across","pass","","",""
+"stringsAsFactors","share_output","total","direct","pass","","",""
+"stringsAsFactors","share_output","total","across","pass","","",""
+"stringsAsFactors","id","none","direct","pass","","",""
+"stringsAsFactors","id","none","across","pass","","",""
+"stringsAsFactors","id","parent","direct","pass","","",""
+"stringsAsFactors","id","parent","across","pass","","",""
+"stringsAsFactors","id","total","direct","pass","","",""
+"stringsAsFactors","id","total","across","pass","","",""
+"i","measure","none","direct","pass","","",""
+"i","measure","none","across","pass","","",""
+"i","measure","parent","direct","pass","","",""
+"i","measure","parent","across","pass","","",""
+"i","measure","total","direct","pass","","",""
+"i","measure","total","across","pass","","",""
+"i","dimension","none","direct","pass","","",""
+"i","dimension","none","across","pass","","",""
+"i","dimension","parent","direct","pass","","",""
+"i","dimension","parent","across","pass","","",""
+"i","dimension","total","direct","pass","","",""
+"i","dimension","total","across","pass","","",""
+"i","fixed","none","direct","pass","","",""
+"i","fixed","none","across","pass","","",""
+"i","fixed","parent","direct","pass","","",""
+"i","fixed","parent","across","pass","","",""
+"i","fixed","total","direct","pass","","",""
+"i","fixed","total","across","pass","","",""
+"i","source_output","none","direct","pass","","",""
+"i","source_output","none","across","pass","","",""
+"i","source_output","parent","direct","pass","","",""
+"i","source_output","parent","across","pass","","",""
+"i","source_output","total","direct","pass","","",""
+"i","source_output","total","across","pass","","",""
+"i","share_output","parent","direct","pass","","",""
+"i","share_output","parent","across","pass","","",""
+"i","share_output","total","direct","pass","","",""
+"i","share_output","total","across","pass","","",""
+"i","id","none","direct","pass","","",""
+"i","id","none","across","pass","","",""
+"i","id","parent","direct","pass","","",""
+"i","id","parent","across","pass","","",""
+"i","id","total","direct","pass","","",""
+"i","id","total","across","pass","","",""
+"j","measure","none","direct","pass","","",""
+"j","measure","none","across","pass","","",""
+"j","measure","parent","direct","pass","","",""
+"j","measure","parent","across","pass","","",""
+"j","measure","total","direct","pass","","",""
+"j","measure","total","across","pass","","",""
+"j","dimension","none","direct","pass","","",""
+"j","dimension","none","across","pass","","",""
+"j","dimension","parent","direct","pass","","",""
+"j","dimension","parent","across","pass","","",""
+"j","dimension","total","direct","pass","","",""
+"j","dimension","total","across","pass","","",""
+"j","fixed","none","direct","pass","","",""
+"j","fixed","none","across","pass","","",""
+"j","fixed","parent","direct","pass","","",""
+"j","fixed","parent","across","pass","","",""
+"j","fixed","total","direct","pass","","",""
+"j","fixed","total","across","pass","","",""
+"j","source_output","none","direct","pass","","",""
+"j","source_output","none","across","pass","","",""
+"j","source_output","parent","direct","pass","","",""
+"j","source_output","parent","across","pass","","",""
+"j","source_output","total","direct","pass","","",""
+"j","source_output","total","across","pass","","",""
+"j","share_output","parent","direct","pass","","",""
+"j","share_output","parent","across","pass","","",""
+"j","share_output","total","direct","pass","","",""
+"j","share_output","total","across","pass","","",""
+"j","id","none","direct","pass","","",""
+"j","id","none","across","pass","","",""
+"j","id","parent","direct","pass","","",""
+"j","id","parent","across","pass","","",""
+"j","id","total","direct","pass","","",""
+"j","id","total","across","pass","","",""
+"by","measure","none","direct","pass","","",""
+"by","measure","none","across","pass","","",""
+"by","measure","parent","direct","pass","","",""
+"by","measure","parent","across","pass","","",""
+"by","measure","total","direct","pass","","",""
+"by","measure","total","across","pass","","",""
+"by","dimension","none","direct","pass","","",""
+"by","dimension","none","across","pass","","",""
+"by","dimension","parent","direct","pass","","",""
+"by","dimension","parent","across","pass","","",""
+"by","dimension","total","direct","pass","","",""
+"by","dimension","total","across","pass","","",""
+"by","fixed","none","direct","pass","","",""
+"by","fixed","none","across","pass","","",""
+"by","fixed","parent","direct","pass","","",""
+"by","fixed","parent","across","pass","","",""
+"by","fixed","total","direct","pass","","",""
+"by","fixed","total","across","pass","","",""
+"by","source_output","none","direct","pass","","",""
+"by","source_output","none","across","pass","","",""
+"by","source_output","parent","direct","pass","","",""
+"by","source_output","parent","across","pass","","",""
+"by","source_output","total","direct","pass","","",""
+"by","source_output","total","across","pass","","",""
+"by","share_output","parent","direct","pass","","",""
+"by","share_output","parent","across","pass","","",""
+"by","share_output","total","direct","pass","","",""
+"by","share_output","total","across","pass","","",""
+"by","id","none","direct","pass","","",""
+"by","id","none","across","pass","","",""
+"by","id","parent","direct","pass","","",""
+"by","id","parent","across","pass","","",""
+"by","id","total","direct","pass","","",""
+"by","id","total","across","pass","","",""
+"with","measure","none","direct","pass","","",""
+"with","measure","none","across","pass","","",""
+"with","measure","parent","direct","pass","","",""
+"with","measure","parent","across","pass","","",""
+"with","measure","total","direct","pass","","",""
+"with","measure","total","across","pass","","",""
+"with","dimension","none","direct","pass","","",""
+"with","dimension","none","across","pass","","",""
+"with","dimension","parent","direct","pass","","",""
+"with","dimension","parent","across","pass","","",""
+"with","dimension","total","direct","pass","","",""
+"with","dimension","total","across","pass","","",""
+"with","fixed","none","direct","pass","","",""
+"with","fixed","none","across","pass","","",""
+"with","fixed","parent","direct","pass","","",""
+"with","fixed","parent","across","pass","","",""
+"with","fixed","total","direct","pass","","",""
+"with","fixed","total","across","pass","","",""
+"with","source_output","none","direct","pass","","",""
+"with","source_output","none","across","pass","","",""
+"with","source_output","parent","direct","pass","","",""
+"with","source_output","parent","across","pass","","",""
+"with","source_output","total","direct","pass","","",""
+"with","source_output","total","across","pass","","",""
+"with","share_output","parent","direct","pass","","",""
+"with","share_output","parent","across","pass","","",""
+"with","share_output","total","direct","pass","","",""
+"with","share_output","total","across","pass","","",""
+"with","id","none","direct","pass","","",""
+"with","id","none","across","pass","","",""
+"with","id","parent","direct","pass","","",""
+"with","id","parent","across","pass","","",""
+"with","id","total","direct","pass","","",""
+"with","id","total","across","pass","","",""
+"on","measure","none","direct","pass","","",""
+"on","measure","none","across","pass","","",""
+"on","measure","parent","direct","pass","","",""
+"on","measure","parent","across","pass","","",""
+"on","measure","total","direct","pass","","",""
+"on","measure","total","across","pass","","",""
+"on","dimension","none","direct","pass","","",""
+"on","dimension","none","across","pass","","",""
+"on","dimension","parent","direct","pass","","",""
+"on","dimension","parent","across","pass","","",""
+"on","dimension","total","direct","pass","","",""
+"on","dimension","total","across","pass","","",""
+"on","fixed","none","direct","pass","","",""
+"on","fixed","none","across","pass","","",""
+"on","fixed","parent","direct","pass","","",""
+"on","fixed","parent","across","pass","","",""
+"on","fixed","total","direct","pass","","",""
+"on","fixed","total","across","pass","","",""
+"on","source_output","none","direct","pass","","",""
+"on","source_output","none","across","pass","","",""
+"on","source_output","parent","direct","pass","","",""
+"on","source_output","parent","across","pass","","",""
+"on","source_output","total","direct","pass","","",""
+"on","source_output","total","across","pass","","",""
+"on","share_output","parent","direct","pass","","",""
+"on","share_output","parent","across","pass","","",""
+"on","share_output","total","direct","pass","","",""
+"on","share_output","total","across","pass","","",""
+"on","id","none","direct","pass","","",""
+"on","id","none","across","pass","","",""
+"on","id","parent","direct","pass","","",""
+"on","id","parent","across","pass","","",""
+"on","id","total","direct","pass","","",""
+"on","id","total","across","pass","","",""
+":=","measure","none","direct","pass","","",""
+":=","measure","none","across","pass","","",""
+":=","measure","parent","direct","pass","","",""
+":=","measure","parent","across","pass","","",""
+":=","measure","total","direct","pass","","",""
+":=","measure","total","across","pass","","",""
+":=","dimension","none","direct","pass","","",""
+":=","dimension","none","across","pass","","",""
+":=","dimension","parent","direct","pass","","",""
+":=","dimension","parent","across","pass","","",""
+":=","dimension","total","direct","pass","","",""
+":=","dimension","total","across","pass","","",""
+":=","fixed","none","direct","pass","","",""
+":=","fixed","none","across","pass","","",""
+":=","fixed","parent","direct","pass","","",""
+":=","fixed","parent","across","pass","","",""
+":=","fixed","total","direct","pass","","",""
+":=","fixed","total","across","pass","","",""
+":=","source_output","none","direct","pass","","",""
+":=","source_output","none","across","pass","","",""
+":=","source_output","parent","direct","pass","","",""
+":=","source_output","parent","across","pass","","",""
+":=","source_output","total","direct","pass","","",""
+":=","source_output","total","across","pass","","",""
+":=","share_output","parent","direct","pass","","",""
+":=","share_output","parent","across","pass","","",""
+":=","share_output","total","direct","pass","","",""
+":=","share_output","total","across","pass","","",""
+":=","id","none","direct","pass","","",""
+":=","id","none","across","pass","","",""
+":=","id","parent","direct","pass","","",""
+":=","id","parent","across","pass","","",""
+":=","id","total","direct","pass","","",""
+":=","id","total","across","pass","","",""
+"CJ","measure","none","direct","pass","","",""
+"CJ","measure","none","across","pass","","",""
+"CJ","measure","parent","direct","pass","","",""
+"CJ","measure","parent","across","pass","","",""
+"CJ","measure","total","direct","pass","","",""
+"CJ","measure","total","across","pass","","",""
+"CJ","dimension","none","direct","pass","","",""
+"CJ","dimension","none","across","pass","","",""
+"CJ","dimension","parent","direct","pass","","",""
+"CJ","dimension","parent","across","pass","","",""
+"CJ","dimension","total","direct","pass","","",""
+"CJ","dimension","total","across","pass","","",""
+"CJ","fixed","none","direct","pass","","",""
+"CJ","fixed","none","across","pass","","",""
+"CJ","fixed","parent","direct","pass","","",""
+"CJ","fixed","parent","across","pass","","",""
+"CJ","fixed","total","direct","pass","","",""
+"CJ","fixed","total","across","pass","","",""
+"CJ","source_output","none","direct","pass","","",""
+"CJ","source_output","none","across","pass","","",""
+"CJ","source_output","parent","direct","pass","","",""
+"CJ","source_output","parent","across","pass","","",""
+"CJ","source_output","total","direct","pass","","",""
+"CJ","source_output","total","across","pass","","",""
+"CJ","share_output","parent","direct","pass","","",""
+"CJ","share_output","parent","across","pass","","",""
+"CJ","share_output","total","direct","pass","","",""
+"CJ","share_output","total","across","pass","","",""
+"CJ","id","none","direct","pass","","",""
+"CJ","id","none","across","pass","","",""
+"CJ","id","parent","direct","pass","","",""
+"CJ","id","parent","across","pass","","",""
+"CJ","id","total","direct","pass","","",""
+"CJ","id","total","across","pass","","",""
+"data.table","measure","none","direct","pass","","",""
+"data.table","measure","none","across","pass","","",""
+"data.table","measure","parent","direct","pass","","",""
+"data.table","measure","parent","across","pass","","",""
+"data.table","measure","total","direct","pass","","",""
+"data.table","measure","total","across","pass","","",""
+"data.table","dimension","none","direct","pass","","",""
+"data.table","dimension","none","across","pass","","",""
+"data.table","dimension","parent","direct","pass","","",""
+"data.table","dimension","parent","across","pass","","",""
+"data.table","dimension","total","direct","pass","","",""
+"data.table","dimension","total","across","pass","","",""
+"data.table","fixed","none","direct","pass","","",""
+"data.table","fixed","none","across","pass","","",""
+"data.table","fixed","parent","direct","pass","","",""
+"data.table","fixed","parent","across","pass","","",""
+"data.table","fixed","total","direct","pass","","",""
+"data.table","fixed","total","across","pass","","",""
+"data.table","source_output","none","direct","pass","","",""
+"data.table","source_output","none","across","pass","","",""
+"data.table","source_output","parent","direct","pass","","",""
+"data.table","source_output","parent","across","pass","","",""
+"data.table","source_output","total","direct","pass","","",""
+"data.table","source_output","total","across","pass","","",""
+"data.table","share_output","parent","direct","pass","","",""
+"data.table","share_output","parent","across","pass","","",""
+"data.table","share_output","total","direct","pass","","",""
+"data.table","share_output","total","across","pass","","",""
+"data.table","id","none","direct","pass","","",""
+"data.table","id","none","across","pass","","",""
+"data.table","id","parent","direct","pass","","",""
+"data.table","id","parent","across","pass","","",""
+"data.table","id","total","direct","pass","","",""
+"data.table","id","total","across","pass","","",""
+".SDcols","measure","none","direct","pass","","",""
+".SDcols","measure","none","across","pass","","",""
+".SDcols","measure","parent","direct","pass","","",""
+".SDcols","measure","parent","across","pass","","",""
+".SDcols","measure","total","direct","pass","","",""
+".SDcols","measure","total","across","pass","","",""
+".SDcols","dimension","none","direct","pass","","",""
+".SDcols","dimension","none","across","pass","","",""
+".SDcols","dimension","parent","direct","pass","","",""
+".SDcols","dimension","parent","across","pass","","",""
+".SDcols","dimension","total","direct","pass","","",""
+".SDcols","dimension","total","across","pass","","",""
+".SDcols","fixed","none","direct","pass","","",""
+".SDcols","fixed","none","across","pass","","",""
+".SDcols","fixed","parent","direct","pass","","",""
+".SDcols","fixed","parent","across","pass","","",""
+".SDcols","fixed","total","direct","pass","","",""
+".SDcols","fixed","total","across","pass","","",""
+".SDcols","source_output","none","direct","pass","","",""
+".SDcols","source_output","none","across","pass","","",""
+".SDcols","source_output","parent","direct","pass","","",""
+".SDcols","source_output","parent","across","pass","","",""
+".SDcols","source_output","total","direct","pass","","",""
+".SDcols","source_output","total","across","pass","","",""
+".SDcols","share_output","parent","direct","pass","","",""
+".SDcols","share_output","parent","across","pass","","",""
+".SDcols","share_output","total","direct","pass","","",""
+".SDcols","share_output","total","across","pass","","",""
+".SDcols","id","none","direct","pass","","",""
+".SDcols","id","none","across","pass","","",""
+".SDcols","id","parent","direct","pass","","",""
+".SDcols","id","parent","across","pass","","",""
+".SDcols","id","total","direct","pass","","",""
+".SDcols","id","total","across","pass","","",""
+"NROW","measure","none","direct","pass","","",""
+"NROW","measure","none","across","pass","","",""
+"NROW","measure","parent","direct","pass","","",""
+"NROW","measure","parent","across","pass","","",""
+"NROW","measure","total","direct","pass","","",""
+"NROW","measure","total","across","pass","","",""
+"NROW","dimension","none","direct","pass","","",""
+"NROW","dimension","none","across","pass","","",""
+"NROW","dimension","parent","direct","pass","","",""
+"NROW","dimension","parent","across","pass","","",""
+"NROW","dimension","total","direct","pass","","",""
+"NROW","dimension","total","across","pass","","",""
+"NROW","fixed","none","direct","pass","","",""
+"NROW","fixed","none","across","pass","","",""
+"NROW","fixed","parent","direct","pass","","",""
+"NROW","fixed","parent","across","pass","","",""
+"NROW","fixed","total","direct","pass","","",""
+"NROW","fixed","total","across","pass","","",""
+"NROW","source_output","none","direct","pass","","",""
+"NROW","source_output","none","across","pass","","",""
+"NROW","source_output","parent","direct","pass","","",""
+"NROW","source_output","parent","across","pass","","",""
+"NROW","source_output","total","direct","pass","","",""
+"NROW","source_output","total","across","pass","","",""
+"NROW","share_output","parent","direct","pass","","",""
+"NROW","share_output","parent","across","pass","","",""
+"NROW","share_output","total","direct","pass","","",""
+"NROW","share_output","total","across","pass","","",""
+"NROW","id","none","direct","pass","","",""
+"NROW","id","none","across","pass","","",""
+"NROW","id","parent","direct","pass","","",""
+"NROW","id","parent","across","pass","","",""
+"NROW","id","total","direct","pass","","",""
+"NROW","id","total","across","pass","","",""

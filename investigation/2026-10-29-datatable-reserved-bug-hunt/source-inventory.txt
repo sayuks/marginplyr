@@ -1,0 +1,84 @@
+Official aliases: .SD, .I, .GRP, .BY, .N, .EACHI, .NGRP, .NATURAL, .ROW
+Namespace functions scanned: 420
+Matching functions: .onLoad, .optmean, .reassign_extracted_table, [.data.table, alloc.col, as.data.table.list, bmerge, melt.data.table, set, setalloccol, setDT, setkeyv, split.data.table, test, test.data.table
+Explicit reservation/locking matches:
+    function_name
+          .onLoad
+          .onLoad
+          .onLoad
+          .onLoad
+     [.data.table
+     [.data.table
+     [.data.table
+     [.data.table
+     [.data.table
+     [.data.table
+     [.data.table
+     [.data.table
+     [.data.table
+     [.data.table
+     [.data.table
+     [.data.table
+     [.data.table
+     [.data.table
+     [.data.table
+     [.data.table
+     [.data.table
+           bmerge
+          setkeyv
+ split.data.table
+ split.data.table
+                                                                                                                                                                                     expression
+                                                                                                                                                 (unlockBinding)("cbind.data.frame", baseenv())
+                                                                                                                                                     lockBinding("cbind.data.frame", baseenv())
+                                                                                                                                                 (unlockBinding)("rbind.data.frame", baseenv())
+                                                                                                                                                     lockBinding("rbind.data.frame", baseenv())
+                                                                                                                                              eval(call("unlockBinding", ".N", parent.frame()))
+                                                                                                                                                              lockBinding(".N", parent.frame())
+           stopf(".SD is locked. Using := in .SD's j is reserved for possible future use; a tortuously flexible way to modify by group. Use := in j directly to modify by group by reference.")
+                                                                                                                                                                      lockBinding(".SD", SDenv)
+                                                                                                                                                                   lockBinding(".SDall", SDenv)
+                                                                                                                                                                       lockBinding(".N", SDenv)
+                                                                                                                                                                       lockBinding(".I", SDenv)
+                                                                                                                                                                     lockBinding(".GRP", SDenv)
+                                                                                                                                                                    lockBinding(".NGRP", SDenv)
+                                                                                                                                                                      lockBinding(".SD", SDenv)
+                                                                                                                                                                   lockBinding(".SDall", SDenv)
+                                                                                                                                                                       lockBinding(".N", SDenv)
+                                                                                                                                                                     lockBinding(".GRP", SDenv)
+                                                                                                                                                                     lockBinding(".iSD", SDenv)
+                                                                                                                                                                    lockBinding(".NGRP", SDenv)
+                                                                                                                                                                    lockBinding(thisfun, SDenv)
+                                                                                                                                                                     lockBinding(".xSD", SDenv)
+                                                                                                                                 stopf("Column name '_nqgrp_' is reserved for non-equi joins.")
+ stopf("Setting a physical key on .SD is reserved for possible future use; to modify the original data's order by group. Try setindex() instead. Or, set*(copy(.SD)) as a (slow) last resort.")
+                                                                                                                   stopf("Column '.ll.tech.split' is reserved for split.data.table processing")
+                                                                                                                   stopf("Column '.nm.tech.split' is reserved for split.data.table processing")
+Versions:
+data.table 1.18.6.1
+dtplyr 1.3.3
+dplyr 1.2.1
+rlang 1.3.0
+tibble 3.3.1
+vctrs 0.7.3
+pkgload 1.5.3
+R version 4.6.1 (2026-06-24)
+R version 4.6.1 (2026-06-24)
+Platform: aarch64-apple-darwin23
+Running under: macOS Tahoe 26.6.2
+
+Matrix products: default
+BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib
+LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1
+
+locale:
+[1] C.UTF-8/C.UTF-8/C.UTF-8/C/C.UTF-8/C.UTF-8
+
+time zone: Asia/Tokyo
+tzcode source: internal
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base
+
+loaded via a namespace (and not attached):
+[1] compiler_4.6.1      tools_4.6.1         data.table_1.18.6.1

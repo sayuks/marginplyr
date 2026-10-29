@@ -1,0 +1,108 @@
+                     name          helper  style actual_ok wrong_value
+               string_lhs share_of_parent direct      TRUE        TRUE
+               string_lhs share_of_parent across      TRUE        TRUE
+               string_lhs  share_of_total direct      TRUE        TRUE
+               string_lhs  share_of_total across      TRUE        TRUE
+  string_right_assignment share_of_parent direct      TRUE        TRUE
+  string_right_assignment share_of_parent across      TRUE        TRUE
+  string_right_assignment  share_of_total direct      TRUE        TRUE
+  string_right_assignment  share_of_total across      TRUE        TRUE
+      string_lhs_function share_of_parent direct      TRUE        TRUE
+      string_lhs_function share_of_parent across      TRUE        TRUE
+      string_lhs_function  share_of_total direct      TRUE        TRUE
+      string_lhs_function  share_of_total across      TRUE        TRUE
+      deferred_assignment share_of_parent direct      TRUE        TRUE
+      deferred_assignment share_of_parent across      TRUE        TRUE
+      deferred_assignment  share_of_total direct      TRUE        TRUE
+      deferred_assignment  share_of_total across      TRUE        TRUE
+      computed_assign_get share_of_parent direct      TRUE        TRUE
+      computed_assign_get share_of_parent across      TRUE        TRUE
+      computed_assign_get  share_of_total direct      TRUE        TRUE
+      computed_assign_get  share_of_total across      TRUE        TRUE
+ computed_assign_matchfun share_of_parent direct      TRUE        TRUE
+ computed_assign_matchfun share_of_parent across      TRUE        TRUE
+ computed_assign_matchfun  share_of_total direct      TRUE        TRUE
+ computed_assign_matchfun  share_of_total across      TRUE        TRUE
+       explicit_eval_list share_of_parent direct      TRUE        TRUE
+       explicit_eval_list share_of_parent across      TRUE        TRUE
+       explicit_eval_list  share_of_total direct      TRUE        TRUE
+       explicit_eval_list  share_of_total across      TRUE        TRUE
+      explicit_evalq_list share_of_parent direct      TRUE        TRUE
+      explicit_evalq_list share_of_parent across      TRUE        TRUE
+      explicit_evalq_list  share_of_total direct      TRUE        TRUE
+      explicit_evalq_list  share_of_total across      TRUE        TRUE
+       explicit_with_list share_of_parent direct      TRUE        TRUE
+       explicit_with_list share_of_parent across      TRUE        TRUE
+       explicit_with_list  share_of_total direct      TRUE        TRUE
+       explicit_with_list  share_of_total across      TRUE        TRUE
+            direct_assign share_of_parent direct     FALSE       FALSE
+            direct_assign share_of_parent across     FALSE       FALSE
+            direct_assign  share_of_total direct     FALSE       FALSE
+            direct_assign  share_of_total across     FALSE       FALSE
+        direct_symbol_lhs share_of_parent direct      TRUE       FALSE
+        direct_symbol_lhs share_of_parent across      TRUE       FALSE
+        direct_symbol_lhs  share_of_total direct      TRUE       FALSE
+        direct_symbol_lhs  share_of_total across      TRUE       FALSE
+                   formal share_of_parent direct      TRUE       FALSE
+                   formal share_of_parent across      TRUE       FALSE
+                   formal  share_of_total direct      TRUE       FALSE
+                   formal  share_of_total across      TRUE       FALSE
+ unchanged
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+      TRUE
+
+Wrong successful values: 36 of 48 cases.
+
+INPUT string_lhs: local({    ".BY" <- c(5, 7)    sum(.BY)})
+REWRITE: local({    ".BY" <- c(5, 7)    sum(safe_alias)})
+BINDS: FALSE
+
+INPUT explicit_eval_list: eval(quote(sum(.BY)), list(.BY = c(5, 7)))
+REWRITE: eval(quote(sum(safe_alias)), list(.BY = c(5, 7)))
+BINDS: FALSE

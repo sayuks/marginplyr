@@ -1,0 +1,16 @@
+Ordinary dtplyr query:
+`_DT1`[, .(.BY, value)]
+Declared dtplyr columns: .BY, value
+Collected columns: BY, value
+Direct data.table selected columns: BY, value
+Inspection of derived step:
+# A tibble: 1 × 6
+  set_id fixed included omitted grouping_bits grouping_id
+   <int> <chr> <chr>    <chr>   <chr>               <int>
+1      1 ()    (.BY)    ()      .BY=0                   0
+Inspection after explicit materialization:
+# A tibble: 1 × 6
+  set_id fixed included omitted grouping_bits grouping_id
+   <int> <chr> <chr>    <chr>   <chr>               <int>
+1      1 ()    (BY)     ()      BY=0                    0
+Source unchanged; discrepancy exists before marginplyr.
