@@ -1,0 +1,11 @@
+Baseline: ee4321789ca60b6259c53df2852f1574aaede584
+Focused existing suite: terminal exit 0 (21 files).
+Jarl: terminal exit 0.
+Package-aware lintr with pkgload::load_all(): terminal exit 0.
+Always-loaded context verifier: terminal exit 0.
+Document-reference verifier: terminal exit 0.
+Staged git diff --check after log whitespace normalization: terminal exit 0.
+Independent coordinator replay of backend/shared-cache-types.R --assert: terminal exit 1 (expected desired-behavior failure).
+Independent coordinator replay of backend/reproduce-metadata-shallow-warning.R --assert: terminal exit 1 (expected desired-behavior failure).
+Independent coordinator replay of backend/reproduce-cached-rename-metadata.R --assert: terminal exit 1 (expected desired-behavior failure).
+No package repair or permanent regression test was added.

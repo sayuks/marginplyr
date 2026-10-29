@@ -1,0 +1,23 @@
+inspect cached-shared error TRUE warnings 0 Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+inspect uncached error FALSE warnings 0 success
+inspect cached-only error FALSE warnings 0 success
+inspect collected error FALSE warnings 0 success
+nest cached-shared error TRUE warnings 0 Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+nest uncached error FALSE warnings 0 success
+nest cached-only error FALSE warnings 0 success
+nest collected error FALSE warnings 0 success
+nest_by cached-shared error TRUE warnings 0 Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+nest_by uncached error FALSE warnings 0 success
+nest_by cached-only error FALSE warnings 0 success
+nest_by collected error FALSE warnings 0 success
+schema-only query:
+head(funion(setnames(`_DT1`, "v", "value"), setnames(copy(`_DT1`),
+    "v", "value"), all = TRUE), n = 0L)
+private evaluation diagnostic: Items of 'old' not found in column names: [v]. Consider skip_absent=TRUE.
+experimental restore-copy-flag: successful typed proxy

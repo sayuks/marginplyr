@@ -1,0 +1,13 @@
+Arrow reader graph calls 48 readers preserved 12
+sqlite ordinary unsupported source graphs: rename
+ordinary source diagnostic: Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?
+Tracing function "dbSendQuery" in package "namespace:DBI"
+Untracing function "dbSendQuery" in package "namespace:DBI"
+sqlite boundary calls 28 typed refusals 7 queries 0 all queries LIMIT 0 when present
+duckdb ordinary unsupported source graphs: rename
+ordinary source diagnostic: Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?
+Tracing function "dbSendQuery" in package "namespace:DBI"
+Untracing function "dbSendQuery" in package "namespace:DBI"
+duckdb boundary calls 28 typed refusals 0 queries 14 all queries LIMIT 0 when present

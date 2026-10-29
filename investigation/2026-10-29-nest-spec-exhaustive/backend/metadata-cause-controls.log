@@ -1,0 +1,26 @@
+isolated roots before dt_sources selfref: 1 1
+dt_sources merged same-name root selfref: 0
+package-rewrite warnings 1 new.y type integer
+retain-cache-locals warnings 0 new.y type character
+restore-copy-flag warnings 0 new.y type character
+rows 2 shape cached-shared expected char new.y actual char  warnings 1
+rows 2 shape swapped-cached expected char new.x actual char new.x warnings 1
+rows 2 shape uncached expected char new.y actual char new.y warnings 0
+rows 2 shape distinct-root expected char new.y actual char new.y warnings 0
+rows 2 shape cached-only expected char new actual char new warnings 0
+rows 2 shape collected expected char new.y actual char new.y warnings 0
+rows 3 shape cached-shared expected char new.y actual char  warnings 1
+rows 3 shape swapped-cached expected char new.x actual char new.x warnings 1
+rows 3 shape uncached expected char new.y actual char new.y warnings 0
+rows 3 shape distinct-root expected char new.y actual char new.y warnings 0
+rows 3 shape cached-only expected char new actual char new warnings 0
+rows 3 shape collected expected char new.y actual char new.y warnings 0
+warn=2 inspect class marginplyr_error,rlang_error,error,condition diagnostic Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+warn=2 nest class marginplyr_error,rlang_error,error,condition diagnostic Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+warn=2 nest_by class marginplyr_error,rlang_error,error,condition diagnostic Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.

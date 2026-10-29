@@ -1,0 +1,1 @@
+4320 public calls; 1992 local data.table/tibble pairs; 168 documented key/id collision or .rows rowwise refusal pairs; PASS: values matched and every serialized source stayed identical
