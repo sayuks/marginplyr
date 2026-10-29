@@ -281,12 +281,14 @@ wrap_assigned_local_summaries <- function(dots, assigned_names, group_vars,
                                           alias_state = NULL) {
   for (i in which(!is.na(assigned_names))) {
     dot <- dots[[i]]
+    type_state <- new.env(parent = emptyenv())
     expr <- rlang::call2(
       marginplyr_private_call("local_assigned_summary_value"),
       rlang::quo_get_expr(dot),
       assigned_names[[i]], group_vars, internal_names, set_id_name,
       set_id_is_internal,
-      setdiff(share_sources, source_definitions[[i]]), alias_state, i
+      setdiff(share_sources, source_definitions[[i]]), type_state,
+      alias_state, i
     )
     dots[[i]] <- rlang::new_quosure(expr, env = rlang::quo_get_env(dot))
     names(dots)[[i]] <- ""
@@ -297,15 +299,22 @@ wrap_assigned_local_summaries <- function(dots, assigned_names, group_vars,
 # Return a frame so dplyr places the output in its mask immediately. An actual
 # frame keeps its own checked column names; a scalar takes the caller-facing
 # name; `NULL` keeps dplyr's omission behavior.
-# The caller supplies the evaluated value and its Assigned summary name.
+# The caller supplies the evaluated value, its Assigned summary name, and a
+# type state shared by this dot's groups within one branch.
 local_assigned_summary_value <- function(value, name, group_vars,
                                          internal_names, set_id_name,
                                          set_id_is_internal,
                                          protected_sources,
+                                         type_state,
                                          alias_state = NULL, position = NULL) {
   if (is.null(value)) {
     return(value)
   }
+  # Check original types before the scalar carrier erases their distinction
+  # from frames; vec_ptype2() keeps unspecified types unresolved (ADR 0028).
+  type_state$ptype <- vctrs::vec_ptype2(
+    type_state$ptype, value, x_arg = name, y_arg = name, call = NULL
+  )
   record_local_summary_aliases(
     if (is.data.frame(value)) names(value) else name,
     alias_state, position
@@ -449,12 +458,14 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
         next
       }
     }
+    type_state <- new.env(parent = emptyenv())
     expr <- rlang::call2(
       marginplyr_private_call("local_assigned_summary_value"),
       expr, auto_names[[i]], group_vars, internal_names,
       set_id_name,
       set_id_is_internal,
-      setdiff(share_sources, source_definitions[[i]]), alias_state, i
+      setdiff(share_sources, source_definitions[[i]]), type_state,
+      alias_state, i
     )
     dots[[i]] <- rlang::new_quosure(expr, env = wrapped_summary_env(dot))
   }
