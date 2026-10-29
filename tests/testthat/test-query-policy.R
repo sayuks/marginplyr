@@ -978,6 +978,26 @@ test_that("partition expansion and inspection read no source rows", {
   expect_identical(tools::md5sum(fixture$files), fixture$hashes)
 })
 
+test_that("hidden partition expansion reads no source rows", {
+  skip_if_suggest_absent("arrow")
+  fixture <- arrow_hidden_partition_fixture(c(
+    "sid", "..marginplyr_arrow_dimension_1", "..marginplyr_arrow_id_1",
+    "..marginplyr_sort_1"
+  ))
+  on.exit(unlink(fixture$path, recursive = TRUE))
+  expect_gt(count_entry_point_invocations(dplyr::collect(fixture$source)), 0L)
+  expect_identical(count_entry_point_invocations({
+    for (sort in c("none", "first", "last")) {
+      for (id in list(NULL, "sid", "..1")) {
+        expand_with_margins(
+          fixture$source, .grouping = rollup(g), .id = id,
+          .sort = sort, .margin_label = NULL
+        )
+      }
+    }
+  }), 0L)
+})
+
 test_that("fixed-size-list expansion and inspection read no source rows", {
   skip_if_suggest_absent("arrow")
   type <- arrow::fixed_size_list_of(arrow::int32(), 2L)

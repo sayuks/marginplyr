@@ -4,6 +4,27 @@ margin_col_names <- function(data) {
   as.character(dplyr::tbl_vars(data))
 }
 
+# Names retained anywhere in a reusable Arrow input's source graph, including
+# fields hidden by selection or renaming. This reads metadata, never rows.
+arrow_source_names <- function(.data) {
+  if (is.null(.data)) {
+    return(character())
+  }
+  columns <- names(.data)
+  if (!inherits(.data, "arrow_dplyr_query")) {
+    return(columns)
+  }
+  query <- unclass(.data)
+  sources <- list(
+    query[[".data"]],
+    query[["join"]][["right_data"]],
+    query[["union_all"]][["right_data"]]
+  )
+  unique(c(columns, unlist(
+    lapply(sources, arrow_source_names), use.names = FALSE
+  )))
+}
+
 get_col_names <- function(data, ...) {
   selected <- dplyr::select(.data = data, ...)
   # Drop the grouping metadata attached to dplyr's variable-name vector.

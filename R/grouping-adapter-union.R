@@ -951,12 +951,23 @@ expand_margin_union <- function(.data,
                                 set_id_name = NULL,
                                 identity_cols = character(),
                                 identity_missing = list()) {
+  public_id <- set_id_name
   if (backend$is_sql) {
     .data <- sql_margin_input_relation(
       .data, backend, margin_col_names(.data)
     )
   }
   if (identical(backend$kind, "arrow")) {
+    source_names <- arrow_source_names(.data)
+    if (!is.null(set_id_name) && (
+      margin_dot_dot_names(set_id_name) || set_id_name %in% source_names
+    )) {
+      # Stage identifiers across the union's partition recovery and the
+      # dimension rename's tidyselect validation of supported dot-dot names.
+      set_id_name <- new_margin_internal_names(
+        1L, c(source_names, set_id_name), prefix = "..marginplyr_arrow_id_"
+      )
+    }
     # Freeze the public schema before branches change projections: Arrow's
     # computed sort fields must stay inside their source relation (#895).
     # collapse() wraps the query without reading or materializing rows.
@@ -1044,7 +1055,7 @@ expand_margin_union <- function(.data,
     dimensions <- plan$dimensions
     private <- new_margin_internal_names(
       length(dimensions),
-      c(get_col_names(.data, dplyr::everything()), set_id_name),
+      c(source_names, set_id_name, public_id),
       prefix = "..marginplyr_arrow_dimension_"
     )
     aliases <- stats::setNames(dimensions, private)
@@ -1053,8 +1064,15 @@ expand_margin_union <- function(.data,
     })
     result <- combine_margin_branches(branches)
     public <- stats::setNames(private, dimensions)
-    return(dplyr::rename(result, dplyr::all_of(public)))
+    result <- dplyr::rename(result, dplyr::all_of(public))
+  } else {
+    result <- combine_margin_branches(branches)
   }
 
-  combine_margin_branches(branches)
+  if (!identical(set_id_name, public_id)) {
+    result <- dplyr::mutate(
+      result, !!public_id := !!rlang::sym(set_id_name), !!set_id_name := NULL
+    )
+  }
+  result
 }
