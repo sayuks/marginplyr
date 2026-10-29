@@ -17,6 +17,6 @@
 # Callers keep their own `on.exit(DBI::dbDisconnect(con, shutdown = TRUE))`.
 # Deferring the disconnect from inside would need withr, which this package does
 # not depend on, and the tests that open a connection already tear it down.
-duckdb_test_connection <- function() {
-  DBI::dbConnect(duckdb::duckdb(shared_home = FALSE))
+duckdb_test_connection <- function(...) {
+  DBI::dbConnect(duckdb::duckdb(shared_home = FALSE), ...)
 }

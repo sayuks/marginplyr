@@ -179,9 +179,7 @@ validate_margin_label <- function(.data,
     }
   }
 
-  packed <- dimensions[vapply(
-    column_info$prototypes[dimensions], is.data.frame, logical(1)
-  )]
+  packed <- column_info$packed
   labelled_packed <- packed[!vapply(
     margin_labels[packed], is_missing_margin_label, logical(1)
   )]
@@ -199,11 +197,7 @@ validate_margin_label <- function(.data,
     ))
   }
 
-  arrays <- dimensions[vapply(
-    column_info$prototypes[dimensions],
-    function(x) is.array(x) && length(dim(x)) > 1L,
-    logical(1)
-  )]
+  arrays <- column_info$arrays
   labelled_arrays <- arrays[!vapply(
     margin_labels[arrays], is_missing_margin_label, logical(1)
   )]
