@@ -116,6 +116,12 @@ sql_margin_input_relation <- function(.data, backend, data_vars) {
       .data <- sql_quote_generated_columns(.data)
     }
   }
+  if (inherits(backend$dialect, "sql_dialect_mssql") &&
+        is.null(.data$lazy_query$limit)) {
+    # SQL Server forbids an unbounded ORDER BY inside a derived table (#994).
+    # Its window ordering is retained separately in input_order.
+    .data$lazy_query$order_by <- NULL
+  }
   input_sql <- dbplyr::sql_render(.data)
   input_sql <- dbplyr::sql_query_select(
     con, dbplyr::escape(dbplyr::ident(data_vars), con = con),

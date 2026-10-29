@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* SQL Server expansions omit unbounded input ordering inside source relations
+  while preserving limited row selection and usable window ordering (#994).
+
 * Both share helpers preserve dtplyr fixed keys named `.`, `..0`, `..00`,
   and `..01` through cardinality validation and denominator grouping (#999).
 
