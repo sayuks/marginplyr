@@ -311,8 +311,8 @@ local_assigned_summary_value <- function(value, name, group_vars,
     return(value)
   }
   # Check original types before the scalar carrier erases their distinction
-  # from frames (ADR 0028).
-  type_state$ptype <- vctrs::vec_ptype_common(type_state$ptype, value)
+  # from frames; vec_ptype2() keeps unspecified types unresolved (ADR 0028).
+  type_state$ptype <- vctrs::vec_ptype2(type_state$ptype, value)
   record_local_summary_aliases(
     if (is.data.frame(value)) names(value) else name,
     alias_state, position

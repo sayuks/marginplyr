@@ -147,3 +147,16 @@ test_that("eager tables retain expansion, naming, packing and evaluation", {
   skip_if_suggest_absent("data.table")
   check_uniform_local_types(data.table::as.data.table)
 })
+
+test_that("original unspecified types remain compatible with later values", {
+  scalar <- function(x) if (x == 1L) NA else "ok"
+  frame <- function(x) data.frame(z = scalar(x))
+  for (rows in list(1:2, 2:1)) {
+    data <- data.frame(g = 1:2, x = 1:2)[rows, ]
+    expected <- dplyr::summarise(data, scalar(x), frame(x), .by = g)
+    actual <- summarize_with_margins(data, scalar(x), frame(x), .by = g)
+    expect_identical(names(actual), c("g", "scalar(x)", "z"))
+    expect_identical(actual[["scalar(x)"]], expected[["scalar(x)"]])
+    expect_identical(actual$z, expected$z)
+  }
+})

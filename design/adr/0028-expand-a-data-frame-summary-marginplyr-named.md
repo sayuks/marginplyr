@@ -47,7 +47,8 @@ finished did not preserve that ordering (#619).
 
 Before wrapping a value, `local_assigned_summary_value()` combines its original
 prototype with those already seen for that summary in the same grouping-set
-branch, using vctrs' common-type rules. Otherwise the scalar carrier hides a
+branch, using vctrs' common-type rules without finalizing unspecified types.
+Otherwise the scalar carrier hides a
 frame/non-frame incompatibility and dplyr accepts separate, missing-filled
 columns where it would have refused the original values (#1020). Each summary
 has its own type state, created anew for each branch; the caller's expression
