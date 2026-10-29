@@ -18,6 +18,7 @@ repository_path <- dirname(dirname(script_path))
 source(file.path(repository_path, ".github", "scripts", "cran-note-policy.R"))
 source(file.path(repository_path, "tools", "dependency-requirements.R"))
 source(file.path(repository_path, "tools", "required-test-suggests.R"))
+source(file.path(repository_path, "tools", "review-ready-progress.R"))
 source(file.path(repository_path, "tools", "review-ready-check-lib.R"))
 
 status <- review_ready_check_cli(

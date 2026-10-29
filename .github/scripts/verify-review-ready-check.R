@@ -4,6 +4,7 @@
 source(".github/scripts/cran-note-policy.R")
 source("tools/dependency-requirements.R")
 source("tools/required-test-suggests.R")
+source("tools/review-ready-progress.R")
 source("tools/review-ready-check-lib.R")
 
 expect_identical <- function(actual, expected, label) {
@@ -37,6 +38,52 @@ expect_error <- function(expression, pattern, label) {
 }
 
 expect_identical(parse_review_ready_args(character()), list(), "no arguments")
+
+# The process boundary exposes progress before returning its terminal verdict.
+local({
+  directory <- tempfile("review-ready-progress-")
+  dir.create(directory)
+  on.exit(unlink(directory, recursive = TRUE), add = TRUE)
+  ticks <- 0L
+  parsed <- FALSE
+  process <- list(
+    poll_io = function(timeout) {
+      ticks <<- ticks + 1L
+      writeLines(c("total\t2", "done\ttest-first.R"),
+        file.path(directory, "test-progress.tsv"))
+    },
+    read_output_lines = function() character(),
+    is_alive = function() {
+      if (ticks == 2L) {
+        writeLines(c("total\t2", "done\ttest-first.R", "done\ttest-second.R", "finished"),
+          file.path(directory, "test-progress.tsv"))
+      }
+      ticks < 2L
+    },
+    wait = function() NULL,
+    kill = function() stop("A completed process must not be killed."),
+    parse_results = function() {
+      parsed <<- TRUE
+      list(status = 17L, timeout = FALSE, errors = "fixture failed")
+    }
+  )
+  factory <- function(..., env) {
+    expect_identical(env[["MARGINPLYR_REVIEW_PROGRESS"]],
+      file.path(directory, "test-progress.tsv"), "the attempt-local progress file")
+    process
+  }
+  output <- capture.output(result <- review_ready_progress_check(
+    "fixture.tar.gz", args = "--as-cran", build_args = NULL,
+    check_dir = directory, error_on = "never", env = character(), repos = character(),
+    process_factory = factory
+  ))
+  expect_true(any(grepl("1/2 files completed (50.0%); last: test-first.R",
+    output, fixed = TRUE)), "live file progress")
+  expect_true(any(grepl("2/2 files completed (100.0%); last: test-second.R",
+    output, fixed = TRUE)), "completion events remain visible at process exit")
+  expect_true(parsed, "only the terminal process result supplies the verdict")
+  expect_identical(result$status, 17L, "progress cannot turn a failed check green")
+})
 expect_error(
   parse_review_ready_args("--fast"),
   "takes no arguments",
@@ -87,7 +134,7 @@ expect_identical(
 )
 expect_identical(
   fixture_review_packages,
-  c("lintr", "pkgload", "rcmdcheck", "spelling", "testthat"),
+  c("lintr", "pkgload", "R6", "rcmdcheck", "spelling", "testthat"),
   "the declared review packages"
 )
 expect_error(
@@ -501,7 +548,11 @@ run_fixture_cli <- function(checker) {
 }
 success_output <- capture.output({
   success_status <- run_fixture_cli(function(..., env) {
-    expect_identical(env, fixture_check_env, "the CLI passes the complete test environment")
+    expect_true(endsWith(env[["MARGINPLYR_REVIEW_PROGRESS_REPORTER"]],
+      "/source/tools/review-ready-progress-reporter.R"),
+      "the progress reporter comes from the committed archive")
+    expect_identical(env[names(fixture_check_env)], fixture_check_env,
+      "the CLI passes the complete test environment")
     empty_result
   })
 })

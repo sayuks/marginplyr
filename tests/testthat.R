@@ -9,4 +9,11 @@
 library(testthat)
 library(marginplyr)
 
-test_check("marginplyr")
+reporter <- testthat::check_reporter()
+progress_reporter <- Sys.getenv("MARGINPLYR_REVIEW_PROGRESS_REPORTER")
+if (nzchar(progress_reporter)) {
+  reporter <- source(progress_reporter, local = TRUE)$value(
+    Sys.getenv("MARGINPLYR_REVIEW_PROGRESS")
+  )
+}
+test_check("marginplyr", reporter = reporter)

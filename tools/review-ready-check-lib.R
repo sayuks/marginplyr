@@ -690,7 +690,7 @@ record_review_ready_retry <- function(bundle, identity, state, second = NULL,
 # the single retry authorized by design/agents/local-checks.md.
 run_review_ready_rcmdcheck <- function(
   tarball, workspace, identity, diagnostic_root, env,
-  checker = rcmdcheck::rcmdcheck,
+  checker = review_ready_progress_check,
   system = Sys.info()[["sysname"]],
   retry_identity = review_ready_retry_identity,
   preserver = preserve_review_ready_failure
@@ -762,7 +762,7 @@ run_review_ready_check <- function(
   identity = review_ready_identity(repository_root),
   prerequisites = review_ready_prerequisites(),
   runner = review_ready_run_system,
-  checker = rcmdcheck::rcmdcheck,
+  checker = review_ready_progress_check,
   diagnostic_root = file.path(tools::R_user_dir("marginplyr", "cache"), "review-ready-failures"),
   system = Sys.info()[["sysname"]],
   retry_identity = review_ready_retry_identity,
@@ -778,6 +778,9 @@ run_review_ready_check <- function(
   verify_review_ready_test_packages(source_root)
   cat("\n==> Required test Suggests\n")
   check_env <- review_ready_rcmdcheck_env(required_test_suggests(source_root))
+  check_env[["MARGINPLYR_REVIEW_PROGRESS_REPORTER"]] <- file.path(
+    source_root, "tools", "review-ready-progress-reporter.R"
+  )
   steps <- review_ready_source_steps(prerequisites)
   for (label in names(steps)) {
     run_review_ready_step(label, steps[[label]], source_root, runner = runner)

@@ -54,6 +54,7 @@ Config/Needs/preflight:
 Config/Needs/review:
     lintr,
     pkgload,
+    R6,
     rcmdcheck,
     spelling,
     testthat
