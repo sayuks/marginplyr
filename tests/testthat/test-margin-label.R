@@ -280,13 +280,14 @@ factor_call_with_input <- function(call, input) {
 # where a user writes one, because `pkgload::load_all()` attaches every
 # internal name to `package:marginplyr` and an environment above it resolves
 # them all. Starting below withholds them under `devtools::test()` and against
-# an installed package alike, and still reaches `utils::head()`, which dtplyr's
-# own translation calls and an environment parented on `baseenv()` would not
-# supply. Every name the calls below use is therefore `::`-qualified.
+# an installed package alike. Supply `utils::head()` explicitly because dtplyr
+# calls its bare spelling and parallel workers need not attach utils. Every
+# name the calls below use is otherwise `::`-qualified.
 factor_in_user_env <- function(data, call) {
   below_marginplyr <- match("package:marginplyr", search()) + 1L
   env <- new.env(parent = as.environment(below_marginplyr))
   env$data <- data
+  env$head <- utils::head
   eval(call, env)
 }
 

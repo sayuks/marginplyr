@@ -10,7 +10,7 @@ test_that("a recovered interrupt does not determine a later unmatched exit", {
   leaf <- structure(list(message = "recovered interrupt", call = NULL),
                     class = c("resumed_interrupt", "interrupt", "condition"))
   testthat::local_mocked_bindings(collect = function(...) {
-    signalCondition(leaf)
+    withRestarts(signalCondition(leaf), resume_driver = function() NULL)
     invokeRestart("leave_driver")
   }, .package = "dplyr")
   delivered <- list()
@@ -21,6 +21,7 @@ test_that("a recovered interrupt does not determine a later unmatched exit", {
     ),
     interrupt = function(cnd) {
       delivered[[length(delivered) + 1L]] <<- cnd
+      invokeRestart("resume_driver")
     }
   ), leave_driver = function() "escaped")
   expect_identical(result, "escaped")

@@ -60,7 +60,9 @@ The command takes no options. It runs, in order:
 6. a source-tarball `R CMD check --as-cran` against disposable empty local
    CRAN and Bioconductor indexes. It sets `NOT_CRAN=true` to run snapshot
    expectations and `MARGINPLYR_REQUIRED_SUGGESTS` to require every registered
-   optional Suggest, so the full suite runs once without coverage measurement.
+   optional Suggest, so the full suite runs once in two test processes without
+   coverage measurement. `TESTTHAT_PARALLEL=true` and `TESTTHAT_CPUS=2` are set
+   by the check rather than package-wide test configuration.
    Remote incoming checks and external-clock verification are disabled; the
    local future-file-timestamp comparison remains enabled.
 

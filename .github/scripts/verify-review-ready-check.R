@@ -243,9 +243,11 @@ expect_identical(
     `_R_CHECK_CRAN_INCOMING_REMOTE_` = "false",
     `_R_CHECK_SYSTEM_CLOCK_` = "false",
     NOT_CRAN = "true",
+    TESTTHAT_PARALLEL = "true",
+    TESTTHAT_CPUS = "2",
     MARGINPLYR_REQUIRED_SUGGESTS = "stats,utils"
   ),
-  "the offline settings, snapshots, and required test Suggests"
+  "the offline settings, snapshots, two test workers, and required test Suggests"
 )
 
 # Real guard and version constraints, using only packages supplied with R.
