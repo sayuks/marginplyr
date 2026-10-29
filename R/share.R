@@ -2325,15 +2325,22 @@ guard_dtplyr_grouped_result <- function(result, plan, set_id_name,
     plan$dimensions
   }
   key_names <- unique(c(set_id_name, plan$by, dimensions))
-  key_exprs <- lapply(key_names, margin_column_pronoun)
-  check <- rlang::call2(
-    marginplyr_private_call("assert_dtplyr_grouped_keys"),
-    !!!key_exprs,
-    share_output = pair$output,
-    share_kind = pair$kind,
-    call_text = share_call_text(call)
+  margin_safe_column_reads(
+    result, key_names,
+    function(data, safe_name) {
+      key_exprs <- lapply(key_names, function(name) {
+        margin_column_pronoun(safe_name(name))
+      })
+      check <- rlang::call2(
+        marginplyr_private_call("assert_dtplyr_grouped_keys"),
+        !!!key_exprs,
+        share_output = pair$output,
+        share_kind = pair$kind,
+        call_text = share_call_text(call)
+      )
+      dplyr::filter(data, !!check)
+    }
   )
-  dplyr::filter(result, !!check)
 }
 
 # Return TRUE when aligned staged key columns identify one row per key. The

@@ -8,9 +8,9 @@ drop_margin_columns <- function(data, columns) {
   dplyr::select(data, -dplyr::all_of(columns))
 }
 
-# Recognize names that selection may reject after a backend summary.
+# Recognize names that selection rejects or R reads as dot arguments.
 margin_dot_dot_names <- function(names) {
-  grepl("^\\.\\.\\.$|^\\.\\.[0-9]+$", names)
+  grepl("^\\.\\.\\.$|^\\.\\.[[:space:]]*[+-]?[0-9]+$", names)
 }
 
 # Evaluate a local operation under safe names for dot-dot columns it reads
@@ -118,8 +118,8 @@ margin_safe_column_reads <- function(.data, read, transform,
   }
   special <- read[
     margin_dot_dot_names(read) |
-      read %in% c(".N", ".I", ".SD", ".SDall", ".GRP", ".NGRP", ".BY", ".ROW",
-                  ".xSD", ".iSD")
+      read %in% c(".", ".N", ".I", ".SD", ".SDall", ".GRP", ".NGRP", ".BY",
+                  ".ROW", ".xSD", ".iSD")
   ]
   if (length(special) == 0L) {
     return(transform(.data, function(name) name))
