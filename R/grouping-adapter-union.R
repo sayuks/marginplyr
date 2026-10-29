@@ -93,7 +93,7 @@ sql_margin_input_relation <- function(.data, backend, data_vars) {
     data_vars[match(boolean_columns, data_vars)] <- private_names
     if (".env" %in% data_vars) {
       # The generated rename projection renders before result-level quoting.
-      .data <- sql_env_output_query(.data)
+      .data <- sql_quote_generated_columns(.data)
     }
   }
   input_sql <- dbplyr::sql_render(.data)
@@ -109,7 +109,7 @@ sql_margin_input_relation <- function(.data, backend, data_vars) {
     )
     if (".env" %in% data_vars) {
       # Restoring Boolean names creates another projection before finalization.
-      relation <- sql_env_output_query(relation)
+      relation <- sql_quote_generated_columns(relation)
     }
     attr(relation, "marginplyr_boolean_input_query") <- source
   }
@@ -464,11 +464,11 @@ summarize_margin_branch <- function(.data,
     summarize_dots[[placeholder_name]] <- rlang::quo(dplyr::n())
   }
 
-  # An output named `.data` must reach dplyr's dynamic dots before argument
-  # matching. Other calls keep early injection so Arrow can recover the
-  # originating expression from its call when reporting an absorbing summary.
+  # Outputs matching all or part of `.data` must reach dynamic dots before
+  # backend argument matching. Other calls keep early injection so Arrow can
+  # recover the originating call when reporting an absorbing summary.
   run_summary <- function() {
-    if (".data" %in% names(summarize_dots)) {
+    if (any(names(summarize_dots) %in% c(".", ".d", ".da", ".dat", ".data"))) {
       return(dplyr::summarize(
         .data = .data,
         !!!summarize_dots,

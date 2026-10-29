@@ -1,5 +1,11 @@
 # marginplyr 0.1.0
 
+* Portable summaries retain dynamic output names `.`, `.da`, and `.dat`
+  without matching the backend `.data` argument (#970).
+
+* SQL summaries preserve accepted dot-dot output and Grouping set identifier
+  names through Margin ordering, collection, and materialization (#971).
+
 * SQLite expansions compose wide Grouping plans through bounded compounds,
   including zero-row type anchors, so a nine-dimension cube can be collected
   without exceeding the compound SELECT term limit (#980).

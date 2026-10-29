@@ -447,9 +447,11 @@ finalize_margin_operation <- function(operation, execution,
     )
     result <- combine_margin_branches(list(anchor, result))
   }
-  if (sql_env_column &&
+  if (operation$backend$is_sql &&
+        (sql_env_column ||
+           any(sql_name_needs_quoting(margin_col_names(result)))) &&
         !inherits(result, "marginplyr_sqlite_typed_result")) {
-    result <- sql_env_output_query(result)
+    result <- sql_quote_generated_columns(result)
   }
   if (sql_env_column &&
         inherits(dbplyr::remote_con(operation$data), "duckdb_connection")) {
