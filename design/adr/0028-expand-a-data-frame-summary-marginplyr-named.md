@@ -45,6 +45,15 @@ both while evaluating the summary, making their columns available to later
 summaries in the same data mask. The former expansion after the branch had
 finished did not preserve that ordering (#619).
 
+Before wrapping a value, `local_assigned_summary_value()` combines its original
+prototype with those already seen for that summary in the same grouping-set
+branch, using vctrs' common-type rules. Otherwise the scalar carrier hides a
+frame/non-frame incompatibility and dplyr accepts separate, missing-filled
+columns where it would have refused the original values (#1020). Each summary
+has its own type state, created anew for each branch; the caller's expression
+is evaluated only once per group. `wrap_local_frame_summaries()` supplies the
+same check for unnamed summaries that receive no Assigned summary name.
+
 `rlang::quos_auto_name()` applied before any rewriting was #430's own stated fix
 direction, and it is rejected here for the reason #435 gives: it packs strictly
 more than the shapes at issue, `across()` and `range_frame(x)` included, which
