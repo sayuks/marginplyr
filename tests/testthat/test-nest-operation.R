@@ -1073,6 +1073,49 @@ test_that("dtplyr preserves empty nesting with named output names", {
   }
 })
 
+expect_scalar_nest_ids <- function(as_source) {
+  empty <- data.frame(value = integer())
+  nonempty <- data.frame(value = 1L)
+  identifiers <- list(
+    "set", c(alias = "set"), I("set"),
+    matrix("set", nrow = 1L, ncol = 1L),
+    array("set", dim = c(1L, 1L, 1L))
+  )
+  for (id in identifiers) {
+    result <- nest_by_with_margins(as_source(empty), .id = id)
+    expect_s3_class(result, "rowwise_df")
+    expect_identical(names(result), c("set", "data"))
+    expect_identical(dplyr::group_vars(result), "set")
+    expect_identical(nrow(result), 1L)
+    expect_identical(result$set, 1L)
+    expect_length(result$data, 1L)
+    expect_identical(tibble::as_tibble(result$data[[1L]]), tibble::tibble(
+      value = integer()
+    ))
+
+    nested <- dplyr::collect(nest_with_margins(as_source(empty), .id = id))
+    expect_identical(nrow(nested), 0L)
+    expect_identical(names(nested), c("set", "data"))
+    expect_identical(nested$set, integer())
+
+    for (verb in list(nest_with_margins, nest_by_with_margins)) {
+      expect_identical(
+        dplyr::collect(verb(as_source(nonempty), .id = id)),
+        dplyr::collect(verb(as_source(nonempty), .id = "set"))
+      )
+    }
+  }
+}
+
+test_that("scalar nesting identifiers retain their value through empty input", {
+  expect_scalar_nest_ids(identity)
+})
+
+test_that("dtplyr retains scalar nesting identifiers through empty input", {
+  skip_if_suggest_absent("dtplyr")
+  expect_scalar_nest_ids(function(data) dtplyr::lazy_dt(data))
+})
+
 test_that("named nesting output names validate collisions by value", {
   input <- data.frame(group = "x", value = 1L)
   for (verb in list(nest_with_margins, nest_by_with_margins)) {
