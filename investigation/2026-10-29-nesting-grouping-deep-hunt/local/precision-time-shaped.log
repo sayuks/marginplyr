@@ -1,0 +1,4 @@
+factor-matrix grouping : expressionStackOverflowError / evaluation nested too deeply: infinite recursion / options(expressions=)?
+factor-matrix location : expressionStackOverflowError / evaluation nested too deeply: infinite recursion / options(expressions=)?
+factor-matrix nesting : expressionStackOverflowError / evaluation nested too deeply: infinite recursion / options(expressions=)?
+PASS: 684 calls; 4494 source cell-column projections; extreme integer64, temporal instants, nonfinite/complex keys, structured factors and one-dimensional arrays

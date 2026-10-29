@@ -1,0 +1,4 @@
+Five ordinary collections returned integer z = 2:3.
+inspect_grouping : wrong typed fixed keys reproduced; synthetic callback rows = 0
+nest_with_margins : wrong typed fixed keys reproduced; synthetic callback rows = 0
+nest_by_with_margins : wrong typed fixed keys reproduced; synthetic callback rows = 0

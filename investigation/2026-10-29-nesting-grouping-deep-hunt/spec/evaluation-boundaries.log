@@ -1,0 +1,3 @@
+PASS: 540 active-binding / constructor evaluations and public consumer comparisons
+PASS: 60 nested-name ambiguity / non-reading controls
+PASS: one promise forced once across repeated occurrences and reused public calls

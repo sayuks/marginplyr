@@ -1,0 +1,6 @@
+                 graphs backend_control_refused        inspection_refused
+                   9720                       0                    4320
+            comparisons                   equal              mismatches
+                   5400                    5400                       0
+        premature_reads        source_mutations
+                      0                       0

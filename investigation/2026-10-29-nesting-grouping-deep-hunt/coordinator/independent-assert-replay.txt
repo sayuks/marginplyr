@@ -1,0 +1,33 @@
+Lookups after ordinary dtplyr construction: 0
+Five sequential ordinary collections: integer 2, 3
+Changing-operator argument lengths in ordinary collection: 2
+Expected fixed keys:[[1]]
+character(0)
+
+Actual fixed keys:[[1]]
+[1] "derived"
+
+Lookup count during inspection: 3
+Changing-operator argument lengths during inspection: 0
+nest_with_margins expected outer rows: 1
+nest_with_margins actual outer rows: 2
+nest_with_margins actual names: derived, data
+nest_with_margins actual cell row counts: 1, 1
+nest_with_margins custom-operator argument lengths before own collection: 0
+nest_by_with_margins expected outer rows: 1
+nest_by_with_margins actual outer rows: 2
+nest_by_with_margins actual names: derived, data
+nest_by_with_margins actual cell row counts: 1, 1
+nest_by_with_margins custom-operator argument lengths before own collection: 0
+Fixed base nesting controls: both matched cells and memberships
+Fixed base control: matched
+Fixed custom control: Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+Names-only inspection operator lookups: 0
+Rollup actual condition classes: dt_join_type_mismatch_error, simpleError, error, condition
+Item 5 of x is 'integer' but the corresponding item of y is 'character'.
+Rollup actual condition classes: dt_join_type_mismatch_error, simpleError, error, condition
+Item 5 of x is 'integer' but the corresponding item of y is 'character'.
+Error: Active arithmetic metadata disagreed with the populated-source control.
+Execution halted
