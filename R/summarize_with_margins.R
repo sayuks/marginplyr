@@ -592,8 +592,7 @@
 #' [rollup()]; composite dimensions move together, and duplicate occurrences
 #' skip identical sets when choosing the parent. [share_of_total()] divides by
 #' the Grand total set, so it accepts any Grouping specification whose plan
-#' contains one, including [cube()]; duplicate grand total occurrences hold
-#' the same values and are interchangeable.
+#' contains one, including [cube()].
 #'
 #' Arrow inputs reject both after expression planning and common
 #' Margin-operation validation but before constructing a summary query. Other

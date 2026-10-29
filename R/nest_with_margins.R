@@ -560,11 +560,8 @@ nest_expanded_margins <- function(.data,
     outer_cols <- vapply(
       outer_cols, alias_name, character(1), USE.NAMES = FALSE
     )
-    # `get_col_names()` rather than `colnames()`, which reads `dimnames()` and
-    # so answers `NULL` for a `dtplyr` step — every payload column would then
-    # look absent and be dropped from every cell.
     cell_cols <- rlang::set_names(
-      setdiff(get_col_names(.data, dplyr::everything()), outer_cols)
+      setdiff(margin_col_names(.data), outer_cols)
     )
     if (length(keep_cols) > 0L) {
       # `.keep = TRUE` nests a copy of each grouping column, made upstream under
@@ -584,7 +581,7 @@ nest_expanded_margins <- function(.data,
     }
 
     margin_safe_column_reads(
-      .data, get_col_names(.data, dplyr::everything()),
+      .data, margin_col_names(.data),
       function(source, safe_name) {
         safe_cells <- stats::setNames(
           vapply(unname(cell_cols), safe_name, character(1), USE.NAMES = FALSE),

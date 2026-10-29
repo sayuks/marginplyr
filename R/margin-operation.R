@@ -493,7 +493,7 @@ order_margin_result <- function(operation, result, execution) {
   }
 
   rowwise <- margin_rowwise_sort_columns(result, operation$plan)
-  result <- with_margin_column_aliases(
+  result <- margin_safe_column_reads(
     result, c(key_id, operation$plan$by, operation$plan$dimensions),
     function(data, safe_name) {
       terms <- margin_order_terms(

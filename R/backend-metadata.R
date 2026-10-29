@@ -361,6 +361,9 @@ postgres_margin_prototypes <- function(.data, dimensions) {
 # columns those are is settled by `prepare_margin_operation()`'s
 # `carried_columns`.
 #
+# `packed` and `arrays` retain the dimension names whose R shapes reject a
+# non-missing label, even when their omitted values use backend-native NULLs.
+#
 # `prototypes` stays keyed to the dimensions alone. It stands for the value a
 # branch omitting a dimension writes, and only a dimension is ever omitted.
 #
@@ -393,8 +396,6 @@ margin_column_info <- function(data_proxy,
     if (is.data.frame(x) || (is.array(x) && length(dim(x)) > 1L)) {
       vctrs::vec_init(x, 1L)
     } else if (identical(backend$kind, "duckdb")) {
-      # DuckDB resolves NULL against the included branch's SQL type; its R
-      # proxy can instead be a difftime or list that dbplyr cannot translate.
       dbplyr::sql("NULL")
     } else {
       x[NA_integer_]
@@ -406,9 +407,10 @@ margin_column_info <- function(data_proxy,
     prototypes <- Map(
       function(value, dimension) {
         type <- arrow_schema$GetFieldByName(dimension)$type
-        if (inherits(type, "DictionaryType")) {
-          # The schema's R factor has string levels even for non-string
-          # dictionaries. Cast a null scalar without rebuilding those values.
+        if (inherits(type, c("DictionaryType", "StructType"))) {
+          # A packed R missing row has a valid STRUCT parent. Non-string
+          # dictionaries also lose their value type in the R factor proxy.
+          # Cast a null scalar to retain the physical type and null validity.
           return(arrow::Scalar$create(NA, type = arrow::null())$cast(type))
         }
         # Arrow cannot rebuild a fixed-size-list Array from its classed R
@@ -458,5 +460,16 @@ margin_column_info <- function(data_proxy,
     list()
   }
 
-  list(factors = factors, prototypes = prototypes)
+  packed <- dimensions[vapply(prototypes, is.data.frame, logical(1))]
+  arrays <- dimensions[vapply(prototypes, function(x) {
+    is.array(x) && length(dim(x)) > 1L
+  }, logical(1))]
+  if (identical(backend$kind, "duckdb")) {
+    # Retain R shapes for label validation before replacing omitted values.
+    # DuckDB resolves SQL NULL against the included branch's SQL key type.
+    prototypes <- lapply(prototypes, function(x) dbplyr::sql("NULL"))
+  }
+  list(
+    factors = factors, prototypes = prototypes, packed = packed, arrays = arrays
+  )
 }

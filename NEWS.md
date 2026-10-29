@@ -6,6 +6,10 @@
 * SQL summaries preserve accepted dot-dot output and Grouping set identifier
   names through Margin ordering, collection, and materialization (#971).
 
+* SQLite expansions compose wide Grouping plans through bounded compounds,
+  including zero-row type anchors, so a nine-dimension cube can be collected
+  without exceeding the compound SELECT term limit (#980).
+
 * Both nesting Margin verbs preserve list-column names such as `...` and `..1`
   across grouping sets, identifiers, and Margin ordering (#950).
 

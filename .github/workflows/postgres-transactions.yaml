@@ -45,6 +45,8 @@ jobs:
         run: Rscript tools/postgres-typed-missing.R
       - name: Verify observed label checks on pronoun dimensions
         run: Rscript tools/postgres-env-label-collision.R
+      - name: Verify selected inputs stay inside expansion branches
+        run: Rscript tools/postgres-expansion-input.R
       - uses: actions/upload-artifact@v7
         if: always()
         with:
