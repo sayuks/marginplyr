@@ -518,6 +518,10 @@ summarize_margin_branch <- function(.data,
     }
   )
 
+  if (inherits(result, "dtplyr_step")) {
+    result <- protect_dtplyr_share_measure(result)
+  }
+
   # A lazy input whose branch came back local was read, and both arms of this
   # are that one fact. Which arm depends on who did the reading, and ADR 0025's
   # *How the refusal is raised* is authoritative for why each falls where it
