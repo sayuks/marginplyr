@@ -1,0 +1,30 @@
+
+ source
+# A tibble: 3 × 2
+  g         x
+  <chr> <dbl>
+1 a         1
+2 b         3
+3 a         1
+
+ ordinary
+# A tibble: 2 × 2
+  g     total
+  <chr> <dbl>
+1 a         2
+2 b         3
+
+ inspect
+# A tibble: 2 × 6
+  set_id fixed included omitted grouping_bits grouping_id
+   <int> <chr> <chr>    <chr>   <chr>               <int>
+1      1 ()    (g)      ()      g=0                     0
+2      2 ()    ()       (g)     g=1                     1
+
+ margin
+# A tibble: 3 × 2
+  g     total
+  <chr> <dbl>
+1 Total     5
+2 a         2
+3 b         3

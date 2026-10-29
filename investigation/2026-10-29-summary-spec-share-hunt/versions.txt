@@ -1,0 +1,5 @@
+[1] "R version 4.6.1 (2026-06-24)"
+     dplyr     dbplyr     dtplyr data.table     duckdb    RSQLite      arrow
+   "1.2.1"    "2.6.0"    "1.3.3" "1.18.6.1"    "1.5.5"   "3.53.3"   "25.0.1"
+     bit64         sf    pkgload      rlang      vctrs     tibble
+   "4.8.6"    "1.1.2"    "1.5.3"    "1.3.0"    "0.7.3"    "3.3.1"

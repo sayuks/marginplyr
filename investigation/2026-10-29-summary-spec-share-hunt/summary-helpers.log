@@ -1,0 +1,231 @@
+SUMMARY 93 cases; 0 mismatches
+R version 4.6.1 (2026-06-24)
+$marginplyr
+[1] 0 1 0
+
+$dplyr
+[1] 1 2 1
+
+$rlang
+[1] 1 3 0
+
+$vctrs
+[1] 0 7 3
+
+$tibble
+[1] 3 3 1
+
+ROLLUP SUMMARY 744 cases; 0 mismatches
+HELPER FAIL 33
+[[1]]
+eval(str2lang("grouping_bit(g)"))
+
+# A tibble: 3 × 2
+  g     `eval(str2lang("grouping_bit(g)"))`
+  <chr>                               <int>
+1 a                                       0
+2 b                                       0
+3 <NA>                                    1
+# A tibble: 3 × 2
+  g     `eval(str2lang("grouping_bit(g)"))`
+  <chr>                               <int>
+1 a                                       1
+2 b                                       1
+3 <NA>                                    1
+HELPER FAIL 115
+[[1]]
+eval(str2lang("grouping_bit(g)"))
+
+# A tibble: 4 × 2
+  g     `eval(str2lang("grouping_bit(g)"))`
+  <chr>                               <int>
+1 a                                       0
+2 b                                       0
+3 <NA>                                    0
+4 <NA>                                    1
+# A tibble: 4 × 2
+  g     `eval(str2lang("grouping_bit(g)"))`
+  <chr>                               <int>
+1 a                                       1
+2 b                                       1
+3 <NA>                                    1
+4 <NA>                                    1
+HELPER FAIL 197
+[[1]]
+eval(str2lang("grouping_bit(g)"))
+
+# A tibble: 4 × 2
+  g     `eval(str2lang("grouping_bit(g)"))`
+  <fct>                               <int>
+1 a                                       0
+2 b                                       0
+3 <NA>                                    0
+4 <NA>                                    1
+# A tibble: 4 × 2
+  g     `eval(str2lang("grouping_bit(g)"))`
+  <fct>                               <int>
+1 a                                       1
+2 b                                       1
+3 <NA>                                    1
+4 <NA>                                    1
+HELPER FAIL 279
+[[1]]
+eval(str2lang("grouping_bit(g)"))
+
+# A tibble: 3 × 2
+  g     `eval(str2lang("grouping_bit(g)"))`
+  <ord>                               <int>
+1 b                                       0
+2 a                                       0
+3 <NA>                                    1
+# A tibble: 3 × 2
+  g     `eval(str2lang("grouping_bit(g)"))`
+  <ord>                               <int>
+1 b                                       1
+2 a                                       1
+3 <NA>                                    1
+HELPER FAIL 361
+[[1]]
+eval(str2lang("grouping_bit(g)"))
+
+# A tibble: 4 × 2
+  g     `eval(str2lang("grouping_bit(g)"))`
+  <lgl>                               <int>
+1 FALSE                                   0
+2 TRUE                                    0
+3 NA                                      0
+4 NA                                      1
+# A tibble: 4 × 2
+  g     `eval(str2lang("grouping_bit(g)"))`
+  <lgl>                               <int>
+1 FALSE                                   1
+2 TRUE                                    1
+3 NA                                      1
+4 NA                                      1
+HELPER FAIL 443
+[[1]]
+eval(str2lang("grouping_bit(g)"))
+
+# A tibble: 4 × 2
+      g `eval(str2lang("grouping_bit(g)"))`
+  <dbl>                               <int>
+1   Inf                                   0
+2    NA                                   0
+3   NaN                                   0
+4    NA                                   1
+# A tibble: 4 × 2
+      g `eval(str2lang("grouping_bit(g)"))`
+  <dbl>                               <int>
+1   Inf                                   1
+2    NA                                   1
+3   NaN                                   1
+4    NA                                   1
+HELPER FAIL 525
+[[1]]
+eval(str2lang("grouping_bit(g)"))
+
+# A tibble: 4 × 2
+  g          `eval(str2lang("grouping_bit(g)"))`
+  <date>                                   <int>
+1 2020-01-01                                   0
+2 2020-01-02                                   0
+3 NA                                           0
+4 NA                                           1
+# A tibble: 4 × 2
+  g          `eval(str2lang("grouping_bit(g)"))`
+  <date>                                   <int>
+1 2020-01-01                                   1
+2 2020-01-02                                   1
+3 NA                                           1
+4 NA                                           1
+HELPER FAIL 607
+[[1]]
+eval(str2lang("grouping_bit(g)"))
+
+# A tibble: 4 × 2
+  g                   `eval(str2lang("grouping_bit(g)"))`
+  <dttm>                                            <int>
+1 2020-01-01 00:00:00                                   0
+2 2020-01-02 01:00:00                                   0
+3 NA                                                    0
+4 NA                                                    1
+# A tibble: 4 × 2
+  g                   `eval(str2lang("grouping_bit(g)"))`
+  <dttm>                                            <int>
+1 2020-01-01 00:00:00                                   1
+2 2020-01-02 01:00:00                                   1
+3 NA                                                    1
+4 NA                                                    1
+HELPER FAIL 689
+[[1]]
+eval(str2lang("grouping_bit(g)"))
+
+# A tibble: 4 × 2
+  g         `eval(str2lang("grouping_bit(g)"))`
+  <list>                                  <int>
+1 <lgl [1]>                                   0
+2 <dbl [1]>                                   0
+3 <NULL>                                      0
+4 <NULL>                                      1
+# A tibble: 4 × 2
+  g         `eval(str2lang("grouping_bit(g)"))`
+  <list>                                  <int>
+1 <lgl [1]>                                   1
+2 <dbl [1]>                                   1
+3 <NULL>                                      1
+4 <NULL>                                      1
+HELPER FAIL 771
+[[1]]
+eval(str2lang("grouping_bit(g)"))
+
+# A tibble: 4 × 2
+  g                `eval(str2lang("grouping_bit(g)"))`
+  <list>                                         <int>
+1 <named list [1]>                                   0
+2 <named list [1]>                                   0
+3 <NULL>                                             0
+4 <NULL>                                             1
+# A tibble: 4 × 2
+  g                `eval(str2lang("grouping_bit(g)"))`
+  <list>                                         <int>
+1 <named list [1]>                                   1
+2 <named list [1]>                                   1
+3 <NULL>                                             1
+4 <NULL>                                             1
+HELPER FAIL 853
+[[1]]
+eval(str2lang("grouping_bit(g)"))
+
+# A tibble: 4 × 2
+  g[,1]  [,2] `eval(str2lang("grouping_bit(g)"))`
+  <dbl> <dbl>                               <int>
+1     1     1                                   0
+2     1    NA                                   0
+3     2     2                                   0
+4    NA    NA                                   1
+# A tibble: 4 × 2
+  g[,1]  [,2] `eval(str2lang("grouping_bit(g)"))`
+  <dbl> <dbl>                               <int>
+1     1     1                                   1
+2     1    NA                                   1
+3     2     2                                   1
+4    NA    NA                                   1
+HELPER FAIL 935
+[[1]]
+eval(str2lang("grouping_bit(g)"))
+
+# A tibble: 4 × 2
+    g$a    $b `eval(str2lang("grouping_bit(g)"))`
+  <dbl> <dbl>                               <int>
+1     1    NA                                   0
+2     2     3                                   0
+3    NA    NA                                   0
+4    NA    NA                                   1
+# A tibble: 4 × 2
+    g$a    $b `eval(str2lang("grouping_bit(g)"))`
+  <dbl> <dbl>                               <int>
+1     1    NA                                   1
+2     2     3                                   1
+3    NA    NA                                   1
+4    NA    NA                                   1
+HELPER SUMMARY 984 cases; 12 mismatches

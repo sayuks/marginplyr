@@ -1,0 +1,10 @@
+F1 parent : object '.SD' not found
+F1 total : object '.SD' not found
+F2 parent columns : Parent share `share` cannot use source summary `tot_x` because it depends on earlier summary alias `prior`.
+ℹ Combine the calculation into one ordinary summary expression.
+F2 parent functions : Parent share `share` cannot use source summary `x_plain` because it depends on earlier summary alias `prior`.
+ℹ Combine the calculation into one ordinary summary expression.
+F2 total columns : Total share `share` cannot use source summary `tot_x` because it depends on earlier summary alias `prior`.
+ℹ Combine the calculation into one ordinary summary expression.
+F2 total functions : Total share `share` cannot use source summary `x_plain` because it depends on earlier summary alias `prior`.
+ℹ Combine the calculation into one ordinary summary expression.

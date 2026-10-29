@@ -1,0 +1,173 @@
+Warning message:
+Missing values are always removed in SQL aggregation functions.
+Use `na.rm = TRUE` to silence this warning
+This warning is displayed once every 8 hours.
+[[1]]
+[[1]]$role
+[1] "fixed"
+
+[[1]]$nm
+[1] "..0"
+
+[[1]]$backend
+[1] "dtplyr"
+
+[[1]]$error
+[1] "indexing '...' with non-positive index 0"
+
+
+[[2]]
+[[2]]$role
+[1] "fixed"
+
+[[2]]$nm
+[1] "..0"
+
+[[2]]$backend
+[1] "duckdb"
+
+[[2]]$error
+[1] "indexing '...' with non-positive index 0"
+
+
+[[3]]
+[[3]]$role
+[1] "fixed"
+
+[[3]]$nm
+[1] "..00"
+
+[[3]]$backend
+[1] "dtplyr"
+
+[[3]]$error
+[1] "indexing '...' with non-positive index 0"
+
+
+[[4]]
+[[4]]$role
+[1] "fixed"
+
+[[4]]$nm
+[1] "..00"
+
+[[4]]$backend
+[1] "duckdb"
+
+[[4]]$error
+[1] "indexing '...' with non-positive index 0"
+
+
+[[5]]
+[[5]]$role
+[1] "fixed"
+
+[[5]]$nm
+[1] "..01"
+
+[[5]]$backend
+[1] "dtplyr"
+
+[[5]]$error
+[1] "..1 used in an incorrect context, no ... to look in"
+
+
+[[6]]
+[[6]]$role
+[1] "fixed"
+
+[[6]]$nm
+[1] "..01"
+
+[[6]]$backend
+[1] "duckdb"
+
+[[6]]$error
+[1] "..1 used in an incorrect context, no ... to look in"
+
+
+[[7]]
+[[7]]$role
+[1] "fixed"
+
+[[7]]$nm
+[1] "..-1"
+
+[[7]]$backend
+[1] "local"
+
+[[7]]$error
+[1] "ℹ In argument: `..marginplyr_key_1 = .data[[\"..-1\"]]`.\nCaused by error:\n! indexing '...' with non-positive index -1"
+
+
+[[8]]
+[[8]]$role
+[1] "fixed"
+
+[[8]]$nm
+[1] "..-1"
+
+[[8]]$backend
+[1] "dtplyr"
+
+[[8]]$error
+[1] "indexing '...' with non-positive index -1"
+
+
+[[9]]
+[[9]]$role
+[1] "fixed"
+
+[[9]]$nm
+[1] "..-1"
+
+[[9]]$backend
+[1] "duckdb"
+
+[[9]]$error
+[1] "indexing '...' with non-positive index -1"
+
+
+[[10]]
+[[10]]$role
+[1] "fixed"
+
+[[10]]$nm
+[1] "."
+
+[[10]]$backend
+[1] "dtplyr"
+
+[[10]]$error
+[1] "object '.SD' not found"
+
+
+[[11]]
+[[11]]$role
+[1] "source"
+
+[[11]]$nm
+[1] "..-1"
+
+[[11]]$backend
+[1] "local"
+
+[[11]]$error
+[1] "ℹ In argument: `..marginplyr_denominator_of_..-1_1 = .data[[\"..-1\"]]`.\nCaused by error:\n! indexing '...' with non-positive index -1"
+
+
+[[12]]
+[[12]]$role
+[1] "source"
+
+[[12]]$nm
+[1] "..-1"
+
+[[12]]$backend
+[1] "dtplyr"
+
+[[12]]$error
+[1] "indexing '...' with non-positive index -1"
+
+
+PASS 312 FAIL 12

@@ -1,0 +1,30 @@
+{
+  "snapshot": "59d55a7867ffc0255f75be32a233d9d475bcb7fb",
+  "jarl": {
+    "exit_code": 0,
+    "log": "jarl.log"
+  },
+  "package_aware_lintr": {
+    "exit_code": 0,
+    "load_all": true,
+    "log": "lintr.log"
+  },
+  "context_budget": {
+    "exit_code": 0,
+    "log": "context-budget.log"
+  },
+  "doc_references": {
+    "exit_code": 0,
+    "log": "doc-references.log"
+  },
+  "share_valid_names": {
+    "exit_code": 0,
+    "passed": 312,
+    "raw_failures": 12,
+    "log": "share-valid-names.log"
+  },
+  "review_ready_check": "not required: Repository-only investigation artifacts",
+  "git_diff_check": {
+    "exit_code": 0
+  }
+}

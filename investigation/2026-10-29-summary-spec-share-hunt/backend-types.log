@@ -1,0 +1,412 @@
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l1dcachesize'. Detail: [errno 1] Operation not permitted
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l2cachesize'. Detail: [errno 1] Operation not permitted
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l3cachesize'. Detail: [errno 1] Operation not permitted
+DIFF integer/FALSE/FALSE/none/missing/dt Component “k”: 'is.NA' value mismatch: 2 in current 2 in target; Component “total”: Mean relative difference: 1
+DIFF integer/FALSE/FALSE/none/missing/sqlite Component “k”: 'is.NA' value mismatch: 2 in current 2 in target; Component “total”: Mean relative difference: 1
+DIFF integer/FALSE/FALSE/none/missing/duckdb Component “k”: 'is.NA' value mismatch: 2 in current 2 in target; Component “total”: Mean relative difference: 0.6666667
+DIFF integer/FALSE/FALSE/none/Total/dt Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 1
+DIFF integer/FALSE/FALSE/none/Total/sqlite Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 1
+DIFF integer/FALSE/FALSE/none/Total/duckdb Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 0.4
+DIFF integer/FALSE/TRUE/none/missing/dt Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 1
+DIFF integer/FALSE/TRUE/none/missing/sqlite Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 1
+DIFF integer/FALSE/TRUE/none/Total/dt Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 1
+DIFF integer/FALSE/TRUE/none/Total/sqlite Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 1
+DIFF integer/FALSE/TRUE/none/Total/duckdb Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 0.6666667
+DIFF integer/TRUE/FALSE/first/missing/sqlite Component “total”: target is logical, current is numeric
+DIFF integer/TRUE/FALSE/first/missing/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF integer/TRUE/FALSE/first/Total/sqlite Component “total”: target is logical, current is numeric
+DIFF integer/TRUE/FALSE/first/Total/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF integer/TRUE/FALSE/last/missing/sqlite Component “total”: target is logical, current is numeric
+DIFF integer/TRUE/FALSE/last/missing/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF integer/TRUE/FALSE/last/Total/sqlite Component “total”: target is logical, current is numeric
+DIFF integer/TRUE/FALSE/last/Total/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF integer/TRUE/FALSE/none/missing/sqlite Component “total”: target is logical, current is numeric
+DIFF integer/TRUE/FALSE/none/missing/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF integer/TRUE/FALSE/none/Total/sqlite Component “total”: target is logical, current is numeric
+DIFF integer/TRUE/FALSE/none/Total/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF integer/TRUE/TRUE/first/missing/sqlite Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF integer/TRUE/TRUE/first/Total/sqlite Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF integer/TRUE/TRUE/last/missing/sqlite Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF integer/TRUE/TRUE/last/Total/sqlite Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF integer/TRUE/TRUE/none/missing/sqlite Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF integer/TRUE/TRUE/none/Total/sqlite Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF double/FALSE/FALSE/none/missing/dt Component “k”: 'is.NA' value mismatch: 2 in current 2 in target; Component “total”: Mean relative difference: 1
+DIFF double/FALSE/FALSE/none/missing/sqlite Component “k”: 'is.NA' value mismatch: 2 in current 2 in target; Component “total”: Mean relative difference: 1
+DIFF double/FALSE/FALSE/none/Total/dt Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 1
+DIFF double/FALSE/FALSE/none/Total/sqlite Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 1
+DIFF double/FALSE/FALSE/none/Total/duckdb Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 0.6666667
+DIFF double/FALSE/TRUE/none/missing/dt Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 1
+DIFF double/FALSE/TRUE/none/missing/sqlite Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 1
+DIFF double/FALSE/TRUE/none/Total/dt Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 1
+DIFF double/FALSE/TRUE/none/Total/sqlite Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 1
+DIFF double/FALSE/TRUE/none/Total/duckdb Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 0.6666667
+DIFF double/TRUE/FALSE/first/missing/sqlite Component “total”: target is logical, current is numeric
+DIFF double/TRUE/FALSE/first/missing/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF double/TRUE/FALSE/first/Total/sqlite Component “total”: target is logical, current is numeric
+DIFF double/TRUE/FALSE/first/Total/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF double/TRUE/FALSE/last/missing/sqlite Component “total”: target is logical, current is numeric
+DIFF double/TRUE/FALSE/last/missing/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF double/TRUE/FALSE/last/Total/sqlite Component “total”: target is logical, current is numeric
+DIFF double/TRUE/FALSE/last/Total/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF double/TRUE/FALSE/none/missing/sqlite Component “total”: target is logical, current is numeric
+DIFF double/TRUE/FALSE/none/missing/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF double/TRUE/FALSE/none/Total/sqlite Component “total”: target is logical, current is numeric
+DIFF double/TRUE/FALSE/none/Total/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF double/TRUE/TRUE/first/missing/sqlite Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF double/TRUE/TRUE/first/Total/sqlite Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF double/TRUE/TRUE/last/missing/sqlite Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF double/TRUE/TRUE/last/Total/sqlite Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF double/TRUE/TRUE/none/missing/sqlite Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF double/TRUE/TRUE/none/Total/sqlite Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF logical/FALSE/FALSE/first/missing/sqlite Component “k”: target is numeric, current is logical
+DIFF logical/FALSE/FALSE/first/Total/arrow Component “k”: 2 string mismatches
+DIFF logical/FALSE/FALSE/first/Total/sqlite Component “k”: 2 string mismatches
+DIFF logical/FALSE/FALSE/first/Total/duckdb Component “k”: 2 string mismatches
+DIFF logical/FALSE/FALSE/last/missing/sqlite Component “k”: target is numeric, current is logical
+DIFF logical/FALSE/FALSE/last/Total/arrow Component “k”: 2 string mismatches
+DIFF logical/FALSE/FALSE/last/Total/sqlite Component “k”: 2 string mismatches
+DIFF logical/FALSE/FALSE/last/Total/duckdb Component “k”: 2 string mismatches
+DIFF logical/FALSE/FALSE/none/missing/dt Component “k”: 'is.NA' value mismatch: 2 in current 2 in target; Component “total”: Mean relative difference: 1
+DIFF logical/FALSE/FALSE/none/missing/sqlite Component “k”: target is numeric, current is logical; Component “total”: Mean relative difference: 1
+DIFF logical/FALSE/FALSE/none/missing/duckdb Component “k”: 'is.NA' value mismatch: 2 in current 2 in target; Component “total”: Mean relative difference: 1
+DIFF logical/FALSE/FALSE/none/Total/dt Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 1
+DIFF logical/FALSE/FALSE/none/Total/arrow Component “k”: 2 string mismatches
+DIFF logical/FALSE/FALSE/none/Total/sqlite Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 1
+DIFF logical/FALSE/FALSE/none/Total/duckdb Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 0.6666667
+DIFF logical/FALSE/TRUE/first/missing/sqlite Component “k”: target is numeric, current is logical
+DIFF logical/FALSE/TRUE/first/Total/sqlite Component “k”: target is numeric, current is logical
+DIFF logical/FALSE/TRUE/last/missing/sqlite Component “k”: target is numeric, current is logical
+DIFF logical/FALSE/TRUE/last/Total/sqlite Component “k”: target is numeric, current is logical
+DIFF logical/FALSE/TRUE/none/missing/dt Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 1
+DIFF logical/FALSE/TRUE/none/missing/sqlite Component “k”: target is numeric, current is logical; Component “total”: Mean relative difference: 1
+DIFF logical/FALSE/TRUE/none/missing/duckdb Component “k”: 2 element mismatches; Component “total”: Mean relative difference: 0.6666667
+DIFF logical/FALSE/TRUE/none/Total/dt Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 1
+DIFF logical/FALSE/TRUE/none/Total/sqlite Component “k”: target is numeric, current is logical; Component “total”: Mean relative difference: 1
+DIFF logical/FALSE/TRUE/none/Total/duckdb Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 0.6666667
+DIFF logical/TRUE/FALSE/first/missing/sqlite Component “k”: target is numeric, current is logical; Component “total”: target is logical, current is numeric
+DIFF logical/TRUE/FALSE/first/missing/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF logical/TRUE/FALSE/first/Total/sqlite Component “total”: target is logical, current is numeric
+DIFF logical/TRUE/FALSE/first/Total/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF logical/TRUE/FALSE/last/missing/sqlite Component “k”: target is numeric, current is logical; Component “total”: target is logical, current is numeric
+DIFF logical/TRUE/FALSE/last/missing/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF logical/TRUE/FALSE/last/Total/sqlite Component “total”: target is logical, current is numeric
+DIFF logical/TRUE/FALSE/last/Total/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF logical/TRUE/FALSE/none/missing/sqlite Component “k”: target is numeric, current is logical; Component “total”: target is logical, current is numeric
+DIFF logical/TRUE/FALSE/none/missing/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF logical/TRUE/FALSE/none/Total/sqlite Component “total”: target is logical, current is numeric
+DIFF logical/TRUE/FALSE/none/Total/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF logical/TRUE/TRUE/first/missing/sqlite Component “k”: target is numeric, current is logical; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF logical/TRUE/TRUE/first/Total/sqlite Component “k”: target is numeric, current is logical; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF logical/TRUE/TRUE/last/missing/sqlite Component “k”: target is numeric, current is logical; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF logical/TRUE/TRUE/last/Total/sqlite Component “k”: target is numeric, current is logical; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF logical/TRUE/TRUE/none/missing/sqlite Component “k”: target is numeric, current is logical; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF logical/TRUE/TRUE/none/Total/sqlite Component “k”: target is numeric, current is logical; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF date/FALSE/FALSE/first/missing/sqlite Component “k”: target is numeric, current is Date
+DIFF date/FALSE/FALSE/first/Total/sqlite Component “k”: 2 string mismatches
+DIFF date/FALSE/FALSE/last/missing/sqlite Component “k”: target is numeric, current is Date
+DIFF date/FALSE/FALSE/last/Total/sqlite Component “k”: 2 string mismatches
+DIFF date/FALSE/FALSE/none/missing/dt Component “k”: 'is.NA' value mismatch: 2 in current 2 in target; Component “total”: Mean relative difference: 1
+DIFF date/FALSE/FALSE/none/missing/sqlite Component “k”: target is numeric, current is Date; Component “total”: Mean relative difference: 1
+DIFF date/FALSE/FALSE/none/missing/duckdb Component “k”: 'is.NA' value mismatch: 2 in current 2 in target; Component “total”: Mean relative difference: 0.6666667
+DIFF date/FALSE/FALSE/none/Total/dt Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 1
+DIFF date/FALSE/FALSE/none/Total/sqlite Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 1
+DIFF date/FALSE/FALSE/none/Total/duckdb Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 0.6666667
+DIFF date/FALSE/TRUE/first/missing/sqlite Component “k”: target is numeric, current is Date
+DIFF date/FALSE/TRUE/first/Total/sqlite Component “k”: target is numeric, current is Date
+DIFF date/FALSE/TRUE/last/missing/sqlite Component “k”: target is numeric, current is Date
+DIFF date/FALSE/TRUE/last/Total/sqlite Component “k”: target is numeric, current is Date
+DIFF date/FALSE/TRUE/none/missing/dt Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 1
+DIFF date/FALSE/TRUE/none/missing/sqlite Component “k”: target is numeric, current is Date; Component “total”: Mean relative difference: 1
+DIFF date/FALSE/TRUE/none/missing/duckdb Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 0.6666667
+DIFF date/FALSE/TRUE/none/Total/dt Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 1
+DIFF date/FALSE/TRUE/none/Total/sqlite Component “k”: target is numeric, current is Date; Component “total”: Mean relative difference: 1
+DIFF date/FALSE/TRUE/none/Total/duckdb Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 0.6666667
+DIFF date/TRUE/FALSE/first/missing/sqlite Component “k”: target is numeric, current is Date; Component “total”: target is logical, current is numeric
+DIFF date/TRUE/FALSE/first/missing/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF date/TRUE/FALSE/first/Total/sqlite Component “total”: target is logical, current is numeric
+DIFF date/TRUE/FALSE/first/Total/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF date/TRUE/FALSE/last/missing/sqlite Component “k”: target is numeric, current is Date; Component “total”: target is logical, current is numeric
+DIFF date/TRUE/FALSE/last/missing/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF date/TRUE/FALSE/last/Total/sqlite Component “total”: target is logical, current is numeric
+DIFF date/TRUE/FALSE/last/Total/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF date/TRUE/FALSE/none/missing/sqlite Component “k”: target is numeric, current is Date; Component “total”: target is logical, current is numeric
+DIFF date/TRUE/FALSE/none/missing/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF date/TRUE/FALSE/none/Total/sqlite Component “total”: target is logical, current is numeric
+DIFF date/TRUE/FALSE/none/Total/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF date/TRUE/TRUE/first/missing/sqlite Component “k”: target is numeric, current is Date; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF date/TRUE/TRUE/first/Total/sqlite Component “k”: target is numeric, current is Date; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF date/TRUE/TRUE/last/missing/sqlite Component “k”: target is numeric, current is Date; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF date/TRUE/TRUE/last/Total/sqlite Component “k”: target is numeric, current is Date; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF date/TRUE/TRUE/none/missing/sqlite Component “k”: target is numeric, current is Date; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF date/TRUE/TRUE/none/Total/sqlite Component “k”: target is numeric, current is Date; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF timestamp/FALSE/FALSE/first/missing/sqlite Component “k”: target is numeric, current is POSIXct
+DIFF timestamp/FALSE/FALSE/first/missing/duckdb Component “k”: 'tzone' attributes are inconsistent ('UTC' and 'Asia/Tokyo')
+DIFF timestamp/FALSE/FALSE/first/Total/arrow Component “k”: 2 string mismatches
+DIFF timestamp/FALSE/FALSE/first/Total/sqlite Component “k”: 2 string mismatches
+DIFF timestamp/FALSE/FALSE/first/Total/duckdb Component “k”: 2 string mismatches
+DIFF timestamp/FALSE/FALSE/last/missing/sqlite Component “k”: target is numeric, current is POSIXct
+DIFF timestamp/FALSE/FALSE/last/missing/duckdb Component “k”: 'tzone' attributes are inconsistent ('UTC' and 'Asia/Tokyo')
+DIFF timestamp/FALSE/FALSE/last/Total/arrow Component “k”: 2 string mismatches
+DIFF timestamp/FALSE/FALSE/last/Total/sqlite Component “k”: 2 string mismatches
+DIFF timestamp/FALSE/FALSE/last/Total/duckdb Component “k”: 2 string mismatches
+DIFF timestamp/FALSE/FALSE/none/missing/dt Component “k”: 'is.NA' value mismatch: 2 in current 2 in target; Component “total”: Mean relative difference: 1
+DIFF timestamp/FALSE/FALSE/none/missing/sqlite Component “k”: target is numeric, current is POSIXct; Component “total”: Mean relative difference: 1
+DIFF timestamp/FALSE/FALSE/none/missing/duckdb Component “k”: 'tzone' attributes are inconsistent ('UTC' and 'Asia/Tokyo'); Component “k”: 'is.NA' value mismatch: 2 in current 2 in target; Component “total”: Mean relative difference: 0.6666667
+DIFF timestamp/FALSE/FALSE/none/Total/dt Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 1
+DIFF timestamp/FALSE/FALSE/none/Total/arrow Component “k”: 2 string mismatches
+DIFF timestamp/FALSE/FALSE/none/Total/sqlite Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 1
+DIFF timestamp/FALSE/FALSE/none/Total/duckdb Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 1
+DIFF timestamp/FALSE/TRUE/first/missing/sqlite Component “k”: target is numeric, current is POSIXct
+DIFF timestamp/FALSE/TRUE/first/missing/duckdb Component “k”: 'tzone' attributes are inconsistent ('UTC' and 'Asia/Tokyo')
+DIFF timestamp/FALSE/TRUE/first/Total/sqlite Component “k”: target is numeric, current is POSIXct
+DIFF timestamp/FALSE/TRUE/first/Total/duckdb Component “k”: 'tzone' attributes are inconsistent ('UTC' and 'Asia/Tokyo')
+DIFF timestamp/FALSE/TRUE/last/missing/sqlite Component “k”: target is numeric, current is POSIXct
+DIFF timestamp/FALSE/TRUE/last/missing/duckdb Component “k”: 'tzone' attributes are inconsistent ('UTC' and 'Asia/Tokyo')
+DIFF timestamp/FALSE/TRUE/last/Total/sqlite Component “k”: target is numeric, current is POSIXct
+DIFF timestamp/FALSE/TRUE/last/Total/duckdb Component “k”: 'tzone' attributes are inconsistent ('UTC' and 'Asia/Tokyo')
+DIFF timestamp/FALSE/TRUE/none/missing/dt Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 1
+DIFF timestamp/FALSE/TRUE/none/missing/sqlite Component “k”: target is numeric, current is POSIXct; Component “total”: Mean relative difference: 1
+DIFF timestamp/FALSE/TRUE/none/missing/duckdb Component “k”: 'tzone' attributes are inconsistent ('UTC' and 'Asia/Tokyo'); Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 0.6666667
+DIFF timestamp/FALSE/TRUE/none/Total/dt Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 1
+DIFF timestamp/FALSE/TRUE/none/Total/sqlite Component “k”: target is numeric, current is POSIXct; Component “total”: Mean relative difference: 1
+DIFF timestamp/FALSE/TRUE/none/Total/duckdb Component “k”: 'tzone' attributes are inconsistent ('UTC' and 'Asia/Tokyo'); Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 0.6666667
+DIFF timestamp/TRUE/FALSE/first/missing/sqlite Component “k”: target is numeric, current is POSIXct; Component “total”: target is logical, current is numeric
+DIFF timestamp/TRUE/FALSE/first/missing/duckdb Component “k”: 'tzone' attributes are inconsistent ('UTC' and 'Asia/Tokyo'); Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF timestamp/TRUE/FALSE/first/Total/sqlite Component “total”: target is logical, current is numeric
+DIFF timestamp/TRUE/FALSE/first/Total/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF timestamp/TRUE/FALSE/last/missing/sqlite Component “k”: target is numeric, current is POSIXct; Component “total”: target is logical, current is numeric
+DIFF timestamp/TRUE/FALSE/last/missing/duckdb Component “k”: 'tzone' attributes are inconsistent ('UTC' and 'Asia/Tokyo'); Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF timestamp/TRUE/FALSE/last/Total/sqlite Component “total”: target is logical, current is numeric
+DIFF timestamp/TRUE/FALSE/last/Total/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF timestamp/TRUE/FALSE/none/missing/sqlite Component “k”: target is numeric, current is POSIXct; Component “total”: target is logical, current is numeric
+DIFF timestamp/TRUE/FALSE/none/missing/duckdb Component “k”: 'tzone' attributes are inconsistent ('UTC' and 'Asia/Tokyo'); Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF timestamp/TRUE/FALSE/none/Total/sqlite Component “total”: target is logical, current is numeric
+DIFF timestamp/TRUE/FALSE/none/Total/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF timestamp/TRUE/TRUE/first/missing/sqlite Component “k”: target is numeric, current is POSIXct; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF timestamp/TRUE/TRUE/first/missing/duckdb Component “k”: 'tzone' attributes are inconsistent ('UTC' and 'Asia/Tokyo')
+DIFF timestamp/TRUE/TRUE/first/Total/sqlite Component “k”: target is numeric, current is POSIXct; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF timestamp/TRUE/TRUE/first/Total/duckdb Component “k”: 'tzone' attributes are inconsistent ('UTC' and 'Asia/Tokyo')
+DIFF timestamp/TRUE/TRUE/last/missing/sqlite Component “k”: target is numeric, current is POSIXct; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF timestamp/TRUE/TRUE/last/missing/duckdb Component “k”: 'tzone' attributes are inconsistent ('UTC' and 'Asia/Tokyo')
+DIFF timestamp/TRUE/TRUE/last/Total/sqlite Component “k”: target is numeric, current is POSIXct; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF timestamp/TRUE/TRUE/last/Total/duckdb Component “k”: 'tzone' attributes are inconsistent ('UTC' and 'Asia/Tokyo')
+DIFF timestamp/TRUE/TRUE/none/missing/sqlite Component “k”: target is numeric, current is POSIXct; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF timestamp/TRUE/TRUE/none/missing/duckdb Component “k”: 'tzone' attributes are inconsistent ('UTC' and 'Asia/Tokyo')
+DIFF timestamp/TRUE/TRUE/none/Total/sqlite Component “k”: target is numeric, current is POSIXct; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF timestamp/TRUE/TRUE/none/Total/duckdb Component “k”: 'tzone' attributes are inconsistent ('UTC' and 'Asia/Tokyo')
+DIFF factor/FALSE/FALSE/first/missing/arrow Component “k”: 2 string mismatches; Component “total”: Mean relative difference: 0.6666667
+DIFF factor/FALSE/FALSE/first/missing/sqlite Component “k”: target is character, current is factor; Component “total”: Mean relative difference: 0.6666667
+DIFF factor/FALSE/FALSE/first/Total/arrow Component “k”: target is character, current is factor; Component “total”: Mean relative difference: 0.6666667
+DIFF factor/FALSE/FALSE/first/Total/sqlite Component “k”: target is character, current is factor; Component “total”: Mean relative difference: 0.6666667
+DIFF factor/FALSE/FALSE/last/missing/arrow Component “k”: 2 string mismatches; Component “total”: Mean relative difference: 0.6666667
+DIFF factor/FALSE/FALSE/last/missing/sqlite Component “k”: target is character, current is factor; Component “total”: Mean relative difference: 0.6666667
+DIFF factor/FALSE/FALSE/last/Total/arrow Component “k”: target is character, current is factor; Component “total”: Mean relative difference: 0.6666667
+DIFF factor/FALSE/FALSE/last/Total/sqlite Component “k”: target is character, current is factor; Component “total”: Mean relative difference: 0.6666667
+DIFF factor/FALSE/FALSE/none/missing/dt Component “k”: 2 NA mismatches; Component “total”: Mean relative difference: 0.6666667
+DIFF factor/FALSE/FALSE/none/missing/sqlite Component “k”: target is character, current is factor; Component “total”: Mean relative difference: 1
+DIFF factor/FALSE/FALSE/none/missing/duckdb Component “k”: 2 NA mismatches; Component “total”: Mean relative difference: 0.4
+DIFF factor/FALSE/FALSE/none/Total/dt Component “k”: 2 NA mismatches; Component “total”: Mean relative difference: 0.6666667
+DIFF factor/FALSE/FALSE/none/Total/arrow Component “k”: target is character, current is factor
+DIFF factor/FALSE/FALSE/none/Total/sqlite Component “k”: target is character, current is factor; Component “total”: Mean relative difference: 1
+DIFF factor/FALSE/FALSE/none/Total/duckdb Component “k”: 2 NA mismatches; Component “total”: Mean relative difference: 0.4
+DIFF factor/FALSE/TRUE/first/missing/arrow Component “k”: 2 string mismatches; Component “total”: Mean relative difference: 0.6666667
+DIFF factor/FALSE/TRUE/first/missing/sqlite Component “k”: target is character, current is factor; Component “total”: Mean relative difference: 0.6666667
+DIFF factor/FALSE/TRUE/first/Total/arrow Component “k”: 2 string mismatches; Component “total”: Mean relative difference: 0.6666667
+DIFF factor/FALSE/TRUE/first/Total/sqlite Component “k”: target is character, current is factor; Component “total”: Mean relative difference: 0.6666667
+DIFF factor/FALSE/TRUE/last/missing/arrow Component “k”: 2 string mismatches; Component “total”: Mean relative difference: 0.6666667
+DIFF factor/FALSE/TRUE/last/missing/sqlite Component “k”: target is character, current is factor; Component “total”: Mean relative difference: 0.6666667
+DIFF factor/FALSE/TRUE/last/Total/arrow Component “k”: 2 string mismatches; Component “total”: Mean relative difference: 0.6666667
+DIFF factor/FALSE/TRUE/last/Total/sqlite Component “k”: target is character, current is factor; Component “total”: Mean relative difference: 0.6666667
+DIFF factor/FALSE/TRUE/none/missing/dt Component “k”: 2 NA mismatches; Component “total”: Mean relative difference: 0.6666667
+DIFF factor/FALSE/TRUE/none/missing/sqlite Component “k”: target is character, current is factor; Component “total”: Mean relative difference: 1
+DIFF factor/FALSE/TRUE/none/missing/duckdb Component “k”: 2 NA mismatches; Component “total”: Mean relative difference: 0.4
+DIFF factor/FALSE/TRUE/none/Total/dt Component “k”: 2 NA mismatches; Component “total”: Mean relative difference: 0.6666667
+DIFF factor/FALSE/TRUE/none/Total/sqlite Component “k”: target is character, current is factor; Component “total”: Mean relative difference: 1
+DIFF factor/FALSE/TRUE/none/Total/duckdb Component “k”: 2 NA mismatches; Component “total”: Mean relative difference: 0.4
+DIFF factor/TRUE/FALSE/first/missing/sqlite Component “k”: target is character, current is factor; Component “total”: target is logical, current is numeric
+DIFF factor/TRUE/FALSE/first/missing/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF factor/TRUE/FALSE/first/Total/arrow Component “k”: target is character, current is factor
+DIFF factor/TRUE/FALSE/first/Total/sqlite Component “k”: target is character, current is factor; Component “total”: target is logical, current is numeric
+DIFF factor/TRUE/FALSE/first/Total/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF factor/TRUE/FALSE/last/missing/sqlite Component “k”: target is character, current is factor; Component “total”: target is logical, current is numeric
+DIFF factor/TRUE/FALSE/last/missing/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF factor/TRUE/FALSE/last/Total/arrow Component “k”: target is character, current is factor
+DIFF factor/TRUE/FALSE/last/Total/sqlite Component “k”: target is character, current is factor; Component “total”: target is logical, current is numeric
+DIFF factor/TRUE/FALSE/last/Total/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF factor/TRUE/FALSE/none/missing/sqlite Component “k”: target is character, current is factor; Component “total”: target is logical, current is numeric
+DIFF factor/TRUE/FALSE/none/missing/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF factor/TRUE/FALSE/none/Total/arrow Component “k”: target is character, current is factor
+DIFF factor/TRUE/FALSE/none/Total/sqlite Component “k”: target is character, current is factor; Component “total”: target is logical, current is numeric
+DIFF factor/TRUE/FALSE/none/Total/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF factor/TRUE/TRUE/first/missing/sqlite Component “k”: target is character, current is factor; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF factor/TRUE/TRUE/first/Total/sqlite Component “k”: target is character, current is factor; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF factor/TRUE/TRUE/last/missing/sqlite Component “k”: target is character, current is factor; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF factor/TRUE/TRUE/last/Total/sqlite Component “k”: target is character, current is factor; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF factor/TRUE/TRUE/none/missing/sqlite Component “k”: target is character, current is factor; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF factor/TRUE/TRUE/none/Total/sqlite Component “k”: target is character, current is factor; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF ordered/FALSE/FALSE/first/missing/arrow Component “k”: 2 string mismatches; Component “total”: Mean relative difference: 0.6666667
+DIFF ordered/FALSE/FALSE/first/missing/sqlite Component “k”: target is character, current is ordered; Component “total”: Mean relative difference: 0.6666667
+DIFF ordered/FALSE/FALSE/first/Total/arrow Component “k”: target is character, current is ordered; Component “total”: Mean relative difference: 0.6666667
+DIFF ordered/FALSE/FALSE/first/Total/sqlite Component “k”: target is character, current is ordered; Component “total”: Mean relative difference: 0.6666667
+DIFF ordered/FALSE/FALSE/last/missing/arrow Component “k”: 2 string mismatches; Component “total”: Mean relative difference: 0.6666667
+DIFF ordered/FALSE/FALSE/last/missing/sqlite Component “k”: target is character, current is ordered; Component “total”: Mean relative difference: 0.6666667
+DIFF ordered/FALSE/FALSE/last/Total/arrow Component “k”: target is character, current is ordered; Component “total”: Mean relative difference: 0.6666667
+DIFF ordered/FALSE/FALSE/last/Total/sqlite Component “k”: target is character, current is ordered; Component “total”: Mean relative difference: 0.6666667
+DIFF ordered/FALSE/FALSE/none/missing/dt Component “k”: 2 NA mismatches; Component “total”: Mean relative difference: 0.6666667
+DIFF ordered/FALSE/FALSE/none/missing/sqlite Component “k”: target is character, current is ordered; Component “total”: Mean relative difference: 1
+DIFF ordered/FALSE/FALSE/none/Total/dt Component “k”: 2 NA mismatches; Component “total”: Mean relative difference: 0.6666667
+DIFF ordered/FALSE/FALSE/none/Total/arrow Component “k”: target is character, current is ordered
+DIFF ordered/FALSE/FALSE/none/Total/sqlite Component “k”: target is character, current is ordered; Component “total”: Mean relative difference: 1
+DIFF ordered/FALSE/FALSE/none/Total/duckdb Component “k”: 2 NA mismatches; Component “total”: Mean relative difference: 0.4
+DIFF ordered/FALSE/TRUE/first/missing/arrow Component “k”: 2 string mismatches; Component “total”: Mean relative difference: 0.6666667
+DIFF ordered/FALSE/TRUE/first/missing/sqlite Component “k”: target is character, current is ordered; Component “total”: Mean relative difference: 0.6666667
+DIFF ordered/FALSE/TRUE/first/Total/arrow Component “k”: 2 string mismatches; Component “total”: Mean relative difference: 0.6666667
+DIFF ordered/FALSE/TRUE/first/Total/sqlite Component “k”: target is character, current is ordered; Component “total”: Mean relative difference: 0.6666667
+DIFF ordered/FALSE/TRUE/last/missing/arrow Component “k”: 2 string mismatches; Component “total”: Mean relative difference: 0.6666667
+DIFF ordered/FALSE/TRUE/last/missing/sqlite Component “k”: target is character, current is ordered; Component “total”: Mean relative difference: 0.6666667
+DIFF ordered/FALSE/TRUE/last/Total/arrow Component “k”: 2 string mismatches; Component “total”: Mean relative difference: 0.6666667
+DIFF ordered/FALSE/TRUE/last/Total/sqlite Component “k”: target is character, current is ordered; Component “total”: Mean relative difference: 0.6666667
+DIFF ordered/FALSE/TRUE/none/missing/dt Component “k”: 2 NA mismatches; Component “total”: Mean relative difference: 0.6666667
+DIFF ordered/FALSE/TRUE/none/missing/sqlite Component “k”: target is character, current is ordered; Component “total”: Mean relative difference: 1
+DIFF ordered/FALSE/TRUE/none/missing/duckdb Component “k”: 2 NA mismatches; Component “total”: Mean relative difference: 0.6666667
+DIFF ordered/FALSE/TRUE/none/Total/dt Component “k”: 2 NA mismatches; Component “total”: Mean relative difference: 0.6666667
+DIFF ordered/FALSE/TRUE/none/Total/sqlite Component “k”: target is character, current is ordered; Component “total”: Mean relative difference: 1
+DIFF ordered/TRUE/FALSE/first/missing/sqlite Component “k”: target is character, current is ordered; Component “total”: target is logical, current is numeric
+DIFF ordered/TRUE/FALSE/first/missing/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF ordered/TRUE/FALSE/first/Total/arrow Component “k”: target is character, current is ordered
+DIFF ordered/TRUE/FALSE/first/Total/sqlite Component “k”: target is character, current is ordered; Component “total”: target is logical, current is numeric
+DIFF ordered/TRUE/FALSE/first/Total/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF ordered/TRUE/FALSE/last/missing/sqlite Component “k”: target is character, current is ordered; Component “total”: target is logical, current is numeric
+DIFF ordered/TRUE/FALSE/last/missing/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF ordered/TRUE/FALSE/last/Total/arrow Component “k”: target is character, current is ordered
+DIFF ordered/TRUE/FALSE/last/Total/sqlite Component “k”: target is character, current is ordered; Component “total”: target is logical, current is numeric
+DIFF ordered/TRUE/FALSE/last/Total/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF ordered/TRUE/FALSE/none/missing/sqlite Component “k”: target is character, current is ordered; Component “total”: target is logical, current is numeric
+DIFF ordered/TRUE/FALSE/none/missing/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF ordered/TRUE/FALSE/none/Total/arrow Component “k”: target is character, current is ordered
+DIFF ordered/TRUE/FALSE/none/Total/sqlite Component “k”: target is character, current is ordered; Component “total”: target is logical, current is numeric
+DIFF ordered/TRUE/FALSE/none/Total/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF ordered/TRUE/TRUE/first/missing/sqlite Component “k”: target is character, current is ordered; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF ordered/TRUE/TRUE/first/Total/sqlite Component “k”: target is character, current is ordered; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF ordered/TRUE/TRUE/last/missing/sqlite Component “k”: target is character, current is ordered; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF ordered/TRUE/TRUE/last/Total/sqlite Component “k”: target is character, current is ordered; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF ordered/TRUE/TRUE/none/missing/sqlite Component “k”: target is character, current is ordered; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF ordered/TRUE/TRUE/none/Total/sqlite Component “k”: target is character, current is ordered; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF integer64/FALSE/FALSE/first/missing/duckdb Component “k”: target is numeric, current is integer64; Component “total”: Mean relative difference: 0.6666667
+DIFF integer64/FALSE/FALSE/first/Total/duckdb Component “k”: 'is.NA' value mismatch: 1 in current 0 in target; Component “total”: Mean relative difference: 0.6666667
+DIFF integer64/FALSE/FALSE/last/missing/duckdb Component “k”: target is numeric, current is integer64; Component “total”: Mean relative difference: 0.6666667
+DIFF integer64/FALSE/FALSE/last/Total/duckdb Component “k”: 'is.NA' value mismatch: 1 in current 0 in target; Component “total”: Mean relative difference: 0.6666667
+DIFF integer64/FALSE/FALSE/none/missing/dt Component “k”: 'is.NA' value mismatch: 2 in current 2 in target; Component “total”: Mean relative difference: 1
+DIFF integer64/FALSE/FALSE/none/missing/sqlite Component “k”: 'is.NA' value mismatch: 2 in current 2 in target; Component “total”: Mean relative difference: 1
+DIFF integer64/FALSE/FALSE/none/missing/duckdb Component “k”: target is numeric, current is integer64; Component “total”: Mean relative difference: 1
+DIFF integer64/FALSE/FALSE/none/Total/dt Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 1
+DIFF integer64/FALSE/FALSE/none/Total/sqlite Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 1
+DIFF integer64/FALSE/FALSE/none/Total/duckdb Component “k”: 'is.NA' value mismatch: 1 in current 0 in target; Component “total”: Mean relative difference: 0.6666667
+DIFF integer64/FALSE/TRUE/first/missing/duckdb Component “k”: target is numeric, current is integer64; Component “total”: Mean relative difference: 0.6666667
+DIFF integer64/FALSE/TRUE/first/Total/duckdb Component “k”: target is numeric, current is integer64; Component “total”: Mean relative difference: 0.6666667
+DIFF integer64/FALSE/TRUE/last/missing/duckdb Component “k”: target is numeric, current is integer64; Component “total”: Mean relative difference: 0.6666667
+DIFF integer64/FALSE/TRUE/last/Total/duckdb Component “k”: target is numeric, current is integer64; Component “total”: Mean relative difference: 0.6666667
+DIFF integer64/FALSE/TRUE/none/missing/dt Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 1
+DIFF integer64/FALSE/TRUE/none/missing/sqlite Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 1
+DIFF integer64/FALSE/TRUE/none/missing/duckdb Component “k”: target is numeric, current is integer64; Component “total”: Mean relative difference: 0.6666667
+DIFF integer64/FALSE/TRUE/none/Total/dt Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 1
+DIFF integer64/FALSE/TRUE/none/Total/sqlite Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 1
+DIFF integer64/FALSE/TRUE/none/Total/duckdb Component “k”: target is numeric, current is integer64; Component “total”: Mean relative difference: 0.6666667
+DIFF integer64/TRUE/FALSE/first/missing/arrow Component “k”: target is numeric, current is integer64
+DIFF integer64/TRUE/FALSE/first/missing/sqlite Component “k”: target is numeric, current is integer64; Component “total”: target is logical, current is numeric
+DIFF integer64/TRUE/FALSE/first/missing/duckdb Component “k”: target is numeric, current is integer64; Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF integer64/TRUE/FALSE/first/Total/sqlite Component “total”: target is logical, current is numeric
+DIFF integer64/TRUE/FALSE/first/Total/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF integer64/TRUE/FALSE/last/missing/arrow Component “k”: target is numeric, current is integer64
+DIFF integer64/TRUE/FALSE/last/missing/sqlite Component “k”: target is numeric, current is integer64; Component “total”: target is logical, current is numeric
+DIFF integer64/TRUE/FALSE/last/missing/duckdb Component “k”: target is numeric, current is integer64; Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF integer64/TRUE/FALSE/last/Total/sqlite Component “total”: target is logical, current is numeric
+DIFF integer64/TRUE/FALSE/last/Total/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF integer64/TRUE/FALSE/none/missing/arrow Component “k”: target is numeric, current is integer64
+DIFF integer64/TRUE/FALSE/none/missing/sqlite Component “k”: target is numeric, current is integer64; Component “total”: target is logical, current is numeric
+DIFF integer64/TRUE/FALSE/none/missing/duckdb Component “k”: target is numeric, current is integer64; Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF integer64/TRUE/FALSE/none/Total/sqlite Component “total”: target is logical, current is numeric
+DIFF integer64/TRUE/FALSE/none/Total/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF integer64/TRUE/TRUE/first/missing/arrow Component “k”: target is numeric, current is integer64
+DIFF integer64/TRUE/TRUE/first/missing/sqlite Component “k”: target is numeric, current is integer64; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF integer64/TRUE/TRUE/first/missing/duckdb Component “k”: target is numeric, current is integer64
+DIFF integer64/TRUE/TRUE/first/Total/arrow Component “k”: target is numeric, current is integer64
+DIFF integer64/TRUE/TRUE/first/Total/sqlite Component “k”: target is numeric, current is integer64; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF integer64/TRUE/TRUE/first/Total/duckdb Component “k”: target is numeric, current is integer64
+DIFF integer64/TRUE/TRUE/last/missing/arrow Component “k”: target is numeric, current is integer64
+DIFF integer64/TRUE/TRUE/last/missing/sqlite Component “k”: target is numeric, current is integer64; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF integer64/TRUE/TRUE/last/missing/duckdb Component “k”: target is numeric, current is integer64
+DIFF integer64/TRUE/TRUE/last/Total/arrow Component “k”: target is numeric, current is integer64
+DIFF integer64/TRUE/TRUE/last/Total/sqlite Component “k”: target is numeric, current is integer64; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF integer64/TRUE/TRUE/last/Total/duckdb Component “k”: target is numeric, current is integer64
+DIFF integer64/TRUE/TRUE/none/missing/arrow Component “k”: target is numeric, current is integer64
+DIFF integer64/TRUE/TRUE/none/missing/sqlite Component “k”: target is numeric, current is integer64; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF integer64/TRUE/TRUE/none/missing/duckdb Component “k”: target is numeric, current is integer64
+DIFF integer64/TRUE/TRUE/none/Total/arrow Component “k”: target is numeric, current is integer64
+DIFF integer64/TRUE/TRUE/none/Total/sqlite Component “k”: target is numeric, current is integer64; Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF integer64/TRUE/TRUE/none/Total/duckdb Component “k”: target is numeric, current is integer64
+DIFF numeric_edge/FALSE/FALSE/first/Total/arrow Component “k”: 2 string mismatches
+DIFF numeric_edge/FALSE/FALSE/first/Total/sqlite Component “k”: 1 string mismatch
+DIFF numeric_edge/FALSE/FALSE/first/Total/duckdb Component “k”: 3 string mismatches
+DIFF numeric_edge/FALSE/FALSE/last/Total/arrow Component “k”: 2 string mismatches
+DIFF numeric_edge/FALSE/FALSE/last/Total/sqlite Component “k”: 1 string mismatch
+DIFF numeric_edge/FALSE/FALSE/last/Total/duckdb Component “k”: 3 string mismatches
+DIFF numeric_edge/FALSE/FALSE/none/missing/duckdb Component “k”: Mean absolute difference: Inf; Component “total”: Mean relative difference: 0.6666667
+DIFF numeric_edge/FALSE/FALSE/none/Total/arrow Component “k”: 2 string mismatches
+DIFF numeric_edge/FALSE/FALSE/none/Total/sqlite Component “k”: 1 string mismatch
+DIFF numeric_edge/FALSE/FALSE/none/Total/duckdb Component “k”: 3 string mismatches; Component “total”: Mean relative difference: 0.6666667
+DIFF numeric_edge/FALSE/TRUE/none/missing/duckdb Component “k”: Mean absolute difference: Inf; Component “total”: Mean relative difference: 0.4
+DIFF numeric_edge/FALSE/TRUE/none/Total/duckdb Component “k”: Mean absolute difference: Inf; Component “total”: Mean relative difference: 0.6666667
+DIFF numeric_edge/TRUE/FALSE/first/missing/sqlite Component “total”: target is logical, current is numeric
+DIFF numeric_edge/TRUE/FALSE/first/missing/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF numeric_edge/TRUE/FALSE/first/Total/sqlite Component “total”: target is logical, current is numeric
+DIFF numeric_edge/TRUE/FALSE/first/Total/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF numeric_edge/TRUE/FALSE/last/missing/sqlite Component “total”: target is logical, current is numeric
+DIFF numeric_edge/TRUE/FALSE/last/missing/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF numeric_edge/TRUE/FALSE/last/Total/sqlite Component “total”: target is logical, current is numeric
+DIFF numeric_edge/TRUE/FALSE/last/Total/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF numeric_edge/TRUE/FALSE/none/missing/sqlite Component “total”: target is logical, current is numeric
+DIFF numeric_edge/TRUE/FALSE/none/missing/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF numeric_edge/TRUE/FALSE/none/Total/sqlite Component “total”: target is logical, current is numeric
+DIFF numeric_edge/TRUE/FALSE/none/Total/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF numeric_edge/TRUE/TRUE/first/missing/sqlite Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF numeric_edge/TRUE/TRUE/first/Total/sqlite Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF numeric_edge/TRUE/TRUE/last/missing/sqlite Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF numeric_edge/TRUE/TRUE/last/Total/sqlite Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF numeric_edge/TRUE/TRUE/none/missing/sqlite Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF numeric_edge/TRUE/TRUE/none/Total/sqlite Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF utf8/FALSE/FALSE/none/missing/dt Component “k”: 'is.NA' value mismatch: 2 in current 2 in target; Component “total”: Mean relative difference: 0.6666667
+DIFF utf8/FALSE/FALSE/none/missing/sqlite Component “k”: 'is.NA' value mismatch: 2 in current 2 in target; Component “total”: Mean relative difference: 0.6666667
+DIFF utf8/FALSE/FALSE/none/missing/duckdb Component “k”: 'is.NA' value mismatch: 2 in current 2 in target; Component “total”: Mean relative difference: 0.6666667
+DIFF utf8/FALSE/FALSE/none/Total/dt Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 0.6666667
+DIFF utf8/FALSE/FALSE/none/Total/sqlite Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 0.6666667
+DIFF utf8/FALSE/FALSE/none/Total/duckdb Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 0.6666667
+DIFF utf8/FALSE/TRUE/none/missing/dt Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 0.6666667
+DIFF utf8/FALSE/TRUE/none/missing/sqlite Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 0.6666667
+DIFF utf8/FALSE/TRUE/none/missing/duckdb Component “k”: 2 string mismatches; Component “total”: Mean relative difference: 0.6666667
+DIFF utf8/FALSE/TRUE/none/Total/dt Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 0.6666667
+DIFF utf8/FALSE/TRUE/none/Total/sqlite Component “k”: 'is.NA' value mismatch: 1 in current 1 in target; Component “total”: Mean relative difference: 0.6666667
+DIFF utf8/FALSE/TRUE/none/Total/duckdb Component “k”: 2 string mismatches; Component “total”: Mean relative difference: 0.6666667
+DIFF utf8/TRUE/FALSE/first/missing/sqlite Component “total”: target is logical, current is numeric
+DIFF utf8/TRUE/FALSE/first/missing/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF utf8/TRUE/FALSE/first/Total/sqlite Component “total”: target is logical, current is numeric
+DIFF utf8/TRUE/FALSE/first/Total/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF utf8/TRUE/FALSE/last/missing/sqlite Component “total”: target is logical, current is numeric
+DIFF utf8/TRUE/FALSE/last/missing/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF utf8/TRUE/FALSE/last/Total/sqlite Component “total”: target is logical, current is numeric
+DIFF utf8/TRUE/FALSE/last/Total/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF utf8/TRUE/FALSE/none/missing/sqlite Component “total”: target is logical, current is numeric
+DIFF utf8/TRUE/FALSE/none/missing/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF utf8/TRUE/FALSE/none/Total/sqlite Component “total”: target is logical, current is numeric
+DIFF utf8/TRUE/FALSE/none/Total/duckdb Component “total”: 'is.NA' value mismatch: 0 in current 1 in target
+DIFF utf8/TRUE/TRUE/first/missing/sqlite Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF utf8/TRUE/TRUE/first/Total/sqlite Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF utf8/TRUE/TRUE/last/missing/sqlite Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF utf8/TRUE/TRUE/last/Total/sqlite Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF utf8/TRUE/TRUE/none/missing/sqlite Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+DIFF utf8/TRUE/TRUE/none/Total/sqlite Component “total”: target is logical, current is numeric; Component “bit”: target is logical, current is numeric
+Warning message:
+Missing values are always removed in SQL aggregation functions.
+Use `na.rm = TRUE` to silence this warning
+This warning is displayed once every 8 hours.
+CHECKS 960 PROBLEMS 404

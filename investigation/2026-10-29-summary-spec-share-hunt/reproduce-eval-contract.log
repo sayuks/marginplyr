@@ -1,0 +1,20 @@
+eval(quote(grouping_bit(g)))
+  g bit
+1 a   0
+eval(str2lang("grouping_bit(g)"))
+marginplyr_error: `grouping_bit()` can only be used inside `summarize_with_margins()`.
+base::eval(base::str2lang("grouping_bit(g)"))
+marginplyr_error: `grouping_bit()` can only be used inside `summarize_with_margins()`.
+eval(parse(text = "grouping_bit(g)"))
+marginplyr_error: `grouping_bit()` can only be used inside `summarize_with_margins()`.
+rlang::eval_tidy(str2lang("grouping_bit(g)"))
+marginplyr_error: `grouping_bit()` can only be used inside `summarize_with_margins()`.
+eval(str2lang("dplyr::cur_group_id()"))
+marginplyr_error: `summarize_with_margins()` does not support:
+ℹ `cur_group_id()`.
+ℹ This spelling is reserved inside a Margin summary and is not resolved from the calling environment.
+ℹ These helpers describe one branch-local dplyr grouping or data mask, but a margin result combines multiple grouping sets.
+ℹ Use `grouping_bit()` or `grouping_id()` when identifying margin levels.
+Shadow control: 99
+Error: !inherits(actual, "error") is not TRUE
+Execution halted
