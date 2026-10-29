@@ -1241,3 +1241,48 @@ test_that("Arrow dot-dot expansion identifiers cause no construction reads", {
     expect_identical(reads, 0L)
   }
 })
+
+test_that("arranged Arrow summaries read no source rows", {
+  skip_if_suggest_absent("arrow")
+  path <- tempfile(fileext = ".parquet")
+  on.exit(unlink(path))
+  for (source in arrow_reexpansion_sources(path)) {
+    arranged <- dplyr::arrange(source, dplyr::desc(g))
+    expect_gt(count_entry_point_invocations(dplyr::collect(arranged)), 0L)
+    reads <- count_entry_point_invocations({
+      for (sort in c("none", "first", "last")) {
+        summarize_with_margins(
+          arranged, total = sum(payload), .by = g, .sort = sort
+        )
+        for (grouping in list(grouping_set(g), rollup(g))) {
+          summarize_with_margins(
+            arranged, total = sum(payload), .grouping = grouping, .sort = sort
+          )
+        }
+      }
+    })
+    expect_identical(reads, 0L)
+  }
+})
+
+test_that("narrow Dataset expansion reads no source rows", {
+  skip_if_suggest_absent("arrow")
+  partitions <- c("sid", "..marginplyr_arrow_dimension_1",
+                  "..marginplyr_arrow_id_1", "..marginplyr_sort_1")
+  fixture <- arrow_hidden_partition_fixture(partitions)
+  on.exit(unlink(fixture$path, recursive = TRUE))
+  for (source in arrow_narrow_partition_sources(fixture, partitions)) {
+    expect_gt(count_entry_point_invocations(dplyr::collect(source)), 0L)
+    reads <- count_entry_point_invocations({
+      for (sort in c("none", "first", "last")) {
+        for (id in list(NULL, "sid", "..1")) {
+          expand_with_margins(
+            source, .grouping = rollup(g), .margin_label = NULL,
+            .id = id, .sort = sort
+          )
+        }
+      }
+    })
+    expect_identical(reads, 0L)
+  }
+})

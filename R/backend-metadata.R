@@ -5,12 +5,30 @@ margin_col_names <- function(data) {
 }
 
 # Names retained anywhere in a reusable Arrow input's source graph, including
-# fields hidden by selection or renaming. This reads metadata, never rows.
+# fields hidden by selection or renaming and Hive directory keys absent from
+# a Dataset schema. This reads metadata, never rows.
 arrow_source_names <- function(.data) {
   if (is.null(.data)) {
     return(character())
   }
   columns <- names(.data)
+  if (inherits(.data, "FileSystemDataset")) {
+    # Hive keys can survive WithSchema() in fragment partition expressions.
+    # Reserve directory keys conservatively, using only the file-path metadata.
+    directories <- unlist(
+      strsplit(unique(dirname(.data$files)), "/", fixed = TRUE),
+      use.names = FALSE
+    )
+    keys <- sub("=.*$", "", directories[grepl("=", directories, fixed = TRUE)])
+    # Nonpartition directories may contain literal, unescaped percent signs.
+    encoded <- keys[!grepl("%(?![[:xdigit:]]{2})", keys, perl = TRUE)]
+    return(unique(c(columns, keys, utils::URLdecode(encoded))))
+  }
+  if (inherits(.data, "UnionDataset")) {
+    return(unique(c(columns, unlist(
+      lapply(.data$children, arrow_source_names), use.names = FALSE
+    ))))
+  }
   if (!inherits(.data, "arrow_dplyr_query")) {
     return(columns)
   }
