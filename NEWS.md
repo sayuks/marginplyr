@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* dtplyr summaries with shares retain native refusals of lexical `.BY`
+  bindings instead of substituting unrelated input-column values (#1033).
+
 * SQL Server expansions omit unbounded input ordering inside source relations
   while preserving limited row selection and usable window ordering (#994).
 

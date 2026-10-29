@@ -1279,9 +1279,8 @@ wrap_dtplyr_share_function <- function(fn, mapping, forwarded_args, call) {
   rlang::call2("~", validator)
 }
 
-# Alias the .BY input of a translated, validated dtplyr summary. Planning has
-# already checked caller expressions; translation has resolved column reads
-# and expanded across without exposing the private input name to either.
+# Alias the .BY input after dependency planning and across translation.
+# Summaries that bind .BY retain the native expression and dtplyr's refusal.
 protect_dtplyr_share_measure <- function(step) {
   if (inherits(step, "dtplyr_step_group")) {
     step$parent <- protect_dtplyr_share_measure(step$parent)
@@ -1294,6 +1293,9 @@ protect_dtplyr_share_measure <- function(step) {
         !any(all.names(step$j) %in% validators)) {
     return(step)
   }
+  if (dtplyr_share_binds_measure(step$j)) {
+    return(step)
+  }
   margin_safe_column_reads(
     step$parent, ".BY",
     function(source, safe_name) {
@@ -1303,6 +1305,30 @@ protect_dtplyr_share_measure <- function(step) {
     },
     reserved = step$vars
   )
+}
+
+# Whether evaluated syntax may bind or remove .BY, including an unresolved
+# reflective assignment.
+dtplyr_share_binds_measure <- function(expr) {
+  expr <- unparenthesized_value(expr)
+  if (!rlang::is_call(expr)) {
+    return(FALSE)
+  }
+  if (any(c(".BY", unresolved_lookup_name()) %in% lookup_rebound_names(expr))) {
+    return(TRUE)
+  }
+  name <- static_call_name(expr)
+  if (identical(name, "function") &&
+        ".BY" %in% names(static_call_args(expr)[[1L]])) {
+    return(TRUE)
+  }
+  if (!is.null(name) && name %in% c("rm", "remove") &&
+        !".BY" %in% removal_retained_bound(expr, ".BY")) {
+    return(TRUE)
+  }
+  parts <- searched_call_parts(expr)
+  parts <- parts[!vapply(parts, rlang::is_missing, logical(1))]
+  any(vapply(parts, dtplyr_share_binds_measure, logical(1)))
 }
 
 # Replace translated .BY column reads while retaining literal field names and
