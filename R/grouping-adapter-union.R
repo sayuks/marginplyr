@@ -604,6 +604,11 @@ summarize_margin_union <- function(.data,
                                    call = NULL,
                                    input_window_order = list(),
                                    parent_key_names = character()) {
+  if (identical(backend$kind, "arrow")) {
+    # Source sort keys belong below the private grouping-key projection.
+    # collapse() keeps their relation lazy without inheriting their metadata.
+    .data <- dplyr::collapse(.data)
+  }
   source_data <- .data
   # Private dtplyr factor keys cross funion() without factor restoration.
   # Original codes keep a declared NA level distinct from a missing code.
