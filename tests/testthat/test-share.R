@@ -1730,6 +1730,121 @@ test_that("caller function symbols are not inferred to be predicates", {
   expect_false(grepl("predicate", conditionMessage(error), fixed = TRUE))
 })
 
+test_that("share sources do not inherit sibling selected-column dependencies", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3))
+
+  for (helper in c("share_of_parent", "share_of_total")) {
+    result <- summarize_with_margins(
+      data,
+      prior = sum(x),
+      dplyr::across(c(x, prior), sum, .names = "tot_{.col}"),
+      direct = !!rlang::call2(helper, quote(tot_x)),
+      dplyr::across(tot_x, !!rlang::sym(helper), .names = "{.col}_share"),
+      .grouping = rollup(g)
+    ) |>
+      dplyr::arrange(tot_x)
+
+    expect_identical(result$tot_x, c(1, 3, 4))
+    expect_identical(result$direct, c(0.25, 0.75, 1))
+    expect_identical(result$tot_x_share, c(0.25, 0.75, 1))
+  }
+})
+
+test_that("share sources do not inherit sibling function dependencies", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3))
+
+  for (helper in c("share_of_parent", "share_of_total")) {
+    result <- summarize_with_margins(
+      data,
+      prior = sum(x),
+      dplyr::across(
+        x,
+        list(alias = ~sum(.x) + prior, plain = sum),
+        .names = "{.col}_{.fn}"
+      ),
+      direct = !!rlang::call2(helper, quote(x_plain)),
+      dplyr::across(x_plain, !!rlang::sym(helper), .names = "{.col}_share"),
+      .grouping = rollup(g)
+    ) |>
+      dplyr::arrange(x_plain)
+
+    expect_identical(result$x_plain, c(1, 3, 4))
+    expect_identical(result$direct, c(0.25, 0.75, 1))
+    expect_identical(result$x_plain_share, c(0.25, 0.75, 1))
+  }
+})
+
+test_that("runtime alias checks follow each across function output", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3))
+
+  for (helper in c("share_of_parent", "share_of_total")) {
+    summarize <- function(source) {
+      summarize_with_margins(
+        data,
+        tibble::tibble(prior = sum(x)),
+        dplyr::across(
+          x,
+          list(alias = ~sum(.x) + prior, plain = sum),
+          .names = "{.col}_{.fn}"
+        ),
+        fraction = !!rlang::call2(helper, rlang::sym(source)),
+        .grouping = rollup(g)
+      )
+    }
+    result <- summarize("x_plain") |>
+      dplyr::arrange(x_plain)
+    expect_identical(result$x_plain, c(1, 3, 4))
+    expect_identical(result$fraction, c(0.25, 0.75, 1))
+    error <- expect_error(
+      summarize("x_alias"), "depends on earlier summary alias `prior`"
+    )
+    expect_s3_class(error, "marginplyr_error")
+  }
+})
+
+test_that("dependent across siblings remain ineligible for shares", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3))
+  sources <- list(
+    quote(dplyr::across(c(x, prior), sum, .names = "tot_{.col}")),
+    quote(dplyr::across(
+      x,
+      list(alias = ~sum(.x) + prior, plain = sum),
+      .names = "{.col}_{.fn}"
+    ))
+  )
+  dependent <- c("tot_prior", "x_alias")
+
+  for (helper in c("share_of_parent", "share_of_total")) {
+    for (i in seq_along(sources)) {
+      requests <- list(
+        direct = list(fraction = rlang::call2(
+          helper, rlang::sym(dependent[[i]])
+        )),
+        across = list(rlang::expr(dplyr::across(
+          !!rlang::sym(dependent[[i]]), !!rlang::sym(helper),
+          .names = "{.col}_share"
+        )))
+      )
+      for (request_kind in names(requests)) {
+        message <- if (request_kind == "direct") {
+          "depends on earlier summary alias `prior`"
+        } else {
+          "not available as a unique, preceding, self-contained"
+        }
+        error <- expect_error(
+          summarize_with_margins(
+            data, prior = sum(x), !!sources[[i]],
+            !!!requests[[request_kind]],
+            .grouping = rollup(g)
+          ),
+          message
+        )
+        expect_s3_class(error, "marginplyr_error")
+      }
+    }
+  }
+})
+
 test_that("across sources cannot hide earlier summary-alias dependencies", {
   data <- data.frame(group = c("x", "y"), value = 1:2)
 
