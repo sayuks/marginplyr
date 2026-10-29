@@ -134,10 +134,7 @@ constructor_call_spellings <- function(constructor, operator = NULL) {
   if (!is.null(operator)) {
     head <- rlang::call2(operator, quote(marginplyr), head)
   }
-  call <- rlang::call2(head)
-  wrapped_head <- rlang::call2(rlang::call2("(", head))
-  list(call, rlang::call2("(", call), wrapped_head,
-       rlang::call2("(", rlang::call2("(", wrapped_head)))
+  selection_call_spellings(head)
 }
 
 test_that("constructor-shaped selections keep their first answer", {

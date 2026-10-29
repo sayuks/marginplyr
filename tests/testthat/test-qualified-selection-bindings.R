@@ -2,10 +2,7 @@
 # selection contract. The arguments stay unevaluated until selection runs.
 qualified_selection_spellings <- function(operator, namespace, name, ...) {
   head <- rlang::call2(operator, rlang::sym(namespace), rlang::sym(name))
-  call <- rlang::call2(head, ...)
-  wrapped <- rlang::call2(rlang::call2("(", head), ...)
-  list(call, rlang::call2("(", call), wrapped,
-       rlang::call2("(", rlang::call2("(", wrapped)))
+  selection_call_spellings(head, ...)
 }
 
 test_that("caller-qualified selections use the input's column types", {
