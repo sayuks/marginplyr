@@ -223,7 +223,7 @@ dtplyr_metadata_safe_step <- function(step) {
       }
       # Braced mutations retain destination columns until the final write,
       # including after a local NULL update.
-      existing <- column %in% columns || column %in% names(source)
+      existing <- column %in% names(source)
       if (is.atomic(expr) && length(expr) == 1L && !is.object(expr)) {
         scalar <- TRUE
         numeric <- is.numeric(expr)

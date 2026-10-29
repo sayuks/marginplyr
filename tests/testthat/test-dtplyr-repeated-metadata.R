@@ -66,6 +66,9 @@ test_that("repeated safe updates retain the current column metadata", {
       dplyr::mutate(root, g = v, g = g / 2),
       dplyr::mutate(root, new = 1L, new = new + v),
       dplyr::mutate(root, new = "tag", alias = new),
+      dplyr::mutate(root, new = v, new = "text"),
+      dplyr::mutate(root, new = 1L, new = "text"),
+      dplyr::mutate(root, new = f, new = "text"),
       dplyr::mutate(root, new = 1L, alias = new / 2),
       dplyr::mutate(root, g = NULL, g = v)
     )
@@ -117,8 +120,8 @@ test_that("later updates use the types and names established by earlier ones", {
   root <- dtplyr::lazy_dt(data.frame(g = 1:2, text = c("a", "b")))
   steps <- list(
     dplyr::mutate(root, g = text, g = g + 1L),
-    dplyr::mutate(root, added = g, added = "text"),
-    dplyr::mutate(root, added = 1L, added = "text")
+    dplyr::mutate(root, g = g + 1L, g = text, g = g + 1L),
+    dplyr::mutate(root, added = 1L, added = NULL, added = added + g)
   )
   for (step in steps) {
     expect_error(inspect_grouping(step, .by = where(is.numeric)),
