@@ -141,7 +141,7 @@ nest_by_with_margins <- function(.data,
     rowwise = TRUE
   )
 
-  .id <- unname(.id)
+  .id <- as.vector(.id)
   .key <- unname(.key)
   # dtplyr's collect() does not forward name repair to its tibble conversion.
   result <- if (inherits(result, "dtplyr_step")) {
