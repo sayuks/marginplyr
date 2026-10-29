@@ -1,0 +1,89 @@
+NAME sqlite ..+0 predicate FALSE
+TRANSLATION bare indexing '...' with non-positive index 0
+TRANSLATION identifier `..+0`
+ORDINARY_COLLECT sqlite ..+0 OK: 1,3
+ORDINARY_COMPUTE sqlite ..+0 OK: 1,3
+NAME sqlite ..+1 predicate FALSE
+TRANSLATION bare ..1 used in an incorrect context, no ... to look in
+TRANSLATION identifier `..+1`
+ORDINARY_COLLECT sqlite ..+1 OK: 1,3
+ORDINARY_COMPUTE sqlite ..+1 OK: 1,3
+NAME sqlite .. 1 predicate FALSE
+TRANSLATION bare ..1 used in an incorrect context, no ... to look in
+TRANSLATION identifier `.. 1`
+ORDINARY_COLLECT sqlite .. 1 OK: 1,3
+ORDINARY_COMPUTE sqlite .. 1 OK: 1,3
+NAME sqlite ..-1 predicate TRUE
+TRANSLATION bare indexing '...' with non-positive index -1
+TRANSLATION identifier `..-1`
+ORDINARY_COLLECT sqlite ..-1 OK: 1,3
+ORDINARY_COMPUTE sqlite ..-1 OK: 1,3
+NAME sqlite .env predicate TRUE
+TRANSLATION bare Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?
+TRANSLATION identifier `.env`
+ORDINARY_COLLECT sqlite .env OK: 1,3
+ADAPTER sqlite drop UNION ALL OK
+PARENT_SHARE sqlite drop ..+0 ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! indexing '...' with non-positive index 0
+PARENT_SHARE sqlite drop ..+1 ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in
+PARENT_SHARE sqlite drop .. 1 ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error in `purrr::map()`:
+ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in
+PARENT_SHARE sqlite drop ..-1 0.25,0.75,1
+NAME duckdb ..+0 predicate FALSE
+TRANSLATION bare indexing '...' with non-positive index 0
+TRANSLATION identifier "..+0"
+ORDINARY_COLLECT duckdb ..+0 OK: 1,3
+ORDINARY_COMPUTE duckdb ..+0 OK: 1,3
+NAME duckdb ..+1 predicate FALSE
+TRANSLATION bare ..1 used in an incorrect context, no ... to look in
+TRANSLATION identifier "..+1"
+ORDINARY_COLLECT duckdb ..+1 OK: 1,3
+ORDINARY_COMPUTE duckdb ..+1 OK: 1,3
+NAME duckdb .. 1 predicate FALSE
+TRANSLATION bare ..1 used in an incorrect context, no ... to look in
+TRANSLATION identifier ".. 1"
+ORDINARY_COLLECT duckdb .. 1 OK: 1,3
+ORDINARY_COMPUTE duckdb .. 1 OK: 1,3
+NAME duckdb ..-1 predicate TRUE
+TRANSLATION bare indexing '...' with non-positive index -1
+TRANSLATION identifier "..-1"
+ORDINARY_COLLECT duckdb ..-1 OK: 1,3
+ORDINARY_COMPUTE duckdb ..-1 OK: 1,3
+NAME duckdb .env predicate TRUE
+TRANSLATION bare Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?
+TRANSLATION identifier ".env"
+ORDINARY_COLLECT duckdb .env OK: 1,3
+ADAPTER duckdb drop GROUPING SETS OK
+PARENT_SHARE duckdb drop ..+0 indexing '...' with non-positive index 0
+PARENT_SHARE duckdb drop ..+1 ..1 used in an incorrect context, no ... to look in
+PARENT_SHARE duckdb drop .. 1 ..1 used in an incorrect context, no ... to look in
+PARENT_SHARE duckdb drop ..-1 0.25,0.75,1
+ADAPTER duckdb keep UNION ALL OK
+PARENT_SHARE duckdb keep ..+0 ℹ In index: 1.
+Caused by error:
+! indexing '...' with non-positive index 0
+PARENT_SHARE duckdb keep ..+1 ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in
+PARENT_SHARE duckdb keep .. 1 ℹ In index: 1.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in
+PARENT_SHARE duckdb keep ..-1 0.25,0.75,1

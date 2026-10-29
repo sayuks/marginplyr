@@ -1,0 +1,47 @@
+complex dtplyr 1 FALSE ORDINARY_REFUSAL simpleError unsupported column type found in x or y: [complex]
+complex dtplyr 1 TRUE ORDINARY_REFUSAL simpleError unsupported column type found in x or y: [complex]
+complex dtplyr 2 FALSE ORDINARY_REFUSAL simpleError unsupported column type found in x or y: [complex]
+complex dtplyr 2 TRUE ORDINARY_REFUSAL simpleError unsupported column type found in x or y: [complex]
+complex dtplyr 3 FALSE ORDINARY_REFUSAL simpleError unsupported column type found in x or y: [complex]
+complex dtplyr 3 TRUE ORDINARY_REFUSAL simpleError unsupported column type found in x or y: [complex]
+list dtplyr 1 FALSE ORDINARY_REFUSAL simpleError Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+list dtplyr 1 TRUE ORDINARY_REFUSAL simpleError Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+list dtplyr 2 FALSE ORDINARY_REFUSAL simpleError Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+list dtplyr 2 TRUE ORDINARY_REFUSAL simpleError Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+list dtplyr 3 FALSE ORDINARY_REFUSAL simpleError Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+list dtplyr 3 TRUE ORDINARY_REFUSAL simpleError Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+list_raw dtplyr 1 FALSE ORDINARY_REFUSAL simpleError Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+list_raw dtplyr 1 TRUE ORDINARY_REFUSAL simpleError Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+list_raw dtplyr 2 FALSE ORDINARY_REFUSAL simpleError Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+list_raw dtplyr 2 TRUE ORDINARY_REFUSAL simpleError Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+list_raw dtplyr 3 FALSE ORDINARY_REFUSAL simpleError Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+list_raw dtplyr 3 TRUE ORDINARY_REFUSAL simpleError Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+matrix dtplyr 1 FALSE ORDINARY_REFUSAL vctrs_error_subscript_oob Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+matrix dtplyr 1 TRUE ORDINARY_REFUSAL vctrs_error_subscript_oob Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+matrix dtplyr 2 FALSE ORDINARY_REFUSAL vctrs_error_subscript_oob Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+matrix dtplyr 2 TRUE ORDINARY_REFUSAL vctrs_error_subscript_oob Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+matrix dtplyr 3 FALSE ORDINARY_REFUSAL vctrs_error_subscript_oob Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+matrix dtplyr 3 TRUE ORDINARY_REFUSAL vctrs_error_subscript_oob Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+frame dtplyr 1 FALSE ORDINARY_REFUSAL vctrs_error_subscript_oob Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+frame dtplyr 1 TRUE ORDINARY_REFUSAL vctrs_error_subscript_oob Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+frame dtplyr 2 FALSE ORDINARY_REFUSAL vctrs_error_subscript_oob Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+frame dtplyr 2 TRUE ORDINARY_REFUSAL vctrs_error_subscript_oob Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+frame dtplyr 3 FALSE ORDINARY_REFUSAL vctrs_error_subscript_oob Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+frame dtplyr 3 TRUE ORDINARY_REFUSAL vctrs_error_subscript_oob Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+         attempts           results            ratios ordinary_refusals
+              192               162              8828                30
+   share_refusals        mismatches
+                0                 0
+Signals: 0

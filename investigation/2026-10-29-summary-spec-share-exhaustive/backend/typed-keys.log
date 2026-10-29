@@ -1,0 +1,24 @@
+[1] 0
+COMPLETED_TYPE array checks 36 signals 0
+COMPLETED_TYPE struct checks 72 signals 0
+COMPLETED_TYPE map checks 108 signals 0
+COMPLETED_TYPE blob checks 144 signals 0
+COMPLETED_TYPE uuid checks 180 signals 0
+COMPLETED_TYPE interval checks 216 signals 0
+FIXTURE_REFUSED json Can't query fields.
+ℹ Using SQL: SELECT * FROM (SELECT CAST(i % 2 AS JSON) AS k, 'g' || CAST(i % 2
+  AS VARCHAR) AS g, i AS v FROM range(1,5) t(i)) AS q01 WHERE (0 = 1)
+Caused by error in `dbSendQuery()`:
+! Extension Autoloading Error: An error occurred while trying to automatically install the required extension 'json':
+Extension "/var/folders/jv/m3wxfdhx765fl9k6nym08g0r0000gn/T//RtmpMBATQV/duckdb/extensions/v1.5.5/osx_arm64/json.duckdb_extension" not found.
+Extension "json" is an existing extension.
+
+Install it first using "INSTALL json".
+ℹ Context: rapi_prepare
+ℹ Error type: AUTOLOAD
+COMPLETED_TYPE timetz checks 252 signals 0
+COMPLETED_TYPE decimal checks 288 signals 0
+COMPLETED_TYPE date checks 324 signals 0
+COMPLETED_TYPE nan checks 360 signals 0
+COMPLETED_TYPE infinity checks 396 signals 0
+CHECKS 396 SIGNALS 0

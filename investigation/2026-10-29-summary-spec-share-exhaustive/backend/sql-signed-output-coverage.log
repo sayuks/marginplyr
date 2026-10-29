@@ -1,0 +1,51 @@
+Investigated: 2026-10-29
+Baseline: 4c63bb917ed7ed31ff6aadf060a5eae7a32cd004
+Public cases: 1080 Failures: 612 Controls: 93 Control failures: 0
+, , ok = FALSE
+
+                 name
+engine            .. 1 ..-1 ..+0 ..+1 .env
+  duckdb_native     60    0   60   60    0
+  duckdb_portable   72    0   72   72    0
+  sqlite            72    0   72   72    0
+
+, , ok = TRUE
+
+                 name
+engine            .. 1 ..-1 ..+0 ..+1 .env
+  duckdb_native     12   72   12   12   72
+  duckdb_portable    0   72    0    0   72
+  sqlite             0   72    0    0   72
+
+Target names by role
+
+             FALSE TRUE
+  identifier   162    0
+  share        126   36
+  source       162    0
+  summary      162    0
+Target names by plan
+
+               FALSE TRUE
+  none           198   18
+  rollup         216    0
+  single_empty   198   18
+Target names by contents
+
+            FALSE TRUE
+  empty       306   18
+  populated   306   18
+Target names by sort
+
+        FALSE TRUE
+  first   204   12
+  last    204   12
+  none    204   12
+Target names by stage
+
+           FALSE TRUE
+  complete     0   36
+  render     612    0
+Distinct matrix coordinate counts
+  engine contents     plan     role     name     sort
+       3        2        3        4        5        3

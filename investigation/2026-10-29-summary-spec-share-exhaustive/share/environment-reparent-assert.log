@@ -1,0 +1,339 @@
+parent source same get BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+parent source same get0 BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+parent source same mget BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+parent source same exists BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <int>    <dbl>
+1 a         1     1        1
+2 b         3     1        1
+3 Total     4     1        1
+parent source prior get BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+parent source prior get0 BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+parent source prior mget BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+parent source prior exists BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <int>    <dbl>
+1 a         1     1        1
+2 b         3     1        1
+3 Total     4     1        1
+parent source separate get BYPASS
+# A tibble: 3 × 5
+  g      mark prior value fraction
+  <chr> <dbl> <dbl> <dbl>    <dbl>
+1 a         0     1     1     0.25
+2 b         0     3     3     0.75
+3 Total     0     4     4     1
+parent source separate get0 BYPASS
+# A tibble: 3 × 5
+  g      mark prior value fraction
+  <chr> <dbl> <dbl> <dbl>    <dbl>
+1 a         0     1     1     0.25
+2 b         0     3     3     0.75
+3 Total     0     4     4     1
+parent source separate mget BYPASS
+# A tibble: 3 × 5
+  g      mark prior value fraction
+  <chr> <dbl> <dbl> <dbl>    <dbl>
+1 a         0     1     1     0.25
+2 b         0     3     3     0.75
+3 Total     0     4     4     1
+parent source separate exists BYPASS
+# A tibble: 3 × 5
+  g      mark prior value fraction
+  <chr> <dbl> <dbl> <int>    <dbl>
+1 a         0     1     1        1
+2 b         0     3     1        1
+3 Total     0     4     1        1
+parent derived same get BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+parent derived same get0 BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+parent derived same mget BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+parent derived same exists BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <int>
+1 a         1  0.25       1
+2 b         3  0.75       1
+3 Total     4  1          1
+parent derived prior get BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+parent derived prior get0 BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+parent derived prior mget BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+parent derived prior exists BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <int>
+1 a         1  0.25       1
+2 b         3  0.75       1
+3 Total     4  1          1
+parent derived separate get BYPASS
+# A tibble: 3 × 5
+  g      mark value prior derived
+  <chr> <dbl> <dbl> <dbl>   <dbl>
+1 a         0     1  0.25     100
+2 b         0     3  0.75     300
+3 Total     0     4  1        400
+parent derived separate get0 BYPASS
+# A tibble: 3 × 5
+  g      mark value prior derived
+  <chr> <dbl> <dbl> <dbl>   <dbl>
+1 a         0     1  0.25     100
+2 b         0     3  0.75     300
+3 Total     0     4  1        400
+parent derived separate mget BYPASS
+# A tibble: 3 × 5
+  g      mark value prior derived
+  <chr> <dbl> <dbl> <dbl>   <dbl>
+1 a         0     1  0.25     100
+2 b         0     3  0.75     300
+3 Total     0     4  1        400
+parent derived separate exists BYPASS
+# A tibble: 3 × 5
+  g      mark value prior derived
+  <chr> <dbl> <dbl> <dbl>   <int>
+1 a         0     1  0.25       1
+2 b         0     3  0.75       1
+3 Total     0     4  1          1
+total source same get BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+total source same get0 BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+total source same mget BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+total source same exists BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <int>    <dbl>
+1 a         1     1        1
+2 b         3     1        1
+3 Total     4     1        1
+total source prior get BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+total source prior get0 BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+total source prior mget BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+total source prior exists BYPASS
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <int>    <dbl>
+1 a         1     1        1
+2 b         3     1        1
+3 Total     4     1        1
+total source separate get BYPASS
+# A tibble: 3 × 5
+  g      mark prior value fraction
+  <chr> <dbl> <dbl> <dbl>    <dbl>
+1 a         0     1     1     0.25
+2 b         0     3     3     0.75
+3 Total     0     4     4     1
+total source separate get0 BYPASS
+# A tibble: 3 × 5
+  g      mark prior value fraction
+  <chr> <dbl> <dbl> <dbl>    <dbl>
+1 a         0     1     1     0.25
+2 b         0     3     3     0.75
+3 Total     0     4     4     1
+total source separate mget BYPASS
+# A tibble: 3 × 5
+  g      mark prior value fraction
+  <chr> <dbl> <dbl> <dbl>    <dbl>
+1 a         0     1     1     0.25
+2 b         0     3     3     0.75
+3 Total     0     4     4     1
+total source separate exists BYPASS
+# A tibble: 3 × 5
+  g      mark prior value fraction
+  <chr> <dbl> <dbl> <int>    <dbl>
+1 a         0     1     1        1
+2 b         0     3     1        1
+3 Total     0     4     1        1
+total derived same get BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+total derived same get0 BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+total derived same mget BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+total derived same exists BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <int>
+1 a         1  0.25       1
+2 b         3  0.75       1
+3 Total     4  1          1
+total derived prior get BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+total derived prior get0 BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+total derived prior mget BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+total derived prior exists BYPASS
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <int>
+1 a         1  0.25       1
+2 b         3  0.75       1
+3 Total     4  1          1
+total derived separate get BYPASS
+# A tibble: 3 × 5
+  g      mark value prior derived
+  <chr> <dbl> <dbl> <dbl>   <dbl>
+1 a         0     1  0.25     100
+2 b         0     3  0.75     300
+3 Total     0     4  1        400
+total derived separate get0 BYPASS
+# A tibble: 3 × 5
+  g      mark value prior derived
+  <chr> <dbl> <dbl> <dbl>   <dbl>
+1 a         0     1  0.25     100
+2 b         0     3  0.75     300
+3 Total     0     4  1        400
+total derived separate mget BYPASS
+# A tibble: 3 × 5
+  g      mark value prior derived
+  <chr> <dbl> <dbl> <dbl>   <dbl>
+1 a         0     1  0.25     100
+2 b         0     3  0.75     300
+3 Total     0     4  1        400
+total derived separate exists BYPASS
+# A tibble: 3 × 5
+  g      mark value prior derived
+  <chr> <dbl> <dbl> <dbl>   <int>
+1 a         0     1  0.25       1
+2 b         0     3  0.75       1
+3 Total     0     4  1          1
+Dependency checks: 48 missing refusals: 48 controls passed: 11
+Error: 48 reparented-environment dependency refusals were bypassed
+Execution halted

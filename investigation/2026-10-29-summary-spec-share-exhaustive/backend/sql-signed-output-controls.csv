@@ -1,0 +1,94 @@
+"engine","contents","plan","name","control","ok"
+"sqlite","populated","none","..+0","ordinary_grouped_output",TRUE
+"sqlite","populated","none","..+1","ordinary_grouped_output",TRUE
+"sqlite","populated","none",".. 1","ordinary_grouped_output",TRUE
+"sqlite","populated","none","..-1","ordinary_grouped_output",TRUE
+"sqlite","populated","none",".env","ordinary_grouped_output",TRUE
+"sqlite","populated","single_empty","..+0","ordinary_grouped_output",TRUE
+"sqlite","populated","single_empty","..+1","ordinary_grouped_output",TRUE
+"sqlite","populated","single_empty",".. 1","ordinary_grouped_output",TRUE
+"sqlite","populated","single_empty","..-1","ordinary_grouped_output",TRUE
+"sqlite","populated","single_empty",".env","ordinary_grouped_output",TRUE
+"sqlite","populated","rollup","..+0","ordinary_grouped_output",TRUE
+"sqlite","populated","rollup","..+1","ordinary_grouped_output",TRUE
+"sqlite","populated","rollup",".. 1","ordinary_grouped_output",TRUE
+"sqlite","populated","rollup","..-1","ordinary_grouped_output",TRUE
+"sqlite","populated","rollup",".env","ordinary_grouped_output",TRUE
+"sqlite","empty","none","..+0","ordinary_grouped_output",TRUE
+"sqlite","empty","none","..+1","ordinary_grouped_output",TRUE
+"sqlite","empty","none",".. 1","ordinary_grouped_output",TRUE
+"sqlite","empty","none","..-1","ordinary_grouped_output",TRUE
+"sqlite","empty","none",".env","ordinary_grouped_output",TRUE
+"sqlite","empty","single_empty","..+0","ordinary_grouped_output",TRUE
+"sqlite","empty","single_empty","..+1","ordinary_grouped_output",TRUE
+"sqlite","empty","single_empty",".. 1","ordinary_grouped_output",TRUE
+"sqlite","empty","single_empty","..-1","ordinary_grouped_output",TRUE
+"sqlite","empty","single_empty",".env","ordinary_grouped_output",TRUE
+"sqlite","empty","rollup","..+0","ordinary_grouped_output",TRUE
+"sqlite","empty","rollup","..+1","ordinary_grouped_output",TRUE
+"sqlite","empty","rollup",".. 1","ordinary_grouped_output",TRUE
+"sqlite","empty","rollup","..-1","ordinary_grouped_output",TRUE
+"sqlite","empty","rollup",".env","ordinary_grouped_output",TRUE
+"duckdb_native","populated","none","..+0","ordinary_grouped_output",TRUE
+"duckdb_native","populated","none","..+1","ordinary_grouped_output",TRUE
+"duckdb_native","populated","none",".. 1","ordinary_grouped_output",TRUE
+"duckdb_native","populated","none","..-1","ordinary_grouped_output",TRUE
+"duckdb_native","populated","none",".env","ordinary_grouped_output",TRUE
+"duckdb_native","populated","single_empty","..+0","ordinary_grouped_output",TRUE
+"duckdb_native","populated","single_empty","..+1","ordinary_grouped_output",TRUE
+"duckdb_native","populated","single_empty",".. 1","ordinary_grouped_output",TRUE
+"duckdb_native","populated","single_empty","..-1","ordinary_grouped_output",TRUE
+"duckdb_native","populated","single_empty",".env","ordinary_grouped_output",TRUE
+"duckdb_native","populated","rollup","..+0","ordinary_grouped_output",TRUE
+"duckdb_native","populated","rollup","..+1","ordinary_grouped_output",TRUE
+"duckdb_native","populated","rollup",".. 1","ordinary_grouped_output",TRUE
+"duckdb_native","populated","rollup","..-1","ordinary_grouped_output",TRUE
+"duckdb_native","populated","rollup",".env","ordinary_grouped_output",TRUE
+"duckdb_native","empty","none","..+0","ordinary_grouped_output",TRUE
+"duckdb_native","empty","none","..+1","ordinary_grouped_output",TRUE
+"duckdb_native","empty","none",".. 1","ordinary_grouped_output",TRUE
+"duckdb_native","empty","none","..-1","ordinary_grouped_output",TRUE
+"duckdb_native","empty","none",".env","ordinary_grouped_output",TRUE
+"duckdb_native","empty","single_empty","..+0","ordinary_grouped_output",TRUE
+"duckdb_native","empty","single_empty","..+1","ordinary_grouped_output",TRUE
+"duckdb_native","empty","single_empty",".. 1","ordinary_grouped_output",TRUE
+"duckdb_native","empty","single_empty","..-1","ordinary_grouped_output",TRUE
+"duckdb_native","empty","single_empty",".env","ordinary_grouped_output",TRUE
+"duckdb_native","empty","rollup","..+0","ordinary_grouped_output",TRUE
+"duckdb_native","empty","rollup","..+1","ordinary_grouped_output",TRUE
+"duckdb_native","empty","rollup",".. 1","ordinary_grouped_output",TRUE
+"duckdb_native","empty","rollup","..-1","ordinary_grouped_output",TRUE
+"duckdb_native","empty","rollup",".env","ordinary_grouped_output",TRUE
+"duckdb_portable","populated","none","..+0","ordinary_grouped_output",TRUE
+"duckdb_portable","populated","none","..+1","ordinary_grouped_output",TRUE
+"duckdb_portable","populated","none",".. 1","ordinary_grouped_output",TRUE
+"duckdb_portable","populated","none","..-1","ordinary_grouped_output",TRUE
+"duckdb_portable","populated","none",".env","ordinary_grouped_output",TRUE
+"duckdb_portable","populated","single_empty","..+0","ordinary_grouped_output",TRUE
+"duckdb_portable","populated","single_empty","..+1","ordinary_grouped_output",TRUE
+"duckdb_portable","populated","single_empty",".. 1","ordinary_grouped_output",TRUE
+"duckdb_portable","populated","single_empty","..-1","ordinary_grouped_output",TRUE
+"duckdb_portable","populated","single_empty",".env","ordinary_grouped_output",TRUE
+"duckdb_portable","populated","rollup","..+0","ordinary_grouped_output",TRUE
+"duckdb_portable","populated","rollup","..+1","ordinary_grouped_output",TRUE
+"duckdb_portable","populated","rollup",".. 1","ordinary_grouped_output",TRUE
+"duckdb_portable","populated","rollup","..-1","ordinary_grouped_output",TRUE
+"duckdb_portable","populated","rollup",".env","ordinary_grouped_output",TRUE
+"duckdb_portable","empty","none","..+0","ordinary_grouped_output",TRUE
+"duckdb_portable","empty","none","..+1","ordinary_grouped_output",TRUE
+"duckdb_portable","empty","none",".. 1","ordinary_grouped_output",TRUE
+"duckdb_portable","empty","none","..-1","ordinary_grouped_output",TRUE
+"duckdb_portable","empty","none",".env","ordinary_grouped_output",TRUE
+"duckdb_portable","empty","single_empty","..+0","ordinary_grouped_output",TRUE
+"duckdb_portable","empty","single_empty","..+1","ordinary_grouped_output",TRUE
+"duckdb_portable","empty","single_empty",".. 1","ordinary_grouped_output",TRUE
+"duckdb_portable","empty","single_empty","..-1","ordinary_grouped_output",TRUE
+"duckdb_portable","empty","single_empty",".env","ordinary_grouped_output",TRUE
+"duckdb_portable","empty","rollup","..+0","ordinary_grouped_output",TRUE
+"duckdb_portable","empty","rollup","..+1","ordinary_grouped_output",TRUE
+"duckdb_portable","empty","rollup",".. 1","ordinary_grouped_output",TRUE
+"duckdb_portable","empty","rollup","..-1","ordinary_grouped_output",TRUE
+"duckdb_portable","empty","rollup",".env","ordinary_grouped_output",TRUE
+"sqlite","populated","rollup",".env","caller_lexical_env",TRUE
+"duckdb_native","populated","rollup",".env","caller_lexical_env",TRUE
+"duckdb_portable","populated","rollup",".env","caller_lexical_env",TRUE
