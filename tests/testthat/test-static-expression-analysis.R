@@ -4380,6 +4380,65 @@ test_that("evaluating a captured helper reaches the rule it always did", {
   expect_match(sql, "eval(quote(GROUPING(", fixed = TRUE)
 })
 
+test_that("literal parsed helpers are analyzed without being rewritten", {
+  data <- data.frame(region = "East")
+  parsed <- list(
+    quote(eval(str2lang("grouping_bit(region)"))),
+    quote(eval(str2expression("grouping_bit(region)"))),
+    quote(eval(parse(text = "grouping_bit(region)")))
+  )
+
+  for (expr in parsed) {
+    expect_error(
+      rlang::inject(summarize_with_margins(
+        data,
+        bit = !!expr,
+        .grouping = rollup(region),
+        .margin_label = NULL
+      )),
+      "can only be used inside",
+      class = "marginplyr_error"
+    )
+  }
+
+  grouping_bit <- function(...) 99L
+  quoted <- summarize_with_margins(
+    data,
+    bit = eval(quote(grouping_bit(region))),
+    .grouping = rollup(region),
+    .margin_label = NULL
+  )
+  expect_identical(quoted$bit, c(0L, 1L))
+
+  for (expr in parsed) {
+    result <- rlang::inject(summarize_with_margins(
+      data,
+      bit = !!expr,
+      .grouping = rollup(region),
+      .margin_label = NULL
+    ))
+    expect_identical(result$bit, c(99L, 99L))
+  }
+
+  reserved <- list(
+    quote(eval(str2lang("dplyr::cur_group_id()"))),
+    quote(eval(str2expression("dplyr::cur_group_id()"))),
+    quote(eval(parse(text = "dplyr::cur_group_id()")))
+  )
+  for (expr in reserved) {
+    expect_error(
+      rlang::inject(summarize_with_margins(
+        data,
+        gid = !!expr,
+        .grouping = rollup(region)
+      )),
+      "does not support:\ni `cur_group_id()`.",
+      fixed = TRUE,
+      class = "marginplyr_error"
+    )
+  }
+})
+
 test_that("`expression()` is one capture on both sides of the boundary", {
   # `static_language_values()` has recovered `expression()` for `eval()` since
   # #173, so reading it as ordinary code everywhere else made the two halves
