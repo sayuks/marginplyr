@@ -89,9 +89,10 @@ test_that("SQL Server expansion applies Margin order outside its source", {
     )
     sql <- gsub("\\s+", " ", as.character(dbplyr::sql_render(query)))
     expect_length(gregexpr("ORDER BY", sql, fixed = TRUE)[[1L]], 1L)
+    expect_match(sql, "\\) AS \\[[^]]+\\] ORDER BY ", perl = TRUE)
     bit <- "CASE WHEN ([set] IN (2)) THEN 1 WHEN NOT ([set] IN (2)) THEN 0 END"
     expect_match(sql, paste0(
-      ") AS [q01] ORDER BY ", bit, if (sort == "first") " DESC" else "", ","
+      " ORDER BY ", bit, if (sort == "first") " DESC" else "", ","
     ), fixed = TRUE)
     expect_identical(as.character(dplyr::tbl_vars(query)), c("g", "set", "v"))
     expect_length(dbplyr::op_sort(query), 0L)
