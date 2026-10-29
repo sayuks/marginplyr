@@ -1,0 +1,98 @@
+[
+  {
+    "script": "summary-probes.R",
+    "args": [],
+    "exit_code": 0,
+    "expected_exit_code": 0,
+    "log": "summary-replay.txt"
+  },
+  {
+    "script": "summary-probes.R",
+    "args": [
+      "--assert"
+    ],
+    "exit_code": 1,
+    "expected_exit_code": 1,
+    "log": "summary-assert.txt"
+  },
+  {
+    "script": "arrow-probes.R",
+    "args": [],
+    "exit_code": 0,
+    "expected_exit_code": 0,
+    "log": "arrow-results.txt"
+  },
+  {
+    "script": "arrow-probes.R",
+    "args": [
+      "--assert"
+    ],
+    "exit_code": 1,
+    "expected_exit_code": 1,
+    "log": "arrow-assert.txt"
+  },
+  {
+    "script": "environment-index-probes.R",
+    "args": [],
+    "exit_code": 0,
+    "expected_exit_code": 0,
+    "log": "environment-index-results.txt"
+  },
+  {
+    "script": "environment-index-probes.R",
+    "args": [
+      "--assert"
+    ],
+    "exit_code": 1,
+    "expected_exit_code": 1,
+    "log": "environment-index-assert.txt"
+  },
+  {
+    "script": "backend-derived-probes.R",
+    "args": [],
+    "exit_code": 0,
+    "expected_exit_code": 0,
+    "log": "backend-derived-results.txt"
+  },
+  {
+    "script": "grouping-probes.R",
+    "args": [],
+    "exit_code": 0,
+    "expected_exit_code": 0,
+    "log": "grouping-replay.txt"
+  },
+  {
+    "script": "share-probes.R",
+    "args": [
+      "--trace"
+    ],
+    "exit_code": 0,
+    "expected_exit_code": 0,
+    "log": "share-replay.txt"
+  },
+  {
+    "script": "share-probes.R",
+    "args": [
+      "--focused",
+      "--assert",
+      "--trace"
+    ],
+    "exit_code": 1,
+    "expected_exit_code": 1,
+    "log": "share-assert.txt"
+  },
+  {
+    "script": "dtplyr-aggregate-probes.R",
+    "args": [],
+    "exit_code": 0,
+    "expected_exit_code": 0,
+    "log": "dtplyr-aggregate-results.txt"
+  },
+  {
+    "script": "devtools::test focused six-file suite",
+    "args": [],
+    "exit_code": 0,
+    "expected_exit_code": 0,
+    "log": "baseline-suite.txt"
+  }
+]

@@ -1,0 +1,165 @@
+There were 41 warnings (use warnings() to see them)
+CHECKS 720 ERRORS 54 MISMATCHES 0
+$`distinct/dtplyr/1/none/error`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`distinct/dtplyr/1/none/keep`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`distinct/dtplyr/1/last/error`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`distinct/dtplyr/1/last/keep`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`distinct/dtplyr/1/first/error`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`distinct/dtplyr/1/first/keep`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`distinct/dtplyr/2/none/error`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`distinct/dtplyr/2/none/keep`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`distinct/dtplyr/2/last/error`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`distinct/dtplyr/2/last/keep`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`distinct/dtplyr/2/first/error`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`distinct/dtplyr/2/first/keep`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`distinct/dtplyr/3/none/error`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`distinct/dtplyr/3/none/keep`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`distinct/dtplyr/3/last/error`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`distinct/dtplyr/3/last/keep`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`distinct/dtplyr/3/first/error`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`distinct/dtplyr/3/first/keep`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`derived/dtplyr/1/none/error`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`derived/dtplyr/1/none/keep`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`derived/dtplyr/1/last/error`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`derived/dtplyr/1/last/keep`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`derived/dtplyr/1/first/error`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`derived/dtplyr/1/first/keep`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`derived/dtplyr/2/none/error`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`derived/dtplyr/2/none/keep`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`derived/dtplyr/2/last/error`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`derived/dtplyr/2/last/keep`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`derived/dtplyr/2/first/error`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`derived/dtplyr/2/first/keep`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`derived/dtplyr/3/none/error`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`derived/dtplyr/3/none/keep`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`derived/dtplyr/3/last/error`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`derived/dtplyr/3/last/keep`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`derived/dtplyr/3/first/error`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`derived/dtplyr/3/first/keep`
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+$`order/arrow/1/none/error`
+[1] "Invalid: Invalid sort key column: No match for FieldRef.Name(h) in ..marginplyr_key_1: string\ntotal: double\ncount: int64\nlower: double\nupper: double\nmean: double"
+
+$`order/arrow/1/none/keep`
+[1] "Invalid: Invalid sort key column: No match for FieldRef.Name(h) in ..marginplyr_key_1: string\n..marginplyr_key_2: string\ntotal: double\ncount: int64\nlower: double\nupper: double\nmean: double"
+
+$`order/arrow/1/last/error`
+[1] "Invalid: Invalid sort key column: No match for FieldRef.Name(h) in ..marginplyr_key_1: string\ntotal: double\ncount: int64\nlower: double\nupper: double\nmean: double"
+
+$`order/arrow/1/last/keep`
+[1] "Invalid: Invalid sort key column: No match for FieldRef.Name(h) in ..marginplyr_key_1: string\ntotal: double\ncount: int64\nlower: double\nupper: double\nmean: double"
+
+$`order/arrow/1/first/error`
+[1] "Invalid: Invalid sort key column: No match for FieldRef.Name(h) in ..marginplyr_key_1: string\n..marginplyr_key_2: string\ntotal: double\ncount: int64\nlower: double\nupper: double\nmean: double"
+
+$`order/arrow/1/first/keep`
+[1] "Invalid: Invalid sort key column: No match for FieldRef.Name(h) in ..marginplyr_key_1: string\ntotal: double\ncount: int64\nlower: double\nupper: double\nmean: double"
+
+$`order/arrow/2/none/error`
+[1] "Invalid: Invalid sort key column: No match for FieldRef.Name(h) in ..marginplyr_key_1: string\ntotal: double\ncount: int64\nlower: double\nupper: double\nmean: double"
+
+$`order/arrow/2/none/keep`
+[1] "Invalid: Invalid sort key column: No match for FieldRef.Name(h) in ..marginplyr_key_1: string\n..marginplyr_key_2: string\ntotal: double\ncount: int64\nlower: double\nupper: double\nmean: double"
+
+$`order/arrow/2/last/error`
+[1] "Invalid: Invalid sort key column: No match for FieldRef.Name(h) in ..marginplyr_key_1: string\ntotal: double\ncount: int64\nlower: double\nupper: double\nmean: double"
+
+$`order/arrow/2/last/keep`
+[1] "Invalid: Invalid sort key column: No match for FieldRef.Name(h) in ..marginplyr_key_1: string\ntotal: double\ncount: int64\nlower: double\nupper: double\nmean: double"
+
+$`order/arrow/2/first/error`
+[1] "Invalid: Invalid sort key column: No match for FieldRef.Name(h) in ..marginplyr_key_1: string\n..marginplyr_key_3: int32\ntotal: double\ncount: int64\nlower: double\nupper: double\nmean: double"
+
+$`order/arrow/2/first/keep`
+[1] "Invalid: Invalid sort key column: No match for FieldRef.Name(h) in ..marginplyr_key_1: string\ntotal: double\ncount: int64\nlower: double\nupper: double\nmean: double"
+
+$`order/arrow/3/none/error`
+[1] "Invalid: Invalid sort key column: No match for FieldRef.Name(h) in ..marginplyr_key_1: string\n..marginplyr_key_2: int32\n..marginplyr_key_3: string\ntotal: double\ncount: int64\nlower: double\nupper: double\nmean: double"
+
+$`order/arrow/3/none/keep`
+[1] "Invalid: Invalid sort key column: No match for FieldRef.Name(h) in ..marginplyr_key_1: string\ntotal: double\ncount: int64\nlower: double\nupper: double\nmean: double"
+
+$`order/arrow/3/last/error`
+[1] "Invalid: Invalid sort key column: No match for FieldRef.Name(h) in ..marginplyr_key_1: string\ntotal: double\ncount: int64\nlower: double\nupper: double\nmean: double"
+
+$`order/arrow/3/last/keep`
+[1] "Invalid: Invalid sort key column: No match for FieldRef.Name(h) in ..marginplyr_key_1: string\n..marginplyr_key_2: int32\n..marginplyr_key_3: string\ntotal: double\ncount: int64\nlower: double\nupper: double\nmean: double"
+
+$`order/arrow/3/first/error`
+[1] "Invalid: Invalid sort key column: No match for FieldRef.Name(h) in ..marginplyr_key_1: string\ntotal: double\ncount: int64\nlower: double\nupper: double\nmean: double"
+
+$`order/arrow/3/first/keep`
+[1] "Invalid: Invalid sort key column: No match for FieldRef.Name(h) in ..marginplyr_key_1: string\ntotal: double\ncount: int64\nlower: double\nupper: double\nmean: double"
+
+list()

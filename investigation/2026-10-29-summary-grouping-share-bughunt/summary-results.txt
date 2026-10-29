@@ -1,0 +1,82 @@
+MINIMAL: one unnamed summary returns a frame in one group, a scalar in another
+Ordinary dplyr:
+Class: rlang_error, error, condition
+ℹ In argument: `mixed(x)`.
+Caused by error:
+! `mixed(x)` must return compatible vectors across groups.
+ℹ Result of type <data.frame<z:integer>> for group 1: `g = 1`.
+ℹ Result of type <integer> for group 2: `g = 2`.
+Margin summary:
+  g  z mixed(x)
+1 1  3       NA
+2 2 NA        3
+MIXED-SHAPE MATRIX: 42 ordinary refusals; 42 Margin summaries accepted
+NAMED CONTROL: both refused incompatible values
+HOMOGENEOUS CONTROLS: six scalar/frame comparisons passed
+EVALUATION CONTROL: 2 calls for two groups
+BETWEEN-SET CONTROL:
+Class: simpleError, error, condition
+Union branch 2 does not have the columns of branch 1.
+Only in branch 2: z
+Only in branch 1: mixed(x)
+WRAPPING CONTROL: ordinary dplyr after the same per-value wrapping
+  g  z mixed(x)
+1 1  3       NA
+2 2 NA        3
+SHAPE DIFFERENCE: int df
+SHAPE DIFFERENCE: int tib
+SHAPE DIFFERENCE: int dflist
+SHAPE DIFFERENCE: int dfdifferent
+SHAPE DIFFERENCE: dbl df
+SHAPE DIFFERENCE: dbl tib
+SHAPE DIFFERENCE: dbl dflist
+SHAPE DIFFERENCE: dbl dfdifferent
+SHAPE DIFFERENCE: chr df
+SHAPE DIFFERENCE: chr tib
+SHAPE DIFFERENCE: chr dflist
+SHAPE DIFFERENCE: chr dfdifferent
+SHAPE DIFFERENCE: lgl df
+SHAPE DIFFERENCE: lgl tib
+SHAPE DIFFERENCE: lgl dflist
+SHAPE DIFFERENCE: lgl dfdifferent
+SHAPE DIFFERENCE: list df
+SHAPE DIFFERENCE: list tib
+SHAPE DIFFERENCE: list dflist
+SHAPE DIFFERENCE: list dfdifferent
+SHAPE DIFFERENCE: mat df
+SHAPE DIFFERENCE: mat tib
+SHAPE DIFFERENCE: mat dflist
+SHAPE DIFFERENCE: mat dfdifferent
+SHAPE DIFFERENCE: df int
+SHAPE DIFFERENCE: df dbl
+SHAPE DIFFERENCE: df chr
+SHAPE DIFFERENCE: df lgl
+SHAPE DIFFERENCE: df list
+SHAPE DIFFERENCE: df mat
+SHAPE DIFFERENCE: tib int
+SHAPE DIFFERENCE: tib dbl
+SHAPE DIFFERENCE: tib chr
+SHAPE DIFFERENCE: tib lgl
+SHAPE DIFFERENCE: tib list
+SHAPE DIFFERENCE: tib mat
+SHAPE DIFFERENCE: dflist int
+SHAPE DIFFERENCE: dflist dbl
+SHAPE DIFFERENCE: dflist chr
+SHAPE DIFFERENCE: dflist lgl
+SHAPE DIFFERENCE: dflist list
+SHAPE DIFFERENCE: dflist mat
+SHAPE DIFFERENCE: dfdifferent int
+SHAPE DIFFERENCE: dfdifferent dbl
+SHAPE DIFFERENCE: dfdifferent chr
+SHAPE DIFFERENCE: dfdifferent lgl
+SHAPE DIFFERENCE: dfdifferent list
+SHAPE DIFFERENCE: dfdifferent mat
+SHAPES: 256 pairs; 48 differences (frame/non-frame combinations)
+SEEDED SUMMARIES: 1200 cases; 448 paired errors; 752 oracle successes; 0 differences
+VERSIONS
+R version 4.6.1 (2026-06-24)
+marginplyr 0.1.0
+dplyr 1.2.1
+tibble 3.3.1
+vctrs 0.7.3
+data.table 1.18.6.1

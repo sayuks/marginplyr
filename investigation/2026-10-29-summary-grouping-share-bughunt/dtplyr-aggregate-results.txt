@@ -1,0 +1,7 @@
+sum ordinary: PASS; wrapped: cannot change value of locked binding for '.BY'
+mean ordinary: PASS; wrapped: cannot change value of locked binding for '.BY'
+min ordinary: PASS; wrapped: cannot change value of locked binding for '.BY'
+max ordinary: PASS; wrapped: cannot change value of locked binding for '.BY'
+median ordinary: PASS; wrapped: cannot change value of locked binding for '.BY'
+sd ordinary: PASS; wrapped: cannot change value of locked binding for '.BY'
+var ordinary: PASS; wrapped: cannot change value of locked binding for '.BY'

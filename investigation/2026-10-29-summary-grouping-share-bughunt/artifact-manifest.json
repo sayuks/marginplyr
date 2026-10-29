@@ -1,0 +1,147 @@
+[
+  {
+    "path": "arrow-assert.txt",
+    "bytes": 6317,
+    "sha256": "4b23f440e410a1f0cbc21863aca32b9ef310c98e21aa825dc4a81a84e43c32ab"
+  },
+  {
+    "path": "arrow-probes.R",
+    "bytes": 2911,
+    "sha256": "322a4556a1aaabc067cf69e7026dc10e355d273106489ad994a4c58ff798d583"
+  },
+  {
+    "path": "arrow-results.txt",
+    "bytes": 6222,
+    "sha256": "46d2ec228734f0018cb8ae4c212f386961f3ae9963204549add6fbc70bb6225b"
+  },
+  {
+    "path": "artifact-lintr.txt",
+    "bytes": 20,
+    "sha256": "1d670927d1333b233cea04397076e6a9d4a87f4983ebc7a0ba98796798d9acf1"
+  },
+  {
+    "path": "backend-derived-probes.R",
+    "bytes": 3422,
+    "sha256": "f6d6b44418fd1a1e6b3b843aa2701a967eab07b47bc1c1065a6d63fb70761511"
+  },
+  {
+    "path": "backend-derived-results.txt",
+    "bytes": 15803,
+    "sha256": "4d9cc208160f8bfbd34975e6950bf5e9e08404d2ee7a0681841b486fd200d2b6"
+  },
+  {
+    "path": "baseline-suite.txt",
+    "bytes": 4597,
+    "sha256": "782955bf0314f2a5b7cc2f1b915717f29f4361516727669042737a238a0cf636"
+  },
+  {
+    "path": "context-budget.txt",
+    "bytes": 506,
+    "sha256": "9e18b0de7969d34597e302bdc689757f4441a26d134a5d331ea8e7b46625a87a"
+  },
+  {
+    "path": "document-references.txt",
+    "bytes": 180,
+    "sha256": "876b58e8842ebaa2c80ac620c31b591b648719242a3149574c96b41ad12864d3"
+  },
+  {
+    "path": "dtplyr-aggregate-probes.R",
+    "bytes": 930,
+    "sha256": "acd0fd6d23f9add0e593c0de1de50708da188de95e3f1cb1e75f4a12792db7c9"
+  },
+  {
+    "path": "dtplyr-aggregate-results.txt",
+    "bytes": 542,
+    "sha256": "a2fea04ff925c05f4a9c6347320e73a02353d0549635fad1de26b3c2438a4681"
+  },
+  {
+    "path": "environment-index-assert.txt",
+    "bytes": 2585,
+    "sha256": "50306d1656df09374200e846328d1596c89040945da411752e0cf4b7701e01e9"
+  },
+  {
+    "path": "environment-index-probes.R",
+    "bytes": 2316,
+    "sha256": "56c92fc56b67a436fb79a06a10623060e430ce421f698762f58945a85de07e25"
+  },
+  {
+    "path": "environment-index-results.txt",
+    "bytes": 2496,
+    "sha256": "5b45a67edbd5da05f5dcc1fa5b5030a0883521f7903891d8ecb14142a0c0b22d"
+  },
+  {
+    "path": "grouping-probes.R",
+    "bytes": 9048,
+    "sha256": "d810e77818998de0ada9c97dc0e10f80ca1b9e66a47dd677e0a25cb329f5105f"
+  },
+  {
+    "path": "grouping-replay.txt",
+    "bytes": 567,
+    "sha256": "88320e0a124927868f07e2cecc34c839cb3f7e9c300e1b84514af7516bb37c3f"
+  },
+  {
+    "path": "grouping-results.txt",
+    "bytes": 567,
+    "sha256": "88320e0a124927868f07e2cecc34c839cb3f7e9c300e1b84514af7516bb37c3f"
+  },
+  {
+    "path": "jarl.txt",
+    "bytes": 149,
+    "sha256": "d6a7bbb867169fa3d69ed497da0c4cf62135431448bb4a4357d951460f57ee5b"
+  },
+  {
+    "path": "package-lintr.txt",
+    "bytes": 20,
+    "sha256": "1d670927d1333b233cea04397076e6a9d4a87f4983ebc7a0ba98796798d9acf1"
+  },
+  {
+    "path": "publication-checks.txt",
+    "bytes": 720,
+    "sha256": "7642777a294c02f0c22066f1b5b04ad245508dc9c45501a80e8424fceee1d44e"
+  },
+  {
+    "path": "replay-status.json",
+    "bytes": 1913,
+    "sha256": "6dd19a527a18fb56ea4bd2cc5e9b3b3ea85b24e64e77f8361b3aff2842d52620"
+  },
+  {
+    "path": "share-assert.txt",
+    "bytes": 6538,
+    "sha256": "a81fdb20e2be75bff162f0e4925f14905a5c1f24dfe83fd31223b155ca78c79f"
+  },
+  {
+    "path": "share-probes.R",
+    "bytes": 9523,
+    "sha256": "f80ed8218ba8e28ece2ce9fc6f737bf84c5b9c6aaf0d877a3e87375a04835547"
+  },
+  {
+    "path": "share-replay.txt",
+    "bytes": 22087,
+    "sha256": "ce7e35ec266eaa06c70c0410b375dc9b405d4c12238e7842bc23189674af6464"
+  },
+  {
+    "path": "share-results.txt",
+    "bytes": 28942,
+    "sha256": "1b205e0a0bf9f8d00abc30825ad2e5165004c12e897f716fb068d602a2d4ff24"
+  },
+  {
+    "path": "summary-assert.txt",
+    "bytes": 1085,
+    "sha256": "ea5947eb458515172a40dfd393ed768d63c0425fad132f0335ea3d2c34fe35a9"
+  },
+  {
+    "path": "summary-probes.R",
+    "bytes": 9428,
+    "sha256": "16a341ae05f465e0b38ce50e1de5f39c32d69ed593927b40a1bf1556e3138aba"
+  },
+  {
+    "path": "summary-replay.txt",
+    "bytes": 1023,
+    "sha256": "4a0e947b44598e27d1e333a3b3aa401476a665fe6d7fad635d9351e427dcfe1a"
+  },
+  {
+    "path": "summary-results.txt",
+    "bytes": 2549,
+    "sha256": "76c6cfc7f7160e7ddb3f8383616a79339001b8d7bba8bb6601d0269a41a65cfb"
+  }
+]

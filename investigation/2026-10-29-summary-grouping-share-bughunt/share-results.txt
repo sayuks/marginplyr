@@ -1,0 +1,998 @@
+Post-format report: Rscript investigation/2026-10-29-summary-grouping-share-bughunt/share-probes.R --trace
+Exit status: 0
+
+Snapshot: ee4321789ca60b6259c53df2852f1574aaede584
+R 4.6.1
+dplyr 1.2.1
+dbplyr 2.6.0
+dtplyr 1.3.3
+data.table 1.18.6.1
+RSQLite 3.53.3
+duckdb 1.5.5
+
+F-S1: dtplyr .BY source-input protection
+ordinary dtplyr and no-share Margin controls: PASS
+share_of_parent direct simpleError cannot change value of locked binding for '.BY'
+share_of_parent across simpleError cannot change value of locked binding for '.BY'
+share_of_total direct simpleError cannot change value of locked binding for '.BY'
+share_of_total across simpleError cannot change value of locked binding for '.BY'
+upstream expression-shape control: simpleError cannot change value of locked binding for '.BY'
+Detected that j uses these columns: [.BY]
+Finding groups using forderv ... forderReuseSorting: opt not possible: is.data.table(DT)=0, sortGroups=1, all1(ascArg)=1
+forder.c received 2 rows and 1 columns
+forderReuseSorting: opt=0, took 0.000s
+0.000s elapsed (0.000s cpu)
+Finding group sizes from the positions (can be avoided to save RAM) ... 0.000s elapsed (0.000s cpu)
+lapply optimization is on, j unchanged as 'list(sum(.BY))'
+GForce optimized j to 'list(gsum(.BY))' (see ?GForce)
+Making each group and running j (GForce TRUE) ... gforce initial population of grp took 0.000
+gforce assign high and low took 0.000
+This gsum (narm=FALSE) took ... gather took 0.000s
+0.000s
+gforce eval took 0.000
+0.001s elapsed (0.000s cpu)
+Detected that j uses these columns: [.BY]
+Finding groups using forderv ... forderReuseSorting: opt not possible: is.data.table(DT)=0, sortGroups=1, all1(ascArg)=1
+forder.c received 2 rows and 1 columns
+forderReuseSorting: opt=0, took 0.000s
+0.000s elapsed (0.000s cpu)
+Finding group sizes from the positions (can be avoided to save RAM) ... 0.000s elapsed (0.000s cpu)
+lapply optimization is on, j unchanged as 'list(identity_value(sum(.BY)))'
+GForce is on, but not activated for this query; left j unchanged (see ?GForce)
+Old mean optimization is on, left j unchanged.
+Making each group and running j (GForce FALSE) ... funion(setnames(copy(copy(`_DT1`))[, `:=`(..marginplyr_key_1 = g)][,
+    .(value = marginplyr:::check_dtplyr_share_source(sum(.BY),
+        share_output = "fraction", source_summary = "value",
+        share_kind = "total", call_text = "summarize_with_margins(source, value = sum(.BY), fraction = share_of_total(value), .grouping = rollup(g))"),
+        fraction = NA_real_), keyby = .(..marginplyr_key_1)],
+    "..marginplyr_key_1", "g")[, `:=`(..marginplyr_parent_original_1 = g)][,
+    `:=`(g = as.character(g))][, `:=`(..marginplyr_set_id_1 = 1L)],
+    setcolorder(copy(`_DT1`)[, `:=`(..marginplyr_key_1 = g)][,
+        .(value = marginplyr:::check_dtplyr_share_source(sum(.BY),
+            share_output = "fraction", source_summary = "value",
+            share_kind = "total", call_text = "summarize_with_margins(source, value = sum(.BY), fraction = share_of_total(value), .grouping = rollup(g))"),
+            fraction = NA_real_)][, `:=`(..marginplyr_parent_original_1 = NA_character_)][,
+        `:=`(g = rep("Total", .N))], c("g", "value", "fraction",
+    "..marginplyr_parent_original_1"))[, `:=`(..marginplyr_set_id_1 = 2L)],
+    all = TRUE)[marginplyr:::assert_dtplyr_grouped_keys(..marginplyr_set_id_1,
+    ..marginplyr_parent_original_1, share_output = "fraction",
+    share_kind = "total", call_text = "summarize_with_margins(source, value = sum(.BY), fraction = share_of_total(value), .grouping = rollup(g))")][,
+    `:=`(..marginplyr_denominator_of_value_1 = marginplyr:::dtplyr_share_denominator(value,
+        ..marginplyr_set_id_1, 2L))][, `:=`(fraction = fifelse(..marginplyr_set_id_1 %in%
+    2L, 1, fifelse(is.na(value) | is.na(..marginplyr_denominator_of_value_1) |
+    ..marginplyr_denominator_of_value_1 == 0, NA_real_, as.double(value *
+    1L)/as.double(..marginplyr_denominator_of_value_1))))][,
+    `:=`(..marginplyr_denominator_of_value_1 = NULL)][, `:=`(..marginplyr_parent_original_1 = NULL)][,
+    `:=`(..marginplyr_set_id_1 = NULL)]
+
+F-S2: computed parenthesized data-pronoun source reads
+share_of_parent computed source accepted
+# A tibble: 3 × 4
+  g     first value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+share_of_parent computed derived accepted
+# A tibble: 3 × 4
+  g     value first derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+share_of_parent variable source accepted
+# A tibble: 3 × 4
+  g     first value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+share_of_parent variable derived accepted
+# A tibble: 3 × 4
+  g     value first derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+share_of_parent repeated source accepted
+# A tibble: 3 × 4
+  g     first value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+share_of_parent repeated derived accepted
+# A tibble: 3 × 4
+  g     value first derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+share_of_total computed source accepted
+# A tibble: 3 × 4
+  g     first value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+share_of_total computed derived accepted
+# A tibble: 3 × 4
+  g     value first derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+share_of_total variable source accepted
+# A tibble: 3 × 4
+  g     first value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+share_of_total variable derived accepted
+# A tibble: 3 × 4
+  g     value first derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+share_of_total repeated source accepted
+# A tibble: 3 × 4
+  g     first value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+share_of_total repeated derived accepted
+# A tibble: 3 × 4
+  g     value first derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+literal/bare refusals and independent dynamic input reads: PASS
+
+Independent result-relative share oracle
+Fixture 1
+1 rollup FALSE local
+1 rollup FALSE dtplyr
+1 rollup FALSE sqlite
+1 rollup FALSE duckdb
+1 rollup TRUE local
+1 rollup TRUE dtplyr
+1 rollup TRUE sqlite
+1 rollup TRUE duckdb
+1 composite FALSE local
+1 composite FALSE dtplyr
+1 composite FALSE sqlite
+1 composite FALSE duckdb
+1 composite TRUE local
+1 composite TRUE dtplyr
+1 composite TRUE sqlite
+1 composite TRUE duckdb
+1 cube FALSE local
+1 cube FALSE dtplyr
+1 cube FALSE sqlite
+1 cube FALSE duckdb
+1 cube TRUE local
+1 cube TRUE dtplyr
+1 cube TRUE sqlite
+1 cube TRUE duckdb
+1 repeated FALSE local
+1 repeated FALSE dtplyr
+1 repeated FALSE sqlite
+1 repeated FALSE duckdb
+1 repeated TRUE local
+1 repeated TRUE dtplyr
+1 repeated TRUE sqlite
+1 repeated TRUE duckdb
+1 unordered FALSE local
+1 unordered FALSE dtplyr
+1 unordered FALSE sqlite
+1 unordered FALSE duckdb
+1 unordered TRUE local
+1 unordered TRUE dtplyr
+1 unordered TRUE sqlite
+1 unordered TRUE duckdb
+1 product FALSE local
+1 product FALSE dtplyr
+1 product FALSE sqlite
+1 product FALSE duckdb
+1 product TRUE local
+1 product TRUE dtplyr
+1 product TRUE sqlite
+1 product TRUE duckdb
+Fixture 2
+2 rollup FALSE local
+2 rollup FALSE dtplyr
+2 rollup FALSE sqlite
+2 rollup FALSE duckdb
+2 rollup TRUE local
+2 rollup TRUE dtplyr
+2 rollup TRUE sqlite
+2 rollup TRUE duckdb
+2 composite FALSE local
+2 composite FALSE dtplyr
+2 composite FALSE sqlite
+2 composite FALSE duckdb
+2 composite TRUE local
+2 composite TRUE dtplyr
+2 composite TRUE sqlite
+2 composite TRUE duckdb
+2 cube FALSE local
+2 cube FALSE dtplyr
+2 cube FALSE sqlite
+2 cube FALSE duckdb
+2 cube TRUE local
+2 cube TRUE dtplyr
+2 cube TRUE sqlite
+2 cube TRUE duckdb
+2 repeated FALSE local
+2 repeated FALSE dtplyr
+2 repeated FALSE sqlite
+2 repeated FALSE duckdb
+2 repeated TRUE local
+2 repeated TRUE dtplyr
+2 repeated TRUE sqlite
+2 repeated TRUE duckdb
+2 unordered FALSE local
+2 unordered FALSE dtplyr
+2 unordered FALSE sqlite
+2 unordered FALSE duckdb
+2 unordered TRUE local
+2 unordered TRUE dtplyr
+2 unordered TRUE sqlite
+2 unordered TRUE duckdb
+2 product FALSE local
+2 product FALSE dtplyr
+2 product FALSE sqlite
+2 product FALSE duckdb
+2 product TRUE local
+2 product TRUE dtplyr
+2 product TRUE sqlite
+2 product TRUE duckdb
+Fixture 3
+3 rollup FALSE local
+3 rollup FALSE dtplyr
+3 rollup FALSE sqlite
+3 rollup FALSE duckdb
+3 rollup TRUE local
+3 rollup TRUE dtplyr
+3 rollup TRUE sqlite
+3 rollup TRUE duckdb
+3 composite FALSE local
+3 composite FALSE dtplyr
+3 composite FALSE sqlite
+3 composite FALSE duckdb
+3 composite TRUE local
+3 composite TRUE dtplyr
+3 composite TRUE sqlite
+3 composite TRUE duckdb
+3 cube FALSE local
+3 cube FALSE dtplyr
+3 cube FALSE sqlite
+3 cube FALSE duckdb
+3 cube TRUE local
+3 cube TRUE dtplyr
+3 cube TRUE sqlite
+3 cube TRUE duckdb
+3 repeated FALSE local
+3 repeated FALSE dtplyr
+3 repeated FALSE sqlite
+3 repeated FALSE duckdb
+3 repeated TRUE local
+3 repeated TRUE dtplyr
+3 repeated TRUE sqlite
+3 repeated TRUE duckdb
+3 unordered FALSE local
+3 unordered FALSE dtplyr
+3 unordered FALSE sqlite
+3 unordered FALSE duckdb
+3 unordered TRUE local
+3 unordered TRUE dtplyr
+3 unordered TRUE sqlite
+3 unordered TRUE duckdb
+3 product FALSE local
+3 product FALSE dtplyr
+3 product FALSE sqlite
+3 product FALSE duckdb
+3 product TRUE local
+3 product TRUE dtplyr
+3 product TRUE sqlite
+3 product TRUE duckdb
+Fixture 4
+4 rollup FALSE local
+4 rollup FALSE dtplyr
+4 rollup FALSE sqlite
+4 rollup FALSE duckdb
+4 rollup TRUE local
+4 rollup TRUE dtplyr
+4 rollup TRUE sqlite
+4 rollup TRUE duckdb
+4 composite FALSE local
+4 composite FALSE dtplyr
+4 composite FALSE sqlite
+4 composite FALSE duckdb
+4 composite TRUE local
+4 composite TRUE dtplyr
+4 composite TRUE sqlite
+4 composite TRUE duckdb
+4 cube FALSE local
+4 cube FALSE dtplyr
+4 cube FALSE sqlite
+4 cube FALSE duckdb
+4 cube TRUE local
+4 cube TRUE dtplyr
+4 cube TRUE sqlite
+4 cube TRUE duckdb
+4 repeated FALSE local
+4 repeated FALSE dtplyr
+4 repeated FALSE sqlite
+4 repeated FALSE duckdb
+4 repeated TRUE local
+4 repeated TRUE dtplyr
+4 repeated TRUE sqlite
+4 repeated TRUE duckdb
+4 unordered FALSE local
+4 unordered FALSE dtplyr
+4 unordered FALSE sqlite
+4 unordered FALSE duckdb
+4 unordered TRUE local
+4 unordered TRUE dtplyr
+4 unordered TRUE sqlite
+4 unordered TRUE duckdb
+4 product FALSE local
+4 product FALSE dtplyr
+4 product FALSE sqlite
+4 product FALSE duckdb
+4 product TRUE local
+4 product TRUE dtplyr
+4 product TRUE sqlite
+4 product TRUE duckdb
+Fixture 5
+5 rollup FALSE local
+5 rollup FALSE dtplyr
+5 rollup FALSE sqlite
+5 rollup FALSE duckdb
+5 rollup TRUE local
+5 rollup TRUE dtplyr
+5 rollup TRUE sqlite
+5 rollup TRUE duckdb
+5 composite FALSE local
+5 composite FALSE dtplyr
+5 composite FALSE sqlite
+5 composite FALSE duckdb
+5 composite TRUE local
+5 composite TRUE dtplyr
+5 composite TRUE sqlite
+5 composite TRUE duckdb
+5 cube FALSE local
+5 cube FALSE dtplyr
+5 cube FALSE sqlite
+5 cube FALSE duckdb
+5 cube TRUE local
+5 cube TRUE dtplyr
+5 cube TRUE sqlite
+5 cube TRUE duckdb
+5 repeated FALSE local
+5 repeated FALSE dtplyr
+5 repeated FALSE sqlite
+5 repeated FALSE duckdb
+5 repeated TRUE local
+5 repeated TRUE dtplyr
+5 repeated TRUE sqlite
+5 repeated TRUE duckdb
+5 unordered FALSE local
+5 unordered FALSE dtplyr
+5 unordered FALSE sqlite
+5 unordered FALSE duckdb
+5 unordered TRUE local
+5 unordered TRUE dtplyr
+5 unordered TRUE sqlite
+5 unordered TRUE duckdb
+5 product FALSE local
+5 product FALSE dtplyr
+5 product FALSE sqlite
+5 product FALSE duckdb
+5 product TRUE local
+5 product TRUE dtplyr
+5 product TRUE sqlite
+5 product TRUE duckdb
+Fixture 6
+6 rollup FALSE local
+6 rollup FALSE dtplyr
+6 rollup FALSE sqlite
+6 rollup FALSE duckdb
+6 rollup TRUE local
+6 rollup TRUE dtplyr
+6 rollup TRUE sqlite
+6 rollup TRUE duckdb
+6 composite FALSE local
+6 composite FALSE dtplyr
+6 composite FALSE sqlite
+6 composite FALSE duckdb
+6 composite TRUE local
+6 composite TRUE dtplyr
+6 composite TRUE sqlite
+6 composite TRUE duckdb
+6 cube FALSE local
+6 cube FALSE dtplyr
+6 cube FALSE sqlite
+6 cube FALSE duckdb
+6 cube TRUE local
+6 cube TRUE dtplyr
+6 cube TRUE sqlite
+6 cube TRUE duckdb
+6 repeated FALSE local
+6 repeated FALSE dtplyr
+6 repeated FALSE sqlite
+6 repeated FALSE duckdb
+6 repeated TRUE local
+6 repeated TRUE dtplyr
+6 repeated TRUE sqlite
+6 repeated TRUE duckdb
+6 unordered FALSE local
+6 unordered FALSE dtplyr
+6 unordered FALSE sqlite
+6 unordered FALSE duckdb
+6 unordered TRUE local
+6 unordered TRUE dtplyr
+6 unordered TRUE sqlite
+6 unordered TRUE duckdb
+6 product FALSE local
+6 product FALSE dtplyr
+6 product FALSE sqlite
+6 product FALSE duckdb
+6 product TRUE local
+6 product TRUE dtplyr
+6 product TRUE sqlite
+6 product TRUE duckdb
+Fixture 7
+7 rollup FALSE local
+7 rollup FALSE dtplyr
+7 rollup FALSE sqlite
+7 rollup FALSE duckdb
+7 rollup TRUE local
+7 rollup TRUE dtplyr
+7 rollup TRUE sqlite
+7 rollup TRUE duckdb
+7 composite FALSE local
+7 composite FALSE dtplyr
+7 composite FALSE sqlite
+7 composite FALSE duckdb
+7 composite TRUE local
+7 composite TRUE dtplyr
+7 composite TRUE sqlite
+7 composite TRUE duckdb
+7 cube FALSE local
+7 cube FALSE dtplyr
+7 cube FALSE sqlite
+7 cube FALSE duckdb
+7 cube TRUE local
+7 cube TRUE dtplyr
+7 cube TRUE sqlite
+7 cube TRUE duckdb
+7 repeated FALSE local
+7 repeated FALSE dtplyr
+7 repeated FALSE sqlite
+7 repeated FALSE duckdb
+7 repeated TRUE local
+7 repeated TRUE dtplyr
+7 repeated TRUE sqlite
+7 repeated TRUE duckdb
+7 unordered FALSE local
+7 unordered FALSE dtplyr
+7 unordered FALSE sqlite
+7 unordered FALSE duckdb
+7 unordered TRUE local
+7 unordered TRUE dtplyr
+7 unordered TRUE sqlite
+7 unordered TRUE duckdb
+7 product FALSE local
+7 product FALSE dtplyr
+7 product FALSE sqlite
+7 product FALSE duckdb
+7 product TRUE local
+7 product TRUE dtplyr
+7 product TRUE sqlite
+7 product TRUE duckdb
+Fixture 8
+8 rollup FALSE local
+8 rollup FALSE dtplyr
+8 rollup FALSE sqlite
+8 rollup FALSE duckdb
+8 rollup TRUE local
+8 rollup TRUE dtplyr
+8 rollup TRUE sqlite
+8 rollup TRUE duckdb
+8 composite FALSE local
+8 composite FALSE dtplyr
+8 composite FALSE sqlite
+8 composite FALSE duckdb
+8 composite TRUE local
+8 composite TRUE dtplyr
+8 composite TRUE sqlite
+8 composite TRUE duckdb
+8 cube FALSE local
+8 cube FALSE dtplyr
+8 cube FALSE sqlite
+8 cube FALSE duckdb
+8 cube TRUE local
+8 cube TRUE dtplyr
+8 cube TRUE sqlite
+8 cube TRUE duckdb
+8 repeated FALSE local
+8 repeated FALSE dtplyr
+8 repeated FALSE sqlite
+8 repeated FALSE duckdb
+8 repeated TRUE local
+8 repeated TRUE dtplyr
+8 repeated TRUE sqlite
+8 repeated TRUE duckdb
+8 unordered FALSE local
+8 unordered FALSE dtplyr
+8 unordered FALSE sqlite
+8 unordered FALSE duckdb
+8 unordered TRUE local
+8 unordered TRUE dtplyr
+8 unordered TRUE sqlite
+8 unordered TRUE duckdb
+8 product FALSE local
+8 product FALSE dtplyr
+8 product FALSE sqlite
+8 product FALSE duckdb
+8 product TRUE local
+8 product TRUE dtplyr
+8 product TRUE sqlite
+8 product TRUE duckdb
+Fixture 9
+9 rollup FALSE local
+9 rollup FALSE dtplyr
+9 rollup FALSE sqlite
+9 rollup FALSE duckdb
+9 rollup TRUE local
+9 rollup TRUE dtplyr
+9 rollup TRUE sqlite
+9 rollup TRUE duckdb
+9 composite FALSE local
+9 composite FALSE dtplyr
+9 composite FALSE sqlite
+9 composite FALSE duckdb
+9 composite TRUE local
+9 composite TRUE dtplyr
+9 composite TRUE sqlite
+9 composite TRUE duckdb
+9 cube FALSE local
+9 cube FALSE dtplyr
+9 cube FALSE sqlite
+9 cube FALSE duckdb
+9 cube TRUE local
+9 cube TRUE dtplyr
+9 cube TRUE sqlite
+9 cube TRUE duckdb
+9 repeated FALSE local
+9 repeated FALSE dtplyr
+9 repeated FALSE sqlite
+9 repeated FALSE duckdb
+9 repeated TRUE local
+9 repeated TRUE dtplyr
+9 repeated TRUE sqlite
+9 repeated TRUE duckdb
+9 unordered FALSE local
+9 unordered FALSE dtplyr
+9 unordered FALSE sqlite
+9 unordered FALSE duckdb
+9 unordered TRUE local
+9 unordered TRUE dtplyr
+9 unordered TRUE sqlite
+9 unordered TRUE duckdb
+9 product FALSE local
+9 product FALSE dtplyr
+9 product FALSE sqlite
+9 product FALSE duckdb
+9 product TRUE local
+9 product TRUE dtplyr
+9 product TRUE sqlite
+9 product TRUE duckdb
+Fixture 10
+10 rollup FALSE local
+10 rollup FALSE dtplyr
+10 rollup FALSE sqlite
+10 rollup FALSE duckdb
+10 rollup TRUE local
+10 rollup TRUE dtplyr
+10 rollup TRUE sqlite
+10 rollup TRUE duckdb
+10 composite FALSE local
+10 composite FALSE dtplyr
+10 composite FALSE sqlite
+10 composite FALSE duckdb
+10 composite TRUE local
+10 composite TRUE dtplyr
+10 composite TRUE sqlite
+10 composite TRUE duckdb
+10 cube FALSE local
+10 cube FALSE dtplyr
+10 cube FALSE sqlite
+10 cube FALSE duckdb
+10 cube TRUE local
+10 cube TRUE dtplyr
+10 cube TRUE sqlite
+10 cube TRUE duckdb
+10 repeated FALSE local
+10 repeated FALSE dtplyr
+10 repeated FALSE sqlite
+10 repeated FALSE duckdb
+10 repeated TRUE local
+10 repeated TRUE dtplyr
+10 repeated TRUE sqlite
+10 repeated TRUE duckdb
+10 unordered FALSE local
+10 unordered FALSE dtplyr
+10 unordered FALSE sqlite
+10 unordered FALSE duckdb
+10 unordered TRUE local
+10 unordered TRUE dtplyr
+10 unordered TRUE sqlite
+10 unordered TRUE duckdb
+10 product FALSE local
+10 product FALSE dtplyr
+10 product FALSE sqlite
+10 product FALSE duckdb
+10 product TRUE local
+10 product TRUE dtplyr
+10 product TRUE sqlite
+10 product TRUE duckdb
+Fixture 11
+11 rollup FALSE local
+11 rollup FALSE dtplyr
+11 rollup FALSE sqlite
+11 rollup FALSE duckdb
+11 rollup TRUE local
+11 rollup TRUE dtplyr
+11 rollup TRUE sqlite
+11 rollup TRUE duckdb
+11 composite FALSE local
+11 composite FALSE dtplyr
+11 composite FALSE sqlite
+11 composite FALSE duckdb
+11 composite TRUE local
+11 composite TRUE dtplyr
+11 composite TRUE sqlite
+11 composite TRUE duckdb
+11 cube FALSE local
+11 cube FALSE dtplyr
+11 cube FALSE sqlite
+11 cube FALSE duckdb
+11 cube TRUE local
+11 cube TRUE dtplyr
+11 cube TRUE sqlite
+11 cube TRUE duckdb
+11 repeated FALSE local
+11 repeated FALSE dtplyr
+11 repeated FALSE sqlite
+11 repeated FALSE duckdb
+11 repeated TRUE local
+11 repeated TRUE dtplyr
+11 repeated TRUE sqlite
+11 repeated TRUE duckdb
+11 unordered FALSE local
+11 unordered FALSE dtplyr
+11 unordered FALSE sqlite
+11 unordered FALSE duckdb
+11 unordered TRUE local
+11 unordered TRUE dtplyr
+11 unordered TRUE sqlite
+11 unordered TRUE duckdb
+11 product FALSE local
+11 product FALSE dtplyr
+11 product FALSE sqlite
+11 product FALSE duckdb
+11 product TRUE local
+11 product TRUE dtplyr
+11 product TRUE sqlite
+11 product TRUE duckdb
+Fixture 12
+12 rollup FALSE local
+12 rollup FALSE dtplyr
+12 rollup FALSE sqlite
+12 rollup FALSE duckdb
+12 rollup TRUE local
+12 rollup TRUE dtplyr
+12 rollup TRUE sqlite
+12 rollup TRUE duckdb
+12 composite FALSE local
+12 composite FALSE dtplyr
+12 composite FALSE sqlite
+12 composite FALSE duckdb
+12 composite TRUE local
+12 composite TRUE dtplyr
+12 composite TRUE sqlite
+12 composite TRUE duckdb
+12 cube FALSE local
+12 cube FALSE dtplyr
+12 cube FALSE sqlite
+12 cube FALSE duckdb
+12 cube TRUE local
+12 cube TRUE dtplyr
+12 cube TRUE sqlite
+12 cube TRUE duckdb
+12 repeated FALSE local
+12 repeated FALSE dtplyr
+12 repeated FALSE sqlite
+12 repeated FALSE duckdb
+12 repeated TRUE local
+12 repeated TRUE dtplyr
+12 repeated TRUE sqlite
+12 repeated TRUE duckdb
+12 unordered FALSE local
+12 unordered FALSE dtplyr
+12 unordered FALSE sqlite
+12 unordered FALSE duckdb
+12 unordered TRUE local
+12 unordered TRUE dtplyr
+12 unordered TRUE sqlite
+12 unordered TRUE duckdb
+12 product FALSE local
+12 product FALSE dtplyr
+12 product FALSE sqlite
+12 product FALSE duckdb
+12 product TRUE local
+12 product TRUE dtplyr
+12 product TRUE sqlite
+12 product TRUE duckdb
+Fixture 13
+13 rollup FALSE local
+13 rollup FALSE dtplyr
+13 rollup FALSE sqlite
+13 rollup FALSE duckdb
+13 rollup TRUE local
+13 rollup TRUE dtplyr
+13 rollup TRUE sqlite
+13 rollup TRUE duckdb
+13 composite FALSE local
+13 composite FALSE dtplyr
+13 composite FALSE sqlite
+13 composite FALSE duckdb
+13 composite TRUE local
+13 composite TRUE dtplyr
+13 composite TRUE sqlite
+13 composite TRUE duckdb
+13 cube FALSE local
+13 cube FALSE dtplyr
+13 cube FALSE sqlite
+13 cube FALSE duckdb
+13 cube TRUE local
+13 cube TRUE dtplyr
+13 cube TRUE sqlite
+13 cube TRUE duckdb
+13 repeated FALSE local
+13 repeated FALSE dtplyr
+13 repeated FALSE sqlite
+13 repeated FALSE duckdb
+13 repeated TRUE local
+13 repeated TRUE dtplyr
+13 repeated TRUE sqlite
+13 repeated TRUE duckdb
+13 unordered FALSE local
+13 unordered FALSE dtplyr
+13 unordered FALSE sqlite
+13 unordered FALSE duckdb
+13 unordered TRUE local
+13 unordered TRUE dtplyr
+13 unordered TRUE sqlite
+13 unordered TRUE duckdb
+13 product FALSE local
+13 product FALSE dtplyr
+13 product FALSE sqlite
+13 product FALSE duckdb
+13 product TRUE local
+13 product TRUE dtplyr
+13 product TRUE sqlite
+13 product TRUE duckdb
+Fixture 14
+14 rollup FALSE local
+14 rollup FALSE dtplyr
+14 rollup FALSE sqlite
+14 rollup FALSE duckdb
+14 rollup TRUE local
+14 rollup TRUE dtplyr
+14 rollup TRUE sqlite
+14 rollup TRUE duckdb
+14 composite FALSE local
+14 composite FALSE dtplyr
+14 composite FALSE sqlite
+14 composite FALSE duckdb
+14 composite TRUE local
+14 composite TRUE dtplyr
+14 composite TRUE sqlite
+14 composite TRUE duckdb
+14 cube FALSE local
+14 cube FALSE dtplyr
+14 cube FALSE sqlite
+14 cube FALSE duckdb
+14 cube TRUE local
+14 cube TRUE dtplyr
+14 cube TRUE sqlite
+14 cube TRUE duckdb
+14 repeated FALSE local
+14 repeated FALSE dtplyr
+14 repeated FALSE sqlite
+14 repeated FALSE duckdb
+14 repeated TRUE local
+14 repeated TRUE dtplyr
+14 repeated TRUE sqlite
+14 repeated TRUE duckdb
+14 unordered FALSE local
+14 unordered FALSE dtplyr
+14 unordered FALSE sqlite
+14 unordered FALSE duckdb
+14 unordered TRUE local
+14 unordered TRUE dtplyr
+14 unordered TRUE sqlite
+14 unordered TRUE duckdb
+14 product FALSE local
+14 product FALSE dtplyr
+14 product FALSE sqlite
+14 product FALSE duckdb
+14 product TRUE local
+14 product TRUE dtplyr
+14 product TRUE sqlite
+14 product TRUE duckdb
+Oracle PASS: 672 results; 27160 row/source ratios checked
+Focused contract mismatches: 16
+
+Post-format focused assertions: Rscript investigation/2026-10-29-summary-grouping-share-bughunt/share-probes.R --focused --assert --trace
+Exit status: 1 (intentional contract-mismatch signal)
+
+Snapshot: ee4321789ca60b6259c53df2852f1574aaede584
+R 4.6.1
+dplyr 1.2.1
+dbplyr 2.6.0
+dtplyr 1.3.3
+data.table 1.18.6.1
+RSQLite 3.53.3
+duckdb 1.5.5
+
+F-S1: dtplyr .BY source-input protection
+ordinary dtplyr and no-share Margin controls: PASS
+share_of_parent direct simpleError cannot change value of locked binding for '.BY'
+share_of_parent across simpleError cannot change value of locked binding for '.BY'
+share_of_total direct simpleError cannot change value of locked binding for '.BY'
+share_of_total across simpleError cannot change value of locked binding for '.BY'
+upstream expression-shape control: simpleError cannot change value of locked binding for '.BY'
+Detected that j uses these columns: [.BY]
+Finding groups using forderv ... forderReuseSorting: opt not possible: is.data.table(DT)=0, sortGroups=1, all1(ascArg)=1
+forder.c received 2 rows and 1 columns
+forderReuseSorting: opt=0, took 0.000s
+0.000s elapsed (0.001s cpu)
+Finding group sizes from the positions (can be avoided to save RAM) ... 0.000s elapsed (0.000s cpu)
+lapply optimization is on, j unchanged as 'list(sum(.BY))'
+GForce optimized j to 'list(gsum(.BY))' (see ?GForce)
+Making each group and running j (GForce TRUE) ... gforce initial population of grp took 0.000
+gforce assign high and low took 0.000
+This gsum (narm=FALSE) took ... gather took 0.000s
+0.000s
+gforce eval took 0.000
+0.000s elapsed (0.000s cpu)
+Detected that j uses these columns: [.BY]
+Finding groups using forderv ... forderReuseSorting: opt not possible: is.data.table(DT)=0, sortGroups=1, all1(ascArg)=1
+forder.c received 2 rows and 1 columns
+forderReuseSorting: opt=0, took 0.000s
+0.000s elapsed (0.000s cpu)
+Finding group sizes from the positions (can be avoided to save RAM) ... 0.000s elapsed (0.000s cpu)
+lapply optimization is on, j unchanged as 'list(identity_value(sum(.BY)))'
+GForce is on, but not activated for this query; left j unchanged (see ?GForce)
+Old mean optimization is on, left j unchanged.
+Making each group and running j (GForce FALSE) ... funion(setnames(copy(copy(`_DT1`))[, `:=`(..marginplyr_key_1 = g)][,
+    .(value = marginplyr:::check_dtplyr_share_source(sum(.BY),
+        share_output = "fraction", source_summary = "value",
+        share_kind = "total", call_text = "summarize_with_margins(source, value = sum(.BY), fraction = share_of_total(value), .grouping = rollup(g))"),
+        fraction = NA_real_), keyby = .(..marginplyr_key_1)],
+    "..marginplyr_key_1", "g")[, `:=`(..marginplyr_parent_original_1 = g)][,
+    `:=`(g = as.character(g))][, `:=`(..marginplyr_set_id_1 = 1L)],
+    setcolorder(copy(`_DT1`)[, `:=`(..marginplyr_key_1 = g)][,
+        .(value = marginplyr:::check_dtplyr_share_source(sum(.BY),
+            share_output = "fraction", source_summary = "value",
+            share_kind = "total", call_text = "summarize_with_margins(source, value = sum(.BY), fraction = share_of_total(value), .grouping = rollup(g))"),
+            fraction = NA_real_)][, `:=`(..marginplyr_parent_original_1 = NA_character_)][,
+        `:=`(g = rep("Total", .N))], c("g", "value", "fraction",
+    "..marginplyr_parent_original_1"))[, `:=`(..marginplyr_set_id_1 = 2L)],
+    all = TRUE)[marginplyr:::assert_dtplyr_grouped_keys(..marginplyr_set_id_1,
+    ..marginplyr_parent_original_1, share_output = "fraction",
+    share_kind = "total", call_text = "summarize_with_margins(source, value = sum(.BY), fraction = share_of_total(value), .grouping = rollup(g))")][,
+    `:=`(..marginplyr_denominator_of_value_1 = marginplyr:::dtplyr_share_denominator(value,
+        ..marginplyr_set_id_1, 2L))][, `:=`(fraction = fifelse(..marginplyr_set_id_1 %in%
+    2L, 1, fifelse(is.na(value) | is.na(..marginplyr_denominator_of_value_1) |
+    ..marginplyr_denominator_of_value_1 == 0, NA_real_, as.double(value *
+    1L)/as.double(..marginplyr_denominator_of_value_1))))][,
+    `:=`(..marginplyr_denominator_of_value_1 = NULL)][, `:=`(..marginplyr_parent_original_1 = NULL)][,
+    `:=`(..marginplyr_set_id_1 = NULL)]
+
+F-S2: computed parenthesized data-pronoun source reads
+share_of_parent computed source accepted
+# A tibble: 3 × 4
+  g     first value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+share_of_parent computed derived accepted
+# A tibble: 3 × 4
+  g     value first derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+share_of_parent variable source accepted
+# A tibble: 3 × 4
+  g     first value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+share_of_parent variable derived accepted
+# A tibble: 3 × 4
+  g     value first derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+share_of_parent repeated source accepted
+# A tibble: 3 × 4
+  g     first value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+share_of_parent repeated derived accepted
+# A tibble: 3 × 4
+  g     value first derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+share_of_total computed source accepted
+# A tibble: 3 × 4
+  g     first value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+share_of_total computed derived accepted
+# A tibble: 3 × 4
+  g     value first derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+share_of_total variable source accepted
+# A tibble: 3 × 4
+  g     first value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+share_of_total variable derived accepted
+# A tibble: 3 × 4
+  g     value first derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+share_of_total repeated source accepted
+# A tibble: 3 × 4
+  g     first value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+share_of_total repeated derived accepted
+# A tibble: 3 × 4
+  g     value first derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+literal/bare refusals and independent dynamic input reads: PASS
+Focused contract mismatches: 16
