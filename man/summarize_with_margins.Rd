@@ -454,9 +454,10 @@ Margin order from a lazy result with no diagnostic naming this package.
 
 The \code{...} expressions use \code{\link[dplyr:summarize]{dplyr::summarize()}} data-masking semantics.
 
-A few spellings mean something only because marginplyr rewrites them before
-anything runs. Those are recognized by spelling and are never looked up in
-the environment the call was written in, so binding a function of your own
+In expressions marginplyr can rewrite, a few spellings mean something only
+because it rewrites them before anything runs. Those are recognized by
+spelling and are never looked up in the environment the call was written
+in, so binding a function of your own
 to one of their names does not change what this verb does with it. They are
 \code{\link[=grouping_bit]{grouping_bit()}} and \code{\link[=grouping_id]{grouping_id()}}; \code{\link[=share_of_parent]{share_of_parent()}} and
 \code{\link[=share_of_total]{share_of_total()}}; \code{\link[dplyr:across]{dplyr::across()}}, \code{\link[dplyr:if_any]{dplyr::if_any()}},
@@ -526,23 +527,23 @@ rejected by spelling like the rest, which is stricter than
 of their own still gets the refusal, because reading that binding would
 mean resolving a call head against the calling environment.
 
-Every rule above reads the expression the data mask evaluates. An expression
-captured as language data — the argument of a plainly written
+marginplyr distinguishes code the data mask evaluates from language data.
+An expression captured as language data — the argument of a plainly written
 \code{\link[base:quote]{base::quote()}}, \code{\link[base:substitute]{base::substitute()}}, \code{\link[base:expression]{base::expression()}},
 \code{\link[base:bquote]{base::bquote()}}, \code{rlang::expr()}, or \code{rlang::quo()} — is a value
 the summary carries, so marginplyr neither analyzes nor rewrites what is
 inside it: a captured helper name requests nothing, creates no dependency on
 an earlier summary, and reaches the backend as written. Evaluating one with
 \code{\link[base:eval]{base::eval()}}, \code{\link[rlang:eval_tidy]{rlang::eval_tidy()}}, or \code{\link[rlang:eval_bare]{rlang::eval_bare()}} runs it in the
-data mask, so what it holds is analyzed as the code it becomes and every
-rule above applies to it.
+data mask. When the capture is written visibly there, its helper calls are
+analyzed and rewritten as the code they become.
 
 In \code{bquote()}, the operand of \code{.()} is evaluated and follows those rules;
 the surrounding language stays literal. Splicing with \code{..()} is refused
 when \code{splice} is enabled or cannot be determined statically. Build that
 language outside the Margin verb instead.
 
-Both halves are read statically, so both stop where a static reading does.
+Capture recognition, analysis, and rewriting are static.
 \code{quote()}, \code{substitute()}, and \code{expression()} name their primitive plainly,
 qualified with \verb{base::} or not. The additional captures require their
 qualifier: \code{base::bquote()}, \code{rlang::expr()}, and \code{rlang::quo()}.
@@ -550,10 +551,14 @@ Qualified \code{bquote()},
 \code{expr()}, and \code{quo()} also allow parentheses around the head.
 Any other spelling — another namespace, or a head computed
 at run time — is analyzed as ordinary code, which can refuse a call that
-only carries language. An evaluation is followed wherever the language it
-runs can be read without running the call, which covers a capture written
-out and text parsed from a literal, but not language a summary builds while
-it runs.
+only carries language. Static searches and dependency analysis also follow
+evaluated text parsed from a literal by \code{str2lang()}, \code{str2expression()}, or
+\code{parse(text = ...)}. Parsed helper calls are not rewritten: for example,
+\code{eval(quote(grouping_bit(region)))} returns the Grouping bit, while
+\code{eval(str2lang("grouping_bit(region)"))} reaches the helper's runtime
+context guard, or a caller's own \code{grouping_bit} binding under ordinary
+lookup. A parsed \code{cur_group_id()} is still found and refused statically.
+Language assembled from values unknown statically is not followed.
 }
 
 \section{Summaries a lazy backend cannot carry}{

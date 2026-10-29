@@ -404,9 +404,10 @@
 #' @section Relationship to dplyr summaries:
 #' The `...` expressions use [dplyr::summarize()] data-masking semantics.
 #'
-#' A few spellings mean something only because marginplyr rewrites them before
-#' anything runs. Those are recognized by spelling and are never looked up in
-#' the environment the call was written in, so binding a function of your own
+#' In expressions marginplyr can rewrite, a few spellings mean something only
+#' because it rewrites them before anything runs. Those are recognized by
+#' spelling and are never looked up in the environment the call was written
+#' in, so binding a function of your own
 #' to one of their names does not change what this verb does with it. They are
 #' [grouping_bit()] and [grouping_id()]; [share_of_parent()] and
 #' [share_of_total()]; [dplyr::across()], [dplyr::if_any()],
@@ -476,23 +477,23 @@
 #' of their own still gets the refusal, because reading that binding would
 #' mean resolving a call head against the calling environment.
 #'
-#' Every rule above reads the expression the data mask evaluates. An expression
-#' captured as language data — the argument of a plainly written
+#' marginplyr distinguishes code the data mask evaluates from language data.
+#' An expression captured as language data — the argument of a plainly written
 #' [base::quote()], [base::substitute()], [base::expression()],
 #' [base::bquote()], `rlang::expr()`, or `rlang::quo()` — is a value
 #' the summary carries, so marginplyr neither analyzes nor rewrites what is
 #' inside it: a captured helper name requests nothing, creates no dependency on
 #' an earlier summary, and reaches the backend as written. Evaluating one with
 #' [base::eval()], [rlang::eval_tidy()], or [rlang::eval_bare()] runs it in the
-#' data mask, so what it holds is analyzed as the code it becomes and every
-#' rule above applies to it.
+#' data mask. When the capture is written visibly there, its helper calls are
+#' analyzed and rewritten as the code they become.
 #'
 #' In `bquote()`, the operand of `.()` is evaluated and follows those rules;
 #' the surrounding language stays literal. Splicing with `..()` is refused
 #' when `splice` is enabled or cannot be determined statically. Build that
 #' language outside the Margin verb instead.
 #'
-#' Both halves are read statically, so both stop where a static reading does.
+#' Capture recognition, analysis, and rewriting are static.
 #' `quote()`, `substitute()`, and `expression()` name their primitive plainly,
 #' qualified with `base::` or not. The additional captures require their
 #' qualifier: `base::bquote()`, `rlang::expr()`, and `rlang::quo()`.
@@ -500,10 +501,14 @@
 #' `expr()`, and `quo()` also allow parentheses around the head.
 #' Any other spelling — another namespace, or a head computed
 #' at run time — is analyzed as ordinary code, which can refuse a call that
-#' only carries language. An evaluation is followed wherever the language it
-#' runs can be read without running the call, which covers a capture written
-#' out and text parsed from a literal, but not language a summary builds while
-#' it runs.
+#' only carries language. Static searches and dependency analysis also follow
+#' evaluated text parsed from a literal by `str2lang()`, `str2expression()`, or
+#' `parse(text = ...)`. Parsed helper calls are not rewritten: for example,
+#' `eval(quote(grouping_bit(region)))` returns the Grouping bit, while
+#' `eval(str2lang("grouping_bit(region)"))` reaches the helper's runtime
+#' context guard, or a caller's own `grouping_bit` binding under ordinary
+#' lookup. A parsed `cur_group_id()` is still found and refused statically.
+#' Language assembled from values unknown statically is not followed.
 #'
 #' @section Summaries a lazy backend cannot carry:
 #' Two lazy inputs cannot carry back a summary with no columns in it: asked
