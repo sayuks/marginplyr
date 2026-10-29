@@ -1,0 +1,12 @@
+       source filtered unioned
+rows        3        1       6
+length      3        1       6
+start       3        3       3
+[[1]]
+[1] 3
+
+[[2]]
+[1] 1 2
+
+PASS: Interval attribute corruption and Period grouping collapse reproduce without marginplyr
+PASS: list key refusals and zoo union refusal reproduce without marginplyr

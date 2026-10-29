@@ -1,0 +1,9 @@
+calls 1040 grouping-set comparisons 1992 failures 56
+
+        A typed-missing `.margin_label` cannot be represented for:\nℹ `a`.\nℹ Choose a supported non-missing label or change the grouping.
+                                                                                                                                        16
+A typed-missing `.margin_label` cannot be represented for:\nℹ `b` and `a`.\nℹ Choose a supported non-missing label or change the grouping.
+                                                                                                                                         4
+        A typed-missing `.margin_label` cannot be represented for:\nℹ `b`.\nℹ Choose a supported non-missing label or change the grouping.
+                                                                                                                                        36
+PASS: all admitted local cells matched independently grouped source projections

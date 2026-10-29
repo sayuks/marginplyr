@@ -1,0 +1,20 @@
+There were 20 warnings (use warnings() to see them)
+calls 768 comparisons 300 error pairs 72
+
+     blob:dimension          blob:fixed list_date:dimension     list_date:fixed
+                  8                   8                   8                   8
+  list_of:dimension       list_of:fixed       zoo:dimension           zoo:fixed
+                  8                   8                   8                   8
+        zoo:payload
+                  8
+cell differences 134
+
+interval:dimension     interval:fixed   interval:payload   period:dimension
+                20                 24                 40                 10
+    period:payload
+                40
+membership differences 12
+
+period:dimension     period:fixed
+               4                8
+PASS: no difference outside the separately controlled S4/list/zoo limits

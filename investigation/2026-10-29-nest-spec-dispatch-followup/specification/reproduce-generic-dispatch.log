@@ -1,0 +1,8 @@
+implicit matrix is.object: FALSE
+ordinary tidyselect: region
+inspected fixed keys:
+rollup outcome: `rollup()` requires at least one dimension.
+ordinary summary rows: 2; Margin summary rows: 1
+nest rows: 1; nest_by rows: 1
+explicit-class control: region
+opaque-wrapper control: region

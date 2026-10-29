@@ -1,0 +1,8 @@
+ordinary ID: one row, ID 1L, zero-row cell
+same dimensional ID with nonempty input: one row, ID 1L
+ℹ In argument: `dplyr::all_of(leading)`.
+Caused by error in `dplyr::all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.
+Error: !inherits(actual, "error") is not TRUE
+Execution halted

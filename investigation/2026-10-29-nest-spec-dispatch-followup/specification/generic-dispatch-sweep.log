@@ -1,0 +1,11 @@
+       generic cases failures
+1 as.character     6        0
+2    as.vector     6        0
+3       format     6        6
+4        is.na     6        0
+5   is.numeric     6        0
+6       length     6        0
+7        names     6        0
+8         sort     6        6
+9       unique     6        6
+CASES 54 FAILURES 18 PASS 36

@@ -1,0 +1,175 @@
+"generic","shape","is_object","method_called","expected","actual","actual_calls","match"
+"format","matrix",FALSE,1,"g","",1,FALSE
+"format","character",FALSE,1,"g","",1,FALSE
+"format","numeric",FALSE,1,"g","",1,FALSE
+"format","integer",FALSE,1,"g","",1,FALSE
+"format","logical",FALSE,1,"g","",1,FALSE
+"format","array",FALSE,1,"g","",1,FALSE
+"unique","matrix",FALSE,1,"g","",1,FALSE
+"unique","character",FALSE,1,"g","",1,FALSE
+"unique","numeric",FALSE,1,"g","",1,FALSE
+"unique","integer",FALSE,1,"g","",1,FALSE
+"unique","logical",FALSE,1,"g","",1,FALSE
+"unique","array",FALSE,1,"g","",1,FALSE
+"sort","matrix",FALSE,1,"g","",1,FALSE
+"sort","character",FALSE,1,"g","",1,FALSE
+"sort","numeric",FALSE,1,"g","",1,FALSE
+"sort","integer",FALSE,1,"g","",1,FALSE
+"sort","logical",FALSE,1,"g","",1,FALSE
+"sort","array",FALSE,1,"g","",1,FALSE
+"as.character","matrix",FALSE,0,"ERROR: ℹ In argument: `tidyselect::all_of(as.character(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `1` doesn't exist.","ERROR: ℹ In argument: `tidyselect::all_of(as.character(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `1` doesn't exist.",0,TRUE
+"as.character","character",FALSE,0,"ERROR: ℹ In argument: `tidyselect::all_of(as.character(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `name` doesn't exist.","ERROR: ℹ In argument: `tidyselect::all_of(as.character(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `name` doesn't exist.",0,TRUE
+"as.character","numeric",FALSE,0,"ERROR: ℹ In argument: `tidyselect::all_of(as.character(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `1` doesn't exist.","ERROR: ℹ In argument: `tidyselect::all_of(as.character(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `1` doesn't exist.",0,TRUE
+"as.character","integer",FALSE,0,"ERROR: ℹ In argument: `tidyselect::all_of(as.character(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `1` doesn't exist.","ERROR: ℹ In argument: `tidyselect::all_of(as.character(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `1` doesn't exist.",0,TRUE
+"as.character","logical",FALSE,0,"ERROR: ℹ In argument: `tidyselect::all_of(as.character(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `TRUE` doesn't exist.","ERROR: ℹ In argument: `tidyselect::all_of(as.character(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `TRUE` doesn't exist.",0,TRUE
+"as.character","array",FALSE,0,"ERROR: ℹ In argument: `tidyselect::all_of(as.character(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `1` doesn't exist.","ERROR: ℹ In argument: `tidyselect::all_of(as.character(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `1` doesn't exist.",0,TRUE
+"as.vector","matrix",FALSE,0,"g","g",0,TRUE
+"as.vector","character",FALSE,0,"ERROR: ℹ In argument: `tidyselect::all_of(as.vector(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `name` doesn't exist.","ERROR: ℹ In argument: `tidyselect::all_of(as.vector(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `name` doesn't exist.",0,TRUE
+"as.vector","numeric",FALSE,0,"g","g",0,TRUE
+"as.vector","integer",FALSE,0,"g","g",0,TRUE
+"as.vector","logical",FALSE,0,"ERROR: ℹ In argument: `tidyselect::all_of(as.vector(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not `TRUE`.","ERROR: ℹ In argument: `tidyselect::all_of(as.vector(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not `TRUE`.",0,TRUE
+"as.vector","array",FALSE,0,"g","g",0,TRUE
+"length","matrix",FALSE,0,"g","g",0,TRUE
+"length","character",FALSE,0,"g","g",0,TRUE
+"length","numeric",FALSE,0,"g","g",0,TRUE
+"length","integer",FALSE,0,"g","g",0,TRUE
+"length","logical",FALSE,0,"g","g",0,TRUE
+"length","array",FALSE,0,"g","g",0,TRUE
+"is.na","matrix",FALSE,0,"ERROR: ℹ In argument: `tidyselect::all_of(is.na(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ERROR: ℹ In argument: `tidyselect::all_of(is.na(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.",0,TRUE
+"is.na","character",FALSE,0,"ERROR: ℹ In argument: `tidyselect::all_of(is.na(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not `FALSE`.","ERROR: ℹ In argument: `tidyselect::all_of(is.na(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not `FALSE`.",0,TRUE
+"is.na","numeric",FALSE,0,"ERROR: ℹ In argument: `tidyselect::all_of(is.na(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not `FALSE`.","ERROR: ℹ In argument: `tidyselect::all_of(is.na(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not `FALSE`.",0,TRUE
+"is.na","integer",FALSE,0,"ERROR: ℹ In argument: `tidyselect::all_of(is.na(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not `FALSE`.","ERROR: ℹ In argument: `tidyselect::all_of(is.na(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not `FALSE`.",0,TRUE
+"is.na","logical",FALSE,0,"ERROR: ℹ In argument: `tidyselect::all_of(is.na(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not `FALSE`.","ERROR: ℹ In argument: `tidyselect::all_of(is.na(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not `FALSE`.",0,TRUE
+"is.na","array",FALSE,0,"ERROR: ℹ In argument: `tidyselect::all_of(is.na(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not an array.","ERROR: ℹ In argument: `tidyselect::all_of(is.na(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not an array.",0,TRUE
+"is.numeric","matrix",FALSE,0,"ERROR: ℹ In argument: `tidyselect::all_of(is.numeric(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not `TRUE`.","ERROR: ℹ In argument: `tidyselect::all_of(is.numeric(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not `TRUE`.",0,TRUE
+"is.numeric","character",FALSE,0,"ERROR: ℹ In argument: `tidyselect::all_of(is.numeric(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not `FALSE`.","ERROR: ℹ In argument: `tidyselect::all_of(is.numeric(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not `FALSE`.",0,TRUE
+"is.numeric","numeric",FALSE,0,"ERROR: ℹ In argument: `tidyselect::all_of(is.numeric(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not `TRUE`.","ERROR: ℹ In argument: `tidyselect::all_of(is.numeric(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not `TRUE`.",0,TRUE
+"is.numeric","integer",FALSE,0,"ERROR: ℹ In argument: `tidyselect::all_of(is.numeric(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not `TRUE`.","ERROR: ℹ In argument: `tidyselect::all_of(is.numeric(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not `TRUE`.",0,TRUE
+"is.numeric","logical",FALSE,0,"ERROR: ℹ In argument: `tidyselect::all_of(is.numeric(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not `FALSE`.","ERROR: ℹ In argument: `tidyselect::all_of(is.numeric(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not `FALSE`.",0,TRUE
+"is.numeric","array",FALSE,0,"ERROR: ℹ In argument: `tidyselect::all_of(is.numeric(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not `TRUE`.","ERROR: ℹ In argument: `tidyselect::all_of(is.numeric(object))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not `TRUE`.",0,TRUE
+"names","matrix",FALSE,0,"","",0,TRUE
+"names","character",FALSE,0,"","",0,TRUE
+"names","numeric",FALSE,0,"","",0,TRUE
+"names","integer",FALSE,0,"","",0,TRUE
+"names","logical",FALSE,0,"","",0,TRUE
+"names","array",FALSE,0,"","",0,TRUE

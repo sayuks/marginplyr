@@ -1,0 +1,7 @@
+Standalone collect: 3 source rows; caller source unchanged
+nest: Items of 'old' not found in column names: [v]. Consider skip_absent=TRUE.
+nest_by: Items of 'old' not found in column names: [v]. Consider skip_absent=TRUE.
+expand: Items of 'old' not found in column names: [v]. Consider skip_absent=TRUE.
+summarize: Items of 'old' not found in column names: [v]. Consider skip_absent=TRUE.
+Ordinary union_all(step, step): Items of 'old' not found in column names: [v]. Consider skip_absent=TRUE.
+Margin failures 4 ; materialized/recached/single-set controls 12 passed; source unchanged

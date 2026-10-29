@@ -1,0 +1,97 @@
+"rows","predicate","shape","consumer","error","metadata_refusal","additional_rename_error","error_phase","warnings","message","failed"
+1,"index","rename","inspect",TRUE,TRUE,FALSE,"metadata preparation",0,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",TRUE
+1,"index","rename","nest",TRUE,TRUE,FALSE,"metadata preparation",0,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",TRUE
+1,"index","rename","nest_by",TRUE,TRUE,FALSE,"metadata preparation",0,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",TRUE
+1,"index","arrange","inspect",TRUE,TRUE,FALSE,"metadata preparation",0,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",TRUE
+1,"index","arrange","nest",TRUE,TRUE,FALSE,"metadata preparation",0,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",TRUE
+1,"index","arrange","nest_by",TRUE,TRUE,FALSE,"metadata preparation",0,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",TRUE
+1,"index","join","inspect",TRUE,TRUE,FALSE,"metadata preparation",0,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",TRUE
+1,"index","join","nest",TRUE,TRUE,FALSE,"metadata preparation",0,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",TRUE
+1,"index","join","nest_by",TRUE,TRUE,FALSE,"metadata preparation",0,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",TRUE
+1,"index","union","inspect",TRUE,TRUE,FALSE,"metadata preparation",0,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",TRUE
+1,"index","union","nest",TRUE,TRUE,FALSE,"metadata preparation",0,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",TRUE
+1,"index","union","nest_by",TRUE,TRUE,FALSE,"metadata preparation",0,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",TRUE
+1,"minimum","rename","inspect",FALSE,FALSE,FALSE,"",1,"no non-missing arguments to min; returning Inf",TRUE
+1,"minimum","rename","nest",TRUE,FALSE,TRUE,"materialization",1,"Items of 'old' not found in column names: [v]. Consider skip_absent=TRUE.",TRUE
+1,"minimum","rename","nest_by",TRUE,FALSE,TRUE,"materialization",1,"Items of 'old' not found in column names: [v]. Consider skip_absent=TRUE.",TRUE
+1,"minimum","arrange","inspect",FALSE,FALSE,FALSE,"",1,"no non-missing arguments to min; returning Inf",TRUE
+1,"minimum","arrange","nest",FALSE,FALSE,FALSE,"",1,"no non-missing arguments to min; returning Inf",TRUE
+1,"minimum","arrange","nest_by",FALSE,FALSE,FALSE,"",1,"no non-missing arguments to min; returning Inf",TRUE
+1,"minimum","join","inspect",FALSE,FALSE,FALSE,"",1,"no non-missing arguments to min; returning Inf",TRUE
+1,"minimum","join","nest",FALSE,FALSE,FALSE,"",1,"no non-missing arguments to min; returning Inf",TRUE
+1,"minimum","join","nest_by",FALSE,FALSE,FALSE,"",1,"no non-missing arguments to min; returning Inf",TRUE
+1,"minimum","union","inspect",FALSE,FALSE,FALSE,"",1,"no non-missing arguments to min; returning Inf",TRUE
+1,"minimum","union","nest",FALSE,FALSE,FALSE,"",1,"no non-missing arguments to min; returning Inf",TRUE
+1,"minimum","union","nest_by",FALSE,FALSE,FALSE,"",1,"no non-missing arguments to min; returning Inf",TRUE
+3,"index","rename","inspect",TRUE,TRUE,FALSE,"metadata preparation",0,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",TRUE
+3,"index","rename","nest",TRUE,TRUE,FALSE,"metadata preparation",0,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",TRUE
+3,"index","rename","nest_by",TRUE,TRUE,FALSE,"metadata preparation",0,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",TRUE
+3,"index","arrange","inspect",TRUE,TRUE,FALSE,"metadata preparation",0,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",TRUE
+3,"index","arrange","nest",TRUE,TRUE,FALSE,"metadata preparation",0,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",TRUE
+3,"index","arrange","nest_by",TRUE,TRUE,FALSE,"metadata preparation",0,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",TRUE
+3,"index","join","inspect",TRUE,TRUE,FALSE,"metadata preparation",0,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",TRUE
+3,"index","join","nest",TRUE,TRUE,FALSE,"metadata preparation",0,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",TRUE
+3,"index","join","nest_by",TRUE,TRUE,FALSE,"metadata preparation",0,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",TRUE
+3,"index","union","inspect",TRUE,TRUE,FALSE,"metadata preparation",0,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",TRUE
+3,"index","union","nest",TRUE,TRUE,FALSE,"metadata preparation",0,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",TRUE
+3,"index","union","nest_by",TRUE,TRUE,FALSE,"metadata preparation",0,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",TRUE
+3,"minimum","rename","inspect",FALSE,FALSE,FALSE,"",1,"no non-missing arguments to min; returning Inf",TRUE
+3,"minimum","rename","nest",TRUE,FALSE,TRUE,"materialization",1,"Items of 'old' not found in column names: [v]. Consider skip_absent=TRUE.",TRUE
+3,"minimum","rename","nest_by",TRUE,FALSE,TRUE,"materialization",1,"Items of 'old' not found in column names: [v]. Consider skip_absent=TRUE.",TRUE
+3,"minimum","arrange","inspect",FALSE,FALSE,FALSE,"",1,"no non-missing arguments to min; returning Inf",TRUE
+3,"minimum","arrange","nest",FALSE,FALSE,FALSE,"",1,"no non-missing arguments to min; returning Inf",TRUE
+3,"minimum","arrange","nest_by",FALSE,FALSE,FALSE,"",1,"no non-missing arguments to min; returning Inf",TRUE
+3,"minimum","join","inspect",FALSE,FALSE,FALSE,"",1,"no non-missing arguments to min; returning Inf",TRUE
+3,"minimum","join","nest",FALSE,FALSE,FALSE,"",1,"no non-missing arguments to min; returning Inf",TRUE
+3,"minimum","join","nest_by",FALSE,FALSE,FALSE,"",1,"no non-missing arguments to min; returning Inf",TRUE
+3,"minimum","union","inspect",FALSE,FALSE,FALSE,"",1,"no non-missing arguments to min; returning Inf",TRUE
+3,"minimum","union","nest",FALSE,FALSE,FALSE,"",1,"no non-missing arguments to min; returning Inf",TRUE
+3,"minimum","union","nest_by",FALSE,FALSE,FALSE,"",1,"no non-missing arguments to min; returning Inf",TRUE

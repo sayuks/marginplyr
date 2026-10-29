@@ -1,0 +1,21 @@
+cached arranged inspection predicate sizes: 0
+[1] "dt_eval"
+metadata dt_eval source sizes: 0
+CASES 48 METADATA_REFUSALS 24 SPURIOUS_WARNING_CASES 24 SEPARATE_CACHED_RENAME_MATERIALIZATION_ERRORS 4 CONTROLS 144 CONTROL_FAILURES 0
+ predicate   shape metadata_refusal warnings additional_rename_error
+     index arrange                6        0                       0
+   minimum arrange                0        6                       0
+     index    join                6        0                       0
+   minimum    join                0        6                       0
+     index  rename                6        0                       0
+   minimum  rename                0        6                       4
+     index   union                6        0                       0
+   minimum   union                0        6                       0
+First metadata refusal:
+ Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+First warning:
+ no non-missing arguments to min; returning Inf
+Tracing function "dt_eval" in package "namespace:dtplyr"
+Untracing function "dt_eval" in package "namespace:dtplyr"
