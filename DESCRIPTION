@@ -63,6 +63,11 @@ Config/Needs/release:
     rhub,
     roxygen2
 Config/testthat/edition: 3
+Config/testthat/start-first:
+    sqlite-wide-plan-threshold,
+    sql-expansion-input-limits,
+    sqlite-wide-expansion,
+    query-policy
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
