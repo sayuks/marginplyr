@@ -1,0 +1,13 @@
+minimal expected fixed: new.y
+minimal actual fixed:
+expected nesting columns: new.y,data actual nesting columns: data warnings 1
+expected nesting columns: new.y,data actual nesting columns: data warnings 1
+typed rollup result: `rollup()` requires at least one dimension.
+  consumer   status   n
+1  inspect    match 160
+2  inspect mismatch  96
+3     nest    match 160
+4     nest mismatch  96
+5  nest_by    match 160
+6  nest_by mismatch  96
+CASES 768 MISMATCHES 288 ERRORS 0 WARNING_CASES 768 source snapshots unchanged

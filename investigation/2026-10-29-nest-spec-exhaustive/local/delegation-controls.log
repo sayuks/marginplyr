@@ -1,0 +1,4 @@
+source time: POSIXlt,POSIXt
+ordinary union time: POSIXct,POSIXt
+nested kept time: POSIXct,POSIXt
+PASS: POSIXlt differences followed ordinary union and raw typed-missing rejection required an omitted dimension

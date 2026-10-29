@@ -1,0 +1,2 @@
+seed 29102911; kinds 27 calls 3888 checks 14118 grouped explicit pairs 1296 refusals 0 failures 0 delegated POSIXlt differences 96
+PASS: independently grouped source membership, original cells, and grouped-input equivalence

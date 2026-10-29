@@ -1,0 +1,24 @@
+ordinary collect warnings: 0
+name-only inspection warnings: 0
+typed inspection warnings: 1
+nesting construction warnings: 1
+nesting collection warnings: 0
+rowwise nesting warnings: 1
+source unchanged: TRUE
+warning class: simpleWarning, warning, condition
+warning call: `[.data.table`(`_DT1`, , `:=`(new = v + 1L))
+warning message: A shallow copy of this data.table was taken so that := can add or remove 1 columns by reference. At an earlier point, this data.table was copied by R (or was created manually using structure() or similar). Avoid names<- and attr<- which in R currently (and oddly) may copy the whole data.table. Use set* syntax instead to avoid copying: ?set, ?setnames and ?setattr. It's also not unusual for data.table-agnostic packages to produce tables affected by this issue. If this message doesn't help, please report your use case to the data.table issue tracker so the root cause can be fixed or this message improved.
+Tracing function "dt_eval" in package "namespace:dtplyr"
+[1] "dt_eval"
+Untracing function "dt_eval" in package "namespace:dtplyr"
+traced metadata root sizes: 0,0,0
+schema-only generated query:
+head(funion(`_DT1`[, `:=`(new = v + 1L)], copy(`_DT1`)[, `:=`(new = v +
+    1L)], all = TRUE), n = 0L)
+uncached-union ordinary warnings 0 typed metadata warnings 0
+cached-only ordinary warnings 0 typed metadata warnings 0
+separate-caches-same-root ordinary warnings 0 typed metadata warnings 1
+separate-roots ordinary warnings 0 typed metadata warnings 0
+cache-before-mutate ordinary warnings 0 typed metadata warnings 0
+cached-set ordinary warnings 0 typed metadata warnings 1
+self-join ordinary warnings 0 typed metadata warnings 1
