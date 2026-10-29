@@ -1336,3 +1336,52 @@ test_that("DuckDB .env expansion and index validation add no reads", {
     }
   }
 })
+
+test_that("caller-qualified Grouping selections add no lazy-input reads", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  data <- data.frame(region = c("east", "west"), amount = 1:2)
+  source <- dplyr::copy_to(con, data)
+  reads <- 0L
+  typed_selection <- function(...) {
+    proxy <- tidyselect::peek_data()
+    names(proxy)[vapply(proxy, is.character, logical(1))]
+  }
+  typed_operator <- function(package, name) typed_selection
+  choose <- function(...) {
+    reads <<- reads + 1L
+    if (reads == 1L) "amount" else "region"
+  }
+  for (verb in list(inspect_grouping, expand_with_margins)) {
+    baseline <- count_entry_point_invocations(verb(
+      source, .by = region,
+      .grouping = grouping_sets(amount, grouping_set())
+    ))
+    expect_gt(baseline, 0L)
+    for (operator in c("::", ":::")) {
+      typed_env <- rlang::env(rlang::current_env())
+      retained_env <- rlang::env(rlang::current_env())
+      assign(operator, typed_operator, typed_env)
+      assign(operator, function(package, name) choose, retained_env)
+      fixed <- rlang::new_quosure(rlang::call2(
+        rlang::call2(operator, quote(dplyr), quote(all_of)), "amount"
+      ), typed_env)
+      nested <- rlang::new_quosure(rlang::call2(
+        rlang::call2(operator, quote(marginplyr), quote(rollup))
+      ), retained_env)
+      reads <- 0L
+      expect_identical(count_entry_point_invocations({
+        actual <- verb(source, .by = !!fixed,
+                       .grouping = grouping_sets(!!nested, grouping_set()))
+      }), baseline)
+      expect_identical(reads, 1L)
+      if (identical(verb, inspect_grouping)) {
+        expect_identical(actual$fixed, rep("(region)", 2L))
+        expect_identical(actual$included, c("(amount)", "()"))
+      } else {
+        expect_s3_class(actual, "tbl_lazy")
+      }
+    }
+  }
+})

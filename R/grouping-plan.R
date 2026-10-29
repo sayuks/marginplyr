@@ -480,10 +480,11 @@ is_name_only_expr <- function(expr, env, data_vars) {
     "matches", "num_range", "everything", "last_col", "one_of"
   )
   # Bare helpers resolve in tidyselect's context mask; qualified helpers
-  # have those semantics only when they name a package that supplies them.
+  # need base namespace lookup into a package that supplies them.
   call_ns <- static_call_ns(expr)
   if (call_name %in% leaf_helpers &&
-        (is.null(call_ns) || call_ns %in% c("tidyselect", "dplyr"))) {
+        (is.null(call_ns) || call_ns %in% c("tidyselect", "dplyr")) &&
+        is_name_only_namespace(expr, env)) {
     return(all(vapply(
       static_call_args(expr),
       is_name_only_helper_arg,
@@ -610,6 +611,36 @@ selection_binding_deferred <- function(env, name) {
        rlang::env_binding_are_lazy(env, name)[[1L]])
 }
 
+# The namespace operator a qualified call head uses, through transparent
+# parentheses, or `NULL` for an unqualified call.
+selection_namespace_operator <- function(expr) {
+  if (is.null(static_call_ns(expr))) {
+    return(NULL)
+  }
+  head <- unparenthesized_name(static_call_head(expr))
+  rlang::as_string(static_call_head(head))
+}
+
+# Whether namespace lookup is settled without column types or caller code.
+# An absent operator fails from names alone; an unqualified head needs no
+# lookup. `bound` names formals whose values cannot be established statically.
+is_name_only_namespace <- function(expr, env, bound = character()) {
+  operator <- selection_namespace_operator(expr)
+  if (is.null(operator)) {
+    return(TRUE)
+  }
+  if (operator %in% bound || selection_binding_deferred(env, operator)) {
+    return(FALSE)
+  }
+  if (!rlang::env_has(env, operator, inherit = TRUE)) {
+    return(TRUE)
+  }
+  identical(
+    rlang::env_get(env, operator, default = NULL, inherit = TRUE),
+    get(operator, envir = baseenv(), inherits = FALSE)
+  )
+}
+
 # A statically named function available without forcing caller bindings, or
 # `NULL` for an unresolved callee. `bound` excludes formals from lexical lookup.
 selection_argument_function <- function(expr, env, bound) {
@@ -619,7 +650,8 @@ selection_argument_function <- function(expr, env, bound) {
     return(NULL)
   }
   if (!is.null(namespace)) {
-    if (!namespace %in% loadedNamespaces()) {
+    if (!is_name_only_namespace(expr, env, bound) ||
+          !namespace %in% loadedNamespaces()) {
       return(NULL)
     }
     env <- asNamespace(namespace)
@@ -1345,7 +1377,12 @@ read_grouping_arg <- function(arg, data_vars) {
     # preflight value without forcing the caller's arguments again.
     retained <- if (is_constructor_call) function(...) value else value
     selection_env <- rlang::env(env)
-    rlang::env_bind(selection_env, !!name := retained)
+    if (is_constructor_call && !is.null(static_call_ns(expr))) {
+      operator <- selection_namespace_operator(expr)
+      rlang::env_bind(selection_env, !!operator := function(...) retained)
+    } else {
+      rlang::env_bind(selection_env, !!name := retained)
+    }
     selection$quo <- rlang::quo_set_env(arg, selection_env)
   }
   selection

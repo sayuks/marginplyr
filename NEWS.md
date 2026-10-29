@@ -1,5 +1,13 @@
 # marginplyr 0.1.0
 
+* Qualified constructor-shaped Grouping selections retain the caller's first
+  answer and conditions with one invocation per argument and public call
+  (#1038).
+
+* Qualified selections resolved by caller namespace operators use typed
+  metadata for fixed keys and Grouping dimensions, including calls inside
+  selection helper arguments (#1039).
+
 * dtplyr summaries with shares keep lexical `.BY` bindings separate from input
   measures and refuse expressions whose two readings cannot be separated safely
   (#1033).

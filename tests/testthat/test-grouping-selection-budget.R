@@ -129,11 +129,12 @@ grouping_selection_consumers <- function(data) {
 }
 
 # Redundant call and head parentheses are transparent to the spelling gate.
-constructor_call_spellings <- function(constructor) {
-  call <- rlang::call2(constructor)
-  wrapped_head <- rlang::call2(rlang::call2("(", rlang::sym(constructor)))
-  list(call, rlang::call2("(", call), wrapped_head,
-       rlang::call2("(", rlang::call2("(", wrapped_head)))
+constructor_call_spellings <- function(constructor, operator = NULL) {
+  head <- rlang::sym(constructor)
+  if (!is.null(operator)) {
+    head <- rlang::call2(operator, quote(marginplyr), head)
+  }
+  selection_call_spellings(head)
 }
 
 test_that("constructor-shaped selections keep their first answer", {
@@ -290,6 +291,162 @@ test_that("retained constructor selections keep selection diagnostics", {
       expect_identical(class(result), class(expected))
     } else {
       expect_identical(result, expected)
+    }
+  }
+})
+
+
+test_that("qualified constructor selections retain their first answer", {
+  data <- data.frame(region = c("east", "west"), amount = 1:2)
+  reads <- 0L
+  choose <- function(...) {
+    reads <<- reads + 1L
+    if (reads == 1L) "region" else "amount"
+  }
+  operator_fn <- function(package, name) choose
+  env <- rlang::env(rlang::current_env())
+  for (operator in c("::", ":::")) {
+    assign(operator, operator_fn, env)
+    for (constructor in c("grouping_set", "grouping_sets", "rollup", "cube",
+                          "grouping_spec")) {
+      for (expr in constructor_call_spellings(constructor, operator)) {
+        selection <- rlang::new_quosure(expr, env)
+        spec <- grouping_sets(!!selection)
+        original <- rlang::duplicate(spec)
+        for (consume in grouping_selection_consumers(data)) {
+          reads <- 0L
+          expect_identical(consume(spec), consume(grouping_sets(region)))
+          expect_identical(reads, 1L)
+          expect_identical(spec, original)
+          expect_identical(get(operator, env), operator_fn)
+        }
+      }
+    }
+  }
+})
+
+test_that("qualified constructor results keep conditions and diagnostics", {
+  data <- data.frame(a = c("x", "y"), b = 1:2)
+  reads <- 0L
+  arguments <- 0L
+  warning <- rlang::warning_cnd("selection_warning", message = "first answer")
+  failure <- rlang::error_cnd("selection_error", message = "first failure")
+  warn_once <- function(x = NULL) {
+    reads <<- reads + 1L
+    force(x)
+    if (reads > 1L) stop("second invocation")
+    warning(warning)
+    "a"
+  }
+  env <- rlang::env(rlang::current_env(), argument = function() {
+    arguments <<- arguments + 1L
+  })
+  for (operator in c("::", ":::")) {
+    choose <- warn_once
+    assign(operator, function(package, name) choose, env)
+    for (constructor in c("grouping_set", "grouping_sets", "rollup", "cube",
+                          "grouping_spec")) {
+      for (expr in constructor_call_spellings(constructor, operator)) {
+        selection <- rlang::new_quosure(expr, env)
+        spec <- grouping_sets(!!selection)
+        for (consume in grouping_selection_consumers(data)) {
+          reads <- 0L
+          seen <- list()
+          result <- withCallingHandlers(consume(spec), warning = function(cnd) {
+            seen[[length(seen) + 1L]] <<- cnd
+            invokeRestart("muffleWarning")
+          })
+          expect_identical(result, consume(grouping_sets(a)))
+          expect_identical(seen, list(warning))
+          expect_identical(reads, 1L)
+        }
+      }
+    }
+
+    head <- rlang::call2(operator, quote(marginplyr), quote(rollup))
+    expr <- rlang::call2(head, quote(argument()))
+    selection <- rlang::new_quosure(expr, env)
+    spec <- grouping_sets(!!selection)
+    for (consume in grouping_selection_consumers(data)) {
+      choose <- function(x = NULL) {
+        reads <<- reads + 1L
+        force(x)
+        if (reads %% 2L == 1L) "a" else "b"
+      }
+      reads <- 0L
+      arguments <- 0L
+      expect_identical(consume(spec), consume(grouping_sets(a)))
+      expect_identical(consume(spec), consume(grouping_sets(b)))
+      expect_identical(reads, 2L)
+      expect_identical(arguments, 2L)
+      reads <- 0L
+      arguments <- 0L
+      expect_identical(consume(grouping_sets(!!selection, !!selection)),
+                       consume(grouping_sets(a, b)))
+      expect_identical(reads, 2L)
+      expect_identical(arguments, 2L)
+
+      choose <- function(...) {
+        reads <<- reads + 1L
+        stop(failure)
+      }
+      reads <- 0L
+      expect_identical(tryCatch(consume(spec), error = identity), failure)
+      expect_identical(reads, 1L)
+    }
+    for (expr in constructor_call_spellings("rollup", operator)) {
+      selection <- rlang::new_quosure(expr, env)
+      spec <- grouping_sets(!!selection)
+      choose <- function(...) list("a")
+      actual <- expect_error(inspect_grouping(data, .grouping = spec),
+                             class = "vctrs_error_subscript_type")
+      direct <- expect_error(tidyselect::eval_select(selection, data),
+                             class = "vctrs_error_subscript_type")
+      expect_identical(conditionMessage(actual), conditionMessage(direct))
+      expect_identical(actual$subscript_arg, direct$subscript_arg)
+    }
+  }
+})
+
+test_that("qualified heads retain nested specifications and selection values", {
+  data <- data.frame(a = c("x", "y"), b = 1:2)
+  env <- rlang::env(rlang::current_env())
+  for (operator in c("::", ":::")) {
+    assign(operator, function(package, name) choose, env)
+    for (constructor in c("grouping_set", "grouping_sets", "rollup", "cube",
+                          "grouping_spec")) {
+      construct <- getExportedValue("marginplyr", constructor)
+      calls <- 0L
+      choose <- function(...) {
+        calls <<- calls + 1L
+        construct(a)
+      }
+      for (expr in constructor_call_spellings(constructor, operator)) {
+        selection <- rlang::new_quosure(expr, env)
+        calls <- 0L
+        expect_identical(inspect_grouping(data, .grouping = grouping_sets(
+          !!selection
+        )), inspect_grouping(data, .grouping = grouping_sets(!!construct(a))))
+        expect_identical(calls, 1L)
+      }
+    }
+    for (value in list(quote(a), is.character, NULL, c(renamed = "a"), 3L)) {
+      choose <- function(...) value
+      selection <- rlang::new_quosure(
+        rlang::call2(rlang::call2(operator, quote(marginplyr), quote(rollup))),
+        env
+      )
+      control <- grouping_sets(choose())
+      actual <- tryCatch(inspect_grouping(
+        data, .grouping = grouping_sets(!!selection)
+      ), error = identity)
+      expected <- tryCatch(inspect_grouping(data, .grouping = control),
+                           error = identity)
+      if (inherits(expected, "error")) {
+        expect_identical(class(actual), class(expected))
+      } else {
+        expect_identical(actual, expected)
+      }
     }
   }
 })
