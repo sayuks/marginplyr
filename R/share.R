@@ -4503,12 +4503,12 @@ removal_retained_bound <- function(expr, bound) {
 }
 
 # The first supplied formal in priority order, or an empty list for defaults.
-# Match reflective lookup arguments without evaluating any caller expression.
-reflective_lookup_argument <- function(expr, formals) {
+# Match a recognized base primitive without evaluating caller expressions.
+base_call_argument <- function(expr, formals) {
   callee <- resolved_callee_name(expr)
   matched <- tryCatch(
     match.call(
-      get(callee, envir = baseenv()),
+      args(get(callee, envir = baseenv())),
       rlang::call2(callee, !!!static_call_args(expr)),
       envir = emptyenv()
     ),
@@ -4616,15 +4616,22 @@ lookup_reparented_environments <- function(
   }
   name <- static_call_name(expr)
   targets <- list()
+  target <- parent <- list()
   if (!is.null(name) && name %in% c("<-", "=", "<<-") &&
         length(expr) >= 3L &&
         identical(static_call_name(expr[[2L]]), "parent.env")) {
     target <- call_formal_argument(expr[[2L]], "env")
-    parent <- unparenthesized_value(expr[[3L]])
+    parent <- as.list(expr)[3L]
+  } else if (identical(name, "parent.env<-")) {
+    target <- base_call_argument(expr, "env")
+    parent <- base_call_argument(expr, "value")
+  }
+  if (length(target) > 0L && length(parent) > 0L) {
+    parent <- unparenthesized_value(parent[[1L]])
     namespace <- static_call_ns(parent)
     safe_parent <- static_call_name(parent) %in% c("baseenv", "emptyenv") &&
       (is.null(namespace) || identical(namespace, "base"))
-    if (length(target) > 0L && !safe_parent) {
+    if (!safe_parent) {
       value <- lookup_environment_value(target[[1L]], character(), list(
         env = env, mask = mask, rebound = rebound
       ))
@@ -4648,10 +4655,10 @@ lookup_reparented_environments <- function(
 # analysis may not do -- it runs while the call is planned, on the caller's own
 # code.
 reflective_lookup_symbols <- function(expr, bound, lookup = NULL) {
-  environment <- reflective_lookup_argument(
+  environment <- base_call_argument(
     expr, c("envir", "frame", "pos", "where")
   )
-  inherited <- reflective_lookup_argument(expr, "inherits")
+  inherited <- base_call_argument(expr, "inherits")
   inherits <- if (length(inherited) > 0L) {
     !identical(unparenthesized_value(inherited[[1L]]), FALSE)
   } else {

@@ -7,54 +7,60 @@ test_that("visible reparenting exposes both share dependency directions", {
     mget("prior", envir = outside, inherits = TRUE)[[1L]],
     as.integer(exists("prior", envir = outside))
   )
+  mutations <- alist(
+    parent.env(outside) <- environment(),
+    base::`parent.env<-`(outside, environment())
+  )
   for (input in list(data, dbplyr::tbl_lazy(data))) {
     for (kind in c("parent", "total")) {
       helper <- rlang::call2(paste0("share_of_", kind), quote(value))
       for (read in reads) {
-        for (placement in c("same", "prior", "separate")) {
-          outside <- new.env(parent = baseenv())
-          expression <- if (placement == "same") {
-            rlang::expr({
-              parent.env(outside) <- environment()
-              !!read
-            })
-          } else {
-            read
+        for (mutation in mutations) {
+          for (placement in c("same", "prior", "separate")) {
+            outside <- new.env(parent = baseenv())
+            expression <- if (placement == "same") {
+              rlang::expr({
+                !!mutation
+                !!read
+              })
+            } else {
+              read
+            }
+            ordinary <- if (placement == "prior") {
+              rlang::expr({
+                !!mutation
+                sum(x)
+              })
+            } else {
+              quote(sum(x))
+            }
+            mark <- if (placement == "separate") {
+              list(mark = rlang::expr({
+                !!mutation
+                0
+              }))
+            } else {
+              list()
+            }
+            expect_error(
+              summarize_with_margins(
+                input, !!!mark, prior = !!ordinary, value = !!expression,
+                fraction = !!helper, .grouping = rollup(group)
+              ),
+              "depends on earlier summary alias `prior`",
+              class = "marginplyr_error"
+            )
+            expect_identical(parent.env(outside), baseenv())
+            expect_error(
+              summarize_with_margins(
+                input, !!!mark, value = !!ordinary, prior = !!helper,
+                derived = sum(!!expression), .grouping = rollup(group)
+              ),
+              "Ordinary summaries cannot use an earlier .* share",
+              class = "marginplyr_error"
+            )
+            expect_identical(parent.env(outside), baseenv())
           }
-          ordinary <- if (placement == "prior") {
-            quote({
-              parent.env(outside) <- environment()
-              sum(x)
-            })
-          } else {
-            quote(sum(x))
-          }
-          mark <- if (placement == "separate") {
-            alist(mark = {
-              parent.env(outside) <- environment()
-              0
-            })
-          } else {
-            list()
-          }
-          expect_error(
-            summarize_with_margins(
-              input, !!!mark, prior = !!ordinary, value = !!expression,
-              fraction = !!helper, .grouping = rollup(group)
-            ),
-            "depends on earlier summary alias `prior`",
-            class = "marginplyr_error"
-          )
-          expect_identical(parent.env(outside), baseenv())
-          expect_error(
-            summarize_with_margins(
-              input, !!!mark, value = !!ordinary, prior = !!helper,
-              derived = sum(!!expression), .grouping = rollup(group)
-            ),
-            "Ordinary summaries cannot use an earlier .* share",
-            class = "marginplyr_error"
-          )
-          expect_identical(parent.env(outside), baseenv())
         }
       }
     }
@@ -72,6 +78,10 @@ test_that("external and non-inheriting reads survive visible reparenting", {
     },
     {
       base::parent.env(outside) <- base::baseenv()
+      get("prior", envir = outside)
+    },
+    {
+      base::`parent.env<-`(outside, baseenv())
       get("prior", envir = outside)
     },
     {
