@@ -132,6 +132,8 @@ sql_margin_source_anchor <- function(.data) {
     if (length(aliases) > 0L) {
       anchor <- dplyr::rename(anchor, dplyr::all_of(aliases))
     }
+    attr(anchor, "marginplyr_declared_types") <-
+      attr(.data, "marginplyr_declared_types")
     return(anchor)
   }
   input <- attr(.data, "marginplyr_input_anchor")

@@ -45,6 +45,15 @@ sqlite_order_value <- function(term) {
 sqlite_typed_result <- function(operation, unsorted, ordered,
                                 execution, source_columns, declared_types,
                                 restore_tibble = FALSE) {
+  input_anchor <- sql_margin_source_anchor(operation$data)
+  source_types <- attr(input_anchor, "marginplyr_declared_types") %||%
+    character()
+  carried_types <- source_types[intersect(source_columns, names(source_types))]
+  # A new Margin label owns its column's type over the input's declaration.
+  declared_types <- c(
+    carried_types[setdiff(names(carried_types), names(declared_types))],
+    declared_types
+  )
   key_id <- if (length(operation$plan$set_ids) > 1L) {
     execution$sort_id
   } else {
@@ -91,8 +100,7 @@ sqlite_typed_result <- function(operation, unsorted, ordered,
     declared_types = declared_types
   )
 
-  public_query <- if (length(keys) == 0L &&
-                        !is.null(sql_margin_source_anchor(operation$data))) {
+  public_query <- if (length(keys) == 0L && !is.null(input_anchor)) {
     typed_union
   } else {
     ordered
@@ -122,6 +130,7 @@ sqlite_typed_result <- function(operation, unsorted, ordered,
     public_query <- sqlite_boolean_query(public_query, source, boolean_aliases)
   }
   class(ordered) <- c("marginplyr_sqlite_typed_result", class(ordered))
+  attr(ordered, "marginplyr_anchored_input") <- !is.null(input_anchor)
   attr(ordered, "marginplyr_boolean_aliases") <- boolean_aliases[
     intersect(public_columns, names(boolean_aliases))
   ]
@@ -163,9 +172,9 @@ sql_render.marginplyr_sqlite_typed_result <- function(query, ...) {
   dbplyr::sql(paste0(sql, "\nORDER BY ", paste(quoted, collapse = ", ")))
 }
 
-# Direct sorted collection drops the internal sort columns after reading the
-# anchored compound query. Boolean-word outputs also avoid a finite-collection
-# subquery. Other unsorted results delegate collection to dbplyr. All paths
+# Direct collection keeps a carried source anchor outermost and drops internal
+# sort columns after reading. Boolean-word outputs also avoid a finite
+# collection subquery. Other unsorted results delegate to dbplyr. All paths
 # restore declared R types for all-missing columns.
 #' @exportS3Method dplyr::collect
 #' @noRd
@@ -176,7 +185,10 @@ collect.marginplyr_sqlite_typed_result <- function(x, ..., n = Inf,
     return(NextMethod())
   }
   boolean_output <- length(attr(x, "marginplyr_boolean_aliases")) > 0L
-  if (length(attr(x, "marginplyr_order_keys")) == 0L && !boolean_output) {
+  anchor_only <- isTRUE(attr(x, "marginplyr_anchored_input")) &&
+    length(attr(x, "marginplyr_order_keys")) == 0L && !boolean_output
+  if (length(attr(x, "marginplyr_order_keys")) == 0L &&
+        !boolean_output && !anchor_only) {
     out <- dplyr::collect(
       attr(x, "marginplyr_public_query"), ..., n = n,
       warn_incomplete = warn_incomplete, sql_options = sql_options
@@ -187,7 +199,9 @@ collect.marginplyr_sqlite_typed_result <- function(x, ..., n = Inf,
     } else {
       # Match dbplyr's head() validation before limiting the compound query.
       utils::head(attr(x, "marginplyr_public_query"), n = n)
-      n <- trunc(n)
+      if (!anchor_only) {
+        n <- trunc(n)
+      }
     }
     sql <- dbplyr::sql_render(x, sql_options = sql_options)
     if (n >= 0) {
@@ -203,9 +217,10 @@ collect.marginplyr_sqlite_typed_result <- function(x, ..., n = Inf,
   out <- out[attr(x, "marginplyr_public_columns")]
   # A sorted helper-only result otherwise changes from dbplyr's tibble to the
   # data frame returned by the compound-query collector (ADR 0033). Unsorted
-  # Boolean-word results retain the delegated collector's tibble class too.
-  if ((isTRUE(attr(x, "marginplyr_restore_tibble")) &&
-         length(attr(x, "marginplyr_order_keys")) > 0L) ||
+  # Unsorted direct collections retain dbplyr's tibble class too.
+  if (anchor_only ||
+        (isTRUE(attr(x, "marginplyr_restore_tibble")) &&
+           length(attr(x, "marginplyr_order_keys")) > 0L) ||
         (boolean_output && length(attr(x, "marginplyr_order_keys")) == 0L)) {
     out <- tibble::as_tibble(out)
   }

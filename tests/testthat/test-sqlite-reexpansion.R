@@ -28,14 +28,17 @@ test_that("SQLite re-expansion retains copies, types, and public boundaries", {
       for (first_sort in c("first", "last")) {
         first <- expand_with_margins(
           input, .grouping = first_spec, .margin_label = NULL,
-          .sort = first_sort
+          .id = "prior", .sort = first_sort
         )
         local <- data
+        local$prior <- 1L
         if (multiple) {
           omitted <- data
           omitted$g <- NA_character_
+          omitted$prior <- 2L
           local <- rbind(local, omitted)
         }
+        local <- local[c("g", "prior", "value", "missing_int", "missing_real")]
         if (empty) local <- local[0L, ]
         for (spec in list(NULL, grouping_set("g"), rollup("g"))) {
           for (sort in c("none", "first", "last")) {
@@ -75,6 +78,8 @@ test_that("SQLite re-expansion retains copies, types, and public boundaries", {
                 }
                 for (n in c(0L, 1L)) {
                   limited <- dplyr::collect(endpoint, n = n)
+                  expect_type(limited$g, "character")
+                  expect_type(limited$prior, "integer")
                   expect_identical(names(limited), names(expected))
                   expect_identical(nrow(limited), min(n, nrow(expected)))
                   expect_identical(limited$missing_int,
@@ -127,4 +132,37 @@ test_that("SQLite re-expansion keeps special public names and current types", {
   )
   actual <- dplyr::collect(query)
   expect_identical(actual$g, c(1L, 1L, NA_integer_, NA_integer_))
+})
+
+test_that("SQLite unsorted re-expansion retains collection behavior", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(con, data.frame(g = "a", value = 1L),
+                           "reexpansion_collect")
+  first <- expand_with_margins(
+    source, .grouping = rollup("g"), .margin_label = NULL, .sort = "last"
+  )
+  query <- expand_with_margins(first)
+  expect_identical(class(dplyr::collect(query)), class(dplyr::collect(source)))
+  expect_error(dplyr::collect(query, n = 1.5), "datatype mismatch")
+})
+
+test_that("a new SQLite Margin label overrides a carried declaration", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(con, data.frame(value = 1L), "reexpansion_override")
+  first <- expand_with_margins(dplyr::filter(source, FALSE), .id = "prior")
+  query <- expand_with_margins(
+    first, .grouping = rollup("prior"), .margin_label = "Total",
+    .id = "set", .sort = "last"
+  )
+  for (endpoint in list(query, dplyr::compute(query))) {
+    for (n in c(Inf, 0L, 1L)) {
+      actual <- dplyr::collect(endpoint, n = n)
+      expect_identical(actual$prior, character())
+      expect_identical(actual$set, integer())
+    }
+  }
 })
