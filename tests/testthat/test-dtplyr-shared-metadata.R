@@ -113,7 +113,8 @@ test_that("shared cached joins preserve nested keys payloads and expansion", {
 
 test_that("cached rename and arithmetic graphs need no repair warnings", {
   skip_if_suggest_absent("dtplyr")
-  withr::local_options(warn = 2L)
+  old <- options(warn = 2L)
+  on.exit(options(old), add = TRUE)
   normalize <- function(x) {
     x <- dplyr::ungroup(x)
     x$data <- lapply(x$data, tibble::as_tibble)
@@ -237,6 +238,8 @@ test_that("schema isolation preserves External warnings", {
   withCallingHandlers({
     inspect_grouping(step, .by = where(is.integer))
     nest_with_margins(step)
+    expand_with_margins(step)
+    nest_by_with_margins(step)
   }, warning = function(w) {
     warnings[[length(warnings) + 1L]] <<- w
     invokeRestart("muffleWarning")
