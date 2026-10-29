@@ -149,18 +149,33 @@ execute_margin_expand <- function(operation) {
   )
   set_id_name <- if (is.null(sort_id)) operation$set_id_name else sort_id
 
-  new_margin_execution(
-    with_margin_error_call(
-      expand_margin_union(
-        operation$data,
-        plan = operation$plan,
-        margin_labels = operation$margin_labels,
-        column_info = operation$column_info,
-        backend = operation$backend,
-        set_id_name = set_id_name
-      ),
-      call = operation$call
+  branch_id <- set_id_name
+  if (identical(operation$backend$kind, "arrow") &&
+        !is.null(set_id_name) && margin_dot_dot_names(set_id_name)) {
+    # Arrow's private dimension rename validates every output name. Restore
+    # the caller's supported dot-dot identifier only after that projection.
+    branch_id <- new_margin_internal_names(
+      1L, c(operation$data_vars, set_id_name), prefix = "..marginplyr_arrow_id_"
+    )
+  }
+  result <- with_margin_error_call(
+    expand_margin_union(
+      operation$data,
+      plan = operation$plan,
+      margin_labels = operation$margin_labels,
+      column_info = operation$column_info,
+      backend = operation$backend,
+      set_id_name = branch_id
     ),
+    call = operation$call
+  )
+  if (!identical(branch_id, set_id_name)) {
+    result <- dplyr::mutate(
+      result, !!set_id_name := !!rlang::sym(branch_id), !!branch_id := NULL
+    )
+  }
+  new_margin_execution(
+    result,
     sort_id = sort_id,
     declared_types = if (sqlite_declared_type_result(operation) &&
                            !is.null(operation$set_id_name)) {
