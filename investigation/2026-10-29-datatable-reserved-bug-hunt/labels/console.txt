@@ -1,0 +1,85 @@
+Completed .SD
+Completed .BY
+Completed .N
+Completed .I
+Completed .GRP
+Completed .NGRP
+Completed .EACHI
+Completed .NATURAL
+Completed .ROW
+Completed .SDall
+Completed .xSD
+Completed .iSD
+Completed .Last.updated
+Completed .SDcols
+Completed ..value
+Completed ..FUN1
+Completed ..FUN2
+Completed i.value
+Completed x.value
+Completed _nqgrp_
+Completed .ll.tech.split
+Completed .nm.tech.split
+Completed .ll.tech.split.names
+Completed .internal.selfref
+Completed .data.table.locked
+Completed .
+Completed key
+Completed keep.rownames
+Completed check.names
+Completed stringsAsFactors
+Completed .named
+Completed sorted
+Completed unique
+Completed x
+Completed i
+Completed j
+Completed by
+Completed keyby
+Completed with
+Completed nomatch
+Completed mult
+Completed roll
+Completed rollends
+Completed which
+Completed verbose
+Completed allow.cartesian
+Completed drop
+Completed on
+Completed env
+Completed showProgress
+Completed T
+Completed F
+Completed get
+Completed mget
+Completed eval
+Completed list
+Completed print
+Completed order
+Completed Cfastmean
+Completed -.POSIXt
+Completed plain
+
+different-decision               pass
+                 8               1944
+ name      kind collision                   verb check             status
+  .SD character     FALSE summarize_with_margins  TRUE different-decision
+  .SD character     FALSE    expand_with_margins  TRUE different-decision
+  .SD character     FALSE      nest_with_margins  TRUE different-decision
+  .SD character     FALSE   nest_by_with_margins  TRUE different-decision
+  .SD character      TRUE summarize_with_margins  TRUE different-decision
+  .SD character      TRUE    expand_with_margins  TRUE different-decision
+  .SD character      TRUE      nest_with_margins  TRUE different-decision
+  .SD character      TRUE   nest_by_with_margins  TRUE different-decision
+                                            actual_message
+ A column may not be called .SD. That has special meaning.
+ A column may not be called .SD. That has special meaning.
+ A column may not be called .SD. That has special meaning.
+ A column may not be called .SD. That has special meaning.
+ A column may not be called .SD. That has special meaning.
+ A column may not be called .SD. That has special meaning.
+ A column may not be called .SD. That has special meaning.
+ A column may not be called .SD. That has special meaning.
+CASES 1952 NAMES 61
+Error: all(results$status == "pass") is not TRUE
+Execution halted

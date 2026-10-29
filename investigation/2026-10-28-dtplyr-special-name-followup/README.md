@@ -1,6 +1,7 @@
 # data.table special column spellings after PR #961
 
 Investigated: 2026-10-28
+Revised: 2026-10-29 — constructor refusal identified in `investigation/2026-10-29-datatable-reserved-bug-hunt/README.md`
 
 This follow-up investigated other data.table-specific spellings after the
 `.SDall`, `.xSD`, and `.iSD` fix in PR #961. The package snapshot was
@@ -40,6 +41,15 @@ The namespace search found no additional explicit reserved-column diagnostic
 beyond the non-equi-join and split cases listed above. It found no `.iGRP` or
 `.xGRP` evaluation binding; those spellings remained probes rather than claims
 about data.table internals.
+
+## Revisions (2026-10-29)
+
+The inventory above omitted `as.data.table.list()`'s explicit refusal of a
+column named `.SD`. The statement about finding no other reserved-column
+diagnostic was therefore incomplete. The [next audit](../2026-10-29-datatable-reserved-bug-hunt/README.md)
+recorded that diagnostic in the distributed 1.18.6.1 source and reproduced a
+Margin label collision query that generated such a column. This corrected the
+inventory; it did not reverse the nesting measurements recorded below.
 
 ## Measurement scope
 

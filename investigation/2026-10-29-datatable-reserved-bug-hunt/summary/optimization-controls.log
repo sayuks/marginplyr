@@ -1,0 +1,87 @@
+ opt   name                                           ordinary
+   0    .SD    cannot change value of locked binding for '.SD'
+   0   .GRP   cannot change value of locked binding for '.GRP'
+   0  .NGRP  cannot change value of locked binding for '.NGRP'
+   0 .SDall cannot change value of locked binding for '.SDall'
+   0   .xSD   cannot change value of locked binding for '.xSD'
+   0   .iSD   cannot change value of locked binding for '.iSD'
+   0    .BY    cannot change value of locked binding for '.BY'
+   1    .SD    cannot change value of locked binding for '.SD'
+   1   .GRP   cannot change value of locked binding for '.GRP'
+   1  .NGRP  cannot change value of locked binding for '.NGRP'
+   1 .SDall cannot change value of locked binding for '.SDall'
+   1   .xSD   cannot change value of locked binding for '.xSD'
+   1   .iSD   cannot change value of locked binding for '.iSD'
+   1    .BY    cannot change value of locked binding for '.BY'
+   2    .SD                                                1,3
+   2   .GRP                                                1,3
+   2  .NGRP                                                1,3
+   2 .SDall                                                1,3
+   2   .xSD                                                1,3
+   2   .iSD                                                1,3
+   2    .BY                                                1,3
+ Inf    .SD                                                1,3
+ Inf   .GRP                                                1,3
+ Inf  .NGRP                                                1,3
+ Inf .SDall                                                1,3
+ Inf   .xSD                                                1,3
+ Inf   .iSD                                                1,3
+ Inf    .BY                                                1,3
+                                           no_share
+    cannot change value of locked binding for '.SD'
+   cannot change value of locked binding for '.GRP'
+  cannot change value of locked binding for '.NGRP'
+ cannot change value of locked binding for '.SDall'
+   cannot change value of locked binding for '.xSD'
+   cannot change value of locked binding for '.iSD'
+    cannot change value of locked binding for '.BY'
+    cannot change value of locked binding for '.SD'
+   cannot change value of locked binding for '.GRP'
+  cannot change value of locked binding for '.NGRP'
+ cannot change value of locked binding for '.SDall'
+   cannot change value of locked binding for '.xSD'
+   cannot change value of locked binding for '.iSD'
+    cannot change value of locked binding for '.BY'
+                                              1,3,4
+                                              1,3,4
+                                              1,3,4
+                                              1,3,4
+                                              1,3,4
+                                              1,3,4
+                                              1,3,4
+                                              1,3,4
+                                              1,3,4
+                                              1,3,4
+                                              1,3,4
+                                              1,3,4
+                                              1,3,4
+                                              1,3,4
+                                              share
+    cannot change value of locked binding for '.SD'
+   cannot change value of locked binding for '.GRP'
+  cannot change value of locked binding for '.NGRP'
+ cannot change value of locked binding for '.SDall'
+   cannot change value of locked binding for '.xSD'
+   cannot change value of locked binding for '.iSD'
+                                              1,3,4
+    cannot change value of locked binding for '.SD'
+   cannot change value of locked binding for '.GRP'
+  cannot change value of locked binding for '.NGRP'
+ cannot change value of locked binding for '.SDall'
+   cannot change value of locked binding for '.xSD'
+   cannot change value of locked binding for '.iSD'
+                                              1,3,4
+    cannot change value of locked binding for '.SD'
+   cannot change value of locked binding for '.GRP'
+  cannot change value of locked binding for '.NGRP'
+ cannot change value of locked binding for '.SDall'
+   cannot change value of locked binding for '.xSD'
+   cannot change value of locked binding for '.iSD'
+                                              1,3,4
+    cannot change value of locked binding for '.SD'
+   cannot change value of locked binding for '.GRP'
+  cannot change value of locked binding for '.NGRP'
+ cannot change value of locked binding for '.SDall'
+   cannot change value of locked binding for '.xSD'
+   cannot change value of locked binding for '.iSD'
+                                              1,3,4

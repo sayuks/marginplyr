@@ -1,0 +1,12 @@
+Completed ordinary
+
+dtplyr-error         pass
+          44          292
+          status
+column     dtplyr-error
+  ordinary           44
+Candidates: 1 ; calls: 336
+data.table 1.18.6.1
+dtplyr 1.3.3
+dplyr 1.2.1
+tidyr 1.3.2

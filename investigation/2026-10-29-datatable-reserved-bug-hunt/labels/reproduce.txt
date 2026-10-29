@@ -1,0 +1,9 @@
+summarize_with_margins collision= FALSE actual= A column may not be called .SD. That has special meaning.
+expand_with_margins collision= FALSE actual= A column may not be called .SD. That has special meaning.
+nest_with_margins collision= FALSE actual= A column may not be called .SD. That has special meaning.
+nest_by_with_margins collision= FALSE actual= A column may not be called .SD. That has special meaning.
+summarize_with_margins collision= TRUE actual= A column may not be called .SD. That has special meaning.
+expand_with_margins collision= TRUE actual= A column may not be called .SD. That has special meaning.
+nest_with_margins collision= TRUE actual= A column may not be called .SD. That has special meaning.
+nest_by_with_margins collision= TRUE actual= A column may not be called .SD. That has special meaning.
+Collision-count diagnosis confirmed; source unchanged.

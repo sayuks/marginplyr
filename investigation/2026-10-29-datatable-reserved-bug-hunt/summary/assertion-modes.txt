@@ -1,0 +1,14 @@
+input-measures.R --expect-bug: exit 0
+input-measures.R --assert-correct: exit 1
+Error: all(results$actual_ok) is not TRUE
+Execution halted
+
+ROW-output.R --expect-bug: exit 0
+ROW-output.R --assert-correct: exit 1
+Error: all(results$actual_ok) is not TRUE
+Execution halted
+
+lexical-ownership.R --expect-bug: exit 0
+lexical-ownership.R --assert-correct: exit 1
+Error: !any(results$wrong_value) is not TRUE
+Execution halted

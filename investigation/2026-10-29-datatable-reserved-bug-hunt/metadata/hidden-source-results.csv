@@ -1,0 +1,397 @@
+"column","size","derive","operation","status","error_class","error","source_changed"
+"..1",0,"drop","inspect_named","pass","","",FALSE
+"..1",0,"drop","inspect_typed_dimension","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",FALSE
+"..1",0,"drop","inspect_typed_fixed","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",FALSE
+"..1",0,"drop","summarize","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",FALSE
+"..1",0,"drop","expand","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",FALSE
+"..1",0,"drop","nest","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",FALSE
+"..1",0,"drop","nest_by","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",FALSE
+"..1",0,"rename","inspect_named","pass","","",FALSE
+"..1",0,"rename","inspect_typed_dimension","pass","","",FALSE
+"..1",0,"rename","inspect_typed_fixed","pass","","",FALSE
+"..1",0,"rename","summarize","pass","","",FALSE
+"..1",0,"rename","expand","pass","","",FALSE
+"..1",0,"rename","nest","pass","","",FALSE
+"..1",0,"rename","nest_by","pass","","",FALSE
+"..1",1,"drop","inspect_named","pass","","",FALSE
+"..1",1,"drop","inspect_typed_dimension","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",FALSE
+"..1",1,"drop","inspect_typed_fixed","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",FALSE
+"..1",1,"drop","summarize","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",FALSE
+"..1",1,"drop","expand","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",FALSE
+"..1",1,"drop","nest","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",FALSE
+"..1",1,"drop","nest_by","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",FALSE
+"..1",1,"rename","inspect_named","pass","","",FALSE
+"..1",1,"rename","inspect_typed_dimension","pass","","",FALSE
+"..1",1,"rename","inspect_typed_fixed","pass","","",FALSE
+"..1",1,"rename","summarize","pass","","",FALSE
+"..1",1,"rename","expand","pass","","",FALSE
+"..1",1,"rename","nest","pass","","",FALSE
+"..1",1,"rename","nest_by","pass","","",FALSE
+"..1",3,"drop","inspect_named","pass","","",FALSE
+"..1",3,"drop","inspect_typed_dimension","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",FALSE
+"..1",3,"drop","inspect_typed_fixed","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",FALSE
+"..1",3,"drop","summarize","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",FALSE
+"..1",3,"drop","expand","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",FALSE
+"..1",3,"drop","nest","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",FALSE
+"..1",3,"drop","nest_by","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.",FALSE
+"..1",3,"rename","inspect_named","pass","","",FALSE
+"..1",3,"rename","inspect_typed_dimension","pass","","",FALSE
+"..1",3,"rename","inspect_typed_fixed","pass","","",FALSE
+"..1",3,"rename","summarize","pass","","",FALSE
+"..1",3,"rename","expand","pass","","",FALSE
+"..1",3,"rename","nest","pass","","",FALSE
+"..1",3,"rename","nest_by","pass","","",FALSE
+"...",0,"drop","inspect_named","pass","","",FALSE
+"...",0,"drop","inspect_typed_dimension","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",FALSE
+"...",0,"drop","inspect_typed_fixed","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",FALSE
+"...",0,"drop","summarize","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",FALSE
+"...",0,"drop","expand","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",FALSE
+"...",0,"drop","nest","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",FALSE
+"...",0,"drop","nest_by","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",FALSE
+"...",0,"rename","inspect_named","pass","","",FALSE
+"...",0,"rename","inspect_typed_dimension","pass","","",FALSE
+"...",0,"rename","inspect_typed_fixed","pass","","",FALSE
+"...",0,"rename","summarize","pass","","",FALSE
+"...",0,"rename","expand","pass","","",FALSE
+"...",0,"rename","nest","pass","","",FALSE
+"...",0,"rename","nest_by","pass","","",FALSE
+"...",1,"drop","inspect_named","pass","","",FALSE
+"...",1,"drop","inspect_typed_dimension","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",FALSE
+"...",1,"drop","inspect_typed_fixed","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",FALSE
+"...",1,"drop","summarize","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",FALSE
+"...",1,"drop","expand","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",FALSE
+"...",1,"drop","nest","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",FALSE
+"...",1,"drop","nest_by","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",FALSE
+"...",1,"rename","inspect_named","pass","","",FALSE
+"...",1,"rename","inspect_typed_dimension","pass","","",FALSE
+"...",1,"rename","inspect_typed_fixed","pass","","",FALSE
+"...",1,"rename","summarize","pass","","",FALSE
+"...",1,"rename","expand","pass","","",FALSE
+"...",1,"rename","nest","pass","","",FALSE
+"...",1,"rename","nest_by","pass","","",FALSE
+"...",3,"drop","inspect_named","pass","","",FALSE
+"...",3,"drop","inspect_typed_dimension","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",FALSE
+"...",3,"drop","inspect_typed_fixed","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",FALSE
+"...",3,"drop","summarize","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",FALSE
+"...",3,"drop","expand","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",FALSE
+"...",3,"drop","nest","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",FALSE
+"...",3,"drop","nest_by","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1.",FALSE
+"...",3,"rename","inspect_named","pass","","",FALSE
+"...",3,"rename","inspect_typed_dimension","pass","","",FALSE
+"...",3,"rename","inspect_typed_fixed","pass","","",FALSE
+"...",3,"rename","summarize","pass","","",FALSE
+"...",3,"rename","expand","pass","","",FALSE
+"...",3,"rename","nest","pass","","",FALSE
+"...",3,"rename","nest_by","pass","","",FALSE
+"..2",0,"drop","inspect_named","pass","","",FALSE
+"..2",0,"drop","inspect_typed_dimension","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..2"" at location 1.",FALSE
+"..2",0,"drop","inspect_typed_fixed","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..2"" at location 1.",FALSE
+"..2",0,"drop","summarize","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..2"" at location 1.",FALSE
+"..2",0,"drop","expand","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..2"" at location 1.",FALSE
+"..2",0,"drop","nest","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..2"" at location 1.",FALSE
+"..2",0,"drop","nest_by","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..2"" at location 1.",FALSE
+"..2",0,"rename","inspect_named","pass","","",FALSE
+"..2",0,"rename","inspect_typed_dimension","pass","","",FALSE
+"..2",0,"rename","inspect_typed_fixed","pass","","",FALSE
+"..2",0,"rename","summarize","pass","","",FALSE
+"..2",0,"rename","expand","pass","","",FALSE
+"..2",0,"rename","nest","pass","","",FALSE
+"..2",0,"rename","nest_by","pass","","",FALSE
+"..2",1,"drop","inspect_named","pass","","",FALSE
+"..2",1,"drop","inspect_typed_dimension","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..2"" at location 1.",FALSE
+"..2",1,"drop","inspect_typed_fixed","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..2"" at location 1.",FALSE
+"..2",1,"drop","summarize","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..2"" at location 1.",FALSE
+"..2",1,"drop","expand","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..2"" at location 1.",FALSE
+"..2",1,"drop","nest","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..2"" at location 1.",FALSE
+"..2",1,"drop","nest_by","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..2"" at location 1.",FALSE
+"..2",1,"rename","inspect_named","pass","","",FALSE
+"..2",1,"rename","inspect_typed_dimension","pass","","",FALSE
+"..2",1,"rename","inspect_typed_fixed","pass","","",FALSE
+"..2",1,"rename","summarize","pass","","",FALSE
+"..2",1,"rename","expand","pass","","",FALSE
+"..2",1,"rename","nest","pass","","",FALSE
+"..2",1,"rename","nest_by","pass","","",FALSE
+"..2",3,"drop","inspect_named","pass","","",FALSE
+"..2",3,"drop","inspect_typed_dimension","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..2"" at location 1.",FALSE
+"..2",3,"drop","inspect_typed_fixed","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..2"" at location 1.",FALSE
+"..2",3,"drop","summarize","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..2"" at location 1.",FALSE
+"..2",3,"drop","expand","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..2"" at location 1.",FALSE
+"..2",3,"drop","nest","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..2"" at location 1.",FALSE
+"..2",3,"drop","nest_by","error","tibble_error_column_names_cannot_be_dot_dot","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..2"" at location 1.",FALSE
+"..2",3,"rename","inspect_named","pass","","",FALSE
+"..2",3,"rename","inspect_typed_dimension","pass","","",FALSE
+"..2",3,"rename","inspect_typed_fixed","pass","","",FALSE
+"..2",3,"rename","summarize","pass","","",FALSE
+"..2",3,"rename","expand","pass","","",FALSE
+"..2",3,"rename","nest","pass","","",FALSE
+"..2",3,"rename","nest_by","pass","","",FALSE

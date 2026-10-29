@@ -1,0 +1,7 @@
+sha256	url
+79ccab7dfb1c404466e7480b75e340f4ef6e364e359256602195ff5145817994	https://github.com/cran/data.table/blob/1.18.6.1/R/data.table.R
+92c1c6c077a4eee2192e01ee84c1c1718af7cf054b91a77bc2f4cefa5125b853	https://github.com/cran/data.table/blob/1.18.6.1/R/bmerge.R
+047a387225a5d6ec5cc3fa171796a013f83b34969ac2c8adb7cbc59859cd83e4	https://github.com/cran/data.table/blob/1.18.6.1/src/dogroups.c
+69695adb5ffb3fb316f3f6ef1c04b70f6f2cdfc23fd7e09bbddc68e1c0c37eb7	https://github.com/cran/data.table/blob/1.18.6.1/man/special-symbols.Rd
+5411aa65bdd71e3688f03b3e972c3b851ca40374ffba718547bb813abf99defc	https://github.com/cran/data.table/blob/1.18.6.1/R/setkey.R
+c635297c3a7e6e27411e0702ff2e94893d7b4323bc842228b2b72a7b8b2b7004	https://github.com/cran/data.table/blob/1.18.6.1/R/as.data.table.R

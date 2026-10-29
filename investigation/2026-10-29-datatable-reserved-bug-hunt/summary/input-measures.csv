@@ -1,0 +1,29 @@
+"name","helper","style","ordinary","no_share","local","renamed","actual","actual_ok","matches_local","unchanged"
+".SD","share_of_parent","direct","1,3","1,3,4","0.25,0.75,1","0.25,0.75,1","cannot change value of locked binding for '.SD'",FALSE,FALSE,TRUE
+".SD","share_of_parent","across","1,3","1,3,4","0.25,0.75,1","0.25,0.75,1","cannot change value of locked binding for '.SD'",FALSE,FALSE,TRUE
+".SD","share_of_total","direct","1,3","1,3,4","0.25,0.75,1","0.25,0.75,1","cannot change value of locked binding for '.SD'",FALSE,FALSE,TRUE
+".SD","share_of_total","across","1,3","1,3,4","0.25,0.75,1","0.25,0.75,1","cannot change value of locked binding for '.SD'",FALSE,FALSE,TRUE
+".GRP","share_of_parent","direct","1,3","1,3,4","0.25,0.75,1","0.25,0.75,1","cannot change value of locked binding for '.GRP'",FALSE,FALSE,TRUE
+".GRP","share_of_parent","across","1,3","1,3,4","0.25,0.75,1","0.25,0.75,1","cannot change value of locked binding for '.GRP'",FALSE,FALSE,TRUE
+".GRP","share_of_total","direct","1,3","1,3,4","0.25,0.75,1","0.25,0.75,1","cannot change value of locked binding for '.GRP'",FALSE,FALSE,TRUE
+".GRP","share_of_total","across","1,3","1,3,4","0.25,0.75,1","0.25,0.75,1","cannot change value of locked binding for '.GRP'",FALSE,FALSE,TRUE
+".NGRP","share_of_parent","direct","1,3","1,3,4","0.25,0.75,1","0.25,0.75,1","cannot change value of locked binding for '.NGRP'",FALSE,FALSE,TRUE
+".NGRP","share_of_parent","across","1,3","1,3,4","0.25,0.75,1","0.25,0.75,1","cannot change value of locked binding for '.NGRP'",FALSE,FALSE,TRUE
+".NGRP","share_of_total","direct","1,3","1,3,4","0.25,0.75,1","0.25,0.75,1","cannot change value of locked binding for '.NGRP'",FALSE,FALSE,TRUE
+".NGRP","share_of_total","across","1,3","1,3,4","0.25,0.75,1","0.25,0.75,1","cannot change value of locked binding for '.NGRP'",FALSE,FALSE,TRUE
+".SDall","share_of_parent","direct","1,3","1,3,4","0.25,0.75,1","0.25,0.75,1","cannot change value of locked binding for '.SDall'",FALSE,FALSE,TRUE
+".SDall","share_of_parent","across","1,3","1,3,4","0.25,0.75,1","0.25,0.75,1","cannot change value of locked binding for '.SDall'",FALSE,FALSE,TRUE
+".SDall","share_of_total","direct","1,3","1,3,4","0.25,0.75,1","0.25,0.75,1","cannot change value of locked binding for '.SDall'",FALSE,FALSE,TRUE
+".SDall","share_of_total","across","1,3","1,3,4","0.25,0.75,1","0.25,0.75,1","cannot change value of locked binding for '.SDall'",FALSE,FALSE,TRUE
+".xSD","share_of_parent","direct","1,3","1,3,4","0.25,0.75,1","0.25,0.75,1","cannot change value of locked binding for '.xSD'",FALSE,FALSE,TRUE
+".xSD","share_of_parent","across","1,3","1,3,4","0.25,0.75,1","0.25,0.75,1","cannot change value of locked binding for '.xSD'",FALSE,FALSE,TRUE
+".xSD","share_of_total","direct","1,3","1,3,4","0.25,0.75,1","0.25,0.75,1","cannot change value of locked binding for '.xSD'",FALSE,FALSE,TRUE
+".xSD","share_of_total","across","1,3","1,3,4","0.25,0.75,1","0.25,0.75,1","cannot change value of locked binding for '.xSD'",FALSE,FALSE,TRUE
+".iSD","share_of_parent","direct","1,3","1,3,4","0.25,0.75,1","0.25,0.75,1","cannot change value of locked binding for '.iSD'",FALSE,FALSE,TRUE
+".iSD","share_of_parent","across","1,3","1,3,4","0.25,0.75,1","0.25,0.75,1","cannot change value of locked binding for '.iSD'",FALSE,FALSE,TRUE
+".iSD","share_of_total","direct","1,3","1,3,4","0.25,0.75,1","0.25,0.75,1","cannot change value of locked binding for '.iSD'",FALSE,FALSE,TRUE
+".iSD","share_of_total","across","1,3","1,3,4","0.25,0.75,1","0.25,0.75,1","cannot change value of locked binding for '.iSD'",FALSE,FALSE,TRUE
+".BY","share_of_parent","direct","1,3","1,3,4","0.25,0.75,1","0.25,0.75,1","0.25,0.75,1",TRUE,TRUE,TRUE
+".BY","share_of_parent","across","1,3","1,3,4","0.25,0.75,1","0.25,0.75,1","0.25,0.75,1",TRUE,TRUE,TRUE
+".BY","share_of_total","direct","1,3","1,3,4","0.25,0.75,1","0.25,0.75,1","0.25,0.75,1",TRUE,TRUE,TRUE
+".BY","share_of_total","across","1,3","1,3,4","0.25,0.75,1","0.25,0.75,1","0.25,0.75,1",TRUE,TRUE,TRUE

@@ -1,0 +1,65 @@
+Completed .N 0 TRUE
+Completed .N 0 FALSE
+Completed .N 3 TRUE
+Completed .N 3 FALSE
+Completed .I 0 TRUE
+Completed .I 0 FALSE
+Completed .I 3 TRUE
+Completed .I 3 FALSE
+Completed .SD 0 TRUE
+Completed .SD 0 FALSE
+Completed .SD 3 TRUE
+Completed .SD 3 FALSE
+Completed .GRP 0 TRUE
+Completed .GRP 0 FALSE
+Completed .GRP 3 TRUE
+Completed .GRP 3 FALSE
+Completed .NGRP 0 TRUE
+Completed .NGRP 0 FALSE
+Completed .NGRP 3 TRUE
+Completed .NGRP 3 FALSE
+Completed .BY 0 TRUE
+Completed .BY 0 FALSE
+Completed .BY 3 TRUE
+Completed .BY 3 FALSE
+Completed .EACHI 0 TRUE
+Completed .EACHI 0 FALSE
+Completed .EACHI 3 TRUE
+Completed .EACHI 3 FALSE
+Completed .NATURAL 0 TRUE
+Completed .NATURAL 0 FALSE
+Completed .NATURAL 3 TRUE
+Completed .NATURAL 3 FALSE
+Completed .ROW 0 TRUE
+Completed .ROW 0 FALSE
+Completed .ROW 3 TRUE
+Completed .ROW 3 FALSE
+Completed .SDall 0 TRUE
+Completed .SDall 0 FALSE
+Completed .SDall 3 TRUE
+Completed .SDall 3 FALSE
+Completed .xSD 0 TRUE
+Completed .xSD 0 FALSE
+Completed .xSD 3 TRUE
+Completed .xSD 3 FALSE
+Completed .iSD 0 TRUE
+Completed .iSD 0 FALSE
+Completed .iSD 3 TRUE
+Completed .iSD 3 FALSE
+Completed ..value 0 TRUE
+Completed ..value 0 FALSE
+Completed ..value 3 TRUE
+Completed ..value 3 FALSE
+
+          pass  plan-mismatch upstream-error
+           780              4             48
+    column size immutable         derive predicate        status evaluated
+323    .BY    0      TRUE select_special character plan-mismatch     FALSE
+339    .BY    0     FALSE select_special character plan-mismatch     FALSE
+355    .BY    3      TRUE select_special character plan-mismatch     FALSE
+371    .BY    3     FALSE select_special character plan-mismatch     FALSE
+    source_changed error
+323          FALSE
+339          FALSE
+355          FALSE
+371          FALSE

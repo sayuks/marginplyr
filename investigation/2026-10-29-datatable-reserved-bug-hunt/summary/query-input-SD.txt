@@ -1,0 +1,25 @@
+funion(setnames(copy(copy(`_DT18`))[, `:=`(..marginplyr_key_1 = f,
+    ..marginplyr_key_2 = g)][, .(value = marginplyr:::check_dtplyr_share_source(sum(.SD),
+    share_output = "fraction", source_summary = "value", share_kind = "total",
+    call_text = "summarize_with_margins(data, !!!dots, .grouping = rollup(g), .by = f)"),
+    fraction = NA_real_), keyby = .(..marginplyr_key_1, ..marginplyr_key_2)],
+    c("..marginplyr_key_1", "..marginplyr_key_2"), c("f", "g"
+    ))[, `:=`(..marginplyr_parent_original_1 = g)][, `:=`(g = as.character(g))][,
+    `:=`(..marginplyr_set_id_1 = 1L)], setcolorder(setnames(copy(copy(`_DT18`))[,
+    `:=`(..marginplyr_key_1 = f, ..marginplyr_key_2 = g)][, .(value = marginplyr:::check_dtplyr_share_source(sum(.SD),
+    share_output = "fraction", source_summary = "value", share_kind = "total",
+    call_text = "summarize_with_margins(data, !!!dots, .grouping = rollup(g), .by = f)"),
+    fraction = NA_real_), keyby = .(..marginplyr_key_1)], "..marginplyr_key_1",
+    "f")[, `:=`(..marginplyr_parent_original_1 = NA_character_)][,
+    `:=`(g = rep("Total", .N))], c("f", "g", "value", "fraction",
+"..marginplyr_parent_original_1"))[, `:=`(..marginplyr_set_id_1 = 2L)],
+    all = TRUE)[marginplyr:::assert_dtplyr_grouped_keys(..marginplyr_set_id_1,
+    f, ..marginplyr_parent_original_1, share_output = "fraction",
+    share_kind = "total", call_text = "summarize_with_margins(data, !!!dots, .grouping = rollup(g), .by = f)")][,
+    `:=`(..marginplyr_denominator_of_value_1 = marginplyr:::dtplyr_share_denominator(value,
+        ..marginplyr_set_id_1, 2L)), by = .(f)][, `:=`(fraction = fifelse(..marginplyr_set_id_1 %in%
+    2L, 1, fifelse(is.na(value) | is.na(..marginplyr_denominator_of_value_1) |
+    ..marginplyr_denominator_of_value_1 == 0, NA_real_, as.double(value *
+    1L)/as.double(..marginplyr_denominator_of_value_1))))][,
+    `:=`(..marginplyr_denominator_of_value_1 = NULL)][, `:=`(..marginplyr_parent_original_1 = NULL)][,
+    `:=`(..marginplyr_set_id_1 = NULL)]

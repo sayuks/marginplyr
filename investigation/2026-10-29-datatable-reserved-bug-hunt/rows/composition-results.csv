@@ -1,0 +1,721 @@
+"kind","spelling","detail","status","local_error","dtplyr_error","warnings"
+"simultaneous",".N","expand_with_margins none FALSE","pass","","",""
+"simultaneous",".N","expand_with_margins first FALSE","pass","","",""
+"simultaneous",".N","expand_with_margins last FALSE","pass","","",""
+"simultaneous",".N","nest_with_margins none FALSE","pass","","",""
+"simultaneous",".N","nest_with_margins none TRUE","pass","","",""
+"simultaneous",".N","nest_with_margins first FALSE","pass","","",""
+"simultaneous",".N","nest_with_margins first TRUE","pass","","",""
+"simultaneous",".N","nest_with_margins last FALSE","pass","","",""
+"simultaneous",".N","nest_with_margins last TRUE","pass","","",""
+"simultaneous",".N","nest_by_with_margins none FALSE","pass","","",""
+"simultaneous",".N","nest_by_with_margins none TRUE","pass","","",""
+"simultaneous",".N","nest_by_with_margins first FALSE","pass","","",""
+"simultaneous",".N","nest_by_with_margins first TRUE","pass","","",""
+"simultaneous",".N","nest_by_with_margins last FALSE","pass","","",""
+"simultaneous",".N","nest_by_with_margins last TRUE","pass","","",""
+"simultaneous",".I","expand_with_margins none FALSE","pass","","",""
+"simultaneous",".I","expand_with_margins first FALSE","pass","","",""
+"simultaneous",".I","expand_with_margins last FALSE","pass","","",""
+"simultaneous",".I","nest_with_margins none FALSE","pass","","",""
+"simultaneous",".I","nest_with_margins none TRUE","pass","","",""
+"simultaneous",".I","nest_with_margins first FALSE","pass","","",""
+"simultaneous",".I","nest_with_margins first TRUE","pass","","",""
+"simultaneous",".I","nest_with_margins last FALSE","pass","","",""
+"simultaneous",".I","nest_with_margins last TRUE","pass","","",""
+"simultaneous",".I","nest_by_with_margins none FALSE","pass","","",""
+"simultaneous",".I","nest_by_with_margins none TRUE","pass","","",""
+"simultaneous",".I","nest_by_with_margins first FALSE","pass","","",""
+"simultaneous",".I","nest_by_with_margins first TRUE","pass","","",""
+"simultaneous",".I","nest_by_with_margins last FALSE","pass","","",""
+"simultaneous",".I","nest_by_with_margins last TRUE","pass","","",""
+"simultaneous",".SD","expand_with_margins none FALSE","pass","","",""
+"simultaneous",".SD","expand_with_margins first FALSE","pass","","",""
+"simultaneous",".SD","expand_with_margins last FALSE","pass","","",""
+"simultaneous",".SD","nest_with_margins none FALSE","pass","","",""
+"simultaneous",".SD","nest_with_margins none TRUE","pass","","",""
+"simultaneous",".SD","nest_with_margins first FALSE","pass","","",""
+"simultaneous",".SD","nest_with_margins first TRUE","pass","","",""
+"simultaneous",".SD","nest_with_margins last FALSE","pass","","",""
+"simultaneous",".SD","nest_with_margins last TRUE","pass","","",""
+"simultaneous",".SD","nest_by_with_margins none FALSE","pass","","",""
+"simultaneous",".SD","nest_by_with_margins none TRUE","pass","","",""
+"simultaneous",".SD","nest_by_with_margins first FALSE","pass","","",""
+"simultaneous",".SD","nest_by_with_margins first TRUE","pass","","",""
+"simultaneous",".SD","nest_by_with_margins last FALSE","pass","","",""
+"simultaneous",".SD","nest_by_with_margins last TRUE","pass","","",""
+"simultaneous",".GRP","expand_with_margins none FALSE","pass","","",""
+"simultaneous",".GRP","expand_with_margins first FALSE","pass","","",""
+"simultaneous",".GRP","expand_with_margins last FALSE","pass","","",""
+"simultaneous",".GRP","nest_with_margins none FALSE","pass","","",""
+"simultaneous",".GRP","nest_with_margins none TRUE","pass","","",""
+"simultaneous",".GRP","nest_with_margins first FALSE","pass","","",""
+"simultaneous",".GRP","nest_with_margins first TRUE","pass","","",""
+"simultaneous",".GRP","nest_with_margins last FALSE","pass","","",""
+"simultaneous",".GRP","nest_with_margins last TRUE","pass","","",""
+"simultaneous",".GRP","nest_by_with_margins none FALSE","pass","","",""
+"simultaneous",".GRP","nest_by_with_margins none TRUE","pass","","",""
+"simultaneous",".GRP","nest_by_with_margins first FALSE","pass","","",""
+"simultaneous",".GRP","nest_by_with_margins first TRUE","pass","","",""
+"simultaneous",".GRP","nest_by_with_margins last FALSE","pass","","",""
+"simultaneous",".GRP","nest_by_with_margins last TRUE","pass","","",""
+"simultaneous",".NGRP","expand_with_margins none FALSE","pass","","",""
+"simultaneous",".NGRP","expand_with_margins first FALSE","pass","","",""
+"simultaneous",".NGRP","expand_with_margins last FALSE","pass","","",""
+"simultaneous",".NGRP","nest_with_margins none FALSE","pass","","",""
+"simultaneous",".NGRP","nest_with_margins none TRUE","pass","","",""
+"simultaneous",".NGRP","nest_with_margins first FALSE","pass","","",""
+"simultaneous",".NGRP","nest_with_margins first TRUE","pass","","",""
+"simultaneous",".NGRP","nest_with_margins last FALSE","pass","","",""
+"simultaneous",".NGRP","nest_with_margins last TRUE","pass","","",""
+"simultaneous",".NGRP","nest_by_with_margins none FALSE","pass","","",""
+"simultaneous",".NGRP","nest_by_with_margins none TRUE","pass","","",""
+"simultaneous",".NGRP","nest_by_with_margins first FALSE","pass","","",""
+"simultaneous",".NGRP","nest_by_with_margins first TRUE","pass","","",""
+"simultaneous",".NGRP","nest_by_with_margins last FALSE","pass","","",""
+"simultaneous",".NGRP","nest_by_with_margins last TRUE","pass","","",""
+"simultaneous",".BY","expand_with_margins none FALSE","pass","","",""
+"simultaneous",".BY","expand_with_margins first FALSE","pass","","",""
+"simultaneous",".BY","expand_with_margins last FALSE","pass","","",""
+"simultaneous",".BY","nest_with_margins none FALSE","pass","","",""
+"simultaneous",".BY","nest_with_margins none TRUE","pass","","",""
+"simultaneous",".BY","nest_with_margins first FALSE","pass","","",""
+"simultaneous",".BY","nest_with_margins first TRUE","pass","","",""
+"simultaneous",".BY","nest_with_margins last FALSE","pass","","",""
+"simultaneous",".BY","nest_with_margins last TRUE","pass","","",""
+"simultaneous",".BY","nest_by_with_margins none FALSE","pass","","",""
+"simultaneous",".BY","nest_by_with_margins none TRUE","pass","","",""
+"simultaneous",".BY","nest_by_with_margins first FALSE","pass","","",""
+"simultaneous",".BY","nest_by_with_margins first TRUE","pass","","",""
+"simultaneous",".BY","nest_by_with_margins last FALSE","pass","","",""
+"simultaneous",".BY","nest_by_with_margins last TRUE","pass","","",""
+"simultaneous",".EACHI","expand_with_margins none FALSE","pass","","",""
+"simultaneous",".EACHI","expand_with_margins first FALSE","pass","","",""
+"simultaneous",".EACHI","expand_with_margins last FALSE","pass","","",""
+"simultaneous",".EACHI","nest_with_margins none FALSE","pass","","",""
+"simultaneous",".EACHI","nest_with_margins none TRUE","pass","","",""
+"simultaneous",".EACHI","nest_with_margins first FALSE","pass","","",""
+"simultaneous",".EACHI","nest_with_margins first TRUE","pass","","",""
+"simultaneous",".EACHI","nest_with_margins last FALSE","pass","","",""
+"simultaneous",".EACHI","nest_with_margins last TRUE","pass","","",""
+"simultaneous",".EACHI","nest_by_with_margins none FALSE","pass","","",""
+"simultaneous",".EACHI","nest_by_with_margins none TRUE","pass","","",""
+"simultaneous",".EACHI","nest_by_with_margins first FALSE","pass","","",""
+"simultaneous",".EACHI","nest_by_with_margins first TRUE","pass","","",""
+"simultaneous",".EACHI","nest_by_with_margins last FALSE","pass","","",""
+"simultaneous",".EACHI","nest_by_with_margins last TRUE","pass","","",""
+"simultaneous",".NATURAL","expand_with_margins none FALSE","pass","","",""
+"simultaneous",".NATURAL","expand_with_margins first FALSE","pass","","",""
+"simultaneous",".NATURAL","expand_with_margins last FALSE","pass","","",""
+"simultaneous",".NATURAL","nest_with_margins none FALSE","pass","","",""
+"simultaneous",".NATURAL","nest_with_margins none TRUE","pass","","",""
+"simultaneous",".NATURAL","nest_with_margins first FALSE","pass","","",""
+"simultaneous",".NATURAL","nest_with_margins first TRUE","pass","","",""
+"simultaneous",".NATURAL","nest_with_margins last FALSE","pass","","",""
+"simultaneous",".NATURAL","nest_with_margins last TRUE","pass","","",""
+"simultaneous",".NATURAL","nest_by_with_margins none FALSE","pass","","",""
+"simultaneous",".NATURAL","nest_by_with_margins none TRUE","pass","","",""
+"simultaneous",".NATURAL","nest_by_with_margins first FALSE","pass","","",""
+"simultaneous",".NATURAL","nest_by_with_margins first TRUE","pass","","",""
+"simultaneous",".NATURAL","nest_by_with_margins last FALSE","pass","","",""
+"simultaneous",".NATURAL","nest_by_with_margins last TRUE","pass","","",""
+"simultaneous",".ROW","expand_with_margins none FALSE","pass","","",""
+"simultaneous",".ROW","expand_with_margins first FALSE","pass","","",""
+"simultaneous",".ROW","expand_with_margins last FALSE","pass","","",""
+"simultaneous",".ROW","nest_with_margins none FALSE","pass","","",""
+"simultaneous",".ROW","nest_with_margins none TRUE","pass","","",""
+"simultaneous",".ROW","nest_with_margins first FALSE","pass","","",""
+"simultaneous",".ROW","nest_with_margins first TRUE","pass","","",""
+"simultaneous",".ROW","nest_with_margins last FALSE","pass","","",""
+"simultaneous",".ROW","nest_with_margins last TRUE","pass","","",""
+"simultaneous",".ROW","nest_by_with_margins none FALSE","pass","","",""
+"simultaneous",".ROW","nest_by_with_margins none TRUE","pass","","",""
+"simultaneous",".ROW","nest_by_with_margins first FALSE","pass","","",""
+"simultaneous",".ROW","nest_by_with_margins first TRUE","pass","","",""
+"simultaneous",".ROW","nest_by_with_margins last FALSE","pass","","",""
+"simultaneous",".ROW","nest_by_with_margins last TRUE","pass","","",""
+"simultaneous",".SDall","expand_with_margins none FALSE","pass","","",""
+"simultaneous",".SDall","expand_with_margins first FALSE","pass","","",""
+"simultaneous",".SDall","expand_with_margins last FALSE","pass","","",""
+"simultaneous",".SDall","nest_with_margins none FALSE","pass","","",""
+"simultaneous",".SDall","nest_with_margins none TRUE","pass","","",""
+"simultaneous",".SDall","nest_with_margins first FALSE","pass","","",""
+"simultaneous",".SDall","nest_with_margins first TRUE","pass","","",""
+"simultaneous",".SDall","nest_with_margins last FALSE","pass","","",""
+"simultaneous",".SDall","nest_with_margins last TRUE","pass","","",""
+"simultaneous",".SDall","nest_by_with_margins none FALSE","pass","","",""
+"simultaneous",".SDall","nest_by_with_margins none TRUE","pass","","",""
+"simultaneous",".SDall","nest_by_with_margins first FALSE","pass","","",""
+"simultaneous",".SDall","nest_by_with_margins first TRUE","pass","","",""
+"simultaneous",".SDall","nest_by_with_margins last FALSE","pass","","",""
+"simultaneous",".SDall","nest_by_with_margins last TRUE","pass","","",""
+"simultaneous",".xSD","expand_with_margins none FALSE","pass","","",""
+"simultaneous",".xSD","expand_with_margins first FALSE","pass","","",""
+"simultaneous",".xSD","expand_with_margins last FALSE","pass","","",""
+"simultaneous",".xSD","nest_with_margins none FALSE","pass","","",""
+"simultaneous",".xSD","nest_with_margins none TRUE","pass","","",""
+"simultaneous",".xSD","nest_with_margins first FALSE","pass","","",""
+"simultaneous",".xSD","nest_with_margins first TRUE","pass","","",""
+"simultaneous",".xSD","nest_with_margins last FALSE","pass","","",""
+"simultaneous",".xSD","nest_with_margins last TRUE","pass","","",""
+"simultaneous",".xSD","nest_by_with_margins none FALSE","pass","","",""
+"simultaneous",".xSD","nest_by_with_margins none TRUE","pass","","",""
+"simultaneous",".xSD","nest_by_with_margins first FALSE","pass","","",""
+"simultaneous",".xSD","nest_by_with_margins first TRUE","pass","","",""
+"simultaneous",".xSD","nest_by_with_margins last FALSE","pass","","",""
+"simultaneous",".xSD","nest_by_with_margins last TRUE","pass","","",""
+"simultaneous",".iSD","expand_with_margins none FALSE","pass","","",""
+"simultaneous",".iSD","expand_with_margins first FALSE","pass","","",""
+"simultaneous",".iSD","expand_with_margins last FALSE","pass","","",""
+"simultaneous",".iSD","nest_with_margins none FALSE","pass","","",""
+"simultaneous",".iSD","nest_with_margins none TRUE","pass","","",""
+"simultaneous",".iSD","nest_with_margins first FALSE","pass","","",""
+"simultaneous",".iSD","nest_with_margins first TRUE","pass","","",""
+"simultaneous",".iSD","nest_with_margins last FALSE","pass","","",""
+"simultaneous",".iSD","nest_with_margins last TRUE","pass","","",""
+"simultaneous",".iSD","nest_by_with_margins none FALSE","pass","","",""
+"simultaneous",".iSD","nest_by_with_margins none TRUE","pass","","",""
+"simultaneous",".iSD","nest_by_with_margins first FALSE","pass","","",""
+"simultaneous",".iSD","nest_by_with_margins first TRUE","pass","","",""
+"simultaneous",".iSD","nest_by_with_margins last FALSE","pass","","",""
+"simultaneous",".iSD","nest_by_with_margins last TRUE","pass","","",""
+"composition-dimension",".N","expand_with_margins expand_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".N","expand_with_margins nest_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".N","expand_with_margins nest_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".N","expand_with_margins nest_by_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".N","expand_with_margins nest_by_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".N","nest_with_margins expand_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".N","nest_with_margins nest_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".N","nest_with_margins nest_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".N","nest_with_margins nest_by_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".N","nest_with_margins nest_by_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-inspection",".N","list","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-inspection",".N","character","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".I","expand_with_margins expand_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".I","expand_with_margins nest_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".I","expand_with_margins nest_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".I","expand_with_margins nest_by_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".I","expand_with_margins nest_by_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".I","nest_with_margins expand_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".I","nest_with_margins nest_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".I","nest_with_margins nest_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".I","nest_with_margins nest_by_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".I","nest_with_margins nest_by_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-inspection",".I","list","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-inspection",".I","character","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".SD","expand_with_margins expand_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".SD","expand_with_margins nest_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".SD","expand_with_margins nest_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".SD","expand_with_margins nest_by_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".SD","expand_with_margins nest_by_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".SD","nest_with_margins expand_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".SD","nest_with_margins nest_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".SD","nest_with_margins nest_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".SD","nest_with_margins nest_by_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".SD","nest_with_margins nest_by_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-inspection",".SD","list","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-inspection",".SD","character","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".GRP","expand_with_margins expand_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".GRP","expand_with_margins nest_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".GRP","expand_with_margins nest_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".GRP","expand_with_margins nest_by_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".GRP","expand_with_margins nest_by_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".GRP","nest_with_margins expand_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".GRP","nest_with_margins nest_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".GRP","nest_with_margins nest_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".GRP","nest_with_margins nest_by_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".GRP","nest_with_margins nest_by_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-inspection",".GRP","list","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-inspection",".GRP","character","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".NGRP","expand_with_margins expand_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".NGRP","expand_with_margins nest_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".NGRP","expand_with_margins nest_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".NGRP","expand_with_margins nest_by_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".NGRP","expand_with_margins nest_by_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".NGRP","nest_with_margins expand_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".NGRP","nest_with_margins nest_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".NGRP","nest_with_margins nest_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".NGRP","nest_with_margins nest_by_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".NGRP","nest_with_margins nest_by_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-inspection",".NGRP","list","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-inspection",".NGRP","character","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".BY","expand_with_margins expand_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".BY","expand_with_margins nest_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".BY","expand_with_margins nest_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".BY","expand_with_margins nest_by_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".BY","expand_with_margins nest_by_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".BY","nest_with_margins expand_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".BY","nest_with_margins nest_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".BY","nest_with_margins nest_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".BY","nest_with_margins nest_by_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".BY","nest_with_margins nest_by_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-inspection",".BY","list","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-inspection",".BY","character","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".EACHI","expand_with_margins expand_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".EACHI","expand_with_margins nest_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".EACHI","expand_with_margins nest_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".EACHI","expand_with_margins nest_by_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".EACHI","expand_with_margins nest_by_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".EACHI","nest_with_margins expand_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".EACHI","nest_with_margins nest_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".EACHI","nest_with_margins nest_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".EACHI","nest_with_margins nest_by_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".EACHI","nest_with_margins nest_by_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-inspection",".EACHI","list","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-inspection",".EACHI","character","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".NATURAL","expand_with_margins expand_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".NATURAL","expand_with_margins nest_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".NATURAL","expand_with_margins nest_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".NATURAL","expand_with_margins nest_by_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".NATURAL","expand_with_margins nest_by_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".NATURAL","nest_with_margins expand_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".NATURAL","nest_with_margins nest_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".NATURAL","nest_with_margins nest_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".NATURAL","nest_with_margins nest_by_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".NATURAL","nest_with_margins nest_by_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-inspection",".NATURAL","list","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-inspection",".NATURAL","character","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".ROW","expand_with_margins expand_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".ROW","expand_with_margins nest_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".ROW","expand_with_margins nest_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".ROW","expand_with_margins nest_by_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".ROW","expand_with_margins nest_by_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".ROW","nest_with_margins expand_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".ROW","nest_with_margins nest_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".ROW","nest_with_margins nest_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".ROW","nest_with_margins nest_by_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".ROW","nest_with_margins nest_by_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-inspection",".ROW","list","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-inspection",".ROW","character","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".SDall","expand_with_margins expand_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".SDall","expand_with_margins nest_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".SDall","expand_with_margins nest_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".SDall","expand_with_margins nest_by_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".SDall","expand_with_margins nest_by_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".SDall","nest_with_margins expand_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".SDall","nest_with_margins nest_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".SDall","nest_with_margins nest_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".SDall","nest_with_margins nest_by_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".SDall","nest_with_margins nest_by_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-inspection",".SDall","list","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-inspection",".SDall","character","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".xSD","expand_with_margins expand_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".xSD","expand_with_margins nest_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".xSD","expand_with_margins nest_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".xSD","expand_with_margins nest_by_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".xSD","expand_with_margins nest_by_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".xSD","nest_with_margins expand_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".xSD","nest_with_margins nest_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".xSD","nest_with_margins nest_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".xSD","nest_with_margins nest_by_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".xSD","nest_with_margins nest_by_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-inspection",".xSD","list","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-inspection",".xSD","character","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".iSD","expand_with_margins expand_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".iSD","expand_with_margins nest_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".iSD","expand_with_margins nest_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".iSD","expand_with_margins nest_by_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".iSD","expand_with_margins nest_by_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".iSD","nest_with_margins expand_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".iSD","nest_with_margins nest_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".iSD","nest_with_margins nest_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".iSD","nest_with_margins nest_by_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension",".iSD","nest_with_margins nest_by_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-inspection",".iSD","list","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-inspection",".iSD","character","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension","ordinary","expand_with_margins expand_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension","ordinary","expand_with_margins nest_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension","ordinary","expand_with_margins nest_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension","ordinary","expand_with_margins nest_by_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension","ordinary","expand_with_margins nest_by_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension","ordinary","nest_with_margins expand_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension","ordinary","nest_with_margins nest_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension","ordinary","nest_with_margins nest_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension","ordinary","nest_with_margins nest_by_with_margins FALSE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-dimension","ordinary","nest_with_margins nest_by_with_margins TRUE","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-inspection","ordinary","list","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"composition-inspection","ordinary","character","dtplyr-error","","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"zero-column-cells",".N","0 nest_with_margins","pass","","",""
+"zero-column-cells",".N","0 nest_by_with_margins","pass","","",""
+"zero-column-cells",".N","1 nest_with_margins","pass","","",""
+"zero-column-cells",".N","1 nest_by_with_margins","pass","","",""
+"zero-column-cells",".N","4 nest_with_margins","pass","","",""
+"zero-column-cells",".N","4 nest_by_with_margins","pass","","",""
+"zero-column-cells",".I","0 nest_with_margins","pass","","",""
+"zero-column-cells",".I","0 nest_by_with_margins","pass","","",""
+"zero-column-cells",".I","1 nest_with_margins","pass","","",""
+"zero-column-cells",".I","1 nest_by_with_margins","pass","","",""
+"zero-column-cells",".I","4 nest_with_margins","pass","","",""
+"zero-column-cells",".I","4 nest_by_with_margins","pass","","",""
+"zero-column-cells",".SD","0 nest_with_margins","pass","","",""
+"zero-column-cells",".SD","0 nest_by_with_margins","pass","","",""
+"zero-column-cells",".SD","1 nest_with_margins","pass","","",""
+"zero-column-cells",".SD","1 nest_by_with_margins","pass","","",""
+"zero-column-cells",".SD","4 nest_with_margins","pass","","",""
+"zero-column-cells",".SD","4 nest_by_with_margins","pass","","",""
+"zero-column-cells",".GRP","0 nest_with_margins","pass","","",""
+"zero-column-cells",".GRP","0 nest_by_with_margins","pass","","",""
+"zero-column-cells",".GRP","1 nest_with_margins","pass","","",""
+"zero-column-cells",".GRP","1 nest_by_with_margins","pass","","",""
+"zero-column-cells",".GRP","4 nest_with_margins","pass","","",""
+"zero-column-cells",".GRP","4 nest_by_with_margins","pass","","",""
+"zero-column-cells",".NGRP","0 nest_with_margins","pass","","",""
+"zero-column-cells",".NGRP","0 nest_by_with_margins","pass","","",""
+"zero-column-cells",".NGRP","1 nest_with_margins","pass","","",""
+"zero-column-cells",".NGRP","1 nest_by_with_margins","pass","","",""
+"zero-column-cells",".NGRP","4 nest_with_margins","pass","","",""
+"zero-column-cells",".NGRP","4 nest_by_with_margins","pass","","",""
+"zero-column-cells",".BY","0 nest_with_margins","pass","","",""
+"zero-column-cells",".BY","0 nest_by_with_margins","pass","","",""
+"zero-column-cells",".BY","1 nest_with_margins","pass","","",""
+"zero-column-cells",".BY","1 nest_by_with_margins","pass","","",""
+"zero-column-cells",".BY","4 nest_with_margins","pass","","",""
+"zero-column-cells",".BY","4 nest_by_with_margins","pass","","",""
+"zero-column-cells",".EACHI","0 nest_with_margins","pass","","",""
+"zero-column-cells",".EACHI","0 nest_by_with_margins","pass","","",""
+"zero-column-cells",".EACHI","1 nest_with_margins","pass","","",""
+"zero-column-cells",".EACHI","1 nest_by_with_margins","pass","","",""
+"zero-column-cells",".EACHI","4 nest_with_margins","pass","","",""
+"zero-column-cells",".EACHI","4 nest_by_with_margins","pass","","",""
+"zero-column-cells",".NATURAL","0 nest_with_margins","pass","","",""
+"zero-column-cells",".NATURAL","0 nest_by_with_margins","pass","","",""
+"zero-column-cells",".NATURAL","1 nest_with_margins","pass","","",""
+"zero-column-cells",".NATURAL","1 nest_by_with_margins","pass","","",""
+"zero-column-cells",".NATURAL","4 nest_with_margins","pass","","",""
+"zero-column-cells",".NATURAL","4 nest_by_with_margins","pass","","",""
+"zero-column-cells",".ROW","0 nest_with_margins","pass","","",""
+"zero-column-cells",".ROW","0 nest_by_with_margins","pass","","",""
+"zero-column-cells",".ROW","1 nest_with_margins","pass","","",""
+"zero-column-cells",".ROW","1 nest_by_with_margins","pass","","",""
+"zero-column-cells",".ROW","4 nest_with_margins","pass","","",""
+"zero-column-cells",".ROW","4 nest_by_with_margins","pass","","",""
+"zero-column-cells",".SDall","0 nest_with_margins","pass","","",""
+"zero-column-cells",".SDall","0 nest_by_with_margins","pass","","",""
+"zero-column-cells",".SDall","1 nest_with_margins","pass","","",""
+"zero-column-cells",".SDall","1 nest_by_with_margins","pass","","",""
+"zero-column-cells",".SDall","4 nest_with_margins","pass","","",""
+"zero-column-cells",".SDall","4 nest_by_with_margins","pass","","",""
+"zero-column-cells",".xSD","0 nest_with_margins","pass","","",""
+"zero-column-cells",".xSD","0 nest_by_with_margins","pass","","",""
+"zero-column-cells",".xSD","1 nest_with_margins","pass","","",""
+"zero-column-cells",".xSD","1 nest_by_with_margins","pass","","",""
+"zero-column-cells",".xSD","4 nest_with_margins","pass","","",""
+"zero-column-cells",".xSD","4 nest_by_with_margins","pass","","",""
+"zero-column-cells",".iSD","0 nest_with_margins","pass","","",""
+"zero-column-cells",".iSD","0 nest_by_with_margins","pass","","",""
+"zero-column-cells",".iSD","1 nest_with_margins","pass","","",""
+"zero-column-cells",".iSD","1 nest_by_with_margins","pass","","",""
+"zero-column-cells",".iSD","4 nest_with_margins","pass","","",""
+"zero-column-cells",".iSD","4 nest_by_with_margins","pass","","",""

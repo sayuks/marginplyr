@@ -1,0 +1,3 @@
+summarize_with_margins collision= FALSE actual= A column may not be called .SD. That has special meaning.
+Error: is.null(actual) is not TRUE
+Execution halted

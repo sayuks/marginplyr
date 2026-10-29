@@ -1,0 +1,151 @@
+.N
+.SD
+.BY
+.I
+.GRP
+.NGRP
+.EACHI
+.NATURAL
+.ROW
+.SDall
+.xSD
+.iSD
+.
+..x
+..g
+..value
+..1
+...
+key
+keep.rownames
+check.names
+stringsAsFactors
+i
+j
+by
+with
+on
+:=
+CJ
+data.table
+.SDcols
+NROW
+
+     dt_error local_refusal          pass
+           73            42           973
+   name          role  share  style        status
+     .N       measure   none direct      dt_error
+     .N       measure   none across      dt_error
+     .N       measure parent direct      dt_error
+     .N       measure parent across      dt_error
+     .N       measure  total direct      dt_error
+     .N       measure  total across      dt_error
+    .SD       measure parent direct      dt_error
+    .SD       measure parent across      dt_error
+    .SD       measure  total direct      dt_error
+    .SD       measure  total across      dt_error
+     .I       measure   none direct      dt_error
+     .I       measure   none across      dt_error
+     .I       measure parent direct      dt_error
+     .I       measure parent across      dt_error
+     .I       measure  total direct      dt_error
+     .I       measure  total across      dt_error
+   .GRP       measure parent direct      dt_error
+   .GRP       measure parent across      dt_error
+   .GRP       measure  total direct      dt_error
+   .GRP       measure  total across      dt_error
+  .NGRP       measure parent direct      dt_error
+  .NGRP       measure parent across      dt_error
+  .NGRP       measure  total direct      dt_error
+  .NGRP       measure  total across      dt_error
+   .ROW  share_output parent direct      dt_error
+   .ROW  share_output parent across      dt_error
+   .ROW  share_output  total direct      dt_error
+   .ROW  share_output  total across      dt_error
+   .ROW            id parent direct      dt_error
+   .ROW            id parent across      dt_error
+   .ROW            id  total direct      dt_error
+   .ROW            id  total across      dt_error
+ .SDall       measure parent direct      dt_error
+ .SDall       measure parent across      dt_error
+ .SDall       measure  total direct      dt_error
+ .SDall       measure  total across      dt_error
+   .xSD       measure parent direct      dt_error
+   .xSD       measure parent across      dt_error
+   .xSD       measure  total direct      dt_error
+   .xSD       measure  total across      dt_error
+   .iSD       measure parent direct      dt_error
+   .iSD       measure parent across      dt_error
+   .iSD       measure  total direct      dt_error
+   .iSD       measure  total across      dt_error
+      .       measure   none direct      dt_error
+      .       measure parent direct      dt_error
+      .       measure  total direct      dt_error
+    ..1       measure   none direct local_refusal
+    ..1       measure   none across local_refusal
+    ..1       measure parent direct local_refusal
+    ..1       measure parent across local_refusal
+    ..1       measure  total direct local_refusal
+    ..1       measure  total across local_refusal
+    ..1     dimension   none direct local_refusal
+    ..1     dimension   none across local_refusal
+    ..1     dimension parent direct local_refusal
+    ..1     dimension parent across local_refusal
+    ..1     dimension  total direct local_refusal
+    ..1     dimension  total across local_refusal
+    ..1         fixed   none direct local_refusal
+    ..1         fixed   none across local_refusal
+    ..1         fixed parent direct local_refusal
+    ..1         fixed parent across local_refusal
+    ..1         fixed  total direct local_refusal
+    ..1         fixed  total across local_refusal
+    ..1 source_output   none direct      dt_error
+    ..1 source_output   none across local_refusal
+    ..1 source_output parent direct      dt_error
+    ..1 source_output parent across local_refusal
+    ..1 source_output  total direct      dt_error
+    ..1 source_output  total across local_refusal
+    ..1  share_output parent direct      dt_error
+    ..1  share_output parent across      dt_error
+    ..1  share_output  total direct      dt_error
+    ..1  share_output  total across      dt_error
+    ..1            id   none direct      dt_error
+    ..1            id   none across      dt_error
+    ..1            id parent direct      dt_error
+    ..1            id parent across      dt_error
+    ..1            id  total direct      dt_error
+    ..1            id  total across      dt_error
+    ...       measure   none direct local_refusal
+    ...       measure   none across local_refusal
+    ...       measure parent direct local_refusal
+    ...       measure parent across local_refusal
+    ...       measure  total direct local_refusal
+    ...       measure  total across local_refusal
+    ...     dimension   none direct local_refusal
+    ...     dimension   none across local_refusal
+    ...     dimension parent direct local_refusal
+    ...     dimension parent across local_refusal
+    ...     dimension  total direct local_refusal
+    ...     dimension  total across local_refusal
+    ...         fixed   none direct local_refusal
+    ...         fixed   none across local_refusal
+    ...         fixed parent direct local_refusal
+    ...         fixed parent across local_refusal
+    ...         fixed  total direct local_refusal
+    ...         fixed  total across local_refusal
+    ... source_output   none direct      dt_error
+    ... source_output   none across local_refusal
+    ... source_output parent direct      dt_error
+    ... source_output parent across local_refusal
+    ... source_output  total direct      dt_error
+    ... source_output  total across local_refusal
+    ...  share_output parent direct      dt_error
+    ...  share_output parent across      dt_error
+    ...  share_output  total direct      dt_error
+    ...  share_output  total across      dt_error
+    ...            id   none direct      dt_error
+    ...            id   none across      dt_error
+    ...            id parent direct      dt_error
+    ...            id parent across      dt_error
+    ...            id  total direct      dt_error
+    ...            id  total across      dt_error

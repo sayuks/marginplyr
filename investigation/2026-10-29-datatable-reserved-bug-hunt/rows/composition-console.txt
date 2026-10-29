@@ -1,0 +1,46 @@
+
+                         dtplyr-error pass
+  composition-dimension           130    0
+  composition-inspection           26    0
+  simultaneous                      0  180
+  zero-column-cells                 0   72
+                      kind                                         detail
+181  composition-dimension  expand_with_margins expand_with_margins FALSE
+182  composition-dimension    expand_with_margins nest_with_margins FALSE
+183  composition-dimension     expand_with_margins nest_with_margins TRUE
+184  composition-dimension expand_with_margins nest_by_with_margins FALSE
+185  composition-dimension  expand_with_margins nest_by_with_margins TRUE
+186  composition-dimension    nest_with_margins expand_with_margins FALSE
+187  composition-dimension      nest_with_margins nest_with_margins FALSE
+188  composition-dimension       nest_with_margins nest_with_margins TRUE
+189  composition-dimension   nest_with_margins nest_by_with_margins FALSE
+190  composition-dimension    nest_with_margins nest_by_with_margins TRUE
+191 composition-inspection                                           list
+192 composition-inspection                                      character
+          status
+181 dtplyr-error
+182 dtplyr-error
+183 dtplyr-error
+184 dtplyr-error
+185 dtplyr-error
+186 dtplyr-error
+187 dtplyr-error
+188 dtplyr-error
+189 dtplyr-error
+190 dtplyr-error
+191 dtplyr-error
+192 dtplyr-error
+                                                                                                                                                                                                                                                                                      dtplyr_error
+181 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+182 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+183 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+184 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+185 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+186 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+187 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+188 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+189 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+190 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+191 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+192 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+Total calls: 408

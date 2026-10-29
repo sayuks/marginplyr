@@ -1,0 +1,244 @@
+Completed .N
+Completed .I
+Completed .SD
+Completed .GRP
+Completed .NGRP
+Completed .BY
+Completed .EACHI
+Completed .NATURAL
+Completed .ROW
+Completed .SDall
+Completed .xSD
+Completed .iSD
+Completed .Last.updated
+Completed .SDcols
+Completed .internal.selfref
+Completed .iGRP
+Completed .xGRP
+Completed ..FUN1
+Completed ..FUN2
+Completed ..value
+Completed ..1
+Completed ...
+Completed i.value
+Completed x.value
+Completed key
+Completed keep.rownames
+Completed check.names
+Completed stringsAsFactors
+Completed .named
+Completed x
+Completed i
+Completed j
+Completed by
+Completed keyby
+Completed with
+Completed nomatch
+Completed mult
+Completed roll
+Completed rollends
+Completed which
+Completed verbose
+Completed allow.cartesian
+Completed drop
+Completed on
+Completed env
+Completed showProgress
+Completed T
+Completed F
+Completed get
+Completed mget
+Completed eval
+Completed list
+Completed .
+Completed _nqgrp_
+Completed .ll.tech.split
+Completed .nm.tech.split
+Completed .ll.tech.split.names
+Completed .data.table.locked
+Completed sorted
+Completed unique
+Completed print
+Completed -.POSIXt
+Completed Cfastmean
+Completed order
+Completed ..0
+Completed ..01
+Completed ..marginplyr_dtplyr_column_1
+
+           inspection-error         local-control-error
+                        452                        1528
+                       pass               plan-mismatch
+                      18738                           6
+  upstream-collection-error upstream-construction-error
+                        840                          24
+[1] column         type           derive         predicate      role
+[6] status         error          warning        source_changed
+<0 rows> (or 0-length row.names)
+                            column      type         derive           status
+319                             .N    factor   shared_union inspection-error
+643                             .I    factor   shared_union inspection-error
+967                            .SD    factor   shared_union inspection-error
+1291                          .GRP    factor   shared_union inspection-error
+1615                         .NGRP    factor   shared_union inspection-error
+1639                           .BY character select_special    plan-mismatch
+1749                           .BY   integer select_special    plan-mismatch
+1859                           .BY    factor select_special    plan-mismatch
+1939                           .BY    factor   shared_union inspection-error
+2263                        .EACHI    factor   shared_union inspection-error
+2587                      .NATURAL    factor   shared_union inspection-error
+2911                          .ROW    factor   shared_union inspection-error
+3235                        .SDall    factor   shared_union inspection-error
+3559                          .xSD    factor   shared_union inspection-error
+3883                          .iSD    factor   shared_union inspection-error
+4207                 .Last.updated    factor   shared_union inspection-error
+4531                       .SDcols    factor   shared_union inspection-error
+4855             .internal.selfref    factor   shared_union inspection-error
+5179                         .iGRP    factor   shared_union inspection-error
+5503                         .xGRP    factor   shared_union inspection-error
+5827                        ..FUN1    factor   shared_union inspection-error
+6151                        ..FUN2    factor   shared_union inspection-error
+6475                       ..value    factor   shared_union inspection-error
+6495                           ..1 character    select_safe inspection-error
+6588                           ..1   integer    select_safe inspection-error
+6681                           ..1    factor    select_safe inspection-error
+6774                           ... character    select_safe inspection-error
+6867                           ...   integer    select_safe inspection-error
+6960                           ...    factor    select_safe inspection-error
+7357                       i.value    factor   shared_union inspection-error
+7681                       x.value    factor   shared_union inspection-error
+8005                           key    factor   shared_union inspection-error
+8329                 keep.rownames    factor   shared_union inspection-error
+8653                   check.names    factor   shared_union inspection-error
+8977              stringsAsFactors    factor   shared_union inspection-error
+9286                        .named    factor   shared_union inspection-error
+9610                             x    factor   shared_union inspection-error
+9934                             i    factor   shared_union inspection-error
+10258                            j    factor   shared_union inspection-error
+10582                           by    factor   shared_union inspection-error
+10906                        keyby    factor   shared_union inspection-error
+11230                         with    factor   shared_union inspection-error
+11554                      nomatch    factor   shared_union inspection-error
+11878                         mult    factor   shared_union inspection-error
+12202                         roll    factor   shared_union inspection-error
+12526                     rollends    factor   shared_union inspection-error
+12850                        which    factor   shared_union inspection-error
+13174                      verbose    factor   shared_union inspection-error
+13498              allow.cartesian    factor   shared_union inspection-error
+13822                         drop    factor   shared_union inspection-error
+14146                           on    factor   shared_union inspection-error
+14470                          env    factor   shared_union inspection-error
+14794                 showProgress    factor   shared_union inspection-error
+14868                            T character  group_special inspection-error
+14974                            T   integer  group_special inspection-error
+15118                            T    factor   shared_union inspection-error
+15192                            F character  group_special inspection-error
+15298                            F   integer  group_special inspection-error
+15442                            F    factor   shared_union inspection-error
+15766                          get    factor   shared_union inspection-error
+16090                         mget    factor   shared_union inspection-error
+16414                         eval    factor   shared_union inspection-error
+16738                         list    factor   shared_union inspection-error
+16817                            . character    mutate_copy inspection-error
+16920                            .   integer    mutate_copy inspection-error
+17023                            .    factor    mutate_copy inspection-error
+17047                            .    factor   shared_union inspection-error
+17371                      _nqgrp_    factor   shared_union inspection-error
+17695               .ll.tech.split    factor   shared_union inspection-error
+18019               .nm.tech.split    factor   shared_union inspection-error
+18343         .ll.tech.split.names    factor   shared_union inspection-error
+18667           .data.table.locked    factor   shared_union inspection-error
+18991                       sorted    factor   shared_union inspection-error
+19315                       unique    factor   shared_union inspection-error
+19639                        print    factor   shared_union inspection-error
+19963                     -.POSIXt    factor   shared_union inspection-error
+20287                    Cfastmean    factor   shared_union inspection-error
+20611                        order    factor   shared_union inspection-error
+20935                          ..0    factor   shared_union inspection-error
+21259                         ..01    factor   shared_union inspection-error
+21583 ..marginplyr_dtplyr_column_1    factor   shared_union inspection-error
+                                                                                                                                                                                                                                                                                               error
+319   Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+643   Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+967   Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+1291  Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+1615  Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+1639
+1749
+1859
+1939  Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+2263  Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+2587  Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+2911  Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+3235  Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+3559  Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+3883  Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+4207  Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+4531  Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+4855  Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+5179  Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+5503  Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+5827  Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+6151  Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+6475  Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+6495                                                         Column 1 must not have names of the form ... or ..j.\nUse `.name_repair` to specify repair.\nCaused by error in `repaired_names()`:\n! Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..1" at location 1.
+6588                                                         Column 1 must not have names of the form ... or ..j.\nUse `.name_repair` to specify repair.\nCaused by error in `repaired_names()`:\n! Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..1" at location 1.
+6681                                                         Column 1 must not have names of the form ... or ..j.\nUse `.name_repair` to specify repair.\nCaused by error in `repaired_names()`:\n! Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..1" at location 1.
+6774                                                         Column 1 must not have names of the form ... or ..j.\nUse `.name_repair` to specify repair.\nCaused by error in `repaired_names()`:\n! Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..." at location 1.
+6867                                                         Column 1 must not have names of the form ... or ..j.\nUse `.name_repair` to specify repair.\nCaused by error in `repaired_names()`:\n! Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..." at location 1.
+6960                                                         Column 1 must not have names of the form ... or ..j.\nUse `.name_repair` to specify repair.\nCaused by error in `repaired_names()`:\n! Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..." at location 1.
+7357  Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+7681  Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+8005  Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+8329  Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+8653  Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+8977  Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+9286  Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+9610  Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+9934  Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+10258 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+10582 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+10906 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+11230 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+11554 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+11878 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+12202 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+12526 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+12850 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+13174 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+13498 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+13822 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+14146 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+14470 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+14794 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+14868 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+14974 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+15118 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+15192 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+15298 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+15442 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+15766 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+16090 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+16414 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+16738 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+16817 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+16920 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+17023 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+17047 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+17371 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+17695 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+18019 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+18343 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+18667 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+18991 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+19315 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+19639 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+19963 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+20287 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+20611 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+20935 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+21259 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+21583 Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+R: R version 4.6.1 (2026-06-24)
+data.table: 1.18.6.1
+dtplyr: 1.3.3

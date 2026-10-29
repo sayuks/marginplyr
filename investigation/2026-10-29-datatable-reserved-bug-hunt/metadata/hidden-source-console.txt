@@ -1,0 +1,24 @@
+, , status = error
+
+        operation
+derive   expand inspect_named inspect_typed_dimension inspect_typed_fixed nest
+  drop        9             0                       9                   9    9
+  rename      0             0                       0                   0    0
+        operation
+derive   nest_by summarize
+  drop         9         9
+  rename       0         0
+
+, , status = pass
+
+        operation
+derive   expand inspect_named inspect_typed_dimension inspect_typed_fixed nest
+  drop        0             9                       0                   0    0
+  rename      9             9                       9                   9    9
+        operation
+derive   nest_by summarize
+  drop         0         0
+  rename       9         9
+
+Cases: 126 ; all ordinary collected/local controls succeeded; source changes: 0
+Observed failure classes: tibble_error_column_names_cannot_be_dot_dot
