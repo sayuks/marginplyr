@@ -1,0 +1,56 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+a + 0.5  actual= double  proxy= double
+# A tibble: 1 × 6
+  set_id fixed included omitted grouping_bits grouping_id
+   <int> <chr> <chr>    <chr>   <chr>               <int>
+1      1 (a)   ()       ()      ()                      0
+a/2L  actual= double  proxy= double
+# A tibble: 1 × 6
+  set_id fixed included omitted grouping_bits grouping_id
+   <int> <chr> <chr>    <chr>   <chr>               <int>
+1      1 (a)   ()       ()      ()                      0
+a + 1  actual= double  proxy= double
+# A tibble: 1 × 6
+  set_id fixed included omitted grouping_bits grouping_id
+   <int> <chr> <chr>    <chr>   <chr>               <int>
+1      1 (a)   ()       ()      ()                      0
+a * 1  actual= double  proxy= double
+# A tibble: 1 × 6
+  set_id fixed included omitted grouping_bits grouping_id
+   <int> <chr> <chr>    <chr>   <chr>               <int>
+1      1 (a)   ()       ()      ()                      0
+-a  actual= integer  proxy= integer
+# A tibble: 1 × 6
+  set_id fixed included omitted grouping_bits grouping_id
+   <int> <chr> <chr>    <chr>   <chr>               <int>
+1      1 ()    ()       ()      ()                      0
+a + a  actual= integer  proxy= integer
+# A tibble: 1 × 6
+  set_id fixed included omitted grouping_bits grouping_id
+   <int> <chr> <chr>    <chr>   <chr>               <int>
+1      1 ()    ()       ()      ()                      0
+1/a  actual= double  proxy= double
+# A tibble: 1 × 6
+  set_id fixed included omitted grouping_bits grouping_id
+   <int> <chr> <chr>    <chr>   <chr>               <int>
+1      1 (a)   ()       ()      ()                      0
+a/0  actual= double  proxy= double
+# A tibble: 1 × 6
+  set_id fixed included omitted grouping_bits grouping_id
+   <int> <chr> <chr>    <chr>   <chr>               <int>
+1      1 (a)   ()       ()      ()                      0
+a - a  actual= integer  proxy= integer
+# A tibble: 1 × 6
+  set_id fixed included omitted grouping_bits grouping_id
+   <int> <chr> <chr>    <chr>   <chr>               <int>
+1      1 ()    ()       ()      ()                      0

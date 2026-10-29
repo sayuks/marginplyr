@@ -1,0 +1,85 @@
+FAIL head/none/drop/dt Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+FAIL head/none/drop/arrow !is.null(schema) is not TRUE
+FAIL head/none/keep/dt Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+FAIL head/none/keep/arrow !is.null(schema) is not TRUE
+FAIL head/last/drop/dt Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+FAIL head/last/drop/arrow !is.null(schema) is not TRUE
+FAIL head/last/keep/dt Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+FAIL head/last/keep/arrow !is.null(schema) is not TRUE
+FAIL filter/none/drop/arrow !is.null(schema) is not TRUE
+FAIL filter/none/keep/arrow !is.null(schema) is not TRUE
+FAIL filter/last/drop/arrow !is.null(schema) is not TRUE
+FAIL filter/last/keep/arrow !is.null(schema) is not TRUE
+FAIL empty/none/drop/arrow !is.null(schema) is not TRUE
+FAIL empty/none/keep/arrow !is.null(schema) is not TRUE
+FAIL empty/last/drop/arrow !is.null(schema) is not TRUE
+FAIL empty/last/keep/arrow !is.null(schema) is not TRUE
+FAIL mutate/none/drop/dt Item 2 is type integer but the first item is type double. Please coerce before coalescing.
+FAIL mutate/none/drop/arrow !is.null(schema) is not TRUE
+FAIL mutate/none/keep/dt Item 2 is type integer but the first item is type double. Please coerce before coalescing.
+FAIL mutate/none/keep/arrow !is.null(schema) is not TRUE
+FAIL mutate/last/drop/dt Item 2 is type integer but the first item is type double. Please coerce before coalescing.
+FAIL mutate/last/drop/arrow !is.null(schema) is not TRUE
+FAIL mutate/last/keep/dt Item 2 is type integer but the first item is type double. Please coerce before coalescing.
+FAIL mutate/last/keep/arrow !is.null(schema) is not TRUE
+FAIL select/none/drop/arrow !is.null(schema) is not TRUE
+FAIL select/none/keep/arrow !is.null(schema) is not TRUE
+FAIL select/last/drop/arrow !is.null(schema) is not TRUE
+FAIL select/last/keep/arrow !is.null(schema) is not TRUE
+FAIL rename/none/drop/arrow !is.null(schema) is not TRUE
+FAIL rename/none/keep/arrow !is.null(schema) is not TRUE
+FAIL rename/last/drop/arrow !is.null(schema) is not TRUE
+FAIL rename/last/keep/arrow !is.null(schema) is not TRUE
+FAIL distinct/none/drop/dt Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+FAIL distinct/none/drop/arrow !is.null(schema) is not TRUE
+FAIL distinct/none/keep/dt Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+FAIL distinct/none/keep/arrow !is.null(schema) is not TRUE
+FAIL distinct/last/drop/dt Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+FAIL distinct/last/drop/arrow !is.null(schema) is not TRUE
+FAIL distinct/last/keep/dt Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+FAIL distinct/last/keep/arrow !is.null(schema) is not TRUE
+FAIL union/none/drop/arrow !is.null(schema) is not TRUE
+FAIL union/none/keep/arrow !is.null(schema) is not TRUE
+FAIL union/last/drop/arrow !is.null(schema) is not TRUE
+FAIL union/last/keep/arrow !is.null(schema) is not TRUE
+FAIL join/none/drop/arrow !is.null(schema) is not TRUE
+FAIL join/none/keep/arrow !is.null(schema) is not TRUE
+FAIL join/last/drop/arrow !is.null(schema) is not TRUE
+FAIL join/last/keep/arrow !is.null(schema) is not TRUE
+FAIL aggregate/none/drop/dt Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+FAIL aggregate/none/drop/arrow !is.null(schema) is not TRUE
+FAIL aggregate/none/keep/dt Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+FAIL aggregate/none/keep/arrow !is.null(schema) is not TRUE
+FAIL aggregate/last/drop/dt Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+FAIL aggregate/last/drop/arrow !is.null(schema) is not TRUE
+FAIL aggregate/last/keep/dt Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+FAIL aggregate/last/keep/arrow !is.null(schema) is not TRUE
+Warning message:
+Missing values are always removed in SQL aggregation functions.
+Use `na.rm = TRUE` to silence this warning
+This warning is displayed once every 8 hours.
+CHECKS 160 PROBLEMS 56

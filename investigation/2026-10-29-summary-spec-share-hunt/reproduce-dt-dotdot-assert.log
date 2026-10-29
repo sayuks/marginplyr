@@ -1,0 +1,9 @@
+..0 parent : indexing '...' with non-positive index 0
+..0 total : indexing '...' with non-positive index 0
+..00 parent : indexing '...' with non-positive index 0
+..00 total : indexing '...' with non-positive index 0
+..01 parent : ..1 used in an incorrect context, no ... to look in
+..01 total : ..1 used in an incorrect context, no ... to look in
+Completed 6 lazy construction/collection probes
+Error: ..0 parent rejected a Margin-supported fixed key: indexing '...' with non-positive index 0
+Execution halted

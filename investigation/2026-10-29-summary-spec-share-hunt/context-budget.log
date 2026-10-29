@@ -1,0 +1,11 @@
+## Always-loaded agent context
+
+20008 bytes of a 22005-byte baseline (#418 deleting the gate's argument from *Chunks that must fail*, which `verify-must-error.R`'s header and `release-matrix.yaml`'s already held, together with the reasons `inst/vignette-hooks/must-error.R` states beside the code each is about and a claim its review found false, over #416's baseline; nothing was added).
+
+```
+      11  CLAUDE.md
+   19997  AGENTS.md
+```
+
+
+Verified: the always-loaded context is 20008 bytes, within 22005.

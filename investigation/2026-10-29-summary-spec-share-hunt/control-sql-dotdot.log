@@ -1,0 +1,40 @@
+
+ source
+# A tibble: 2 × 2
+  ..0       v
+  <chr> <int>
+1 a         1
+2 b         3
+
+ ordinary .by
+simpleError error condition
+ indexing '...' with non-positive index 0
+eval_tidy(x, mask)
+
+ ordinary group_by
+simpleError error condition
+ indexing '...' with non-positive index 0
+eval_tidy(x, mask)
+
+ fixed one set
+simpleError error condition
+ indexing '...' with non-positive index 0
+eval_tidy(x, mask)
+
+ dimension one set
+simpleError error condition
+ indexing '...' with non-positive index 0
+eval_tidy(x, mask)
+
+ native rollup
+simpleError error condition
+ indexing '...' with non-positive index 0
+eval_tidy(x, mask)
+
+ portable rollup
+# A tibble: 3 × 3
+  ..0     sid     n
+  <chr> <int> <dbl>
+1 a         1     1
+2 b         1     1
+3 <NA>      2     2

@@ -1,0 +1,313 @@
+duckdb is storing downloaded extensions and secrets under ~/.duckdb:
+ℹ /Users/sayuks/.duckdb
+This persists across sessions and is shared with the DuckDB CLI and other clients.
+ℹ Run duckdb(shared_home = FALSE) to use a temporary directory instead.
+ℹ See ?duckdb_storage for details and alternatives.
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l1dcachesize'. Detail: [errno 1] Operation not permitted
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l2cachesize'. Detail: [errno 1] Operation not permitted
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l3cachesize'. Detail: [errno 1] Operation not permitted
+case 1 checks 120 failures 0
+case 2 checks 240 failures 0
+case 3 checks 360 failures 0
+FAIL 4/rollup/FALSE/none/sqlite Component “z”: target is numeric, current is logical
+FAIL 4/rollup/FALSE/none/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 4/rollup/FALSE/first/sqlite Component “z”: target is numeric, current is logical
+FAIL 4/rollup/FALSE/first/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 4/rollup/FALSE/last/sqlite Component “z”: target is numeric, current is logical
+FAIL 4/rollup/FALSE/last/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 4/rollup/TRUE/none/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 4/rollup/TRUE/first/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 4/rollup/TRUE/last/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 4/cube/FALSE/none/sqlite Component “z”: target is numeric, current is logical
+FAIL 4/cube/FALSE/none/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 4/cube/FALSE/first/sqlite Component “z”: target is numeric, current is logical
+FAIL 4/cube/FALSE/first/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 4/cube/FALSE/last/sqlite Component “z”: target is numeric, current is logical
+FAIL 4/cube/FALSE/last/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 4/cube/TRUE/none/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 4/cube/TRUE/first/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 4/cube/TRUE/last/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 4/product/FALSE/none/sqlite Component “z”: target is numeric, current is logical
+FAIL 4/product/FALSE/none/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 4/product/FALSE/first/sqlite Component “z”: target is numeric, current is logical
+FAIL 4/product/FALSE/first/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 4/product/FALSE/last/sqlite Component “z”: target is numeric, current is logical
+FAIL 4/product/FALSE/last/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 4/product/TRUE/none/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 4/product/TRUE/first/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 4/product/TRUE/last/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 4/duplicate/FALSE/none/sqlite Component “z”: target is numeric, current is logical
+FAIL 4/duplicate/FALSE/none/duckdb Component “z”: 'is.NA' value mismatch: 2 in current 0 in target
+FAIL 4/duplicate/FALSE/first/sqlite Component “z”: target is numeric, current is logical
+FAIL 4/duplicate/FALSE/first/duckdb Component “z”: 'is.NA' value mismatch: 2 in current 0 in target
+FAIL 4/duplicate/FALSE/last/sqlite Component “z”: target is numeric, current is logical
+FAIL 4/duplicate/FALSE/last/duckdb Component “z”: 'is.NA' value mismatch: 2 in current 0 in target
+FAIL 4/duplicate/TRUE/none/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 4/duplicate/TRUE/first/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 4/duplicate/TRUE/last/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 4/sparse/FALSE/none/sqlite Component “z”: target is numeric, current is logical
+FAIL 4/sparse/FALSE/none/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 4/sparse/FALSE/first/sqlite Component “z”: target is numeric, current is logical
+FAIL 4/sparse/FALSE/first/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 4/sparse/FALSE/last/sqlite Component “z”: target is numeric, current is logical
+FAIL 4/sparse/FALSE/last/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 4/sparse/TRUE/none/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 4/sparse/TRUE/first/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 4/sparse/TRUE/last/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+case 4 checks 480 failures 45
+case 5 checks 600 failures 45
+FAIL 6/rollup/FALSE/none/sqlite Component “z”: target is numeric, current is logical
+FAIL 6/rollup/FALSE/none/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 6/rollup/FALSE/first/sqlite Component “z”: target is numeric, current is logical
+FAIL 6/rollup/FALSE/first/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 6/rollup/FALSE/last/sqlite Component “z”: target is numeric, current is logical
+FAIL 6/rollup/FALSE/last/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 6/rollup/TRUE/none/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 6/rollup/TRUE/first/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 6/rollup/TRUE/last/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 6/cube/FALSE/none/sqlite Component “z”: target is numeric, current is logical
+FAIL 6/cube/FALSE/none/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 6/cube/FALSE/first/sqlite Component “z”: target is numeric, current is logical
+FAIL 6/cube/FALSE/first/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 6/cube/FALSE/last/sqlite Component “z”: target is numeric, current is logical
+FAIL 6/cube/FALSE/last/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 6/cube/TRUE/none/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 6/cube/TRUE/first/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 6/cube/TRUE/last/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 6/product/FALSE/none/sqlite Component “z”: target is numeric, current is logical
+FAIL 6/product/FALSE/none/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 6/product/FALSE/first/sqlite Component “z”: target is numeric, current is logical
+FAIL 6/product/FALSE/first/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 6/product/FALSE/last/sqlite Component “z”: target is numeric, current is logical
+FAIL 6/product/FALSE/last/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 6/product/TRUE/none/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 6/product/TRUE/first/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 6/product/TRUE/last/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 6/duplicate/FALSE/none/sqlite Component “z”: target is numeric, current is logical
+FAIL 6/duplicate/FALSE/none/duckdb Component “z”: 'is.NA' value mismatch: 2 in current 0 in target
+FAIL 6/duplicate/FALSE/first/sqlite Component “z”: target is numeric, current is logical
+FAIL 6/duplicate/FALSE/first/duckdb Component “z”: 'is.NA' value mismatch: 2 in current 0 in target
+FAIL 6/duplicate/FALSE/last/sqlite Component “z”: target is numeric, current is logical
+FAIL 6/duplicate/FALSE/last/duckdb Component “z”: 'is.NA' value mismatch: 2 in current 0 in target
+FAIL 6/duplicate/TRUE/none/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 6/duplicate/TRUE/first/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 6/duplicate/TRUE/last/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 6/sparse/FALSE/none/sqlite Component “z”: target is numeric, current is logical
+FAIL 6/sparse/FALSE/none/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 6/sparse/FALSE/first/sqlite Component “z”: target is numeric, current is logical
+FAIL 6/sparse/FALSE/first/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 6/sparse/FALSE/last/sqlite Component “z”: target is numeric, current is logical
+FAIL 6/sparse/FALSE/last/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 6/sparse/TRUE/none/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 6/sparse/TRUE/first/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 6/sparse/TRUE/last/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+case 6 checks 720 failures 90
+case 7 checks 840 failures 90
+case 8 checks 960 failures 90
+case 9 checks 1080 failures 90
+FAIL 10/rollup/FALSE/none/sqlite Component “z”: target is numeric, current is logical
+FAIL 10/rollup/FALSE/none/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 10/rollup/FALSE/first/sqlite Component “z”: target is numeric, current is logical
+FAIL 10/rollup/FALSE/first/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 10/rollup/FALSE/last/sqlite Component “z”: target is numeric, current is logical
+FAIL 10/rollup/FALSE/last/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 10/rollup/TRUE/none/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 10/rollup/TRUE/first/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 10/rollup/TRUE/last/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 10/cube/FALSE/none/sqlite Component “z”: target is numeric, current is logical
+FAIL 10/cube/FALSE/none/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 10/cube/FALSE/first/sqlite Component “z”: target is numeric, current is logical
+FAIL 10/cube/FALSE/first/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 10/cube/FALSE/last/sqlite Component “z”: target is numeric, current is logical
+FAIL 10/cube/FALSE/last/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 10/cube/TRUE/none/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 10/cube/TRUE/first/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 10/cube/TRUE/last/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 10/product/FALSE/none/sqlite Component “z”: target is numeric, current is logical
+FAIL 10/product/FALSE/none/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 10/product/FALSE/first/sqlite Component “z”: target is numeric, current is logical
+FAIL 10/product/FALSE/first/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 10/product/FALSE/last/sqlite Component “z”: target is numeric, current is logical
+FAIL 10/product/FALSE/last/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 10/product/TRUE/none/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 10/product/TRUE/first/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 10/product/TRUE/last/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 10/duplicate/FALSE/none/sqlite Component “z”: target is numeric, current is logical
+FAIL 10/duplicate/FALSE/none/duckdb Component “z”: 'is.NA' value mismatch: 2 in current 0 in target
+FAIL 10/duplicate/FALSE/first/sqlite Component “z”: target is numeric, current is logical
+FAIL 10/duplicate/FALSE/first/duckdb Component “z”: 'is.NA' value mismatch: 2 in current 0 in target
+FAIL 10/duplicate/FALSE/last/sqlite Component “z”: target is numeric, current is logical
+FAIL 10/duplicate/FALSE/last/duckdb Component “z”: 'is.NA' value mismatch: 2 in current 0 in target
+FAIL 10/duplicate/TRUE/none/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 10/duplicate/TRUE/first/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 10/duplicate/TRUE/last/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 10/sparse/FALSE/none/sqlite Component “z”: target is numeric, current is logical
+FAIL 10/sparse/FALSE/none/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 10/sparse/FALSE/first/sqlite Component “z”: target is numeric, current is logical
+FAIL 10/sparse/FALSE/first/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 10/sparse/FALSE/last/sqlite Component “z”: target is numeric, current is logical
+FAIL 10/sparse/FALSE/last/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 10/sparse/TRUE/none/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 10/sparse/TRUE/first/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 10/sparse/TRUE/last/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+case 10 checks 1200 failures 135
+case 11 checks 1320 failures 135
+case 12 checks 1440 failures 135
+case 13 checks 1560 failures 135
+case 14 checks 1680 failures 135
+case 15 checks 1800 failures 135
+case 16 checks 1920 failures 135
+case 17 checks 2040 failures 135
+case 18 checks 2160 failures 135
+case 19 checks 2280 failures 135
+FAIL 20/rollup/FALSE/none/sqlite Component “z”: target is numeric, current is logical
+FAIL 20/rollup/FALSE/none/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 20/rollup/FALSE/first/sqlite Component “z”: target is numeric, current is logical
+FAIL 20/rollup/FALSE/first/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 20/rollup/FALSE/last/sqlite Component “z”: target is numeric, current is logical
+FAIL 20/rollup/FALSE/last/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 20/rollup/TRUE/none/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 20/rollup/TRUE/first/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 20/rollup/TRUE/last/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 20/cube/FALSE/none/sqlite Component “z”: target is numeric, current is logical
+FAIL 20/cube/FALSE/none/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 20/cube/FALSE/first/sqlite Component “z”: target is numeric, current is logical
+FAIL 20/cube/FALSE/first/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 20/cube/FALSE/last/sqlite Component “z”: target is numeric, current is logical
+FAIL 20/cube/FALSE/last/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 20/cube/TRUE/none/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 20/cube/TRUE/first/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 20/cube/TRUE/last/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 20/product/FALSE/none/sqlite Component “z”: target is numeric, current is logical
+FAIL 20/product/FALSE/none/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 20/product/FALSE/first/sqlite Component “z”: target is numeric, current is logical
+FAIL 20/product/FALSE/first/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 20/product/FALSE/last/sqlite Component “z”: target is numeric, current is logical
+FAIL 20/product/FALSE/last/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 20/product/TRUE/none/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 20/product/TRUE/first/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 20/product/TRUE/last/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 20/duplicate/FALSE/none/sqlite Component “z”: target is numeric, current is logical
+FAIL 20/duplicate/FALSE/none/duckdb Component “z”: 'is.NA' value mismatch: 2 in current 0 in target
+FAIL 20/duplicate/FALSE/first/sqlite Component “z”: target is numeric, current is logical
+FAIL 20/duplicate/FALSE/first/duckdb Component “z”: 'is.NA' value mismatch: 2 in current 0 in target
+FAIL 20/duplicate/FALSE/last/sqlite Component “z”: target is numeric, current is logical
+FAIL 20/duplicate/FALSE/last/duckdb Component “z”: 'is.NA' value mismatch: 2 in current 0 in target
+FAIL 20/duplicate/TRUE/none/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 20/duplicate/TRUE/first/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 20/duplicate/TRUE/last/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 20/sparse/FALSE/none/sqlite Component “z”: target is numeric, current is logical
+FAIL 20/sparse/FALSE/none/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 20/sparse/FALSE/first/sqlite Component “z”: target is numeric, current is logical
+FAIL 20/sparse/FALSE/first/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 20/sparse/FALSE/last/sqlite Component “z”: target is numeric, current is logical
+FAIL 20/sparse/FALSE/last/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 20/sparse/TRUE/none/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 20/sparse/TRUE/first/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 20/sparse/TRUE/last/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+case 20 checks 2400 failures 180
+case 21 checks 2520 failures 180
+case 22 checks 2640 failures 180
+case 23 checks 2760 failures 180
+case 24 checks 2880 failures 180
+FAIL 25/rollup/FALSE/none/sqlite Component “z”: target is numeric, current is logical
+FAIL 25/rollup/FALSE/none/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 25/rollup/FALSE/first/sqlite Component “z”: target is numeric, current is logical
+FAIL 25/rollup/FALSE/first/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 25/rollup/FALSE/last/sqlite Component “z”: target is numeric, current is logical
+FAIL 25/rollup/FALSE/last/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 25/rollup/TRUE/none/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 25/rollup/TRUE/first/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 25/rollup/TRUE/last/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 25/cube/FALSE/none/sqlite Component “z”: target is numeric, current is logical
+FAIL 25/cube/FALSE/none/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 25/cube/FALSE/first/sqlite Component “z”: target is numeric, current is logical
+FAIL 25/cube/FALSE/first/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 25/cube/FALSE/last/sqlite Component “z”: target is numeric, current is logical
+FAIL 25/cube/FALSE/last/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 25/cube/TRUE/none/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 25/cube/TRUE/first/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 25/cube/TRUE/last/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 25/product/FALSE/none/sqlite Component “z”: target is numeric, current is logical
+FAIL 25/product/FALSE/none/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 25/product/FALSE/first/sqlite Component “z”: target is numeric, current is logical
+FAIL 25/product/FALSE/first/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 25/product/FALSE/last/sqlite Component “z”: target is numeric, current is logical
+FAIL 25/product/FALSE/last/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 25/product/TRUE/none/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 25/product/TRUE/first/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 25/product/TRUE/last/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 25/duplicate/FALSE/none/sqlite Component “z”: target is numeric, current is logical
+FAIL 25/duplicate/FALSE/none/duckdb Component “z”: 'is.NA' value mismatch: 2 in current 0 in target
+FAIL 25/duplicate/FALSE/first/sqlite Component “z”: target is numeric, current is logical
+FAIL 25/duplicate/FALSE/first/duckdb Component “z”: 'is.NA' value mismatch: 2 in current 0 in target
+FAIL 25/duplicate/FALSE/last/sqlite Component “z”: target is numeric, current is logical
+FAIL 25/duplicate/FALSE/last/duckdb Component “z”: 'is.NA' value mismatch: 2 in current 0 in target
+FAIL 25/duplicate/TRUE/none/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 25/duplicate/TRUE/first/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 25/duplicate/TRUE/last/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 25/sparse/FALSE/none/sqlite Component “z”: target is numeric, current is logical
+FAIL 25/sparse/FALSE/none/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 25/sparse/FALSE/first/sqlite Component “z”: target is numeric, current is logical
+FAIL 25/sparse/FALSE/first/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 25/sparse/FALSE/last/sqlite Component “z”: target is numeric, current is logical
+FAIL 25/sparse/FALSE/last/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 25/sparse/TRUE/none/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 25/sparse/TRUE/first/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 25/sparse/TRUE/last/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+case 25 checks 3000 failures 225
+case 26 checks 3120 failures 225
+FAIL 27/rollup/FALSE/none/sqlite Component “z”: target is numeric, current is logical
+FAIL 27/rollup/FALSE/none/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 27/rollup/FALSE/first/sqlite Component “z”: target is numeric, current is logical
+FAIL 27/rollup/FALSE/first/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 27/rollup/FALSE/last/sqlite Component “z”: target is numeric, current is logical
+FAIL 27/rollup/FALSE/last/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 27/rollup/TRUE/none/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 27/rollup/TRUE/first/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 27/rollup/TRUE/last/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 27/cube/FALSE/none/sqlite Component “z”: target is numeric, current is logical
+FAIL 27/cube/FALSE/none/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 27/cube/FALSE/first/sqlite Component “z”: target is numeric, current is logical
+FAIL 27/cube/FALSE/first/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 27/cube/FALSE/last/sqlite Component “z”: target is numeric, current is logical
+FAIL 27/cube/FALSE/last/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 27/cube/TRUE/none/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 27/cube/TRUE/first/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 27/cube/TRUE/last/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 27/product/FALSE/none/sqlite Component “z”: target is numeric, current is logical
+FAIL 27/product/FALSE/none/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 27/product/FALSE/first/sqlite Component “z”: target is numeric, current is logical
+FAIL 27/product/FALSE/first/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 27/product/FALSE/last/sqlite Component “z”: target is numeric, current is logical
+FAIL 27/product/FALSE/last/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 27/product/TRUE/none/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 27/product/TRUE/first/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 27/product/TRUE/last/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 27/duplicate/FALSE/none/sqlite Component “z”: target is numeric, current is logical
+FAIL 27/duplicate/FALSE/none/duckdb Component “z”: 'is.NA' value mismatch: 2 in current 0 in target
+FAIL 27/duplicate/FALSE/first/sqlite Component “z”: target is numeric, current is logical
+FAIL 27/duplicate/FALSE/first/duckdb Component “z”: 'is.NA' value mismatch: 2 in current 0 in target
+FAIL 27/duplicate/FALSE/last/sqlite Component “z”: target is numeric, current is logical
+FAIL 27/duplicate/FALSE/last/duckdb Component “z”: 'is.NA' value mismatch: 2 in current 0 in target
+FAIL 27/duplicate/TRUE/none/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 27/duplicate/TRUE/first/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 27/duplicate/TRUE/last/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 27/sparse/FALSE/none/sqlite Component “z”: target is numeric, current is logical
+FAIL 27/sparse/FALSE/none/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 27/sparse/FALSE/first/sqlite Component “z”: target is numeric, current is logical
+FAIL 27/sparse/FALSE/first/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 27/sparse/FALSE/last/sqlite Component “z”: target is numeric, current is logical
+FAIL 27/sparse/FALSE/last/duckdb Component “z”: 'is.NA' value mismatch: 1 in current 0 in target
+FAIL 27/sparse/TRUE/none/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 27/sparse/TRUE/first/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+FAIL 27/sparse/TRUE/last/sqlite Component “z”: target is numeric, current is logical; Component “n”: target is numeric, current is logical
+case 27 checks 3240 failures 270
+case 28 checks 3360 failures 270
+case 29 checks 3480 failures 270
+case 30 checks 3600 failures 270
+Warning message:
+Missing values are always removed in SQL aggregation functions.
+Use `na.rm = TRUE` to silence this warning
+This warning is displayed once every 8 hours.
+TOTAL 3600 FAILURES 270

@@ -1,0 +1,56 @@
+source "..-1" local parent : ℹ In argument: `..marginplyr_denominator_of_..-1_1 = .data[["..-1"]]`.
+Caused by error:
+! indexing '...' with non-positive index -1
+source "..-1" local total : ℹ In argument: `..marginplyr_denominator_of_..-1_1 = .data[["..-1"]]`.
+Caused by error:
+! indexing '...' with non-positive index -1
+source "..-1" dtplyr parent : indexing '...' with non-positive index -1
+source "..-1" dtplyr total : indexing '...' with non-positive index -1
+source "..-0" local parent : ℹ In argument: `..marginplyr_denominator_of_..-0_1 = .data[["..-0"]]`.
+Caused by error:
+! indexing '...' with non-positive index 0
+source "..-0" local total : ℹ In argument: `..marginplyr_denominator_of_..-0_1 = .data[["..-0"]]`.
+Caused by error:
+! indexing '...' with non-positive index 0
+source "..-0" dtplyr parent : indexing '...' with non-positive index 0
+source "..-0" dtplyr total : indexing '...' with non-positive index 0
+source "..+1" local parent : ℹ In argument: `..marginplyr_denominator_of_..+1_1 = .data[["..+1"]]`.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in
+source "..+1" local total : ℹ In argument: `..marginplyr_denominator_of_..+1_1 = .data[["..+1"]]`.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in
+source "..+1" dtplyr parent : ..1 used in an incorrect context, no ... to look in
+source "..+1" dtplyr total : ..1 used in an incorrect context, no ... to look in
+source "..+0" local parent : ℹ In argument: `..marginplyr_denominator_of_..+0_1 = .data[["..+0"]]`.
+Caused by error:
+! indexing '...' with non-positive index 0
+source "..+0" local total : ℹ In argument: `..marginplyr_denominator_of_..+0_1 = .data[["..+0"]]`.
+Caused by error:
+! indexing '...' with non-positive index 0
+source "..+0" dtplyr parent : indexing '...' with non-positive index 0
+source "..+0" dtplyr total : indexing '...' with non-positive index 0
+source ".. 1" local parent : ℹ In argument: `..marginplyr_denominator_of_.. 1_1 = .data[[".. 1"]]`.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in
+source ".. 1" local total : ℹ In argument: `..marginplyr_denominator_of_.. 1_1 = .data[[".. 1"]]`.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in
+source ".. 1" dtplyr parent : ..1 used in an incorrect context, no ... to look in
+source ".. 1" dtplyr total : ..1 used in an incorrect context, no ... to look in
+fixed "..-1" local : ℹ In argument: `..marginplyr_key_1 = .data[["..-1"]]`.
+Caused by error:
+! indexing '...' with non-positive index -1
+fixed "..-0" local : ℹ In argument: `..marginplyr_key_1 = .data[["..-0"]]`.
+Caused by error:
+! indexing '...' with non-positive index 0
+fixed "..+1" local : ℹ In argument: `..marginplyr_key_1 = .data[["..+1"]]`.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in
+fixed "..+0" local : ℹ In argument: `..marginplyr_key_1 = .data[["..+0"]]`.
+Caused by error:
+! indexing '...' with non-positive index 0
+fixed ".. 1" local : ℹ In argument: `..marginplyr_key_1 = .data[[".. 1"]]`.
+Caused by error:
+! ..1 used in an incorrect context, no ... to look in
+Completed 25 source/fixed probes with ordinary controls

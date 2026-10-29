@@ -1,0 +1,122 @@
+[
+  {
+    "script": "grouping-oracle.R",
+    "args": [],
+    "exit_code": 0,
+    "log": "grouping-oracle.log"
+  },
+  {
+    "script": "grouping-selection.R",
+    "args": [],
+    "exit_code": 0,
+    "log": "grouping-selection.log"
+  },
+  {
+    "script": "grouping-backends.R",
+    "args": [],
+    "exit_code": 0,
+    "log": "grouping-backends.log"
+  },
+  {
+    "script": "dt-metadata.R",
+    "args": [],
+    "exit_code": 0,
+    "log": "dt-metadata.log"
+  },
+  {
+    "script": "summary-helpers.R",
+    "args": [],
+    "exit_code": 0,
+    "log": "summary-helpers.log"
+  },
+  {
+    "script": "share-oracle.R",
+    "args": [],
+    "exit_code": 0,
+    "log": "share-oracle.log"
+  },
+  {
+    "script": "reproduce-shares.R",
+    "args": [],
+    "exit_code": 0,
+    "log": "reproduce-shares.log"
+  },
+  {
+    "script": "reproduce-shares.R",
+    "args": [
+      "--assert",
+      "--only=F1"
+    ],
+    "exit_code": 1,
+    "log": "reproduce-shares-assert-only-F1.log"
+  },
+  {
+    "script": "reproduce-shares.R",
+    "args": [
+      "--assert",
+      "--only=F2"
+    ],
+    "exit_code": 1,
+    "log": "reproduce-shares-assert-only-F2.log"
+  },
+  {
+    "script": "reproduce-dt-dotdot.R",
+    "args": [],
+    "exit_code": 0,
+    "log": "reproduce-dt-dotdot.log"
+  },
+  {
+    "script": "reproduce-dt-dotdot.R",
+    "args": [
+      "--assert"
+    ],
+    "exit_code": 1,
+    "log": "reproduce-dt-dotdot-assert.log"
+  },
+  {
+    "script": "reproduce-signed.R",
+    "args": [],
+    "exit_code": 0,
+    "log": "reproduce-signed.log"
+  },
+  {
+    "script": "reproduce-signed.R",
+    "args": [
+      "--assert"
+    ],
+    "exit_code": 1,
+    "log": "reproduce-signed-assert.log"
+  },
+  {
+    "script": "reproduce-sf.R",
+    "args": [],
+    "exit_code": 0,
+    "log": "reproduce-sf.log"
+  },
+  {
+    "script": "reproduce-sf.R",
+    "args": [
+      "--assert"
+    ],
+    "exit_code": 1,
+    "log": "reproduce-sf-assert.log"
+  },
+  {
+    "script": "reproduce-eval-contract.R",
+    "args": [],
+    "exit_code": 1,
+    "log": "reproduce-eval-contract.log"
+  },
+  {
+    "script": "control-sql-dotdot.R",
+    "args": [],
+    "exit_code": 0,
+    "log": "control-sql-dotdot.log"
+  },
+  {
+    "script": "control-arrow-derived.R",
+    "args": [],
+    "exit_code": 0,
+    "log": "control-arrow-derived.log"
+  }
+]

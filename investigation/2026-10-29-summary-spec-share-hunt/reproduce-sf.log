@@ -1,0 +1,26 @@
+
+EMPTY FALSE
+Simple feature collection with 2 features and 1 field
+Geometry type: POINT
+Dimension:     XY
+Bounding box:  xmin: 1 ymin: 3 xmax: 2 ymax: 4
+CRS:           NA
+  total    geometry
+1     1 POINT (1 3)
+2     3 POINT (2 4)
+MARGIN ERROR: internal error: can't find sf column
+BEFORE total,private_geometry sf_column= private_geometry
+AFTER total,geometry sf_column= private_geometry
+[1] "attr(obj, \"sf_column\") does not point to a geometry column.\nDid you rename it, without setting st_geometry(obj) <- \"newname\"?"
+
+EMPTY TRUE
+Simple feature collection with 0 features and 1 field
+Geometry type: POINT
+Bounding box:  xmin: NA ymin: NA xmax: NA ymax: NA
+CRS:           NA
+[1] total    geometry
+<0 rows> (or 0-length row.names)
+MARGIN ERROR: internal error: can't find sf column
+BEFORE total,private_geometry sf_column= private_geometry
+AFTER total,geometry sf_column= private_geometry
+[1] "attr(obj, \"sf_column\") does not point to a geometry column.\nDid you rename it, without setting st_geometry(obj) <- \"newname\"?"

@@ -1,0 +1,10 @@
+pkgload::load_all('.',quiet=TRUE)
+suppressPackageStartupMessages(library(dplyr))
+d<-tibble(g=c('a','b'),x=c(1,3))
+s<-arrow::Table$create(d)
+q<-union_all(s,filter(s,x<2))
+report<-function(label,code){cat('\n',label,'\n');tryCatch(print(force(code)),error=function(e){cat(class(e),conditionMessage(e),'\n');print(conditionCall(e))})}
+report('source',collect(q))
+report('ordinary',collect(summarise(q,total=sum(x),.by=g)))
+report('inspect',inspect_grouping(q,.grouping=rollup(g)))
+report('margin',collect(summarize_with_margins(q,total=sum(x),.grouping=rollup(g))))
