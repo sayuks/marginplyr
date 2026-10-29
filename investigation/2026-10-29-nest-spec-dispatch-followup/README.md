@@ -141,7 +141,7 @@ than evidence that these row-only filters needed real rows to determine types.
 The affected matrix covered two populated source sizes, two predicates,
 rename/arrange/join/union derivations, and three consumers. Twenty-four
 first-element cases were refused; all 24 minimum cases emitted a warning.
-The 144 uncached, plain-filter, and explicitly collected controls succeeded.
+The 144 uncached, cached-only, and explicitly collected controls succeeded.
 Four minimum/rename cases also reached the separate F4 collection error;
 those overlapping outcomes were not counted as additional F2 refusals.
 Caller tables remained unchanged. The metadata and Mutable-step boundaries
