@@ -1,0 +1,1130 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+[1] 0
+[1] 2
+EMPTY= FALSE
+tibble [2 × 2] (S3: tbl_df/tbl/data.frame)
+ $ g: blob [1:2]
+  ..$ : raw [1:2] 41 42
+  ..$ : NULL
+  ..@ ptype: raw(0)
+ $ i: int [1:2] 1 2
+tibble [2 × 2] (S3: tbl_df/tbl/data.frame)
+ $ g: blob [1:2]
+  ..$ : raw [1:2] 41 42
+  ..$ : NULL
+  ..@ ptype: raw(0)
+ $ i: int [1:2] 1 2
+SPEC= set ~g  SORT= none
+tibble [2 × 3] (S3: tbl_df/tbl/data.frame)
+ $ g  : blob [1:2]
+  ..$ : raw [1:2] 41 42
+  ..$ : NULL
+  ..@ ptype: raw(0)
+ $ sid: int [1:2] 1 1
+ $ i  : int [1:2] 1 2
+tibble [2 × 3] (S3: tbl_df/tbl/data.frame)
+ $ g  : blob [1:2]
+  ..$ : raw [1:2] 41 42
+  ..$ : NULL
+  ..@ ptype: raw(0)
+ $ sid: int [1:2] 1 1
+ $ i  : int [1:2] 1 2
+<SQL> SELECT `g`, NULL AS `sid`, `i`
+FROM `t`
+WHERE (0)
+
+UNION ALL
+
+SELECT `g`, 1 AS `sid`, `i`
+FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+) AS `q01`
+) AS `q01`
+SPEC= set ~g  SORT= first
+'data.frame':	2 obs. of  3 variables:
+ $ g  : blob [1:2]
+  ..$ : raw  41 42
+  ..$ : NULL
+  ..@ ptype: raw
+ $ sid: int  1 1
+ $ i  : int  1 2
+tibble [2 × 3] (S3: tbl_df/tbl/data.frame)
+ $ g  : blob [1:2]
+  ..$ : raw [1:2] 41 42
+  ..$ : NULL
+  ..@ ptype: raw(0)
+ $ sid: int [1:2] 1 1
+ $ i  : int [1:2] 1 2
+<SQL> SELECT
+  `g`,
+  CAST(NULL AS INTEGER) AS `sid`,
+  `i`,
+  NULL AS `..marginplyr_order_1`,
+  NULL AS `..marginplyr_order_2`
+FROM `t`
+WHERE (0)
+
+UNION ALL
+
+SELECT
+  *,
+  CASE WHEN ((`g` IS NULL)) THEN 1 WHEN NOT ((`g` IS NULL)) THEN 0 END AS `..marginplyr_order_1`,
+  `g` AS `..marginplyr_order_2`
+FROM (
+  SELECT `g`, 1 AS `sid`, `i`
+  FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+) AS `q01`
+  ) AS `q01`
+) AS `q01`
+ORDER BY `..marginplyr_order_1`, `..marginplyr_order_2`
+SPEC= set ~g  SORT= last
+'data.frame':	2 obs. of  3 variables:
+ $ g  : blob [1:2]
+  ..$ : raw  41 42
+  ..$ : NULL
+  ..@ ptype: raw
+ $ sid: int  1 1
+ $ i  : int  1 2
+tibble [2 × 3] (S3: tbl_df/tbl/data.frame)
+ $ g  : blob [1:2]
+  ..$ : raw [1:2] 41 42
+  ..$ : NULL
+  ..@ ptype: raw(0)
+ $ sid: int [1:2] 1 1
+ $ i  : int [1:2] 1 2
+<SQL> SELECT
+  `g`,
+  CAST(NULL AS INTEGER) AS `sid`,
+  `i`,
+  NULL AS `..marginplyr_order_1`,
+  NULL AS `..marginplyr_order_2`
+FROM `t`
+WHERE (0)
+
+UNION ALL
+
+SELECT
+  *,
+  CASE WHEN ((`g` IS NULL)) THEN 1 WHEN NOT ((`g` IS NULL)) THEN 0 END AS `..marginplyr_order_1`,
+  `g` AS `..marginplyr_order_2`
+FROM (
+  SELECT `g`, 1 AS `sid`, `i`
+  FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+) AS `q01`
+  ) AS `q01`
+) AS `q01`
+ORDER BY `..marginplyr_order_1`, `..marginplyr_order_2`
+SPEC= rollup ~g  SORT= none
+tibble [4 × 3] (S3: tbl_df/tbl/data.frame)
+ $ g  : blob [1:4]
+  ..$ : raw [1:2] 41 42
+  ..$ : NULL
+  ..$ : NULL
+  ..$ : NULL
+  ..@ ptype: raw(0)
+ $ sid: int [1:4] 1 1 2 2
+ $ i  : int [1:4] 1 2 1 2
+tibble [4 × 3] (S3: tbl_df/tbl/data.frame)
+ $ g  : blob [1:4]
+  ..$ : raw [1:2] 41 42
+  ..$ : NULL
+  ..$ : NULL
+  ..$ : NULL
+  ..@ ptype: raw(0)
+ $ sid: int [1:4] 1 1 2 2
+ $ i  : int [1:4] 1 2 1 2
+<SQL> SELECT `g`, NULL AS `sid`, `i`
+FROM `t`
+WHERE (0)
+
+UNION ALL
+
+SELECT `g`, `sid`, `i`
+FROM (
+  SELECT *, NULL AS `sid`
+  FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT *, 1 AS `sid`
+    FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+) AS `q01`
+    ) AS `q01`
+
+    UNION ALL
+
+    SELECT *, 2 AS `sid`
+    FROM (
+      SELECT NULL AS `g`, `i`
+      FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+SPEC= rollup ~g  SORT= first
+'data.frame':	4 obs. of  3 variables:
+ $ g  : blob [1:4]
+  ..$ : NULL
+  ..$ : NULL
+  ..$ : raw  41 42
+  ..$ : NULL
+  ..@ ptype: raw
+ $ sid: int  2 2 1 1
+ $ i  : int  1 2 1 2
+tibble [4 × 3] (S3: tbl_df/tbl/data.frame)
+ $ g  : blob [1:4]
+  ..$ : NULL
+  ..$ : NULL
+  ..$ : raw [1:2] 41 42
+  ..$ : NULL
+  ..@ ptype: raw(0)
+ $ sid: int [1:4] 2 2 1 1
+ $ i  : int [1:4] 1 2 1 2
+<SQL> SELECT
+  `g`,
+  CAST(NULL AS INTEGER) AS `sid`,
+  `i`,
+  NULL AS `..marginplyr_order_1`,
+  NULL AS `..marginplyr_order_2`,
+  NULL AS `..marginplyr_order_3`,
+  NULL AS `..marginplyr_order_4`
+FROM `t`
+WHERE (0)
+
+UNION ALL
+
+SELECT
+  `g`,
+  `sid`,
+  `i`,
+  -CASE WHEN (`sid` IN (2)) THEN 1 WHEN NOT (`sid` IN (2)) THEN 0 END AS `..marginplyr_order_1`,
+  CASE WHEN ((`g` IS NULL)) THEN 1 WHEN NOT ((`g` IS NULL)) THEN 0 END AS `..marginplyr_order_2`,
+  `g` AS `..marginplyr_order_3`,
+  `sid` AS `..marginplyr_order_4`
+FROM (
+  SELECT *, NULL AS `sid`
+  FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT *, 1 AS `sid`
+    FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+) AS `q01`
+    ) AS `q01`
+
+    UNION ALL
+
+    SELECT *, 2 AS `sid`
+    FROM (
+      SELECT NULL AS `g`, `i`
+      FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+ORDER BY `..marginplyr_order_1`, `..marginplyr_order_2`, `..marginplyr_order_3`, `..marginplyr_order_4`
+SPEC= rollup ~g  SORT= last
+'data.frame':	4 obs. of  3 variables:
+ $ g  : blob [1:4]
+  ..$ : raw  41 42
+  ..$ : NULL
+  ..$ : NULL
+  ..$ : NULL
+  ..@ ptype: raw
+ $ sid: int  1 1 2 2
+ $ i  : int  1 2 1 2
+tibble [4 × 3] (S3: tbl_df/tbl/data.frame)
+ $ g  : blob [1:4]
+  ..$ : raw [1:2] 41 42
+  ..$ : NULL
+  ..$ : NULL
+  ..$ : NULL
+  ..@ ptype: raw(0)
+ $ sid: int [1:4] 1 1 2 2
+ $ i  : int [1:4] 1 2 1 2
+<SQL> SELECT
+  `g`,
+  CAST(NULL AS INTEGER) AS `sid`,
+  `i`,
+  NULL AS `..marginplyr_order_1`,
+  NULL AS `..marginplyr_order_2`,
+  NULL AS `..marginplyr_order_3`,
+  NULL AS `..marginplyr_order_4`
+FROM `t`
+WHERE (0)
+
+UNION ALL
+
+SELECT
+  `g`,
+  `sid`,
+  `i`,
+  CASE WHEN (`sid` IN (2)) THEN 1 WHEN NOT (`sid` IN (2)) THEN 0 END AS `..marginplyr_order_1`,
+  CASE WHEN ((`g` IS NULL)) THEN 1 WHEN NOT ((`g` IS NULL)) THEN 0 END AS `..marginplyr_order_2`,
+  `g` AS `..marginplyr_order_3`,
+  `sid` AS `..marginplyr_order_4`
+FROM (
+  SELECT *, NULL AS `sid`
+  FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT *, 1 AS `sid`
+    FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+) AS `q01`
+    ) AS `q01`
+
+    UNION ALL
+
+    SELECT *, 2 AS `sid`
+    FROM (
+      SELECT NULL AS `g`, `i`
+      FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+ORDER BY `..marginplyr_order_1`, `..marginplyr_order_2`, `..marginplyr_order_3`, `..marginplyr_order_4`
+SPEC= sets ~grouping_set(), ~grouping_set(g)  SORT= none
+tibble [4 × 3] (S3: tbl_df/tbl/data.frame)
+ $ g  : blob [1:4]
+  ..$ : NULL
+  ..$ : NULL
+  ..$ : raw [1:2] 41 42
+  ..$ : NULL
+  ..@ ptype: raw(0)
+ $ sid: int [1:4] 1 1 2 2
+ $ i  : int [1:4] 1 2 1 2
+tibble [4 × 3] (S3: tbl_df/tbl/data.frame)
+ $ g  : blob [1:4]
+  ..$ : NULL
+  ..$ : NULL
+  ..$ : raw [1:2] 41 42
+  ..$ : NULL
+  ..@ ptype: raw(0)
+ $ sid: int [1:4] 1 1 2 2
+ $ i  : int [1:4] 1 2 1 2
+<SQL> SELECT `g`, NULL AS `sid`, `i`
+FROM `t`
+WHERE (0)
+
+UNION ALL
+
+SELECT `g`, `sid`, `i`
+FROM (
+  SELECT *, NULL AS `sid`
+  FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT *, 1 AS `sid`
+    FROM (
+      SELECT NULL AS `g`, `i`
+      FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+
+    UNION ALL
+
+    SELECT *, 2 AS `sid`
+    FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+SPEC= sets ~grouping_set(), ~grouping_set(g)  SORT= first
+'data.frame':	4 obs. of  3 variables:
+ $ g  : blob [1:4]
+  ..$ : NULL
+  ..$ : NULL
+  ..$ : raw  41 42
+  ..$ : NULL
+  ..@ ptype: raw
+ $ sid: int  1 1 2 2
+ $ i  : int  1 2 1 2
+tibble [4 × 3] (S3: tbl_df/tbl/data.frame)
+ $ g  : blob [1:4]
+  ..$ : NULL
+  ..$ : NULL
+  ..$ : raw [1:2] 41 42
+  ..$ : NULL
+  ..@ ptype: raw(0)
+ $ sid: int [1:4] 1 1 2 2
+ $ i  : int [1:4] 1 2 1 2
+<SQL> SELECT
+  `g`,
+  CAST(NULL AS INTEGER) AS `sid`,
+  `i`,
+  NULL AS `..marginplyr_order_1`,
+  NULL AS `..marginplyr_order_2`,
+  NULL AS `..marginplyr_order_3`,
+  NULL AS `..marginplyr_order_4`
+FROM `t`
+WHERE (0)
+
+UNION ALL
+
+SELECT
+  `g`,
+  `sid`,
+  `i`,
+  -CASE WHEN (`sid` IN (1)) THEN 1 WHEN NOT (`sid` IN (1)) THEN 0 END AS `..marginplyr_order_1`,
+  CASE WHEN ((`g` IS NULL)) THEN 1 WHEN NOT ((`g` IS NULL)) THEN 0 END AS `..marginplyr_order_2`,
+  `g` AS `..marginplyr_order_3`,
+  `sid` AS `..marginplyr_order_4`
+FROM (
+  SELECT *, NULL AS `sid`
+  FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT *, 1 AS `sid`
+    FROM (
+      SELECT NULL AS `g`, `i`
+      FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+
+    UNION ALL
+
+    SELECT *, 2 AS `sid`
+    FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+ORDER BY `..marginplyr_order_1`, `..marginplyr_order_2`, `..marginplyr_order_3`, `..marginplyr_order_4`
+SPEC= sets ~grouping_set(), ~grouping_set(g)  SORT= last
+'data.frame':	4 obs. of  3 variables:
+ $ g  : blob [1:4]
+  ..$ : raw  41 42
+  ..$ : NULL
+  ..$ : NULL
+  ..$ : NULL
+  ..@ ptype: raw
+ $ sid: int  2 2 1 1
+ $ i  : int  1 2 1 2
+tibble [4 × 3] (S3: tbl_df/tbl/data.frame)
+ $ g  : blob [1:4]
+  ..$ : raw [1:2] 41 42
+  ..$ : NULL
+  ..$ : NULL
+  ..$ : NULL
+  ..@ ptype: raw(0)
+ $ sid: int [1:4] 2 2 1 1
+ $ i  : int [1:4] 1 2 1 2
+<SQL> SELECT
+  `g`,
+  CAST(NULL AS INTEGER) AS `sid`,
+  `i`,
+  NULL AS `..marginplyr_order_1`,
+  NULL AS `..marginplyr_order_2`,
+  NULL AS `..marginplyr_order_3`,
+  NULL AS `..marginplyr_order_4`
+FROM `t`
+WHERE (0)
+
+UNION ALL
+
+SELECT
+  `g`,
+  `sid`,
+  `i`,
+  CASE WHEN (`sid` IN (1)) THEN 1 WHEN NOT (`sid` IN (1)) THEN 0 END AS `..marginplyr_order_1`,
+  CASE WHEN ((`g` IS NULL)) THEN 1 WHEN NOT ((`g` IS NULL)) THEN 0 END AS `..marginplyr_order_2`,
+  `g` AS `..marginplyr_order_3`,
+  `sid` AS `..marginplyr_order_4`
+FROM (
+  SELECT *, NULL AS `sid`
+  FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT *, 1 AS `sid`
+    FROM (
+      SELECT NULL AS `g`, `i`
+      FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+
+    UNION ALL
+
+    SELECT *, 2 AS `sid`
+    FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+ORDER BY `..marginplyr_order_1`, `..marginplyr_order_2`, `..marginplyr_order_3`, `..marginplyr_order_4`
+EMPTY= TRUE
+tibble [0 × 2] (S3: tbl_df/tbl/data.frame)
+ $ g: blob [1:0]
+ list()
+  ..@ ptype: raw(0)
+ $ i: int(0)
+tibble [0 × 2] (S3: tbl_df/tbl/data.frame)
+ $ g: logi(0)
+ $ i: int(0)
+SPEC= set ~g  SORT= none
+tibble [0 × 3] (S3: tbl_df/tbl/data.frame)
+ $ g  : blob [1:0]
+ list()
+  ..@ ptype: raw(0)
+ $ sid: int(0)
+ $ i  : int(0)
+tibble [0 × 3] (S3: tbl_df/tbl/data.frame)
+ $ g  : logi(0)
+ $ sid: int(0)
+ $ i  : int(0)
+<SQL> SELECT `g`, NULL AS `sid`, `i`
+FROM `t`
+WHERE (0) AND (0)
+
+UNION ALL
+
+SELECT `g`, 1 AS `sid`, `i`
+FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+WHERE (0)
+) AS `q01`
+) AS `q01`
+SPEC= set ~g  SORT= first
+'data.frame':	0 obs. of  3 variables:
+ $ g  : blob [1:0]
+ list()
+  ..@ ptype: raw
+ $ sid: int
+ $ i  : int
+tibble [0 × 3] (S3: tbl_df/tbl/data.frame)
+ $ g  : logi(0)
+ $ sid: int(0)
+ $ i  : int(0)
+<SQL> SELECT
+  `g`,
+  CAST(NULL AS INTEGER) AS `sid`,
+  `i`,
+  NULL AS `..marginplyr_order_1`,
+  NULL AS `..marginplyr_order_2`
+FROM `t`
+WHERE (0) AND (0)
+
+UNION ALL
+
+SELECT
+  *,
+  CASE WHEN ((`g` IS NULL)) THEN 1 WHEN NOT ((`g` IS NULL)) THEN 0 END AS `..marginplyr_order_1`,
+  `g` AS `..marginplyr_order_2`
+FROM (
+  SELECT `g`, 1 AS `sid`, `i`
+  FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+WHERE (0)
+) AS `q01`
+  ) AS `q01`
+) AS `q01`
+ORDER BY `..marginplyr_order_1`, `..marginplyr_order_2`
+SPEC= set ~g  SORT= last
+'data.frame':	0 obs. of  3 variables:
+ $ g  : blob [1:0]
+ list()
+  ..@ ptype: raw
+ $ sid: int
+ $ i  : int
+tibble [0 × 3] (S3: tbl_df/tbl/data.frame)
+ $ g  : logi(0)
+ $ sid: int(0)
+ $ i  : int(0)
+<SQL> SELECT
+  `g`,
+  CAST(NULL AS INTEGER) AS `sid`,
+  `i`,
+  NULL AS `..marginplyr_order_1`,
+  NULL AS `..marginplyr_order_2`
+FROM `t`
+WHERE (0) AND (0)
+
+UNION ALL
+
+SELECT
+  *,
+  CASE WHEN ((`g` IS NULL)) THEN 1 WHEN NOT ((`g` IS NULL)) THEN 0 END AS `..marginplyr_order_1`,
+  `g` AS `..marginplyr_order_2`
+FROM (
+  SELECT `g`, 1 AS `sid`, `i`
+  FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+WHERE (0)
+) AS `q01`
+  ) AS `q01`
+) AS `q01`
+ORDER BY `..marginplyr_order_1`, `..marginplyr_order_2`
+SPEC= rollup ~g  SORT= none
+tibble [0 × 3] (S3: tbl_df/tbl/data.frame)
+ $ g  : blob [1:0]
+ list()
+  ..@ ptype: raw(0)
+ $ sid: int(0)
+ $ i  : int(0)
+tibble [0 × 3] (S3: tbl_df/tbl/data.frame)
+ $ g  : logi(0)
+ $ sid: int(0)
+ $ i  : int(0)
+<SQL> SELECT `g`, NULL AS `sid`, `i`
+FROM `t`
+WHERE (0) AND (0)
+
+UNION ALL
+
+SELECT `g`, `sid`, `i`
+FROM (
+  SELECT *, NULL AS `sid`
+  FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+WHERE (0)
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT *, 1 AS `sid`
+    FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+WHERE (0)
+) AS `q01`
+    ) AS `q01`
+
+    UNION ALL
+
+    SELECT *, 2 AS `sid`
+    FROM (
+      SELECT NULL AS `g`, `i`
+      FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+WHERE (0)
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+SPEC= rollup ~g  SORT= first
+'data.frame':	0 obs. of  3 variables:
+ $ g  : blob [1:0]
+ list()
+  ..@ ptype: raw
+ $ sid: int
+ $ i  : int
+tibble [0 × 3] (S3: tbl_df/tbl/data.frame)
+ $ g  : logi(0)
+ $ sid: int(0)
+ $ i  : int(0)
+<SQL> SELECT
+  `g`,
+  CAST(NULL AS INTEGER) AS `sid`,
+  `i`,
+  NULL AS `..marginplyr_order_1`,
+  NULL AS `..marginplyr_order_2`,
+  NULL AS `..marginplyr_order_3`,
+  NULL AS `..marginplyr_order_4`
+FROM `t`
+WHERE (0) AND (0)
+
+UNION ALL
+
+SELECT
+  `g`,
+  `sid`,
+  `i`,
+  -CASE WHEN (`sid` IN (2)) THEN 1 WHEN NOT (`sid` IN (2)) THEN 0 END AS `..marginplyr_order_1`,
+  CASE WHEN ((`g` IS NULL)) THEN 1 WHEN NOT ((`g` IS NULL)) THEN 0 END AS `..marginplyr_order_2`,
+  `g` AS `..marginplyr_order_3`,
+  `sid` AS `..marginplyr_order_4`
+FROM (
+  SELECT *, NULL AS `sid`
+  FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+WHERE (0)
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT *, 1 AS `sid`
+    FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+WHERE (0)
+) AS `q01`
+    ) AS `q01`
+
+    UNION ALL
+
+    SELECT *, 2 AS `sid`
+    FROM (
+      SELECT NULL AS `g`, `i`
+      FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+WHERE (0)
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+ORDER BY `..marginplyr_order_1`, `..marginplyr_order_2`, `..marginplyr_order_3`, `..marginplyr_order_4`
+SPEC= rollup ~g  SORT= last
+'data.frame':	0 obs. of  3 variables:
+ $ g  : blob [1:0]
+ list()
+  ..@ ptype: raw
+ $ sid: int
+ $ i  : int
+tibble [0 × 3] (S3: tbl_df/tbl/data.frame)
+ $ g  : logi(0)
+ $ sid: int(0)
+ $ i  : int(0)
+<SQL> SELECT
+  `g`,
+  CAST(NULL AS INTEGER) AS `sid`,
+  `i`,
+  NULL AS `..marginplyr_order_1`,
+  NULL AS `..marginplyr_order_2`,
+  NULL AS `..marginplyr_order_3`,
+  NULL AS `..marginplyr_order_4`
+FROM `t`
+WHERE (0) AND (0)
+
+UNION ALL
+
+SELECT
+  `g`,
+  `sid`,
+  `i`,
+  CASE WHEN (`sid` IN (2)) THEN 1 WHEN NOT (`sid` IN (2)) THEN 0 END AS `..marginplyr_order_1`,
+  CASE WHEN ((`g` IS NULL)) THEN 1 WHEN NOT ((`g` IS NULL)) THEN 0 END AS `..marginplyr_order_2`,
+  `g` AS `..marginplyr_order_3`,
+  `sid` AS `..marginplyr_order_4`
+FROM (
+  SELECT *, NULL AS `sid`
+  FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+WHERE (0)
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT *, 1 AS `sid`
+    FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+WHERE (0)
+) AS `q01`
+    ) AS `q01`
+
+    UNION ALL
+
+    SELECT *, 2 AS `sid`
+    FROM (
+      SELECT NULL AS `g`, `i`
+      FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+WHERE (0)
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+ORDER BY `..marginplyr_order_1`, `..marginplyr_order_2`, `..marginplyr_order_3`, `..marginplyr_order_4`
+SPEC= sets ~grouping_set(), ~grouping_set(g)  SORT= none
+tibble [0 × 3] (S3: tbl_df/tbl/data.frame)
+ $ g  : blob [1:0]
+ list()
+  ..@ ptype: raw(0)
+ $ sid: int(0)
+ $ i  : int(0)
+tibble [0 × 3] (S3: tbl_df/tbl/data.frame)
+ $ g  : logi(0)
+ $ sid: int(0)
+ $ i  : int(0)
+<SQL> SELECT `g`, NULL AS `sid`, `i`
+FROM `t`
+WHERE (0) AND (0)
+
+UNION ALL
+
+SELECT `g`, `sid`, `i`
+FROM (
+  SELECT *, NULL AS `sid`
+  FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+WHERE (0)
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT *, 1 AS `sid`
+    FROM (
+      SELECT NULL AS `g`, `i`
+      FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+WHERE (0)
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+
+    UNION ALL
+
+    SELECT *, 2 AS `sid`
+    FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+WHERE (0)
+) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+SPEC= sets ~grouping_set(), ~grouping_set(g)  SORT= first
+'data.frame':	0 obs. of  3 variables:
+ $ g  : blob [1:0]
+ list()
+  ..@ ptype: raw
+ $ sid: int
+ $ i  : int
+tibble [0 × 3] (S3: tbl_df/tbl/data.frame)
+ $ g  : logi(0)
+ $ sid: int(0)
+ $ i  : int(0)
+<SQL> SELECT
+  `g`,
+  CAST(NULL AS INTEGER) AS `sid`,
+  `i`,
+  NULL AS `..marginplyr_order_1`,
+  NULL AS `..marginplyr_order_2`,
+  NULL AS `..marginplyr_order_3`,
+  NULL AS `..marginplyr_order_4`
+FROM `t`
+WHERE (0) AND (0)
+
+UNION ALL
+
+SELECT
+  `g`,
+  `sid`,
+  `i`,
+  -CASE WHEN (`sid` IN (1)) THEN 1 WHEN NOT (`sid` IN (1)) THEN 0 END AS `..marginplyr_order_1`,
+  CASE WHEN ((`g` IS NULL)) THEN 1 WHEN NOT ((`g` IS NULL)) THEN 0 END AS `..marginplyr_order_2`,
+  `g` AS `..marginplyr_order_3`,
+  `sid` AS `..marginplyr_order_4`
+FROM (
+  SELECT *, NULL AS `sid`
+  FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+WHERE (0)
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT *, 1 AS `sid`
+    FROM (
+      SELECT NULL AS `g`, `i`
+      FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+WHERE (0)
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+
+    UNION ALL
+
+    SELECT *, 2 AS `sid`
+    FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+WHERE (0)
+) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+ORDER BY `..marginplyr_order_1`, `..marginplyr_order_2`, `..marginplyr_order_3`, `..marginplyr_order_4`
+SPEC= sets ~grouping_set(), ~grouping_set(g)  SORT= last
+'data.frame':	0 obs. of  3 variables:
+ $ g  : blob [1:0]
+ list()
+  ..@ ptype: raw
+ $ sid: int
+ $ i  : int
+tibble [0 × 3] (S3: tbl_df/tbl/data.frame)
+ $ g  : logi(0)
+ $ sid: int(0)
+ $ i  : int(0)
+<SQL> SELECT
+  `g`,
+  CAST(NULL AS INTEGER) AS `sid`,
+  `i`,
+  NULL AS `..marginplyr_order_1`,
+  NULL AS `..marginplyr_order_2`,
+  NULL AS `..marginplyr_order_3`,
+  NULL AS `..marginplyr_order_4`
+FROM `t`
+WHERE (0) AND (0)
+
+UNION ALL
+
+SELECT
+  `g`,
+  `sid`,
+  `i`,
+  CASE WHEN (`sid` IN (1)) THEN 1 WHEN NOT (`sid` IN (1)) THEN 0 END AS `..marginplyr_order_1`,
+  CASE WHEN ((`g` IS NULL)) THEN 1 WHEN NOT ((`g` IS NULL)) THEN 0 END AS `..marginplyr_order_2`,
+  `g` AS `..marginplyr_order_3`,
+  `sid` AS `..marginplyr_order_4`
+FROM (
+  SELECT *, NULL AS `sid`
+  FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+WHERE (0)
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT *, 1 AS `sid`
+    FROM (
+      SELECT NULL AS `g`, `i`
+      FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+WHERE (0)
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+
+    UNION ALL
+
+    SELECT *, 2 AS `sid`
+    FROM (
+SELECT `g`, `i`
+FROM (
+SELECT *
+FROM `t`
+WHERE (0)
+) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+ORDER BY `..marginplyr_order_1`, `..marginplyr_order_2`, `..marginplyr_order_3`, `..marginplyr_order_4`

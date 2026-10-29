@@ -1,0 +1,38 @@
+# A tibble: 26 × 3
+   type        `sub("ERROR.*", "ERROR", sub("DIFF.*", "DIFF", verdict))`     n
+   <chr>       <chr>                                                     <int>
+ 1 arr         ERROR                                                         6
+ 2 arr         PASS                                                         48
+ 3 blob        PASS                                                         54
+ 4 complex     PASS                                                         54
+ 5 date        PASS                                                         54
+ 6 difftime    PASS                                                         54
+ 7 hms         ERROR                                                         3
+ 8 hms         PASS                                                         51
+ 9 ip          PASS                                                         54
+10 labelled    PASS                                                         54
+11 mat         ERROR                                                         6
+12 mat         PASS                                                         48
+13 named       DIFF                                                          6
+14 named       PASS                                                         48
+15 nested      ERROR                                                         6
+16 nested      PASS                                                         48
+17 packed_zero ERROR                                                         6
+18 packed_zero PASS                                                         48
+19 posixct     PASS                                                         54
+20 posixlt     PASS                                                         54
+21 surv        ERROR                                                        30
+22 surv        PASS                                                         24
+23 ts          PASS                                                         54
+24 units       PASS                                                         54
+25 yearmon     PASS                                                         54
+26 yearqtr     PASS                                                         54
+# A tibble: 6 × 6
+  type  empty lab   sort  role  verdict
+  <chr> <lgl> <chr> <chr> <chr> <chr>
+1 named FALSE NULL  none  dim   DIFF Component “key”: Names: 'is.NA' value mism…
+2 named FALSE NULL  first dim   DIFF Component “key”: Names: 'is.NA' value mism…
+3 named FALSE NULL  last  dim   DIFF Component “key”: Names: 'is.NA' value mism…
+4 named FALSE <NA>  none  dim   DIFF Component “key”: Names: 'is.NA' value mism…
+5 named FALSE <NA>  first dim   DIFF Component “key”: Names: 'is.NA' value mism…
+6 named FALSE <NA>  last  dim   DIFF Component “key”: Names: 'is.NA' value mism…

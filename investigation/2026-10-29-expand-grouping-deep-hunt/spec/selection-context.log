@@ -1,0 +1,11 @@
+Progress: 50 of 368 expressions
+Progress: 100 of 368 expressions
+Progress: 150 of 368 expressions
+Progress: 200 of 368 expressions
+Progress: 250 of 368 expressions
+Progress: 300 of 368 expressions
+Progress: 350 of 368 expressions
+Expressions: 368 excluded injection ASTs: 1 consumer comparisons: 4404
+         success            error           rename empty_dimensions
+            2276             2052                0               76
+Mismatches: 0

@@ -1,0 +1,29 @@
+Ordinary source collection:
+# A tibble: 2 × 2
+  g         v
+  <fct> <int>
+1 1         1
+2 2         2
+Duplicate-assignment expansion:
+# A tibble: 4 × 3
+  g       sid     v
+  <fct> <int> <int>
+1 <NA>      1     1
+2 <NA>      1     2
+3 Total     2     1
+4 Total     2     2
+Explicitly collected input control:
+# A tibble: 4 × 3
+  g       sid     v
+  <fct> <int> <int>
+1 1         1     1
+2 2         1     2
+3 Total     2     1
+4 Total     2     2
+Captured assignments:
+List of 2
+ $ g: symbol v
+ $ g: language factor(g)
+Callback sizes during Margin construction:0L
+Numeric selection from lazy proxy:c("g", "v")
+Numeric selection from actual input:"v"

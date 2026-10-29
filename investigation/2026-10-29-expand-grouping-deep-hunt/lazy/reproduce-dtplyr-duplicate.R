@@ -1,0 +1,40 @@
+# Investigated 2026-10-29 against ee43217 main. No implementation fix.
+# Run from a marginplyr repository with: Rscript <this-script> [--assert]
+suppressPackageStartupMessages(library(dplyr))
+pkgload::load_all('.', quiet=TRUE)
+assert <- '--assert' %in% commandArgs(trailingOnly=TRUE)
+source <- data.table::data.table(g=11:12, v=1:2)
+before <- data.table::copy(source)
+root <- dtplyr::lazy_dt(source)
+input <- mutate(root, g=v, g=factor(g))
+materialized <- collect(input)
+stopifnot(identical(as.character(materialized$g),c('1','2')))
+actual <- collect(expand_with_margins(input,.grouping=rollup(g),.id='sid'))
+expected <- expand_with_margins(materialized,.grouping=rollup(g),.id='sid')
+cat('Ordinary source collection:\n');print(materialized)
+cat('Duplicate-assignment expansion:\n');print(actual)
+cat('Explicitly collected input control:\n');print(expected)
+stopifnot(identical(as.character(expected$g),c('1','2','Total','Total')))
+# The duplicate named list's first entry is safe, and its second is not.
+cat('Captured assignments:\n');str(input[['new_vars']])
+# A single unsafe assignment receives the intended pre-evaluation refusal.
+seen <- integer()
+probe <- function(x){seen <<- c(seen,length(x));factor(x)}
+single <- mutate(root,g=probe(v))
+single_error <- tryCatch(expand_with_margins(single,.grouping=rollup(g)),error=identity)
+stopifnot(inherits(single_error,'marginplyr_error'),length(seen)==0L)
+duplicate_callback <- mutate(root,g=v,g=probe(g))
+# Ordinary construction remains unexecuted.
+invisible(mutate(duplicate_callback,z=1L));stopifnot(length(seen)==0L)
+callback_result <- tryCatch(expand_with_margins(duplicate_callback,.grouping=rollup(g)),error=identity)
+cat('Callback sizes during Margin construction:');dput(seen)
+stopifnot(identical(seen,0L),!inherits(callback_result,'error'))
+# A value-dependent type is enough to produce a wrong public Grouping plan.
+typed <- mutate(root,g=v,g=if(n()>0L)rep('text',n())else integer())
+want_input <- collect(typed)
+actual_plan <- inspect_grouping(typed,.grouping=grouping_set(where(is.numeric)),.format='list')
+expected_plan <- inspect_grouping(want_input,.grouping=grouping_set(where(is.numeric)),.format='list')
+cat('Numeric selection from lazy proxy:');dput(actual_plan$included[[1L]])
+cat('Numeric selection from actual input:');dput(expected_plan$included[[1L]])
+stopifnot(identical(expected_plan$included[[1L]],'v'),identical(source,before))
+if(assert)stopifnot(identical(actual,expected),identical(actual_plan,expected_plan),length(seen)==0L)

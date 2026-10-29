@@ -1,0 +1,588 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+SHARED json plain 1 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type json
+LINE 8:   "g"
+          ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED json plain 1 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type json
+LINE 8:   "g"
+          ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED json plain 2 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type json
+LINE 27:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED json plain 2 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type json
+LINE 27:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED json plain 3 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type json
+LINE 27:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED json plain 3 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type json
+LINE 27:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED json filter 1 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type json
+LINE 12:   "g"
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED json filter 1 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type json
+LINE 12:   "g"
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED json filter 2 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type json
+LINE 35:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED json filter 2 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type json
+LINE 35:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED json filter 3 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type json
+LINE 35:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED json filter 3 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type json
+LINE 35:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED json limit 1 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type json
+LINE 13:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED json limit 1 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type json
+LINE 13:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED json limit 2 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type json
+LINE 39:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED json limit 2 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type json
+LINE 39:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED json limit 3 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type json
+LINE 39:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED json limit 3 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type json
+LINE 39:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+Warning: ORDER BY is ignored in subqueries without LIMIT
+ℹ Do you need to move arrange() later in the pipeline or use window_order() instead?
+SHARED json window 1 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type json
+LINE 12:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+Warning: ORDER BY is ignored in subqueries without LIMIT
+ℹ Do you need to move arrange() later in the pipeline or use window_order() instead?
+SHARED json window 1 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type json
+LINE 12:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+Warning: ORDER BY is ignored in subqueries without LIMIT
+ℹ Do you need to move arrange() later in the pipeline or use window_order() instead?
+SHARED json window 2 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type json
+LINE 37:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+Warning: ORDER BY is ignored in subqueries without LIMIT
+ℹ Do you need to move arrange() later in the pipeline or use window_order() instead?
+SHARED json window 2 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type json
+LINE 37:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+Warning: ORDER BY is ignored in subqueries without LIMIT
+ℹ Do you need to move arrange() later in the pipeline or use window_order() instead?
+SHARED json window 3 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type json
+LINE 37:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+Warning: ORDER BY is ignored in subqueries without LIMIT
+ℹ Do you need to move arrange() later in the pipeline or use window_order() instead?
+SHARED json window 3 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type json
+LINE 37:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED json empty 1 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type json
+LINE 12:   "g"
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED json empty 1 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type json
+LINE 12:   "g"
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED json empty 2 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type json
+LINE 35:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED json empty 2 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type json
+LINE 35:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED json empty 3 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type json
+LINE 35:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED json empty 3 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type json
+LINE 35:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED point plain 1 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type point
+LINE 8:   "g"
+          ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED point plain 1 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type point
+LINE 8:   "g"
+          ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED point plain 2 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type point
+LINE 27:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED point plain 2 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type point
+LINE 27:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED point plain 3 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type point
+LINE 27:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED point plain 3 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type point
+LINE 27:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED point filter 1 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type point
+LINE 12:   "g"
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED point filter 1 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type point
+LINE 12:   "g"
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED point filter 2 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type point
+LINE 35:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED point filter 2 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type point
+LINE 35:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED point filter 3 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type point
+LINE 35:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED point filter 3 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type point
+LINE 35:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED point limit 1 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type point
+LINE 13:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED point limit 1 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type point
+LINE 13:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED point limit 2 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type point
+LINE 39:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED point limit 2 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type point
+LINE 39:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED point limit 3 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type point
+LINE 39:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED point limit 3 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type point
+LINE 39:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+Warning: ORDER BY is ignored in subqueries without LIMIT
+ℹ Do you need to move arrange() later in the pipeline or use window_order() instead?
+SHARED point window 1 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type point
+LINE 12:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+Warning: ORDER BY is ignored in subqueries without LIMIT
+ℹ Do you need to move arrange() later in the pipeline or use window_order() instead?
+SHARED point window 1 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type point
+LINE 12:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+Warning: ORDER BY is ignored in subqueries without LIMIT
+ℹ Do you need to move arrange() later in the pipeline or use window_order() instead?
+SHARED point window 2 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type point
+LINE 37:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+Warning: ORDER BY is ignored in subqueries without LIMIT
+ℹ Do you need to move arrange() later in the pipeline or use window_order() instead?
+SHARED point window 2 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type point
+LINE 37:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+Warning: ORDER BY is ignored in subqueries without LIMIT
+ℹ Do you need to move arrange() later in the pipeline or use window_order() instead?
+SHARED point window 3 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type point
+LINE 37:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+Warning: ORDER BY is ignored in subqueries without LIMIT
+ℹ Do you need to move arrange() later in the pipeline or use window_order() instead?
+SHARED point window 3 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type point
+LINE 37:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED point empty 1 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type point
+LINE 12:   "g"
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED point empty 1 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type point
+LINE 12:   "g"
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED point empty 2 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type point
+LINE 35:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED point empty 2 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type point
+LINE 35:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED point empty 3 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type point
+LINE 35:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED point empty 3 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type point
+LINE 35:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED xml plain 1 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type xml
+LINE 8:   "g"
+          ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED xml plain 1 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type xml
+LINE 8:   "g"
+          ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED xml plain 2 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type xml
+LINE 27:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED xml plain 2 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type xml
+LINE 27:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED xml plain 3 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type xml
+LINE 27:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED xml plain 3 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type xml
+LINE 27:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED xml filter 1 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type xml
+LINE 12:   "g"
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED xml filter 1 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type xml
+LINE 12:   "g"
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED xml filter 2 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type xml
+LINE 35:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED xml filter 2 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type xml
+LINE 35:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED xml filter 3 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type xml
+LINE 35:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED xml filter 3 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type xml
+LINE 35:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED xml limit 1 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type xml
+LINE 13:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED xml limit 1 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type xml
+LINE 13:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED xml limit 2 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type xml
+LINE 39:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED xml limit 2 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type xml
+LINE 39:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED xml limit 3 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type xml
+LINE 39:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED xml limit 3 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type xml
+LINE 39:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+Warning: ORDER BY is ignored in subqueries without LIMIT
+ℹ Do you need to move arrange() later in the pipeline or use window_order() instead?
+SHARED xml window 1 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type xml
+LINE 12:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+Warning: ORDER BY is ignored in subqueries without LIMIT
+ℹ Do you need to move arrange() later in the pipeline or use window_order() instead?
+SHARED xml window 1 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type xml
+LINE 12:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+Warning: ORDER BY is ignored in subqueries without LIMIT
+ℹ Do you need to move arrange() later in the pipeline or use window_order() instead?
+SHARED xml window 2 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type xml
+LINE 37:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+Warning: ORDER BY is ignored in subqueries without LIMIT
+ℹ Do you need to move arrange() later in the pipeline or use window_order() instead?
+SHARED xml window 2 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type xml
+LINE 37:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+Warning: ORDER BY is ignored in subqueries without LIMIT
+ℹ Do you need to move arrange() later in the pipeline or use window_order() instead?
+SHARED xml window 3 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type xml
+LINE 37:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+Warning: ORDER BY is ignored in subqueries without LIMIT
+ℹ Do you need to move arrange() later in the pipeline or use window_order() instead?
+SHARED xml window 3 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type xml
+LINE 37:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED xml empty 1 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type xml
+LINE 12:   "g"
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED xml empty 1 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type xml
+LINE 12:   "g"
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED xml empty 2 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type xml
+LINE 35:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED xml empty 2 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type xml
+LINE 35:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED xml empty 3 last Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type xml
+LINE 35:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+SHARED xml empty 3 first Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  could not identify an ordering operator for type xml
+LINE 35:   "g",
+           ^
+HINT:  Use an explicit ordering operator or modify the query.
+PASS 1395 SHARED 90 FAIL 0

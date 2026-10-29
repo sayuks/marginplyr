@@ -1,0 +1,61 @@
+FOCUSED GROUPING WITNESS
+[1] "g"
+character(0)
+# A tibble: 3 × 2
+  g     total
+  <chr> <dbl>
+1 <NA>      3
+2 b         2
+3 a         1
+# A tibble: 1 × 1
+  total
+  <dbl>
+1     6
+GROUPING AND WINDOW-ORDER MATRIX
+payload FALSE FALSE groups g -> empty; order v -> empty
+payload FALSE TRUE groups g -> empty; order v -> empty
+payload TRUE FALSE groups g -> empty; order v -> empty
+payload TRUE TRUE groups g -> empty; order v -> empty
+dimension FALSE FALSE groups g -> empty; order v -> empty
+dimension FALSE TRUE groups g -> empty; order v -> empty
+dimension TRUE FALSE groups g -> empty; order v -> empty
+dimension TRUE TRUE groups g -> empty; order v -> empty
+fixed FALSE FALSE groups g -> empty; order v -> empty
+fixed FALSE TRUE groups g -> empty; order v -> empty
+fixed TRUE FALSE groups g -> empty; order v -> empty
+fixed TRUE TRUE groups g -> empty; order v -> empty
+identifier FALSE FALSE groups g -> empty; order v -> empty
+identifier FALSE TRUE groups g -> empty; order v -> empty
+identifier TRUE FALSE groups g -> empty; order v -> empty
+identifier TRUE TRUE groups g -> empty; order v -> empty
+METADATA_CASES 16 ordinary control retained g and v
+INVALID INDEX DESTINATION MATRIX
+ordinary indexes FALSE FALSE table_exists FALSE columns
+ordinary indexes FALSE TRUE table_exists TRUE columns sentinel
+ordinary indexes TRUE FALSE table_exists FALSE columns
+ordinary indexes TRUE TRUE table_exists TRUE columns sentinel
+ordinary unique_indexes FALSE FALSE table_exists FALSE columns
+ordinary unique_indexes FALSE TRUE table_exists TRUE columns sentinel
+ordinary unique_indexes TRUE FALSE table_exists FALSE columns
+ordinary unique_indexes TRUE TRUE table_exists TRUE columns sentinel
+margin indexes FALSE FALSE table_exists TRUE columns g,sid,v,.env
+margin indexes FALSE TRUE table_exists TRUE columns g,sid,v,.env
+margin indexes TRUE FALSE table_exists TRUE columns g,sid,v,.env
+margin indexes TRUE TRUE table_exists TRUE columns g,sid,v,.env
+CAUSAL ERROR: Can't copy query to table index_margin_indexes_TRUE_TRUE.
+Caused by error in `dbplyr_create_index()`:
+! Can't create index on table index_margin_indexes_TRUE_TRUE.
+ℹ Using SQL: CREATE INDEX index_margin_indexes_TRUE_TRUE_missing ON
+  index_margin_indexes_TRUE_TRUE (missing)
+Caused by error in `dbSendQuery()`:
+! Binder Error: Table "index_margin_indexes_TRUE_TRUE" does not have a column named "missing"
+
+Candidate bindings: : "g"
+ℹ Context: rapi_prepare
+ℹ Error type: BINDER
+margin unique_indexes FALSE FALSE table_exists TRUE columns g,sid,v,.env
+margin unique_indexes FALSE TRUE table_exists TRUE columns g,sid,v,.env
+margin unique_indexes TRUE FALSE table_exists TRUE columns g,sid,v,.env
+margin unique_indexes TRUE TRUE table_exists TRUE columns g,sid,v,.env
+INDEX_CASES 16
+Both deviations reproduced. This script requires the baseline bugs; it does not assert fixes.

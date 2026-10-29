@@ -1,0 +1,7 @@
+matrix is.object: FALSE cast calls: 0 direct: vctrs_error_subscript_type
+array is.object: FALSE cast calls: 0 direct: vctrs_error_subscript_type
+numeric is.object: FALSE cast calls: 0 direct: selected region
+integer is.object: FALSE cast calls: 0 direct: selected region
+character is.object: FALSE cast calls: 0 direct: selected region
+logical is.object: FALSE cast calls: 0 direct: vctrs_error_subscript_type
+PASS excluded implicit-cast lead: 12 matching package comparisons; no custom cast invoked
