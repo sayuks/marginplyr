@@ -90,6 +90,20 @@ isolated_dtplyr_proxy <- function(.data) {
   as_data_table(proxy)
 }
 
+# Whether lexical lookup finds an ordinary base arithmetic binding. Active
+# bindings cannot certify the function a later proxy evaluation will call.
+dtplyr_base_arithmetic_binding <- function(name, env) {
+  while (!identical(env, emptyenv())) {
+    if (exists(name, envir = env, inherits = FALSE)) {
+      return(!bindingIsActive(name, env) &&
+        identical(get(name, envir = env, inherits = FALSE),
+                  get(name, envir = baseenv())))
+    }
+    env <- parent.env(env)
+  }
+  FALSE
+}
+
 # Only base arithmetic over known plain numeric bindings has an output type
 # fixed independently of values. Other calls may derive levels or types from
 # the rows, even when their zero-row evaluation returns a plausible column.
@@ -103,8 +117,7 @@ dtplyr_value_stable_arithmetic <- function(expr, columns, env) {
   if (is.call(expr) && is.symbol(expr[[1L]])) {
     head <- as.character(expr[[1L]])
     if (head %in% c("+", "-", "*", "/") &&
-          identical(get(head, envir = env, inherits = TRUE),
-                    get(head, envir = baseenv()))) {
+          dtplyr_base_arithmetic_binding(head, env)) {
       args <- as.list(expr)[-1L]
       return(length(args) %in% c(1L, 2L) && all(vapply(args, function(arg) {
         dtplyr_value_stable_arithmetic(arg, columns, env)
@@ -134,8 +147,8 @@ dtplyr_plain_roots <- function(step) {
 # match. Require matching input types before using an empty-input result.
 dtplyr_join_set_types_match <- function(step) {
   tryCatch({
-    left <- dtplyr_selection_proxy(step[["parent"]], mutable = TRUE)
-    right <- dtplyr_selection_proxy(step[["parent2"]], mutable = TRUE)
+    left <- dtplyr_selection_proxy(step[["parent"]], isolate = TRUE)
+    right <- dtplyr_selection_proxy(step[["parent2"]], isolate = TRUE)
     if (inherits(step, "dtplyr_step_join")) {
       on <- step[["on"]]
       if (!is.list(on) || length(on[["x"]]) != length(on[["y"]]) ||
@@ -311,17 +324,17 @@ abort_unsafe_dtplyr_metadata <- function() {
 }
 
 # A faithful typed proxy for a dtplyr step, or a refusal before its source rows
-# run. `mutable` is true only for inspection; Margin verbs refuse that input
-# before this function is called.
-dtplyr_selection_proxy <- function(.data, mutable = FALSE) {
+# run. `isolate` avoids collecting even a root, for Mutable inspection and for
+# parent schemas whose unsupported names a downstream projection discards.
+dtplyr_selection_proxy <- function(.data, isolate = FALSE) {
   if (!dtplyr_metadata_safe_step(.data)) {
     abort_unsafe_dtplyr_metadata()
   }
   if (inherits(.data, c("dtplyr_step_group", "dtplyr_step_assign"))) {
-    return(dtplyr_selection_proxy(.data[["parent"]], mutable = mutable))
+    return(dtplyr_selection_proxy(.data[["parent"]], isolate = isolate))
   }
   if (inherits(.data, "dtplyr_step_subset")) {
-    parent <- dtplyr_selection_proxy(.data[["parent"]], mutable = mutable)
+    parent <- dtplyr_selection_proxy(.data[["parent"]], isolate = TRUE)
     columns <- dtplyr_metadata_subset_columns(.data)
     # The list converter refuses `.SD`; assign names only on the fresh proxy.
     proxy <- data.table::as.data.table(
@@ -330,7 +343,7 @@ dtplyr_selection_proxy <- function(.data, mutable = FALSE) {
     data.table::setnames(proxy, .data[["vars"]])
     return(proxy)
   }
-  if (mutable || !inherits(.data, "dtplyr_step_first")) {
+  if (isolate || !inherits(.data, "dtplyr_step_first")) {
     return(tryCatch(
       isolated_dtplyr_proxy(.data),
       error = function(...) abort_unsafe_dtplyr_metadata()

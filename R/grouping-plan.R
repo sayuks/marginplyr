@@ -285,7 +285,7 @@ prepare_grouping_plan <- function(.data,
         data_proxy <- if (identical(backend$kind, "dtplyr")) {
           dtplyr_selection_proxy(
             data,
-            mutable = !builds_margin_branches && mutable_step
+            isolate = !builds_margin_branches && mutable_step
           )
         } else {
           grouping_selection_proxy(data, backend = backend)
