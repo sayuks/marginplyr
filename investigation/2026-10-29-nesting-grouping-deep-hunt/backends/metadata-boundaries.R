@@ -60,7 +60,6 @@ for (type in names(vectors)) for (size in c(0L, 3L)) {
     }
   }
 }
-# Lexical .BY is deliberately present without a same-named source column.
 # Values come from the caller binding in the upstream predicate, while the
 # Margin operation creates aliases only downstream of that predicate.
 for (name in c('.BY', '.SD', '.I', '.N', '.GRP', '.ROW', '.xSD', '.iSD')) {
