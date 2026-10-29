@@ -54,8 +54,9 @@ margin_column_source <- function(data) {
   dplyr::as_tibble(data, .name_repair = "minimal")
 }
 
-# Move known Margin columns to the front of an ungrouped result. Selection
-# validates dot-dot output names, so local inputs with those use output aliases
+# Move known Margin columns to the front of an ungrouped result. Relocation
+# keeps selected local subclass columns in place. Selection validates dot-dot
+# output names, so local inputs with those use output aliases
 # and Arrow uses relocation when such names occur. dtplyr projects safe aliases
 # before restoring its public names.
 reorder_margin_columns <- function(data, leading) {
@@ -73,9 +74,11 @@ reorder_margin_columns <- function(data, leading) {
     # Arrow's relocate method captures its selection before tidy evaluation.
     return(do.call(dplyr::relocate, list(data, leading)))
   }
-  if (!is.data.frame(data) ||
-        !any(margin_dot_dot_names(margin_col_names(data)))) {
+  if (!is.data.frame(data)) {
     return(dplyr::select(data, dplyr::all_of(leading), dplyr::everything()))
+  }
+  if (!any(margin_dot_dot_names(margin_col_names(data)))) {
+    return(dplyr::relocate(data, dplyr::all_of(leading)))
   }
   # An alias round-trip must not leave retained subclass metadata naming the
   # aliases after the ordinary column names have been restored.

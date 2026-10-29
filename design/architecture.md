@@ -27,9 +27,10 @@ Every exported Margin verb follows the same explicit lifecycle:
    result, restores factor Margin columns, places fixed keys and grouping
    dimensions followed by the optional Grouping set identifier first, and
    leaves row ordering unspecified by default. When `.sort` asks for a Margin
-   order, it applies that order last — after restoration, so a factor
-   dimension sorts by its restored levels, and after placement, so the
-   `ORDER BY` is the outermost one. The key comes from the Grouping plan the
+   order, it applies that order after restoration, so a factor dimension
+   sorts by its restored levels, and after initial placement, so the
+   `ORDER BY` is the outermost one. Local results then reapply Margin-column
+   placement. The key comes from the Grouping plan the
    module already holds, so no verb kind is passed in. See
    [ADR 0018](adr/0018-order-margin-results-by-grouping-structure.md).
 
