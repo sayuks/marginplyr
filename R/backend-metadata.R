@@ -40,6 +40,8 @@ zero_row_dtplyr_proxy_input <- function(.data) {
     return(zero_row_dtplyr_proxy_input(.data[["parent"]]))
   }
   step <- .data
+  # Expanded caches expose reference writes against shared zero-row roots.
+  step[["needs_copy"]] <- TRUE
   # Downstream steps inherit cached expressions independently of their parent.
   step[["locals"]] <- list()
   inputs <- dtplyr_step_input_fields(step)
@@ -207,23 +209,44 @@ dtplyr_metadata_safe_step <- function(step) {
     numeric_columns <- names(source)[vapply(source, function(x) {
       is.numeric(x) && !is.object(x)
     }, logical(1))]
-    return(all(vapply(names(step[["new_vars"]]), function(column) {
-      expr <- step[["new_vars"]][[column]]
+    updates <- step[["new_vars"]]
+    columns <- names(source)
+    for (i in seq_along(updates)) {
+      column <- names(updates)[[i]]
+      expr <- updates[[i]]
       if (is.null(expr)) {
-        return(TRUE)
+        columns <- setdiff(columns, column)
+        numeric_columns <- setdiff(numeric_columns, column)
+        next
       }
+      # Braced mutations retain destination columns until the final write,
+      # including after a local NULL update.
+      existing <- column %in% columns || column %in% names(source)
       if (is.atomic(expr) && length(expr) == 1L && !is.object(expr)) {
-        # Scalar assignment to an existing column keeps its old metadata on
-        # zero rows, but may replace its type or add factor levels on real rows.
-        return(!column %in% names(source))
+        # Scalar writes can retain destination metadata on zero rows.
+        if (existing) {
+          return(FALSE)
+        }
+        numeric <- is.numeric(expr)
+      } else if (is.symbol(expr) && as.character(expr) %in% columns) {
+        numeric <- as.character(expr) %in% numeric_columns
+      } else {
+        if (!dtplyr_value_stable_arithmetic(
+          expr, numeric_columns, step[["env"]]
+        ) || (existing && dtplyr_value_stable_arithmetic(
+          expr, character(), step[["env"]]
+        ))) {
+          return(FALSE)
+        }
+        numeric <- TRUE
       }
-      if (is.symbol(expr) && as.character(expr) %in% names(source)) {
-        return(TRUE)
+      columns <- union(columns, column)
+      numeric_columns <- setdiff(numeric_columns, column)
+      if (numeric) {
+        numeric_columns <- union(numeric_columns, column)
       }
-      dtplyr_value_stable_arithmetic(expr, numeric_columns, step[["env"]]) &&
-        (!column %in% names(source) ||
-           !dtplyr_value_stable_arithmetic(expr, character(), step[["env"]]))
-    }, logical(1))))
+    }
+    return(TRUE)
   }
   # Grouping and cached-table aliases retain their parent's column metadata.
   if (inherits(step, c("dtplyr_step_group", "dtplyr_step_assign"))) {
