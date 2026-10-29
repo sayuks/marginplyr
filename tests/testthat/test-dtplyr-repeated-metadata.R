@@ -65,6 +65,8 @@ test_that("repeated safe updates retain the current column metadata", {
       dplyr::mutate(root, g = f, g = g),
       dplyr::mutate(root, g = v, g = g / 2),
       dplyr::mutate(root, new = 1L, new = new + v),
+      dplyr::mutate(root, new = "tag", alias = new),
+      dplyr::mutate(root, new = 1L, alias = new / 2),
       dplyr::mutate(root, g = NULL, g = v)
     )
     for (step in steps) {
@@ -149,4 +151,34 @@ test_that("NULL updates do not certify scalar writes to an existing factor", {
   expect_error(inspect_grouping(step, .by = where(is.factor)),
                "Can't safely determine column metadata",
                class = "marginplyr_error")
+})
+
+test_that("scalar aliases cannot certify existing factor metadata", {
+  skip_if_suggest_absent("dtplyr")
+  for (rows in c(0L, 1L, 3L)) {
+    source <- data.table::data.table(
+      g = factor(rep("a", rows), levels = c("a", "unused")), v = seq_len(rows)
+    )
+    before <- data.table::copy(source)
+    root <- dtplyr::lazy_dt(source)
+    for (label in c("z", "Total")) {
+      steps <- list(
+        dplyr::mutate(root, added = !!label, g = added),
+        dplyr::mutate(root, added = !!label, g = v, g = added),
+        dplyr::mutate(root, added = 1L, alias = added, g = alias + 1L)
+      )
+      for (step in steps) {
+        expect_error(inspect_grouping(step, .by = where(is.factor)),
+                     "Can't safely determine column metadata",
+                     class = "marginplyr_error")
+        for (verb in list(expand_with_margins, nest_with_margins,
+                          nest_by_with_margins)) {
+          expect_error(verb(step, .grouping = rollup(g)),
+                       "Can't safely determine column metadata",
+                       class = "marginplyr_error")
+        }
+        expect_identical(source, before)
+      }
+    }
+  }
 })

@@ -72,7 +72,7 @@ isolated_dtplyr_proxy <- function(.data) {
   as_data_table(proxy)
 }
 
-# Only base arithmetic over plain numeric source columns has an output type
+# Only base arithmetic over known plain numeric bindings has an output type
 # fixed independently of values. Other calls may derive levels or types from
 # the rows, even when their zero-row evaluation returns a plausible column.
 dtplyr_value_stable_arithmetic <- function(expr, columns, env) {
@@ -211,36 +211,45 @@ dtplyr_metadata_safe_step <- function(step) {
     }, logical(1))]
     updates <- step[["new_vars"]]
     columns <- names(source)
+    scalar_columns <- character()
     for (i in seq_along(updates)) {
       column <- names(updates)[[i]]
       expr <- updates[[i]]
       if (is.null(expr)) {
         columns <- setdiff(columns, column)
         numeric_columns <- setdiff(numeric_columns, column)
+        scalar_columns <- setdiff(scalar_columns, column)
         next
       }
       # Braced mutations retain destination columns until the final write,
       # including after a local NULL update.
       existing <- column %in% columns || column %in% names(source)
       if (is.atomic(expr) && length(expr) == 1L && !is.object(expr)) {
-        # Scalar writes can retain destination metadata on zero rows.
-        if (existing) {
-          return(FALSE)
-        }
+        scalar <- TRUE
         numeric <- is.numeric(expr)
       } else if (is.symbol(expr) && as.character(expr) %in% columns) {
+        scalar <- as.character(expr) %in% scalar_columns
         numeric <- as.character(expr) %in% numeric_columns
       } else {
         if (!dtplyr_value_stable_arithmetic(
           expr, numeric_columns, step[["env"]]
-        ) || (existing && dtplyr_value_stable_arithmetic(
-          expr, character(), step[["env"]]
-        ))) {
+        )) {
           return(FALSE)
         }
+        scalar <- dtplyr_value_stable_arithmetic(
+          expr, intersect(numeric_columns, scalar_columns), step[["env"]]
+        )
         numeric <- TRUE
       }
+      # Scalar writes, including aliases, can retain stale zero-row metadata.
+      if (existing && scalar) {
+        return(FALSE)
+      }
       columns <- union(columns, column)
+      scalar_columns <- setdiff(scalar_columns, column)
+      if (scalar) {
+        scalar_columns <- union(scalar_columns, column)
+      }
       numeric_columns <- setdiff(numeric_columns, column)
       if (numeric) {
         numeric_columns <- union(numeric_columns, column)
