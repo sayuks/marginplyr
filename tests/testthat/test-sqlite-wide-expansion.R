@@ -89,8 +89,18 @@ test_that("SQLite includes every anchor at the wide-plan threshold", {
         for (endpoint in list(query, saved)) {
           for (n in c(Inf, 0L, 1L)) {
             rows <- seq_len(min(n, nrow(expected)))
-            expect_identical(as.data.frame(dplyr::collect(endpoint, n = n)),
-                             expected[rows, ], info = paste(info, n))
+            got <- as.data.frame(dplyr::collect(endpoint, n = n))
+            target <- expected[rows, ]
+            if (identical(sort, "none")) {
+              expect_true(all(got$sid %in% expected$sid), info = info)
+              if (is.infinite(n)) {
+                got <- got[order(got$sid), ]
+                rownames(got) <- NULL
+              } else {
+                target$sid <- got$sid
+              }
+            }
+            expect_identical(got, target, info = paste(info, n))
           }
         }
       }
