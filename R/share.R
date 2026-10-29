@@ -2391,9 +2391,15 @@ execute_shares <- function(operation,
     result <- drop_margin_columns(result, unname(parent_key_names))
   }
   if (!is.null(operation$set_id_name)) {
-    result <- dplyr::mutate(
-      result,
-      "{operation$set_id_name}" := .data[[staged_set_id_name]]
+    result <- margin_safe_column_reads(
+      result, c(staged_set_id_name, operation$set_id_name),
+      function(data, safe_name) {
+        dplyr::mutate(
+          data,
+          "{safe_name(operation$set_id_name)}" :=
+            .data[[safe_name(staged_set_id_name)]]
+        )
+      }
     )
   }
   # A Margin order reads its Grouping bits from the same staged identifier, so
@@ -3175,8 +3181,9 @@ dtplyr_share_denominator <- function(value, identifier, target) {
 # Apply the shared value rules after denominator columns have been attached.
 apply_share_ratios <- function(result, pairs, sources, denominator_names,
                                own_denominator_ids, joined_ids, set_id_name) {
+  outputs <- vapply(pairs, `[[`, character(1), "output")
   margin_safe_column_reads(
-    result, sources,
+    result, c(sources, outputs),
     function(share_result, safe_name) {
       share_exprs <- lapply(pairs, function(pair) {
         source <- safe_name(pair$source)
@@ -3222,7 +3229,9 @@ apply_share_ratios <- function(result, pairs, sources, denominator_names,
           )
         )
       })
-      names(share_exprs) <- vapply(pairs, `[[`, character(1), "output")
+      names(share_exprs) <- vapply(
+        outputs, safe_name, character(1), USE.NAMES = FALSE
+      )
       dplyr::mutate(share_result, !!!share_exprs)
     }
   )
