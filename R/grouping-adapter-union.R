@@ -953,6 +953,24 @@ restore_input_window_order <- function(result, input_window_order) {
   result
 }
 
+# A reusable Arrow input whose filesystem partition guarantees cannot overwrite
+# later expansion projections. Ordering a private constant retains duplicates
+# and nested payload types without reading rows during construction (ADR 0020).
+isolate_arrow_partitions <- function(.data) {
+  if (!arrow_input_has_source(.data, "FileSystemDataset")) {
+    return(.data)
+  }
+  columns <- margin_col_names(.data)
+  key <- new_margin_internal_names(
+    1L, columns, prefix = "..marginplyr_arrow_boundary_"
+  )
+  source <- dplyr::mutate(.data, !!key := 0L)
+  # Arrow's ordering node drops partition guarantees. Keep its private key
+  # inside the collapsed relation so later branches cannot change its scope.
+  source <- dplyr::arrange(source, !!!rlang::syms(key))
+  dplyr::collapse(dplyr::select(source, dplyr::all_of(columns)))
+}
+
 # `backend` is the operation's own, and it sits among the required arguments
 # rather than after the optional one so that no positional call can reach a
 # different arrangement than the two callers write.
@@ -987,6 +1005,7 @@ expand_margin_union <- function(.data,
     # computed sort fields must stay inside their source relation (#895).
     # collapse() wraps the query without reading or materializing rows.
     .data <- dplyr::collapse(.data)
+    .data <- isolate_arrow_partitions(.data)
   }
   # An expansion branch is the input's own rows, so a column-less one standing
   # for no rows has to stay empty, and only a backend that invents a row when

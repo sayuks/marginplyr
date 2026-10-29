@@ -827,8 +827,8 @@ test_that("Arrow reader query branches retain a one-shot source", {
     total = sum(v)
   )
 
-  expect_true(arrow_input_has_reader_source(detail))
-  expect_true(arrow_input_has_reader_source(grand))
+  expect_true(arrow_input_has_source(detail, "RecordBatchReader"))
+  expect_true(arrow_input_has_source(grand, "RecordBatchReader"))
 
   first <- arrow::as_arrow_table(reader)
   second <- arrow::as_arrow_table(reader)
