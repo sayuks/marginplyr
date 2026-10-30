@@ -63,12 +63,14 @@ exempt <- data.frame(
     ".github/workflows/R-CMD-check.yaml",
     "design/agents/code-review.md",
     "design/agents/code-review.md",
+    "design/agents/local-checks.md",
     rep("tools/cran-release.md", 3L)
   ),
   path = c(
     "Meta/features.rds",
     "design/review-dispositions.md",
     "docs/agents/issue-tracker.md",
+    "focus_workspace/run-focused.R",
     "audit_root/preparation-sha.txt",
     "audit_root/attachment-invocation.txt",
     "audit_root/attachment-console.txt"
@@ -86,6 +88,10 @@ exempt <- data.frame(
     paste(
       "the left column of a table of what the skill looks for, so the row",
       "exists to say this repository has no such file"
+    ),
+    paste(
+      "The focused-test recipe generates this script in a disposable",
+      "focus_workspace outside the submitting worktree"
     ),
     rep(paste(
       "Stage 3 generates this audit record below an explicitly external",
