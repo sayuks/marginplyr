@@ -1,0 +1,5 @@
+base package_version equal values with distinct display text: upstream vctrs/dplyr/tidyr kept one two-row group.
+Wrong-membership observations=96 of 96; plain frames/tibbles x both nesting verbs x both keep settings x three sorts x grouping_set/rollup x payload/no-payload.
+NULL/NA labels, fixed-key nesting, and Margin summary controls retained one two-row detail group in every combination.
+Error: all(unlist(observed)) is not TRUE
+Execution halted

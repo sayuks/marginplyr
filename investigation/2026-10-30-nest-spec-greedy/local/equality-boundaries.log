@@ -1,0 +1,63 @@
+, , label = NA, correct = FALSE
+
+          plan
+case       fixed rollup single
+  empty        0      0      0
+  four         0      0      0
+  reversed     0      0      0
+  single       0      0      0
+  two          0      0      0
+
+, , label = NULL, correct = FALSE
+
+          plan
+case       fixed rollup single
+  empty        0      0      0
+  four         0      0      0
+  reversed     0      0      0
+  single       0      0      0
+  two          0      0      0
+
+, , label = string, correct = FALSE
+
+          plan
+case       fixed rollup single
+  empty        0      0      0
+  four         0     12     12
+  reversed     0     12     12
+  single       0      0      0
+  two          0     12     12
+
+, , label = NA, correct = TRUE
+
+          plan
+case       fixed rollup single
+  empty       12     12     12
+  four        12     12     12
+  reversed    12     12     12
+  single      12     12     12
+  two         12     12     12
+
+, , label = NULL, correct = TRUE
+
+          plan
+case       fixed rollup single
+  empty       12     12     12
+  four        12     12     12
+  reversed    12     12     12
+  single      12     12     12
+  two         12     12     12
+
+, , label = string, correct = TRUE
+
+          plan
+case       fixed rollup single
+  empty       12     12     12
+  four        12      0      0
+  reversed    12      0      0
+  single      12     12     12
+  two         12      0      0
+
+calls: 540 faithful memberships: 468 incorrect memberships: 72
+Grand total membership controls: 180
+PASS: dated defect/control observation assertions; no fix applied

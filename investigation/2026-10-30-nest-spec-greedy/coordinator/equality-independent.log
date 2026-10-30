@@ -1,0 +1,45 @@
+# A tibble: 1 × 2
+           g rows
+  <hnt_bckt> <list>
+1        1.1 <int [2]>
+# A tibble: 3 × 3
+  g       set data
+  <chr> <int> <list>
+1 1.1       1 <tibble [1 × 1]>
+2 1.2       1 <tibble [1 × 1]>
+3 Total     2 <tibble [2 × 1]>
+[[1]]
+[1] 1
+
+[[2]]
+[1] 2
+
+[[3]]
+[1] 1 2
+
+# A tibble: 2 × 2
+  g         n
+  <chr> <int>
+1 1.1       2
+2 Total     2
+# A tibble: 3 × 3
+# Rowwise:  g, set
+  g       set data
+  <chr> <int> <list>
+1 1.1       1 <tibble [1 × 1]>
+2 1.2       1 <tibble [1 × 1]>
+3 Total     2 <tibble [2 × 1]>
+[[1]]
+[1] 1
+
+[[2]]
+[1] 2
+
+[[3]]
+[1] 1 2
+
+# A tibble: 2 × 2
+  g         n
+  <chr> <int>
+1 1.1       2
+2 Total     2

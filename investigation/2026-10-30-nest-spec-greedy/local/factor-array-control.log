@@ -1,0 +1,3 @@
+upstream_group : expressionStackOverflowError : evaluation nested too deeply: infinite recursion / options(expressions=)?
+upstream_vctrs : expressionStackOverflowError : evaluation nested too deeply: infinite recursion / options(expressions=)?
+nest : expressionStackOverflowError : evaluation nested too deeply: infinite recursion / options(expressions=)?

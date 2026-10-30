@@ -1,0 +1,2 @@
+nest_with_margins : included-only and upstream nesting passed; rollup reproduced existing #1071: Can't combine `..1$g` <table[1d]> and `..2$g` <integer>.
+nest_by_with_margins : included-only and upstream nesting passed; rollup reproduced existing #1071: Can't combine `..1$g` <table[1d]> and `..2$g` <integer>.

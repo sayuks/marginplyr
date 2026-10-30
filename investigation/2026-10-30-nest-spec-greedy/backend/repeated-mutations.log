@@ -1,0 +1,105 @@
+WARNING CASE 5 SIZE 5
+$z
+NULL
+
+$p
+g
+
+SOURCE WARNINGS Tried to assign NULL to column 'z', but this column does not exist to remove
+METADATA WARNINGS Tried to assign NULL to column 'z', but this column does not exist to remove
+# A tibble: 1 × 6
+  set_id fixed     included  omitted   grouping_bits grouping_id
+   <int> <list>    <list>    <list>    <list>              <int>
+1      1 <chr [2]> <chr [0]> <chr [0]> <int [0]>               0
+WARNING CASE 24 SIZE 0
+$k
+NULL
+
+$v
+g
+
+$p
+p
+
+SOURCE WARNINGS Tried to assign NULL to column 'k', but this column does not exist to remove
+METADATA WARNINGS Tried to assign NULL to column 'k', but this column does not exist to remove
+# A tibble: 1 × 6
+  set_id fixed     included  omitted   grouping_bits grouping_id
+   <int> <list>    <list>    <list>    <list>              <int>
+1      1 <chr [2]> <chr [0]> <chr [0]> <int [0]>               0
+WARNING CASE 207 SIZE 0
+$k
+NULL
+
+$w
+NULL
+
+SOURCE WARNINGS Tried to assign NULL to column 'k', but this column does not exist to remove | Tried to assign NULL to column 'w', but this column does not exist to remove
+METADATA WARNINGS Tried to assign NULL to column 'k', but this column does not exist to remove | Tried to assign NULL to column 'w', but this column does not exist to remove
+# A tibble: 1 × 6
+  set_id fixed     included  omitted   grouping_bits grouping_id
+   <int> <list>    <list>    <list>    <list>              <int>
+1      1 <chr [1]> <chr [0]> <chr [0]> <int [0]>               0
+WARNING CASE 332 SIZE 0
+$v
+NULL
+
+$k
+NULL
+
+SOURCE WARNINGS Tried to assign NULL to column 'k', but this column does not exist to remove
+METADATA WARNINGS Tried to assign NULL to column 'k', but this column does not exist to remove
+# A tibble: 1 × 6
+  set_id fixed     included  omitted   grouping_bits grouping_id
+   <int> <list>    <list>    <list>    <list>              <int>
+1      1 <chr [1]> <chr [0]> <chr [0]> <int [0]>               0
+WARNING CASE 359 SIZE 0
+$k
+NULL
+
+$z
+v
+
+SOURCE WARNINGS Tried to assign NULL to column 'k', but this column does not exist to remove
+METADATA WARNINGS Tried to assign NULL to column 'k', but this column does not exist to remove
+# A tibble: 1 × 6
+  set_id fixed     included  omitted   grouping_bits grouping_id
+   <int> <list>    <list>    <list>    <list>              <int>
+1      1 <chr [1]> <chr [0]> <chr [0]> <int [0]>               0
+WARNING CASE 459 SIZE 5
+$w
+p
+
+$z
+NULL
+
+SOURCE WARNINGS Tried to assign NULL to column 'z', but this column does not exist to remove
+METADATA WARNINGS Tried to assign NULL to column 'z', but this column does not exist to remove
+# A tibble: 1 × 6
+  set_id fixed     included  omitted   grouping_bits grouping_id
+   <int> <list>    <list>    <list>    <list>              <int>
+1      1 <chr [1]> <chr [0]> <chr [0]> <int [0]>               0
+WARNING CASE 512 SIZE 5
+$z
+v
+
+$w
+NULL
+
+$k
+v * 1
+
+SOURCE WARNINGS Tried to assign NULL to column 'w', but this column does not exist to remove
+METADATA WARNINGS Tried to assign NULL to column 'w', but this column does not exist to remove
+# A tibble: 1 × 6
+  set_id fixed     included  omitted   grouping_bits grouping_id
+   <int> <list>    <list>    <list>    <list>              <int>
+1      1 <chr [1]> <chr [0]> <chr [0]> <int [0]>               0
+                       cases              upstream_errors
+                         542                          252
+              typed_refusals                typed_matches
+                         114                          176
+            typed_mismatches            metadata_warnings
+                           0                            8
+additional_metadata_warnings             source_mutations
+                           0                            0

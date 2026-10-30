@@ -1,0 +1,6 @@
+             graphs     upstream_errors   upstream_warnings       typed_matches
+                819                   0                   0                 450
+     typed_refusals    typed_mismatches        nest_matches       nest_refusals
+                369                   0                1800                1476
+    nest_mismatches    source_mutations unexpected_warnings
+                  0                   0                   0
