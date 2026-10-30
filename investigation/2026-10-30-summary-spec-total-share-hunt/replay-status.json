@@ -1,0 +1,127 @@
+{
+  "investigated": "2026-10-30",
+  "snapshot": "28c449aa03fd5289916f0673e41c848cc126999e",
+  "working_directory": "repository root",
+  "runs": [
+    {
+      "script": "grouping-oracle.R",
+      "arguments": [],
+      "exit_code": 0,
+      "result": "6000 comparisons"
+    },
+    {
+      "script": "grouping-boundaries.R",
+      "arguments": [],
+      "exit_code": 0,
+      "result": "1118 assertions"
+    },
+    {
+      "script": "ordinary-expression-sweep.R",
+      "arguments": [],
+      "exit_code": 0,
+      "result": "272 comparisons; 8 intentional capture differences"
+    },
+    {
+      "script": "shape-differential.R",
+      "arguments": [],
+      "exit_code": 0,
+      "result": "722 comparisons; 0 unexplained differences"
+    },
+    {
+      "script": "backend-one-set.R",
+      "arguments": [],
+      "exit_code": 0,
+      "result": "1170 comparisons; 33 documented absorption refusals; 0 unexplained differences"
+    },
+    {
+      "script": "no-summary-id.R",
+      "arguments": [],
+      "exit_code": 0,
+      "result": "80 comparisons"
+    },
+    {
+      "script": "duplicate-oracle.R",
+      "arguments": [],
+      "exit_code": 0,
+      "result": "2560 complete summaries"
+    },
+    {
+      "script": "name-sweep.R",
+      "arguments": [],
+      "exit_code": 0,
+      "result": "266 ratio checks; 4 ordinary name refusals"
+    },
+    {
+      "script": "measure-sweep.R",
+      "arguments": [],
+      "exit_code": 0,
+      "result": "168 paired cases"
+    },
+    {
+      "script": "missing-keys.R",
+      "arguments": [],
+      "exit_code": 0,
+      "result": "missing-safe key controls"
+    },
+    {
+      "script": "name-controls.R",
+      "arguments": [],
+      "exit_code": 0,
+      "result": "ordinary unsupported-name controls"
+    },
+    {
+      "script": "selection-scope.R",
+      "arguments": [],
+      "exit_code": 0,
+      "result": "F1 report"
+    },
+    {
+      "script": "selection-scope-coverage.R",
+      "arguments": [],
+      "exit_code": 0,
+      "result": "180 cases; 120 divergences and 60 matching controls"
+    },
+    {
+      "script": "arrow-warning-reproduction.R",
+      "arguments": [],
+      "exit_code": 0,
+      "result": "36 false refusals and successful controls"
+    },
+    {
+      "script": "independent-local-selection.R",
+      "arguments": [],
+      "exit_code": 0,
+      "result": "independent F1 confirmation"
+    },
+    {
+      "script": "complex-union-control.R",
+      "arguments": [],
+      "exit_code": 0,
+      "result": "matched ordinary and Margin backend refusals"
+    },
+    {
+      "script": "selection-scope.R",
+      "arguments": [
+        "--assert"
+      ],
+      "exit_code": 1,
+      "result": "Intentional failure of desired-behavior assertion; no fix applied"
+    },
+    {
+      "script": "arrow-warning-reproduction.R",
+      "arguments": [
+        "--assert"
+      ],
+      "exit_code": 1,
+      "result": "Intentional failure of desired-behavior assertion; no fix applied"
+    }
+  ],
+  "baseline_checks": [
+    {
+      "command": "Rscript .github/scripts/verify-doc-references.R",
+      "working_directory": "unchanged main worktree",
+      "exit_code": 1,
+      "existing_issue": 1074
+    }
+  ]
+}

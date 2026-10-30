@@ -1,0 +1,13 @@
+local fixed "..." ERR Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * "..." at location 1.
+dtplyr source "..." ERR Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * "..." at location 1.
+dtplyr output "..." ERR Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * "..." at location 1.
+dtplyr fixed "..." ERR Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * "..." at location 1.
+PASS 266 ratio checks; 4 documented upstream-name refusals

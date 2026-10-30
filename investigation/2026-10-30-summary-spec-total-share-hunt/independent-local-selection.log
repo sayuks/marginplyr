@@ -1,0 +1,66 @@
+across ordinary
+# A tibble: 2 × 2
+  g         x
+  <chr> <int>
+1 a         3
+2 b         3
+across margin
+# A tibble: 2 × 2
+  g         y
+  <chr> <dbl>
+1 a        11
+2 b         7
+across equal: FALSE
+# A tibble: 2 × 2
+  g         x
+  <chr> <int>
+1 a         3
+2 b         3
+# A tibble: 2 × 2
+  g         y
+  <chr> <dbl>
+1 a        11
+2 b         7
+pick equal: FALSE
+# A tibble: 2 × 2
+  g     value
+  <chr> <int>
+1 a         3
+2 b         3
+# A tibble: 2 × 2
+  g     value
+  <chr> <dbl>
+1 a        11
+2 b         7
+if_any equal: FALSE
+# A tibble: 2 × 2
+  g     value
+  <chr> <lgl>
+1 a     FALSE
+2 b     FALSE
+# A tibble: 2 × 2
+  g     value
+  <chr> <lgl>
+1 a     TRUE
+2 b     TRUE
+if_all equal: FALSE
+# A tibble: 2 × 2
+  g     value
+  <chr> <lgl>
+1 a     FALSE
+2 b     FALSE
+# A tibble: 2 × 2
+  g     value
+  <chr> <lgl>
+1 a     TRUE
+2 b     TRUE
+No outer cols binding
+ℹ In argument: `(function(cols) dplyr::across(dplyr::all_of(cols),
+  sum))("x")`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found

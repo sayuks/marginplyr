@@ -1,0 +1,661 @@
+data.frame fixed none absent across MATCH FALSE ℹ In argument: `out = (function(cols) dplyr::across(dplyr::all_of(cols),
+  sum))("x")`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.frame fixed none absent pick MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(unlist(dplyr::pick(dplyr::all_of(cols)))))("x")`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.frame fixed none absent if_any MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(dplyr::if_any(dplyr::all_of(cols), ~.x > ...`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.frame fixed none absent if_all MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(dplyr::if_all(dplyr::all_of(cols), ~.x > ...`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.frame fixed none x across MATCH TRUE nrow 2 out_names x
+data.frame fixed none x pick MATCH TRUE nrow 2 out_names
+data.frame fixed none x if_any MATCH TRUE nrow 2 out_names
+data.frame fixed none x if_all MATCH TRUE nrow 2 out_names
+data.frame fixed none y across MATCH FALSE nrow 2 out_names y
+data.frame fixed none y pick MATCH FALSE nrow 2 out_names
+data.frame fixed none y if_any MATCH FALSE nrow 2 out_names
+data.frame fixed none y if_all MATCH FALSE nrow 2 out_names
+data.frame fixed total absent across MATCH FALSE ℹ In argument: `out = (function(cols) dplyr::across(dplyr::all_of(cols),
+  sum))("x")`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.frame fixed total absent pick MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(unlist(dplyr::pick(dplyr::all_of(cols)))))("x")`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.frame fixed total absent if_any MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(dplyr::if_any(dplyr::all_of(cols), ~.x > ...`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.frame fixed total absent if_all MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(dplyr::if_all(dplyr::all_of(cols), ~.x > ...`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.frame fixed total x across MATCH TRUE nrow 2 out_names x
+data.frame fixed total x pick MATCH TRUE nrow 2 out_names
+data.frame fixed total x if_any MATCH TRUE nrow 2 out_names
+data.frame fixed total x if_all MATCH TRUE nrow 2 out_names
+data.frame fixed total y across MATCH FALSE nrow 2 out_names y
+data.frame fixed total y pick MATCH FALSE nrow 2 out_names
+data.frame fixed total y if_any MATCH FALSE nrow 2 out_names
+data.frame fixed total y if_all MATCH FALSE nrow 2 out_names
+data.frame rollup none absent across MATCH FALSE ℹ In argument: `out = (function(cols) dplyr::across(dplyr::all_of(cols),
+  sum))("x")`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.frame rollup none absent pick MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(unlist(dplyr::pick(dplyr::all_of(cols)))))("x")`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.frame rollup none absent if_any MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(dplyr::if_any(dplyr::all_of(cols), ~.x > ...`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.frame rollup none absent if_all MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(dplyr::if_all(dplyr::all_of(cols), ~.x > ...`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.frame rollup none x across MATCH TRUE nrow 3 out_names x
+data.frame rollup none x pick MATCH TRUE nrow 3 out_names
+data.frame rollup none x if_any MATCH TRUE nrow 3 out_names
+data.frame rollup none x if_all MATCH TRUE nrow 3 out_names
+data.frame rollup none y across MATCH FALSE nrow 3 out_names y
+data.frame rollup none y pick MATCH FALSE nrow 3 out_names
+data.frame rollup none y if_any MATCH FALSE nrow 3 out_names
+data.frame rollup none y if_all MATCH FALSE nrow 3 out_names
+data.frame rollup total absent across MATCH FALSE ℹ In argument: `out = (function(cols) dplyr::across(dplyr::all_of(cols),
+  sum))("x")`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.frame rollup total absent pick MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(unlist(dplyr::pick(dplyr::all_of(cols)))))("x")`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.frame rollup total absent if_any MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(dplyr::if_any(dplyr::all_of(cols), ~.x > ...`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.frame rollup total absent if_all MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(dplyr::if_all(dplyr::all_of(cols), ~.x > ...`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.frame rollup total x across MATCH TRUE nrow 3 out_names x
+data.frame rollup total x pick MATCH TRUE nrow 3 out_names
+data.frame rollup total x if_any MATCH TRUE nrow 3 out_names
+data.frame rollup total x if_all MATCH TRUE nrow 3 out_names
+data.frame rollup total y across MATCH FALSE nrow 3 out_names y
+data.frame rollup total y pick MATCH FALSE nrow 3 out_names
+data.frame rollup total y if_any MATCH FALSE nrow 3 out_names
+data.frame rollup total y if_all MATCH FALSE nrow 3 out_names
+data.frame rollup parent absent across MATCH FALSE ℹ In argument: `out = (function(cols) dplyr::across(dplyr::all_of(cols),
+  sum))("x")`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.frame rollup parent absent pick MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(unlist(dplyr::pick(dplyr::all_of(cols)))))("x")`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.frame rollup parent absent if_any MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(dplyr::if_any(dplyr::all_of(cols), ~.x > ...`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.frame rollup parent absent if_all MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(dplyr::if_all(dplyr::all_of(cols), ~.x > ...`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.frame rollup parent x across MATCH TRUE nrow 3 out_names x
+data.frame rollup parent x pick MATCH TRUE nrow 3 out_names
+data.frame rollup parent x if_any MATCH TRUE nrow 3 out_names
+data.frame rollup parent x if_all MATCH TRUE nrow 3 out_names
+data.frame rollup parent y across MATCH FALSE nrow 3 out_names y
+data.frame rollup parent y pick MATCH FALSE nrow 3 out_names
+data.frame rollup parent y if_any MATCH FALSE nrow 3 out_names
+data.frame rollup parent y if_all MATCH FALSE nrow 3 out_names
+tibble fixed none absent across MATCH FALSE ℹ In argument: `out = (function(cols) dplyr::across(dplyr::all_of(cols),
+  sum))("x")`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+tibble fixed none absent pick MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(unlist(dplyr::pick(dplyr::all_of(cols)))))("x")`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+tibble fixed none absent if_any MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(dplyr::if_any(dplyr::all_of(cols), ~.x > ...`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+tibble fixed none absent if_all MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(dplyr::if_all(dplyr::all_of(cols), ~.x > ...`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+tibble fixed none x across MATCH TRUE nrow 2 out_names x
+tibble fixed none x pick MATCH TRUE nrow 2 out_names
+tibble fixed none x if_any MATCH TRUE nrow 2 out_names
+tibble fixed none x if_all MATCH TRUE nrow 2 out_names
+tibble fixed none y across MATCH FALSE nrow 2 out_names y
+tibble fixed none y pick MATCH FALSE nrow 2 out_names
+tibble fixed none y if_any MATCH FALSE nrow 2 out_names
+tibble fixed none y if_all MATCH FALSE nrow 2 out_names
+tibble fixed total absent across MATCH FALSE ℹ In argument: `out = (function(cols) dplyr::across(dplyr::all_of(cols),
+  sum))("x")`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+tibble fixed total absent pick MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(unlist(dplyr::pick(dplyr::all_of(cols)))))("x")`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+tibble fixed total absent if_any MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(dplyr::if_any(dplyr::all_of(cols), ~.x > ...`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+tibble fixed total absent if_all MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(dplyr::if_all(dplyr::all_of(cols), ~.x > ...`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+tibble fixed total x across MATCH TRUE nrow 2 out_names x
+tibble fixed total x pick MATCH TRUE nrow 2 out_names
+tibble fixed total x if_any MATCH TRUE nrow 2 out_names
+tibble fixed total x if_all MATCH TRUE nrow 2 out_names
+tibble fixed total y across MATCH FALSE nrow 2 out_names y
+tibble fixed total y pick MATCH FALSE nrow 2 out_names
+tibble fixed total y if_any MATCH FALSE nrow 2 out_names
+tibble fixed total y if_all MATCH FALSE nrow 2 out_names
+tibble rollup none absent across MATCH FALSE ℹ In argument: `out = (function(cols) dplyr::across(dplyr::all_of(cols),
+  sum))("x")`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+tibble rollup none absent pick MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(unlist(dplyr::pick(dplyr::all_of(cols)))))("x")`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+tibble rollup none absent if_any MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(dplyr::if_any(dplyr::all_of(cols), ~.x > ...`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+tibble rollup none absent if_all MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(dplyr::if_all(dplyr::all_of(cols), ~.x > ...`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+tibble rollup none x across MATCH TRUE nrow 3 out_names x
+tibble rollup none x pick MATCH TRUE nrow 3 out_names
+tibble rollup none x if_any MATCH TRUE nrow 3 out_names
+tibble rollup none x if_all MATCH TRUE nrow 3 out_names
+tibble rollup none y across MATCH FALSE nrow 3 out_names y
+tibble rollup none y pick MATCH FALSE nrow 3 out_names
+tibble rollup none y if_any MATCH FALSE nrow 3 out_names
+tibble rollup none y if_all MATCH FALSE nrow 3 out_names
+tibble rollup total absent across MATCH FALSE ℹ In argument: `out = (function(cols) dplyr::across(dplyr::all_of(cols),
+  sum))("x")`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+tibble rollup total absent pick MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(unlist(dplyr::pick(dplyr::all_of(cols)))))("x")`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+tibble rollup total absent if_any MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(dplyr::if_any(dplyr::all_of(cols), ~.x > ...`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+tibble rollup total absent if_all MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(dplyr::if_all(dplyr::all_of(cols), ~.x > ...`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+tibble rollup total x across MATCH TRUE nrow 3 out_names x
+tibble rollup total x pick MATCH TRUE nrow 3 out_names
+tibble rollup total x if_any MATCH TRUE nrow 3 out_names
+tibble rollup total x if_all MATCH TRUE nrow 3 out_names
+tibble rollup total y across MATCH FALSE nrow 3 out_names y
+tibble rollup total y pick MATCH FALSE nrow 3 out_names
+tibble rollup total y if_any MATCH FALSE nrow 3 out_names
+tibble rollup total y if_all MATCH FALSE nrow 3 out_names
+tibble rollup parent absent across MATCH FALSE ℹ In argument: `out = (function(cols) dplyr::across(dplyr::all_of(cols),
+  sum))("x")`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+tibble rollup parent absent pick MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(unlist(dplyr::pick(dplyr::all_of(cols)))))("x")`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+tibble rollup parent absent if_any MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(dplyr::if_any(dplyr::all_of(cols), ~.x > ...`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+tibble rollup parent absent if_all MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(dplyr::if_all(dplyr::all_of(cols), ~.x > ...`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+tibble rollup parent x across MATCH TRUE nrow 3 out_names x
+tibble rollup parent x pick MATCH TRUE nrow 3 out_names
+tibble rollup parent x if_any MATCH TRUE nrow 3 out_names
+tibble rollup parent x if_all MATCH TRUE nrow 3 out_names
+tibble rollup parent y across MATCH FALSE nrow 3 out_names y
+tibble rollup parent y pick MATCH FALSE nrow 3 out_names
+tibble rollup parent y if_any MATCH FALSE nrow 3 out_names
+tibble rollup parent y if_all MATCH FALSE nrow 3 out_names
+data.table fixed none absent across MATCH FALSE ℹ In argument: `out = (function(cols) dplyr::across(dplyr::all_of(cols),
+  sum))("x")`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.table fixed none absent pick MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(unlist(dplyr::pick(dplyr::all_of(cols)))))("x")`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.table fixed none absent if_any MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(dplyr::if_any(dplyr::all_of(cols), ~.x > ...`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.table fixed none absent if_all MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(dplyr::if_all(dplyr::all_of(cols), ~.x > ...`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.table fixed none x across MATCH TRUE nrow 2 out_names x
+data.table fixed none x pick MATCH TRUE nrow 2 out_names
+data.table fixed none x if_any MATCH TRUE nrow 2 out_names
+data.table fixed none x if_all MATCH TRUE nrow 2 out_names
+data.table fixed none y across MATCH FALSE nrow 2 out_names y
+data.table fixed none y pick MATCH FALSE nrow 2 out_names
+data.table fixed none y if_any MATCH FALSE nrow 2 out_names
+data.table fixed none y if_all MATCH FALSE nrow 2 out_names
+data.table fixed total absent across MATCH FALSE ℹ In argument: `out = (function(cols) dplyr::across(dplyr::all_of(cols),
+  sum))("x")`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.table fixed total absent pick MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(unlist(dplyr::pick(dplyr::all_of(cols)))))("x")`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.table fixed total absent if_any MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(dplyr::if_any(dplyr::all_of(cols), ~.x > ...`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.table fixed total absent if_all MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(dplyr::if_all(dplyr::all_of(cols), ~.x > ...`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.table fixed total x across MATCH TRUE nrow 2 out_names x
+data.table fixed total x pick MATCH TRUE nrow 2 out_names
+data.table fixed total x if_any MATCH TRUE nrow 2 out_names
+data.table fixed total x if_all MATCH TRUE nrow 2 out_names
+data.table fixed total y across MATCH FALSE nrow 2 out_names y
+data.table fixed total y pick MATCH FALSE nrow 2 out_names
+data.table fixed total y if_any MATCH FALSE nrow 2 out_names
+data.table fixed total y if_all MATCH FALSE nrow 2 out_names
+data.table rollup none absent across MATCH FALSE ℹ In argument: `out = (function(cols) dplyr::across(dplyr::all_of(cols),
+  sum))("x")`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.table rollup none absent pick MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(unlist(dplyr::pick(dplyr::all_of(cols)))))("x")`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.table rollup none absent if_any MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(dplyr::if_any(dplyr::all_of(cols), ~.x > ...`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.table rollup none absent if_all MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(dplyr::if_all(dplyr::all_of(cols), ~.x > ...`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.table rollup none x across MATCH TRUE nrow 3 out_names x
+data.table rollup none x pick MATCH TRUE nrow 3 out_names
+data.table rollup none x if_any MATCH TRUE nrow 3 out_names
+data.table rollup none x if_all MATCH TRUE nrow 3 out_names
+data.table rollup none y across MATCH FALSE nrow 3 out_names y
+data.table rollup none y pick MATCH FALSE nrow 3 out_names
+data.table rollup none y if_any MATCH FALSE nrow 3 out_names
+data.table rollup none y if_all MATCH FALSE nrow 3 out_names
+data.table rollup total absent across MATCH FALSE ℹ In argument: `out = (function(cols) dplyr::across(dplyr::all_of(cols),
+  sum))("x")`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.table rollup total absent pick MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(unlist(dplyr::pick(dplyr::all_of(cols)))))("x")`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.table rollup total absent if_any MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(dplyr::if_any(dplyr::all_of(cols), ~.x > ...`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.table rollup total absent if_all MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(dplyr::if_all(dplyr::all_of(cols), ~.x > ...`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.table rollup total x across MATCH TRUE nrow 3 out_names x
+data.table rollup total x pick MATCH TRUE nrow 3 out_names
+data.table rollup total x if_any MATCH TRUE nrow 3 out_names
+data.table rollup total x if_all MATCH TRUE nrow 3 out_names
+data.table rollup total y across MATCH FALSE nrow 3 out_names y
+data.table rollup total y pick MATCH FALSE nrow 3 out_names
+data.table rollup total y if_any MATCH FALSE nrow 3 out_names
+data.table rollup total y if_all MATCH FALSE nrow 3 out_names
+data.table rollup parent absent across MATCH FALSE ℹ In argument: `out = (function(cols) dplyr::across(dplyr::all_of(cols),
+  sum))("x")`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.table rollup parent absent pick MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(unlist(dplyr::pick(dplyr::all_of(cols)))))("x")`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.table rollup parent absent if_any MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(dplyr::if_any(dplyr::all_of(cols), ~.x > ...`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.table rollup parent absent if_all MATCH FALSE ℹ In argument: `out = (function(cols)
+  sum(dplyr::if_all(dplyr::all_of(cols), ~.x > ...`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-spec-total-share-20261030/R/summary-selections.R:1278:3:
+ℹ In argument: `dplyr::all_of(cols)`.
+Caused by error:
+! object 'cols' not found
+data.table rollup parent x across MATCH TRUE nrow 3 out_names x
+data.table rollup parent x pick MATCH TRUE nrow 3 out_names
+data.table rollup parent x if_any MATCH TRUE nrow 3 out_names
+data.table rollup parent x if_all MATCH TRUE nrow 3 out_names
+data.table rollup parent y across MATCH FALSE nrow 3 out_names y
+data.table rollup parent y pick MATCH FALSE nrow 3 out_names
+data.table rollup parent y if_any MATCH FALSE nrow 3 out_names
+data.table rollup parent y if_all MATCH FALSE nrow 3 out_names
+CASES 180 CONFIRMED_DIVERGENCES 120 MATCHING_BINDING_CONTROLS 60
