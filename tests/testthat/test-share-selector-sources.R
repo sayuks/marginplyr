@@ -236,3 +236,29 @@ test_that("tracking across outputs preserves inherited naming bindings", {
   expect_equal(result$source, c(1, 3, 4))
   expect_identical(result$share, c(0.25, 0.75, 1))
 })
+
+test_that("omitted across columns retain independent share sources", {
+  # dplyr still accepts this deprecated spelling of an all-column selection.
+  withr::local_options(lifecycle_verbosity = "quiet")
+  data <- data.frame(g = c("a", "b"), value = c(1, 3))
+  for (kind in c("parent", "total")) {
+    helper <- rlang::call2(paste0("share_of_", kind), quote(value_sum))
+    result <- summarize_with_margins(
+      data,
+      dplyr::across(.fns = sum, .names = "{.col}_sum"),
+      fraction = !!helper,
+      .grouping = rollup(g)
+    )
+    expect_equal(result$value_sum, c(1, 3, 4))
+    expect_equal(result$fraction, c(0.25, 0.75, 1))
+    lazy <- summarize_with_margins(
+      dbplyr::tbl_lazy(data),
+      dplyr::across(.fns = sum, .names = "{.col}_sum"),
+      fraction = !!helper,
+      .grouping = rollup(g),
+      .check_share_source = FALSE
+    )
+    expect_s3_class(lazy, "tbl_lazy")
+    expect_match(as.character(dbplyr::sql_render(lazy)), 'SUM("value")', fixed = TRUE)
+  }
+})

@@ -3,6 +3,8 @@ test_that("nested removal exposes both forbidden share dependencies", {
   original <- data
   removals <- alist(
     identity(rm(prior)),
+    identity((rm(prior))),
+    identity(((remove(prior)))),
     if (sum(x) > 0) remove(prior),
     eval(quote(rm(prior))),
     evalq(remove(prior)),
