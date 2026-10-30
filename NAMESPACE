@@ -10,6 +10,8 @@ S3method(reconstruct_factor,data.frame)
 S3method(reconstruct_factor,dtplyr_step)
 S3method(reconstruct_factor,tbl_duckdb_connection)
 S3method(sql_build,lazy_grouping_sets_query)
+S3method(vctrs::vec_cast,margin_summary.margin_summary)
+S3method(vctrs::vec_ptype2,margin_summary.margin_summary)
 export(cube)
 export(expand_with_margins)
 export(grouping_bit)
@@ -29,4 +31,8 @@ export(summarize_with_margins)
 importFrom(dbplyr,
   op_vars,
   sql_build
+)
+importFrom(vctrs,
+  vec_cast,
+  vec_ptype2
 )

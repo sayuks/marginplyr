@@ -310,8 +310,6 @@ local_assigned_summary_value <- function(value, name, group_vars,
   if (is.null(value)) {
     return(value)
   }
-  # Check original types before the scalar carrier erases their distinction
-  # from frames; vec_ptype2() keeps unspecified types unresolved (ADR 0028).
   type_state$ptype <- vctrs::vec_ptype2(
     type_state$ptype, value, x_arg = name, y_arg = name, call = NULL
   )
@@ -324,12 +322,8 @@ local_assigned_summary_value <- function(value, name, group_vars,
       names(value), group_vars, internal_names, set_id_name,
       set_id_is_internal, protected_sources
     )
-    return(value)
   }
-  vctrs::new_data_frame(
-    stats::setNames(list(value), name),
-    n = vctrs::vec_size(value)
-  )
+  new_local_summary_value(value, name)
 }
 
 # Check the names a local frame actually produced before dplyr can replace a
