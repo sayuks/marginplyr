@@ -4276,7 +4276,7 @@ call_part_symbols <- function(expr, bound, lookup = NULL) {
   reads <- character()
   for (index in seq_along(parts)) {
     reads <- c(reads, expression_data_symbols(parts[[index]], bound, lookup))
-    bound <- nested_removal_retained_bound(parts[[index]], bound)
+    bound <- nested_removal_retained_bound(parts[[index]], bound, lookup)
   }
   unique(reads)
 }
@@ -4395,13 +4395,13 @@ statement_reads_and_bound <- function(expr, bound, lookup = NULL) {
   if (!is_binding_statement(call_name, expr)) {
     return(list(
       reads = expression_data_symbols(expr, bound, lookup),
-      bound = nested_removal_retained_bound(expr, bound)
+      bound = nested_removal_retained_bound(expr, bound, lookup)
     ))
   }
   if (identical(call_name, "for")) {
     # R binds the index even for an empty sequence. The sequence runs before
     # that binding; the body runs after it and may remove it.
-    inner <- nested_removal_retained_bound(expr[[3L]], bound)
+    inner <- nested_removal_retained_bound(expr[[3L]], bound, lookup)
     if (is_name_part(expr[[2L]])) {
       inner <- unique(c(inner, rlang::as_name(expr[[2L]])))
     }
@@ -4410,11 +4410,11 @@ statement_reads_and_bound <- function(expr, bound, lookup = NULL) {
         expression_data_symbols(expr[[3L]], bound, lookup),
         expression_data_symbols(expr[[4L]], inner, lookup)
       )),
-      bound = nested_removal_retained_bound(expr[[4L]], inner)
+      bound = nested_removal_retained_bound(expr[[4L]], inner, lookup)
     ))
   }
   value <- expression_data_symbols(expr[[3L]], bound, lookup)
-  retained <- nested_removal_retained_bound(expr[[3L]], bound)
+  retained <- nested_removal_retained_bound(expr[[3L]], bound, lookup)
   if (is_name_part(expr[[2L]])) {
     return(list(
       reads = value,
@@ -4430,25 +4430,46 @@ statement_reads_and_bound <- function(expr, bound, lookup = NULL) {
     reads = unique(c(
       expression_data_symbols(expr[[2L]], bound, lookup), value
     )),
-    bound = nested_removal_retained_bound(expr[[2L]], retained)
+    bound = nested_removal_retained_bound(expr[[2L]], retained, lookup)
+  )
+}
+
+# Whether a recognized base function is the actual callee, without invoking it.
+# The caller supplies its static name; unresolved bindings prove no exemption.
+is_known_base_call <- function(expr, name, bound, lookup) {
+  namespace <- static_call_ns(expr)
+  if (!is.null(namespace)) {
+    return(identical(namespace, "base"))
+  }
+  if (is.null(lookup$env) || name %in% c(bound, lookup$rebound) ||
+        unresolved_lookup_name() %in% lookup$rebound) {
+    return(FALSE)
+  }
+  identical(
+    ordinary_function_binding(name, lookup$env),
+    get(name, envir = baseenv())
   )
 }
 
 # Lexical bindings that survive every visibly evaluated removal in this node.
 # Conditional removals may run; literal FALSE arms cannot. Function bodies and
 # default local() frames own removals; an explicit local environment may not.
-nested_removal_retained_bound <- function(expr, bound) {
+nested_removal_retained_bound <- function(expr, bound, lookup = NULL) {
+  if (rlang::is_quosure(expr)) {
+    lookup$env <- rlang::quo_get_env(expr)
+  }
   if (!rlang::is_call(expr) || length(bound) == 0L) {
     return(bound)
   }
   if (is_parenthesized(expr)) {
-    return(nested_removal_retained_bound(unparenthesized_value(expr), bound))
+    return(nested_removal_retained_bound(
+      unparenthesized_value(expr), bound, lookup
+    ))
   }
   name <- static_call_name(expr)
-  namespace <- static_call_ns(expr)
   if (identical(name, "function") ||
-        (identical(name, "local") && !"local" %in% bound &&
-           (is.null(namespace) || identical(namespace, "base")) &&
+        (identical(name, "local") &&
+           is_known_base_call(expr, name, bound, lookup) &&
            length(base_call_argument(expr, "envir")) == 0L)) {
     return(bound)
   }
@@ -4468,7 +4489,7 @@ nested_removal_retained_bound <- function(expr, bound) {
     }
   }
   for (index in seq_along(parts)) {
-    bound <- nested_removal_retained_bound(parts[[index]], bound)
+    bound <- nested_removal_retained_bound(parts[[index]], bound, lookup)
   }
   bound
 }
@@ -4635,9 +4656,11 @@ lookup_reparented_environments <- function(
   }
   if (length(target) > 0L && length(parent) > 0L) {
     parent <- unparenthesized_value(parent[[1L]])
-    namespace <- static_call_ns(parent)
-    safe_parent <- static_call_name(parent) %in% c("baseenv", "emptyenv") &&
-      (is.null(namespace) || identical(namespace, "base"))
+    parent_name <- static_call_name(parent)
+    safe_parent <- parent_name %in% c("baseenv", "emptyenv") &&
+      is_known_base_call(parent, parent_name, character(), list(
+        env = env, rebound = rebound
+      ))
     if (!safe_parent) {
       value <- lookup_environment_value(target[[1L]], character(), list(
         env = env, mask = mask, rebound = rebound
