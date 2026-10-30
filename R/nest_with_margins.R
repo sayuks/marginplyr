@@ -539,9 +539,10 @@ nest_cell_expr <- function(cell_cols, kind) {
   }
 }
 
-# Fold expanded rows into cells by public keys, set identifier, and original
-# typed dimension keys. dtplyr uses safe aliases during the fold, then restores
-# public names; private identity columns are removed from the result.
+# Fold expanded rows into cells by fixed keys, set identifier, and original
+# typed dimension keys. Displayed dimensions take one representative per cell.
+# dtplyr uses safe aliases during the fold, then restores public names;
+# private identity columns are removed from the result.
 nest_expanded_margins <- function(.data,
                                   group_cols,
                                   set_col,
@@ -590,10 +591,19 @@ nest_expanded_margins <- function(.data,
         safe_outer <- vapply(
           outer_cols, safe_name, character(1), USE.NAMES = FALSE
         )
+        display_cols <- vapply(
+          names(identity_cols),
+          function(col) safe_name(alias_name(col)),
+          character(1), USE.NAMES = FALSE
+        )
+        display_exprs <- rlang::set_names(lapply(display_cols, function(col) {
+          rlang::expr(dplyr::first(!!margin_column_pronoun(col)))
+        }), display_cols)
         result <- dplyr::summarize(
           source,
           "{.key}" := list(!!nest_cell_expr(safe_cells, kind)),
-          .by = dplyr::all_of(safe_outer)
+          !!!display_exprs,
+          .by = dplyr::all_of(setdiff(safe_outer, display_cols))
         )
 
         if (drop_set_col) {
