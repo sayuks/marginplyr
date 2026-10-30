@@ -717,7 +717,7 @@ plan_summary_expressions <- function(dots,
   group_vars <- c(plan$by, plan$dimensions)
   if (!is.null(local_data) && first_across_needs_planning(dots)) {
     return(plan_first_local_across(
-      dots, local_data, data_vars, group_vars, plan$sets[[1L]],
+      dots, local_data, data_vars, group_vars, plan$sets[[1L]], call,
       planner = function(resolved) {
         plan_summary_expressions(
           resolved, data_proxy, data_vars, plan, backend_kind,
@@ -973,7 +973,7 @@ first_across_needs_planning <- function(dots) {
 # receives local columns. Independent summaries resume their original selector
 # in later branches, while share sources retain their planned schema.
 plan_first_local_across <- function(dots, data, data_vars, group_vars,
-                                    first_set, planner) {
+                                    first_set, call, planner) {
   original <- dots[[1L]]
   expr <- rlang::quo_get_expr(original)
   env <- rlang::quo_get_env(original)
@@ -1013,14 +1013,23 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
       state$error <- cnd
       NULL
     })
+    if (!is.null(state$error) && state$selecting) stop(state$error)
     character()
   }
-  dplyr::summarise(
-    carrier, dplyr::across(dplyr::all_of(resolve()), identity),
-    .by = dplyr::all_of(first_set)
+  probe <- rlang::quo(dplyr::across(dplyr::all_of(resolve()), identity))
+  conditions <- new_branch_conditions(character(), call)
+  on.exit(report_branch_warnings(conditions), add = TRUE)
+  with_branch_conditions(
+    dplyr::summarise(carrier, !!probe, .by = dplyr::all_of(first_set)),
+    conditions, restatements = branch_argument_map(
+      list(probe), summary_argument_labels(list(original))
+    )
   )
   if (!is.null(state$error)) {
-    for (cnd in c(state$warnings, state$planning_warnings)) warning(cnd)
+    conditions$error <- state$error
+    for (cnd in c(state$warnings, state$planning_warnings)) {
+      buffer_branch_warning(cnd, conditions, character())
+    }
     stop(state$error)
   }
   for (cnd in state$planning_warnings) warning(cnd)

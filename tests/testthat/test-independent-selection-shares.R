@@ -282,6 +282,34 @@ test_that("selection shares preserve repeated selector warnings", {
   expect_match(conditionMessage(actual[[1L]]), "1 further grouping set")
 })
 
+test_that("a selector error survives warning conversion during planning", {
+  original_options <- options(warn = 2L)
+  on.exit(options(original_options), add = TRUE)
+  data <- data.frame(g = c("a", "b"), x = c(1, 3))
+  failure <- rlang::error_cnd("selector_failure", message = "selector failure")
+  calls <- 0L
+  choose <- function() {
+    calls <<- calls + 1L
+    warning("before failure")
+    stop(failure)
+  }
+  call <- quote(summarize_with_margins(
+    data, dplyr::across(dplyr::all_of(choose()), sum, .names = "unused"),
+    total = sum(x),
+    dplyr::across(dplyr::starts_with("total"), share_of_total,
+                  .names = "share"),
+    .grouping = rollup(g)
+  ))
+  error <- tryCatch(eval(call), error = identity)
+  expect_s3_class(error, "rlang_error")
+  expect_match(conditionMessage(error), "selector failure", fixed = TRUE)
+  expect_identical(error$call, call)
+  cause <- error
+  while (!is.null(cause$parent)) cause <- cause$parent
+  expect_identical(cause, failure)
+  expect_identical(calls, 1L)
+})
+
 test_that("pattern prediction respects caller bindings and explicit vars", {
   data <- data.frame(x = c(1, 3), y = c(10, 30))
   for (active in c(FALSE, TRUE)) {
