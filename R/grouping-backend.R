@@ -8,17 +8,21 @@ arrow_input_classes <- function() {
   c("arrow_dplyr_query", "Table", "RecordBatch", "Dataset")
 }
 
-# Whether an Arrow input's source graph contains a RecordBatchReader. A caller
-# holds either a direct Arrow object or the query produced by Arrow's dplyr
-# methods. Queries keep their left source in `.data` and any right sources in
-# the join and union nodes; walking all three is what prevents wrapping a
+# Whether an Arrow input's source graph contains the requested source class.
+# The caller holds a direct Arrow object or a query produced by Arrow's
+# dplyr methods. Queries keep their left source in `.data` and right sources
+# in join and union nodes; walking all three is what prevents wrapping a
 # one-shot reader in a query from bypassing the reusable-input refusal.
-arrow_input_has_reader_source <- function(.data) {
+arrow_input_has_source <- function(.data, source_class) {
   if (is.null(.data)) {
     return(FALSE)
   }
-  if (inherits(.data, "RecordBatchReader")) {
+  if (inherits(.data, source_class)) {
     return(TRUE)
+  }
+  if (inherits(.data, "UnionDataset")) {
+    return(any(vapply(.data$children, arrow_input_has_source, logical(1L),
+                      source_class = source_class)))
   }
   if (!inherits(.data, "arrow_dplyr_query")) {
     return(FALSE)
@@ -31,8 +35,9 @@ arrow_input_has_reader_source <- function(.data) {
       query[["join"]][["right_data"]],
       query[["union_all"]][["right_data"]]
     ),
-    arrow_input_has_reader_source,
-    logical(1L)
+    arrow_input_has_source,
+    logical(1L),
+    source_class = source_class
   ))
 }
 

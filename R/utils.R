@@ -324,7 +324,7 @@ assert_margin_input <- function(x) {
 assert_reusable_margin_input <- function(x) {
   # Read only from the cli template below, which codetools cannot see.
   nm <- deparse(substitute(x)) # nolint: object_usage_linter.
-  if (arrow_input_has_reader_source(x)) {
+  if (arrow_input_has_source(x, "RecordBatchReader")) {
     abort_marginplyr(c(
       paste0(
         "{.arg {nm}} must not be or depend on a ",
