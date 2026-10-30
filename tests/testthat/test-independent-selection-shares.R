@@ -330,7 +330,8 @@ test_that("selection shares preserve repeated selector warnings", {
       rlang::quos(share = share_of_total(total))
     }
     withCallingHandlers(summarize_with_margins(
-      data, dplyr::across(dplyr::all_of(choose()), factory(), .names = "unused"),
+      data, dplyr::across(dplyr::all_of(choose()), factory(),
+                          .names = "unused"),
       total = sum(x), !!!share, .grouping = rollup(g)
     ), warning = function(cnd) {
       warnings[[length(warnings) + 1L]] <<- cnd
