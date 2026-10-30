@@ -228,3 +228,134 @@ test_that("selected share sources leave absent runtime bindings to functions", {
     }
   }
 })
+
+test_that("selectors inside an across function keep their runtime scope", {
+  data <- data.frame(g = c("a", "a", "b"), x = 1:3, y = c(5, 6, 7))
+  selectors <- rlang::exprs(
+    sum(dplyr::across(dplyr::all_of(cols), identity)),
+    sum(dplyr::pick(dplyr::all_of(cols))),
+    sum(dplyr::if_any(dplyr::all_of(cols), function(x) x > 2)),
+    sum(dplyr::if_all(dplyr::all_of(cols), function(x) x > 2)),
+    sum(dplyr::across(dplyr::where(predicate), identity))
+  )
+  for (selector in selectors) {
+    for (outer in c("absent", "conflicting")) {
+      env <- rlang::env(rlang::base_env())
+      if (outer == "conflicting") {
+        env$cols <- "y"
+        env$predicate <- is.double
+      }
+      expression <- rlang::expr(dplyr::across(
+        y, (function(cols, predicate) function(z) !!selector)("x", is.integer),
+        .names = "ordinary"
+      ))
+      summary <- rlang::new_quosure(expression, env)
+      expected <- dplyr::summarise(data, !!summary, .by = g)
+      subtotal <- dplyr::summarise(data, !!summary)
+      expected_values <- c(expected$ordinary, subtotal$ordinary)
+      for (kind in c("total", "parent")) {
+        helper <- rlang::sym(paste0("share_of_", kind))
+        actual <- rlang::inject(summarize_with_margins(
+          data, !!summary, total = sum(y),
+          dplyr::across(dplyr::starts_with("total"), !!helper,
+                        .names = "share"),
+          .grouping = rollup(g), .margin_label = NULL
+        ))
+        expect_identical(actual$ordinary, expected_values,
+                         info = rlang::as_label(selector))
+        expect_equal(actual$share, c(11 / 18, 7 / 18, 1))
+      }
+    }
+  }
+})
+
+test_that("nested selectors retain across function and selection counts", {
+  data <- data.frame(g = c("a", "a", "b"), x = 1:3, y = c(5, 6, 7))
+  run <- function(mode) {
+    state <- new.env(parent = emptyenv())
+    state$selections <- integer()
+    state$factories <- integer()
+    summary <- rlang::quo(dplyr::across(
+      y, (function(cols) {
+        state$factories <- c(state$factories, dplyr::n())
+        choose_cols <- function() {
+          state$selections <- c(state$selections, dplyr::n())
+          cols
+        }
+        function(z) {
+          sum(dplyr::across(dplyr::all_of(choose_cols()), identity))
+        }
+      })("x"), .names = "ordinary"
+    ))
+    if (mode == "dplyr") {
+      detail <- dplyr::summarise(data, !!summary, .by = g)
+      subtotal <- dplyr::summarise(data, !!summary)
+      subtotal$g <- NA_character_
+      result <- dplyr::bind_rows(detail, subtotal)
+    } else {
+      result <- summarize_with_margins(
+        data, !!summary, total = sum(y),
+        dplyr::across(dplyr::starts_with("total"), share_of_total,
+                      .names = "share"),
+        .grouping = rollup(g), .margin_label = NULL
+      )
+    }
+    list(result = result, selections = state$selections,
+         factories = state$factories)
+  }
+  expected <- run("dplyr")
+  actual <- run("margin")
+  expect_identical(expected$result$ordinary, c(3L, 3L, 6L))
+  expect_equal(actual$result[names(expected$result)], expected$result)
+  expect_identical(actual$selections, expected$selections)
+  expect_identical(actual$factories, expected$factories)
+})
+
+test_that("nested selectors retain dynamically named share sources", {
+  data <- data.frame(g = c("a", "a", "b"), x = 1:3, y = c(5, 6, 7))
+  output_name <- function() "total"
+  actual <- summarize_with_margins(
+    data,
+    dplyr::across(y, function(z) sum(dplyr::pick(x)), .names = output_name()),
+    share = share_of_total(total), .grouping = rollup(g)
+  )
+  expect_identical(actual$total, c(3L, 3L, 6L))
+  expect_identical(actual$share, c(0.5, 0.5, 1))
+
+  output_name <- function() "total_extra"
+  actual <- summarize_with_margins(
+    data,
+    dplyr::across(y, function(z) sum(dplyr::pick(x)), .names = output_name()),
+    total = sum(y),
+    dplyr::across(dplyr::starts_with("total"), share_of_total,
+                  .names = "{.col}_share"),
+    .grouping = rollup(g)
+  )
+  expect_identical(actual$total_extra_share, c(0.5, 0.5, 1))
+  expect_equal(actual$total_share, c(11 / 18, 7 / 18, 1))
+})
+
+test_that("nested selectors keep injected environments and key exclusions", {
+  data <- data.frame(g = c("a", "a", "b"), x = 1:3, y = c(5, 6, 7))
+  captured <- rlang::env(rlang::current_env(), cols = "y")
+  selected <- rlang::new_quosure(quote(dplyr::all_of(cols)), captured)
+  summary <- rlang::quo(dplyr::across(
+    y, (function(cols) function(z) sum(dplyr::pick(!!selected)))("x"),
+    .names = "ordinary"
+  ))
+  actual <- summarize_with_margins(
+    data, !!summary, total = sum(x),
+    dplyr::across(dplyr::starts_with("total"), share_of_total,
+                  .names = "share"), .grouping = rollup(g)
+  )
+  expect_identical(actual$ordinary, c(11, 7, 18))
+
+  expect_error(summarize_with_margins(
+    data, dplyr::across(y, (function(cols) {
+      function(z) sum(dplyr::pick(dplyr::all_of(cols)))
+    })("g"), .names = "ordinary"),
+    total = sum(x),
+    dplyr::across(dplyr::starts_with("total"), share_of_total,
+                  .names = "share"), .grouping = rollup(g)
+  ), "doesn't exist")
+})

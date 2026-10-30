@@ -687,6 +687,17 @@ contains_summary_selection <- function(expr) {
   if (!is.null(static_spelling_name(expr, "selection"))) {
     return(TRUE)
   }
+  has_nested_summary_selection(expr)
+}
+
+# Whether a call's evaluated parts contain an ordinary selection helper.
+has_nested_summary_selection <- function(expr) {
+  if (rlang::is_quosure(expr)) {
+    return(has_nested_summary_selection(rlang::quo_get_expr(expr)))
+  }
+  if (!rlang::is_call(expr)) {
+    return(FALSE)
+  }
   any(vapply(
     searched_call_parts(expr, call_name = static_call_name(expr)),
     contains_summary_selection,
@@ -715,6 +726,7 @@ plan_summary_expressions <- function(dots,
     logical(1)
   ))
   deferred <- rep(FALSE, length(dots))
+  nested_deferred <- rep(FALSE, length(dots))
   if (defer_local) {
     independent_shares <- shares_use_named_summaries(dots)
     prior_ordinary <- FALSE
@@ -733,6 +745,10 @@ plan_summary_expressions <- function(dots,
              !(identical(selection_kind, "across") ||
                  identical(selection_kind, "pick")))
       )
+      # Share planning still needs this outer selector's output names; its
+      # nested selections wait until the per-dot execution state exists.
+      nested_deferred[[i]] <- !deferred[[i]] &&
+        has_nested_summary_selection(expr)
       prior_ordinary <- TRUE
     }
   }
@@ -760,6 +776,8 @@ plan_summary_expressions <- function(dots,
       normalize_across_names = FALSE,
       skip_shares = TRUE,
       defer_local = deferred,
+      defer_nested_local = nested_deferred,
+      skip_nested_deferred = TRUE,
       skip_deferred = TRUE,
       selection_proxy = selection_proxy
     )
@@ -809,6 +827,7 @@ plan_summary_expressions <- function(dots,
   caller_labels <- caller_labels[summary_plan$origin_positions]
   assigned_names <- named$assigned_names[summary_plan$origin_positions]
   deferred <- deferred[summary_plan$origin_positions]
+  nested_deferred <- nested_deferred[summary_plan$origin_positions]
   selection_state <- if (defer_local) new.env(parent = emptyenv()) else NULL
   if (defer_local) {
     selection_state$internal_names <- character()
@@ -890,6 +909,7 @@ plan_summary_expressions <- function(dots,
     caller_labels = caller_labels,
     normalize_across_names = identical(backend_kind, "dtplyr"),
     defer_local = deferred,
+    defer_nested_local = nested_deferred,
     forbidden_names = if (defer_local) selection_state else character(),
     selection_proxy = selection_proxy
   )
@@ -1066,13 +1086,19 @@ resolve_summary_selections <- function(dots,
                                        normalize_across_names = FALSE,
                                        skip_shares = FALSE,
                                        defer_local = FALSE,
+                                       defer_nested_local = FALSE,
                                        forbidden_names = character(),
+                                       skip_nested_deferred = FALSE,
                                        skip_deferred = FALSE) {
   stopifnot(length(dots) == length(caller_labels))
   if (length(defer_local) == 1L) {
     defer_local <- rep(defer_local, length(dots))
   }
   stopifnot(length(defer_local) == length(dots))
+  if (length(defer_nested_local) == 1L) {
+    defer_nested_local <- rep(defer_nested_local, length(dots))
+  }
+  stopifnot(length(defer_nested_local) == length(dots))
 
   lapply(
     seq_along(dots),
@@ -1103,6 +1129,8 @@ resolve_summary_selections <- function(dots,
           data_proxy = selection_proxy,
           normalize_across_names = normalize_across_names,
           defer_local = defer_local[[i]],
+          defer_nested_local = defer_nested_local[[i]],
+          skip_nested_deferred = skip_nested_deferred,
           group_vars = group_vars,
           forbidden_names = dot_forbidden_names
         ),
@@ -1124,16 +1152,16 @@ rewrite_summary_selections <- function(expr,
                                        data_proxy,
                                        normalize_across_names,
                                        defer_local = FALSE,
+                                       defer_nested_local = FALSE,
+                                       skip_nested_deferred = FALSE,
                                        group_vars = character(),
                                        forbidden_names = character()) {
   if (!rlang::is_call(expr)) {
     return(expr)
   }
 
-  # An injected quosure carries an environment of its own, and that is what
-  # injecting one is for, so a selection inside it resolves there rather than
-  # in the environment of the dot that contains it. Reading the outer one would
-  # look up a name the caller never put in it.
+  # Eager selection resolution inside a quosure uses its captured environment.
+  # Deferred local selections instead resolve in their execution scope.
   if (rlang::is_quosure(expr)) {
     env <- rlang::quo_get_env(expr)
   }
@@ -1146,12 +1174,15 @@ rewrite_summary_selections <- function(expr,
   expr <- rewrite_evaluated_call_parts(
     expr,
     function(part) {
+      if (defer_nested_local && skip_nested_deferred) {
+        return(part)
+      }
       rewrite_summary_selections(
         part,
         env = env,
         data_proxy = data_proxy,
         normalize_across_names = normalize_across_names,
-        defer_local = defer_local,
+        defer_local = defer_local || defer_nested_local,
         group_vars = group_vars,
         forbidden_names = forbidden_names
       )
