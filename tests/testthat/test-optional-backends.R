@@ -250,7 +250,9 @@ test_that("a backend job installs the package it is for and its companions", {
   # `extra-packages` from this, so a driver backend that arrived without DBI
   # would install, run nothing, and report green.
   expect_identical(suggest_job_packages("duckdb"), c("duckdb", "DBI", "bit64"))
-  expect_identical(suggest_job_packages("RSQLite"), c("RSQLite", "DBI", "bit64"))
+  expect_identical(
+    suggest_job_packages("RSQLite"), c("RSQLite", "DBI", "bit64")
+  )
   # dtplyr declares `Imports: data.table`, so the job installs it regardless;
   # naming it is what keeps `verify-library-isolation.R` from reading a
   # dependency of the requested backend as a cache leak.
