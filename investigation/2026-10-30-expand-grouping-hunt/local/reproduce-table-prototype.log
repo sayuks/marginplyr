@@ -1,0 +1,5 @@
+ordinary result: rows 4 class table shape 4
+included-only: match; ordinary grouping: accepted
+expansion: vctrs_error_ptype2 Can't combine `..1$key` <table[1d]> and `..2$key` <integer>.
+subset prototype class: integer shape:
+vec_init prototype class: table shape: 1

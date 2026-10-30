@@ -1,0 +1,21 @@
+{
+  "baseline": "28c449aa03fd5289916f0673e41c848cc126999e",
+  "runs": [
+    {
+      "command": "MARGINPLYR_HUNT_OUTPUT=/tmp Rscript investigation/2026-10-30-expand-grouping-hunt/lazy/arrow-file-types.R",
+      "exit_code": 0
+    },
+    {
+      "command": "MARGINPLYR_HUNT_OUTPUT=/tmp Rscript investigation/2026-10-30-expand-grouping-hunt/lazy/dtplyr-mutate-matrix.R",
+      "exit_code": 0
+    },
+    {
+      "command": "Rscript investigation/2026-10-30-expand-grouping-hunt/lazy/boundary-controls.R",
+      "exit_code": 0
+    },
+    {
+      "command": "jarl check investigation/2026-10-30-expand-grouping-hunt/lazy",
+      "exit_code": 0
+    }
+  ]
+}

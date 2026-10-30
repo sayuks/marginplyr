@@ -1,0 +1,8 @@
+Arrow virtual scanner name: __filename passed
+Arrow virtual scanner name: __fragment_index passed
+Arrow virtual scanner name: __batch_index passed
+Arrow virtual scanner name: __last_in_fragment passed
+dtplyr generated copy callee ignores caller's copy binding: passed
+dtplyr special alias source: ..x passed
+dtplyr special alias source: .env passed
+dtplyr special alias source: .data passed

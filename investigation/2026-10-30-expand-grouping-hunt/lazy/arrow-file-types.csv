@@ -1,0 +1,2089 @@
+"name","empty","shape","label","sort","status","actual_error","control_error"
+"null",FALSE,"parquet","null","none","pass","",""
+"null",FALSE,"parquet","null","first","pass","",""
+"null",FALSE,"parquet","null","last","pass","",""
+"null",FALSE,"parquet","na","none","pass","",""
+"null",FALSE,"parquet","na","first","pass","",""
+"null",FALSE,"parquet","na","last","pass","",""
+"null",FALSE,"parquet","text","none","pass","",""
+"null",FALSE,"parquet","text","first","pass","",""
+"null",FALSE,"parquet","text","last","pass","",""
+"null",FALSE,"ipc","null","none","pass","",""
+"null",FALSE,"ipc","null","first","pass","",""
+"null",FALSE,"ipc","null","last","pass","",""
+"null",FALSE,"ipc","na","none","pass","",""
+"null",FALSE,"ipc","na","first","pass","",""
+"null",FALSE,"ipc","na","last","pass","",""
+"null",FALSE,"ipc","text","none","pass","",""
+"null",FALSE,"ipc","text","first","pass","",""
+"null",FALSE,"ipc","text","last","pass","",""
+"null",TRUE,"parquet","null","none","pass","",""
+"null",TRUE,"parquet","null","first","pass","",""
+"null",TRUE,"parquet","null","last","pass","",""
+"null",TRUE,"parquet","na","none","pass","",""
+"null",TRUE,"parquet","na","first","pass","",""
+"null",TRUE,"parquet","na","last","pass","",""
+"null",TRUE,"parquet","text","none","pass","",""
+"null",TRUE,"parquet","text","first","pass","",""
+"null",TRUE,"parquet","text","last","pass","",""
+"null",TRUE,"ipc","null","none","pass","",""
+"null",TRUE,"ipc","null","first","pass","",""
+"null",TRUE,"ipc","null","last","pass","",""
+"null",TRUE,"ipc","na","none","pass","",""
+"null",TRUE,"ipc","na","first","pass","",""
+"null",TRUE,"ipc","na","last","pass","",""
+"null",TRUE,"ipc","text","none","pass","",""
+"null",TRUE,"ipc","text","first","pass","",""
+"null",TRUE,"ipc","text","last","pass","",""
+"bool",FALSE,"parquet","null","none","pass","",""
+"bool",FALSE,"parquet","null","first","pass","",""
+"bool",FALSE,"parquet","null","last","pass","",""
+"bool",FALSE,"parquet","na","none","pass","",""
+"bool",FALSE,"parquet","na","first","pass","",""
+"bool",FALSE,"parquet","na","last","pass","",""
+"bool",FALSE,"parquet","text","none","pass","",""
+"bool",FALSE,"parquet","text","first","pass","",""
+"bool",FALSE,"parquet","text","last","pass","",""
+"bool",FALSE,"ipc","null","none","pass","",""
+"bool",FALSE,"ipc","null","first","pass","",""
+"bool",FALSE,"ipc","null","last","pass","",""
+"bool",FALSE,"ipc","na","none","pass","",""
+"bool",FALSE,"ipc","na","first","pass","",""
+"bool",FALSE,"ipc","na","last","pass","",""
+"bool",FALSE,"ipc","text","none","pass","",""
+"bool",FALSE,"ipc","text","first","pass","",""
+"bool",FALSE,"ipc","text","last","pass","",""
+"bool",TRUE,"parquet","null","none","pass","",""
+"bool",TRUE,"parquet","null","first","pass","",""
+"bool",TRUE,"parquet","null","last","pass","",""
+"bool",TRUE,"parquet","na","none","pass","",""
+"bool",TRUE,"parquet","na","first","pass","",""
+"bool",TRUE,"parquet","na","last","pass","",""
+"bool",TRUE,"parquet","text","none","pass","",""
+"bool",TRUE,"parquet","text","first","pass","",""
+"bool",TRUE,"parquet","text","last","pass","",""
+"bool",TRUE,"ipc","null","none","pass","",""
+"bool",TRUE,"ipc","null","first","pass","",""
+"bool",TRUE,"ipc","null","last","pass","",""
+"bool",TRUE,"ipc","na","none","pass","",""
+"bool",TRUE,"ipc","na","first","pass","",""
+"bool",TRUE,"ipc","na","last","pass","",""
+"bool",TRUE,"ipc","text","none","pass","",""
+"bool",TRUE,"ipc","text","first","pass","",""
+"bool",TRUE,"ipc","text","last","pass","",""
+"int8",FALSE,"parquet","null","none","pass","",""
+"int8",FALSE,"parquet","null","first","pass","",""
+"int8",FALSE,"parquet","null","last","pass","",""
+"int8",FALSE,"parquet","na","none","pass","",""
+"int8",FALSE,"parquet","na","first","pass","",""
+"int8",FALSE,"parquet","na","last","pass","",""
+"int8",FALSE,"parquet","text","none","pass","",""
+"int8",FALSE,"parquet","text","first","pass","",""
+"int8",FALSE,"parquet","text","last","pass","",""
+"int8",FALSE,"ipc","null","none","pass","",""
+"int8",FALSE,"ipc","null","first","pass","",""
+"int8",FALSE,"ipc","null","last","pass","",""
+"int8",FALSE,"ipc","na","none","pass","",""
+"int8",FALSE,"ipc","na","first","pass","",""
+"int8",FALSE,"ipc","na","last","pass","",""
+"int8",FALSE,"ipc","text","none","pass","",""
+"int8",FALSE,"ipc","text","first","pass","",""
+"int8",FALSE,"ipc","text","last","pass","",""
+"int8",TRUE,"parquet","null","none","pass","",""
+"int8",TRUE,"parquet","null","first","pass","",""
+"int8",TRUE,"parquet","null","last","pass","",""
+"int8",TRUE,"parquet","na","none","pass","",""
+"int8",TRUE,"parquet","na","first","pass","",""
+"int8",TRUE,"parquet","na","last","pass","",""
+"int8",TRUE,"parquet","text","none","pass","",""
+"int8",TRUE,"parquet","text","first","pass","",""
+"int8",TRUE,"parquet","text","last","pass","",""
+"int8",TRUE,"ipc","null","none","pass","",""
+"int8",TRUE,"ipc","null","first","pass","",""
+"int8",TRUE,"ipc","null","last","pass","",""
+"int8",TRUE,"ipc","na","none","pass","",""
+"int8",TRUE,"ipc","na","first","pass","",""
+"int8",TRUE,"ipc","na","last","pass","",""
+"int8",TRUE,"ipc","text","none","pass","",""
+"int8",TRUE,"ipc","text","first","pass","",""
+"int8",TRUE,"ipc","text","last","pass","",""
+"int16",FALSE,"parquet","null","none","pass","",""
+"int16",FALSE,"parquet","null","first","pass","",""
+"int16",FALSE,"parquet","null","last","pass","",""
+"int16",FALSE,"parquet","na","none","pass","",""
+"int16",FALSE,"parquet","na","first","pass","",""
+"int16",FALSE,"parquet","na","last","pass","",""
+"int16",FALSE,"parquet","text","none","pass","",""
+"int16",FALSE,"parquet","text","first","pass","",""
+"int16",FALSE,"parquet","text","last","pass","",""
+"int16",FALSE,"ipc","null","none","pass","",""
+"int16",FALSE,"ipc","null","first","pass","",""
+"int16",FALSE,"ipc","null","last","pass","",""
+"int16",FALSE,"ipc","na","none","pass","",""
+"int16",FALSE,"ipc","na","first","pass","",""
+"int16",FALSE,"ipc","na","last","pass","",""
+"int16",FALSE,"ipc","text","none","pass","",""
+"int16",FALSE,"ipc","text","first","pass","",""
+"int16",FALSE,"ipc","text","last","pass","",""
+"int16",TRUE,"parquet","null","none","pass","",""
+"int16",TRUE,"parquet","null","first","pass","",""
+"int16",TRUE,"parquet","null","last","pass","",""
+"int16",TRUE,"parquet","na","none","pass","",""
+"int16",TRUE,"parquet","na","first","pass","",""
+"int16",TRUE,"parquet","na","last","pass","",""
+"int16",TRUE,"parquet","text","none","pass","",""
+"int16",TRUE,"parquet","text","first","pass","",""
+"int16",TRUE,"parquet","text","last","pass","",""
+"int16",TRUE,"ipc","null","none","pass","",""
+"int16",TRUE,"ipc","null","first","pass","",""
+"int16",TRUE,"ipc","null","last","pass","",""
+"int16",TRUE,"ipc","na","none","pass","",""
+"int16",TRUE,"ipc","na","first","pass","",""
+"int16",TRUE,"ipc","na","last","pass","",""
+"int16",TRUE,"ipc","text","none","pass","",""
+"int16",TRUE,"ipc","text","first","pass","",""
+"int16",TRUE,"ipc","text","last","pass","",""
+"int32",FALSE,"parquet","null","none","pass","",""
+"int32",FALSE,"parquet","null","first","pass","",""
+"int32",FALSE,"parquet","null","last","pass","",""
+"int32",FALSE,"parquet","na","none","pass","",""
+"int32",FALSE,"parquet","na","first","pass","",""
+"int32",FALSE,"parquet","na","last","pass","",""
+"int32",FALSE,"parquet","text","none","pass","",""
+"int32",FALSE,"parquet","text","first","pass","",""
+"int32",FALSE,"parquet","text","last","pass","",""
+"int32",FALSE,"ipc","null","none","pass","",""
+"int32",FALSE,"ipc","null","first","pass","",""
+"int32",FALSE,"ipc","null","last","pass","",""
+"int32",FALSE,"ipc","na","none","pass","",""
+"int32",FALSE,"ipc","na","first","pass","",""
+"int32",FALSE,"ipc","na","last","pass","",""
+"int32",FALSE,"ipc","text","none","pass","",""
+"int32",FALSE,"ipc","text","first","pass","",""
+"int32",FALSE,"ipc","text","last","pass","",""
+"int32",TRUE,"parquet","null","none","pass","",""
+"int32",TRUE,"parquet","null","first","pass","",""
+"int32",TRUE,"parquet","null","last","pass","",""
+"int32",TRUE,"parquet","na","none","pass","",""
+"int32",TRUE,"parquet","na","first","pass","",""
+"int32",TRUE,"parquet","na","last","pass","",""
+"int32",TRUE,"parquet","text","none","pass","",""
+"int32",TRUE,"parquet","text","first","pass","",""
+"int32",TRUE,"parquet","text","last","pass","",""
+"int32",TRUE,"ipc","null","none","pass","",""
+"int32",TRUE,"ipc","null","first","pass","",""
+"int32",TRUE,"ipc","null","last","pass","",""
+"int32",TRUE,"ipc","na","none","pass","",""
+"int32",TRUE,"ipc","na","first","pass","",""
+"int32",TRUE,"ipc","na","last","pass","",""
+"int32",TRUE,"ipc","text","none","pass","",""
+"int32",TRUE,"ipc","text","first","pass","",""
+"int32",TRUE,"ipc","text","last","pass","",""
+"int64",FALSE,"parquet","null","none","pass","",""
+"int64",FALSE,"parquet","null","first","pass","",""
+"int64",FALSE,"parquet","null","last","pass","",""
+"int64",FALSE,"parquet","na","none","pass","",""
+"int64",FALSE,"parquet","na","first","pass","",""
+"int64",FALSE,"parquet","na","last","pass","",""
+"int64",FALSE,"parquet","text","none","pass","",""
+"int64",FALSE,"parquet","text","first","pass","",""
+"int64",FALSE,"parquet","text","last","pass","",""
+"int64",FALSE,"ipc","null","none","pass","",""
+"int64",FALSE,"ipc","null","first","pass","",""
+"int64",FALSE,"ipc","null","last","pass","",""
+"int64",FALSE,"ipc","na","none","pass","",""
+"int64",FALSE,"ipc","na","first","pass","",""
+"int64",FALSE,"ipc","na","last","pass","",""
+"int64",FALSE,"ipc","text","none","pass","",""
+"int64",FALSE,"ipc","text","first","pass","",""
+"int64",FALSE,"ipc","text","last","pass","",""
+"int64",TRUE,"parquet","null","none","pass","",""
+"int64",TRUE,"parquet","null","first","pass","",""
+"int64",TRUE,"parquet","null","last","pass","",""
+"int64",TRUE,"parquet","na","none","pass","",""
+"int64",TRUE,"parquet","na","first","pass","",""
+"int64",TRUE,"parquet","na","last","pass","",""
+"int64",TRUE,"parquet","text","none","pass","",""
+"int64",TRUE,"parquet","text","first","pass","",""
+"int64",TRUE,"parquet","text","last","pass","",""
+"int64",TRUE,"ipc","null","none","pass","",""
+"int64",TRUE,"ipc","null","first","pass","",""
+"int64",TRUE,"ipc","null","last","pass","",""
+"int64",TRUE,"ipc","na","none","pass","",""
+"int64",TRUE,"ipc","na","first","pass","",""
+"int64",TRUE,"ipc","na","last","pass","",""
+"int64",TRUE,"ipc","text","none","pass","",""
+"int64",TRUE,"ipc","text","first","pass","",""
+"int64",TRUE,"ipc","text","last","pass","",""
+"uint8",FALSE,"parquet","null","none","pass","",""
+"uint8",FALSE,"parquet","null","first","pass","",""
+"uint8",FALSE,"parquet","null","last","pass","",""
+"uint8",FALSE,"parquet","na","none","pass","",""
+"uint8",FALSE,"parquet","na","first","pass","",""
+"uint8",FALSE,"parquet","na","last","pass","",""
+"uint8",FALSE,"parquet","text","none","pass","",""
+"uint8",FALSE,"parquet","text","first","pass","",""
+"uint8",FALSE,"parquet","text","last","pass","",""
+"uint8",FALSE,"ipc","null","none","pass","",""
+"uint8",FALSE,"ipc","null","first","pass","",""
+"uint8",FALSE,"ipc","null","last","pass","",""
+"uint8",FALSE,"ipc","na","none","pass","",""
+"uint8",FALSE,"ipc","na","first","pass","",""
+"uint8",FALSE,"ipc","na","last","pass","",""
+"uint8",FALSE,"ipc","text","none","pass","",""
+"uint8",FALSE,"ipc","text","first","pass","",""
+"uint8",FALSE,"ipc","text","last","pass","",""
+"uint8",TRUE,"parquet","null","none","pass","",""
+"uint8",TRUE,"parquet","null","first","pass","",""
+"uint8",TRUE,"parquet","null","last","pass","",""
+"uint8",TRUE,"parquet","na","none","pass","",""
+"uint8",TRUE,"parquet","na","first","pass","",""
+"uint8",TRUE,"parquet","na","last","pass","",""
+"uint8",TRUE,"parquet","text","none","pass","",""
+"uint8",TRUE,"parquet","text","first","pass","",""
+"uint8",TRUE,"parquet","text","last","pass","",""
+"uint8",TRUE,"ipc","null","none","pass","",""
+"uint8",TRUE,"ipc","null","first","pass","",""
+"uint8",TRUE,"ipc","null","last","pass","",""
+"uint8",TRUE,"ipc","na","none","pass","",""
+"uint8",TRUE,"ipc","na","first","pass","",""
+"uint8",TRUE,"ipc","na","last","pass","",""
+"uint8",TRUE,"ipc","text","none","pass","",""
+"uint8",TRUE,"ipc","text","first","pass","",""
+"uint8",TRUE,"ipc","text","last","pass","",""
+"uint16",FALSE,"parquet","null","none","pass","",""
+"uint16",FALSE,"parquet","null","first","pass","",""
+"uint16",FALSE,"parquet","null","last","pass","",""
+"uint16",FALSE,"parquet","na","none","pass","",""
+"uint16",FALSE,"parquet","na","first","pass","",""
+"uint16",FALSE,"parquet","na","last","pass","",""
+"uint16",FALSE,"parquet","text","none","pass","",""
+"uint16",FALSE,"parquet","text","first","pass","",""
+"uint16",FALSE,"parquet","text","last","pass","",""
+"uint16",FALSE,"ipc","null","none","pass","",""
+"uint16",FALSE,"ipc","null","first","pass","",""
+"uint16",FALSE,"ipc","null","last","pass","",""
+"uint16",FALSE,"ipc","na","none","pass","",""
+"uint16",FALSE,"ipc","na","first","pass","",""
+"uint16",FALSE,"ipc","na","last","pass","",""
+"uint16",FALSE,"ipc","text","none","pass","",""
+"uint16",FALSE,"ipc","text","first","pass","",""
+"uint16",FALSE,"ipc","text","last","pass","",""
+"uint16",TRUE,"parquet","null","none","pass","",""
+"uint16",TRUE,"parquet","null","first","pass","",""
+"uint16",TRUE,"parquet","null","last","pass","",""
+"uint16",TRUE,"parquet","na","none","pass","",""
+"uint16",TRUE,"parquet","na","first","pass","",""
+"uint16",TRUE,"parquet","na","last","pass","",""
+"uint16",TRUE,"parquet","text","none","pass","",""
+"uint16",TRUE,"parquet","text","first","pass","",""
+"uint16",TRUE,"parquet","text","last","pass","",""
+"uint16",TRUE,"ipc","null","none","pass","",""
+"uint16",TRUE,"ipc","null","first","pass","",""
+"uint16",TRUE,"ipc","null","last","pass","",""
+"uint16",TRUE,"ipc","na","none","pass","",""
+"uint16",TRUE,"ipc","na","first","pass","",""
+"uint16",TRUE,"ipc","na","last","pass","",""
+"uint16",TRUE,"ipc","text","none","pass","",""
+"uint16",TRUE,"ipc","text","first","pass","",""
+"uint16",TRUE,"ipc","text","last","pass","",""
+"uint32",FALSE,"parquet","null","none","pass","",""
+"uint32",FALSE,"parquet","null","first","pass","",""
+"uint32",FALSE,"parquet","null","last","pass","",""
+"uint32",FALSE,"parquet","na","none","pass","",""
+"uint32",FALSE,"parquet","na","first","pass","",""
+"uint32",FALSE,"parquet","na","last","pass","",""
+"uint32",FALSE,"parquet","text","none","pass","",""
+"uint32",FALSE,"parquet","text","first","pass","",""
+"uint32",FALSE,"parquet","text","last","pass","",""
+"uint32",FALSE,"ipc","null","none","pass","",""
+"uint32",FALSE,"ipc","null","first","pass","",""
+"uint32",FALSE,"ipc","null","last","pass","",""
+"uint32",FALSE,"ipc","na","none","pass","",""
+"uint32",FALSE,"ipc","na","first","pass","",""
+"uint32",FALSE,"ipc","na","last","pass","",""
+"uint32",FALSE,"ipc","text","none","pass","",""
+"uint32",FALSE,"ipc","text","first","pass","",""
+"uint32",FALSE,"ipc","text","last","pass","",""
+"uint32",TRUE,"parquet","null","none","pass","",""
+"uint32",TRUE,"parquet","null","first","pass","",""
+"uint32",TRUE,"parquet","null","last","pass","",""
+"uint32",TRUE,"parquet","na","none","pass","",""
+"uint32",TRUE,"parquet","na","first","pass","",""
+"uint32",TRUE,"parquet","na","last","pass","",""
+"uint32",TRUE,"parquet","text","none","pass","",""
+"uint32",TRUE,"parquet","text","first","pass","",""
+"uint32",TRUE,"parquet","text","last","pass","",""
+"uint32",TRUE,"ipc","null","none","pass","",""
+"uint32",TRUE,"ipc","null","first","pass","",""
+"uint32",TRUE,"ipc","null","last","pass","",""
+"uint32",TRUE,"ipc","na","none","pass","",""
+"uint32",TRUE,"ipc","na","first","pass","",""
+"uint32",TRUE,"ipc","na","last","pass","",""
+"uint32",TRUE,"ipc","text","none","pass","",""
+"uint32",TRUE,"ipc","text","first","pass","",""
+"uint32",TRUE,"ipc","text","last","pass","",""
+"uint64",FALSE,"parquet","null","none","pass","",""
+"uint64",FALSE,"parquet","null","first","pass","",""
+"uint64",FALSE,"parquet","null","last","pass","",""
+"uint64",FALSE,"parquet","na","none","pass","",""
+"uint64",FALSE,"parquet","na","first","pass","",""
+"uint64",FALSE,"parquet","na","last","pass","",""
+"uint64",FALSE,"parquet","text","none","pass","",""
+"uint64",FALSE,"parquet","text","first","pass","",""
+"uint64",FALSE,"parquet","text","last","pass","",""
+"uint64",FALSE,"ipc","null","none","pass","",""
+"uint64",FALSE,"ipc","null","first","pass","",""
+"uint64",FALSE,"ipc","null","last","pass","",""
+"uint64",FALSE,"ipc","na","none","pass","",""
+"uint64",FALSE,"ipc","na","first","pass","",""
+"uint64",FALSE,"ipc","na","last","pass","",""
+"uint64",FALSE,"ipc","text","none","pass","",""
+"uint64",FALSE,"ipc","text","first","pass","",""
+"uint64",FALSE,"ipc","text","last","pass","",""
+"uint64",TRUE,"parquet","null","none","pass","",""
+"uint64",TRUE,"parquet","null","first","pass","",""
+"uint64",TRUE,"parquet","null","last","pass","",""
+"uint64",TRUE,"parquet","na","none","pass","",""
+"uint64",TRUE,"parquet","na","first","pass","",""
+"uint64",TRUE,"parquet","na","last","pass","",""
+"uint64",TRUE,"parquet","text","none","pass","",""
+"uint64",TRUE,"parquet","text","first","pass","",""
+"uint64",TRUE,"parquet","text","last","pass","",""
+"uint64",TRUE,"ipc","null","none","pass","",""
+"uint64",TRUE,"ipc","null","first","pass","",""
+"uint64",TRUE,"ipc","null","last","pass","",""
+"uint64",TRUE,"ipc","na","none","pass","",""
+"uint64",TRUE,"ipc","na","first","pass","",""
+"uint64",TRUE,"ipc","na","last","pass","",""
+"uint64",TRUE,"ipc","text","none","pass","",""
+"uint64",TRUE,"ipc","text","first","pass","",""
+"uint64",TRUE,"ipc","text","last","pass","",""
+"float16",FALSE,"parquet","null","none","pass","",""
+"float16",FALSE,"parquet","null","first","both_error","Type error: Unsupported type for RecordBatch sorting: halffloat","Type error: Unsupported type for RecordBatch sorting: halffloat"
+"float16",FALSE,"parquet","null","last","both_error","Type error: Unsupported type for RecordBatch sorting: halffloat","Type error: Unsupported type for RecordBatch sorting: halffloat"
+"float16",FALSE,"parquet","na","none","pass","",""
+"float16",FALSE,"parquet","na","first","both_error","Type error: Unsupported type for RecordBatch sorting: halffloat","Type error: Unsupported type for RecordBatch sorting: halffloat"
+"float16",FALSE,"parquet","na","last","both_error","Type error: Unsupported type for RecordBatch sorting: halffloat","Type error: Unsupported type for RecordBatch sorting: halffloat"
+"float16",FALSE,"parquet","text","none","pass","",""
+"float16",FALSE,"parquet","text","first","pass","",""
+"float16",FALSE,"parquet","text","last","pass","",""
+"float16",FALSE,"ipc","null","none","pass","",""
+"float16",FALSE,"ipc","null","first","both_error","Type error: Unsupported type for RecordBatch sorting: halffloat","Type error: Unsupported type for RecordBatch sorting: halffloat"
+"float16",FALSE,"ipc","null","last","both_error","Type error: Unsupported type for RecordBatch sorting: halffloat","Type error: Unsupported type for RecordBatch sorting: halffloat"
+"float16",FALSE,"ipc","na","none","pass","",""
+"float16",FALSE,"ipc","na","first","both_error","Type error: Unsupported type for RecordBatch sorting: halffloat","Type error: Unsupported type for RecordBatch sorting: halffloat"
+"float16",FALSE,"ipc","na","last","both_error","Type error: Unsupported type for RecordBatch sorting: halffloat","Type error: Unsupported type for RecordBatch sorting: halffloat"
+"float16",FALSE,"ipc","text","none","pass","",""
+"float16",FALSE,"ipc","text","first","pass","",""
+"float16",FALSE,"ipc","text","last","pass","",""
+"float16",TRUE,"parquet","null","none","pass","",""
+"float16",TRUE,"parquet","null","first","pass","",""
+"float16",TRUE,"parquet","null","last","pass","",""
+"float16",TRUE,"parquet","na","none","pass","",""
+"float16",TRUE,"parquet","na","first","pass","",""
+"float16",TRUE,"parquet","na","last","pass","",""
+"float16",TRUE,"parquet","text","none","pass","",""
+"float16",TRUE,"parquet","text","first","pass","",""
+"float16",TRUE,"parquet","text","last","pass","",""
+"float16",TRUE,"ipc","null","none","pass","",""
+"float16",TRUE,"ipc","null","first","pass","",""
+"float16",TRUE,"ipc","null","last","pass","",""
+"float16",TRUE,"ipc","na","none","pass","",""
+"float16",TRUE,"ipc","na","first","pass","",""
+"float16",TRUE,"ipc","na","last","pass","",""
+"float16",TRUE,"ipc","text","none","pass","",""
+"float16",TRUE,"ipc","text","first","pass","",""
+"float16",TRUE,"ipc","text","last","pass","",""
+"float32",FALSE,"parquet","null","none","pass","",""
+"float32",FALSE,"parquet","null","first","pass","",""
+"float32",FALSE,"parquet","null","last","pass","",""
+"float32",FALSE,"parquet","na","none","pass","",""
+"float32",FALSE,"parquet","na","first","pass","",""
+"float32",FALSE,"parquet","na","last","pass","",""
+"float32",FALSE,"parquet","text","none","pass","",""
+"float32",FALSE,"parquet","text","first","pass","",""
+"float32",FALSE,"parquet","text","last","pass","",""
+"float32",FALSE,"ipc","null","none","pass","",""
+"float32",FALSE,"ipc","null","first","pass","",""
+"float32",FALSE,"ipc","null","last","pass","",""
+"float32",FALSE,"ipc","na","none","pass","",""
+"float32",FALSE,"ipc","na","first","pass","",""
+"float32",FALSE,"ipc","na","last","pass","",""
+"float32",FALSE,"ipc","text","none","pass","",""
+"float32",FALSE,"ipc","text","first","pass","",""
+"float32",FALSE,"ipc","text","last","pass","",""
+"float32",TRUE,"parquet","null","none","pass","",""
+"float32",TRUE,"parquet","null","first","pass","",""
+"float32",TRUE,"parquet","null","last","pass","",""
+"float32",TRUE,"parquet","na","none","pass","",""
+"float32",TRUE,"parquet","na","first","pass","",""
+"float32",TRUE,"parquet","na","last","pass","",""
+"float32",TRUE,"parquet","text","none","pass","",""
+"float32",TRUE,"parquet","text","first","pass","",""
+"float32",TRUE,"parquet","text","last","pass","",""
+"float32",TRUE,"ipc","null","none","pass","",""
+"float32",TRUE,"ipc","null","first","pass","",""
+"float32",TRUE,"ipc","null","last","pass","",""
+"float32",TRUE,"ipc","na","none","pass","",""
+"float32",TRUE,"ipc","na","first","pass","",""
+"float32",TRUE,"ipc","na","last","pass","",""
+"float32",TRUE,"ipc","text","none","pass","",""
+"float32",TRUE,"ipc","text","first","pass","",""
+"float32",TRUE,"ipc","text","last","pass","",""
+"float64",FALSE,"parquet","null","none","pass","",""
+"float64",FALSE,"parquet","null","first","pass","",""
+"float64",FALSE,"parquet","null","last","pass","",""
+"float64",FALSE,"parquet","na","none","pass","",""
+"float64",FALSE,"parquet","na","first","pass","",""
+"float64",FALSE,"parquet","na","last","pass","",""
+"float64",FALSE,"parquet","text","none","pass","",""
+"float64",FALSE,"parquet","text","first","pass","",""
+"float64",FALSE,"parquet","text","last","pass","",""
+"float64",FALSE,"ipc","null","none","pass","",""
+"float64",FALSE,"ipc","null","first","pass","",""
+"float64",FALSE,"ipc","null","last","pass","",""
+"float64",FALSE,"ipc","na","none","pass","",""
+"float64",FALSE,"ipc","na","first","pass","",""
+"float64",FALSE,"ipc","na","last","pass","",""
+"float64",FALSE,"ipc","text","none","pass","",""
+"float64",FALSE,"ipc","text","first","pass","",""
+"float64",FALSE,"ipc","text","last","pass","",""
+"float64",TRUE,"parquet","null","none","pass","",""
+"float64",TRUE,"parquet","null","first","pass","",""
+"float64",TRUE,"parquet","null","last","pass","",""
+"float64",TRUE,"parquet","na","none","pass","",""
+"float64",TRUE,"parquet","na","first","pass","",""
+"float64",TRUE,"parquet","na","last","pass","",""
+"float64",TRUE,"parquet","text","none","pass","",""
+"float64",TRUE,"parquet","text","first","pass","",""
+"float64",TRUE,"parquet","text","last","pass","",""
+"float64",TRUE,"ipc","null","none","pass","",""
+"float64",TRUE,"ipc","null","first","pass","",""
+"float64",TRUE,"ipc","null","last","pass","",""
+"float64",TRUE,"ipc","na","none","pass","",""
+"float64",TRUE,"ipc","na","first","pass","",""
+"float64",TRUE,"ipc","na","last","pass","",""
+"float64",TRUE,"ipc","text","none","pass","",""
+"float64",TRUE,"ipc","text","first","pass","",""
+"float64",TRUE,"ipc","text","last","pass","",""
+"nan",FALSE,"parquet","null","none","pass","",""
+"nan",FALSE,"parquet","null","first","pass","",""
+"nan",FALSE,"parquet","null","last","pass","",""
+"nan",FALSE,"parquet","na","none","pass","",""
+"nan",FALSE,"parquet","na","first","pass","",""
+"nan",FALSE,"parquet","na","last","pass","",""
+"nan",FALSE,"parquet","text","none","pass","",""
+"nan",FALSE,"parquet","text","first","pass","",""
+"nan",FALSE,"parquet","text","last","pass","",""
+"nan",FALSE,"ipc","null","none","pass","",""
+"nan",FALSE,"ipc","null","first","pass","",""
+"nan",FALSE,"ipc","null","last","pass","",""
+"nan",FALSE,"ipc","na","none","pass","",""
+"nan",FALSE,"ipc","na","first","pass","",""
+"nan",FALSE,"ipc","na","last","pass","",""
+"nan",FALSE,"ipc","text","none","pass","",""
+"nan",FALSE,"ipc","text","first","pass","",""
+"nan",FALSE,"ipc","text","last","pass","",""
+"nan",TRUE,"parquet","null","none","pass","",""
+"nan",TRUE,"parquet","null","first","pass","",""
+"nan",TRUE,"parquet","null","last","pass","",""
+"nan",TRUE,"parquet","na","none","pass","",""
+"nan",TRUE,"parquet","na","first","pass","",""
+"nan",TRUE,"parquet","na","last","pass","",""
+"nan",TRUE,"parquet","text","none","pass","",""
+"nan",TRUE,"parquet","text","first","pass","",""
+"nan",TRUE,"parquet","text","last","pass","",""
+"nan",TRUE,"ipc","null","none","pass","",""
+"nan",TRUE,"ipc","null","first","pass","",""
+"nan",TRUE,"ipc","null","last","pass","",""
+"nan",TRUE,"ipc","na","none","pass","",""
+"nan",TRUE,"ipc","na","first","pass","",""
+"nan",TRUE,"ipc","na","last","pass","",""
+"nan",TRUE,"ipc","text","none","pass","",""
+"nan",TRUE,"ipc","text","first","pass","",""
+"nan",TRUE,"ipc","text","last","pass","",""
+"decimal128",FALSE,"parquet","null","none","pass","",""
+"decimal128",FALSE,"parquet","null","first","pass","",""
+"decimal128",FALSE,"parquet","null","last","pass","",""
+"decimal128",FALSE,"parquet","na","none","pass","",""
+"decimal128",FALSE,"parquet","na","first","pass","",""
+"decimal128",FALSE,"parquet","na","last","pass","",""
+"decimal128",FALSE,"parquet","text","none","pass","",""
+"decimal128",FALSE,"parquet","text","first","pass","",""
+"decimal128",FALSE,"parquet","text","last","pass","",""
+"decimal128",FALSE,"ipc","null","none","pass","",""
+"decimal128",FALSE,"ipc","null","first","pass","",""
+"decimal128",FALSE,"ipc","null","last","pass","",""
+"decimal128",FALSE,"ipc","na","none","pass","",""
+"decimal128",FALSE,"ipc","na","first","pass","",""
+"decimal128",FALSE,"ipc","na","last","pass","",""
+"decimal128",FALSE,"ipc","text","none","pass","",""
+"decimal128",FALSE,"ipc","text","first","pass","",""
+"decimal128",FALSE,"ipc","text","last","pass","",""
+"decimal128",TRUE,"parquet","null","none","pass","",""
+"decimal128",TRUE,"parquet","null","first","pass","",""
+"decimal128",TRUE,"parquet","null","last","pass","",""
+"decimal128",TRUE,"parquet","na","none","pass","",""
+"decimal128",TRUE,"parquet","na","first","pass","",""
+"decimal128",TRUE,"parquet","na","last","pass","",""
+"decimal128",TRUE,"parquet","text","none","pass","",""
+"decimal128",TRUE,"parquet","text","first","pass","",""
+"decimal128",TRUE,"parquet","text","last","pass","",""
+"decimal128",TRUE,"ipc","null","none","pass","",""
+"decimal128",TRUE,"ipc","null","first","pass","",""
+"decimal128",TRUE,"ipc","null","last","pass","",""
+"decimal128",TRUE,"ipc","na","none","pass","",""
+"decimal128",TRUE,"ipc","na","first","pass","",""
+"decimal128",TRUE,"ipc","na","last","pass","",""
+"decimal128",TRUE,"ipc","text","none","pass","",""
+"decimal128",TRUE,"ipc","text","first","pass","",""
+"decimal128",TRUE,"ipc","text","last","pass","",""
+"decimal256",FALSE,"parquet","null","none","pass","",""
+"decimal256",FALSE,"parquet","null","first","pass","",""
+"decimal256",FALSE,"parquet","null","last","pass","",""
+"decimal256",FALSE,"parquet","na","none","pass","",""
+"decimal256",FALSE,"parquet","na","first","pass","",""
+"decimal256",FALSE,"parquet","na","last","pass","",""
+"decimal256",FALSE,"parquet","text","none","pass","",""
+"decimal256",FALSE,"parquet","text","first","pass","",""
+"decimal256",FALSE,"parquet","text","last","pass","",""
+"decimal256",FALSE,"ipc","null","none","pass","",""
+"decimal256",FALSE,"ipc","null","first","pass","",""
+"decimal256",FALSE,"ipc","null","last","pass","",""
+"decimal256",FALSE,"ipc","na","none","pass","",""
+"decimal256",FALSE,"ipc","na","first","pass","",""
+"decimal256",FALSE,"ipc","na","last","pass","",""
+"decimal256",FALSE,"ipc","text","none","pass","",""
+"decimal256",FALSE,"ipc","text","first","pass","",""
+"decimal256",FALSE,"ipc","text","last","pass","",""
+"decimal256",TRUE,"parquet","null","none","pass","",""
+"decimal256",TRUE,"parquet","null","first","pass","",""
+"decimal256",TRUE,"parquet","null","last","pass","",""
+"decimal256",TRUE,"parquet","na","none","pass","",""
+"decimal256",TRUE,"parquet","na","first","pass","",""
+"decimal256",TRUE,"parquet","na","last","pass","",""
+"decimal256",TRUE,"parquet","text","none","pass","",""
+"decimal256",TRUE,"parquet","text","first","pass","",""
+"decimal256",TRUE,"parquet","text","last","pass","",""
+"decimal256",TRUE,"ipc","null","none","pass","",""
+"decimal256",TRUE,"ipc","null","first","pass","",""
+"decimal256",TRUE,"ipc","null","last","pass","",""
+"decimal256",TRUE,"ipc","na","none","pass","",""
+"decimal256",TRUE,"ipc","na","first","pass","",""
+"decimal256",TRUE,"ipc","na","last","pass","",""
+"decimal256",TRUE,"ipc","text","none","pass","",""
+"decimal256",TRUE,"ipc","text","first","pass","",""
+"decimal256",TRUE,"ipc","text","last","pass","",""
+"utf8",FALSE,"parquet","null","none","pass","",""
+"utf8",FALSE,"parquet","null","first","pass","",""
+"utf8",FALSE,"parquet","null","last","pass","",""
+"utf8",FALSE,"parquet","na","none","pass","",""
+"utf8",FALSE,"parquet","na","first","pass","",""
+"utf8",FALSE,"parquet","na","last","pass","",""
+"utf8",FALSE,"parquet","text","none","pass","",""
+"utf8",FALSE,"parquet","text","first","pass","",""
+"utf8",FALSE,"parquet","text","last","pass","",""
+"utf8",FALSE,"ipc","null","none","pass","",""
+"utf8",FALSE,"ipc","null","first","pass","",""
+"utf8",FALSE,"ipc","null","last","pass","",""
+"utf8",FALSE,"ipc","na","none","pass","",""
+"utf8",FALSE,"ipc","na","first","pass","",""
+"utf8",FALSE,"ipc","na","last","pass","",""
+"utf8",FALSE,"ipc","text","none","pass","",""
+"utf8",FALSE,"ipc","text","first","pass","",""
+"utf8",FALSE,"ipc","text","last","pass","",""
+"utf8",TRUE,"parquet","null","none","pass","",""
+"utf8",TRUE,"parquet","null","first","pass","",""
+"utf8",TRUE,"parquet","null","last","pass","",""
+"utf8",TRUE,"parquet","na","none","pass","",""
+"utf8",TRUE,"parquet","na","first","pass","",""
+"utf8",TRUE,"parquet","na","last","pass","",""
+"utf8",TRUE,"parquet","text","none","pass","",""
+"utf8",TRUE,"parquet","text","first","pass","",""
+"utf8",TRUE,"parquet","text","last","pass","",""
+"utf8",TRUE,"ipc","null","none","pass","",""
+"utf8",TRUE,"ipc","null","first","pass","",""
+"utf8",TRUE,"ipc","null","last","pass","",""
+"utf8",TRUE,"ipc","na","none","pass","",""
+"utf8",TRUE,"ipc","na","first","pass","",""
+"utf8",TRUE,"ipc","na","last","pass","",""
+"utf8",TRUE,"ipc","text","none","pass","",""
+"utf8",TRUE,"ipc","text","first","pass","",""
+"utf8",TRUE,"ipc","text","last","pass","",""
+"large_utf8",FALSE,"parquet","null","none","pass","",""
+"large_utf8",FALSE,"parquet","null","first","pass","",""
+"large_utf8",FALSE,"parquet","null","last","pass","",""
+"large_utf8",FALSE,"parquet","na","none","pass","",""
+"large_utf8",FALSE,"parquet","na","first","pass","",""
+"large_utf8",FALSE,"parquet","na","last","pass","",""
+"large_utf8",FALSE,"parquet","text","none","pass","",""
+"large_utf8",FALSE,"parquet","text","first","pass","",""
+"large_utf8",FALSE,"parquet","text","last","pass","",""
+"large_utf8",FALSE,"ipc","null","none","pass","",""
+"large_utf8",FALSE,"ipc","null","first","pass","",""
+"large_utf8",FALSE,"ipc","null","last","pass","",""
+"large_utf8",FALSE,"ipc","na","none","pass","",""
+"large_utf8",FALSE,"ipc","na","first","pass","",""
+"large_utf8",FALSE,"ipc","na","last","pass","",""
+"large_utf8",FALSE,"ipc","text","none","pass","",""
+"large_utf8",FALSE,"ipc","text","first","pass","",""
+"large_utf8",FALSE,"ipc","text","last","pass","",""
+"large_utf8",TRUE,"parquet","null","none","pass","",""
+"large_utf8",TRUE,"parquet","null","first","pass","",""
+"large_utf8",TRUE,"parquet","null","last","pass","",""
+"large_utf8",TRUE,"parquet","na","none","pass","",""
+"large_utf8",TRUE,"parquet","na","first","pass","",""
+"large_utf8",TRUE,"parquet","na","last","pass","",""
+"large_utf8",TRUE,"parquet","text","none","pass","",""
+"large_utf8",TRUE,"parquet","text","first","pass","",""
+"large_utf8",TRUE,"parquet","text","last","pass","",""
+"large_utf8",TRUE,"ipc","null","none","pass","",""
+"large_utf8",TRUE,"ipc","null","first","pass","",""
+"large_utf8",TRUE,"ipc","null","last","pass","",""
+"large_utf8",TRUE,"ipc","na","none","pass","",""
+"large_utf8",TRUE,"ipc","na","first","pass","",""
+"large_utf8",TRUE,"ipc","na","last","pass","",""
+"large_utf8",TRUE,"ipc","text","none","pass","",""
+"large_utf8",TRUE,"ipc","text","first","pass","",""
+"large_utf8",TRUE,"ipc","text","last","pass","",""
+"date32",FALSE,"parquet","null","none","pass","",""
+"date32",FALSE,"parquet","null","first","pass","",""
+"date32",FALSE,"parquet","null","last","pass","",""
+"date32",FALSE,"parquet","na","none","pass","",""
+"date32",FALSE,"parquet","na","first","pass","",""
+"date32",FALSE,"parquet","na","last","pass","",""
+"date32",FALSE,"parquet","text","none","pass","",""
+"date32",FALSE,"parquet","text","first","pass","",""
+"date32",FALSE,"parquet","text","last","pass","",""
+"date32",FALSE,"ipc","null","none","pass","",""
+"date32",FALSE,"ipc","null","first","pass","",""
+"date32",FALSE,"ipc","null","last","pass","",""
+"date32",FALSE,"ipc","na","none","pass","",""
+"date32",FALSE,"ipc","na","first","pass","",""
+"date32",FALSE,"ipc","na","last","pass","",""
+"date32",FALSE,"ipc","text","none","pass","",""
+"date32",FALSE,"ipc","text","first","pass","",""
+"date32",FALSE,"ipc","text","last","pass","",""
+"date32",TRUE,"parquet","null","none","pass","",""
+"date32",TRUE,"parquet","null","first","pass","",""
+"date32",TRUE,"parquet","null","last","pass","",""
+"date32",TRUE,"parquet","na","none","pass","",""
+"date32",TRUE,"parquet","na","first","pass","",""
+"date32",TRUE,"parquet","na","last","pass","",""
+"date32",TRUE,"parquet","text","none","pass","",""
+"date32",TRUE,"parquet","text","first","pass","",""
+"date32",TRUE,"parquet","text","last","pass","",""
+"date32",TRUE,"ipc","null","none","pass","",""
+"date32",TRUE,"ipc","null","first","pass","",""
+"date32",TRUE,"ipc","null","last","pass","",""
+"date32",TRUE,"ipc","na","none","pass","",""
+"date32",TRUE,"ipc","na","first","pass","",""
+"date32",TRUE,"ipc","na","last","pass","",""
+"date32",TRUE,"ipc","text","none","pass","",""
+"date32",TRUE,"ipc","text","first","pass","",""
+"date32",TRUE,"ipc","text","last","pass","",""
+"date64",FALSE,"parquet","null","none","pass","",""
+"date64",FALSE,"parquet","null","first","pass","",""
+"date64",FALSE,"parquet","null","last","pass","",""
+"date64",FALSE,"parquet","na","none","pass","",""
+"date64",FALSE,"parquet","na","first","pass","",""
+"date64",FALSE,"parquet","na","last","pass","",""
+"date64",FALSE,"parquet","text","none","pass","",""
+"date64",FALSE,"parquet","text","first","pass","",""
+"date64",FALSE,"parquet","text","last","pass","",""
+"date64",FALSE,"ipc","null","none","pass","",""
+"date64",FALSE,"ipc","null","first","pass","",""
+"date64",FALSE,"ipc","null","last","pass","",""
+"date64",FALSE,"ipc","na","none","pass","",""
+"date64",FALSE,"ipc","na","first","pass","",""
+"date64",FALSE,"ipc","na","last","pass","",""
+"date64",FALSE,"ipc","text","none","pass","",""
+"date64",FALSE,"ipc","text","first","pass","",""
+"date64",FALSE,"ipc","text","last","pass","",""
+"date64",TRUE,"parquet","null","none","pass","",""
+"date64",TRUE,"parquet","null","first","pass","",""
+"date64",TRUE,"parquet","null","last","pass","",""
+"date64",TRUE,"parquet","na","none","pass","",""
+"date64",TRUE,"parquet","na","first","pass","",""
+"date64",TRUE,"parquet","na","last","pass","",""
+"date64",TRUE,"parquet","text","none","pass","",""
+"date64",TRUE,"parquet","text","first","pass","",""
+"date64",TRUE,"parquet","text","last","pass","",""
+"date64",TRUE,"ipc","null","none","pass","",""
+"date64",TRUE,"ipc","null","first","pass","",""
+"date64",TRUE,"ipc","null","last","pass","",""
+"date64",TRUE,"ipc","na","none","pass","",""
+"date64",TRUE,"ipc","na","first","pass","",""
+"date64",TRUE,"ipc","na","last","pass","",""
+"date64",TRUE,"ipc","text","none","pass","",""
+"date64",TRUE,"ipc","text","first","pass","",""
+"date64",TRUE,"ipc","text","last","pass","",""
+"timestamp_s",FALSE,"parquet","null","none","pass","",""
+"timestamp_s",FALSE,"parquet","null","first","pass","",""
+"timestamp_s",FALSE,"parquet","null","last","pass","",""
+"timestamp_s",FALSE,"parquet","na","none","pass","",""
+"timestamp_s",FALSE,"parquet","na","first","pass","",""
+"timestamp_s",FALSE,"parquet","na","last","pass","",""
+"timestamp_s",FALSE,"parquet","text","none","pass","",""
+"timestamp_s",FALSE,"parquet","text","first","pass","",""
+"timestamp_s",FALSE,"parquet","text","last","pass","",""
+"timestamp_s",FALSE,"ipc","null","none","pass","",""
+"timestamp_s",FALSE,"ipc","null","first","pass","",""
+"timestamp_s",FALSE,"ipc","null","last","pass","",""
+"timestamp_s",FALSE,"ipc","na","none","pass","",""
+"timestamp_s",FALSE,"ipc","na","first","pass","",""
+"timestamp_s",FALSE,"ipc","na","last","pass","",""
+"timestamp_s",FALSE,"ipc","text","none","pass","",""
+"timestamp_s",FALSE,"ipc","text","first","pass","",""
+"timestamp_s",FALSE,"ipc","text","last","pass","",""
+"timestamp_s",TRUE,"parquet","null","none","pass","",""
+"timestamp_s",TRUE,"parquet","null","first","pass","",""
+"timestamp_s",TRUE,"parquet","null","last","pass","",""
+"timestamp_s",TRUE,"parquet","na","none","pass","",""
+"timestamp_s",TRUE,"parquet","na","first","pass","",""
+"timestamp_s",TRUE,"parquet","na","last","pass","",""
+"timestamp_s",TRUE,"parquet","text","none","pass","",""
+"timestamp_s",TRUE,"parquet","text","first","pass","",""
+"timestamp_s",TRUE,"parquet","text","last","pass","",""
+"timestamp_s",TRUE,"ipc","null","none","pass","",""
+"timestamp_s",TRUE,"ipc","null","first","pass","",""
+"timestamp_s",TRUE,"ipc","null","last","pass","",""
+"timestamp_s",TRUE,"ipc","na","none","pass","",""
+"timestamp_s",TRUE,"ipc","na","first","pass","",""
+"timestamp_s",TRUE,"ipc","na","last","pass","",""
+"timestamp_s",TRUE,"ipc","text","none","pass","",""
+"timestamp_s",TRUE,"ipc","text","first","pass","",""
+"timestamp_s",TRUE,"ipc","text","last","pass","",""
+"timestamp_ms",FALSE,"parquet","null","none","pass","",""
+"timestamp_ms",FALSE,"parquet","null","first","pass","",""
+"timestamp_ms",FALSE,"parquet","null","last","pass","",""
+"timestamp_ms",FALSE,"parquet","na","none","pass","",""
+"timestamp_ms",FALSE,"parquet","na","first","pass","",""
+"timestamp_ms",FALSE,"parquet","na","last","pass","",""
+"timestamp_ms",FALSE,"parquet","text","none","pass","",""
+"timestamp_ms",FALSE,"parquet","text","first","pass","",""
+"timestamp_ms",FALSE,"parquet","text","last","pass","",""
+"timestamp_ms",FALSE,"ipc","null","none","pass","",""
+"timestamp_ms",FALSE,"ipc","null","first","pass","",""
+"timestamp_ms",FALSE,"ipc","null","last","pass","",""
+"timestamp_ms",FALSE,"ipc","na","none","pass","",""
+"timestamp_ms",FALSE,"ipc","na","first","pass","",""
+"timestamp_ms",FALSE,"ipc","na","last","pass","",""
+"timestamp_ms",FALSE,"ipc","text","none","pass","",""
+"timestamp_ms",FALSE,"ipc","text","first","pass","",""
+"timestamp_ms",FALSE,"ipc","text","last","pass","",""
+"timestamp_ms",TRUE,"parquet","null","none","pass","",""
+"timestamp_ms",TRUE,"parquet","null","first","pass","",""
+"timestamp_ms",TRUE,"parquet","null","last","pass","",""
+"timestamp_ms",TRUE,"parquet","na","none","pass","",""
+"timestamp_ms",TRUE,"parquet","na","first","pass","",""
+"timestamp_ms",TRUE,"parquet","na","last","pass","",""
+"timestamp_ms",TRUE,"parquet","text","none","pass","",""
+"timestamp_ms",TRUE,"parquet","text","first","pass","",""
+"timestamp_ms",TRUE,"parquet","text","last","pass","",""
+"timestamp_ms",TRUE,"ipc","null","none","pass","",""
+"timestamp_ms",TRUE,"ipc","null","first","pass","",""
+"timestamp_ms",TRUE,"ipc","null","last","pass","",""
+"timestamp_ms",TRUE,"ipc","na","none","pass","",""
+"timestamp_ms",TRUE,"ipc","na","first","pass","",""
+"timestamp_ms",TRUE,"ipc","na","last","pass","",""
+"timestamp_ms",TRUE,"ipc","text","none","pass","",""
+"timestamp_ms",TRUE,"ipc","text","first","pass","",""
+"timestamp_ms",TRUE,"ipc","text","last","pass","",""
+"timestamp_us",FALSE,"parquet","null","none","pass","",""
+"timestamp_us",FALSE,"parquet","null","first","pass","",""
+"timestamp_us",FALSE,"parquet","null","last","pass","",""
+"timestamp_us",FALSE,"parquet","na","none","pass","",""
+"timestamp_us",FALSE,"parquet","na","first","pass","",""
+"timestamp_us",FALSE,"parquet","na","last","pass","",""
+"timestamp_us",FALSE,"parquet","text","none","pass","",""
+"timestamp_us",FALSE,"parquet","text","first","pass","",""
+"timestamp_us",FALSE,"parquet","text","last","pass","",""
+"timestamp_us",FALSE,"ipc","null","none","pass","",""
+"timestamp_us",FALSE,"ipc","null","first","pass","",""
+"timestamp_us",FALSE,"ipc","null","last","pass","",""
+"timestamp_us",FALSE,"ipc","na","none","pass","",""
+"timestamp_us",FALSE,"ipc","na","first","pass","",""
+"timestamp_us",FALSE,"ipc","na","last","pass","",""
+"timestamp_us",FALSE,"ipc","text","none","pass","",""
+"timestamp_us",FALSE,"ipc","text","first","pass","",""
+"timestamp_us",FALSE,"ipc","text","last","pass","",""
+"timestamp_us",TRUE,"parquet","null","none","pass","",""
+"timestamp_us",TRUE,"parquet","null","first","pass","",""
+"timestamp_us",TRUE,"parquet","null","last","pass","",""
+"timestamp_us",TRUE,"parquet","na","none","pass","",""
+"timestamp_us",TRUE,"parquet","na","first","pass","",""
+"timestamp_us",TRUE,"parquet","na","last","pass","",""
+"timestamp_us",TRUE,"parquet","text","none","pass","",""
+"timestamp_us",TRUE,"parquet","text","first","pass","",""
+"timestamp_us",TRUE,"parquet","text","last","pass","",""
+"timestamp_us",TRUE,"ipc","null","none","pass","",""
+"timestamp_us",TRUE,"ipc","null","first","pass","",""
+"timestamp_us",TRUE,"ipc","null","last","pass","",""
+"timestamp_us",TRUE,"ipc","na","none","pass","",""
+"timestamp_us",TRUE,"ipc","na","first","pass","",""
+"timestamp_us",TRUE,"ipc","na","last","pass","",""
+"timestamp_us",TRUE,"ipc","text","none","pass","",""
+"timestamp_us",TRUE,"ipc","text","first","pass","",""
+"timestamp_us",TRUE,"ipc","text","last","pass","",""
+"timestamp_ns",FALSE,"parquet","null","none","pass","",""
+"timestamp_ns",FALSE,"parquet","null","first","pass","",""
+"timestamp_ns",FALSE,"parquet","null","last","pass","",""
+"timestamp_ns",FALSE,"parquet","na","none","pass","",""
+"timestamp_ns",FALSE,"parquet","na","first","pass","",""
+"timestamp_ns",FALSE,"parquet","na","last","pass","",""
+"timestamp_ns",FALSE,"parquet","text","none","pass","",""
+"timestamp_ns",FALSE,"parquet","text","first","pass","",""
+"timestamp_ns",FALSE,"parquet","text","last","pass","",""
+"timestamp_ns",FALSE,"ipc","null","none","pass","",""
+"timestamp_ns",FALSE,"ipc","null","first","pass","",""
+"timestamp_ns",FALSE,"ipc","null","last","pass","",""
+"timestamp_ns",FALSE,"ipc","na","none","pass","",""
+"timestamp_ns",FALSE,"ipc","na","first","pass","",""
+"timestamp_ns",FALSE,"ipc","na","last","pass","",""
+"timestamp_ns",FALSE,"ipc","text","none","pass","",""
+"timestamp_ns",FALSE,"ipc","text","first","pass","",""
+"timestamp_ns",FALSE,"ipc","text","last","pass","",""
+"timestamp_ns",TRUE,"parquet","null","none","pass","",""
+"timestamp_ns",TRUE,"parquet","null","first","pass","",""
+"timestamp_ns",TRUE,"parquet","null","last","pass","",""
+"timestamp_ns",TRUE,"parquet","na","none","pass","",""
+"timestamp_ns",TRUE,"parquet","na","first","pass","",""
+"timestamp_ns",TRUE,"parquet","na","last","pass","",""
+"timestamp_ns",TRUE,"parquet","text","none","pass","",""
+"timestamp_ns",TRUE,"parquet","text","first","pass","",""
+"timestamp_ns",TRUE,"parquet","text","last","pass","",""
+"timestamp_ns",TRUE,"ipc","null","none","pass","",""
+"timestamp_ns",TRUE,"ipc","null","first","pass","",""
+"timestamp_ns",TRUE,"ipc","null","last","pass","",""
+"timestamp_ns",TRUE,"ipc","na","none","pass","",""
+"timestamp_ns",TRUE,"ipc","na","first","pass","",""
+"timestamp_ns",TRUE,"ipc","na","last","pass","",""
+"timestamp_ns",TRUE,"ipc","text","none","pass","",""
+"timestamp_ns",TRUE,"ipc","text","first","pass","",""
+"timestamp_ns",TRUE,"ipc","text","last","pass","",""
+"time32_s",FALSE,"parquet","null","none","pass","",""
+"time32_s",FALSE,"parquet","null","first","pass","",""
+"time32_s",FALSE,"parquet","null","last","pass","",""
+"time32_s",FALSE,"parquet","na","none","pass","",""
+"time32_s",FALSE,"parquet","na","first","pass","",""
+"time32_s",FALSE,"parquet","na","last","pass","",""
+"time32_s",FALSE,"parquet","text","none","pass","",""
+"time32_s",FALSE,"parquet","text","first","pass","",""
+"time32_s",FALSE,"parquet","text","last","pass","",""
+"time32_s",FALSE,"ipc","null","none","pass","",""
+"time32_s",FALSE,"ipc","null","first","pass","",""
+"time32_s",FALSE,"ipc","null","last","pass","",""
+"time32_s",FALSE,"ipc","na","none","pass","",""
+"time32_s",FALSE,"ipc","na","first","pass","",""
+"time32_s",FALSE,"ipc","na","last","pass","",""
+"time32_s",FALSE,"ipc","text","none","pass","",""
+"time32_s",FALSE,"ipc","text","first","pass","",""
+"time32_s",FALSE,"ipc","text","last","pass","",""
+"time32_s",TRUE,"parquet","null","none","pass","",""
+"time32_s",TRUE,"parquet","null","first","pass","",""
+"time32_s",TRUE,"parquet","null","last","pass","",""
+"time32_s",TRUE,"parquet","na","none","pass","",""
+"time32_s",TRUE,"parquet","na","first","pass","",""
+"time32_s",TRUE,"parquet","na","last","pass","",""
+"time32_s",TRUE,"parquet","text","none","pass","",""
+"time32_s",TRUE,"parquet","text","first","pass","",""
+"time32_s",TRUE,"parquet","text","last","pass","",""
+"time32_s",TRUE,"ipc","null","none","pass","",""
+"time32_s",TRUE,"ipc","null","first","pass","",""
+"time32_s",TRUE,"ipc","null","last","pass","",""
+"time32_s",TRUE,"ipc","na","none","pass","",""
+"time32_s",TRUE,"ipc","na","first","pass","",""
+"time32_s",TRUE,"ipc","na","last","pass","",""
+"time32_s",TRUE,"ipc","text","none","pass","",""
+"time32_s",TRUE,"ipc","text","first","pass","",""
+"time32_s",TRUE,"ipc","text","last","pass","",""
+"time32_ms",FALSE,"parquet","null","none","pass","",""
+"time32_ms",FALSE,"parquet","null","first","pass","",""
+"time32_ms",FALSE,"parquet","null","last","pass","",""
+"time32_ms",FALSE,"parquet","na","none","pass","",""
+"time32_ms",FALSE,"parquet","na","first","pass","",""
+"time32_ms",FALSE,"parquet","na","last","pass","",""
+"time32_ms",FALSE,"parquet","text","none","pass","",""
+"time32_ms",FALSE,"parquet","text","first","pass","",""
+"time32_ms",FALSE,"parquet","text","last","pass","",""
+"time32_ms",FALSE,"ipc","null","none","pass","",""
+"time32_ms",FALSE,"ipc","null","first","pass","",""
+"time32_ms",FALSE,"ipc","null","last","pass","",""
+"time32_ms",FALSE,"ipc","na","none","pass","",""
+"time32_ms",FALSE,"ipc","na","first","pass","",""
+"time32_ms",FALSE,"ipc","na","last","pass","",""
+"time32_ms",FALSE,"ipc","text","none","pass","",""
+"time32_ms",FALSE,"ipc","text","first","pass","",""
+"time32_ms",FALSE,"ipc","text","last","pass","",""
+"time32_ms",TRUE,"parquet","null","none","pass","",""
+"time32_ms",TRUE,"parquet","null","first","pass","",""
+"time32_ms",TRUE,"parquet","null","last","pass","",""
+"time32_ms",TRUE,"parquet","na","none","pass","",""
+"time32_ms",TRUE,"parquet","na","first","pass","",""
+"time32_ms",TRUE,"parquet","na","last","pass","",""
+"time32_ms",TRUE,"parquet","text","none","pass","",""
+"time32_ms",TRUE,"parquet","text","first","pass","",""
+"time32_ms",TRUE,"parquet","text","last","pass","",""
+"time32_ms",TRUE,"ipc","null","none","pass","",""
+"time32_ms",TRUE,"ipc","null","first","pass","",""
+"time32_ms",TRUE,"ipc","null","last","pass","",""
+"time32_ms",TRUE,"ipc","na","none","pass","",""
+"time32_ms",TRUE,"ipc","na","first","pass","",""
+"time32_ms",TRUE,"ipc","na","last","pass","",""
+"time32_ms",TRUE,"ipc","text","none","pass","",""
+"time32_ms",TRUE,"ipc","text","first","pass","",""
+"time32_ms",TRUE,"ipc","text","last","pass","",""
+"time64_us",FALSE,"parquet","null","none","pass","",""
+"time64_us",FALSE,"parquet","null","first","pass","",""
+"time64_us",FALSE,"parquet","null","last","pass","",""
+"time64_us",FALSE,"parquet","na","none","pass","",""
+"time64_us",FALSE,"parquet","na","first","pass","",""
+"time64_us",FALSE,"parquet","na","last","pass","",""
+"time64_us",FALSE,"parquet","text","none","pass","",""
+"time64_us",FALSE,"parquet","text","first","pass","",""
+"time64_us",FALSE,"parquet","text","last","pass","",""
+"time64_us",FALSE,"ipc","null","none","pass","",""
+"time64_us",FALSE,"ipc","null","first","pass","",""
+"time64_us",FALSE,"ipc","null","last","pass","",""
+"time64_us",FALSE,"ipc","na","none","pass","",""
+"time64_us",FALSE,"ipc","na","first","pass","",""
+"time64_us",FALSE,"ipc","na","last","pass","",""
+"time64_us",FALSE,"ipc","text","none","pass","",""
+"time64_us",FALSE,"ipc","text","first","pass","",""
+"time64_us",FALSE,"ipc","text","last","pass","",""
+"time64_us",TRUE,"parquet","null","none","pass","",""
+"time64_us",TRUE,"parquet","null","first","pass","",""
+"time64_us",TRUE,"parquet","null","last","pass","",""
+"time64_us",TRUE,"parquet","na","none","pass","",""
+"time64_us",TRUE,"parquet","na","first","pass","",""
+"time64_us",TRUE,"parquet","na","last","pass","",""
+"time64_us",TRUE,"parquet","text","none","pass","",""
+"time64_us",TRUE,"parquet","text","first","pass","",""
+"time64_us",TRUE,"parquet","text","last","pass","",""
+"time64_us",TRUE,"ipc","null","none","pass","",""
+"time64_us",TRUE,"ipc","null","first","pass","",""
+"time64_us",TRUE,"ipc","null","last","pass","",""
+"time64_us",TRUE,"ipc","na","none","pass","",""
+"time64_us",TRUE,"ipc","na","first","pass","",""
+"time64_us",TRUE,"ipc","na","last","pass","",""
+"time64_us",TRUE,"ipc","text","none","pass","",""
+"time64_us",TRUE,"ipc","text","first","pass","",""
+"time64_us",TRUE,"ipc","text","last","pass","",""
+"time64_ns",FALSE,"parquet","null","none","pass","",""
+"time64_ns",FALSE,"parquet","null","first","pass","",""
+"time64_ns",FALSE,"parquet","null","last","pass","",""
+"time64_ns",FALSE,"parquet","na","none","pass","",""
+"time64_ns",FALSE,"parquet","na","first","pass","",""
+"time64_ns",FALSE,"parquet","na","last","pass","",""
+"time64_ns",FALSE,"parquet","text","none","pass","",""
+"time64_ns",FALSE,"parquet","text","first","pass","",""
+"time64_ns",FALSE,"parquet","text","last","pass","",""
+"time64_ns",FALSE,"ipc","null","none","pass","",""
+"time64_ns",FALSE,"ipc","null","first","pass","",""
+"time64_ns",FALSE,"ipc","null","last","pass","",""
+"time64_ns",FALSE,"ipc","na","none","pass","",""
+"time64_ns",FALSE,"ipc","na","first","pass","",""
+"time64_ns",FALSE,"ipc","na","last","pass","",""
+"time64_ns",FALSE,"ipc","text","none","pass","",""
+"time64_ns",FALSE,"ipc","text","first","pass","",""
+"time64_ns",FALSE,"ipc","text","last","pass","",""
+"time64_ns",TRUE,"parquet","null","none","pass","",""
+"time64_ns",TRUE,"parquet","null","first","pass","",""
+"time64_ns",TRUE,"parquet","null","last","pass","",""
+"time64_ns",TRUE,"parquet","na","none","pass","",""
+"time64_ns",TRUE,"parquet","na","first","pass","",""
+"time64_ns",TRUE,"parquet","na","last","pass","",""
+"time64_ns",TRUE,"parquet","text","none","pass","",""
+"time64_ns",TRUE,"parquet","text","first","pass","",""
+"time64_ns",TRUE,"parquet","text","last","pass","",""
+"time64_ns",TRUE,"ipc","null","none","pass","",""
+"time64_ns",TRUE,"ipc","null","first","pass","",""
+"time64_ns",TRUE,"ipc","null","last","pass","",""
+"time64_ns",TRUE,"ipc","na","none","pass","",""
+"time64_ns",TRUE,"ipc","na","first","pass","",""
+"time64_ns",TRUE,"ipc","na","last","pass","",""
+"time64_ns",TRUE,"ipc","text","none","pass","",""
+"time64_ns",TRUE,"ipc","text","first","pass","",""
+"time64_ns",TRUE,"ipc","text","last","pass","",""
+"duration_s",FALSE,"parquet","null","none","pass","",""
+"duration_s",FALSE,"parquet","null","first","pass","",""
+"duration_s",FALSE,"parquet","null","last","pass","",""
+"duration_s",FALSE,"parquet","na","none","pass","",""
+"duration_s",FALSE,"parquet","na","first","pass","",""
+"duration_s",FALSE,"parquet","na","last","pass","",""
+"duration_s",FALSE,"parquet","text","none","pass","",""
+"duration_s",FALSE,"parquet","text","first","pass","",""
+"duration_s",FALSE,"parquet","text","last","pass","",""
+"duration_s",FALSE,"ipc","null","none","pass","",""
+"duration_s",FALSE,"ipc","null","first","pass","",""
+"duration_s",FALSE,"ipc","null","last","pass","",""
+"duration_s",FALSE,"ipc","na","none","pass","",""
+"duration_s",FALSE,"ipc","na","first","pass","",""
+"duration_s",FALSE,"ipc","na","last","pass","",""
+"duration_s",FALSE,"ipc","text","none","pass","",""
+"duration_s",FALSE,"ipc","text","first","pass","",""
+"duration_s",FALSE,"ipc","text","last","pass","",""
+"duration_s",TRUE,"parquet","null","none","pass","",""
+"duration_s",TRUE,"parquet","null","first","pass","",""
+"duration_s",TRUE,"parquet","null","last","pass","",""
+"duration_s",TRUE,"parquet","na","none","pass","",""
+"duration_s",TRUE,"parquet","na","first","pass","",""
+"duration_s",TRUE,"parquet","na","last","pass","",""
+"duration_s",TRUE,"parquet","text","none","pass","",""
+"duration_s",TRUE,"parquet","text","first","pass","",""
+"duration_s",TRUE,"parquet","text","last","pass","",""
+"duration_s",TRUE,"ipc","null","none","pass","",""
+"duration_s",TRUE,"ipc","null","first","pass","",""
+"duration_s",TRUE,"ipc","null","last","pass","",""
+"duration_s",TRUE,"ipc","na","none","pass","",""
+"duration_s",TRUE,"ipc","na","first","pass","",""
+"duration_s",TRUE,"ipc","na","last","pass","",""
+"duration_s",TRUE,"ipc","text","none","pass","",""
+"duration_s",TRUE,"ipc","text","first","pass","",""
+"duration_s",TRUE,"ipc","text","last","pass","",""
+"duration_ns",FALSE,"parquet","null","none","pass","",""
+"duration_ns",FALSE,"parquet","null","first","pass","",""
+"duration_ns",FALSE,"parquet","null","last","pass","",""
+"duration_ns",FALSE,"parquet","na","none","pass","",""
+"duration_ns",FALSE,"parquet","na","first","pass","",""
+"duration_ns",FALSE,"parquet","na","last","pass","",""
+"duration_ns",FALSE,"parquet","text","none","pass","",""
+"duration_ns",FALSE,"parquet","text","first","pass","",""
+"duration_ns",FALSE,"parquet","text","last","pass","",""
+"duration_ns",FALSE,"ipc","null","none","pass","",""
+"duration_ns",FALSE,"ipc","null","first","pass","",""
+"duration_ns",FALSE,"ipc","null","last","pass","",""
+"duration_ns",FALSE,"ipc","na","none","pass","",""
+"duration_ns",FALSE,"ipc","na","first","pass","",""
+"duration_ns",FALSE,"ipc","na","last","pass","",""
+"duration_ns",FALSE,"ipc","text","none","pass","",""
+"duration_ns",FALSE,"ipc","text","first","pass","",""
+"duration_ns",FALSE,"ipc","text","last","pass","",""
+"duration_ns",TRUE,"parquet","null","none","pass","",""
+"duration_ns",TRUE,"parquet","null","first","pass","",""
+"duration_ns",TRUE,"parquet","null","last","pass","",""
+"duration_ns",TRUE,"parquet","na","none","pass","",""
+"duration_ns",TRUE,"parquet","na","first","pass","",""
+"duration_ns",TRUE,"parquet","na","last","pass","",""
+"duration_ns",TRUE,"parquet","text","none","pass","",""
+"duration_ns",TRUE,"parquet","text","first","pass","",""
+"duration_ns",TRUE,"parquet","text","last","pass","",""
+"duration_ns",TRUE,"ipc","null","none","pass","",""
+"duration_ns",TRUE,"ipc","null","first","pass","",""
+"duration_ns",TRUE,"ipc","null","last","pass","",""
+"duration_ns",TRUE,"ipc","na","none","pass","",""
+"duration_ns",TRUE,"ipc","na","first","pass","",""
+"duration_ns",TRUE,"ipc","na","last","pass","",""
+"duration_ns",TRUE,"ipc","text","none","pass","",""
+"duration_ns",TRUE,"ipc","text","first","pass","",""
+"duration_ns",TRUE,"ipc","text","last","pass","",""
+"binary",FALSE,"parquet","null","none","pass","",""
+"binary",FALSE,"parquet","null","first","pass","",""
+"binary",FALSE,"parquet","null","last","pass","",""
+"binary",FALSE,"parquet","na","none","pass","",""
+"binary",FALSE,"parquet","na","first","pass","",""
+"binary",FALSE,"parquet","na","last","pass","",""
+"binary",FALSE,"parquet","text","none","pass","",""
+"binary",FALSE,"parquet","text","first","pass","",""
+"binary",FALSE,"parquet","text","last","pass","",""
+"binary",FALSE,"ipc","null","none","pass","",""
+"binary",FALSE,"ipc","null","first","pass","",""
+"binary",FALSE,"ipc","null","last","pass","",""
+"binary",FALSE,"ipc","na","none","pass","",""
+"binary",FALSE,"ipc","na","first","pass","",""
+"binary",FALSE,"ipc","na","last","pass","",""
+"binary",FALSE,"ipc","text","none","pass","",""
+"binary",FALSE,"ipc","text","first","pass","",""
+"binary",FALSE,"ipc","text","last","pass","",""
+"binary",TRUE,"parquet","null","none","pass","",""
+"binary",TRUE,"parquet","null","first","pass","",""
+"binary",TRUE,"parquet","null","last","pass","",""
+"binary",TRUE,"parquet","na","none","pass","",""
+"binary",TRUE,"parquet","na","first","pass","",""
+"binary",TRUE,"parquet","na","last","pass","",""
+"binary",TRUE,"parquet","text","none","pass","",""
+"binary",TRUE,"parquet","text","first","pass","",""
+"binary",TRUE,"parquet","text","last","pass","",""
+"binary",TRUE,"ipc","null","none","pass","",""
+"binary",TRUE,"ipc","null","first","pass","",""
+"binary",TRUE,"ipc","null","last","pass","",""
+"binary",TRUE,"ipc","na","none","pass","",""
+"binary",TRUE,"ipc","na","first","pass","",""
+"binary",TRUE,"ipc","na","last","pass","",""
+"binary",TRUE,"ipc","text","none","pass","",""
+"binary",TRUE,"ipc","text","first","pass","",""
+"binary",TRUE,"ipc","text","last","pass","",""
+"large_binary",FALSE,"parquet","null","none","pass","",""
+"large_binary",FALSE,"parquet","null","first","pass","",""
+"large_binary",FALSE,"parquet","null","last","pass","",""
+"large_binary",FALSE,"parquet","na","none","pass","",""
+"large_binary",FALSE,"parquet","na","first","pass","",""
+"large_binary",FALSE,"parquet","na","last","pass","",""
+"large_binary",FALSE,"parquet","text","none","pass","",""
+"large_binary",FALSE,"parquet","text","first","pass","",""
+"large_binary",FALSE,"parquet","text","last","pass","",""
+"large_binary",FALSE,"ipc","null","none","pass","",""
+"large_binary",FALSE,"ipc","null","first","pass","",""
+"large_binary",FALSE,"ipc","null","last","pass","",""
+"large_binary",FALSE,"ipc","na","none","pass","",""
+"large_binary",FALSE,"ipc","na","first","pass","",""
+"large_binary",FALSE,"ipc","na","last","pass","",""
+"large_binary",FALSE,"ipc","text","none","pass","",""
+"large_binary",FALSE,"ipc","text","first","pass","",""
+"large_binary",FALSE,"ipc","text","last","pass","",""
+"large_binary",TRUE,"parquet","null","none","pass","",""
+"large_binary",TRUE,"parquet","null","first","pass","",""
+"large_binary",TRUE,"parquet","null","last","pass","",""
+"large_binary",TRUE,"parquet","na","none","pass","",""
+"large_binary",TRUE,"parquet","na","first","pass","",""
+"large_binary",TRUE,"parquet","na","last","pass","",""
+"large_binary",TRUE,"parquet","text","none","pass","",""
+"large_binary",TRUE,"parquet","text","first","pass","",""
+"large_binary",TRUE,"parquet","text","last","pass","",""
+"large_binary",TRUE,"ipc","null","none","pass","",""
+"large_binary",TRUE,"ipc","null","first","pass","",""
+"large_binary",TRUE,"ipc","null","last","pass","",""
+"large_binary",TRUE,"ipc","na","none","pass","",""
+"large_binary",TRUE,"ipc","na","first","pass","",""
+"large_binary",TRUE,"ipc","na","last","pass","",""
+"large_binary",TRUE,"ipc","text","none","pass","",""
+"large_binary",TRUE,"ipc","text","first","pass","",""
+"large_binary",TRUE,"ipc","text","last","pass","",""
+"fixed_binary",FALSE,"parquet","null","none","pass","",""
+"fixed_binary",FALSE,"parquet","null","first","pass","",""
+"fixed_binary",FALSE,"parquet","null","last","pass","",""
+"fixed_binary",FALSE,"parquet","na","none","pass","",""
+"fixed_binary",FALSE,"parquet","na","first","pass","",""
+"fixed_binary",FALSE,"parquet","na","last","pass","",""
+"fixed_binary",FALSE,"parquet","text","none","pass","",""
+"fixed_binary",FALSE,"parquet","text","first","pass","",""
+"fixed_binary",FALSE,"parquet","text","last","pass","",""
+"fixed_binary",FALSE,"ipc","null","none","pass","",""
+"fixed_binary",FALSE,"ipc","null","first","pass","",""
+"fixed_binary",FALSE,"ipc","null","last","pass","",""
+"fixed_binary",FALSE,"ipc","na","none","pass","",""
+"fixed_binary",FALSE,"ipc","na","first","pass","",""
+"fixed_binary",FALSE,"ipc","na","last","pass","",""
+"fixed_binary",FALSE,"ipc","text","none","pass","",""
+"fixed_binary",FALSE,"ipc","text","first","pass","",""
+"fixed_binary",FALSE,"ipc","text","last","pass","",""
+"fixed_binary",TRUE,"parquet","null","none","pass","",""
+"fixed_binary",TRUE,"parquet","null","first","pass","",""
+"fixed_binary",TRUE,"parquet","null","last","pass","",""
+"fixed_binary",TRUE,"parquet","na","none","pass","",""
+"fixed_binary",TRUE,"parquet","na","first","pass","",""
+"fixed_binary",TRUE,"parquet","na","last","pass","",""
+"fixed_binary",TRUE,"parquet","text","none","pass","",""
+"fixed_binary",TRUE,"parquet","text","first","pass","",""
+"fixed_binary",TRUE,"parquet","text","last","pass","",""
+"fixed_binary",TRUE,"ipc","null","none","pass","",""
+"fixed_binary",TRUE,"ipc","null","first","pass","",""
+"fixed_binary",TRUE,"ipc","null","last","pass","",""
+"fixed_binary",TRUE,"ipc","na","none","pass","",""
+"fixed_binary",TRUE,"ipc","na","first","pass","",""
+"fixed_binary",TRUE,"ipc","na","last","pass","",""
+"fixed_binary",TRUE,"ipc","text","none","pass","",""
+"fixed_binary",TRUE,"ipc","text","first","pass","",""
+"fixed_binary",TRUE,"ipc","text","last","pass","",""
+"list",FALSE,"parquet","null","none","pass","",""
+"list",FALSE,"parquet","null","first","both_error","Type error: Unsupported type for RecordBatch sorting: list<element: int16>","Type error: Unsupported type for RecordBatch sorting: list<element: int16>"
+"list",FALSE,"parquet","null","last","both_error","Type error: Unsupported type for RecordBatch sorting: list<element: int16>","Type error: Unsupported type for RecordBatch sorting: list<element: int16>"
+"list",FALSE,"parquet","na","none","pass","",""
+"list",FALSE,"parquet","na","first","both_error","Type error: Unsupported type for RecordBatch sorting: list<element: int16>","Type error: Unsupported type for RecordBatch sorting: list<element: int16>"
+"list",FALSE,"parquet","na","last","both_error","Type error: Unsupported type for RecordBatch sorting: list<element: int16>","Type error: Unsupported type for RecordBatch sorting: list<element: int16>"
+"list",FALSE,"parquet","text","none","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from list<element: int16> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from list<element: int16> to utf8 using function cast_string"
+"list",FALSE,"parquet","text","first","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from list<element: int16> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from list<element: int16> to utf8 using function cast_string"
+"list",FALSE,"parquet","text","last","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from list<element: int16> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from list<element: int16> to utf8 using function cast_string"
+"list",FALSE,"ipc","null","none","pass","",""
+"list",FALSE,"ipc","null","first","both_error","Type error: Unsupported type for RecordBatch sorting: list<item: int16>","Type error: Unsupported type for RecordBatch sorting: list<item: int16>"
+"list",FALSE,"ipc","null","last","both_error","Type error: Unsupported type for RecordBatch sorting: list<item: int16>","Type error: Unsupported type for RecordBatch sorting: list<item: int16>"
+"list",FALSE,"ipc","na","none","pass","",""
+"list",FALSE,"ipc","na","first","both_error","Type error: Unsupported type for RecordBatch sorting: list<item: int16>","Type error: Unsupported type for RecordBatch sorting: list<item: int16>"
+"list",FALSE,"ipc","na","last","both_error","Type error: Unsupported type for RecordBatch sorting: list<item: int16>","Type error: Unsupported type for RecordBatch sorting: list<item: int16>"
+"list",FALSE,"ipc","text","none","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from list<item: int16> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from list<item: int16> to utf8 using function cast_string"
+"list",FALSE,"ipc","text","first","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from list<item: int16> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from list<item: int16> to utf8 using function cast_string"
+"list",FALSE,"ipc","text","last","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from list<item: int16> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from list<item: int16> to utf8 using function cast_string"
+"list",TRUE,"parquet","null","none","pass","",""
+"list",TRUE,"parquet","null","first","pass","",""
+"list",TRUE,"parquet","null","last","pass","",""
+"list",TRUE,"parquet","na","none","pass","",""
+"list",TRUE,"parquet","na","first","pass","",""
+"list",TRUE,"parquet","na","last","pass","",""
+"list",TRUE,"parquet","text","none","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from list<element: int16> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from list<element: int16> to utf8 using function cast_string"
+"list",TRUE,"parquet","text","first","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from list<element: int16> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from list<element: int16> to utf8 using function cast_string"
+"list",TRUE,"parquet","text","last","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from list<element: int16> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from list<element: int16> to utf8 using function cast_string"
+"list",TRUE,"ipc","null","none","pass","",""
+"list",TRUE,"ipc","null","first","pass","",""
+"list",TRUE,"ipc","null","last","pass","",""
+"list",TRUE,"ipc","na","none","pass","",""
+"list",TRUE,"ipc","na","first","pass","",""
+"list",TRUE,"ipc","na","last","pass","",""
+"list",TRUE,"ipc","text","none","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from list<item: int16> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from list<item: int16> to utf8 using function cast_string"
+"list",TRUE,"ipc","text","first","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from list<item: int16> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from list<item: int16> to utf8 using function cast_string"
+"list",TRUE,"ipc","text","last","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from list<item: int16> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from list<item: int16> to utf8 using function cast_string"
+"large_list",FALSE,"parquet","null","none","pass","",""
+"large_list",FALSE,"parquet","null","first","both_error","Type error: Unsupported type for RecordBatch sorting: large_list<element: int16>","Type error: Unsupported type for RecordBatch sorting: large_list<element: int16>"
+"large_list",FALSE,"parquet","null","last","both_error","Type error: Unsupported type for RecordBatch sorting: large_list<element: int16>","Type error: Unsupported type for RecordBatch sorting: large_list<element: int16>"
+"large_list",FALSE,"parquet","na","none","pass","",""
+"large_list",FALSE,"parquet","na","first","both_error","Type error: Unsupported type for RecordBatch sorting: large_list<element: int16>","Type error: Unsupported type for RecordBatch sorting: large_list<element: int16>"
+"large_list",FALSE,"parquet","na","last","both_error","Type error: Unsupported type for RecordBatch sorting: large_list<element: int16>","Type error: Unsupported type for RecordBatch sorting: large_list<element: int16>"
+"large_list",FALSE,"parquet","text","none","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from large_list<element: int16> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from large_list<element: int16> to utf8 using function cast_string"
+"large_list",FALSE,"parquet","text","first","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from large_list<element: int16> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from large_list<element: int16> to utf8 using function cast_string"
+"large_list",FALSE,"parquet","text","last","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from large_list<element: int16> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from large_list<element: int16> to utf8 using function cast_string"
+"large_list",FALSE,"ipc","null","none","pass","",""
+"large_list",FALSE,"ipc","null","first","both_error","Type error: Unsupported type for RecordBatch sorting: large_list<item: int16>","Type error: Unsupported type for RecordBatch sorting: large_list<item: int16>"
+"large_list",FALSE,"ipc","null","last","both_error","Type error: Unsupported type for RecordBatch sorting: large_list<item: int16>","Type error: Unsupported type for RecordBatch sorting: large_list<item: int16>"
+"large_list",FALSE,"ipc","na","none","pass","",""
+"large_list",FALSE,"ipc","na","first","both_error","Type error: Unsupported type for RecordBatch sorting: large_list<item: int16>","Type error: Unsupported type for RecordBatch sorting: large_list<item: int16>"
+"large_list",FALSE,"ipc","na","last","both_error","Type error: Unsupported type for RecordBatch sorting: large_list<item: int16>","Type error: Unsupported type for RecordBatch sorting: large_list<item: int16>"
+"large_list",FALSE,"ipc","text","none","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from large_list<item: int16> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from large_list<item: int16> to utf8 using function cast_string"
+"large_list",FALSE,"ipc","text","first","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from large_list<item: int16> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from large_list<item: int16> to utf8 using function cast_string"
+"large_list",FALSE,"ipc","text","last","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from large_list<item: int16> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from large_list<item: int16> to utf8 using function cast_string"
+"large_list",TRUE,"parquet","null","none","pass","",""
+"large_list",TRUE,"parquet","null","first","pass","",""
+"large_list",TRUE,"parquet","null","last","pass","",""
+"large_list",TRUE,"parquet","na","none","pass","",""
+"large_list",TRUE,"parquet","na","first","pass","",""
+"large_list",TRUE,"parquet","na","last","pass","",""
+"large_list",TRUE,"parquet","text","none","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from large_list<element: int16> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from large_list<element: int16> to utf8 using function cast_string"
+"large_list",TRUE,"parquet","text","first","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from large_list<element: int16> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from large_list<element: int16> to utf8 using function cast_string"
+"large_list",TRUE,"parquet","text","last","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from large_list<element: int16> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from large_list<element: int16> to utf8 using function cast_string"
+"large_list",TRUE,"ipc","null","none","pass","",""
+"large_list",TRUE,"ipc","null","first","pass","",""
+"large_list",TRUE,"ipc","null","last","pass","",""
+"large_list",TRUE,"ipc","na","none","pass","",""
+"large_list",TRUE,"ipc","na","first","pass","",""
+"large_list",TRUE,"ipc","na","last","pass","",""
+"large_list",TRUE,"ipc","text","none","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from large_list<item: int16> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from large_list<item: int16> to utf8 using function cast_string"
+"large_list",TRUE,"ipc","text","first","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from large_list<item: int16> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from large_list<item: int16> to utf8 using function cast_string"
+"large_list",TRUE,"ipc","text","last","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from large_list<item: int16> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from large_list<item: int16> to utf8 using function cast_string"
+"fixed_list",FALSE,"parquet","null","none","both_error","Invalid: Expected all lists to be of size=2 but index 3 had size=0","Invalid: Expected all lists to be of size=2 but index 3 had size=0"
+"fixed_list",FALSE,"parquet","null","first","both_error","Invalid: Expected all lists to be of size=2 but index 3 had size=0","Invalid: Expected all lists to be of size=2 but index 3 had size=0"
+"fixed_list",FALSE,"parquet","null","last","both_error","Invalid: Expected all lists to be of size=2 but index 3 had size=0","Invalid: Expected all lists to be of size=2 but index 3 had size=0"
+"fixed_list",FALSE,"parquet","na","none","both_error","Invalid: Expected all lists to be of size=2 but index 3 had size=0","Invalid: Expected all lists to be of size=2 but index 3 had size=0"
+"fixed_list",FALSE,"parquet","na","first","both_error","Invalid: Expected all lists to be of size=2 but index 3 had size=0","Invalid: Expected all lists to be of size=2 but index 3 had size=0"
+"fixed_list",FALSE,"parquet","na","last","both_error","Invalid: Expected all lists to be of size=2 but index 3 had size=0","Invalid: Expected all lists to be of size=2 but index 3 had size=0"
+"fixed_list",FALSE,"parquet","text","none","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from fixed_size_list<element: int16>[2] to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from fixed_size_list<element: int16>[2] to utf8 using function cast_string"
+"fixed_list",FALSE,"parquet","text","first","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from fixed_size_list<element: int16>[2] to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from fixed_size_list<element: int16>[2] to utf8 using function cast_string"
+"fixed_list",FALSE,"parquet","text","last","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from fixed_size_list<element: int16>[2] to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from fixed_size_list<element: int16>[2] to utf8 using function cast_string"
+"fixed_list",FALSE,"ipc","null","none","pass","",""
+"fixed_list",FALSE,"ipc","null","first","both_error","Type error: Unsupported type for RecordBatch sorting: fixed_size_list<item: int16>[2]","Type error: Unsupported type for RecordBatch sorting: fixed_size_list<item: int16>[2]"
+"fixed_list",FALSE,"ipc","null","last","both_error","Type error: Unsupported type for RecordBatch sorting: fixed_size_list<item: int16>[2]","Type error: Unsupported type for RecordBatch sorting: fixed_size_list<item: int16>[2]"
+"fixed_list",FALSE,"ipc","na","none","pass","",""
+"fixed_list",FALSE,"ipc","na","first","both_error","Type error: Unsupported type for RecordBatch sorting: fixed_size_list<item: int16>[2]","Type error: Unsupported type for RecordBatch sorting: fixed_size_list<item: int16>[2]"
+"fixed_list",FALSE,"ipc","na","last","both_error","Type error: Unsupported type for RecordBatch sorting: fixed_size_list<item: int16>[2]","Type error: Unsupported type for RecordBatch sorting: fixed_size_list<item: int16>[2]"
+"fixed_list",FALSE,"ipc","text","none","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from fixed_size_list<item: int16>[2] to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from fixed_size_list<item: int16>[2] to utf8 using function cast_string"
+"fixed_list",FALSE,"ipc","text","first","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from fixed_size_list<item: int16>[2] to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from fixed_size_list<item: int16>[2] to utf8 using function cast_string"
+"fixed_list",FALSE,"ipc","text","last","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from fixed_size_list<item: int16>[2] to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from fixed_size_list<item: int16>[2] to utf8 using function cast_string"
+"fixed_list",TRUE,"parquet","null","none","pass","",""
+"fixed_list",TRUE,"parquet","null","first","pass","",""
+"fixed_list",TRUE,"parquet","null","last","pass","",""
+"fixed_list",TRUE,"parquet","na","none","pass","",""
+"fixed_list",TRUE,"parquet","na","first","pass","",""
+"fixed_list",TRUE,"parquet","na","last","pass","",""
+"fixed_list",TRUE,"parquet","text","none","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from fixed_size_list<element: int16>[2] to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from fixed_size_list<element: int16>[2] to utf8 using function cast_string"
+"fixed_list",TRUE,"parquet","text","first","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from fixed_size_list<element: int16>[2] to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from fixed_size_list<element: int16>[2] to utf8 using function cast_string"
+"fixed_list",TRUE,"parquet","text","last","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from fixed_size_list<element: int16>[2] to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from fixed_size_list<element: int16>[2] to utf8 using function cast_string"
+"fixed_list",TRUE,"ipc","null","none","pass","",""
+"fixed_list",TRUE,"ipc","null","first","pass","",""
+"fixed_list",TRUE,"ipc","null","last","pass","",""
+"fixed_list",TRUE,"ipc","na","none","pass","",""
+"fixed_list",TRUE,"ipc","na","first","pass","",""
+"fixed_list",TRUE,"ipc","na","last","pass","",""
+"fixed_list",TRUE,"ipc","text","none","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from fixed_size_list<item: int16>[2] to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from fixed_size_list<item: int16>[2] to utf8 using function cast_string"
+"fixed_list",TRUE,"ipc","text","first","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from fixed_size_list<item: int16>[2] to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from fixed_size_list<item: int16>[2] to utf8 using function cast_string"
+"fixed_list",TRUE,"ipc","text","last","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from fixed_size_list<item: int16>[2] to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from fixed_size_list<item: int16>[2] to utf8 using function cast_string"
+"struct",FALSE,"parquet","null","none","pass","",""
+"struct",FALSE,"parquet","null","first","pass","",""
+"struct",FALSE,"parquet","null","last","pass","",""
+"struct",FALSE,"parquet","na","none","pass","",""
+"struct",FALSE,"parquet","na","first","pass","",""
+"struct",FALSE,"parquet","na","last","pass","",""
+"struct",FALSE,"parquet","text","none","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: int16, y: string> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: int16, y: string> to utf8 using function cast_string"
+"struct",FALSE,"parquet","text","first","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: int16, y: string> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: int16, y: string> to utf8 using function cast_string"
+"struct",FALSE,"parquet","text","last","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: int16, y: string> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: int16, y: string> to utf8 using function cast_string"
+"struct",FALSE,"ipc","null","none","pass","",""
+"struct",FALSE,"ipc","null","first","pass","",""
+"struct",FALSE,"ipc","null","last","pass","",""
+"struct",FALSE,"ipc","na","none","pass","",""
+"struct",FALSE,"ipc","na","first","pass","",""
+"struct",FALSE,"ipc","na","last","pass","",""
+"struct",FALSE,"ipc","text","none","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: int16, y: string> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: int16, y: string> to utf8 using function cast_string"
+"struct",FALSE,"ipc","text","first","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: int16, y: string> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: int16, y: string> to utf8 using function cast_string"
+"struct",FALSE,"ipc","text","last","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: int16, y: string> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: int16, y: string> to utf8 using function cast_string"
+"struct",TRUE,"parquet","null","none","pass","",""
+"struct",TRUE,"parquet","null","first","pass","",""
+"struct",TRUE,"parquet","null","last","pass","",""
+"struct",TRUE,"parquet","na","none","pass","",""
+"struct",TRUE,"parquet","na","first","pass","",""
+"struct",TRUE,"parquet","na","last","pass","",""
+"struct",TRUE,"parquet","text","none","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: int16, y: string> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: int16, y: string> to utf8 using function cast_string"
+"struct",TRUE,"parquet","text","first","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: int16, y: string> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: int16, y: string> to utf8 using function cast_string"
+"struct",TRUE,"parquet","text","last","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: int16, y: string> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: int16, y: string> to utf8 using function cast_string"
+"struct",TRUE,"ipc","null","none","pass","",""
+"struct",TRUE,"ipc","null","first","pass","",""
+"struct",TRUE,"ipc","null","last","pass","",""
+"struct",TRUE,"ipc","na","none","pass","",""
+"struct",TRUE,"ipc","na","first","pass","",""
+"struct",TRUE,"ipc","na","last","pass","",""
+"struct",TRUE,"ipc","text","none","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: int16, y: string> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: int16, y: string> to utf8 using function cast_string"
+"struct",TRUE,"ipc","text","first","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: int16, y: string> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: int16, y: string> to utf8 using function cast_string"
+"struct",TRUE,"ipc","text","last","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: int16, y: string> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: int16, y: string> to utf8 using function cast_string"
+"nested_struct",FALSE,"parquet","null","none","pass","",""
+"nested_struct",FALSE,"parquet","null","first","both_error","Type error: Unsupported type for RecordBatch sorting: list<element: int32>","Type error: Unsupported type for RecordBatch sorting: list<element: int32>"
+"nested_struct",FALSE,"parquet","null","last","both_error","Type error: Unsupported type for RecordBatch sorting: list<element: int32>","Type error: Unsupported type for RecordBatch sorting: list<element: int32>"
+"nested_struct",FALSE,"parquet","na","none","pass","",""
+"nested_struct",FALSE,"parquet","na","first","both_error","Type error: Unsupported type for RecordBatch sorting: list<element: int32>","Type error: Unsupported type for RecordBatch sorting: list<element: int32>"
+"nested_struct",FALSE,"parquet","na","last","both_error","Type error: Unsupported type for RecordBatch sorting: list<element: int32>","Type error: Unsupported type for RecordBatch sorting: list<element: int32>"
+"nested_struct",FALSE,"parquet","text","none","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: list<element: int32>> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: list<element: int32>> to utf8 using function cast_string"
+"nested_struct",FALSE,"parquet","text","first","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: list<element: int32>> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: list<element: int32>> to utf8 using function cast_string"
+"nested_struct",FALSE,"parquet","text","last","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: list<element: int32>> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: list<element: int32>> to utf8 using function cast_string"
+"nested_struct",FALSE,"ipc","null","none","pass","",""
+"nested_struct",FALSE,"ipc","null","first","both_error","Type error: Unsupported type for RecordBatch sorting: list<item: int32>","Type error: Unsupported type for RecordBatch sorting: list<item: int32>"
+"nested_struct",FALSE,"ipc","null","last","both_error","Type error: Unsupported type for RecordBatch sorting: list<item: int32>","Type error: Unsupported type for RecordBatch sorting: list<item: int32>"
+"nested_struct",FALSE,"ipc","na","none","pass","",""
+"nested_struct",FALSE,"ipc","na","first","both_error","Type error: Unsupported type for RecordBatch sorting: list<item: int32>","Type error: Unsupported type for RecordBatch sorting: list<item: int32>"
+"nested_struct",FALSE,"ipc","na","last","both_error","Type error: Unsupported type for RecordBatch sorting: list<item: int32>","Type error: Unsupported type for RecordBatch sorting: list<item: int32>"
+"nested_struct",FALSE,"ipc","text","none","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: list<item: int32>> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: list<item: int32>> to utf8 using function cast_string"
+"nested_struct",FALSE,"ipc","text","first","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: list<item: int32>> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: list<item: int32>> to utf8 using function cast_string"
+"nested_struct",FALSE,"ipc","text","last","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: list<item: int32>> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: list<item: int32>> to utf8 using function cast_string"
+"nested_struct",TRUE,"parquet","null","none","pass","",""
+"nested_struct",TRUE,"parquet","null","first","pass","",""
+"nested_struct",TRUE,"parquet","null","last","pass","",""
+"nested_struct",TRUE,"parquet","na","none","pass","",""
+"nested_struct",TRUE,"parquet","na","first","pass","",""
+"nested_struct",TRUE,"parquet","na","last","pass","",""
+"nested_struct",TRUE,"parquet","text","none","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: list<element: int32>> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: list<element: int32>> to utf8 using function cast_string"
+"nested_struct",TRUE,"parquet","text","first","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: list<element: int32>> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: list<element: int32>> to utf8 using function cast_string"
+"nested_struct",TRUE,"parquet","text","last","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: list<element: int32>> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: list<element: int32>> to utf8 using function cast_string"
+"nested_struct",TRUE,"ipc","null","none","pass","",""
+"nested_struct",TRUE,"ipc","null","first","pass","",""
+"nested_struct",TRUE,"ipc","null","last","pass","",""
+"nested_struct",TRUE,"ipc","na","none","pass","",""
+"nested_struct",TRUE,"ipc","na","first","pass","",""
+"nested_struct",TRUE,"ipc","na","last","pass","",""
+"nested_struct",TRUE,"ipc","text","none","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: list<item: int32>> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: list<item: int32>> to utf8 using function cast_string"
+"nested_struct",TRUE,"ipc","text","first","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: list<item: int32>> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: list<item: int32>> to utf8 using function cast_string"
+"nested_struct",TRUE,"ipc","text","last","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: list<item: int32>> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from struct<x: list<item: int32>> to utf8 using function cast_string"
+"dict_int32_FALSE",FALSE,"parquet","null","none","pass","",""
+"dict_int32_FALSE",FALSE,"parquet","null","first","pass","",""
+"dict_int32_FALSE",FALSE,"parquet","null","last","pass","",""
+"dict_int32_FALSE",FALSE,"parquet","na","none","pass","",""
+"dict_int32_FALSE",FALSE,"parquet","na","first","pass","",""
+"dict_int32_FALSE",FALSE,"parquet","na","last","pass","",""
+"dict_int32_FALSE",FALSE,"parquet","text","none","pass","",""
+"dict_int32_FALSE",FALSE,"parquet","text","first","pass","",""
+"dict_int32_FALSE",FALSE,"parquet","text","last","pass","",""
+"dict_int32_FALSE",FALSE,"ipc","null","none","pass","",""
+"dict_int32_FALSE",FALSE,"ipc","null","first","pass","",""
+"dict_int32_FALSE",FALSE,"ipc","null","last","pass","",""
+"dict_int32_FALSE",FALSE,"ipc","na","none","pass","",""
+"dict_int32_FALSE",FALSE,"ipc","na","first","pass","",""
+"dict_int32_FALSE",FALSE,"ipc","na","last","pass","",""
+"dict_int32_FALSE",FALSE,"ipc","text","none","pass","",""
+"dict_int32_FALSE",FALSE,"ipc","text","first","control_error_only","","Invalid: Failed to parse string: 'Total' as a scalar of type int32"
+"dict_int32_FALSE",FALSE,"ipc","text","last","control_error_only","","Invalid: Failed to parse string: 'Total' as a scalar of type int32"
+"dict_int32_FALSE",TRUE,"parquet","null","none","pass","",""
+"dict_int32_FALSE",TRUE,"parquet","null","first","pass","",""
+"dict_int32_FALSE",TRUE,"parquet","null","last","pass","",""
+"dict_int32_FALSE",TRUE,"parquet","na","none","pass","",""
+"dict_int32_FALSE",TRUE,"parquet","na","first","pass","",""
+"dict_int32_FALSE",TRUE,"parquet","na","last","pass","",""
+"dict_int32_FALSE",TRUE,"parquet","text","none","pass","",""
+"dict_int32_FALSE",TRUE,"parquet","text","first","pass","",""
+"dict_int32_FALSE",TRUE,"parquet","text","last","pass","",""
+"dict_int32_FALSE",TRUE,"ipc","null","none","pass","",""
+"dict_int32_FALSE",TRUE,"ipc","null","first","pass","",""
+"dict_int32_FALSE",TRUE,"ipc","null","last","pass","",""
+"dict_int32_FALSE",TRUE,"ipc","na","none","pass","",""
+"dict_int32_FALSE",TRUE,"ipc","na","first","pass","",""
+"dict_int32_FALSE",TRUE,"ipc","na","last","pass","",""
+"dict_int32_FALSE",TRUE,"ipc","text","none","pass","",""
+"dict_int32_FALSE",TRUE,"ipc","text","first","control_error_only","","Invalid: Failed to parse string: 'Total' as a scalar of type int32"
+"dict_int32_FALSE",TRUE,"ipc","text","last","control_error_only","","Invalid: Failed to parse string: 'Total' as a scalar of type int32"
+"dict_int32_TRUE",FALSE,"parquet","null","none","pass","",""
+"dict_int32_TRUE",FALSE,"parquet","null","first","pass","",""
+"dict_int32_TRUE",FALSE,"parquet","null","last","pass","",""
+"dict_int32_TRUE",FALSE,"parquet","na","none","pass","",""
+"dict_int32_TRUE",FALSE,"parquet","na","first","pass","",""
+"dict_int32_TRUE",FALSE,"parquet","na","last","pass","",""
+"dict_int32_TRUE",FALSE,"parquet","text","none","pass","",""
+"dict_int32_TRUE",FALSE,"parquet","text","first","pass","",""
+"dict_int32_TRUE",FALSE,"parquet","text","last","pass","",""
+"dict_int32_TRUE",FALSE,"ipc","null","none","pass","",""
+"dict_int32_TRUE",FALSE,"ipc","null","first","pass","",""
+"dict_int32_TRUE",FALSE,"ipc","null","last","pass","",""
+"dict_int32_TRUE",FALSE,"ipc","na","none","pass","",""
+"dict_int32_TRUE",FALSE,"ipc","na","first","pass","",""
+"dict_int32_TRUE",FALSE,"ipc","na","last","pass","",""
+"dict_int32_TRUE",FALSE,"ipc","text","none","pass","",""
+"dict_int32_TRUE",FALSE,"ipc","text","first","control_error_only","","Invalid: Failed to parse string: 'Total' as a scalar of type int32"
+"dict_int32_TRUE",FALSE,"ipc","text","last","control_error_only","","Invalid: Failed to parse string: 'Total' as a scalar of type int32"
+"dict_int32_TRUE",TRUE,"parquet","null","none","pass","",""
+"dict_int32_TRUE",TRUE,"parquet","null","first","pass","",""
+"dict_int32_TRUE",TRUE,"parquet","null","last","pass","",""
+"dict_int32_TRUE",TRUE,"parquet","na","none","pass","",""
+"dict_int32_TRUE",TRUE,"parquet","na","first","pass","",""
+"dict_int32_TRUE",TRUE,"parquet","na","last","pass","",""
+"dict_int32_TRUE",TRUE,"parquet","text","none","pass","",""
+"dict_int32_TRUE",TRUE,"parquet","text","first","pass","",""
+"dict_int32_TRUE",TRUE,"parquet","text","last","pass","",""
+"dict_int32_TRUE",TRUE,"ipc","null","none","pass","",""
+"dict_int32_TRUE",TRUE,"ipc","null","first","pass","",""
+"dict_int32_TRUE",TRUE,"ipc","null","last","pass","",""
+"dict_int32_TRUE",TRUE,"ipc","na","none","pass","",""
+"dict_int32_TRUE",TRUE,"ipc","na","first","pass","",""
+"dict_int32_TRUE",TRUE,"ipc","na","last","pass","",""
+"dict_int32_TRUE",TRUE,"ipc","text","none","pass","",""
+"dict_int32_TRUE",TRUE,"ipc","text","first","control_error_only","","Invalid: Failed to parse string: 'Total' as a scalar of type int32"
+"dict_int32_TRUE",TRUE,"ipc","text","last","control_error_only","","Invalid: Failed to parse string: 'Total' as a scalar of type int32"
+"dict_float64_FALSE",FALSE,"parquet","null","none","pass","",""
+"dict_float64_FALSE",FALSE,"parquet","null","first","pass","",""
+"dict_float64_FALSE",FALSE,"parquet","null","last","pass","",""
+"dict_float64_FALSE",FALSE,"parquet","na","none","pass","",""
+"dict_float64_FALSE",FALSE,"parquet","na","first","pass","",""
+"dict_float64_FALSE",FALSE,"parquet","na","last","pass","",""
+"dict_float64_FALSE",FALSE,"parquet","text","none","pass","",""
+"dict_float64_FALSE",FALSE,"parquet","text","first","pass","",""
+"dict_float64_FALSE",FALSE,"parquet","text","last","pass","",""
+"dict_float64_FALSE",FALSE,"ipc","null","none","pass","",""
+"dict_float64_FALSE",FALSE,"ipc","null","first","pass","",""
+"dict_float64_FALSE",FALSE,"ipc","null","last","pass","",""
+"dict_float64_FALSE",FALSE,"ipc","na","none","pass","",""
+"dict_float64_FALSE",FALSE,"ipc","na","first","pass","",""
+"dict_float64_FALSE",FALSE,"ipc","na","last","pass","",""
+"dict_float64_FALSE",FALSE,"ipc","text","none","pass","",""
+"dict_float64_FALSE",FALSE,"ipc","text","first","control_error_only","","Invalid: Failed to parse string: 'Total' as a scalar of type double"
+"dict_float64_FALSE",FALSE,"ipc","text","last","control_error_only","","Invalid: Failed to parse string: 'Total' as a scalar of type double"
+"dict_float64_FALSE",TRUE,"parquet","null","none","pass","",""
+"dict_float64_FALSE",TRUE,"parquet","null","first","pass","",""
+"dict_float64_FALSE",TRUE,"parquet","null","last","pass","",""
+"dict_float64_FALSE",TRUE,"parquet","na","none","pass","",""
+"dict_float64_FALSE",TRUE,"parquet","na","first","pass","",""
+"dict_float64_FALSE",TRUE,"parquet","na","last","pass","",""
+"dict_float64_FALSE",TRUE,"parquet","text","none","pass","",""
+"dict_float64_FALSE",TRUE,"parquet","text","first","pass","",""
+"dict_float64_FALSE",TRUE,"parquet","text","last","pass","",""
+"dict_float64_FALSE",TRUE,"ipc","null","none","pass","",""
+"dict_float64_FALSE",TRUE,"ipc","null","first","pass","",""
+"dict_float64_FALSE",TRUE,"ipc","null","last","pass","",""
+"dict_float64_FALSE",TRUE,"ipc","na","none","pass","",""
+"dict_float64_FALSE",TRUE,"ipc","na","first","pass","",""
+"dict_float64_FALSE",TRUE,"ipc","na","last","pass","",""
+"dict_float64_FALSE",TRUE,"ipc","text","none","pass","",""
+"dict_float64_FALSE",TRUE,"ipc","text","first","control_error_only","","Invalid: Failed to parse string: 'Total' as a scalar of type double"
+"dict_float64_FALSE",TRUE,"ipc","text","last","control_error_only","","Invalid: Failed to parse string: 'Total' as a scalar of type double"
+"dict_float64_TRUE",FALSE,"parquet","null","none","pass","",""
+"dict_float64_TRUE",FALSE,"parquet","null","first","pass","",""
+"dict_float64_TRUE",FALSE,"parquet","null","last","pass","",""
+"dict_float64_TRUE",FALSE,"parquet","na","none","pass","",""
+"dict_float64_TRUE",FALSE,"parquet","na","first","pass","",""
+"dict_float64_TRUE",FALSE,"parquet","na","last","pass","",""
+"dict_float64_TRUE",FALSE,"parquet","text","none","pass","",""
+"dict_float64_TRUE",FALSE,"parquet","text","first","pass","",""
+"dict_float64_TRUE",FALSE,"parquet","text","last","pass","",""
+"dict_float64_TRUE",FALSE,"ipc","null","none","pass","",""
+"dict_float64_TRUE",FALSE,"ipc","null","first","pass","",""
+"dict_float64_TRUE",FALSE,"ipc","null","last","pass","",""
+"dict_float64_TRUE",FALSE,"ipc","na","none","pass","",""
+"dict_float64_TRUE",FALSE,"ipc","na","first","pass","",""
+"dict_float64_TRUE",FALSE,"ipc","na","last","pass","",""
+"dict_float64_TRUE",FALSE,"ipc","text","none","pass","",""
+"dict_float64_TRUE",FALSE,"ipc","text","first","control_error_only","","Invalid: Failed to parse string: 'Total' as a scalar of type double"
+"dict_float64_TRUE",FALSE,"ipc","text","last","control_error_only","","Invalid: Failed to parse string: 'Total' as a scalar of type double"
+"dict_float64_TRUE",TRUE,"parquet","null","none","pass","",""
+"dict_float64_TRUE",TRUE,"parquet","null","first","pass","",""
+"dict_float64_TRUE",TRUE,"parquet","null","last","pass","",""
+"dict_float64_TRUE",TRUE,"parquet","na","none","pass","",""
+"dict_float64_TRUE",TRUE,"parquet","na","first","pass","",""
+"dict_float64_TRUE",TRUE,"parquet","na","last","pass","",""
+"dict_float64_TRUE",TRUE,"parquet","text","none","pass","",""
+"dict_float64_TRUE",TRUE,"parquet","text","first","pass","",""
+"dict_float64_TRUE",TRUE,"parquet","text","last","pass","",""
+"dict_float64_TRUE",TRUE,"ipc","null","none","pass","",""
+"dict_float64_TRUE",TRUE,"ipc","null","first","pass","",""
+"dict_float64_TRUE",TRUE,"ipc","null","last","pass","",""
+"dict_float64_TRUE",TRUE,"ipc","na","none","pass","",""
+"dict_float64_TRUE",TRUE,"ipc","na","first","pass","",""
+"dict_float64_TRUE",TRUE,"ipc","na","last","pass","",""
+"dict_float64_TRUE",TRUE,"ipc","text","none","pass","",""
+"dict_float64_TRUE",TRUE,"ipc","text","first","control_error_only","","Invalid: Failed to parse string: 'Total' as a scalar of type double"
+"dict_float64_TRUE",TRUE,"ipc","text","last","control_error_only","","Invalid: Failed to parse string: 'Total' as a scalar of type double"
+"dict_utf8_FALSE",FALSE,"parquet","null","none","pass","",""
+"dict_utf8_FALSE",FALSE,"parquet","null","first","pass","",""
+"dict_utf8_FALSE",FALSE,"parquet","null","last","pass","",""
+"dict_utf8_FALSE",FALSE,"parquet","na","none","pass","",""
+"dict_utf8_FALSE",FALSE,"parquet","na","first","pass","",""
+"dict_utf8_FALSE",FALSE,"parquet","na","last","pass","",""
+"dict_utf8_FALSE",FALSE,"parquet","text","none","pass","",""
+"dict_utf8_FALSE",FALSE,"parquet","text","first","pass","",""
+"dict_utf8_FALSE",FALSE,"parquet","text","last","pass","",""
+"dict_utf8_FALSE",FALSE,"ipc","null","none","pass","",""
+"dict_utf8_FALSE",FALSE,"ipc","null","first","pass","",""
+"dict_utf8_FALSE",FALSE,"ipc","null","last","pass","",""
+"dict_utf8_FALSE",FALSE,"ipc","na","none","pass","",""
+"dict_utf8_FALSE",FALSE,"ipc","na","first","pass","",""
+"dict_utf8_FALSE",FALSE,"ipc","na","last","pass","",""
+"dict_utf8_FALSE",FALSE,"ipc","text","none","pass","",""
+"dict_utf8_FALSE",FALSE,"ipc","text","first","pass","",""
+"dict_utf8_FALSE",FALSE,"ipc","text","last","pass","",""
+"dict_utf8_FALSE",TRUE,"parquet","null","none","pass","",""
+"dict_utf8_FALSE",TRUE,"parquet","null","first","pass","",""
+"dict_utf8_FALSE",TRUE,"parquet","null","last","pass","",""
+"dict_utf8_FALSE",TRUE,"parquet","na","none","pass","",""
+"dict_utf8_FALSE",TRUE,"parquet","na","first","pass","",""
+"dict_utf8_FALSE",TRUE,"parquet","na","last","pass","",""
+"dict_utf8_FALSE",TRUE,"parquet","text","none","pass","",""
+"dict_utf8_FALSE",TRUE,"parquet","text","first","pass","",""
+"dict_utf8_FALSE",TRUE,"parquet","text","last","pass","",""
+"dict_utf8_FALSE",TRUE,"ipc","null","none","pass","",""
+"dict_utf8_FALSE",TRUE,"ipc","null","first","pass","",""
+"dict_utf8_FALSE",TRUE,"ipc","null","last","pass","",""
+"dict_utf8_FALSE",TRUE,"ipc","na","none","pass","",""
+"dict_utf8_FALSE",TRUE,"ipc","na","first","pass","",""
+"dict_utf8_FALSE",TRUE,"ipc","na","last","pass","",""
+"dict_utf8_FALSE",TRUE,"ipc","text","none","pass","",""
+"dict_utf8_FALSE",TRUE,"ipc","text","first","pass","",""
+"dict_utf8_FALSE",TRUE,"ipc","text","last","pass","",""
+"dict_utf8_TRUE",FALSE,"parquet","null","none","pass","",""
+"dict_utf8_TRUE",FALSE,"parquet","null","first","pass","",""
+"dict_utf8_TRUE",FALSE,"parquet","null","last","pass","",""
+"dict_utf8_TRUE",FALSE,"parquet","na","none","pass","",""
+"dict_utf8_TRUE",FALSE,"parquet","na","first","pass","",""
+"dict_utf8_TRUE",FALSE,"parquet","na","last","pass","",""
+"dict_utf8_TRUE",FALSE,"parquet","text","none","pass","",""
+"dict_utf8_TRUE",FALSE,"parquet","text","first","pass","",""
+"dict_utf8_TRUE",FALSE,"parquet","text","last","pass","",""
+"dict_utf8_TRUE",FALSE,"ipc","null","none","pass","",""
+"dict_utf8_TRUE",FALSE,"ipc","null","first","pass","",""
+"dict_utf8_TRUE",FALSE,"ipc","null","last","pass","",""
+"dict_utf8_TRUE",FALSE,"ipc","na","none","pass","",""
+"dict_utf8_TRUE",FALSE,"ipc","na","first","pass","",""
+"dict_utf8_TRUE",FALSE,"ipc","na","last","pass","",""
+"dict_utf8_TRUE",FALSE,"ipc","text","none","pass","",""
+"dict_utf8_TRUE",FALSE,"ipc","text","first","pass","",""
+"dict_utf8_TRUE",FALSE,"ipc","text","last","pass","",""
+"dict_utf8_TRUE",TRUE,"parquet","null","none","pass","",""
+"dict_utf8_TRUE",TRUE,"parquet","null","first","pass","",""
+"dict_utf8_TRUE",TRUE,"parquet","null","last","pass","",""
+"dict_utf8_TRUE",TRUE,"parquet","na","none","pass","",""
+"dict_utf8_TRUE",TRUE,"parquet","na","first","pass","",""
+"dict_utf8_TRUE",TRUE,"parquet","na","last","pass","",""
+"dict_utf8_TRUE",TRUE,"parquet","text","none","pass","",""
+"dict_utf8_TRUE",TRUE,"parquet","text","first","pass","",""
+"dict_utf8_TRUE",TRUE,"parquet","text","last","pass","",""
+"dict_utf8_TRUE",TRUE,"ipc","null","none","pass","",""
+"dict_utf8_TRUE",TRUE,"ipc","null","first","pass","",""
+"dict_utf8_TRUE",TRUE,"ipc","null","last","pass","",""
+"dict_utf8_TRUE",TRUE,"ipc","na","none","pass","",""
+"dict_utf8_TRUE",TRUE,"ipc","na","first","pass","",""
+"dict_utf8_TRUE",TRUE,"ipc","na","last","pass","",""
+"dict_utf8_TRUE",TRUE,"ipc","text","none","pass","",""
+"dict_utf8_TRUE",TRUE,"ipc","text","first","pass","",""
+"dict_utf8_TRUE",TRUE,"ipc","text","last","pass","",""
+"extension",FALSE,"parquet","null","none","pass","",""
+"extension",FALSE,"parquet","null","first","both_error","Type error: Unsupported type for RecordBatch sorting: <hunt_vctr[0]>","Type error: Unsupported type for RecordBatch sorting: <hunt_vctr[0]>"
+"extension",FALSE,"parquet","null","last","both_error","Type error: Unsupported type for RecordBatch sorting: <hunt_vctr[0]>","Type error: Unsupported type for RecordBatch sorting: <hunt_vctr[0]>"
+"extension",FALSE,"parquet","na","none","pass","",""
+"extension",FALSE,"parquet","na","first","both_error","Type error: Unsupported type for RecordBatch sorting: <hunt_vctr[0]>","Type error: Unsupported type for RecordBatch sorting: <hunt_vctr[0]>"
+"extension",FALSE,"parquet","na","last","both_error","Type error: Unsupported type for RecordBatch sorting: <hunt_vctr[0]>","Type error: Unsupported type for RecordBatch sorting: <hunt_vctr[0]>"
+"extension",FALSE,"parquet","text","none","pass","",""
+"extension",FALSE,"parquet","text","first","pass","",""
+"extension",FALSE,"parquet","text","last","pass","",""
+"extension",FALSE,"ipc","null","none","pass","",""
+"extension",FALSE,"ipc","null","first","both_error","Type error: Unsupported type for RecordBatch sorting: <hunt_vctr[0]>","Type error: Unsupported type for RecordBatch sorting: <hunt_vctr[0]>"
+"extension",FALSE,"ipc","null","last","both_error","Type error: Unsupported type for RecordBatch sorting: <hunt_vctr[0]>","Type error: Unsupported type for RecordBatch sorting: <hunt_vctr[0]>"
+"extension",FALSE,"ipc","na","none","pass","",""
+"extension",FALSE,"ipc","na","first","both_error","Type error: Unsupported type for RecordBatch sorting: <hunt_vctr[0]>","Type error: Unsupported type for RecordBatch sorting: <hunt_vctr[0]>"
+"extension",FALSE,"ipc","na","last","both_error","Type error: Unsupported type for RecordBatch sorting: <hunt_vctr[0]>","Type error: Unsupported type for RecordBatch sorting: <hunt_vctr[0]>"
+"extension",FALSE,"ipc","text","none","pass","",""
+"extension",FALSE,"ipc","text","first","pass","",""
+"extension",FALSE,"ipc","text","last","pass","",""
+"extension",TRUE,"parquet","null","none","pass","",""
+"extension",TRUE,"parquet","null","first","pass","",""
+"extension",TRUE,"parquet","null","last","pass","",""
+"extension",TRUE,"parquet","na","none","pass","",""
+"extension",TRUE,"parquet","na","first","pass","",""
+"extension",TRUE,"parquet","na","last","pass","",""
+"extension",TRUE,"parquet","text","none","pass","",""
+"extension",TRUE,"parquet","text","first","pass","",""
+"extension",TRUE,"parquet","text","last","pass","",""
+"extension",TRUE,"ipc","null","none","pass","",""
+"extension",TRUE,"ipc","null","first","pass","",""
+"extension",TRUE,"ipc","null","last","pass","",""
+"extension",TRUE,"ipc","na","none","pass","",""
+"extension",TRUE,"ipc","na","first","pass","",""
+"extension",TRUE,"ipc","na","last","pass","",""
+"extension",TRUE,"ipc","text","none","pass","",""
+"extension",TRUE,"ipc","text","first","pass","",""
+"extension",TRUE,"ipc","text","last","pass","",""
+"map",FALSE,"parquet","null","none","pass","",""
+"map",FALSE,"parquet","null","first","both_error","Type error: Unsupported type for RecordBatch sorting: map<string, int32 ('g')>","Type error: Unsupported type for RecordBatch sorting: map<string, int32 ('g')>"
+"map",FALSE,"parquet","null","last","both_error","Type error: Unsupported type for RecordBatch sorting: map<string, int32 ('g')>","Type error: Unsupported type for RecordBatch sorting: map<string, int32 ('g')>"
+"map",FALSE,"parquet","na","none","pass","",""
+"map",FALSE,"parquet","na","first","both_error","Type error: Unsupported type for RecordBatch sorting: map<string, int32 ('g')>","Type error: Unsupported type for RecordBatch sorting: map<string, int32 ('g')>"
+"map",FALSE,"parquet","na","last","both_error","Type error: Unsupported type for RecordBatch sorting: map<string, int32 ('g')>","Type error: Unsupported type for RecordBatch sorting: map<string, int32 ('g')>"
+"map",FALSE,"parquet","text","none","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from map<string, int32 ('g')> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from map<string, int32 ('g')> to utf8 using function cast_string"
+"map",FALSE,"parquet","text","first","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from map<string, int32 ('g')> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from map<string, int32 ('g')> to utf8 using function cast_string"
+"map",FALSE,"parquet","text","last","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from map<string, int32 ('g')> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from map<string, int32 ('g')> to utf8 using function cast_string"
+"map",FALSE,"ipc","null","none","pass","",""
+"map",FALSE,"ipc","null","first","both_error","Type error: Unsupported type for RecordBatch sorting: map<string, int32>","Type error: Unsupported type for RecordBatch sorting: map<string, int32>"
+"map",FALSE,"ipc","null","last","both_error","Type error: Unsupported type for RecordBatch sorting: map<string, int32>","Type error: Unsupported type for RecordBatch sorting: map<string, int32>"
+"map",FALSE,"ipc","na","none","pass","",""
+"map",FALSE,"ipc","na","first","both_error","Type error: Unsupported type for RecordBatch sorting: map<string, int32>","Type error: Unsupported type for RecordBatch sorting: map<string, int32>"
+"map",FALSE,"ipc","na","last","both_error","Type error: Unsupported type for RecordBatch sorting: map<string, int32>","Type error: Unsupported type for RecordBatch sorting: map<string, int32>"
+"map",FALSE,"ipc","text","none","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from map<string, int32> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from map<string, int32> to utf8 using function cast_string"
+"map",FALSE,"ipc","text","first","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from map<string, int32> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from map<string, int32> to utf8 using function cast_string"
+"map",FALSE,"ipc","text","last","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from map<string, int32> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from map<string, int32> to utf8 using function cast_string"
+"map",TRUE,"parquet","null","none","pass","",""
+"map",TRUE,"parquet","null","first","pass","",""
+"map",TRUE,"parquet","null","last","pass","",""
+"map",TRUE,"parquet","na","none","pass","",""
+"map",TRUE,"parquet","na","first","pass","",""
+"map",TRUE,"parquet","na","last","pass","",""
+"map",TRUE,"parquet","text","none","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from map<string, int32 ('g')> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from map<string, int32 ('g')> to utf8 using function cast_string"
+"map",TRUE,"parquet","text","first","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from map<string, int32 ('g')> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from map<string, int32 ('g')> to utf8 using function cast_string"
+"map",TRUE,"parquet","text","last","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from map<string, int32 ('g')> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from map<string, int32 ('g')> to utf8 using function cast_string"
+"map",TRUE,"ipc","null","none","pass","",""
+"map",TRUE,"ipc","null","first","pass","",""
+"map",TRUE,"ipc","null","last","pass","",""
+"map",TRUE,"ipc","na","none","pass","",""
+"map",TRUE,"ipc","na","first","pass","",""
+"map",TRUE,"ipc","na","last","pass","",""
+"map",TRUE,"ipc","text","none","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from map<string, int32> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from map<string, int32> to utf8 using function cast_string"
+"map",TRUE,"ipc","text","first","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from map<string, int32> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from map<string, int32> to utf8 using function cast_string"
+"map",TRUE,"ipc","text","last","both_error","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from map<string, int32> to utf8 using function cast_string","ℹ In index: 1.
+ℹ With name: g.
+Caused by error:
+! NotImplemented: Unsupported cast from map<string, int32> to utf8 using function cast_string"

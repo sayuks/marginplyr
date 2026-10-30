@@ -1,0 +1,29 @@
+[
+  {
+    "command": [
+      "Rscript",
+      "investigation/2026-10-30-expand-grouping-hunt/local/reproduce-classed-structured-missing.R",
+      "--assert"
+    ],
+    "exit_code": 1,
+    "expected_on_baseline": 1
+  },
+  {
+    "command": [
+      "Rscript",
+      "investigation/2026-10-30-expand-grouping-hunt/local/reproduce-table-structured-missing.R",
+      "--assert"
+    ],
+    "exit_code": 1,
+    "expected_on_baseline": 1
+  },
+  {
+    "command": [
+      "Rscript",
+      "investigation/2026-10-30-expand-grouping-hunt/local/reproduce-table-prototype.R",
+      "--assert"
+    ],
+    "exit_code": 1,
+    "expected_on_baseline": 1
+  }
+]

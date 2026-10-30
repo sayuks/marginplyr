@@ -1,0 +1,34 @@
+slice failure: expression `x` must be a vector, not an expression vector.
+ℹ Read our FAQ about scalar types (`?vctrs::faq_error_scalar_type`) to learn more.
+slice failure: expression `x` must be a vector, not an expression vector.
+ℹ Read our FAQ about scalar types (`?vctrs::faq_error_scalar_type`) to learn more.
+slice failure: expression `x` must be a vector, not an expression vector.
+ℹ Read our FAQ about scalar types (`?vctrs::faq_error_scalar_type`) to learn more.
+slice failure: timeDate `x` must be a vector, not a <timeDate> object.
+ℹ Read our FAQ about scalar types (`?vctrs::faq_error_scalar_type`) to learn more.
+slice failure: timeDate `x` must be a vector, not a <timeDate> object.
+ℹ Read our FAQ about scalar types (`?vctrs::faq_error_scalar_type`) to learn more.
+slice failure: timeDate `x` must be a vector, not a <timeDate> object.
+ℹ Read our FAQ about scalar types (`?vctrs::faq_error_scalar_type`) to learn more.
+                  verdict
+kind               difference match package_error package_refusal
+  complex                   0    81             0               0
+  Date_matrix               0    36            36               9
+  difftime_matrix           0    54            18               9
+  distribution              0    81             0               0
+  integer64_matrix          0    72             0               9
+  labelled                  0    81             0               0
+  labelled_spss             0    81             0               0
+  POSIXct_matrix            0    36            36               9
+  posixlt                   0    81             0               0
+  raw                       0    63             0              18
+  rvar                     36     9            18              18
+  surv                      0    36            36               9
+  table                     0    63            18               0
+  ts                        0    81             0               0
+  units_matrix              0    72             0               9
+  yearmon                   0    81             0               0
+  yearqtr                   0    81             0               0
+
+     difference           match   package_error package_refusal
+             36            1089             162              90
