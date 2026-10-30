@@ -49,16 +49,29 @@ local({
   process <- list(
     poll_io = function(timeout) {
       ticks <<- ticks + 1L
-      writeLines(c("total\t2", "done\ttest-first.R"),
-        file.path(directory, "test-progress.tsv"))
-    },
-    read_output_lines = function() character(),
-    is_alive = function() {
+      transcript <- file.path(directory, "fixture.Rcheck", "tests", "testthat.Rout")
+      dir.create(dirname(transcript), recursive = TRUE, showWarnings = FALSE)
+      if (ticks == 1L) {
+        writeLines(c("Starting 1 test process.", "Error:",
+          "! testthat subprocess failed to start.", "Caused by error:",
+          "! fixture worker startup failure"), transcript)
+        cat("partial frame", file = transcript, append = TRUE)
+      } else {
+        writeLines(c("total\t2", "done\ttest-first.R"),
+          file.path(directory, "test-progress.tsv"))
+      }
       if (ticks == 2L) {
+        cat(" complete\n", file = transcript, append = TRUE)
+        file.rename(transcript, paste0(transcript, ".fail"))
+      }
+    },
+    read_output_lines = function() paste("checker poll", ticks),
+    is_alive = function() {
+      if (ticks == 3L) {
         writeLines(c("total\t2", "done\ttest-first.R", "done\ttest-second.R", "finished"),
           file.path(directory, "test-progress.tsv"))
       }
-      ticks < 2L
+      ticks < 3L
     },
     wait = function() NULL,
     kill = function() stop("A completed process must not be killed."),
@@ -77,6 +90,18 @@ local({
     check_dir = directory, error_on = "never", env = character(), repos = character(),
     process_factory = factory
   ))
+  expect_identical(sum(output == "Starting 1 test process."), 1L,
+    "the native selected-process count is forwarded once")
+  expect_true(match("Starting 1 test process.", output) <
+    grep("1/2 files completed", output, fixed = TRUE)[[1L]],
+    "the startup message is visible while the check is running")
+  expect_true(match("! fixture worker startup failure", output) <
+    match("checker poll 2", output),
+    "worker startup diagnostics are visible before reporter events or terminal exit")
+  expect_identical(sum(output == "Test worker diagnostic:"), 1L,
+    "renaming the transcript to .fail does not repeat the diagnostic")
+  expect_true("partial frame complete" %in% output,
+    "an unfinished diagnostic line is forwarded after it becomes complete")
   expect_true(any(grepl("1/2 files completed (50.0%); last: test-first.R",
     output, fixed = TRUE)), "live file progress")
   expect_true(any(grepl("2/2 files completed (100.0%); last: test-second.R",
