@@ -96,12 +96,24 @@ above. It also adds a query where the chosen mechanism adds none.
 Two mechanisms, chosen so that they fail in opposite directions.
 
 The **handler** reads the warning an Absorbing backend marks the absorption
-with, which is raised before the read. Arrow's carries no class, no cause, and no
-call, so its text is the only thing to recognise it by. That is undocumented
-behaviour of another package, and it is gated rather than trusted: a test asserts
-that Arrow still absorbs the expressions the refusal is asserted over and still
-marks them with that text, so a re-wording fails there instead of switching the
-refusal off silently.
+with, which is raised before the read. The condition has no absorption-specific
+class, cause, or call. Its text identifies the marker, but cannot establish who
+raised it: a caller warning can contain the same words, including a sentence
+that denies absorption (#1072). The handler therefore also reads the live
+signalling stack. The active `warning()` or `rlang::warn()` emitter must have
+been called by a function in Arrow's namespace. The base emitter delegated to
+by `rlang::warn()` belongs to the same emission; older Arrow frames evaluating
+a caller's function do not establish its origin. This reads no source data and
+changes no condition fields, so caller warnings keep ordinary propagation and
+Repeated-condition handling.
+
+Both the marker and the signalling route are undocumented behaviour of another
+package, and are gated rather than trusted: a test asserts that Arrow still
+absorbs the expressions the refusal is asserted over and that the handler
+recognises the warning before collection. Synthetic emissions cover the base
+warning route through Arrow 16.0.0 and the rlang route from 17.0.0, with their
+respective marker phrasings. A change to either dependency fails the gate
+instead of switching the refusal off silently.
 
 The **guard** reads the branch result's class — a local data frame from an input
 that was not one — which cannot stop matching, but only answers after the branch
@@ -201,8 +213,8 @@ grouping set reports, and is untouched: the refusal stops at the first branch, s
 there is nothing repeated to report. ADR 0022 and ADR 0024 are what the refusal
 spells its subject by, and ADR 0023 is the idiom it is authored in.
 
-Evidence: `investigation/what-arrow-does-with-an-untranslatable-summary.md`.
-Everything this decision asserts about Arrow was measured there, including the
-one fact the mechanism turns on that is not visible from the newest release:
-Arrow reworded the warning between 16.0.0 and 17.0.0, and `DESCRIPTION` admits
-both sides of that change.
+Evidence: `investigation/what-arrow-does-with-an-untranslatable-summary.md`
+records the absorption path and Arrow's warning rewrite between 16.0.0 and
+17.0.0; `DESCRIPTION` admits both sides of that change.
+`investigation/summary-spec-total-share-bughunt-2026-10-30.md` records the
+caller-warning collision (#1072).
