@@ -736,6 +736,17 @@ test_that("no Arrow read happens while a Margin verb runs", {
     0L
   )
 
+  offset <- function() {
+    warning("the caller is not pulling data into R", call. = FALSE)
+    1
+  }
+  expect_identical(
+    count_entry_point_invocations(suppressWarnings(summarize_with_margins(
+      table, total = sum(v) + offset(), .grouping = rollup(k)
+    ))),
+    0L
+  )
+
   expect_identical(
     count_entry_point_invocations(
       expand_with_margins(table, .grouping = rollup(k))
@@ -774,6 +785,39 @@ test_that("no Arrow read happens while a Margin verb runs", {
       info = shape
     )
   }
+})
+
+test_that("a caller warning does not hide a later Arrow absorption", {
+  skip_if_suggest_absent("arrow")
+  input <- arrow::Table$create(arrow_input_data())
+  caller_cnd <- simpleWarning("the caller is not pulling data into R")
+  offset <- function() {
+    warning(caller_cnd)
+    1
+  }
+  observed <- list()
+  error <- NULL
+  reads <- count_entry_point_invocations(withCallingHandlers(
+    {
+      error <- tryCatch(
+        summarize_with_margins(
+          input, total = sum(v) + offset(), joined = paste(s, collapse = ","),
+          .grouping = rollup(k)
+        ),
+        error = identity
+      )
+    },
+    warning = function(cnd) {
+      observed[[length(observed) + 1L]] <<- cnd
+      invokeRestart("muffleWarning")
+    }
+  ))
+
+  expect_identical(reads, 0L)
+  expect_identical(observed, list(caller_cnd))
+  expect_s3_class(error, "marginplyr_error")
+  expect_match(conditionMessage(error), "joined = paste(s, collapse = \",\")",
+               fixed = TRUE)
 })
 
 # The fifth Arrow shape and the query over it, which the loop above cannot

@@ -4,6 +4,10 @@
   bindings at execution while retaining the environments of injected
   `quosures` (#1070).
 
+* Supported Arrow summaries preserve caller warnings containing the absorption
+  marker, while genuine absorption is still refused before reading input rows
+  (#1072).
+
 * dtplyr Margin verbs preserve `.SD` dimensions during opt-in observed Margin
   label collision checks and report collisions under the caller's column names
   (#1046).

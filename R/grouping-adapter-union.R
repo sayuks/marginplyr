@@ -286,50 +286,16 @@ sqlite_union_operand <- function(branch) {
   }
 }
 
-# The text an Absorbing backend marks an absorption with, which is the whole of
-# what a backend can be recognised as absorbing by. Arrow's warning carries no
-# class of its own, no `$parent`, and no `$call` -- it is an `rlang_warning`
-# holding one rendered string -- so there is nothing else to key on.
-#
-# It is matched without regard to case, and that is a version range rather than
-# caution. `DESCRIPTION` admits `arrow (>= 13.0.0)`, and Arrow rewrote this
-# warning between 16.0.0 and 17.0.0: through 16.0.0 it was
-# `warning(msg, "; pulling data into R")`, and from 17.0.0 it is an rlang
-# warning whose body ends `"Pulling data into R"`. What survived the rewrite is
-# the phrase and not its capitalisation, so matching the capitalised spelling
-# alone left the refusal switched off for four of the versions this package
-# says it supports, where Arrow absorbs exactly as it does on the newest
-# (`investigation/what-arrow-does-with-an-untranslatable-summary.md`).
-#
-# This is undocumented behaviour of another package, and it is depended on the
-# way `AGENTS.md` depends on roxygen's treatment of a markdown table row: by
-# gating it. `test-grouping-backends.R` asserts that Arrow still absorbs the
-# expressions the refusal is asserted over and still marks the absorption with
-# this text, so a re-wording fails there rather than silently switching the
-# refusal off. It is a function rather than a constant so that taking it away
-# is how the backstop below is reached in a test.
-#
-# The gate calls `is_absorbing_backend_warning()` rather than matching this
-# marker a second time of its own, and that is the difference between gating
-# the reading and gating a copy of it: a second match answers for its own
-# spelling, so it would go on reporting Arrow as marking the absorption after
-# the handler had stopped recognising it. Which leaves one thing the gate
-# cannot see, since it holds one Arrow and the case difference above spans two
-# -- so the reading is asserted on both phrasings beside it, over synthesised
-# warnings.
+# Arrow's absorption marker, matched without regard to case for the warning
+# phrasings before and after Arrow 17.0.0 (ADR 0025). Kept as a function so the
+# local-result guard can be exercised with a missed marker.
 absorbing_warning_marker <- function() {
   "pulling data into R"
 }
 
-# `.data` decides as well as the text, because the text alone answers for a
-# warning marginplyr did not cause: a caller's own summary expression may spell
-# anything, and a refusal naming Arrow raised over a `dtplyr` input would be
-# wrong twice over. The class list is `R/grouping-backend.R`'s, so the two
-# readings cannot disagree about what an Arrow input is.
-#
-# `conditionMessage()` is checked for shape before it is matched: a condition
-# class of another package's may carry a message method returning anything, and
-# `grepl()` over a vector would answer for whichever element matched.
+# Recognise an absorption while its warning is being signalled. The input,
+# marker, and signalling origin must all belong to Arrow; caller text alone
+# does not establish absorption (ADR 0025).
 is_absorbing_backend_warning <- function(cnd, .data) {
   if (!inherits(.data, arrow_input_classes())) {
     return(FALSE)
@@ -337,7 +303,35 @@ is_absorbing_backend_warning <- function(cnd, .data) {
   text <- conditionMessage(cnd)
   is.character(text) &&
     length(text) == 1L &&
-    grepl(absorbing_warning_marker(), text, ignore.case = TRUE)
+    grepl(absorbing_warning_marker(), text, ignore.case = TRUE) &&
+    warning_from_arrow()
+}
+
+# Identify the namespace that called the active warning emitter, without
+# loading Arrow or inspecting data. Called synchronously from a warning handler.
+warning_from_arrow <- function() {
+  parents <- sys.parents()
+  for (frame in rev(seq_along(parents))) {
+    emitter <- sys.function(frame)
+    if (!identical(emitter, base::warning) &&
+          !identical(emitter, rlang::warn)) {
+      next
+    }
+    origin <- parents[[frame]]
+    # rlang::warn() delegates signalling to base::warning(). Follow that
+    # emitter chain, not older Arrow frames still evaluating caller code.
+    while (origin > 0L &&
+             (identical(sys.function(origin), base::warning) ||
+                identical(sys.function(origin), rlang::warn))) {
+      origin <- parents[[origin]]
+    }
+    if (origin == 0L) {
+      return(FALSE)
+    }
+    env <- environment(sys.function(origin))
+    return(isNamespace(env) && getNamespaceName(env) == "arrow")
+  }
+  FALSE
 }
 
 # The label Arrow writes an absorbed expression by, reproduced so that the
