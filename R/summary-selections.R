@@ -952,19 +952,21 @@ plan_summary_expressions <- function(dots,
   )
 }
 
-# Whether share planning needs the first local across call's output names.
-# Known FALSE unpacking is the shape dplyr expands before evaluating groups.
+# Whether share planning needs the first direct local across call's names.
+# Only the shape dplyr expands before groups uses this preparation (ADR 0019).
 first_across_needs_planning <- function(dots) {
   if (length(dots) == 0L || nzchar(rlang::names2(dots)[[1L]]) ||
-        !is_across_call(rlang::quo_get_expr(dots[[1L]])) ||
+        !rlang::is_call(rlang::quo_get_expr(dots[[1L]]), "across",
+                        ns = c("", "dplyr")) ||
         contains_share_helper(rlang::quo_get_expr(dots[[1L]])) ||
         shares_use_named_summaries(dots)) {
     return(FALSE)
   }
-  any(vapply(dots, function(dot) {
+  parsed <- parse_across_arguments(rlang::quo_get_expr(dots[[1L]]))
+  length(parsed$additional) == 0L && any(vapply(dots, function(dot) {
     contains_share_helper(rlang::quo_get_expr(dot))
   }, logical(1))) && across_unpack_is_false(
-    parse_across_arguments(rlang::quo_get_expr(dots[[1L]]))$unpack,
+    parsed$unpack,
     rlang::quo_get_env(dots[[1L]])
   )
 }
