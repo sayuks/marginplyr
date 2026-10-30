@@ -5,23 +5,23 @@ if (nzchar(Sys.getenv("MARGINPLYR_TIMING_DIR"))) {
     tracer = quote({
       if (identical(Sys.getenv("TESTTHAT_IS_PARALLEL"), "true")) {
         cat("start", basename(path), Sys.getpid(),
-          sprintf("%.6f", as.numeric(Sys.time())),
-          sprintf("%.6f", proc.time()[["elapsed"]]), sep = "\t",
-          file = file.path(Sys.getenv("MARGINPLYR_TIMING_DIR"),
-            paste0(Sys.getpid(), ".tsv")), append = TRUE)
+            sprintf("%.6f", as.numeric(Sys.time())),
+            sprintf("%.6f", proc.time()[["elapsed"]]), sep = "\t",
+            file = file.path(Sys.getenv("MARGINPLYR_TIMING_DIR"),
+                             paste0(Sys.getpid(), ".tsv")), append = TRUE)
         cat("\n", file = file.path(Sys.getenv("MARGINPLYR_TIMING_DIR"),
-          paste0(Sys.getpid(), ".tsv")), append = TRUE)
+                                   paste0(Sys.getpid(), ".tsv")), append = TRUE)
       }
     }),
     exit = quote({
       if (identical(Sys.getenv("TESTTHAT_IS_PARALLEL"), "true")) {
         cat("end", basename(path), Sys.getpid(),
-          sprintf("%.6f", as.numeric(Sys.time())),
-          sprintf("%.6f", proc.time()[["elapsed"]]), sep = "\t",
-          file = file.path(Sys.getenv("MARGINPLYR_TIMING_DIR"),
-            paste0(Sys.getpid(), ".tsv")), append = TRUE)
+            sprintf("%.6f", as.numeric(Sys.time())),
+            sprintf("%.6f", proc.time()[["elapsed"]]), sep = "\t",
+            file = file.path(Sys.getenv("MARGINPLYR_TIMING_DIR"),
+                             paste0(Sys.getpid(), ".tsv")), append = TRUE)
         cat("\n", file = file.path(Sys.getenv("MARGINPLYR_TIMING_DIR"),
-          paste0(Sys.getpid(), ".tsv")), append = TRUE)
+                                   paste0(Sys.getpid(), ".tsv")), append = TRUE)
       }
     })
   )
