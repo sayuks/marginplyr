@@ -963,6 +963,21 @@ first_across_needs_planning <- function(dots) {
     return(FALSE)
   }
   parsed <- parse_across_arguments(rlang::quo_get_expr(dots[[1L]]))
+  if (length(known_across_function_names(
+    parsed, rlang::quo_get_env(dots[[1L]])
+  )) == 0L) {
+    # An unresolved first source stays with source planning before its
+    # function argument can run.
+    static_dots <- Filter(function(dot) {
+      expr <- rlang::quo_get_expr(dot)
+      if (!contains_share_helper(expr) || is_share_helper_call(expr)) {
+        return(TRUE)
+      }
+      selection <- unwrap_injected_quosure(parse_across_arguments(expr)$cols)
+      is_name_part(selection) || is.character(selection)
+    }, dots)
+    if (!shares_use_named_summaries(static_dots)) return(FALSE)
+  }
   length(parsed$additional) == 0L && any(vapply(dots, function(dot) {
     contains_share_helper(rlang::quo_get_expr(dot))
   }, logical(1))) && across_unpack_is_false(
@@ -981,6 +996,7 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
   expr <- rlang::quo_get_expr(original)
   env <- rlang::quo_get_env(original)
   parsed <- parse_across_arguments(expr)
+  unknown_fns <- length(known_across_function_names(parsed, env)) == 0L
   columns <- setdiff(data_vars, group_vars)
   selection_data <- vctrs::new_data_frame(
     as.list(data)[columns], n = nrow(data)
@@ -991,6 +1007,10 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
   state <- new.env(parent = emptyenv())
   state$warnings <- list()
   state$planning_warnings <- list()
+  nested_state <- rlang::env(
+    emptyenv(), forbidden_names = character(), internal_names = character(),
+    share_aliases = character(), source_checks = list()
+  )
   capture_fns <- function(value) {
     state$fns_env <- parent.frame()
     state$fns <- list(withCallingHandlers(value, warning = function(cnd) {
@@ -1010,6 +1030,12 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
         args <- append(list(.cols = selection), args)
       } else {
         args[[parsed$cols_index]] <- selection
+      }
+      if (unknown_fns && parsed$fns_index > 0L) {
+        # Forcing a promise does not establish static source provenance.
+        args[[parsed$fns_index]] <- rlang::call2(
+          "identity", parsed$fns, .ns = "base"
+        )
       }
       dots[[1L]] <- rlang::new_quosure(rebuild_static_call(expr, args), env)
       planner(dots)
@@ -1031,8 +1057,13 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
   if (parsed$fns_index > 0L &&
         !rlang::is_missing(parsed$call_args[[parsed$fns_index]])) {
     probe_expr <- rlang::quo_get_expr(probe)
+    fns <- rewrite_summary_selections(
+      parsed$fns, env, selection_data, normalize_across_names = FALSE,
+      defer_local = TRUE, group_vars = group_vars,
+      forbidden_names = nested_state
+    )
     probe_expr[[3L]] <- rlang::new_quosure(
-      rlang::call2(capture_fns, parsed$fns), env
+      rlang::call2(capture_fns, fns), env
     )
     probe <- rlang::quo_set_expr(probe, probe_expr)
   }
@@ -1054,6 +1085,9 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
   for (cnd in state$planning_warnings) warning(cnd)
   result <- state$result
   state$result <- NULL
+  # Captured closures now use the first dot's live selection state.
+  parent.env(nested_state) <- result$summaries$selection_state$by_dot[[1L]]
+  rlang::env_unbind(nested_state, ls(nested_state, all.names = TRUE))
   result$summaries$labels[[1L]] <- summary_argument_labels(list(original))[[1L]]
   if (!is.null(state$fns)) {
     first <- result$summaries$dots[[1L]]

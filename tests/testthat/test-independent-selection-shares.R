@@ -207,6 +207,38 @@ test_that("cached first functions retain the local summary mask", {
   }
 })
 
+test_that("function evaluation does not promote unresolved share sources", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3))
+  for (explicit in c(FALSE, TRUE)) {
+    caller <- rlang::env(rlang::current_env(), calls = 0L)
+    delayedAssign("fn", {
+      caller$calls <- caller$calls + 1L
+      sum
+    }, assign.env = caller)
+    ordinary <- rlang::new_quosure(
+      quote(dplyr::across(x, fn, .names = "s")), caller
+    )
+    if (explicit) {
+      expect_error(summarize_with_margins(
+        data, !!ordinary,
+        dplyr::across(s, share_of_total, .names = "share"),
+        .grouping = rollup(g)
+      ), "unknown", class = "marginplyr_error")
+      expect_identical(caller$calls, 0L)
+    } else {
+      result <- summarize_with_margins(
+        data, !!ordinary,
+        dplyr::across(dplyr::starts_with("s"), share_of_total,
+                      .names = "share"),
+        .grouping = rollup(g)
+      )
+      expect_identical(names(result), c("g", "s"))
+      expect_identical(result$s, c(1, 3, 4))
+      expect_identical(caller$calls, 1L)
+    }
+  }
+})
+
 test_that("selection shares retain matching across sources and naming", {
   data <- data.frame(g = c("a", "b"), x = c(1, 3), y = c(10, 30))
   for (dynamic in c(FALSE, TRUE)) {
