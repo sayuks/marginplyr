@@ -116,7 +116,9 @@ Rscript .github/scripts/verify-review-ready-check.R
 ```
 
 The Python fixtures substitute the OS-home adapter for independent test
-users and the boot-identity adapter for simulated restart recovery and provide a lightweight `Rscript` executable at the external checker
+users, the boot-identity adapter for simulated restart recovery, and a delayed
+filesystem open for the completion/read race. A lightweight `Rscript` executable
+is provided at the external checker
 boundary. They run real Git worktrees/clones and subprocesses. They do not run
 several real package checks or expose a production capacity override. Process
 inspection and signals must be permitted in the execution environment; a

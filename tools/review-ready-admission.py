@@ -122,9 +122,11 @@ def save(path, record):
 
 
 def read_record(path):
-    if not path.exists():
+    try:
+        contents = path.read_text()
+    except FileNotFoundError:
         return None
-    record = json.loads(path.read_text())
+    record = json.loads(contents)
     if record.get('version') != 1:
         raise RuntimeError('Unknown admission journal version; recovery requires inspection.')
     return record

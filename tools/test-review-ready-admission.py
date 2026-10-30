@@ -1,7 +1,6 @@
 """Exercise the installed CLI lifecycle with real repositories and light jobs.
 
-Only the OS home lookup is substituted, giving each test an isolated OS-user
-scope. Rscript is a PATH fixture at the external checker boundary; no production
+Rscript is a PATH fixture at the external checker boundary; no production
 argument can change capacity or replace the gate.
 """
 import json
@@ -348,6 +347,29 @@ sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
         self.assertEqual(result.returncode, 2, result.stderr)
         self.assertIn('No check was run', result.stderr)
         self.assertNotIn('HEAVY ', result.stdout)
+
+    def test_waiter_survives_journal_disappearing_during_its_read(self):
+        active, a = self.start(FIXTURE_SECONDS='2')
+        self.until(a, 'HEAVY ')
+        # A delayed filesystem open places normal completion before the waiter
+        # reads the journal. The test still enters via the CLI.
+        code = ("import importlib.machinery, pathlib, sys, time; "
+                "m=importlib.machinery.SourceFileLoader('admission', sys.argv[1]).load_module(); " +
+                "\nclass DelayedPath(type(pathlib.Path())):\n"
+                " def read_text(self, *args, **kwargs):\n"
+                "  print('Reading shared state', flush=True)\n"
+                "  deadline=time.monotonic()+8\n"
+                "  while self.exists() and time.monotonic()<deadline: time.sleep(0.02)\n"
+                "  return super().read_text(*args, **kwargs)\n" +
+                "m.USER_HOME=DelayedPath(sys.argv[2]); sys.exit(m.main([]))")
+        log = self.root / 'delayed-read.log'
+        with log.open('w') as output:
+            waiter = subprocess.Popen([sys.executable, '-c', code, str(self.command), str(self.home)],
+                                      cwd=self.repo, env=self.env, stdout=output, stderr=output)
+        self.jobs.append(waiter)
+        self.until(log, 'Reading shared state')
+        self.finish(active, a)
+        self.assertIn('HEAVY ', self.finish(waiter, log))
 
 
 if __name__ == '__main__':
