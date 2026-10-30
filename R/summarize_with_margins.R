@@ -1164,7 +1164,12 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
         plan = plan,
         backend_kind = operation$backend$kind,
         set_id_name = operation$set_id_name,
-        call = operation$call
+        call = operation$call,
+        local_data = if (identical(operation$backend$kind, "local")) {
+          operation$data
+        } else {
+          NULL
+        }
       )
       summaries <- summary_plan$summaries
       dots <- summaries$dots

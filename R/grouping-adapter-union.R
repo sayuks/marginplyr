@@ -675,8 +675,12 @@ summarize_margin_union <- function(.data,
   tryCatch({
     branches <- Map(
       function(grouping_set, set_id) {
+        current_dots <- dots
+        if (set_id > 1L && !is.null(summaries$subsequent_first)) {
+          current_dots[[1L]] <- summaries$subsequent_first
+        }
         branch_dots <- rewrite_grouping_dots(
-          dots,
+          current_dots,
           plan = plan,
           grouping_set = grouping_set,
           sql = FALSE,

@@ -1,4 +1,11 @@
-expect_local_selection_shares <- function(data) {
+expect_local_selection_shares <- function(data, naming, indirect) {
+  pattern <- if (indirect) {
+    rlang::new_quosure(
+      quote(dplyr::starts_with(prefix)), rlang::env(prefix = "total")
+    )
+  } else {
+    quote(dplyr::starts_with("total"))
+  }
   for (multiple in c(FALSE, TRUE)) {
     grouping <- if (multiple) rollup(dplyr::all_of("g")) else grouping_set()
     helpers <- c("share_of_total", if (multiple) "share_of_parent")
@@ -20,13 +27,13 @@ expect_local_selection_shares <- function(data) {
             }))
           }
           ordinary <- list(
-            rlang::expr(dplyr::across(!!selection, sum, .names = "unused")),
+            rlang::expr(dplyr::across(!!selection, sum, .names = !!naming)),
             total = quote(sum(y))
           )
           if (shared) {
             result <- summarize_with_margins(
               data, !!!ordinary,
-              dplyr::across(dplyr::starts_with("total"), !!rlang::sym(helper),
+              dplyr::across(!!pattern, !!rlang::sym(helper),
                             .names = "share"),
               .grouping = grouping
             )
@@ -45,7 +52,8 @@ expect_local_selection_shares <- function(data) {
         expect_identical(actual$contexts, control$contexts)
         expect_length(actual$contexts, if (multiple) 2L else 1L)
         expect_identical(actual$result[names(control$result)], control$result)
-        expect_identical(actual$result$unused,
+        ordinary_name <- setdiff(names(control$result), c("g", "total"))[[1L]]
+        expect_identical(actual$result[[ordinary_name]],
                          if (multiple) c(3L, 3L, 6L) else 6L)
         expect_equal(actual$result$share,
                      if (multiple) c(11 / 18, 7 / 18, 1) else 1)
@@ -55,11 +63,22 @@ expect_local_selection_shares <- function(data) {
   }
 }
 
+expect_local_share_patterns <- function(data) {
+  for (naming in list(
+    "unused", "{.col}_unused", quote(paste0("un", "used")),
+    quote(paste0("unused_", dplyr::n()))
+  )) {
+    for (indirect in c(FALSE, TRUE)) {
+      expect_local_selection_shares(data, naming, indirect)
+    }
+  }
+}
+
 test_that("independent selection shares preserve local selector evaluation", {
   data <- data.frame(g = c("a", "a", "b"), x = 1:3, y = c(5, 6, 7))
-  expect_local_selection_shares(data)
-  expect_local_selection_shares(tibble::as_tibble(data))
-  expect_local_selection_shares(structure(
+  expect_local_share_patterns(data)
+  expect_local_share_patterns(tibble::as_tibble(data))
+  expect_local_share_patterns(structure(
     data, class = c("local_frame", "data.frame")
   ))
 })
@@ -69,7 +88,7 @@ test_that("independent selection shares preserve eager data.table selectors", {
   data <- data.table::data.table(
     g = c("a", "a", "b"), x = 1:3, y = c(5, 6, 7)
   )
-  expect_local_selection_shares(data)
+  expect_local_share_patterns(data)
 })
 
 test_that("independent selection shares preserve geometry-key selectors", {
@@ -181,8 +200,11 @@ test_that("independent selection shares retain source and collision guards", {
         dplyr::all_of(if (dplyr::n() == 0L) "x" else character()),
         sum, .names = "unused"
       ),
-      total = unused + 1, !!share, .grouping = rollup(g)
-    ), "earlier summary alias", class = "marginplyr_error")
+      total = unused + 1,
+      dplyr::across(c(dplyr::starts_with("total"), total),
+                    !!rlang::sym(helper), .names = "share"),
+      .grouping = rollup(g)
+    ), "not available", class = "marginplyr_error")
     dependent <- summarize_with_margins(
       data, dplyr::across(x, sum, .names = "unused"),
       total = unused + 1, !!share, .grouping = rollup(g)
@@ -211,6 +233,53 @@ test_that("independent selection shares retain source and collision guards", {
       total = sum(x), !!explicit, .grouping = rollup(g)
     ), "more than once", class = "marginplyr_error")
   }
+})
+
+test_that("escaped across names remain selection share sources", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), y = c(10, 30))
+  choose <- function() "x"
+  result <- summarize_with_margins(
+    data, dplyr::across(dplyr::all_of(choose()), sum, .names = "total}}"),
+    `other_total}` = sum(y),
+    dplyr::across(dplyr::ends_with("total}"), share_of_total,
+                  .names = "{.col}_share"),
+    .grouping = rollup(g)
+  )
+  expect_identical(result[["total}_share"]], c(0.25, 0.75, 1))
+  expect_identical(result[["other_total}_share"]], c(0.25, 0.75, 1))
+})
+
+test_that("selection shares preserve repeated selector warnings", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3))
+  run <- function(pattern) {
+    warnings <- list()
+    choose <- function() {
+      warning("selector warning")
+      "x"
+    }
+    share <- if (pattern) {
+      rlang::quos(dplyr::across(
+        dplyr::starts_with("total"), share_of_total, .names = "share"
+      ))
+    } else {
+      rlang::quos(share = share_of_total(total))
+    }
+    withCallingHandlers(summarize_with_margins(
+      data, dplyr::across(dplyr::all_of(choose()), sum, .names = "unused"),
+      total = sum(x), !!!share, .grouping = rollup(g)
+    ), warning = function(cnd) {
+      warnings[[length(warnings) + 1L]] <<- cnd
+      invokeRestart("muffleWarning")
+    })
+    warnings
+  }
+  control <- run(FALSE)
+  actual <- run(TRUE)
+  expect_length(actual, 1L)
+  expect_identical(class(actual[[1L]]), class(control[[1L]]))
+  expect_identical(conditionMessage(actual[[1L]]),
+                   conditionMessage(control[[1L]]))
+  expect_match(conditionMessage(actual[[1L]]), "1 further grouping set")
 })
 
 test_that("pattern prediction respects caller bindings and explicit vars", {
