@@ -1,0 +1,305 @@
+# A tibble: 4 × 3
+  g     f       rid
+  <chr> <chr> <int>
+1 a     x         1
+2 A     z         3
+3 B     X         2
+4 b     Z         4
+     g sid f rid
+1 <NA>   2 x   1
+2 <NA>   2 X   2
+3 <NA>   2 z   3
+4 <NA>   2 Z   4
+5    a   1 x   1
+6    A   1 z   3
+7    B   1 X   2
+8    b   1 Z   4
+<SQL> SELECT
+  `g`,
+  CAST(NULL AS INTEGER) AS `sid`,
+  `f`,
+  `rid`,
+  NULL AS `..marginplyr_order_1`,
+  NULL AS `..marginplyr_order_2`,
+  NULL AS `..marginplyr_order_3`,
+  NULL AS `..marginplyr_order_4`
+FROM `d`
+WHERE (0)
+
+UNION ALL
+
+SELECT
+  `g`,
+  `sid`,
+  `f`,
+  `rid`,
+  -CASE WHEN (`sid` IN (2)) THEN 1 WHEN NOT (`sid` IN (2)) THEN 0 END AS `..marginplyr_order_1`,
+  CASE WHEN ((`g` IS NULL)) THEN 1 WHEN NOT ((`g` IS NULL)) THEN 0 END AS `..marginplyr_order_2`,
+  `g` AS `..marginplyr_order_3`,
+  `sid` AS `..marginplyr_order_4`
+FROM (
+  SELECT *, NULL AS `sid`
+  FROM (
+SELECT `g`, `f`, `rid`
+FROM (
+SELECT *
+FROM `d`
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT *, 1 AS `sid`
+    FROM (
+SELECT `g`, `f`, `rid`
+FROM (
+SELECT *
+FROM `d`
+) AS `q01`
+    ) AS `q01`
+
+    UNION ALL
+
+    SELECT *, 2 AS `sid`
+    FROM (
+      SELECT NULL AS `g`, `f`, `rid`
+      FROM (
+SELECT `g`, `f`, `rid`
+FROM (
+SELECT *
+FROM `d`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+ORDER BY `..marginplyr_order_1`, `..marginplyr_order_2`, `..marginplyr_order_3`, `..marginplyr_order_4`
+      g sid f rid
+1 Total   2 x   1
+2 Total   2 X   2
+3 Total   2 z   3
+4 Total   2 Z   4
+5     a   1 x   1
+6     A   1 z   3
+7     B   1 X   2
+8     b   1 Z   4
+<SQL> SELECT
+  CAST(NULL AS TEXT) AS `g`,
+  CAST(NULL AS INTEGER) AS `sid`,
+  `f`,
+  `rid`,
+  NULL AS `..marginplyr_order_1`,
+  NULL AS `..marginplyr_order_2`,
+  NULL AS `..marginplyr_order_3`,
+  NULL AS `..marginplyr_order_4`
+FROM `d`
+WHERE (0)
+
+UNION ALL
+
+SELECT
+  `g`,
+  `sid`,
+  `f`,
+  `rid`,
+  -CASE WHEN (`sid` IN (2)) THEN 1 WHEN NOT (`sid` IN (2)) THEN 0 END AS `..marginplyr_order_1`,
+  CASE WHEN ((`g` IS NULL)) THEN 1 WHEN NOT ((`g` IS NULL)) THEN 0 END AS `..marginplyr_order_2`,
+  `g` AS `..marginplyr_order_3`,
+  `sid` AS `..marginplyr_order_4`
+FROM (
+  SELECT *, NULL AS `sid`
+  FROM (
+SELECT `g`, `f`, `rid`
+FROM (
+SELECT *
+FROM `d`
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT *, 1 AS `sid`
+    FROM (
+      SELECT CAST(`g` AS TEXT) AS `g`, `f`, `rid`
+      FROM (
+SELECT `g`, `f`, `rid`
+FROM (
+SELECT *
+FROM `d`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+
+    UNION ALL
+
+    SELECT *, 2 AS `sid`
+    FROM (
+      SELECT 'Total' AS `g`, `f`, `rid`
+      FROM (
+SELECT `g`, `f`, `rid`
+FROM (
+SELECT *
+FROM `d`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+ORDER BY `..marginplyr_order_1`, `..marginplyr_order_2`, `..marginplyr_order_3`, `..marginplyr_order_4`
+     g sid f rid
+1    a   1 x   1
+2    A   1 z   3
+3    B   1 X   2
+4    b   1 Z   4
+5 <NA>   2 x   1
+6 <NA>   2 X   2
+7 <NA>   2 z   3
+8 <NA>   2 Z   4
+<SQL> SELECT
+  `g`,
+  CAST(NULL AS INTEGER) AS `sid`,
+  `f`,
+  `rid`,
+  NULL AS `..marginplyr_order_1`,
+  NULL AS `..marginplyr_order_2`,
+  NULL AS `..marginplyr_order_3`,
+  NULL AS `..marginplyr_order_4`
+FROM `d`
+WHERE (0)
+
+UNION ALL
+
+SELECT
+  `g`,
+  `sid`,
+  `f`,
+  `rid`,
+  CASE WHEN (`sid` IN (2)) THEN 1 WHEN NOT (`sid` IN (2)) THEN 0 END AS `..marginplyr_order_1`,
+  CASE WHEN ((`g` IS NULL)) THEN 1 WHEN NOT ((`g` IS NULL)) THEN 0 END AS `..marginplyr_order_2`,
+  `g` AS `..marginplyr_order_3`,
+  `sid` AS `..marginplyr_order_4`
+FROM (
+  SELECT *, NULL AS `sid`
+  FROM (
+SELECT `g`, `f`, `rid`
+FROM (
+SELECT *
+FROM `d`
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT *, 1 AS `sid`
+    FROM (
+SELECT `g`, `f`, `rid`
+FROM (
+SELECT *
+FROM `d`
+) AS `q01`
+    ) AS `q01`
+
+    UNION ALL
+
+    SELECT *, 2 AS `sid`
+    FROM (
+      SELECT NULL AS `g`, `f`, `rid`
+      FROM (
+SELECT `g`, `f`, `rid`
+FROM (
+SELECT *
+FROM `d`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+ORDER BY `..marginplyr_order_1`, `..marginplyr_order_2`, `..marginplyr_order_3`, `..marginplyr_order_4`
+      g sid f rid
+1     a   1 x   1
+2     A   1 z   3
+3     B   1 X   2
+4     b   1 Z   4
+5 Total   2 x   1
+6 Total   2 X   2
+7 Total   2 z   3
+8 Total   2 Z   4
+<SQL> SELECT
+  CAST(NULL AS TEXT) AS `g`,
+  CAST(NULL AS INTEGER) AS `sid`,
+  `f`,
+  `rid`,
+  NULL AS `..marginplyr_order_1`,
+  NULL AS `..marginplyr_order_2`,
+  NULL AS `..marginplyr_order_3`,
+  NULL AS `..marginplyr_order_4`
+FROM `d`
+WHERE (0)
+
+UNION ALL
+
+SELECT
+  `g`,
+  `sid`,
+  `f`,
+  `rid`,
+  CASE WHEN (`sid` IN (2)) THEN 1 WHEN NOT (`sid` IN (2)) THEN 0 END AS `..marginplyr_order_1`,
+  CASE WHEN ((`g` IS NULL)) THEN 1 WHEN NOT ((`g` IS NULL)) THEN 0 END AS `..marginplyr_order_2`,
+  `g` AS `..marginplyr_order_3`,
+  `sid` AS `..marginplyr_order_4`
+FROM (
+  SELECT *, NULL AS `sid`
+  FROM (
+SELECT `g`, `f`, `rid`
+FROM (
+SELECT *
+FROM `d`
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT *, 1 AS `sid`
+    FROM (
+      SELECT CAST(`g` AS TEXT) AS `g`, `f`, `rid`
+      FROM (
+SELECT `g`, `f`, `rid`
+FROM (
+SELECT *
+FROM `d`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+
+    UNION ALL
+
+    SELECT *, 2 AS `sid`
+    FROM (
+      SELECT 'Total' AS `g`, `f`, `rid`
+      FROM (
+SELECT `g`, `f`, `rid`
+FROM (
+SELECT *
+FROM `d`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+ORDER BY `..marginplyr_order_1`, `..marginplyr_order_2`, `..marginplyr_order_3`, `..marginplyr_order_4`

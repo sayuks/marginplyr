@@ -1,0 +1,2 @@
+Qualified active-binding/deep-quosure comparisons: 200
+Every result matched the literal-column control; one caller invocation and one operator read per case.

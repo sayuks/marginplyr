@@ -1,0 +1,52 @@
+There were 50 or more warnings (use warnings() to see the first 50)
+
+        both_error control_error_only               pass
+               130                 16               1510
+
+                     both_error control_error_only pass
+  binary                      0                  0   36
+  bool                        0                  0   36
+  date32                      0                  0   36
+  date64                      0                  0   36
+  decimal128                  0                  0   36
+  decimal256                  0                  0   36
+  dict_float64_FALSE          0                  4   32
+  dict_float64_TRUE           0                  4   32
+  dict_int32_FALSE            0                  4   32
+  dict_int32_TRUE             0                  4   32
+  dict_utf8_FALSE             0                  0   36
+  dict_utf8_TRUE              0                  0   36
+  duration_ns                 0                  0   36
+  duration_s                  0                  0   36
+  extension                   8                  0   28
+  fixed_binary                0                  0   36
+  fixed_list                 22                  0   14
+  float16                     8                  0   28
+  float32                     0                  0   36
+  float64                     0                  0   36
+  int16                       0                  0   36
+  int32                       0                  0   36
+  int64                       0                  0   36
+  int8                        0                  0   36
+  large_binary                0                  0   36
+  large_list                 20                  0   16
+  large_utf8                  0                  0   36
+  list                       20                  0   16
+  map                        20                  0   16
+  nan                         0                  0   36
+  nested_struct              20                  0   16
+  null                        0                  0   36
+  struct                     12                  0   24
+  time32_ms                   0                  0   36
+  time32_s                    0                  0   36
+  time64_ns                   0                  0   36
+  time64_us                   0                  0   36
+  timestamp_ms                0                  0   36
+  timestamp_ns                0                  0   36
+  timestamp_s                 0                  0   36
+  timestamp_us                0                  0   36
+  uint16                      0                  0   36
+  uint32                      0                  0   36
+  uint64                      0                  0   36
+  uint8                       0                  0   36
+  utf8                        0                  0   36

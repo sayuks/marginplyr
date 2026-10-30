@@ -1,0 +1,5 @@
+Date matrix ordinary rows: 2 included-only: match
+Date matrix expansion: expressionStackOverflowError evaluation nested too deeply: infinite recursion / options(expressions=)?
+Packed factor matrix ordinary rows: 2 included-only: match
+Packed factor matrix expansion: expressionStackOverflowError evaluation nested too deeply: infinite recursion / options(expressions=)?
+Date prototype missingness: expressionStackOverflowError

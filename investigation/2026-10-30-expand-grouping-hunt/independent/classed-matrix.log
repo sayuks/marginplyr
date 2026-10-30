@@ -1,0 +1,2 @@
+ordinary rows: 2 shape: 2x1 class: Date
+actual: expressionStackOverflowError evaluation nested too deeply: infinite recursion / options(expressions=)?

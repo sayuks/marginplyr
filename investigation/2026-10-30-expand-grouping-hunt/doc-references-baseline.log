@@ -1,0 +1,10 @@
+## Document references
+
+257 path(s) named across 368 maintained document(s), 6 exempt.
+
+- **focus_workspace/run-focused.R** — named by `design/agents/local-checks.md`
+
+Error: These documents name paths no tracked file answers, so each reads as a citation and resolves to nothing:
+  design/agents/local-checks.md names `focus_workspace/run-focused.R`
+Point each at the file that now holds what it cited, or delete the sentence with what it named. A reference that is correct as written -- a retired file named in the past tense, or a path outside this repository -- goes in `exempt` in this script with the reason it is correct.
+Execution halted

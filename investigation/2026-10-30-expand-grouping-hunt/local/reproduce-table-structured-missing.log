@@ -1,0 +1,11 @@
+prototype scalar missingness: TRUE TRUE
+prototype row missingness: FALSE FALSE
+unclassed prototype row missingness: TRUE
+equality proxy:
+  Var1 Var2 Freq
+1 <NA>    A   NA
+2 <NA>    B   NA
+ordinary result rows: 2 shape: 2 2
+expansion: marginplyr_error A typed-missing `.margin_label` cannot be represented for:
+ℹ `key`.
+ℹ Choose a supported non-missing label or change the grouping.

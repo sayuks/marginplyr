@@ -1,0 +1,66 @@
+map FALSE none source: MAP(VARCHAR, INTEGER),INTEGER ordinary: MAP(VARCHAR, INTEGER),INTEGER,INTEGER actual: MAP(VARCHAR, INTEGER),INTEGER,INTEGER
+map FALSE first source: MAP(VARCHAR, INTEGER),INTEGER ordinary: MAP(VARCHAR, INTEGER),INTEGER,INTEGER actual: MAP(VARCHAR, INTEGER),INTEGER,INTEGER
+map FALSE last source: MAP(VARCHAR, INTEGER),INTEGER ordinary: MAP(VARCHAR, INTEGER),INTEGER,INTEGER actual: MAP(VARCHAR, INTEGER),INTEGER,INTEGER
+map TRUE none source: MAP(VARCHAR, INTEGER),INTEGER ordinary: MAP(VARCHAR, INTEGER),INTEGER,INTEGER actual: MAP(VARCHAR, INTEGER),INTEGER,INTEGER
+map TRUE first source: MAP(VARCHAR, INTEGER),INTEGER ordinary: MAP(VARCHAR, INTEGER),INTEGER,INTEGER actual: MAP(VARCHAR, INTEGER),INTEGER,INTEGER
+map TRUE last source: MAP(VARCHAR, INTEGER),INTEGER ordinary: MAP(VARCHAR, INTEGER),INTEGER,INTEGER actual: MAP(VARCHAR, INTEGER),INTEGER,INTEGER
+union FIXTURE Can't query fields.
+ℹ Using SQL: SELECT * FROM (SELECT union_value(a := 42) AS g, 1 AS rid UNION
+  ALL SELECT NULL, 2) AS q01 WHERE (0 = 1)
+Caused by error in `dbSendQuery()`:
+! Unknown column type for prepare: UNION(a INTEGER)
+ℹ Context: rapi_prepare
+uuid FALSE none source: UUID,INTEGER ordinary: UUID,INTEGER,INTEGER actual: UUID,INTEGER,INTEGER
+uuid FALSE first source: UUID,INTEGER ordinary: UUID,INTEGER,INTEGER actual: UUID,INTEGER,INTEGER
+uuid FALSE last source: UUID,INTEGER ordinary: UUID,INTEGER,INTEGER actual: UUID,INTEGER,INTEGER
+uuid TRUE none source: UUID,INTEGER ordinary: UUID,INTEGER,INTEGER actual: UUID,INTEGER,INTEGER
+uuid TRUE first source: UUID,INTEGER ordinary: UUID,INTEGER,INTEGER actual: UUID,INTEGER,INTEGER
+uuid TRUE last source: UUID,INTEGER ordinary: UUID,INTEGER,INTEGER actual: UUID,INTEGER,INTEGER
+json FIXTURE ! Could not evaluate cli `{}` expression: `"a": 1`.
+Caused by error in `"a":1`:
+! NA/NaN argument
+interval FALSE none source: INTERVAL,INTEGER ordinary: INTERVAL,INTEGER,INTEGER actual: INTERVAL,INTEGER,INTEGER
+interval FALSE first source: INTERVAL,INTEGER ordinary: INTERVAL,INTEGER,INTEGER actual: INTERVAL,INTEGER,INTEGER
+interval FALSE last source: INTERVAL,INTEGER ordinary: INTERVAL,INTEGER,INTEGER actual: INTERVAL,INTEGER,INTEGER
+interval TRUE none source: INTERVAL,INTEGER ordinary: INTERVAL,INTEGER,INTEGER actual: INTERVAL,INTEGER,INTEGER
+interval TRUE first source: INTERVAL,INTEGER ordinary: INTERVAL,INTEGER,INTEGER actual: INTERVAL,INTEGER,INTEGER
+interval TRUE last source: INTERVAL,INTEGER ordinary: INTERVAL,INTEGER,INTEGER actual: INTERVAL,INTEGER,INTEGER
+enum FALSE none source: ENUM('sad', 'ok', 'happy'),INTEGER ordinary: ENUM('sad', 'ok', 'happy'),INTEGER,INTEGER actual: ENUM('sad', 'ok', 'happy'),INTEGER,INTEGER
+enum FALSE first source: ENUM('sad', 'ok', 'happy'),INTEGER ordinary: ENUM('sad', 'ok', 'happy'),INTEGER,INTEGER actual: ENUM('sad', 'ok', 'happy'),INTEGER,INTEGER
+enum FALSE last source: ENUM('sad', 'ok', 'happy'),INTEGER ordinary: ENUM('sad', 'ok', 'happy'),INTEGER,INTEGER actual: ENUM('sad', 'ok', 'happy'),INTEGER,INTEGER
+enum TRUE none source: ENUM('sad', 'ok', 'happy'),INTEGER ordinary: ENUM('sad', 'ok', 'happy'),INTEGER,INTEGER actual: ENUM('sad', 'ok', 'happy'),INTEGER,INTEGER
+enum TRUE first source: ENUM('sad', 'ok', 'happy'),INTEGER ordinary: ENUM('sad', 'ok', 'happy'),INTEGER,INTEGER actual: ENUM('sad', 'ok', 'happy'),INTEGER,INTEGER
+enum TRUE last source: ENUM('sad', 'ok', 'happy'),INTEGER ordinary: ENUM('sad', 'ok', 'happy'),INTEGER,INTEGER actual: ENUM('sad', 'ok', 'happy'),INTEGER,INTEGER
+bit FIXTURE Can't query fields.
+ℹ Using SQL: SELECT * FROM (SELECT '1011'::BIT AS g, 1 AS rid UNION ALL SELECT
+  NULL, 2) AS q01 WHERE (0 = 1)
+Caused by error in `dbSendQuery()`:
+! Unknown column type for prepare: BIT
+ℹ Context: rapi_prepare
+bignum FIXTURE Can't query fields.
+ℹ Using SQL: SELECT * FROM (SELECT
+  '99999999999999999999999999999999999999999999999'::BIGNUM AS g, 1 AS rid
+  UNION ALL SELECT NULL, 2) AS q02 WHERE (0 = 1)
+Caused by error in `dbSendQuery()`:
+! Unknown column type for prepare: BIGNUM
+ℹ Context: rapi_prepare
+variant FALSE none source: VARIANT,INTEGER ordinary: VARIANT,INTEGER,INTEGER actual: VARIANT,INTEGER,INTEGER
+variant FALSE first source: VARIANT,INTEGER ordinary: VARIANT,INTEGER,INTEGER actual: VARIANT,INTEGER,INTEGER
+variant FALSE last source: VARIANT,INTEGER ordinary: VARIANT,INTEGER,INTEGER actual: VARIANT,INTEGER,INTEGER
+variant TRUE none source: VARIANT,INTEGER ordinary: VARIANT,INTEGER,INTEGER actual: VARIANT,INTEGER,INTEGER
+variant TRUE first source: VARIANT,INTEGER ordinary: VARIANT,INTEGER,INTEGER actual: VARIANT,INTEGER,INTEGER
+variant TRUE last source: VARIANT,INTEGER ordinary: VARIANT,INTEGER,INTEGER actual: VARIANT,INTEGER,INTEGER
+array FALSE none source: INTEGER[3],INTEGER ordinary: INTEGER[3],INTEGER,INTEGER actual: INTEGER[3],INTEGER,INTEGER
+array FALSE first source: INTEGER[3],INTEGER ordinary: INTEGER[3],INTEGER,INTEGER actual: INTEGER[3],INTEGER,INTEGER
+array FALSE last source: INTEGER[3],INTEGER ordinary: INTEGER[3],INTEGER,INTEGER actual: INTEGER[3],INTEGER,INTEGER
+array TRUE none source: INTEGER[3],INTEGER ordinary: INTEGER[3],INTEGER,INTEGER actual: INTEGER[3],INTEGER,INTEGER
+array TRUE first source: INTEGER[3],INTEGER ordinary: INTEGER[3],INTEGER,INTEGER actual: INTEGER[3],INTEGER,INTEGER
+array TRUE last source: INTEGER[3],INTEGER ordinary: INTEGER[3],INTEGER,INTEGER actual: INTEGER[3],INTEGER,INTEGER
+map_empty FALSE none source: MAP(INTEGER, INTEGER),INTEGER ordinary: MAP(INTEGER, INTEGER),INTEGER,INTEGER actual: MAP(INTEGER, INTEGER),INTEGER,INTEGER
+map_empty FALSE first source: MAP(INTEGER, INTEGER),INTEGER ordinary: MAP(INTEGER, INTEGER),INTEGER,INTEGER actual: MAP(INTEGER, INTEGER),INTEGER,INTEGER
+map_empty FALSE last source: MAP(INTEGER, INTEGER),INTEGER ordinary: MAP(INTEGER, INTEGER),INTEGER,INTEGER actual: MAP(INTEGER, INTEGER),INTEGER,INTEGER
+map_empty TRUE none source: MAP(INTEGER, INTEGER),INTEGER ordinary: MAP(INTEGER, INTEGER),INTEGER,INTEGER actual: MAP(INTEGER, INTEGER),INTEGER,INTEGER
+map_empty TRUE first source: MAP(INTEGER, INTEGER),INTEGER ordinary: MAP(INTEGER, INTEGER),INTEGER,INTEGER actual: MAP(INTEGER, INTEGER),INTEGER,INTEGER
+map_empty TRUE last source: MAP(INTEGER, INTEGER),INTEGER ordinary: MAP(INTEGER, INTEGER),INTEGER,INTEGER actual: MAP(INTEGER, INTEGER),INTEGER,INTEGER
+Warning message:
+In eval(expr, envir = envir) : NAs introduced by coercion

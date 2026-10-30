@@ -1,0 +1,4 @@
+missing rvar: is.na TRUE vec_detect_missing FALSE
+dimension expansion: marginplyr_error
+payload draw matrices: identical; all.equal: TRUE
+ordinary rvar ordering: rvar does not support vctrs::vec_order()

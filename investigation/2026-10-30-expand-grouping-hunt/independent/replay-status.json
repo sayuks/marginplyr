@@ -1,0 +1,20 @@
+[
+  {
+    "command": [
+      "Rscript",
+      "investigation/2026-10-30-expand-grouping-hunt/independent/classed-matrix.R",
+      "--assert"
+    ],
+    "exit_code": 1,
+    "expected_on_baseline": 1
+  },
+  {
+    "command": [
+      "Rscript",
+      "investigation/2026-10-30-expand-grouping-hunt/independent/table-vector.R",
+      "--assert"
+    ],
+    "exit_code": 1,
+    "expected_on_baseline": 1
+  }
+]
