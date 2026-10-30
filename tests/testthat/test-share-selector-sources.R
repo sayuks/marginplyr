@@ -238,8 +238,6 @@ test_that("tracking across outputs preserves inherited naming bindings", {
 })
 
 test_that("omitted across columns retain independent share sources", {
-  # dplyr still accepts this deprecated spelling of an all-column selection.
-  withr::local_options(lifecycle_verbosity = "quiet")
   data <- data.frame(g = c("a", "b"), value = c(1, 3))
   for (kind in c("parent", "total")) {
     helper <- rlang::call2(paste0("share_of_", kind), quote(value_sum))
