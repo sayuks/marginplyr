@@ -44,10 +44,18 @@ commit into a disposable directory, so ignored local files cannot enter the
 evidence. Run it from the repository root:
 
 ```sh
-Rscript tools/review-ready-check.R
+marginplyr-review-ready
 ```
 
-The command takes no options. It runs, in order:
+Install the common command using `python3 tools/install-review-ready.py`.
+[Shared admission](../../tools/review-ready-admission.md) owns installation,
+platform support, cancellation, recovery, and migration of existing sessions.
+All agents and terminals use that command; missing setup has no direct-command
+fallback. A waiting request pins this clean commit and is cancelled before
+admission if HEAD or cleanliness changes. One complete check is admitted per
+OS user across all clones and worktrees, preserving four internal workers.
+
+The check invocation takes no options. The admitted fixed gate runs, in order:
 
 1. a test-source dependency scan that refuses every package candidate absent
    from `DESCRIPTION`;

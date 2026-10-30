@@ -1,0 +1,354 @@
+"""Exercise the installed CLI lifecycle with real repositories and light jobs.
+
+Only the OS home lookup is substituted, giving each test an isolated OS-user
+scope. Rscript is a PATH fixture at the external checker boundary; no production
+argument can change capacity or replace the gate.
+"""
+import json
+import os
+import shutil
+from pathlib import Path
+import signal
+import subprocess
+import sys
+import tempfile
+import time
+import unittest
+
+SOURCE = Path(__file__).with_name('review-ready-admission.py')
+
+
+class Lifecycle(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.root = Path(self.temp.name)
+        self.home = self.root / 'home'
+        self.home.mkdir()
+        self.command = self.home / 'marginplyr-review-ready'
+        shutil.copyfile(SOURCE, self.command)
+        self.jobs = []
+        self.logs = []
+        self.env = dict(os.environ)
+        self.bin = self.root / 'bin'
+        self.bin.mkdir()
+        shim = self.bin / 'Rscript'
+        shim.write_text('#!' + sys.executable + '\n' + '''
+import fcntl, os, pathlib, subprocess, sys, time
+lock = open(os.environ["FIXTURE_LOCK"], "a+")
+fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+root = pathlib.Path.cwd()
+print("HEAVY " + str(root), flush=True)
+child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"]) if os.environ.get("FIXTURE_CHILD") else None
+if child:
+    pathlib.Path(os.environ["FIXTURE_CHILD_FILE"]).write_text(str(child.pid))
+time.sleep(float(os.environ.get("FIXTURE_SECONDS", "0.6")))
+if child: child.wait()
+print("DONE", flush=True)
+sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
+''')
+        shim.chmod(0o755)
+        self.env['FIXTURE_LOCK'] = str(self.root / 'heavy.lock')
+        self.env['FIXTURE_CHILD_FILE'] = str(self.root / 'child.pid')
+        self.env['PATH'] = str(self.bin) + os.pathsep + self.env['PATH']
+        self.repo = self.root / 'repo'
+        self.repo.mkdir()
+        self.git(self.repo, 'init', '-q')
+        self.git(self.repo, 'config', 'user.email', 'fixture@example.com')
+        self.git(self.repo, 'config', 'user.name', 'Fixture')
+        (self.repo / 'DESCRIPTION').write_text('Package: marginplyr\n')
+        (self.repo / 'tools').mkdir()
+        (self.repo / 'tools/review-ready-check.R').write_text('# fixture\n')
+        self.git(self.repo, 'add', '.')
+        self.git(self.repo, 'commit', '-qm', 'fixture')
+
+    def git(self, root, *args):
+        return subprocess.check_output(['git', '-C', str(root), *args], stderr=subprocess.STDOUT, text=True).strip()
+
+    def start(self, repo=None, args=(), **env):
+        log = self.root / ('log-' + str(len(self.logs)))
+        self.logs.append(log)
+        code = ('import importlib.machinery, pathlib, sys; '
+                'm=importlib.machinery.SourceFileLoader("admission", sys.argv[1]).load_module(); '
+                'm.USER_HOME=pathlib.Path(sys.argv[2]); sys.exit(m.main(sys.argv[3:]))')
+        with log.open('w') as output:
+            job = subprocess.Popen([sys.executable, '-c', code, str(self.command), str(self.home), *args],
+                                   cwd=repo or self.repo, env=dict(self.env, **env), stdout=output, stderr=output)
+        self.jobs.append(job)
+        return job, log
+
+    def until(self, log, text, timeout=10):
+        deadline = time.monotonic() + timeout
+        while time.monotonic() < deadline:
+            if text in log.read_text():
+                return
+            time.sleep(0.04)
+        self.fail('Missing ' + text + ': ' + log.read_text())
+
+    def finish(self, job, log, status=0):
+        self.assertEqual(job.wait(timeout=15), status, log.read_text())
+        return log.read_text()
+
+    def tearDown(self):
+        for job in self.jobs:
+            if job.poll() is None:
+                job.terminate()
+                job.wait(timeout=15)
+        # A killed manager deliberately leaves its fixture child for recovery.
+        for pidfile in self.root.rglob('child.pid'):
+            try:
+                os.kill(int(pidfile.read_text()), signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+        journal = self.home / '.local/state/marginplyr/review-ready/request.json'
+        if journal.exists():
+            record = json.loads(journal.read_text())
+            if record.get('group'):
+                try:
+                    os.killpg(record['group'], signal.SIGKILL)
+                except ProcessLookupError:
+                    pass
+        self.temp.cleanup()
+
+    def test_worktrees_and_clones_share_one_capacity(self):
+        worktree = self.root / 'worktree'
+        clone = self.root / 'clone'
+        self.git(self.repo, 'worktree', 'add', '-qb', 'other', str(worktree))
+        self.git(self.repo, 'clone', '-q', str(self.repo), str(clone))
+        first, a = self.start(FIXTURE_SECONDS='2')
+        self.until(a, 'HEAVY ')
+        second, b = self.start(worktree)
+        third, c = self.start(clone)
+        for log in (b, c):
+            self.until(log, 'Waiting')
+            self.assertNotIn('HEAVY ', log.read_text())
+            self.assertIn(self.git(self.repo, 'rev-parse', 'HEAD'), log.read_text())
+        self.finish(first, a)
+        self.finish(second, b)
+        self.finish(third, c)
+        # Each heavy fixture takes an independent nonblocking OS lock too.
+        # Its failure exits nonzero, so all-success proves no overlap.
+
+    def test_waiting_requests_cancel_when_head_changes_or_tree_gets_dirty(self):
+        for change in ('head', 'dirty'):
+            with self.subTest(change=change):
+                active, a = self.start(FIXTURE_SECONDS='2')
+                self.until(a, 'HEAVY ')
+                waiter, b = self.start()
+                self.until(b, 'Waiting')
+                if change == 'head':
+                    self.git(self.repo, 'commit', '--allow-empty', '-qm', 'new head')
+                else:
+                    (self.repo / 'untracked').write_text('new edit')
+                self.finish(active, a)
+                text = self.finish(waiter, b, 3)
+                self.assertIn('Stale request cancelled', text)
+                self.assertNotIn('HEAVY ', text)
+                if change == 'dirty':
+                    (self.repo / 'untracked').unlink()
+
+    def test_waiter_cancellation_does_not_stop_active_check(self):
+        active, a = self.start(FIXTURE_SECONDS='2')
+        self.until(a, 'HEAVY ')
+        waiter, b = self.start()
+        self.until(b, 'Waiting')
+        waiter.send_signal(signal.SIGINT)
+        self.finish(waiter, b, 130)
+        self.assertIsNone(active.poll())
+        self.assertNotIn('HEAVY ', b.read_text())
+        self.finish(active, a)
+
+    def test_running_cancellation_stops_children_before_next_admission(self):
+        active, a = self.start(FIXTURE_CHILD='1', FIXTURE_SECONDS='60')
+        self.until(a, 'HEAVY ')
+        deadline = time.monotonic() + 5
+        while not (self.root / 'child.pid').exists() and time.monotonic() < deadline:
+            time.sleep(0.04)
+        child = int((self.root / 'child.pid').read_text())
+        waiter, b = self.start()
+        self.until(b, 'Waiting')
+        active.terminate()
+        self.finish(active, a, 130)
+        self.finish(waiter, b)
+        # A zombie has stopped and cannot hold the fixture's independent lock.
+        state = subprocess.run(['ps', '-p', str(child), '-o', 'stat='], capture_output=True, text=True)
+        self.assertTrue(not state.stdout.strip() or state.stdout.strip().startswith('Z'))
+
+    def test_killed_manager_leaves_live_work_and_blocks_admission(self):
+        active, a = self.start(FIXTURE_CHILD='1', FIXTURE_SECONDS='60')
+        self.until(a, 'HEAVY ')
+        active.kill()
+        active.wait(timeout=5)
+        next_job, b = self.start()
+        text = self.finish(next_job, b, 4)
+        self.assertIn('Admission blocked', text)
+        self.assertNotIn('HEAVY ', text)
+        recovery, c = self.start(args=('--recover',))
+        self.finish(recovery, c, 4)
+        # Stop the fixture through its own recorded manager-independent group.
+        status, d = self.start(args=('--status',))
+        self.finish(status, d)
+        record = json.loads(d.read_text())
+        os.killpg(record['group'], signal.SIGKILL)
+        time.sleep(0.2)
+        stale, e = self.start(args=('--recover',))
+        self.assertIn('OS restart', self.finish(stale, e, 4))
+
+    def test_terminal_failure_is_not_admission_success(self):
+        failure, a = self.start(FIXTURE_STATUS='17')
+        text = self.finish(failure, a, 17)
+        self.assertIn('terminal outcome: 17', text)
+        self.assertIn(self.git(self.repo, 'rev-parse', 'HEAD'), text)
+        passing, b = self.start()
+        self.finish(passing, b)
+
+    def test_normal_parent_exit_retains_capacity_until_detached_child_stops(self):
+        shim = self.bin / 'Rscript'
+        shim.write_text('#!' + sys.executable + "\n" +
+                        'import os, subprocess, sys\n' +
+                        'subprocess.Popen([sys.executable, "-c", "import time; time.sleep(2)"], start_new_session=True)\n' +
+                        'print("HEAVY detached", flush=True)\n')
+        active, a = self.start()
+        self.until(a, 'HEAVY ')
+        waiter, b = self.start()
+        self.until(b, 'Waiting')
+        self.assertIsNone(active.poll())
+        self.finish(active, a)
+        self.finish(waiter, b)
+
+    def test_profiles_cannot_partition_capacity_and_edits_after_admission_do_not_change_sha(self):
+        sha = self.git(self.repo, 'rev-parse', 'HEAD')
+        active, a = self.start(FIXTURE_SECONDS='2', HOME=str(self.root / 'profile-a'))
+        self.until(a, 'HEAVY ')
+        self.git(self.repo, 'commit', '--allow-empty', '-qm', 'later commit')
+        waiter, b = self.start(HOME=str(self.root / 'profile-b'), XDG_STATE_HOME=str(self.root / 'state-b'))
+        self.until(b, 'Waiting')
+        self.assertNotIn('HEAVY ', b.read_text())
+        self.assertIn('checked commit: ' + sha, self.finish(active, a))
+        self.finish(waiter, b)
+
+    def test_missing_process_visibility_fails_without_fallback(self):
+        shim = self.bin / 'ps'
+        shim.write_text('#!/bin/sh\nexit 1\n')
+        shim.chmod(0o755)
+        job, log = self.start()
+        text = self.finish(job, log, 2)
+        self.assertIn('admission failed', text)
+        self.assertNotIn('HEAVY ', text)
+
+    def test_inspection_failure_during_work_blocks_following_requests(self):
+        job, log = self.start(FIXTURE_SECONDS='60')
+        self.until(log, 'HEAVY ')
+        shim = self.bin / 'ps'
+        shim.write_text('#!/bin/sh\nexit 1\n')
+        shim.chmod(0o755)
+        self.assertIn('shutdown is unconfirmed', self.finish(job, log, 2))
+        shim.unlink()
+        next_job, next_log = self.start()
+        self.finish(next_job, next_log, 4)
+        self.assertNotIn('HEAVY ', next_log.read_text())
+
+    def test_status_and_empty_recovery_are_not_check_evidence(self):
+        for mode in ('--status', '--recover'):
+            job, log = self.start(args=(mode,))
+            self.assertIn('No check was run', self.finish(job, log))
+            self.assertNotIn('HEAVY ', log.read_text())
+
+    def test_current_r_entry_delegates_and_preserves_status(self):
+        real_rscript = shutil.which('Rscript')
+        if not real_rscript:
+            self.skipTest('Rscript is needed only for the entry-point integration fixture')
+        shim = self.bin / 'marginplyr-review-ready'
+        shim.write_text('#!/bin/sh\necho COMMON_ENTRY\nexit 17\n')
+        shim.chmod(0o755)
+        entry = SOURCE.with_name('review-ready-check.R')
+        result = subprocess.run([real_rscript, str(entry)], cwd=self.repo, env=self.env,
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 17, result.stderr)
+        self.assertIn('COMMON_ENTRY', result.stdout)
+        self.assertNotIn('HEAVY ', result.stdout)
+
+    def test_management_parent_termination_cancels_owned_work(self):
+        # The execution backend is a real parent, separate from the CLI manager.
+        log = self.root / 'backend.log'
+        pidfile = self.root / 'manager.pid'
+        code = ('import importlib.machinery, pathlib, sys; '
+                'm=importlib.machinery.SourceFileLoader("admission", sys.argv[1]).load_module(); '
+                'm.USER_HOME=pathlib.Path(sys.argv[2]); sys.exit(m.main([]))')
+        command = [sys.executable, '-c', code, str(self.command), str(self.home)]
+        backend_code = ('import pathlib, subprocess, sys, time; '
+                        'p=subprocess.Popen(sys.argv[2:]); '
+                        'pathlib.Path(sys.argv[1]).write_text(str(p.pid)); time.sleep(60)')
+        with log.open('w') as output:
+            backend = subprocess.Popen([sys.executable, '-c', backend_code, str(pidfile), *command],
+                                       cwd=self.repo, env=dict(self.env, FIXTURE_SECONDS='60'),
+                                       stdout=output, stderr=output)
+        self.jobs.append(backend)
+        self.until(log, 'HEAVY ')
+        backend.terminate()
+        backend.wait(timeout=5)
+        self.until(log, 'terminal outcome: 130')
+        following, output = self.start()
+        self.finish(following, output)
+
+    def test_recovery_after_a_new_boot_does_not_run_a_check(self):
+        # OS boot identity is the only additional external adapter substituted.
+        code = ('import importlib.machinery, pathlib, sys; '
+                'm=importlib.machinery.SourceFileLoader("admission", sys.argv[1]).load_module(); '
+                'm.USER_HOME=pathlib.Path(sys.argv[2]); m.boot_identity=lambda:sys.argv[3]; '
+                'sys.exit(m.main(sys.argv[4:]))')
+        def launch(boot, *args):
+            log = self.root / ('boot-' + str(len(self.logs)))
+            self.logs.append(log)
+            with log.open('w') as output:
+                job = subprocess.Popen([sys.executable, '-c', code, str(self.command), str(self.home), boot, *args],
+                                       cwd=self.repo, env=dict(self.env, FIXTURE_SECONDS='60'),
+                                       stdout=output, stderr=output)
+            self.jobs.append(job)
+            return job, log
+        active, a = launch('first-boot')
+        self.until(a, 'HEAVY ')
+        active.kill()
+        active.wait(timeout=5)
+        status, b = self.start(args=('--status',))
+        self.finish(status, b)
+        os.killpg(json.loads(b.read_text())['group'], signal.SIGKILL)
+        recovery, c = launch('next-boot', '--recover')
+        self.assertIn('No check was run', self.finish(recovery, c))
+        self.assertNotIn('HEAVY ', c.read_text())
+        normal, d = self.start()
+        self.finish(normal, d)
+
+    def test_term_resistant_child_is_stopped_without_touching_unrelated_process(self):
+        shim = self.bin / 'Rscript'
+        shim.write_text('#!' + sys.executable + "\n" +
+                        'import os, pathlib, signal, subprocess, sys, time\n' +
+                        'child=subprocess.Popen([sys.executable, "-c", "import signal,time; signal.signal(signal.SIGTERM, signal.SIG_IGN); time.sleep(60)"], start_new_session=True)\n' +
+                        'time.sleep(0.2)\n' +
+                        'pathlib.Path(os.environ["FIXTURE_CHILD_FILE"]).write_text(str(child.pid))\n' +
+                        'print("HEAVY resistant", flush=True)\n' +
+                        'time.sleep(60)\n')
+        unrelated = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'])
+        self.jobs.append(unrelated)
+        active, a = self.start()
+        self.until(a, 'HEAVY ')
+        active.terminate()
+        self.finish(active, a, 130)
+        self.assertIsNone(unrelated.poll())
+        child = int((self.root / 'child.pid').read_text())
+        state = subprocess.run(['ps', '-p', str(child), '-o', 'stat='], capture_output=True, text=True)
+        self.assertTrue(not state.stdout.strip() or state.stdout.strip().startswith('Z'))
+
+    def test_direct_r_entry_refuses_missing_common_command(self):
+        real_rscript = shutil.which('Rscript')
+        if not real_rscript:
+            self.skipTest('Rscript is needed only for the entry-point integration fixture')
+        env = dict(self.env, PATH=str(self.bin) + os.pathsep + '/usr/bin:/bin')
+        result = subprocess.run([real_rscript, str(SOURCE.with_name('review-ready-check.R'))],
+                                cwd=self.repo, env=env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 2, result.stderr)
+        self.assertIn('No check was run', result.stderr)
+        self.assertNotIn('HEAVY ', result.stdout)
+
+
+if __name__ == '__main__':
+    unittest.main()
