@@ -1279,8 +1279,8 @@ wrap_dtplyr_share_function <- function(fn, mapping, forwarded_args, call) {
   rlang::call2("~", validator)
 }
 
-# Alias the .BY input after dependency planning and across translation.
-# Lexical scopes that bind .BY keep their own names.
+# Alias supported special inputs after planning and across translation.
+# Lexical scopes keep their own names; uncertain ownership is refused.
 protect_dtplyr_share_measure <- function(step) {
   if (inherits(step, "dtplyr_step_group")) {
     step$parent <- protect_dtplyr_share_measure(step$parent)
@@ -1289,27 +1289,34 @@ protect_dtplyr_share_measure <- function(step) {
   validators <- c("check_dtplyr_share_source", "check_dtplyr_share_scalar",
                   "check_dtplyr_share_ordinary")
   if (!inherits(step, "dtplyr_step_subset") ||
-        !".BY" %in% step$parent$vars ||
         !any(all.names(step$j) %in% validators)) {
     return(step)
   }
+  measures <- intersect(
+    step$parent$vars, c(".BY", ".SD", ".GRP", ".NGRP", ".SDall", ".xSD", ".iSD")
+  )
+  if (!length(measures)) {
+    return(step)
+  }
   margin_safe_column_reads(
-    step$parent, ".BY",
+    step$parent, measures,
     function(source, safe_name) {
       step$parent <- source
-      step$j <- rebuild_static_call(step$j, lapply(
-        static_call_args(step$j), rewrite_dtplyr_share_measure,
-        alias = safe_name(".BY")
-      ))
+      for (measure in measures) {
+        step$j <- rebuild_static_call(step$j, lapply(
+          static_call_args(step$j), rewrite_dtplyr_share_measure,
+          alias = safe_name(measure), measure = measure
+        ))
+      }
       step
     },
     reserved = step$vars
   )
 }
 
-# Whether evaluated syntax may bind or remove .BY in its current scope.
+# Whether evaluated syntax may bind or remove the input name in its scope.
 # Function literals establish a separate scope; unresolved assignments count.
-dtplyr_share_binds_measure <- function(expr) {
+dtplyr_share_binds_measure <- function(expr, measure = ".BY") {
   expr <- unparenthesized_value(expr)
   if (!rlang::is_call(expr)) {
     return(FALSE)
@@ -1318,51 +1325,76 @@ dtplyr_share_binds_measure <- function(expr) {
   if (identical(name, "function")) {
     return(FALSE)
   }
+  callee <- resolved_callee_name(expr, name)
+  head <- unparenthesized_value(static_call_head(expr))
+  if (identical(callee, "do.call") ||
+        (is.null(callee) && !identical(static_call_name(head), "function"))) {
+    return(TRUE)
+  }
   assigned <- lookup_assignment_names(expr)
-  if (any(c(".BY", unresolved_lookup_name()) %in% assigned)) {
+  if (any(c(measure, unresolved_lookup_name()) %in% assigned)) {
     return(TRUE)
   }
   if (!is.null(name) && name %in% c("rm", "remove") &&
-        !".BY" %in% removal_retained_bound(expr, ".BY")) {
+        !measure %in% removal_retained_bound(expr, measure)) {
     return(TRUE)
   }
   parts <- searched_call_parts(expr)
   parts <- parts[!vapply(parts, rlang::is_missing, logical(1))]
-  any(vapply(parts, dtplyr_share_binds_measure, logical(1)))
+  any(vapply(parts, dtplyr_share_binds_measure, logical(1), measure = measure))
 }
 
-# Replace translated .BY column reads while retaining lexical scopes, literal
-# field names and captures. Refuse scopes with unresolved input/lexical reads.
+# Replace translated special column reads, retaining lexical scopes, field names
+# and captures. Refuse scopes with unresolved input/lexical reads.
 # Freeze the generated across input-name read before aliasing so its
 # validation mapping continues to name the caller's selected column.
-rewrite_dtplyr_share_measure <- function(expr, alias) {
-  if (rlang::is_symbol(expr, ".BY")) {
+rewrite_dtplyr_share_measure <- function(expr, alias, measure = ".BY") {
+  if (rlang::is_symbol(expr, measure)) {
     return(rlang::sym(alias))
   }
   if (!rlang::is_call(expr)) {
     return(expr)
   }
   name <- static_call_name(expr)
+  callee <- resolved_callee_name(expr, name)
+  # An explicit mask can own the name or fall back to this input. Neither its
+  # bindings nor its type can be established by running caller code here.
+  if (!is.null(callee) &&
+        callee %in% c("eval", "evalq", "with", "eval_tidy", "eval_bare") &&
+        length(static_call_args(expr)) > 1L &&
+        any(c(measure, unresolved_lookup_name()) %in%
+              expression_data_symbols(expr))) {
+    abort_marginplyr(c(
+      paste0(
+        "dtplyr summaries with shares cannot safely distinguish input ",
+        "and explicit evaluation environment {.code {measure}} reads."
+      ),
+      i = paste0("Rename the input column {.code {measure}} ",
+                 "or evaluate this summary separately.")
+    ))
+  }
   if (identical(name, "function")) {
     parts <- static_call_args(expr)
-    if (".BY" %in% names(parts[[1L]])) {
+    if (measure %in% names(parts[[1L]])) {
       return(expr)
     }
     values <- c(function_formal_defaults(expr), parts[2L])
     values <- values[!vapply(values, rlang::is_missing, logical(1))]
-    rebinds <- any(vapply(values, dtplyr_share_binds_measure, logical(1)))
+    rebinds <- any(vapply(
+      values, dtplyr_share_binds_measure, logical(1), measure = measure
+    ))
   } else {
-    rebinds <- dtplyr_share_binds_measure(expr)
+    rebinds <- dtplyr_share_binds_measure(expr, measure)
   }
   if (rebinds) {
     reads <- expression_data_symbols(expr)
-    if (any(c(".BY", unresolved_lookup_name()) %in% reads)) {
+    if (any(c(measure, unresolved_lookup_name()) %in% reads)) {
       abort_marginplyr(c(
         paste0(
           "dtplyr summaries with shares cannot safely distinguish input ",
-          "and lexical {.code .BY} reads in this expression."
+          "and lexical {.code {measure}} reads in this expression."
         ),
-        i = "Rename the lexical binding or the input column {.code .BY}."
+        i = "Rename the lexical binding or the input column {.code {measure}}."
       ))
     }
     return(expr)
@@ -1373,11 +1405,11 @@ rewrite_dtplyr_share_measure <- function(expr, alias) {
   }
   if (!is.null(name) && name %in% c("$", "@")) {
     args <- static_call_args(expr)
-    args[1L] <- list(rewrite_dtplyr_share_measure(args[[1L]], alias))
+    args[1L] <- list(rewrite_dtplyr_share_measure(args[[1L]], alias, measure))
     return(rebuild_static_call(expr, args))
   }
   rewrite_evaluated_call_parts(expr, function(part) {
-    rewrite_dtplyr_share_measure(part, alias)
+    rewrite_dtplyr_share_measure(part, alias, measure)
   })
 }
 
@@ -4012,9 +4044,11 @@ lookup_rebound_names <- function(expr) {
 # Names assigned by this call itself, or the unresolved marker when a reflective
 # assignment's target is not statically known. The caller supplies a call.
 lookup_assignment_names <- function(expr) {
-  name <- static_call_name(expr)
+  name <- resolved_callee_name(expr)
   assigned <- if (!is.null(name) && name %in% c("<-", "=", "<<-", "for") &&
-                    length(expr) >= 3L && is_name_part(expr[[2L]])) {
+                    length(expr) >= 3L &&
+                    (is_name_part(expr[[2L]]) ||
+                       rlang::is_string(expr[[2L]]))) {
     rlang::as_name(expr[[2L]])
   } else {
     character()
