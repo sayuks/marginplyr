@@ -827,7 +827,8 @@ plan_share_expressions <- function(dots,
         colnames(selection_proxy),
         vapply(preceding_ordinary, `[[`, character(1), "name"),
         preceding_shares$names
-      )
+      ),
+      reparented = analyses[[i]]$reparented
     )
     if (length(share_dependency) > 0L) {
       dependency <- share_dependency[[1L]]
@@ -1744,6 +1745,7 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
   dot_names <- names(dots)
   analyses <- vector("list", length(dots))
   preceding_names <- character()
+  reparented <- list()
   independent_shares <- defer_local && shares_use_named_summaries(dots)
   for (i in seq_along(dots)) {
     quo <- dots[[i]]
@@ -1754,6 +1756,9 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
       analyses[[i]] <- list(records = list())
       next
     }
+    reparented <- c(reparented, lookup_reparented_environments(
+      expr, env, c(colnames(selection_proxy), preceding_names)
+    ))
 
     # Local dplyr resolves selections after preceding summaries have entered
     # its mask. Predict only literal names here, leaving naming expressions
@@ -1783,8 +1788,8 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
       )
       analyses[[i]] <- list(records = ordinary_summary_records(
         expr, env, proxy, output_names, output_name,
-        eligibility, i, preceding_names
-      ))
+        eligibility, i, preceding_names, reparented
+      ), reparented = reparented)
       preceding_names <- c(preceding_names, output_names)
       next
     }
@@ -1822,9 +1827,9 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
 
     records <- ordinary_summary_records(
       expr, env, selection_proxy, output_names, output_name,
-      eligibility, i, preceding_names
+      eligibility, i, preceding_names, reparented
     )
-    analyses[[i]] <- list(records = records)
+    analyses[[i]] <- list(records = records, reparented = reparented)
     # An argument name alone cannot establish a preceding alias dependency.
     if (!identical(eligibility, "frame_candidate")) {
       preceding_names <- c(preceding_names, output_names)
@@ -1836,10 +1841,11 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
 
 # Records each known ordinary output against the aliases preceding its call.
 # The proxy includes those aliases when local selections have been deferred.
+# An output with known across provenance has an explicit column argument.
 # Unknown provenance retains the whole call's dependencies.
 ordinary_summary_records <- function(expr, env, proxy, output_names,
                                      output_name, eligibility, position,
-                                     preceding_names) {
+                                     preceding_names, reparented) {
   expands <- is_across_call(expr) && !nzchar(output_name) &&
     length(output_names) > 0L
   provenance <- across_output_provenance(
@@ -1856,11 +1862,7 @@ ordinary_summary_records <- function(expr, env, proxy, output_names,
     if (!is.na(across_input)) {
       parsed <- parse_across_arguments(expr)
       args <- parsed$call_args
-      if (parsed$cols_index > 0L) {
-        args[[parsed$cols_index]] <- rlang::sym(across_input)
-      } else {
-        args$.cols <- rlang::sym(across_input)
-      }
+      args[[parsed$cols_index]] <- rlang::sym(across_input)
       if (is_known_function_list_call(parsed$fns, env)) {
         args[parsed$fns_index] <- static_call_args(parsed$fns)[across_function]
       }
@@ -1870,7 +1872,7 @@ ordinary_summary_records <- function(expr, env, proxy, output_names,
     dependencies <- unique(c(
       expression_alias_dependencies(
         dependency_expr, preceding_names, env,
-        c(colnames(proxy), preceding_names)
+        c(colnames(proxy), preceding_names), reparented = reparented
       ),
       intersect(inputs, preceding_names)
     ))
@@ -4004,13 +4006,15 @@ abort_share_predicate <- function(kind) {
 # and naming the marker instead would put a name no summary has into a message
 # about the caller's own summaries.
 expression_alias_dependencies <- function(expr, aliases, env = emptyenv(),
-                                          mask = character()) {
+                                          mask = character(),
+                                          reparented = list()) {
   if (length(aliases) == 0L) {
     return(character())
   }
   symbols <- unique(expression_data_symbols(
     expr, lookup = list(
-      env = env, mask = mask, rebound = lookup_rebound_names(expr)
+      env = env, mask = mask, rebound = lookup_rebound_names(expr),
+      reparented = reparented
     )
   ))
   if (unresolved_lookup_name() %in% symbols) {
@@ -4300,18 +4304,10 @@ call_part_symbols <- function(expr, bound, lookup = NULL) {
   if (!rlang::is_symbol(call_head)) {
     parts <- c(list(call_head), parts)
   }
-  reads <- unlist(
-    lapply(parts, expression_data_symbols, bound = bound, lookup = lookup),
-    use.names = FALSE
-  )
-  # `unlist()` answers `NULL` for a walk that reached no part at all, and every
-  # member of this family answers a character vector: `intersect()` and `%in%`
-  # read the two alike, but `expect_identical()` does not, and a caller storing
-  # the answer would find one branch of the walk typeless. A call whose parts
-  # are all captured is the shape that made it reachable for a name-carrying
-  # call rather than only for `f()` (#179).
-  if (is.null(reads)) {
-    return(character())
+  reads <- character()
+  for (index in seq_along(parts)) {
+    reads <- c(reads, expression_data_symbols(parts[[index]], bound, lookup))
+    bound <- nested_removal_retained_bound(parts[[index]], bound, lookup)
   }
   unique(reads)
 }
@@ -4397,7 +4393,7 @@ block_reads_and_bound <- function(expr, bound, lookup = NULL) {
 }
 
 # One statement's reads together with the bound set the statement after it
-# sees. A node that binds nothing returns the set it was given.
+# sees. Nested evaluated removals can shrink it without binding a new name.
 statement_reads_and_bound <- function(expr, bound, lookup = NULL) {
   # A nested block and a redundant parenthesis are transparent here for the
   # reason the enclosing block is: neither opens a scope, and both always run,
@@ -4420,8 +4416,7 @@ statement_reads_and_bound <- function(expr, bound, lookup = NULL) {
   # out of scope again, and losing one from the set is the direction this walk
   # is not allowed to be wrong in: after `{ tmp <- 1; rm(tmp); tmp }` the last
   # read reaches the column once more, so a share named `tmp` is read there and
-  # the guard owes the caller a diagnostic. Everything else the walk does not
-  # recognize can only add bindings, which over-reports and is safe to ignore.
+  # the guard owes the caller a diagnostic.
   if (!is.null(call_name) && call_name %in% c("rm", "remove")) {
     return(list(
       reads = expression_data_symbols(expr, bound, lookup),
@@ -4430,31 +4425,31 @@ statement_reads_and_bound <- function(expr, bound, lookup = NULL) {
   }
   if (!is_binding_statement(call_name, expr)) {
     return(list(
-      reads = expression_data_symbols(expr, bound, lookup), bound = bound
+      reads = expression_data_symbols(expr, bound, lookup),
+      bound = nested_removal_retained_bound(expr, bound, lookup)
     ))
   }
   if (identical(call_name, "for")) {
-    # The index survives the loop: R binds it in the enclosing environment, and
-    # binds it even when the sequence is empty, so `{ for (i in v) NULL; i }`
-    # reads no column `i`. The sequence is read before the index is bound, the
-    # body after.
-    inner <- bound
+    # R binds the index even for an empty sequence. The sequence runs before
+    # that binding; the body runs after it and may remove it.
+    inner <- nested_removal_retained_bound(expr[[3L]], bound, lookup)
     if (is_name_part(expr[[2L]])) {
-      inner <- unique(c(bound, rlang::as_name(expr[[2L]])))
+      inner <- unique(c(inner, rlang::as_name(expr[[2L]])))
     }
     return(list(
       reads = unique(c(
         expression_data_symbols(expr[[3L]], bound, lookup),
         expression_data_symbols(expr[[4L]], inner, lookup)
       )),
-      bound = inner
+      bound = nested_removal_retained_bound(expr[[4L]], inner, lookup)
     ))
   }
   value <- expression_data_symbols(expr[[3L]], bound, lookup)
+  retained <- nested_removal_retained_bound(expr[[3L]], bound, lookup)
   if (is_name_part(expr[[2L]])) {
     return(list(
       reads = value,
-      bound = unique(c(bound, rlang::as_name(expr[[2L]])))
+      bound = unique(c(retained, rlang::as_name(expr[[2L]])))
     ))
   }
   # A replacement form -- `names(x) <- v` -- reads its target before it rebuilds
@@ -4466,8 +4461,68 @@ statement_reads_and_bound <- function(expr, bound, lookup = NULL) {
     reads = unique(c(
       expression_data_symbols(expr[[2L]], bound, lookup), value
     )),
-    bound = bound
+    bound = nested_removal_retained_bound(expr[[2L]], retained, lookup)
   )
+}
+
+# Whether a recognized base function is the actual callee, without invoking it.
+# The caller supplies its static name; unresolved bindings prove no exemption.
+is_known_base_call <- function(expr, name, bound, lookup) {
+  namespace <- static_call_ns(expr)
+  if (!is.null(namespace)) {
+    return(identical(namespace, "base"))
+  }
+  if (is.null(lookup$env) || name %in% c(bound, lookup$rebound) ||
+        unresolved_lookup_name() %in% lookup$rebound) {
+    return(FALSE)
+  }
+  identical(
+    ordinary_function_binding(name, lookup$env),
+    get(name, envir = baseenv())
+  )
+}
+
+# Lexical bindings that survive every visibly evaluated removal in this node.
+# Conditional removals may run; literal FALSE arms cannot. Function bodies and
+# default local() frames own removals; an explicit local environment may not.
+nested_removal_retained_bound <- function(expr, bound, lookup = NULL) {
+  if (rlang::is_quosure(expr)) {
+    lookup$env <- rlang::quo_get_env(expr)
+  }
+  if (!rlang::is_call(expr) || length(bound) == 0L) {
+    return(bound)
+  }
+  if (is_parenthesized(expr)) {
+    return(nested_removal_retained_bound(
+      unparenthesized_value(expr), bound, lookup
+    ))
+  }
+  name <- static_call_name(expr)
+  if (identical(name, "function") ||
+        (identical(name, "local") &&
+           is_known_base_call(expr, name, bound, lookup) &&
+           length(base_call_argument(expr, "envir")) == 0L)) {
+    return(bound)
+  }
+  if (!is.null(name) && name %in% c("rm", "remove")) {
+    return(removal_retained_bound(expr, bound))
+  }
+  parts <- c(
+    evaluated_call_head(expr), evaluated_call_args(expr, bound = bound),
+    evaluated_language_parts(expr)
+  )
+  if (identical(name, "if") && length(expr) >= 3L) {
+    condition <- unparenthesized_value(expr[[2L]])
+    if (identical(condition, FALSE)) {
+      parts <- if (length(expr) >= 4L) list(expr[[4L]]) else list()
+    } else if (identical(condition, TRUE)) {
+      parts <- list(expr[[3L]])
+    }
+  }
+  for (index in seq_along(parts)) {
+    bound <- nested_removal_retained_bound(parts[[index]], bound, lookup)
+  }
+  bound
 }
 
 # What survives an `rm()` of the bound set it is given. A name written
@@ -4503,21 +4558,20 @@ removal_retained_bound <- function(expr, bound) {
   setdiff(bound, removed)
 }
 
-# A reflective lookup's explicit search environment, or an empty list for its
-# default. Match without evaluation; `envir` overrides `pos`/`where`, and
-# `exists()` uses `frame` only when `envir` is absent.
-lookup_environment_argument <- function(expr) {
+# The first supplied formal in priority order, or an empty list for defaults.
+# Match a recognized base primitive without evaluating caller expressions.
+base_call_argument <- function(expr, formals) {
   callee <- resolved_callee_name(expr)
   matched <- tryCatch(
     match.call(
-      get(callee, envir = baseenv()),
+      args(get(callee, envir = baseenv())),
       rlang::call2(callee, !!!static_call_args(expr)),
       envir = emptyenv()
     ),
     error = function(cnd) NULL
   )
   args <- as.list(matched)[-1L]
-  for (formal in c("envir", "frame", "pos", "where")) {
+  for (formal in formals) {
     if (formal %in% names(args)) {
       return(args[formal])
     }
@@ -4525,20 +4579,20 @@ lookup_environment_argument <- function(expr) {
   list()
 }
 
-# Only existing environment values prove the lookup cannot start in the mask.
+# Existing environment values without forcing caller bindings, or NULL.
 # Unknown expressions, promises, active bindings, and names shadowed by the
 # mask or an expression-local binding stay conservative without running code.
-lookup_environment_is_external <- function(expr, bound, lookup) {
+lookup_environment_value <- function(expr, bound, lookup) {
   if (is_parenthesized(expr)) {
-    return(lookup_environment_is_external(
+    return(lookup_environment_value(
       unparenthesized_value(expr), bound, lookup
     ))
   }
   if (is.environment(expr)) {
-    return(TRUE)
+    return(expr)
   }
   if (unresolved_lookup_name() %in% lookup$rebound) {
-    return(FALSE)
+    return(NULL)
   }
   if (rlang::is_call(expr, c("$", "[["), n = 2L) &&
         rlang::is_symbol(expr[[2L]], ".env") &&
@@ -4549,31 +4603,106 @@ lookup_environment_is_external <- function(expr, bound, lookup) {
       static_character_value(expr[[3L]])
     }
     if (!is.null(name) && length(name) == 1L && !is.null(lookup)) {
-      return(lookup_environment_is_external(
+      return(lookup_environment_value(
         rlang::sym(name), character(),
         list(env = lookup$env, mask = character(), rebound = lookup$rebound)
       ))
     }
   }
   if (!is_name_part(expr)) {
-    return(FALSE)
+    return(NULL)
   }
   name <- rlang::as_name(expr)
   if (is.null(lookup) || name %in% c(bound, lookup$mask, lookup$rebound)) {
-    return(FALSE)
+    return(NULL)
   }
   current <- lookup$env
   while (!identical(current, emptyenv())) {
     if (exists(name, envir = current, inherits = FALSE)) {
       if (bindingIsActive(name, current) ||
             rlang::env_binding_are_lazy(current, name)) {
-        return(FALSE)
+        return(NULL)
       }
-      return(is.environment(get(name, envir = current, inherits = FALSE)))
+      value <- get(name, envir = current, inherits = FALSE)
+      return(if (is.environment(value)) value else NULL)
     }
     current <- parent.env(current)
   }
-  FALSE
+  NULL
+}
+
+# Whether a lookup stays outside the mask after visible parent replacements.
+# Non-inheriting reads cannot reach a changed parent. TRUE in `reparented`
+# denotes an unresolved mutation target, which invalidates every proof.
+lookup_environment_is_external <- function(expr, bound, lookup,
+                                           inherits = TRUE) {
+  value <- lookup_environment_value(expr, bound, lookup)
+  if (is.null(value)) {
+    return(FALSE)
+  }
+  if (!inherits) {
+    return(TRUE)
+  }
+  while (!identical(value, emptyenv())) {
+    if (any(vapply(lookup$reparented, function(target) {
+      isTRUE(target) || identical(target, value)
+    }, logical(1)))) {
+      return(FALSE)
+    }
+    value <- parent.env(value)
+  }
+  TRUE
+}
+
+# Existing environments whose visibly replaced parent may reach the mask.
+# Targets are compared by identity across summaries and quosure environments;
+# an unreadable target invalidates all proofs. No caller expression is run.
+lookup_reparented_environments <- function(
+  expr, env, mask, rebound = lookup_rebound_names(expr)) {
+  if (rlang::is_quosure(expr)) {
+    env <- rlang::quo_get_env(expr)
+  }
+  if (!rlang::is_call(expr)) {
+    return(list())
+  }
+  if (is_parenthesized(expr)) {
+    return(lookup_reparented_environments(
+      unparenthesized_value(expr), env, mask, rebound
+    ))
+  }
+  name <- static_call_name(expr)
+  if (identical(name, "function") && length(expr) >= 3L) {
+    rebound <- unique(c(rebound, names(as.list(expr[[2L]]))))
+  }
+  targets <- list()
+  target <- parent <- list()
+  if (!is.null(name) && name %in% c("<-", "=", "<<-") &&
+        length(expr) >= 3L &&
+        identical(static_call_name(expr[[2L]]), "parent.env")) {
+    target <- call_formal_argument(expr[[2L]], "env")
+    parent <- as.list(expr)[3L]
+  } else if (identical(name, "parent.env<-")) {
+    target <- base_call_argument(expr, "env")
+    parent <- base_call_argument(expr, "value")
+  }
+  if (length(target) > 0L && length(parent) > 0L) {
+    parent <- unparenthesized_value(parent[[1L]])
+    parent_name <- static_call_name(parent)
+    safe_parent <- parent_name %in% c("baseenv", "emptyenv") &&
+      is_known_base_call(parent, parent_name, character(), list(
+        env = env, rebound = rebound
+      ))
+    if (!safe_parent) {
+      value <- lookup_environment_value(target[[1L]], character(), list(
+        env = env, mask = mask, rebound = rebound
+      ))
+      targets <- list(if (is.null(value)) TRUE else value)
+    }
+  }
+  c(targets, unlist(lapply(
+    searched_call_parts(expr),
+    lookup_reparented_environments, env = env, mask = mask, rebound = rebound
+  ), recursive = FALSE))
 }
 
 # The names a reflective lookup resolves in the mask.
@@ -4587,9 +4716,18 @@ lookup_environment_is_external <- function(expr, bound, lookup) {
 # analysis may not do -- it runs while the call is planned, on the caller's own
 # code.
 reflective_lookup_symbols <- function(expr, bound, lookup = NULL) {
-  environment <- lookup_environment_argument(expr)
-  if (length(environment) > 0L &&
-        lookup_environment_is_external(environment[[1L]], bound, lookup)) {
+  environment <- base_call_argument(
+    expr, c("envir", "frame", "pos", "where")
+  )
+  inherited <- base_call_argument(expr, "inherits")
+  inherits <- if (length(inherited) > 0L) {
+    !identical(unparenthesized_value(inherited[[1L]]), FALSE)
+  } else {
+    !identical(resolved_callee_name(expr), "mget")
+  }
+  if (length(environment) > 0L && lookup_environment_is_external(
+    environment[[1L]], bound, lookup, inherits
+  )) {
     return(character())
   }
   argument <- call_formal_argument(expr, "x")
