@@ -322,10 +322,18 @@ test_that("an absorbed expression is labelled by Arrow's convention", {
 # claims, which is not hypothetical: that is the state this branch found the
 # handler in (#254).
 #
-# The inputs carry a class attribute rather than being Arrow objects, which is
-# the whole of what `inherits()` reads, so this runs wherever the suite does --
-# a claim about a reading, like its sibling above, and not about a backend.
+# The inputs carry only the class attribute the predicate reads. The emitters
+# run in Arrow's namespace to exercise each version's signalling route.
 test_that("an absorption is recognised on every phrasing and only on Arrow", {
+  skip_if_suggest_absent("arrow")
+  emitters <- list(
+    function(cnd) warning(cnd),
+    function(cnd) rlang::warn(conditionMessage(cnd))
+  )
+  emitters <- lapply(emitters, function(emit) {
+    environment(emit) <- asNamespace("arrow")
+    emit
+  })
   # Built with `structure()` for the reason `test-execution-conditions.R` gives
   # about its own foreign condition: `warning_cnd()` cannot express the case.
   # It collapses a vector `message` to one string, which is exactly the shape
@@ -344,13 +352,26 @@ test_that("an absorption is recognised on every phrasing and only on Arrow", {
   for (cls in arrow_input_classes()) {
     input <- structure(list(), class = cls)
     marked <- function(message) {
-      is_absorbing_backend_warning(warned(message), input)
+      # The vector-message fixture bypasses emitters that flatten its shape.
+      if (length(message) != 1L) {
+        return(is_absorbing_backend_warning(warned(message), input))
+      }
+      answers <- vapply(emitters, function(emit) {
+        answer <- FALSE
+        withCallingHandlers(
+          emit(warned(message)),
+          warning = function(cnd) {
+            answer <<- is_absorbing_backend_warning(cnd, input)
+            invokeRestart("muffleWarning")
+          }
+        )
+        answer
+      }, logical(1))
+      all(answers)
     }
 
-    # From Arrow 17.0.0, and through 16.0.0, which differ in the case of the
-    # phrase and in nothing else the reading depends on. `info` rather than
-    # `label`, which would replace the expression and leave a reader knowing
-    # which class failed but not which of the four readings did.
+    # Both marker phrasings cross both emitter routes. `info` preserves the
+    # expression in the failure report while naming the input class.
     expect_true(
       marked("In paste(s, collapse = \",\"): \nPulling data into R"),
       info = cls
@@ -376,6 +397,22 @@ test_that("an absorption is recognised on every phrasing and only on Arrow", {
   }
   expect_false(not_arrow(data.frame(k = 1)))
   expect_false(not_arrow(structure(list(), class = "dtplyr_step")))
+})
+
+test_that("an absorption marker without an Arrow emitter is not absorption", {
+  input <- structure(list(), class = "Table")
+  expect_false(is_absorbing_backend_warning(
+    simpleWarning("Pulling data into R"), input
+  ))
+  marked <- NULL
+  withCallingHandlers(
+    rlang::eval_bare(quote(warning("Pulling data into R")), globalenv()),
+    warning = function(cnd) {
+      marked <<- is_absorbing_backend_warning(cnd, input)
+      invokeRestart("muffleWarning")
+    }
+  )
+  expect_false(marked)
 })
 
 test_that("Arrow refuses a subset inside an aggregate", {
@@ -459,11 +496,8 @@ test_that("Arrow rejects contextual shares for every accepted input shape", {
 # absorbs the two expressions it is asserted over, and that Arrow still marks
 # the absorption with the text the handler keys on.
 #
-# The text dependency is what makes this block load-bearing rather than
-# redundant. Arrow's fallback warning carries no class, no `$parent`, and no
-# `$call`, so its message is the only thing to recognise it by; that is
-# undocumented behaviour, and this is what keeps it honest, the way
-# `document.yaml` keeps the roxygen table-row exception honest.
+# Arrow's absorption marker and signalling origin are undocumented behaviour;
+# this gate exercises the same reading as the handler before collection.
 #
 # The absorption is recognised by calling the handler's own reading rather than
 # by matching the marker again here. A second match would answer for its own
