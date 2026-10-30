@@ -13,7 +13,7 @@ local({
     "Package: fixture", "Version: 0.0.1", "Title: Progress Fixture",
     "Description: Exercises live progress during source package checks.",
     'Authors@R: person("A", "B", email="a@example.com", role=c("aut", "cre"))',
-    "License: GPL-3", "Suggests: testthat", "Config/testthat/edition: 3"
+    "License: GPL-3", "Suggests: testthat, withr", "Config/testthat/edition: 3"
   ), file.path(package, "DESCRIPTION"))
   writeLines(character(), file.path(package, "NAMESPACE"))
   writeLines(gsub("marginplyr", "fixture", readLines("tests/testthat.R"), fixed = TRUE),
@@ -21,11 +21,22 @@ local({
   writeLines('test_that("first", expect_true(TRUE))',
     file.path(package, "tests", "testthat", "test-first.R"))
   repos <- review_ready_offline_repositories(workspace)
-  for (fail in c(FALSE, TRUE)) {
-    writeLines(sprintf('test_that("second", expect_true(%s))',
-      if (fail) "FALSE" else "TRUE"),
-      file.path(package, "tests", "testthat", "test-second.R"))
-    check_dir <- file.path(workspace, if (fail) "fail" else "pass")
+  for (mode in c("pass", "fail", "worker", "teardown", "startup")) {
+    fail <- mode != "pass"
+    helper <- file.path(package, "tests", "testthat", "helper-worker-startup.R")
+    if (mode == "startup") writeLines('stop("fixture worker startup failure")', helper)
+    expression <- switch(mode,
+      pass = 'test_that("second", expect_true(TRUE))',
+      fail = 'test_that("second", expect_true(FALSE))',
+      worker = 'test_that("worker exits", quit(status = 17L, save = "no"))',
+      teardown = c(
+        'withr::defer(stop("fixture teardown failure"), envir = .GlobalEnv)',
+        'test_that("second", expect_true(TRUE))'
+      ),
+      startup = 'test_that("second", expect_true(TRUE))'
+    )
+    writeLines(expression, file.path(package, "tests", "testthat", "test-second.R"))
+    check_dir <- file.path(workspace, mode)
     output <- capture.output({
       result <- review_ready_progress_check(
         package, args = c("--no-manual", "--no-vignettes"), build_args = character(),
@@ -44,6 +55,27 @@ local({
       identical(result$status == 0L, !fail),
       identical(length(result$errors) == 0L, !fail)
     )
+    if (mode == "worker") {
+      stopifnot(
+        any(grepl("testthat subprocess exited in file 'test-second.R'", output, fixed = TRUE)),
+        any(grepl("R session crashed with exit code 17", output, fixed = TRUE))
+      )
+      next
+    }
+    if (mode == "teardown") {
+      stopifnot(
+        any(grepl("At least one parallel worker failed to run teardown", output, fixed = TRUE)),
+        any(grepl("fixture teardown failure", output, fixed = TRUE))
+      )
+      next
+    }
+    if (mode == "startup") {
+      stopifnot(
+        any(grepl("testthat subprocess failed to start", output, fixed = TRUE)),
+        any(grepl("fixture worker startup failure", output, fixed = TRUE))
+      )
+      next
+    }
     events <- readLines(file.path(check_dir, "test-progress.tsv"))
     stopifnot(
       identical(events[[1L]], "total\t2"),
