@@ -1,0 +1,23 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+ORDINARY
+# A tibble: 2 × 2
+  g         x
+  <chr> <int>
+1 a         3
+2 b         3
+MARGIN
+# A tibble: 2 × 2
+  g         y
+  <chr> <dbl>
+1 a        11
+2 b         7

@@ -1,0 +1,61 @@
+MINIMAL ordinary stayed lazy; caller warning identity retained; total=2
+# A tibble: 1 × 1
+  total
+  <dbl>
+1     2
+MINIMAL Margin outcome:
+marginplyr_error,rlang_error,error,condition Arrow cannot evaluate this summary, so Arrow would read the whole input to compute it:
+ℹ `total = sum(x) + offset()`.
+ℹ Collect the Arrow input first, then call `summarize_with_margins()`.
+ℹ Collection changes the default of `.check_margin_label` from `FALSE` to `TRUE`; set it explicitly when re-running this call.
+ℹ Select the columns you need before collecting. Arrow reads every column of the input, including the ones a summary does not use.
+External warnings received: 0
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l1dcachesize'. Detail: [errno 1] Operation not permitted
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l2cachesize'. Detail: [errno 1] Operation not permitted
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l3cachesize'. Detail: [errno 1] Operation not permitted
+MISMATCH table pulling data into R FALSE warnings 0 class marginplyr_error
+MISMATCH table pulling data into R TRUE warnings 0 class marginplyr_error
+MISMATCH table Pulling data into R FALSE warnings 0 class marginplyr_error
+MISMATCH table Pulling data into R TRUE warnings 0 class marginplyr_error
+MISMATCH table Caller says: not pulling data into R here. FALSE warnings 0 class marginplyr_error
+MISMATCH table Caller says: not pulling data into R here. TRUE warnings 0 class marginplyr_error
+MISMATCH table_query pulling data into R FALSE warnings 0 class marginplyr_error
+MISMATCH table_query pulling data into R TRUE warnings 0 class marginplyr_error
+MISMATCH table_query Pulling data into R FALSE warnings 0 class marginplyr_error
+MISMATCH table_query Pulling data into R TRUE warnings 0 class marginplyr_error
+MISMATCH table_query Caller says: not pulling data into R here. FALSE warnings 0 class marginplyr_error
+MISMATCH table_query Caller says: not pulling data into R here. TRUE warnings 0 class marginplyr_error
+MISMATCH batch pulling data into R FALSE warnings 0 class marginplyr_error
+MISMATCH batch pulling data into R TRUE warnings 0 class marginplyr_error
+MISMATCH batch Pulling data into R FALSE warnings 0 class marginplyr_error
+MISMATCH batch Pulling data into R TRUE warnings 0 class marginplyr_error
+MISMATCH batch Caller says: not pulling data into R here. FALSE warnings 0 class marginplyr_error
+MISMATCH batch Caller says: not pulling data into R here. TRUE warnings 0 class marginplyr_error
+MISMATCH batch_query pulling data into R FALSE warnings 0 class marginplyr_error
+MISMATCH batch_query pulling data into R TRUE warnings 0 class marginplyr_error
+MISMATCH batch_query Pulling data into R FALSE warnings 0 class marginplyr_error
+MISMATCH batch_query Pulling data into R TRUE warnings 0 class marginplyr_error
+MISMATCH batch_query Caller says: not pulling data into R here. FALSE warnings 0 class marginplyr_error
+MISMATCH batch_query Caller says: not pulling data into R here. TRUE warnings 0 class marginplyr_error
+MISMATCH dataset pulling data into R FALSE warnings 0 class marginplyr_error
+MISMATCH dataset pulling data into R TRUE warnings 0 class marginplyr_error
+MISMATCH dataset Pulling data into R FALSE warnings 0 class marginplyr_error
+MISMATCH dataset Pulling data into R TRUE warnings 0 class marginplyr_error
+MISMATCH dataset Caller says: not pulling data into R here. FALSE warnings 0 class marginplyr_error
+MISMATCH dataset Caller says: not pulling data into R here. TRUE warnings 0 class marginplyr_error
+MISMATCH dataset_query pulling data into R FALSE warnings 0 class marginplyr_error
+MISMATCH dataset_query pulling data into R TRUE warnings 0 class marginplyr_error
+MISMATCH dataset_query Pulling data into R FALSE warnings 0 class marginplyr_error
+MISMATCH dataset_query Pulling data into R TRUE warnings 0 class marginplyr_error
+MISMATCH dataset_query Caller says: not pulling data into R here. FALSE warnings 0 class marginplyr_error
+MISMATCH dataset_query Caller says: not pulling data into R here. TRUE warnings 0 class marginplyr_error
+MATRIX 36 checks; 36 mismatches
+TEXT CONTROL passed with caller warning identity and lazy result
+GENUINE ABSORPTION CONTROL: ordinary returned local frame; Margin refused
+R version 4.6.1 (2026-06-24)
+arrow 25.0.1
+dplyr 1.2.1
+rlang 1.3.0
+marginplyr 0.1.0
+Error: minimal_ok is not TRUE
+Execution halted

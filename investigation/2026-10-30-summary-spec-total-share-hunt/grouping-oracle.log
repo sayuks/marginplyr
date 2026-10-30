@@ -1,0 +1,8 @@
+PASS 100 plans; 1200 backend/duplicate-policy comparisons
+PASS 200 plans; 2000 backend/duplicate-policy comparisons
+PASS 300 plans; 2800 backend/duplicate-policy comparisons
+PASS 400 plans; 3600 backend/duplicate-policy comparisons
+PASS 500 plans; 4400 backend/duplicate-policy comparisons
+PASS 600 plans; 5200 backend/duplicate-policy comparisons
+PASS 700 plans; 6000 backend/duplicate-policy comparisons
+FINAL PASS 6000 comparisons

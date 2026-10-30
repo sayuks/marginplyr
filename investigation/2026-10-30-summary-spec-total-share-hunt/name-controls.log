@@ -1,0 +1,34 @@
+local source
+# A tibble: 2 × 3
+  fixed g       ...
+  <chr> <chr> <dbl>
+1 x     a         1
+2 x     b         3
+local output
+# A tibble: 2 × 3
+  fixed g       ...
+  <chr> <chr> <dbl>
+1 x     a         1
+2 x     b         3
+local fixed
+Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * "..." at location 1.
+dtplyr source
+Column 3 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * "..." at location 1.
+dtplyr output
+Column 3 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * "..." at location 1.
+dtplyr fixed
+Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * "..." at location 1.

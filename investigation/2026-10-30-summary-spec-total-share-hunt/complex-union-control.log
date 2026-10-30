@@ -1,0 +1,12 @@
+# A tibble: 2 × 3
+  f     g         v
+  <cpl> <chr> <dbl>
+1 1+0i  a         1
+2 2+0i  b         3
+# A tibble: 2 × 3
+  f     g         v
+  <cpl> <chr> <dbl>
+1 1+0i  Total     1
+2 2+0i  Total     3
+ORDINARY UNION: unsupported column type found in x or y: [complex]
+MARGIN UNION: unsupported column type found in x or y: [complex]

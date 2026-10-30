@@ -1,0 +1,421 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+
+SIGNAL 1 PREFIX  NAMED FALSE FORM list(quote(pick(g)))
+<error/rlang_error>
+Error in `dplyr::summarise()`:
+ℹ In argument: `list(quote(pick(g)))`.
+Caused by error in `pick()`:
+! Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+---
+Backtrace:
+     ▆
+  1. ├─global capture(normal)
+  2. │ ├─base::tryCatch(suppressWarnings(eval(expr)), error = function(e) e)
+  3. │ │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+  4. │ │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+  5. │ │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+  6. │ ├─base::suppressWarnings(eval(expr))
+  7. │ │ └─base::withCallingHandlers(...)
+  8. │ ├─base::eval(expr)
+  9. │ │ └─base::eval(expr)
+ 10. │ ├─dplyr::summarise(data, list(quote(pick(g))), .by = g)
+ 11. │ └─dplyr:::summarise.data.frame(data, list(quote(pick(g))), .by = g)
+ 12. │   └─dplyr:::summarise_cols(.data, dplyr_quosures(...), by, "summarise")
+ 13. │     ├─base::withCallingHandlers(...)
+ 14. │     └─dplyr:::expand_pick(dot, mask)
+ 15. │       └─dplyr:::expand_pick_quo(quo, mask, error_call = error_call)
+ 16. │         └─dplyr:::expand_pick_call(expr, env, mask, error_call = error_call)
+ 17. │           └─dplyr:::expand_pick_call(elt, env, mask, error_call = error_call)
+ 18. │             └─dplyr:::expand_pick_call(elt, env, mask, error_call = error_call)
+ 19. │               └─dplyr:::eval_pick(expr, env, mask, error_call)
+ 20. │                 └─tidyselect::eval_select(...)
+ 21. │                   └─tidyselect:::eval_select_impl(...)
+ 22. │                     ├─tidyselect:::with_subscript_errors(...)
+ 23. │                     │ └─base::withCallingHandlers(...)
+ 24. │                     └─tidyselect:::vars_select_eval(...)
+ 25. │                       └─tidyselect:::walk_data_tree(expr, data_mask, context_mask)
+ 26. │                         └─tidyselect:::eval_c(expr, data_mask, context_mask)
+ 27. │                           └─tidyselect:::reduce_sels(node, data_mask, context_mask, init = init)
+ 28. │                             └─tidyselect:::walk_data_tree(new, data_mask, context_mask)
+ 29. │                               └─tidyselect:::as_indices_sel_impl(...)
+ 30. │                                 └─tidyselect:::as_indices_impl(...)
+ 31. │                                   └─tidyselect:::chr_as_locations(x, vars, call = call, arg = arg)
+ 32. │                                     └─vctrs::vec_as_location(...)
+ 33. └─vctrs (local) `<fn>`() at vctrs/R/subscript-loc.R:84:3
+ 34.   └─vctrs:::stop_subscript_oob(...)
+ 35.     └─vctrs:::stop_subscript(...) at vctrs/R/subscript-loc.R:503:3
+# A tibble: 2 × 2
+  g     `list(quote(pick(g)))`
+  <chr> <list>
+1 a     <language>
+2 b     <language>
+
+SIGNAL 2 PREFIX  NAMED TRUE FORM list(quote(pick(g)))
+<error/rlang_error>
+Error in `dplyr::summarise()`:
+ℹ In argument: `out = list(quote(pick(g)))`.
+Caused by error in `pick()`:
+! Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+---
+Backtrace:
+     ▆
+  1. ├─global capture(normal)
+  2. │ ├─base::tryCatch(suppressWarnings(eval(expr)), error = function(e) e)
+  3. │ │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+  4. │ │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+  5. │ │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+  6. │ ├─base::suppressWarnings(eval(expr))
+  7. │ │ └─base::withCallingHandlers(...)
+  8. │ ├─base::eval(expr)
+  9. │ │ └─base::eval(expr)
+ 10. │ ├─dplyr::summarise(data, out = list(quote(pick(g))), .by = g)
+ 11. │ └─dplyr:::summarise.data.frame(data, out = list(quote(pick(g))), .by = g)
+ 12. │   └─dplyr:::summarise_cols(.data, dplyr_quosures(...), by, "summarise")
+ 13. │     ├─base::withCallingHandlers(...)
+ 14. │     └─dplyr:::expand_pick(dot, mask)
+ 15. │       └─dplyr:::expand_pick_quo(quo, mask, error_call = error_call)
+ 16. │         └─dplyr:::expand_pick_call(expr, env, mask, error_call = error_call)
+ 17. │           └─dplyr:::expand_pick_call(elt, env, mask, error_call = error_call)
+ 18. │             └─dplyr:::expand_pick_call(elt, env, mask, error_call = error_call)
+ 19. │               └─dplyr:::eval_pick(expr, env, mask, error_call)
+ 20. │                 └─tidyselect::eval_select(...)
+ 21. │                   └─tidyselect:::eval_select_impl(...)
+ 22. │                     ├─tidyselect:::with_subscript_errors(...)
+ 23. │                     │ └─base::withCallingHandlers(...)
+ 24. │                     └─tidyselect:::vars_select_eval(...)
+ 25. │                       └─tidyselect:::walk_data_tree(expr, data_mask, context_mask)
+ 26. │                         └─tidyselect:::eval_c(expr, data_mask, context_mask)
+ 27. │                           └─tidyselect:::reduce_sels(node, data_mask, context_mask, init = init)
+ 28. │                             └─tidyselect:::walk_data_tree(new, data_mask, context_mask)
+ 29. │                               └─tidyselect:::as_indices_sel_impl(...)
+ 30. │                                 └─tidyselect:::as_indices_impl(...)
+ 31. │                                   └─tidyselect:::chr_as_locations(x, vars, call = call, arg = arg)
+ 32. │                                     └─vctrs::vec_as_location(...)
+ 33. └─vctrs (local) `<fn>`() at vctrs/R/subscript-loc.R:84:3
+ 34.   └─vctrs:::stop_subscript_oob(...)
+ 35.     └─vctrs:::stop_subscript(...) at vctrs/R/subscript-loc.R:503:3
+# A tibble: 2 × 2
+  g     out
+  <chr> <list>
+1 a     <language>
+2 b     <language>
+
+SIGNAL 3 PREFIX a=sum(x), NAMED FALSE FORM list(quote(pick(g)))
+<error/rlang_error>
+Error in `dplyr::summarise()`:
+ℹ In argument: `list(quote(pick(g)))`.
+Caused by error in `pick()`:
+! Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+---
+Backtrace:
+     ▆
+  1. ├─global capture(normal)
+  2. │ ├─base::tryCatch(suppressWarnings(eval(expr)), error = function(e) e)
+  3. │ │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+  4. │ │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+  5. │ │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+  6. │ ├─base::suppressWarnings(eval(expr))
+  7. │ │ └─base::withCallingHandlers(...)
+  8. │ ├─base::eval(expr)
+  9. │ │ └─base::eval(expr)
+ 10. │ ├─dplyr::summarise(data, a = sum(x), list(quote(pick(g))), .by = g)
+ 11. │ └─dplyr:::summarise.data.frame(data, a = sum(x), list(quote(pick(g))), .by = g)
+ 12. │   └─dplyr:::summarise_cols(.data, dplyr_quosures(...), by, "summarise")
+ 13. │     ├─base::withCallingHandlers(...)
+ 14. │     └─dplyr:::expand_pick(dot, mask)
+ 15. │       └─dplyr:::expand_pick_quo(quo, mask, error_call = error_call)
+ 16. │         └─dplyr:::expand_pick_call(expr, env, mask, error_call = error_call)
+ 17. │           └─dplyr:::expand_pick_call(elt, env, mask, error_call = error_call)
+ 18. │             └─dplyr:::expand_pick_call(elt, env, mask, error_call = error_call)
+ 19. │               └─dplyr:::eval_pick(expr, env, mask, error_call)
+ 20. │                 └─tidyselect::eval_select(...)
+ 21. │                   └─tidyselect:::eval_select_impl(...)
+ 22. │                     ├─tidyselect:::with_subscript_errors(...)
+ 23. │                     │ └─base::withCallingHandlers(...)
+ 24. │                     └─tidyselect:::vars_select_eval(...)
+ 25. │                       └─tidyselect:::walk_data_tree(expr, data_mask, context_mask)
+ 26. │                         └─tidyselect:::eval_c(expr, data_mask, context_mask)
+ 27. │                           └─tidyselect:::reduce_sels(node, data_mask, context_mask, init = init)
+ 28. │                             └─tidyselect:::walk_data_tree(new, data_mask, context_mask)
+ 29. │                               └─tidyselect:::as_indices_sel_impl(...)
+ 30. │                                 └─tidyselect:::as_indices_impl(...)
+ 31. │                                   └─tidyselect:::chr_as_locations(x, vars, call = call, arg = arg)
+ 32. │                                     └─vctrs::vec_as_location(...)
+ 33. └─vctrs (local) `<fn>`() at vctrs/R/subscript-loc.R:84:3
+ 34.   └─vctrs:::stop_subscript_oob(...)
+ 35.     └─vctrs:::stop_subscript(...) at vctrs/R/subscript-loc.R:503:3
+# A tibble: 2 × 3
+  g         a `list(quote(pick(g)))`
+  <chr> <int> <list>
+1 a         3 <language>
+2 b         3 <language>
+
+SIGNAL 4 PREFIX a=sum(x), NAMED TRUE FORM list(quote(pick(g)))
+<error/rlang_error>
+Error in `dplyr::summarise()`:
+ℹ In argument: `out = list(quote(pick(g)))`.
+Caused by error in `pick()`:
+! Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+---
+Backtrace:
+     ▆
+  1. ├─global capture(normal)
+  2. │ ├─base::tryCatch(suppressWarnings(eval(expr)), error = function(e) e)
+  3. │ │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+  4. │ │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+  5. │ │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+  6. │ ├─base::suppressWarnings(eval(expr))
+  7. │ │ └─base::withCallingHandlers(...)
+  8. │ ├─base::eval(expr)
+  9. │ │ └─base::eval(expr)
+ 10. │ ├─dplyr::summarise(...)
+ 11. │ └─dplyr:::summarise.data.frame(data, a = sum(x), out = list(quote(pick(g))), .by = g)
+ 12. │   └─dplyr:::summarise_cols(.data, dplyr_quosures(...), by, "summarise")
+ 13. │     ├─base::withCallingHandlers(...)
+ 14. │     └─dplyr:::expand_pick(dot, mask)
+ 15. │       └─dplyr:::expand_pick_quo(quo, mask, error_call = error_call)
+ 16. │         └─dplyr:::expand_pick_call(expr, env, mask, error_call = error_call)
+ 17. │           └─dplyr:::expand_pick_call(elt, env, mask, error_call = error_call)
+ 18. │             └─dplyr:::expand_pick_call(elt, env, mask, error_call = error_call)
+ 19. │               └─dplyr:::eval_pick(expr, env, mask, error_call)
+ 20. │                 └─tidyselect::eval_select(...)
+ 21. │                   └─tidyselect:::eval_select_impl(...)
+ 22. │                     ├─tidyselect:::with_subscript_errors(...)
+ 23. │                     │ └─base::withCallingHandlers(...)
+ 24. │                     └─tidyselect:::vars_select_eval(...)
+ 25. │                       └─tidyselect:::walk_data_tree(expr, data_mask, context_mask)
+ 26. │                         └─tidyselect:::eval_c(expr, data_mask, context_mask)
+ 27. │                           └─tidyselect:::reduce_sels(node, data_mask, context_mask, init = init)
+ 28. │                             └─tidyselect:::walk_data_tree(new, data_mask, context_mask)
+ 29. │                               └─tidyselect:::as_indices_sel_impl(...)
+ 30. │                                 └─tidyselect:::as_indices_impl(...)
+ 31. │                                   └─tidyselect:::chr_as_locations(x, vars, call = call, arg = arg)
+ 32. │                                     └─vctrs::vec_as_location(...)
+ 33. └─vctrs (local) `<fn>`() at vctrs/R/subscript-loc.R:84:3
+ 34.   └─vctrs:::stop_subscript_oob(...)
+ 35.     └─vctrs:::stop_subscript(...) at vctrs/R/subscript-loc.R:503:3
+# A tibble: 2 × 3
+  g         a out
+  <chr> <int> <list>
+1 a         3 <language>
+2 b         3 <language>
+
+SIGNAL 5 PREFIX x=sum(x), NAMED FALSE FORM list(quote(pick(g)))
+<error/rlang_error>
+Error in `dplyr::summarise()`:
+ℹ In argument: `list(quote(pick(g)))`.
+Caused by error in `pick()`:
+! Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+---
+Backtrace:
+     ▆
+  1. ├─global capture(normal)
+  2. │ ├─base::tryCatch(suppressWarnings(eval(expr)), error = function(e) e)
+  3. │ │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+  4. │ │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+  5. │ │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+  6. │ ├─base::suppressWarnings(eval(expr))
+  7. │ │ └─base::withCallingHandlers(...)
+  8. │ ├─base::eval(expr)
+  9. │ │ └─base::eval(expr)
+ 10. │ ├─dplyr::summarise(data, x = sum(x), list(quote(pick(g))), .by = g)
+ 11. │ └─dplyr:::summarise.data.frame(data, x = sum(x), list(quote(pick(g))), .by = g)
+ 12. │   └─dplyr:::summarise_cols(.data, dplyr_quosures(...), by, "summarise")
+ 13. │     ├─base::withCallingHandlers(...)
+ 14. │     └─dplyr:::expand_pick(dot, mask)
+ 15. │       └─dplyr:::expand_pick_quo(quo, mask, error_call = error_call)
+ 16. │         └─dplyr:::expand_pick_call(expr, env, mask, error_call = error_call)
+ 17. │           └─dplyr:::expand_pick_call(elt, env, mask, error_call = error_call)
+ 18. │             └─dplyr:::expand_pick_call(elt, env, mask, error_call = error_call)
+ 19. │               └─dplyr:::eval_pick(expr, env, mask, error_call)
+ 20. │                 └─tidyselect::eval_select(...)
+ 21. │                   └─tidyselect:::eval_select_impl(...)
+ 22. │                     ├─tidyselect:::with_subscript_errors(...)
+ 23. │                     │ └─base::withCallingHandlers(...)
+ 24. │                     └─tidyselect:::vars_select_eval(...)
+ 25. │                       └─tidyselect:::walk_data_tree(expr, data_mask, context_mask)
+ 26. │                         └─tidyselect:::eval_c(expr, data_mask, context_mask)
+ 27. │                           └─tidyselect:::reduce_sels(node, data_mask, context_mask, init = init)
+ 28. │                             └─tidyselect:::walk_data_tree(new, data_mask, context_mask)
+ 29. │                               └─tidyselect:::as_indices_sel_impl(...)
+ 30. │                                 └─tidyselect:::as_indices_impl(...)
+ 31. │                                   └─tidyselect:::chr_as_locations(x, vars, call = call, arg = arg)
+ 32. │                                     └─vctrs::vec_as_location(...)
+ 33. └─vctrs (local) `<fn>`() at vctrs/R/subscript-loc.R:84:3
+ 34.   └─vctrs:::stop_subscript_oob(...)
+ 35.     └─vctrs:::stop_subscript(...) at vctrs/R/subscript-loc.R:503:3
+# A tibble: 2 × 3
+  g         x `list(quote(pick(g)))`
+  <chr> <int> <list>
+1 a         3 <language>
+2 b         3 <language>
+
+SIGNAL 6 PREFIX x=sum(x), NAMED TRUE FORM list(quote(pick(g)))
+<error/rlang_error>
+Error in `dplyr::summarise()`:
+ℹ In argument: `out = list(quote(pick(g)))`.
+Caused by error in `pick()`:
+! Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+---
+Backtrace:
+     ▆
+  1. ├─global capture(normal)
+  2. │ ├─base::tryCatch(suppressWarnings(eval(expr)), error = function(e) e)
+  3. │ │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+  4. │ │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+  5. │ │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+  6. │ ├─base::suppressWarnings(eval(expr))
+  7. │ │ └─base::withCallingHandlers(...)
+  8. │ ├─base::eval(expr)
+  9. │ │ └─base::eval(expr)
+ 10. │ ├─dplyr::summarise(...)
+ 11. │ └─dplyr:::summarise.data.frame(data, x = sum(x), out = list(quote(pick(g))), .by = g)
+ 12. │   └─dplyr:::summarise_cols(.data, dplyr_quosures(...), by, "summarise")
+ 13. │     ├─base::withCallingHandlers(...)
+ 14. │     └─dplyr:::expand_pick(dot, mask)
+ 15. │       └─dplyr:::expand_pick_quo(quo, mask, error_call = error_call)
+ 16. │         └─dplyr:::expand_pick_call(expr, env, mask, error_call = error_call)
+ 17. │           └─dplyr:::expand_pick_call(elt, env, mask, error_call = error_call)
+ 18. │             └─dplyr:::expand_pick_call(elt, env, mask, error_call = error_call)
+ 19. │               └─dplyr:::eval_pick(expr, env, mask, error_call)
+ 20. │                 └─tidyselect::eval_select(...)
+ 21. │                   └─tidyselect:::eval_select_impl(...)
+ 22. │                     ├─tidyselect:::with_subscript_errors(...)
+ 23. │                     │ └─base::withCallingHandlers(...)
+ 24. │                     └─tidyselect:::vars_select_eval(...)
+ 25. │                       └─tidyselect:::walk_data_tree(expr, data_mask, context_mask)
+ 26. │                         └─tidyselect:::eval_c(expr, data_mask, context_mask)
+ 27. │                           └─tidyselect:::reduce_sels(node, data_mask, context_mask, init = init)
+ 28. │                             └─tidyselect:::walk_data_tree(new, data_mask, context_mask)
+ 29. │                               └─tidyselect:::as_indices_sel_impl(...)
+ 30. │                                 └─tidyselect:::as_indices_impl(...)
+ 31. │                                   └─tidyselect:::chr_as_locations(x, vars, call = call, arg = arg)
+ 32. │                                     └─vctrs::vec_as_location(...)
+ 33. └─vctrs (local) `<fn>`() at vctrs/R/subscript-loc.R:84:3
+ 34.   └─vctrs:::stop_subscript_oob(...)
+ 35.     └─vctrs:::stop_subscript(...) at vctrs/R/subscript-loc.R:503:3
+# A tibble: 2 × 3
+  g         x out
+  <chr> <int> <list>
+1 a         3 <language>
+2 b         3 <language>
+
+SIGNAL 7 PREFIX x=as.character(sum(x)), NAMED FALSE FORM list(quote(pick(g)))
+<error/rlang_error>
+Error in `dplyr::summarise()`:
+ℹ In argument: `list(quote(pick(g)))`.
+Caused by error in `pick()`:
+! Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+---
+Backtrace:
+     ▆
+  1. ├─global capture(normal)
+  2. │ ├─base::tryCatch(suppressWarnings(eval(expr)), error = function(e) e)
+  3. │ │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+  4. │ │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+  5. │ │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+  6. │ ├─base::suppressWarnings(eval(expr))
+  7. │ │ └─base::withCallingHandlers(...)
+  8. │ ├─base::eval(expr)
+  9. │ │ └─base::eval(expr)
+ 10. │ ├─dplyr::summarise(...)
+ 11. │ └─dplyr:::summarise.data.frame(data, x = as.character(sum(x)), list(quote(pick(g))), .by = g)
+ 12. │   └─dplyr:::summarise_cols(.data, dplyr_quosures(...), by, "summarise")
+ 13. │     ├─base::withCallingHandlers(...)
+ 14. │     └─dplyr:::expand_pick(dot, mask)
+ 15. │       └─dplyr:::expand_pick_quo(quo, mask, error_call = error_call)
+ 16. │         └─dplyr:::expand_pick_call(expr, env, mask, error_call = error_call)
+ 17. │           └─dplyr:::expand_pick_call(elt, env, mask, error_call = error_call)
+ 18. │             └─dplyr:::expand_pick_call(elt, env, mask, error_call = error_call)
+ 19. │               └─dplyr:::eval_pick(expr, env, mask, error_call)
+ 20. │                 └─tidyselect::eval_select(...)
+ 21. │                   └─tidyselect:::eval_select_impl(...)
+ 22. │                     ├─tidyselect:::with_subscript_errors(...)
+ 23. │                     │ └─base::withCallingHandlers(...)
+ 24. │                     └─tidyselect:::vars_select_eval(...)
+ 25. │                       └─tidyselect:::walk_data_tree(expr, data_mask, context_mask)
+ 26. │                         └─tidyselect:::eval_c(expr, data_mask, context_mask)
+ 27. │                           └─tidyselect:::reduce_sels(node, data_mask, context_mask, init = init)
+ 28. │                             └─tidyselect:::walk_data_tree(new, data_mask, context_mask)
+ 29. │                               └─tidyselect:::as_indices_sel_impl(...)
+ 30. │                                 └─tidyselect:::as_indices_impl(...)
+ 31. │                                   └─tidyselect:::chr_as_locations(x, vars, call = call, arg = arg)
+ 32. │                                     └─vctrs::vec_as_location(...)
+ 33. └─vctrs (local) `<fn>`() at vctrs/R/subscript-loc.R:84:3
+ 34.   └─vctrs:::stop_subscript_oob(...)
+ 35.     └─vctrs:::stop_subscript(...) at vctrs/R/subscript-loc.R:503:3
+# A tibble: 2 × 3
+  g     x     `list(quote(pick(g)))`
+  <chr> <chr> <list>
+1 a     3     <language>
+2 b     3     <language>
+
+SIGNAL 8 PREFIX x=as.character(sum(x)), NAMED TRUE FORM list(quote(pick(g)))
+<error/rlang_error>
+Error in `dplyr::summarise()`:
+ℹ In argument: `out = list(quote(pick(g)))`.
+Caused by error in `pick()`:
+! Can't select columns that don't exist.
+✖ Column `g` doesn't exist.
+---
+Backtrace:
+     ▆
+  1. ├─global capture(normal)
+  2. │ ├─base::tryCatch(suppressWarnings(eval(expr)), error = function(e) e)
+  3. │ │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+  4. │ │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+  5. │ │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+  6. │ ├─base::suppressWarnings(eval(expr))
+  7. │ │ └─base::withCallingHandlers(...)
+  8. │ ├─base::eval(expr)
+  9. │ │ └─base::eval(expr)
+ 10. │ ├─dplyr::summarise(...)
+ 11. │ └─dplyr:::summarise.data.frame(...)
+ 12. │   └─dplyr:::summarise_cols(.data, dplyr_quosures(...), by, "summarise")
+ 13. │     ├─base::withCallingHandlers(...)
+ 14. │     └─dplyr:::expand_pick(dot, mask)
+ 15. │       └─dplyr:::expand_pick_quo(quo, mask, error_call = error_call)
+ 16. │         └─dplyr:::expand_pick_call(expr, env, mask, error_call = error_call)
+ 17. │           └─dplyr:::expand_pick_call(elt, env, mask, error_call = error_call)
+ 18. │             └─dplyr:::expand_pick_call(elt, env, mask, error_call = error_call)
+ 19. │               └─dplyr:::eval_pick(expr, env, mask, error_call)
+ 20. │                 └─tidyselect::eval_select(...)
+ 21. │                   └─tidyselect:::eval_select_impl(...)
+ 22. │                     ├─tidyselect:::with_subscript_errors(...)
+ 23. │                     │ └─base::withCallingHandlers(...)
+ 24. │                     └─tidyselect:::vars_select_eval(...)
+ 25. │                       └─tidyselect:::walk_data_tree(expr, data_mask, context_mask)
+ 26. │                         └─tidyselect:::eval_c(expr, data_mask, context_mask)
+ 27. │                           └─tidyselect:::reduce_sels(node, data_mask, context_mask, init = init)
+ 28. │                             └─tidyselect:::walk_data_tree(new, data_mask, context_mask)
+ 29. │                               └─tidyselect:::as_indices_sel_impl(...)
+ 30. │                                 └─tidyselect:::as_indices_impl(...)
+ 31. │                                   └─tidyselect:::chr_as_locations(x, vars, call = call, arg = arg)
+ 32. │                                     └─vctrs::vec_as_location(...)
+ 33. └─vctrs (local) `<fn>`() at vctrs/R/subscript-loc.R:84:3
+ 34.   └─vctrs:::stop_subscript_oob(...)
+ 35.     └─vctrs:::stop_subscript(...) at vctrs/R/subscript-loc.R:503:3
+# A tibble: 2 × 3
+  g     x     out
+  <chr> <chr> <list>
+1 a     3     <language>
+2 b     3     <language>
+
+CHECKS 272 SIGNALS 8
