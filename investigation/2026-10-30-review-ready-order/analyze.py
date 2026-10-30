@@ -32,7 +32,7 @@ for file in sorted(expected):
                      duration_s=end['elapsed']-start['elapsed']))
 rows.sort(key=lambda row: (-row['duration_s'], row['file']))
 with (directory / 'files.csv').open('w') as stream:
-    writer = csv.DictWriter(stream, fieldnames=list(rows[0]))
+    writer = csv.DictWriter(stream, fieldnames=list(rows[0]), lineterminator='\n')
     writer.writeheader()
     writer.writerows(rows)
 ends = sorted(row['end_s'] for row in rows)
