@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Ordinary local summary selections resolve function arguments and local
+  bindings at execution while retaining the environments of injected
+  `quosures` (#1070).
+
 * Supported Arrow summaries preserve caller warnings containing the absorption
   marker, while genuine absorption is still refused before reading input rows
   (#1072).
