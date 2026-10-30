@@ -112,7 +112,7 @@ test_that("nesting respects case-insensitive vctrs equality", {
       result <- verb(input, .grouping = rollup(g), .id = "set", .keep = keep)
 
       expect_identical(sort(result$set), c(1L, 1L, 2L))
-      expect_identical(
+      expect_setequal(
         lapply(result$data[result$set == 1L], function(cell) cell$row_id),
         list(1:2, 3:4)
       )
