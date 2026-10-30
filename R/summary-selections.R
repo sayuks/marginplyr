@@ -957,6 +957,7 @@ plan_summary_expressions <- function(dots,
 first_across_needs_planning <- function(dots) {
   if (length(dots) == 0L || nzchar(rlang::names2(dots)[[1L]]) ||
         !is_across_call(rlang::quo_get_expr(dots[[1L]])) ||
+        contains_share_helper(rlang::quo_get_expr(dots[[1L]])) ||
         shares_use_named_summaries(dots)) {
     return(FALSE)
   }
@@ -988,6 +989,14 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
   state <- new.env(parent = emptyenv())
   state$warnings <- list()
   state$planning_warnings <- list()
+  capture_fns <- function(value) {
+    state$fns_env <- parent.frame()
+    state$fns <- list(withCallingHandlers(value, warning = function(cnd) {
+      state$warnings <- c(state$warnings, list(cnd))
+      invokeRestart("muffleWarning")
+    }))
+    value
+  }
   resolve <- function() {
     state$result <- tryCatch(withCallingHandlers({
       state$selecting <- TRUE
@@ -1017,6 +1026,14 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
     character()
   }
   probe <- rlang::quo(dplyr::across(dplyr::all_of(resolve()), identity))
+  if (parsed$fns_index > 0L &&
+        !rlang::is_missing(parsed$call_args[[parsed$fns_index]])) {
+    probe_expr <- rlang::quo_get_expr(probe)
+    probe_expr[[3L]] <- rlang::new_quosure(
+      rlang::call2(capture_fns, parsed$fns), env
+    )
+    probe <- rlang::quo_set_expr(probe, probe_expr)
+  }
   conditions <- new_branch_conditions(character(), call)
   on.exit(report_branch_warnings(conditions), add = TRUE)
   with_branch_conditions(
@@ -1036,6 +1053,13 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
   result <- state$result
   state$result <- NULL
   result$summaries$labels[[1L]] <- summary_argument_labels(list(original))[[1L]]
+  if (!is.null(state$fns)) {
+    first <- result$summaries$dots[[1L]]
+    result$summaries$dots[[1L]] <- rlang::new_quosure(
+      cache_first_across_fns(rlang::quo_get_expr(first), state),
+      rlang::quo_get_env(first)
+    )
+  }
   if (length(result$summaries$selection_state$source_definitions[[1L]]) == 0L) {
     first <- result$summaries$dots[[1L]]
     first_expr <- rlang::quo_get_expr(first)
@@ -1058,6 +1082,39 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
     for (cnd in state$warnings) warning(cnd)
   }
   result
+}
+
+# Replace the first planned across function argument after source analysis.
+# A source check may wrap the call; its original syntax remains the planner's
+# evidence for source eligibility rather than the cached function value.
+cache_first_across_fns <- function(expr, state) {
+  if (!is_across_call(expr)) {
+    expr[[2L]] <- cache_first_across_fns(expr[[2L]], state)
+    return(expr)
+  }
+  parsed <- parse_across_arguments(expr)
+  args <- parsed$call_args
+  args[[parsed$fns_index]] <- rlang::call2(
+    marginplyr_private_call("first_local_across_fns"), state
+  )
+  rebuild_static_call(expr, args)
+}
+
+# Reuse functions evaluated before the cached selector. A function or formula
+# created in the carrier's mask enters the current mask so dplyr can apply its
+# ordinary lambda handling; factory closures retain their own environments.
+first_local_across_fns <- function(state) {
+  mask <- parent.frame()
+  restore <- function(value) {
+    if (is.list(value)) return(lapply(value, restore))
+    has_env <- (is.function(value) && !is.primitive(value)) ||
+      rlang::is_formula(value)
+    if (has_env && identical(rlang::get_env(value), state$fns_env)) {
+      return(rlang::set_env(value, mask))
+    }
+    value
+  }
+  restore(state$fns[[1L]])
 }
 
 # Replay a captured selector's warnings inside its first dplyr branch so the

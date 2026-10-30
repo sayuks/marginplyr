@@ -146,6 +146,67 @@ test_that("name patterns leave a stateful first selector in each branch", {
   }
 })
 
+test_that("first selectors follow functions beside selection shares", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), y = c(10, 30))
+  run <- function(shared) {
+    events <- character()
+    ready <- FALSE
+    factory <- function() {
+      events <<- c(events, paste0("function:", dplyr::n()))
+      ready <<- TRUE
+      sum
+    }
+    choose <- function() {
+      events <<- c(events, paste0("selector:", dplyr::n()))
+      if (ready) "x" else "y"
+    }
+    ordinary <- rlang::quos(
+      dplyr::across(dplyr::all_of(choose()), factory(), .names = "unused"),
+      total = sum(x)
+    )
+    result <- if (shared) {
+      summarize_with_margins(
+        data, !!!ordinary,
+        dplyr::across(dplyr::starts_with("total"), share_of_total,
+                      .names = "share"),
+        .grouping = rollup(g)
+      )
+    } else {
+      dplyr::bind_rows(
+        dplyr::summarise(data, !!!ordinary, .by = g),
+        dplyr::mutate(dplyr::summarise(data, !!!ordinary), g = "Total")
+      )
+    }
+    list(result = result, events = events)
+  }
+  control <- run(FALSE)
+  actual <- run(TRUE)
+  expect_identical(actual$events, control$events)
+  expect_identical(actual$events,
+                   rep(c("function:0", "selector:0"), 2L))
+  expect_identical(actual$result[names(control$result)], control$result)
+  expect_identical(actual$result$unused, c(1, 3, 4))
+  expect_identical(actual$result$share, c(0.25, 0.75, 1))
+})
+
+test_that("cached first functions retain the local summary mask", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), y = c(10, 30))
+  for (fn in rlang::exprs(
+    if (dplyr::n() == 0L) function(x) sum(y) else function(x) -1,
+    if (dplyr::n() == 0L) ~sum(y) else ~-1,
+    list(a = function(x) sum(y))
+  )) {
+    result <- summarize_with_margins(
+      data, dplyr::across(x, !!fn, .names = "unused"), total = sum(x),
+      dplyr::across(dplyr::starts_with("total"), share_of_total,
+                    .names = "share"),
+      .grouping = rollup(g)
+    )
+    expect_identical(result$unused, c(10, 30, 40))
+    expect_identical(result$share, c(0.25, 0.75, 1))
+  }
+})
+
 test_that("selection shares retain matching across sources and naming", {
   data <- data.frame(g = c("a", "b"), x = c(1, 3), y = c(10, 30))
   for (dynamic in c(FALSE, TRUE)) {
@@ -251,11 +312,15 @@ test_that("escaped across names remain selection share sources", {
 
 test_that("selection shares preserve repeated selector warnings", {
   data <- data.frame(g = c("a", "b"), x = c(1, 3))
-  run <- function(pattern) {
+  run <- function(pattern, phase) {
     warnings <- list()
     choose <- function() {
-      warning("selector warning")
+      if (phase == "selector") warning("selector warning")
       "x"
+    }
+    factory <- function() {
+      if (phase == "function") warning("function warning")
+      sum
     }
     share <- if (pattern) {
       rlang::quos(dplyr::across(
@@ -265,7 +330,7 @@ test_that("selection shares preserve repeated selector warnings", {
       rlang::quos(share = share_of_total(total))
     }
     withCallingHandlers(summarize_with_margins(
-      data, dplyr::across(dplyr::all_of(choose()), sum, .names = "unused"),
+      data, dplyr::across(dplyr::all_of(choose()), factory(), .names = "unused"),
       total = sum(x), !!!share, .grouping = rollup(g)
     ), warning = function(cnd) {
       warnings[[length(warnings) + 1L]] <<- cnd
@@ -273,13 +338,15 @@ test_that("selection shares preserve repeated selector warnings", {
     })
     warnings
   }
-  control <- run(FALSE)
-  actual <- run(TRUE)
-  expect_length(actual, 1L)
-  expect_identical(class(actual[[1L]]), class(control[[1L]]))
-  expect_identical(conditionMessage(actual[[1L]]),
-                   conditionMessage(control[[1L]]))
-  expect_match(conditionMessage(actual[[1L]]), "1 further grouping set")
+  for (phase in c("selector", "function")) {
+    control <- run(FALSE, phase)
+    actual <- run(TRUE, phase)
+    expect_length(actual, 1L)
+    expect_identical(class(actual[[1L]]), class(control[[1L]]))
+    expect_identical(conditionMessage(actual[[1L]]),
+                     conditionMessage(control[[1L]]))
+    expect_match(conditionMessage(actual[[1L]]), "1 further grouping set")
+  }
 })
 
 test_that("a selector error survives warning conversion during planning", {
