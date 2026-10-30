@@ -44,10 +44,18 @@ commit into a disposable directory, so ignored local files cannot enter the
 evidence. Run it from the repository root:
 
 ```sh
-Rscript tools/review-ready-check.R
+marginplyr-review-ready
 ```
 
-The command takes no options. It runs, in order:
+Install the common command using `python3 tools/install-review-ready.py`.
+[Shared admission](../../tools/review-ready-admission.md) owns installation,
+platform support, cancellation, recovery, and migration of existing sessions.
+All agents and terminals use that command; missing setup has no direct-command
+fallback. A waiting request pins this clean commit and is cancelled before
+admission if HEAD or cleanliness changes. One complete check is admitted per
+OS user across all clones and worktrees, preserving four internal workers.
+
+The check invocation takes no options. The admitted fixed gate runs, in order:
 
 1. a test-source dependency scan that refuses every package candidate absent
    from `DESCRIPTION`;
@@ -71,8 +79,15 @@ The command takes no options. It runs, in order:
 
 ### Observing one invocation
 
-During the source-tarball check, English progress lines report elapsed test
-time, completed files out of the discovered total, their percentage, and the
+During the source-tarball check, the monitor forwards testthat's native
+`Starting N test processes.` message from its check transcript. This is the
+count testthat selected, including its limit by the number of test files,
+rather than a repeated configuration value. It also forwards native worker
+startup, unexpected-exit, and teardown diagnostics with their cause and
+backtrace from that transcript. Reading continues after the reporter finishes,
+and does not wait for reporter events to begin, so worker lifecycle failures
+remain visible in either phase. These observations do not replace the terminal
+check result. English progress lines report elapsed test time, completed files out of the discovered total, their percentage, and the
 last completed file. The percentage counts files, not runtime or passing tests;
 it does not estimate remaining time. A five-second heartbeat continues while
 a long file runs. The ordinary testthat check summary and the check process's

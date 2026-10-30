@@ -1,6 +1,6 @@
 ## Local checks
 
-Package-affecting changes need `Rscript tools/review-ready-check.R` before
+Package-affecting changes need `marginplyr-review-ready` before
 review; `design/agents/local-checks.md` owns its triggers and freshness.
 
 ### Always-loaded context
