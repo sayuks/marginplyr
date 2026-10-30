@@ -152,3 +152,34 @@ test_that("typed-missing labels and fixed keys retain source equality", {
     }
   }
 })
+
+test_that("typed-missing list keys retain their values and row membership", {
+  input <- tibble::tibble(
+    g = list(NULL, NULL, 1:2, 1:2, NA_real_, integer()),
+    row_id = 1:6
+  )
+
+  for (verb in list(nest_with_margins, nest_by_with_margins)) {
+    for (keep in c(FALSE, TRUE)) {
+      result <- verb(
+        input, .grouping = rollup(g), .id = "set",
+        .margin_label = NULL, .keep = keep
+      )
+      detail <- which(result$set == 1L)
+      total <- which(result$set == 2L)
+      cells <- lapply(result$data[detail], function(cell) cell$row_id)
+      cells <- cells[order(vapply(cells, function(ids) ids[[1L]], integer(1)))]
+      expect_identical(cells, list(1:2, 3:4, 5L, 6L))
+      expect_identical(result$data[[total]]$row_id, 1:6)
+      for (i in detail) {
+        cell <- result$data[[i]]
+        expect_identical(result$g[i], input$g[cell$row_id[[1L]]])
+      }
+      if (keep) {
+        for (cell in result$data) {
+          expect_identical(cell$g, input$g[cell$row_id])
+        }
+      }
+    }
+  }
+})

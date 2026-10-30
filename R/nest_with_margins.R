@@ -597,7 +597,11 @@ nest_expanded_margins <- function(.data,
           character(1), USE.NAMES = FALSE
         )
         display_exprs <- rlang::set_names(lapply(display_cols, function(col) {
-          rlang::expr(dplyr::first(!!margin_column_pronoun(col)))
+          # Summaries can be evaluated on zero rows to infer output types.
+          value <- margin_column_pronoun(col)
+          rlang::expr(vctrs::vec_slice(
+            !!value, seq_len(min(vctrs::vec_size(!!value), 1L))
+          ))
         }), display_cols)
         result <- dplyr::summarize(
           source,
