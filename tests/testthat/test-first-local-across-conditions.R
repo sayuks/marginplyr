@@ -54,7 +54,15 @@ test_that("first across planning preserves naming and selector conditions", {
 })
 
 test_that("nested selection detection unwraps injected expressions", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3))
   selection <- rlang::quo(dplyr::across(x, sum))
-  expect_true(contains_summary_selection(rlang::quo(identity(!!selection))))
-  expect_false(contains_summary_selection(rlang::quo(identity(1))))
+  actual <- summarize_with_margins(
+    data, identity(!!selection), .grouping = rollup(g)
+  )
+  expect_identical(actual$x, c(1, 3, 4))
+  value <- rlang::quo(1)
+  scalar <- summarize_with_margins(
+    data, identity(!!value), .grouping = rollup(g)
+  )
+  expect_identical(scalar[["identity(1)"]], c(1, 1, 1))
 })
