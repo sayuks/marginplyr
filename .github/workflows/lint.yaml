@@ -95,8 +95,7 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: >-
-            any::lintr, any::pkgload, any::spelling, any::testthat, local::.
+          extra-packages: any::lintr, any::pkgload, any::spelling, local::., any::testthat
           needs: lint
 
       - name: Verify suite-coverage worker execution
