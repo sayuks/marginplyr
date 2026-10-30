@@ -100,6 +100,11 @@ test_that("retained lexical bindings and ordinary aliases keep their values", {
     },
     {
       prior <- 2
+      identity((prior))
+      sum(prior)
+    },
+    {
+      prior <- 2
       if (FALSE) rm(prior)
       sum(prior)
     },

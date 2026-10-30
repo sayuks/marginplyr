@@ -1809,6 +1809,7 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
 
 # Records each known ordinary output against the aliases preceding its call.
 # The proxy includes those aliases when local selections have been deferred.
+# An output with known across provenance has an explicit column argument.
 # Unknown provenance retains the whole call's dependencies.
 ordinary_summary_records <- function(expr, env, proxy, output_names,
                                      output_name, eligibility, position,
@@ -1829,11 +1830,7 @@ ordinary_summary_records <- function(expr, env, proxy, output_names,
     if (!is.na(across_input)) {
       parsed <- parse_across_arguments(expr)
       args <- parsed$call_args
-      if (parsed$cols_index > 0L) {
-        args[[parsed$cols_index]] <- rlang::sym(across_input)
-      } else {
-        args$.cols <- rlang::sym(across_input)
-      }
+      args[[parsed$cols_index]] <- rlang::sym(across_input)
       if (is_known_function_list_call(parsed$fns, env)) {
         args[parsed$fns_index] <- static_call_args(parsed$fns)[across_function]
       }
