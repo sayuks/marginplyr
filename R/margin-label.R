@@ -142,6 +142,19 @@ margin_label_of <- function(margin_labels, col) {
   margin_labels[[col]]
 }
 
+# Whether a one-row omitted prototype has only missing components. Packed
+# rows recurse through their columns; arrays test data components because a
+# class equality proxy may recurse or expose non-missing dimension labels.
+margin_prototype_is_missing <- function(x) {
+  if (is.data.frame(x)) {
+    return(all(vapply(x, margin_prototype_is_missing, logical(1))))
+  }
+  if (is.array(x) || is.factor(x)) {
+    return(all(is.na(x)))
+  }
+  vctrs::vec_detect_missing(x)[[1L]]
+}
+
 validate_margin_label <- function(.data,
                                   dimensions,
                                   omitted,
@@ -167,14 +180,7 @@ validate_margin_label <- function(.data,
     )]
     unsupported <- missing_dimensions[!vapply(
       column_info$prototypes[missing_dimensions],
-      function(x) {
-        # is.na.factor() checks missing codes without the recursive vctrs
-        # missingness proxy for factor matrices and arrays.
-        if (is.factor(x)) {
-          return(all(is.na(x)))
-        }
-        vctrs::vec_detect_missing(x)[[1L]]
-      },
+      margin_prototype_is_missing,
       logical(1)
     )]
     if (length(unsupported) > 0L) {
