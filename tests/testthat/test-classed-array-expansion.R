@@ -11,6 +11,32 @@ observe_array_expansion <- function(expr) {
   list(value = value, warnings = warnings)
 }
 
+# Compare direct and packed arrays built from one classed scalar fixture.
+expect_missing_array_control <- function(value) {
+  for (size in c(0L, 1L, 3L)) {
+    for (tail in list(1L, c(1L, 2L))) {
+      key <- rep(value, size * prod(tail))
+      dim(key) <- c(size, tail)
+      for (packed in c(FALSE, TRUE)) {
+        dimension <- if (packed) tibble::tibble(component = key) else key
+        input <- tibble::tibble(key = dimension)
+        control <- observe_array_expansion(dplyr::union_all(
+          input, dplyr::mutate(input, key = vctrs::vec_init(dimension, size))
+        ))
+        for (label in list(NULL, NA_character_)) {
+          expect_identical(
+            observe_array_expansion(expand_with_margins(
+              input, .grouping = rollup(key),
+              .margin_label = label, .sort = "none"
+            )),
+            control
+          )
+        }
+      }
+    }
+  }
+}
+
 test_that("unsorted expansion validates missing Date matrix components", {
   key <- as.Date("2026-01-01")
   dim(key) <- c(1L, 1L)
@@ -129,52 +155,10 @@ test_that("units arrays remain an ordinary typed-missing expansion control", {
     sf::st_linestring(rbind(c(0, 0), c(3, 4))), crs = 3857
   ))
   expect_s3_class(distance, "units")
-  for (size in c(0L, 1L, 3L)) {
-    for (tail in list(1L, c(1L, 2L))) {
-      key <- rep(distance, size * prod(tail))
-      dim(key) <- c(size, tail)
-      for (packed in c(FALSE, TRUE)) {
-        dimension <- if (packed) tibble::tibble(component = key) else key
-        input <- tibble::tibble(key = dimension)
-        control <- observe_array_expansion(dplyr::union_all(
-          input, dplyr::mutate(input, key = vctrs::vec_init(dimension, size))
-        ))
-        for (label in list(NULL, NA_character_)) {
-          expect_identical(
-            observe_array_expansion(expand_with_margins(
-              input, .grouping = rollup(key),
-              .margin_label = label, .sort = "none"
-            )),
-            control
-          )
-        }
-      }
-    }
-  }
+  expect_missing_array_control(distance)
 })
 
 test_that("integer64 arrays remain an ordinary typed-missing control", {
   skip_if_suggest_absent("bit64")
-  for (size in c(0L, 1L, 3L)) {
-    for (tail in list(1L, c(1L, 2L))) {
-      key <- rep(bit64::as.integer64("9007199254740993"), size * prod(tail))
-      dim(key) <- c(size, tail)
-      for (packed in c(FALSE, TRUE)) {
-        dimension <- if (packed) tibble::tibble(component = key) else key
-        input <- tibble::tibble(key = dimension)
-        control <- observe_array_expansion(dplyr::union_all(
-          input, dplyr::mutate(input, key = vctrs::vec_init(dimension, size))
-        ))
-        for (label in list(NULL, NA_character_)) {
-          expect_identical(
-            observe_array_expansion(expand_with_margins(
-              input, .grouping = rollup(key),
-              .margin_label = label, .sort = "none"
-            )),
-            control
-          )
-        }
-      }
-    }
-  }
+  expect_missing_array_control(bit64::as.integer64("9007199254740993"))
 })
