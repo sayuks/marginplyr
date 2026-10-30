@@ -74,9 +74,12 @@ The check invocation takes no options. The admitted fixed gate runs, in order:
    optional Suggest, so the full suite runs once in four test processes without
    coverage measurement. `TESTTHAT_PARALLEL=true` and `TESTTHAT_CPUS=4` are set
    by the check rather than package-wide test configuration.
-   `DESCRIPTION`'s `Config/testthat/start-first` starts the four longest files
-   from local file-duration measurements before the remaining files. It changes
-   suite order for all testthat runs without selecting or excluding tests.
+   `DESCRIPTION`'s `Config/testthat/start-first` queues all measured files in
+   descending local per-file elapsed time. Testthat appends newly added unlisted
+   files and retains every test; this priority applies to all testthat runs.
+   Refresh the list from four-worker measurements when suite timings change.
+   [The #1085 measurements](../../investigation/review-ready-test-order-2026-10-30.md)
+   record the environment, worker timings, and ordering comparison.
    Remote incoming checks and external-clock verification are disabled; the
    local future-file-timestamp comparison remains enabled.
 
