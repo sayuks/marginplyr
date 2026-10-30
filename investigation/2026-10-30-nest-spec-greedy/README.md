@@ -97,8 +97,7 @@ repository citation and could find no tracked file answering it. Its
 admitted deliberately external generated paths with an expression-specific
 reason, including the release audit's temporary records.
 
-The failure preceded all changes in this investigation. The tracked-path set
-and maintained-document inputs were unchanged by these investigation files.
+The failure preceded all changes in this investigation.
 [The captured output](coordinator/doc-references-baseline.log) preserved the
 failure. An all-state Issue search for the temporary variable's spelling
 returned no duplicate before publication. The separate repair needed to make
