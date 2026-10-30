@@ -172,11 +172,18 @@ test_that("reparenting invalidates inherited and aliased environment proofs", {
     eval(quote({
       parent.env(outside) <- environment()
       get("prior", envir = outside)
-    }))
+    })),
+    {
+      (function(other) {
+        parent.env(other) <- environment()
+      })(outside)
+      get("prior", envir = outside)
+    }
   )
   for (expression in expressions) {
     outside <- new.env(parent = baseenv())
     alias <- outside
+    other <- new.env(parent = baseenv())
     child <- new.env(parent = outside)
     expect_error(
       summarize_with_margins(

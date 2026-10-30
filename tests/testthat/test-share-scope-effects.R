@@ -40,6 +40,25 @@ test_that("nested removal exposes both forbidden share dependencies", {
       prior <- 0
       other <- identity(rm(prior))
       sum(prior)
+    },
+    {
+      prior <- 0
+      for (i in {
+        rm(prior)
+        1
+      }) NULL
+      sum(prior)
+    },
+    {
+      prior <- 0
+      local(rm(prior), envir = environment())
+      sum(prior)
+    },
+    {
+      prior <- 0
+      local <- identity
+      local(rm(prior))
+      sum(prior)
     }
   ))
 

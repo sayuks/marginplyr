@@ -4401,9 +4401,9 @@ statement_reads_and_bound <- function(expr, bound, lookup = NULL) {
   if (identical(call_name, "for")) {
     # R binds the index even for an empty sequence. The sequence runs before
     # that binding; the body runs after it and may remove it.
-    inner <- bound
+    inner <- nested_removal_retained_bound(expr[[3L]], bound)
     if (is_name_part(expr[[2L]])) {
-      inner <- unique(c(bound, rlang::as_name(expr[[2L]])))
+      inner <- unique(c(inner, rlang::as_name(expr[[2L]])))
     }
     return(list(
       reads = unique(c(
@@ -4435,8 +4435,8 @@ statement_reads_and_bound <- function(expr, bound, lookup = NULL) {
 }
 
 # Lexical bindings that survive every visibly evaluated removal in this node.
-# Conditional removals may run; literal FALSE arms cannot. A function or local
-# body owns its removals, while evaluated language retains the current scope.
+# Conditional removals may run; literal FALSE arms cannot. Function bodies and
+# default local() frames own removals; an explicit local environment may not.
 nested_removal_retained_bound <- function(expr, bound) {
   if (!rlang::is_call(expr) || length(bound) == 0L) {
     return(bound)
@@ -4445,7 +4445,11 @@ nested_removal_retained_bound <- function(expr, bound) {
     return(nested_removal_retained_bound(unparenthesized_value(expr), bound))
   }
   name <- static_call_name(expr)
-  if (!is.null(name) && name %in% c("function", "local")) {
+  namespace <- static_call_ns(expr)
+  if (identical(name, "function") ||
+        (identical(name, "local") && !"local" %in% bound &&
+           (is.null(namespace) || identical(namespace, "base")) &&
+           length(base_call_argument(expr, "envir")) == 0L)) {
     return(bound)
   }
   if (!is.null(name) && name %in% c("rm", "remove")) {
@@ -4615,6 +4619,9 @@ lookup_reparented_environments <- function(
     ))
   }
   name <- static_call_name(expr)
+  if (identical(name, "function") && length(expr) >= 3L) {
+    rebound <- unique(c(rebound, names(as.list(expr[[2L]]))))
+  }
   targets <- list()
   target <- parent <- list()
   if (!is.null(name) && name %in% c("<-", "=", "<<-") &&
