@@ -54,6 +54,9 @@ All agents and terminals use that command; missing setup has no direct-command
 fallback. A waiting request pins this clean commit and is cancelled before
 admission if HEAD or cleanliness changes. One complete check is admitted per
 OS user across all clones and worktrees, preserving four internal workers.
+When the invocation waits or runs, enter *Bounded work while waiting or
+checking* below while retaining the execution identity described under
+*Observing one invocation*.
 
 The check invocation takes no options. The admitted fixed gate runs, in order:
 
@@ -128,6 +131,127 @@ definition of the evidence rule:
   result includes `exit_code`; do not reduce an in-progress result to `.output`
   alone. An outer wrapper preserves the nested result or keeps waiting on the
   same execution instead of completing and discarding its handle.
+
+### Bounded work while waiting or checking
+
+Use the same agent for one ordered pass over the submitted change during both
+admission waiting and execution of the admitted check:
+
+1. **Requirements:** account for the originating issue's requirements against
+   the diff and identify omissions.
+2. **Bug hunt:** inspect changed behavior and directly affected code for
+   boundary conditions, error paths, and regressions. Derive failure hypotheses
+   from the requirements and implementation before reading tests.
+3. **Test inspection:** determine whether tests detect those failures and
+   whether their assertions establish the intended behavior. Use the focused
+   recipe below or a small reproduction when evidence is needed.
+4. **PR preparation:** prepare the explanation and validation record, leaving
+   the check outcome pending until its terminal evidence arrives.
+
+Finish each activity after inspecting its relevant scope once and capturing
+concrete findings or unresolved hypotheses. Keep hypotheses, evidence, and next
+steps outside the submitting worktree. After the list, return to waiting using
+the existing interface mapping above; revisit completed work only for new
+evidence. Finding no defect is normal. Continuous activity and finding counts
+are not goals, and preparation for another issue is outside this pass.
+
+Reading, searching, small reproductions, and explicitly selected focused tests
+are allowed. Full-suite runs (including successive individual files covering
+the suite), builds, rendering, and continuously running additional agents are
+excluded. This pass is separate from `mattpocock-skills:code-review`, which
+follows a successful Review-ready check; finishing the pass is not another gate.
+
+Observe the original invocation at natural work boundaries through
+*Observing one invocation*. Admission is automatic: continue the bounded work
+without an agent-ready handshake or delaying the check. Immediate interruption
+of reasoning is not assumed. When a transition is observed:
+
+- **Check completion:** briefly save the current hypothesis and next step;
+  stop and collect any focused-test execution and its owned work, then
+  prioritize the actual terminal check outcome. Dispose of the test copy only
+  after shutdown. Cancelled or partial focused-test output is not a pass.
+- **Required fix confirmed:** use the retained Review-ready handle to cancel
+  only this agent's request under [Cancellation and recovery](../../tools/review-ready-admission.md#cancellation-and-recovery).
+  Confirm terminal completion and cleanup before editing, committing, and
+  submitting a fresh request. A suspicion alone warrants investigation, not
+  cancellation. If the check already completed, preserve its result for that
+  SHA; it does not certify the later fix.
+- **Pass:** resolve concrete open concerns, then proceed to formal review.
+  Unfinished activities without a concrete concern do not delay it. Failure,
+  NOTE, and management-error handling remain as defined by this document and
+  shared admission.
+
+Reports focus on useful findings and unresolved concerns with concise evidence.
+These instructions apply to future worktrees and sessions loading them; they
+add no migration of existing sessions or user-wide instruction changes.
+
+#### Focused-test recipe
+
+Each worktree may have one focused-test invocation at a time, with testthat
+parallel execution explicitly disabled. Different worktrees may each run one
+concurrently; after its test finishes, a worktree may start another relevant
+target independently. There is no fixed per-run time limit, user-wide focused
+slot, or cap on backend-internal threads, and no fixed total CPU or memory bound
+is implied.
+
+Select one relevant existing test file explicitly. Inspect its helpers, setup,
+teardown, and any subprocesses before running: one file alone does not establish
+that it is lightweight. Account for how to stop and collect its owned work
+through the execution interface; select a smaller reproduction if that cannot
+be established. Never replace a missing or empty selection with the suite.
+
+Create a disposable copy of the submitted SHA outside the submitting worktree.
+Use the SHA pinned by the retained Review-ready invocation, not a later HEAD:
+
+```sh
+submitted_sha='<40-character SHA from the Review-ready invocation>'
+focus_workspace=$(mktemp -d "${TMPDIR:-/tmp}/marginplyr-focused.XXXXXX")
+mkdir "$focus_workspace/source"
+git archive --format=tar --output="$focus_workspace/source.tar" "$submitted_sha"
+tar -xf "$focus_workspace/source.tar" -C "$focus_workspace/source"
+```
+
+Check each preparation command succeeds before continuing. Save the following
+as `$focus_workspace/run-focused.R`, outside the submitting worktree:
+
+```r
+args <- commandArgs(trailingOnly = TRUE)
+if (length(args) != 2L || !nzchar(args[[2L]])) {
+  stop("Supply a disposable source directory and one explicit test filename.")
+}
+copy <- normalizePath(args[[1L]], mustWork = TRUE)
+target <- args[[2L]]
+if (!grepl("^test-[A-Za-z0-9_-]+[.][Rr]$", target)) {
+  stop("Select one test-<letters/digits/_/->.R filename, not a path or pattern.")
+}
+test_dir <- file.path(copy, "tests", "testthat")
+stem <- sub("[.][Rr]$", "", sub("^test-", "", target))
+filter <- paste0("^", stem, "$")
+selected <- testthat::find_test_scripts(test_dir, filter = filter,
+                                       full.names = FALSE)
+if (!identical(selected, target)) {
+  stop("Selection must resolve to exactly the requested existing file.")
+}
+Sys.setenv(TESTTHAT_PARALLEL = "false")
+testthat::test_local(copy, filter = filter, reporter = "summary",
+                     stop_on_failure = TRUE)
+```
+
+Run it with the chosen filename, for example:
+
+```sh
+Rscript "$focus_workspace/run-focused.R" "$focus_workspace/source" test-example.R
+```
+
+Retain this focused-test execution's handle separately from the original
+Review-ready handle. A yielded execution is still active: do not start the
+next focused target until it and its owned work have stopped and been
+collected. The copy contains generated files and snapshot side effects; the
+submitting worktree stays clean for admission. Store logs and checkpoints
+outside that worktree too. After shutdown, remove the disposable workspace.
+A focused result never replaces the fixed gate or supplies its outcome.
+
+### Recording the outcome
 
 For a spelling finding, correct an actual typo; when the word is intentional,
 add it to `inst/WORDLIST` instead.

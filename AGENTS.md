@@ -2,6 +2,8 @@
 
 Package-affecting changes need `marginplyr-review-ready` before
 review; `design/agents/local-checks.md` owns its triggers and freshness.
+When an invocation waits for admission or runs, follow that document's
+*Bounded work while waiting or checking* with the same agent.
 
 ### Always-loaded context
 
