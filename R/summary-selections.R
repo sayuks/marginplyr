@@ -692,9 +692,6 @@ contains_summary_selection <- function(expr) {
 
 # Whether a call's evaluated parts contain an ordinary selection helper.
 has_nested_summary_selection <- function(expr) {
-  if (rlang::is_quosure(expr)) {
-    return(has_nested_summary_selection(rlang::quo_get_expr(expr)))
-  }
   if (!rlang::is_call(expr)) {
     return(FALSE)
   }

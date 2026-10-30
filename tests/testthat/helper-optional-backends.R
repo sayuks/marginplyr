@@ -176,14 +176,14 @@ suggest_status <- function(package, suggests = declared_suggests()) {
 # `backend` job proves is that input class, not a translation.
 optional_suggest_spec <- function() {
   list(
-    arrow = list(asserted = TRUE, companions = character()),
-    duckdb = list(asserted = TRUE, companions = "DBI"),
+    arrow = list(asserted = TRUE, companions = "bit64"),
+    duckdb = list(asserted = TRUE, companions = c("DBI", "bit64")),
     dtplyr = list(asserted = TRUE, companions = c("data.table", "bit64")),
-    data.table = list(asserted = TRUE, companions = character()),
-    RSQLite = list(asserted = TRUE, companions = "DBI"),
-    RPostgres = list(asserted = TRUE, companions = "DBI"),
-    sf = list(asserted = TRUE, companions = "DBI"),
-    # bit64 supplies typed-key fixtures in the dtplyr job, not a backend job.
+    data.table = list(asserted = TRUE, companions = "bit64"),
+    RSQLite = list(asserted = TRUE, companions = c("DBI", "bit64")),
+    RPostgres = list(asserted = TRUE, companions = c("DBI", "bit64")),
+    sf = list(asserted = TRUE, companions = c("DBI", "bit64")),
+    # Every job runs the local integer64 array control; dtplyr also uses keys.
     bit64 = list(asserted = FALSE, companions = character()),
     DBI = list(asserted = FALSE, companions = character()),
     # Like DBI, blob is imported by dbplyr and cannot be withheld.

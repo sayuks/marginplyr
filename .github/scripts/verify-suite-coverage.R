@@ -57,6 +57,8 @@ source(".github/scripts/ci-helpers.R")
 # two backends, which is a false positive produced entirely by this script.
 # Set here rather than in the workflow so a local run gives the same verdict.
 Sys.setenv(NOT_CRAN = "true")
+# Each configuration keeps its own suite; files share four workers within it.
+Sys.setenv(TESTTHAT_PARALLEL = "true", TESTTHAT_CPUS = "4")
 
 backends <- optional_backends()
 if (length(backends) == 0L) {

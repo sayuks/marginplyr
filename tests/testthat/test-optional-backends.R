@@ -249,15 +249,15 @@ test_that("a backend job installs the package it is for and its companions", {
   # `generate-backend-matrix.R` builds each job's `required` list and its
   # `extra-packages` from this, so a driver backend that arrived without DBI
   # would install, run nothing, and report green.
-  expect_identical(suggest_job_packages("duckdb"), c("duckdb", "DBI"))
-  expect_identical(suggest_job_packages("RSQLite"), c("RSQLite", "DBI"))
+  expect_identical(suggest_job_packages("duckdb"), c("duckdb", "DBI", "bit64"))
+  expect_identical(suggest_job_packages("RSQLite"), c("RSQLite", "DBI", "bit64"))
   # dtplyr declares `Imports: data.table`, so the job installs it regardless;
   # naming it is what keeps `verify-library-isolation.R` from reading a
   # dependency of the requested backend as a cache leak.
   expect_identical(
     suggest_job_packages("dtplyr"), c("dtplyr", "data.table", "bit64")
   )
-  expect_identical(suggest_job_packages("data.table"), "data.table")
+  expect_identical(suggest_job_packages("data.table"), c("data.table", "bit64"))
   expect_error(suggest_job_packages(absent_package), "optional_suggest_spec")
 })
 
@@ -270,6 +270,12 @@ test_that("every companion is itself a tracked Suggest", {
     function(entry) entry$companions
   ))
   expect_true(all(companions %in% names(optional_suggests())))
+})
+
+test_that("every backend job executes the standalone integer64 control", {
+  for (backend in optional_backends()) {
+    expect_true("bit64" %in% suggest_job_packages(backend), info = backend)
+  }
 })
 
 test_that("optional_backends() is the subset a job can be asked to withhold", {
