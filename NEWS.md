@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Ordinary local summary selections resolve function arguments and local
+  bindings at execution while retaining the environments of injected
+  `quosures` (#1070).
+
 * dtplyr Margin verbs preserve `.SD` dimensions during opt-in observed Margin
   label collision checks and report collisions under the caller's column names
   (#1046).

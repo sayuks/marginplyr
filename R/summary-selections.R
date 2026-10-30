@@ -723,10 +723,15 @@ plan_summary_expressions <- function(dots,
       if (contains_share_helper(expr)) {
         next
       }
+      selection_kind <- data_frame_valued_summary_kind(expr)
+      # A nested selection can execute in a scope created by its enclosing
+      # expression; that scope is not available during share planning.
       deferred[[i]] <- !has_shares || (
         contains_summary_selection(expr) &&
           (prior_ordinary || nzchar(rlang::names2(dots)[[i]]) ||
-             independent_shares)
+             independent_shares ||
+             !(identical(selection_kind, "across") ||
+                 identical(selection_kind, "pick")))
       )
       prior_ordinary <- TRUE
     }
@@ -1173,7 +1178,7 @@ rewrite_summary_selections <- function(expr,
   if (call_name %in% c("across", "if_any", "if_all")) {
     if (defer_local) {
       return(rewrite_local_across_selection(
-        expr, env, group_vars, forbidden_names
+        expr, group_vars, forbidden_names
       ))
     }
     return(rewrite_across_selection(
@@ -1187,7 +1192,7 @@ rewrite_summary_selections <- function(expr,
   if (identical(call_name, "pick")) {
     if (defer_local) {
       return(rewrite_local_pick_selection(
-        expr, env, group_vars, forbidden_names
+        expr, group_vars, forbidden_names
       ))
     }
     return(rewrite_pick_selection(expr, env, data_proxy))
@@ -1206,10 +1211,12 @@ rewrite_summary_selections <- function(expr,
   )
 }
 
-# Builds the selection passed to dplyr, preserving the caller's environment.
+# Builds a selection in dplyr's active selection scope, retaining an explicitly
+# injected quosure's environment instead when the selection carries one.
 # An injected missing selection stays empty rather than taking the default.
-local_summary_selection_expr <- function(selection, env, group_vars,
+local_summary_selection_expr <- function(selection, group_vars,
                                          forbidden_names) {
+  env <- rlang::sym(".env")
   if (rlang::is_quosure(selection)) {
     env <- rlang::quo_get_env(selection)
     selection <- rlang::quo_get_expr(selection)
@@ -1231,12 +1238,12 @@ local_summary_selection_expr <- function(selection, env, group_vars,
 }
 
 # Leaves `.cols` for local dplyr to resolve against its current summary mask.
-rewrite_local_across_selection <- function(expr, env, group_vars,
+rewrite_local_across_selection <- function(expr, group_vars,
                                            forbidden_names) {
   parsed <- parse_across_arguments(expr)
   call_args <- parsed$call_args
   selection <- local_summary_selection_expr(
-    parsed$cols, env, group_vars, forbidden_names
+    parsed$cols, group_vars, forbidden_names
   )
   if (parsed$cols_index == 0L) {
     call_args <- append(list(.cols = selection), call_args)
@@ -1247,14 +1254,14 @@ rewrite_local_across_selection <- function(expr, env, group_vars,
 }
 
 # Applies the same deferred local selection to `pick()`.
-rewrite_local_pick_selection <- function(expr, env, group_vars,
+rewrite_local_pick_selection <- function(expr, group_vars,
                                          forbidden_names) {
   selection <- parse_pick_selection(expr)
   if (is.null(selection)) {
     return(expr)
   }
   selection <- local_summary_selection_expr(
-    selection, env, group_vars, forbidden_names
+    selection, group_vars, forbidden_names
   )
   rebuild_static_call(expr, list(selection))
 }
