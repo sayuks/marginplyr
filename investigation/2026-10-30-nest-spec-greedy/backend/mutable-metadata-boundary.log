@@ -1,0 +1,4 @@
+             graphs           inspected  inspection_matches inspection_refusals
+                 96                 192                 180                  12
+      nest_refusals row_predicate_calls        unsafe_calls    source_mutations
+                192                   0                   0                   0

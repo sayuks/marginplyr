@@ -1,0 +1,5 @@
+source equality groups / ordinary dplyr::nest_by() / Margin summary: one two-row group
+nest_with_margins : default label yielded 2 groups; cell memberships: 1 / 2
+nest_by_with_margins : default label yielded 2 groups; cell memberships: 1 / 2
+Error: all(unlist(observations)) is not TRUE
+Execution halted

@@ -1,0 +1,7 @@
+Arrow boundary calls 24 ; readers preserved 4; retained source rows 12
+Tracing function "dbSendQuery" in package "namespace:DBI"
+Untracing function "dbSendQuery" in package "namespace:DBI"
+SQL sqlite boundary calls 60 ; statements 0 ; every statement LIMIT 0
+Tracing function "dbSendQuery" in package "namespace:DBI"
+Untracing function "dbSendQuery" in package "namespace:DBI"
+SQL duckdb boundary calls 60 ; statements 24 ; every statement LIMIT 0

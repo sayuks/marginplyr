@@ -1,0 +1,2 @@
+calls 144 accepted 120 projections 378 upstream recursion controls 24 unexpected differences 0
+PASS: nested NA-level factors retained exact original values and levels
