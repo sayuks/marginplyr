@@ -1022,7 +1022,10 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
   resolve <- function() {
     state$result <- tryCatch(withCallingHandlers({
       state$selecting <- TRUE
-      selected <- resolve_summary_selection(parsed$cols, env, selection_data)
+      # dplyr exposes a plain column list while resolving across selectors.
+      selected <- resolve_summary_selection(
+        parsed$cols, env, as.list(selection_data)
+      )
       state$selecting <- FALSE
       args <- parsed$call_args
       selection <- summary_all_of_expr(selected, selection_data)

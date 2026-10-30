@@ -146,6 +146,43 @@ test_that("name patterns leave a stateful first selector in each branch", {
   }
 })
 
+test_that("first selectors retain dplyr's selection data context", {
+  data <- data.frame(g = c("a", "a", "b"), x = 1:3, y = c(5, 6, 7))
+  run <- function(shared) {
+    observed <- new.env(parent = emptyenv())
+    observed$classes <- character()
+    choose <- function() {
+      proxy <- tidyselect::peek_data()
+      observed$classes <- c(observed$classes, class(proxy))
+      if (is.data.frame(proxy)) "x" else "y"
+    }
+    ordinary <- rlang::quos(
+      dplyr::across(dplyr::all_of(choose()), sum, .names = "unused"),
+      total = sum(y)
+    )
+    result <- if (shared) {
+      summarize_with_margins(
+        data, !!!ordinary,
+        dplyr::across(dplyr::starts_with("total"), share_of_total,
+                      .names = "share"),
+        .grouping = rollup(g)
+      )
+    } else {
+      dplyr::bind_rows(
+        dplyr::summarise(data, !!!ordinary, .by = g),
+        dplyr::mutate(dplyr::summarise(data, !!!ordinary), g = "Total")
+      )
+    }
+    list(result = result, classes = observed$classes)
+  }
+  control <- run(FALSE)
+  actual <- run(TRUE)
+  expect_identical(actual$classes, control$classes)
+  expect_identical(actual$result[names(control$result)], control$result)
+  expect_identical(actual$result$unused, c(11, 7, 18))
+  expect_equal(actual$result$share, c(11 / 18, 7 / 18, 1))
+})
+
 test_that("first selectors follow functions beside selection shares", {
   data <- data.frame(g = c("a", "b"), x = c(1, 3), y = c(10, 30))
   run <- function(shared) {
