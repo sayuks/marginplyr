@@ -61,7 +61,10 @@ usual live progress, full check, diagnostics, and authorized native-crash retry.
 The original worktree is never checked out or reset by the CLI.
 
 Retain the same execution handle through waiting, execution, cleanup, and
-terminal exit. Exit zero from a check invocation forwards the gate's zero;
+terminal exit. While waiting or checking, follow
+[Bounded work while waiting or checking](../design/agents/local-checks.md#bounded-work-while-waiting-or-checking);
+that workflow uses the retained handle and does not control admission.
+Exit zero from a check invocation forwards the gate's zero;
 nonzero gate outcomes remain nonzero (including their original exit code).
 Exit 130 denotes cancellation, 3 a stale waiting request, 4 blocked recovery,
 and 2 setup/management failure. A gate can also return one of these nonzero
