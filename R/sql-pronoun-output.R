@@ -1,7 +1,7 @@
 # Names whose generated bare SQL references have an R evaluation meaning.
 # Public names are already validated against the backend's own restrictions.
 sql_name_needs_quoting <- function(names) {
-  names == ".env" | grepl("^\\.\\.-?[0-9]+$", names)
+  names == ".env" | margin_dot_dot_names(names)
 }
 
 # Quote SQL-generated references to names R reads as pronouns or dot arguments.

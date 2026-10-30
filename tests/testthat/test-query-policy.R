@@ -556,7 +556,7 @@ test_that("DuckDB .env summary keys add no construction read", {
   }
 })
 
-test_that("SQL .env summary outputs add no construction read", {
+test_that("SQL pronoun and dot-dot outputs add no construction read", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
@@ -564,8 +564,6 @@ test_that("SQL .env summary outputs add no construction read", {
     con, data.frame(g = "east", value = 2L),
     "query_policy_env_summary_output", temporary = TRUE
   )
-  output <- ".env"
-
   for (sort in c("none", "first", "last")) {
     ordinary <- count_entry_point_invocations(
       summarize_with_margins(
@@ -575,12 +573,15 @@ test_that("SQL .env summary outputs add no construction read", {
     )
     # DuckDB's zero-row type read is permitted by ADR 0020.
     expect_gt(ordinary, 0L)
-    expect_identical(count_entry_point_invocations(
-      summarize_with_margins(
-        source, !!output := dplyr::n(),
-        .grouping = rollup(g), .sort = sort
-      )
-    ), ordinary, info = sort)
+    for (output in c(".env", "..+0", "..+1", ".. 1")) {
+      expect_identical(count_entry_point_invocations({
+        query <- summarize_with_margins(
+          source, !!output := dplyr::n(),
+          .grouping = rollup(g), .sort = sort
+        )
+        dbplyr::sql_render(query)
+      }), ordinary, info = paste(output, sort))
+    }
   }
 })
 
