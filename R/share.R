@@ -1672,13 +1672,23 @@ unwritable_name <- function(value) {
 }
 
 # Whether every share source is among the preceding explicitly named summaries.
-# The caller supplies preflighted syntax. Prediction runs no caller code.
+# The caller supplies preflighted syntax. Prediction runs no caller code;
+# unknown across names prevent a name-pattern proof.
 shares_use_named_summaries <- function(dots) {
   preceding <- character()
+  other_names <- character()
   for (i in seq_along(dots)) {
     expr <- rlang::quo_get_expr(dots[[i]])
     if (!contains_share_helper(expr)) {
-      preceding <- c(preceding, rlang::names2(dots)[[i]])
+      name <- rlang::names2(dots)[[i]]
+      if (nzchar(name)) {
+        preceding <- c(preceding, name)
+      } else if (is_across_call(expr) && !is.null(other_names)) {
+        candidates <- local_across_name_candidates(dots[[i]])
+        other_names <- if (is.null(candidates)) NULL else c(
+          other_names, candidates
+        )
+      }
       next
     }
     source <- if (is_share_helper_call(expr)) {
@@ -1687,7 +1697,8 @@ shares_use_named_summaries <- function(dots) {
       parse_across_arguments(expr)$cols
     }
     if (!share_selects_named_summaries(
-      source, preceding, rlang::quo_get_env(dots[[i]])
+      source, preceding, rlang::quo_get_env(dots[[i]]),
+      other_names = other_names
     )) {
       return(FALSE)
     }
@@ -1695,13 +1706,34 @@ shares_use_named_summaries <- function(dots) {
   TRUE
 }
 
-# Recognize explicit positive selections without evaluating their expressions.
-# Inside all_of/any_of, symbols are values and c() uses ordinary lookup.
+# A superset of an unnamed across call's output names without resolving its
+# selector. A constant template bounds every output even for unknown columns.
+# NULL means the names cannot be bounded without running caller code.
+local_across_name_candidates <- function(dot) {
+  expr <- rlang::quo_get_expr(dot)
+  env <- rlang::quo_get_env(dot)
+  parsed <- parse_across_arguments(expr)
+  if (!across_unpack_is_false(parsed$unpack, env)) {
+    return(NULL)
+  }
+  template <- parsed$names
+  if (is.character(template) && length(template) == 1L &&
+        !is.na(template) && !grepl("{", template, fixed = TRUE)) {
+    return(template)
+  }
+  NULL
+}
+
+# Recognize explicit positive selections and independent literal name patterns
+# without running caller code. Inside all_of/any_of, symbols are values and
+# c() uses ordinary lookup.
 share_selects_named_summaries <- function(expr, preceding, env,
-                                          literal = FALSE) {
+                                          literal = FALSE,
+                                          other_names = NULL) {
   if (rlang::is_quosure(expr)) {
     return(share_selects_named_summaries(
-      rlang::quo_get_expr(expr), preceding, rlang::quo_get_env(expr), literal
+      rlang::quo_get_expr(expr), preceding, rlang::quo_get_env(expr), literal,
+      other_names = other_names
     ))
   }
   if (is_name_part(expr)) {
@@ -1717,11 +1749,14 @@ share_selects_named_summaries <- function(expr, preceding, env,
     }
     return(all(vapply(
       static_call_args(expr), share_selects_named_summaries, logical(1),
-      preceding = preceding, env = env, literal = literal
+      preceding = preceding, env = env, literal = literal,
+      other_names = other_names
     )))
   }
   name <- static_call_name(expr)
-  if (is.null(name) || !name %in% c("all_of", "any_of")) {
+  helpers <- c("all_of", "any_of", "starts_with", "ends_with", "contains",
+               "matches", "everything")
+  if (is.null(name) || !name %in% helpers) {
     return(FALSE)
   }
   namespace <- static_call_ns(expr)
@@ -1734,6 +1769,30 @@ share_selects_named_summaries <- function(expr, preceding, env,
     namespace %in% c("dplyr", "tidyselect")
   }
   args <- static_call_args(expr)
+  if (!name %in% c("all_of", "any_of")) {
+    literal_args <- all(vapply(args, function(arg) {
+      !rlang::is_missing(arg) &&
+        (is.character(arg) || is.logical(arg) || is.numeric(arg))
+    }, logical(1)))
+    if (!known || literal || is.null(other_names) || !literal_args) {
+      return(FALSE)
+    }
+    available <- unique(c(preceding, other_names))
+    proxy <- stats::setNames(as.list(seq_along(available)), available)
+    selected <- tryCatch(
+      {
+        helper_call <- rlang::call2(name, !!!args, .ns = "tidyselect")
+        matched <- match.call(getExportedValue("tidyselect", name), helper_call)
+        if ("vars" %in% names(matched)) {
+          return(FALSE)
+        }
+        resolve_summary_selection(helper_call, env, proxy)
+      },
+      warning = function(cnd) NULL,
+      error = function(cnd) NULL
+    )
+    return(!is.null(selected) && all(names(selected) %in% preceding))
+  }
   known && length(args) == 1L && share_selects_named_summaries(
     args[[1L]], preceding, env, literal = TRUE
   )
