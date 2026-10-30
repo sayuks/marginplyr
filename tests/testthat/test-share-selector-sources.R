@@ -257,6 +257,8 @@ test_that("omitted across columns retain independent share sources", {
       .check_share_source = FALSE
     )
     expect_s3_class(lazy, "tbl_lazy")
-    expect_match(as.character(dbplyr::sql_render(lazy)), 'SUM("value")', fixed = TRUE)
+    expect_match(
+      as.character(dbplyr::sql_render(lazy)), 'SUM("value")', fixed = TRUE
+    )
   }
 })
