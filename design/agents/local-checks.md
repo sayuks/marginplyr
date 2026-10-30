@@ -79,8 +79,11 @@ The check invocation takes no options. The admitted fixed gate runs, in order:
 
 ### Observing one invocation
 
-During the source-tarball check, English progress lines report elapsed test
-time, completed files out of the discovered total, their percentage, and the
+During the source-tarball check, the monitor forwards testthat's native
+`Starting N test processes.` message from its check transcript. This is the
+count testthat selected, including its limit by the number of test files,
+rather than a repeated configuration value. English progress lines report
+elapsed test time, completed files out of the discovered total, their percentage, and the
 last completed file. The percentage counts files, not runtime or passing tests;
 it does not estimate remaining time. A five-second heartbeat continues while
 a long file runs. The ordinary testthat check summary and the check process's

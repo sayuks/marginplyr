@@ -26,17 +26,21 @@ local({
       if (fail) "FALSE" else "TRUE"),
       file.path(package, "tests", "testthat", "test-second.R"))
     check_dir <- file.path(workspace, if (fail) "fail" else "pass")
-    result <- review_ready_progress_check(
-      package, args = c("--no-manual", "--no-vignettes"), build_args = character(),
-      check_dir = check_dir, error_on = "never", repos = repos,
-      env = c(
-        TESTTHAT_PARALLEL = "true", TESTTHAT_CPUS = "2", NOT_CRAN = "true",
-        MARGINPLYR_REVIEW_PROGRESS_REPORTER = file.path(
-          root, "tools", "review-ready-progress-reporter.R"
+    output <- capture.output({
+      result <- review_ready_progress_check(
+        package, args = c("--no-manual", "--no-vignettes"), build_args = character(),
+        check_dir = check_dir, error_on = "never", repos = repos,
+        env = c(
+          TESTTHAT_PARALLEL = "true", TESTTHAT_CPUS = "4", NOT_CRAN = "true",
+          MARGINPLYR_REVIEW_PROGRESS_REPORTER = file.path(
+            root, "tools", "review-ready-progress-reporter.R"
+          )
         )
       )
-    )
+    })
+    # Four requested workers and two files distinguish selection from configuration.
     stopifnot(
+      "Starting 2 test processes." %in% trimws(output),
       identical(result$status == 0L, !fail),
       identical(length(result$errors) == 0L, !fail)
     )

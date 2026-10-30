@@ -49,6 +49,9 @@ local({
   process <- list(
     poll_io = function(timeout) {
       ticks <<- ticks + 1L
+      transcript <- file.path(directory, "fixture.Rcheck", "tests", "testthat.Rout")
+      dir.create(dirname(transcript), recursive = TRUE, showWarnings = FALSE)
+      writeLines("Starting 1 test process.", transcript)
       writeLines(c("total\t2", "done\ttest-first.R"),
         file.path(directory, "test-progress.tsv"))
     },
@@ -77,6 +80,11 @@ local({
     check_dir = directory, error_on = "never", env = character(), repos = character(),
     process_factory = factory
   ))
+  expect_identical(sum(output == "Starting 1 test process."), 1L,
+    "the native selected-process count is forwarded once")
+  expect_true(match("Starting 1 test process.", output) <
+    grep("1/2 files completed", output, fixed = TRUE)[[1L]],
+    "the startup message is visible while the check is running")
   expect_true(any(grepl("1/2 files completed (50.0%); last: test-first.R",
     output, fixed = TRUE)), "live file progress")
   expect_true(any(grepl("2/2 files completed (100.0%); last: test-second.R",

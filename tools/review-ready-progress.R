@@ -12,6 +12,22 @@ review_ready_progress_snapshot <- function(path) {
   )
 }
 
+# Reads testthat's native startup message from its actual check transcript.
+# The selected worker count can be lower than TESTTHAT_CPUS.
+review_ready_test_start_message <- function(check_dir) {
+  logs <- list.files(check_dir, "^testthat[.]Rout([.]fail)?$",
+    recursive = TRUE, full.names = TRUE)
+  for (log in logs) {
+    # R CMD check can rename the transcript to .fail while it is observed.
+    lines <- tryCatch(suppressWarnings(readLines(log, warn = FALSE)),
+      error = function(cnd) character())
+    messages <- grep("^Starting [0-9]+ test process(es)?[.]$", trimws(lines),
+      value = TRUE)
+    if (length(messages)) return(messages[[1L]])
+  }
+  character()
+}
+
 # Runs the same source-tarball check while forwarding output and periodic
 # completed-file counts. The process object is retained through terminal wait.
 review_ready_progress_check <- function(
@@ -32,6 +48,7 @@ review_ready_progress_check <- function(
   started <- NULL
   displayed <- -Inf
   finished <- FALSE
+  announced <- FALSE
   repeat {
     process$poll_io(250L)
     lines <- process$read_output_lines()
@@ -39,6 +56,14 @@ review_ready_progress_check <- function(
     alive <- process$is_alive()
     snapshot <- review_ready_progress_snapshot(progress)
     now <- proc.time()[["elapsed"]]
+    if (!announced && (!is.null(snapshot) || !alive)) {
+      announcement <- review_ready_test_start_message(check_dir)
+      if (length(announcement)) {
+        cat(announcement, "\n", sep = "")
+        flush.console()
+        announced <- TRUE
+      }
+    }
     if (!is.null(snapshot) && !finished) {
       if (is.null(started)) started <- now
       if (now - displayed >= 5 || snapshot$finished) {
