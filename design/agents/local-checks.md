@@ -67,6 +67,8 @@ submitted commit, `refs/heads/main` commit, and unique merge-base, using local
 main without fetching. A later main update does not replace these identities.
 Missing or ambiguous bases, comparison failures, empty differences, unknown
 paths, mode/type changes, symlinks, and submodules select Full with a reason.
+An unreadable comparison supplies no admissible base; current gates refuse
+verification rather than substitute Full for undetermined artifact checks.
 Deletion and both sides of a rename participate in the NUL-delimited final
 tree comparison. Reverted historical edits do not participate.
 

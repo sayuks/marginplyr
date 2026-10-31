@@ -296,6 +296,22 @@ sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
         self.commit_all()
         self.assertIn('lacks selection protocol', ' '.join(self.selected()['reasons']))
 
+    def test_unreadable_diff_cannot_supply_ci_verification_base(self):
+        self.repository_branch()
+        (self.repo / 'tools/verify-ci-artifacts.py').write_text('# current CI verification\n')
+        self.commit_all()
+        real_git = shutil.which('git')
+        shim = self.bin / 'git'
+        shim.write_text('#!' + sys.executable + '\nimport os,sys\n' +
+                        'if "diff" in sys.argv and "--raw" in sys.argv:\n' +
+                        ' os.write(1, b"unreadable\\0"); sys.exit(0)\n' +
+                        'os.execv(' + repr(real_git) + ', [' + repr(real_git) + '] + sys.argv[1:])\n')
+        shim.chmod(0o755)
+        selected = self.selected()
+        self.assertEqual(selected['path'], 'Full')
+        self.assertIsNone(selected['base'],
+                          'Unreadable artifact selection must not supply usable comparison evidence')
+
     def test_comparison_errors_and_unclassifiable_records_fall_back_to_full(self):
         self.repository_branch()
         real_git = shutil.which('git')

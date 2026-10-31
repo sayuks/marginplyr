@@ -175,6 +175,7 @@ def select_path(root, sha):
         # still selected, but cannot turn an unreadable CI diff into a pass.
         try:
             git_bytes(root, 'show', sha + ':tools/verify-ci-artifacts.py')
+            selection['base'] = None
             selection['verifiers'] = list(REFERENCE_CHECKS) + ['tools/verify-ci-artifacts.py']
         except (OSError, subprocess.SubprocessError):
             pass
