@@ -583,5 +583,31 @@ sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
         self.assertIn('HEAVY ', self.finish(waiter, log))
 
 
+class References(unittest.TestCase):
+    def test_required_reference_verification_reads_unusual_tracked_names(self):
+        rscript = shutil.which('Rscript')
+        if not rscript:
+            self.skipTest('Rscript is required for the reference-verifier fixture')
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = Path(temporary) / 'source'
+            source = SOURCE.parent.parent
+            subprocess.run(['git', 'clone', '--quiet', '--shared', str(source), str(repo)], check=True)
+            verifier = '.github/scripts/verify-doc-references.R'
+            shutil.copyfile(source / verifier, repo / verifier)
+            names = ('design/reference\nprobe.md', 'design/日本語.md',
+                     'design/reference\tprobe.md', 'design/a"quote.md', 'design/a\\slash.md')
+            for name in names:
+                (repo / name).write_text('`R/not-a-real-file.R`\n')
+            subprocess.run(['git', '-C', str(repo), 'add', '.'], check=True)
+            result = subprocess.run([rscript, verifier], cwd=repo, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+            self.assertIn('not-a-real-file', result.stderr)
+            for name in names:
+                self.assertIn(name, result.stderr)
+                (repo / name).write_text('See `design/architecture.md`.\n')
+            result = subprocess.run([rscript, verifier], cwd=repo, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+
 if __name__ == '__main__':
     unittest.main()
