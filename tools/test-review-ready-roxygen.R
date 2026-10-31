@@ -73,6 +73,12 @@ local({
   check(sub("@export", "@export\n#' continuation", original, fixed = TRUE),
     "Full", "unsafe directive continuation")
   check(sub("  x", "  (", original, fixed = TRUE), "Full", "parse failure")
+  failure <- tryCatch(
+    review_ready_roxygen_path(root, base, git("rev-parse", "HEAD")[[1L]],
+      fail_parse = TRUE),
+    error = identity
+  )
+  if (!inherits(failure, "error")) stop("Command-mode parse failure must remain a failure.")
   check(expected = "Full", label = "configuration", configure = function() {
     writeLines("export(other)", file.path(root, "NAMESPACE"))
   })
