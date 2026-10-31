@@ -2,6 +2,7 @@
 # Review-ready selection protocol: 2
 # Review-ready supervision protocol: 3
 # Review-ready roxygen proof protocol: 1
+# Review-ready evidence protocol: 1
 
 # Runs the fixed local gate for one reviewable package commit. The implementation
 # lives beside this entry point so its command contract can be fixture-tested.

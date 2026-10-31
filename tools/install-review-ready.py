@@ -26,7 +26,7 @@ def main():
     if options.verify:
         if not destination.exists() or destination.read_bytes() != installed:
             sys.exit('Installed Review-ready command differs; refresh installation before checking.')
-        print('Verified installed supervision protocol: 3; SHA-256: ' + hashlib.sha256(installed).hexdigest())
+        print('Verified installed supervision protocol: 3; stage evidence protocol: 1; SHA-256: ' + hashlib.sha256(installed).hexdigest())
         return
     # Installation must not weaken an existing pending/unfinished request.
     destination.parent.mkdir(parents=True, exist_ok=True)
@@ -40,7 +40,7 @@ def main():
         temporary.unlink(missing_ok=True)
     subprocess.run([str(destination), '--status'], check=True)
     print('Installed: ' + str(destination))
-    print('Supervision protocol: 3; SHA-256: ' + hashlib.sha256(installed).hexdigest())
+    print('Supervision protocol: 3; stage evidence protocol: 1; SHA-256: ' + hashlib.sha256(installed).hexdigest())
     if shutil.which('marginplyr-review-ready') != str(destination):
         print('Add ' + str(destination.parent) + ' to PATH in every execution environment,')
         print('or invoke the installed command by that absolute path. Refresh existing sessions.')

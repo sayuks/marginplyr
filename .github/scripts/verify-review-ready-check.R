@@ -666,6 +666,7 @@ local({
   expect_identical(commands[[5L]]$args, route$verifiers,
     "Repository executes its required verifier")
   expect_identical(commands[[5L]]$env, c("TESTTHAT_PARALLEL=false", "TESTTHAT_CPUS=1",
+    "MARGINPLYR_REVIEW_STAGE_REPORT=",
     paste0("MARGINPLYR_REVIEW_BASE=", route$base)),
     "artifact commands receive the pinned base in system2 environment format")
   expect_true(any(grepl("Repository passed", output, fixed = TRUE)),
@@ -673,6 +674,28 @@ local({
   expect_true(any(grepl("package build/check omitted", output, fixed = TRUE)),
     "Repository explicitly records omissions")
   expect_true(!dir.exists(observed_workspace), "Repository success cleanup")
+  route$path <- "Full"
+  route$reused <- "build-full"
+  commands <- list()
+  output <- capture.output(status <- review_ready_check_cli(character(), getwd(),
+    identity = clean_identity, prerequisites = prerequisites,
+    runner = repository_runner, checker = never_check, selection = route))
+  expect_identical(status, 0L, "a reused Full obligation retains current source and artifact checks")
+  expect_identical(length(commands), length(steps) + 2L,
+    "reuse executes no source build or package checker")
+  expect_true(any(grepl("not a new Full pass", output, fixed = TRUE)),
+    "reused Full evidence is not reported as a new execution")
+  route$path <- "Documentation"
+  route$reused <- c("build-documentation", "documentation-assertions")
+  commands <- list()
+  capture.output(status <- review_ready_check_cli(character(), getwd(),
+    identity = clean_identity, prerequisites = prerequisites,
+    runner = repository_runner, checker = never_check, selection = route))
+  expect_identical(status, 0L, "Documentation can reuse its two distinct units")
+  expect_identical(length(commands), length(steps) + 2L,
+    "reused Documentation does not reconstruct assertions or build/check")
+  route$path <- "Repository"
+  route$reused <- NULL
   for (failed in 2:5) {
     seen <- 0L
     failing_runner <- function(...) {
@@ -1235,7 +1258,8 @@ local({
   expect_true(endsWith(assertion[[1L]]$directory, "/source"),
     "assertions run against the submitted archive")
   expect_identical(assertion[[1L]]$extra$env,
-    "MARGINPLYR_REQUIRED_SUGGESTS=stats,utils", "assertions require provisioned Suggests")
+    c("MARGINPLYR_REVIEW_STAGE_REPORT=", "MARGINPLYR_REQUIRED_SUGGESTS=stats,utils"),
+    "assertions require provisioned Suggests without writing the supervisor's report")
   failed_runner <- function(command, args, directory, ...) {
     if (identical(args, "tools/review-ready-documentation.R")) return(list(status = 7L))
     runner(command, args, directory, ...)

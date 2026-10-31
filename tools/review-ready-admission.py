@@ -20,6 +20,7 @@ import sys
 import time
 import tempfile
 import uuid
+import types
 
 if os.name == 'posix':
     import fcntl
@@ -39,15 +40,25 @@ EXEMPT_PROTOCOL = b'# Review-ready supervision protocol: 3'
 # The installer embeds fingerprints of the reviewed stage contracts. An older
 # or directly copied launcher has no exemption capability and stays locked.
 CAPABILITY_DIGESTS = {}  # installed capabilities
+EVIDENCE_SOURCE = None  # installed evidence implementation
 LAUNCHER_SOURCE = Path(__file__).read_bytes()
+evidence_policy = None
+_evidence_path = Path(__file__).with_name('review-ready-evidence.py')
+if EVIDENCE_SOURCE is not None or _evidence_path.is_file():
+    evidence_policy = types.ModuleType('review_ready_evidence')
+    exec(EVIDENCE_SOURCE if EVIDENCE_SOURCE is not None else _evidence_path.read_text(),
+         evidence_policy.__dict__)
 
 CORE_SOURCES = (
     'tools/review-ready-check.R', 'tools/review-ready-check-lib.R',
     'tools/review-ready-progress.R', 'tools/review-ready-progress-reporter.R',
     'tools/dependency-requirements.R', 'tools/required-test-suggests.R',
+    'tests/testthat/helper-optional-backends.R',
     '.github/scripts/cran-note-policy.R',
     'DESCRIPTION', 'NAMESPACE', '.Rbuildignore', 'jarl.toml', '.lintr*', '.Rprofile*',
     'tools/review-ready-roxygen.R',
+    'tools/review-ready-evidence.py', 'tools/review-ready-environment.R',
+    'tools/review-ready-followup-contract.R',
     'inst/suggests/guard.R',
 )
 DOCUMENTATION_SOURCES = (
@@ -59,6 +70,12 @@ DOCUMENTATION_SOURCES = (
 # Policies describe reviewed workloads, never a guess from source spellings.
 # Only the progress fixture exercises testthat workers outside Full capacity.
 STAGE_CONTRACTS = {
+    'tools/review-ready-followup-contract.R': ('serial', (
+        'tools/dependency-requirements.R', 'tools/review-ready-generated.R', 'DESCRIPTION')),
+    'tools/test-review-ready-evidence.py': ('process-fixture', (
+        'tools/review-ready-evidence.py', 'tools/review-ready-environment.R',
+        'tools/review-ready-followup-contract.R', 'tools/review-ready-admission.py',
+        'tools/test-review-ready-admission.py')),
     '.github/scripts/verify-doc-references.R': ('serial', ('.github/scripts/ci-helpers.R',)),
     '.github/scripts/verify-context-budget.R': ('serial', ('.github/scripts/ci-helpers.R',)),
     '.github/scripts/verify-verifier-invocation.R': ('serial', ('.github/scripts/ci-helpers.R',)),
@@ -108,7 +125,7 @@ def installed_source(root):
         files = {path for pattern in patterns for path in root.glob(pattern)
                  if path.is_file() and path.relative_to(root).as_posix() in tracked}
         digests[group] = {
-            path.relative_to(root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+            path.relative_to(root).as_posix(): capability_digest(path.relative_to(root).as_posix(), path.read_bytes())
             for path in sorted(files) if any(fnmatch.fnmatchcase(path.relative_to(root).as_posix(), pattern)
                                     for pattern in patterns)
         }
@@ -116,13 +133,27 @@ def installed_source(root):
             if not any(char in pattern for char in '*?[') and pattern not in digests[group]:
                 raise RuntimeError('Missing installation contract source: ' + pattern)
     source = (root / 'tools/review-ready-admission.py').read_bytes()
-    return source.replace(b'CAPABILITY_DIGESTS = {}  # installed capabilities',
-                          ('CAPABILITY_DIGESTS = ' + repr(digests)).encode(), 1)
+    source = source.replace(b'CAPABILITY_DIGESTS = {}  # installed capabilities',
+                            ('CAPABILITY_DIGESTS = ' + repr(digests)).encode(), 1)
+    return source.replace(b'EVIDENCE_SOURCE = None  # installed evidence implementation',
+                          ('EVIDENCE_SOURCE = ' + repr((root / 'tools/review-ready-evidence.py').read_text())).encode(), 1)
+
+
+def capability_digest(name, source):
+    if evidence_policy and name == evidence_policy.EXPECTATION:
+        protected = evidence_policy.protected_expectation(source)
+        if protected is not None:
+            source = protected
+    return hashlib.sha256(source).hexdigest()
+
+
+def needs_full(selection):
+    return evidence_policy.full_required(selection) if evidence_policy else selection['path'] == 'Full'
 
 
 def eligibility(root, sha, selection):
     """Return a reason to require Full when a stage lacks installed capability."""
-    if selection['path'] == 'Full':
+    if needs_full(selection):
         return None
     entry = git_bytes(root, 'show', sha + ':tools/review-ready-check.R')
     if EXEMPT_PROTOCOL not in entry.splitlines():
@@ -168,12 +199,12 @@ def eligibility(root, sha, selection):
         if actual != oid or kind != b'blob':
             raise RuntimeError('Unsupported capability object response.')
         end = boundary + 1 + int(size)
-        blobs[oid] = hashlib.sha256(result[boundary + 1:end]).hexdigest()
+        blobs[oid] = result[boundary + 1:end]
         if result[end:end + 1] != b'\n':
             raise RuntimeError('Incomplete capability object response.')
         offset = end + 1
     for name, digest in required.items():
-        if blobs[tree[name][2]] != digest:
+        if capability_digest(name, blobs[tree[name][2]]) != digest:
             return 'unsupported stage source capability: ' + name
     return None
 
@@ -225,6 +256,7 @@ CONTRACTS = [
                                 '.github/scripts/verify-codex-config.R']),
     (CHECKING, ['.github/scripts/verify-review-ready-check.R',
                 'tools/test-review-ready-admission.py', 'tools/test-review-ready-progress.R',
+                'tools/test-review-ready-evidence.py',
                 'tools/test-ci-artifacts.py', 'tools/verify-ci-artifacts.py',
                 'tools/test-review-ready-documentation.R', 'tools/test-review-ready-roxygen.R']),
     (r'\.github/.*', ['tools/verify-ci-artifacts.py']),
@@ -253,6 +285,8 @@ def select_path(root, sha):
     """
     selection = dict(submitted=sha, main=None, base=None, path='Full', reasons=[], verifiers=[])
     try:
+        if evidence_policy:
+            evidence_policy.comparison_inputs(root)
         selection['main'] = git(root, 'rev-parse', '--verify', 'refs/heads/main^{commit}')
         bases = git(root, 'merge-base', '--all', sha, selection['main']).splitlines()
         if len(bases) != 1 or not re.fullmatch('[0-9a-f]{40}', bases[0]):
@@ -266,6 +300,7 @@ def select_path(root, sha):
         if records.pop() != b'':
             raise ValueError('unterminated diff records')
         names = []
+        recognized = set()
         documentation = False
         roxygen = False
         reasons = []
@@ -283,12 +318,20 @@ def select_path(root, sha):
                 raise ValueError('missing diff path')
             paths = [path.decode('utf-8', errors='strict') for path in paths]
             names.extend(paths)
+            if (evidence_policy and paths == [evidence_policy.EXPECTATION] and
+                    status == b'M' and before == after == b'100644' and
+                    evidence_policy.recognize_expectation(
+                        git_bytes(root, 'cat-file', 'blob', old_blob.decode()),
+                        git_bytes(root, 'cat-file', 'blob', new_blob.decode()))):
+                recognized.add(paths[0])
             modes = {before, after} - {b'000000'}
             if modes != {b'100644'} or (before != after and status not in (b'A', b'D')):
                 reasons.append('unsupported file mode/type: ' + repr(paths))
             if status not in (b'A', b'M', b'D', b'R') or (status == b'R' and not score):
                 reasons.append('unsupported change status: ' + repr(paths))
             for name in paths:
+                if name in recognized:
+                    continue
                 documentation |= bool(re.fullmatch(DOCUMENTATION, name))
                 if (re.fullmatch(r'R/[^/]+\.R', name) and status == b'M' and
                         before == after == b'100644'):
@@ -313,8 +356,15 @@ def select_path(root, sha):
             index += 1 + count
         selection['verifiers'] = list(REFERENCE_CHECKS)
         for pattern, checks in ARTIFACTS + CONTRACTS:
-            if any(re.fullmatch(pattern, name) for name in names):
+            if any(re.fullmatch(pattern, name) for name in names if name not in recognized):
                 selection['verifiers'].extend(check for check in checks if check not in selection['verifiers'])
+        if recognized:
+            for check in ('tools/review-ready-followup-contract.R',
+                          '.github/scripts/verify-cran-preflight.R',
+                          '.github/scripts/verify-review-ready-check.R'):
+                if check not in selection['verifiers']:
+                    selection['verifiers'].append(check)
+            selection['expectation_followup'] = True
         entry = git_bytes(root, 'show', sha + ':tools/review-ready-check.R')
         if PROTOCOL not in entry.splitlines():
             selection['verifiers'] = []
@@ -327,6 +377,8 @@ def select_path(root, sha):
             reasons = ['R documentation eligibility pending supervised proof' if roxygen else
                        'all cumulative changes are supported documentation or repository artifacts'
                        if documentation else 'all cumulative changes are supported repository artifacts']
+        if evidence_policy:
+            evidence_policy.comparison_inputs(root)
         selection['reasons'] = reasons
     except (OSError, ValueError, subprocess.SubprocessError) as error:
         selection['reasons'] = ['comparison unavailable: ' + str(error)]
@@ -480,9 +532,10 @@ def read_record(path):
                 type(record['requires_proof']) is bool and
                 type(record['channel_owned']) is bool and
                 isinstance(record['selection'], dict) and
+                (not evidence_policy or evidence_policy.valid_plan(record['selection'])) and
                 record['selection']['submitted'] == record['sha'] and
                 record['selection']['path'] in ('Repository', 'Documentation', 'Full') and
-                (record['selection']['path'] == 'Full') == (record['capacity'] == 'Full') and
+                needs_full(record['selection']) == (record['capacity'] == 'Full') and
                 (not record['owned_capacity'] or
                  (record['may_own_full'] and record['capacity'] == 'Full')) and
                 (record['capacity'] != 'exempt' or not record['may_own_full']) and
@@ -490,7 +543,7 @@ def read_record(path):
                  record['owned_capacity']) and
                 record['workspace'] == str(path.parent / 'workspace') and
                 record['channel'] == '/tmp/marginplyr-review-' + record['id'] + '.sock')
-    except (KeyError, TypeError, ValueError):
+    except (KeyError, TypeError, ValueError, AttributeError):
         valid = False
     if not valid:
         raise RuntimeError('Invalid admission journal ownership metadata; recovery requires inspection.')
@@ -604,6 +657,7 @@ def recover_request(state, requested, boot):
         else:
             reason = 'from an earlier OS boot'
         if record['version'] == 2:
+            retain_outcome(state, path, record)
             clean_workspace(record)
             record.update(state='terminal', outcome='interrupted; recovered, no check evidence',
                           cleanup='confirmed', owned_capacity=False, finished=time.time())
@@ -716,7 +770,8 @@ def selection_transport(record):
     return ('Path: ' + selection['path'] + '\nCommit: ' + record['sha'] +
             '\nRequest: ' + record['token'] + '\nProtocol: 3\nCapacity: ' + record['capacity'] +
             '\nVerifiers: ' + ' '.join(selection['verifiers']) + '\nBase: ' +
-            (selection.get('base') or '') + '\n')
+            (selection.get('base') or '') + '\nReused: ' +
+            ' '.join(evidence_policy.reused_units(selection) if evidence_policy else []) + '\n')
 
 
 def serve_control(server, path, record, cancellation, parent):
@@ -749,7 +804,7 @@ def serve_control(server, path, record, cancellation, parent):
                     raise RuntimeError('The supervised worker has not begun the gate.')
                 if record['authorized']:
                     raise RuntimeError('Duplicate gate authorization.')
-                if record['selection']['path'] == 'Full' and not record['owned_capacity']:
+                if needs_full(record['selection']) and not record['owned_capacity']:
                     raise RuntimeError('Full execution requires owned capacity.')
                 digest = hashlib.sha256(selection_transport(record).encode()).hexdigest()
                 if message.get('transport') != digest:
@@ -781,6 +836,14 @@ def serve_control(server, path, record, cancellation, parent):
                 persist(path, record)
                 channel.sendall(b'{"ok": true, "promoting": true}\n')
                 return True
+            elif operation == 'discard-reuse':
+                if record.get('gate_started') or record['capacity'] != 'Full' or not record['owned_capacity']:
+                    raise RuntimeError('Reuse can be discarded only before validation under owned Full capacity.')
+                record['selection']['plan'] = dict(schema=1, snapshot=None,
+                    reasons=['Reuse invalidated before gate start; executing under owned Full capacity'],
+                    units={unit: dict(action='execute') for unit in evidence_policy.required_units(record['selection'])})
+                persist(path, record)
+                reply = dict(ok=True)
             else:
                 raise RuntimeError('Unsupported supervisor operation.')
             channel.sendall(json.dumps(reply).encode() + b'\n')
@@ -885,7 +948,33 @@ def supervise(path, record, server, cancellation, parent):
         raise
 
 
+def retain_outcome(state, path, record, status=None):
+    """Preserve stage outcomes before cleanup or recovery can remove their report."""
+    if status is not None:
+        record['gate_outcome'] = status
+        persist(path, record)
+    result = Path(record['workspace']) / 'worker-result.json'
+    worker = json.loads(result.read_text()) if result.exists() else {}
+    if 'gate_outcome' not in record:
+        record['gate_outcome'] = worker.get('status', CANCELLED)
+        persist(path, record)
+    if evidence_policy and record.get('evidence_supported'):
+        try:
+            evidence_policy.observe_outcome(state, path, record, worker, save)
+        except (ValueError, KeyError, TypeError) as error:
+            # Invalid older cache data cannot block cleanup of an executed gate.
+            # The durable outcome journal still fences unobserved failures.
+            record['observation_error'] = str(error)
+            persist(path, record)
+            say('Stage outcome observation unavailable for reuse: ' + str(error))
+    return worker
+
+
 def finish_request(state, path, record, status):
+    worker = retain_outcome(state, path, record, status)
+    if record.get('observation_error') and evidence_policy.reused_units(record['selection']):
+        status = 1
+        say('Reuse invalidated at outcome observation; invocation failed without fallback.')
     clean_workspace(record)
     record.update(state='terminal', outcome=status, cleanup='confirmed', finished=time.time())
     # Capacity stays owned until disposable-source cleanup is complete.
@@ -893,6 +982,21 @@ def finish_request(state, path, record, status):
     remove_full_mirror(state, record)
     record['owned_capacity'] = False
     save(path, record)
+    if evidence_policy and worker:
+        payload = evidence_policy.issue(state, record, worker)
+        if payload is not None:
+            try:
+                evidence_policy.append_evidence(state, path.with_name('evidence.json'), payload, save)
+                say('Retained structured stage evidence: ' + str(path.with_name('evidence.json')))
+            except (OSError, ValueError, KeyError, TypeError) as error:
+                say('Stage evidence issuance unavailable for reuse: ' + str(error))
+                if evidence_policy.reused_units(record['selection']):
+                    status = 1
+                    record['outcome'] = status
+                    save(path, record)
+                    say('Reuse invalidated at terminal issuance; invocation failed without fallback.')
+        else:
+            say('Stage evidence unavailable for reuse; terminal gate outcome is retained.')
     say('Review-ready terminal outcome: ' + str(status) + '; request: ' + record['id'] +
         '; checked commit: ' + record['sha'] + '; selected path: ' + record['selection']['path'] +
         '; capacity: ' + record['capacity'] + '; cleanup: confirmed; promotions: ' +
@@ -938,6 +1042,9 @@ def run_request(state, path, record, cancellation, parent):
                           worker_policy='Full suite: 4 test workers')
             record['selection']['path'] = 'Full'
             record['selection']['roxygen_pending'] = False
+            if evidence_policy and 'plan' in record['selection']:
+                record['selection']['plan'] = dict(schema=1, snapshot=None, reasons=['Full promotion'],
+                    units={unit: dict(action='execute') for unit in evidence_policy.required_units(record['selection'])})
             persist(path, record)
             shutil.rmtree(workspace / 'source', ignore_errors=False)
     except BaseException:
@@ -994,7 +1101,8 @@ def run_pinned(args):
     if selection.get('roxygen_pending'):
         result = Path(checkout).parent / 'roxygen-path'
         proof = subprocess.run(['Rscript', 'tools/review-ready-roxygen.R', selection['base'], sha, str(result)],
-                               cwd=checkout)
+                               cwd=checkout, env=evidence_policy.gate_environment(os.environ)
+                               if evidence_policy else None)
         if proof.returncode != 0 or not result.is_file():
             raise RuntimeError('R documentation eligibility failed; no Full fallback.')
         resolved = result.read_text()
@@ -1013,13 +1121,65 @@ def run_pinned(args):
         selection = record['selection']
         say('Review-ready resolved selection: ' + json.dumps(selection, ensure_ascii=True))
     transport = Path(checkout).parent / 'selection.dcf'
+    state = Path(path).parents[2]
+    repository_id = evidence_policy.repository(Path(root)) if evidence_policy and evidence_policy.reused_units(selection) else None
+    if evidence_policy and not evidence_policy.revalidate(Path(checkout), sha, selection, state, repository_id):
+        operation = 'discard-reuse' if record['capacity'] == 'Full' else 'promote'
+        reply = rpc_request(operation, 'stage evidence invalidated before gate start')
+        if not reply.get('ok'):
+            raise RuntimeError('Evidence eligibility promotion refused: ' + str(reply))
+        if operation == 'promote':
+            while True:
+                time.sleep(1)
+        record = read_record(Path(path))
+        selection = record['selection']
+        say('Review-ready resolved execution plan: ' + json.dumps(selection, ensure_ascii=True))
+    before = None
+    supported = evidence_policy and evidence_policy.PROTOCOL in git_bytes(
+        Path(checkout), 'show', sha + ':tools/review-ready-check.R').splitlines()
+    units = evidence_policy.required_units(selection) if supported else []
+    if supported and units:
+        try:
+            before = evidence_policy.snapshot(Path(checkout), sha, units)
+        except (OSError, ValueError, KeyError, subprocess.SubprocessError) as error:
+            say('Stage evidence identity unavailable: ' + str(error))
+        if evidence_policy.reused_units(selection) and before != selection['plan']['snapshot']:
+            raise RuntimeError('Evidence changed during pre-gate validation; no passing check evidence.')
+    elif supported:
+        before = dict(environment=dict(digest=None), sources={})
     transport.write_text(selection_transport(record))
     os.environ[SELECTION] = str(transport)
     reply = rpc_request('begin-gate')
     if not reply.get('ok'):
         raise RuntimeError('Supervised gate start refused: ' + str(reply))
     os.chdir(checkout)
-    os.execvpe('Rscript', ['Rscript', 'tools/review-ready-check.R'], os.environ)
+    report = Path(checkout).parent / 'stage-report.json'
+    report.unlink(missing_ok=True)
+    os.environ['MARGINPLYR_REVIEW_STAGE_REPORT'] = str(report)
+    status = subprocess.call(['Rscript', 'tools/review-ready-check.R'],
+                             env=evidence_policy.gate_environment(os.environ) if evidence_policy else None)
+    if supported:
+        after = before if not units else None
+        if units:
+            try:
+                after = evidence_policy.snapshot(Path(checkout), sha, units)
+            except (OSError, ValueError, KeyError, subprocess.SubprocessError) as error:
+                say('Final stage evidence identity unavailable: ' + str(error))
+        if evidence_policy.reused_units(selection) and (before != after or not
+                evidence_policy.revalidate(Path(checkout), sha, selection, state, repository_id)):
+            say('Reuse invalidated during validation; invocation failed without fallback.')
+            status = 1
+        if report.exists():
+            try:
+                result = dict(before=before, after=after, status=status,
+                              repository=evidence_policy.repository(Path(root)),
+                              report=json.loads(report.read_text()))
+                (Path(checkout).parent / 'worker-result.json').write_text(json.dumps(result))
+            except (OSError, ValueError, subprocess.SubprocessError) as error:
+                say('Reusable terminal report unavailable: ' + str(error))
+                if evidence_policy.reused_units(selection):
+                    status = 1
+    return status
 
 
 def main(args=None):
@@ -1081,11 +1241,16 @@ def main(args=None):
             return recover_request(state, options.recover or None, boot_identity())
         root, sha = identity()
         selection = select_path(root, sha)
+        if evidence_policy:
+            selection['plan'] = evidence_policy.plan(root, sha, selection, state)
         reason = eligibility(root, sha, selection)
         if reason:
             selection['path'] = 'Full'
             selection['roxygen_pending'] = False
             selection['reasons'].append(reason)
+            if evidence_policy:
+                selection['plan'] = dict(schema=1, snapshot=None, reasons=[reason], units={
+                    unit: dict(action='execute') for unit in evidence_policy.required_units(selection)})
         say('Review-ready selection: ' + json.dumps(selection, ensure_ascii=True))
         if not shutil.which('Rscript'):
             raise RuntimeError('Rscript is missing from PATH. Install the review prerequisites; no check was run.')
@@ -1097,19 +1262,26 @@ def main(args=None):
         directory.mkdir(parents=True, mode=0o700)
         manager_lock = lock_file(directory / 'manager.lock')
         path = directory / 'record.json'
+        try:
+            repository_id = evidence_policy.repository(root) if evidence_policy else None
+        except (OSError, subprocess.SubprocessError):
+            repository_id = None
         record = dict(version=2, protocol=SUPERVISION_PROTOCOL, id=request, token=uuid.uuid4().hex,
                       sha=sha, root=str(root), boot=boot, manager=evidence(table[os.getpid()]),
                       group=None, children=[], started=time.time(), selection=selection,
                       initial_selection=dict(selection),
-                      state='preparing', capacity='Full' if selection['path'] == 'Full' else 'exempt',
+                      state='preparing', capacity='Full' if needs_full(selection) else 'exempt',
                       may_own_full=False, owned_capacity=False, epoch=1, authorized=False,
                       gate_started=False,
                       promotions=[], workspace=str(directory / 'workspace'), cleanup='pending',
                       channel='/tmp/marginplyr-review-' + request + '.sock', channel_owned=False,
-                      worker_policy=('Full suite: 4 test workers' if selection['path'] == 'Full' else
+                      worker_policy=('Full suite: 4 test workers' if needs_full(selection) else
                                      'serial; registered parallel fixtures <=2'),
                       requires_proof=EXEMPT_PROTOCOL in git_bytes(
-                          root, 'show', sha + ':tools/review-ready-check.R').splitlines())
+                          root, 'show', sha + ':tools/review-ready-check.R').splitlines(),
+                      repository=repository_id,
+                      evidence_supported=bool(evidence_policy and evidence_policy.PROTOCOL in git_bytes(
+                          root, 'show', sha + ':tools/review-ready-check.R').splitlines()))
         save(path, record)
         say('Review-ready request: ' + request + '; management record: ' + str(path))
         return run_request(state, path, record, cancellation, parent)

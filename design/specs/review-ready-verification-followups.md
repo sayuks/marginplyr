@@ -3,7 +3,8 @@
 Design for [#1110](https://github.com/sayuks/marginplyr/issues/1110), under
 [ADR 0038](../adr/0038-reuse-unaffected-review-ready-stage-evidence.md).
 The maintainer accepted this specification on 2026-10-31.
-It does not authorize bypassing the current local gate.
+The implementation uses the common CLI and the operating guidance in
+[local checks](../agents/local-checks.md#reusing-unaffected-stages).
 
 ## Obligations and execution plan
 
@@ -46,6 +47,9 @@ startup profiles and environment files, relevant build configuration,
 environment variables, locale, timezone, and renderer identities. Package
 versions alone do not establish identity. Normalize invocation-specific
 paths/tokens only where a registered rule establishes their irrelevance.
+For registered execution IDs, use the same effective child environment for
+identity probes, documentation proof, the gate and all its descendants, as
+ADR 0038 specifies. Keep unknown values, configuration and supervisor transport.
 Undeclared external inputs prevent reuse. Capture content and change metadata
 before and after execution and around reuse validation. Preserve the
 cooperative environment boundary in the ADR; do not claim hermetic execution.

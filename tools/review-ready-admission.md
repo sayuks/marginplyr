@@ -14,6 +14,14 @@ and commands outside this boundary are unchanged. The accepted design is
 and [local checks](../design/agents/local-checks.md) owns the gate and its
 evidence.
 
+The cumulative selection and executed workload are separate under
+[ADR 0038](../design/adr/0038-reuse-unaffected-review-ready-stage-evidence.md).
+A Full obligation can reuse a compatible ancestor's actual build/check unit
+and run its remaining registered contracts under independent supervision.
+Every invocation still executes source checks and changed-artifact contracts.
+The stage plan lists executed, reused and omitted units and their origins; a
+limited execution with inherited Full evidence is not a new Full pass.
+
 ## Install and migrate
 
 Requirements: macOS or Linux, Python 3.9 or later, Git, POSIX `flock` support on
@@ -56,7 +64,9 @@ checkout to enable selection; source edits alone never update the standalone
 installed copy. The installer embeds hashes of the reviewed stage sources and
 their explicit dependencies; `STAGE_CONTRACTS` and `capability_patterns()` in
 `tools/review-ready-admission.py` own that registration. Refresh installation
-after changing a contract source. Current gates require supervised protocol 3
+after changing a contract source. The standalone installation embeds the
+evidence implementation and its protected expectation fingerprints as well.
+Current gates require supervised protocol 3
 transport with the pinned comparison base; older transports cannot replace CI
 artifact verification with Full. Verify the installed bytes with
 `python3 tools/install-review-ready.py --verify`, and verify real Full, Documentation and supported-artifact
@@ -83,6 +93,41 @@ and verifier registry is `PROSE`, `DOCUMENTATION`, `GENERATED_INPUTS`,
 `ARTIFACTS`, `CHECKING`, `REFERENCE_CHECKS`, and `CONTRACTS` in
 `tools/review-ready-admission.py`; [local checks](../design/agents/local-checks.md)
 owns the policy. There is no caller-selected path or unrestricted skip flag.
+
+`tools/review-ready-evidence.py` registers source/environment identities,
+protected expectation recognition and stage evidence. Before capacity selection,
+the CLI searches new-format records for compatible ancestor executions; it
+never changes the pinned comparison base. Identity probes run no verification
+stage. Missing or incompatible evidence schedules the required work. Old
+launchers, old logs and CI passes cannot issue this format.
+`EXECUTION_METADATA` registers Codex call/proxy-attribution IDs and Claude Code
+session/PID metadata by exact format. Unknown formats, other variables,
+Claude shell/environment-file settings and proxy configuration stay inputs.
+The same registered child environment is used for the identity probe,
+documentation proof and actual gate and descendants: known-format IDs are
+removed there, while manager environment and supervisor transport remain
+available. Both agents use this same command, user-wide capacity and evidence
+store. Their profile directories cannot partition admission. A probe without
+the versioned visible-name audit acknowledgement cannot establish reusable
+identities.
+
+The common supervisor writes a sealed `evidence.json` beside a request's
+terminal `record.json` only after confirming process and workspace cleanup.
+The private `evidence.key` binds integrity and provenance to the OS user state.
+`evidence-index.json` seals the complete issuance inventory and sequence;
+`evidence.lock` serializes that short write independently of Full admission.
+An authenticated `observation.json` retains attempted stage outcomes before
+cleanup, including when cleanup fails. Recovery preserves it and can complete
+its interrupted index write; observations never discharge an obligation.
+Unobserved authorized execution journals, including running journals after
+manager loss, fence reuse conservatively. Unavailable cache reads disable reuse;
+interrupted publication writes still require recovery. Stage
+observation order prevents delayed cleanup from hiding a later failure.
+Keep referenced origins and observations available. Missing,
+corrupt or incompatible records disable reuse; they never become omission.
+Before gate start the pinned worker revalidates the plan and can request the
+existing authenticated Full promotion. Invalidation after gate start fails
+without switching gates. The same request and handle own all these transitions.
 
 A later local main update does not affect the pinned comparison. Waiting
 lines show that SHA, elapsed wait, and the active commit/worktree when
@@ -220,6 +265,7 @@ retained at the printed path for inspection; remove them only after recovery.
 
 ```sh
 python3 tools/test-review-ready-admission.py
+python3 tools/test-review-ready-evidence.py
 Rscript tools/test-review-ready-roxygen.R
 Rscript .github/scripts/verify-review-ready-check.R
 python3 tools/test-ci-artifacts.py
@@ -231,6 +277,12 @@ rename sides, deletions, unsafe modes, missing/ambiguous bases, and pinned main,
 concurrent exempt execution with Full active or recovery-blocked, isolated
 records/cancellation/recovery, authenticated promotion and its waiting states,
 and unknown source capabilities that could hide complete-suite work.
+The evidence fixtures establish new-format baselines and exercise the #1107
+correction with real R verifiers, original/missing/incorrect dependency failures,
+mixed branches, repeated origins, incompatible/corrupt/missing evidence,
+Documentation boundaries, timestamp comparisons and cancellation under reuse.
+Their external package-check stand-in is explicitly a process fixture; it is
+not a real package Full pass. The implementation's own Full gate supplies that.
 Artifact fixtures exercise removed workflow wiring, changed conditions and
 environment, YAML syntax failures, missing actionlint, unsupported inputs, and
 CI script behavior. Workflow contracts preserve all parsed fields while
