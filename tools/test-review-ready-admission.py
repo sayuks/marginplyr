@@ -35,6 +35,12 @@ class Lifecycle(unittest.TestCase):
         shim = self.bin / 'Rscript'
         shim.write_text('#!' + sys.executable + '\n' + '''
 import fcntl, json, os, pathlib, socket, subprocess, sys, time
+if sys.argv[1:] == ['tools/review-ready-environment.R']:
+    configuration = [os.environ['FIXTURE_ENVIRONMENT_FILE']] if os.environ.get('FIXTURE_ENVIRONMENT_FILE') else []
+    print(json.dumps(dict(unregistered=[], libraries=[], runtime_roots=[], configuration=configuration, r='4.6.1',
+        clock=dict(r='4.6.1', checker='2efcaa5190c038e60834bd5c4e502c82',
+                   timeout='34ee7dea5eac7ba7138bd3c60651faee', leeway=300))))
+    sys.exit(0)
 if os.environ.get("MARGINPLYR_REVIEW_SUPERVISOR"):
     subprocess.run([sys.executable, os.environ["MARGINPLYR_REVIEW_SUPERVISOR"], "--gate-proof"], check=True)
 lock = open(os.environ["FIXTURE_LOCK"], "a+")
@@ -47,6 +53,28 @@ if child:
 time.sleep(float(os.environ.get("FIXTURE_SECONDS", "0.6")))
 if child: child.wait()
 print("DONE", flush=True)
+if os.environ.get('FIXTURE_EVIDENCE'):
+    record = json.loads(pathlib.Path(os.environ['MARGINPLYR_REVIEW_RECORD']).read_text())
+    selection = record['selection']
+    units = {unit: 'passed' for unit, entry in selection['plan']['units'].items() if entry['action'] == 'execute'}
+    if selection.get('expectation_followup'):
+        for script in ('tools/review-ready-followup-contract.R', '.github/scripts/verify-cran-preflight.R',
+                       '.github/scripts/verify-review-ready-check.R'):
+            subprocess.run([os.environ['FIXTURE_REAL_RSCRIPT'], script], check=True)
+    for unit, entry in selection['plan']['units'].items():
+        print(('EXECUTED ' if entry['action'] == 'execute' else 'REUSED ') + unit, flush=True)
+    notes = []
+    attempt = dict(status=0, timeout=False, errors=0, warnings=0, notes=notes)
+    arguments = ['--as-cran'] + (['--no-tests'] if selection['path'] == 'Documentation' else [])
+    report = dict(request=record['token'], units=units,
+        completed=['Package spelling', 'jarl', 'package-aware lintr', 'Test dependency syntax', 'Required test Suggests'] +
+                  ['Artifact verification: ' + stage for stage in selection['verifiers']],
+        omitted=[], timestamps=dict(observed=time.time(), paths={'DESCRIPTION': time.time()}),
+        check=dict(args=arguments, status=0, timeout=False, errors=0, warnings=0, notes=notes, attempts=[attempt]))
+    pathlib.Path(os.environ['MARGINPLYR_REVIEW_STAGE_REPORT']).write_text(json.dumps(report))
+    trigger = os.environ.get('FIXTURE_ENVIRONMENT_TRIGGER')
+    if trigger and pathlib.Path(trigger).exists():
+        pathlib.Path(os.environ['FIXTURE_ENVIRONMENT_FILE']).write_text('same version; changed installed bytes')
 sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
 ''')
         shim.chmod(0o755)
@@ -122,22 +150,25 @@ os.execv(real_git, [real_git] + sys.argv[1:])
                 os.kill(int(pidfile.read_text()), signal.SIGKILL)
             except ProcessLookupError:
                 pass
-        journal = self.home / '.local/state/marginplyr/review-ready/request.json'
-        if journal.exists():
-            record = json.loads(journal.read_text())
-            if record.get('group'):
-                try:
-                    os.killpg(record['group'], signal.SIGKILL)
-                except ProcessLookupError:
-                    pass
         requests = self.home / '.local/state/marginplyr/review-ready/requests'
+        module = importlib.machinery.SourceFileLoader('fixture_cleanup', str(SOURCE)).load_module()
         for path in requests.glob('*/record.json'):
             record = json.loads(path.read_text())
-            if record.get('group') and record.get('state') != 'terminal':
-                try:
-                    os.killpg(record['group'], signal.SIGKILL)
-                except ProcessLookupError:
-                    pass
+            # Fault fixtures may deliberately corrupt the group field. Only
+            # processes carrying this fixture's exact private marker are ours.
+            marker = module.MARKER + '=' + record['token']
+            for attempt in range(100):
+                table = module.processes()
+                owned = [pid for pid, proc in table.items() if marker in proc['command'].split()]
+                if not owned:
+                    break
+                for pid in owned:
+                    try:
+                        os.kill(pid, signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                time.sleep(0.02)
+            self.assertFalse(owned, 'fixture-owned processes must stop before disposable cleanup')
             Path(record['channel']).unlink(missing_ok=True)
         self.temp.cleanup()
 

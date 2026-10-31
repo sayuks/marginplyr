@@ -122,8 +122,9 @@ records the stage inputs, evidence validation, case matrix, and required
 regressions. This design has one implementation scope; its exclusions are
 not promises of subsequent implementation.
 
-This accepted design records the agreed contract, not an implemented
-exemption. [Local checks](../agents/local-checks.md) and
-[shared admission](../../tools/review-ready-admission.md) remain authoritative
-until this design is implemented. CI package checks and
+[Local checks](../agents/local-checks.md) and
+[shared admission](../../tools/review-ready-admission.md) own operation and
+migration of the implementation. The classifier and stage contracts live in
+`tools/review-ready-admission.py`; `tools/review-ready-evidence.py` registers
+inputs, protected follow-ups and evidence validation. CI package checks and
 coverage requirements are outside this change.
