@@ -1,6 +1,6 @@
 """Verify supported CI artifacts, refusing changes without a local contract.
 
-Workflow contracts preserve executable semantics. Comments and display names
+Workflow contracts preserve every parsed field. Comments and formatting
 can change independently; other changes require updating this protected checker
 or its contract with Full evidence. A package check cannot supply that evidence.
 """
@@ -37,15 +37,6 @@ def workflows(paths):
     return json.loads(run('Rscript', '-e', code, *paths))
 
 
-def executable_contract(workflow):
-    workflow.pop('name', None)
-    for job in workflow.get('jobs', {}).values():
-        job.pop('name', None)
-        for step in job.get('steps', []):
-            step.pop('name', None)
-    return workflow
-
-
 def verify():
     policy = registry()
     base = os.environ.get('MARGINPLYR_REVIEW_BASE')
@@ -79,13 +70,13 @@ def verify():
         raise ValueError('CI validation unresolved: install actionlint; package checking is no fallback.')
     print(run(actionlint, '-shellcheck=', '-pyflakes=', *paths), end='')
     print('Completed CI artifact verification: actionlint workflow syntax', flush=True)
-    actual = {path: executable_contract(value) for path, value in workflows(paths).items()}
+    actual = workflows(paths)
     expected = json.loads(Path('tools/ci-workflow-contracts.json').read_text())
     if actual != expected:
         different = sorted(path for path in set(actual) | set(expected)
                            if actual.get(path) != expected.get(path))
         raise ValueError('Workflow executable contract changed (conditions, environment, steps, '
-                         'triggers and setup are protected): ' + ', '.join(different) +
+                         'triggers, names and setup are protected): ' + ', '.join(different) +
                          '. Extend the contract and fixtures under Full; CI validation remains unresolved.')
     print('Completed CI artifact verification: workflow executable contracts', flush=True)
     print(run('Rscript', '.github/scripts/verify-verifier-invocation.R'), end='')

@@ -99,8 +99,9 @@ CI/configuration routes are deliberately narrow:
 | Codecov configuration | the existing coverage exclusion policy and its fixtures |
 | Codex and Claude configuration | existing network/Codex policy checks; CI artifact checks also reject invalid Claude JSON |
 
-Workflow support covers comments and display names while preserving executable
-semantics. `tools/ci-workflow-contracts.json` records those semantics: triggers,
+Workflow support covers comments and formatting while preserving every parsed
+field. Names are protected too because `github.workflow` contributes to the
+concurrency key. `tools/ci-workflow-contracts.json` records those semantics: triggers,
 job/step conditions, environment, setup, commands, dependency wiring, and all
 other executable fields must agree. A change outside that contract fails with
 CI validation unresolved. Extend the protected contract and command fixtures

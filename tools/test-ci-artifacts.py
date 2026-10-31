@@ -49,11 +49,15 @@ class Artifacts(unittest.TestCase):
     def workflow(self, name='lint.yaml'):
         return self.repo / '.github/workflows' / name
 
-    def test_comments_and_display_names_keep_the_executable_contract(self):
+    def test_comments_keep_the_executable_contract(self):
         path = self.workflow()
-        path.write_text(path.read_text().replace('name: lint.yaml', 'name: Source hygiene') +
-                        '\n# Artifact verification fixture\n')
+        path.write_text(path.read_text() + '\n# Artifact verification fixture\n')
         self.check()
+
+    def test_workflow_name_cannot_collide_with_package_check_concurrency(self):
+        path = self.workflow()
+        path.write_text(path.read_text().replace('name: lint.yaml', 'name: R-CMD-check.yaml'))
+        self.check(1, 'Workflow executable contract changed')
 
     def test_removed_wiring_conditions_environment_and_invalid_syntax_fail(self):
         path = self.workflow()

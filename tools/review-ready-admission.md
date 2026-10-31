@@ -171,8 +171,8 @@ The Python fixtures cover cumulative/final-tree selection, NUL-delimited names,
 rename sides, deletions, unsafe modes, missing/ambiguous bases, and pinned main.
 Artifact fixtures exercise removed workflow wiring, changed conditions and
 environment, YAML syntax failures, missing actionlint, unsupported inputs, and
-CI script behavior. Workflow contracts preserve all executable fields while
-allowing comments and display names to change. Local checks owns the supported
+CI script behavior. Workflow contracts preserve all parsed fields while
+allowing comments and formatting to change. Local checks owns the supported
 cases and prerequisites; a package-check result never fills missing CI
 verification. Site configuration routes render and verify output within the
 same admission slot.
