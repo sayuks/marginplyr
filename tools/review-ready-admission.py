@@ -33,6 +33,7 @@ STALE = 3
 BLOCKED = 4
 SELECTION = 'MARGINPLYR_REVIEW_SELECTION'
 PROTOCOL = b'# Review-ready selection protocol: 2'
+ROXYGEN_PROTOCOL = b'# Review-ready roxygen proof protocol: 1'
 SUPERVISION_PROTOCOL = 3
 EXEMPT_PROTOCOL = b'# Review-ready supervision protocol: 3'
 # The installer embeds fingerprints of the reviewed stage contracts. An older
@@ -45,7 +46,8 @@ CORE_SOURCES = (
     'tools/review-ready-progress.R', 'tools/review-ready-progress-reporter.R',
     'tools/dependency-requirements.R', 'tools/required-test-suggests.R',
     '.github/scripts/cran-note-policy.R',
-    'R/*.R', 'DESCRIPTION', 'NAMESPACE', '.Rbuildignore', 'jarl.toml', '.lintr*', '.Rprofile*',
+    'DESCRIPTION', 'NAMESPACE', '.Rbuildignore', 'jarl.toml', '.lintr*', '.Rprofile*',
+    'tools/review-ready-roxygen.R',
     'inst/suggests/guard.R',
 )
 DOCUMENTATION_SOURCES = (
@@ -67,6 +69,7 @@ STAGE_CONTRACTS = {
         'tools/review-ready-admission.py', 'tools/review-ready-check.R', 'tools/install-review-ready.py',
         '.github/scripts/verify-doc-references.R', '.github/scripts/ci-helpers.R')),
     'tools/test-review-ready-progress.R': ('parallel-fixture-2', CORE_SOURCES + ('tests/testthat.R',)),
+    'tools/test-review-ready-roxygen.R': ('serial', CORE_SOURCES),
     'tools/review-ready-generated.R': ('serial', ()),
     '.github/scripts/verify-cran-release.R': ('serial', (
         'tools/cran-release.R', 'tools/dependency-requirements.R')),
@@ -178,7 +181,8 @@ REFERENCE_CHECKS = ['.github/scripts/verify-doc-references.R',
 CONTRACTS = [
     (r'(tools/(?:review-ready[^/]*|test-review-ready[^/]*|install-review-ready\.py|dependency-requirements\.R|required-test-suggests\.R)|'
      r'\.github/scripts/verify-review-ready-check\.R|design/(?:agents/local-checks\.md|specs/review-ready[^/]*\.md))',
-     ['.github/scripts/verify-review-ready-check.R', 'tools/test-review-ready-documentation.R']),
+     ['.github/scripts/verify-review-ready-check.R', 'tools/test-review-ready-documentation.R',
+      'tools/test-review-ready-roxygen.R']),
     (r'tools/(?:review-ready[^/]*\.(?:py|R)|test-review-ready[^/]*|install-review-ready\.py)',
      ['tools/test-review-ready-admission.py', 'tools/test-review-ready-progress.R']),
     (GENERATED_INPUTS, ['tools/review-ready-generated.R']),
@@ -215,6 +219,7 @@ def select_path(root, sha):
             raise ValueError('unterminated diff records')
         names = []
         documentation = False
+        roxygen = False
         reasons = []
         index = 0
         while index < len(records):
@@ -237,6 +242,11 @@ def select_path(root, sha):
                 reasons.append('unsupported change status: ' + repr(paths))
             for name in paths:
                 documentation |= bool(re.fullmatch(DOCUMENTATION, name))
+                if (re.fullmatch(r'R/[^/]+\.R', name) and status == b'M' and
+                        before == after == b'100644'):
+                    roxygen = True
+                    documentation = True
+                    continue
                 if not (re.fullmatch(PROSE, name) or re.fullmatch(DOCUMENTATION, name)):
                     reasons.append('unsupported path: ' + repr(name))
             supported = all(re.fullmatch(PROSE, name) or re.fullmatch(DOCUMENTATION, name)
@@ -261,9 +271,13 @@ def select_path(root, sha):
         if PROTOCOL not in entry.splitlines():
             selection['verifiers'] = []
             reasons.append('submitted revision lacks selection protocol; existing Full gate')
+        if roxygen and ROXYGEN_PROTOCOL not in entry.splitlines():
+            reasons.append('submitted revision lacks R documentation eligibility protocol')
         if not reasons:
+            selection['roxygen_pending'] = roxygen
             selection['path'] = 'Documentation' if documentation else 'Repository'
-            reasons = ['all cumulative changes are supported documentation or repository prose'
+            reasons = ['R documentation eligibility pending supervised proof' if roxygen else
+                       'all cumulative changes are supported documentation or repository prose'
                        if documentation else 'all cumulative changes are supported repository prose']
         selection['reasons'] = reasons
     except (OSError, ValueError, subprocess.SubprocessError) as error:
@@ -668,6 +682,8 @@ def serve_control(server, path, record, cancellation, parent):
             if operation == 'begin-gate':
                 if record.get('gate_started'):
                     raise RuntimeError('Duplicate gate start.')
+                if record['selection'].get('roxygen_pending'):
+                    raise RuntimeError('R documentation eligibility is still pending.')
                 record['gate_started'] = True
                 persist(path, record)
                 reply = dict(ok=True)
@@ -684,6 +700,16 @@ def serve_control(server, path, record, cancellation, parent):
                 record['authorized'] = True
                 persist(path, record)
                 reply = dict(ok=True, path=record['selection']['path'], capacity=record['capacity'])
+            elif operation == 'resolve-documentation':
+                if record.get('gate_started') or not record['selection'].get('roxygen_pending'):
+                    raise RuntimeError('R documentation eligibility is not pending.')
+                result = Path(record['workspace']) / 'roxygen-path'
+                if result.read_text() != 'Documentation\n':
+                    raise RuntimeError('Invalid R documentation proof transport.')
+                record['selection']['roxygen_pending'] = False
+                record['selection']['reasons'].append('R documentation proof passed without evaluation')
+                persist(path, record)
+                reply = dict(ok=True)
             elif operation == 'promote':
                 if record['capacity'] != 'exempt':
                     raise RuntimeError('Promotion is only valid for running exempt work.')
@@ -854,6 +880,7 @@ def run_request(state, path, record, cancellation, parent):
                           gate_started=False,
                           worker_policy='Full suite: 4 test workers')
             record['selection']['path'] = 'Full'
+            record['selection']['roxygen_pending'] = False
             persist(path, record)
             shutil.rmtree(workspace / 'source', ignore_errors=False)
     except BaseException:
@@ -896,6 +923,8 @@ def run_pinned(args):
     subprocess.run(['git', 'clone', '--quiet', '--shared', '--no-checkout', root, checkout], check=True)
     subprocess.run(['git', '-C', checkout, 'checkout', '--quiet', '--detach', sha], check=True)
     selection = record['selection']
+    os.environ['TESTTHAT_PARALLEL'] = 'false'
+    os.environ['TESTTHAT_CPUS'] = '1'
     if record['capacity'] == 'exempt':
         reason = eligibility(Path(checkout), sha, selection)
         if reason:
@@ -905,11 +934,30 @@ def run_pinned(args):
             # The supervisor stops this epoch and all its children before waiting.
             while True:
                 time.sleep(1)
+    if selection.get('roxygen_pending'):
+        result = Path(checkout).parent / 'roxygen-path'
+        proof = subprocess.run(['Rscript', 'tools/review-ready-roxygen.R', selection['base'], sha, str(result)],
+                               cwd=checkout)
+        if proof.returncode != 0 or not result.is_file():
+            raise RuntimeError('R documentation eligibility failed; no Full fallback.')
+        resolved = result.read_text()
+        if resolved == 'Full\n':
+            reply = rpc_request('promote', 'R documentation proof requires Full')
+            if not reply.get('ok'):
+                raise RuntimeError('Supervised promotion refused: ' + str(reply))
+            while True:
+                time.sleep(1)
+        if resolved != 'Documentation\n':
+            raise RuntimeError('Invalid R documentation eligibility result; no Full fallback.')
+        reply = rpc_request('resolve-documentation')
+        if not reply.get('ok'):
+            raise RuntimeError('Supervised R documentation resolution refused: ' + str(reply))
+        record = read_record(Path(path))
+        selection = record['selection']
+        say('Review-ready resolved selection: ' + json.dumps(selection, ensure_ascii=True))
     transport = Path(checkout).parent / 'selection.dcf'
     transport.write_text(selection_transport(record))
     os.environ[SELECTION] = str(transport)
-    os.environ['TESTTHAT_PARALLEL'] = 'false'
-    os.environ['TESTTHAT_CPUS'] = '1'
     reply = rpc_request('begin-gate')
     if not reply.get('ok'):
         raise RuntimeError('Supervised gate start refused: ' + str(reply))
@@ -979,6 +1027,7 @@ def main(args=None):
         reason = eligibility(root, sha, selection)
         if reason:
             selection['path'] = 'Full'
+            selection['roxygen_pending'] = False
             selection['reasons'].append(reason)
         say('Review-ready selection: ' + json.dumps(selection, ensure_ascii=True))
         if not shutil.which('Rscript'):
