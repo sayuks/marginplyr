@@ -78,4 +78,3 @@ stopifnot(
   grepl("selector was read twice", conditionMessage(b$value), fixed = TRUE)
 )
 cat("A read-once binding succeeded ordinarily and failed in the Margin call.\n")
-
