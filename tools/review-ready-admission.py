@@ -936,7 +936,11 @@ def main(args=None):
                     records.append(dict(id=path.parent.name, state='recovery', error=error,
                                         capacity='unknown; Full protected', record=str(path)))
                 else:
-                    item = dict(record)
+                    fields = ('id', 'sha', 'root', 'boot', 'manager', 'group', 'workspace',
+                              'selection', 'state', 'capacity', 'owned_capacity', 'may_own_full',
+                              'worker_policy', 'promotions', 'cleanup')
+                    item = {key: record[key] for key in fields if key in record}
+                    item.update(record=str(path), recorded_children=len(record['children']))
                     if record['version'] == 1:
                         item.setdefault('id', 'legacy')
                         item.setdefault('state', 'running')
