@@ -1,0 +1,8 @@
+Tracing specified method for function "dbSendQuery" in package "namespace:DBI"
+[1] "dbSendQuery"
+Untracing specified method for function "dbSendQuery" in package "namespace:DBI"
+MIXED PREFLIGHT: 75 matrix cases; each had 5 controls/investigated calls.
+DuckDB: 0 control queries; 45 mixed queries.
+dtplyr: 75 masked leading-selection errors.
+Later predicate effects: 0
+Warnings: 0

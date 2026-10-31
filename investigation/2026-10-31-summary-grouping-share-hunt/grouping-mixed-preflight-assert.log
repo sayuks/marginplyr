@@ -1,0 +1,4 @@
+Error in run_reproduction() :
+  length(duck_mixed$queries) == 0L is not TRUE
+Calls: run_reproduction -> stopifnot
+Execution halted
