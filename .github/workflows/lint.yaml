@@ -90,16 +90,34 @@ jobs:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
 
       - uses: r-lib/actions/setup-r@v2
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::lintr, any::pkgload, any::spelling, local::., any::testthat
+          extra-packages: any::lintr, any::pkgload, any::spelling, local::., any::testthat, any::yaml, any::jsonlite
           needs: lint
 
       - name: Verify suite-coverage worker execution
         run: Rscript tools/test-suite-coverage-workers.R
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: '1.25.x'
+          cache: false
+
+      - name: Install workflow syntax checker
+        run: |
+          mkdir -p "$RUNNER_TEMP/actionlint"
+          GOBIN="$RUNNER_TEMP/actionlint" go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+          echo "$RUNNER_TEMP/actionlint" >> "$GITHUB_PATH"
+
+      - name: Verify CI artifacts and their command fixtures
+        run: |
+          python3 tools/verify-ci-artifacts.py
+          python3 tools/test-ci-artifacts.py
 
       # Jarl complements rather than replaces lintr. Package-specific rules
       # need R and installed packages, so this reuses the dependency environment

@@ -52,14 +52,17 @@ Config/Needs/preflight:
     spelling,
     urlchecker
 Config/Needs/review:
+    altdoc (>= 0.7.3),
     devtools,
-    roxygen2,
+    jsonlite,
     lintr,
     pkgload,
     R6,
     rcmdcheck,
+    roxygen2,
     spelling,
-    testthat
+    testthat,
+    yaml
 Config/Needs/release:
     attachment,
     devtools,

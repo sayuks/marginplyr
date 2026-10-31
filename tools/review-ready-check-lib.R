@@ -796,7 +796,7 @@ read_review_ready_selection <- function(
   }
   record <- read.dcf(path)
   required <- c(
-    "Path", "Commit", "Request", "Verifiers", "Protocol", "Capacity"
+    "Path", "Commit", "Request", "Verifiers", "Protocol", "Capacity", "Base"
   )
   if (nrow(record) != 1L || !all(required %in% colnames(record)) ||
         !record[[1L, "Path"]] %in% c("Full", "Repository", "Documentation") ||
@@ -813,6 +813,11 @@ read_review_ready_selection <- function(
         (is.na(verifiers) || !nzchar(verifiers))) {
     stop("Selected path requires mapped artifact verification.", call. = FALSE)
   }
+  if (is.na(record[[1L, "Base"]]) ||
+      !grepl("^[0-9a-f]{40}$", record[[1L, "Base"]])) {
+    stop("Invalid admitted comparison base; CI validation remains unresolved.",
+      call. = FALSE)
+  }
   authorization <- proof()
   if (!identical(authorization$path, record[[1L, "Path"]]) ||
         !identical(authorization$capacity, record[[1L, "Capacity"]]) ||
@@ -822,6 +827,7 @@ read_review_ready_selection <- function(
   }
   list(
     path = record[[1L, "Path"]], sha = record[[1L, "Commit"]],
+    base = record[[1L, "Base"]],
     verifiers = if (is.na(verifiers) || !nzchar(verifiers)) character() else
       strsplit(verifiers, " ", fixed = TRUE)[[1L]]
   )
@@ -840,7 +846,9 @@ run_review_ready_verifiers <- function(selection, identity, prerequisites, runne
       paste("Artifact verification:", path),
       list(
         command = command, args = path,
-        env = c("TESTTHAT_PARALLEL=false", "TESTTHAT_CPUS=1")
+        env = c("TESTTHAT_PARALLEL=false", "TESTTHAT_CPUS=1", paste0(
+          "MARGINPLYR_REVIEW_BASE=", if (is.null(selection$base)) "" else selection$base
+        ))
       ),
       identity$root, runner = runner
     )

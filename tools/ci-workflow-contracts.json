@@ -1,0 +1,1182 @@
+{
+  ".github/workflows/R-CMD-check.yaml": {
+    "on": {
+      "push": {
+        "branches": [
+          "main",
+          "master"
+        ]
+      },
+      "pull_request": null
+    },
+    "name": "R-CMD-check.yaml",
+    "permissions": {
+      "contents": "read"
+    },
+    "concurrency": {
+      "group": "${{ github.workflow }}-${{ github.ref }}",
+      "cancel-in-progress": "true"
+    },
+    "jobs": {
+      "R-CMD-check": {
+        "runs-on": "${{ matrix.config.os }}",
+        "timeout-minutes": "60",
+        "name": "${{ matrix.config.os }} (${{ matrix.config.r }})",
+        "strategy": {
+          "fail-fast": "false",
+          "matrix": {
+            "config": [
+              {
+                "os": "macos-latest",
+                "r": "release"
+              },
+              {
+                "os": "windows-latest",
+                "r": "release"
+              },
+              {
+                "os": "ubuntu-latest",
+                "r": "devel",
+                "http-user-agent": "release"
+              },
+              {
+                "os": "ubuntu-latest",
+                "r": "release",
+                "no_build_vignettes": "true"
+              },
+              {
+                "os": "ubuntu-latest",
+                "r": "oldrel-1"
+              }
+            ]
+          }
+        },
+        "env": {
+          "GITHUB_PAT": "${{ secrets.GITHUB_TOKEN }}",
+          "R_KEEP_PKG_SOURCE": "yes",
+          "TESTTHAT_PARALLEL": "true",
+          "TESTTHAT_CPUS": "4"
+        },
+        "steps": [
+          {
+            "uses": "actions/checkout@v7"
+          },
+          {
+            "uses": "quarto-dev/quarto-actions/setup@v2"
+          },
+          {
+            "uses": "r-lib/actions/setup-r@v2",
+            "with": {
+              "r-version": "${{ matrix.config.r }}",
+              "http-user-agent": "${{ matrix.config.http-user-agent }}"
+            }
+          },
+          {
+            "name": "Preinstall Zstandard-compressed macOS dependencies",
+            "if": "runner.os == 'macOS'",
+            "run": "install.packages(\n  c(\"knitr\", \"xfun\"),\n  dependencies = NA,\n  type = \"binary\"\n)\n",
+            "shell": "Rscript {0}"
+          },
+          {
+            "name": "Install P3M binary dependencies for R-devel",
+            "if": "matrix.config.r == 'devel'",
+            "run": "user_agent <- getOption(\"HTTPUserAgent\")\nmatch <- regexec(\"R [(]([0-9]+[.][0-9]+)[.]\", user_agent)\nrelease <- regmatches(user_agent, match)[[1]][2]\nif (is.na(release) || !grepl(\"^[0-9]+[.][0-9]+$\", release)) {\n  stop(\"Could not derive the release R series from: \", user_agent)\n}\n# setup-r selects the P3M repository for the runner's Linux\n# distribution and architecture (for example noble or resolute).\np3m <- Sys.getenv(\"RSPM\")\np3m_prefix <- \"https://packagemanager.posit.co/cran/__linux__/\"\nif (!nzchar(p3m) || !startsWith(p3m, p3m_prefix)) {\n  stop(\"setup-r did not configure a supported P3M repository: \", p3m)\n}\nvariables <- c(\n  PKG_R_VERSIONS = release,\n  PKG_CRAN_MIRROR = p3m,\n  RENV_CONFIG_REPOS_OVERRIDE = p3m\n)\nwrite(\n  paste(names(variables), variables, sep = \"=\"),\n  file = Sys.getenv(\"GITHUB_ENV\"),\n  append = TRUE\n)\nmessage(\"Using P3M binary repository: \", p3m)\n\ndescription <- read.dcf(\"DESCRIPTION\")\nfields <- intersect(\n  c(\"Depends\", \"Imports\", \"Suggests\", \"LinkingTo\"),\n  colnames(description)\n)\nreferences <- unlist(strsplit(\n  paste(description[1, fields], collapse = \",\"),\n  \",\",\n  fixed = TRUE\n))\ndependencies <- trimws(sub(\" *[(].*[)] *$\", \"\", references))\nbundled <- rownames(installed.packages(\n  priority = c(\"base\", \"recommended\")\n))\ndependencies <- sort(unique(setdiff(\n  c(dependencies, \"rcmdcheck\"),\n  c(\"\", \"R\", bundled)\n)))\nmessage(\"Installing P3M binaries: \", paste(dependencies, collapse = \", \"))\ninstall.packages(dependencies, repos = p3m, dependencies = NA)\n\n# When a binary is unavailable P3M serves source instead, silently\n# and without an error, so a successful install proves nothing on\n# its own. `Built` is the only field that separates a served release\n# binary from a source build that happened to compile.\npackages <- c(\"arrow\", \"duckdb\")\nbuilt <- vapply(\n  packages,\n  packageDescription,\n  FUN.VALUE = character(1),\n  fields = \"Built\"\n)\nprint(data.frame(package = packages, built = unname(built)))\nexpected <- paste0(\"R \", release, \".\")\nif (!all(startsWith(built, expected))) {\n  stop(\"P3M did not serve release binaries for Arrow and DuckDB\")\n}\n",
+            "shell": "Rscript {0}"
+          },
+          {
+            "name": "Install full dependencies",
+            "uses": "r-lib/actions/setup-r-dependencies@v2",
+            "with": {
+              "install-pandoc": "false",
+              "extra-packages": "any::rcmdcheck, local::. ${{ runner.os == 'Windows' && ', any::tzdb' || '' }}",
+              "needs": "check",
+              "cache-version": "full-1"
+            }
+          },
+          {
+            "name": "Provision and check Windows Arrow timezone data",
+            "if": "runner.os == 'Windows'",
+            "run": "Rscript .github/scripts/provision-windows-arrow-timezone.R"
+          },
+          {
+            "name": "Verify P3M binary backends on R-devel",
+            "if": "matrix.config.r == 'devel'",
+            "run": "packages <- c(\"arrow\", \"duckdb\")\nbuilt <- vapply(\n  packages,\n  packageDescription,\n  FUN.VALUE = character(1),\n  fields = \"Built\"\n)\nprint(data.frame(package = packages, built = unname(built)))\nexpected <- paste0(\"R \", Sys.getenv(\"PKG_R_VERSIONS\"), \".\")\nif (!all(startsWith(built, expected))) {\n  stop(\"Arrow and DuckDB were not installed from P3M release binaries\")\n}\n",
+            "shell": "Rscript {0}"
+          },
+          {
+            "name": "Load the P3M binary backends on R-devel",
+            "if": "matrix.config.r == 'devel'",
+            "run": "# The internals-UUID comparison lives in `loadNamespace()`, not in\n# `library()`, so every load path trips it; `library()` is simply\n# the shortest one to write.\nlibrary(arrow)\nlibrary(duckdb)\nmessage(\"Loaded arrow and duckdb under \", R.version.string)\n",
+            "shell": "Rscript {0}"
+          },
+          {
+            "name": "Check package",
+            "uses": "r-lib/actions/check-r-package@v2",
+            "with": {
+              "args": "c(\"--no-manual\", \"--as-cran\", ${{ matrix.config.no_build_vignettes && '\"--no-build-vignettes\"' || 'NULL' }})",
+              "build_args": "c(\"--no-manual\",\"--compact-vignettes=gs+qpdf\")",
+              "upload-results": "true"
+            }
+          },
+          {
+            "name": "Summarize the check log",
+            "if": "always()",
+            "run": "Rscript .github/scripts/summarize-check-log.R",
+            "env": {
+              "MARGINPLYR_CHECK_LABEL": "${{ matrix.config.os }} (${{ matrix.config.r }})"
+            }
+          }
+        ]
+      }
+    }
+  },
+  ".github/workflows/altdoc.yaml": {
+    "on": {
+      "push": {
+        "branches": [
+          "main"
+        ]
+      },
+      "pull_request": {
+        "branches": [
+          "main"
+        ]
+      },
+      "workflow_dispatch": null
+    },
+    "name": "altdoc",
+    "permissions": {
+      "contents": "read",
+      "pages": "read"
+    },
+    "jobs": {
+      "altdoc": {
+        "runs-on": "ubuntu-latest",
+        "timeout-minutes": "60",
+        "concurrency": {
+          "group": "altdoc-build-${{ github.ref }}",
+          "cancel-in-progress": "true"
+        },
+        "env": {
+          "GITHUB_PAT": "${{ secrets.GITHUB_TOKEN }}"
+        },
+        "steps": [
+          {
+            "uses": "actions/checkout@v7"
+          },
+          {
+            "uses": "r-lib/actions/setup-r@v2",
+            "with": {
+              "use-public-rspm": "true"
+            }
+          },
+          {
+            "uses": "quarto-dev/quarto-actions/setup@v2"
+          },
+          {
+            "uses": "r-lib/actions/setup-r-dependencies@v2",
+            "with": {
+              "install-pandoc": "false",
+              "extra-packages": "local::.",
+              "needs": "website"
+            }
+          },
+          {
+            "name": "Build site",
+            "run": "altdoc::render_docs(parallel = FALSE, freeze = FALSE)\n",
+            "shell": "Rscript {0}"
+          },
+          {
+            "name": "Verify site output",
+            "run": "Rscript .github/scripts/verify-site.R"
+          },
+          {
+            "name": "Configure GitHub Pages",
+            "if": "github.ref == 'refs/heads/main'",
+            "uses": "actions/configure-pages@v6"
+          },
+          {
+            "name": "Upload GitHub Pages artifact",
+            "if": "github.ref == 'refs/heads/main'",
+            "uses": "actions/upload-pages-artifact@v5",
+            "with": {
+              "path": "docs",
+              "include-hidden-files": "true"
+            }
+          }
+        ]
+      },
+      "deploy": {
+        "name": "Deploy GitHub Pages",
+        "if": "github.ref == 'refs/heads/main'",
+        "needs": "altdoc",
+        "runs-on": "ubuntu-latest",
+        "timeout-minutes": "10",
+        "concurrency": {
+          "group": "pages",
+          "cancel-in-progress": "false"
+        },
+        "permissions": {
+          "pages": "write",
+          "id-token": "write"
+        },
+        "environment": {
+          "name": "github-pages",
+          "url": "${{ steps.deployment.outputs.page_url }}"
+        },
+        "steps": [
+          {
+            "name": "Deploy GitHub Pages",
+            "id": "deployment",
+            "uses": "actions/deploy-pages@v5"
+          }
+        ]
+      }
+    }
+  },
+  ".github/workflows/document.yaml": {
+    "on": {
+      "push": {
+        "branches": [
+          "main",
+          "master"
+        ]
+      },
+      "pull_request": null
+    },
+    "name": "document.yaml",
+    "permissions": {
+      "contents": "read"
+    },
+    "concurrency": {
+      "group": "${{ github.workflow }}-${{ github.ref }}",
+      "cancel-in-progress": "true"
+    },
+    "jobs": {
+      "document": {
+        "runs-on": "ubuntu-latest",
+        "timeout-minutes": "60",
+        "env": {
+          "GITHUB_PAT": "${{ secrets.GITHUB_TOKEN }}"
+        },
+        "steps": [
+          {
+            "uses": "actions/checkout@v7"
+          },
+          {
+            "uses": "quarto-dev/quarto-actions/setup@v2"
+          },
+          {
+            "uses": "r-lib/actions/setup-r@v2",
+            "with": {
+              "use-public-rspm": "true"
+            }
+          },
+          {
+            "uses": "r-lib/actions/setup-r-dependencies@v2",
+            "with": {
+              "extra-packages": "any::roxygen2, any::devtools, local::.",
+              "install-pandoc": "false"
+            }
+          },
+          {
+            "name": "Record README renderer versions",
+            "run": "quarto_version=$(quarto --version)\npandoc_version=$(quarto pandoc --version | head -n 1)\necho \"Quarto ${quarto_version}\"\necho \"${pandoc_version}\"\necho \"README_QUARTO_VERSION=${quarto_version}\" >> \"$GITHUB_ENV\"\necho \"README_PANDOC_VERSION=${pandoc_version}\" >> \"$GITHUB_ENV\"\n{\n  echo '### README renderer'\n  echo \"- Quarto: \\`${quarto_version}\\`\"\n  echo \"- Bundled Pandoc: \\`${pandoc_version}\\`\"\n} >> \"$GITHUB_STEP_SUMMARY\"\n"
+          },
+          {
+            "name": "Regenerate documentation",
+            "run": "roxygen2::roxygenise()",
+            "shell": "Rscript {0}"
+          },
+          {
+            "name": "Regenerate README.md",
+            "run": "devtools::build_readme(quiet = TRUE)",
+            "shell": "Rscript {0}"
+          },
+          {
+            "name": "Check man/ and NAMESPACE are up to date",
+            "run": "git diff --exit-code man/ NAMESPACE"
+          },
+          {
+            "name": "Check README.md is up to date",
+            "run": "if git diff --exit-code README.md; then\n  exit 0\nfi\necho \"::error::README.md is not what README.qmd renders with latest stable Quarto ${README_QUARTO_VERSION} and its bundled ${README_PANDOC_VERSION}. This can mean README.md is stale, or that a newer Quarto changed its bundled Pandoc or Markdown writer output. Run devtools::build_readme() with the current stable Quarto and commit README.md.\"\nexit 1"
+          }
+        ]
+      }
+    }
+  },
+  ".github/workflows/lint.yaml": {
+    "on": {
+      "push": {
+        "branches": [
+          "main",
+          "master"
+        ]
+      },
+      "pull_request": null
+    },
+    "name": "lint.yaml",
+    "permissions": {
+      "contents": "read"
+    },
+    "concurrency": {
+      "group": "${{ github.workflow }}-${{ github.ref }}",
+      "cancel-in-progress": "true"
+    },
+    "jobs": {
+      "context-budget": {
+        "runs-on": "ubuntu-latest",
+        "timeout-minutes": "30",
+        "steps": [
+          {
+            "uses": "actions/checkout@v7"
+          },
+          {
+            "uses": "r-lib/actions/setup-r@v2"
+          },
+          {
+            "name": "Verify the always-loaded context is within its baseline",
+            "run": "Rscript .github/scripts/verify-context-budget.R"
+          }
+        ]
+      },
+      "doc-references": {
+        "runs-on": "ubuntu-latest",
+        "timeout-minutes": "30",
+        "steps": [
+          {
+            "uses": "actions/checkout@v7"
+          },
+          {
+            "uses": "r-lib/actions/setup-r@v2"
+          },
+          {
+            "name": "Verify every path a maintained document names exists",
+            "run": "Rscript .github/scripts/verify-doc-references.R"
+          }
+        ]
+      },
+      "codex-config": {
+        "runs-on": "ubuntu-latest",
+        "timeout-minutes": "30",
+        "steps": [
+          {
+            "uses": "actions/checkout@v7"
+          },
+          {
+            "uses": "r-lib/actions/setup-r@v2"
+          },
+          {
+            "name": "Verify the project-scoped Codex configuration",
+            "run": "Rscript .github/scripts/verify-codex-config.R"
+          }
+        ]
+      },
+      "release-contract": {
+        "runs-on": "ubuntu-latest",
+        "timeout-minutes": "30",
+        "steps": [
+          {
+            "uses": "actions/checkout@v7"
+          },
+          {
+            "uses": "r-lib/actions/setup-r@v2"
+          },
+          {
+            "name": "Verify the agent sandbox network policy",
+            "run": "Rscript .github/scripts/verify-agent-network-policy.R"
+          },
+          {
+            "name": "Verify the local CRAN preflight contract",
+            "run": "Rscript .github/scripts/verify-cran-preflight.R"
+          },
+          {
+            "name": "Verify the CRAN release helper contract",
+            "run": "Rscript .github/scripts/verify-cran-release.R"
+          },
+          {
+            "name": "Verify the review-ready check contract",
+            "run": "Rscript .github/scripts/verify-review-ready-check.R"
+          }
+        ]
+      },
+      "lint": {
+        "runs-on": "ubuntu-latest",
+        "timeout-minutes": "60",
+        "env": {
+          "GITHUB_PAT": "${{ secrets.GITHUB_TOKEN }}"
+        },
+        "steps": [
+          {
+            "uses": "actions/checkout@v7",
+            "with": {
+              "fetch-depth": "0"
+            }
+          },
+          {
+            "uses": "r-lib/actions/setup-r@v2"
+          },
+          {
+            "uses": "r-lib/actions/setup-r-dependencies@v2",
+            "with": {
+              "extra-packages": "any::lintr, any::pkgload, any::spelling, local::., any::testthat, any::yaml, any::jsonlite",
+              "needs": "lint"
+            }
+          },
+          {
+            "name": "Verify suite-coverage worker execution",
+            "run": "Rscript tools/test-suite-coverage-workers.R"
+          },
+          {
+            "uses": "actions/setup-go@v6",
+            "with": {
+              "go-version": "1.25.x",
+              "cache": "false"
+            }
+          },
+          {
+            "name": "Install workflow syntax checker",
+            "run": "mkdir -p \"$RUNNER_TEMP/actionlint\"\nGOBIN=\"$RUNNER_TEMP/actionlint\" go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12\necho \"$RUNNER_TEMP/actionlint\" >> \"$GITHUB_PATH\"\n"
+          },
+          {
+            "name": "Verify CI artifacts and their command fixtures",
+            "run": "python3 tools/verify-ci-artifacts.py\npython3 tools/test-ci-artifacts.py\n"
+          },
+          {
+            "uses": "etiennebacher/setup-jarl@v0.1.1",
+            "with": {
+              "version": "0.6.0"
+            }
+          },
+          {
+            "name": "Spell-check package",
+            "run": "findings <- spelling::spell_check_package('.', vignettes = TRUE, use_wordlist = TRUE)\nif (nrow(findings)) { print(findings); stop('Package spelling found unknown words.', call. = FALSE) }\n",
+            "shell": "Rscript {0}"
+          },
+          {
+            "name": "Lint",
+            "run": "pkgload::load_all(\".\", quiet = TRUE)\nlintr::lint_package()\n",
+            "shell": "Rscript {0}",
+            "env": {
+              "LINTR_ERROR_ON_LINT": "true"
+            }
+          }
+        ]
+      }
+    }
+  },
+  ".github/workflows/postgres-transactions.yaml": {
+    "name": "PostgreSQL share transactions",
+    "on": {
+      "pull_request": null,
+      "push": {
+        "branches": [
+          "main"
+        ]
+      },
+      "workflow_dispatch": null
+    },
+    "permissions": {
+      "contents": "read"
+    },
+    "jobs": {
+      "transactions": {
+        "runs-on": "ubuntu-latest",
+        "timeout-minutes": "60",
+        "services": {
+          "postgres": {
+            "image": "postgres:17",
+            "env": {
+              "POSTGRES_USER": "margin774",
+              "POSTGRES_PASSWORD": "margin774",
+              "POSTGRES_DB": "margin774"
+            },
+            "ports": [
+              "5432:5432"
+            ],
+            "options": "--health-cmd \"pg_isready -U margin774\" --health-interval 5s --health-timeout 5s --health-retries 12"
+          }
+        },
+        "env": {
+          "PGHOST": "localhost",
+          "PGPORT": "5432",
+          "PGUSER": "margin774",
+          "PGPASSWORD": "margin774",
+          "PGDATABASE": "margin774"
+        },
+        "steps": [
+          {
+            "uses": "actions/checkout@v7"
+          },
+          {
+            "uses": "r-lib/actions/setup-r@v2"
+          },
+          {
+            "uses": "r-lib/actions/setup-r-dependencies@v2",
+            "with": {
+              "dependencies": "\"hard\"",
+              "extra-packages": "any::RPostgres, any::testthat, local::.",
+              "cache-version": "postgres-transactions-1"
+            }
+          },
+          {
+            "name": "Verify public transaction preservation in fresh processes",
+            "run": "Rscript tools/postgres-share-transactions.R postgres-evidence"
+          },
+          {
+            "name": "Verify fixed keys named like tidy-evaluation pronouns",
+            "run": "Rscript tools/postgres-share-fixed-keys.R"
+          },
+          {
+            "name": "Verify typed missing dimensions and private Parent keys",
+            "run": "Rscript tools/postgres-typed-missing.R"
+          },
+          {
+            "name": "Verify observed label checks on pronoun dimensions",
+            "run": "Rscript tools/postgres-env-label-collision.R"
+          },
+          {
+            "name": "Verify selected inputs stay inside expansion branches",
+            "run": "Rscript tools/postgres-expansion-input.R"
+          },
+          {
+            "uses": "actions/upload-artifact@v7",
+            "if": "always()",
+            "with": {
+              "name": "postgres-transaction-evidence",
+              "path": "postgres-evidence/",
+              "retention-days": "7"
+            }
+          }
+        ]
+      }
+    }
+  },
+  ".github/workflows/release-matrix.yaml": {
+    "on": {
+      "push": {
+        "branches": [
+          "main",
+          "master"
+        ]
+      },
+      "pull_request": null,
+      "workflow_dispatch": null
+    },
+    "name": "release-matrix.yaml",
+    "permissions": {
+      "contents": "read"
+    },
+    "concurrency": {
+      "group": "${{ github.workflow }}-${{ github.ref }}",
+      "cancel-in-progress": "true"
+    },
+    "env": {
+      "GITHUB_PAT": "${{ secrets.GITHUB_TOKEN }}",
+      "MARGINPLYR_STRICT_RELEASE": "${{ github.event_name == 'workflow_dispatch' }}",
+      "_R_CHECK_CRAN_INCOMING_REMOTE_": "false"
+    },
+    "jobs": {
+      "structure": {
+        "name": "Suite coverage by construction",
+        "runs-on": "ubuntu-latest",
+        "timeout-minutes": "90",
+        "steps": [
+          {
+            "uses": "actions/checkout@v7"
+          },
+          {
+            "uses": "r-lib/actions/setup-r@v2",
+            "with": {
+              "use-public-rspm": "true"
+            }
+          },
+          {
+            "uses": "r-lib/actions/setup-r-dependencies@v2",
+            "with": {
+              "extra-packages": "local::.",
+              "needs": "check",
+              "cache-version": "full-1"
+            }
+          },
+          {
+            "name": "Verify every test executes in some backend configuration",
+            "run": "Rscript .github/scripts/verify-suite-coverage.R"
+          }
+        ]
+      },
+      "backend-matrix": {
+        "name": "Generate the backend matrix",
+        "runs-on": "ubuntu-latest",
+        "timeout-minutes": "30",
+        "outputs": {
+          "backend": "${{ steps.generate.outputs.backend }}"
+        },
+        "steps": [
+          {
+            "uses": "actions/checkout@v7"
+          },
+          {
+            "uses": "r-lib/actions/setup-r@v2",
+            "with": {
+              "use-public-rspm": "true"
+            }
+          },
+          {
+            "name": "Install the JSON serializer",
+            "run": "install.packages(\"jsonlite\")",
+            "shell": "Rscript {0}"
+          },
+          {
+            "name": "Generate the backend matrix",
+            "id": "generate",
+            "timeout-minutes": "2",
+            "run": "Rscript .github/scripts/generate-backend-matrix.R"
+          }
+        ]
+      },
+      "build": {
+        "name": "Build source tarball",
+        "runs-on": "ubuntu-latest",
+        "timeout-minutes": "60",
+        "steps": [
+          {
+            "uses": "actions/checkout@v7"
+          },
+          {
+            "uses": "quarto-dev/quarto-actions/setup@v2"
+          },
+          {
+            "uses": "r-lib/actions/setup-r@v2",
+            "with": {
+              "use-public-rspm": "true"
+            }
+          },
+          {
+            "uses": "r-lib/actions/setup-r-dependencies@v2",
+            "with": {
+              "install-pandoc": "false",
+              "extra-packages": "local::.",
+              "needs": "check",
+              "cache-version": "full-1"
+            }
+          },
+          {
+            "name": "Verify local worktrees stay out of source packages",
+            "run": "Rscript .github/scripts/verify-build-exclusions.R"
+          },
+          {
+            "name": "Build source tarball",
+            "run": "mkdir tarball\nR CMD build .\nmv marginplyr_*.tar.gz tarball/\n"
+          },
+          {
+            "name": "Record the tarball contents",
+            "run": "tarball=$(ls tarball/marginplyr_*.tar.gz)\necho \"## Source tarball\" >> \"$GITHUB_STEP_SUMMARY\"\necho '```' >> \"$GITHUB_STEP_SUMMARY\"\nls -l \"$tarball\" >> \"$GITHUB_STEP_SUMMARY\"\ntar -tzf \"$tarball\" >> \"$GITHUB_STEP_SUMMARY\"\necho '```' >> \"$GITHUB_STEP_SUMMARY\"\n"
+          },
+          {
+            "uses": "actions/upload-artifact@v7",
+            "with": {
+              "name": "source-tarball",
+              "path": "tarball/marginplyr_*.tar.gz",
+              "retention-days": "7",
+              "if-no-files-found": "error"
+            }
+          }
+        ]
+      },
+      "checktor": {
+        "name": "CRAN preflight (checktor)",
+        "if": "github.event_name == 'workflow_dispatch'",
+        "needs": "build",
+        "runs-on": "ubuntu-latest",
+        "timeout-minutes": "60",
+        "steps": [
+          {
+            "uses": "actions/checkout@v7"
+          },
+          {
+            "uses": "r-lib/actions/setup-r@v2",
+            "with": {
+              "use-public-rspm": "true"
+            }
+          },
+          {
+            "uses": "r-lib/actions/setup-r-dependencies@v2",
+            "with": {
+              "dependencies": "\"hard\"",
+              "extra-packages": "any::checktor",
+              "cache-version": "checktor-1"
+            }
+          },
+          {
+            "uses": "actions/download-artifact@v8",
+            "with": {
+              "name": "source-tarball",
+              "path": "tarball"
+            }
+          },
+          {
+            "name": "Run extra CRAN preflight checks",
+            "run": "Rscript .github/scripts/check-cran-readiness.R tarball/marginplyr_*.tar.gz checktor-report/report.md"
+          },
+          {
+            "name": "Add the checktor report to the run summary",
+            "if": "always()",
+            "run": "cat checktor-report/report.md >> \"$GITHUB_STEP_SUMMARY\""
+          },
+          {
+            "uses": "actions/upload-artifact@v7",
+            "if": "always()",
+            "with": {
+              "name": "checktor-report",
+              "path": "checktor-report/report.md",
+              "retention-days": "7",
+              "if-no-files-found": "error"
+            }
+          }
+        ]
+      },
+      "depends-only": {
+        "name": "Minimal dependencies (depends-only)",
+        "needs": "build",
+        "runs-on": "ubuntu-latest",
+        "timeout-minutes": "45",
+        "env": {
+          "_R_CHECK_DEPENDS_ONLY_": "true",
+          "_R_CHECK_FORCE_SUGGESTS_": "false",
+          "MARGINPLYR_CHECK_LABEL": "Minimal dependencies (depends-only)"
+        },
+        "steps": [
+          {
+            "uses": "actions/checkout@v7"
+          },
+          {
+            "uses": "quarto-dev/quarto-actions/setup@v2"
+          },
+          {
+            "uses": "r-lib/actions/setup-r@v2",
+            "with": {
+              "use-public-rspm": "true"
+            }
+          },
+          {
+            "uses": "r-lib/actions/setup-r-dependencies@v2",
+            "with": {
+              "install-pandoc": "true",
+              "dependencies": "\"hard\"",
+              "extra-packages": "any::rcmdcheck, any::testthat, any::quarto",
+              "cache-version": "hard-1"
+            }
+          },
+          {
+            "uses": "actions/download-artifact@v8",
+            "with": {
+              "name": "source-tarball",
+              "path": "tarball"
+            }
+          },
+          {
+            "name": "Check the tarball without Suggested packages",
+            "run": "Rscript .github/scripts/check-tarball.R"
+          },
+          {
+            "name": "Verify the minimal-dependency run proved something",
+            "if": "always()",
+            "run": "Rscript .github/scripts/verify-depends-only.R"
+          },
+          {
+            "uses": "actions/upload-artifact@v7",
+            "if": "always()",
+            "with": {
+              "name": "check-depends-only",
+              "path": "check",
+              "retention-days": "7"
+            }
+          }
+        ]
+      },
+      "tarball": {
+        "name": "Tarball ${{ matrix.config.os }} (${{ matrix.config.r }})",
+        "needs": "build",
+        "runs-on": "${{ matrix.config.os }}",
+        "timeout-minutes": "60",
+        "strategy": {
+          "fail-fast": "false",
+          "matrix": {
+            "config": [
+              {
+                "os": "ubuntu-latest",
+                "r": "release"
+              },
+              {
+                "os": "ubuntu-latest",
+                "r": "devel",
+                "http-user-agent": "release"
+              },
+              {
+                "os": "ubuntu-latest",
+                "r": "oldrel-1"
+              },
+              {
+                "os": "macos-latest",
+                "r": "release"
+              },
+              {
+                "os": "windows-latest",
+                "r": "release"
+              }
+            ]
+          }
+        },
+        "env": {
+          "_R_CHECK_FORCE_SUGGESTS_": "false",
+          "MARGINPLYR_CHECK_LABEL": "Tarball ${{ matrix.config.os }} (${{ matrix.config.r }})"
+        },
+        "steps": [
+          {
+            "uses": "actions/checkout@v7"
+          },
+          {
+            "uses": "quarto-dev/quarto-actions/setup@v2"
+          },
+          {
+            "uses": "r-lib/actions/setup-r@v2",
+            "with": {
+              "r-version": "${{ matrix.config.r }}",
+              "http-user-agent": "${{ matrix.config.http-user-agent }}",
+              "use-public-rspm": "true"
+            }
+          },
+          {
+            "name": "Preinstall Zstandard-compressed macOS dependencies",
+            "if": "runner.os == 'macOS'",
+            "run": "install.packages(\n  c(\"knitr\", \"xfun\"),\n  dependencies = NA,\n  type = \"binary\"\n)\n",
+            "shell": "Rscript {0}"
+          },
+          {
+            "uses": "r-lib/actions/setup-r-dependencies@v2",
+            "with": {
+              "install-pandoc": "true",
+              "dependencies": "\"hard\"",
+              "extra-packages": "any::rcmdcheck, any::testthat, any::quarto",
+              "cache-version": "hard-1"
+            }
+          },
+          {
+            "uses": "actions/download-artifact@v8",
+            "with": {
+              "name": "source-tarball",
+              "path": "tarball"
+            }
+          },
+          {
+            "name": "Check the tarball",
+            "run": "Rscript .github/scripts/check-tarball.R"
+          },
+          {
+            "uses": "actions/upload-artifact@v7",
+            "if": "always()",
+            "with": {
+              "name": "check-tarball-${{ matrix.config.os }}-${{ matrix.config.r }}",
+              "path": "check",
+              "retention-days": "7"
+            }
+          }
+        ]
+      },
+      "backend": {
+        "name": "Live ${{ matrix.backend.name }}",
+        "needs": [
+          "build",
+          "backend-matrix"
+        ],
+        "runs-on": "ubuntu-latest",
+        "timeout-minutes": "45",
+        "strategy": {
+          "fail-fast": "false",
+          "matrix": {
+            "backend": "${{ fromJSON(needs.backend-matrix.outputs.backend) }}"
+          }
+        },
+        "env": {
+          "MARGINPLYR_REQUIRED_SUGGESTS": "${{ matrix.backend.required }}",
+          "NOT_CRAN": "true",
+          "_R_CHECK_FORCE_SUGGESTS_": "false",
+          "MARGINPLYR_CHECK_ARGS": "--as-cran --ignore-vignettes",
+          "MARGINPLYR_CHECK_LABEL": "Live ${{ matrix.backend.name }}"
+        },
+        "steps": [
+          {
+            "uses": "actions/checkout@v7"
+          },
+          {
+            "uses": "r-lib/actions/setup-r@v2",
+            "with": {
+              "use-public-rspm": "true"
+            }
+          },
+          {
+            "uses": "r-lib/actions/setup-r-dependencies@v2",
+            "with": {
+              "install-pandoc": "true",
+              "install-quarto": "false",
+              "dependencies": "\"hard\"",
+              "extra-packages": "any::rcmdcheck, any::testthat, ${{ matrix.backend.packages }}",
+              "cache-version": "${{ matrix.backend.cache }}"
+            }
+          },
+          {
+            "uses": "actions/download-artifact@v8",
+            "with": {
+              "name": "source-tarball",
+              "path": "tarball"
+            }
+          },
+          {
+            "name": "Check the tarball with ${{ matrix.backend.name }} installed",
+            "run": "Rscript .github/scripts/check-tarball.R"
+          },
+          {
+            "name": "Verify the live ${{ matrix.backend.name }} run was sound",
+            "if": "always()",
+            "run": "Rscript .github/scripts/verify-backend.R"
+          },
+          {
+            "uses": "actions/upload-artifact@v7",
+            "if": "always()",
+            "with": {
+              "name": "check-backend-${{ matrix.backend.name }}",
+              "path": "check",
+              "retention-days": "7"
+            }
+          }
+        ]
+      }
+    }
+  },
+  ".github/workflows/rhub.yaml": {
+    "name": "R-hub",
+    "run-name": "${{ github.event.inputs.id || format('Manual run by @{0}', github.triggering_actor) }}: ${{ github.event.inputs.name || github.event.inputs.config }}",
+    "on": {
+      "workflow_dispatch": {
+        "inputs": {
+          "config": {
+            "description": "Comma-separated list of R-hub platforms to use. Full list: https://r-hub.github.io/containers/",
+            "type": "string",
+            "default": "linux,windows,macos"
+          },
+          "name": {
+            "description": "Run name. You can leave this empty.",
+            "type": "string"
+          },
+          "id": {
+            "description": "Unique ID. You can leave this empty.",
+            "type": "string"
+          }
+        }
+      }
+    },
+    "env": {
+      "RHUB_ACTIONS_INSTALL_LOCAL_PACKAGE": "true"
+    },
+    "jobs": {
+      "setup": {
+        "runs-on": "ubuntu-latest",
+        "outputs": {
+          "containers": "${{ steps.rhub-setup.outputs.containers }}",
+          "platforms": "${{ steps.rhub-setup.outputs.platforms }}"
+        },
+        "steps": [
+          {
+            "uses": "r-hub/actions/setup@v1",
+            "with": {
+              "config": "${{ github.event.inputs.config }}"
+            },
+            "id": "rhub-setup"
+          }
+        ]
+      },
+      "linux-containers": {
+        "needs": "setup",
+        "if": "${{ needs.setup.outputs.containers != '[]' }}",
+        "runs-on": "ubuntu-latest",
+        "name": "${{ matrix.config.label }}",
+        "strategy": {
+          "fail-fast": "false",
+          "matrix": {
+            "config": "${{ fromJson(needs.setup.outputs.containers) }}"
+          }
+        },
+        "container": {
+          "image": "${{ matrix.config.container }}"
+        },
+        "steps": [
+          {
+            "uses": "r-hub/actions/checkout@v1"
+          },
+          {
+            "uses": "r-hub/actions/platform-info@v1",
+            "with": {
+              "token": "${{ secrets.RHUB_TOKEN }}",
+              "job-config": "${{ matrix.config.job-config }}"
+            }
+          },
+          {
+            "name": "Install portable Quarto from the official tarball",
+            "shell": "bash",
+            "run": "set -euo pipefail\nquarto_machine=\"$(uname -m)\"\ncase \"$quarto_machine\" in\n  x86_64 | amd64)\n    quarto_arch=amd64\n    ;;\n  aarch64 | arm64)\n    quarto_arch=arm64\n    ;;\n  *)\n    echo \"::error::Unsupported architecture for Quarto: $quarto_machine\" >&2\n    exit 1\n    ;;\nesac\n\nquarto_dir=\"$(mktemp -d)\"\nquarto_archive=\"$quarto_dir/quarto.tar.gz\"\ncurl --fail --location --show-error --silent \\\n  \"https://quarto.org/download/latest/quarto-linux-${quarto_arch}.tar.gz\" \\\n  --output \"$quarto_archive\"\ntar -xzf \"$quarto_archive\" -C \"$quarto_dir\"\nquarto_executable=\"$(find \"$quarto_dir\" -type f -path '*/bin/quarto' -print -quit)\"\nif [ ! -x \"$quarto_executable\" ]; then\n  echo \"::error::Quarto archive did not contain a usable executable.\" >&2\n  exit 1\nfi\nquarto_bin_dir=\"$(dirname \"$quarto_executable\")\"\nprintf '%s\\n' \"$quarto_bin_dir\" >> \"$GITHUB_PATH\"\nexport PATH=\"$quarto_bin_dir:$PATH\"\ncommand -v quarto\nquarto --version\nquarto pandoc --version\n"
+          },
+          {
+            "uses": "r-hub/actions/setup-deps@v1",
+            "with": {
+              "token": "${{ secrets.RHUB_TOKEN }}",
+              "job-config": "${{ matrix.config.job-config }}"
+            }
+          },
+          {
+            "uses": "r-hub/actions/run-check@v1",
+            "with": {
+              "token": "${{ secrets.RHUB_TOKEN }}",
+              "job-config": "${{ matrix.config.job-config }}"
+            }
+          }
+        ]
+      },
+      "other-platforms": {
+        "needs": "setup",
+        "if": "${{ needs.setup.outputs.platforms != '[]' }}",
+        "runs-on": "${{ matrix.config.os }}",
+        "name": "${{ matrix.config.label }}",
+        "strategy": {
+          "fail-fast": "false",
+          "matrix": {
+            "config": "${{ fromJson(needs.setup.outputs.platforms) }}"
+          }
+        },
+        "steps": [
+          {
+            "uses": "r-hub/actions/checkout@v1"
+          },
+          {
+            "uses": "r-hub/actions/setup-r@v1",
+            "with": {
+              "job-config": "${{ matrix.config.job-config }}",
+              "token": "${{ secrets.RHUB_TOKEN }}"
+            }
+          },
+          {
+            "uses": "quarto-dev/quarto-actions/setup@v2"
+          },
+          {
+            "uses": "r-hub/actions/platform-info@v1",
+            "with": {
+              "token": "${{ secrets.RHUB_TOKEN }}",
+              "job-config": "${{ matrix.config.job-config }}"
+            }
+          },
+          {
+            "name": "Preinstall Zstandard-compressed macOS dependencies",
+            "if": "runner.os == 'macOS'",
+            "run": "install.packages(\n  c(\"knitr\", \"xfun\"),\n  dependencies = NA,\n  type = \"binary\"\n)\n",
+            "shell": "Rscript {0}"
+          },
+          {
+            "uses": "r-hub/actions/setup-deps@v1",
+            "with": {
+              "job-config": "${{ matrix.config.job-config }}",
+              "token": "${{ secrets.RHUB_TOKEN }}"
+            }
+          },
+          {
+            "uses": "r-hub/actions/run-check@v1",
+            "with": {
+              "job-config": "${{ matrix.config.job-config }}",
+              "token": "${{ secrets.RHUB_TOKEN }}"
+            }
+          }
+        ]
+      }
+    }
+  },
+  ".github/workflows/test-coverage.yaml": {
+    "on": {
+      "push": {
+        "branches": [
+          "main",
+          "master"
+        ]
+      },
+      "pull_request": null
+    },
+    "name": "test-coverage.yaml",
+    "permissions": {
+      "contents": "read",
+      "id-token": "write"
+    },
+    "concurrency": {
+      "group": "${{ github.workflow }}-${{ github.ref }}",
+      "cancel-in-progress": "true"
+    },
+    "jobs": {
+      "test-coverage": {
+        "runs-on": "ubuntu-latest",
+        "timeout-minutes": "120",
+        "env": {
+          "GITHUB_PAT": "${{ secrets.GITHUB_TOKEN }}"
+        },
+        "steps": [
+          {
+            "uses": "actions/checkout@v7"
+          },
+          {
+            "uses": "r-lib/actions/setup-r@v2"
+          },
+          {
+            "uses": "r-lib/actions/setup-r-dependencies@v2",
+            "with": {
+              "extra-packages": "any::covr, any::xml2, any::yaml",
+              "needs": "coverage"
+            }
+          },
+          {
+            "name": "Verify coverage exclusion policy",
+            "run": "Rscript .github/scripts/verify-coverage-policy.R"
+          },
+          {
+            "name": "Test coverage",
+            "run": "Rscript tools/coverage-check.R --cobertura cobertura.xml"
+          },
+          {
+            "uses": "codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5",
+            "if": "${{ always() && hashFiles('cobertura.xml') != '' }}",
+            "with": {
+              "fail_ci_if_error": "${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository || secrets.CODECOV_TOKEN != '' }}",
+              "files": "./cobertura.xml",
+              "plugins": "noop",
+              "disable_search": "true",
+              "token": "${{ secrets.CODECOV_TOKEN }}",
+              "use_oidc": "true"
+            }
+          },
+          {
+            "name": "Show testthat output",
+            "if": "always()",
+            "run": "## --------------------------------------------------------------------\nfind '${{ runner.temp }}/package' -name 'testthat.Rout*' -exec cat '{}' \\; || true\n",
+            "shell": "bash"
+          },
+          {
+            "name": "Upload test results",
+            "if": "failure()",
+            "uses": "actions/upload-artifact@v7",
+            "with": {
+              "name": "coverage-test-failures",
+              "path": "${{ runner.temp }}/package\ncobertura.xml\n",
+              "retention-days": "7"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

@@ -641,6 +641,34 @@ sys.exit(17)
         self.commit_all()
         self.assertEqual(self.selected()['path'], 'Full')
 
+    def test_roxygen_resolution_preserves_ci_verifiers_and_pinned_transport(self):
+        self.roxygen_branch()
+        workflow = self.repo / '.github/workflows/lint.yaml'
+        workflow.parent.mkdir(parents=True)
+        workflow.write_text('# supported workflow\n')
+        self.commit_all()
+        base = self.git(self.repo, 'rev-parse', 'main')
+        shim = self.bin / 'Rscript'
+        shim.write_text(shim.read_text().replace('root = pathlib.Path.cwd()\n',
+            'root = pathlib.Path.cwd()\n'
+            'print("TRANSPORT\\n" + pathlib.Path(os.environ["MARGINPLYR_REVIEW_SELECTION"])'
+            '.read_text() + "END TRANSPORT", flush=True)\n'))
+        for path in ('Documentation', 'Full'):
+            with self.subTest(path=path):
+                if path == 'Full':
+                    (self.repo / 'R/help.R').write_text("#' Description.\nf <- function(x) x + 1\n")
+                    self.commit_all()
+                job, log = self.start(FIXTURE_SECONDS='0')
+                output = self.finish(job, log)
+                transport = output.split('TRANSPORT\n', 1)[1].split('END TRANSPORT', 1)[0]
+                self.assertIn('selected path: ' + path, output)
+                self.assertIn('Path: ' + path + '\n', transport)
+                self.assertIn('Protocol: 3\n', transport)
+                self.assertIn('Capacity: ' + ('exempt' if path == 'Documentation' else 'Full'), transport)
+                self.assertIn('Base: ' + base + '\n', transport)
+                self.assertIn('tools/verify-ci-artifacts.py', transport)
+                self.assertIn('tools/review-ready-generated.R', transport)
+
     def test_roxygen_proof_does_not_wait_for_full_admission(self):
         self.roxygen_branch()
         exempt = self.root / 'roxygen'
@@ -705,6 +733,108 @@ sys.exit(17)
                 self.assertEqual(selection['path'], 'Full')
                 self.assertIn('unsupported prose content', ' '.join(selection['reasons']))
 
+    def test_ci_configuration_routes_survive_cumulative_package_changes(self):
+        self.repository_branch()
+        for name in ('.github/workflows/lint.yaml', '.github/scripts/summarize-check-log.R',
+                     'altdoc/quarto_website.yml', 'codecov.yml', '.codex/config.toml',
+                     '.claude/settings.json'):
+            path = self.repo / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text('# supported artifact\n')
+        self.commit_all()
+        module = importlib.machinery.SourceFileLoader('ci_fixture_installer', str(SOURCE)).load_module()
+        self.command.write_bytes(module.installed_source(self.repo))
+        selected = self.selected()
+        self.assertEqual(selected['path'], 'Repository')
+        required = ('tools/verify-ci-artifacts.py', 'tools/test-ci-artifacts.py',
+                    'tools/verify-site-artifacts.R', '.github/scripts/verify-coverage-policy.R',
+                    '.github/scripts/verify-agent-network-policy.R',
+                    '.github/scripts/verify-codex-config.R')
+        for verifier in required:
+            self.assertIn(verifier, selected['verifiers'])
+        (self.repo / 'NEWS.md').write_text('Documentation and CI artifacts\n')
+        self.commit_all()
+        selected = self.selected()
+        self.assertEqual(selected['path'], 'Documentation')
+        for verifier in required:
+            self.assertIn(verifier, selected['verifiers'])
+        (self.repo / 'R').mkdir()
+        (self.repo / 'R/change.R').write_text('1\n')
+        self.commit_all()
+        selected = self.selected()
+        self.assertEqual(selected['path'], 'Full')
+        for verifier in required:
+            self.assertIn(verifier, selected['verifiers'])
+
+    def test_policy_checker_changes_run_the_changed_checker(self):
+        self.repository_branch()
+        baseline = self.git(self.repo, 'rev-parse', 'HEAD')
+        for name in ('verify-coverage-policy.R', 'verify-agent-network-policy.R',
+                     'verify-codex-config.R'):
+            with self.subTest(name=name):
+                self.git(self.repo, 'reset', '--hard', baseline)
+                relative = '.github/scripts/' + name
+                path = self.repo / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text('stop("Changed checker sentinel")\n')
+                self.commit_all()
+                selected = self.selected()
+                self.assertEqual(selected['path'], 'Full')
+                self.assertIn(relative, selected['verifiers'])
+
+    def test_ci_stage_dependencies_require_matching_installed_capabilities(self):
+        self.repository_branch()
+        artifacts = ('.github/workflows/lint.yaml', 'altdoc/quarto_website.yml', 'codecov.yml')
+        for name in artifacts:
+            path = self.repo / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text('# artifact\n')
+        self.commit_all()
+        baseline = self.git(self.repo, 'rev-parse', 'HEAD')
+        for name in ('tools/verify-ci-artifacts.py', 'tools/verify-site-artifacts.R',
+                     'tools/coverage-check-lib.R'):
+            with self.subTest(name=name):
+                self.git(self.repo, 'reset', '--hard', baseline)
+                (self.repo / name).write_text('# changed stage implementation\n')
+                self.commit_all()
+                self.git(self.repo, 'branch', '-f', 'main', 'HEAD')
+                for artifact in artifacts:
+                    with (self.repo / artifact).open('a') as stream:
+                        stream.write('# changed artifact\n')
+                self.commit_all()
+                selected = self.selected()
+                self.assertEqual(selected['path'], 'Full')
+                self.assertIn('unsupported stage source capability: ' + name,
+                              ' '.join(selected['reasons']))
+                self.assertIn('tools/verify-ci-artifacts.py', selected['verifiers'])
+
+    def test_checker_helpers_and_unsupported_ci_inputs_keep_full_contracts(self):
+        self.repository_branch()
+        baseline = self.git(self.repo, 'rev-parse', 'HEAD')
+        for name in ('tools/review-ready-check-lib.R', 'tools/install-review-ready.py',
+                     'tools/dependency-requirements.R', 'tools/required-test-suggests.R',
+                     '.github/scripts/cran-note-policy.R', 'tools/verify-ci-artifacts.py',
+                     '.github/scripts/verify-doc-references.R', '.github/scripts/ci-helpers.R',
+                     'tools/test-ci-artifacts.py', 'tools/ci-workflow-contracts.json',
+                     'tools/verify-site-artifacts.R'):
+            with self.subTest(name=name):
+                self.git(self.repo, 'reset', '--hard', baseline)
+                path = self.repo / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text('# checking machinery\n')
+                self.commit_all()
+                selected = self.selected()
+                self.assertEqual(selected['path'], 'Full')
+                self.assertIn('tools/test-ci-artifacts.py', selected['verifiers'])
+        for name in ('.github/workflows/unknown.yaml', 'altdoc/custom.py', 'altdoc/pkgdown.yml',
+                     '.github/scripts/unknown.R', 'investigation/executable.R'):
+            self.git(self.repo, 'reset', '--hard', baseline)
+            path = self.repo / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text('# unsupported\n')
+            self.commit_all()
+            self.assertEqual(self.selected()['path'], 'Full')
+
     def test_documentation_text_requires_utf8_and_protocol_two(self):
         self.repository_branch()
         readme = self.repo / 'README.md'
@@ -715,6 +845,27 @@ sys.exit(17)
         (self.repo / 'tools/review-ready-check.R').write_text('# Review-ready selection protocol: 1\n')
         self.commit_all()
         self.assertIn('lacks selection protocol', ' '.join(self.selected()['reasons']))
+
+    def test_unreadable_diff_cannot_supply_ci_verification_base(self):
+        self.repository_branch()
+        (self.repo / 'tools/verify-ci-artifacts.py').write_text('# current CI verification\n')
+        self.commit_all()
+        real_git = shutil.which('git')
+        shim = self.bin / 'git'
+        shim.write_text('#!' + sys.executable + '\nimport os,sys\n' +
+                        'if "diff" in sys.argv and "--raw" in sys.argv:\n' +
+                        ' os.write(1, b"unreadable\\0"); sys.exit(0)\n' +
+                        'os.execv(' + repr(real_git) + ', [' + repr(real_git) + '] + sys.argv[1:])\n')
+        shim.chmod(0o755)
+        for checker_present in (True, False):
+            with self.subTest(checker_present=checker_present):
+                if not checker_present:
+                    (self.repo / 'tools/verify-ci-artifacts.py').unlink()
+                    self.commit_all()
+                selected = self.selected()
+                self.assertEqual(selected['path'], 'Full')
+                self.assertIsNone(selected['base'],
+                                  'Unreadable artifact selection must not supply usable comparison evidence')
 
     def test_comparison_errors_and_unclassifiable_records_fall_back_to_full(self):
         self.repository_branch()
@@ -861,6 +1012,16 @@ sys.exit(17)
         for arg in ('--repository', '--skip-check', '--path=Repository'):
             job, log = self.start(args=(arg,))
             self.assertNotIn('HEAVY ', self.finish(job, log, 2))
+
+    def test_older_revision_keeps_its_existing_full_gate(self):
+        self.repository_branch()
+        (self.repo / 'tools/review-ready-check.R').write_text(
+            '# Review-ready selection protocol: 1\n')
+        self.commit_all()
+        selected = self.selected()
+        self.assertEqual(selected['path'], 'Full')
+        self.assertEqual(selected['verifiers'], [])
+        self.assertIn('lacks selection protocol', ' '.join(selected['reasons']))
 
     def test_worktrees_and_clones_share_one_capacity(self):
         worktree = self.root / 'worktree'

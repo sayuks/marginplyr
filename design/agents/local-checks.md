@@ -19,14 +19,15 @@ Design and investigation notes and agent instructions that drive no
 generation are ordinary examples. Exclusion from the package is not
 sufficient: CI, release, or local-check tooling is Package-affecting when it
 can change a package check result. Repository-only does not mean unchecked.
-Supported prose uses the Repository path below; unsupported changes use Full
-until a validated route exists.
+Supported artifacts use the Repository path below. Unsupported changes select
+Full; a missing CI artifact route remains unresolved and cannot be certified by
+a package-check pass.
 
 The **Review-ready check** is the local gate for one clean committed revision.
 It selects **Full**, **Documentation**, or **Repository** from the cumulative
 final tree difference against the unique merge-base with local `main`. Full
 retains the package boundary; Documentation retains build/check without the complete suite, and
-Repository omits package build/check for supported repository prose.
+Repository omits package build/check for supported repository artifacts.
 Focused tests and the wider release process have separate roles.
 
 ## Boundary
@@ -70,17 +71,19 @@ submitted commit, `refs/heads/main` commit, and unique merge-base, using local
 main without fetching. A later main update does not replace these identities.
 Missing or ambiguous bases, comparison failures, empty differences, unknown
 paths, mode/type changes, symlinks, and submodules select Full with a reason.
+An unreadable comparison supplies no admissible base; current gates refuse
+verification rather than substitute Full for undetermined artifact checks.
 Deletion and both sides of a rename participate in the NUL-delimited final
 tree comparison. Reverted historical edits do not participate.
 
-The supported prose categories and required verifier mapping have one home:
-`PROSE`, `DOCUMENTATION`, `GENERATED_INPUTS`, `REFERENCE_CHECKS`, and `CONTRACTS` in
-`tools/review-ready-admission.py`. It supports agent/domain/design Markdown,
+The supported categories and required verifier mapping have one home:
+`PROSE`, `DOCUMENTATION`, `GENERATED_INPUTS`, `ARTIFACTS`, `CHECKING`,
+`REFERENCE_CHECKS`, and `CONTRACTS` in
+`tools/review-ready-admission.py`. Prose includes agent/domain/design Markdown,
 Markdown investigation notes, conduct policy, and operational Markdown under
-`tools/`. Prose blobs must be UTF-8 text without non-prose control characters;
-unknown encodings or binary content select Full. Other formats in those
-directories remain Full. Package licenses, CI configuration, and checking
-machinery remain Full.
+`tools/`. Supported blobs must be UTF-8 text without non-prose control
+characters; unknown encodings or binary content select Full. Other formats
+and executable investigation scripts remain Full. Package licenses remain Full.
 Documentation supports README Markdown/Quarto, NEWS Markdown, generated Rd,
 explicit image formats under `man/figures/`, top-level `vignettes/*.qmd`, and
 explicit vignette image, bibliography and citation-style formats. Executable
@@ -106,6 +109,49 @@ validation failure; a supported result requiring Full requests authenticated
 promotion. The resolved selection and terminal outcome identify the final path.
 Full wins over Documentation, which wins over Repository, across the cumulative
 diff.
+
+CI/configuration routes are deliberately narrow:
+
+| Artifact | Required verification |
+|---|---|
+| The eight workflows named by `WORKFLOWS` | actionlint syntax, executable workflow contracts, and verifier-invocation wiring |
+| The CI check-log summary runner | command fixtures over check status, all diagnostic details, and absent logs/status |
+| `altdoc/quarto_website.yml` | install the submitted source in an isolated library, render the site, then verify output and markers |
+| Codecov configuration | the existing coverage exclusion policy and its fixtures |
+| Codex and Claude configuration | existing network/Codex policy checks; CI artifact checks also reject invalid Claude JSON |
+
+Workflow support covers comments and formatting while preserving every parsed
+field. Names are protected too because `github.workflow` contributes to the
+concurrency key. `tools/ci-workflow-contracts.json` records those semantics: triggers,
+job/step conditions, environment, setup, commands, dependency wiring, and all
+other executable fields must agree. A change outside that contract fails with
+CI validation unresolved. Extend the protected contract and command fixtures
+under Full when intentionally changing executable workflow behavior; syntax
+alone is insufficient. `tools/verify-ci-artifacts.py` reads the pinned base
+passed by admission, so a later main update cannot change its changed-artifact
+inventory. Outside admission it derives a unique base from local main, or
+origin/main in CI. CI fetches the history that comparison needs.
+
+Provide `actionlint` on PATH (the CI job installs version 1.7.12), and the R
+`yaml` and `jsonlite` packages, before checking supported CI artifacts. The
+review dependency field records these and altdoc; site rendering also uses the
+website dependency field. Missing
+prerequisites, unsupported CI scripts/configuration, removed wiring, and known
+verification failures fail the artifact step; Full is not substitute evidence.
+The syntax check disables optional shellcheck/pyflakes integrations; executable
+contract checks and script fixtures supply the additional local evidence.
+Remote job execution remains CI's responsibility.
+
+`altdoc/pkgdown.yml` is generated metadata that rendering overwrites, so it has
+no Repository route: rendering would erase its submitted changes before they
+could be verified. It remains Full with CI validation unresolved.
+
+Selection/admission/installer/progress/local-gate machinery, its dependency
+helpers, shared NOTE policy, artifact checkers, workflow contracts, and their
+fixtures remain Full and run their mapped contract/process checks. The common
+reference/context/invocation verifiers and their CI helper also remain Full;
+they help decide this check's outcome. The same
+routes run for cumulative mixed changes, even when package edits require Full.
 
 All paths always execute package spelling, jarl, and package-aware lintr
 (the three source stages described below), followed by mapped artifact

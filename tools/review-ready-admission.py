@@ -79,6 +79,18 @@ STAGE_CONTRACTS = {
         'tools/dependency-requirements.R', 'tools/cran-preflight-lib.R', 'tools/cran-preflight.R')),
     '.github/scripts/verify-agent-network-policy.R': ('serial', ()),
     '.github/scripts/verify-codex-config.R': ('serial', ()),
+    '.github/scripts/verify-coverage-policy.R': ('serial', (
+        'tools/coverage-check-lib.R', 'tools/required-test-suggests.R')),
+    'tools/verify-ci-artifacts.py': ('serial', (
+        'tools/review-ready-admission.py', 'tools/ci-workflow-contracts.json',
+        '.github/scripts/verify-verifier-invocation.R', '.github/scripts/ci-helpers.R')),
+    'tools/test-ci-artifacts.py': ('serial', (
+        'tools/verify-ci-artifacts.py', 'tools/review-ready-admission.py',
+        'tools/ci-workflow-contracts.json', '.github/scripts/summarize-check-log.R',
+        '.github/scripts/verify-doc-references.R', '.github/scripts/verify-verifier-invocation.R',
+        '.github/scripts/ci-helpers.R')),
+    'tools/verify-site-artifacts.R': ('serial', (
+        '.github/scripts/verify-site.R', '.github/scripts/ci-helpers.R')),
 }
 
 
@@ -178,19 +190,55 @@ GENERATED_INPUTS = r'(README\.(?:md|qmd)|NAMESPACE|R/.*|DESCRIPTION|inst/.*|data
 REFERENCE_CHECKS = ['.github/scripts/verify-doc-references.R',
                     '.github/scripts/verify-context-budget.R',
                     '.github/scripts/verify-verifier-invocation.R']
+# These exact artifacts have routes; no directory is exempted by its location.
+WORKFLOWS = ('R-CMD-check.yaml', 'altdoc.yaml', 'document.yaml', 'lint.yaml',
+             'postgres-transactions.yaml', 'release-matrix.yaml', 'rhub.yaml',
+             'test-coverage.yaml')
+ARTIFACTS = [
+    (r'\.github/workflows/(' + '|'.join(re.escape(name) for name in WORKFLOWS) + r')',
+     ['tools/verify-ci-artifacts.py']),
+    (r'\.github/scripts/summarize-check-log\.R', ['tools/test-ci-artifacts.py']),
+    (r'altdoc/quarto_website\.yml', ['tools/verify-site-artifacts.R']),
+    (r'codecov\.yml', ['.github/scripts/verify-coverage-policy.R']),
+    (r'\.(?:codex/config\.toml|claude/settings\.json)',
+     ['.github/scripts/verify-agent-network-policy.R', '.github/scripts/verify-codex-config.R',
+      'tools/verify-ci-artifacts.py']),
+]
+CHECKING = (r'(?:tools/(?:review-ready[^/]*|test-review-ready[^/]*|install-review-ready\.py|'
+            r'dependency-requirements\.R|required-test-suggests\.R|verify-ci-artifacts\.py|'
+            r'test-ci-artifacts\.py|ci-workflow-contracts\.json|verify-site-artifacts\.R)|'
+            r'\.github/scripts/(?:cran-note-policy\.R|ci-helpers\.R|verify-(?:review-ready-check|'
+            r'doc-references|context-budget|verifier-invocation|site|coverage-policy|cran-preflight|'
+            r'agent-network-policy|codex-config)\.R))')
 CONTRACTS = [
-    (r'(tools/(?:review-ready[^/]*|test-review-ready[^/]*|install-review-ready\.py|dependency-requirements\.R|required-test-suggests\.R)|'
-     r'\.github/scripts/verify-review-ready-check\.R|design/(?:agents/local-checks\.md|specs/review-ready[^/]*\.md))',
+    (r'design/(?:agents/local-checks\.md|specs/review-ready[^/]*\.md)',
      ['.github/scripts/verify-review-ready-check.R', 'tools/test-review-ready-documentation.R',
       'tools/test-review-ready-roxygen.R']),
-    (r'tools/(?:review-ready[^/]*\.(?:py|R)|test-review-ready[^/]*|install-review-ready\.py)',
-     ['tools/test-review-ready-admission.py', 'tools/test-review-ready-progress.R']),
     (GENERATED_INPUTS, ['tools/review-ready-generated.R']),
+    (r'\.github/scripts/verify-cran-preflight\.R', ['.github/scripts/verify-cran-preflight.R']),
+    (r'\.github/scripts/verify-coverage-policy\.R', ['.github/scripts/verify-coverage-policy.R']),
+    (r'\.github/scripts/verify-agent-network-policy\.R', ['.github/scripts/verify-agent-network-policy.R']),
+    (r'\.github/scripts/verify-codex-config\.R', ['.github/scripts/verify-codex-config.R']),
     (r'tools/cran-release\.md', ['.github/scripts/verify-cran-release.R']),
     (r'tools/cran-preflight\.md', ['.github/scripts/verify-cran-preflight.R',
                                 '.github/scripts/verify-agent-network-policy.R',
                                 '.github/scripts/verify-codex-config.R']),
+    (CHECKING, ['.github/scripts/verify-review-ready-check.R',
+                'tools/test-review-ready-admission.py', 'tools/test-review-ready-progress.R',
+                'tools/test-ci-artifacts.py', 'tools/verify-ci-artifacts.py',
+                'tools/test-review-ready-documentation.R', 'tools/test-review-ready-roxygen.R']),
+    (r'\.github/.*', ['tools/verify-ci-artifacts.py']),
+    (r'(?:altdoc/.*|\.(?:codex|claude)/.*)', ['tools/verify-ci-artifacts.py']),
+    (r'(?:\.covrignore|inst/\.covrignore|tools/coverage-check(?:-lib)?\.R)',
+     ['.github/scripts/verify-coverage-policy.R']),
+    (r'(?:tools/verify-site-artifacts\.R|\.github/scripts/verify-site\.R)',
+     ['tools/verify-site-artifacts.R']),
 ]
+
+
+def repository_artifact(name):
+    return bool(re.fullmatch(PROSE, name) or
+                any(re.fullmatch(pattern, name) for pattern, _ in ARTIFACTS))
 
 
 def git_bytes(root, *args):
@@ -247,9 +295,9 @@ def select_path(root, sha):
                     roxygen = True
                     documentation = True
                     continue
-                if not (re.fullmatch(PROSE, name) or re.fullmatch(DOCUMENTATION, name)):
+                if not (repository_artifact(name) or re.fullmatch(DOCUMENTATION, name)):
                     reasons.append('unsupported path: ' + repr(name))
-            supported = all(re.fullmatch(PROSE, name) or re.fullmatch(DOCUMENTATION, name)
+            supported = all(repository_artifact(name) or re.fullmatch(DOCUMENTATION, name)
                             for name in paths)
             if supported:
                 for mode, blob, name in ((before, old_blob, paths[0]),
@@ -264,7 +312,7 @@ def select_path(root, sha):
                         reasons.append('unsupported prose content: ' + repr(paths))
             index += 1 + count
         selection['verifiers'] = list(REFERENCE_CHECKS)
-        for pattern, checks in CONTRACTS:
+        for pattern, checks in ARTIFACTS + CONTRACTS:
             if any(re.fullmatch(pattern, name) for name in names):
                 selection['verifiers'].extend(check for check in checks if check not in selection['verifiers'])
         entry = git_bytes(root, 'show', sha + ':tools/review-ready-check.R')
@@ -277,11 +325,19 @@ def select_path(root, sha):
             selection['roxygen_pending'] = roxygen
             selection['path'] = 'Documentation' if documentation else 'Repository'
             reasons = ['R documentation eligibility pending supervised proof' if roxygen else
-                       'all cumulative changes are supported documentation or repository prose'
-                       if documentation else 'all cumulative changes are supported repository prose']
+                       'all cumulative changes are supported documentation or repository artifacts'
+                       if documentation else 'all cumulative changes are supported repository artifacts']
         selection['reasons'] = reasons
     except (OSError, ValueError, subprocess.SubprocessError) as error:
         selection['reasons'] = ['comparison unavailable: ' + str(error)]
+        selection['base'] = None
+        # Current CI verification refuses missing comparison evidence. Full is
+        # still selected, but cannot turn an unreadable CI diff into a pass.
+        try:
+            git_bytes(root, 'show', sha + ':tools/verify-ci-artifacts.py')
+            selection['verifiers'] = list(REFERENCE_CHECKS) + ['tools/verify-ci-artifacts.py']
+        except (OSError, subprocess.SubprocessError):
+            pass
     return selection
 
 
@@ -659,7 +715,8 @@ def selection_transport(record):
     selection = record['selection']
     return ('Path: ' + selection['path'] + '\nCommit: ' + record['sha'] +
             '\nRequest: ' + record['token'] + '\nProtocol: 3\nCapacity: ' + record['capacity'] +
-            '\nVerifiers: ' + ' '.join(selection['verifiers']) + '\n')
+            '\nVerifiers: ' + ' '.join(selection['verifiers']) + '\nBase: ' +
+            (selection.get('base') or '') + '\n')
 
 
 def serve_control(server, path, record, cancellation, parent):
