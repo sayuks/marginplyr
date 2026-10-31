@@ -869,7 +869,7 @@ read_review_ready_selection <- function(
   reused <- if ("Reused" %in% colnames(record) && !is.na(record[[1L, "Reused"]]) &&
                  nzchar(record[[1L, "Reused"]])) strsplit(record[[1L, "Reused"]], " ", fixed = TRUE)[[1L]] else
     character()
-  if (any(!reused %in% c("build-full", "build-documentation", "generation", "documentation-assertions")) ||
+  if (!all(reused %in% c("build-full", "build-documentation", "generation", "documentation-assertions")) ||
       anyDuplicated(reused)) stop("Invalid stage reuse transport.", call. = FALSE)
   if (!identical(authorization$path, record[[1L, "Path"]]) ||
         !identical(authorization$capacity, record[[1L, "Capacity"]]) ||

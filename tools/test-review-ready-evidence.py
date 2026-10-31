@@ -54,6 +54,14 @@ class ExpectationContract(unittest.TestCase):
             self.assertIn('DESCRIPTION:Date', probe['unregistered'])
             self.assertIn('R/clock.R', probe['unregistered'])
 
+    def test_r_probe_does_not_invent_an_empty_date_input(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'DESCRIPTION').write_text('Package: fixture\n')
+            probe = json.loads(subprocess.check_output(
+                ['Rscript', str(ROOT / 'tools/review-ready-environment.R')], cwd=root, text=True))
+            self.assertNotIn('DESCRIPTION:', probe['unregistered'])
+
 
 class StageEvidence(unittest.TestCase):
     def setUp(self):

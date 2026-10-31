@@ -16,7 +16,7 @@ unknown <- setdiff(unknown, c("R_LIBS_USER", "R_LIBS_SITE"))
 custom <- configuration[!configuration %in% file.path(R.home("etc"), c("Renviron", "Makeconf"))]
 unknown <- c(unknown, custom[file.exists(custom)])
 dated <- intersect(c("Date", "Date/Publication"), colnames(description))
-unknown <- c(unknown, paste0("DESCRIPTION:", dated))
+if (length(dated)) unknown <- c(unknown, paste0("DESCRIPTION:", dated))
 clock_sources <- c(list.files("R", "[.][Rr]$", full.names = TRUE),
   list.files("tests", "[.](Rin|[Rr])$", full.names = TRUE, recursive = TRUE),
   list.files("vignettes", "[.]qmd$", full.names = TRUE), "README.qmd")
