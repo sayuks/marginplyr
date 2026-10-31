@@ -498,7 +498,18 @@ def append_evidence(state, path, payload, writer):
     with (state / 'evidence.lock').open('a+') as lock:
         fcntl.flock(lock, fcntl.LOCK_EX)
         key = signing_key(state, create=True)
-        records(state, key)
+        existing = records(state, key)
+        origins = {record['request']: record for record in existing}
+        for unit, reference in payload['reused'].items():
+            origin = origins[reference['request']]
+            entry = origin['units'][reference['unit']]
+            if (origin['outcome'] != 0 or entry['status'] != 'passed' or
+                    any(later['repository'] == payload['repository'] and
+                        later['sequence'] >= origin['sequence'] and any(
+                            compatible_unit(failed, unit) and item['status'] in ('failed', 'unavailable') and
+                            item['source'] == entry['source'] and item['environment'] == entry['environment']
+                            for failed, item in later['units'].items()) for later in existing)):
+                raise ValueError('Reused execution origin was superseded before terminal issuance.')
         entries = read_index(state, key)
         payload['sequence'] = entries[-1]['sequence'] + 1 if entries else 1
         writer(path, seal(payload, key))

@@ -251,6 +251,25 @@ class StageEvidence(unittest.TestCase):
         (self.state / 'evidence-index.json').unlink()
         self.assertEqual(self.plan()['units']['build-full']['action'], 'execute')
 
+    def test_issuance_refuses_a_failure_after_the_last_worker_validation(self):
+        _, origin = self.origin()
+        record = json.loads(origin.with_name('record.json').read_text())
+        record.update(id=uuid.uuid4().hex, token=uuid.uuid4().hex,
+                      selection=dict(self.selection, plan=self.plan()))
+        directory = self.state / 'requests' / record['id']
+        directory.mkdir()
+        before = self.observe(self.root, self.sha, policy.required_units(record['selection']))
+        report = dict(request=record['token'], units={}, completed=[
+            'Package spelling', 'jarl', 'package-aware lintr', 'Test dependency syntax', 'Required test Suggests'])
+        worker = dict(before=before, after=before, repository=policy.repository(self.root), report=report)
+        payload = policy.issue(self.state, record, worker)
+        self.origin(status=1, mutate=lambda record, worker:
+                    worker['report']['units'].update({'build-full': 'running'}))
+        (directory / 'record.json').write_text(json.dumps(record))
+        with self.assertRaisesRegex(ValueError, 'superseded'):
+            policy.append_evidence(self.state, directory / 'evidence.json', payload,
+                                   lambda path, value: path.write_text(json.dumps(value)))
+
     def test_retry_requires_complete_success_and_preserved_first_attempt(self):
         check = dict(args=['--as-cran'], status=0, timeout=False, errors=0, warnings=0, notes=[],
                      attempts=[dict(status=0, timeout=False, errors=0, warnings=0, notes=[])])
@@ -410,6 +429,25 @@ class EvidenceLifecycle(process_contract.Lifecycle):
         self.assertIn('Reuse invalidated during validation', output)
         self.assertIn('REUSED build-full', output)
         self.assertNotIn('EXECUTED build-full', output)
+        self.assertIn('; cleanup: confirmed;', output)
+
+    def test_terminal_publication_failure_cannot_return_a_limited_pass(self):
+        current = self.prepare_evidence()
+        job, log = self.start()
+        self.finish(job, log)
+        (self.repo / policy.EXPECTATION).write_text(current)
+        self.commit_all()
+        adapter = '''
+original_save = m.save
+def fail_evidence(path, value):
+    if path.name == 'evidence.json': raise OSError('fixture publication failure')
+    return original_save(path, value)
+m.save = fail_evidence
+'''
+        job, log = self.start(adapter=adapter)
+        output = self.finish(job, log, status=1)
+        self.assertIn('Reuse invalidated at terminal issuance', output)
+        self.assertIn('REUSED build-full', output)
         self.assertIn('; cleanup: confirmed;', output)
 
 

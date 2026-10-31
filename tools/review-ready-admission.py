@@ -53,6 +53,7 @@ CORE_SOURCES = (
     'tools/review-ready-check.R', 'tools/review-ready-check-lib.R',
     'tools/review-ready-progress.R', 'tools/review-ready-progress-reporter.R',
     'tools/dependency-requirements.R', 'tools/required-test-suggests.R',
+    'tests/testthat/helper-optional-backends.R',
     '.github/scripts/cran-note-policy.R',
     'DESCRIPTION', 'NAMESPACE', '.Rbuildignore', 'jarl.toml', '.lintr*', '.Rprofile*',
     'tools/review-ready-roxygen.R',
@@ -960,6 +961,11 @@ def finish_request(state, path, record, status):
                 say('Retained structured stage evidence: ' + str(path.with_name('evidence.json')))
             except (OSError, ValueError, KeyError, TypeError) as error:
                 say('Stage evidence issuance unavailable for reuse: ' + str(error))
+                if evidence_policy.reused_units(record['selection']):
+                    status = 1
+                    record['outcome'] = status
+                    save(path, record)
+                    say('Reuse invalidated at terminal issuance; invocation failed without fallback.')
         else:
             say('Stage evidence unavailable for reuse; terminal gate outcome is retained.')
     say('Review-ready terminal outcome: ' + str(status) + '; request: ' + record['id'] +

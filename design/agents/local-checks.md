@@ -203,6 +203,8 @@ no age-only expiry.
 The signed issuance index retains success and failure records in sequence order
 independent of the wall clock. Missing indexed evidence prevents reuse, including
 when the missing record could have superseded an older success.
+Origin validity is checked again under the issuance lock. A superseding failure
+or unavailable publication after validation fails a request relying on reuse.
 
 Environment identities include R and its checker implementation, OS/architecture,
 resolved tools and runtime assets, Python and R libraries with content/change
