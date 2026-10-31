@@ -9,11 +9,16 @@ signal and does not restrict merging. The `main` ruleset has no required CI
 status checks. The CRAN release process still requires the successful coverage
 job and Codecov report for the exact candidate SHA.
 
-The local source-tarball `R CMD check --as-cran` sets `NOT_CRAN=true` and
+The Full local source-tarball `R CMD check --as-cran` sets `NOT_CRAN=true` and
 requires every optional Suggest registered by the test suite. It runs the full
 suite, including snapshot expectations, once alongside package metadata,
 examples, and vignettes ([#941](https://github.com/sayuks/marginplyr/issues/941)).
-CRAN-emulating CI jobs retain their existing environment.
+The common CLI also selects Repository for supported repository prose and runs
+spelling, both linters, and mapped artifact verification while omitting package
+build/check ([#1099](https://github.com/sayuks/marginplyr/issues/1099)).
+[Local checks](../agents/local-checks.md) owns selection and evidence; Repository
+success does not assert full-suite or snapshot execution. CRAN-emulating CI jobs
+retain their existing environment.
 
 A reachable branch gets a test asserting its behavior or diagnostic; a
 meaningful internal backstop gets an abnormal-state test; a branch with no

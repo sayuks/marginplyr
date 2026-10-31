@@ -2,7 +2,7 @@
 
 This is the operational authority for the local boundary before a marginplyr
 commit is published for review. It defines which commits need the boundary,
-what the fixed check proves, and when its evidence expires. Pull-request CI
+what each selected path proves, and when its evidence expires. Pull-request CI
 remains the cross-platform and release-matrix authority.
 
 ## Language
@@ -15,15 +15,18 @@ exclusions. A tests-only change is Package-affecting. When the classification
 is uncertain, use this one.
 
 A **Repository-only change** can be shown to affect none of those things.
-Design and investigation notes and agent instructions that drive no generation
-are ordinary examples. Exclusion from the package is not sufficient: CI,
-release, or local-check tooling is Package-affecting when it can change a
-package check result. Repository-only does not mean unchecked: run the verifier
-or generation command owned by the changed artifact. It means the package
-boundary below is not additionally required.
+Design and investigation notes and agent instructions that drive no
+generation are ordinary examples. Exclusion from the package is not
+sufficient: CI, release, or local-check tooling is Package-affecting when it
+can change a package check result. Repository-only does not mean unchecked.
+Supported prose uses the Repository path below; unsupported changes use Full
+until a validated route exists.
 
-The **Review-ready check** is the fixed local gate for one Package-affecting
-commit. It is not a name for focused tests or for the wider release process.
+The **Review-ready check** is the local gate for one clean committed revision.
+It selects **Full** or **Repository** from the cumulative final tree difference
+against the unique merge-base with local `main`. Full retains the package
+boundary; Repository omits package build/check for supported repository prose.
+Focused tests and the wider release process have separate roles.
 
 ## Boundary
 
@@ -31,13 +34,12 @@ Run the Review-ready check before any of these transitions:
 
 - opening a non-draft pull request;
 - marking a draft pull request ready or requesting review; or
-- pushing a Package-affecting change to a pull request already ready for
-  review.
+- pushing a change to a pull request already ready for review.
 
 The alternative for the last case is to return the pull request to draft,
 push the change, and pass the check before making it ready again. A later
-Package-affecting change invalidates the earlier result. A Repository-only
-change does not.
+commit requires a fresh invocation; previous successful checks never narrow
+the comparison base.
 
 The checked state is a clean committed `HEAD`. The command archives that exact
 commit into a disposable directory, so ignored local files cannot enter the
@@ -58,7 +60,33 @@ When the invocation waits or runs, enter *Bounded work while waiting or
 checking* below while retaining the execution identity described under
 *Observing one invocation*.
 
-The check invocation takes no options. The admitted fixed gate runs, in order:
+The check invocation takes no path or skip options. Before waiting it pins the
+submitted commit, `refs/heads/main` commit, and unique merge-base, using local
+main without fetching. A later main update does not replace these identities.
+Missing or ambiguous bases, comparison failures, empty differences, unknown
+paths, mode/type changes, symlinks, and submodules select Full with a reason.
+Deletion and both sides of a rename participate in the NUL-delimited final
+tree comparison. Reverted historical edits do not participate.
+
+The supported prose categories and required verifier mapping have one home:
+`PROSE`, `REFERENCE_CHECKS`, and `CONTRACTS` in
+`tools/review-ready-admission.py`. It supports agent/domain/design Markdown,
+Markdown investigation notes, conduct policy, and operational Markdown under
+`tools/`. Other formats in those directories remain Full. Package
+documentation, licenses, CI configuration, and checking machinery remain Full.
+A Documentation path and CI-specific exemptions are not enabled.
+
+Both paths always execute package spelling, jarl, and package-aware lintr
+(the three source stages described below), followed by mapped artifact
+verification. Reference/context/invocation verification runs against the
+pinned disposable Git checkout; common source checks run against its archive.
+Operational docs also run their mapped contracts. The same artifact routes run
+on Full, so package checking cannot hide a required verifier failure. Missing
+or failing verifiers fail the invocation without changing paths.
+
+Repository stops after those checks. It records completed checks and explicitly
+reports package build/check, the full suite, and snapshots as omitted. Its
+success is a Repository result, never a Full pass. Full runs, in order:
 
 1. a test-source dependency scan that refuses every package candidate absent
    from `DESCRIPTION`;
@@ -114,13 +142,13 @@ They belong to the one check; they are not the shell execution an agent starts
 to run it. A subagent is separate again: its work and any shell execution it
 starts are not the agent-launched Review-ready invocation or evidence for it.
 
-For one clean commit, start one Review-ready invocation and retain its execution
-identity until it returns a terminal completion result. Only that invocation's
-terminal exit or timeout outcome is evidence. Do not infer success or failure
-from partial output, elapsed time, process absence, or a separate `ps`
-invocation. If the execution identity or its result is lost, the evidence is
-unavailable: report that before any replacement run, and do not silently rerun
-the check.
+For one clean commit, start one Review-ready invocation and retain its
+execution identity until it returns a terminal completion result. Only that
+invocation's terminal exit or timeout outcome is evidence for its selected
+path. Do not infer success or failure from partial output, elapsed time,
+process absence, or a separate `ps` invocation. If the execution identity or
+its result is lost, the evidence is unavailable: report that before any
+replacement run, and do not silently rerun the check.
 
 The following are mappings for the current shell interfaces, not a second
 definition of the evidence rule:
@@ -334,7 +362,7 @@ failed. A missing or delayed `.ips` does not prevent retry when the portable
 evidence satisfies these conditions; the command does not wait for or collect
 a native report.
 
-Record content hashes of the tarball, Quarto launcher, its `quarto.js`, and
+Full records content hashes of the tarball, Quarto launcher, its `quarto.js`, and
 Deno executable, together with the canonical Quarto/Deno executable paths and
 versions, before the first attempt. Immediately before retry, require those
 identities to remain available and unchanged. An identity change or inability

@@ -1,4 +1,5 @@
 #!/usr/bin/env Rscript
+# Review-ready selection protocol: 1
 
 # Runs the fixed local gate for one reviewable package commit. The implementation
 # lives beside this entry point so its command contract can be fixture-tested.
@@ -43,6 +44,7 @@ source(file.path(repository_path, "tools", "review-ready-check-lib.R"))
 
 status <- review_ready_check_cli(
   commandArgs(trailingOnly = TRUE),
-  expected_root = repository_path
+  expected_root = repository_path,
+  selection = read_review_ready_selection()
 )
 quit(status = status, save = "no")

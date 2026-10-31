@@ -28,6 +28,93 @@ MARKER = 'MARGINPLYR_REVIEW_REQUEST'
 CANCELLED = 130
 STALE = 3
 BLOCKED = 4
+SELECTION = 'MARGINPLYR_REVIEW_SELECTION'
+PROTOCOL = b'# Review-ready selection protocol: 1'
+
+# Supported prose and its verification routes live here. Other file formats in
+# these directories have no exemption. Checking machinery remains Full.
+PROSE = (r'(AGENTS\.md|CLAUDE\.md|CONTEXT\.md|CODE_OF_CONDUCT\.md|'
+         r'(?:design|investigation)/(?:[^/]+/)*[^/]+\.md|tools/[^/]+\.md)')
+REFERENCE_CHECKS = ['.github/scripts/verify-doc-references.R',
+                    '.github/scripts/verify-context-budget.R',
+                    '.github/scripts/verify-verifier-invocation.R']
+CONTRACTS = [
+    (r'(tools/(?:review-ready[^/]*|test-review-ready[^/]*|install-review-ready\.py|dependency-requirements\.R|required-test-suggests\.R)|'
+     r'\.github/scripts/verify-review-ready-check\.R|design/(?:agents/local-checks\.md|specs/review-ready[^/]*\.md))',
+     ['.github/scripts/verify-review-ready-check.R']),
+    (r'tools/(?:review-ready[^/]*\.(?:py|R)|test-review-ready[^/]*|install-review-ready\.py)',
+     ['tools/test-review-ready-admission.py', 'tools/test-review-ready-progress.R']),
+    (r'tools/cran-release\.md', ['.github/scripts/verify-cran-release.R']),
+    (r'tools/cran-preflight\.md', ['.github/scripts/verify-cran-preflight.R',
+                                '.github/scripts/verify-agent-network-policy.R',
+                                '.github/scripts/verify-codex-config.R']),
+]
+
+
+def git_bytes(root, *args):
+    return subprocess.check_output(['git', '-C', str(root), *args], stderr=subprocess.PIPE)
+
+
+def select_path(root, sha):
+    """Pin local comparison identities and classify the cumulative final trees.
+
+    Unavailable or unsupported evidence can only strengthen the gate to Full.
+    Nothing here loads dependencies or starts verification before admission.
+    """
+    selection = dict(submitted=sha, main=None, base=None, path='Full', reasons=[], verifiers=[])
+    try:
+        selection['main'] = git(root, 'rev-parse', '--verify', 'refs/heads/main^{commit}')
+        bases = git(root, 'merge-base', '--all', sha, selection['main']).splitlines()
+        if len(bases) != 1 or not re.fullmatch('[0-9a-f]{40}', bases[0]):
+            raise ValueError('missing or ambiguous merge-base')
+        selection['base'] = bases[0]
+        records = git_bytes(root, 'diff', '--raw', '-z', '--no-abbrev', '--no-ext-diff',
+                            '--no-textconv', '--ignore-submodules=none', '--no-relative',
+                            '--find-renames', bases[0], sha, '--').split(b'\0')
+        if records == [b'']:
+            raise ValueError('empty cumulative diff')
+        if records.pop() != b'':
+            raise ValueError('unterminated diff records')
+        names = []
+        reasons = []
+        index = 0
+        while index < len(records):
+            header = re.fullmatch(
+                rb':([0-7]{6}) ([0-7]{6}) [0-9a-f]{40} [0-9a-f]{40} ([AMDTRCUXB])([0-9]*)',
+                records[index])
+            if header is None:
+                raise ValueError('unrecognized raw diff record')
+            before, after, status, score = header.groups()
+            count = 2 if status in (b'R', b'C') else 1
+            paths = records[index + 1:index + 1 + count]
+            if len(paths) != count or not all(paths):
+                raise ValueError('missing diff path')
+            paths = [path.decode('utf-8', errors='strict') for path in paths]
+            names.extend(paths)
+            modes = {before, after} - {b'000000'}
+            if modes != {b'100644'} or (before != after and status not in (b'A', b'D')):
+                reasons.append('unsupported file mode/type: ' + repr(paths))
+            if status not in (b'A', b'M', b'D', b'R') or (status == b'R' and not score):
+                reasons.append('unsupported change status: ' + repr(paths))
+            for name in paths:
+                if not re.fullmatch(PROSE, name):
+                    reasons.append('unsupported path: ' + repr(name))
+            index += 1 + count
+        selection['verifiers'] = list(REFERENCE_CHECKS)
+        for pattern, checks in CONTRACTS:
+            if any(re.fullmatch(pattern, name) for name in names):
+                selection['verifiers'].extend(check for check in checks if check not in selection['verifiers'])
+        entry = git_bytes(root, 'show', sha + ':tools/review-ready-check.R')
+        if PROTOCOL not in entry.splitlines():
+            selection['verifiers'] = []
+            reasons.append('submitted revision lacks selection protocol; existing Full gate')
+        if not reasons:
+            selection['path'] = 'Repository'
+            reasons = ['all cumulative changes are supported repository prose']
+        selection['reasons'] = reasons
+    except (OSError, ValueError, subprocess.SubprocessError) as error:
+        selection['reasons'] = ['comparison unavailable: ' + str(error)]
+    return selection
 
 
 def say(message):
@@ -206,7 +293,8 @@ def run_gate(path, record, root, sha, cancellation, parent):
                 if not owned(processes(), record):
                     status = CANCELLED if stopping is not None else (result if result >= 0 else 128 - result)
                     path.unlink()
-                    say('Review-ready terminal outcome: ' + str(status) + '; checked commit: ' + sha)
+                    say('Review-ready terminal outcome: ' + str(status) + '; checked commit: ' + sha +
+                        '; selected path: ' + record['selection']['path'])
                     return status
             if stopping is not None and time.monotonic() - stopping > 10:
                 raise RuntimeError('Owned processing did not stop within the cleanup deadline.')
@@ -249,6 +337,14 @@ def run_pinned(args):
             raise RuntimeError('The pinned worker requires held admission capacity.')
     subprocess.run(['git', 'clone', '--quiet', '--shared', '--no-checkout', root, checkout], check=True)
     subprocess.run(['git', '-C', checkout, 'checkout', '--quiet', '--detach', sha], check=True)
+    selection = record.get('selection', dict(path='Full', verifiers=[]))
+    transport = Path(checkout).parent / 'selection.dcf'
+    transport.write_text('Path: ' + selection['path'] + '\nCommit: ' + sha +
+                         '\nRequest: ' + record['token'] + '\nVerifiers: ' +
+                         ' '.join(selection['verifiers']) + '\n')
+    # Overwrite caller-provided selection. Only the lock-authorized worker
+    # transports the manager's pinned decision into compatible source gates.
+    os.environ[SELECTION] = str(transport)
     os.chdir(checkout)
     os.execvpe('Rscript', ['Rscript', 'tools/review-ready-check.R'], os.environ)
 
@@ -281,6 +377,9 @@ def main(args=None):
             say(json.dumps(record, indent=2) if record else 'No active or unfinished request. No check was run.')
             return 0
         root, sha = (None, None) if options.recover else identity()
+        selection = None if options.recover else select_path(root, sha)
+        if selection is not None:
+            say('Review-ready selection: ' + json.dumps(selection, ensure_ascii=True))
         if not options.recover and not shutil.which('Rscript'):
             raise RuntimeError('Rscript is missing from PATH. Install the review prerequisites; no check was run.')
         # Check process visibility before waiting or starting any heavy stage.
@@ -327,7 +426,8 @@ def main(args=None):
         if cancellation[0]:
             return CANCELLED
         record = dict(version=1, token=uuid.uuid4().hex, sha=sha, root=str(root),
-                      boot=boot, manager=manager, group=None, children=[], started=time.time())
+                      boot=boot, manager=manager, group=None, children=[], started=time.time(),
+                      selection=selection)
         return run_gate(path, record, root, sha, cancellation, parent)
     except (OSError, ValueError, KeyError, TypeError, RuntimeError, subprocess.SubprocessError) as error:
         say('Review-ready admission failed: ' + str(error) + '. No passing check evidence.')

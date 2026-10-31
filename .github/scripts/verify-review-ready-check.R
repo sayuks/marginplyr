@@ -598,6 +598,57 @@ expect_identical(
 )
 expect_identical(checker_calls, 3L, "each failed invocation ran its checker only once")
 
+# Repository keeps every common source check and its mapped artifact checks,
+# but never reaches dependency validation, build, or the package checker.
+local({
+  commands <- list()
+  repository_runner <- function(command, args, directory, ...) {
+    commands[[length(commands) + 1L]] <<- list(command = command, args = args)
+    fixture_runner(command, args, directory, ...)
+  }
+  route <- list(path = "Repository", sha = clean_identity$sha,
+    verifiers = ".github/scripts/verify-context-budget.R")
+  never_check <- function(...) stop("Repository must not run R CMD check.")
+  output <- capture.output(status <- review_ready_check_cli(character(), getwd(),
+    identity = clean_identity, prerequisites = prerequisites,
+    runner = repository_runner, checker = never_check, selection = route))
+  expect_identical(status, 0L, "Repository success")
+  expect_identical(length(commands), length(steps) + 2L,
+    "Repository runs archive, all common checks, and mapped verification")
+  expect_identical(lapply(commands[2:4], `[[`, "args"),
+    unname(lapply(steps, `[[`, "args")), "Repository retains exact common commands")
+  expect_identical(commands[[5L]]$args, route$verifiers,
+    "Repository executes its required verifier")
+  expect_true(any(grepl("Repository passed", output, fixed = TRUE)),
+    "Repository success has its own verdict")
+  expect_true(any(grepl("package build/check omitted", output, fixed = TRUE)),
+    "Repository explicitly records omissions")
+  expect_true(!dir.exists(observed_workspace), "Repository success cleanup")
+  for (failed in 2:5) {
+    seen <- 0L
+    failing_runner <- function(...) {
+      seen <<- seen + 1L
+      if (seen == failed) return(list(status = 7L, output = character()))
+      repository_runner(...)
+    }
+    output <- capture.output(status <- review_ready_check_cli(character(), getwd(),
+      identity = clean_identity, prerequisites = prerequisites,
+      runner = failing_runner, checker = never_check, selection = route))
+    expect_identical(status, 1L, "a required Repository stage fails the invocation")
+    expect_identical(seen, failed, "failure stops subsequent Repository stages")
+    expect_true(!dir.exists(observed_workspace), "Repository failure cleanup")
+  }
+  route$verifiers <- "missing-required-verifier.R"
+  output <- capture.output(status <- review_ready_check_cli(character(), getwd(),
+    identity = clean_identity, prerequisites = prerequisites,
+    runner = repository_runner, checker = never_check, selection = route))
+  expect_identical(status, 1L, "a missing mapped verifier fails")
+  route$sha <- paste(rep("b", 40L), collapse = "")
+  expect_error(run_review_ready_check(getwd(), identity = clean_identity,
+    prerequisites = prerequisites, selection = route),
+    "does not match", "a substituted submitted identity")
+})
+
 child_script <- file.path(diagnostic_fixture, "failed-cli.R")
 writeLines(c(
   'source(".github/scripts/cran-note-policy.R")',

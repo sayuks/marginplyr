@@ -27,7 +27,8 @@ class Lifecycle(unittest.TestCase):
         shutil.copyfile(SOURCE, self.command)
         self.jobs = []
         self.logs = []
-        self.env = dict(os.environ)
+        self.env = {key: value for key, value in os.environ.items()
+                    if key not in ('MARGINPLYR_REVIEW_REQUEST', 'MARGINPLYR_REVIEW_SELECTION')}
         self.bin = self.root / 'bin'
         self.bin.mkdir()
         shim = self.bin / 'Rscript'
@@ -107,6 +108,206 @@ sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
                 except ProcessLookupError:
                     pass
         self.temp.cleanup()
+
+    def repository_branch(self):
+        self.git(self.repo, 'checkout', '-qb', 'selection-support')
+        entry = self.repo / 'tools/review-ready-check.R'
+        entry.write_text('# Review-ready selection protocol: 1\n')
+        self.git(self.repo, 'add', '.')
+        self.git(self.repo, 'commit', '-qm', 'selection support')
+        self.git(self.repo, 'branch', '-f', 'main', 'HEAD')
+        self.git(self.repo, 'checkout', '-qb', 'prose')
+        note = self.repo / 'design/note.md'
+        note.parent.mkdir()
+        note.write_text('Repository prose\n')
+        self.git(self.repo, 'add', '.')
+        self.git(self.repo, 'commit', '-qm', 'prose')
+
+    def test_supported_prose_selects_repository_with_pinned_comparison(self):
+        self.repository_branch()
+        main = self.git(self.repo, 'rev-parse', 'main')
+        job, log = self.start()
+        output = self.finish(job, log)
+        self.assertIn('"path": "Repository"', output)
+        self.assertIn('"main": "' + main + '"', output)
+        self.assertIn('"base": "' + main + '"', output)
+        self.assertIn('verify-doc-references.R', output)
+
+    def selected(self, **env):
+        job, log = self.start(FIXTURE_SECONDS='0', **env)
+        output = self.finish(job, log)
+        line = next(line for line in output.splitlines() if line.startswith('Review-ready selection: '))
+        return json.loads(line.removeprefix('Review-ready selection: '))
+
+    def commit_all(self):
+        self.git(self.repo, 'add', '-A')
+        self.git(self.repo, 'commit', '-qm', 'fixture change')
+
+    def test_supported_prose_categories_keep_their_contract_routes(self):
+        self.repository_branch()
+        for name in ('AGENTS.md', 'CLAUDE.md', 'CONTEXT.md', 'CODE_OF_CONDUCT.md',
+                     'design/adr/decision.md', 'investigation/note.md',
+                     'tools/cran-release.md', 'tools/review-ready-admission.md'):
+            path = self.repo / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text('Prose\n')
+        self.commit_all()
+        selection = self.selected()
+        self.assertEqual(selection['path'], 'Repository')
+        self.assertIn('.github/scripts/verify-cran-release.R', selection['verifiers'])
+        self.assertIn('.github/scripts/verify-review-ready-check.R', selection['verifiers'])
+        self.assertIn('.github/scripts/verify-context-budget.R', selection['verifiers'])
+        (self.repo / 'tools/review-ready-admission.py').write_text('# machinery\n')
+        self.commit_all()
+        selection = self.selected()
+        self.assertEqual(selection['path'], 'Full')
+        self.assertIn('tools/test-review-ready-admission.py', selection['verifiers'])
+
+    def test_comparison_errors_and_unclassifiable_records_fall_back_to_full(self):
+        self.repository_branch()
+        real_git = shutil.which('git')
+        shim = self.bin / 'git'
+        for raw in (None, b'not a raw record\0', b':100644 100644 invalid\0name\0'):
+            with self.subTest(raw=raw):
+                code = '#!' + sys.executable + '\nimport os,sys\n'
+                code += 'if "diff" in sys.argv:\n'
+                if raw is None:
+                    code += ' sys.exit(9)\n'
+                else:
+                    code += ' os.write(1, ' + repr(raw) + '); sys.exit(0)\n'
+                code += 'os.execv(' + repr(real_git) + ', [' + repr(real_git) + '] + sys.argv[1:])\n'
+                shim.write_text(code)
+                shim.chmod(0o755)
+                selection = self.selected()
+                self.assertEqual(selection['path'], 'Full')
+                self.assertIn('comparison unavailable', selection['reasons'][0])
+
+    def test_cumulative_tree_includes_earlier_code_but_ignores_reverted_code(self):
+        self.repository_branch()
+        code = self.repo / 'code.R'
+        code.write_text('1\n')
+        self.commit_all()
+        (self.repo / 'design/note.md').write_text('More prose\n')
+        self.commit_all()
+        self.assertEqual(self.selected()['path'], 'Full')
+        code.unlink()
+        self.commit_all()
+        self.assertEqual(self.selected()['path'], 'Repository')
+
+    def test_deletions_renames_and_nul_delimited_paths(self):
+        self.repository_branch()
+        main = self.git(self.repo, 'rev-parse', 'main')
+        for name in ('design/a space.md', 'design/a\ttab.md', 'design/a\nnewline.md', 'design/日本語.md'):
+            with self.subTest(name=name):
+                self.git(self.repo, 'reset', '--hard', main)
+                (self.repo / 'design').mkdir(exist_ok=True)
+                (self.repo / name).write_text('Prose\n')
+                self.commit_all()
+                self.assertEqual(self.selected()['path'], 'Repository')
+        self.git(self.repo, 'reset', '--hard', main)
+        (self.repo / 'design').mkdir(exist_ok=True)
+        (self.repo / 'design/a.md').write_text('Old prose\n')
+        self.commit_all()
+        self.git(self.repo, 'branch', '-f', 'main', 'HEAD')
+        self.git(self.repo, 'mv', 'design/a.md', 'design/b.md')
+        self.commit_all()
+        self.assertEqual(self.selected()['path'], 'Repository')
+        self.git(self.repo, 'mv', 'design/b.md', 'code.R')
+        self.commit_all()
+        self.assertEqual(self.selected()['path'], 'Full')
+        self.git(self.repo, 'reset', '--hard', 'main')
+        (self.repo / 'design/a.md').unlink()
+        self.commit_all()
+        self.assertEqual(self.selected()['path'], 'Repository')
+        # An unsupported old name must not disappear behind a supported new name.
+        self.git(self.repo, 'reset', '--hard', 'main')
+        self.git(self.repo, 'mv', 'design/a.md', 'code.R')
+        self.commit_all()
+        self.git(self.repo, 'branch', '-f', 'main', 'HEAD')
+        self.git(self.repo, 'mv', 'code.R', 'design/a.md')
+        self.commit_all()
+        self.assertEqual(self.selected()['path'], 'Full')
+
+    def test_unknown_executable_documentation_ci_modes_links_and_submodules_are_full(self):
+        self.repository_branch()
+        baseline = self.git(self.repo, 'rev-parse', 'HEAD')
+        for name in ('design/script.R', 'investigation/script.py', 'tools/unknown.py',
+                     'README.md', 'README.qmd', 'NEWS.md', 'LICENSE.md', '.github/job.yaml'):
+            with self.subTest(name=name):
+                self.git(self.repo, 'reset', '--hard', baseline)
+                path = self.repo / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text('unknown\n')
+                self.commit_all()
+                self.assertEqual(self.selected()['path'], 'Full')
+        self.git(self.repo, 'reset', '--hard', baseline)
+        note = self.repo / 'design/note.md'
+        note.chmod(0o755)
+        self.commit_all()
+        self.assertIn('mode/type', ' '.join(self.selected()['reasons']))
+        self.git(self.repo, 'reset', '--hard', baseline)
+        note.unlink()
+        note.symlink_to('../DESCRIPTION')
+        self.commit_all()
+        self.assertIn('mode/type', ' '.join(self.selected()['reasons']))
+        self.git(self.repo, 'reset', '--hard', baseline)
+        self.git(self.repo, 'update-index', '--add', '--cacheinfo',
+                 '160000,' + baseline + ',design/module.md')
+        self.git(self.repo, 'commit', '-qm', 'gitlink')
+        (self.repo / 'design/module.md').mkdir()
+        self.assertIn('mode/type', ' '.join(self.selected()['reasons']))
+
+    def test_missing_unrelated_ambiguous_bases_empty_diff_and_old_revision_are_full(self):
+        self.repository_branch()
+        main = self.git(self.repo, 'rev-parse', 'main')
+        self.git(self.repo, 'branch', '-D', 'main')
+        self.assertIn('comparison unavailable', self.selected()['reasons'][0])
+        self.git(self.repo, 'branch', 'main', 'HEAD')
+        self.assertIn('empty cumulative diff', self.selected()['reasons'][0])
+        self.git(self.repo, 'branch', '-f', 'main', main)
+        entry = self.repo / 'tools/review-ready-check.R'
+        entry.write_text('# old gate\n')
+        self.commit_all()
+        selected = self.selected()
+        self.assertEqual(selected['path'], 'Full')
+        self.assertIn('lacks selection protocol', ' '.join(selected['reasons']))
+        # Two commits with the same pair of independent parents have two bases.
+        tree = self.git(self.repo, 'rev-parse', 'HEAD^{tree}')
+        left = self.git(self.repo, 'commit-tree', tree, '-p', main, '-m', 'left')
+        right = self.git(self.repo, 'commit-tree', tree, '-p', main, '-m', 'right')
+        first = self.git(self.repo, 'commit-tree', tree, '-p', left, '-p', right, '-m', 'first')
+        second = self.git(self.repo, 'commit-tree', tree, '-p', right, '-p', left, '-m', 'second')
+        self.git(self.repo, 'reset', '--hard', first)
+        self.git(self.repo, 'branch', '-f', 'main', second)
+        selected = self.selected()
+        self.assertEqual(selected['path'], 'Full')
+        self.assertIn('ambiguous merge-base', selected['reasons'][0])
+        unrelated = self.git(self.repo, 'commit-tree', tree, '-m', 'unrelated')
+        self.git(self.repo, 'branch', '-f', 'main', unrelated)
+        self.assertEqual(self.selected()['path'], 'Full')
+
+    def test_later_main_does_not_replace_pinned_comparison_or_run_checks_while_waiting(self):
+        self.repository_branch()
+        main = self.git(self.repo, 'rev-parse', 'main')
+        active, a = self.start(FIXTURE_SECONDS='2')
+        self.until(a, 'HEAVY ')
+        waiter, b = self.start()
+        self.until(b, 'Waiting')
+        self.assertNotIn('HEAVY ', b.read_text())
+        self.assertIn('"main": "' + main + '"', b.read_text())
+        self.git(self.repo, 'branch', '-f', 'main', 'HEAD')
+        self.finish(active, a)
+        output = self.finish(waiter, b)
+        self.assertIn('"path": "Repository"', output)
+        self.assertIn('"main": "' + main + '"', output)
+
+    def test_caller_cannot_select_repository_or_skip_verifiers(self):
+        job, log = self.start(MARGINPLYR_REVIEW_SELECTION='/untrusted/skip')
+        output = self.finish(job, log)
+        self.assertIn('"path": "Full"', output)
+        for arg in ('--repository', '--skip-check', '--path=Repository'):
+            job, log = self.start(args=(arg,))
+            self.assertNotIn('HEAVY ', self.finish(job, log, 2))
 
     def test_worktrees_and_clones_share_one_capacity(self):
         worktree = self.root / 'worktree'

@@ -1,11 +1,13 @@
 # Shared local Review-ready admission
 
 `marginplyr-review-ready` admits one complete Review-ready check per OS user
-across marginplyr clones and worktrees. It retains the fixed gate's four test
-workers. Waiting does not load R dependencies or run any check stage. CI and
-commands outside this boundary are unchanged. The accepted design is
-[resource admission](../design/specs/review-ready-resource-admission.md), and
-[local checks](../design/agents/local-checks.md) owns the gate and its evidence.
+across marginplyr clones and worktrees. Full retains four test workers;
+Repository omits package build/check for supported prose. Both paths use the
+same slot. Waiting does not load R dependencies or run any check stage. CI
+and commands outside this boundary are unchanged. The accepted design is
+[resource admission](../design/specs/review-ready-resource-admission.md),
+and [local checks](../design/agents/local-checks.md) owns the gate and its
+evidence.
 
 ## Install and migrate
 
@@ -34,14 +36,23 @@ with `command -v marginplyr-review-ready` and
 `marginplyr-review-ready --status` before its next check. Installation reports
 a PATH problem rather than editing shell profiles automatically.
 
-In every existing session, acknowledge this entry point and replace remembered
-`Rscript tools/review-ready-check.R` invocations before starting another check.
-Refresh/restart sessions whose instructions or PATH cannot be updated. Older
-worktrees need not merge this implementation: run the installed command from
-their root. Unmodified older scripts invoked directly bypass this cooperative
-boundary. Installation cannot intercept them. The updated R entry point delegates to the
-common CLI when invoked directly; it refuses missing installation. Do not launch a fallback direct
-check when installation, process inspection, or admission fails.
+In every existing session, acknowledge this entry point and replace
+remembered `Rscript tools/review-ready-check.R` invocations before starting
+another check. Refresh/restart sessions whose instructions or PATH cannot be
+updated. Older worktrees need not merge this implementation: run the
+installed command from their root. Selection requires the submitted R entry
+point's versioned protocol marker. Unsupported older revisions retain their
+existing Full gate; an older installed launcher with new sources also
+retains Full. Refresh the installed launcher from the implementation
+checkout to enable selection; source edits alone never update the standalone
+installed copy. Compare its bytes with `tools/review-ready-admission.py`
+after installation, and verify both a real Full and a real prose-only
+Repository invocation through the installed command. Unmodified older
+scripts invoked directly bypass this cooperative boundary. Installation
+cannot intercept them. The updated R entry point delegates to the common CLI
+when invoked directly; it refuses missing installation. Do not launch a
+fallback direct check when installation, process inspection, or admission
+fails.
 
 ## Invocation and outcomes
 
@@ -49,16 +60,32 @@ check when installation, process inspection, or admission fails.
 marginplyr-review-ready
 ```
 
-The CLI requires and pins a clean committed HEAD before waiting. Waiting lines
-show that SHA, elapsed wait, and the active commit/worktree when known. There
-is no queue position or ETA. Immediately before admission it revalidates HEAD
-and cleanliness; a stale request exits 3 without checking a newer revision.
-After admission, a disposable shared Git clone at the pinned SHA invokes that
-revision's existing fixed R gate. This prevents later source edits, changed
-HEAD, and untracked files from substituting the requested revision, including
-on older worktrees. The gate still archives the exact SHA and produces its
-usual live progress, full check, diagnostics, and authorized native-crash retry.
-The original worktree is never checked out or reset by the CLI.
+The CLI requires clean committed HEAD and pins submitted SHA, local
+`refs/heads/main` SHA, and unique merge-base before waiting. No automatic fetch
+or previous-success baseline is used. `Review-ready selection` prints those
+identities, selected path, reasons, and required verifiers as JSON. Paths and
+reasons containing unusual filename characters are JSON escaped. Full is the
+fallback for unavailable or unsupported comparisons. The authoritative path
+and verifier registry is `PROSE`, `REFERENCE_CHECKS`, and `CONTRACTS` in
+`tools/review-ready-admission.py`; [local checks](../design/agents/local-checks.md)
+owns the policy. There is no caller-selected path or unrestricted skip flag.
+
+A later local main update does not affect the pinned comparison. Waiting
+lines show that SHA, elapsed wait, and the active commit/worktree when
+known. There is no queue position or ETA. Immediately before admission it
+revalidates HEAD and cleanliness; a stale request exits 3 without checking a
+newer revision. After admission, a disposable shared Git clone at the pinned
+SHA invokes that revision's R gate with an internal request-bound selection
+transport. This prevents later source edits, changed HEAD, and untracked
+files from substituting the requested revision, including on older
+worktrees. The gate archives the exact SHA. Both paths run spelling and both
+linters, loading the package before lintr, plus mapped artifact
+verification. Completed stages are printed individually. Repository
+explicitly omits package build/check and reports its own result. Full
+retains dependency checks, full-suite live progress, snapshots, diagnostics,
+NOTE policy, and authorized native-crash retry. The terminal CLI outcome
+includes the selected path; zero alone does not imply that Full ran. The
+original worktree is never checked out or reset by the CLI.
 
 Retain the same execution handle through waiting, execution, cleanup, and
 terminal exit. While waiting or checking, follow
@@ -118,7 +145,9 @@ python3 tools/test-review-ready-admission.py
 Rscript .github/scripts/verify-review-ready-check.R
 ```
 
-The Python fixtures substitute the OS-home adapter for independent test
+The Python fixtures cover cumulative/final-tree selection, NUL-delimited names,
+rename sides, deletions, unsafe modes, missing/ambiguous bases, and pinned main.
+They also substitute the OS-home adapter for independent test
 users, the boot-identity adapter for simulated restart recovery, and a delayed
 filesystem open for the completion/read race. A lightweight `Rscript` executable
 is provided at the external checker
