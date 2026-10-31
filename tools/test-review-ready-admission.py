@@ -173,6 +173,57 @@ sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
                 self.assertEqual(selection['path'], 'Full')
                 self.assertIn('unsupported prose content', ' '.join(selection['reasons']))
 
+    def test_ci_configuration_routes_survive_cumulative_package_changes(self):
+        self.repository_branch()
+        for name in ('.github/workflows/lint.yaml', '.github/scripts/verify-doc-references.R',
+                     'altdoc/quarto_website.yml', 'codecov.yml', '.codex/config.toml',
+                     '.claude/settings.json'):
+            path = self.repo / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text('# supported artifact\n')
+        self.commit_all()
+        selected = self.selected()
+        self.assertEqual(selected['path'], 'Repository')
+        required = ('tools/verify-ci-artifacts.py', 'tools/test-ci-artifacts.py',
+                    'tools/verify-site-artifacts.R', '.github/scripts/verify-coverage-policy.R',
+                    '.github/scripts/verify-agent-network-policy.R',
+                    '.github/scripts/verify-codex-config.R')
+        for verifier in required:
+            self.assertIn(verifier, selected['verifiers'])
+        (self.repo / 'R').mkdir()
+        (self.repo / 'R/change.R').write_text('1\n')
+        self.commit_all()
+        selected = self.selected()
+        self.assertEqual(selected['path'], 'Full')
+        for verifier in required:
+            self.assertIn(verifier, selected['verifiers'])
+
+    def test_checker_helpers_and_unsupported_ci_inputs_keep_full_contracts(self):
+        self.repository_branch()
+        baseline = self.git(self.repo, 'rev-parse', 'HEAD')
+        for name in ('tools/review-ready-check-lib.R', 'tools/install-review-ready.py',
+                     'tools/dependency-requirements.R', 'tools/required-test-suggests.R',
+                     '.github/scripts/cran-note-policy.R', 'tools/verify-ci-artifacts.py',
+                     'tools/test-ci-artifacts.py', 'tools/ci-workflow-contracts.json',
+                     'tools/verify-site-artifacts.R'):
+            with self.subTest(name=name):
+                self.git(self.repo, 'reset', '--hard', baseline)
+                path = self.repo / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text('# checking machinery\n')
+                self.commit_all()
+                selected = self.selected()
+                self.assertEqual(selected['path'], 'Full')
+                self.assertIn('tools/test-ci-artifacts.py', selected['verifiers'])
+        for name in ('.github/workflows/unknown.yaml', 'altdoc/custom.py',
+                     '.github/scripts/unknown.R', 'investigation/executable.R'):
+            self.git(self.repo, 'reset', '--hard', baseline)
+            path = self.repo / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text('# unsupported\n')
+            self.commit_all()
+            self.assertEqual(self.selected()['path'], 'Full')
+
     def test_comparison_errors_and_unclassifiable_records_fall_back_to_full(self):
         self.repository_branch()
         real_git = shutil.which('git')

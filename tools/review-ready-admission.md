@@ -2,8 +2,8 @@
 
 `marginplyr-review-ready` admits one complete Review-ready check per OS user
 across marginplyr clones and worktrees. Full retains four test workers;
-Repository omits package build/check for supported prose. Both paths use the
-same slot. Waiting does not load R dependencies or run any check stage. CI
+Repository omits package build/check for supported repository artifacts. Both
+paths use the same slot. Waiting does not load R dependencies or run any check stage. CI
 and commands outside this boundary are unchanged. The accepted design is
 [resource admission](../design/specs/review-ready-resource-admission.md),
 and [local checks](../design/agents/local-checks.md) owns the gate and its
@@ -49,7 +49,7 @@ existing Full gate; an older installed launcher with new sources also
 retains Full. Refresh the installed launcher from the implementation
 checkout to enable selection; source edits alone never update the standalone
 installed copy. Compare its bytes with `tools/review-ready-admission.py`
-after installation, and verify both a real Full and a real prose-only
+after installation, and verify both a real Full and a real supported-artifact
 Repository invocation through the installed command. Unmodified older
 scripts invoked directly bypass this cooperative boundary. Installation
 cannot intercept them. The updated R entry point delegates to the common CLI
@@ -69,7 +69,8 @@ or previous-success baseline is used. `Review-ready selection` prints those
 identities, selected path, reasons, and required verifiers as JSON. Paths and
 reasons containing unusual filename characters are JSON escaped. Full is the
 fallback for unavailable or unsupported comparisons. The authoritative path
-and verifier registry is `PROSE`, `REFERENCE_CHECKS`, and `CONTRACTS` in
+and verifier registry is `PROSE`, `ARTIFACTS`, `CHECKING`, `REFERENCE_CHECKS`,
+and `CONTRACTS` in
 `tools/review-ready-admission.py`; [local checks](../design/agents/local-checks.md)
 owns the policy. There is no caller-selected path or unrestricted skip flag.
 
@@ -149,11 +150,21 @@ retained at the printed path for inspection; remove them only after recovery.
 ```sh
 python3 tools/test-review-ready-admission.py
 Rscript .github/scripts/verify-review-ready-check.R
+python3 tools/test-ci-artifacts.py
+python3 tools/verify-ci-artifacts.py
 ```
 
 The Python fixtures cover cumulative/final-tree selection, NUL-delimited names,
 rename sides, deletions, unsafe modes, missing/ambiguous bases, and pinned main.
-They also substitute the OS-home adapter for independent test
+Artifact fixtures exercise removed workflow wiring, changed conditions and
+environment, YAML syntax failures, missing actionlint, unsupported inputs, and
+CI script behavior. Workflow contracts preserve all executable fields while
+allowing comments and display names to change. Local checks owns the supported
+cases and prerequisites; a package-check result never fills missing CI
+verification. Site configuration routes render and verify output within the
+same admission slot.
+
+The process fixtures also substitute the OS-home adapter for independent test
 users, the boot-identity adapter for simulated restart recovery, and a delayed
 filesystem open for the completion/read race. A lightweight `Rscript` executable
 is provided at the external checker

@@ -772,9 +772,16 @@ read_review_ready_selection <- function() {
       (is.na(verifiers) || !nzchar(verifiers))) {
     stop("Repository requires mapped artifact verification.", call. = FALSE)
   }
-  list(path = record[[1L, "Path"]], sha = record[[1L, "Commit"]],
+  selection <- list(path = record[[1L, "Path"]], sha = record[[1L, "Commit"]],
     verifiers = if (is.na(verifiers) || !nzchar(verifiers)) character() else
       strsplit(verifiers, " ", fixed = TRUE)[[1L]])
+  if ("Base" %in% colnames(record) && !is.na(record[[1L, "Base"]])) {
+    if (!grepl("^[0-9a-f]{40}$", record[[1L, "Base"]])) {
+      stop("Invalid admitted comparison base.", call. = FALSE)
+    }
+    selection$base <- record[[1L, "Base"]]
+  }
+  selection
 }
 
 # Runs the manager's artifact routes in the pinned disposable Git checkout;
@@ -787,7 +794,9 @@ run_review_ready_verifiers <- function(selection, identity, prerequisites, runne
     command <- if (endsWith(path, ".py")) unname(Sys.which("python3")) else
       prerequisites$rscript
     run_review_ready_step(paste("Artifact verification:", path),
-      list(command = command, args = path, env = character()),
+      list(command = command, args = path, env = paste0(
+        "MARGINPLYR_REVIEW_BASE=", if (is.null(selection$base)) "" else selection$base
+      )),
       identity$root, runner = runner)
     cat("Completed artifact verification: ", path, "\n", sep = "")
   }

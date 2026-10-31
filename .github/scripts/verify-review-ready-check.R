@@ -621,6 +621,15 @@ local({
     list(path = "Repository", sha = clean_identity$sha,
       verifiers = ".github/scripts/verify-context-budget.R"),
     "the admitted worker's Repository transport")
+  writeLines(c("Path: Repository", paste("Commit:", clean_identity$sha),
+    "Request: fixture", "Verifiers: .github/scripts/verify-context-budget.R",
+    paste("Base:", clean_identity$sha)), transport)
+  expect_identical(read_review_ready_selection()$base, clean_identity$sha,
+    "the pinned comparison reaches artifact verification")
+  writeLines(c("Path: Full", paste("Commit:", clean_identity$sha),
+    "Request: fixture", "Verifiers:", "Base: invalid"), transport)
+  expect_error(read_review_ready_selection(), "Invalid admitted comparison base",
+    "an invalid comparison base")
   Sys.setenv(MARGINPLYR_REVIEW_REQUEST = "another-request")
   expect_error(read_review_ready_selection(), "Invalid admitted",
     "a different admitted request")
@@ -635,12 +644,12 @@ local({
 # but never reaches dependency validation, build, or the package checker.
 local({
   commands <- list()
-  repository_runner <- function(command, args, directory, ...) {
-    commands[[length(commands) + 1L]] <<- list(command = command, args = args)
+  repository_runner <- function(command, args, directory, env = character(), ...) {
+    commands[[length(commands) + 1L]] <<- list(command = command, args = args, env = env)
     fixture_runner(command, args, directory, ...)
   }
   route <- list(path = "Repository", sha = clean_identity$sha,
-    verifiers = ".github/scripts/verify-context-budget.R")
+    base = clean_identity$sha, verifiers = ".github/scripts/verify-context-budget.R")
   never_check <- function(...) stop("Repository must not run R CMD check.")
   output <- capture.output(status <- review_ready_check_cli(character(), getwd(),
     identity = clean_identity, prerequisites = prerequisites,
@@ -652,6 +661,8 @@ local({
     unname(lapply(steps, `[[`, "args")), "Repository retains exact common commands")
   expect_identical(commands[[5L]]$args, route$verifiers,
     "Repository executes its required verifier")
+  expect_identical(commands[[5L]]$env, paste0("MARGINPLYR_REVIEW_BASE=", route$base),
+    "artifact commands receive the pinned base in system2 environment format")
   expect_true(any(grepl("Repository passed", output, fixed = TRUE)),
     "Repository success has its own verdict")
   expect_true(any(grepl("package build/check omitted", output, fixed = TRUE)),
@@ -671,6 +682,19 @@ local({
     expect_identical(seen, failed, "failure stops subsequent Repository stages")
     expect_true(!dir.exists(observed_workspace), "Repository failure cleanup")
   }
+  route$path <- "Full"
+  seen <- 0L
+  failing_artifact <- function(...) {
+    seen <<- seen + 1L
+    if (seen == 5L) return(list(status = 7L, output = character()))
+    repository_runner(...)
+  }
+  output <- capture.output(status <- review_ready_check_cli(character(), getwd(),
+    identity = clean_identity, prerequisites = prerequisites,
+    runner = failing_artifact, checker = never_check, selection = route))
+  expect_identical(status, 1L, "Full cannot bypass a failing required artifact")
+  expect_identical(seen, 5L, "Full stops before package checking after artifact failure")
+  route$path <- "Repository"
   route$verifiers <- "missing-required-verifier.R"
   output <- capture.output(status <- review_ready_check_cli(character(), getwd(),
     identity = clean_identity, prerequisites = prerequisites,

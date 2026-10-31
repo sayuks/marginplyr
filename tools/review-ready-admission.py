@@ -38,17 +38,44 @@ PROSE = (r'(AGENTS\.md|CLAUDE\.md|CONTEXT\.md|CODE_OF_CONDUCT\.md|'
 REFERENCE_CHECKS = ['.github/scripts/verify-doc-references.R',
                     '.github/scripts/verify-context-budget.R',
                     '.github/scripts/verify-verifier-invocation.R']
+# These exact artifacts have routes; no directory is exempted by its location.
+WORKFLOWS = ('R-CMD-check.yaml', 'altdoc.yaml', 'document.yaml', 'lint.yaml',
+             'postgres-transactions.yaml', 'release-matrix.yaml', 'rhub.yaml',
+             'test-coverage.yaml')
+ARTIFACTS = [
+    (r'\.github/workflows/(' + '|'.join(re.escape(name) for name in WORKFLOWS) + r')',
+     ['tools/verify-ci-artifacts.py']),
+    (r'\.github/scripts/verify-doc-references\.R', ['tools/test-ci-artifacts.py']),
+    (r'altdoc/(?:quarto_website|pkgdown)\.yml', ['tools/verify-site-artifacts.R']),
+    (r'codecov\.yml', ['.github/scripts/verify-coverage-policy.R']),
+    (r'\.(?:codex/config\.toml|claude/settings\.json)',
+     ['.github/scripts/verify-agent-network-policy.R', '.github/scripts/verify-codex-config.R',
+      'tools/verify-ci-artifacts.py']),
+]
+CHECKING = (r'(?:tools/(?:review-ready[^/]*|test-review-ready[^/]*|install-review-ready\.py|'
+            r'dependency-requirements\.R|required-test-suggests\.R|verify-ci-artifacts\.py|'
+            r'test-ci-artifacts\.py|ci-workflow-contracts\.json|verify-site-artifacts\.R)|'
+            r'\.github/scripts/(?:verify-review-ready-check\.R|cran-note-policy\.R))')
 CONTRACTS = [
-    (r'(tools/(?:review-ready[^/]*|test-review-ready[^/]*|install-review-ready\.py|dependency-requirements\.R|required-test-suggests\.R)|'
-     r'\.github/scripts/verify-review-ready-check\.R|design/(?:agents/local-checks\.md|specs/review-ready[^/]*\.md))',
+    (r'design/(?:agents/local-checks\.md|specs/review-ready[^/]*\.md)',
      ['.github/scripts/verify-review-ready-check.R']),
-    (r'tools/(?:review-ready[^/]*\.(?:py|R)|test-review-ready[^/]*|install-review-ready\.py)',
-     ['tools/test-review-ready-admission.py', 'tools/test-review-ready-progress.R']),
     (r'tools/cran-release\.md', ['.github/scripts/verify-cran-release.R']),
     (r'tools/cran-preflight\.md', ['.github/scripts/verify-cran-preflight.R',
                                 '.github/scripts/verify-agent-network-policy.R',
                                 '.github/scripts/verify-codex-config.R']),
+    (CHECKING, ['.github/scripts/verify-review-ready-check.R',
+                'tools/test-review-ready-admission.py', 'tools/test-review-ready-progress.R',
+                'tools/test-ci-artifacts.py', 'tools/verify-ci-artifacts.py']),
+    (r'\.github/.*', ['tools/verify-ci-artifacts.py']),
+    (r'(?:altdoc/.*|\.(?:codex|claude)/.*)', ['tools/verify-ci-artifacts.py']),
+    (r'(?:\.covrignore|inst/\.covrignore|tools/coverage-check(?:-lib)?\.R)',
+     ['.github/scripts/verify-coverage-policy.R']),
 ]
+
+
+def repository_artifact(name):
+    return bool(re.fullmatch(PROSE, name) or
+                any(re.fullmatch(pattern, name) for pattern, _ in ARTIFACTS))
 
 
 def git_bytes(root, *args):
@@ -97,9 +124,9 @@ def select_path(root, sha):
             if status not in (b'A', b'M', b'D', b'R') or (status == b'R' and not score):
                 reasons.append('unsupported change status: ' + repr(paths))
             for name in paths:
-                if not re.fullmatch(PROSE, name):
+                if not repository_artifact(name):
                     reasons.append('unsupported path: ' + repr(name))
-            if all(re.fullmatch(PROSE, name) for name in paths):
+            if all(repository_artifact(name) for name in paths):
                 for mode, blob in ((before, old_blob), (after, new_blob)):
                     if mode != b'100644':
                         continue
@@ -111,7 +138,7 @@ def select_path(root, sha):
                         reasons.append('unsupported prose content: ' + repr(paths))
             index += 1 + count
         selection['verifiers'] = list(REFERENCE_CHECKS)
-        for pattern, checks in CONTRACTS:
+        for pattern, checks in ARTIFACTS + CONTRACTS:
             if any(re.fullmatch(pattern, name) for name in names):
                 selection['verifiers'].extend(check for check in checks if check not in selection['verifiers'])
         entry = git_bytes(root, 'show', sha + ':tools/review-ready-check.R')
@@ -120,10 +147,17 @@ def select_path(root, sha):
             reasons.append('submitted revision lacks selection protocol; existing Full gate')
         if not reasons:
             selection['path'] = 'Repository'
-            reasons = ['all cumulative changes are supported repository prose']
+            reasons = ['all cumulative changes have supported repository artifact routes']
         selection['reasons'] = reasons
     except (OSError, ValueError, subprocess.SubprocessError) as error:
         selection['reasons'] = ['comparison unavailable: ' + str(error)]
+        # Current CI verification refuses missing comparison evidence. Full is
+        # still selected, but cannot turn an unreadable CI diff into a pass.
+        try:
+            git_bytes(root, 'show', sha + ':tools/verify-ci-artifacts.py')
+            selection['verifiers'] = list(REFERENCE_CHECKS) + ['tools/verify-ci-artifacts.py']
+        except (OSError, subprocess.SubprocessError):
+            pass
     return selection
 
 
@@ -351,7 +385,8 @@ def run_pinned(args):
     transport = Path(checkout).parent / 'selection.dcf'
     transport.write_text('Path: ' + selection['path'] + '\nCommit: ' + sha +
                          '\nRequest: ' + record['token'] + '\nVerifiers: ' +
-                         ' '.join(selection['verifiers']) + '\n')
+                         ' '.join(selection['verifiers']) + '\nBase: ' +
+                         (selection.get('base') or '') + '\n')
     # Overwrite caller-provided selection. Only the lock-authorized worker
     # transports the manager's pinned decision into compatible source gates.
     os.environ[SELECTION] = str(transport)
