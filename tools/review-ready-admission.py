@@ -246,7 +246,7 @@ def recovery_message(record):
     return ('Admission blocked: shutdown is unconfirmed for ' + record['sha'] +
             ' in ' + record['root'] + '. Inspect with marginplyr-review-ready --status. '
             'Do not delete the lock or journal. After the owned work has stopped, run '
-            'marginplyr-review-ready --recover; restart the OS if ownership cannot be confirmed.')
+            'marginplyr-review-ready --recover. Recovery requires complete process ownership evidence.')
 
 
 def recover(path, record, boot):
@@ -254,16 +254,20 @@ def recover(path, record, boot):
         say('No unfinished request to recover. No check was run.')
         return 0
     if record['boot'] == boot:
-        table = processes()
-        if same_process(table, record['manager']) or owned(table, record):
-            say(recovery_message(record))
-            return BLOCKED
-        # A management crash can hide descendants that detached and erased env.
-        # Only an OS restart provides evidence that those unknown processes ended.
-        say(recovery_message(record) + ' This request requires an OS restart before recovery.')
-        return BLOCKED
+        # The held admission lock excludes new requests while both complete
+        # observations check the trusted gate's recorded and inherited ownership.
+        for observation in range(2):
+            table = processes()
+            if same_process(table, record['manager']) or owned(table, record):
+                say(recovery_message(record))
+                return BLOCKED
+            if observation == 0:
+                time.sleep(0.2)
+        reason = 'after confirmed shutdown'
+    else:
+        reason = 'from an earlier OS boot'
     path.unlink()
-    say('Recovered an unfinished request from an earlier OS boot. No check was run.')
+    say('Recovered unfinished request ' + record['sha'] + ' ' + reason + '. No check was run.')
     return 0
 
 
@@ -379,7 +383,7 @@ def main(args=None):
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument('--status', action='store_true', help='show admission state; does not run a check')
-    mode.add_argument('--recover', action='store_true', help='recover an unfinished request after OS restart')
+    mode.add_argument('--recover', action='store_true', help='recover an unfinished request after confirmed shutdown')
     options = parser.parse_args(args)
     if sys.platform not in ('darwin', 'linux'):
         say('Unsupported platform: this admission CLI requires macOS or Linux. No check was run.')

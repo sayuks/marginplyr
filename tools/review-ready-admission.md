@@ -140,14 +140,20 @@ marginplyr-review-ready --status
 marginplyr-review-ready --recover
 ```
 
-Recovery never kills an unverified PID or deletes a lock. It refuses while
-known owned work or the manager is alive. If a manager ended abnormally,
-same-boot observations cannot rule out a detached, unrecorded descendant, so
-recovery requires an OS restart. After reboot, `--recover` recognizes the older
-boot identity and clears its unfinished journal; it does not run or pass a
-check. Never manually delete the journal to unblock admission. Invalid journals
-or unavailable boot/process evidence require inspection and restoration of
-readable metadata, not bypassing the safeguard. Uncertain checkouts are
+Recovery never signals a process or deletes a lock. For a request from the
+current OS boot, it holds exclusive admission while taking two complete
+process observations, separated by 0.2 seconds. Both must find the recorded
+manager and every identified owned process stopped. Ownership uses the same
+request marker, PID/birth identities, process groups and descendants as the
+running supervisor; an ambiguous group or failed observation leaves the journal
+intact. A dead manager or free lock alone is insufficient.
+
+After confirmed shutdown, `--recover` clears the stale
+journal without requiring an OS restart. It also recognizes a request from an
+earlier boot. Either recovery reports that no check was run; an interrupted
+check never becomes a pass. Never manually delete the journal to unblock
+admission. Invalid journals or unavailable boot/process evidence require
+inspection and restoration of readable metadata. Uncertain checkouts are
 retained at the printed path for inspection; remove them only after recovery.
 
 ## Focused verification
@@ -160,7 +166,8 @@ Rscript .github/scripts/verify-review-ready-check.R
 The Python fixtures cover cumulative/final-tree selection, NUL-delimited names,
 rename sides, deletions, unsafe modes, missing/ambiguous bases, and pinned main.
 They also substitute the OS-home adapter for independent test
-users, the boot-identity adapter for simulated restart recovery, and a delayed
+users, process-observation faults and late-visible descendants for recovery,
+the boot-identity adapter for simulated restart recovery, and a delayed
 filesystem open for the completion/read race. A lightweight `Rscript` executable
 is provided at the external checker
 boundary. They run real Git worktrees/clones and subprocesses. They do not run
