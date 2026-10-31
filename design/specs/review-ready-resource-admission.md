@@ -1,7 +1,9 @@
 # Coordinate local review-ready checks across worktrees
 
-Status: accepted design. Implementation is tracked in
-[issue #1065](https://github.com/sayuks/marginplyr/issues/1065).
+Status: accepted design, amended by
+[issue #1108](https://github.com/sayuks/marginplyr/issues/1108) for independent
+Documentation and Repository supervision. The original common-slot implementation
+is tracked in [issue #1065](https://github.com/sayuks/marginplyr/issues/1065).
 
 ## Problem
 
@@ -40,8 +42,13 @@ is retained. Progress and a released execution slot are not success evidence.
   AI agents, and a human terminal use the same CLI and admission mechanism.
   Agent-specific instructions explain invocation; agent SDKs, plugins,
   instruction formats, or agent-owned directories do not own the safeguard.
-- Admit at most one Review-ready check at a time, retaining four internal test
-  workers. Two concurrent checks with four workers each are a later candidate,
+- Admit at most one complete Full Review-ready check at a time, retaining four
+  internal test workers through lint, build, rendering, tests, retry and cleanup.
+  Eligible Documentation and Repository requests start independently without
+  that slot or a separate aggregate limit. Their trusted stage contracts and
+  installed source capabilities restrict limited verification to serial tests
+  and registered small parallel-behavior fixtures using at most two test workers.
+  Unclassified workloads require Full. Two concurrent Full checks with four workers each are a later candidate,
   not the initial default. Compare responsiveness, memory pressure, swap growth,
   and completion time before deciding whether to adopt that configuration.
 - Require a clean committed HEAD and pin that commit before waiting.
@@ -56,8 +63,9 @@ is retained. Progress and a released execution slot are not success evidence.
   notification, or termination of the CLI or its management process. Stop the
   request's owned child processes and return capacity only after confirming
   their shutdown.
-  If abnormal termination leaves shutdown unconfirmed, do not automatically
-  admit another check; explain the recovery action instead.
+  If abnormal termination leaves shutdown unconfirmed, preserve that request's
+  recovery record. Full uncertainty protects Full admission; an unfinished exempt
+  request alone does not block other requests.
 - Do not infer cancellation merely because an AI conversation or user interface
   closes. Its execution backend may continue running. Callers retain the
   execution handle and propagate cancellation through their execution tool.
@@ -73,8 +81,12 @@ Review-ready check, keeping that check's source and terminal evidence intact.
 Missing setup fails with an English explanation; it does not fall back to an
 unrestricted direct invocation.
 
-Waiting processes do not start dependency loading, lint, build, rendering, or
-tests. English waiting output identifies the requested commit, elapsed wait,
+Full waiting processes do not start dependency loading, lint, build, rendering,
+or tests. Exempt requests have their own supervision, output and disposable source.
+If later eligibility requires Full, stop and collect preparation, authenticate and
+persist the transition, then acquire Full and revalidate the pinned submission
+before running the entire Full gate under the same request and execution handle.
+English waiting output identifies the requested commit, elapsed wait,
 and the active check where known. It promises neither a queue position nor an
 ETA. The launched command remains attached to one retained execution handle
 through waiting, checking, cleanup, and terminal completion; queue registration
@@ -95,8 +107,9 @@ concurrent four-worker checks remain a separate, later measurement.
 
 ## Verification before rollout
 
-- Use lightweight subprocess fixtures to submit several concurrent requests
-  from distinct worktrees and clones, proving at most one heavy job is admitted.
+- Use lightweight subprocess fixtures from distinct worktrees and clones to
+  prove exempt requests start while Full runs or needs recovery, while another
+  Full waits. Exercise simultaneous promotion and isolated request recovery.
 - Exercise cancellation while waiting and running, abnormal launcher exit,
   stale commits, dirty worktrees, and incomplete cleanup. Unknown cleanup
   blocks admission instead of reporting success or guessing that resources

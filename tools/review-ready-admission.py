@@ -1,17 +1,20 @@
 #!/usr/bin/env python3
-"""One user-wide admission boundary for the complete local Review-ready gate.
+"""Supervise Review-ready requests; admit one complete Full gate per OS user.
 
 POSIX only. The flock file is permanent; the durable journal survives a killed
 manager. Neither a free lock nor an absent PID is evidence of child shutdown.
 """
 import argparse
 import errno
+import fnmatch
+import hashlib
 import json
 import os
 from pathlib import Path
 import re
 import shutil
 import signal
+import socket
 import subprocess
 import sys
 import time
@@ -30,6 +33,130 @@ STALE = 3
 BLOCKED = 4
 SELECTION = 'MARGINPLYR_REVIEW_SELECTION'
 PROTOCOL = b'# Review-ready selection protocol: 2'
+SUPERVISION_PROTOCOL = 3
+EXEMPT_PROTOCOL = b'# Review-ready supervision protocol: 3'
+# The installer embeds fingerprints of the reviewed stage contracts. An older
+# or directly copied launcher has no exemption capability and stays locked.
+CAPABILITY_DIGESTS = {}  # installed capabilities
+LAUNCHER_SOURCE = Path(__file__).read_bytes()
+
+CORE_SOURCES = (
+    'tools/review-ready-check.R', 'tools/review-ready-check-lib.R',
+    'tools/review-ready-progress.R', 'tools/review-ready-progress-reporter.R',
+    'tools/dependency-requirements.R', 'tools/required-test-suggests.R',
+    '.github/scripts/cran-note-policy.R',
+    'R/*.R', 'DESCRIPTION', 'NAMESPACE', '.Rbuildignore', 'jarl.toml', '.lintr*', '.Rprofile*',
+    'inst/suggests/guard.R',
+)
+DOCUMENTATION_SOURCES = (
+    'tools/review-ready-documentation.R', 'tests/testthat/test-documentation.R',
+    'tests/testthat/test-duckdb-storage.R', 'tests/testthat/test-package-metadata.R',
+    'tests/testthat/helper*.R', 'tests/testthat/setup*.R', 'tests/testthat/teardown*.R',
+    'inst/suggests/guard.R',
+)
+# Policies describe reviewed workloads, never a guess from source spellings.
+# Only the progress fixture exercises testthat workers outside Full capacity.
+STAGE_CONTRACTS = {
+    '.github/scripts/verify-doc-references.R': ('serial', ('.github/scripts/ci-helpers.R',)),
+    '.github/scripts/verify-context-budget.R': ('serial', ('.github/scripts/ci-helpers.R',)),
+    '.github/scripts/verify-verifier-invocation.R': ('serial', ('.github/scripts/ci-helpers.R',)),
+    '.github/scripts/verify-review-ready-check.R': ('serial', CORE_SOURCES),
+    'tools/test-review-ready-documentation.R': ('serial', CORE_SOURCES + (
+        'tools/review-ready-documentation.R', 'tools/review-ready-generated.R')),
+    'tools/test-review-ready-admission.py': ('process-fixture', (
+        'tools/review-ready-admission.py', 'tools/review-ready-check.R', 'tools/install-review-ready.py',
+        '.github/scripts/verify-doc-references.R', '.github/scripts/ci-helpers.R')),
+    'tools/test-review-ready-progress.R': ('parallel-fixture-2', CORE_SOURCES + ('tests/testthat.R',)),
+    'tools/review-ready-generated.R': ('serial', ()),
+    '.github/scripts/verify-cran-release.R': ('serial', (
+        'tools/cran-release.R', 'tools/dependency-requirements.R')),
+    '.github/scripts/verify-cran-preflight.R': ('serial', (
+        '.github/scripts/cran-note-policy.R', '.github/scripts/checktor-baseline.R',
+        '.github/scripts/verify-agent-network-policy.R',
+        'tools/dependency-requirements.R', 'tools/cran-preflight-lib.R', 'tools/cran-preflight.R')),
+    '.github/scripts/verify-agent-network-policy.R': ('serial', ()),
+    '.github/scripts/verify-codex-config.R': ('serial', ()),
+}
+
+
+def capability_patterns():
+    return dict(core=CORE_SOURCES, documentation=DOCUMENTATION_SOURCES,
+                **{stage: (stage,) + dependencies
+                   for stage, (_, dependencies) in STAGE_CONTRACTS.items()})
+
+
+def installed_source(root):
+    """Bind a standalone installation to the reviewed stage source bytes."""
+    tracked = set(git_bytes(root, 'ls-files', '-z').decode('utf-8').split('\0'))
+    digests = {}
+    for group, patterns in capability_patterns().items():
+        files = {path for pattern in patterns for path in root.glob(pattern)
+                 if path.is_file() and path.relative_to(root).as_posix() in tracked}
+        digests[group] = {
+            path.relative_to(root).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in sorted(files) if any(fnmatch.fnmatchcase(path.relative_to(root).as_posix(), pattern)
+                                    for pattern in patterns)
+        }
+        for pattern in patterns:
+            if not any(char in pattern for char in '*?[') and pattern not in digests[group]:
+                raise RuntimeError('Missing installation contract source: ' + pattern)
+    source = (root / 'tools/review-ready-admission.py').read_bytes()
+    return source.replace(b'CAPABILITY_DIGESTS = {}  # installed capabilities',
+                          ('CAPABILITY_DIGESTS = ' + repr(digests)).encode(), 1)
+
+
+def eligibility(root, sha, selection):
+    """Return a reason to require Full when a stage lacks installed capability."""
+    if selection['path'] == 'Full':
+        return None
+    entry = git_bytes(root, 'show', sha + ':tools/review-ready-check.R')
+    if EXEMPT_PROTOCOL not in entry.splitlines():
+        return 'source lacks compatible independent supervision; legacy locked Full contract'
+    groups = ['core'] + selection['verifiers']
+    if selection['path'] == 'Documentation':
+        groups.append('documentation')
+    tree = {}
+    for entry in git_bytes(root, 'ls-tree', '-rz', sha).split(b'\0'):
+        if entry:
+            metadata, name = entry.split(b'\t', 1)
+            mode, kind, oid = metadata.split()
+            tree[name.decode('utf-8')] = (mode, kind, oid)
+    required = {}
+    for group in groups:
+        if group not in capability_patterns() or group not in CAPABILITY_DIGESTS:
+            return 'unclassified stage or unavailable installed capability: ' + group
+        expected = CAPABILITY_DIGESTS[group]
+        paths = {name for name in tree if any(fnmatch.fnmatchcase(name, pattern)
+                                               for pattern in capability_patterns()[group])}
+        if paths != set(expected):
+            return 'unsupported stage source set: ' + group
+        required.update(expected)
+    oids = []
+    for name in required:
+        mode, kind, oid = tree[name]
+        if kind != b'blob' or mode not in (b'100644', b'100755'):
+            return 'unsupported stage source type: ' + name
+        if oid not in oids:
+            oids.append(oid)
+    result = subprocess.run(['git', '-C', str(root), 'cat-file', '--batch'],
+                            input=b'\n'.join(oids) + b'\n', stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE, check=True).stdout
+    blobs = {}
+    offset = 0
+    for oid in oids:
+        boundary = result.index(b'\n', offset)
+        actual, kind, size = result[offset:boundary].split()
+        if actual != oid or kind != b'blob':
+            raise RuntimeError('Unsupported capability object response.')
+        end = boundary + 1 + int(size)
+        blobs[oid] = hashlib.sha256(result[boundary + 1:end]).hexdigest()
+        if result[end:end + 1] != b'\n':
+            raise RuntimeError('Incomplete capability object response.')
+        offset = end + 1
+    for name, digest in required.items():
+        if blobs[tree[name][2]] != digest:
+            return 'unsupported stage source capability: ' + name
+    return None
 
 # Supported prose and its verification routes live here. Other file formats in
 # these directories have no exemption. Checking machinery remains Full.
@@ -249,7 +376,7 @@ def read_record(path):
         return None
     record = json.loads(contents)
     if (not isinstance(record, dict) or type(record.get('version')) is not int or
-            record['version'] != 1):
+            record['version'] not in (1, 2)):
         raise RuntimeError('Unknown or invalid admission journal version; recovery requires inspection.')
     try:
         valid = (isinstance(record['token'], str) and
@@ -264,6 +391,30 @@ def read_record(path):
                  all(valid_recorded_process(item) for item in record['children']) and
                  (record['group'] is None or
                   (type(record['group']) is int and record['group'] > 0)))
+        if record['version'] == 2:
+            valid = valid and (record['protocol'] == SUPERVISION_PROTOCOL and
+                re.fullmatch('[0-9a-f]{32}', record['id']) and
+                record['id'] == path.parent.name and
+                record['state'] in ('preparing', 'waiting', 'acquiring', 'running',
+                                    'promoting', 'cancelling', 'recovery', 'terminal') and
+                record['capacity'] in ('exempt', 'Full') and
+                type(record['may_own_full']) is bool and
+                type(record['owned_capacity']) is bool and
+                type(record['epoch']) is int and record['epoch'] > 0 and
+                type(record['authorized']) is bool and
+                type(record['requires_proof']) is bool and
+                type(record['channel_owned']) is bool and
+                isinstance(record['selection'], dict) and
+                record['selection']['submitted'] == record['sha'] and
+                record['selection']['path'] in ('Repository', 'Documentation', 'Full') and
+                (record['selection']['path'] == 'Full') == (record['capacity'] == 'Full') and
+                (not record['owned_capacity'] or
+                 (record['may_own_full'] and record['capacity'] == 'Full')) and
+                (record['capacity'] != 'exempt' or not record['may_own_full']) and
+                (record['state'] != 'running' or record['capacity'] != 'Full' or
+                 record['owned_capacity']) and
+                record['workspace'] == str(path.parent / 'workspace') and
+                record['channel'] == '/tmp/marginplyr-review-' + record['id'] + '.sock')
     except (KeyError, TypeError, ValueError):
         valid = False
     if not valid:
@@ -271,136 +422,478 @@ def read_record(path):
     return record
 
 
+def active_records(state):
+    """Enumerate independent requests; malformed evidence remains visible."""
+    records = []
+    requests = state / 'requests'
+    if requests.exists():
+        for directory in sorted(requests.iterdir()):
+            path = directory / 'record.json'
+            try:
+                record = read_record(path)
+                if record is None:
+                    raise RuntimeError('Request record missing (possibly interrupted durable write).')
+                if record['state'] != 'terminal':
+                    records.append((path, record, None))
+            except (OSError, ValueError, KeyError, TypeError, RuntimeError) as error:
+                records.append((path, None, str(error)))
+    legacy = state / 'request.json'
+    try:
+        record = read_record(legacy)
+        # A mirrored v1 journal protects capacity against older launchers too.
+        if record and not any(item and item.get('id') == record.get('id')
+                              for _, item, _ in records):
+            records.append((legacy, record, None))
+    except (OSError, ValueError, RuntimeError) as error:
+        records.append((legacy, None, str(error)))
+    return records
+
+
 def recovery_message(record):
-    return ('Admission blocked: shutdown is unconfirmed for ' + record['sha'] +
-            ' in ' + record['root'] + '. Inspect with marginplyr-review-ready --status. '
-            'Do not delete the lock or journal. After the owned work has stopped, run '
-            'marginplyr-review-ready --recover. Recovery requires complete process ownership evidence.')
+    request = record.get('id', 'legacy')
+    return ('Admission blocked: shutdown is unconfirmed for request ' + request + ' (' +
+            record['sha'] + ') in ' + record['root'] + '. Inspect with '
+            'marginplyr-review-ready --status. Do not delete the lock or journal. '
+            'After the owned work has stopped, run marginplyr-review-ready --recover ' + request +
+            '. Recovery requires complete process ownership evidence.')
 
 
-def recover(path, record, boot):
-    if record is None:
+def lock_file(path):
+    lock = path.open('a+')
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except BaseException:
+        lock.close()
+        raise
+    return lock
+
+
+def persist(path, record):
+    save(path, record)
+    if record['owned_capacity']:
+        legacy = dict(record, version=1)
+        save(path.parents[2] / 'request.json', legacy)
+
+
+def remove_full_mirror(state, record):
+    path = state / 'request.json'
+    mirror = read_record(path)
+    if mirror and mirror.get('id') == record['id']:
+        path.unlink()
+
+
+def clean_workspace(record):
+    workspace = Path(record['workspace'])
+    if workspace.exists():
+        shutil.rmtree(workspace)
+    if record.get('channel_owned'):
+        Path(record['channel']).unlink(missing_ok=True)
+
+
+def recover_request(state, requested, boot):
+    candidates = active_records(state)
+    if not candidates:
         say('No unfinished request to recover. No check was run.')
         return 0
-    if record['boot'] == boot:
-        # The held admission lock excludes new requests while both complete
-        # observations check the trusted gate's recorded and inherited ownership.
-        for observation in range(2):
-            table = processes()
-            if same_process(table, record['manager']) or owned(table, record):
-                say(recovery_message(record))
-                return BLOCKED
-            if observation == 0:
-                time.sleep(0.2)
-        reason = 'after confirmed shutdown'
-    else:
-        reason = 'from an earlier OS boot'
-    path.unlink()
-    say('Recovered unfinished request ' + record['sha'] + ' ' + reason + '. No check was run.')
-    return 0
-
-
-def run_gate(path, record, root, sha, cancellation, parent):
-    job = None
-    workspace = None
+    ids = [record.get('id', 'legacy') if record else
+           ('legacy' if path == state / 'request.json' else path.parent.name)
+           for path, record, _ in candidates]
+    if requested is None or requested not in ids or ids.count(requested) != 1:
+        say('Recovery requires one explicit request ID; candidates: ' + ', '.join(ids) +
+            '. No check was run; no state changed.')
+        return BLOCKED
+    path, record, error = candidates[ids.index(requested)]
+    if error:
+        raise RuntimeError(error)
+    locks = []
+    ownership_records = [record]
     try:
-        # Persist uncertainty before spawning: even death between spawn and the
-        # next write must leave a blocked journal rather than an apparently free slot.
-        save(path, record)
-        env = dict(os.environ, **{MARKER: record['token']})
-        # The old gate also works: a private checkout pins its code and HEAD,
-        # even when the caller edits or commits after admission.
-        workspace = tempfile.mkdtemp(prefix='marginplyr-admitted-')
-        checkout = Path(workspace) / 'source'
-        job = subprocess.Popen([sys.executable, str(Path(__file__).resolve()),
-                                '--run-pinned', str(path), str(root), sha, str(checkout)],
-                               env=env, start_new_session=True)
-        record['group'] = job.pid
-        save(path, record)
-        say('Admitted Review-ready commit: ' + sha + ' in ' + str(root))
-        stopping = None
+        if record['version'] == 2:
+            locks.append(lock_file(path.parent / 'manager.lock'))
+        if record['version'] == 1 or record['may_own_full']:
+            locks.append(lock_file(state / 'admission.lock'))
+            # Validate the compatibility fence before changing independent state.
+            mirror = read_record(state / 'request.json')
+            if mirror and mirror.get('id') == record.get('id'):
+                ownership_records.append(mirror)
+        if record['boot'] == boot:
+            for observation in range(2):
+                table = processes()
+                if any(same_process(table, item['manager']) or owned(table, item)
+                       for item in ownership_records):
+                    say(recovery_message(record))
+                    return BLOCKED
+                if observation == 0:
+                    time.sleep(0.2)
+            reason = 'after confirmed shutdown'
+        else:
+            reason = 'from an earlier OS boot'
+        if record['version'] == 2:
+            clean_workspace(record)
+            record.update(state='terminal', outcome='interrupted; recovered, no check evidence',
+                          cleanup='confirmed', owned_capacity=False, finished=time.time())
+            save(path, record)
+            remove_full_mirror(state, record)
+        else:
+            path.unlink()
+        say('Recovered unfinished request ' + requested + ' ' + reason + '. No check was run.')
+        return 0
+    except BlockingIOError:
+        say('An active manager holds request/capacity ownership; recovery refused. No check was run.')
+        return BLOCKED
+    finally:
+        for lock in reversed(locks):
+            lock.close()
+
+
+def full_blocker(state, request):
+    for path, record, error in active_records(state):
+        if error:
+            return 'Full recovery required for ' + str(path) + ': ' + error
+        if record.get('id') == request:
+            continue
+        if record['version'] == 1 or record['may_own_full']:
+            return recovery_message(record)
+    return None
+
+
+def acquire_full(state, path, record, cancellation, parent):
+    """Keep one indivisible Full slot, including cleanup, with legacy fencing."""
+    record.update(state='waiting', capacity='Full', owned_capacity=False)
+    persist(path, record)
+    started = time.monotonic()
+    displayed = -float('inf')
+    while True:
+        if cancellation[0] or os.getppid() != parent:
+            return None, CANCELLED
+        lock = None
+        try:
+            lock = lock_file(state / 'admission.lock')
+            blocker = full_blocker(state, record['id'])
+            if blocker:
+                say(blocker)
+                lock.close()
+                return None, BLOCKED
+            # Persist uncertainty before any capacity or spawn side effect.
+            record.update(state='acquiring', may_own_full=True)
+            persist(path, record)
+            try:
+                current_root, current_sha = identity()
+                if (str(current_root), current_sha) != (record['root'], record['sha']):
+                    raise RuntimeError('HEAD changed while waiting.')
+            except (RuntimeError, subprocess.SubprocessError, OSError) as error:
+                say('Stale request cancelled for ' + record['sha'] + ': ' + str(error) +
+                    ' Submit a fresh request.')
+                return lock, STALE
+            if cancellation[0] or os.getppid() != parent:
+                return lock, CANCELLED
+            record.update(owned_capacity=True)
+            persist(path, record)
+            return lock, 0
+        except BlockingIOError:
+            if time.monotonic() - displayed >= 5:
+                active = read_record(state / 'request.json')
+                detail = ('; active ' + active['sha'] + ' in ' + active['root']) if active else '; active identity pending'
+                say('Waiting for Review-ready capacity: requested ' + record['sha'] +
+                    '; request ' + record['id'] + '; elapsed ' +
+                    str(int(time.monotonic() - started)) + 's' + detail)
+                displayed = time.monotonic()
+            time.sleep(0.15)
+        except BaseException:
+            if lock:
+                lock.close()
+            raise
+
+
+def rpc_request(operation, reason=''):
+    """Request-private manager channel, also used by the R gate's proof helper."""
+    path = Path(os.environ['MARGINPLYR_REVIEW_RECORD'])
+    record = read_record(path)
+    message = dict(protocol=SUPERVISION_PROTOCOL, request=record['id'],
+                   token=os.environ[MARKER], sha=os.environ['MARGINPLYR_REVIEW_COMMIT'],
+                   epoch=int(os.environ['MARGINPLYR_REVIEW_EPOCH']), operation=operation,
+                   expected='running', reason=reason)
+    if operation == 'authorize':
+        message['transport'] = hashlib.sha256(Path(os.environ[SELECTION]).read_bytes()).hexdigest()
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as channel:
+        channel.settimeout(10)
+        channel.connect(record['channel'])
+        channel.sendall(json.dumps(message).encode() + b'\n')
+        return json.loads(receive_message(channel))
+
+
+def receive_message(channel):
+    data = b''
+    while b'\n' not in data:
+        chunk = channel.recv(4096)
+        if not chunk:
+            raise RuntimeError('Incomplete supervisor message.')
+        data += chunk
+        if len(data) > 16384:
+            raise RuntimeError('Oversized supervisor message.')
+    if data.count(b'\n') != 1 or not data.endswith(b'\n'):
+        raise RuntimeError('Malformed supervisor message.')
+    return data.decode('utf-8')
+
+
+def selection_transport(record):
+    selection = record['selection']
+    return ('Path: ' + selection['path'] + '\nCommit: ' + record['sha'] +
+            '\nRequest: ' + record['token'] + '\nProtocol: 3\nCapacity: ' + record['capacity'] +
+            '\nVerifiers: ' + ' '.join(selection['verifiers']) + '\n')
+
+
+def serve_control(server, path, record, cancellation, parent):
+    """Authenticate one state transition; rejected messages never change state."""
+    try:
+        channel, _ = server.accept()
+    except BlockingIOError:
+        return False
+    with channel:
+        channel.settimeout(0.2)
+        try:
+            message = json.loads(receive_message(channel))
+            expected = dict(protocol=SUPERVISION_PROTOCOL, request=record['id'], token=record['token'],
+                            sha=record['sha'], epoch=record['epoch'], expected='running')
+            if (not isinstance(message, dict) or
+                    any(message.get(key) != value for key, value in expected.items()) or
+                    record['state'] != 'running' or cancellation[0] or os.getppid() != parent):
+                raise RuntimeError('Stale, mismatched or cancelled supervisor request.')
+            operation = message.get('operation')
+            if operation == 'authorize':
+                if record['authorized']:
+                    raise RuntimeError('Duplicate gate authorization.')
+                if record['selection']['path'] == 'Full' and not record['owned_capacity']:
+                    raise RuntimeError('Full execution requires owned capacity.')
+                digest = hashlib.sha256(selection_transport(record).encode()).hexdigest()
+                if message.get('transport') != digest:
+                    raise RuntimeError('Selection transport does not match the supervised contract.')
+                record['authorized'] = True
+                persist(path, record)
+                reply = dict(ok=True, path=record['selection']['path'], capacity=record['capacity'])
+            elif operation == 'promote':
+                if record['capacity'] != 'exempt':
+                    raise RuntimeError('Promotion is only valid for running exempt work.')
+                reason = message.get('reason')
+                if not isinstance(reason, str) or not reason.strip() or len(reason) > 2000:
+                    raise RuntimeError('Promotion requires a bounded eligibility reason.')
+                record['promotions'].append(dict(epoch=record['epoch'], reason=reason, at=time.time(),
+                                                 source=record['selection']['path'], target='Full'))
+                record.update(state='promoting')
+                persist(path, record)
+                channel.sendall(b'{"ok": true, "promoting": true}\n')
+                return True
+            else:
+                raise RuntimeError('Unsupported supervisor operation.')
+            channel.sendall(json.dumps(reply).encode() + b'\n')
+        except (ValueError, RuntimeError, socket.timeout) as error:
+            try:
+                channel.sendall(json.dumps(dict(ok=False, error=str(error))).encode() + b'\n')
+            except OSError:
+                pass
+    return False
+
+
+def stop_owned(table, children, stopping):
+    sig = signal.SIGTERM if time.monotonic() - stopping < 2 else signal.SIGKILL
+    fresh = processes()
+    for pid in children:
+        if same_process(fresh, evidence(table[pid])):
+            try:
+                os.kill(pid, sig)
+            except ProcessLookupError:
+                pass
+
+
+def supervise(path, record, server, cancellation, parent):
+    """Observe and collect one worker epoch before finishing or changing capacity."""
+    workspace = Path(record['workspace'])
+    record.update(state='running', authorized=False)
+    persist(path, record)
+    env = dict(os.environ, **{MARKER: record['token'],
+        'MARGINPLYR_REVIEW_RECORD': str(path), 'MARGINPLYR_REVIEW_COMMIT': record['sha'],
+        'MARGINPLYR_REVIEW_EPOCH': str(record['epoch']),
+        'MARGINPLYR_REVIEW_SUPERVISOR': str(workspace / 'supervisor.py')})
+    with (path.parent / 'output.log').open('ab', buffering=0) as output:
+        job = subprocess.Popen([sys.executable, str(workspace / 'supervisor.py'), '--run-pinned',
+                                str(path), record['root'], record['sha'], str(workspace / 'source')],
+                               env=env, start_new_session=True, stdout=output, stderr=output)
+    record['group'] = job.pid
+    persist(path, record)
+    say('Admitted Review-ready commit: ' + record['sha'] + ' in ' + record['root'] +
+        '; request: ' + record['id'] + '; path: ' + record['selection']['path'] +
+        '; capacity: ' + record['capacity'] + '; worker policy: ' + record['worker_policy'])
+    stopping = None
+    promoting = False
+    offset = record.get('output_offset', 0)
+    try:
         while True:
+            with (path.parent / 'output.log').open('rb') as output:
+                output.seek(offset)
+                chunk = output.read()
+                offset = output.tell()
+                record['output_offset'] = offset
+            if chunk:
+                sys.stdout.write(chunk.decode('utf-8', errors='replace'))
+                sys.stdout.flush()
             result = job.poll()
             table = processes()
             children = owned(table, record)
             known = {(item['pid'], item['birth']) for item in record['children']}
-            new = [evidence(table[pid]) for pid in children
-                   if (pid, table[pid]['birth']) not in known]
+            new = [evidence(table[pid]) for pid in children if (pid, table[pid]['birth']) not in known]
             if new:
                 record['children'].extend(new)
-                save(path, record)
+                persist(path, record)
             if os.getppid() != parent:
                 cancellation[0] = signal.SIGTERM
-            if cancellation[0] and stopping is None:
-                say('Cancelling Review-ready commit: ' + sha + '; stopping owned processing.')
+            if serve_control(server, path, record, cancellation, parent):
+                promoting = True
+            if (cancellation[0] or promoting) and stopping is None:
+                say(('Promoting' if promoting and not cancellation[0] else 'Cancelling') +
+                    ' Review-ready commit: ' + record['sha'] + '; stopping owned processing.')
                 stopping = time.monotonic()
+                if cancellation[0]:
+                    record['state'] = 'cancelling'
+                    persist(path, record)
             if stopping is not None:
-                sig = signal.SIGTERM if time.monotonic() - stopping < 2 else signal.SIGKILL
-                for pid in children:
-                    if not same_process(processes(), evidence(table[pid])):
-                        continue
-                    try:
-                        os.kill(pid, sig)
-                    except ProcessLookupError:
-                        pass
-            if result is not None and not children:
-                # A second complete observation avoids releasing on a transient
-                # process-table view while a known child is exiting.
-                if not owned(processes(), record):
-                    status = CANCELLED if stopping is not None else (result if result >= 0 else 128 - result)
-                    path.unlink()
-                    say('Review-ready terminal outcome: ' + str(status) + '; checked commit: ' + sha +
-                        '; selected path: ' + record['selection']['path'])
-                    return status
+                stop_owned(table, children, stopping)
+            if result is not None and not children and not owned(processes(), record):
+                # Drain output only after the last owned writer has stopped.
+                with (path.parent / 'output.log').open('rb') as output:
+                    output.seek(offset)
+                    sys.stdout.write(output.read().decode('utf-8', errors='replace'))
+                    sys.stdout.flush()
+                    record['output_offset'] = output.tell()
+                if cancellation[0]:
+                    return CANCELLED, False
+                if promoting:
+                    return 0, True
+                if result == 0 and record['requires_proof'] and not record['authorized']:
+                    say('Compatible source omitted live gate authorization; no passing check evidence.')
+                    return 2, False
+                return (result if result >= 0 else 128 - result), False
             if stopping is not None and time.monotonic() - stopping > 10:
                 raise RuntimeError('Owned processing did not stop within the cleanup deadline.')
-            time.sleep(0.5)
+            time.sleep(0.1)
     except BaseException:
-        # Errors retain the journal. Best effort shutdown is not proof of cleanup.
-        if job is not None and job.poll() is None:
+        # The Popen handle identifies this unreaped child even when process
+        # inspection failed. Other descendants remain protected by the record.
+        if job.poll() is None:
             try:
                 job.kill()
                 job.wait(timeout=5)
             except (OSError, subprocess.TimeoutExpired):
                 pass
-        say(recovery_message(record))
+        raise
+
+
+def finish_request(state, path, record, status):
+    clean_workspace(record)
+    record.update(state='terminal', outcome=status, cleanup='confirmed', finished=time.time())
+    # Capacity stays owned until disposable-source cleanup is complete.
+    persist(path, record)
+    remove_full_mirror(state, record)
+    record['owned_capacity'] = False
+    save(path, record)
+    say('Review-ready terminal outcome: ' + str(status) + '; request: ' + record['id'] +
+        '; checked commit: ' + record['sha'] + '; selected path: ' + record['selection']['path'] +
+        '; capacity: ' + record['capacity'] + '; cleanup: confirmed; promotions: ' +
+        json.dumps(record['promotions']))
+    return status
+
+
+def run_request(state, path, record, cancellation, parent):
+    capacity = None
+    server = None
+    try:
+        workspace = Path(record['workspace'])
+        workspace.mkdir(mode=0o700)
+        script = workspace / 'supervisor.py'
+        script.write_bytes(LAUNCHER_SOURCE)
+        record['launcher'] = hashlib.sha256(LAUNCHER_SOURCE).hexdigest()
+        persist(path, record)
+        server = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        server.bind(record['channel'])
+        os.chmod(record['channel'], 0o600)
+        record['channel_owned'] = True
+        persist(path, record)
+        server.listen()
+        server.setblocking(False)
+        while True:
+            if record['capacity'] == 'Full':
+                capacity, status = acquire_full(state, path, record, cancellation, parent)
+                if status:
+                    return finish_request(state, path, record, status)
+            elif cancellation[0] or os.getppid() != parent:
+                return finish_request(state, path, record, CANCELLED)
+            else:
+                current_root, current_sha = identity()
+                if (str(current_root), current_sha) != (record['root'], record['sha']):
+                    return finish_request(state, path, record, STALE)
+            status, promoting = supervise(path, record, server, cancellation, parent)
+            if not promoting:
+                return finish_request(state, path, record, status)
+            # All preparatory work and owned children are stopped and collected.
+            record.update(capacity='Full', state='waiting', group=None, children=[],
+                          epoch=record['epoch'] + 1, authorized=False,
+                          worker_policy='Full suite: 4 test workers')
+            record['selection']['path'] = 'Full'
+            persist(path, record)
+            shutil.rmtree(workspace / 'source', ignore_errors=False)
+    except BaseException:
+        record.update(state='recovery', cleanup='unconfirmed')
+        try:
+            persist(path, record)
+        finally:
+            say(recovery_message(record))
+            say('Unfinished checkout retained: ' + record['workspace'])
         raise
     finally:
-        if workspace is not None and not path.exists():
-            shutil.rmtree(workspace)
-        elif workspace is not None:
-            # Keep uncertain work's checkout available for inspection.
-            say('Unfinished checkout retained: ' + workspace)
+        if server is not None:
+            server.close()
+        if capacity is not None:
+            capacity.close()
 
 
 def run_pinned(args):
-    """Internal worker; only a live lock-holding manager can authorize it."""
+    """Run pinned source only inside its live, matching supervision generation."""
     if len(args) != 4 or MARKER not in os.environ:
         raise RuntimeError('The pinned worker requires an admitted manager.')
     path, root, sha, checkout = args
     record = read_record(Path(path))
-    if (not record or record['token'] != os.environ[MARKER] or
-            record['sha'] != sha or record['root'] != root or
-            record['manager']['pid'] != os.getppid()):
-        raise RuntimeError('The pinned worker has no matching admitted request.')
-    # The worker must still be inside the shared admission boundary.
-    with (Path(path).parent / 'admission.lock').open('a+') as lock:
-        try:
-            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except BlockingIOError:
-            pass
-        else:
-            raise RuntimeError('The pinned worker requires held admission capacity.')
+    if (not record or record['version'] != 2 or record['protocol'] != SUPERVISION_PROTOCOL or
+            record['token'] != os.environ[MARKER] or record['sha'] != sha or record['root'] != root or
+            record['manager']['pid'] != os.getppid() or record['state'] != 'running' or
+            record['epoch'] != int(os.environ['MARGINPLYR_REVIEW_EPOCH']) or
+            record['launcher'] != hashlib.sha256(LAUNCHER_SOURCE).hexdigest()):
+        raise RuntimeError('The pinned worker has no matching supervised request.')
+    if record['capacity'] == 'Full':
+        if not record['owned_capacity']:
+            raise RuntimeError('Full execution requires proof of owned capacity.')
+        with (Path(path).parents[2] / 'admission.lock').open('a+') as lock:
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                pass
+            else:
+                raise RuntimeError('The pinned worker requires held admission capacity.')
     subprocess.run(['git', 'clone', '--quiet', '--shared', '--no-checkout', root, checkout], check=True)
     subprocess.run(['git', '-C', checkout, 'checkout', '--quiet', '--detach', sha], check=True)
-    selection = record.get('selection', dict(path='Full', verifiers=[]))
+    selection = record['selection']
+    if record['capacity'] == 'exempt':
+        reason = eligibility(Path(checkout), sha, selection)
+        if reason:
+            reply = rpc_request('promote', reason)
+            if not reply.get('ok'):
+                raise RuntimeError('Supervised promotion refused: ' + str(reply))
+            # The supervisor stops this epoch and all its children before waiting.
+            while True:
+                time.sleep(1)
     transport = Path(checkout).parent / 'selection.dcf'
-    transport.write_text('Path: ' + selection['path'] + '\nCommit: ' + sha +
-                         '\nRequest: ' + record['token'] + '\nVerifiers: ' +
-                         ' '.join(selection['verifiers']) + '\n')
-    # Overwrite caller-provided selection. Only the lock-authorized worker
-    # transports the manager's pinned decision into compatible source gates.
+    transport.write_text(selection_transport(record))
     os.environ[SELECTION] = str(transport)
+    os.environ['TESTTHAT_PARALLEL'] = 'false'
+    os.environ['TESTTHAT_CPUS'] = '1'
     os.chdir(checkout)
     os.execvpe('Rscript', ['Rscript', 'tools/review-ready-check.R'], os.environ)
 
@@ -409,10 +902,20 @@ def main(args=None):
     args = list(sys.argv[1:] if args is None else args)
     if args and args[0] == '--run-pinned':
         return run_pinned(args[1:])
+    if args == ['--gate-proof']:
+        reply = rpc_request('authorize')
+        if not reply.get('ok'):
+            raise RuntimeError('Supervision proof refused: ' + str(reply))
+        say('Path: ' + reply['path'] + '\nCapacity: ' + reply['capacity'])
+        return 0
+    if len(args) == 2 and args[0] == '--promote':
+        reply = rpc_request('promote', args[1])
+        return 0 if reply.get('ok') else 2
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group()
-    mode.add_argument('--status', action='store_true', help='show admission state; does not run a check')
-    mode.add_argument('--recover', action='store_true', help='recover an unfinished request after confirmed shutdown')
+    mode.add_argument('--status', action='store_true', help='list requests; does not run a check')
+    mode.add_argument('--recover', nargs='?', const='', metavar='REQUEST',
+                      help='recover one explicit stopped request; does not run a check')
     options = parser.parse_args(args)
     if sys.platform not in ('darwin', 'linux'):
         say('Unsupported platform: this admission CLI requires macOS or Linux. No check was run.')
@@ -421,76 +924,71 @@ def main(args=None):
     previous = {}
     for sig in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
         previous[sig] = signal.signal(sig, lambda number, frame: cancellation.__setitem__(0, number))
-    lock = None
+    manager_lock = None
     try:
         state = USER_HOME / '.local/state/marginplyr/review-ready'
         state.mkdir(parents=True, exist_ok=True, mode=0o700)
-        path = state / 'request.json'
         if options.status:
-            record = read_record(path)
-            if record:
-                record['operation'] = 'status only; no check was run'
-            say(json.dumps(record, indent=2) if record else 'No active or unfinished request. No check was run.')
+            records = []
+            table = processes()
+            for path, record, error in active_records(state):
+                if error:
+                    records.append(dict(id=path.parent.name, state='recovery', error=error,
+                                        capacity='unknown; Full protected', record=str(path)))
+                else:
+                    item = dict(record)
+                    if record['version'] == 1:
+                        item.setdefault('id', 'legacy')
+                        item.setdefault('state', 'running')
+                        item.setdefault('capacity', 'Full')
+                        item.setdefault('selection', dict(path='Full'))
+                        item['ownership'] = 'legacy fence; Full shutdown must be confirmed'
+                    if not same_process(table, record['manager']):
+                        item['state'] = 'recovery'
+                    records.append(item)
+            say(json.dumps(dict(requests=records, operation='status only; No check was run.'), indent=2))
             return 0
-        root, sha = (None, None) if options.recover else identity()
-        selection = None if options.recover else select_path(root, sha)
-        if selection is not None:
-            say('Review-ready selection: ' + json.dumps(selection, ensure_ascii=True))
-        if not options.recover and not shutil.which('Rscript'):
+        if options.recover is not None:
+            processes()
+            return recover_request(state, options.recover or None, boot_identity())
+        root, sha = identity()
+        selection = select_path(root, sha)
+        reason = eligibility(root, sha, selection)
+        if reason:
+            selection['path'] = 'Full'
+            selection['reasons'].append(reason)
+        say('Review-ready selection: ' + json.dumps(selection, ensure_ascii=True))
+        if not shutil.which('Rscript'):
             raise RuntimeError('Rscript is missing from PATH. Install the review prerequisites; no check was run.')
-        # Check process visibility before waiting or starting any heavy stage.
         table = processes()
         boot = boot_identity()
         parent = os.getppid()
-        manager = evidence(table[os.getpid()])
-        lock = (state / 'admission.lock').open('a+')
-        started = time.monotonic()
-        displayed = -float('inf')
-        while True:
-            if cancellation[0] or os.getppid() != parent:
-                say('Cancelled waiting request for ' + str(sha) + '. No check was run.')
-                return CANCELLED
-            try:
-                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                break
-            except OSError as error:
-                if error.errno not in (errno.EAGAIN, errno.EACCES):
-                    raise
-            if options.recover:
-                say('An active manager holds capacity; recovery refused. No check was run.')
-                return BLOCKED
-            if time.monotonic() - displayed >= 5:
-                active = read_record(path)
-                detail = ('; active ' + active['sha'] + ' in ' + active['root']) if active else '; active identity pending'
-                say('Waiting for Review-ready capacity: requested ' + sha + '; elapsed ' +
-                    str(int(time.monotonic() - started)) + 's' + detail)
-                displayed = time.monotonic()
-            time.sleep(0.15)
-        record = read_record(path)
-        if options.recover:
-            return recover(path, record, boot)
-        if record:
-            say(recovery_message(record))
-            return BLOCKED
-        try:
-            current_root, current_sha = identity()
-            if (current_root, current_sha) != (root, sha):
-                raise RuntimeError('HEAD changed while waiting.')
-        except (RuntimeError, subprocess.SubprocessError, OSError) as error:
-            say('Stale request cancelled for ' + sha + ': ' + str(error) + ' Submit a fresh request.')
-            return STALE
-        if cancellation[0]:
-            return CANCELLED
-        record = dict(version=1, token=uuid.uuid4().hex, sha=sha, root=str(root),
-                      boot=boot, manager=manager, group=None, children=[], started=time.time(),
-                      selection=selection)
-        return run_gate(path, record, root, sha, cancellation, parent)
+        request = uuid.uuid4().hex
+        directory = state / 'requests' / request
+        directory.mkdir(parents=True, mode=0o700)
+        manager_lock = lock_file(directory / 'manager.lock')
+        path = directory / 'record.json'
+        record = dict(version=2, protocol=SUPERVISION_PROTOCOL, id=request, token=uuid.uuid4().hex,
+                      sha=sha, root=str(root), boot=boot, manager=evidence(table[os.getpid()]),
+                      group=None, children=[], started=time.time(), selection=selection,
+                      initial_selection=dict(selection),
+                      state='preparing', capacity='Full' if selection['path'] == 'Full' else 'exempt',
+                      may_own_full=False, owned_capacity=False, epoch=1, authorized=False,
+                      promotions=[], workspace=str(directory / 'workspace'), cleanup='pending',
+                      channel='/tmp/marginplyr-review-' + request + '.sock', channel_owned=False,
+                      worker_policy=('Full suite: 4 test workers' if selection['path'] == 'Full' else
+                                     'serial; registered parallel fixtures <=2'),
+                      requires_proof=EXEMPT_PROTOCOL in git_bytes(
+                          root, 'show', sha + ':tools/review-ready-check.R').splitlines())
+        save(path, record)
+        say('Review-ready request: ' + request + '; management record: ' + str(path))
+        return run_request(state, path, record, cancellation, parent)
     except (OSError, ValueError, KeyError, TypeError, RuntimeError, subprocess.SubprocessError) as error:
         say('Review-ready admission failed: ' + str(error) + '. No passing check evidence.')
         return 2
     finally:
-        if lock is not None:
-            lock.close()
+        if manager_lock is not None:
+            manager_lock.close()
         for sig, handler in previous.items():
             signal.signal(sig, handler)
 

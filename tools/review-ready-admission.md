@@ -1,10 +1,14 @@
 # Shared local Review-ready admission
 
-`marginplyr-review-ready` admits one complete Review-ready check per OS user
+`marginplyr-review-ready` admits one complete Full Review-ready check per OS user
 across marginplyr clones and worktrees. Full retains four test workers;
 Documentation retains package build/check with `--no-tests` and separate
-documentation assertions; Repository omits build/check for supported prose. All paths use the
-same slot. Waiting does not load R dependencies or run any check stage. CI
+documentation assertions; Repository omits build/check for supported prose.
+Eligible Documentation and Repository requests start immediately under their
+own supervision, including while Full runs or needs recovery. They have no
+separate aggregate slot or host CPU/memory bound; build/render and limited
+verification may overlap. Full waiting does not load R dependencies or run any
+check stage. CI
 and commands outside this boundary are unchanged. The accepted design is
 [resource admission](../design/specs/review-ready-resource-admission.md),
 and [local checks](../design/agents/local-checks.md) owns the gate and its
@@ -45,12 +49,15 @@ explicit acknowledgement; installation alone does not reload their guidance.
 Refresh/restart sessions whose instructions or PATH cannot be updated. Older
 worktrees need not merge this implementation: run the installed command from
 their root. Selection requires the submitted R entry
-point's versioned protocol marker. Unsupported older revisions retain their
-existing Full gate; an older installed launcher with new sources also
-retains Full. Refresh the installed launcher from the implementation
+point's versioned protocol and installed stage fingerprints. Unsupported older
+revisions retain their locked Full gate; an older installed launcher with new
+sources either uses its verified locked contract or fails safely. Refresh the installed launcher from the implementation
 checkout to enable selection; source edits alone never update the standalone
-installed copy. Compare its bytes with `tools/review-ready-admission.py`
-after installation, and verify real Full, Documentation and prose-only
+installed copy. The installer embeds hashes of the reviewed stage sources and
+their explicit dependencies; `STAGE_CONTRACTS` and `capability_patterns()` in
+`tools/review-ready-admission.py` own that registration. Refresh installation
+after changing a contract source. Verify the installed bytes with
+`python3 tools/install-review-ready.py --verify`, and verify real Full, Documentation and prose-only
 Repository invocations through the installed command. Unmodified older
 scripts invoked directly bypass this cooperative boundary. Installation
 cannot intercept them. The updated R entry point delegates to the common CLI
@@ -78,9 +85,13 @@ A later local main update does not affect the pinned comparison. Waiting
 lines show that SHA, elapsed wait, and the active commit/worktree when
 known. There is no queue position or ETA. Immediately before admission it
 revalidates HEAD and cleanliness; a stale request exits 3 without checking a
-newer revision. After admission, a disposable shared Git clone at the pinned
+newer revision. Each request has a durable record, private token and channel,
+PID/birth identities, owned-child ledger, gate output and disposable source.
+Records and output remain under the shared state's `requests/` directory after
+confirmed source cleanup. After supervision setup (and admission for Full), a disposable shared Git clone at the pinned
 SHA invokes that revision's R gate with an internal request-bound selection
-transport. This prevents later source edits, changed HEAD, and untracked
+transport. An independent worker checks its installed source capabilities again
+before starting the gate. This prevents later source edits, changed HEAD, and untracked
 files from substituting the requested revision, including on older
 worktrees. The gate archives the exact SHA. All paths run spelling and both
 linters, loading the package before lintr, plus mapped artifact
@@ -94,7 +105,30 @@ runs the registered assertions serially without skips, and explicitly reports
 the complete suite and snapshots omitted. Native-crash retry preserves its
 `--as-cran --no-tests` arguments and tarball. The terminal CLI outcome
 includes the selected path; zero alone does not imply that Full ran. The
-original worktree is never checked out or reset by the CLI.
+original worktree is never checked out or reset by the CLI. Completed and omitted
+stages and NOTE dispositions appear in gate output. Terminal output identifies
+the request/commit, final path, capacity mode, cleanup and promotion history.
+
+The exemption contract requires serial Documentation assertions and ordinary
+limited Repository tests in one test process. Only the registered progress
+fixture tests parallel behavior using at most two test workers. Larger parallel
+tests, complete suites and unknown or changed stage contracts require Full;
+neither filenames, source-text searches nor a caller skip flag establish safety.
+Spelling, jarl and package-aware lintr always run, with package loading before
+lintr, on every path.
+
+Later eligibility work may request promotion over the request-private manager
+channel. The manager authenticates protocol, token, request/commit, epoch and
+expected running state, refusing duplicates, stale messages and cancellation.
+It stops and collects all preparatory work and children, persists Full waiting,
+acquires the existing common lock, revalidates submitted HEAD/cleanliness and
+persists capacity ownership before restarting the complete Full gate. Request,
+comparison identities, execution handle and preparatory evidence remain intact.
+The R gate obtains live authorization from that manager; environment changes
+alone cannot grant Full. Missing/corrupt selection transport fails without
+unrestricted fallback. Parse errors, failed assertions and stale generated
+outputs remain failures, not promotion. Native retries keep the same path,
+tarball and arguments: Documentation stays exempt and Full retains its slot.
 
 Retain the same execution handle through waiting, execution, cleanup, and
 terminal exit. While waiting or checking, follow
@@ -130,26 +164,38 @@ cleanup. This is supervision of the fixed trusted gate, not containment of
 arbitrary programs that deliberately erase environment and detach between
 observations. No guarantee covers every possible macOS descendant.
 
-The permanent advisory lock is not removed. A durable journal is written before
-spawning; even SIGKILL between spawn and ownership registration leaves admission
-blocked. A killed manager's free OS lock or dead PID is not shutdown evidence.
+The permanent Full advisory lock is not removed. A durable request record is
+written before spawning; even SIGKILL between spawn and child registration
+leaves recovery evidence. Full also maintains the legacy `request.json` fence
+under that same lock so older launchers cannot overlook unfinished Full work.
+A killed manager's free OS lock or dead PID is not shutdown evidence.
 Inspect using:
 
 ```sh
 marginplyr-review-ready --status
-marginplyr-review-ready --recover
+marginplyr-review-ready --recover REQUEST
 ```
 
-Recovery never signals a process or deletes a lock. For a request from the
-current OS boot, it holds exclusive admission while taking two complete
+Status lists request IDs, selected paths, capacity ownership, running/waiting
+states and requests needing recovery. Recovery requires one explicit request ID;
+an absent, unknown or ambiguous selection lists candidates and changes nothing.
+Use `legacy` for an old standalone journal. An unfinished exempt request does
+not globally block others. Unknown/corrupt evidence or any uncertainty about
+entry into Full protects Full admission conservatively. New requests unable to
+establish their own supervision fail before starting work.
+
+Recovery never signals a process or deletes a lock. It locks the target request
+and, where Full ownership is possible, the common Full slot. For a request from
+the current OS boot, it takes two complete
 process observations, separated by 0.2 seconds. Both must find the recorded
 manager and every identified owned process stopped. Ownership uses the same
 request marker, PID/birth identities, process groups and descendants as the
 running supervisor; an ambiguous group or failed observation leaves the journal
 intact. A dead manager or free lock alone is insufficient.
 
-After confirmed shutdown, `--recover` clears the stale
-journal without requiring an OS restart. It also recognizes a request from an
+After confirmed shutdown, recovery removes only the target's disposable source
+and channel and records an interrupted outcome, without requiring an OS restart.
+It clears a legacy fence only for its matching request. It also recognizes a request from an
 earlier boot. Either recovery reports that no check was run; an interrupted
 check never becomes a pass. Never manually delete the journal to unblock
 admission. Invalid journals or unavailable boot/process evidence require
@@ -164,7 +210,10 @@ Rscript .github/scripts/verify-review-ready-check.R
 ```
 
 The Python fixtures cover cumulative/final-tree selection, NUL-delimited names,
-rename sides, deletions, unsafe modes, missing/ambiguous bases, and pinned main.
+rename sides, deletions, unsafe modes, missing/ambiguous bases, and pinned main,
+concurrent exempt execution with Full active or recovery-blocked, isolated
+records/cancellation/recovery, authenticated promotion and its waiting states,
+and unknown source capabilities that could hide complete-suite work.
 They also substitute the OS-home adapter for independent test
 users, process-observation faults and late-visible descendants for recovery,
 the boot-identity adapter for simulated restart recovery, and a delayed

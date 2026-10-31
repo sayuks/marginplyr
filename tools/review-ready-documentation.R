@@ -18,7 +18,9 @@ run_review_ready_documentation_tests <- function(source_root = ".") {
   if (!identical(sort(selected), sort(targets))) {
     stop("Documentation selection must match every registered file exactly.", call. = FALSE)
   }
-  Sys.setenv(TESTTHAT_PARALLEL = "false", NOT_CRAN = "true")
+  Sys.setenv(
+    TESTTHAT_PARALLEL = "false", TESTTHAT_CPUS = "1", NOT_CRAN = "true"
+  )
   cat("Documentation assertions: ", paste(targets, collapse = ", "), "\n", sep = "")
   results <- testthat::test_local(source_root, filter = filter, reporter = "summary",
     stop_on_failure = TRUE, stop_on_warning = TRUE)

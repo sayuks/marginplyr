@@ -610,14 +610,20 @@ local({
   transport <- tempfile("review-ready-selection-")
   on.exit(unlink(transport), add = TRUE)
   Sys.unsetenv(keys)
-  expect_identical(read_review_ready_selection(),
-    list(path = "Full", verifiers = character()), "older launchers keep Full")
+  expect_error(
+    read_review_ready_selection(), "selection transport is required",
+    "missing transport cannot authorize Full"
+  )
   Sys.setenv(MARGINPLYR_REVIEW_SELECTION = transport,
     MARGINPLYR_REVIEW_REQUEST = "fixture")
-  writeLines(c("Path: Repository", paste("Commit:", clean_identity$sha),
-    "Request: fixture", "Verifiers: .github/scripts/verify-context-budget.R"),
-    transport)
-  expect_identical(read_review_ready_selection(),
+  writeLines(
+    c("Path: Repository", paste("Commit:", clean_identity$sha),
+      "Request: fixture", "Protocol: 3", "Capacity: exempt",
+      "Verifiers: .github/scripts/verify-context-budget.R"),
+    transport
+  )
+  proof <- function() list(path = "Repository", capacity = "exempt")
+  expect_identical(read_review_ready_selection(proof),
     list(path = "Repository", sha = clean_identity$sha,
       verifiers = ".github/scripts/verify-context-budget.R"),
     "the admitted worker's Repository transport")
@@ -625,8 +631,11 @@ local({
   expect_error(read_review_ready_selection(), "Invalid admitted",
     "a different admitted request")
   Sys.setenv(MARGINPLYR_REVIEW_REQUEST = "fixture")
-  writeLines(c("Path: Repository", paste("Commit:", clean_identity$sha),
-    "Request: fixture", "Verifiers:"), transport)
+  writeLines(
+    c("Path: Repository", paste("Commit:", clean_identity$sha),
+      "Request: fixture", "Protocol: 3", "Capacity: exempt", "Verifiers:"),
+    transport
+  )
   expect_error(read_review_ready_selection(), "requires mapped",
     "a missing required verifier route")
 })
