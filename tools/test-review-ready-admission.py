@@ -37,12 +37,6 @@ class Lifecycle(unittest.TestCase):
 import fcntl, json, os, pathlib, socket, subprocess, sys, time
 if os.environ.get("MARGINPLYR_REVIEW_SUPERVISOR"):
     subprocess.run([sys.executable, os.environ["MARGINPLYR_REVIEW_SUPERVISOR"], "--gate-proof"], check=True)
-if os.environ.get("FIXTURE_PROMOTE") and os.environ["MARGINPLYR_REVIEW_EPOCH"] == "1":
-    child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"], start_new_session=True)
-    pathlib.Path(os.environ["FIXTURE_CHILD_FILE"]).write_text(str(child.pid))
-    print("PREPARING promotion", flush=True)
-    subprocess.run([sys.executable, os.environ["MARGINPLYR_REVIEW_SUPERVISOR"], "--promote", "fixture requires Full"], check=True)
-    time.sleep(60)
 lock = open(os.environ["FIXTURE_LOCK"], "a+")
 fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
 root = pathlib.Path.cwd()
@@ -56,6 +50,21 @@ print("DONE", flush=True)
 sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
 ''')
         shim.chmod(0o755)
+        real_git = shutil.which('git')
+        git_shim = self.bin / 'git'
+        git_shim.write_text('#!' + sys.executable + '\n' + '''
+import os, pathlib, subprocess, sys, time
+real_git = ''' + repr(real_git) + '''
+if 'clone' in sys.argv and os.environ.get('FIXTURE_PROMOTE') and os.environ.get('MARGINPLYR_REVIEW_EPOCH') == '1':
+    subprocess.run([real_git] + sys.argv[1:], check=True)
+    child = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'], start_new_session=True)
+    pathlib.Path(os.environ['FIXTURE_CHILD_FILE']).write_text(str(child.pid))
+    print('PREPARING promotion', flush=True)
+    subprocess.run([sys.executable, os.environ['MARGINPLYR_REVIEW_SUPERVISOR'], '--promote', 'fixture requires Full'], check=True)
+    time.sleep(60)
+os.execv(real_git, [real_git] + sys.argv[1:])
+''')
+        git_shim.chmod(0o755)
         self.env['FIXTURE_LOCK'] = str(self.root / 'heavy.lock')
         self.env['FIXTURE_CHILD_FILE'] = str(self.root / 'child.pid')
         self.env['PATH'] = str(self.bin) + os.pathsep + self.env['PATH']
@@ -477,6 +486,36 @@ sys.exit(result.returncode)
                                     cwd=self.repo, env=self.env, capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             self.assertIn('Verified installed supervision protocol: 3', result.stdout)
+
+    def test_started_validation_failure_cannot_be_replaced_by_full_promotion(self):
+        self.repository_branch()
+        shim = self.bin / 'Rscript'
+        probe = '''
+if os.environ["MARGINPLYR_REVIEW_EPOCH"] == "1":
+    result = subprocess.run([sys.executable, os.environ["MARGINPLYR_REVIEW_SUPERVISOR"], "--promote", "attempt to replace a validation failure"], capture_output=True)
+    print("POST-VALIDATION PROMOTION STATUS", result.returncode, flush=True)
+    sys.exit(17)
+'''
+        shim.write_text(shim.read_text().replace('lock = open(', probe + '\nlock = open(', 1))
+        job, log = self.start()
+        output = self.finish(job, log, 17)
+        self.assertIn('POST-VALIDATION PROMOTION STATUS 2', output)
+        self.assertIn('selected path: Repository; capacity: exempt', output)
+        self.assertIn('promotions: []', output)
+
+    def test_failed_transport_before_authorization_cannot_promote(self):
+        self.repository_branch()
+        shim = self.bin / 'Rscript'
+        shim.write_text('#!' + sys.executable + '\n' + '''
+import os, subprocess, sys
+result = subprocess.run([sys.executable, os.environ['MARGINPLYR_REVIEW_SUPERVISOR'], '--promote', 'transport failed before authorization'])
+assert result.returncode == 2
+sys.exit(17)
+''')
+        job, log = self.start()
+        output = self.finish(job, log, 17)
+        self.assertIn('selected path: Repository; capacity: exempt', output)
+        self.assertIn('promotions: []', output)
 
     def selected(self, **env):
         job, log = self.start(FIXTURE_SECONDS='0', **env)

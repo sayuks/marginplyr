@@ -402,6 +402,7 @@ def read_record(path):
                 type(record['owned_capacity']) is bool and
                 type(record['epoch']) is int and record['epoch'] > 0 and
                 type(record['authorized']) is bool and
+                type(record.get('gate_started', False)) is bool and
                 type(record['requires_proof']) is bool and
                 type(record['channel_owned']) is bool and
                 isinstance(record['selection'], dict) and
@@ -660,7 +661,15 @@ def serve_control(server, path, record, cancellation, parent):
                     record['state'] != 'running' or cancellation[0] or os.getppid() != parent):
                 raise RuntimeError('Stale, mismatched or cancelled supervisor request.')
             operation = message.get('operation')
-            if operation == 'authorize':
+            if operation == 'begin-gate':
+                if record.get('gate_started'):
+                    raise RuntimeError('Duplicate gate start.')
+                record['gate_started'] = True
+                persist(path, record)
+                reply = dict(ok=True)
+            elif operation == 'authorize':
+                if not record.get('gate_started'):
+                    raise RuntimeError('The supervised worker has not begun the gate.')
                 if record['authorized']:
                     raise RuntimeError('Duplicate gate authorization.')
                 if record['selection']['path'] == 'Full' and not record['owned_capacity']:
@@ -674,6 +683,8 @@ def serve_control(server, path, record, cancellation, parent):
             elif operation == 'promote':
                 if record['capacity'] != 'exempt':
                     raise RuntimeError('Promotion is only valid for running exempt work.')
+                if record.get('gate_started'):
+                    raise RuntimeError('Eligibility promotion must precede gate execution; validation failures are terminal.')
                 reason = message.get('reason')
                 if not isinstance(reason, str) or not reason.strip() or len(reason) > 2000:
                     raise RuntimeError('Promotion requires a bounded eligibility reason.')
@@ -836,6 +847,7 @@ def run_request(state, path, record, cancellation, parent):
             # All preparatory work and owned children are stopped and collected.
             record.update(capacity='Full', state='waiting', group=None, children=[],
                           epoch=record['epoch'] + 1, authorized=False,
+                          gate_started=False,
                           worker_policy='Full suite: 4 test workers')
             record['selection']['path'] = 'Full'
             persist(path, record)
@@ -894,6 +906,9 @@ def run_pinned(args):
     os.environ[SELECTION] = str(transport)
     os.environ['TESTTHAT_PARALLEL'] = 'false'
     os.environ['TESTTHAT_CPUS'] = '1'
+    reply = rpc_request('begin-gate')
+    if not reply.get('ok'):
+        raise RuntimeError('Supervised gate start refused: ' + str(reply))
     os.chdir(checkout)
     os.execvpe('Rscript', ['Rscript', 'tools/review-ready-check.R'], os.environ)
 
@@ -978,6 +993,7 @@ def main(args=None):
                       initial_selection=dict(selection),
                       state='preparing', capacity='Full' if selection['path'] == 'Full' else 'exempt',
                       may_own_full=False, owned_capacity=False, epoch=1, authorized=False,
+                      gate_started=False,
                       promotions=[], workspace=str(directory / 'workspace'), cleanup='pending',
                       channel='/tmp/marginplyr-review-' + request + '.sock', channel_owned=False,
                       worker_policy=('Full suite: 4 test workers' if selection['path'] == 'Full' else

@@ -109,6 +109,9 @@ Only the explicitly registered parallel-behavior fixture may start testthat
 workers outside Full, with at most two actual workers. Larger parallel work,
 complete-suite work and unsupported contracts require Full.
 
+Eligibility work ends before the worker starts the gate, including transport
+parsing. Once validation starts,
+promotion is refused so an observed failure cannot be replaced by another gate.
 If later eligibility work requires Full, the supervisor stops and collects
 preparation and its owned children, persists Full waiting, acquires the common
 slot, revalidates submitted HEAD/cleanliness and records owned capacity before

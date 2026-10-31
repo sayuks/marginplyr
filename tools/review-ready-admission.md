@@ -117,9 +117,13 @@ neither filenames, source-text searches nor a caller skip flag establish safety.
 Spelling, jarl and package-aware lintr always run, with package loading before
 lintr, on every path.
 
-Later eligibility work may request promotion over the request-private manager
+Before the worker starts the gate, later eligibility work may request promotion
+over the request-private manager
 channel. The manager authenticates protocol, token, request/commit, epoch and
 expected running state, refusing duplicates, stale messages and cancellation.
+The worker authenticates gate start before executing R or parsing its transport;
+promotion after that boundary is refused, preserving validation failures as
+terminal outcomes even if R never obtained gate authorization.
 It stops and collects all preparatory work and children, persists Full waiting,
 acquires the existing common lock, revalidates submitted HEAD/cleanliness and
 persists capacity ownership before restarting the complete Full gate. Request,
