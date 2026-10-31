@@ -110,7 +110,10 @@ review_requirements <- dependency_requirements(description_value(
 ))
 expect_identical(
   review_requirements$package,
-  c("lintr", "pkgload", "R6", "rcmdcheck", "spelling", "testthat"),
+  c(
+    "devtools", "roxygen2", "lintr", "pkgload", "R6", "rcmdcheck",
+    "spelling", "testthat"
+  ),
   "the review dependency set"
 )
 expect_identical(
