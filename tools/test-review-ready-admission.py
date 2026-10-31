@@ -198,6 +198,104 @@ sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
                 self.commit_all()
                 self.assertEqual(self.selected()['path'], 'Full')
 
+    def roxygen_branch(self):
+        self.repository_branch()
+        (self.repo / 'tools/review-ready-check.R').write_text(
+            '# Review-ready selection protocol: 2\n# Review-ready roxygen proof protocol: 1\n')
+        for name in ('review-ready-roxygen.R', 'review-ready-check-lib.R'):
+            shutil.copyfile(SOURCE.with_name(name), self.repo / 'tools' / name)
+        (self.repo / 'R').mkdir()
+        (self.repo / 'R/help.R').write_text("#' Title\n#' Description.\nf <- function(x) x\n")
+        self.commit_all()
+        self.git(self.repo, 'branch', '-f', 'main', 'HEAD')
+        (self.repo / 'R/help.R').write_text("#' Title\n#' New description.\nf <- function(x) x\n")
+        self.commit_all()
+        # Only the eligibility subprocess uses real R; the expensive fixed gate
+        # remains the lifecycle fixture at its existing process boundary.
+        shim = self.bin / 'Rscript'
+        original = shim.read_text()
+        real_r = shutil.which('Rscript')
+        shim.write_text(original.replace('import fcntl, os, pathlib, subprocess, sys, time',
+            'import fcntl, os, pathlib, subprocess, sys, time\n'
+            'if "tools/review-ready-roxygen.R" in sys.argv:\n'
+            '    os.execv(' + repr(real_r) + ', [' + repr(real_r) + '] + sys.argv[1:])'))
+
+    def test_roxygen_proof_runs_after_admission_and_terminal_path_is_resolved(self):
+        self.roxygen_branch()
+        job, log = self.start(FIXTURE_SECONDS='0')
+        output = self.finish(job, log)
+        self.assertLess(output.index('Admitted Review-ready commit:'), output.index('R documentation proof:'))
+        self.assertIn('"roxygen_pending": true', output)
+        self.assertIn('selected path: Documentation', output)
+        (self.repo / 'R/help.R').write_text("#' @export\nf <- function(x) x\n")
+        self.commit_all()
+        job, log = self.start(FIXTURE_SECONDS='0')
+        self.assertIn('selected path: Full', self.finish(job, log))
+
+    def test_roxygen_mixed_code_configuration_and_added_deleted_sources_stay_full(self):
+        self.roxygen_branch()
+        baseline = self.git(self.repo, 'rev-parse', 'HEAD')
+        for name in ('DESCRIPTION', 'NAMESPACE', 'tools/code.R', 'R/added.R'):
+            with self.subTest(name=name):
+                self.git(self.repo, 'reset', '--hard', baseline)
+                path = self.repo / name
+                path.write_text('Package: marginplyr\nTitle: Change\n' if name == 'DESCRIPTION' else '# changed\n')
+                self.commit_all()
+                route = self.selected()
+                self.assertEqual(route['path'], 'Full')
+                self.assertFalse(route.get('roxygen_pending', False))
+        self.git(self.repo, 'reset', '--hard', baseline)
+        (self.repo / 'R/help.R').unlink()
+        self.commit_all()
+        self.assertEqual(self.selected()['path'], 'Full')
+
+    def test_roxygen_resolution_preserves_ci_verifiers_and_pinned_transport(self):
+        self.roxygen_branch()
+        workflow = self.repo / '.github/workflows/lint.yaml'
+        workflow.parent.mkdir(parents=True)
+        workflow.write_text('# supported workflow\n')
+        self.commit_all()
+        base = self.git(self.repo, 'rev-parse', 'main')
+        shim = self.bin / 'Rscript'
+        shim.write_text(shim.read_text().replace('root = pathlib.Path.cwd()\n',
+            'root = pathlib.Path.cwd()\n'
+            'print("TRANSPORT\\n" + pathlib.Path(os.environ["MARGINPLYR_REVIEW_SELECTION"])'
+            '.read_text() + "END TRANSPORT", flush=True)\n'))
+        for path in ('Documentation', 'Full'):
+            with self.subTest(path=path):
+                if path == 'Full':
+                    (self.repo / 'R/help.R').write_text("#' Description.\nf <- function(x) x + 1\n")
+                    self.commit_all()
+                job, log = self.start(FIXTURE_SECONDS='0')
+                output = self.finish(job, log)
+                transport = output.split('TRANSPORT\n', 1)[1].split('END TRANSPORT', 1)[0]
+                self.assertIn('selected path: ' + path, output)
+                self.assertIn('Protocol: 2\nPath: ' + path + '\n', transport)
+                self.assertIn('Base: ' + base + '\n', transport)
+                self.assertIn('tools/verify-ci-artifacts.py', transport)
+                self.assertIn('tools/review-ready-generated.R', transport)
+
+    def test_waiting_roxygen_request_does_not_parse_before_admission(self):
+        self.roxygen_branch()
+        active, active_log = self.start(FIXTURE_SECONDS='60')
+        self.until(active_log, 'HEAVY ')
+        waiting, waiting_log = self.start()
+        self.until(waiting_log, 'Waiting for Review-ready capacity:')
+        self.assertNotIn('R documentation proof:', waiting_log.read_text())
+        waiting.terminate()
+        self.finish(waiting, waiting_log, 130)
+        active.terminate()
+        self.finish(active, active_log, 130)
+
+    def test_older_selection_protocol_keeps_modified_r_full(self):
+        self.roxygen_branch()
+        (self.repo / 'tools/review-ready-check.R').write_text('# Review-ready selection protocol: 2\n')
+        self.commit_all()
+        self.git(self.repo, 'branch', '-f', 'main', 'HEAD')
+        (self.repo / 'R/help.R').write_text("#' Other description.\nf <- function(x) x\n")
+        self.commit_all()
+        self.assertFalse(self.selected().get('roxygen_pending', False))
+
     def test_documentation_deletion_rename_and_reverted_code(self):
         self.repository_branch()
         (self.repo / 'NEWS.md').write_text('Release\n')

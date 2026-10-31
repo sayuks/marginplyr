@@ -85,9 +85,24 @@ explicit image formats under `man/figures/`, top-level `vignettes/*.qmd`, and
 explicit vignette image, bibliography and citation-style formats. Executable
 vignette eligibility follows `documentation_sources()` in
 `tests/testthat/test-documentation.R`; unscanned document formats and nested
-Quarto documents remain Full. Unknown formats remain Full;
-R-file edits remain Full, including roxygen-only edits. Full wins over
-Documentation, which wins over Repository, across the cumulative diff.
+Quarto documents remain Full. Unknown formats remain Full.
+Existing ordinary `R/*.R` edits are candidates for the admitted R documentation
+proof in `tools/review-ready-roxygen.R`. It compares parsed expressions without
+evaluation and preserves the placement of unsafe directives among executable
+tokens. Blank lines anywhere, CRLF/LF, ordinary comments, inline lint directives
+and formatting may differ when the parsed expressions remain identical. These
+edits use the Documentation verification level even when they are not document
+edits. A lint correction that changes the parsed expressions remains Full;
+its motivation does not establish executable equivalence.
+Added/deleted/renamed R files, unsupported forms, coverage directives and package
+configuration changes remain Full.
+The allowlist in that proof owns the supported tags; unknown and evaluated tags,
+namespace/import/export and load-order directives are conservative Full cases.
+The pre-admission selection stays Full while this proof is pending. It runs only
+after admission against archives of the pinned base and submitted commit; the
+admitted selection and terminal outcome identify the resolved path.
+Full wins over Documentation, which wins over Repository, across the cumulative
+diff.
 
 CI/configuration routes are deliberately narrow:
 
@@ -163,8 +178,12 @@ not evidence of their execution.
 Mapped generation runs on Full as well as Documentation whenever README/help
 outputs or their supported package inputs change. It regenerates roxygen help,
 NAMESPACE and README in another disposable committed-tree copy, installing that
-copy for README execution. It compares all artifact names and bytes, including
-added, modified and removed figures. A mismatch fails; the diagnostic records
+copy for README execution. All generated path names, types, permissions and
+bytes participate, including added/removed figures and unexpected outputs
+outside documentation. A generated namespace, dependency or
+runtime-configuration effect requires Full. A mismatch with the submitted tree
+still fails validation: fallback never hides stale output, and the corrected
+commit receives a fresh selection. The diagnostic records
 Quarto and bundled Pandoc versions to distinguish stale output from writer
 drift. Regenerate and commit the result; never accept silently repaired output.
 
