@@ -1,0 +1,3 @@
+           plans      helper_rows duplicate_errors
+             808             2748               92
+seed=31103147; 300 generated AST attempts; helper columns were selected in independently permuted order and could include the fixed key.

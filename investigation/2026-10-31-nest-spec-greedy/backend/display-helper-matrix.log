@@ -1,0 +1,8 @@
+    Var1       Var2 Freq
+     min      match  144
+ seq_len      match  144
+     min wrong_keys  288
+ seq_len wrong_keys  288
+Completed comparisons: 864
+Every unmasked baseline matched explicit collected-input local nesting.
+All source snapshots unchanged; no warning or unexpected error.

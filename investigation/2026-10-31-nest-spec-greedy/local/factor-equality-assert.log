@@ -1,0 +1,20 @@
+ordinary dplyr source and union controls preserved one source group
+[[1]]
+[[1]][[1]]
+[1] 1
+
+[[1]][[2]]
+[1] 2
+
+
+[[2]]
+[[2]][[1]]
+[1] 1
+
+[[2]][[2]]
+[1] 2
+
+
+removing the unused NA level or selecting the source as a fixed key restored one cell
+Error: all(vapply(observed, identical, logical(1), expected)) is not TRUE
+Execution halted

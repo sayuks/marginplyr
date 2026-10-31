@@ -1,0 +1,20 @@
+ordinary dplyr source and union controls preserved one source group
+[[1]]
+[[1]][[1]]
+[1] 1
+
+[[1]][[2]]
+[1] 2
+
+
+[[2]]
+[[2]][[1]]
+[1] 1
+
+[[2]][[2]]
+[1] 2
+
+
+removing the unused NA level or selecting the source as a fixed key restored one cell
+DATED OBSERVATION: both nesting verbs split one group into two cells
+calls 576 faithful 480 wrong_membership 96 verified_cell_projections 1536 source_mutations 0
