@@ -109,7 +109,9 @@ The private `evidence.key` binds integrity and provenance to the OS user state.
 An authenticated `observation.json` retains attempted stage outcomes before
 cleanup, including when cleanup fails. Recovery preserves it and can complete
 its interrupted index write; observations never discharge an obligation.
-Unobserved failed or uncertain journals fence reuse conservatively. Stage
+Unobserved authorized execution journals, including running journals after
+manager loss, fence reuse conservatively. Unavailable cache reads disable reuse;
+interrupted publication writes still require recovery. Stage
 observation order prevents delayed cleanup from hiding a later failure.
 Keep referenced origins and observations available. Missing,
 corrupt or incompatible records disable reuse; they never become omission.

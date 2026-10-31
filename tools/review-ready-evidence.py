@@ -470,9 +470,17 @@ def clock_valid(clock, inventory, commit_time, now):
         return False
 
 
+def read_cached(reader):
+    """Report unavailable existing evidence as a reuse error, without masking writes."""
+    try:
+        return reader()
+    except OSError as error:
+        raise ValueError('Unavailable cached stage evidence: ' + str(error)) from error
+
+
 def signing_key(state, create=False):
     key = state / 'evidence.key'
-    if create and not key.exists():
+    if create and not read_cached(key.exists):
         try:
             descriptor = os.open(key, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         except FileExistsError:
@@ -482,9 +490,10 @@ def signing_key(state, create=False):
                 stream.write(os.urandom(32))
                 stream.flush()
                 os.fsync(stream.fileno())
-    if key.stat().st_uid != os.getuid() or stat.S_IMODE(key.stat().st_mode) != 0o600:
+    metadata = read_cached(key.stat)
+    if metadata.st_uid != os.getuid() or stat.S_IMODE(metadata.st_mode) != 0o600:
         raise ValueError('Unavailable private evidence key.')
-    value = key.read_bytes()
+    value = read_cached(key.read_bytes)
     if len(value) != 32:
         raise ValueError('Invalid evidence key.')
     return value
@@ -499,11 +508,11 @@ def read_evidence(path, key, seen=None):
     if path.parent.name in seen:
         raise ValueError('Cyclic evidence reference.')
     seen = seen | {path.parent.name}
-    envelope = json.loads(path.read_text())
+    envelope = json.loads(read_cached(path.read_text))
     payload = envelope['payload']
     if not hmac.compare_digest(envelope['integrity'], seal(payload, key)['integrity']):
         raise ValueError('Corrupt stage evidence.')
-    record = json.loads(path.with_name('record.json').read_text())
+    record = json.loads(read_cached(path.with_name('record.json').read_text))
     kind = payload.get('kind', 'evidence')
     if (kind not in ('evidence', 'observation') or path.name != kind + '.json' or
             payload['schema'] != SCHEMA or payload['request'] != path.parent.name or
@@ -563,12 +572,12 @@ def compatible_unit(candidate, wanted):
 
 def read_index(state, key):
     path = state / 'evidence-index.json'
-    if not path.exists():
+    if not read_cached(path.exists):
         if any(path.name in ('evidence.json', 'observation.json')
-                for path in (state / 'requests').glob('*/*.json')):
+                for path in read_cached(lambda: list((state / 'requests').glob('*/*.json')))):
             raise ValueError('Missing common evidence index; records cannot be imported.')
         return []
-    envelope = json.loads(path.read_text())
+    envelope = json.loads(read_cached(path.read_text))
     payload = envelope['payload']
     if (not hmac.compare_digest(envelope['integrity'], seal(payload, key)['integrity']) or
             payload['schema'] != SCHEMA or not isinstance(payload['entries'], list)):
@@ -591,7 +600,8 @@ def read_index(state, key):
 def records(state, key, pending_observation=None):
     """Read the complete signed inventory, including negative outcomes."""
     entries = read_index(state, key)
-    actual = {(path.parent.name, path.stem) for path in (state / 'requests').glob('*/*.json')
+    actual = {(path.parent.name, path.stem)
+              for path in read_cached(lambda: list((state / 'requests').glob('*/*.json')))
               if path.name in ('evidence.json', 'observation.json')}
     if pending_observation is not None:
         actual.discard((pending_observation.parent.name, 'observation'))
@@ -605,19 +615,17 @@ def records(state, key, pending_observation=None):
             raise ValueError('Evidence differs from its issuance index.')
         found.append(payload)
     observed = {entry['request'] for entry in entries if entry.get('kind') == 'observation'}
-    directories = (state / 'requests').iterdir() if (state / 'requests').exists() else []
+    directories = (read_cached(lambda: list((state / 'requests').iterdir()))
+                   if read_cached((state / 'requests').exists) else [])
     for directory in directories:
-        if not directory.is_dir():
+        if not read_cached(directory.is_dir):
             continue
-        try:
-            record = json.loads((directory / 'record.json').read_text())
-        except (OSError, ValueError) as error:
-            raise ValueError('Unavailable common request metadata: ' + directory.name) from error
+        record = json.loads(read_cached((directory / 'record.json').read_text))
         if not isinstance(record, dict):
             raise ValueError('Invalid common request metadata.')
         if (record.get('evidence_supported') and record.get('authorized') and
                 record['id'] not in observed and
-                (record.get('state') in ('recovery', 'cancelling') or
+                (record.get('state') in ('running', 'recovery', 'cancelling') or
                  record.get('gate_outcome', 0) != 0)):
             units = {unit: dict(status='unavailable', source=None, environment=None)
                      for unit, entry in record['selection']['plan']['units'].items()
@@ -846,7 +854,7 @@ def observe_outcome(state, path, record, worker, writer):
     if not record.get('evidence_supported') or not record.get('authorized'):
         return None
     destination = path.with_name('observation.json')
-    if destination.exists():
+    if read_cached(destination.exists):
         observation = complete_observation_index(state, destination, writer)
     else:
         units = execution_entries(record, worker)

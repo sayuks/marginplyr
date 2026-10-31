@@ -464,6 +464,36 @@ class StageEvidence(unittest.TestCase):
         self.assertEqual(retained['outcome'], 1)
         self.assertEqual(retained['units'], {})
 
+    def test_unobserved_failed_running_request_fences_an_older_success(self):
+        record, path, workspace, worker = self.stage_request(1)
+        self.assertIsNotNone(admission.read_record(path))
+        self.assertNotIn('gate_outcome', record)
+        self.assertEqual(self.plan()['units']['build-full']['action'], 'execute')
+        self.recover_stage(record)
+        self.assertEqual(self.plan()['units']['build-full']['action'], 'execute')
+        self.origin()
+        self.assertEqual(self.plan()['units']['build-full']['action'], 'reuse')
+
+    def test_unobserved_running_request_without_worker_result_is_uncertain(self):
+        record, path, workspace, worker = self.stage_request(1)
+        (workspace / 'worker-result.json').unlink()
+        self.assertEqual(self.plan()['units']['build-full']['action'], 'execute')
+        self.recover_stage(record)
+        self.assertEqual(self.plan()['units']['build-full']['action'], 'execute')
+        self.origin()
+        self.assertEqual(self.plan()['units']['build-full']['action'], 'reuse')
+
+    def test_missing_indexed_origin_journal_does_not_block_executed_cleanup(self):
+        record, path, workspace, worker = self.stage_request(0)
+        origin = next(self.state.glob('requests/*/evidence.json'))
+        origin.with_name('record.json').unlink()
+        self.assertEqual(admission.finish_request(self.state, path, record, 0), 0)
+        self.assertFalse(workspace.exists())
+        self.assertEqual(record['cleanup'], 'confirmed')
+        self.assertTrue(record['observation_error'])
+        self.assertFalse(path.with_name('evidence.json').exists())
+        self.assertEqual(self.plan()['units']['build-full']['action'], 'execute')
+
     def test_pending_success_observation_is_not_an_execution_origin(self):
         record, path, workspace, worker = self.stage_request(0)
         for evidence in self.state.glob('requests/*/evidence.json'):

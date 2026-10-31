@@ -206,8 +206,11 @@ NOTEs, or later same-input/environment stage failures prevent reuse. There is
 no age-only expiry.
 Before cleanup, the supervisor seals a stage outcome observation; it is never a
 reusable origin. Recovery preserves that observation before removing its report,
-and can finish an interrupted observation index write. Unobserved failed or
-uncertain request journals conservatively fence older successes.
+and can finish an interrupted observation index write. Unobserved authorized
+execution journals, including requests still marked running after manager loss,
+conservatively fence older successes until their observation is retained.
+Unavailable cache reads disable reuse without blocking an executed gate's
+cleanup; interrupted publication writes retain recovery ownership.
 The signed issuance index inventories observations and terminal evidence in
 sequence order independent of the wall clock. Supersession follows stage
 observation order, not delayed cleanup completion. Missing indexed evidence
