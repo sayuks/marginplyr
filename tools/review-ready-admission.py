@@ -174,6 +174,7 @@ def boot_identity():
 
 
 def processes():
+    """Read active user processes, requiring the observer's PID/birth identity."""
     # Never print this output: process environments can contain credentials.
     result = subprocess.check_output(
         ['ps', 'eww', '-axo', 'pid=,ppid=,pgid=,uid=,stat=,lstart=,command='],
@@ -188,6 +189,9 @@ def processes():
         if uid == os.getuid() and not fields[4].startswith('Z'):
             table[pid] = dict(pid=pid, parent=parent, group=group,
                               birth=' '.join(fields[5:10]), command=fields[10])
+    observer = table.get(os.getpid())
+    if observer is None or not observer.get('birth'):
+        raise RuntimeError('Unable to read complete process ownership evidence.')
     return table
 
 

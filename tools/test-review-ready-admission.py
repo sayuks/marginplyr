@@ -613,6 +613,34 @@ sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
                 self.assertEqual(journal.read_bytes(), before)
                 self.assertNotIn('No check was run', log.read_text())
 
+    def test_recovery_refuses_empty_successful_observations_with_live_work(self):
+        active, log = self.start(FIXTURE_SECONDS='60')
+        self.until(log, 'HEAVY ')
+        active.kill()
+        active.wait(timeout=5)
+        journal = self.home / '.local/state/marginplyr/review-ready/request.json'
+        original = journal.read_bytes()
+        record = json.loads(original)
+        real_ps = shutil.which('ps')
+        shim = self.bin / 'ps'
+        count = self.root / 'ps-count'
+        shim.write_text('#!' + sys.executable + '\n' +
+            'import os,pathlib,sys\n' +
+            'counter=pathlib.Path(' + repr(str(count)) + ')\n' +
+            'number=int(counter.read_text())+1 if counter.exists() else 1\n' +
+            'counter.write_text(str(number))\n' +
+            'if number > 1: sys.exit(0)\n' +
+            'os.execv(' + repr(real_ps) + ',[' + repr(real_ps) + ']+sys.argv[1:])\n')
+        shim.chmod(0o755)
+        try:
+            recovery, log = self.start(args=('--recover',))
+            self.assertIn('complete process ownership evidence', self.finish(recovery, log, 2))
+            self.assertEqual(journal.read_bytes(), original)
+            self.assertNotIn('No check was run', log.read_text())
+        finally:
+            shim.unlink()
+            os.killpg(record['group'], signal.SIGKILL)
+
     def test_terminal_failure_is_not_admission_success(self):
         failure, a = self.start(FIXTURE_STATUS='17')
         text = self.finish(failure, a, 17)
