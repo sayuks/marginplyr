@@ -159,8 +159,8 @@ expect_identical(
 )
 expect_identical(
   fixture_review_packages,
-  c("altdoc", "jsonlite", "lintr", "pkgload", "R6", "rcmdcheck", "spelling",
-    "testthat", "yaml"),
+  c("altdoc", "devtools", "jsonlite", "lintr", "pkgload", "R6", "rcmdcheck",
+    "roxygen2", "spelling", "testthat", "yaml"),
   "the declared review packages"
 )
 expect_error(
@@ -415,7 +415,7 @@ expect_true(
   "the complete CRAN-style check"
 )
 expect_true(
-  grepl("review_ready_rcmdcheck_env(required_test_suggests(source_root))",
+  grepl("review_ready_rcmdcheck_env(required_test_suggests(source_root), selection$path)",
     library_source, fixed = TRUE) &&
     grepl("env = check_env", library_source, fixed = TRUE),
   "the check environment derives from the archived suite"
@@ -942,6 +942,17 @@ local({
   }
   expect_identical(recovered$calls[[1L]]$repos, recovered$calls[[2L]]$repos,
     "unchanged offline repositories")
+  documentation_retry <- make_retry_fixture()
+  capture.output(documentation_outcome <- documentation_retry$run(path = "Documentation"))
+  expect_identical(documentation_outcome$retried, TRUE, "Documentation native-crash retry")
+  for (call in documentation_retry$calls) {
+    expect_identical(call$args, c("--as-cran", "--no-tests"),
+      "Documentation retry keeps its exact arguments")
+    expect_identical(call$path, documentation_retry$tarball,
+      "Documentation retry keeps its source archive")
+    expect_identical(call$hash, documentation_retry$calls[[1L]]$hash,
+      "Documentation retry keeps tarball bytes")
+  }
   recovered_bundles <- list.dirs(recovered$diagnostics, recursive = FALSE)
   expect_identical(length(recovered_bundles), 1L, "only the failed attempt creates a bundle")
   expect_identical(normalizePath(recovered_outcome$first_failure),
@@ -1199,4 +1210,43 @@ local({
   expect_identical(length(cli_bundles), 1L, "first-failure evidence outlives CLI cleanup")
   expect_true(file.exists(file.path(cli_bundles[[1L]], "retry-result.txt")),
     "the retry summary outlives CLI cleanup")
+})
+
+# Documentation keeps the package-check boundary with exactly one added flag.
+local({
+  calls <- list()
+  route <- list(path = "Documentation", sha = clean_identity$sha,
+    verifiers = character())
+  runner <- function(command, args, directory, ...) {
+    calls[[length(calls) + 1L]] <<- list(command = command, args = args,
+      directory = directory, extra = list(...))
+    fixture_runner(command, args, directory, ...)
+  }
+  output <- capture.output(status <- review_ready_check_cli(character(), getwd(),
+    identity = clean_identity, prerequisites = prerequisites, runner = runner,
+    checker = function(path, args, ..., env) {
+      expect_identical(args, c("--as-cran", "--no-tests"), "Documentation check flags")
+      expect_identical(env[["TESTTHAT_PARALLEL"]], "false", "serial documentation tests")
+      empty_result
+    }, selection = route))
+  expect_identical(status, 0L, "Documentation succeeds")
+  expect_true(any(grepl("full suite and snapshots omitted", output, fixed = TRUE)),
+    "Documentation identifies its omissions")
+  expect_identical(lapply(calls[2:4], `[[`, "args"),
+    unname(lapply(steps, `[[`, "args")), "Documentation retains every common source check")
+  assertion <- Filter(function(call) "tools/review-ready-documentation.R" %in% call$args, calls)
+  expect_identical(length(assertion), 1L, "one separate documentation assertion stage")
+  expect_true(endsWith(assertion[[1L]]$directory, "/source"),
+    "assertions run against the submitted archive")
+  expect_identical(assertion[[1L]]$extra$env,
+    "MARGINPLYR_REQUIRED_SUGGESTS=stats,utils", "assertions require provisioned Suggests")
+  failed_runner <- function(command, args, directory, ...) {
+    if (identical(args, "tools/review-ready-documentation.R")) return(list(status = 7L))
+    runner(command, args, directory, ...)
+  }
+  capture.output(failed <- review_ready_check_cli(character(), getwd(),
+    identity = clean_identity, prerequisites = prerequisites, runner = failed_runner,
+    checker = function(...) stop("No check after failed assertions"), selection = route))
+  expect_identical(failed, 1L, "failed documentation assertions fail the invocation")
+
 })

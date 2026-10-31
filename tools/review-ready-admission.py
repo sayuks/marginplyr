@@ -36,6 +36,12 @@ PROTOCOL = ('# Review-ready selection protocol: ' + str(PROTOCOL_VERSION)).encod
 # these directories have no exemption. Checking machinery remains Full.
 PROSE = (r'(AGENTS\.md|CLAUDE\.md|CONTEXT\.md|CODE_OF_CONDUCT\.md|'
          r'(?:design|investigation)/(?:[^/]+/)*[^/]+\.md|tools/[^/]+\.md)')
+# Executable vignette inputs match documentation_sources() in test-documentation.R.
+DOCUMENTATION = (r'(README\.(?:md|qmd)|NEWS\.md|man/[^/]+\.Rd|'
+                 r'man/figures/(?:[^/]+/)*[^/]+\.(?:png|jpg|jpeg|gif|svg|pdf)|'
+                 r'vignettes/[^/]+\.qmd|vignettes/(?:[^/]+/)*[^/]+\.(?:png|jpg|jpeg|gif|svg|pdf|bib|csl))')
+# Package code and metadata can feed README chunks or roxygen even on Full.
+GENERATED_INPUTS = r'(README\.(?:md|qmd)|NAMESPACE|R/.*|DESCRIPTION|inst/.*|data/.*|man/.*|vignettes/.*)'
 REFERENCE_CHECKS = ['.github/scripts/verify-doc-references.R',
                     '.github/scripts/verify-context-budget.R',
                     '.github/scripts/verify-verifier-invocation.R']
@@ -57,18 +63,21 @@ CHECKING = (r'(?:tools/(?:review-ready[^/]*|test-review-ready[^/]*|install-revie
             r'dependency-requirements\.R|required-test-suggests\.R|verify-ci-artifacts\.py|'
             r'test-ci-artifacts\.py|ci-workflow-contracts\.json|verify-site-artifacts\.R)|'
             r'\.github/scripts/(?:cran-note-policy\.R|ci-helpers\.R|verify-(?:review-ready-check|'
-            r'doc-references|context-budget|verifier-invocation|site|coverage-policy|'
+            r'doc-references|context-budget|verifier-invocation|site|coverage-policy|cran-preflight|'
             r'agent-network-policy|codex-config)\.R))')
 CONTRACTS = [
     (r'design/(?:agents/local-checks\.md|specs/review-ready[^/]*\.md)',
-     ['.github/scripts/verify-review-ready-check.R']),
+     ['.github/scripts/verify-review-ready-check.R', 'tools/test-review-ready-documentation.R']),
+    (GENERATED_INPUTS, ['tools/review-ready-generated.R']),
+    (r'\.github/scripts/verify-cran-preflight\.R', ['.github/scripts/verify-cran-preflight.R']),
     (r'tools/cran-release\.md', ['.github/scripts/verify-cran-release.R']),
     (r'tools/cran-preflight\.md', ['.github/scripts/verify-cran-preflight.R',
                                 '.github/scripts/verify-agent-network-policy.R',
                                 '.github/scripts/verify-codex-config.R']),
     (CHECKING, ['.github/scripts/verify-review-ready-check.R',
                 'tools/test-review-ready-admission.py', 'tools/test-review-ready-progress.R',
-                'tools/test-ci-artifacts.py', 'tools/verify-ci-artifacts.py']),
+                'tools/test-ci-artifacts.py', 'tools/verify-ci-artifacts.py',
+                'tools/test-review-ready-documentation.R']),
     (r'\.github/.*', ['tools/verify-ci-artifacts.py']),
     (r'(?:altdoc/.*|\.(?:codex|claude)/.*)', ['tools/verify-ci-artifacts.py']),
     (r'(?:\.covrignore|inst/\.covrignore|tools/coverage-check(?:-lib)?\.R)',
@@ -108,6 +117,7 @@ def select_path(root, sha):
         if records.pop() != b'':
             raise ValueError('unterminated diff records')
         names = []
+        documentation = False
         reasons = []
         index = 0
         while index < len(records):
@@ -129,11 +139,15 @@ def select_path(root, sha):
             if status not in (b'A', b'M', b'D', b'R') or (status == b'R' and not score):
                 reasons.append('unsupported change status: ' + repr(paths))
             for name in paths:
-                if not repository_artifact(name):
+                documentation |= bool(re.fullmatch(DOCUMENTATION, name))
+                if not (repository_artifact(name) or re.fullmatch(DOCUMENTATION, name)):
                     reasons.append('unsupported path: ' + repr(name))
-            if all(repository_artifact(name) for name in paths):
-                for mode, blob in ((before, old_blob), (after, new_blob)):
-                    if mode != b'100644':
+            supported = all(repository_artifact(name) or re.fullmatch(DOCUMENTATION, name)
+                            for name in paths)
+            if supported:
+                for mode, blob, name in ((before, old_blob, paths[0]),
+                                         (after, new_blob, paths[-1])):
+                    if mode != b'100644' or re.search(r'\.(png|jpg|jpeg|gif|pdf)$', name):
                         continue
                     try:
                         text = git_bytes(root, 'cat-file', 'blob', blob.decode('ascii')).decode('utf-8')
@@ -151,8 +165,9 @@ def select_path(root, sha):
             selection['verifiers'] = []
             reasons.append('submitted revision lacks selection protocol; existing Full gate')
         if not reasons:
-            selection['path'] = 'Repository'
-            reasons = ['all cumulative changes have supported repository artifact routes']
+            selection['path'] = 'Documentation' if documentation else 'Repository'
+            reasons = ['all cumulative changes are supported documentation or repository artifacts'
+                       if documentation else 'all cumulative changes are supported repository artifacts']
         selection['reasons'] = reasons
     except (OSError, ValueError, subprocess.SubprocessError) as error:
         selection['reasons'] = ['comparison unavailable: ' + str(error)]
@@ -200,6 +215,7 @@ def boot_identity():
 
 
 def processes():
+    """Read active user processes, requiring the observer's PID/birth identity."""
     # Never print this output: process environments can contain credentials.
     result = subprocess.check_output(
         ['ps', 'eww', '-axo', 'pid=,ppid=,pgid=,uid=,stat=,lstart=,command='],
@@ -214,6 +230,9 @@ def processes():
         if uid == os.getuid() and not fields[4].startswith('Z'):
             table[pid] = dict(pid=pid, parent=parent, group=group,
                               birth=' '.join(fields[5:10]), command=fields[10])
+    observer = table.get(os.getpid())
+    if observer is None or not observer.get('birth'):
+        raise RuntimeError('Unable to read complete process ownership evidence.')
     return table
 
 
@@ -257,14 +276,39 @@ def save(path, record):
         os.close(descriptor)
 
 
+def valid_recorded_process(item):
+    """Validate the durable PID/birth fields before trusting their absence."""
+    return (isinstance(item, dict) and type(item.get('pid')) is int and
+            item['pid'] > 0 and isinstance(item.get('birth'), str) and
+            bool(item['birth'].strip()))
+
+
 def read_record(path):
     try:
         contents = path.read_text()
     except FileNotFoundError:
         return None
     record = json.loads(contents)
-    if record.get('version') != 1:
-        raise RuntimeError('Unknown admission journal version; recovery requires inspection.')
+    if (not isinstance(record, dict) or type(record.get('version')) is not int or
+            record['version'] != 1):
+        raise RuntimeError('Unknown or invalid admission journal version; recovery requires inspection.')
+    try:
+        valid = (isinstance(record['token'], str) and
+                 re.fullmatch('[0-9a-f]{32}', record['token']) and
+                 isinstance(record['sha'], str) and
+                 re.fullmatch('[0-9a-f]{40}', record['sha']) and
+                 isinstance(record['root'], str) and Path(record['root']).is_absolute() and
+                 isinstance(record['boot'], str) and
+                 str(uuid.UUID(record['boot'])) == record['boot'] and
+                 valid_recorded_process(record['manager']) and
+                 isinstance(record['children'], list) and
+                 all(valid_recorded_process(item) for item in record['children']) and
+                 (record['group'] is None or
+                  (type(record['group']) is int and record['group'] > 0)))
+    except (KeyError, TypeError, ValueError):
+        valid = False
+    if not valid:
+        raise RuntimeError('Invalid admission journal ownership metadata; recovery requires inspection.')
     return record
 
 
@@ -272,7 +316,7 @@ def recovery_message(record):
     return ('Admission blocked: shutdown is unconfirmed for ' + record['sha'] +
             ' in ' + record['root'] + '. Inspect with marginplyr-review-ready --status. '
             'Do not delete the lock or journal. After the owned work has stopped, run '
-            'marginplyr-review-ready --recover; restart the OS if ownership cannot be confirmed.')
+            'marginplyr-review-ready --recover. Recovery requires complete process ownership evidence.')
 
 
 def recover(path, record, boot):
@@ -280,16 +324,20 @@ def recover(path, record, boot):
         say('No unfinished request to recover. No check was run.')
         return 0
     if record['boot'] == boot:
-        table = processes()
-        if same_process(table, record['manager']) or owned(table, record):
-            say(recovery_message(record))
-            return BLOCKED
-        # A management crash can hide descendants that detached and erased env.
-        # Only an OS restart provides evidence that those unknown processes ended.
-        say(recovery_message(record) + ' This request requires an OS restart before recovery.')
-        return BLOCKED
+        # The held admission lock excludes new requests while both complete
+        # observations check the trusted gate's recorded and inherited ownership.
+        for observation in range(2):
+            table = processes()
+            if same_process(table, record['manager']) or owned(table, record):
+                say(recovery_message(record))
+                return BLOCKED
+            if observation == 0:
+                time.sleep(0.2)
+        reason = 'after confirmed shutdown'
+    else:
+        reason = 'from an earlier OS boot'
     path.unlink()
-    say('Recovered an unfinished request from an earlier OS boot. No check was run.')
+    say('Recovered unfinished request ' + record['sha'] + ' ' + reason + '. No check was run.')
     return 0
 
 
@@ -406,7 +454,7 @@ def main(args=None):
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument('--status', action='store_true', help='show admission state; does not run a check')
-    mode.add_argument('--recover', action='store_true', help='recover an unfinished request after OS restart')
+    mode.add_argument('--recover', action='store_true', help='recover an unfinished request after confirmed shutdown')
     options = parser.parse_args(args)
     if sys.platform not in ('darwin', 'linux'):
         say('Unsupported platform: this admission CLI requires macOS or Linux. No check was run.')

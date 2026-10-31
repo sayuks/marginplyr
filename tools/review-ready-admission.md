@@ -2,8 +2,9 @@
 
 `marginplyr-review-ready` admits one complete Review-ready check per OS user
 across marginplyr clones and worktrees. Full retains four test workers;
-Repository omits package build/check for supported repository artifacts. Both
-paths use the same slot. Waiting does not load R dependencies or run any check stage. CI
+Documentation retains package build/check with `--no-tests` and separate
+documentation assertions; Repository omits build/check for supported repository artifacts. All paths use the
+same slot. Waiting does not load R dependencies or run any check stage. CI
 and commands outside this boundary are unchanged. The accepted design is
 [resource admission](../design/specs/review-ready-resource-admission.md),
 and [local checks](../design/agents/local-checks.md) owns the gate and its
@@ -50,8 +51,8 @@ selection transports: Full package checking cannot replace their required CI
 artifact checks. Refresh the installed launcher from the implementation
 checkout to enable selection; source edits alone never update the standalone
 installed copy. Compare its bytes with `tools/review-ready-admission.py`
-after installation, and verify both a real Full and a real supported-artifact
-Repository invocation through the installed command. Unmodified older
+after installation, and verify real Full, Documentation, and supported-artifact
+Repository invocations through the installed command. Unmodified older
 scripts invoked directly bypass this cooperative boundary. Installation
 cannot intercept them. The updated R entry point delegates to the common CLI
 when invoked directly; it refuses missing installation. Do not launch a
@@ -70,8 +71,8 @@ or previous-success baseline is used. `Review-ready selection` prints those
 identities, selected path, reasons, and required verifiers as JSON. Paths and
 reasons containing unusual filename characters are JSON escaped. Full is the
 fallback for unavailable or unsupported comparisons. The authoritative path
-and verifier registry is `PROSE`, `ARTIFACTS`, `CHECKING`, `REFERENCE_CHECKS`,
-and `CONTRACTS` in
+and verifier registry is `PROSE`, `DOCUMENTATION`, `GENERATED_INPUTS`,
+`ARTIFACTS`, `CHECKING`, `REFERENCE_CHECKS`, and `CONTRACTS` in
 `tools/review-ready-admission.py`; [local checks](../design/agents/local-checks.md)
 owns the policy. There is no caller-selected path or unrestricted skip flag.
 
@@ -83,12 +84,17 @@ newer revision. After admission, a disposable shared Git clone at the pinned
 SHA invokes that revision's R gate with an internal request-bound selection
 transport. This prevents later source edits, changed HEAD, and untracked
 files from substituting the requested revision, including on older
-worktrees. The gate archives the exact SHA. Both paths run spelling and both
+worktrees. The gate archives the exact SHA. All paths run spelling and both
 linters, loading the package before lintr, plus mapped artifact
-verification. Completed stages are printed individually. Repository
+verification, including generation on Full when mapped inputs change. Completed
+stages are printed individually. Repository
 explicitly omits package build/check and reports its own result. Full
 retains dependency checks, full-suite live progress, snapshots, diagnostics,
-NOTE policy, and authorized native-crash retry. The terminal CLI outcome
+NOTE policy, and authorized native-crash retry. Documentation retains the same
+dependency checks, installation/loading, help, codoc, examples and vignettes,
+runs the registered assertions serially without skips, and explicitly reports
+the complete suite and snapshots omitted. Native-crash retry preserves its
+`--as-cran --no-tests` arguments and tarball. The terminal CLI outcome
 includes the selected path; zero alone does not imply that Full ran. The
 original worktree is never checked out or reset by the CLI.
 
@@ -136,14 +142,20 @@ marginplyr-review-ready --status
 marginplyr-review-ready --recover
 ```
 
-Recovery never kills an unverified PID or deletes a lock. It refuses while
-known owned work or the manager is alive. If a manager ended abnormally,
-same-boot observations cannot rule out a detached, unrecorded descendant, so
-recovery requires an OS restart. After reboot, `--recover` recognizes the older
-boot identity and clears its unfinished journal; it does not run or pass a
-check. Never manually delete the journal to unblock admission. Invalid journals
-or unavailable boot/process evidence require inspection and restoration of
-readable metadata, not bypassing the safeguard. Uncertain checkouts are
+Recovery never signals a process or deletes a lock. For a request from the
+current OS boot, it holds exclusive admission while taking two complete
+process observations, separated by 0.2 seconds. Both must find the recorded
+manager and every identified owned process stopped. Ownership uses the same
+request marker, PID/birth identities, process groups and descendants as the
+running supervisor; an ambiguous group or failed observation leaves the journal
+intact. A dead manager or free lock alone is insufficient.
+
+After confirmed shutdown, `--recover` clears the stale
+journal without requiring an OS restart. It also recognizes a request from an
+earlier boot. Either recovery reports that no check was run; an interrupted
+check never becomes a pass. Never manually delete the journal to unblock
+admission. Invalid journals or unavailable boot/process evidence require
+inspection and restoration of readable metadata. Uncertain checkouts are
 retained at the printed path for inspection; remove them only after recovery.
 
 ## Focused verification
@@ -166,7 +178,8 @@ verification. Site configuration routes render and verify output within the
 same admission slot.
 
 The process fixtures also substitute the OS-home adapter for independent test
-users, the boot-identity adapter for simulated restart recovery, and a delayed
+users, process-observation faults and late-visible descendants for recovery,
+the boot-identity adapter for simulated restart recovery, and a delayed
 filesystem open for the completion/read race. A lightweight `Rscript` executable
 is provided at the external checker
 boundary. They run real Git worktrees/clones and subprocesses. They do not run

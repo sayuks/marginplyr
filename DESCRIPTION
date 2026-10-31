@@ -53,11 +53,13 @@ Config/Needs/preflight:
     urlchecker
 Config/Needs/review:
     altdoc (>= 0.7.3),
+    devtools,
     jsonlite,
     lintr,
     pkgload,
     R6,
     rcmdcheck,
+    roxygen2,
     spelling,
     testthat,
     yaml

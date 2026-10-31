@@ -307,12 +307,12 @@ review_ready_check_outcome <- function(result, cran_status) {
 # keys. Remote incoming checks and the external clock belong to the release
 # flow. The caller supplies the validated suite Suggests; NOT_CRAN enables
 # snapshot comparisons within the tarball's single test-suite run.
-review_ready_rcmdcheck_env <- function(required_suggests) {
+review_ready_rcmdcheck_env <- function(required_suggests, path = "Full") {
   c(
     `_R_CHECK_CRAN_INCOMING_REMOTE_` = "false",
     `_R_CHECK_SYSTEM_CLOCK_` = "false",
     NOT_CRAN = "true",
-    TESTTHAT_PARALLEL = "true",
+    TESTTHAT_PARALLEL = if (identical(path, "Documentation")) "false" else "true",
     TESTTHAT_CPUS = "4",
     MARGINPLYR_REQUIRED_SUGGESTS = paste(required_suggests, collapse = ",")
   )
@@ -606,7 +606,7 @@ review_ready_native_crash <- function(result, tool_identity, system) {
 }
 
 # Runs one complete check in a fresh directory and captures its terminal state.
-review_ready_check_attempt <- function(tarball, workspace, checker, repositories, env) {
+review_ready_check_attempt <- function(tarball, workspace, checker, repositories, env, args) {
   attempt <- tempfile("check-attempt-", tmpdir = workspace)
   dir.create(attempt)
   started <- Sys.time()
@@ -617,7 +617,7 @@ review_ready_check_attempt <- function(tarball, workspace, checker, repositories
     sink(console, split = TRUE)
     result <- tryCatch(withCallingHandlers(checker(
       tarball,
-      args = "--as-cran",
+      args = args,
       build_args = NULL,
       check_dir = file.path(attempt, "check"),
       error_on = "never",
@@ -691,22 +691,26 @@ run_review_ready_rcmdcheck <- function(
   checker = review_ready_progress_check,
   system = Sys.info()[["sysname"]],
   retry_identity = review_ready_retry_identity,
-  preserver = preserve_review_ready_failure
+  preserver = preserve_review_ready_failure,
+  path = "Full"
 ) {
-  cat("\n==> Source-tarball R CMD check --as-cran\n")
+  args <- c("--as-cran", if (identical(path, "Documentation")) "--no-tests")
+  cat("\n==> Source-tarball R CMD check ", paste(args, collapse = " "), "\n", sep = "")
   snapshot <- function() tryCatch(retry_identity(tarball), error = function(cnd) NULL)
   before <- if (identical(system, "Darwin")) snapshot() else NULL
   repositories <- review_ready_offline_repositories(workspace)
   first_failure <- NULL
   for (number in 1:2) {
     cat("R CMD check attempt ", number, ".\n", sep = "")
-    attempt <- review_ready_check_attempt(tarball, workspace, checker, repositories, env)
+    attempt <- review_ready_check_attempt(tarball, workspace, checker, repositories, env, args)
     bundle <- NULL
     if (!is.null(attempt$error)) {
       bundle <- tryCatch({
         retained <- preserver(attempt$workspace, identity, attempt$started,
           attempt$result, attempt$error, diagnostic_root)
         dput(before, file = file.path(retained, "attempt-identity.txt"))
+        writeLines(c(paste("Path:", path), paste("Arguments:", paste(args, collapse = " "))),
+          file.path(retained, "attempt-selection.txt"))
         retained
       }, error = function(cnd) {
         cat("Could not retain all diagnostics: ", conditionMessage(cnd),
@@ -770,15 +774,15 @@ read_review_ready_selection <- function() {
   }
   required <- c("Path", "Commit", "Request", "Verifiers")
   if (nrow(record) != 1L || !all(required %in% colnames(record)) ||
-      !record[[1L, "Path"]] %in% c("Full", "Repository") ||
+      !record[[1L, "Path"]] %in% c("Full", "Repository", "Documentation") ||
       !nzchar(Sys.getenv("MARGINPLYR_REVIEW_REQUEST")) ||
       !identical(record[[1L, "Request"]], Sys.getenv("MARGINPLYR_REVIEW_REQUEST"))) {
     stop("Invalid admitted Review-ready selection.", call. = FALSE)
   }
   verifiers <- record[[1L, "Verifiers"]]
-  if (identical(record[[1L, "Path"]], "Repository") &&
+  if (record[[1L, "Path"]] %in% c("Repository", "Documentation") &&
       (is.na(verifiers) || !nzchar(verifiers))) {
-    stop("Repository requires mapped artifact verification.", call. = FALSE)
+    stop("Selected path requires mapped artifact verification.", call. = FALSE)
   }
   selection <- list(path = record[[1L, "Path"]], sha = record[[1L, "Commit"]],
     verifiers = if (is.na(verifiers) || !nzchar(verifiers)) character() else
@@ -810,8 +814,8 @@ run_review_ready_verifiers <- function(selection, identity, prerequisites, runne
   }
 }
 
-# Runs the selected fixed gate and returns its identity and path. Only Full
-# returns source-tarball outcome and NOTE disposition.
+# Runs the selected fixed gate and returns its identity and path.
+# Package paths also return source-tarball outcome and NOTE disposition.
 run_review_ready_check <- function(
   repository_root,
   identity = review_ready_identity(repository_root),
@@ -827,7 +831,7 @@ run_review_ready_check <- function(
   if (!is.null(selection$sha) && !identical(selection$sha, identity$sha)) {
     stop("Admitted selection does not match the checked commit.", call. = FALSE)
   }
-  if (!selection$path %in% c("Full", "Repository")) {
+  if (!selection$path %in% c("Full", "Repository", "Documentation")) {
     stop("Unsupported Review-ready path.", call. = FALSE)
   }
   workspace <- tempfile("marginplyr-review-ready-")
@@ -838,10 +842,10 @@ run_review_ready_check <- function(
   cat("Review-ready commit: ", identity$sha, "\n", sep = "")
   cat("Disposable source: ", source_root, "\n", sep = "")
   cat("Review-ready path: ", selection$path, "\n", sep = "")
-  if (identical(selection$path, "Full")) {
+  if (!identical(selection$path, "Repository")) {
     verify_review_ready_test_packages(source_root)
     cat("Completed: Test dependency syntax\n\n==> Required test Suggests\n")
-    check_env <- review_ready_rcmdcheck_env(required_test_suggests(source_root))
+    check_env <- review_ready_rcmdcheck_env(required_test_suggests(source_root), selection$path)
     cat("Completed: Required test Suggests\n")
     check_env[["MARGINPLYR_REVIEW_PROGRESS_REPORTER"]] <- file.path(
       source_root, "tools", "review-ready-progress-reporter.R"
@@ -860,6 +864,14 @@ run_review_ready_check <- function(
       "; package build/check omitted.\n", sep = "")
     return(invisible(list(identity = identity, path = "Repository")))
   }
+  if (identical(selection$path, "Documentation")) {
+    cat("Documentation: full suite and snapshots omitted; running selected assertions.\n")
+    run_review_ready_step("Documentation assertions",
+      list(command = prerequisites$rscript, args = "tools/review-ready-documentation.R",
+        env = paste0("MARGINPLYR_REQUIRED_SUGGESTS=",
+          check_env[["MARGINPLYR_REQUIRED_SUGGESTS"]])),
+      source_root, runner = runner)
+  }
   tarball <- build_review_ready_tarball(
     source_root,
     workspace,
@@ -869,11 +881,11 @@ run_review_ready_check <- function(
   cat("Completed: Build source tarball\n")
   outcome <- run_review_ready_rcmdcheck(tarball, workspace, identity,
     checker = checker, diagnostic_root = diagnostic_root, env = check_env, system = system,
-    retry_identity = retry_identity, preserver = preserver)
+    retry_identity = retry_identity, preserver = preserver, path = selection$path)
 
   verdict <- if (outcome$retried) "passed-after-retry" else "passed"
   cat("Completed: R CMD check --as-cran\n")
-  cat("\nReview-ready Full check ", verdict, " for ", identity$sha, ".\n", sep = "")
+  cat("\nReview-ready ", selection$path, " check ", verdict, " for ", identity$sha, ".\n", sep = "")
   if (length(outcome$unexpected_notes) > 0L) {
     cat(
       "Review and explain every unclassified NOTE before publishing this ",
@@ -881,7 +893,7 @@ run_review_ready_check <- function(
       sep = ""
     )
   }
-  invisible(list(identity = identity, path = "Full", outcome = outcome))
+  invisible(list(identity = identity, path = selection$path, outcome = outcome))
 }
 
 # Command-line boundary: invalid invocation or any failed step exits nonzero.

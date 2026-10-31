@@ -163,6 +163,60 @@ sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
         self.assertEqual(selection['path'], 'Full')
         self.assertIn('tools/test-review-ready-admission.py', selection['verifiers'])
 
+    def test_documentation_formats_and_mixed_full_keep_generation_routes(self):
+        self.repository_branch()
+        baseline = self.git(self.repo, 'rev-parse', 'HEAD')
+        for name in ('README.md', 'README.qmd', 'NEWS.md', 'man/topic.Rd',
+                     'man/figures/README-plot.png', 'man/figures/logo.svg',
+                     'vignettes/guide.qmd',
+                     'vignettes/plot.jpg', 'vignettes/nested/plot.png'):
+            with self.subTest(name=name):
+                self.git(self.repo, 'reset', '--hard', baseline)
+                path = self.repo / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(b'\x89PNG\0image' if name.endswith('.png') else b'Documentation\n')
+                self.commit_all()
+                selection = self.selected()
+                self.assertEqual(selection['path'], 'Documentation')
+                if name != 'NEWS.md':
+                    self.assertIn('tools/review-ready-generated.R', selection['verifiers'])
+                (self.repo / 'code.R').write_text('1\n')
+                self.commit_all()
+                self.assertEqual(self.selected()['path'], 'Full')
+                if name != 'NEWS.md':
+                    self.assertIn('tools/review-ready-generated.R', self.selected()['verifiers'])
+
+    def test_unscanned_vignette_document_formats_remain_full(self):
+        self.repository_branch()
+        baseline = self.git(self.repo, 'rev-parse', 'HEAD')
+        for name in ('vignettes/guide.Rmd', 'vignettes/guide.md', 'vignettes/nested/guide.qmd'):
+            with self.subTest(name=name):
+                self.git(self.repo, 'reset', '--hard', baseline)
+                path = self.repo / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text('Unscanned documentation input\n')
+                self.commit_all()
+                self.assertEqual(self.selected()['path'], 'Full')
+
+    def test_documentation_deletion_rename_and_reverted_code(self):
+        self.repository_branch()
+        (self.repo / 'NEWS.md').write_text('Release\n')
+        self.commit_all()
+        self.git(self.repo, 'branch', '-f', 'main', 'HEAD')
+        self.git(self.repo, 'mv', 'NEWS.md', 'README.md')
+        self.commit_all()
+        self.assertEqual(self.selected()['path'], 'Documentation')
+        code = self.repo / 'code.R'
+        code.write_text('1\n')
+        self.commit_all()
+        self.assertEqual(self.selected()['path'], 'Full')
+        code.unlink()
+        self.commit_all()
+        self.assertEqual(self.selected()['path'], 'Documentation')
+        (self.repo / 'README.md').unlink()
+        self.commit_all()
+        self.assertEqual(self.selected()['path'], 'Documentation')
+
     def test_binary_or_unknown_encoding_markdown_is_full(self):
         self.repository_branch()
         for contents in (b'binary\0payload', b'unknown\xffencoding', b'control\x01character'):
@@ -188,6 +242,12 @@ sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
                     'tools/verify-site-artifacts.R', '.github/scripts/verify-coverage-policy.R',
                     '.github/scripts/verify-agent-network-policy.R',
                     '.github/scripts/verify-codex-config.R')
+        for verifier in required:
+            self.assertIn(verifier, selected['verifiers'])
+        (self.repo / 'NEWS.md').write_text('Documentation and CI artifacts\n')
+        self.commit_all()
+        selected = self.selected()
+        self.assertEqual(selected['path'], 'Documentation')
         for verifier in required:
             self.assertIn(verifier, selected['verifiers'])
         (self.repo / 'R').mkdir()
@@ -224,6 +284,17 @@ sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
             path.write_text('# unsupported\n')
             self.commit_all()
             self.assertEqual(self.selected()['path'], 'Full')
+
+    def test_documentation_text_requires_utf8_and_protocol_two(self):
+        self.repository_branch()
+        readme = self.repo / 'README.md'
+        readme.write_bytes(b'bad\x00text')
+        self.commit_all()
+        self.assertEqual(self.selected()['path'], 'Full')
+        readme.write_text('Documentation\n')
+        (self.repo / 'tools/review-ready-check.R').write_text('# Review-ready selection protocol: 1\n')
+        self.commit_all()
+        self.assertIn('lacks selection protocol', ' '.join(self.selected()['reasons']))
 
     def test_comparison_errors_and_unclassifiable_records_fall_back_to_full(self):
         self.repository_branch()
@@ -294,12 +365,13 @@ sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
         self.repository_branch()
         baseline = self.git(self.repo, 'rev-parse', 'HEAD')
         for name in ('design/script.R', 'investigation/script.py', 'tools/unknown.py',
-                     'README.md', 'README.qmd', 'NEWS.md', 'LICENSE.md', '.github/job.yaml'):
+                     'man/unknown.R', 'man/figures/payload.exe', 'vignettes/unknown.py',
+                     'R/help.R', 'DESCRIPTION', 'LICENSE.md', '.github/job.yaml'):
             with self.subTest(name=name):
                 self.git(self.repo, 'reset', '--hard', baseline)
                 path = self.repo / name
                 path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text('unknown\n')
+                path.write_text('Package: marginplyr\nTitle: Changed\n' if name == 'DESCRIPTION' else 'unknown\n')
                 self.commit_all()
                 self.assertEqual(self.selected()['path'], 'Full')
         self.git(self.repo, 'reset', '--hard', baseline)
@@ -463,7 +535,179 @@ sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
         os.killpg(record['group'], signal.SIGKILL)
         time.sleep(0.2)
         stale, e = self.start(args=('--recover',))
-        self.assertIn('OS restart', self.finish(stale, e, 4))
+        recovered = self.finish(stale, e)
+        self.assertIn('No check was run', recovered)
+        self.assertNotIn('HEAVY ', recovered)
+        passing, f = self.start()
+        self.finish(passing, f)
+
+    def stopped_request(self):
+        active, log = self.start(FIXTURE_SECONDS='60')
+        self.until(log, 'HEAVY ')
+        active.kill()
+        active.wait(timeout=5)
+        journal = self.home / '.local/state/marginplyr/review-ready/request.json'
+        record = json.loads(journal.read_text())
+        os.killpg(record['group'], signal.SIGKILL)
+        time.sleep(0.2)
+        return journal
+
+    def test_recovery_rechecks_ownership_before_releasing_capacity(self):
+        journal = self.stopped_request()
+        original = journal.read_bytes()
+        real_ps = shutil.which('ps')
+        shim = self.bin / 'ps'
+        count = self.root / 'ps-count'
+        shim.write_text('#!' + sys.executable + '\n' +
+            'import json,os,pathlib,subprocess,sys\n' +
+            'counter=pathlib.Path(' + repr(str(count)) + ')\n' +
+            'number=int(counter.read_text())+1 if counter.exists() else 1\n' +
+            'counter.write_text(str(number))\n' +
+            'snapshot=subprocess.check_output([' + repr(real_ps) + ']+sys.argv[1:])\n' +
+            'if number == 2:\n' +
+            ' record=json.loads(pathlib.Path(' + repr(str(journal)) + ').read_text())\n' +
+            ' env=dict(os.environ,MARGINPLYR_REVIEW_REQUEST=record["token"])\n' +
+            ' child=subprocess.Popen([sys.executable,"-c","import time; time.sleep(60)"],env=env,start_new_session=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)\n' +
+            ' pathlib.Path(os.environ["FIXTURE_CHILD_FILE"]).write_text(str(child.pid))\n' +
+            'sys.stdout.buffer.write(snapshot)\n')
+        shim.chmod(0o755)
+        recovery, log = self.start(args=('--recover',))
+        self.assertIn('Admission blocked', self.finish(recovery, log, 4))
+        self.assertEqual(journal.read_bytes(), original)
+        self.assertNotIn('HEAVY ', log.read_text())
+        shim.unlink()
+        child = int((self.root / 'child.pid').read_text())
+        os.kill(child, signal.SIGKILL)
+        recovery, log = self.start(args=('--recover',))
+        self.assertIn('No check was run', self.finish(recovery, log))
+
+    def test_recovery_preserves_journal_if_final_inspection_fails(self):
+        journal = self.stopped_request()
+        original = journal.read_bytes()
+        real_ps = shutil.which('ps')
+        shim = self.bin / 'ps'
+        count = self.root / 'ps-count'
+        shim.write_text('#!' + sys.executable + '\n' +
+            'import os,pathlib,sys\n' +
+            'counter=pathlib.Path(' + repr(str(count)) + ')\n' +
+            'number=int(counter.read_text())+1 if counter.exists() else 1\n' +
+            'counter.write_text(str(number))\n' +
+            'if number == 3: sys.exit(1)\n' +
+            'os.execv(' + repr(real_ps) + ',[' + repr(real_ps) + ']+sys.argv[1:])\n')
+        shim.chmod(0o755)
+        recovery, log = self.start(args=('--recover',))
+        self.assertIn('admission failed', self.finish(recovery, log, 2))
+        self.assertEqual(journal.read_bytes(), original)
+        shim.unlink()
+        recovery, log = self.start(args=('--recover',))
+        self.assertIn('No check was run', self.finish(recovery, log))
+
+    def test_recovery_tracks_recorded_detached_child_without_marker(self):
+        shim = self.bin / 'Rscript'
+        shim.write_text('#!' + sys.executable + '\n' +
+            'import os,pathlib,subprocess,sys,time\n' +
+            'env=dict(os.environ); env.pop("MARGINPLYR_REVIEW_REQUEST",None)\n' +
+            'child=subprocess.Popen([sys.executable,"-c","import time; time.sleep(60)"],env=env,start_new_session=True)\n' +
+            'pathlib.Path(os.environ["FIXTURE_CHILD_FILE"]).write_text(str(child.pid))\n' +
+            'print("HEAVY detached without marker",flush=True)\n' +
+            'time.sleep(60)\n')
+        shim.chmod(0o755)
+        active, log = self.start()
+        self.until(log, 'HEAVY ')
+        child = int((self.root / 'child.pid').read_text())
+        journal = self.home / '.local/state/marginplyr/review-ready/request.json'
+        deadline = time.monotonic() + 5
+        while time.monotonic() < deadline:
+            record = json.loads(journal.read_text())
+            if any(item['pid'] == child for item in record['children']):
+                break
+            time.sleep(0.04)
+        else:
+            self.fail('The manager did not record its detached descendant')
+        active.kill()
+        active.wait(timeout=5)
+        os.killpg(record['group'], signal.SIGKILL)
+        recovery, log = self.start(args=('--recover',))
+        self.finish(recovery, log, 4)
+        os.kill(child, signal.SIGKILL)
+        recovery, log = self.start(args=('--recover',))
+        self.assertIn('No check was run', self.finish(recovery, log))
+
+    def test_recovery_does_not_confuse_reused_pid_with_owned_work(self):
+        journal = self.stopped_request()
+        unrelated = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'])
+        try:
+            record = json.loads(journal.read_text())
+            record['manager'] = dict(pid=unrelated.pid, birth='different birth identity')
+            record['children'].append(dict(pid=unrelated.pid, birth='different birth identity'))
+            journal.write_text(json.dumps(record))
+            recovery, log = self.start(args=('--recover',))
+            self.assertIn('No check was run', self.finish(recovery, log))
+            self.assertIsNone(unrelated.poll())
+        finally:
+            unrelated.terminate()
+            unrelated.wait(timeout=5)
+
+    def test_recovery_refuses_a_live_recorded_manager_without_signalling_it(self):
+        journal = self.stopped_request()
+        unrelated = subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)'])
+        try:
+            birth = subprocess.check_output(['ps', '-p', str(unrelated.pid), '-o', 'lstart='],
+                text=True, env=dict(os.environ, LC_ALL='C'))
+            record = json.loads(journal.read_text())
+            record['manager'] = dict(pid=unrelated.pid, birth=' '.join(birth.split()))
+            journal.write_text(json.dumps(record))
+            recovery, log = self.start(args=('--recover',))
+            self.finish(recovery, log, 4)
+            self.assertTrue(journal.exists())
+            self.assertIsNone(unrelated.poll())
+        finally:
+            unrelated.terminate()
+            unrelated.wait(timeout=5)
+
+    def test_recovery_refuses_malformed_ownership_metadata(self):
+        journal = self.stopped_request()
+        original = json.loads(journal.read_text())
+        for field, value in (('manager', None), ('children', [None]),
+                             ('boot', 'invalid-boot'), ('group', -1),
+                             ('token', ''), ('sha', 'invalid-sha'),
+                             ('root', 'relative/path'), ('version', True)):
+            with self.subTest(field=field):
+                record = dict(original, **{field: value})
+                journal.write_text(json.dumps(record))
+                before = journal.read_bytes()
+                recovery, log = self.start(args=('--recover',))
+                self.finish(recovery, log, 2)
+                self.assertEqual(journal.read_bytes(), before)
+                self.assertNotIn('No check was run', log.read_text())
+
+    def test_recovery_refuses_empty_successful_observations_with_live_work(self):
+        active, log = self.start(FIXTURE_SECONDS='60')
+        self.until(log, 'HEAVY ')
+        active.kill()
+        active.wait(timeout=5)
+        journal = self.home / '.local/state/marginplyr/review-ready/request.json'
+        original = journal.read_bytes()
+        record = json.loads(original)
+        real_ps = shutil.which('ps')
+        shim = self.bin / 'ps'
+        count = self.root / 'ps-count'
+        shim.write_text('#!' + sys.executable + '\n' +
+            'import os,pathlib,sys\n' +
+            'counter=pathlib.Path(' + repr(str(count)) + ')\n' +
+            'number=int(counter.read_text())+1 if counter.exists() else 1\n' +
+            'counter.write_text(str(number))\n' +
+            'if number > 1: sys.exit(0)\n' +
+            'os.execv(' + repr(real_ps) + ',[' + repr(real_ps) + ']+sys.argv[1:])\n')
+        shim.chmod(0o755)
+        try:
+            recovery, log = self.start(args=('--recover',))
+            self.assertIn('complete process ownership evidence', self.finish(recovery, log, 2))
+            self.assertEqual(journal.read_bytes(), original)
+            self.assertNotIn('No check was run', log.read_text())
+        finally:
+            shim.unlink()
+            os.killpg(record['group'], signal.SIGKILL)
 
     def test_terminal_failure_is_not_admission_success(self):
         failure, a = self.start(FIXTURE_STATUS='17')
@@ -577,14 +821,14 @@ sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
                                        stdout=output, stderr=output)
             self.jobs.append(job)
             return job, log
-        active, a = launch('first-boot')
+        active, a = launch('00000000-0000-0000-0000-000000000001')
         self.until(a, 'HEAVY ')
         active.kill()
         active.wait(timeout=5)
         status, b = self.start(args=('--status',))
         self.finish(status, b)
         os.killpg(json.loads(b.read_text())['group'], signal.SIGKILL)
-        recovery, c = launch('next-boot', '--recover')
+        recovery, c = launch('00000000-0000-0000-0000-000000000002', '--recover')
         self.assertIn('No check was run', self.finish(recovery, c))
         self.assertNotIn('HEAVY ', c.read_text())
         normal, d = self.start()
