@@ -37,6 +37,14 @@ run <- function(margin = FALSE, selection = quote(cols), prior = FALSE,
 
 expected <- run()
 actual <- run(TRUE)
+if ("--assert" %in% commandArgs(trailingOnly = TRUE)) {
+  stopifnot(
+    identical(actual$value, expected$value),
+    identical(actual$reads, expected$reads)
+  )
+  cat("Desired selector results and evaluation counts agreed.\n")
+  quit(status = 0L)
+}
 stopifnot(
   identical(expected$reads, 1L), identical(actual$reads, 2L),
   identical(names(expected$value), c("g", "x")),
@@ -71,6 +79,3 @@ stopifnot(
 )
 cat("A read-once binding succeeded ordinarily and failed in the Margin call.\n")
 
-if ("--assert" %in% commandArgs(trailingOnly = TRUE)) {
-  stopifnot(identical(actual$value, expected$value))
-}

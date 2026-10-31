@@ -39,6 +39,16 @@ run_reproduction <- function() {
   duck_mixed <- probe(remote, mixed)
   dt_control <- probe(unsafe, control)
   dt_mixed <- probe(unsafe, mixed)
+  if ("--assert" %in% commandArgs(trailingOnly = TRUE)) {
+    stopifnot(
+      inherits(ordinary$result, "vctrs_error_subscript_oob"),
+      length(duck_mixed$queries) == 0L,
+      identical(class(dt_mixed$result), class(ordinary$result)),
+      effects == 0L
+    )
+    cat("Desired zero-query and leading-error behavior agreed.\n")
+    return(invisible(NULL))
+  }
   stopifnot(
     inherits(ordinary$result, "vctrs_error_subscript_oob"),
     identical(class(duck_control$result), class(ordinary$result)),
@@ -62,11 +72,5 @@ run_reproduction <- function() {
   cat("dtplyr control:", class(dt_control$result)[[1L]], "\n")
   cat("dtplyr mixed:", class(dt_mixed$result)[[1L]], "\n")
   cat("Later predicate effects:", invalid_effects, "\n")
-  if ("--assert" %in% commandArgs(trailingOnly = TRUE)) {
-    stopifnot(
-      length(duck_mixed$queries) == 0L,
-      identical(class(dt_mixed$result), class(ordinary$result))
-    )
-  }
 }
 run_reproduction()

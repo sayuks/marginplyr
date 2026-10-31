@@ -46,6 +46,16 @@ for (data in inputs) {
     for (direction in c("source", "later")) {
       for (mutation in mutations) {
         observed <- run(data, mutation, kind, direction)
+        if (assert_desired) {
+          stopifnot(inherits(observed, "marginplyr_error"))
+          wanted <- if (direction == "source") {
+            "depends on earlier summary alias"
+          } else {
+            "Ordinary summaries cannot use an earlier"
+          }
+          stopifnot(grepl(wanted, conditionMessage(observed), fixed = TRUE))
+          next
+        }
         stopifnot(is.data.frame(observed))
         column <- if (direction == "source") "value" else "derived"
         expected <- if (direction == "source") c(1, 3, 4) else c(100, 300, 400)

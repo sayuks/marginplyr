@@ -42,6 +42,16 @@ for (data in inputs) {
           sum(prior)
         })
         observed <- capture(run(data, expression, kind, direction))
+        if (assert_desired) {
+          stopifnot(inherits(observed, "marginplyr_error"))
+          wanted <- if (direction == "source") {
+            "depends on earlier summary alias"
+          } else {
+            "Ordinary summaries cannot use an earlier"
+          }
+          stopifnot(grepl(wanted, conditionMessage(observed), fixed = TRUE))
+          next
+        }
         stopifnot(is.data.frame(observed))
         expected <- if (direction == "source") c(1, 3, 4) else c(100, 300, 400)
         column <- if (direction == "source") "value" else "derived"

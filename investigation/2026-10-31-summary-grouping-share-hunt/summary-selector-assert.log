@@ -1,7 +1,2 @@
-Ordinary: selector read once; x = 3, 3.
-Margin: selector read twice; y = 11, 7.
-Only the first Margin read came from preflight_local_selection().
-Four selector controls and a preceding-summary control agreed.
-A read-once binding succeeded ordinarily and failed in the Margin call.
 Error: identical(actual$value, expected$value) is not TRUE
 Execution halted
