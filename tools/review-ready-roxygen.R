@@ -1,49 +1,52 @@
-# Proves R documentation eligibility after admission, without evaluating code.
-# Unknown tags and ordinary comments remain part of the unchanged source proof.
+# Proves documentation-equivalent R edits after admission without evaluation.
+# Parsed expressions and unsafe directive placement must both remain unchanged.
 review_ready_roxygen_source <- function(path) {
   text <- rawToChar(readBin(path, "raw", n = file.info(path)$size))
   lines <- strsplit(text, "\n", fixed = TRUE)[[1L]]
   if (!all(validUTF8(lines)) || any(grepl("[[:cntrl:]]", gsub("[\t\r]", "", lines)))) {
     stop("Unsupported R source encoding or control character.", call. = FALSE)
   }
-  parsed <- parse(text = text, keep.source = TRUE)
-  tokens <- utils::getParseData(parsed)
-  comments <- tokens[tokens$token == "COMMENT", , drop = FALSE]
-  documentation <- rep(FALSE, length(lines))
+  expressions <- parse(file = path, keep.source = FALSE, encoding = "UTF-8")
+  tokens <- utils::getParseData(parse(file = path, keep.source = TRUE, encoding = "UTF-8"))
+  if (is.null(tokens)) return(list(expressions = expressions, retained = character()))
+  tokens <- tokens[tokens$terminal, , drop = FALSE]
+  tokens <- tokens[order(tokens$line1, tokens$col1), , drop = FALSE]
+  keep <- tokens$token != "COMMENT"
   allowed <- c("title", "description", "details", "param", "return", "returns",
     "examples", "section", "seealso", "note", "references")
   supported <- TRUE
   previous <- 0L
-  for (i in seq_len(nrow(comments))) {
-    line <- comments$line1[[i]]
-    line_text <- lines[[line]]
-    if (!grepl("^[ \t]*#'", line_text) || comments$line2[[i]] != line) next
+  for (i in which(tokens$token == "COMMENT")) {
+    line <- tokens$line1[[i]]
+    comment <- sub("\r$", "", tokens$text[[i]])
+    if (grepl("\\bnocov\\b", comment, perl = TRUE)) keep[[i]] <- TRUE
+    if (!startsWith(comment, "#'")) {
+      keep[[i]] <- keep[[i]] || grepl("^#+['|]", comment)
+      next
+    }
+    if (!grepl("^[ \t]*#'", lines[[line]]) || tokens$line2[[i]] != line) {
+      keep[[i]] <- TRUE
+      next
+    }
     if (line > previous + 1L &&
         any(nzchar(trimws(lines[seq.int(previous + 1L, line - 1L)])))) supported <- TRUE
-    content <- sub("^[ \t]*#'[ ]?", "", line_text)
+    content <- sub("^#'[ ]?", "", comment)
     if (grepl("@", content, fixed = TRUE)) {
       tag <- regmatches(content, regexec("^[ \t]*@([A-Za-z]+)([ \t]|$)", content))[[1L]]
       supported <- length(tag) > 0L && tag[[2L]] %in% allowed &&
         !grepl("@", substring(content, nchar(tag[[1L]]) + 1L), fixed = TRUE)
     }
-    documentation[[line]] <- supported && !grepl("#[ \t]*(nolint|nocov)", content)
+    keep[[i]] <- keep[[i]] || !supported
     previous <- line
   }
-  blank <- !nzchar(trimws(lines))
-  adjacent <- documentation
-  repeat {
-    expanded <- adjacent | (blank &
-      (c(FALSE, head(adjacent, -1L)) | c(tail(adjacent, -1L), FALSE)))
-    if (identical(expanded, adjacent)) break
-    adjacent <- expanded
-  }
-  # A final newline has no executable effect; other retained bytes stay exact.
-  list(expressions = parse(text = text, keep.source = FALSE),
-    retained = paste0(lines, "\n")[!adjacent])
+  # Code token kinds anchor unsafe directives while ignoring source formatting.
+  retained <- ifelse(tokens$token == "COMMENT",
+    paste0("COMMENT:", sub("\r$", "", tokens$text)), tokens$token)
+  list(expressions = expressions, retained = unname(retained[keep]))
 }
 
 # The caller pins both commits. Archives also expose added/deleted R inputs and
-# package configuration that a comment-only expression comparison cannot prove.
+# package configuration that an expression comparison alone cannot prove.
 review_ready_roxygen_path <- function(root, base, sha) {
   workspace <- tempfile("review-ready-roxygen-")
   dir.create(workspace)

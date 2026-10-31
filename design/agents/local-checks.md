@@ -85,12 +85,14 @@ vignette eligibility follows `documentation_sources()` in
 Quarto documents remain Full. Unknown formats remain Full.
 Existing ordinary `R/*.R` edits are candidates for the admitted R documentation
 proof in `tools/review-ready-roxygen.R`. It compares parsed expressions without
-evaluation and retains ordinary comments, executable source formatting, unsafe
-roxygen tags and their continuations. Only the supported help/example tags and
-associated whitespace may differ. Final-newline presence may also differ: it
-has no executable effect and uses the same Documentation verification level.
-Added/deleted/renamed R files, unsupported
-forms, lint/coverage directives and changes to package configuration remain Full.
+evaluation and preserves the placement of unsafe directives among executable
+tokens. Blank lines anywhere, CRLF/LF, ordinary comments, inline lint directives
+and formatting may differ when the parsed expressions remain identical. These
+edits use the Documentation verification level even when they are not document
+edits. A lint correction that changes the parsed expressions remains Full;
+its motivation does not establish executable equivalence.
+Added/deleted/renamed R files, unsupported forms, coverage directives and package
+configuration changes remain Full.
 The allowlist in that proof owns the supported tags; unknown and evaluated tags,
 namespace/import/export and load-order directives are conservative Full cases.
 The pre-admission selection stays Full while this proof is pending. It runs only

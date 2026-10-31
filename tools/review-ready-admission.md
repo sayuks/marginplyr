@@ -84,7 +84,7 @@ transport. This prevents later source edits, changed HEAD, and untracked
 files from substituting the requested revision, including on older
 worktrees. The gate archives the exact SHA. For an existing ordinary R source modification, the initial Full selection can
 carry a pending documentation proof. After admission, the pinned worker uses
-the R parser and preserved non-documentation source to establish eligibility;
+the R parser and preserved unsafe-directive placement to establish eligibility;
 only then can it resolve to Documentation. Unavailable or unsupported evidence
 retains Full. No R proof or regeneration runs while waiting. The resolved path
 is printed before the gate and in the terminal outcome. The local check guide

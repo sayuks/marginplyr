@@ -13,7 +13,7 @@ local({
   original <- c("#' Fixture", "#'", "#' Description.", "#' @param x Input.",
     "#' @return The input.", "#' @export", "#' @examples", "#' fixture(1)",
     "fixture <- function(x) {", "  # ordinary comment", "  x", "}",
-    "literal <- \"#' @export # string\"", "", "other <- function() 1")
+    "literal <- \"#' @export # string\"", "", "other <- function() T")
   source_path <- file.path(root, "R", "fixture.R")
   writeLines(original, source_path)
   git("init", "-q")
@@ -43,23 +43,33 @@ local({
   check(sub("ordinary comment", "nocov start", original, fixed = TRUE),
     "Full", "ordinary coverage directive")
   check(sub("ordinary comment", "nolint: object_usage_linter.", original, fixed = TRUE),
-    "Full", "ordinary lint directive")
+    "Documentation", "ordinary lint directive")
   check(sub("Description.", "Description. # nolint: line_length_linter.", original,
-    fixed = TRUE), "Full", "roxygen lint directive")
+    fixed = TRUE), "Documentation", "roxygen lint directive")
   for (tag in c("export other", "importFrom stats median", "evalNamespace 'export(other)'",
       "evalRd 'text'", "rawNamespace export(other)", "useDynLib fixture", "include other.R",
       "order 1", "unknown text")) {
     check(sub("@export", paste0("@", tag), original, fixed = TRUE), "Full", tag)
   }
   check(sub("  x", "  x # inline comment", original, fixed = TRUE),
-    "Full", "inline comment")
-  check(c(original[1:14], "", original[15]), "Full", "unassociated whitespace")
+    "Documentation", "inline comment")
+  check(c(original[1:14], "", original[15]), "Documentation", "unassociated whitespace")
+  check(original[nzchar(original)], "Documentation", "remove interior blank lines")
   check(expected = "Documentation", label = "final newline", configure = function() {
     cat(paste(original, collapse = "\n"), file = source_path)
   })
-  check(expected = "Full", label = "executable line endings", configure = function() {
+  check(expected = "Documentation", label = "executable line endings", configure = function() {
     cat(paste0(paste(original, collapse = "\r\n"), "\r\n"), file = source_path)
   })
+  check(sub("function(x)", "function ( x )", original, fixed = TRUE),
+    "Documentation", "lint formatting")
+  check(sub("  x", "  return(x)", original, fixed = TRUE),
+    "Full", "explicit return changes syntax")
+  check(sub("function() T", "function() TRUE", original, fixed = TRUE),
+    "Full", "expression-changing lint correction")
+  moved <- original[original != "#' @export"]
+  moved <- append(moved, "#' @export", after = length(moved) - 1L)
+  check(moved, "Full", "directive moved across executable code")
   check(sub("@export", "@export\n#' continuation", original, fixed = TRUE),
     "Full", "unsafe directive continuation")
   check(sub("  x", "  (", original, fixed = TRUE), "Full", "parse failure")
