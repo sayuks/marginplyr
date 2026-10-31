@@ -1,6 +1,4 @@
-# Implementation of the fixed, non-mutating review-ready check. It runs every
-# step against a disposable archive of the clean committed HEAD so the reported
-# SHA identifies the sources that were actually checked.
+# Implementation of the fixed, non-mutating review-ready check.
 
 # Runs one subprocess from a named directory and returns its exit status and,
 # when requested, its combined output.
@@ -756,7 +754,47 @@ run_review_ready_rcmdcheck <- function(
   }
 }
 
-# Runs the complete fixed check and returns the identity and NOTE disposition.
+# Reads the admitted worker's transport. Launchers predating selection retain
+# Full; a malformed transport fails rather than dropping required verifiers.
+read_review_ready_selection <- function() {
+  path <- Sys.getenv("MARGINPLYR_REVIEW_SELECTION")
+  if (!nzchar(path)) return(list(path = "Full", verifiers = character()))
+  record <- read.dcf(path)
+  required <- c("Path", "Commit", "Request", "Verifiers")
+  if (nrow(record) != 1L || !all(required %in% colnames(record)) ||
+      !record[[1L, "Path"]] %in% c("Full", "Repository") ||
+      !nzchar(Sys.getenv("MARGINPLYR_REVIEW_REQUEST")) ||
+      !identical(record[[1L, "Request"]], Sys.getenv("MARGINPLYR_REVIEW_REQUEST"))) {
+    stop("Invalid admitted Review-ready selection.", call. = FALSE)
+  }
+  verifiers <- record[[1L, "Verifiers"]]
+  if (identical(record[[1L, "Path"]], "Repository") &&
+      (is.na(verifiers) || !nzchar(verifiers))) {
+    stop("Repository requires mapped artifact verification.", call. = FALSE)
+  }
+  list(path = record[[1L, "Path"]], sha = record[[1L, "Commit"]],
+    verifiers = if (is.na(verifiers) || !nzchar(verifiers)) character() else
+      strsplit(verifiers, " ", fixed = TRUE)[[1L]])
+}
+
+# Runs the manager's artifact routes in the pinned disposable Git checkout;
+# reference verifiers need its tracked index, which an archive does not carry.
+run_review_ready_verifiers <- function(selection, identity, prerequisites, runner) {
+  for (path in selection$verifiers) {
+    if (!file.exists(file.path(identity$root, path))) {
+      stop("Required Review-ready verifier is missing: ", path, call. = FALSE)
+    }
+    command <- if (endsWith(path, ".py")) unname(Sys.which("python3")) else
+      prerequisites$rscript
+    run_review_ready_step(paste("Artifact verification:", path),
+      list(command = command, args = path, env = character()),
+      identity$root, runner = runner)
+    cat("Completed artifact verification: ", path, "\n", sep = "")
+  }
+}
+
+# Runs the selected fixed gate and returns its identity and path. Only Full
+# returns source-tarball outcome and NOTE disposition.
 run_review_ready_check <- function(
   repository_root,
   identity = review_ready_identity(repository_root),
@@ -766,8 +804,15 @@ run_review_ready_check <- function(
   diagnostic_root = file.path(tools::R_user_dir("marginplyr", "cache"), "review-ready-failures"),
   system = Sys.info()[["sysname"]],
   retry_identity = review_ready_retry_identity,
-  preserver = preserve_review_ready_failure
+  preserver = preserve_review_ready_failure,
+  selection = list(path = "Full", verifiers = character())
 ) {
+  if (!is.null(selection$sha) && !identical(selection$sha, identity$sha)) {
+    stop("Admitted selection does not match the checked commit.", call. = FALSE)
+  }
+  if (!selection$path %in% c("Full", "Repository")) {
+    stop("Unsupported Review-ready path.", call. = FALSE)
+  }
   workspace <- tempfile("marginplyr-review-ready-")
   dir.create(workspace)
   on.exit(unlink(workspace, recursive = TRUE), add = TRUE)
@@ -775,15 +820,28 @@ run_review_ready_check <- function(
 
   cat("Review-ready commit: ", identity$sha, "\n", sep = "")
   cat("Disposable source: ", source_root, "\n", sep = "")
-  verify_review_ready_test_packages(source_root)
-  cat("\n==> Required test Suggests\n")
-  check_env <- review_ready_rcmdcheck_env(required_test_suggests(source_root))
-  check_env[["MARGINPLYR_REVIEW_PROGRESS_REPORTER"]] <- file.path(
-    source_root, "tools", "review-ready-progress-reporter.R"
-  )
+  cat("Review-ready path: ", selection$path, "\n", sep = "")
+  if (identical(selection$path, "Full")) {
+    verify_review_ready_test_packages(source_root)
+    cat("Completed: Test dependency syntax\n\n==> Required test Suggests\n")
+    check_env <- review_ready_rcmdcheck_env(required_test_suggests(source_root))
+    cat("Completed: Required test Suggests\n")
+    check_env[["MARGINPLYR_REVIEW_PROGRESS_REPORTER"]] <- file.path(
+      source_root, "tools", "review-ready-progress-reporter.R"
+    )
+  } else {
+    cat("Repository omits package build and R CMD check (full suite and snapshots).\n")
+  }
   steps <- review_ready_source_steps(prerequisites)
   for (label in names(steps)) {
     run_review_ready_step(label, steps[[label]], source_root, runner = runner)
+    cat("Completed: ", label, "\n", sep = "")
+  }
+  run_review_ready_verifiers(selection, identity, prerequisites, runner)
+  if (identical(selection$path, "Repository")) {
+    cat("\nReview-ready Repository passed for ", identity$sha,
+      "; package build/check omitted.\n", sep = "")
+    return(invisible(list(identity = identity, path = "Repository")))
   }
   tarball <- build_review_ready_tarball(
     source_root,
@@ -791,12 +849,14 @@ run_review_ready_check <- function(
     prerequisites$r,
     runner = runner
   )
+  cat("Completed: Build source tarball\n")
   outcome <- run_review_ready_rcmdcheck(tarball, workspace, identity,
     checker = checker, diagnostic_root = diagnostic_root, env = check_env, system = system,
     retry_identity = retry_identity, preserver = preserver)
 
   verdict <- if (outcome$retried) "passed-after-retry" else "passed"
-  cat("\nReview-ready check ", verdict, " for ", identity$sha, ".\n", sep = "")
+  cat("Completed: R CMD check --as-cran\n")
+  cat("\nReview-ready Full check ", verdict, " for ", identity$sha, ".\n", sep = "")
   if (length(outcome$unexpected_notes) > 0L) {
     cat(
       "Review and explain every unclassified NOTE before publishing this ",
@@ -804,7 +864,7 @@ run_review_ready_check <- function(
       sep = ""
     )
   }
-  invisible(list(identity = identity, outcome = outcome))
+  invisible(list(identity = identity, path = "Full", outcome = outcome))
 }
 
 # Command-line boundary: invalid invocation or any failed step exits nonzero.

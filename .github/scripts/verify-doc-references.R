@@ -101,7 +101,41 @@ exempt <- data.frame(
   stringsAsFactors = FALSE
 )
 
-tracked <- system2("git", "ls-files", stdout = TRUE)
+# Decodes Git's NUL-delimited paths without treating filename whitespace or
+# quoting as record syntax. The caller supplies raw bytes, including the final NUL.
+nul_paths <- function(bytes) {
+  if (length(bytes) == 0L) return(character())
+  ends <- which(bytes == as.raw(0L))
+  starts <- c(1L, head(ends, -1L) + 1L)
+  if (length(ends) == 0L || tail(ends, 1L) != length(bytes) ||
+      any(ends <= starts)) {
+    stop("Invalid NUL-delimited Git paths.", call. = FALSE)
+  }
+  vapply(seq_along(ends), function(index) {
+    rawToChar(bytes[seq.int(starts[[index]], ends[[index]] - 1L)])
+  }, character(1))
+}
+
+# Reads the tracked index as bytes; system2(stdout = TRUE) reads text lines and
+# cannot preserve NUL separators or Git's quoted unusual filenames.
+read_tracked_paths <- function() {
+  output <- tempfile("doc-reference-paths-")
+  on.exit(unlink(output))
+  status <- system2("git", c("ls-files", "-z"), stdout = output)
+  if (status != 0L) stop("git ls-files failed.", call. = FALSE)
+  nul_paths(readBin(output, "raw", n = file.size(output)))
+}
+
+path_probe <- c("design/a space.md", "design/a\tname.md", "design/a\nname.md",
+  "design/日本語.md", "design/a\"quote.md", "design/a\\slash.md")
+probe_bytes <- unlist(lapply(path_probe, function(path) {
+  c(charToRaw(path), as.raw(0L))
+}))
+if (!identical(nul_paths(probe_bytes), path_probe)) {
+  stop("The path reader must preserve unusual Git filenames.", call. = FALSE)
+}
+
+tracked <- read_tracked_paths()
 
 if (length(tracked) == 0L) {
   stop(call. = FALSE, paste0(
