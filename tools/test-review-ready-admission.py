@@ -517,6 +517,18 @@ sys.exit(17)
         self.assertIn('selected path: Repository; capacity: exempt', output)
         self.assertIn('promotions: []', output)
 
+    def test_unclassified_full_suite_and_larger_parallel_contracts_require_full(self):
+        self.repository_branch()
+        original = self.command.read_text()
+        for policy in ('unclassified', 'full-suite', 'parallel-fixture-4'):
+            with self.subTest(policy=policy):
+                self.command.write_text(original.replace(
+                    "'.github/scripts/verify-doc-references.R': ('serial',",
+                    "'.github/scripts/verify-doc-references.R': ('" + policy + "',", 1))
+                selection = self.selected()
+                self.assertEqual(selection['path'], 'Full')
+                self.assertIn('stage workload requires Full capacity', ' '.join(selection['reasons']))
+
     def selected(self, **env):
         job, log = self.start(FIXTURE_SECONDS='0', **env)
         output = self.finish(job, log)

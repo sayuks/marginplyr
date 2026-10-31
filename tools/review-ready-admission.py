@@ -112,6 +112,10 @@ def eligibility(root, sha, selection):
     entry = git_bytes(root, 'show', sha + ':tools/review-ready-check.R')
     if EXEMPT_PROTOCOL not in entry.splitlines():
         return 'source lacks compatible independent supervision; legacy locked Full contract'
+    for stage in selection['verifiers']:
+        contract = STAGE_CONTRACTS.get(stage)
+        if not contract or contract[0] not in ('serial', 'process-fixture', 'parallel-fixture-2'):
+            return 'stage workload requires Full capacity: ' + stage
     groups = ['core'] + selection['verifiers']
     if selection['path'] == 'Documentation':
         groups.append('documentation')
