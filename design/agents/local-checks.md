@@ -28,6 +28,9 @@ It selects **Full**, **Documentation**, or **Repository** from the cumulative
 final tree difference against the unique merge-base with local `main`. Full
 retains the package boundary; Documentation retains build/check without the complete suite, and
 Repository omits package build/check for supported repository artifacts.
+The selection states cumulative obligations. A separate stage plan records
+execution, valid reuse under [ADR 0038](../adr/0038-reuse-unaffected-review-ready-stage-evidence.md),
+or omission; a Full obligation discharged by reuse is not a new Full pass.
 Focused tests and the wider release process have separate roles.
 
 ## Boundary
@@ -41,7 +44,8 @@ Run the Review-ready check before any of these transitions:
 The alternative for the last case is to return the pull request to draft,
 push the change, and pass the check before making it ready again. A later
 commit requires a fresh invocation; previous successful checks never narrow
-the comparison base.
+the comparison base. They may discharge an unaffected stage only through the
+structured evidence mechanism below.
 
 The checked state is a clean committed `HEAD`. The command archives that exact
 commit into a disposable directory, so ignored local files cannot enter the
@@ -58,6 +62,9 @@ All agents and terminals use that command; missing setup has no direct-command
 fallback. A waiting request pins this clean commit and is cancelled before
 admission if HEAD or cleanliness changes. One complete Full check is admitted
 per OS user across all clones and worktrees, preserving four internal workers.
+The slot is required when Full build/check actually executes. A cumulative Full
+selection whose package unit is validly reused can use independent supervision
+when every remaining workload has an installed limited capability.
 Eligible Documentation and Repository requests start under independent
 supervision without acquiring that slot, including while Full needs recovery.
 Their build, rendering and limited verification may overlap; no aggregate slot
@@ -79,7 +86,8 @@ tree comparison. Reverted historical edits do not participate.
 The supported categories and required verifier mapping have one home:
 `PROSE`, `DOCUMENTATION`, `GENERATED_INPUTS`, `ARTIFACTS`, `CHECKING`,
 `REFERENCE_CHECKS`, and `CONTRACTS` in
-`tools/review-ready-admission.py`. Prose includes agent/domain/design Markdown,
+`tools/review-ready-admission.py`, together with the stage input registration
+and expectation recognizer in `tools/review-ready-evidence.py`. Prose includes agent/domain/design Markdown,
 Markdown investigation notes, conduct policy, and operational Markdown under
 `tools/`. Supported blobs must be UTF-8 text without non-prose control
 characters; unknown encodings or binary content select Full. Other formats
@@ -119,6 +127,7 @@ CI/configuration routes are deliberately narrow:
 | `altdoc/quarto_website.yml` | install the submitted source in an isolated library, render the site, then verify output and markers |
 | Codecov configuration | the existing coverage exclusion policy and its fixtures |
 | Codex and Claude configuration | existing network/Codex policy checks; CI artifact checks also reject invalid Claude JSON |
+| The literal review dependency expectation in the CRAN preflight verifier | protected comparison structure, independent tool-use and negative contracts, and both preflight and Review-ready verifiers |
 
 Workflow support covers comments and formatting while preserving every parsed
 field. Names are protected too because `github.workflow` contributes to the
@@ -146,12 +155,75 @@ Remote job execution remains CI's responsibility.
 no Repository route: rendering would erase its submitted changes before they
 could be verified. It remains Full with CI validation unresolved.
 
-Selection/admission/installer/progress/local-gate machinery, its dependency
+The dependency expectation route recognizes only an existing ordinary-file
+modification whose bytes outside the registered literal vector are identical.
+It preserves the strict assertion and independently checks declared tools
+against their actual generation calls, reproduces the original #1107 mismatch,
+and refuses missing or incorrect dependencies. Changing DESCRIPTION, weakening
+the assertion, or changing other verifier logic is outside that route.
+Other expected values, fixtures, snapshots, diagnostics and tooling logic need
+their own registered independent contract; their location does not qualify them.
+
+Selection/admission/installer/evidence/progress/local-gate machinery, its dependency
 helpers, shared NOTE policy, artifact checkers, workflow contracts, and their
-fixtures remain Full and run their mapped contract/process checks. The common
+fixtures retain Full obligations and mapped contract/process checks. They
+cannot certify their own changed implementation for limited execution. The common
 reference/context/invocation verifiers and their CI helper also remain Full;
 they help decide this check's outcome. The same
 routes run for cumulative mixed changes, even when package edits require Full.
+
+### Reusing unaffected stages
+
+`tools/review-ready-evidence.py` owns registered inputs, evidence validation and
+deterministic origin selection. Its default source identity includes every
+tracked path's name, type, mode and object; only its explicit audited non-inputs
+are excluded. Both sides of additions, deletions and renames consequently
+participate. The dependency expectation vector is normalized only while all
+protected verifier bytes remain identical. All of DESCRIPTION, package tests,
+the progress reporter, generation sources and the trusted machinery remain
+inputs. A newly registered non-input needs an audit of every unit it affects.
+
+Build and check are one unit. Full and Documentation remain distinct;
+compatible Full evidence can discharge Documentation build/check, but never
+the reverse. Generation and Documentation assertions are separate units.
+Dependency syntax and required Suggests still execute for cumulative package
+paths; spelling, both linters, common reference checks and changed-artifact
+contracts execute at every submitted SHA. A failing contract ends the request.
+
+The common supervisor seals a new-format success record in its private user
+state only after terminal success and confirmed owned-process/workspace cleanup.
+It binds the repository, user, request, submitted/main/base identities, installed
+supervisor, completed units, inputs, environment, check arguments, attempts and
+NOTE classifications. Only an ancestor's actual execution is reusable; repeated
+reuse points to that origin. Another clone of the same repository is eligible.
+Old logs, CI results and agent reports cannot establish a baseline. Corrupt or
+missing records/origins, incomplete cleanup, incompatible identities, unknown
+NOTEs, or later same-input/environment stage failures prevent reuse. There is
+no age-only expiry.
+
+Environment identities include R and its checker implementation, OS/architecture,
+resolved tools and runtime assets, Python and R libraries with content/change
+metadata, native dependencies, ordered R libraries, startup/build configuration,
+environment variables, locale and timezone. Caller loader overrides, custom
+startup/build hooks and unsupported native resolution have unregistered input
+closures and disable reuse. The native inspection routes are macOS `otool`
+and Linux `ldd`; unknown evidence strengthens verification. These are cooperative
+observations, not environment isolation. Keep tools and libraries unchanged
+throughout the request. Identity changes during validation fail a request
+relying on reuse; unavailable identity cannot issue reusable success.
+
+Build/check reuse additionally reevaluates the original inspected timestamp
+inventory and the submitted archive's commit timestamp against the registered
+R checker and effective leeway. Equality is allowed; a future boundary violation,
+clock rollback, unknown checker or missing inventory requires execution.
+Unregistered clock-dependent package contracts cannot reuse build/check.
+
+Eligibility is revalidated before gate start. Invalidation there promotes the
+same independently supervised request to Full before validation. After gate
+start it is a failure, without fallback. The [case matrix](../specs/review-ready-verification-followups.md#case-matrix)
+records the supported family and conservative exclusions. Missing evidence for
+a required unit means execution, never omission. This mechanism changes no CI
+package-check or coverage obligation.
 
 All paths always execute package spelling, jarl, and package-aware lintr
 (the three source stages described below), followed by mapped artifact
@@ -484,7 +556,9 @@ described below.
 Record the request/commit and comparison identities, selected path, capacity
 mode, worker policy, completed/omitted stages, promotion history, terminal
 outcome, cleanup and NOTE dispositions in the pull request. Exempt success is
-not a Full pass. The common CLI retains each request's record and gate output;
+not a Full pass. Include the separate stage plan, every reused unit's original
+request/SHA, and timestamp reevaluation; distinguish execution from inherited
+Full evidence. The common CLI retains each request's record and gate output;
 recover one explicit request ID rather than guessing which request to clear.
 For Full:
 

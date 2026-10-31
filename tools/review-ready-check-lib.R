@@ -1,5 +1,36 @@
 # Implementation of the fixed, non-mutating review-ready check.
 
+# Updates the private supervisor's stage report; stdout is never reuse evidence.
+review_ready_report <- function(completed = NULL, unit = NULL, state = NULL,
+                                check = NULL, timestamps = NULL, omitted = NULL) {
+  path <- Sys.getenv("MARGINPLYR_REVIEW_STAGE_REPORT")
+  if (!nzchar(path)) return(invisible())
+  report <- if (file.exists(path)) jsonlite::fromJSON(path, simplifyVector = FALSE) else
+    list(request = Sys.getenv("MARGINPLYR_REVIEW_REQUEST"), units = list(), completed = list())
+  if (!is.null(completed)) report$completed <- c(report$completed, list(completed))
+  if (!is.null(unit)) report$units[[unit]] <- state
+  if (!is.null(check)) report$check <- check
+  if (!is.null(timestamps)) report$timestamps <- timestamps
+  if (!is.null(omitted)) report$omitted <- as.list(omitted)
+  temporary <- paste0(path, ".new")
+  writeLines(jsonlite::toJSON(report, auto_unbox = TRUE, null = "null"), temporary)
+  if (!file.rename(temporary, path)) stop("Cannot retain supervised stage report.", call. = FALSE)
+  invisible()
+}
+
+# Captures the top-level paths whose mtimes the supported R checker inspects.
+review_ready_timestamps <- function(tarball, workspace) {
+  copy <- file.path(workspace, "timestamp-inventory")
+  dir.create(copy)
+  utils::untar(tarball, exdir = copy)
+  roots <- list.dirs(copy, recursive = FALSE, full.names = TRUE)
+  if (length(roots) != 1L) stop("Unknown source tarball timestamp layout.", call. = FALSE)
+  paths <- list.files(roots, all.files = TRUE, full.names = TRUE, include.dirs = TRUE, no.. = TRUE)
+  values <- as.numeric(file.mtime(paths))
+  if (!length(paths) || anyNA(values)) stop("Timestamp inventory unavailable.", call. = FALSE)
+  list(observed = as.numeric(Sys.time()), paths = stats::setNames(as.list(values), basename(paths)))
+}
+
 # Runs one subprocess from a named directory and returns its exit status and,
 # when requested, its combined output.
 review_ready_run_system <- function(
@@ -215,6 +246,7 @@ run_review_ready_step <- function(
   if (result$status != 0L) {
     stop(label, " failed with status ", result$status, ".", call. = FALSE)
   }
+  review_ready_report(completed = label)
   invisible(TRUE)
 }
 
@@ -700,9 +732,17 @@ run_review_ready_rcmdcheck <- function(
   before <- if (identical(system, "Darwin")) snapshot() else NULL
   repositories <- review_ready_offline_repositories(workspace)
   first_failure <- NULL
+  attempt_records <- list()
   for (number in 1:2) {
     cat("R CMD check attempt ", number, ".\n", sep = "")
     attempt <- review_ready_check_attempt(tarball, workspace, checker, repositories, env, args)
+    if (!is.null(attempt$result)) {
+      attempt_records[[number]] <- list(
+        status = attempt$result$status, timeout = attempt$result$timeout,
+        errors = length(attempt$result$errors), warnings = length(attempt$result$warnings),
+        notes = as.list(vapply(attempt$outcome$classifications, `[[`, character(1), "status"))
+      )
+    }
     bundle <- NULL
     if (!is.null(attempt$error)) {
       bundle <- tryCatch({
@@ -727,6 +767,13 @@ run_review_ready_rcmdcheck <- function(
       outcome$attempts <- number
       outcome$retried <- number == 2L
       outcome$first_failure <- first_failure
+      review_ready_report(check = list(
+        args = as.list(args), status = attempt$result$status, timeout = attempt$result$timeout,
+        errors = outcome$errors, warnings = outcome$warnings,
+        notes = as.list(vapply(outcome$classifications, `[[`, character(1), "status")),
+        attempts = attempt_records, retry_verified = number == 2L,
+        first_failure = first_failure, retry_identity = if (number == 2L) before else NULL
+      ))
       if (outcome$retried) {
         cat("Source-tarball check passed-after-retry; attempt 1 remains failed.\n",
           "First failure diagnostics: ", first_failure, "\n", sep = "")
@@ -819,40 +866,54 @@ read_review_ready_selection <- function(
       call. = FALSE)
   }
   authorization <- proof()
+  reused <- if ("Reused" %in% colnames(record) && !is.na(record[[1L, "Reused"]]) &&
+                 nzchar(record[[1L, "Reused"]])) strsplit(record[[1L, "Reused"]], " ", fixed = TRUE)[[1L]] else
+    character()
+  if (any(!reused %in% c("build-full", "build-documentation", "generation", "documentation-assertions")) ||
+      anyDuplicated(reused)) stop("Invalid stage reuse transport.", call. = FALSE)
   if (!identical(authorization$path, record[[1L, "Path"]]) ||
         !identical(authorization$capacity, record[[1L, "Capacity"]]) ||
         (identical(authorization$path, "Full") &&
-           !identical(authorization$capacity, "Full"))) {
+           !"build-full" %in% reused && !identical(authorization$capacity, "Full"))) {
     stop("Selection does not match owned supervisor capacity.", call. = FALSE)
   }
-  list(
+  selection <- list(
     path = record[[1L, "Path"]], sha = record[[1L, "Commit"]],
     base = record[[1L, "Base"]],
     verifiers = if (is.na(verifiers) || !nzchar(verifiers)) character() else
       strsplit(verifiers, " ", fixed = TRUE)[[1L]]
   )
+  if (length(reused)) selection$reused <- reused
+  selection
 }
 
 # Runs the manager's artifact routes in the pinned disposable Git checkout;
 # reference verifiers need its tracked index, which an archive does not carry.
 run_review_ready_verifiers <- function(selection, identity, prerequisites, runner) {
   for (path in selection$verifiers) {
+    generation <- identical(path, "tools/review-ready-generated.R")
+    if (generation && "generation" %in% selection$reused) {
+      cat("Reused: generation (original execution in supervised plan).\n")
+      next
+    }
     if (!file.exists(file.path(identity$root, path))) {
       stop("Required Review-ready verifier is missing: ", path, call. = FALSE)
     }
     command <- if (endsWith(path, ".py")) unname(Sys.which("python3")) else
       prerequisites$rscript
+    if (generation) review_ready_report(unit = "generation", state = "running")
     run_review_ready_step(
       paste("Artifact verification:", path),
       list(
         command = command, args = path,
-        env = c("TESTTHAT_PARALLEL=false", "TESTTHAT_CPUS=1", paste0(
+        env = c("TESTTHAT_PARALLEL=false", "TESTTHAT_CPUS=1", "MARGINPLYR_REVIEW_STAGE_REPORT=", paste0(
           "MARGINPLYR_REVIEW_BASE=", if (is.null(selection$base)) "" else selection$base
         ))
       ),
       identity$root, runner = runner
     )
     cat("Completed artifact verification: ", path, "\n", sep = "")
+    if (generation) review_ready_report(unit = "generation", state = "passed")
   }
 }
 
@@ -884,11 +945,19 @@ run_review_ready_check <- function(
   cat("Review-ready commit: ", identity$sha, "\n", sep = "")
   cat("Disposable source: ", source_root, "\n", sep = "")
   cat("Review-ready path: ", selection$path, "\n", sep = "")
+  if (length(selection$reused)) cat("Reused units: ", paste(selection$reused, collapse = ", "),
+    "; this invocation is not a new Full pass.\n", sep = "")
+  review_ready_report(omitted = c(
+    if (identical(selection$path, "Repository")) c("package build/check", "full suite", "snapshots"),
+    if (identical(selection$path, "Documentation")) c("full suite", "snapshots")
+  ))
   if (!identical(selection$path, "Repository")) {
     verify_review_ready_test_packages(source_root)
+    review_ready_report(completed = "Test dependency syntax")
     cat("Completed: Test dependency syntax\n\n==> Required test Suggests\n")
     check_env <- review_ready_rcmdcheck_env(required_test_suggests(source_root), selection$path)
     cat("Completed: Required test Suggests\n")
+    review_ready_report(completed = "Required test Suggests")
     check_env[["MARGINPLYR_REVIEW_PROGRESS_REPORTER"]] <- file.path(
       source_root, "tools", "review-ready-progress-reporter.R"
     )
@@ -908,12 +977,24 @@ run_review_ready_check <- function(
   }
   if (identical(selection$path, "Documentation")) {
     cat("Documentation: full suite and snapshots omitted; running selected assertions.\n")
-    run_review_ready_step("Documentation assertions",
+    if ("documentation-assertions" %in% selection$reused) {
+      cat("Reused: documentation-assertions (original execution in supervised plan).\n")
+    } else {
+      review_ready_report(unit = "documentation-assertions", state = "running")
+      run_review_ready_step("Documentation assertions",
       list(command = prerequisites$rscript, args = "tools/review-ready-documentation.R",
-        env = paste0("MARGINPLYR_REQUIRED_SUGGESTS=",
-          check_env[["MARGINPLYR_REQUIRED_SUGGESTS"]])),
-      source_root, runner = runner)
+        env = c("MARGINPLYR_REVIEW_STAGE_REPORT=", paste0("MARGINPLYR_REQUIRED_SUGGESTS=",
+          check_env[["MARGINPLYR_REQUIRED_SUGGESTS"]]))),
+        source_root, runner = runner)
+      review_ready_report(unit = "documentation-assertions", state = "passed")
+    }
   }
+  unit <- if (identical(selection$path, "Full")) "build-full" else "build-documentation"
+  if (unit %in% selection$reused) {
+    cat("Reused: ", unit, "; package build/check not executed.\n", sep = "")
+    return(invisible(list(identity = identity, path = selection$path, reused = selection$reused)))
+  }
+  review_ready_report(unit = unit, state = "running")
   tarball <- build_review_ready_tarball(
     source_root,
     workspace,
@@ -921,9 +1002,13 @@ run_review_ready_check <- function(
     runner = runner
   )
   cat("Completed: Build source tarball\n")
+  if (nzchar(Sys.getenv("MARGINPLYR_REVIEW_STAGE_REPORT"))) {
+    review_ready_report(timestamps = review_ready_timestamps(tarball, workspace))
+  }
   outcome <- run_review_ready_rcmdcheck(tarball, workspace, identity,
     checker = checker, diagnostic_root = diagnostic_root, env = check_env, system = system,
     retry_identity = retry_identity, preserver = preserver, path = selection$path)
+  review_ready_report(unit = unit, state = "passed")
 
   verdict <- if (outcome$retried) "passed-after-retry" else "passed"
   cat("Completed: R CMD check --as-cran\n")

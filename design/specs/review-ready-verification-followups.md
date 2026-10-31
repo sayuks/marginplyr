@@ -3,7 +3,8 @@
 Design for [#1110](https://github.com/sayuks/marginplyr/issues/1110), under
 [ADR 0038](../adr/0038-reuse-unaffected-review-ready-stage-evidence.md).
 The maintainer accepted this specification on 2026-10-31.
-It does not authorize bypassing the current local gate.
+The implementation uses the common CLI and the operating guidance in
+[local checks](../agents/local-checks.md#reusing-unaffected-stages).
 
 ## Obligations and execution plan
 
