@@ -78,8 +78,11 @@ unknown encodings or binary content select Full. Other formats in those
 directories remain Full. Package licenses, CI configuration, and checking
 machinery remain Full.
 Documentation supports README Markdown/Quarto, NEWS Markdown, generated Rd,
-explicit image formats under `man/figures/`, and explicit vignette document,
-image, bibliography and citation-style formats. Unknown formats remain Full;
+explicit image formats under `man/figures/`, top-level `vignettes/*.qmd`, and
+explicit vignette image, bibliography and citation-style formats. Executable
+vignette eligibility follows `documentation_sources()` in
+`tests/testthat/test-documentation.R`; unscanned document formats and nested
+Quarto documents remain Full. Unknown formats remain Full;
 R-file edits remain Full, including roxygen-only edits. Full wins over
 Documentation, which wins over Repository, across the cumulative diff.
 

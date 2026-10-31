@@ -168,8 +168,8 @@ sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
         baseline = self.git(self.repo, 'rev-parse', 'HEAD')
         for name in ('README.md', 'README.qmd', 'NEWS.md', 'man/topic.Rd',
                      'man/figures/README-plot.png', 'man/figures/logo.svg',
-                     'vignettes/guide.qmd', 'vignettes/guide.Rmd',
-                     'vignettes/plot.jpg'):
+                     'vignettes/guide.qmd',
+                     'vignettes/plot.jpg', 'vignettes/nested/plot.png'):
             with self.subTest(name=name):
                 self.git(self.repo, 'reset', '--hard', baseline)
                 path = self.repo / name
@@ -185,6 +185,18 @@ sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
                 self.assertEqual(self.selected()['path'], 'Full')
                 if name != 'NEWS.md':
                     self.assertIn('tools/review-ready-generated.R', self.selected()['verifiers'])
+
+    def test_unscanned_vignette_document_formats_remain_full(self):
+        self.repository_branch()
+        baseline = self.git(self.repo, 'rev-parse', 'HEAD')
+        for name in ('vignettes/guide.Rmd', 'vignettes/guide.md', 'vignettes/nested/guide.qmd'):
+            with self.subTest(name=name):
+                self.git(self.repo, 'reset', '--hard', baseline)
+                path = self.repo / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text('Unscanned documentation input\n')
+                self.commit_all()
+                self.assertEqual(self.selected()['path'], 'Full')
 
     def test_documentation_deletion_rename_and_reverted_code(self):
         self.repository_branch()

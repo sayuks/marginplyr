@@ -35,9 +35,10 @@ PROTOCOL = b'# Review-ready selection protocol: 2'
 # these directories have no exemption. Checking machinery remains Full.
 PROSE = (r'(AGENTS\.md|CLAUDE\.md|CONTEXT\.md|CODE_OF_CONDUCT\.md|'
          r'(?:design|investigation)/(?:[^/]+/)*[^/]+\.md|tools/[^/]+\.md)')
+# Executable vignette inputs match documentation_sources() in test-documentation.R.
 DOCUMENTATION = (r'(README\.(?:md|qmd)|NEWS\.md|man/[^/]+\.Rd|'
                  r'man/figures/(?:[^/]+/)*[^/]+\.(?:png|jpg|jpeg|gif|svg|pdf)|'
-                 r'vignettes/(?:[^/]+/)*[^/]+\.(?:qmd|Rmd|md|png|jpg|jpeg|gif|svg|pdf|bib|csl))')
+                 r'vignettes/[^/]+\.qmd|vignettes/(?:[^/]+/)*[^/]+\.(?:png|jpg|jpeg|gif|svg|pdf|bib|csl))')
 # Package code and metadata can feed README chunks or roxygen even on Full.
 GENERATED_INPUTS = r'(README\.(?:md|qmd)|NAMESPACE|R/.*|DESCRIPTION|inst/.*|data/.*|man/.*|vignettes/.*)'
 REFERENCE_CHECKS = ['.github/scripts/verify-doc-references.R',
