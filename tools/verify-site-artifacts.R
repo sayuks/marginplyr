@@ -1,9 +1,25 @@
 # Installs this source in an isolated library before rendering and verifying
 # site output. The common admission manager owns this process and its children.
 verify_site_artifacts <- function() {
-  library <- tempfile("marginplyr-site-library-")
+  workspace <- tempfile("marginplyr-site-")
+  dir.create(workspace)
+  original_directory <- getwd()
+  on.exit({
+    setwd(original_directory)
+    unlink(workspace, recursive = TRUE)
+  }, add = TRUE)
+  archive <- file.path(workspace, "source.tar")
+  status <- system2("git", shQuote(c(
+    "archive", "--format=tar", paste0("--output=", archive), "HEAD"
+  )))
+  if (status != 0L) stop("Cannot archive pinned site source.", call. = FALSE)
+  source <- file.path(workspace, "source")
+  dir.create(source)
+  utils::untar(archive, exdir = source)
+  # A hidden checkout ancestor hides Quarto inputs; render the committed archive.
+  setwd(source)
+  library <- file.path(workspace, "library")
   dir.create(library)
-  on.exit(unlink(library, recursive = TRUE), add = TRUE)
   previous <- Sys.getenv("R_LIBS", unset = NA_character_)
   on.exit({
     if (is.na(previous)) {
