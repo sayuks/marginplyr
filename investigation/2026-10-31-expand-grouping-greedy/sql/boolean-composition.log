@@ -1,0 +1,122 @@
+Source and explicitly materialized public-name controls passed.
+ordinary head success 1
+ordinary filter success 2
+ordinary grouped success 2
+ordinary window success 2
+ordinary union success 4
+ordinary reexpand simpleError no such column: TRUE
+margin head rlang_error Failed to collect lazy table. Caused by error: ! no such column: TRUE
+margin filter rlang_error Failed to collect lazy table. Caused by error: ! no such column: TRUE
+margin grouped rlang_error Failed to collect lazy table. Caused by error: ! no such column: TRUE
+margin window rlang_error Failed to collect lazy table. Caused by error: ! no such column: TRUE
+margin union rlang_error Failed to collect lazy table. Caused by error: ! no such column: TRUE
+margin reexpand success 2
+Direct companion TRUE derived companion FALSE
+Direct SQL:
+ SELECT *
+FROM `facts`
+WHERE (0)
+
+UNION ALL
+
+SELECT `g`, `..marginplyr_boolean_1` AS `TRUE`
+FROM (
+  SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+  FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `facts`
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT CAST(`g` AS TEXT) AS `g`, `..marginplyr_boolean_1`
+    FROM (
+      SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+      FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `facts`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+
+    UNION ALL
+
+    SELECT 'Total' AS `g`, `..marginplyr_boolean_1`
+    FROM (
+      SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+      FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `facts`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+WHERE (1)
+Derived SQL:
+ SELECT *
+FROM (
+  SELECT *
+  FROM `facts`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+    FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `facts`
+) AS `q01`
+    ) AS `q01`
+    WHERE (0)
+
+    UNION ALL
+
+    SELECT *
+    FROM (
+      SELECT CAST(`g` AS TEXT) AS `g`, `TRUE`
+      FROM (
+        SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+        FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `facts`
+) AS `q01`
+        ) AS `q01`
+      ) AS `q01`
+
+      UNION ALL
+
+      SELECT 'Total' AS `g`, `TRUE`
+      FROM (
+        SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+        FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `facts`
+) AS `q01`
+        ) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+    WHERE (1)
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+LIMIT 1

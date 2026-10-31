@@ -1,0 +1,15 @@
+dist control_rows 6 control_class dist
+actual_class vctrs_error_ptype2
+ Can't combine `..1$key` <dist> and `..2$key` <double>.
+New names:
+• `Min.` -> `Min....1`
+• `Min.` -> `Min....2`
+summary payload control_rows 2 control_class table
+actual_class vctrs_error_names_must_be_unique
+ Names must be unique.
+✖ These names are duplicated:
+  * "Min." at locations 1 and 2.
+           dist summary_payload
+          FALSE           FALSE
+Error: Expected ordinary typed-missing expansion behavior was not met.
+Execution halted

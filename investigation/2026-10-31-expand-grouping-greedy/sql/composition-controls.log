@@ -1,0 +1,20 @@
+ordinary identity success
+ordinary head success
+ordinary filter success
+ordinary select rlang_error Cannot translate a <rlang_ctxt_pronoun> object to SQL. ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?
+ordinary rename rlang_error Cannot translate a <rlang_ctxt_pronoun> object to SQL. ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?
+ordinary grouped success
+ordinary window success
+ordinary union success
+ordinary join rlang_error Failed to collect lazy table. Caused by error: ! no such column: LHS.TRUE
+margin identity success
+margin head rlang_error Failed to collect lazy table. Caused by error: ! no such column: TRUE
+margin filter rlang_error Failed to collect lazy table. Caused by error: ! no such column: TRUE
+margin select rlang_error Cannot translate a <rlang_ctxt_pronoun> object to SQL. ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?
+margin rename rlang_error Cannot translate a <rlang_ctxt_pronoun> object to SQL. ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?
+margin grouped rlang_error Failed to collect lazy table. Caused by error: ! no such column: TRUE
+margin window rlang_error Failed to collect lazy table. Caused by error: ! no such column: TRUE
+margin union rlang_error Failed to collect lazy table. Caused by error: ! no such column: TRUE
+margin join rlang_error Failed to collect lazy table. Caused by error: ! no such column: TRUE
+ordered union ordinary Failed to collect lazy table. Caused by error: ! ORDER BY clause should come after UNION ALL not before
+ordered union margin Failed to collect lazy table. Caused by error: ! ORDER BY clause should come after UNION ALL not before

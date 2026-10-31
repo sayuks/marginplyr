@@ -1,0 +1,22 @@
+Input names: key row
+Prototype class: summaryDefault table missing: TRUE
+New names:
+• `` -> `...2`
+# A tibble: 2 × 2
+  key           row
+  <table[1d]> <int>
+1  1              1
+2 NA              1
+Callback observations:
+list(c("key", "row"), c("key", "row"), c("Min.", ""))
+vctrs_error_names_cannot_be_empty
+Names can't be empty.
+✖ Empty name found at location 2.
+Default vec_rbind:
+New names:
+• `` -> `...2`
+# A tibble: 2 × 2
+  key           row
+  <table[1d]> <int>
+1  1              1
+2 NA              1

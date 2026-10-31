@@ -1,0 +1,38 @@
+status
+        match package_error
+         1188           648
+, , status = match
+
+   packed_actual
+n   FALSE TRUE
+  0   315  144
+  1   243    0
+  3   243    0
+  6   243    0
+
+, , status = package_error
+
+   packed_actual
+n   FALSE TRUE
+  0     0    0
+  1    72  144
+  3    72  144
+  6    72  144
+
+, , status = match
+
+           label_kind
+role         NA NULL Total
+  dimension 135  135   108
+  fixed     135  135   135
+  payload   135  135   135
+
+, , status = package_error
+
+           label_kind
+role         NA NULL Total
+  dimension  81   81     0
+  fixed      81   81    81
+  payload    81   81    81
+
+Output: investigation/2026-10-31-expand-grouping-greedy/local

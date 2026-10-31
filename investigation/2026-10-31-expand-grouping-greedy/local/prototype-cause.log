@@ -1,0 +1,19 @@
+Family: dist
+Scalar-subset class: numeric
+vec_init class: dist
+Scalar-subset missing: TRUE
+vec_init missing: TRUE
+Ordinary branch combination: passed
+Expansion condition: vctrs_error_ptype2
+Can't combine `..1$key` <dist> and `..2$key` <double>.
+Family: logLik
+Scalar-subset class: numeric
+vec_init class: logLik
+Scalar-subset missing: TRUE
+vec_init missing: TRUE
+Ordinary branch combination: passed
+Expansion condition: vctrs_error_ptype2
+Can't combine `..1$key` <logLik> and `..2$key` <double>.
+numeric_version missingness: TRUE TRUE
+numeric_version value equality: TRUE
+numeric_version scalar-subset comparison: NA

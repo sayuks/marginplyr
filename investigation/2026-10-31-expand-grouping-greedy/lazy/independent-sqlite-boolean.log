@@ -1,0 +1,36 @@
+
+Identifier: absent
+Direct result:
+# A tibble: 2 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 x         19
+2 Total     19
+Ordinary union columns: g, column2
+head ordinary control rows: 1
+Package-derived error: Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE
+Ordinary union columns: g, column2
+filter ordinary control rows: 2
+Package-derived error: Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE
+
+Identifier: sid
+Direct result:
+# A tibble: 2 × 3
+  g       sid `TRUE`
+  <chr> <int>  <int>
+1 x         1     19
+2 Total     2     19
+Ordinary union columns: g, column2, sid
+head ordinary control rows: 1
+Package-derived error: Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE
+Ordinary union columns: g, column2, sid
+filter ordinary control rows: 2
+Package-derived error: Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE

@@ -1,0 +1,1369 @@
+"case","status","detail"
+"sqlite/1/FALSE/none/identity/collect","match",""
+"sqlite/1/FALSE/none/identity/compute","match",""
+"sqlite/1/FALSE/none/head/collect","match",""
+"sqlite/1/FALSE/none/head/compute","match",""
+"sqlite/1/FALSE/none/filter/collect","match",""
+"sqlite/1/FALSE/none/select/collect","match",""
+"sqlite/1/FALSE/none/select/compute","match",""
+"sqlite/1/FALSE/none/rename/collect","match",""
+"sqlite/1/FALSE/none/rename/compute","match",""
+"sqlite/1/FALSE/none/grouped/collect","match",""
+"sqlite/1/FALSE/none/window/collect","match",""
+"sqlite/1/FALSE/none/union/collect","match",""
+"sqlite/1/FALSE/none/join/collect","match",""
+"sqlite/1/FALSE/first/identity/collect","match",""
+"sqlite/1/FALSE/first/identity/compute","match",""
+"sqlite/1/FALSE/first/head/collect","match",""
+"sqlite/1/FALSE/first/head/compute","match",""
+"sqlite/1/FALSE/first/filter/collect","match",""
+"sqlite/1/FALSE/first/select/collect","match",""
+"sqlite/1/FALSE/first/select/compute","match",""
+"sqlite/1/FALSE/first/rename/collect","match",""
+"sqlite/1/FALSE/first/rename/compute","match",""
+"sqlite/1/FALSE/first/grouped/collect","match",""
+"sqlite/1/FALSE/first/window/collect","match",""
+"sqlite/1/FALSE/first/union","source-error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite/1/FALSE/first/join/collect","match",""
+"sqlite/1/FALSE/last/identity/collect","match",""
+"sqlite/1/FALSE/last/identity/compute","match",""
+"sqlite/1/FALSE/last/head/collect","match",""
+"sqlite/1/FALSE/last/head/compute","match",""
+"sqlite/1/FALSE/last/filter/collect","match",""
+"sqlite/1/FALSE/last/select/collect","match",""
+"sqlite/1/FALSE/last/select/compute","match",""
+"sqlite/1/FALSE/last/rename/collect","match",""
+"sqlite/1/FALSE/last/rename/compute","match",""
+"sqlite/1/FALSE/last/grouped/collect","match",""
+"sqlite/1/FALSE/last/window/collect","match",""
+"sqlite/1/FALSE/last/union","source-error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite/1/FALSE/last/join/collect","match",""
+"sqlite/1/TRUE/none/identity/collect","match",""
+"sqlite/1/TRUE/none/identity/compute","match",""
+"sqlite/1/TRUE/none/head/collect","match",""
+"sqlite/1/TRUE/none/head/compute","match",""
+"sqlite/1/TRUE/none/filter/collect","match",""
+"sqlite/1/TRUE/none/select/collect","match",""
+"sqlite/1/TRUE/none/select/compute","match",""
+"sqlite/1/TRUE/none/rename/collect","match",""
+"sqlite/1/TRUE/none/rename/compute","match",""
+"sqlite/1/TRUE/none/grouped/collect","match",""
+"sqlite/1/TRUE/none/window/collect","match",""
+"sqlite/1/TRUE/none/union/collect","match",""
+"sqlite/1/TRUE/none/join/collect","match",""
+"sqlite/1/TRUE/first/identity/collect","match",""
+"sqlite/1/TRUE/first/identity/compute","match",""
+"sqlite/1/TRUE/first/head/collect","match",""
+"sqlite/1/TRUE/first/head/compute","match",""
+"sqlite/1/TRUE/first/filter/collect","match",""
+"sqlite/1/TRUE/first/select/collect","match",""
+"sqlite/1/TRUE/first/select/compute","match",""
+"sqlite/1/TRUE/first/rename/collect","match",""
+"sqlite/1/TRUE/first/rename/compute","match",""
+"sqlite/1/TRUE/first/grouped/collect","match",""
+"sqlite/1/TRUE/first/window/collect","match",""
+"sqlite/1/TRUE/first/union","source-error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite/1/TRUE/first/join/collect","match",""
+"sqlite/1/TRUE/last/identity/collect","match",""
+"sqlite/1/TRUE/last/identity/compute","match",""
+"sqlite/1/TRUE/last/head/collect","match",""
+"sqlite/1/TRUE/last/head/compute","match",""
+"sqlite/1/TRUE/last/filter/collect","match",""
+"sqlite/1/TRUE/last/select/collect","match",""
+"sqlite/1/TRUE/last/select/compute","match",""
+"sqlite/1/TRUE/last/rename/collect","match",""
+"sqlite/1/TRUE/last/rename/compute","match",""
+"sqlite/1/TRUE/last/grouped/collect","match",""
+"sqlite/1/TRUE/last/window/collect","match",""
+"sqlite/1/TRUE/last/union","source-error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite/1/TRUE/last/join/collect","match",""
+"sqlite/2/FALSE/none/identity/collect","match",""
+"sqlite/2/FALSE/none/identity/compute","match",""
+"sqlite/2/FALSE/none/head","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/FALSE/none/filter","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/FALSE/none/select","source-error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite/2/FALSE/none/rename","source-error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite/2/FALSE/none/grouped","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/FALSE/none/window","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/FALSE/none/union","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/FALSE/none/join","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/FALSE/first/identity/collect","match",""
+"sqlite/2/FALSE/first/identity/compute","match",""
+"sqlite/2/FALSE/first/head","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/FALSE/first/filter","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/FALSE/first/select","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/FALSE/first/rename","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/FALSE/first/grouped","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/FALSE/first/window","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/FALSE/first/union","source-error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite/2/FALSE/first/join","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/FALSE/last/identity/collect","match",""
+"sqlite/2/FALSE/last/identity/compute","match",""
+"sqlite/2/FALSE/last/head","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/FALSE/last/filter","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/FALSE/last/select","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/FALSE/last/rename","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/FALSE/last/grouped","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/FALSE/last/window","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/FALSE/last/union","source-error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite/2/FALSE/last/join","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/TRUE/none/identity/collect","match",""
+"sqlite/2/TRUE/none/identity/compute","match",""
+"sqlite/2/TRUE/none/head","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/TRUE/none/filter","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/TRUE/none/select","source-error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite/2/TRUE/none/rename","source-error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite/2/TRUE/none/grouped","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/TRUE/none/window","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/TRUE/none/union","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/TRUE/none/join","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/TRUE/first/identity/collect","match",""
+"sqlite/2/TRUE/first/identity/compute","match",""
+"sqlite/2/TRUE/first/head","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/TRUE/first/filter","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/TRUE/first/select","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/TRUE/first/rename","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/TRUE/first/grouped","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/TRUE/first/window","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/TRUE/first/union","source-error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite/2/TRUE/first/join","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/TRUE/last/identity/collect","match",""
+"sqlite/2/TRUE/last/identity/compute","match",""
+"sqlite/2/TRUE/last/head","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/TRUE/last/filter","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/TRUE/last/select","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/TRUE/last/rename","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/TRUE/last/grouped","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/TRUE/last/window","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/2/TRUE/last/union","source-error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite/2/TRUE/last/join","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/FALSE/none/identity/collect","match",""
+"sqlite/3/FALSE/none/identity/compute","match",""
+"sqlite/3/FALSE/none/head","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/FALSE/none/filter","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/FALSE/none/select","source-error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite/3/FALSE/none/rename","source-error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite/3/FALSE/none/grouped","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/FALSE/none/window","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/FALSE/none/union","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/FALSE/none/join","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/FALSE/first/identity/collect","match",""
+"sqlite/3/FALSE/first/identity/compute","match",""
+"sqlite/3/FALSE/first/head","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/FALSE/first/filter","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/FALSE/first/select","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/FALSE/first/rename","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/FALSE/first/grouped","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/FALSE/first/window","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/FALSE/first/union","source-error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite/3/FALSE/first/join","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/FALSE/last/identity/collect","match",""
+"sqlite/3/FALSE/last/identity/compute","match",""
+"sqlite/3/FALSE/last/head","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/FALSE/last/filter","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/FALSE/last/select","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/FALSE/last/rename","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/FALSE/last/grouped","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/FALSE/last/window","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/FALSE/last/union","source-error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite/3/FALSE/last/join","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/TRUE/none/identity/collect","match",""
+"sqlite/3/TRUE/none/identity/compute","match",""
+"sqlite/3/TRUE/none/head","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/TRUE/none/filter","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/TRUE/none/select","source-error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite/3/TRUE/none/rename","source-error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite/3/TRUE/none/grouped","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/TRUE/none/window","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/TRUE/none/union","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/TRUE/none/join","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/TRUE/first/identity/collect","match",""
+"sqlite/3/TRUE/first/identity/compute","match",""
+"sqlite/3/TRUE/first/head","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/TRUE/first/filter","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/TRUE/first/select","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/TRUE/first/rename","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/TRUE/first/grouped","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/TRUE/first/window","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/TRUE/first/union","source-error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite/3/TRUE/first/join","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/TRUE/last/identity/collect","match",""
+"sqlite/3/TRUE/last/identity/compute","match",""
+"sqlite/3/TRUE/last/head","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/TRUE/last/filter","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/TRUE/last/select","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/TRUE/last/rename","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/TRUE/last/grouped","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/TRUE/last/window","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite/3/TRUE/last/union","source-error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite/3/TRUE/last/join","source-error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite 4 FALSE none first","error","Columns 1 and 2 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.
+  * ""..."" at location 2."
+"sqlite 4 FALSE first first","error","Columns 1 and 2 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.
+  * ""..."" at location 2."
+"sqlite 4 FALSE last first","error","Columns 1 and 2 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.
+  * ""..."" at location 2."
+"sqlite 4 TRUE none base","source-error","Columns 1 and 2 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.
+  * ""..."" at location 2."
+"sqlite 4 TRUE first base","source-error","Columns 1 and 2 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.
+  * ""..."" at location 2."
+"sqlite 4 TRUE last base","source-error","Columns 1 and 2 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.
+  * ""..."" at location 2."
+"sqlite/5/FALSE/none/identity/collect","match",""
+"sqlite/5/FALSE/none/identity/compute","match",""
+"sqlite/5/FALSE/none/head/collect","match",""
+"sqlite/5/FALSE/none/head/compute","match",""
+"sqlite/5/FALSE/none/filter/collect","match",""
+"sqlite/5/FALSE/none/select/collect","match",""
+"sqlite/5/FALSE/none/select/compute","match",""
+"sqlite/5/FALSE/none/rename/collect","match",""
+"sqlite/5/FALSE/none/rename/compute","match",""
+"sqlite/5/FALSE/none/grouped/collect","match",""
+"sqlite/5/FALSE/none/window/collect","match",""
+"sqlite/5/FALSE/none/union/collect","match",""
+"sqlite/5/FALSE/none/join/collect","match",""
+"sqlite/5/FALSE/first/identity/collect","match",""
+"sqlite/5/FALSE/first/identity/compute","error","Can't materialize this SQLite Margin order: result columns shadow all three rowid aliases (`rowid`, `oid`, `_rowid_`)."
+"sqlite/5/FALSE/first/head/collect","match",""
+"sqlite/5/FALSE/first/head/compute","error","Can't materialize this SQLite Margin order: result columns shadow all three rowid aliases (`rowid`, `oid`, `_rowid_`)."
+"sqlite/5/FALSE/first/filter/collect","match",""
+"sqlite/5/FALSE/first/select/collect","match",""
+"sqlite/5/FALSE/first/select/compute","error","Can't materialize this SQLite Margin order: result columns shadow all three rowid aliases (`rowid`, `oid`, `_rowid_`)."
+"sqlite/5/FALSE/first/rename/collect","match",""
+"sqlite/5/FALSE/first/rename/compute","match",""
+"sqlite/5/FALSE/first/grouped/collect","match",""
+"sqlite/5/FALSE/first/window/collect","match",""
+"sqlite/5/FALSE/first/union","source-error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite/5/FALSE/first/join/collect","match",""
+"sqlite/5/FALSE/last/identity/collect","match",""
+"sqlite/5/FALSE/last/identity/compute","error","Can't materialize this SQLite Margin order: result columns shadow all three rowid aliases (`rowid`, `oid`, `_rowid_`)."
+"sqlite/5/FALSE/last/head/collect","match",""
+"sqlite/5/FALSE/last/head/compute","error","Can't materialize this SQLite Margin order: result columns shadow all three rowid aliases (`rowid`, `oid`, `_rowid_`)."
+"sqlite/5/FALSE/last/filter/collect","match",""
+"sqlite/5/FALSE/last/select/collect","match",""
+"sqlite/5/FALSE/last/select/compute","error","Can't materialize this SQLite Margin order: result columns shadow all three rowid aliases (`rowid`, `oid`, `_rowid_`)."
+"sqlite/5/FALSE/last/rename/collect","match",""
+"sqlite/5/FALSE/last/rename/compute","match",""
+"sqlite/5/FALSE/last/grouped/collect","match",""
+"sqlite/5/FALSE/last/window/collect","match",""
+"sqlite/5/FALSE/last/union","source-error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite/5/FALSE/last/join/collect","match",""
+"sqlite/5/TRUE/none/identity/collect","match",""
+"sqlite/5/TRUE/none/identity/compute","match",""
+"sqlite/5/TRUE/none/head/collect","match",""
+"sqlite/5/TRUE/none/head/compute","match",""
+"sqlite/5/TRUE/none/filter/collect","match",""
+"sqlite/5/TRUE/none/select/collect","match",""
+"sqlite/5/TRUE/none/select/compute","match",""
+"sqlite/5/TRUE/none/rename/collect","match",""
+"sqlite/5/TRUE/none/rename/compute","match",""
+"sqlite/5/TRUE/none/grouped/collect","match",""
+"sqlite/5/TRUE/none/window/collect","match",""
+"sqlite/5/TRUE/none/union/collect","match",""
+"sqlite/5/TRUE/none/join/collect","match",""
+"sqlite/5/TRUE/first/identity/collect","match",""
+"sqlite/5/TRUE/first/identity/compute","error","Can't materialize this SQLite Margin order: result columns shadow all three rowid aliases (`rowid`, `oid`, `_rowid_`)."
+"sqlite/5/TRUE/first/head/collect","match",""
+"sqlite/5/TRUE/first/head/compute","error","Can't materialize this SQLite Margin order: result columns shadow all three rowid aliases (`rowid`, `oid`, `_rowid_`)."
+"sqlite/5/TRUE/first/filter/collect","match",""
+"sqlite/5/TRUE/first/select/collect","match",""
+"sqlite/5/TRUE/first/select/compute","error","Can't materialize this SQLite Margin order: result columns shadow all three rowid aliases (`rowid`, `oid`, `_rowid_`)."
+"sqlite/5/TRUE/first/rename/collect","match",""
+"sqlite/5/TRUE/first/rename/compute","match",""
+"sqlite/5/TRUE/first/grouped/collect","match",""
+"sqlite/5/TRUE/first/window/collect","match",""
+"sqlite/5/TRUE/first/union","source-error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite/5/TRUE/first/join/collect","match",""
+"sqlite/5/TRUE/last/identity/collect","match",""
+"sqlite/5/TRUE/last/identity/compute","error","Can't materialize this SQLite Margin order: result columns shadow all three rowid aliases (`rowid`, `oid`, `_rowid_`)."
+"sqlite/5/TRUE/last/head/collect","match",""
+"sqlite/5/TRUE/last/head/compute","error","Can't materialize this SQLite Margin order: result columns shadow all three rowid aliases (`rowid`, `oid`, `_rowid_`)."
+"sqlite/5/TRUE/last/filter/collect","match",""
+"sqlite/5/TRUE/last/select/collect","match",""
+"sqlite/5/TRUE/last/select/compute","error","Can't materialize this SQLite Margin order: result columns shadow all three rowid aliases (`rowid`, `oid`, `_rowid_`)."
+"sqlite/5/TRUE/last/rename/collect","match",""
+"sqlite/5/TRUE/last/rename/compute","match",""
+"sqlite/5/TRUE/last/grouped/collect","match",""
+"sqlite/5/TRUE/last/window/collect","match",""
+"sqlite/5/TRUE/last/union","source-error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite/5/TRUE/last/join/collect","match",""
+"sqlite/6/FALSE/none/identity/collect","match",""
+"sqlite/6/FALSE/none/identity/compute","match",""
+"sqlite/6/FALSE/none/head/collect","match",""
+"sqlite/6/FALSE/none/head/compute","match",""
+"sqlite/6/FALSE/none/filter/collect","match",""
+"sqlite/6/FALSE/none/select/collect","match",""
+"sqlite/6/FALSE/none/select/compute","match",""
+"sqlite/6/FALSE/none/rename/collect","match",""
+"sqlite/6/FALSE/none/rename/compute","match",""
+"sqlite/6/FALSE/none/grouped/collect","match",""
+"sqlite/6/FALSE/none/window/collect","match",""
+"sqlite/6/FALSE/none/union/collect","match",""
+"sqlite/6/FALSE/none/join/collect","match",""
+"sqlite/6/FALSE/first/identity/collect","match",""
+"sqlite/6/FALSE/first/identity/compute","match",""
+"sqlite/6/FALSE/first/head/collect","match",""
+"sqlite/6/FALSE/first/head/compute","match",""
+"sqlite/6/FALSE/first/filter/collect","match",""
+"sqlite/6/FALSE/first/select/collect","match",""
+"sqlite/6/FALSE/first/select/compute","match",""
+"sqlite/6/FALSE/first/rename/collect","match",""
+"sqlite/6/FALSE/first/rename/compute","match",""
+"sqlite/6/FALSE/first/grouped/collect","match",""
+"sqlite/6/FALSE/first/window/collect","match",""
+"sqlite/6/FALSE/first/union","source-error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite/6/FALSE/first/join/collect","match",""
+"sqlite/6/FALSE/last/identity/collect","match",""
+"sqlite/6/FALSE/last/identity/compute","match",""
+"sqlite/6/FALSE/last/head/collect","match",""
+"sqlite/6/FALSE/last/head/compute","match",""
+"sqlite/6/FALSE/last/filter/collect","match",""
+"sqlite/6/FALSE/last/select/collect","match",""
+"sqlite/6/FALSE/last/select/compute","match",""
+"sqlite/6/FALSE/last/rename/collect","match",""
+"sqlite/6/FALSE/last/rename/compute","match",""
+"sqlite/6/FALSE/last/grouped/collect","match",""
+"sqlite/6/FALSE/last/window/collect","match",""
+"sqlite/6/FALSE/last/union","source-error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite/6/FALSE/last/join/collect","match",""
+"sqlite/6/TRUE/none/identity/collect","match",""
+"sqlite/6/TRUE/none/identity/compute","match",""
+"sqlite/6/TRUE/none/head/collect","match",""
+"sqlite/6/TRUE/none/head/compute","match",""
+"sqlite/6/TRUE/none/filter/collect","match",""
+"sqlite/6/TRUE/none/select/collect","match",""
+"sqlite/6/TRUE/none/select/compute","match",""
+"sqlite/6/TRUE/none/rename/collect","match",""
+"sqlite/6/TRUE/none/rename/compute","match",""
+"sqlite/6/TRUE/none/grouped/collect","match",""
+"sqlite/6/TRUE/none/window/collect","match",""
+"sqlite/6/TRUE/none/union/collect","match",""
+"sqlite/6/TRUE/none/join/collect","match",""
+"sqlite/6/TRUE/first/identity/collect","match",""
+"sqlite/6/TRUE/first/identity/compute","match",""
+"sqlite/6/TRUE/first/head/collect","match",""
+"sqlite/6/TRUE/first/head/compute","match",""
+"sqlite/6/TRUE/first/filter/collect","match",""
+"sqlite/6/TRUE/first/select/collect","match",""
+"sqlite/6/TRUE/first/select/compute","match",""
+"sqlite/6/TRUE/first/rename/collect","match",""
+"sqlite/6/TRUE/first/rename/compute","match",""
+"sqlite/6/TRUE/first/grouped/collect","match",""
+"sqlite/6/TRUE/first/window/collect","match",""
+"sqlite/6/TRUE/first/union","source-error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite/6/TRUE/first/join/collect","match",""
+"sqlite/6/TRUE/last/identity/collect","match",""
+"sqlite/6/TRUE/last/identity/compute","match",""
+"sqlite/6/TRUE/last/head/collect","match",""
+"sqlite/6/TRUE/last/head/compute","match",""
+"sqlite/6/TRUE/last/filter/collect","match",""
+"sqlite/6/TRUE/last/select/collect","match",""
+"sqlite/6/TRUE/last/select/compute","match",""
+"sqlite/6/TRUE/last/rename/collect","match",""
+"sqlite/6/TRUE/last/rename/compute","match",""
+"sqlite/6/TRUE/last/grouped/collect","match",""
+"sqlite/6/TRUE/last/window/collect","match",""
+"sqlite/6/TRUE/last/union","source-error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite/6/TRUE/last/join/collect","match",""
+"sqlite/7/FALSE/none/identity/collect","match",""
+"sqlite/7/FALSE/none/identity/compute","match",""
+"sqlite/7/FALSE/none/head/collect","match",""
+"sqlite/7/FALSE/none/head/compute","match",""
+"sqlite/7/FALSE/none/filter/collect","match",""
+"sqlite/7/FALSE/none/select/collect","match",""
+"sqlite/7/FALSE/none/select/compute","match",""
+"sqlite/7/FALSE/none/rename/collect","match",""
+"sqlite/7/FALSE/none/rename/compute","match",""
+"sqlite/7/FALSE/none/grouped/collect","match",""
+"sqlite/7/FALSE/none/window/collect","match",""
+"sqlite/7/FALSE/none/union/collect","match",""
+"sqlite/7/FALSE/none/join/collect","match",""
+"sqlite/7/FALSE/first/identity/collect","match",""
+"sqlite/7/FALSE/first/identity/compute","match",""
+"sqlite/7/FALSE/first/head/collect","match",""
+"sqlite/7/FALSE/first/head/compute","match",""
+"sqlite/7/FALSE/first/filter/collect","match",""
+"sqlite/7/FALSE/first/select/collect","match",""
+"sqlite/7/FALSE/first/select/compute","match",""
+"sqlite/7/FALSE/first/rename/collect","match",""
+"sqlite/7/FALSE/first/rename/compute","match",""
+"sqlite/7/FALSE/first/grouped/collect","match",""
+"sqlite/7/FALSE/first/window/collect","match",""
+"sqlite/7/FALSE/first/union","source-error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite/7/FALSE/first/join/collect","match",""
+"sqlite/7/FALSE/last/identity/collect","match",""
+"sqlite/7/FALSE/last/identity/compute","match",""
+"sqlite/7/FALSE/last/head/collect","match",""
+"sqlite/7/FALSE/last/head/compute","match",""
+"sqlite/7/FALSE/last/filter/collect","match",""
+"sqlite/7/FALSE/last/select/collect","match",""
+"sqlite/7/FALSE/last/select/compute","match",""
+"sqlite/7/FALSE/last/rename/collect","match",""
+"sqlite/7/FALSE/last/rename/compute","match",""
+"sqlite/7/FALSE/last/grouped/collect","match",""
+"sqlite/7/FALSE/last/window/collect","match",""
+"sqlite/7/FALSE/last/union","source-error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite/7/FALSE/last/join/collect","match",""
+"sqlite/7/TRUE/none/identity/collect","match",""
+"sqlite/7/TRUE/none/identity/compute","match",""
+"sqlite/7/TRUE/none/head/collect","match",""
+"sqlite/7/TRUE/none/head/compute","match",""
+"sqlite/7/TRUE/none/filter/collect","match",""
+"sqlite/7/TRUE/none/select/collect","match",""
+"sqlite/7/TRUE/none/select/compute","match",""
+"sqlite/7/TRUE/none/rename/collect","match",""
+"sqlite/7/TRUE/none/rename/compute","match",""
+"sqlite/7/TRUE/none/grouped/collect","match",""
+"sqlite/7/TRUE/none/window/collect","match",""
+"sqlite/7/TRUE/none/union/collect","match",""
+"sqlite/7/TRUE/none/join/collect","match",""
+"sqlite/7/TRUE/first/identity/collect","match",""
+"sqlite/7/TRUE/first/identity/compute","match",""
+"sqlite/7/TRUE/first/head/collect","match",""
+"sqlite/7/TRUE/first/head/compute","match",""
+"sqlite/7/TRUE/first/filter/collect","match",""
+"sqlite/7/TRUE/first/select/collect","match",""
+"sqlite/7/TRUE/first/select/compute","match",""
+"sqlite/7/TRUE/first/rename/collect","match",""
+"sqlite/7/TRUE/first/rename/compute","match",""
+"sqlite/7/TRUE/first/grouped/collect","match",""
+"sqlite/7/TRUE/first/window/collect","match",""
+"sqlite/7/TRUE/first/union","source-error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite/7/TRUE/first/join/collect","match",""
+"sqlite/7/TRUE/last/identity/collect","match",""
+"sqlite/7/TRUE/last/identity/compute","match",""
+"sqlite/7/TRUE/last/head/collect","match",""
+"sqlite/7/TRUE/last/head/compute","match",""
+"sqlite/7/TRUE/last/filter/collect","match",""
+"sqlite/7/TRUE/last/select/collect","match",""
+"sqlite/7/TRUE/last/select/compute","match",""
+"sqlite/7/TRUE/last/rename/collect","match",""
+"sqlite/7/TRUE/last/rename/compute","match",""
+"sqlite/7/TRUE/last/grouped/collect","match",""
+"sqlite/7/TRUE/last/window/collect","match",""
+"sqlite/7/TRUE/last/union","source-error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite/7/TRUE/last/join/collect","match",""
+"duckdb/1/FALSE/none/identity/collect","match",""
+"duckdb/1/FALSE/none/identity/compute","match",""
+"duckdb/1/FALSE/none/head/collect","match",""
+"duckdb/1/FALSE/none/head/compute","match",""
+"duckdb/1/FALSE/none/filter/collect","match",""
+"duckdb/1/FALSE/none/select/collect","match",""
+"duckdb/1/FALSE/none/select/compute","match",""
+"duckdb/1/FALSE/none/rename/collect","match",""
+"duckdb/1/FALSE/none/rename/compute","match",""
+"duckdb/1/FALSE/none/grouped/collect","match",""
+"duckdb/1/FALSE/none/window/collect","match",""
+"duckdb/1/FALSE/none/union/collect","match",""
+"duckdb/1/FALSE/none/join/collect","match",""
+"duckdb/1/FALSE/first/identity/collect","match",""
+"duckdb/1/FALSE/first/identity/compute","match",""
+"duckdb/1/FALSE/first/head/collect","match",""
+"duckdb/1/FALSE/first/head/compute","match",""
+"duckdb/1/FALSE/first/filter/collect","match",""
+"duckdb/1/FALSE/first/select/collect","match",""
+"duckdb/1/FALSE/first/select/compute","match",""
+"duckdb/1/FALSE/first/rename/collect","match",""
+"duckdb/1/FALSE/first/rename/compute","match",""
+"duckdb/1/FALSE/first/grouped/collect","match",""
+"duckdb/1/FALSE/first/window/collect","match",""
+"duckdb/1/FALSE/first/union","source-error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 32: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb/1/FALSE/first/join/collect","match",""
+"duckdb/1/FALSE/last/identity/collect","match",""
+"duckdb/1/FALSE/last/identity/compute","match",""
+"duckdb/1/FALSE/last/head/collect","match",""
+"duckdb/1/FALSE/last/head/compute","match",""
+"duckdb/1/FALSE/last/filter/collect","match",""
+"duckdb/1/FALSE/last/select/collect","match",""
+"duckdb/1/FALSE/last/select/compute","match",""
+"duckdb/1/FALSE/last/rename/collect","match",""
+"duckdb/1/FALSE/last/rename/compute","match",""
+"duckdb/1/FALSE/last/grouped/collect","match",""
+"duckdb/1/FALSE/last/window/collect","match",""
+"duckdb/1/FALSE/last/union","source-error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 32: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb/1/FALSE/last/join/collect","match",""
+"duckdb/1/TRUE/none/identity/collect","match",""
+"duckdb/1/TRUE/none/identity/compute","match",""
+"duckdb/1/TRUE/none/head/collect","match",""
+"duckdb/1/TRUE/none/head/compute","match",""
+"duckdb/1/TRUE/none/filter/collect","match",""
+"duckdb/1/TRUE/none/select/collect","match",""
+"duckdb/1/TRUE/none/select/compute","match",""
+"duckdb/1/TRUE/none/rename/collect","match",""
+"duckdb/1/TRUE/none/rename/compute","match",""
+"duckdb/1/TRUE/none/grouped/collect","match",""
+"duckdb/1/TRUE/none/window/collect","match",""
+"duckdb/1/TRUE/none/union/collect","match",""
+"duckdb/1/TRUE/none/join/collect","match",""
+"duckdb/1/TRUE/first/identity/collect","match",""
+"duckdb/1/TRUE/first/identity/compute","match",""
+"duckdb/1/TRUE/first/head/collect","match",""
+"duckdb/1/TRUE/first/head/compute","match",""
+"duckdb/1/TRUE/first/filter/collect","match",""
+"duckdb/1/TRUE/first/select/collect","match",""
+"duckdb/1/TRUE/first/select/compute","match",""
+"duckdb/1/TRUE/first/rename/collect","match",""
+"duckdb/1/TRUE/first/rename/compute","match",""
+"duckdb/1/TRUE/first/grouped/collect","match",""
+"duckdb/1/TRUE/first/window/collect","match",""
+"duckdb/1/TRUE/first/union","source-error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 34: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb/1/TRUE/first/join/collect","match",""
+"duckdb/1/TRUE/last/identity/collect","match",""
+"duckdb/1/TRUE/last/identity/compute","match",""
+"duckdb/1/TRUE/last/head/collect","match",""
+"duckdb/1/TRUE/last/head/compute","match",""
+"duckdb/1/TRUE/last/filter/collect","match",""
+"duckdb/1/TRUE/last/select/collect","match",""
+"duckdb/1/TRUE/last/select/compute","match",""
+"duckdb/1/TRUE/last/rename/collect","match",""
+"duckdb/1/TRUE/last/rename/compute","match",""
+"duckdb/1/TRUE/last/grouped/collect","match",""
+"duckdb/1/TRUE/last/window/collect","match",""
+"duckdb/1/TRUE/last/union","source-error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 34: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb/1/TRUE/last/join/collect","match",""
+"duckdb/2/FALSE/none/identity/collect","match",""
+"duckdb/2/FALSE/none/identity/compute","match",""
+"duckdb/2/FALSE/none/head/collect","match",""
+"duckdb/2/FALSE/none/head/compute","match",""
+"duckdb/2/FALSE/none/filter/collect","match",""
+"duckdb/2/FALSE/none/select/collect","match",""
+"duckdb/2/FALSE/none/select/compute","match",""
+"duckdb/2/FALSE/none/rename/collect","match",""
+"duckdb/2/FALSE/none/rename/compute","match",""
+"duckdb/2/FALSE/none/grouped/collect","match",""
+"duckdb/2/FALSE/none/window/collect","match",""
+"duckdb/2/FALSE/none/union/collect","match",""
+"duckdb/2/FALSE/none/join/collect","match",""
+"duckdb/2/FALSE/first/identity/collect","match",""
+"duckdb/2/FALSE/first/identity/compute","match",""
+"duckdb/2/FALSE/first/head/collect","match",""
+"duckdb/2/FALSE/first/head/compute","match",""
+"duckdb/2/FALSE/first/filter/collect","match",""
+"duckdb/2/FALSE/first/select/collect","match",""
+"duckdb/2/FALSE/first/select/compute","match",""
+"duckdb/2/FALSE/first/rename/collect","match",""
+"duckdb/2/FALSE/first/rename/compute","match",""
+"duckdb/2/FALSE/first/grouped/collect","match",""
+"duckdb/2/FALSE/first/window/collect","match",""
+"duckdb/2/FALSE/first/union","source-error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 32: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb/2/FALSE/first/join/collect","match",""
+"duckdb/2/FALSE/last/identity/collect","match",""
+"duckdb/2/FALSE/last/identity/compute","match",""
+"duckdb/2/FALSE/last/head/collect","match",""
+"duckdb/2/FALSE/last/head/compute","match",""
+"duckdb/2/FALSE/last/filter/collect","match",""
+"duckdb/2/FALSE/last/select/collect","match",""
+"duckdb/2/FALSE/last/select/compute","match",""
+"duckdb/2/FALSE/last/rename/collect","match",""
+"duckdb/2/FALSE/last/rename/compute","match",""
+"duckdb/2/FALSE/last/grouped/collect","match",""
+"duckdb/2/FALSE/last/window/collect","match",""
+"duckdb/2/FALSE/last/union","source-error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 32: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb/2/FALSE/last/join/collect","match",""
+"duckdb/2/TRUE/none/identity/collect","match",""
+"duckdb/2/TRUE/none/identity/compute","match",""
+"duckdb/2/TRUE/none/head/collect","match",""
+"duckdb/2/TRUE/none/head/compute","match",""
+"duckdb/2/TRUE/none/filter/collect","match",""
+"duckdb/2/TRUE/none/select/collect","match",""
+"duckdb/2/TRUE/none/select/compute","match",""
+"duckdb/2/TRUE/none/rename/collect","match",""
+"duckdb/2/TRUE/none/rename/compute","match",""
+"duckdb/2/TRUE/none/grouped/collect","match",""
+"duckdb/2/TRUE/none/window/collect","match",""
+"duckdb/2/TRUE/none/union/collect","match",""
+"duckdb/2/TRUE/none/join/collect","match",""
+"duckdb/2/TRUE/first/identity/collect","match",""
+"duckdb/2/TRUE/first/identity/compute","match",""
+"duckdb/2/TRUE/first/head/collect","match",""
+"duckdb/2/TRUE/first/head/compute","match",""
+"duckdb/2/TRUE/first/filter/collect","match",""
+"duckdb/2/TRUE/first/select/collect","match",""
+"duckdb/2/TRUE/first/select/compute","match",""
+"duckdb/2/TRUE/first/rename/collect","match",""
+"duckdb/2/TRUE/first/rename/compute","match",""
+"duckdb/2/TRUE/first/grouped/collect","match",""
+"duckdb/2/TRUE/first/window/collect","match",""
+"duckdb/2/TRUE/first/union","source-error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 34: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb/2/TRUE/first/join/collect","match",""
+"duckdb/2/TRUE/last/identity/collect","match",""
+"duckdb/2/TRUE/last/identity/compute","match",""
+"duckdb/2/TRUE/last/head/collect","match",""
+"duckdb/2/TRUE/last/head/compute","match",""
+"duckdb/2/TRUE/last/filter/collect","match",""
+"duckdb/2/TRUE/last/select/collect","match",""
+"duckdb/2/TRUE/last/select/compute","match",""
+"duckdb/2/TRUE/last/rename/collect","match",""
+"duckdb/2/TRUE/last/rename/compute","match",""
+"duckdb/2/TRUE/last/grouped/collect","match",""
+"duckdb/2/TRUE/last/window/collect","match",""
+"duckdb/2/TRUE/last/union","source-error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 34: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb/2/TRUE/last/join/collect","match",""
+"duckdb/3/FALSE/none/identity/collect","match",""
+"duckdb/3/FALSE/none/identity/compute","match",""
+"duckdb/3/FALSE/none/head/collect","match",""
+"duckdb/3/FALSE/none/head/compute","match",""
+"duckdb/3/FALSE/none/filter/collect","match",""
+"duckdb/3/FALSE/none/select/collect","match",""
+"duckdb/3/FALSE/none/select/compute","match",""
+"duckdb/3/FALSE/none/rename/collect","match",""
+"duckdb/3/FALSE/none/rename/compute","match",""
+"duckdb/3/FALSE/none/grouped/collect","match",""
+"duckdb/3/FALSE/none/window/collect","match",""
+"duckdb/3/FALSE/none/union/collect","match",""
+"duckdb/3/FALSE/none/join/collect","match",""
+"duckdb/3/FALSE/first/identity/collect","match",""
+"duckdb/3/FALSE/first/identity/compute","match",""
+"duckdb/3/FALSE/first/head/collect","match",""
+"duckdb/3/FALSE/first/head/compute","match",""
+"duckdb/3/FALSE/first/filter/collect","match",""
+"duckdb/3/FALSE/first/select/collect","match",""
+"duckdb/3/FALSE/first/select/compute","match",""
+"duckdb/3/FALSE/first/rename/collect","match",""
+"duckdb/3/FALSE/first/rename/compute","match",""
+"duckdb/3/FALSE/first/grouped/collect","match",""
+"duckdb/3/FALSE/first/window/collect","match",""
+"duckdb/3/FALSE/first/union","source-error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 32: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb/3/FALSE/first/join/collect","match",""
+"duckdb/3/FALSE/last/identity/collect","match",""
+"duckdb/3/FALSE/last/identity/compute","match",""
+"duckdb/3/FALSE/last/head/collect","match",""
+"duckdb/3/FALSE/last/head/compute","match",""
+"duckdb/3/FALSE/last/filter/collect","match",""
+"duckdb/3/FALSE/last/select/collect","match",""
+"duckdb/3/FALSE/last/select/compute","match",""
+"duckdb/3/FALSE/last/rename/collect","match",""
+"duckdb/3/FALSE/last/rename/compute","match",""
+"duckdb/3/FALSE/last/grouped/collect","match",""
+"duckdb/3/FALSE/last/window/collect","match",""
+"duckdb/3/FALSE/last/union","source-error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 32: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb/3/FALSE/last/join/collect","match",""
+"duckdb/3/TRUE/none/identity/collect","match",""
+"duckdb/3/TRUE/none/identity/compute","match",""
+"duckdb/3/TRUE/none/head/collect","match",""
+"duckdb/3/TRUE/none/head/compute","match",""
+"duckdb/3/TRUE/none/filter/collect","match",""
+"duckdb/3/TRUE/none/select/collect","match",""
+"duckdb/3/TRUE/none/select/compute","match",""
+"duckdb/3/TRUE/none/rename/collect","match",""
+"duckdb/3/TRUE/none/rename/compute","match",""
+"duckdb/3/TRUE/none/grouped/collect","match",""
+"duckdb/3/TRUE/none/window/collect","match",""
+"duckdb/3/TRUE/none/union/collect","match",""
+"duckdb/3/TRUE/none/join/collect","match",""
+"duckdb/3/TRUE/first/identity/collect","match",""
+"duckdb/3/TRUE/first/identity/compute","match",""
+"duckdb/3/TRUE/first/head/collect","match",""
+"duckdb/3/TRUE/first/head/compute","match",""
+"duckdb/3/TRUE/first/filter/collect","match",""
+"duckdb/3/TRUE/first/select/collect","match",""
+"duckdb/3/TRUE/first/select/compute","match",""
+"duckdb/3/TRUE/first/rename/collect","match",""
+"duckdb/3/TRUE/first/rename/compute","match",""
+"duckdb/3/TRUE/first/grouped/collect","match",""
+"duckdb/3/TRUE/first/window/collect","match",""
+"duckdb/3/TRUE/first/union","source-error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 34: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb/3/TRUE/first/join/collect","match",""
+"duckdb/3/TRUE/last/identity/collect","match",""
+"duckdb/3/TRUE/last/identity/compute","match",""
+"duckdb/3/TRUE/last/head/collect","match",""
+"duckdb/3/TRUE/last/head/compute","match",""
+"duckdb/3/TRUE/last/filter/collect","match",""
+"duckdb/3/TRUE/last/select/collect","match",""
+"duckdb/3/TRUE/last/select/compute","match",""
+"duckdb/3/TRUE/last/rename/collect","match",""
+"duckdb/3/TRUE/last/rename/compute","match",""
+"duckdb/3/TRUE/last/grouped/collect","match",""
+"duckdb/3/TRUE/last/window/collect","match",""
+"duckdb/3/TRUE/last/union","source-error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 34: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb/3/TRUE/last/join/collect","match",""
+"duckdb 4 FALSE none first","error","Columns 1 and 2 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.
+  * ""..."" at location 2."
+"duckdb 4 FALSE first first","error","Columns 1 and 2 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.
+  * ""..."" at location 2."
+"duckdb 4 FALSE last first","error","Columns 1 and 2 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.
+  * ""..."" at location 2."
+"duckdb 4 TRUE none base","source-error","Columns 1 and 2 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.
+  * ""..."" at location 2."
+"duckdb 4 TRUE first base","source-error","Columns 1 and 2 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.
+  * ""..."" at location 2."
+"duckdb 4 TRUE last base","source-error","Columns 1 and 2 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1.
+  * ""..."" at location 2."
+"duckdb/5/FALSE/none/identity/collect","match",""
+"duckdb/5/FALSE/none/identity/compute","match",""
+"duckdb/5/FALSE/none/head/collect","match",""
+"duckdb/5/FALSE/none/head/compute","match",""
+"duckdb/5/FALSE/none/filter/collect","match",""
+"duckdb/5/FALSE/none/select/collect","match",""
+"duckdb/5/FALSE/none/select/compute","match",""
+"duckdb/5/FALSE/none/rename/collect","match",""
+"duckdb/5/FALSE/none/rename/compute","match",""
+"duckdb/5/FALSE/none/grouped/collect","match",""
+"duckdb/5/FALSE/none/window/collect","match",""
+"duckdb/5/FALSE/none/union/collect","match",""
+"duckdb/5/FALSE/none/join/collect","match",""
+"duckdb/5/FALSE/first/identity/collect","match",""
+"duckdb/5/FALSE/first/identity/compute","match",""
+"duckdb/5/FALSE/first/head/collect","match",""
+"duckdb/5/FALSE/first/head/compute","match",""
+"duckdb/5/FALSE/first/filter/collect","match",""
+"duckdb/5/FALSE/first/select/collect","match",""
+"duckdb/5/FALSE/first/select/compute","match",""
+"duckdb/5/FALSE/first/rename/collect","match",""
+"duckdb/5/FALSE/first/rename/compute","match",""
+"duckdb/5/FALSE/first/grouped/collect","match",""
+"duckdb/5/FALSE/first/window/collect","match",""
+"duckdb/5/FALSE/first/union","source-error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 32: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb/5/FALSE/first/join/collect","match",""
+"duckdb/5/FALSE/last/identity/collect","match",""
+"duckdb/5/FALSE/last/identity/compute","match",""
+"duckdb/5/FALSE/last/head/collect","match",""
+"duckdb/5/FALSE/last/head/compute","match",""
+"duckdb/5/FALSE/last/filter/collect","match",""
+"duckdb/5/FALSE/last/select/collect","match",""
+"duckdb/5/FALSE/last/select/compute","match",""
+"duckdb/5/FALSE/last/rename/collect","match",""
+"duckdb/5/FALSE/last/rename/compute","match",""
+"duckdb/5/FALSE/last/grouped/collect","match",""
+"duckdb/5/FALSE/last/window/collect","match",""
+"duckdb/5/FALSE/last/union","source-error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 32: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb/5/FALSE/last/join/collect","match",""
+"duckdb/5/TRUE/none/identity/collect","match",""
+"duckdb/5/TRUE/none/identity/compute","match",""
+"duckdb/5/TRUE/none/head/collect","match",""
+"duckdb/5/TRUE/none/head/compute","match",""
+"duckdb/5/TRUE/none/filter/collect","match",""
+"duckdb/5/TRUE/none/select/collect","match",""
+"duckdb/5/TRUE/none/select/compute","match",""
+"duckdb/5/TRUE/none/rename/collect","match",""
+"duckdb/5/TRUE/none/rename/compute","match",""
+"duckdb/5/TRUE/none/grouped/collect","match",""
+"duckdb/5/TRUE/none/window/collect","match",""
+"duckdb/5/TRUE/none/union/collect","match",""
+"duckdb/5/TRUE/none/join/collect","match",""
+"duckdb/5/TRUE/first/identity/collect","match",""
+"duckdb/5/TRUE/first/identity/compute","match",""
+"duckdb/5/TRUE/first/head/collect","match",""
+"duckdb/5/TRUE/first/head/compute","match",""
+"duckdb/5/TRUE/first/filter/collect","match",""
+"duckdb/5/TRUE/first/select/collect","match",""
+"duckdb/5/TRUE/first/select/compute","match",""
+"duckdb/5/TRUE/first/rename/collect","match",""
+"duckdb/5/TRUE/first/rename/compute","match",""
+"duckdb/5/TRUE/first/grouped/collect","match",""
+"duckdb/5/TRUE/first/window/collect","match",""
+"duckdb/5/TRUE/first/union","source-error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 34: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb/5/TRUE/first/join/collect","match",""
+"duckdb/5/TRUE/last/identity/collect","match",""
+"duckdb/5/TRUE/last/identity/compute","match",""
+"duckdb/5/TRUE/last/head/collect","match",""
+"duckdb/5/TRUE/last/head/compute","match",""
+"duckdb/5/TRUE/last/filter/collect","match",""
+"duckdb/5/TRUE/last/select/collect","match",""
+"duckdb/5/TRUE/last/select/compute","match",""
+"duckdb/5/TRUE/last/rename/collect","match",""
+"duckdb/5/TRUE/last/rename/compute","match",""
+"duckdb/5/TRUE/last/grouped/collect","match",""
+"duckdb/5/TRUE/last/window/collect","match",""
+"duckdb/5/TRUE/last/union","source-error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 34: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb/5/TRUE/last/join/collect","match",""
+"duckdb/6/FALSE/none/identity/collect","match",""
+"duckdb/6/FALSE/none/identity/compute","match",""
+"duckdb/6/FALSE/none/head/collect","match",""
+"duckdb/6/FALSE/none/head/compute","match",""
+"duckdb/6/FALSE/none/filter/collect","match",""
+"duckdb/6/FALSE/none/select/collect","match",""
+"duckdb/6/FALSE/none/select/compute","match",""
+"duckdb/6/FALSE/none/rename/collect","match",""
+"duckdb/6/FALSE/none/rename/compute","match",""
+"duckdb/6/FALSE/none/grouped/collect","match",""
+"duckdb/6/FALSE/none/window/collect","match",""
+"duckdb/6/FALSE/none/union/collect","match",""
+"duckdb/6/FALSE/none/join/collect","match",""
+"duckdb/6/FALSE/first/identity/collect","match",""
+"duckdb/6/FALSE/first/identity/compute","match",""
+"duckdb/6/FALSE/first/head/collect","match",""
+"duckdb/6/FALSE/first/head/compute","match",""
+"duckdb/6/FALSE/first/filter/collect","match",""
+"duckdb/6/FALSE/first/select/collect","match",""
+"duckdb/6/FALSE/first/select/compute","match",""
+"duckdb/6/FALSE/first/rename/collect","match",""
+"duckdb/6/FALSE/first/rename/compute","match",""
+"duckdb/6/FALSE/first/grouped/collect","match",""
+"duckdb/6/FALSE/first/window/collect","match",""
+"duckdb/6/FALSE/first/union","source-error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 36: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb/6/FALSE/first/join/collect","match",""
+"duckdb/6/FALSE/last/identity/collect","match",""
+"duckdb/6/FALSE/last/identity/compute","match",""
+"duckdb/6/FALSE/last/head/collect","match",""
+"duckdb/6/FALSE/last/head/compute","match",""
+"duckdb/6/FALSE/last/filter/collect","match",""
+"duckdb/6/FALSE/last/select/collect","match",""
+"duckdb/6/FALSE/last/select/compute","match",""
+"duckdb/6/FALSE/last/rename/collect","match",""
+"duckdb/6/FALSE/last/rename/compute","match",""
+"duckdb/6/FALSE/last/grouped/collect","match",""
+"duckdb/6/FALSE/last/window/collect","match",""
+"duckdb/6/FALSE/last/union","source-error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 36: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb/6/FALSE/last/join/collect","match",""
+"duckdb/6/TRUE/none/identity/collect","match",""
+"duckdb/6/TRUE/none/identity/compute","match",""
+"duckdb/6/TRUE/none/head/collect","match",""
+"duckdb/6/TRUE/none/head/compute","match",""
+"duckdb/6/TRUE/none/filter/collect","match",""
+"duckdb/6/TRUE/none/select/collect","match",""
+"duckdb/6/TRUE/none/select/compute","match",""
+"duckdb/6/TRUE/none/rename/collect","match",""
+"duckdb/6/TRUE/none/rename/compute","match",""
+"duckdb/6/TRUE/none/grouped/collect","match",""
+"duckdb/6/TRUE/none/window/collect","match",""
+"duckdb/6/TRUE/none/union/collect","match",""
+"duckdb/6/TRUE/none/join/collect","match",""
+"duckdb/6/TRUE/first/identity/collect","match",""
+"duckdb/6/TRUE/first/identity/compute","match",""
+"duckdb/6/TRUE/first/head/collect","match",""
+"duckdb/6/TRUE/first/head/compute","match",""
+"duckdb/6/TRUE/first/filter/collect","match",""
+"duckdb/6/TRUE/first/select/collect","match",""
+"duckdb/6/TRUE/first/select/compute","match",""
+"duckdb/6/TRUE/first/rename/collect","match",""
+"duckdb/6/TRUE/first/rename/compute","match",""
+"duckdb/6/TRUE/first/grouped/collect","match",""
+"duckdb/6/TRUE/first/window/collect","match",""
+"duckdb/6/TRUE/first/union","source-error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 38: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb/6/TRUE/first/join/collect","match",""
+"duckdb/6/TRUE/last/identity/collect","match",""
+"duckdb/6/TRUE/last/identity/compute","match",""
+"duckdb/6/TRUE/last/head/collect","match",""
+"duckdb/6/TRUE/last/head/compute","match",""
+"duckdb/6/TRUE/last/filter/collect","match",""
+"duckdb/6/TRUE/last/select/collect","match",""
+"duckdb/6/TRUE/last/select/compute","match",""
+"duckdb/6/TRUE/last/rename/collect","match",""
+"duckdb/6/TRUE/last/rename/compute","match",""
+"duckdb/6/TRUE/last/grouped/collect","match",""
+"duckdb/6/TRUE/last/window/collect","match",""
+"duckdb/6/TRUE/last/union","source-error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 38: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb/6/TRUE/last/join/collect","match",""
+"duckdb/7/FALSE/none/identity/collect","match",""
+"duckdb/7/FALSE/none/identity/compute","match",""
+"duckdb/7/FALSE/none/head/collect","match",""
+"duckdb/7/FALSE/none/head/compute","match",""
+"duckdb/7/FALSE/none/filter/collect","match",""
+"duckdb/7/FALSE/none/select/collect","match",""
+"duckdb/7/FALSE/none/select/compute","match",""
+"duckdb/7/FALSE/none/rename/collect","match",""
+"duckdb/7/FALSE/none/rename/compute","match",""
+"duckdb/7/FALSE/none/grouped/collect","match",""
+"duckdb/7/FALSE/none/window/collect","match",""
+"duckdb/7/FALSE/none/union/collect","match",""
+"duckdb/7/FALSE/none/join/collect","match",""
+"duckdb/7/FALSE/first/identity/collect","match",""
+"duckdb/7/FALSE/first/identity/compute","match",""
+"duckdb/7/FALSE/first/head/collect","match",""
+"duckdb/7/FALSE/first/head/compute","match",""
+"duckdb/7/FALSE/first/filter/collect","match",""
+"duckdb/7/FALSE/first/select/collect","match",""
+"duckdb/7/FALSE/first/select/compute","match",""
+"duckdb/7/FALSE/first/rename/collect","match",""
+"duckdb/7/FALSE/first/rename/compute","match",""
+"duckdb/7/FALSE/first/grouped/collect","match",""
+"duckdb/7/FALSE/first/window/collect","match",""
+"duckdb/7/FALSE/first/union","source-error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 39: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb/7/FALSE/first/join/collect","match",""
+"duckdb/7/FALSE/last/identity/collect","match",""
+"duckdb/7/FALSE/last/identity/compute","match",""
+"duckdb/7/FALSE/last/head/collect","match",""
+"duckdb/7/FALSE/last/head/compute","match",""
+"duckdb/7/FALSE/last/filter/collect","match",""
+"duckdb/7/FALSE/last/select/collect","match",""
+"duckdb/7/FALSE/last/select/compute","match",""
+"duckdb/7/FALSE/last/rename/collect","match",""
+"duckdb/7/FALSE/last/rename/compute","match",""
+"duckdb/7/FALSE/last/grouped/collect","match",""
+"duckdb/7/FALSE/last/window/collect","match",""
+"duckdb/7/FALSE/last/union","source-error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 39: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb/7/FALSE/last/join/collect","match",""
+"duckdb/7/TRUE/none/identity/collect","match",""
+"duckdb/7/TRUE/none/identity/compute","match",""
+"duckdb/7/TRUE/none/head/collect","match",""
+"duckdb/7/TRUE/none/head/compute","match",""
+"duckdb/7/TRUE/none/filter/collect","match",""
+"duckdb/7/TRUE/none/select/collect","match",""
+"duckdb/7/TRUE/none/select/compute","match",""
+"duckdb/7/TRUE/none/rename/collect","match",""
+"duckdb/7/TRUE/none/rename/compute","match",""
+"duckdb/7/TRUE/none/grouped/collect","match",""
+"duckdb/7/TRUE/none/window/collect","match",""
+"duckdb/7/TRUE/none/union/collect","match",""
+"duckdb/7/TRUE/none/join/collect","match",""
+"duckdb/7/TRUE/first/identity/collect","match",""
+"duckdb/7/TRUE/first/identity/compute","match",""
+"duckdb/7/TRUE/first/head/collect","match",""
+"duckdb/7/TRUE/first/head/compute","match",""
+"duckdb/7/TRUE/first/filter/collect","match",""
+"duckdb/7/TRUE/first/select/collect","match",""
+"duckdb/7/TRUE/first/select/compute","match",""
+"duckdb/7/TRUE/first/rename/collect","match",""
+"duckdb/7/TRUE/first/rename/compute","match",""
+"duckdb/7/TRUE/first/grouped/collect","match",""
+"duckdb/7/TRUE/first/window/collect","match",""
+"duckdb/7/TRUE/first/union","source-error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 41: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb/7/TRUE/first/join/collect","match",""
+"duckdb/7/TRUE/last/identity/collect","match",""
+"duckdb/7/TRUE/last/identity/compute","match",""
+"duckdb/7/TRUE/last/head/collect","match",""
+"duckdb/7/TRUE/last/head/compute","match",""
+"duckdb/7/TRUE/last/filter/collect","match",""
+"duckdb/7/TRUE/last/select/collect","match",""
+"duckdb/7/TRUE/last/select/compute","match",""
+"duckdb/7/TRUE/last/rename/collect","match",""
+"duckdb/7/TRUE/last/rename/compute","match",""
+"duckdb/7/TRUE/last/grouped/collect","match",""
+"duckdb/7/TRUE/last/window/collect","match",""
+"duckdb/7/TRUE/last/union","source-error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 41: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb/7/TRUE/last/join/collect","match",""

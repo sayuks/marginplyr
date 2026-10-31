@@ -1,0 +1,9 @@
+New names:
+• `Min.` -> `Min....1`
+• `Min.` -> `Min....2`
+Included-only comparison: passed
+Ordinary mutation/union comparison: passed
+Expansion condition: vctrs_error_names_must_be_unique
+Names must be unique.
+✖ These names are duplicated:
+  * "Min." at locations 1 and 2.

@@ -1,0 +1,19 @@
+        status
+family   match package_error
+  dist     756           216
+  logLik   756           216
+, , status = match
+
+             role
+packed_actual dimension fixed payload
+        FALSE         0   432     432
+        TRUE        216   216     216
+
+, , status = package_error
+
+             role
+packed_actual dimension fixed payload
+        FALSE       432     0       0
+        TRUE          0     0       0
+
+Output: investigation/2026-10-31-expand-grouping-greedy/local
