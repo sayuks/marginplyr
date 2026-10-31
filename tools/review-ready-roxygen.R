@@ -37,10 +37,9 @@ review_ready_roxygen_source <- function(path) {
     if (identical(expanded, adjacent)) break
     adjacent <- expanded
   }
-  endings <- rep("\n", length(lines))
-  if (length(lines) && !endsWith(text, "\n")) endings[[length(lines)]] <- ""
+  # A final newline has no executable effect; other retained bytes stay exact.
   list(expressions = parse(text = text, keep.source = FALSE),
-    retained = paste0(lines, endings)[!adjacent])
+    retained = paste0(lines, "\n")[!adjacent])
 }
 
 # The caller pins both commits. Archives also expose added/deleted R inputs and

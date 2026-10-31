@@ -87,7 +87,9 @@ Existing ordinary `R/*.R` edits are candidates for the admitted R documentation
 proof in `tools/review-ready-roxygen.R`. It compares parsed expressions without
 evaluation and retains ordinary comments, executable source formatting, unsafe
 roxygen tags and their continuations. Only the supported help/example tags and
-associated whitespace may differ. Added/deleted/renamed R files, unsupported
+associated whitespace may differ. Final-newline presence may also differ: it
+has no executable effect and uses the same Documentation verification level.
+Added/deleted/renamed R files, unsupported
 forms, lint/coverage directives and changes to package configuration remain Full.
 The allowlist in that proof owns the supported tags; unknown and evaluated tags,
 namespace/import/export and load-order directives are conservative Full cases.
