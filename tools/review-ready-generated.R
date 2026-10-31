@@ -1,10 +1,13 @@
-# Returns committed-tree byte hashes, including all generated artifact paths.
+# Records every generated path, type, permission and byte content.
 review_ready_generated_hashes <- function(root) {
-  paths <- sort(list.files(root, recursive = TRUE, all.files = TRUE))
+  paths <- sort(list.files(root, recursive = TRUE, all.files = TRUE, include.dirs = TRUE))
   # Quarto's execution cache is not a generated publication artifact.
-  paths <- paths[!grepl("(^|/)[.]quarto/", paths)]
-  hashes <- tools::md5sum(file.path(root, paths))
-  stats::setNames(unname(hashes), paths)
+  paths <- paths[!grepl("(^|/)[.]quarto(/|$)", paths)]
+  full <- file.path(root, paths)
+  info <- file.info(full)
+  hashes <- rep("directory", length(paths))
+  hashes[!info$isdir] <- unname(tools::md5sum(full[!info$isdir]))
+  stats::setNames(paste(info$mode, Sys.readlink(full), hashes, sep = ":"), paths)
 }
 
 # Regeneration owns its installation in a temporary library inherited by Quarto.
@@ -40,6 +43,12 @@ run_review_ready_generated <- function(root = ".") {
   changed <- changed[is.na(before[changed]) | is.na(after[changed]) |
     before[changed] != after[changed]]
   if (length(changed)) {
+    unexpected <- changed[!grepl(
+      "^(README[.]md|man/[^/]+[.]Rd|man/figures(/.*)?)$", changed)]
+    if (length(unexpected)) {
+      cat("Non-documentation generation effects require Full: ",
+        paste(unexpected, collapse = ", "), ".\n", sep = "")
+    }
     stop("Stale generated documentation (or Quarto/Pandoc writer drift): ",
       paste(changed, collapse = ", "), ". Regenerate and commit all outputs.", call. = FALSE)
   }
