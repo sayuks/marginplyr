@@ -16,8 +16,15 @@ examples, and vignettes ([#941](https://github.com/sayuks/marginplyr/issues/941)
 The common CLI also selects Repository for supported repository prose and runs
 spelling, both linters, and mapped artifact verification while omitting package
 build/check ([#1099](https://github.com/sayuks/marginplyr/issues/1099)).
-[Local checks](../agents/local-checks.md) owns selection and evidence; Repository
-success does not assert full-suite or snapshot execution. CRAN-emulating CI jobs
+Documentation retains the package build and `R CMD check --as-cran --no-tests`
+for supported documentation inputs, with separately registered documentation
+assertions and generated-artifact comparison
+([#1100](https://github.com/sayuks/marginplyr/issues/1100)). The exception avoids
+executing unrelated tests while retaining examples, vignettes, Rd and codoc
+checks. Unknown inputs and R edits remain Full.
+[Local checks](../agents/local-checks.md) owns selection and evidence;
+Documentation and Repository success do not assert full-suite or snapshot
+execution. CRAN-emulating CI jobs
 retain their existing environment.
 
 A reachable branch gets a test asserting its behavior or diagnostic; a

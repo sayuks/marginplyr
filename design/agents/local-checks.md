@@ -23,9 +23,10 @@ Supported prose uses the Repository path below; unsupported changes use Full
 until a validated route exists.
 
 The **Review-ready check** is the local gate for one clean committed revision.
-It selects **Full** or **Repository** from the cumulative final tree difference
-against the unique merge-base with local `main`. Full retains the package
-boundary; Repository omits package build/check for supported repository prose.
+It selects **Full**, **Documentation**, or **Repository** from the cumulative
+final tree difference against the unique merge-base with local `main`. Full
+retains the package boundary; Documentation retains build/check without the complete suite, and
+Repository omits package build/check for supported repository prose.
 Focused tests and the wider release process have separate roles.
 
 ## Boundary
@@ -69,16 +70,23 @@ Deletion and both sides of a rename participate in the NUL-delimited final
 tree comparison. Reverted historical edits do not participate.
 
 The supported prose categories and required verifier mapping have one home:
-`PROSE`, `REFERENCE_CHECKS`, and `CONTRACTS` in
+`PROSE`, `DOCUMENTATION`, `GENERATED_INPUTS`, `REFERENCE_CHECKS`, and `CONTRACTS` in
 `tools/review-ready-admission.py`. It supports agent/domain/design Markdown,
 Markdown investigation notes, conduct policy, and operational Markdown under
 `tools/`. Prose blobs must be UTF-8 text without non-prose control characters;
 unknown encodings or binary content select Full. Other formats in those
-directories remain Full. Package
-documentation, licenses, CI configuration, and checking machinery remain Full.
-A Documentation path and CI-specific exemptions are not enabled.
+directories remain Full. Package licenses, CI configuration, and checking
+machinery remain Full.
+Documentation supports README Markdown/Quarto, NEWS Markdown, generated Rd,
+explicit image formats under `man/figures/`, top-level `vignettes/*.qmd`, and
+explicit vignette image, bibliography and citation-style formats. Executable
+vignette eligibility follows `documentation_sources()` in
+`tests/testthat/test-documentation.R`; unscanned document formats and nested
+Quarto documents remain Full. Unknown formats remain Full;
+R-file edits remain Full, including roxygen-only edits. Full wins over
+Documentation, which wins over Repository, across the cumulative diff.
 
-Both paths always execute package spelling, jarl, and package-aware lintr
+All paths always execute package spelling, jarl, and package-aware lintr
 (the three source stages described below), followed by mapped artifact
 verification. Reference/context/invocation verification runs against the
 pinned disposable Git checkout; common source checks run against its archive.
@@ -88,7 +96,39 @@ or failing verifiers fail the invocation without changing paths.
 
 Repository stops after those checks. It records completed checks and explicitly
 reports package build/check, the full suite, and snapshots as omitted. Its
-success is a Repository result, never a Full pass. Full runs, in order:
+success is a Repository result, never a Full pass.
+
+Documentation retains the dependency scan and provisioned optional Suggests,
+builds the package, and uses `R CMD check --as-cran --no-tests`. Installation,
+loading, Rd syntax/references, codoc, examples and vignette execution/rebuilding
+remain enabled. It separately runs the exact registration in
+`review_ready_documentation_tests()` in `tools/review-ready-documentation.R`
+against the submitted Git archive with helpers, setup and teardown intact and
+testthat parallelism disabled. Missing or empty selections, failures, warnings
+and any skipped assertion fail; selection never expands to the suite.
+
+That registration is maintained by hand: when a test gains documentation
+inputs, audit whether Documentation must execute it and update the registration
+or narrow eligible inputs. A filename list does not prove completeness. It
+currently covers documentation, DuckDB storage and package metadata contracts.
+Documentation explicitly omits the full suite and snapshots; its success is
+not evidence of their execution.
+
+Mapped generation runs on Full as well as Documentation whenever README/help
+outputs or their supported package inputs change. It regenerates roxygen help,
+NAMESPACE and README in another disposable committed-tree copy, installing that
+copy for README execution. It compares all artifact names and bytes, including
+added, modified and removed figures. A mismatch fails; the diagnostic records
+Quarto and bundled Pandoc versions to distinguish stale output from writer
+drift. Regenerate and commit the result; never accept silently repaired output.
+
+For new or changed rejected vignette calls, preserve `error: true`, `purl: false`
+and optional-dependency `eval` settings. Review the extracted/rendered call and
+confirm its stated refusal with an existing direct assertion or a small
+reproduction of that submitted SHA. Record the assertion or reproduction in the
+PR; successful rendering alone does not establish the refusal reason.
+
+Full runs, in order:
 
 1. a test-source dependency scan that refuses every package candidate absent
    from `DESCRIPTION`;
@@ -169,7 +209,7 @@ definition of the evidence rule:
 
 The submitting agent continues a hypothesis/investigation/evidence loop across
 both admission waiting and execution of the admitted check. This works with the
-current fixed Full gate and requires no selective-check implementation.
+selected gate and requires no selective-check implementation.
 
 1. **Account for the submission:** compare every originating requirement with
    the submitted diff. Record omissions and concrete concerns, then prioritize
@@ -347,15 +387,24 @@ non-mutating and removes its disposable checkout, tarball, and check directory
 when it finishes. A failed source-tarball check first retains the diagnostics
 described below.
 
-Record the exact identity and outcome in the pull request:
+Record the exact identity, selected path and outcome in the pull request.
+For Full:
 
 ```text
 - Review-ready check: <40-character commit SHA>
+  - selected path: Full
   - package spelling: passed
   - jarl: passed
   - package-aware lintr: passed
   - source-tarball R CMD check, including snapshots: <errors/warnings/notes and NOTE dispositions>
 ```
+
+For Documentation, record the same source checks plus mapped generation,
+the three registered assertion files with no skips, and source-tarball
+`R CMD check --as-cran --no-tests` with ERROR/WARNING/NOTE dispositions; state
+`full suite and snapshots omitted`. For Repository, record the common source
+checks and mapped verifiers and state `package build/check, full suite and
+snapshots omitted`. Never label either as a Full pass.
 
 When the native-crash retry is used, record `passed-after-retry` or `failed`,
 both attempt outcomes, the retry eligibility reason, and the retained first
@@ -412,17 +461,19 @@ failed. A missing or delayed `.ips` does not prevent retry when the portable
 evidence satisfies these conditions; the command does not wait for or collect
 a native report.
 
-Full records content hashes of the tarball, Quarto launcher, its `quarto.js`, and
-Deno executable, together with the canonical Quarto/Deno executable paths and
+Both package paths record content hashes of the tarball, Quarto launcher, its
+`quarto.js`, and Deno executable, together with the canonical Quarto/Deno executable paths and
 versions, before the first attempt. Immediately before retry, require those
 identities to remain available and unchanged. An identity change or inability
 to establish identity prevents retry. Do not rebuild the tarball, change
 caches, or switch installed tools for the retry.
 
-The retry runs the complete `R CMD check --as-cran`, including tests and
-vignettes, on that same tarball in a fresh check directory. Preserve separate
-logs and outcomes for both attempts. The already completed spelling, lint, and
-build stages are not repeated; snapshots run again within the retried check.
+The retry preserves the selected path and exact check arguments on that same
+tarball in a fresh check directory: Full includes tests and vignettes;
+Documentation retains `--no-tests` and vignette rebuilding. Preserve separate
+logs and outcomes for both attempts. The already completed spelling, lint,
+build and documentation-assertion stages are not repeated; Full snapshots run
+again within the retried check. Documentation continues to omit them.
 There is no third attempt; any retry failure, timeout, or exception fails the
 invocation.
 
@@ -436,9 +487,9 @@ that the crash was prevented or its cause resolved.
 ## Roles outside the boundary
 
 Focused tests are the tight feedback loop while changing a module. They do not
-replace the source-tarball check, which sees the full suite, snapshots, package
-metadata, and installed-package boundaries. That check does not replace jarl
-or lintr. CI owns line-coverage measurement under
+replace the selected source-tarball check. Full sees the complete suite and
+snapshots; Documentation retains its explicit assertions and package boundary.
+That check does not replace jarl or lintr. CI owns line-coverage measurement under
 [ADR 0030](../adr/0030-require-complete-test-line-coverage.md); its coverage
 command rejects source, covr, and Codecov exclusions and reports each uncovered
 file and line without rounding its verdict.

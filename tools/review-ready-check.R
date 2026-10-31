@@ -1,5 +1,5 @@
 #!/usr/bin/env Rscript
-# Review-ready selection protocol: 1
+# Review-ready selection protocol: 2
 
 # Runs the fixed local gate for one reviewable package commit. The implementation
 # lives beside this entry point so its command contract can be fixture-tested.
