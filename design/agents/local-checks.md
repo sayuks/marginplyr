@@ -229,6 +229,18 @@ and Linux `ldd`; unknown evidence strengthens verification. These are cooperativ
 observations, not environment isolation. Keep tools and libraries unchanged
 throughout the request. Identity changes during validation fail a request
 relying on reuse; unavailable identity cannot issue reusable success.
+Known-format Codex call/network-attribution IDs and Claude Code session/parent
+process IDs are execution metadata; `EXECUTION_METADATA` owns their formats.
+Their provenance is in [Codex command metadata][codex-metadata],
+[proxy attribution binding][codex-attribution], and
+[Claude Code environment variables][claude-variables]. Other variables, proxy
+settings, `CLAUDE_ENV_FILE` and `CLAUDE_CODE_SHELL_PREFIX` remain inputs.
+A package source consuming a normalized identifier disables reuse. The probe
+must acknowledge the versioned name audit; older probes cannot establish reuse.
+
+[codex-metadata]: https://github.com/openai/codex/blob/67f0994b532b8740f14b5b738af7b7b2a915b1d6/codex-rs/exec-server/README.md#command-metadata
+[codex-attribution]: https://github.com/openai/codex/blob/67f0994b532b8740f14b5b738af7b7b2a915b1d6/codex-rs/network-proxy/src/runtime.rs
+[claude-variables]: https://code.claude.com/docs/en/env-vars
 
 Build/check reuse additionally reevaluates the original inspected timestamp
 inventory and the submitted archive's commit timestamp against the registered

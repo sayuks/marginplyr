@@ -14,6 +14,7 @@ import sys
 import tempfile
 import time
 import unittest
+import uuid
 
 SOURCE = Path(__file__).with_name('review-ready-admission.py')
 
@@ -1341,6 +1342,18 @@ sys.exit(17)
         self.until(b, 'Waiting')
         self.assertNotIn('HEAVY ', b.read_text())
         self.assertIn('checked commit: ' + sha, self.finish(active, a))
+        self.finish(waiter, b)
+
+    def test_codex_and_claude_profiles_share_the_common_full_slot(self):
+        active, a = self.start(FIXTURE_SECONDS='2', CLAUDECODE='1',
+            CLAUDE_CODE_SESSION_ID=str(uuid.uuid4()), CLAUDE_PID='32101',
+            CLAUDE_CONFIG_DIR=str(self.root / 'claude-profile'))
+        self.until(a, 'HEAVY ')
+        waiter, b = self.start(CODEX_TOOL_CALL_ID='exec-' + str(uuid.uuid4()),
+            CODEX_NETWORK_PROXY_ATTRIBUTION=str(uuid.uuid4()))
+        self.until(b, 'Waiting for Review-ready capacity')
+        self.assertNotIn('HEAVY ', b.read_text())
+        self.finish(active, a)
         self.finish(waiter, b)
 
     def test_missing_process_visibility_fails_without_fallback(self):

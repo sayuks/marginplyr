@@ -42,6 +42,10 @@ NON_INPUTS = (
 )
 UNITS = ('build-full', 'build-documentation', 'generation', 'documentation-assertions')
 CHECKER = ('4.6.1', '2efcaa5190c038e60834bd5c4e502c82', '34ee7dea5eac7ba7138bd3c60651faee')
+UUID_PATTERN = r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
+EXECUTION_METADATA = {'CODEX_TOOL_CALL_ID': 'exec-' + UUID_PATTERN,
+                      'CODEX_NETWORK_PROXY_ATTRIBUTION': UUID_PATTERN,
+                      'CLAUDE_CODE_SESSION_ID': UUID_PATTERN, 'CLAUDE_PID': r'[1-9][0-9]*'}
 
 
 def canonical(value):
@@ -383,11 +387,15 @@ def environment(root):
     overrides = ('LD_LIBRARY_PATH', 'DYLD_LIBRARY_PATH', 'DYLD_FALLBACK_LIBRARY_PATH')
     if any(os.environ.get(name) for name in overrides):
         raise ValueError('Unregistered caller loader override.')
-    output = subprocess.check_output(['Rscript', 'tools/review-ready-environment.R'],
+    output = subprocess.check_output(['Rscript', 'tools/review-ready-environment.R', *EXECUTION_METADATA],
                                      cwd=root, stderr=subprocess.PIPE, text=True)
     probe = json.loads(output)
     if probe['unregistered']:
         raise ValueError('Unregistered external inputs: ' + ', '.join(probe['unregistered']))
+    audit = probe.get('metadata_audit')
+    if (not isinstance(audit, dict) or type(audit.get('version')) is not int or
+            audit != dict(version=1, names=list(EXECUTION_METADATA))):
+        raise ValueError('Unavailable execution metadata audit.')
     files = []
     natives = set()
     executables = []
@@ -430,9 +438,9 @@ def environment(root):
         directories.append([path, directory_identity(path, natives)])
     for path in probe['configuration']:
         files.append(file_identity(path) if Path(path).exists() else [path, 'absent'])
-    # Only manager-owned transport and shell bookkeeping are normalized. Other
-    # variables (including library, rendering, locale and compiler settings)
-    # remain inputs, hashed without recording their potentially secret values.
+    # Only registered execution IDs, manager transport and shell bookkeeping
+    # are normalized. Other variables, including library/render/compiler
+    # settings, remain inputs, hashed without recording their secret values.
     internal = {'MARGINPLYR_REVIEW_REQUEST', 'MARGINPLYR_REVIEW_SELECTION',
                 'MARGINPLYR_REVIEW_RECORD', 'MARGINPLYR_REVIEW_COMMIT',
                 'MARGINPLYR_REVIEW_EPOCH', 'MARGINPLYR_REVIEW_SUPERVISOR',
@@ -440,12 +448,15 @@ def environment(root):
     bookkeeping = {'PWD', 'OLDPWD', 'SHLVL', '_'}
     values = {key: value for key, value in os.environ.items()
               if key not in internal | bookkeeping}
+    for key, pattern in EXECUTION_METADATA.items():
+        if re.fullmatch(pattern, values.get(key, '')):
+            values.pop(key)
     values.update(TESTTHAT_PARALLEL='false', TESTTHAT_CPUS='1')
     return dict(digest=digest(dict(probe=probe, files=files, directories=directories,
                                   git=git_inputs,
                                   linkage=linked_runtime(natives, probe['libraries'] + runtime_roots, executables),
                                   variables=digest(values), platform=platform.uname()._asdict())),
-                clock=probe['clock'], r=probe['r'], libraries=probe['libraries'])
+                clock=probe['clock'], r=probe['r'], libraries=probe['libraries'], metadata_audit=audit)
 
 
 def snapshot(root, sha, units):

@@ -81,6 +81,21 @@ class ExpectationContract(unittest.TestCase):
                 ['Rscript', str(ROOT / 'tools/review-ready-environment.R')], cwd=root, text=True))
             self.assertNotIn('DESCRIPTION:', probe['unregistered'])
 
+    def test_r_probe_refuses_package_reads_of_normalized_execution_ids(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'DESCRIPTION').write_text('Package: fixture\n')
+            (root / 'R').mkdir()
+            names = ('CODEX_TOOL_CALL_ID', 'CODEX_NETWORK_PROXY_ATTRIBUTION',
+                     'CLAUDE_CODE_SESSION_ID', 'CLAUDE_PID')
+            for number, name in enumerate(names):
+                (root / ('R/session' + str(number) + '.R')).write_text(
+                    'session <- function() Sys.getenv("' + name + '")\n')
+            probe = json.loads(subprocess.check_output(
+                ['Rscript', str(ROOT / 'tools/review-ready-environment.R'), *names], cwd=root, text=True))
+            for number in range(len(names)):
+                self.assertIn('R/session' + str(number) + '.R', probe['unregistered'])
+
 
 class StageEvidence(unittest.TestCase):
     def setUp(self):
@@ -127,6 +142,14 @@ class StageEvidence(unittest.TestCase):
     def observe(self, root, sha, units):
         return dict(environment=copy.deepcopy(self.env),
                     sources={unit: policy.source_inputs(root, sha, unit) for unit in units})
+
+    def environment_at(self, root, variables=None):
+        code = ('import importlib.machinery,json,sys; '
+                'm=importlib.machinery.SourceFileLoader("identity_probe",sys.argv[1]).load_module(); '
+                'print(json.dumps(m.environment(sys.argv[2])))')
+        return json.loads(subprocess.check_output(
+            [process_contract.sys.executable, '-c', code, policy.__file__, str(root)],
+            cwd=root, env=dict(os.environ, **(variables or {})), text=True, stderr=subprocess.PIPE))
 
     def origin(self, path='Full', status=0, notes=None, mutate=None):
         self.counter += 1
@@ -372,12 +395,7 @@ class StageEvidence(unittest.TestCase):
         original = self.observe
         def observe(root, sha, units):
             snapshot = original(root, sha, units)
-            code = ('import importlib.machinery,json,sys; '
-                    'm=importlib.machinery.SourceFileLoader("identity_probe",sys.argv[1]).load_module(); '
-                    'print(json.dumps(m.environment(sys.argv[2])))')
-            snapshot['environment'] = json.loads(subprocess.check_output(
-                [process_contract.sys.executable, '-c', code, policy.__file__, str(root)],
-                cwd=root, text=True, stderr=subprocess.PIPE))
+            snapshot['environment'] = self.environment_at(root)
             return snapshot
         self.observe = observe
         try:
@@ -396,6 +414,62 @@ class StageEvidence(unittest.TestCase):
                 os.environ.pop('GIT_CONFIG_GLOBAL', None)
             else:
                 os.environ['GIT_CONFIG_GLOBAL'] = previous
+
+    def test_execution_ids_do_not_invalidate_but_other_or_unknown_values_do(self):
+        self.write('tools/review-ready-environment.R', (ROOT / 'tools/review-ready-environment.R').read_text())
+        self.commit()
+        variables = dict(CODEX_TOOL_CALL_ID='exec-' + str(uuid.uuid4()),
+                         CODEX_NETWORK_PROXY_ATTRIBUTION=str(uuid.uuid4()), CODEX_REVIEW_BEHAVIOR='original')
+        original = self.observe
+        def observe(root, sha, units):
+            snapshot = original(root, sha, units)
+            snapshot['environment'] = self.environment_at(root, variables)
+            return snapshot
+        self.observe = observe
+        self.origin()
+        variables.update(CODEX_TOOL_CALL_ID='exec-' + str(uuid.uuid4()),
+                         CODEX_NETWORK_PROXY_ATTRIBUTION=str(uuid.uuid4()))
+        self.assertEqual(self.plan()['units']['build-full']['action'], 'reuse')
+        variables['CODEX_REVIEW_BEHAVIOR'] = 'changed'
+        self.assertEqual(self.plan()['units']['build-full']['action'], 'execute')
+        variables['CODEX_REVIEW_BEHAVIOR'] = 'original'
+        variables['CODEX_NETWORK_PROXY_ATTRIBUTION'] = 'unregistered proxy configuration'
+        self.assertEqual(self.plan()['units']['build-full']['action'], 'execute')
+
+    def test_claude_session_ids_do_not_invalidate_but_shell_settings_do(self):
+        self.write('tools/review-ready-environment.R', (ROOT / 'tools/review-ready-environment.R').read_text())
+        self.commit()
+        variables = dict(CLAUDE_CODE_SESSION_ID=str(uuid.uuid4()), CLAUDE_PID='32101',
+                         CLAUDECODE='1', CLAUDE_CODE_SHELL_PREFIX='original shell wrapper')
+        original = self.observe
+        def observe(root, sha, units):
+            snapshot = original(root, sha, units)
+            snapshot['environment'] = self.environment_at(root, variables)
+            return snapshot
+        self.observe = observe
+        self.origin()
+        variables.update(CLAUDE_CODE_SESSION_ID=str(uuid.uuid4()), CLAUDE_PID='32102')
+        self.assertEqual(self.plan()['units']['build-full']['action'], 'reuse')
+        variables['CLAUDE_CODE_SHELL_PREFIX'] = 'changed shell wrapper'
+        self.assertEqual(self.plan()['units']['build-full']['action'], 'execute')
+        variables['CLAUDE_CODE_SHELL_PREFIX'] = 'original shell wrapper'
+        variables['CLAUDE_ENV_FILE'] = str(Path(self.temp.name) / 'changed-environment.sh')
+        self.assertEqual(self.plan()['units']['build-full']['action'], 'execute')
+        variables.pop('CLAUDE_ENV_FILE')
+        variables['CLAUDE_CODE_SESSION_ID'] = 'unregistered session identifier'
+        self.assertEqual(self.plan()['units']['build-full']['action'], 'execute')
+
+    def test_older_probe_cannot_silently_ignore_the_metadata_audit(self):
+        self.write('tools/real-environment.R', (ROOT / 'tools/review-ready-environment.R').read_text())
+        self.write('tools/review-ready-environment.R', '''
+result <- system2("Rscript", c("tools/real-environment.R", commandArgs(trailingOnly = TRUE)), stdout = TRUE)
+snapshot <- jsonlite::fromJSON(paste(result, collapse = "\\n"), simplifyVector = FALSE)
+snapshot$metadata_audit <- NULL
+cat(jsonlite::toJSON(snapshot, auto_unbox = TRUE, null = "null"))
+''')
+        with self.assertRaises(subprocess.CalledProcessError) as failure:
+            self.environment_at(self.root)
+        self.assertIn('Unavailable execution metadata audit', failure.exception.stderr)
 
     def stage_request(self, status):
         _, origin = self.origin()
