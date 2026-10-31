@@ -692,9 +692,6 @@ contains_summary_selection <- function(expr) {
 
 # Whether a call's evaluated parts contain an ordinary selection helper.
 has_nested_summary_selection <- function(expr) {
-  if (rlang::is_quosure(expr)) {
-    return(has_nested_summary_selection(rlang::quo_get_expr(expr)))
-  }
   if (!rlang::is_call(expr)) {
     return(FALSE)
   }
@@ -711,9 +708,21 @@ plan_summary_expressions <- function(dots,
                                      plan,
                                      backend_kind,
                                      set_id_name,
-                                     call) {
+                                     call,
+                                     local_data = NULL) {
   stopifnot(inherits(plan, "margin_grouping_plan"))
   group_vars <- c(plan$by, plan$dimensions)
+  if (!is.null(local_data) && first_across_needs_planning(dots)) {
+    return(plan_first_local_across(
+      dots, local_data, data_vars, group_vars, plan$sets[[1L]], call,
+      planner = function(resolved) {
+        plan_summary_expressions(
+          resolved, data_proxy, data_vars, plan, backend_kind,
+          set_id_name, call
+        )
+      }
+    ))
+  }
   # Read before anything is rewritten, which is the whole of what makes these
   # the caller's own labels: every rewrite below runs after this line, and ADR
   # 0007 has already captured the dots at the public verb.
@@ -938,6 +947,220 @@ plan_summary_expressions <- function(dots,
     requests = summary_plan$requests,
     predictable_names = predictable_names
   )
+}
+
+# Whether share planning needs the first direct local across call's names.
+# Only the shape dplyr expands before groups uses this preparation (ADR 0019).
+first_across_needs_planning <- function(dots) {
+  if (length(dots) == 0L || nzchar(rlang::names2(dots)[[1L]]) ||
+        !rlang::is_call(rlang::quo_get_expr(dots[[1L]]), "across",
+                        ns = c("", "dplyr")) ||
+        contains_share_helper(rlang::quo_get_expr(dots[[1L]])) ||
+        shares_use_named_summaries(dots)) {
+    return(FALSE)
+  }
+  parsed <- parse_across_arguments(rlang::quo_get_expr(dots[[1L]]))
+  if (length(known_across_function_names(
+    parsed, rlang::quo_get_env(dots[[1L]])
+  )) == 0L) {
+    # An unresolved first source stays with source planning before its
+    # function argument can run.
+    static_dots <- Filter(function(dot) {
+      expr <- rlang::quo_get_expr(dot)
+      if (!contains_share_helper(expr) || is_share_helper_call(expr)) {
+        return(TRUE)
+      }
+      selection <- unwrap_injected_quosure(parse_across_arguments(expr)$cols)
+      is_name_part(selection) || is.character(selection)
+    }, dots)
+    if (!shares_use_named_summaries(static_dots)) return(FALSE)
+  }
+  length(parsed$additional) == 0L && any(vapply(dots, function(dot) {
+    contains_share_helper(rlang::quo_get_expr(dot))
+  }, logical(1))) && across_unpack_is_false(
+    parsed$unpack,
+    rlang::quo_get_env(dots[[1L]])
+  )
+}
+
+# Resolve the first selector once in dplyr's expansion context, then plan with
+# that selection. The zero-row carrier evaluates no input rows; tidyselect
+# receives local columns. Independent summaries resume their original selector
+# in later branches, while share sources retain their planned schema.
+plan_first_local_across <- function(dots, data, data_vars, group_vars,
+                                    first_set, call, planner) {
+  original <- dots[[1L]]
+  expr <- rlang::quo_get_expr(original)
+  env <- rlang::quo_get_env(original)
+  parsed <- parse_across_arguments(expr)
+  unknown_fns <- length(known_across_function_names(parsed, env)) == 0L
+  columns <- setdiff(data_vars, group_vars)
+  selection_data <- vctrs::new_data_frame(
+    as.list(data)[columns], n = nrow(data)
+  )
+  carrier <- vctrs::vec_slice(
+    vctrs::new_data_frame(as.list(data), n = nrow(data)), integer()
+  )
+  state <- new.env(parent = emptyenv())
+  state$warnings <- list()
+  state$planning_warnings <- list()
+  nested_state <- rlang::env(
+    emptyenv(), forbidden_names = character(), internal_names = character(),
+    share_aliases = character(), source_checks = list()
+  )
+  capture_fns <- function(value) {
+    state$fns_env <- parent.frame()
+    state$fns <- list(withCallingHandlers(value, warning = function(cnd) {
+      state$warnings <- c(state$warnings, list(cnd))
+      invokeRestart("muffleWarning")
+    }))
+    value
+  }
+  resolve <- function() {
+    state$result <- tryCatch(withCallingHandlers({
+      state$selecting <- TRUE
+      # dplyr exposes a plain column list while resolving across selectors.
+      selected <- resolve_summary_selection(
+        parsed$cols, env, as.list(selection_data)
+      )
+      state$selecting <- FALSE
+      args <- parsed$call_args
+      selection <- summary_all_of_expr(selected, selection_data)
+      if (parsed$cols_index == 0L) {
+        args <- append(list(.cols = selection), args)
+      } else {
+        args[[parsed$cols_index]] <- selection
+      }
+      if (unknown_fns && parsed$fns_index > 0L) {
+        # Forcing a promise does not establish static source provenance.
+        args[[parsed$fns_index]] <- rlang::call2(
+          "identity", parsed$fns, .ns = "base"
+        )
+      }
+      dots[[1L]] <- rlang::new_quosure(rebuild_static_call(expr, args), env)
+      planner(dots)
+    }, warning = function(cnd) {
+      if (state$selecting) {
+        state$warnings <- c(state$warnings, list(cnd))
+      } else {
+        state$planning_warnings <- c(state$planning_warnings, list(cnd))
+      }
+      invokeRestart("muffleWarning")
+    }), error = function(cnd) {
+      state$error <- cnd
+      NULL
+    })
+    if (!is.null(state$error) && state$selecting) stop(state$error)
+    character()
+  }
+  probe <- rlang::quo(dplyr::across(dplyr::all_of(resolve()), identity))
+  if (parsed$fns_index > 0L &&
+        !rlang::is_missing(parsed$call_args[[parsed$fns_index]])) {
+    probe_expr <- rlang::quo_get_expr(probe)
+    fns <- rewrite_summary_selections(
+      parsed$fns, env, selection_data, normalize_across_names = FALSE,
+      defer_local = TRUE, group_vars = group_vars,
+      forbidden_names = nested_state
+    )
+    probe_expr[[3L]] <- rlang::new_quosure(
+      rlang::call2(capture_fns, fns), env
+    )
+    probe <- rlang::quo_set_expr(probe, probe_expr)
+  }
+  conditions <- new_branch_conditions(character(), call)
+  on.exit(report_branch_warnings(conditions), add = TRUE)
+  with_branch_conditions(
+    dplyr::summarise(carrier, !!probe, .by = dplyr::all_of(first_set)),
+    conditions, restatements = branch_argument_map(
+      list(probe), summary_argument_labels(list(original))
+    )
+  )
+  if (!is.null(state$error)) {
+    conditions$error <- state$error
+    for (cnd in c(state$warnings, state$planning_warnings)) {
+      buffer_branch_warning(cnd, conditions, character())
+    }
+    stop(state$error)
+  }
+  for (cnd in state$planning_warnings) warning(cnd)
+  result <- state$result
+  state$result <- NULL
+  # Captured closures now use the first dot's live selection state.
+  parent.env(nested_state) <- result$summaries$selection_state$by_dot[[1L]]
+  rlang::env_unbind(nested_state, ls(nested_state, all.names = TRUE))
+  result$summaries$labels[[1L]] <- summary_argument_labels(list(original))[[1L]]
+  if (!is.null(state$fns)) {
+    first <- result$summaries$dots[[1L]]
+    result$summaries$dots[[1L]] <- rlang::new_quosure(
+      cache_first_across_fns(rlang::quo_get_expr(first), state),
+      rlang::quo_get_env(first)
+    )
+  }
+  if (length(result$summaries$selection_state$source_definitions[[1L]]) == 0L) {
+    first <- result$summaries$dots[[1L]]
+    first_expr <- rlang::quo_get_expr(first)
+    first_args <- parse_across_arguments(first_expr)
+    args <- first_args$call_args
+    args[[first_args$cols_index]] <- rlang::call2(
+      "c", rlang::call2(
+        marginplyr_private_call("replay_local_selector_warnings"), state
+      ), first_args$cols
+    )
+    result$summaries$dots[[1L]] <- rlang::new_quosure(
+      rebuild_static_call(first_expr, args), rlang::quo_get_env(first)
+    )
+    result$summaries$subsequent_first <- resolve_summary_selections(
+      list(original), group_vars, result$summaries$labels[[1L]],
+      selection_data, defer_local = TRUE,
+      forbidden_names = result$summaries$selection_state
+    )[[1L]]
+  } else {
+    for (cnd in state$warnings) warning(cnd)
+  }
+  result
+}
+
+# Replace the first planned across function argument after source analysis.
+# A source check may wrap the call; its original syntax remains the planner's
+# evidence for source eligibility rather than the cached function value.
+cache_first_across_fns <- function(expr, state) {
+  if (!is_across_call(expr)) {
+    expr[[2L]] <- cache_first_across_fns(expr[[2L]], state)
+    return(expr)
+  }
+  parsed <- parse_across_arguments(expr)
+  args <- parsed$call_args
+  args[[parsed$fns_index]] <- rlang::call2(
+    marginplyr_private_call("first_local_across_fns"), state
+  )
+  rebuild_static_call(expr, args)
+}
+
+# Reuse functions evaluated before the cached selector. A function or formula
+# created in the carrier's mask enters the current mask so dplyr can apply its
+# ordinary lambda handling; factory closures retain their own environments.
+first_local_across_fns <- function(state) {
+  mask <- parent.frame()
+  restore <- function(value) {
+    if (is.list(value)) return(lapply(value, restore))
+    has_env <- (is.function(value) && !is.primitive(value)) ||
+      rlang::is_formula(value)
+    if (has_env && identical(rlang::get_env(value), state$fns_env)) {
+      return(rlang::set_env(value, mask))
+    }
+    value
+  }
+  restore(state$fns[[1L]])
+}
+
+# Replay a captured selector's warnings inside its first dplyr branch so the
+# ordinary branch handler can recognize repetitions from later grouping sets.
+# Returning no columns leaves the cached selection beside this call unchanged.
+replay_local_selector_warnings <- function(state) {
+  warnings <- state$warnings
+  state$warnings <- list()
+  for (cnd in warnings) warning(cnd)
+  character()
 }
 
 # Whether local name prediction can read a selection as known columns.

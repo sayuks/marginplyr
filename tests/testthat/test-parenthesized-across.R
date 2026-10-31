@@ -36,3 +36,37 @@ test_that("ordinary across keeps the written dplyr evaluation context", {
     )
   }
 })
+
+test_that("selection shares retain across evaluation boundaries", {
+  data <- data.frame(g = c("a", "b", "b"), x = c(1, 10, 20))
+  expressions <- alist(
+    direct = dplyr::across(x, factory(), .names = "unused"),
+    head = (dplyr::across)(x, factory(), .names = "unused"),
+    call = (dplyr::across(x, factory(), .names = "unused"))
+  )
+  for (expression in expressions) {
+    observed <- new.env(parent = emptyenv())
+    observed$sizes <- integer()
+    factory <- function() {
+      offset <- dplyr::n()
+      observed$sizes <- c(observed$sizes, offset)
+      function(x) sum(x) + offset
+    }
+    ordinary <- rlang::quos(!!expression, total = sum(x))
+    control <- dplyr::bind_rows(
+      dplyr::summarise(data, !!!ordinary, .by = g),
+      dplyr::mutate(dplyr::summarise(data, !!!ordinary), g = "Total")
+    )
+    expected_sizes <- observed$sizes
+    observed$sizes <- integer()
+    result <- summarize_with_margins(
+      data, !!!ordinary,
+      dplyr::across(dplyr::starts_with("total"), share_of_total,
+                    .names = "share"),
+      .grouping = rollup(g)
+    )
+    expect_identical(observed$sizes, expected_sizes)
+    expect_identical(result[names(control)], control)
+    expect_equal(result$share, c(1 / 31, 30 / 31, 1))
+  }
+})

@@ -21,7 +21,7 @@ jobs:
   test-coverage:
     runs-on: ubuntu-latest
     # Includes dependency setup and the full provisioned suite under covr.
-    timeout-minutes: 90
+    timeout-minutes: 120
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
 

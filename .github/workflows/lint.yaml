@@ -95,8 +95,11 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::lintr, any::pkgload, any::spelling, local::.
+          extra-packages: any::lintr, any::pkgload, any::spelling, local::., any::testthat
           needs: lint
+
+      - name: Verify suite-coverage worker execution
+        run: Rscript tools/test-suite-coverage-workers.R
 
       # Jarl complements rather than replaces lintr. Package-specific rules
       # need R and installed packages, so this reuses the dependency environment
