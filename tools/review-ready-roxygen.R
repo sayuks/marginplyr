@@ -1,11 +1,12 @@
 # Proves R documentation eligibility after admission, without evaluating code.
 # Unknown tags and ordinary comments remain part of the unchanged source proof.
 review_ready_roxygen_source <- function(path) {
-  lines <- readLines(path, warn = FALSE, encoding = "UTF-8")
-  if (!all(validUTF8(lines)) || any(grepl("[[:cntrl:]]", gsub("\t", "", lines)))) {
+  text <- rawToChar(readBin(path, "raw", n = file.info(path)$size))
+  lines <- strsplit(text, "\n", fixed = TRUE)[[1L]]
+  if (!all(validUTF8(lines)) || any(grepl("[[:cntrl:]]", gsub("[\t\r]", "", lines)))) {
     stop("Unsupported R source encoding or control character.", call. = FALSE)
   }
-  parsed <- parse(text = lines, keep.source = TRUE)
+  parsed <- parse(text = text, keep.source = TRUE)
   tokens <- utils::getParseData(parsed)
   comments <- tokens[tokens$token == "COMMENT", , drop = FALSE]
   documentation <- rep(FALSE, length(lines))
@@ -15,11 +16,11 @@ review_ready_roxygen_source <- function(path) {
   previous <- 0L
   for (i in seq_len(nrow(comments))) {
     line <- comments$line1[[i]]
-    text <- lines[[line]]
-    if (!grepl("^[ \t]*#'", text) || comments$line2[[i]] != line) next
+    line_text <- lines[[line]]
+    if (!grepl("^[ \t]*#'", line_text) || comments$line2[[i]] != line) next
     if (line > previous + 1L &&
         any(nzchar(trimws(lines[seq.int(previous + 1L, line - 1L)])))) supported <- TRUE
-    content <- sub("^[ \t]*#'[ ]?", "", text)
+    content <- sub("^[ \t]*#'[ ]?", "", line_text)
     if (grepl("@", content, fixed = TRUE)) {
       tag <- regmatches(content, regexec("^[ \t]*@([A-Za-z]+)([ \t]|$)", content))[[1L]]
       supported <- length(tag) > 0L && tag[[2L]] %in% allowed &&
@@ -36,7 +37,10 @@ review_ready_roxygen_source <- function(path) {
     if (identical(expanded, adjacent)) break
     adjacent <- expanded
   }
-  list(expressions = parse(text = lines, keep.source = FALSE), retained = lines[!adjacent])
+  endings <- rep("\n", length(lines))
+  if (length(lines) && !endsWith(text, "\n")) endings[[length(lines)]] <- ""
+  list(expressions = parse(text = text, keep.source = FALSE),
+    retained = paste0(lines, endings)[!adjacent])
 }
 
 # The caller pins both commits. Archives also expose added/deleted R inputs and

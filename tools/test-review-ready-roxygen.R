@@ -54,6 +54,12 @@ local({
   check(sub("  x", "  x # inline comment", original, fixed = TRUE),
     "Full", "inline comment")
   check(c(original[1:14], "", original[15]), "Full", "unassociated whitespace")
+  check(expected = "Full", label = "unassociated final newline", configure = function() {
+    cat(paste(original, collapse = "\n"), file = source_path)
+  })
+  check(expected = "Full", label = "executable line endings", configure = function() {
+    cat(paste0(paste(original, collapse = "\r\n"), "\r\n"), file = source_path)
+  })
   check(sub("@export", "@export\n#' continuation", original, fixed = TRUE),
     "Full", "unsafe directive continuation")
   check(sub("  x", "  (", original, fixed = TRUE), "Full", "parse failure")
