@@ -609,7 +609,10 @@ def records(state, key, pending_observation=None):
     for directory in directories:
         if not directory.is_dir():
             continue
-        record = json.loads((directory / 'record.json').read_text())
+        try:
+            record = json.loads((directory / 'record.json').read_text())
+        except (OSError, ValueError) as error:
+            raise ValueError('Unavailable common request metadata: ' + directory.name) from error
         if not isinstance(record, dict):
             raise ValueError('Invalid common request metadata.')
         if (record.get('evidence_supported') and record.get('authorized') and
@@ -806,17 +809,26 @@ def revalidate(root, sha, selection, state, repository_id=None):
     return (previous['units'] == current['units'] and previous['snapshot'] == current['snapshot'])
 
 
+def reported_units(report):
+    """Normalize R's empty-unit JSON array; refuse malformed nonempty reports."""
+    units = report.get('units') or {}
+    if not isinstance(units, dict):
+        raise ValueError('Invalid stage outcome report.')
+    return units
+
+
 def execution_entries(record, worker):
     """Describe actual attempted units without asserting terminal cleanup."""
     before = worker.get('before')
     report = worker.get('report', {})
     if not before or report.get('request') != record['token']:
         return {}
+    statuses = reported_units(report)
     invalid = before != worker.get('after') or any(
         unit.startswith('build-') and status == 'passed' and not valid_check(report.get('check'), unit)
-        for unit, status in report.get('units', {}).items())
+        for unit, status in statuses.items())
     units = {}
-    for unit, status in report.get('units', {}).items():
+    for unit, status in statuses.items():
         if (unit not in before['sources'] or status not in ('passed', 'running') or
                 record['selection'].get('plan', {}).get('units', {}).get(unit, {}).get('action') != 'execute'):
             continue
@@ -869,7 +881,7 @@ def issue(state, record, worker):
         for entry in units.values():
             entry['observation_sequence'] = record['observation_sequence']
     if record['outcome'] == 0 and not all(
-            report.get('units', {}).get(unit) == 'passed'
+            reported_units(report).get(unit) == 'passed'
             for unit, entry in record['selection'].get('plan', {}).get('units', {}).items()
             if entry['action'] == 'execute'):
         return None

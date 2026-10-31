@@ -454,6 +454,16 @@ class StageEvidence(unittest.TestCase):
         self.origin()
         self.assertEqual(self.plan()['units']['build-full']['action'], 'reuse')
 
+    def test_failure_before_first_unit_accepts_the_empty_r_report(self):
+        record, path, workspace, worker = self.stage_request(1)
+        worker['report']['units'] = []
+        (workspace / 'worker-result.json').write_text(json.dumps(worker))
+        self.assertEqual(admission.finish_request(self.state, path, record, 1), 1)
+        self.assertFalse(workspace.exists())
+        retained = json.loads(path.with_name('observation.json').read_text())['payload']
+        self.assertEqual(retained['outcome'], 1)
+        self.assertEqual(retained['units'], {})
+
     def test_pending_success_observation_is_not_an_execution_origin(self):
         record, path, workspace, worker = self.stage_request(0)
         for evidence in self.state.glob('requests/*/evidence.json'):
