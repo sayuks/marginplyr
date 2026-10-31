@@ -389,7 +389,7 @@
           {
             "uses": "r-lib/actions/setup-r-dependencies@v2",
             "with": {
-              "extra-packages": "any::lintr, any::pkgload, any::spelling, local::., any::testthat",
+              "extra-packages": "any::lintr, any::pkgload, any::spelling, local::., any::testthat, any::yaml, any::jsonlite",
               "needs": "lint"
             }
           },

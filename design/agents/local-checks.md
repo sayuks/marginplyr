@@ -100,7 +100,9 @@ inventory. Outside admission it derives a unique base from local main, or
 origin/main in CI. CI fetches the history that comparison needs.
 
 Provide `actionlint` on PATH (the CI job installs version 1.7.12), and the R
-`yaml` and `jsonlite` packages, before checking supported CI artifacts. Missing
+`yaml` and `jsonlite` packages, before checking supported CI artifacts. The
+review dependency field records these and altdoc; site rendering also uses the
+website dependency field. Missing
 prerequisites, unsupported CI scripts/configuration, removed wiring, and known
 verification failures fail the artifact step; Full is not substitute evidence.
 The syntax check disables optional shellcheck/pyflakes integrations; executable

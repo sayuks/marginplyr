@@ -52,12 +52,15 @@ Config/Needs/preflight:
     spelling,
     urlchecker
 Config/Needs/review:
+    altdoc (>= 0.7.3),
+    jsonlite,
     lintr,
     pkgload,
     R6,
     rcmdcheck,
     spelling,
-    testthat
+    testthat,
+    yaml
 Config/Needs/release:
     attachment,
     devtools,
