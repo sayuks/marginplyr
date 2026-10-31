@@ -36,7 +36,9 @@ for (engine in c("RSQLite", "duckdb")) {
       function(q) inspect_grouping(q, .duplicates = "k"),
       function(q) inspect_grouping(q, .by = all_of("absent")),
       function(q) inspect_grouping(q, .grouping = rollup()),
-      function(q) inspect_grouping(q, .grouping = grouping_sets(, g)),
+      function(q) inspect_grouping(q, .grouping = !!rlang::call2(
+        "grouping_sets", rlang::missing_arg(), rlang::sym("g")
+      )),
       function(q) inspect_grouping(q, .grouping = rollup(named = g))
     )
     for (f in invalid) {

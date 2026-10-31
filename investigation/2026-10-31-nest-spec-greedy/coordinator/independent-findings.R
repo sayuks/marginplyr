@@ -58,10 +58,11 @@ for (verb in list(nest_with_margins, nest_by_with_margins)) {
 }
 rm(min)
 cat("caller min invoked", min_calls, "times; ordinary source, upstream summary, and local nesting controls passed\n")
-stopifnot(min_calls > 0L)
-if ("--assert-factor" %in% args) stopifnot(factor_ok)
-if ("--assert-dtplyr" %in% args) stopifnot(dt_ok)
-if ("--assert" %in% args) stopifnot(factor_ok, dt_ok) else {
-  stopifnot(!factor_ok, !dt_ok)
+assert_factor <- any(c("--assert", "--assert-factor") %in% args)
+assert_dtplyr <- any(c("--assert", "--assert-dtplyr") %in% args)
+if (assert_factor) stopifnot(factor_ok)
+if (assert_dtplyr) stopifnot(dt_ok, min_calls == 0L)
+if (!assert_factor && !assert_dtplyr) {
+  stopifnot(!factor_ok, !dt_ok, min_calls > 0L)
   cat("DATED OBSERVATION: both independent findings reproduced\n")
 }

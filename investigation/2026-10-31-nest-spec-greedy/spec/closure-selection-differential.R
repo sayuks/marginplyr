@@ -24,7 +24,7 @@ bodies <- list(
   quote({x <- names(tidyselect::peek_data()); x[c(2L,1L)]}),
   quote({x <- names(tidyselect::peek_data()); x <- paste0(x,''); x}),
   quote({x <- tidyselect::peek_data(); names(x)[vapply(x,is.logical,logical(1))]}),
-  quote(tidyselect::peek_vars()[order(tidyselect::peek_vars())]),
+  quote(sort(tidyselect::peek_vars())),
   quote(unname(c(3L,1L))), quote(c('absent','a')), quote(c(renamed='a')),
   quote(character()), quote(1:2), quote(-2L), quote(c(TRUE,FALSE))
 )
@@ -42,7 +42,9 @@ for (iteration in 1:8) {
     fn <- shapes[[fi]](bodies[[bi]])
     env <- rlang::env(.GlobalEnv, choose=fn)
     head <- quote(choose)
-    if(depth) for (k in seq_len(depth)) head <- rlang::call2('(',head)
+    if(depth) {
+      for (k in seq_len(depth)) head <- rlang::call2('(',head)
+    }
     expr <- rlang::expr(tidyselect::all_of(!!rlang::call2(head)))
     q <- rlang::new_quosure(expr,env)
     direct <- tryCatch(tidyselect::eval_select(q,d),error=identity)

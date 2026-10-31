@@ -51,4 +51,4 @@ stopifnot(identical(recovered$g, c('a', 'b')),
 cat('Rebinding min to base::min restored keys on the same lazy result.\n')
 cat('Source, ordinary grouped dtplyr, tidyr nesting, fixed-key, and local controls passed.\n')
 if (assert_correct) stopifnot(identical(wrong$g, c('a', 'b')),
-                            identical(wrong_by$g, c('a', 'b')))
+                            identical(wrong_by$g, c('a', 'b')), reads == 0L)

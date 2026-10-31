@@ -11,9 +11,9 @@ node <- function(depth=0L) {
   if(kind %in% c('rollup','cube')) {
     args <- replicate(sample(1:3,1L), {
       cols <- sample(dim_names,sample(1:2,1L))
-      if(runif(1)<.4) list(kind='set',args=list(cols)) else cols
+      if(runif(1)<0.4) list(kind='set',args=list(cols)) else cols
     },simplify=FALSE)
-  } else args <- replicate(sample(if(kind=='sets') 1:3 else 0:3,1L),if(runif(1)<.7) node(depth+1L) else leaf(),simplify=FALSE)
+  } else args <- replicate(sample(if(kind=='sets') 1:3 else 0:3,1L),if(runif(1)<0.7) node(depth+1L) else leaf(),simplify=FALSE)
   list(kind=kind,args=args)
 }
 expand <- function(n) {
