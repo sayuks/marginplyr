@@ -216,7 +216,7 @@ sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
                 selected = self.selected()
                 self.assertEqual(selected['path'], 'Full')
                 self.assertIn('tools/test-ci-artifacts.py', selected['verifiers'])
-        for name in ('.github/workflows/unknown.yaml', 'altdoc/custom.py',
+        for name in ('.github/workflows/unknown.yaml', 'altdoc/custom.py', 'altdoc/pkgdown.yml',
                      '.github/scripts/unknown.R', 'investigation/executable.R'):
             self.git(self.repo, 'reset', '--hard', baseline)
             path = self.repo / name

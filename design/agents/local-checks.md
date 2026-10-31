@@ -84,7 +84,7 @@ CI/configuration routes are deliberately narrow:
 |---|---|
 | The eight workflows named by `WORKFLOWS` | actionlint syntax, executable workflow contracts, and verifier-invocation wiring |
 | The CI check-log summary runner | command fixtures over check status, all diagnostic details, and absent logs/status |
-| The two altdoc configuration files | install the submitted source in an isolated library, render the site, then verify output and markers |
+| `altdoc/quarto_website.yml` | install the submitted source in an isolated library, render the site, then verify output and markers |
 | Codecov configuration | the existing coverage exclusion policy and its fixtures |
 | Codex and Claude configuration | existing network/Codex policy checks; CI artifact checks also reject invalid Claude JSON |
 
@@ -108,6 +108,10 @@ verification failures fail the artifact step; Full is not substitute evidence.
 The syntax check disables optional shellcheck/pyflakes integrations; executable
 contract checks and script fixtures supply the additional local evidence.
 Remote job execution remains CI's responsibility.
+
+`altdoc/pkgdown.yml` is generated metadata that rendering overwrites, so it has
+no Repository route: rendering would erase its submitted changes before they
+could be verified. It remains Full with CI validation unresolved.
 
 Selection/admission/installer/progress/local-gate machinery, its dependency
 helpers, shared NOTE policy, artifact checkers, workflow contracts, and their

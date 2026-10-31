@@ -47,7 +47,7 @@ ARTIFACTS = [
     (r'\.github/workflows/(' + '|'.join(re.escape(name) for name in WORKFLOWS) + r')',
      ['tools/verify-ci-artifacts.py']),
     (r'\.github/scripts/summarize-check-log\.R', ['tools/test-ci-artifacts.py']),
-    (r'altdoc/(?:quarto_website|pkgdown)\.yml', ['tools/verify-site-artifacts.R']),
+    (r'altdoc/quarto_website\.yml', ['tools/verify-site-artifacts.R']),
     (r'codecov\.yml', ['.github/scripts/verify-coverage-policy.R']),
     (r'\.(?:codex/config\.toml|claude/settings\.json)',
      ['.github/scripts/verify-agent-network-policy.R', '.github/scripts/verify-codex-config.R',

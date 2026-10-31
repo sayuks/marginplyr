@@ -77,7 +77,8 @@ class Artifacts(unittest.TestCase):
         path.write_text(original)
 
     def test_unknown_workflow_and_script_are_unresolved_even_with_full(self):
-        for name in ('.github/workflows/unknown.yaml', '.github/scripts/unknown.R'):
+        for name in ('.github/workflows/unknown.yaml', '.github/scripts/unknown.R',
+                     'altdoc/pkgdown.yml'):
             with self.subTest(name=name):
                 path = self.repo / name
                 path.write_text('# no verified contract\n')
