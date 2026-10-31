@@ -137,32 +137,44 @@ definition of the evidence rule:
 
 ### Bounded work while waiting or checking
 
-Use the same agent for one ordered pass over the submitted change during both
-admission waiting and execution of the admitted check:
+The submitting agent continues a hypothesis/investigation/evidence loop across
+both admission waiting and execution of the admitted check. This works with the
+current fixed Full gate and requires no selective-check implementation.
 
-1. **Requirements:** account for the originating issue's requirements against
-   the diff and identify omissions.
-2. **Bug hunt:** inspect changed behavior and directly affected code for
-   boundary conditions, error paths, and regressions. Derive failure hypotheses
-   from the requirements and implementation before reading tests.
-3. **Test inspection:** determine whether tests detect those failures and
-   whether their assertions establish the intended behavior. Use the focused
-   recipe below or a small reproduction when evidence is needed.
-4. **PR preparation:** prepare the explanation and validation record, leaving
-   the check outcome pending until its terminal evidence arrives.
+1. **Account for the submission:** compare every originating requirement with
+   the submitted diff. Record omissions and concrete concerns, then prioritize
+   hypotheses about changed behavior and directly affected code.
+2. **Form a failure hypothesis:** state the contract, the boundary condition or
+   error path that might violate it, and the observation that would distinguish
+   failure from correct behavior. Derive it from requirements and implementation
+   before reading tests to assess coverage.
+3. **Investigate:** inspect the relevant implementation, then determine whether
+   tests detect the hypothesized failure and whether their assertions establish
+   the contract. Use the focused-test recipe or a small reproduction when
+   execution would settle the question.
+4. **Record and continue:** capture the hypothesis, evidence, coverage gap if
+   any, disposition (confirmed, refuted, or pending), and next step. Use the
+   evidence to refine the next hypothesis. Once submission concerns are
+   accounted for, expand to other package areas while meaningful hypotheses
+   remain; route separate confirmed defects through *Separate defects* below.
 
-Finish each activity after inspecting its relevant scope once and capturing
-concrete findings or unresolved hypotheses. Keep hypotheses, evidence, and next
-steps outside the submitting worktree. After the list, return to waiting using
-the existing interface mapping above; revisit completed work only for new
-evidence. Finding no defect is normal. Continuous activity and finding counts
-are not goals, and preparation for another issue is outside this pass.
+Use disposable copies of the SHA pinned by the original Review-ready invocation
+for investigation and execution. Keep notes, logs, checkpoints, generated
+artifacts, and reproductions outside the submitting worktree. Each evidence
+record names its SHA and environment; a later-main confirmation is separate
+evidence and cannot establish what the submitted commit did. Prepare the PR
+explanation and validation record there too, leaving the gate outcome pending.
+
+When meaningful hypotheses are exhausted, checkpoint what was investigated and
+what would supply new evidence, then wait on the retained invocation. Finding
+no defect is normal; neither activity nor finding counts have quotas. Revisit a
+settled hypothesis when new evidence warrants it, rather than repeating a pass.
 
 Reading, searching, small reproductions, and explicitly selected focused tests
-are allowed. Full-suite runs (including successive individual files covering
-the suite), builds, rendering, and continuously running additional agents are
-excluded. This pass is separate from `mattpocock-skills:code-review`, which
-follows a successful Review-ready check; finishing the pass is not another gate.
+are allowed. Full-suite runs, successive files reconstructing a suite, builds,
+rendering, and continuously adding agents are outside this workflow. The same
+agent owns the loop; it is separate from `mattpocock-skills:code-review`, which
+follows a successful Review-ready check. Exploration is not another gate.
 
 Observe the original invocation at natural work boundaries through
 *Observing one invocation*. Admission is automatic: continue the bounded work
@@ -170,32 +182,68 @@ without an agent-ready handshake or delaying the check. Immediate interruption
 of reasoning is not assumed. When a transition is observed:
 
 - **Check completion:** briefly save the current hypothesis and next step;
-  stop and collect any focused-test execution and its owned work, then
+  stop and collect any additional execution and its owned children, then
   prioritize the actual terminal check outcome. Dispose of the test copy only
-  after shutdown. Cancelled or partial focused-test output is not a pass.
+  after shutdown. Partial or interrupted execution, or execution that skipped
+  a relevant test, is not a pass.
 - **Required fix confirmed:** use the retained Review-ready handle to cancel
   only this agent's request under [Cancellation and recovery](../../tools/review-ready-admission.md#cancellation-and-recovery).
-  Confirm terminal completion and cleanup before editing, committing, and
-  submitting a fresh request. A suspicion alone warrants investigation, not
-  cancellation. If the check already completed, preserve its result for that
-  SHA; it does not certify the later fix.
+  Confirm terminal completion and cleanup, and stop and collect any additional
+  owned execution, before editing, committing, and submitting a fresh request.
+  A suspicion alone warrants investigation; an unrelated defect follows
+  *Separate defects*. Neither cancels this request.
+  If the check already completed, preserve its result for that SHA; it does not
+  certify the later fix.
 - **Pass:** resolve concrete open concerns, then proceed to formal review.
-  Unfinished activities without a concrete concern do not delay it. Failure,
-  NOTE, and management-error handling remain as defined by this document and
-  shared admission.
+  Unfinished broad exploration or unrelated issue preparation does not delay
+  review once concrete submission concerns are resolved. Failure, NOTE, and
+  management-error handling remain as defined by this document and shared
+  admission.
 
 Reports focus on useful findings and unresolved concerns with concise evidence.
-These instructions apply to future worktrees and sessions loading them; they
-add no migration of existing sessions or user-wide instruction changes.
+
+#### Separate defects
+
+For a confirmed defect outside the required submission fix, collect:
+
+- the violated contract and its source;
+- a minimal reproduction, expected behavior, observed result, and impact;
+- the exact tested SHA, environment, and any relevant-test skips or limitations;
+- current-main status, checked at an explicitly recorded SHA using a separate
+  disposable copy when reproduction is needed; and
+- a duplicate search across open and closed issues and relevant pull requests,
+  with the queries and matching links recorded.
+
+Follow [the issue tracker guide](issue-tracker.md) and publish an English GitHub
+issue when the defect remains valid on current main and is nonduplicate. Link an
+existing report for a duplicate; record a main-fixed defect without opening a
+new one. Keep unconfirmed hypotheses, unavailable main/duplicate checks, and
+failed publications as pending notes with the evidence and next action outside
+the submitting worktree. Keep repairs as separate tasks. If the original check
+finishes during this preparation, checkpoint it and prioritize that outcome;
+resume publication separately without holding up formal review.
+
+#### Session refresh
+
+Before the next check, every participating existing agent session rereads this
+section and [shared admission](../../tools/review-ready-admission.md), then
+explicitly acknowledges the common CLI, the continuing same-agent loop, its
+execution ownership, and the terminal-completion transitions. Refresh or restart
+a session that cannot load the updated guidance. For an invocation already in
+flight, refresh at the next natural work boundary while preserving its original
+handle and ownership; collect owned work before any restart that would lose
+them. New review sessions acknowledge the guidance when they join. Do not
+assume an edited instruction file refreshed a running session.
 
 #### Focused-test recipe
 
-Each worktree may have one focused-test invocation at a time, with testthat
-parallel execution explicitly disabled. Different worktrees may each run one
-concurrently; after its test finishes, a worktree may start another relevant
-target independently. There is no fixed per-run time limit, user-wide focused
-slot, or cap on backend-internal threads, and no fixed total CPU or memory bound
-is implied.
+Each submitting worktree may have at most one additional focused-test or
+reproduction execution at a time, including any later-main confirmation. Keep
+testthat parallel execution explicitly disabled. Different worktrees may each
+run one concurrently; after an execution and its owned work stop and are
+collected, that worktree may start another relevant target independently. There
+is no user-wide additional-execution limit, duration cap, backend-thread cap, or
+aggregate CPU or memory bound.
 
 Select one relevant existing test file explicitly. Inspect its helpers, setup,
 teardown, and any subprocesses before running: one file alone does not establish
