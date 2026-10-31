@@ -95,12 +95,24 @@ changes or unavailable identities prevent reuse. Whole-environment isolation
 and complete detection of a transient change followed by restoration are
 outside the guarantee.
 
+Use one registered child environment for the identity probe, documentation
+proof, actual gate and its descendants. Remove known-format Codex and Claude
+Code execution metadata there; retain unknown values, genuine configuration
+and supervisor transport. The manager keeps its original environment. Match
+evidence against that effective child environment.
+
 Reevaluate time-dependent conditions on every invocation. Preserve the
 origin's inspected paths and timestamps and account for the submitted
 archive's timestamps. Bind the lightweight future-timestamp evaluator to
 the supported R checker implementation and test its boundary behavior.
 Unknown R implementations or unregistered time-dependent inputs make the
 build/check unit ineligible for reuse rather than suppressing the check.
+
+## Considered options
+
+Omitting execution IDs only from the fingerprint while scanning source readers
+was rejected. Computed callees can consume those IDs without containing a
+recognizable name; actual child-environment removal establishes their absence.
 
 ## Execution and migration
 

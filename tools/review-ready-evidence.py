@@ -48,6 +48,18 @@ EXECUTION_METADATA = {'CODEX_TOOL_CALL_ID': 'exec-' + UUID_PATTERN,
                       'CLAUDE_CODE_SESSION_ID': UUID_PATTERN, 'CLAUDE_PID': r'[1-9][0-9]*'}
 
 
+def gate_environment(values):
+    """Copy the supervised child environment without known-format execution IDs.
+
+    Keep unknown values, configuration and supervisor transport unchanged.
+    """
+    values = dict(values)
+    for key, pattern in EXECUTION_METADATA.items():
+        if re.fullmatch(pattern, values.get(key, '')):
+            values.pop(key)
+    return values
+
+
 def canonical(value):
     return json.dumps(value, sort_keys=True, separators=(',', ':'), ensure_ascii=True).encode()
 
@@ -387,14 +399,16 @@ def environment(root):
     overrides = ('LD_LIBRARY_PATH', 'DYLD_LIBRARY_PATH', 'DYLD_FALLBACK_LIBRARY_PATH')
     if any(os.environ.get(name) for name in overrides):
         raise ValueError('Unregistered caller loader override.')
+    child_env = gate_environment(os.environ)
     output = subprocess.check_output(['Rscript', 'tools/review-ready-environment.R', *EXECUTION_METADATA],
-                                     cwd=root, stderr=subprocess.PIPE, text=True)
+                                     cwd=root, env=child_env, stderr=subprocess.PIPE, text=True)
     probe = json.loads(output)
     if probe['unregistered']:
         raise ValueError('Unregistered external inputs: ' + ', '.join(probe['unregistered']))
     audit = probe.get('metadata_audit')
     if (not isinstance(audit, dict) or type(audit.get('version')) is not int or
-            audit != dict(version=3, names=list(EXECUTION_METADATA))):
+            audit != dict(version=4, names=list(EXECUTION_METADATA),
+                          present=[name for name in EXECUTION_METADATA if child_env.get(name)])):
         raise ValueError('Unavailable execution metadata audit.')
     files = []
     natives = set()
@@ -438,19 +452,15 @@ def environment(root):
         directories.append([path, directory_identity(path, natives)])
     for path in probe['configuration']:
         files.append(file_identity(path) if Path(path).exists() else [path, 'absent'])
-    # Only registered execution IDs, manager transport and shell bookkeeping
-    # are normalized. Other variables, including library/render/compiler
-    # settings, remain inputs, hashed without recording their secret values.
+    # Fingerprint the actual child environment; only transport and shell
+    # bookkeeping are omitted here. Secret values are hashed, never recorded.
     internal = {'MARGINPLYR_REVIEW_REQUEST', 'MARGINPLYR_REVIEW_SELECTION',
                 'MARGINPLYR_REVIEW_RECORD', 'MARGINPLYR_REVIEW_COMMIT',
                 'MARGINPLYR_REVIEW_EPOCH', 'MARGINPLYR_REVIEW_SUPERVISOR',
                 'MARGINPLYR_REVIEW_STAGE_REPORT', 'MARGINPLYR_REVIEW_BASE'}
     bookkeeping = {'PWD', 'OLDPWD', 'SHLVL', '_'}
-    values = {key: value for key, value in os.environ.items()
+    values = {key: value for key, value in child_env.items()
               if key not in internal | bookkeeping}
-    for key, pattern in EXECUTION_METADATA.items():
-        if re.fullmatch(pattern, values.get(key, '')):
-            values.pop(key)
     values.update(TESTTHAT_PARALLEL='false', TESTTHAT_CPUS='1')
     return dict(digest=digest(dict(probe=probe, files=files, directories=directories,
                                   git=git_inputs,

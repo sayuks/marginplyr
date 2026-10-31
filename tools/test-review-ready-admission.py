@@ -39,12 +39,21 @@ import fcntl, json, os, pathlib, socket, subprocess, sys, time
 if sys.argv[1:2] == ['tools/review-ready-environment.R']:
     configuration = [os.environ['FIXTURE_ENVIRONMENT_FILE']] if os.environ.get('FIXTURE_ENVIRONMENT_FILE') else []
     print(json.dumps(dict(unregistered=[], libraries=[], runtime_roots=[], configuration=configuration, r='4.6.1',
-        metadata_audit=dict(version=3, names=sys.argv[2:]),
+        metadata_audit=dict(version=4, names=sys.argv[2:],
+                            present=[name for name in sys.argv[2:] if os.environ.get(name)]),
         clock=dict(r='4.6.1', checker='2efcaa5190c038e60834bd5c4e502c82',
                    timeout='34ee7dea5eac7ba7138bd3c60651faee', leeway=300))))
     sys.exit(0)
 if os.environ.get("MARGINPLYR_REVIEW_SUPERVISOR"):
     subprocess.run([sys.executable, os.environ["MARGINPLYR_REVIEW_SUPERVISOR"], "--gate-proof"], check=True)
+if os.environ.get('FIXTURE_EXECUTION_ENV_REPORT'):
+    names = ['CODEX_TOOL_CALL_ID', 'CODEX_NETWORK_PROXY_ATTRIBUTION', 'CLAUDE_CODE_SESSION_ID',
+             'CLAUDE_PID', 'CLAUDE_ENV_FILE', 'CLAUDE_CODE_SHELL_PREFIX', 'HTTPS_PROXY']
+    gate = {name: os.environ.get(name) for name in names}
+    gate['owned_request'] = bool(os.environ.get('MARGINPLYR_REVIEW_REQUEST'))
+    code = ''' + repr('reader <- get(paste0("Sys.", "get", "env")); values <- as.list(reader(commandArgs(TRUE), unset = NA_character_)); values$owned_request <- nzchar(reader("MARGINPLYR_REVIEW_REQUEST")); cat(jsonlite::toJSON(values, auto_unbox = TRUE, na = "null"))') + '''
+    child = json.loads(subprocess.check_output([os.environ['FIXTURE_REAL_RSCRIPT'], '-e', code, *names], text=True))
+    pathlib.Path(os.environ['FIXTURE_EXECUTION_ENV_REPORT']).write_text(json.dumps(dict(gate=gate, child=child)))
 lock = open(os.environ["FIXTURE_LOCK"], "a+")
 fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
 root = pathlib.Path.cwd()

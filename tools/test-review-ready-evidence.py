@@ -81,43 +81,6 @@ class ExpectationContract(unittest.TestCase):
                 ['Rscript', str(ROOT / 'tools/review-ready-environment.R')], cwd=root, text=True))
             self.assertNotIn('DESCRIPTION:', probe['unregistered'])
 
-    def test_r_probe_refuses_package_reads_of_normalized_execution_ids(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            (root / 'DESCRIPTION').write_text('Package: fixture\n')
-            (root / 'R').mkdir()
-            names = ('CODEX_TOOL_CALL_ID', 'CODEX_NETWORK_PROXY_ATTRIBUTION',
-                     'CLAUDE_CODE_SESSION_ID', 'CLAUDE_PID')
-            for number, name in enumerate(names):
-                (root / ('R/session' + str(number) + '.R')).write_text(
-                    'session <- function() Sys.getenv("' + name + '")\n')
-            probe = json.loads(subprocess.check_output(
-                ['Rscript', str(ROOT / 'tools/review-ready-environment.R'), *names], cwd=root, text=True))
-            for number in range(len(names)):
-                self.assertIn('R/session' + str(number) + '.R', probe['unregistered'])
-
-    def test_r_probe_refuses_unresolved_environment_readers(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            (root / 'DESCRIPTION').write_text('Package: fixture\n')
-            (root / 'R').mkdir()
-            readers = ('Sys.getenv()', 'Sys.getenv(paste0("CLAUDE", "_PID"))',
-                       'Sys.getenv(c("SAFE_INPUT", paste0("CLAUDE", "_PID")))',
-                       'reader <- Sys.getenv', 'get("Sys.getenv")',
-                       'Sys.getenv(x = paste0("CLAUDE", "_PID"))',
-                       'Sys.getenv("SAFE_INPUT", x = paste0("CLAUDE", "_PID"))',
-                       'Sys.getenv("\\x43LAUDE_PID")', 'getenv(name)')
-            for number, reader in enumerate(readers):
-                (root / ('R/reader' + str(number) + '.R')).write_text(reader + '\n')
-            (root / 'R/literal.R').write_text('Sys.getenv("SAFE_INPUT", unset = "")\n')
-            probe = json.loads(subprocess.check_output(
-                ['Rscript', str(ROOT / 'tools/review-ready-environment.R'),
-                 *policy.EXECUTION_METADATA], cwd=root, text=True))
-            for number in range(len(readers)):
-                self.assertIn('R/reader' + str(number) + '.R', probe['unregistered'])
-            self.assertNotIn('R/literal.R', probe['unregistered'])
-
-
 class StageEvidence(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
@@ -483,7 +446,7 @@ class StageEvidence(unittest.TestCase):
     def test_older_probe_cannot_silently_ignore_the_metadata_audit(self):
         self.write('tools/real-environment.R', (ROOT / 'tools/review-ready-environment.R').read_text())
         for legacy in ('NULL', *(f'list(version = {version}L, names = as.list(commandArgs(trailingOnly = TRUE)))'
-                                 for version in (1, 2))):
+                                 for version in (1, 2, 3))):
             self.write('tools/review-ready-environment.R', '''
 result <- system2("Rscript", c("tools/real-environment.R", commandArgs(trailingOnly = TRUE)), stdout = TRUE)
 snapshot <- jsonlite::fromJSON(paste(result, collapse = "\\n"), simplifyVector = FALSE)
@@ -666,6 +629,28 @@ class EvidenceLifecycle(process_contract.Lifecycle):
         self.command.write_bytes(admission.installed_source(self.repo))
         self.env.update(FIXTURE_EVIDENCE='true', FIXTURE_REAL_RSCRIPT=real_rscript)
         return current
+
+    def test_metadata_environment_is_shared_by_probe_gate_and_descendants(self):
+        self.prepare_evidence()
+        report = self.root / 'execution-environment.json'
+        settings = dict(CLAUDE_ENV_FILE='fixture-environment.sh',
+                        CLAUDE_CODE_SHELL_PREFIX='fixture shell wrapper',
+                        HTTPS_PROXY='http://proxy.fixture.invalid:8080')
+        known = dict(CODEX_TOOL_CALL_ID='exec-' + str(uuid.uuid4()),
+                     CODEX_NETWORK_PROXY_ATTRIBUTION=str(uuid.uuid4()),
+                     CLAUDE_CODE_SESSION_ID=str(uuid.uuid4()), CLAUDE_PID='32101')
+        self.env.update(settings, FIXTURE_EXECUTION_ENV_REPORT=str(report))
+        for metadata, expected in ((known, dict.fromkeys(known)),
+                                   (dict.fromkeys(known, 'unregistered value'),
+                                    dict.fromkeys(known, 'unregistered value'))):
+            self.env.update(metadata)
+            job, log = self.start()
+            output = self.finish(job, log)
+            self.assertIn('Retained structured stage evidence:', output)
+            observed = json.loads(report.read_text())
+            expected = dict(expected, **settings, owned_request=True)
+            self.assertEqual(observed['gate'], expected)
+            self.assertEqual(observed['child'], expected)
 
     def test_1107_new_format_baseline_then_actual_contract_without_full_replay(self):
         current = self.prepare_evidence()

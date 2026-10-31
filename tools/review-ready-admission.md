@@ -102,11 +102,14 @@ stage. Missing or incompatible evidence schedules the required work. Old
 launchers, old logs and CI passes cannot issue this format.
 `EXECUTION_METADATA` registers Codex call/proxy-attribution IDs and Claude Code
 session/PID metadata by exact format. Unknown formats, other variables,
-Claude shell/environment-file settings and proxy configuration stay inputs;
-package sources consuming a normalized ID cannot reuse evidence. Both agents
-use this same command, user-wide capacity and evidence store. Their profile
-directories cannot partition admission. A probe without the versioned name-audit
-acknowledgement cannot establish reusable identities.
+Claude shell/environment-file settings and proxy configuration stay inputs.
+The same registered child environment is used for the identity probe,
+documentation proof and actual gate and descendants: known-format IDs are
+removed there, while manager environment and supervisor transport remain
+available. Both agents use this same command, user-wide capacity and evidence
+store. Their profile directories cannot partition admission. A probe without
+the versioned visible-name audit acknowledgement cannot establish reusable
+identities.
 
 The common supervisor writes a sealed `evidence.json` beside a request's
 terminal `record.json` only after confirming process and workspace cleanup.

@@ -1101,7 +1101,8 @@ def run_pinned(args):
     if selection.get('roxygen_pending'):
         result = Path(checkout).parent / 'roxygen-path'
         proof = subprocess.run(['Rscript', 'tools/review-ready-roxygen.R', selection['base'], sha, str(result)],
-                               cwd=checkout)
+                               cwd=checkout, env=evidence_policy.gate_environment(os.environ)
+                               if evidence_policy else None)
         if proof.returncode != 0 or not result.is_file():
             raise RuntimeError('R documentation eligibility failed; no Full fallback.')
         resolved = result.read_text()
@@ -1155,7 +1156,8 @@ def run_pinned(args):
     report = Path(checkout).parent / 'stage-report.json'
     report.unlink(missing_ok=True)
     os.environ['MARGINPLYR_REVIEW_STAGE_REPORT'] = str(report)
-    status = subprocess.call(['Rscript', 'tools/review-ready-check.R'])
+    status = subprocess.call(['Rscript', 'tools/review-ready-check.R'],
+                             env=evidence_policy.gate_environment(os.environ) if evidence_policy else None)
     if supported:
         after = before if not units else None
         if units:

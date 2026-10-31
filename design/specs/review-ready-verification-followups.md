@@ -47,6 +47,9 @@ startup profiles and environment files, relevant build configuration,
 environment variables, locale, timezone, and renderer identities. Package
 versions alone do not establish identity. Normalize invocation-specific
 paths/tokens only where a registered rule establishes their irrelevance.
+For registered execution IDs, use the same effective child environment for
+identity probes, documentation proof, the gate and all its descendants, as
+ADR 0038 specifies. Keep unknown values, configuration and supervisor transport.
 Undeclared external inputs prevent reuse. Capture content and change metadata
 before and after execution and around reuse validation. Preserve the
 cooperative environment boundary in the ADR; do not claim hermetic execution.

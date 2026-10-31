@@ -235,10 +235,12 @@ Their provenance is in [Codex command metadata][codex-metadata],
 [proxy attribution binding][codex-attribution], and
 [Claude Code environment variables][claude-variables]. Other variables, proxy
 settings, `CLAUDE_ENV_FILE` and `CLAUDE_CODE_SHELL_PREFIX` remain inputs.
-A package source consuming a normalized identifier disables reuse. The probe
-must acknowledge the versioned name audit; older probes cannot establish reuse.
-Only direct literal-name environment reads are registered; unresolved, indirect
-or enumerating readers disable reuse.
+The registered known-format IDs are absent from the actual identity-probe,
+documentation-proof and gate child environments and their descendants, under
+ADR 0038. The manager retains its environment and supervisor transport remains
+available to children. The environment identity uses that same child
+environment. The probe acknowledges a versioned audit of visible registered
+names; older probes cannot establish reuse.
 
 [codex-metadata]: https://github.com/openai/codex/blob/67f0994b532b8740f14b5b738af7b7b2a915b1d6/codex-rs/exec-server/README.md#command-metadata
 [codex-attribution]: https://github.com/openai/codex/blob/67f0994b532b8740f14b5b738af7b7b2a915b1d6/codex-rs/network-proxy/src/runtime.rs
