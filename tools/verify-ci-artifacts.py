@@ -26,7 +26,7 @@ def run(*args):
 
 
 def workflows(paths):
-    # R's YAML reader rejects duplicate keys and never evaluates YAML tags.
+    # YAML 1.1 would collapse yes and true; keep scalar spellings and lists.
     code = ('p <- commandArgs(TRUE); '
             'tags <- c("bool#yes", "bool#no", "int", "int#hex", "int#oct", '
             '"int#base60", "float#fix", "float#exp", "float#base60", '

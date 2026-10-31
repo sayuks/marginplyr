@@ -21,7 +21,8 @@ class Artifacts(unittest.TestCase):
         # Exercise current checker sources during the implementation loop too.
         for relative in ('tools/review-ready-admission.py', 'tools/verify-ci-artifacts.py',
                          'tools/ci-workflow-contracts.json',
-                         '.github/scripts/verify-doc-references.R'):
+                         '.github/scripts/verify-doc-references.R',
+                         '.github/scripts/summarize-check-log.R'):
             shutil.copyfile(SOURCE / relative, self.repo / relative)
         for path in (SOURCE / '.github/workflows').glob('*.yaml'):
             shutil.copyfile(path, self.repo / '.github/workflows' / path.name)
@@ -113,6 +114,40 @@ class Artifacts(unittest.TestCase):
                                     cwd=self.repo, capture_output=True, text=True)
             self.assertEqual(result.returncode, status, result.stdout + result.stderr)
             self.assertIn(fragment, result.stdout + result.stderr)
+
+    def test_ci_summary_runner_preserves_status_and_all_diagnostic_details(self):
+        check = Path(self.temp.name) / 'check'
+        rcheck = check / 'fixture.Rcheck'
+        rcheck.mkdir(parents=True)
+        summary = Path(self.temp.name) / 'summary.md'
+        env = dict(os.environ, MARGINPLYR_CHECK_DIR=str(check),
+                   MARGINPLYR_CHECK_LABEL='Fixture check', GITHUB_STEP_SUMMARY=str(summary))
+        log = rcheck / '00check.log'
+        log.write_text('* checking examples ... ERROR\nexample detail\n'
+                       '* checking tests ... WARNING\nwarning detail\n'
+                       '* checking metadata ... NOTE\nnote detail\n'
+                       '* checking completed ... OK\nStatus: 1 ERROR, 1 WARNING, 1 NOTE\n')
+        result = subprocess.run(['Rscript', '.github/scripts/summarize-check-log.R'],
+                                cwd=self.repo, env=env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        actual = summary.read_text()
+        for part in ('## Fixture check', 'Status: 1 ERROR, 1 WARNING, 1 NOTE',
+                     'example detail', 'warning detail', 'note detail'):
+            self.assertIn(part, actual)
+        self.assertNotIn('checking completed', actual)
+        summary.unlink()
+        log.write_text('* checking tests ... OK\n')
+        result = subprocess.run(['Rscript', '.github/scripts/summarize-check-log.R'],
+                                cwd=self.repo, env=env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('No status line in the check log.', summary.read_text())
+        log.unlink()
+        summary.unlink()
+        result = subprocess.run(['Rscript', '.github/scripts/summarize-check-log.R'],
+                                cwd=self.repo, env=env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('nothing to summarize', result.stderr)
+        self.assertFalse(summary.exists())
 
 
 if __name__ == '__main__':

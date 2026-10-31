@@ -83,7 +83,7 @@ CI/configuration routes are deliberately narrow:
 | Artifact | Required verification |
 |---|---|
 | The eight workflows named by `WORKFLOWS` | actionlint syntax, executable workflow contracts, and verifier-invocation wiring |
-| The document-reference CI script | command fixtures over valid and missing tracked references |
+| The CI check-log summary runner | command fixtures over check status, all diagnostic details, and absent logs/status |
 | The two altdoc configuration files | install the submitted source in an isolated library, render the site, then verify output and markers |
 | Codecov configuration | the existing coverage exclusion policy and its fixtures |
 | Codex and Claude configuration | existing network/Codex policy checks; CI artifact checks also reject invalid Claude JSON |
@@ -109,7 +109,9 @@ Remote job execution remains CI's responsibility.
 
 Selection/admission/installer/progress/local-gate machinery, its dependency
 helpers, shared NOTE policy, artifact checkers, workflow contracts, and their
-fixtures remain Full and run their mapped contract/process checks. The same
+fixtures remain Full and run their mapped contract/process checks. The common
+reference/context/invocation verifiers and their CI helper also remain Full;
+they help decide this check's outcome. The same
 routes run for cumulative mixed changes, even when package edits require Full.
 
 Both paths always execute package spelling, jarl, and package-aware lintr

@@ -175,7 +175,7 @@ sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
 
     def test_ci_configuration_routes_survive_cumulative_package_changes(self):
         self.repository_branch()
-        for name in ('.github/workflows/lint.yaml', '.github/scripts/verify-doc-references.R',
+        for name in ('.github/workflows/lint.yaml', '.github/scripts/summarize-check-log.R',
                      'altdoc/quarto_website.yml', 'codecov.yml', '.codex/config.toml',
                      '.claude/settings.json'):
             path = self.repo / name
@@ -204,6 +204,7 @@ sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
         for name in ('tools/review-ready-check-lib.R', 'tools/install-review-ready.py',
                      'tools/dependency-requirements.R', 'tools/required-test-suggests.R',
                      '.github/scripts/cran-note-policy.R', 'tools/verify-ci-artifacts.py',
+                     '.github/scripts/verify-doc-references.R', '.github/scripts/ci-helpers.R',
                      'tools/test-ci-artifacts.py', 'tools/ci-workflow-contracts.json',
                      'tools/verify-site-artifacts.R'):
             with self.subTest(name=name):

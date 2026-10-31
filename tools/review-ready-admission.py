@@ -45,7 +45,7 @@ WORKFLOWS = ('R-CMD-check.yaml', 'altdoc.yaml', 'document.yaml', 'lint.yaml',
 ARTIFACTS = [
     (r'\.github/workflows/(' + '|'.join(re.escape(name) for name in WORKFLOWS) + r')',
      ['tools/verify-ci-artifacts.py']),
-    (r'\.github/scripts/verify-doc-references\.R', ['tools/test-ci-artifacts.py']),
+    (r'\.github/scripts/summarize-check-log\.R', ['tools/test-ci-artifacts.py']),
     (r'altdoc/(?:quarto_website|pkgdown)\.yml', ['tools/verify-site-artifacts.R']),
     (r'codecov\.yml', ['.github/scripts/verify-coverage-policy.R']),
     (r'\.(?:codex/config\.toml|claude/settings\.json)',
@@ -55,7 +55,9 @@ ARTIFACTS = [
 CHECKING = (r'(?:tools/(?:review-ready[^/]*|test-review-ready[^/]*|install-review-ready\.py|'
             r'dependency-requirements\.R|required-test-suggests\.R|verify-ci-artifacts\.py|'
             r'test-ci-artifacts\.py|ci-workflow-contracts\.json|verify-site-artifacts\.R)|'
-            r'\.github/scripts/(?:verify-review-ready-check\.R|cran-note-policy\.R))')
+            r'\.github/scripts/(?:cran-note-policy\.R|ci-helpers\.R|verify-(?:review-ready-check|'
+            r'doc-references|context-budget|verifier-invocation|site|coverage-policy|'
+            r'agent-network-policy|codex-config)\.R))')
 CONTRACTS = [
     (r'design/(?:agents/local-checks\.md|specs/review-ready[^/]*\.md)',
      ['.github/scripts/verify-review-ready-check.R']),
@@ -70,6 +72,8 @@ CONTRACTS = [
     (r'(?:altdoc/.*|\.(?:codex|claude)/.*)', ['tools/verify-ci-artifacts.py']),
     (r'(?:\.covrignore|inst/\.covrignore|tools/coverage-check(?:-lib)?\.R)',
      ['.github/scripts/verify-coverage-policy.R']),
+    (r'(?:tools/verify-site-artifacts\.R|\.github/scripts/verify-site\.R)',
+     ['tools/verify-site-artifacts.R']),
 ]
 
 
