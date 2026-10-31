@@ -1,6 +1,4 @@
-# Implementation of the fixed, non-mutating review-ready check. It runs every
-# step against a disposable archive of the clean committed HEAD so the reported
-# SHA identifies the sources that were actually checked.
+# Implementation of the fixed, non-mutating review-ready check.
 
 # Runs one subprocess from a named directory and returns its exit status and,
 # when requested, its combined output.
