@@ -394,7 +394,7 @@ def environment(root):
         raise ValueError('Unregistered external inputs: ' + ', '.join(probe['unregistered']))
     audit = probe.get('metadata_audit')
     if (not isinstance(audit, dict) or type(audit.get('version')) is not int or
-            audit != dict(version=1, names=list(EXECUTION_METADATA))):
+            audit != dict(version=2, names=list(EXECUTION_METADATA))):
         raise ValueError('Unavailable execution metadata audit.')
     files = []
     natives = set()

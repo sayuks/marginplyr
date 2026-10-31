@@ -96,6 +96,26 @@ class ExpectationContract(unittest.TestCase):
             for number in range(len(names)):
                 self.assertIn('R/session' + str(number) + '.R', probe['unregistered'])
 
+    def test_r_probe_refuses_unresolved_environment_readers(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / 'DESCRIPTION').write_text('Package: fixture\n')
+            (root / 'R').mkdir()
+            readers = ('Sys.getenv()', 'Sys.getenv(paste0("CLAUDE", "_PID"))',
+                       'Sys.getenv(c("SAFE_INPUT", paste0("CLAUDE", "_PID")))',
+                       'reader <- Sys.getenv', 'get("Sys.getenv")',
+                       'Sys.getenv(x = paste0("CLAUDE", "_PID"))',
+                       'Sys.getenv("\\x43LAUDE_PID")', 'getenv(name)')
+            for number, reader in enumerate(readers):
+                (root / ('R/reader' + str(number) + '.R')).write_text(reader + '\n')
+            (root / 'R/literal.R').write_text('Sys.getenv("SAFE_INPUT", unset = "")\n')
+            probe = json.loads(subprocess.check_output(
+                ['Rscript', str(ROOT / 'tools/review-ready-environment.R'),
+                 *policy.EXECUTION_METADATA], cwd=root, text=True))
+            for number in range(len(readers)):
+                self.assertIn('R/reader' + str(number) + '.R', probe['unregistered'])
+            self.assertNotIn('R/literal.R', probe['unregistered'])
+
 
 class StageEvidence(unittest.TestCase):
     def setUp(self):
@@ -461,15 +481,16 @@ class StageEvidence(unittest.TestCase):
 
     def test_older_probe_cannot_silently_ignore_the_metadata_audit(self):
         self.write('tools/real-environment.R', (ROOT / 'tools/review-ready-environment.R').read_text())
-        self.write('tools/review-ready-environment.R', '''
+        for legacy in ('NULL', 'list(version = 1L, names = as.list(commandArgs(trailingOnly = TRUE)))'):
+            self.write('tools/review-ready-environment.R', '''
 result <- system2("Rscript", c("tools/real-environment.R", commandArgs(trailingOnly = TRUE)), stdout = TRUE)
 snapshot <- jsonlite::fromJSON(paste(result, collapse = "\\n"), simplifyVector = FALSE)
-snapshot$metadata_audit <- NULL
+snapshot$metadata_audit <- ''' + legacy + '''
 cat(jsonlite::toJSON(snapshot, auto_unbox = TRUE, null = "null"))
 ''')
-        with self.assertRaises(subprocess.CalledProcessError) as failure:
-            self.environment_at(self.root)
-        self.assertIn('Unavailable execution metadata audit', failure.exception.stderr)
+            with self.assertRaises(subprocess.CalledProcessError) as failure:
+                self.environment_at(self.root)
+            self.assertIn('Unavailable execution metadata audit', failure.exception.stderr)
 
     def stage_request(self, status):
         _, origin = self.origin()

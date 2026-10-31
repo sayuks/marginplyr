@@ -32,6 +32,12 @@ for (file in package_sources[file.exists(package_sources)]) {
   if (any(vapply(execution_metadata, function(name) {
     any(grepl(name, lines, fixed = TRUE))
   }, logical(1)))) unknown <- c(unknown, file)
+  # Only direct literal-name reads establish independence from normalized IDs.
+  unresolved <- gsub(
+    "\\bSys[.]getenv[[:space:]]*[(][[:space:]]*([\"'])[A-Za-z_][A-Za-z0-9_]*\\1[[:space:]]*[,)]",
+    "", paste(lines, collapse = "\n"), perl = TRUE
+  )
+  if (grepl("\\bgetenv\\b", unresolved, perl = TRUE)) unknown <- c(unknown, file)
 }
 checksum <- function(name) {
   file <- tempfile("review-ready-r-implementation-")
@@ -54,6 +60,6 @@ cat(jsonlite::toJSON(list(
   loader_defaults = as.list(Sys.getenv(c("LD_LIBRARY_PATH", "DYLD_FALLBACK_LIBRARY_PATH"))),
   clock = list(r = as.character(getRversion()), checker = checksum(".check_packages"),
     timeout = checksum("get_timeout"), leeway = leeway),
-  metadata_audit = list(version = 1L, names = as.list(execution_metadata)),
+  metadata_audit = list(version = 2L, names = as.list(execution_metadata)),
   unregistered = as.list(unname(unknown))
 ), auto_unbox = TRUE, null = "null"))

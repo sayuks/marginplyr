@@ -39,7 +39,7 @@ import fcntl, json, os, pathlib, socket, subprocess, sys, time
 if sys.argv[1:2] == ['tools/review-ready-environment.R']:
     configuration = [os.environ['FIXTURE_ENVIRONMENT_FILE']] if os.environ.get('FIXTURE_ENVIRONMENT_FILE') else []
     print(json.dumps(dict(unregistered=[], libraries=[], runtime_roots=[], configuration=configuration, r='4.6.1',
-        metadata_audit=dict(version=1, names=sys.argv[2:]),
+        metadata_audit=dict(version=2, names=sys.argv[2:]),
         clock=dict(r='4.6.1', checker='2efcaa5190c038e60834bd5c4e502c82',
                    timeout='34ee7dea5eac7ba7138bd3c60651faee', leeway=300))))
     sys.exit(0)

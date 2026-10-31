@@ -25,8 +25,8 @@
 # so it is absent from the tarball these tests run from -- so the split is
 # forced, and keeping the two readings identical is what makes a `required`
 # value mean one package set on both sides.
-suggests_env_list <- function(name) {
-  declared <- trimws(strsplit(Sys.getenv(name, ""), ",", fixed = TRUE)[[1]])
+suggests_env_list <- function(value) {
+  declared <- trimws(strsplit(value, ",", fixed = TRUE)[[1]])
   declared[nzchar(declared)]
 }
 
@@ -35,7 +35,7 @@ suggests_env_list <- function(name) {
 # test instead of skipping it. Generic jobs leave the variable unset and keep
 # skipping. `.github/workflows/release-matrix.yaml` sets it per dedicated job.
 required_suggests <- function() {
-  suggests_env_list("MARGINPLYR_REQUIRED_SUGGESTS")
+  suggests_env_list(Sys.getenv("MARGINPLYR_REQUIRED_SUGGESTS", ""))
 }
 
 # Simulated absence. `verify-suite-coverage.R` runs the whole suite once per
@@ -50,7 +50,7 @@ required_suggests <- function() {
 # be reported as running, which is the honest answer -- the guards are what
 # decide whether a test skips, and the guards are what this reads.
 hidden_suggests <- function() {
-  suggests_env_list("MARGINPLYR_HIDE_SUGGESTS")
+  suggests_env_list(Sys.getenv("MARGINPLYR_HIDE_SUGGESTS", ""))
 }
 
 # Whether a package is usable is not the same question as whether it is

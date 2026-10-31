@@ -237,6 +237,8 @@ Their provenance is in [Codex command metadata][codex-metadata],
 settings, `CLAUDE_ENV_FILE` and `CLAUDE_CODE_SHELL_PREFIX` remain inputs.
 A package source consuming a normalized identifier disables reuse. The probe
 must acknowledge the versioned name audit; older probes cannot establish reuse.
+Only direct literal-name environment reads are registered; unresolved, indirect
+or enumerating readers disable reuse.
 
 [codex-metadata]: https://github.com/openai/codex/blob/67f0994b532b8740f14b5b738af7b7b2a915b1d6/codex-rs/exec-server/README.md#command-metadata
 [codex-attribution]: https://github.com/openai/codex/blob/67f0994b532b8740f14b5b738af7b7b2a915b1d6/codex-rs/network-proxy/src/runtime.rs
