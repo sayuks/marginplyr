@@ -45,7 +45,7 @@ explicit acknowledgement; installation alone does not reload their guidance.
 Refresh/restart sessions whose instructions or PATH cannot be updated. Older
 worktrees need not merge this implementation: run the installed command from
 their root. Selection requires the submitted R entry
-point's versioned protocol marker. Unsupported older revisions retain their
+point's versioned protocol marker (version 3 for admitted R documentation proof). Unsupported older revisions retain their
 existing Full gate; an older installed launcher with new sources also
 retains Full. Refresh the installed launcher from the implementation
 checkout to enable selection; source edits alone never update the standalone
@@ -82,7 +82,15 @@ newer revision. After admission, a disposable shared Git clone at the pinned
 SHA invokes that revision's R gate with an internal request-bound selection
 transport. This prevents later source edits, changed HEAD, and untracked
 files from substituting the requested revision, including on older
-worktrees. The gate archives the exact SHA. All paths run spelling and both
+worktrees. The gate archives the exact SHA. For an existing ordinary R source modification, the initial Full selection can
+carry a pending documentation proof. After admission, the pinned worker uses
+the R parser and preserved non-documentation source to establish eligibility;
+only then can it resolve to Documentation. Unavailable or unsupported evidence
+retains Full. No R proof or regeneration runs while waiting. The resolved path
+is printed before the gate and in the terminal outcome. The local check guide
+owns eligibility and stale-output policy.
+
+All paths run spelling and both
 linters, loading the package before lintr, plus mapped artifact
 verification, including generation on Full when mapped inputs change. Completed
 stages are printed individually. Repository
@@ -160,6 +168,7 @@ retained at the printed path for inspection; remove them only after recovery.
 
 ```sh
 python3 tools/test-review-ready-admission.py
+Rscript tools/test-review-ready-roxygen.R
 Rscript .github/scripts/verify-review-ready-check.R
 ```
 

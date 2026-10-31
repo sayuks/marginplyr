@@ -106,23 +106,34 @@ local({
   generated <- review_ready_run_system(file.path(R.home("bin"), "Rscript"),
     c("-e", "roxygen2::roxygenise(); devtools::build_readme()"),
     directory = root, capture = TRUE)
-  expect_identical(generated$status, 0L, "initial fixture generation")
+  expect_identical(generated$status, 0L, paste("initial fixture generation",
+    paste(generated$output, collapse = "\n")))
   git(c("init", "-q"))
   git(c("config", "user.name", "Fixture"))
   git(c("config", "user.email", "fixture@example.com"))
   git(c("add", "."))
   git(c("commit", "-qm", "generated fixture"))
   capture.output(run_review_ready_generated(root))
-  for (artifact in c("README.md", "man/fixture.Rd", "man/figures/README-obsolete.png")) {
+  for (artifact in c("README.md", "man/fixture.Rd", "man/figures/README-obsolete.png", "NAMESPACE")) {
     git(c("reset", "--hard", "HEAD"))
     path <- file.path(root, artifact)
     dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
-    cat("stale", file = path, append = TRUE)
+    cat(if (artifact == "NAMESPACE") "\n# stale\n" else "stale", file = path, append = TRUE)
     git(c("add", "."))
     git(c("commit", "-qm", "stale artifact"))
     capture.output(expect_error(run_review_ready_generated(root),
       artifact, paste("stale generated artifact", artifact)))
     git(c("reset", "--hard", "HEAD~1"))
   }
+  source_path <- file.path(root, "R", "fixture.R")
+  lines <- readLines(source_path)
+  writeLines(c("#' @evalRd { writeLines('# generated runtime', 'R/generated.R'); 'Text.' }", lines),
+    source_path)
+  git(c("add", "."))
+  git(c("commit", "-qm", "unexpected runtime output"))
+  output <- capture.output(expect_error(run_review_ready_generated(root),
+    "Stale generated documentation", "unexpected output is never hidden by Full fallback"))
+  expect_true(any(grepl("Non-documentation generation effects require Full: R/generated.R", output,
+    fixed = TRUE)), "unexpected generated runtime output is classified")
   cat("Generated README, help and obsolete-figure fixtures passed.\n")
 })

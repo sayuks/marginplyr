@@ -30,6 +30,7 @@ STALE = 3
 BLOCKED = 4
 SELECTION = 'MARGINPLYR_REVIEW_SELECTION'
 PROTOCOL = b'# Review-ready selection protocol: 2'
+ROXYGEN_PROTOCOL = b'# Review-ready selection protocol: 3'
 
 # Supported prose and its verification routes live here. Other file formats in
 # these directories have no exemption. Checking machinery remains Full.
@@ -47,7 +48,8 @@ REFERENCE_CHECKS = ['.github/scripts/verify-doc-references.R',
 CONTRACTS = [
     (r'(tools/(?:review-ready[^/]*|test-review-ready[^/]*|install-review-ready\.py|dependency-requirements\.R|required-test-suggests\.R)|'
      r'\.github/scripts/verify-review-ready-check\.R|design/(?:agents/local-checks\.md|specs/review-ready[^/]*\.md))',
-     ['.github/scripts/verify-review-ready-check.R', 'tools/test-review-ready-documentation.R']),
+     ['.github/scripts/verify-review-ready-check.R', 'tools/test-review-ready-documentation.R',
+      'tools/test-review-ready-roxygen.R']),
     (r'tools/(?:review-ready[^/]*\.(?:py|R)|test-review-ready[^/]*|install-review-ready\.py)',
      ['tools/test-review-ready-admission.py', 'tools/test-review-ready-progress.R']),
     (GENERATED_INPUTS, ['tools/review-ready-generated.R']),
@@ -84,6 +86,7 @@ def select_path(root, sha):
             raise ValueError('unterminated diff records')
         names = []
         documentation = False
+        roxygen = False
         reasons = []
         index = 0
         while index < len(records):
@@ -106,6 +109,11 @@ def select_path(root, sha):
                 reasons.append('unsupported change status: ' + repr(paths))
             for name in paths:
                 documentation |= bool(re.fullmatch(DOCUMENTATION, name))
+                if (re.fullmatch(r'R/[^/]+\.R', name) and status == b'M' and
+                        before == after == b'100644'):
+                    roxygen = True
+                    documentation = True
+                    continue
                 if not (re.fullmatch(PROSE, name) or re.fullmatch(DOCUMENTATION, name)):
                     reasons.append('unsupported path: ' + repr(name))
             supported = all(re.fullmatch(PROSE, name) or re.fullmatch(DOCUMENTATION, name)
@@ -127,12 +135,16 @@ def select_path(root, sha):
             if any(re.fullmatch(pattern, name) for name in names):
                 selection['verifiers'].extend(check for check in checks if check not in selection['verifiers'])
         entry = git_bytes(root, 'show', sha + ':tools/review-ready-check.R')
-        if PROTOCOL not in entry.splitlines():
+        if not any(protocol in entry.splitlines() for protocol in (PROTOCOL, ROXYGEN_PROTOCOL)):
             selection['verifiers'] = []
             reasons.append('submitted revision lacks selection protocol; existing Full gate')
+        if roxygen and ROXYGEN_PROTOCOL not in entry.splitlines():
+            reasons.append('submitted revision lacks R documentation eligibility protocol')
         if not reasons:
-            selection['path'] = 'Documentation' if documentation else 'Repository'
-            reasons = ['all cumulative changes are supported documentation or repository prose'
+            selection['roxygen_pending'] = roxygen
+            selection['path'] = 'Full' if roxygen else ('Documentation' if documentation else 'Repository')
+            reasons = ['R documentation eligibility pending admission' if roxygen else
+                       'all cumulative changes are supported documentation or repository prose'
                        if documentation else 'all cumulative changes are supported repository prose']
         selection['reasons'] = reasons
     except (OSError, ValueError, subprocess.SubprocessError) as error:
@@ -348,9 +360,13 @@ def run_gate(path, record, root, sha, cancellation, parent):
                 # process-table view while a known child is exiting.
                 if not owned(processes(), record):
                     status = CANCELLED if stopping is not None else (result if result >= 0 else 128 - result)
+                    resolved = Path(workspace) / 'resolved-path'
+                    selected_path = resolved.read_text().strip() if resolved.is_file() else record['selection']['path']
+                    if selected_path not in ('Full', 'Documentation', 'Repository'):
+                        raise RuntimeError('Invalid resolved Review-ready path.')
                     path.unlink()
                     say('Review-ready terminal outcome: ' + str(status) + '; checked commit: ' + sha +
-                        '; selected path: ' + record['selection']['path'])
+                        '; selected path: ' + selected_path)
                     return status
             if stopping is not None and time.monotonic() - stopping > 10:
                 raise RuntimeError('Owned processing did not stop within the cleanup deadline.')
@@ -394,6 +410,19 @@ def run_pinned(args):
     subprocess.run(['git', 'clone', '--quiet', '--shared', '--no-checkout', root, checkout], check=True)
     subprocess.run(['git', '-C', checkout, 'checkout', '--quiet', '--detach', sha], check=True)
     selection = record.get('selection', dict(path='Full', verifiers=[]))
+    if selection.get('roxygen_pending'):
+        result = Path(checkout).parent / 'roxygen-path'
+        proof = subprocess.run(['Rscript', 'tools/review-ready-roxygen.R', selection['base'], sha, str(result)],
+                               cwd=checkout)
+        selection['path'] = result.read_text().strip() if proof.returncode == 0 and result.is_file() else 'Full'
+        if selection['path'] not in ('Full', 'Documentation'):
+            raise RuntimeError('Invalid R documentation eligibility result.')
+        selection['roxygen_pending'] = False
+        selection['reasons'] = ['R documentation proof passed; executable expressions and configuration unchanged'
+                                if selection['path'] == 'Documentation' else
+                                'R documentation proof unavailable or unsupported R/configuration change']
+        say('Review-ready admitted selection: ' + json.dumps(selection, ensure_ascii=True))
+    (Path(checkout).parent / 'resolved-path').write_text(selection['path'])
     transport = Path(checkout).parent / 'selection.dcf'
     transport.write_text('Path: ' + selection['path'] + '\nCommit: ' + sha +
                          '\nRequest: ' + record['token'] + '\nVerifiers: ' +
