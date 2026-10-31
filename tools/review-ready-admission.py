@@ -80,11 +80,11 @@ def select_path(root, sha):
         index = 0
         while index < len(records):
             header = re.fullmatch(
-                rb':([0-7]{6}) ([0-7]{6}) [0-9a-f]{40} [0-9a-f]{40} ([AMDTRCUXB])([0-9]*)',
+                rb':([0-7]{6}) ([0-7]{6}) ([0-9a-f]{40}) ([0-9a-f]{40}) ([AMDTRCUXB])([0-9]*)',
                 records[index])
             if header is None:
                 raise ValueError('unrecognized raw diff record')
-            before, after, status, score = header.groups()
+            before, after, old_blob, new_blob, status, score = header.groups()
             count = 2 if status in (b'R', b'C') else 1
             paths = records[index + 1:index + 1 + count]
             if len(paths) != count or not all(paths):
@@ -99,6 +99,16 @@ def select_path(root, sha):
             for name in paths:
                 if not re.fullmatch(PROSE, name):
                     reasons.append('unsupported path: ' + repr(name))
+            if all(re.fullmatch(PROSE, name) for name in paths):
+                for mode, blob in ((before, old_blob), (after, new_blob)):
+                    if mode != b'100644':
+                        continue
+                    try:
+                        text = git_bytes(root, 'cat-file', 'blob', blob.decode('ascii')).decode('utf-8')
+                        if any(ord(char) < 32 and char not in '\n\r\t' for char in text):
+                            raise ValueError('non-prose control character')
+                    except (UnicodeError, ValueError):
+                        reasons.append('unsupported prose content: ' + repr(paths))
             index += 1 + count
         selection['verifiers'] = list(REFERENCE_CHECKS)
         for pattern, checks in CONTRACTS:

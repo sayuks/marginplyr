@@ -866,7 +866,7 @@ run_review_ready_check <- function(
       sep = ""
     )
   }
-  invisible(list(identity = identity, outcome = outcome))
+  invisible(list(identity = identity, path = "Full", outcome = outcome))
 }
 
 # Command-line boundary: invalid invocation or any failed step exits nonzero.

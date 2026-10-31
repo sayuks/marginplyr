@@ -163,6 +163,16 @@ sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
         self.assertEqual(selection['path'], 'Full')
         self.assertIn('tools/test-review-ready-admission.py', selection['verifiers'])
 
+    def test_binary_or_unknown_encoding_markdown_is_full(self):
+        self.repository_branch()
+        for contents in (b'binary\0payload', b'unknown\xffencoding', b'control\x01character'):
+            with self.subTest(contents=contents):
+                (self.repo / 'design/note.md').write_bytes(contents)
+                self.commit_all()
+                selection = self.selected()
+                self.assertEqual(selection['path'], 'Full')
+                self.assertIn('unsupported prose content', ' '.join(selection['reasons']))
+
     def test_comparison_errors_and_unclassifiable_records_fall_back_to_full(self):
         self.repository_branch()
         real_git = shutil.which('git')

@@ -72,7 +72,9 @@ The supported prose categories and required verifier mapping have one home:
 `PROSE`, `REFERENCE_CHECKS`, and `CONTRACTS` in
 `tools/review-ready-admission.py`. It supports agent/domain/design Markdown,
 Markdown investigation notes, conduct policy, and operational Markdown under
-`tools/`. Other formats in those directories remain Full. Package
+`tools/`. Prose blobs must be UTF-8 text without non-prose control characters;
+unknown encodings or binary content select Full. Other formats in those
+directories remain Full. Package
 documentation, licenses, CI configuration, and checking machinery remain Full.
 A Documentation path and CI-specific exemptions are not enabled.
 

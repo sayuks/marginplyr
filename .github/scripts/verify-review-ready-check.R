@@ -598,6 +598,39 @@ expect_identical(
 )
 expect_identical(checker_calls, 3L, "each failed invocation ran its checker only once")
 
+# The worker transport is bound to this admitted request and checked commit.
+local({
+  keys <- c("MARGINPLYR_REVIEW_SELECTION", "MARGINPLYR_REVIEW_REQUEST")
+  previous <- Sys.getenv(keys, unset = NA_character_)
+  on.exit({
+    Sys.unsetenv(keys)
+    present <- !is.na(previous)
+    if (any(present)) do.call(Sys.setenv, as.list(previous[present]))
+  })
+  transport <- tempfile("review-ready-selection-")
+  on.exit(unlink(transport), add = TRUE)
+  Sys.unsetenv(keys)
+  expect_identical(read_review_ready_selection(),
+    list(path = "Full", verifiers = character()), "older launchers keep Full")
+  Sys.setenv(MARGINPLYR_REVIEW_SELECTION = transport,
+    MARGINPLYR_REVIEW_REQUEST = "fixture")
+  writeLines(c("Path: Repository", paste("Commit:", clean_identity$sha),
+    "Request: fixture", "Verifiers: .github/scripts/verify-context-budget.R"),
+    transport)
+  expect_identical(read_review_ready_selection(),
+    list(path = "Repository", sha = clean_identity$sha,
+      verifiers = ".github/scripts/verify-context-budget.R"),
+    "the admitted worker's Repository transport")
+  Sys.setenv(MARGINPLYR_REVIEW_REQUEST = "another-request")
+  expect_error(read_review_ready_selection(), "Invalid admitted",
+    "a different admitted request")
+  Sys.setenv(MARGINPLYR_REVIEW_REQUEST = "fixture")
+  writeLines(c("Path: Repository", paste("Commit:", clean_identity$sha),
+    "Request: fixture", "Verifiers:"), transport)
+  expect_error(read_review_ready_selection(), "requires mapped",
+    "a missing required verifier route")
+})
+
 # Repository keeps every common source check and its mapped artifact checks,
 # but never reaches dependency validation, build, or the package checker.
 local({
