@@ -1,0 +1,6 @@
+Root-local min binding; neither caller supplied a summary expression.
+Lazy result keys: c(NA_character_, NA_character_)
+Rowwise result keys: c(NA_character_, NA_character_)
+min binding reads: 4
+Rebinding min to base::min restored keys on the same lazy result.
+Source, ordinary grouped dtplyr, tidyr nesting, fixed-key, and local controls passed.

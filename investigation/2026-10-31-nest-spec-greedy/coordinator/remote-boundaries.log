@@ -1,0 +1,7 @@
+Tracing function "dbSendQuery" in package "namespace:DBI"
+Untracing function "dbSendQuery" in package "namespace:DBI"
+RSQLite : 50 calls; 0 statements, all LIMIT 0; no refusal forced its specification
+Tracing function "dbSendQuery" in package "namespace:DBI"
+Untracing function "dbSendQuery" in package "namespace:DBI"
+duckdb : 50 calls; 10 statements, all LIMIT 0; no refusal forced its specification
+Arrow: 20 calls, five readers and all 15 original rows preserved; total 120 calls

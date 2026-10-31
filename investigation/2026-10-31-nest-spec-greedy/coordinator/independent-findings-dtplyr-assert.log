@@ -1,0 +1,29 @@
+factor NA level, typed label FALSE :[[1]]
+[1] 1
+
+[[2]]
+[1] 2
+
+factor NA level, typed label TRUE :[[1]]
+[1] 1
+
+[[2]]
+[1] 2
+
+factor NA level, typed label FALSE :[[1]]
+[1] 1
+
+[[2]]
+[1] 2
+
+factor NA level, typed label TRUE :[[1]]
+[1] 1
+
+[[2]]
+[1] 2
+
+dtplyr displayed keys:[1] NA NA
+dtplyr displayed keys:[1] NA NA
+caller min invoked 4 times; ordinary source, upstream summary, and local nesting controls passed
+Error: dt_ok is not TRUE
+Execution halted
