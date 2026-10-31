@@ -6,6 +6,12 @@ The maintainer accepted this specification on 2026-10-31.
 The implementation uses the common CLI and the operating guidance in
 [local checks](../agents/local-checks.md#reusing-unaffected-stages).
 
+For the planned repository-owned replacement,
+[ADR 0039](../adr/0039-run-review-ready-from-the-target-worktree.md) and the
+[runner specification](review-ready-repository-runner.md) amend delivery and
+evidence retention while preserving this stage-reuse contract. Existing
+installed-command operation remains in force until that rollout.
+
 ## Obligations and execution plan
 
 Derive required verification from the cumulative final-tree difference between

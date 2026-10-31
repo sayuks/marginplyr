@@ -42,6 +42,11 @@ implementation, and relevant tool, dependency, and execution-environment
 identities. There is no age-only expiry. An unavailable or changed identity
 invalidates the affected stage; rerun it rather than assume compatibility.
 
+For the planned repository-owned replacement, [ADR 0039](0039-run-review-ready-from-the-target-worktree.md)
+amends evidence availability with bounded retention and coordinated retirement.
+That amendment takes effect at its rollout; the installed command's operating
+rules remain under [local checks](../agents/local-checks.md) until then.
+
 Treat build and check as one reuse unit. Keep Full and Documentation evidence
 distinct: a Documentation result cannot discharge a Full obligation.
 Generation and Documentation assertions are separate units. Run the common

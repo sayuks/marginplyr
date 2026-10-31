@@ -5,6 +5,11 @@ Status: accepted design, amended by
 Documentation and Repository supervision. The original common-slot implementation
 is tracked in [issue #1065](https://github.com/sayuks/marginplyr/issues/1065).
 
+The common-installation delivery direction is superseded in design by
+[ADR 0039](../adr/0039-run-review-ready-from-the-target-worktree.md).
+Admission and lifecycle requirements remain in force; the installed command
+remains the operational entry point until the replacement is implemented.
+
 ## Problem
 
 The user reported on 2026-10-30 that four or five concurrent worktree checks
