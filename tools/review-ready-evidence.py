@@ -1,6 +1,7 @@
 """Registered stage evidence and follow-up contracts (ADR 0038).
 
-Only the common supervisor issues sealed records, after terminal cleanup.
+Only the common supervisor seals stage outcomes; reusable origins require
+terminal success and confirmed cleanup.
 The local user's private state is the cooperative trust boundary, not a
 defence against that user replacing the checker or its records deliberately.
 """
@@ -85,6 +86,10 @@ def source_inputs(root, sha, unit):
         metadata, name = entry.split(b'\t', 1)
         mode, kind, oid = metadata.decode().split()
         name = name.decode('utf-8')
+        if kind != 'blob' or mode not in ('100644', '100755'):
+            raise ValueError('Unsupported committed source type: ' + name)
+        if Path(name).name == '.gitattributes' and git(root, 'cat-file', 'blob', oid).strip():
+            raise ValueError('Unregistered committed Git attributes: ' + name)
         entries.append((name, mode, kind, oid))
     needed = sorted({oid for name, mode, kind, oid in entries if mode == '100644' and kind == 'blob' and
                      (name == EXPECTATION or any(re.fullmatch(pattern, name) for pattern in NON_INPUTS))})
@@ -106,7 +111,7 @@ def source_inputs(root, sha, unit):
             offset += 1
     inputs = []
     for name, mode, kind, oid in entries:
-        # Unsafe types participate even when their names would be non-inputs.
+        # Only ordinary non-executable text qualifies for non-input exclusions.
         ordinary = mode == '100644' and kind == 'blob'
         if ordinary and any(re.fullmatch(pattern, name) for pattern in NON_INPUTS):
             try:
@@ -288,12 +293,93 @@ def linked_runtime(natives, roots, executables):
     return digest(identities)
 
 
+def comparison_inputs(root):
+    """Refuse mutable Git overlays that can replace committed source or ancestry."""
+    overrides = ('GIT_DIR', 'GIT_WORK_TREE', 'GIT_COMMON_DIR', 'GIT_INDEX_FILE',
+                 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES',
+                 'GIT_NAMESPACE', 'GIT_REPLACE_REF_BASE', 'GIT_ATTR_SOURCE',
+                 'GIT_TEMPLATE_DIR', 'GIT_EXEC_PATH')
+    if any(os.environ.get(name) for name in overrides):
+        raise ValueError('Unregistered Git context override.')
+    if git(root, 'replace', '-l').strip():
+        raise ValueError('Unregistered Git replacement objects.')
+    grafts = Path(git(root, 'rev-parse', '--git-path', 'info/grafts').decode().strip())
+    if not grafts.is_absolute():
+        grafts = Path(root) / grafts
+    if grafts.exists():
+        raise ValueError('Unregistered Git grafts input.')
+
+
+def git_configuration(root):
+    """Bind Git's external inputs; unregistered archive/hook closures cannot reuse."""
+    comparison_inputs(root)
+    data = git(root, 'config', '--show-scope', '--show-origin', '--null', '--list').split(b'\0')
+    if data[-1:] != [b''] or (len(data) - 1) % 3:
+        raise ValueError('Unknown Git configuration inventory.')
+    home = Path.home()
+    xdg = Path(os.environ.get('XDG_CONFIG_HOME', str(home / '.config')))
+    executable_root = Path(git(root, '--exec-path').decode().strip()).parent.parent
+    files = {home / '.gitconfig', xdg / 'git/config', Path('/etc/gitconfig'),
+             executable_root / 'etc/gitconfig'}
+    attributes = {xdg / 'git/attributes', Path('/etc/gitattributes'),
+                  executable_root / 'etc/gitattributes'}
+    effective = []
+    for offset in range(0, len(data) - 1, 3):
+        scope, origin, item = (field.decode('utf-8') for field in data[offset:offset+3])
+        name, separator, value = item.partition('\n')
+        if not separator:
+            raise ValueError('Unknown Git configuration value.')
+        name = name.lower()
+        if (name in ('core.hookspath', 'core.fsmonitor', 'init.templatedir', 'diff.external') or
+                name.startswith('tar.') or (name.startswith('diff.') and
+                                             name.endswith(('.command', '.textconv')))):
+            raise ValueError('Unregistered executable/archive Git configuration: ' + name)
+        if scope not in ('local', 'worktree'):
+            effective.append([scope, name, digest(value)])
+            if origin.startswith('file:'):
+                file = Path(origin.removeprefix('file:')).expanduser()
+                if not file.is_absolute():
+                    raise ValueError('Unregistered relative Git configuration input.')
+                files.add(file)
+    for variable in ('GIT_CONFIG_GLOBAL', 'GIT_CONFIG_SYSTEM'):
+        if os.environ.get(variable):
+            file = Path(os.environ[variable]).expanduser()
+            if not file.is_absolute():
+                raise ValueError('Unregistered relative Git configuration input.')
+            files.add(file)
+    query = subprocess.run(['git', '-C', str(root), 'config', '--path', '--null', '--get-all',
+                            'core.attributesFile'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if query.returncode not in (0, 1):
+        raise ValueError('Git attributes configuration unavailable.')
+    for value in query.stdout.split(b'\0'):
+        if value:
+            path = Path(value.decode()).expanduser()
+            if not path.is_absolute():
+                raise ValueError('Unregistered relative Git attributes input.')
+            attributes.add(path)
+    info = Path(git(root, 'rev-parse', '--git-path', 'info/attributes').decode().strip())
+    if not info.is_absolute():
+        info = Path(root) / info
+    if info.exists():
+        raise ValueError('Unregistered repository-local Git attributes.')
+    for path in attributes:
+        if path.exists() and path.stat().st_size:
+            raise ValueError('Unregistered external Git attributes: ' + str(path))
+    identities = [file_identity(path) if path.exists() else [str(path), 'absent']
+                  for path in sorted(files | attributes)]
+    actual_git = executable_root / 'bin/git'
+    if actual_git.exists():
+        identities.append(file_identity(actual_git))
+    return dict(configuration=effective, files=identities)
+
+
 def environment(root):
     """Observe the registered cooperative environment without running a gate.
 
     Custom startup/build hooks and unregistered external-library overrides
     have unknown input closures, so cannot issue or consume reusable evidence.
     """
+    git_inputs = git_configuration(root)
     overrides = ('LD_LIBRARY_PATH', 'DYLD_LIBRARY_PATH', 'DYLD_FALLBACK_LIBRARY_PATH')
     if any(os.environ.get(name) for name in overrides):
         raise ValueError('Unregistered caller loader override.')
@@ -356,6 +442,7 @@ def environment(root):
               if key not in internal | bookkeeping}
     values.update(TESTTHAT_PARALLEL='false', TESTTHAT_CPUS='1')
     return dict(digest=digest(dict(probe=probe, files=files, directories=directories,
+                                  git=git_inputs,
                                   linkage=linked_runtime(natives, probe['libraries'] + runtime_roots, executables),
                                   variables=digest(values), platform=platform.uname()._asdict())),
                 clock=probe['clock'], r=probe['r'], libraries=probe['libraries'])
@@ -417,15 +504,36 @@ def read_evidence(path, key, seen=None):
     if not hmac.compare_digest(envelope['integrity'], seal(payload, key)['integrity']):
         raise ValueError('Corrupt stage evidence.')
     record = json.loads(path.with_name('record.json').read_text())
-    if (payload['schema'] != SCHEMA or payload['request'] != path.parent.name or
+    kind = payload.get('kind', 'evidence')
+    if (kind not in ('evidence', 'observation') or path.name != kind + '.json' or
+            payload['schema'] != SCHEMA or payload['request'] != path.parent.name or
             type(payload.get('sequence')) is not int or payload['sequence'] < 1 or
             payload['user'] != os.getuid() or payload['request'] != record['id'] or
             payload['submitted'] != record['sha'] or payload['selection'] != record['selection'] or
-            payload['supervisor'] != record['launcher'] or payload['finished'] != record['finished'] or
-            record['state'] != 'terminal' or record['cleanup'] != 'confirmed' or
-            record['outcome'] != payload['outcome'] or record['owned_capacity'] or
+            payload['supervisor'] != record['launcher'] or
             record['version'] != 2 or record['protocol'] != 3 or not record['authorized']):
         raise ValueError('Unavailable terminal evidence provenance.')
+    if kind == 'observation':
+        if (record.get('gate_outcome') != payload['outcome'] or payload['reused'] or
+                any(unit not in UNITS or entry['status'] not in ('passed', 'failed', 'unavailable') or
+                    (entry['status'] != 'unavailable' and
+                     (entry['source'] is None or entry['environment'] is None))
+                    for unit, entry in payload['units'].items())):
+            raise ValueError('Invalid stage outcome observation.')
+        return payload
+    if (payload['finished'] != record['finished'] or record['state'] != 'terminal' or
+            record['cleanup'] != 'confirmed' or record['outcome'] != payload['outcome'] or
+            record['owned_capacity']):
+        raise ValueError('Unavailable terminal evidence provenance.')
+    if payload.get('observation') is not None:
+        observation = read_evidence(path.with_name('observation.json'), key)
+        if observation['sequence'] != payload['observation']:
+            raise ValueError('Missing executing stage observation.')
+        for unit, entry in payload['units'].items():
+            original = observation['units'][unit]
+            if (entry.get('observation_sequence') != observation['sequence'] or
+                    any(entry[field] != original[field] for field in ('source', 'environment', 'status'))):
+                raise ValueError('Execution differs from its observed outcome.')
     for wanted, reference in payload['reused'].items():
         if not re.fullmatch('[0-9a-f]{32}', reference['request']):
             raise ValueError('Invalid execution origin.')
@@ -456,7 +564,8 @@ def compatible_unit(candidate, wanted):
 def read_index(state, key):
     path = state / 'evidence-index.json'
     if not path.exists():
-        if list((state / 'requests').glob('*/evidence.json')):
+        if any(path.name in ('evidence.json', 'observation.json')
+                for path in (state / 'requests').glob('*/*.json')):
             raise ValueError('Missing common evidence index; records cannot be imported.')
         return []
     envelope = json.loads(path.read_text())
@@ -468,28 +577,70 @@ def read_index(state, key):
     requests = set()
     previous = 0
     for entry in entries:
-        if (not re.fullmatch('[0-9a-f]{32}', entry['request']) or entry['request'] in requests or
+        identity = (entry['request'], entry.get('kind', 'evidence'))
+        if (not re.fullmatch('[0-9a-f]{32}', entry['request']) or identity in requests or
+                identity[1] not in ('evidence', 'observation') or
                 type(entry['sequence']) is not int or entry['sequence'] <= previous or
                 not re.fullmatch('[0-9a-f]{64}', entry['digest'])):
             raise ValueError('Invalid evidence issuance ordering.')
-        requests.add(entry['request'])
+        requests.add(identity)
         previous = entry['sequence']
     return entries
 
 
-def records(state, key):
+def records(state, key, pending_observation=None):
     """Read the complete signed inventory, including negative outcomes."""
     entries = read_index(state, key)
-    actual = {path.parent.name for path in (state / 'requests').glob('*/evidence.json')}
-    if actual != {entry['request'] for entry in entries}:
+    actual = {(path.parent.name, path.stem) for path in (state / 'requests').glob('*/*.json')
+              if path.name in ('evidence.json', 'observation.json')}
+    if pending_observation is not None:
+        actual.discard((pending_observation.parent.name, 'observation'))
+    if actual != {(entry['request'], entry.get('kind', 'evidence')) for entry in entries}:
         raise ValueError('Missing or unindexed common stage evidence.')
     found = []
     for entry in entries:
-        payload = read_evidence(state / 'requests' / entry['request'] / 'evidence.json', key)
+        payload = read_evidence(state / 'requests' / entry['request'] /
+                                (entry.get('kind', 'evidence') + '.json'), key)
         if payload['sequence'] != entry['sequence'] or digest(payload) != entry['digest']:
             raise ValueError('Evidence differs from its issuance index.')
         found.append(payload)
+    observed = {entry['request'] for entry in entries if entry.get('kind') == 'observation'}
+    directories = (state / 'requests').iterdir() if (state / 'requests').exists() else []
+    for directory in directories:
+        if not directory.is_dir():
+            continue
+        record = json.loads((directory / 'record.json').read_text())
+        if not isinstance(record, dict):
+            raise ValueError('Invalid common request metadata.')
+        if (record.get('evidence_supported') and record.get('authorized') and
+                record['id'] not in observed and
+                (record.get('state') in ('recovery', 'cancelling') or
+                 record.get('gate_outcome', 0) != 0)):
+            units = {unit: dict(status='unavailable', source=None, environment=None)
+                     for unit, entry in record['selection']['plan']['units'].items()
+                     if entry['action'] == 'execute'}
+            if units:
+                found.append(dict(kind='observation', request=record['id'],
+                    submitted=record['sha'], repository=record.get('repository'),
+                    sequence=entries[-1]['sequence'] + 1 if entries else 1,
+                    units=units, outcome=1))
     return list(reversed(found))
+
+
+def execution_is_current(origin, executed_unit, required_unit, history):
+    """Answer whether an actual successful execution remains unsuperseded."""
+    entry = origin['units'].get(executed_unit)
+    if (origin.get('kind', 'evidence') != 'evidence' or origin['outcome'] != 0 or not entry or
+            entry['status'] != 'passed' or not compatible_unit(executed_unit, required_unit)):
+        return False
+    sequence = entry.get('observation_sequence', origin['sequence'])
+    return not any(
+        later.get('repository') in (None, origin['repository']) and any(
+            item.get('observation_sequence', later['sequence']) >= sequence and
+            compatible_unit(failed, required_unit) and item['status'] in ('failed', 'unavailable') and
+            (item['source'] is None or item['source'] == entry['source']) and
+            (item['environment'] is None or item['environment'] == entry['environment'])
+            for failed, item in later['units'].items()) for later in history)
 
 
 def append_evidence(state, path, payload, writer):
@@ -499,22 +650,39 @@ def append_evidence(state, path, payload, writer):
         fcntl.flock(lock, fcntl.LOCK_EX)
         key = signing_key(state, create=True)
         existing = records(state, key)
-        origins = {record['request']: record for record in existing}
+        origins = {record['request']: record for record in existing
+                   if record.get('kind', 'evidence') == 'evidence'}
         for unit, reference in payload['reused'].items():
             origin = origins[reference['request']]
-            entry = origin['units'][reference['unit']]
-            if (origin['outcome'] != 0 or entry['status'] != 'passed' or
-                    any(later['repository'] == payload['repository'] and
-                        later['sequence'] >= origin['sequence'] and any(
-                            compatible_unit(failed, unit) and item['status'] in ('failed', 'unavailable') and
-                            item['source'] == entry['source'] and item['environment'] == entry['environment']
-                            for failed, item in later['units'].items()) for later in existing)):
+            if not execution_is_current(origin, reference['unit'], unit, existing):
                 raise ValueError('Reused execution origin was superseded before terminal issuance.')
         entries = read_index(state, key)
         payload['sequence'] = entries[-1]['sequence'] + 1 if entries else 1
         writer(path, seal(payload, key))
-        entries.append(dict(request=payload['request'], sequence=payload['sequence'], digest=digest(payload)))
+        entries.append(dict(request=payload['request'], kind=payload.get('kind', 'evidence'),
+                            sequence=payload['sequence'], digest=digest(payload)))
         writer(state / 'evidence-index.json', seal(dict(schema=SCHEMA, entries=entries), key))
+
+
+def complete_observation_index(state, path, writer):
+    """Finish one interrupted negative-capable observation write, never an origin."""
+    import fcntl
+    with (state / 'evidence.lock').open('a+') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        key = signing_key(state)
+        payload = read_evidence(path, key)
+        entries = read_index(state, key)
+        if any(entry['request'] == payload['request'] and entry.get('kind') == 'observation'
+               for entry in entries):
+            records(state, key)
+            return payload
+        if payload.get('kind') != 'observation' or payload['sequence'] != (entries[-1]['sequence'] + 1 if entries else 1):
+            raise ValueError('Interrupted stage observation has ambiguous ordering.')
+        records(state, key, pending_observation=path)
+        entries.append(dict(request=payload['request'], kind='observation',
+                            sequence=payload['sequence'], digest=digest(payload)))
+        writer(state / 'evidence-index.json', seal(dict(schema=SCHEMA, entries=entries), key))
+        return payload
 
 
 def plan(root, sha, selection, state, observe=snapshot, now=None, repository_id=None):
@@ -528,13 +696,14 @@ def plan(root, sha, selection, state, observe=snapshot, now=None, repository_id=
         key = signing_key(state)
         origins = records(state, key)
         repo = repository_id or repository(root)
-        origins = [origin for origin in origins if origin['repository'] == repo]
+        origins = [origin for origin in origins if origin.get('repository') in (None, repo)]
         if not origins:
             return result
         source = source_inputs(root, sha, units[0])
         if not any(entry['status'] == 'passed' and entry['source'] == source and
                    any(compatible_unit(candidate, unit) for unit in units)
-                   for origin in origins for candidate, entry in origin['units'].items()):
+                   for origin in origins if origin.get('kind', 'evidence') == 'evidence'
+                   for candidate, entry in origin['units'].items()):
             result['reasons'].append('No origin matches the registered source inputs.')
             return result
         observed = observe(root, sha, units)
@@ -543,6 +712,8 @@ def plan(root, sha, selection, state, observe=snapshot, now=None, repository_id=
         current_time = time.time() if now is None else now
         for unit in units:
             for origin in origins:
+                if origin.get('kind', 'evidence') != 'evidence':
+                    continue
                 if subprocess.run(['git', '-C', str(root), 'merge-base', '--is-ancestor',
                                    origin['submitted'], sha], stderr=subprocess.DEVNULL).returncode:
                     continue
@@ -552,14 +723,7 @@ def plan(root, sha, selection, state, observe=snapshot, now=None, repository_id=
                     if (entry['source'] != observed['sources'][unit] or
                             entry['environment'] != observed['environment']['digest']):
                         continue
-                    # Later same-input failures cannot be bypassed by selecting
-                    # an older successful record, even from another branch.
-                    blocked = any(
-                        later['sequence'] >= origin['sequence'] and any(
-                            compatible_unit(failed, unit) and item['status'] in ('failed', 'unavailable') and
-                            item['source'] == entry['source'] and item['environment'] == entry['environment']
-                            for failed, item in later['units'].items()) for later in origins)
-                    if blocked or origin['outcome'] != 0:
+                    if not execution_is_current(origin, candidate, unit, origins):
                         continue
                     if unit.startswith('build-') and not clock_valid(
                             observed['environment']['clock'], entry.get('timestamps'), commit_time, current_time):
@@ -642,10 +806,57 @@ def revalidate(root, sha, selection, state, repository_id=None):
     return (previous['units'] == current['units'] and previous['snapshot'] == current['snapshot'])
 
 
+def execution_entries(record, worker):
+    """Describe actual attempted units without asserting terminal cleanup."""
+    before = worker.get('before')
+    report = worker.get('report', {})
+    if not before or report.get('request') != record['token']:
+        return {}
+    invalid = before != worker.get('after') or any(
+        unit.startswith('build-') and status == 'passed' and not valid_check(report.get('check'), unit)
+        for unit, status in report.get('units', {}).items())
+    units = {}
+    for unit, status in report.get('units', {}).items():
+        if (unit not in before['sources'] or status not in ('passed', 'running') or
+                record['selection'].get('plan', {}).get('units', {}).get(unit, {}).get('action') != 'execute'):
+            continue
+        entry = dict(source=before['sources'][unit], environment=before['environment']['digest'],
+                     environment_contract=before['environment'],
+                     status='unavailable' if invalid else 'passed' if status == 'passed' else 'failed')
+        if unit.startswith('build-'):
+            entry.update(check=report.get('check'), timestamps=report.get('timestamps'))
+        units[unit] = entry
+    return units
+
+
+def observe_outcome(state, path, record, worker, writer):
+    """Retain ordered outcomes before cleanup; observations cannot authorize reuse."""
+    if not record.get('evidence_supported') or not record.get('authorized'):
+        return None
+    destination = path.with_name('observation.json')
+    if destination.exists():
+        observation = complete_observation_index(state, destination, writer)
+    else:
+        units = execution_entries(record, worker)
+        if not worker or not worker.get('before') or worker.get('report', {}).get('request') != record['token']:
+            units = {unit: dict(status='unavailable', source=None, environment=None)
+                     for unit, entry in record['selection']['plan']['units'].items()
+                     if entry['action'] == 'execute'}
+        observation = dict(schema=SCHEMA, kind='observation', request=record['id'], user=os.getuid(),
+            repository=worker.get('repository', record.get('repository')), submitted=record['sha'],
+            selection=record['selection'], supervisor=record['launcher'], finished=time.time(),
+            outcome=record['gate_outcome'], units=units, reused={})
+        append_evidence(state, destination, observation, writer)
+    record['observation_sequence'] = observation['sequence']
+    writer(path, record)
+    return observation
+
+
 def issue(state, record, worker):
     """Seal only observed executions after the supervisor confirms cleanup."""
     if (record['state'] != 'terminal' or record['cleanup'] != 'confirmed' or
-            record['owned_capacity'] or not record['authorized']):
+            record['owned_capacity'] or not record['authorized'] or
+            record.get('observation_error')):
         return None
     before, after = worker.get('before'), worker.get('after')
     if not before or before != after:
@@ -653,21 +864,10 @@ def issue(state, record, worker):
     report = worker.get('report', {})
     if report.get('request') != record['token']:
         return None
-    units = {}
-    invalid_origin = any(unit.startswith('build-') and status == 'passed' and
-                         not valid_check(report.get('check'), unit)
-                         for unit, status in report.get('units', {}).items())
-    for unit, status in report.get('units', {}).items():
-        if (unit not in before['sources'] or status not in ('passed', 'running') or
-                record['selection'].get('plan', {}).get('units', {}).get(unit, {}).get('action') != 'execute'):
-            continue
-        passed = status == 'passed'
-        entry = dict(source=before['sources'][unit], environment=before['environment']['digest'],
-                     environment_contract=before['environment'],
-                     status='unavailable' if invalid_origin else 'passed' if passed else 'failed')
-        if unit.startswith('build-'):
-            entry.update(check=report.get('check'), timestamps=report.get('timestamps'))
-        units[unit] = entry
+    units = execution_entries(record, worker)
+    if record.get('observation_sequence') is not None:
+        for entry in units.values():
+            entry['observation_sequence'] = record['observation_sequence']
     if record['outcome'] == 0 and not all(
             report.get('units', {}).get(unit) == 'passed'
             for unit, entry in record['selection'].get('plan', {}).get('units', {}).items()
@@ -681,10 +881,11 @@ def issue(state, record, worker):
         required += ['Test dependency syntax', 'Required test Suggests']
     if record['outcome'] == 0 and not set(required).issubset(report.get('completed', [])):
         return None
-    return dict(schema=SCHEMA, request=record['id'], user=os.getuid(),
+    return dict(schema=SCHEMA, kind='evidence', request=record['id'], user=os.getuid(),
                 repository=worker['repository'], submitted=record['sha'],
                 selection=record['selection'], supervisor=record['launcher'],
                 finished=record['finished'], outcome=record['outcome'],
+                observation=record.get('observation_sequence'),
                 units=units, reused={unit: entry for unit, entry in
                                     record['selection'].get('plan', {}).get('units', {}).items()
                                     if entry['action'] == 'reuse'},

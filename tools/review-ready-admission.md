@@ -106,8 +106,12 @@ terminal `record.json` only after confirming process and workspace cleanup.
 The private `evidence.key` binds integrity and provenance to the OS user state.
 `evidence-index.json` seals the complete issuance inventory and sequence;
 `evidence.lock` serializes that short write independently of Full admission.
-Failed stage attempts are retained to prevent choosing an older same-input pass;
-they cannot discharge an obligation. Keep referenced origins available. Missing,
+An authenticated `observation.json` retains attempted stage outcomes before
+cleanup, including when cleanup fails. Recovery preserves it and can complete
+its interrupted index write; observations never discharge an obligation.
+Unobserved failed or uncertain journals fence reuse conservatively. Stage
+observation order prevents delayed cleanup from hiding a later failure.
+Keep referenced origins and observations available. Missing,
 corrupt or incompatible records disable reuse; they never become omission.
 Before gate start the pinned worker revalidates the plan and can request the
 existing authenticated Full promotion. Invalidation after gate start fails

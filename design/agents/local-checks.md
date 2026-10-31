@@ -182,6 +182,10 @@ participate. The dependency expectation vector is normalized only while all
 protected verifier bytes remain identical. All of DESCRIPTION, package tests,
 the progress reporter, generation sources and the trusted machinery remain
 inputs. A newly registered non-input needs an audit of every unit it affects.
+Committed symlinks, submodules and nonempty Git attributes have unregistered
+source closures and cannot supply reusable identities. Git replacement objects,
+grafts and caller context overrides also make the cumulative comparison
+unavailable, selecting Full.
 
 Build and check are one unit. Full and Documentation remain distinct;
 compatible Full evidence can discharge Documentation build/check, but never
@@ -200,17 +204,23 @@ Old logs, CI results and agent reports cannot establish a baseline. Corrupt or
 missing records/origins, incomplete cleanup, incompatible identities, unknown
 NOTEs, or later same-input/environment stage failures prevent reuse. There is
 no age-only expiry.
-The signed issuance index retains success and failure records in sequence order
-independent of the wall clock. Missing indexed evidence prevents reuse, including
-when the missing record could have superseded an older success.
+Before cleanup, the supervisor seals a stage outcome observation; it is never a
+reusable origin. Recovery preserves that observation before removing its report,
+and can finish an interrupted observation index write. Unobserved failed or
+uncertain request journals conservatively fence older successes.
+The signed issuance index inventories observations and terminal evidence in
+sequence order independent of the wall clock. Supersession follows stage
+observation order, not delayed cleanup completion. Missing indexed evidence
+prevents reuse, including when it could have superseded an older success.
 Origin validity is checked again under the issuance lock. A superseding failure
 or unavailable publication after validation fails a request relying on reuse.
 
 Environment identities include R and its checker implementation, OS/architecture,
 resolved tools and runtime assets, Python and R libraries with content/change
-metadata, native dependencies, ordered R libraries, startup/build configuration,
+metadata, native dependencies, ordered R libraries, startup/build and external Git configuration,
 environment variables, locale and timezone. Caller loader overrides, custom
-startup/build hooks and unsupported native resolution have unregistered input
+startup/build hooks, nonempty external attributes, executable/archive Git
+configuration and unsupported native resolution have unregistered input
 closures and disable reuse. The native inspection routes are macOS `otool`
 and Linux `ldd`; unknown evidence strengthens verification. These are cooperative
 observations, not environment isolation. Keep tools and libraries unchanged

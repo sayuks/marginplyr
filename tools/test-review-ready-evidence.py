@@ -5,6 +5,8 @@ import fcntl
 import json
 import os
 import re
+import io
+import tarfile
 from pathlib import Path
 import shutil
 import subprocess
@@ -17,6 +19,8 @@ import uuid
 ROOT = Path(__file__).resolve().parent.parent
 policy = importlib.machinery.SourceFileLoader(
     'evidence_contract', str(ROOT / 'tools/review-ready-evidence.py')).load_module()
+admission = importlib.machinery.SourceFileLoader(
+    'evidence_admission_contract', str(ROOT / 'tools/review-ready-admission.py')).load_module()
 process_contract = importlib.machinery.SourceFileLoader(
     'evidence_lifecycle', str(ROOT / 'tools/test-review-ready-admission.py')).load_module()
 
@@ -129,7 +133,7 @@ class StageEvidence(unittest.TestCase):
         request = uuid.uuid4().hex
         directory = self.state / 'requests' / request
         directory.mkdir(parents=True)
-        selection = dict(self.selection, path=path)
+        selection = dict(self.selection, path=path, submitted=self.sha)
         units = policy.required_units(selection)
         selection['plan'] = dict(units={unit: dict(action='execute') for unit in units})
         record = dict(id=request, sha=self.sha, token=uuid.uuid4().hex, launcher='trusted supervisor',
@@ -263,6 +267,7 @@ class StageEvidence(unittest.TestCase):
             'Package spelling', 'jarl', 'package-aware lintr', 'Test dependency syntax', 'Required test Suggests'])
         worker = dict(before=before, after=before, repository=policy.repository(self.root), report=report)
         payload = policy.issue(self.state, record, worker)
+        (directory / 'record.json').write_text(json.dumps(record))
         self.origin(status=1, mutate=lambda record, worker:
                     worker['report']['units'].update({'build-full': 'running'}))
         (directory / 'record.json').write_text(json.dumps(record))
@@ -329,6 +334,172 @@ class StageEvidence(unittest.TestCase):
         self.origin()
         self.sha = self.base
         self.assertEqual(self.plan()['units']['build-full']['action'], 'execute')
+
+    def test_external_symlink_and_committed_attributes_cannot_supply_source_identity(self):
+        external = Path(self.temp.name) / 'external.R'
+        external.write_text('behavior <- function() 1\n')
+        (self.root / 'R/linked.R').symlink_to(external)
+        self.commit()
+        with self.assertRaisesRegex(ValueError, 'Unsupported committed source type'):
+            policy.source_inputs(self.root, self.sha, 'build-full')
+        self.git('reset', '--hard', self.base)
+        self.write('.gitattributes', 'R/behavior.R export-subst\n')
+        self.commit()
+        with self.assertRaisesRegex(ValueError, 'Unregistered committed Git attributes'):
+            policy.source_inputs(self.root, self.sha, 'build-full')
+
+    def test_git_replacement_cannot_hide_a_cumulative_package_change(self):
+        self.git('checkout', '-qb', 'followup')
+        self.write('R/behavior.R', 'behavior <- function() 2\n')
+        self.commit()
+        self.assertIn('R/behavior.R', self.git('diff', '--name-only', self.base, self.sha))
+        self.git('replace', self.sha, self.base)
+        self.assertEqual(self.git('diff', '--name-only', self.base, self.sha), '')
+        selection = admission.select_path(self.root, self.sha)
+        self.assertEqual(selection['path'], 'Full')
+        self.assertIsNone(selection['base'])
+        self.assertIn('replacement objects', selection['reasons'][0])
+
+    def test_external_git_attributes_cannot_change_archive_behind_a_reused_unit(self):
+        self.write('tools/review-ready-environment.R', (ROOT / 'tools/review-ready-environment.R').read_text())
+        self.commit()
+        config = Path(self.temp.name) / 'gitconfig'
+        attributes = Path(self.temp.name) / 'attributes'
+        attributes.write_text('')
+        config.write_text('[core]\n attributesFile = ' + str(attributes) + '\n')
+        previous = os.environ.get('GIT_CONFIG_GLOBAL')
+        os.environ['GIT_CONFIG_GLOBAL'] = str(config)
+        original = self.observe
+        def observe(root, sha, units):
+            snapshot = original(root, sha, units)
+            code = ('import importlib.machinery,json,sys; '
+                    'm=importlib.machinery.SourceFileLoader("identity_probe",sys.argv[1]).load_module(); '
+                    'print(json.dumps(m.environment(sys.argv[2])))')
+            snapshot['environment'] = json.loads(subprocess.check_output(
+                [process_contract.sys.executable, '-c', code, policy.__file__, str(root)],
+                cwd=root, text=True, stderr=subprocess.PIPE))
+            return snapshot
+        self.observe = observe
+        try:
+            self.origin()
+            self.assertEqual(self.plan()['units']['build-full']['action'], 'reuse')
+            before = policy.git(self.root, 'archive', '--format=tar', self.sha)
+            attributes.write_text('R/behavior.R export-ignore\n')
+            after = policy.git(self.root, 'archive', '--format=tar', self.sha)
+            with tarfile.open(fileobj=io.BytesIO(before)) as archive:
+                self.assertIn('R/behavior.R', archive.getnames())
+            with tarfile.open(fileobj=io.BytesIO(after)) as archive:
+                self.assertNotIn('R/behavior.R', archive.getnames())
+            self.assertEqual(self.plan()['units']['build-full']['action'], 'execute')
+        finally:
+            if previous is None:
+                os.environ.pop('GIT_CONFIG_GLOBAL', None)
+            else:
+                os.environ['GIT_CONFIG_GLOBAL'] = previous
+
+    def stage_request(self, status):
+        _, origin = self.origin()
+        record = json.loads(origin.with_name('record.json').read_text())
+        request = uuid.uuid4().hex
+        directory = self.state / 'requests' / request
+        directory.mkdir()
+        workspace = directory / 'workspace'
+        workspace.mkdir()
+        record.update(id=request, token=uuid.uuid4().hex, root=str(self.root),
+            boot=str(uuid.uuid4()), manager=dict(pid=99999999, birth='fixture process'),
+            group=None, children=[], state='running', capacity='Full', may_own_full=True,
+            owned_capacity=True, epoch=1, gate_started=True, requires_proof=True,
+            workspace=str(workspace), cleanup='pending', promotions=[],
+            channel='/tmp/marginplyr-review-' + request + '.sock', channel_owned=False,
+            evidence_supported=True, repository=policy.repository(self.root))
+        record['selection']['plan'].update(schema=1, snapshot=None, reasons=[])
+        path = directory / 'record.json'
+        admission.save(path, record)
+        before = self.observe(self.root, self.sha, policy.required_units(record['selection']))
+        original = json.loads(origin.read_text())['payload']
+        build = original['units']['build-full']
+        report = dict(request=record['token'], units={'build-full': 'running' if status else 'passed',
+                      'generation': 'passed'}, check=build['check'], timestamps=build['timestamps'],
+                      completed=original['completed'])
+        worker = dict(before=before, after=before, repository=record['repository'], report=report, status=status)
+        (workspace / 'worker-result.json').write_text(json.dumps(worker))
+        return record, path, workspace, worker
+
+    def recover_stage(self, record):
+        observer = admission.processes
+        admission.processes = lambda: {}
+        try:
+            self.assertEqual(admission.recover_request(self.state, record['id'], record['boot']), 0)
+        finally:
+            admission.processes = observer
+
+    def test_failed_stage_survives_cleanup_failure_and_recovery(self):
+        record, path, workspace, worker = self.stage_request(1)
+        clean = admission.clean_workspace
+        def failed_cleanup(record):
+            raise OSError('fixture cleanup failure')
+        admission.clean_workspace = failed_cleanup
+        try:
+            with self.assertRaisesRegex(OSError, 'fixture cleanup failure'):
+                admission.finish_request(self.state, path, record, 1)
+        finally:
+            admission.clean_workspace = clean
+        record.update(state='recovery', cleanup='unconfirmed')
+        admission.save(path, record)
+        self.assertIsNotNone(admission.read_record(path))
+        self.assertEqual(self.plan()['units']['build-full']['action'], 'execute')
+        self.recover_stage(record)
+        self.assertFalse(workspace.exists())
+        self.assertEqual(self.plan()['units']['build-full']['action'], 'execute')
+        self.origin()
+        self.assertEqual(self.plan()['units']['build-full']['action'], 'reuse')
+
+    def test_pending_success_observation_is_not_an_execution_origin(self):
+        record, path, workspace, worker = self.stage_request(0)
+        for evidence in self.state.glob('requests/*/evidence.json'):
+            evidence.unlink()
+        (self.state / 'evidence-index.json').unlink()
+        record['gate_outcome'] = 0
+        admission.save(path, record)
+        policy.observe_outcome(self.state, path, record, worker, admission.save)
+        self.assertEqual(self.plan()['units']['build-full']['action'], 'execute')
+
+    def test_delayed_success_cleanup_cannot_hide_a_later_stage_failure(self):
+        record, path, workspace, worker = self.stage_request(0)
+        admission.retain_outcome(self.state, path, record, 0)
+        sequence = record['observation_sequence']
+        self.origin(status=1, mutate=lambda record, worker:
+                    worker['report']['units'].update({'build-full': 'running'}))
+        self.assertEqual(admission.finish_request(self.state, path, record, 0), 0)
+        retained = json.loads(path.with_name('evidence.json').read_text())['payload']
+        self.assertGreater(retained['sequence'], sequence)
+        self.assertEqual(retained['units']['build-full']['observation_sequence'], sequence)
+        self.assertEqual(self.plan()['units']['build-full']['action'], 'execute')
+        self.origin()
+        self.assertEqual(self.plan()['units']['build-full']['action'], 'reuse')
+
+    def test_recovery_completes_only_the_interrupted_observation_index(self):
+        record, path, workspace, worker = self.stage_request(1)
+        original = admission.save
+        def fail_index(path, value):
+            if path.name == 'evidence-index.json':
+                raise OSError('fixture index write failure')
+            return original(path, value)
+        admission.save = fail_index
+        try:
+            with self.assertRaisesRegex(OSError, 'fixture index write failure'):
+                admission.finish_request(self.state, path, record, 1)
+        finally:
+            admission.save = original
+        self.assertTrue(path.with_name('observation.json').exists())
+        record.update(state='recovery', cleanup='unconfirmed')
+        admission.save(path, record)
+        self.assertEqual(self.plan()['units']['build-full']['action'], 'execute')
+        self.recover_stage(record)
+        self.assertFalse(workspace.exists())
+        self.assertEqual(self.plan()['units']['build-full']['action'], 'execute')
+        self.origin()
+        self.assertEqual(self.plan()['units']['build-full']['action'], 'reuse')
 
 
 class EvidenceLifecycle(process_contract.Lifecycle):
@@ -412,6 +583,9 @@ class EvidenceLifecycle(process_contract.Lifecycle):
         output = self.finish(job, log)
         self.assertIn('; capacity: Full;', output)
         self.assertIn('EXECUTED build-full', output)
+        self.assertIn('; cleanup: confirmed;', output)
+        self.assertIn('observation unavailable for reuse', output)
+        self.assertEqual(len(list(state.glob('requests/*/evidence.json'))), 0)
 
     def test_environment_change_during_reuse_fails_without_full_fallback(self):
         current = self.prepare_evidence()

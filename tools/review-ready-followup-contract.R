@@ -26,12 +26,9 @@ if (!is.call(expected) || !identical(expected[[1L]], as.name("c")) ||
 }
 expected <- eval(expected, baseenv())
 if (!identical(declared, expected)) stop("Independent review dependency mismatch.", call. = FALSE)
-# Use the verifier's actual assertion and dependency reader in an isolated copy;
+# Use the verifier's actual assertion and dependency reader in a private scope;
 # neither expected vectors nor a successful changed verifier prove strictness.
 local({
-  workspace <- tempfile("review-followup-contract-")
-  dir.create(workspace)
-  on.exit(unlink(workspace, recursive = TRUE), add = TRUE)
   assertion <- expression[[which(vapply(as.list(expression), function(call) {
     is.call(call) && identical(call[[1L]], as.name("<-")) &&
       identical(call[[2L]], as.name("expect_identical"))

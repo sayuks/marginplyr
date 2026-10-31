@@ -285,6 +285,8 @@ def select_path(root, sha):
     """
     selection = dict(submitted=sha, main=None, base=None, path='Full', reasons=[], verifiers=[])
     try:
+        if evidence_policy:
+            evidence_policy.comparison_inputs(root)
         selection['main'] = git(root, 'rev-parse', '--verify', 'refs/heads/main^{commit}')
         bases = git(root, 'merge-base', '--all', sha, selection['main']).splitlines()
         if len(bases) != 1 or not re.fullmatch('[0-9a-f]{40}', bases[0]):
@@ -375,6 +377,8 @@ def select_path(root, sha):
             reasons = ['R documentation eligibility pending supervised proof' if roxygen else
                        'all cumulative changes are supported documentation or repository artifacts'
                        if documentation else 'all cumulative changes are supported repository artifacts']
+        if evidence_policy:
+            evidence_policy.comparison_inputs(root)
         selection['reasons'] = reasons
     except (OSError, ValueError, subprocess.SubprocessError) as error:
         selection['reasons'] = ['comparison unavailable: ' + str(error)]
@@ -653,6 +657,7 @@ def recover_request(state, requested, boot):
         else:
             reason = 'from an earlier OS boot'
         if record['version'] == 2:
+            retain_outcome(state, path, record)
             clean_workspace(record)
             record.update(state='terminal', outcome='interrupted; recovered, no check evidence',
                           cleanup='confirmed', owned_capacity=False, finished=time.time())
@@ -943,9 +948,33 @@ def supervise(path, record, server, cancellation, parent):
         raise
 
 
-def finish_request(state, path, record, status):
+def retain_outcome(state, path, record, status=None):
+    """Preserve stage outcomes before cleanup or recovery can remove their report."""
+    if status is not None:
+        record['gate_outcome'] = status
+        persist(path, record)
     result = Path(record['workspace']) / 'worker-result.json'
     worker = json.loads(result.read_text()) if result.exists() else {}
+    if 'gate_outcome' not in record:
+        record['gate_outcome'] = worker.get('status', CANCELLED)
+        persist(path, record)
+    if evidence_policy and record.get('evidence_supported'):
+        try:
+            evidence_policy.observe_outcome(state, path, record, worker, save)
+        except (ValueError, KeyError, TypeError) as error:
+            # Invalid older cache data cannot block cleanup of an executed gate.
+            # The durable outcome journal still fences unobserved failures.
+            record['observation_error'] = str(error)
+            persist(path, record)
+            say('Stage outcome observation unavailable for reuse: ' + str(error))
+    return worker
+
+
+def finish_request(state, path, record, status):
+    worker = retain_outcome(state, path, record, status)
+    if record.get('observation_error') and evidence_policy.reused_units(record['selection']):
+        status = 1
+        say('Reuse invalidated at outcome observation; invocation failed without fallback.')
     clean_workspace(record)
     record.update(state='terminal', outcome=status, cleanup='confirmed', finished=time.time())
     # Capacity stays owned until disposable-source cleanup is complete.
@@ -1140,7 +1169,8 @@ def run_pinned(args):
             status = 1
         if report.exists():
             try:
-                result = dict(before=before, after=after, repository=evidence_policy.repository(Path(root)),
+                result = dict(before=before, after=after, status=status,
+                              repository=evidence_policy.repository(Path(root)),
                               report=json.loads(report.read_text()))
                 (Path(checkout).parent / 'worker-result.json').write_text(json.dumps(result))
             except (OSError, ValueError, subprocess.SubprocessError) as error:
@@ -1230,6 +1260,10 @@ def main(args=None):
         directory.mkdir(parents=True, mode=0o700)
         manager_lock = lock_file(directory / 'manager.lock')
         path = directory / 'record.json'
+        try:
+            repository_id = evidence_policy.repository(root) if evidence_policy else None
+        except (OSError, subprocess.SubprocessError):
+            repository_id = None
         record = dict(version=2, protocol=SUPERVISION_PROTOCOL, id=request, token=uuid.uuid4().hex,
                       sha=sha, root=str(root), boot=boot, manager=evidence(table[os.getpid()]),
                       group=None, children=[], started=time.time(), selection=selection,
@@ -1242,7 +1276,10 @@ def main(args=None):
                       worker_policy=('Full suite: 4 test workers' if needs_full(selection) else
                                      'serial; registered parallel fixtures <=2'),
                       requires_proof=EXEMPT_PROTOCOL in git_bytes(
-                          root, 'show', sha + ':tools/review-ready-check.R').splitlines())
+                          root, 'show', sha + ':tools/review-ready-check.R').splitlines(),
+                      repository=repository_id,
+                      evidence_supported=bool(evidence_policy and evidence_policy.PROTOCOL in git_bytes(
+                          root, 'show', sha + ':tools/review-ready-check.R').splitlines()))
         save(path, record)
         say('Review-ready request: ' + request + '; management record: ' + str(path))
         return run_request(state, path, record, cancellation, parent)
