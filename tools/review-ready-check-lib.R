@@ -754,12 +754,20 @@ run_review_ready_rcmdcheck <- function(
   }
 }
 
-# Reads the admitted worker's transport. Launchers predating selection retain
-# Full; a malformed transport fails rather than dropping required verifiers.
+# Reads the admitted worker's transport. A current launcher must supply the
+# pinned base so legacy Full selection cannot omit required artifact checks.
 read_review_ready_selection <- function() {
   path <- Sys.getenv("MARGINPLYR_REVIEW_SELECTION")
-  if (!nzchar(path)) return(list(path = "Full", verifiers = character()))
+  refresh <- paste(
+    "Refresh the installed marginplyr-review-ready launcher:",
+    "CI artifact verification requires its pinned comparison transport."
+  )
+  if (!nzchar(path)) stop(refresh, call. = FALSE)
   record <- read.dcf(path)
+  if (!all(c("Base", "Protocol") %in% colnames(record)) ||
+      !identical(record[[1L, "Protocol"]], "2")) {
+    stop(refresh, call. = FALSE)
+  }
   required <- c("Path", "Commit", "Request", "Verifiers")
   if (nrow(record) != 1L || !all(required %in% colnames(record)) ||
       !record[[1L, "Path"]] %in% c("Full", "Repository") ||
@@ -775,12 +783,12 @@ read_review_ready_selection <- function() {
   selection <- list(path = record[[1L, "Path"]], sha = record[[1L, "Commit"]],
     verifiers = if (is.na(verifiers) || !nzchar(verifiers)) character() else
       strsplit(verifiers, " ", fixed = TRUE)[[1L]])
-  if ("Base" %in% colnames(record) && !is.na(record[[1L, "Base"]])) {
-    if (!grepl("^[0-9a-f]{40}$", record[[1L, "Base"]])) {
-      stop("Invalid admitted comparison base.", call. = FALSE)
-    }
-    selection$base <- record[[1L, "Base"]]
+  if (is.na(record[[1L, "Base"]]) ||
+      !grepl("^[0-9a-f]{40}$", record[[1L, "Base"]])) {
+    stop("Invalid admitted comparison base; CI validation remains unresolved.",
+      call. = FALSE)
   }
+  selection$base <- record[[1L, "Base"]]
   selection
 }
 

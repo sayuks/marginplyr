@@ -611,32 +611,40 @@ local({
   transport <- tempfile("review-ready-selection-")
   on.exit(unlink(transport), add = TRUE)
   Sys.unsetenv(keys)
-  expect_identical(read_review_ready_selection(),
-    list(path = "Full", verifiers = character()), "older launchers keep Full")
+  expect_error(read_review_ready_selection(), "Refresh the installed",
+    "older launchers cannot omit required CI artifact checks")
   Sys.setenv(MARGINPLYR_REVIEW_SELECTION = transport,
     MARGINPLYR_REVIEW_REQUEST = "fixture")
   writeLines(c("Path: Repository", paste("Commit:", clean_identity$sha),
-    "Request: fixture", "Verifiers: .github/scripts/verify-context-budget.R"),
+    "Protocol: 2", "Request: fixture", "Verifiers: .github/scripts/verify-context-budget.R",
+    paste("Base:", clean_identity$sha)),
     transport)
   expect_identical(read_review_ready_selection(),
     list(path = "Repository", sha = clean_identity$sha,
-      verifiers = ".github/scripts/verify-context-budget.R"),
+      verifiers = ".github/scripts/verify-context-budget.R", base = clean_identity$sha),
     "the admitted worker's Repository transport")
   writeLines(c("Path: Repository", paste("Commit:", clean_identity$sha),
-    "Request: fixture", "Verifiers: .github/scripts/verify-context-budget.R",
+    "Protocol: 2", "Request: fixture", "Verifiers: .github/scripts/verify-context-budget.R",
     paste("Base:", clean_identity$sha)), transport)
   expect_identical(read_review_ready_selection()$base, clean_identity$sha,
     "the pinned comparison reaches artifact verification")
   writeLines(c("Path: Full", paste("Commit:", clean_identity$sha),
-    "Request: fixture", "Verifiers:", "Base: invalid"), transport)
+    "Protocol: 2", "Request: fixture", "Verifiers:", "Base: invalid"), transport)
   expect_error(read_review_ready_selection(), "Invalid admitted comparison base",
     "an invalid comparison base")
+  writeLines(c("Path: Full", paste("Commit:", clean_identity$sha),
+    "Protocol: 2", "Request: fixture", "Verifiers:"), transport)
+  expect_error(read_review_ready_selection(), "Refresh the installed",
+    "a legacy Full transport cannot replace CI artifact evidence")
+  writeLines(c("Path: Full", paste("Commit:", clean_identity$sha),
+    "Protocol: 2", "Request: fixture", "Verifiers:",
+    paste("Base:", clean_identity$sha)), transport)
   Sys.setenv(MARGINPLYR_REVIEW_REQUEST = "another-request")
   expect_error(read_review_ready_selection(), "Invalid admitted",
     "a different admitted request")
   Sys.setenv(MARGINPLYR_REVIEW_REQUEST = "fixture")
   writeLines(c("Path: Repository", paste("Commit:", clean_identity$sha),
-    "Request: fixture", "Verifiers:"), transport)
+    "Protocol: 2", "Request: fixture", "Verifiers:", paste("Base:", clean_identity$sha)), transport)
   expect_error(read_review_ready_selection(), "requires mapped",
     "a missing required verifier route")
 })

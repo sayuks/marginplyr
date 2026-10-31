@@ -29,7 +29,8 @@ CANCELLED = 130
 STALE = 3
 BLOCKED = 4
 SELECTION = 'MARGINPLYR_REVIEW_SELECTION'
-PROTOCOL = b'# Review-ready selection protocol: 1'
+PROTOCOL_VERSION = 2
+PROTOCOL = ('# Review-ready selection protocol: ' + str(PROTOCOL_VERSION)).encode('ascii')
 
 # Supported prose and its verification routes live here. Other file formats in
 # these directories have no exemption. Checking machinery remains Full.
@@ -387,7 +388,7 @@ def run_pinned(args):
     subprocess.run(['git', '-C', checkout, 'checkout', '--quiet', '--detach', sha], check=True)
     selection = record.get('selection', dict(path='Full', verifiers=[]))
     transport = Path(checkout).parent / 'selection.dcf'
-    transport.write_text('Path: ' + selection['path'] + '\nCommit: ' + sha +
+    transport.write_text('Protocol: ' + str(PROTOCOL_VERSION) + '\nPath: ' + selection['path'] + '\nCommit: ' + sha +
                          '\nRequest: ' + record['token'] + '\nVerifiers: ' +
                          ' '.join(selection['verifiers']) + '\nBase: ' +
                          (selection.get('base') or '') + '\n')

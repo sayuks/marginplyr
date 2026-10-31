@@ -45,8 +45,9 @@ Refresh/restart sessions whose instructions or PATH cannot be updated. Older
 worktrees need not merge this implementation: run the installed command from
 their root. Selection requires the submitted R entry
 point's versioned protocol marker. Unsupported older revisions retain their
-existing Full gate; an older installed launcher with new sources also
-retains Full. Refresh the installed launcher from the implementation
+existing Full gate. Current sources require protocol 2 and refuse older
+selection transports: Full package checking cannot replace their required CI
+artifact checks. Refresh the installed launcher from the implementation
 checkout to enable selection; source edits alone never update the standalone
 installed copy. Compare its bytes with `tools/review-ready-admission.py`
 after installation, and verify both a real Full and a real supported-artifact

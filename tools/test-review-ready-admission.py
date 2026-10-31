@@ -112,7 +112,7 @@ sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
     def repository_branch(self):
         self.git(self.repo, 'checkout', '-qb', 'selection-support')
         entry = self.repo / 'tools/review-ready-check.R'
-        entry.write_text('# Review-ready selection protocol: 1\n')
+        entry.write_text('# Review-ready selection protocol: 2\n')
         self.git(self.repo, 'add', '.')
         self.git(self.repo, 'commit', '-qm', 'selection support')
         self.git(self.repo, 'branch', '-f', 'main', 'HEAD')
@@ -370,6 +370,16 @@ sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
         for arg in ('--repository', '--skip-check', '--path=Repository'):
             job, log = self.start(args=(arg,))
             self.assertNotIn('HEAVY ', self.finish(job, log, 2))
+
+    def test_older_revision_keeps_its_existing_full_gate(self):
+        self.repository_branch()
+        (self.repo / 'tools/review-ready-check.R').write_text(
+            '# Review-ready selection protocol: 1\n')
+        self.commit_all()
+        selected = self.selected()
+        self.assertEqual(selected['path'], 'Full')
+        self.assertEqual(selected['verifiers'], [])
+        self.assertIn('lacks selection protocol', ' '.join(selected['reasons']))
 
     def test_worktrees_and_clones_share_one_capacity(self):
         worktree = self.root / 'worktree'
