@@ -25,6 +25,12 @@ package_sources <- c(list.files("R", "[.][Rr]$", full.names = TRUE),
   list.files("src", "[.](c|cc|cpp|h|hpp|f|f90)$", full.names = TRUE, recursive = TRUE),
   list.files("man", "[.]Rd$", full.names = TRUE),
   list.files("vignettes", "[.]qmd$", full.names = TRUE), "README.qmd")
+# Match the complete call so named argument matching cannot replace its name.
+literal_environment_read <- paste0(
+  "\\bSys[.]getenv[[:space:]]*[(][[:space:]]*([\"'])[A-Za-z_][A-Za-z0-9_]*\\1",
+  "[[:space:]]*(,[[:space:]]*(unset[[:space:]]*=[[:space:]]*)?",
+  "(\"[^\"\\\\]*\"|'[^'\\\\]*'|NA))?[[:space:]]*[)]"
+)
 for (file in package_sources[file.exists(package_sources)]) {
   lines <- readLines(file, warn = FALSE)
   if (any(grepl("\\b(Sys[.](Date|time)|date|now|today)[[:space:]]*[(]",
@@ -32,11 +38,7 @@ for (file in package_sources[file.exists(package_sources)]) {
   if (any(vapply(execution_metadata, function(name) {
     any(grepl(name, lines, fixed = TRUE))
   }, logical(1)))) unknown <- c(unknown, file)
-  # Only direct literal-name reads establish independence from normalized IDs.
-  unresolved <- gsub(
-    "\\bSys[.]getenv[[:space:]]*[(][[:space:]]*([\"'])[A-Za-z_][A-Za-z0-9_]*\\1[[:space:]]*[,)]",
-    "", paste(lines, collapse = "\n"), perl = TRUE
-  )
+  unresolved <- gsub(literal_environment_read, "", paste(lines, collapse = "\n"), perl = TRUE)
   if (grepl("\\bgetenv\\b", unresolved, perl = TRUE)) unknown <- c(unknown, file)
 }
 checksum <- function(name) {
@@ -60,6 +62,6 @@ cat(jsonlite::toJSON(list(
   loader_defaults = as.list(Sys.getenv(c("LD_LIBRARY_PATH", "DYLD_FALLBACK_LIBRARY_PATH"))),
   clock = list(r = as.character(getRversion()), checker = checksum(".check_packages"),
     timeout = checksum("get_timeout"), leeway = leeway),
-  metadata_audit = list(version = 2L, names = as.list(execution_metadata)),
+  metadata_audit = list(version = 3L, names = as.list(execution_metadata)),
   unregistered = as.list(unname(unknown))
 ), auto_unbox = TRUE, null = "null"))

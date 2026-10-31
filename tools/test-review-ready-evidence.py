@@ -105,6 +105,7 @@ class ExpectationContract(unittest.TestCase):
                        'Sys.getenv(c("SAFE_INPUT", paste0("CLAUDE", "_PID")))',
                        'reader <- Sys.getenv', 'get("Sys.getenv")',
                        'Sys.getenv(x = paste0("CLAUDE", "_PID"))',
+                       'Sys.getenv("SAFE_INPUT", x = paste0("CLAUDE", "_PID"))',
                        'Sys.getenv("\\x43LAUDE_PID")', 'getenv(name)')
             for number, reader in enumerate(readers):
                 (root / ('R/reader' + str(number) + '.R')).write_text(reader + '\n')
@@ -481,7 +482,8 @@ class StageEvidence(unittest.TestCase):
 
     def test_older_probe_cannot_silently_ignore_the_metadata_audit(self):
         self.write('tools/real-environment.R', (ROOT / 'tools/review-ready-environment.R').read_text())
-        for legacy in ('NULL', 'list(version = 1L, names = as.list(commandArgs(trailingOnly = TRUE)))'):
+        for legacy in ('NULL', *(f'list(version = {version}L, names = as.list(commandArgs(trailingOnly = TRUE)))'
+                                 for version in (1, 2))):
             self.write('tools/review-ready-environment.R', '''
 result <- system2("Rscript", c("tools/real-environment.R", commandArgs(trailingOnly = TRUE)), stdout = TRUE)
 snapshot <- jsonlite::fromJSON(paste(result, collapse = "\\n"), simplifyVector = FALSE)
