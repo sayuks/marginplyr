@@ -159,7 +159,8 @@ expect_identical(
 )
 expect_identical(
   fixture_review_packages,
-  c("lintr", "pkgload", "R6", "rcmdcheck", "spelling", "testthat"),
+  c("altdoc", "jsonlite", "lintr", "pkgload", "R6", "rcmdcheck", "spelling",
+    "testthat", "yaml"),
   "the declared review packages"
 )
 expect_error(
