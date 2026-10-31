@@ -56,8 +56,12 @@ Install the common command using `python3 tools/install-review-ready.py`.
 platform support, cancellation, recovery, and migration of existing sessions.
 All agents and terminals use that command; missing setup has no direct-command
 fallback. A waiting request pins this clean commit and is cancelled before
-admission if HEAD or cleanliness changes. One complete check is admitted per
-OS user across all clones and worktrees, preserving four internal workers.
+admission if HEAD or cleanliness changes. One complete Full check is admitted
+per OS user across all clones and worktrees, preserving four internal workers.
+Eligible Documentation and Repository requests start under independent
+supervision without acquiring that slot, including while Full needs recovery.
+Their build, rendering and limited verification may overlap; no aggregate slot
+or host CPU/memory bound is imposed on them.
 When the invocation waits or runs, enter *Bounded work while waiting or
 checking* below while retaining the execution identity described under
 *Observing one invocation*.
@@ -86,7 +90,7 @@ explicit vignette image, bibliography and citation-style formats. Executable
 vignette eligibility follows `documentation_sources()` in
 `tests/testthat/test-documentation.R`; unscanned document formats and nested
 Quarto documents remain Full. Unknown formats remain Full.
-Existing ordinary `R/*.R` edits are candidates for the admitted R documentation
+Existing ordinary `R/*.R` edits are candidates for the supervised R documentation
 proof in `tools/review-ready-roxygen.R`. It compares parsed expressions without
 evaluation and preserves the placement of unsafe directives among executable
 tokens. Blank lines anywhere, CRLF/LF, ordinary comments, inline lint directives
@@ -98,9 +102,11 @@ Added/deleted/renamed R files, unsupported forms, coverage directives and packag
 configuration changes remain Full.
 The allowlist in that proof owns the supported tags; unknown and evaluated tags,
 namespace/import/export and load-order directives are conservative Full cases.
-The pre-admission selection stays Full while this proof is pending. It runs only
-after admission against archives of the pinned base and submitted commit; the
-admitted selection and terminal outcome identify the resolved path.
+The provisional Documentation selection carries a pending proof. A compatible
+worker runs it under independent supervision against archives of the pinned
+base and submitted commit before starting the gate. A failed parse is a
+validation failure; a supported result requiring Full requests authenticated
+promotion. The resolved selection and terminal outcome identify the final path.
 Full wins over Documentation, which wins over Repository, across the cumulative
 diff.
 
@@ -154,6 +160,29 @@ pinned disposable Git checkout; common source checks run against its archive.
 Operational docs also run their mapped contracts. The same artifact routes run
 on Full, so package checking cannot hide a required verifier failure. Missing
 or failing verifiers fail the invocation without changing paths.
+
+Exemption additionally requires compatible supervision and installed source
+capabilities for every selected stage. `STAGE_CONTRACTS` in the common launcher
+registers the reviewed workloads; installation fingerprints their source and
+explicit dependencies. Unknown or changed stage code requires Full, even if
+the cumulative prose diff alone would select Repository. This prevents a
+Repository verifier from hiding a complete suite. Documentation assertions and
+ordinary limited tests run in one test process with parallelism disabled.
+Only the explicitly registered parallel-behavior fixture may start testthat
+workers outside Full, with at most two actual workers. Larger parallel work,
+complete-suite work and unsupported contracts require Full.
+
+Eligibility work ends before the worker starts the gate, including transport
+parsing. Once validation starts,
+promotion is refused so an observed failure cannot be replaced by another gate.
+If later eligibility work requires Full, the supervisor stops and collects
+preparation and its owned children, persists Full waiting, acquires the common
+slot, revalidates submitted HEAD/cleanliness and records owned capacity before
+restarting the complete Full gate. The request, comparison identities, handle
+and evidence remain the same. This transition requires the private authenticated
+manager channel; changing environment variables cannot grant capacity. Missing
+or corrupt transport fails without an unrestricted Full fallback. Known
+validation failures, including stale generated output, never become promotion.
 
 Repository stops after those checks. It records completed checks and explicitly
 reports package build/check, the full suite, and snapshots as omitted. Its
@@ -452,7 +481,11 @@ non-mutating and removes its disposable checkout, tarball, and check directory
 when it finishes. A failed source-tarball check first retains the diagnostics
 described below.
 
-Record the exact identity, selected path and outcome in the pull request.
+Record the request/commit and comparison identities, selected path, capacity
+mode, worker policy, completed/omitted stages, promotion history, terminal
+outcome, cleanup and NOTE dispositions in the pull request. Exempt success is
+not a Full pass. The common CLI retains each request's record and gate output;
+recover one explicit request ID rather than guessing which request to clear.
 For Full:
 
 ```text

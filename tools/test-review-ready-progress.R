@@ -42,14 +42,14 @@ local({
         package, args = c("--no-manual", "--no-vignettes"), build_args = character(),
         check_dir = check_dir, error_on = "never", repos = repos,
         env = c(
-          TESTTHAT_PARALLEL = "true", TESTTHAT_CPUS = "4", NOT_CRAN = "true",
+          TESTTHAT_PARALLEL = "true", TESTTHAT_CPUS = "2", NOT_CRAN = "true",
           MARGINPLYR_REVIEW_PROGRESS_REPORTER = file.path(
             root, "tools", "review-ready-progress-reporter.R"
           )
         )
       )
     })
-    # Four requested workers and two files distinguish selection from configuration.
+    # This registered fixture uses at most two workers outside Full admission.
     stopifnot(
       "Starting 2 test processes." %in% trimws(output),
       identical(result$status == 0L, !fail),

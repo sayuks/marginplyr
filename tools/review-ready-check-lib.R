@@ -758,42 +758,79 @@ run_review_ready_rcmdcheck <- function(
   }
 }
 
-# Reads the admitted worker's transport. A current launcher must supply the
-# pinned base so legacy Full selection cannot omit required artifact checks.
-read_review_ready_selection <- function() {
-  path <- Sys.getenv("MARGINPLYR_REVIEW_SELECTION")
-  refresh <- paste(
-    "Refresh the installed marginplyr-review-ready launcher:",
-    "CI artifact verification requires its pinned comparison transport."
-  )
-  if (!nzchar(path)) stop(refresh, call. = FALSE)
-  record <- read.dcf(path)
-  if (!all(c("Base", "Protocol") %in% colnames(record)) ||
-      !identical(record[[1L, "Protocol"]], "2")) {
-    stop(refresh, call. = FALSE)
+# Obtains one live manager authorization over its request-private channel.
+review_ready_supervision_proof <- function() {
+  supervisor <- Sys.getenv("MARGINPLYR_REVIEW_SUPERVISOR")
+  python <- Sys.which("python3")
+  if (!nzchar(supervisor) || !file.exists(supervisor) || !nzchar(python)) {
+    stop(
+      "Review-ready supervision is required; refresh the common CLI.",
+      call. = FALSE
+    )
   }
-  required <- c("Path", "Commit", "Request", "Verifiers")
+  output <- system2(
+    python, c(shQuote(supervisor), "--gate-proof"), stdout = TRUE
+  )
+  if (!is.null(attr(output, "status"))) {
+    stop("Review-ready supervisor refused gate authorization.", call. = FALSE)
+  }
+  connection <- textConnection(output)
+  on.exit(close(connection), add = TRUE)
+  proof <- read.dcf(connection)
+  if (nrow(proof) != 1L || !all(c("Path", "Capacity") %in% colnames(proof))) {
+    stop("Invalid Review-ready supervision proof.", call. = FALSE)
+  }
+  list(path = proof[[1L, "Path"]], capacity = proof[[1L, "Capacity"]])
+}
+
+# Missing or corrupt transport never grants Full; proof comes from the manager.
+read_review_ready_selection <- function(
+  proof = review_ready_supervision_proof
+) {
+  path <- Sys.getenv("MARGINPLYR_REVIEW_SELECTION")
+  if (!nzchar(path)) {
+    stop(
+      "Supervised selection transport is required; no Full fallback.",
+      call. = FALSE
+    )
+  }
+  record <- read.dcf(path)
+  required <- c(
+    "Path", "Commit", "Request", "Verifiers", "Protocol", "Capacity", "Base"
+  )
   if (nrow(record) != 1L || !all(required %in% colnames(record)) ||
-      !record[[1L, "Path"]] %in% c("Full", "Repository", "Documentation") ||
-      !nzchar(Sys.getenv("MARGINPLYR_REVIEW_REQUEST")) ||
-      !identical(record[[1L, "Request"]], Sys.getenv("MARGINPLYR_REVIEW_REQUEST"))) {
+        !record[[1L, "Path"]] %in% c("Full", "Repository", "Documentation") ||
+        !identical(record[[1L, "Protocol"]], "3") ||
+        !record[[1L, "Capacity"]] %in% c("Full", "exempt") ||
+        !grepl("^[0-9a-f]{40}$", record[[1L, "Commit"]]) ||
+        !nzchar(Sys.getenv("MARGINPLYR_REVIEW_REQUEST")) ||
+        !identical(record[[1L, "Request"]],
+                   Sys.getenv("MARGINPLYR_REVIEW_REQUEST"))) {
     stop("Invalid admitted Review-ready selection.", call. = FALSE)
   }
   verifiers <- record[[1L, "Verifiers"]]
   if (record[[1L, "Path"]] %in% c("Repository", "Documentation") &&
-      (is.na(verifiers) || !nzchar(verifiers))) {
+        (is.na(verifiers) || !nzchar(verifiers))) {
     stop("Selected path requires mapped artifact verification.", call. = FALSE)
   }
-  selection <- list(path = record[[1L, "Path"]], sha = record[[1L, "Commit"]],
-    verifiers = if (is.na(verifiers) || !nzchar(verifiers)) character() else
-      strsplit(verifiers, " ", fixed = TRUE)[[1L]])
   if (is.na(record[[1L, "Base"]]) ||
       !grepl("^[0-9a-f]{40}$", record[[1L, "Base"]])) {
     stop("Invalid admitted comparison base; CI validation remains unresolved.",
       call. = FALSE)
   }
-  selection$base <- record[[1L, "Base"]]
-  selection
+  authorization <- proof()
+  if (!identical(authorization$path, record[[1L, "Path"]]) ||
+        !identical(authorization$capacity, record[[1L, "Capacity"]]) ||
+        (identical(authorization$path, "Full") &&
+           !identical(authorization$capacity, "Full"))) {
+    stop("Selection does not match owned supervisor capacity.", call. = FALSE)
+  }
+  list(
+    path = record[[1L, "Path"]], sha = record[[1L, "Commit"]],
+    base = record[[1L, "Base"]],
+    verifiers = if (is.na(verifiers) || !nzchar(verifiers)) character() else
+      strsplit(verifiers, " ", fixed = TRUE)[[1L]]
+  )
 }
 
 # Runs the manager's artifact routes in the pinned disposable Git checkout;
@@ -805,11 +842,16 @@ run_review_ready_verifiers <- function(selection, identity, prerequisites, runne
     }
     command <- if (endsWith(path, ".py")) unname(Sys.which("python3")) else
       prerequisites$rscript
-    run_review_ready_step(paste("Artifact verification:", path),
-      list(command = command, args = path, env = paste0(
-        "MARGINPLYR_REVIEW_BASE=", if (is.null(selection$base)) "" else selection$base
-      )),
-      identity$root, runner = runner)
+    run_review_ready_step(
+      paste("Artifact verification:", path),
+      list(
+        command = command, args = path,
+        env = c("TESTTHAT_PARALLEL=false", "TESTTHAT_CPUS=1", paste0(
+          "MARGINPLYR_REVIEW_BASE=", if (is.null(selection$base)) "" else selection$base
+        ))
+      ),
+      identity$root, runner = runner
+    )
     cat("Completed artifact verification: ", path, "\n", sep = "")
   }
 }

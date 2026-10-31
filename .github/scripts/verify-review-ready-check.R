@@ -611,41 +611,36 @@ local({
   transport <- tempfile("review-ready-selection-")
   on.exit(unlink(transport), add = TRUE)
   Sys.unsetenv(keys)
-  expect_error(read_review_ready_selection(), "Refresh the installed",
-    "older launchers cannot omit required CI artifact checks")
+  expect_error(read_review_ready_selection(), "selection transport is required",
+    "missing transport cannot authorize Full or omit CI artifact checks")
   Sys.setenv(MARGINPLYR_REVIEW_SELECTION = transport,
     MARGINPLYR_REVIEW_REQUEST = "fixture")
-  writeLines(c("Path: Repository", paste("Commit:", clean_identity$sha),
-    "Protocol: 2", "Request: fixture", "Verifiers: .github/scripts/verify-context-budget.R",
-    paste("Base:", clean_identity$sha)),
-    transport)
-  expect_identical(read_review_ready_selection(),
-    list(path = "Repository", sha = clean_identity$sha,
-      verifiers = ".github/scripts/verify-context-budget.R", base = clean_identity$sha),
-    "the admitted worker's Repository transport")
-  writeLines(c("Path: Repository", paste("Commit:", clean_identity$sha),
-    "Protocol: 2", "Request: fixture", "Verifiers: .github/scripts/verify-context-budget.R",
-    paste("Base:", clean_identity$sha)), transport)
-  expect_identical(read_review_ready_selection()$base, clean_identity$sha,
-    "the pinned comparison reaches artifact verification")
-  writeLines(c("Path: Full", paste("Commit:", clean_identity$sha),
-    "Protocol: 2", "Request: fixture", "Verifiers:", "Base: invalid"), transport)
-  expect_error(read_review_ready_selection(), "Invalid admitted comparison base",
+  valid <- c("Path: Repository", paste("Commit:", clean_identity$sha),
+    "Request: fixture", "Protocol: 3", "Capacity: exempt",
+    "Verifiers: .github/scripts/verify-context-budget.R", paste("Base:", clean_identity$sha))
+  writeLines(valid, transport)
+  proof <- function() list(path = "Repository", capacity = "exempt")
+  expect_identical(read_review_ready_selection(proof),
+    list(path = "Repository", sha = clean_identity$sha, base = clean_identity$sha,
+      verifiers = ".github/scripts/verify-context-budget.R"),
+    "the admitted worker's Repository transport retains its pinned comparison")
+  writeLines(sub(paste("Base:", clean_identity$sha), "Base: invalid", valid, fixed = TRUE), transport)
+  expect_error(read_review_ready_selection(proof), "Invalid admitted comparison base",
     "an invalid comparison base")
-  writeLines(c("Path: Full", paste("Commit:", clean_identity$sha),
-    "Protocol: 2", "Request: fixture", "Verifiers:"), transport)
-  expect_error(read_review_ready_selection(), "Refresh the installed",
-    "a legacy Full transport cannot replace CI artifact evidence")
-  writeLines(c("Path: Full", paste("Commit:", clean_identity$sha),
-    "Protocol: 2", "Request: fixture", "Verifiers:",
-    paste("Base:", clean_identity$sha)), transport)
+  writeLines(valid[!startsWith(valid, "Base:")], transport)
+  expect_error(read_review_ready_selection(proof), "Invalid admitted",
+    "a supervised transport without Base cannot replace CI artifact evidence")
+  writeLines(sub("Protocol: 3", "Protocol: 2", valid, fixed = TRUE), transport)
+  expect_error(read_review_ready_selection(proof), "Invalid admitted",
+    "a legacy transport cannot authorize the supervised gate")
+  writeLines(valid, transport)
   Sys.setenv(MARGINPLYR_REVIEW_REQUEST = "another-request")
-  expect_error(read_review_ready_selection(), "Invalid admitted",
+  expect_error(read_review_ready_selection(proof), "Invalid admitted",
     "a different admitted request")
   Sys.setenv(MARGINPLYR_REVIEW_REQUEST = "fixture")
-  writeLines(c("Path: Repository", paste("Commit:", clean_identity$sha),
-    "Protocol: 2", "Request: fixture", "Verifiers:", paste("Base:", clean_identity$sha)), transport)
-  expect_error(read_review_ready_selection(), "requires mapped",
+  writeLines(sub("Verifiers: .github/scripts/verify-context-budget.R", "Verifiers:",
+    valid, fixed = TRUE), transport)
+  expect_error(read_review_ready_selection(proof), "requires mapped",
     "a missing required verifier route")
 })
 
@@ -670,7 +665,8 @@ local({
     unname(lapply(steps, `[[`, "args")), "Repository retains exact common commands")
   expect_identical(commands[[5L]]$args, route$verifiers,
     "Repository executes its required verifier")
-  expect_identical(commands[[5L]]$env, paste0("MARGINPLYR_REVIEW_BASE=", route$base),
+  expect_identical(commands[[5L]]$env, c("TESTTHAT_PARALLEL=false", "TESTTHAT_CPUS=1",
+    paste0("MARGINPLYR_REVIEW_BASE=", route$base)),
     "artifact commands receive the pinned base in system2 environment format")
   expect_true(any(grepl("Repository passed", output, fixed = TRUE)),
     "Repository success has its own verdict")

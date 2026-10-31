@@ -14,18 +14,30 @@ local({
   on.exit(unlink(root, recursive = TRUE), add = TRUE)
   writeLines(c("Package: fixture", "Version: 0.0.1", "Title: Fixture",
     "Description: Documentation assertion fixture.", "License: GPL-3",
-    "Config/testthat/edition: 3"), file.path(root, "DESCRIPTION"))
+    "Config/testthat/edition: 3", "Config/testthat/parallel: true"),
+    file.path(root, "DESCRIPTION"))
   writeLines(character(), file.path(root, "NAMESPACE"))
   tests <- file.path(root, "tests", "testthat")
-  writeLines("fixture_helper <- TRUE", file.path(tests, "helper-fixture.R"))
+  writeLines(
+    c("fixture_helper <- TRUE", "fixture_pid <- Sys.getpid()"),
+    file.path(tests, "helper-fixture.R")
+  )
   writeLines("options(fixture_setup = TRUE)", file.path(tests, "setup-fixture.R"))
   writeLines("options(fixture_teardown = TRUE)", file.path(tests, "teardown-fixture.R"))
   targets <- review_ready_documentation_tests()
   for (target in targets) {
-    writeLines("test_that('lifecycle', { testthat::expect_true(fixture_helper); testthat::expect_true(getOption('fixture_setup')) })",
-      file.path(tests, target))
+    writeLines(
+      paste0(
+        "test_that('lifecycle', { testthat::expect_true(fixture_helper); ",
+        "testthat::expect_true(getOption('fixture_setup')); ",
+        "testthat::expect_identical(Sys.getpid(), fixture_pid); ",
+        "testthat::expect_identical(Sys.getenv('TESTTHAT_CPUS'), '1') })"
+      ),
+      file.path(tests, target)
+    )
   }
   writeLines("stop('Unselected suite sentinel')", file.path(tests, "test-unselected.R"))
+  Sys.setenv(TESTTHAT_PARALLEL = "true", TESTTHAT_CPUS = "4")
   capture.output(run_review_ready_documentation_tests(root))
   expect_true(getOption("fixture_teardown"), "teardown ran after selected assertions")
   writeLines("test_that('skipped relevant assertion', { skip('fixture skip') })",
@@ -107,8 +119,10 @@ local({
   generated <- review_ready_run_system(file.path(R.home("bin"), "Rscript"),
     c("-e", "roxygen2::roxygenise(); devtools::build_readme()"),
     directory = root, capture = TRUE)
-  expect_identical(generated$status, 0L, paste("initial fixture generation",
-    paste(generated$output, collapse = "\n")))
+  expect_identical(
+    generated$status, 0L,
+    paste(c("initial fixture generation", generated$output), collapse = "\n")
+  )
   git(c("init", "-q"))
   git(c("config", "user.name", "Fixture"))
   git(c("config", "user.email", "fixture@example.com"))

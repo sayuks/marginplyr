@@ -1,4 +1,4 @@
-# Proves documentation-equivalent R edits after admission without evaluation.
+# Proves documentation-equivalent R edits without evaluation.
 # Parsed expressions and unsafe directive placement must both remain unchanged.
 review_ready_roxygen_source <- function(path) {
   text <- rawToChar(readBin(path, "raw", n = file.info(path)$size))
@@ -47,7 +47,8 @@ review_ready_roxygen_source <- function(path) {
 
 # The caller pins both commits. Archives also expose added/deleted R inputs and
 # package configuration that an expression comparison alone cannot prove.
-review_ready_roxygen_path <- function(root, base, sha) {
+# Command mode refuses submitted parse errors before any capacity promotion.
+review_ready_roxygen_path <- function(root, base, sha, fail_parse = FALSE) {
   workspace <- tempfile("review-ready-roxygen-")
   dir.create(workspace)
   on.exit(unlink(workspace, recursive = TRUE), add = TRUE)
@@ -60,6 +61,11 @@ review_ready_roxygen_path <- function(root, base, sha) {
       directory = root, capture = TRUE)
     if (result$status != 0L) stop("Cannot archive pinned R comparison.", call. = FALSE)
     utils::untar(archive, exdir = trees[[i]])
+  }
+  if (fail_parse) {
+    sources <- list.files(file.path(trees[[2L]], "R"), "^[^/]+[.]R$",
+      full.names = TRUE)
+    for (source in sources) parse(file = source, keep.source = FALSE, encoding = "UTF-8")
   }
   compare <- function() {
     inputs <- lapply(trees, function(tree) list.files(file.path(tree, "R"),
@@ -100,5 +106,6 @@ if (sys.nframe() == 0L) {
   if (length(args) != 3L || !all(grepl("^[0-9a-f]{40}$", args[1:2]))) {
     stop("Pinned base, submitted commit and result path are required.", call. = FALSE)
   }
-  writeLines(review_ready_roxygen_path(".", args[[1L]], args[[2L]]), args[[3L]])
+  writeLines(review_ready_roxygen_path(".", args[[1L]], args[[2L]],
+    fail_parse = TRUE), args[[3L]])
 }

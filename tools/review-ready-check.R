@@ -1,5 +1,6 @@
 #!/usr/bin/env Rscript
 # Review-ready selection protocol: 2
+# Review-ready supervision protocol: 3
 # Review-ready roxygen proof protocol: 1
 
 # Runs the fixed local gate for one reviewable package commit. The implementation
