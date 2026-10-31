@@ -38,9 +38,12 @@ a PATH problem rather than editing shell profiles automatically.
 
 In every existing session, acknowledge this entry point and replace
 remembered `Rscript tools/review-ready-check.R` invocations before starting
-another check. Refresh/restart sessions whose instructions or PATH cannot be
-updated. Older worktrees need not merge this implementation: run the
-installed command from their root. Selection requires the submitted R entry
+another check. For waiting/checking work, refresh participating sessions through
+[Session refresh](../design/agents/local-checks.md#session-refresh), including
+explicit acknowledgement; installation alone does not reload their guidance.
+Refresh/restart sessions whose instructions or PATH cannot be updated. Older
+worktrees need not merge this implementation: run the installed command from
+their root. Selection requires the submitted R entry
 point's versioned protocol marker. Unsupported older revisions retain their
 existing Full gate; an older installed launcher with new sources also
 retains Full. Refresh the installed launcher from the implementation
@@ -91,6 +94,9 @@ Retain the same execution handle through waiting, execution, cleanup, and
 terminal exit. While waiting or checking, follow
 [Bounded work while waiting or checking](../design/agents/local-checks.md#bounded-work-while-waiting-or-checking);
 that workflow uses the retained handle and does not control admission.
+It keeps investigation and any separate-defect publication with the submitting
+agent while the selected Review-ready path waits or runs. Its execution recipe
+and terminal-completion transitions apply throughout.
 Exit zero from a check invocation forwards the gate's zero;
 nonzero gate outcomes remain nonzero (including their original exit code).
 Exit 130 denotes cancellation, 3 a stale waiting request, 4 blocked recovery,
@@ -157,3 +163,21 @@ inspection and signals must be permitted in the execution environment; a
 sandbox that prohibits them must grant that capability for the common command.
 Linux uses the same POSIX implementation; macOS and Linux fixture results must
 be identified separately in delivery evidence.
+
+### Agent workflow walkthroughs
+
+After refreshing participating sessions, exercise these decision scenarios
+against *Bounded work while waiting or checking* in the local check guide.
+Use hypothetical defects for the walkthrough; publish only actual confirmed
+defects under that guide's evidence requirements. Record the chosen action and
+checkpoint in external notes, distinguishing a walkthrough from execution
+evidence. These scenarios verify agent decisions, not CLI process containment;
+the subprocess fixtures above own that check.
+
+| Scenario | Input at a natural work boundary | Required action |
+|---|---|---|
+| Continuation | Submission requirements are accounted for; the gate is still waiting or running, and another meaningful hypothesis remains. | Form the hypothesis before inspecting test coverage, investigate and record evidence, then continue into another package area when appropriate. Retain the original gate handle. |
+| Hypothesis exhaustion | No meaningful uninvestigated hypothesis remains. | Checkpoint dispositions and what new evidence would reopen them, then wait on the retained invocation without manufacturing activity or findings. |
+| Confirmed submission fix | A reproduction establishes a required fix while the request is waiting or running. | Cancel only this request using its handle, collect terminal cleanup and additional owned work, then edit, commit, and resubmit. A suspicion alone continues investigation. |
+| Unrelated defect | Evidence confirms a defect outside the submission. | Keep the request alive; collect contract, reproduction, impact, SHA/environment, current-main status, and duplicate search. Publish an English issue only if still valid and nonduplicate; otherwise link or checkpoint the disposition. Keep repair separate and failed publication pending. |
+| Terminal completion | The gate returns while an additional execution or unrelated issue draft is unfinished. | Checkpoint, stop and collect the additional execution and children, then use the original terminal outcome. Partial or interrupted work, or work that skipped a relevant test, is not a pass. Proceed to review after gate success and resolution of concrete submission concerns, without waiting for broad exploration or issue preparation. |
