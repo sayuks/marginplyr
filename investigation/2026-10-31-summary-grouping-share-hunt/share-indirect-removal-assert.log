@@ -1,0 +1,5 @@
+Indirect removal missing refusals: 84
+Canonical, no-share, and independent controls passed: 144
+Source values: 1,3,4; later derived values: 100,300,400
+Error: missing_refusals == 0L is not TRUE
+Execution halted

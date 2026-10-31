@@ -1,0 +1,5 @@
+Indirect reparenting missing refusals: 48
+Canonical, no-share, non-inheriting controls passed: 120
+Source values: 1,3,4; later derived values: 100,300,400
+Error: missing_refusals == 0L is not TRUE
+Execution halted

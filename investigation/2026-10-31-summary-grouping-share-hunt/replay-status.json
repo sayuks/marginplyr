@@ -1,0 +1,119 @@
+{
+  "investigated": "2026-10-31",
+  "source_snapshot": "339315c387f31deace77566f5d3294b15b323865",
+  "runs": [
+    {
+      "script": "grouping-selection-oracle.R",
+      "arguments": [],
+      "log": "grouping-selection-oracle.log",
+      "exit_code": 0,
+      "expected_exit_code": 0
+    },
+    {
+      "script": "grouping-mixed-preflight.R",
+      "arguments": [],
+      "log": "grouping-mixed-preflight.log",
+      "exit_code": 0,
+      "expected_exit_code": 0
+    },
+    {
+      "script": "share-indirect-removal.R",
+      "arguments": [],
+      "log": "share-indirect-removal.log",
+      "exit_code": 0,
+      "expected_exit_code": 0
+    },
+    {
+      "script": "share-indirect-reparenting.R",
+      "arguments": [],
+      "log": "share-indirect-reparenting.log",
+      "exit_code": 0,
+      "expected_exit_code": 0
+    },
+    {
+      "script": "summary-selector-reproduction.R",
+      "arguments": [],
+      "log": "summary-selector-report.log",
+      "exit_code": 0,
+      "expected_exit_code": 0
+    },
+    {
+      "script": "summary-selector-matrix.R",
+      "arguments": [],
+      "log": "summary-selector-matrix.log",
+      "exit_code": 0,
+      "expected_exit_code": 0
+    },
+    {
+      "script": "summary-scopes.R",
+      "arguments": [],
+      "log": "summary-scopes.log",
+      "exit_code": 0,
+      "expected_exit_code": 0
+    },
+    {
+      "script": "summary-arguments.R",
+      "arguments": [],
+      "log": "summary-arguments.log",
+      "exit_code": 0,
+      "expected_exit_code": 0
+    },
+    {
+      "script": "summary-shapes.R",
+      "arguments": [],
+      "log": "summary-shapes.log",
+      "exit_code": 0,
+      "expected_exit_code": 0
+    },
+    {
+      "script": "grouping-mixed-preflight.R",
+      "arguments": [
+        "--assert"
+      ],
+      "log": "grouping-mixed-preflight-assert.log",
+      "exit_code": 1,
+      "expected_exit_code": 1
+    },
+    {
+      "script": "share-indirect-removal.R",
+      "arguments": [
+        "--assert"
+      ],
+      "log": "share-indirect-removal-assert.log",
+      "exit_code": 1,
+      "expected_exit_code": 1
+    },
+    {
+      "script": "share-indirect-reparenting.R",
+      "arguments": [
+        "--assert"
+      ],
+      "log": "share-indirect-reparenting-assert.log",
+      "exit_code": 1,
+      "expected_exit_code": 1
+    },
+    {
+      "script": "summary-selector-reproduction.R",
+      "arguments": [
+        "--assert"
+      ],
+      "log": "summary-selector-assert.log",
+      "exit_code": 1,
+      "expected_exit_code": 1
+    },
+    {
+      "script": "backend-derived.R",
+      "arguments": [],
+      "log": "backend-derived.log",
+      "exit_code": 0,
+      "expected_exit_code": 0
+    },
+    {
+      "script": "grouping-mixed-preflight-matrix.R",
+      "arguments": [],
+      "log": "grouping-mixed-preflight-matrix.log",
+      "exit_code": 0,
+      "expected_exit_code": 0
+    }
+  ]
+}

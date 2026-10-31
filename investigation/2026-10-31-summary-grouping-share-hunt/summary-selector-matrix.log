@@ -1,0 +1,17 @@
+       selection prior equal.n equal.equal
+1         all_of FALSE      12          12
+2           bare FALSE      12           6
+3            env FALSE      12          12
+4         envsub FALSE      12          12
+5  parenthesized FALSE      12          12
+6         all_of  TRUE      12          12
+7           bare  TRUE      12          12
+8            env  TRUE      12          12
+9         envsub  TRUE      12          12
+10 parenthesized  TRUE      12          12
+matrix cases= 120 extra-read wrong-column= 6
+read-once control successful; Margin extra read raised: ℹ In argument: `dplyr::across(cols, sum)`.
+Caused by error in `across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error:
+! selector was read twice

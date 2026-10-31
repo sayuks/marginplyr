@@ -1,0 +1,16 @@
+dtplyr empty Margin grand-total row retained as documented
+dtplyr mutate_key documented metadata refusal
+dtplyr distinct documented metadata refusal
+dtplyr grouped_mutate documented metadata refusal
+dtplyr summarize documented metadata refusal
+dtplyr mutate_window documented metadata refusal
+arrow arrange ordinary summary retained an invalid sort key; Margin call succeeded
+arrow arrange_expression ordinary summary retained an invalid sort key; Margin call succeeded
+arrow intersect ordinary input construction refused
+arrow setdiff ordinary input construction refused
+duckdb arrange ordinary summary retained an invalid sort key; Margin call succeeded
+duckdb arrange_expression ordinary summary retained an invalid sort key; Margin call succeeded
+               matched      metadata_refusals       documented_empty
+                   103                      5                      1
+ordinary_sort_failures         input_refusals             unexpected
+                     4                      2                      0

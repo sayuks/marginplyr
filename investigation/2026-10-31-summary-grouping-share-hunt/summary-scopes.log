@@ -1,0 +1,39 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+1 PASS (function(cols) across(all_of(cols), sum))('x')
+2 PASS (function(cols) pick(all_of(cols)))('x')
+3 PASS local({ cols <- 'x'; across(all_of(cols), sum) })
+4 PASS local({ cols <- 'x'; pick(all_of(cols)) })
+5 PASS { cols <- 'x'; across(all_of(cols), sum) }
+6 PASS { cols <- 'x'; pick(all_of(cols)) }
+7 PASS (function(cols) across(all_of(.env$cols), sum))('x')
+8 PASS (function(cols) pick(all_of(.env$cols)))('x')
+9 PASS (function(cols) across(all_of(get('cols')), sum))('x')
+10 PASS (function(cols) across(all_of(eval(quote(cols))), sum))('x')
+11 PASS (function(cols) eval(quote(across(all_of(cols), sum))))('x')
+12 PASS (function(cols) eval(quote(pick(all_of(cols)))))('x')
+13 PASS (function(cols) rlang::eval_tidy(rlang::quo(across(all_of(cols), sum))))('x')
+14 PASS sapply('x', function(cols) sum(pick(all_of(cols))[[1]]))
+15 PASS sapply('x', function(cols) sum(across(all_of(cols))[[1]]))
+16 PASS (function(cols) across(all_of(cols), function(x) sum(x)+length(cols)))('x')
+17 PASS (function(cols) across(where(function(x) is.numeric(x) && cols=='x'), sum))('x')
+18 PASS (function(cols) (function() across(all_of(cols), sum))())('x')
+19 PASS (function(cols) { f <- function() across(all_of(cols), sum); f() })('x')
+20 PASS with(list(cols='x'), across(all_of(cols), sum))
+21 PASS with(list(cols='x'), pick(all_of(cols)))
+22 PASS evalq(across(all_of(cols), sum), list(cols='x'))
+23 PASS evalq(pick(all_of(cols)), list(cols='x'))
+24 PASS (function(.env) across(all_of(cols), sum))(list(cols='x'))
+25 PASS (function(.env) pick(all_of(cols)))(list(cols='x'))
+26 PASS (function(.data) across(all_of(cols), sum))(list(cols='x'))
+27 PASS (function(.data) pick(all_of(cols)))(list(cols='x'))
+forms= 27  differences= 0
