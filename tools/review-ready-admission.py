@@ -231,14 +231,39 @@ def save(path, record):
         os.close(descriptor)
 
 
+def valid_recorded_process(item):
+    """Validate the durable PID/birth fields before trusting their absence."""
+    return (isinstance(item, dict) and type(item.get('pid')) is int and
+            item['pid'] > 0 and isinstance(item.get('birth'), str) and
+            bool(item['birth'].strip()))
+
+
 def read_record(path):
     try:
         contents = path.read_text()
     except FileNotFoundError:
         return None
     record = json.loads(contents)
-    if record.get('version') != 1:
-        raise RuntimeError('Unknown admission journal version; recovery requires inspection.')
+    if (not isinstance(record, dict) or type(record.get('version')) is not int or
+            record['version'] != 1):
+        raise RuntimeError('Unknown or invalid admission journal version; recovery requires inspection.')
+    try:
+        valid = (isinstance(record['token'], str) and
+                 re.fullmatch('[0-9a-f]{32}', record['token']) and
+                 isinstance(record['sha'], str) and
+                 re.fullmatch('[0-9a-f]{40}', record['sha']) and
+                 isinstance(record['root'], str) and Path(record['root']).is_absolute() and
+                 isinstance(record['boot'], str) and
+                 str(uuid.UUID(record['boot'])) == record['boot'] and
+                 valid_recorded_process(record['manager']) and
+                 isinstance(record['children'], list) and
+                 all(valid_recorded_process(item) for item in record['children']) and
+                 (record['group'] is None or
+                  (type(record['group']) is int and record['group'] > 0)))
+    except (KeyError, TypeError, ValueError):
+        valid = False
+    if not valid:
+        raise RuntimeError('Invalid admission journal ownership metadata; recovery requires inspection.')
     return record
 
 

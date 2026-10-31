@@ -597,6 +597,22 @@ sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
             unrelated.terminate()
             unrelated.wait(timeout=5)
 
+    def test_recovery_refuses_malformed_ownership_metadata(self):
+        journal = self.stopped_request()
+        original = json.loads(journal.read_text())
+        for field, value in (('manager', None), ('children', [None]),
+                             ('boot', 'invalid-boot'), ('group', -1),
+                             ('token', ''), ('sha', 'invalid-sha'),
+                             ('root', 'relative/path'), ('version', True)):
+            with self.subTest(field=field):
+                record = dict(original, **{field: value})
+                journal.write_text(json.dumps(record))
+                before = journal.read_bytes()
+                recovery, log = self.start(args=('--recover',))
+                self.finish(recovery, log, 2)
+                self.assertEqual(journal.read_bytes(), before)
+                self.assertNotIn('No check was run', log.read_text())
+
     def test_terminal_failure_is_not_admission_success(self):
         failure, a = self.start(FIXTURE_STATUS='17')
         text = self.finish(failure, a, 17)
@@ -709,14 +725,14 @@ sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
                                        stdout=output, stderr=output)
             self.jobs.append(job)
             return job, log
-        active, a = launch('first-boot')
+        active, a = launch('00000000-0000-0000-0000-000000000001')
         self.until(a, 'HEAVY ')
         active.kill()
         active.wait(timeout=5)
         status, b = self.start(args=('--status',))
         self.finish(status, b)
         os.killpg(json.loads(b.read_text())['group'], signal.SIGKILL)
-        recovery, c = launch('next-boot', '--recover')
+        recovery, c = launch('00000000-0000-0000-0000-000000000002', '--recover')
         self.assertIn('No check was run', self.finish(recovery, c))
         self.assertNotIn('HEAVY ', c.read_text())
         normal, d = self.start()
