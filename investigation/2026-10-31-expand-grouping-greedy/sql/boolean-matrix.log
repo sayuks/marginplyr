@@ -1,0 +1,12 @@
+
+          Failed to collect lazy table.\nCaused by error:\n! no such column: FaLsE
+  success                                                                       96
+
+          Failed to collect lazy table.\nCaused by error:\n! no such column: FALSE
+  success                                                                       96
+
+          Failed to collect lazy table.\nCaused by error:\n! no such column: TrUe
+  success                                                                      96
+
+          Failed to collect lazy table.\nCaused by error:\n! no such column: TRUE
+  success                                                                      96

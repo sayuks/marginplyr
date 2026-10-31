@@ -1,0 +1,22 @@
+
+ decimal32(9, 2)
+simple : NotImplemented: decimal32(9, 2)
+missing : c(1.12, 2.25)
+union_simple : c(1.12, 2.25, NA, NA)
+union_full : c(1.12, 2.25, NA, NA)
+package : c(1.12, 2.25, NA, NA)
+
+ decimal64(18, 4)
+simple : NotImplemented: decimal64(18, 4)
+missing : c(2.25, 1.125)
+union_simple : c(2.25, 1.125, NA, NA)
+union_full : c(2.25, 1.125, NA, NA)
+package : c(2.25, 1.125, NA, NA)
+
+ decimal128(18, 4)
+simple : c(1.125, 2.25)
+missing : c(1.125, 2.25)
+union_simple : c(1.125, 2.25, NA, NA)
+union_full : c(1.125, 2.25, NA, NA)
+package : c(1.125, 2.25, NA, NA)
+Three ordinary full-key union controls matched package results and physical types.

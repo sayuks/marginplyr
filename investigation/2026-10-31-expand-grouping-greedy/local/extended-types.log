@@ -1,0 +1,85 @@
+343 num_version 1 FALSE dimension none difference Component “g”: Component 2: Modes: numeric, NULL; Component “g”: Component 2: target is numeric, current is NULL; Component “g”: Component 4: Modes: numeric, NULL; Component “g”: C
+344 num_version 1 FALSE dimension last difference Component “g”: Component 2: Modes: numeric, NULL; Component “g”: Component 2: target is numeric, current is NULL; Component “g”: Component 4: Modes: numeric, NULL; Component “g”: C
+345 num_version 1 FALSE dimension first difference Component “g”: Component 2: Modes: numeric, NULL; Component “g”: Component 2: target is numeric, current is NULL; Component “g”: Component 4: Modes: numeric, NULL; Component “g”: C
+361 num_version 3 FALSE dimension none difference Component “g”: Component 4: Modes: numeric, NULL; Component “g”: Component 4: target is numeric, current is NULL; Component “g”: Component 5: Modes: numeric, NULL; Component “g”: C
+362 num_version 3 FALSE dimension last difference Component “g”: Component 4: Modes: numeric, NULL; Component “g”: Component 4: target is numeric, current is NULL; Component “g”: Component 5: Modes: numeric, NULL; Component “g”: C
+363 num_version 3 FALSE dimension first difference Component “g”: Component 4: Modes: numeric, NULL; Component “g”: Component 4: target is numeric, current is NULL; Component “g”: Component 5: Modes: numeric, NULL; Component “g”: C
+812 array_factor 0 FALSE dimension last package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+813 array_factor 0 FALSE dimension first package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+815 array_factor 0 FALSE fixed last package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+816 array_factor 0 FALSE fixed first package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+821 array_factor 0 TRUE dimension last package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+822 array_factor 0 TRUE dimension first package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+824 array_factor 0 TRUE fixed last package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+825 array_factor 0 TRUE fixed first package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+830 array_factor 1 FALSE dimension last package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+831 array_factor 1 FALSE dimension first package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+833 array_factor 1 FALSE fixed last package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+834 array_factor 1 FALSE fixed first package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+839 array_factor 1 TRUE dimension last package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+840 array_factor 1 TRUE dimension first package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+842 array_factor 1 TRUE fixed last package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+843 array_factor 1 TRUE fixed first package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+848 array_factor 3 FALSE dimension last package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+849 array_factor 3 FALSE dimension first package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+851 array_factor 3 FALSE fixed last package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+852 array_factor 3 FALSE fixed first package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+857 array_factor 3 TRUE dimension last package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+858 array_factor 3 TRUE dimension first package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+860 array_factor 3 TRUE fixed last package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+861 array_factor 3 TRUE fixed first package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+866 matrix_date 0 FALSE dimension last package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+867 matrix_date 0 FALSE dimension first package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+869 matrix_date 0 FALSE fixed last package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+870 matrix_date 0 FALSE fixed first package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+875 matrix_date 0 TRUE dimension last package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+876 matrix_date 0 TRUE dimension first package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+878 matrix_date 0 TRUE fixed last package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+879 matrix_date 0 TRUE fixed first package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+884 matrix_date 1 FALSE dimension last package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+885 matrix_date 1 FALSE dimension first package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+887 matrix_date 1 FALSE fixed last package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+888 matrix_date 1 FALSE fixed first package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+893 matrix_date 1 TRUE dimension last package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+894 matrix_date 1 TRUE dimension first package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+896 matrix_date 1 TRUE fixed last package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+897 matrix_date 1 TRUE fixed first package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+902 matrix_date 3 FALSE dimension last package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+903 matrix_date 3 FALSE dimension first package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+905 matrix_date 3 FALSE fixed last package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+906 matrix_date 3 FALSE fixed first package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+911 matrix_date 3 TRUE dimension last package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+912 matrix_date 3 TRUE dimension first package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+914 matrix_date 3 TRUE fixed last package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+915 matrix_date 3 TRUE fixed first package_error evaluation nested too deeply: infinite recursion / options(expressions=)?
+status
+   difference         match package_error
+            6          1350            48
+                status
+family           difference match package_error
+  array_0                 0    54             0
+  array_4d                0    54             0
+  array_factor            0    30            24
+  asis_list               0    54             0
+  complex                 0    54             0
+  difftime                0    54             0
+  distribution            0    54             0
+  duration                0    54             0
+  empty_packed            0    54             0
+  factor_na               0    54             0
+  interval                0    54             0
+  list_nested             0    54             0
+  list_of_factor          0    54             0
+  list_of_table           0    54             0
+  matrix_0                0    54             0
+  matrix_date             0    30            24
+  nested_packed           0    54             0
+  num_version             6    48             0
+  period                  0    54             0
+  plain                   0    54             0
+  posixlt                 0    54             0
+  table_1d                0    54             0
+  wk_wkb                  0    54             0
+  wk_wkt                  0    54             0
+  wk_xy                   0    54             0
+  wk_xyz                  0    54             0

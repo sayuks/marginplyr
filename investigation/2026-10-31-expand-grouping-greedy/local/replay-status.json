@@ -1,0 +1,6 @@
+[
+  {"script":"reproduce-dist-prototype.R","assert":false,"exit_code":0},
+  {"script":"reproduce-dist-prototype.R","assert":true,"exit_code":1},
+  {"script":"reproduce-inner-name-repair.R","assert":false,"exit_code":0},
+  {"script":"reproduce-inner-name-repair.R","assert":true,"exit_code":1}
+]

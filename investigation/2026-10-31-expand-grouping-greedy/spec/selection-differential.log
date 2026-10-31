@@ -1,0 +1,111 @@
+
+               candidate-error              candidate-refusal
+                          1186                             12
+        expected-empty-refusal expected-specification-refusal
+                           888                             10
+                         match
+                         26044
+                                                                               source
+163                                                                   !!rlang::quo(a)
+164                                                                   !!rlang::quo(a)
+165                                                                   !!rlang::quo(a)
+166                                                                   !!rlang::quo(a)
+167                                                                   !!rlang::quo(a)
+168                                                                   !!rlang::quo(a)
+523                   !!(all_of((function(x) x)(c("d", "a"))) / starts_with("a")):a^b
+524                   !!(all_of((function(x) x)(c("d", "a"))) / starts_with("a")):a^b
+525                   !!(all_of((function(x) x)(c("d", "a"))) / starts_with("a")):a^b
+526                   !!(all_of((function(x) x)(c("d", "a"))) / starts_with("a")):a^b
+527                   !!(all_of((function(x) x)(c("d", "a"))) / starts_with("a")):a^b
+528                   !!(all_of((function(x) x)(c("d", "a"))) / starts_with("a")):a^b
+1141          c(all_of(names(tidyselect::peek_data())[vapply(tidyselect::peek_data(),
+1142 is.numeric, logical(1))]) / .data[["b"]] / where(is.character), !!rlang::quo(a))
+1143          c(all_of(names(tidyselect::peek_data())[vapply(tidyselect::peek_data(),
+1144 is.numeric, logical(1))]) / .data[["b"]] / where(is.character), !!rlang::quo(a))
+1145          c(all_of(names(tidyselect::peek_data())[vapply(tidyselect::peek_data(),
+1146 is.numeric, logical(1))]) / .data[["b"]] / where(is.character), !!rlang::quo(a))
+1147          c(all_of(names(tidyselect::peek_data())[vapply(tidyselect::peek_data(),
+1148 is.numeric, logical(1))]) / .data[["b"]] / where(is.character), !!rlang::quo(a))
+1149          c(all_of(names(tidyselect::peek_data())[vapply(tidyselect::peek_data(),
+1150 is.numeric, logical(1))]) / .data[["b"]] / where(is.character), !!rlang::quo(a))
+1151          c(all_of(names(tidyselect::peek_data())[vapply(tidyselect::peek_data(),
+1152 is.numeric, logical(1))]) / .data[["b"]] / where(is.character), !!rlang::quo(a))
+1345   (!!rlang::quo(a)) / (function(x) names(x)[vapply(x, is.numeric, logical(1))])(
+            parent          status
+163            .by candidate-error
+164   grouping_set candidate-error
+165  grouping_sets candidate-error
+166         rollup candidate-error
+167           cube candidate-error
+168  grouping_spec candidate-error
+523            .by candidate-error
+524   grouping_set candidate-error
+525  grouping_sets candidate-error
+526         rollup candidate-error
+527           cube candidate-error
+528  grouping_spec candidate-error
+1141           .by candidate-error
+1142           .by candidate-error
+1143  grouping_set candidate-error
+1144  grouping_set candidate-error
+1145 grouping_sets candidate-error
+1146 grouping_sets candidate-error
+1147        rollup candidate-error
+1148        rollup candidate-error
+1149          cube candidate-error
+1150          cube candidate-error
+1151 grouping_spec candidate-error
+1152 grouping_spec candidate-error
+1345           .by candidate-error
+                                                                                                                  oracle
+163  Can't select columns with `rlang::quo(a)`.\n✖ `rlang::quo(a)` must be numeric or character, not a <quosure> object.
+164  Can't select columns with `rlang::quo(a)`.\n✖ `rlang::quo(a)` must be numeric or character, not a <quosure> object.
+165  Can't select columns with `rlang::quo(a)`.\n✖ `rlang::quo(a)` must be numeric or character, not a <quosure> object.
+166  Can't select columns with `rlang::quo(a)`.\n✖ `rlang::quo(a)` must be numeric or character, not a <quosure> object.
+167  Can't select columns with `rlang::quo(a)`.\n✖ `rlang::quo(a)` must be numeric or character, not a <quosure> object.
+168  Can't select columns with `rlang::quo(a)`.\n✖ `rlang::quo(a)` must be numeric or character, not a <quosure> object.
+523                                                              Can't use arithmetic operator `^` in selection context.
+524                                                              Can't use arithmetic operator `^` in selection context.
+525                                                              Can't use arithmetic operator `^` in selection context.
+526                                                              Can't use arithmetic operator `^` in selection context.
+527                                                              Can't use arithmetic operator `^` in selection context.
+528                                                              Can't use arithmetic operator `^` in selection context.
+1141 Can't select columns with `rlang::quo(a)`.\n✖ `rlang::quo(a)` must be numeric or character, not a <quosure> object.
+1142 Can't select columns with `rlang::quo(a)`.\n✖ `rlang::quo(a)` must be numeric or character, not a <quosure> object.
+1143 Can't select columns with `rlang::quo(a)`.\n✖ `rlang::quo(a)` must be numeric or character, not a <quosure> object.
+1144 Can't select columns with `rlang::quo(a)`.\n✖ `rlang::quo(a)` must be numeric or character, not a <quosure> object.
+1145 Can't select columns with `rlang::quo(a)`.\n✖ `rlang::quo(a)` must be numeric or character, not a <quosure> object.
+1146 Can't select columns with `rlang::quo(a)`.\n✖ `rlang::quo(a)` must be numeric or character, not a <quosure> object.
+1147 Can't select columns with `rlang::quo(a)`.\n✖ `rlang::quo(a)` must be numeric or character, not a <quosure> object.
+1148 Can't select columns with `rlang::quo(a)`.\n✖ `rlang::quo(a)` must be numeric or character, not a <quosure> object.
+1149 Can't select columns with `rlang::quo(a)`.\n✖ `rlang::quo(a)` must be numeric or character, not a <quosure> object.
+1150 Can't select columns with `rlang::quo(a)`.\n✖ `rlang::quo(a)` must be numeric or character, not a <quosure> object.
+1151 Can't select columns with `rlang::quo(a)`.\n✖ `rlang::quo(a)` must be numeric or character, not a <quosure> object.
+1152 Can't select columns with `rlang::quo(a)`.\n✖ `rlang::quo(a)` must be numeric or character, not a <quosure> object.
+1345 Can't select columns with `rlang::quo(a)`.\n✖ `rlang::quo(a)` must be numeric or character, not a <quosure> object.
+                               actual
+163                                 a
+164                                 a
+165                                 a
+166                                 a
+167                                 a
+168                                 a
+523  could not find function "all_of"
+524  could not find function "all_of"
+525  could not find function "all_of"
+526  could not find function "all_of"
+527  could not find function "all_of"
+528  could not find function "all_of"
+1141                                a
+1142                                a
+1143                                a
+1144                                a
+1145                                a
+1146                                a
+1147                                a
+1148                                a
+1149                                a
+1150                                a
+1151                                a
+1152                                a
+1345                                a

@@ -1,0 +1,15 @@
+
+Identifier: absent
+Direct result:
+# A tibble: 2 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 x         19
+2 Total     19
+Ordinary union columns: g, column2
+head ordinary control rows: 1
+Package-derived error: Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE
+Error: !inherits(observed, "error") is not TRUE
+Execution halted

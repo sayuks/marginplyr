@@ -1,0 +1,6 @@
+Included-only comparison: passed
+Ordinary mutation/union comparison: passed
+Expansion condition: vctrs_error_ptype2
+Can't combine `..1$key` <dist> and `..2$key` <double>.
+Error: !inherits(actual, "error") is not TRUE
+Execution halted

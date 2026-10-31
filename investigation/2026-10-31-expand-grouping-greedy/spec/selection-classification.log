@@ -1,0 +1,8 @@
+
+      excluded-injection-phase         expected-empty-refusal
+                          1188                            554
+expected-specification-refusal                          match
+                            10                          16596
+Executed distinct frame/expression/position comparisons: 18348
+[1] source parent status oracle actual
+<0 rows> (or 0-length row.names)
