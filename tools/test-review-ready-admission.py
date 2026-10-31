@@ -258,6 +258,22 @@ sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
         for verifier in required:
             self.assertIn(verifier, selected['verifiers'])
 
+    def test_policy_checker_changes_run_the_changed_checker(self):
+        self.repository_branch()
+        baseline = self.git(self.repo, 'rev-parse', 'HEAD')
+        for name in ('verify-coverage-policy.R', 'verify-agent-network-policy.R',
+                     'verify-codex-config.R'):
+            with self.subTest(name=name):
+                self.git(self.repo, 'reset', '--hard', baseline)
+                relative = '.github/scripts/' + name
+                path = self.repo / relative
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text('stop("Changed checker sentinel")\n')
+                self.commit_all()
+                selected = self.selected()
+                self.assertEqual(selected['path'], 'Full')
+                self.assertIn(relative, selected['verifiers'])
+
     def test_checker_helpers_and_unsupported_ci_inputs_keep_full_contracts(self):
         self.repository_branch()
         baseline = self.git(self.repo, 'rev-parse', 'HEAD')
@@ -307,10 +323,15 @@ sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
                         ' os.write(1, b"unreadable\\0"); sys.exit(0)\n' +
                         'os.execv(' + repr(real_git) + ', [' + repr(real_git) + '] + sys.argv[1:])\n')
         shim.chmod(0o755)
-        selected = self.selected()
-        self.assertEqual(selected['path'], 'Full')
-        self.assertIsNone(selected['base'],
-                          'Unreadable artifact selection must not supply usable comparison evidence')
+        for checker_present in (True, False):
+            with self.subTest(checker_present=checker_present):
+                if not checker_present:
+                    (self.repo / 'tools/verify-ci-artifacts.py').unlink()
+                    self.commit_all()
+                selected = self.selected()
+                self.assertEqual(selected['path'], 'Full')
+                self.assertIsNone(selected['base'],
+                                  'Unreadable artifact selection must not supply usable comparison evidence')
 
     def test_comparison_errors_and_unclassifiable_records_fall_back_to_full(self):
         self.repository_branch()

@@ -70,6 +70,9 @@ CONTRACTS = [
      ['.github/scripts/verify-review-ready-check.R', 'tools/test-review-ready-documentation.R']),
     (GENERATED_INPUTS, ['tools/review-ready-generated.R']),
     (r'\.github/scripts/verify-cran-preflight\.R', ['.github/scripts/verify-cran-preflight.R']),
+    (r'\.github/scripts/verify-coverage-policy\.R', ['.github/scripts/verify-coverage-policy.R']),
+    (r'\.github/scripts/verify-agent-network-policy\.R', ['.github/scripts/verify-agent-network-policy.R']),
+    (r'\.github/scripts/verify-codex-config\.R', ['.github/scripts/verify-codex-config.R']),
     (r'tools/cran-release\.md', ['.github/scripts/verify-cran-release.R']),
     (r'tools/cran-preflight\.md', ['.github/scripts/verify-cran-preflight.R',
                                 '.github/scripts/verify-agent-network-policy.R',
@@ -171,11 +174,11 @@ def select_path(root, sha):
         selection['reasons'] = reasons
     except (OSError, ValueError, subprocess.SubprocessError) as error:
         selection['reasons'] = ['comparison unavailable: ' + str(error)]
+        selection['base'] = None
         # Current CI verification refuses missing comparison evidence. Full is
         # still selected, but cannot turn an unreadable CI diff into a pass.
         try:
             git_bytes(root, 'show', sha + ':tools/verify-ci-artifacts.py')
-            selection['base'] = None
             selection['verifiers'] = list(REFERENCE_CHECKS) + ['tools/verify-ci-artifacts.py']
         except (OSError, subprocess.SubprocessError):
             pass
