@@ -112,7 +112,7 @@ sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
     def repository_branch(self):
         self.git(self.repo, 'checkout', '-qb', 'selection-support')
         entry = self.repo / 'tools/review-ready-check.R'
-        entry.write_text('# Review-ready selection protocol: 1\n')
+        entry.write_text('# Review-ready selection protocol: 2\n')
         self.git(self.repo, 'add', '.')
         self.git(self.repo, 'commit', '-qm', 'selection support')
         self.git(self.repo, 'branch', '-f', 'main', 'HEAD')
@@ -163,6 +163,48 @@ sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
         self.assertEqual(selection['path'], 'Full')
         self.assertIn('tools/test-review-ready-admission.py', selection['verifiers'])
 
+    def test_documentation_formats_and_mixed_full_keep_generation_routes(self):
+        self.repository_branch()
+        baseline = self.git(self.repo, 'rev-parse', 'HEAD')
+        for name in ('README.md', 'README.qmd', 'NEWS.md', 'man/topic.Rd',
+                     'man/figures/README-plot.png', 'man/figures/logo.svg',
+                     'vignettes/guide.qmd', 'vignettes/guide.Rmd',
+                     'vignettes/plot.jpg'):
+            with self.subTest(name=name):
+                self.git(self.repo, 'reset', '--hard', baseline)
+                path = self.repo / name
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(b'\x89PNG\0image' if name.endswith('.png') else b'Documentation\n')
+                self.commit_all()
+                selection = self.selected()
+                self.assertEqual(selection['path'], 'Documentation')
+                if name != 'NEWS.md':
+                    self.assertIn('tools/review-ready-generated.R', selection['verifiers'])
+                (self.repo / 'code.R').write_text('1\n')
+                self.commit_all()
+                self.assertEqual(self.selected()['path'], 'Full')
+                if name != 'NEWS.md':
+                    self.assertIn('tools/review-ready-generated.R', self.selected()['verifiers'])
+
+    def test_documentation_deletion_rename_and_reverted_code(self):
+        self.repository_branch()
+        (self.repo / 'NEWS.md').write_text('Release\n')
+        self.commit_all()
+        self.git(self.repo, 'branch', '-f', 'main', 'HEAD')
+        self.git(self.repo, 'mv', 'NEWS.md', 'README.md')
+        self.commit_all()
+        self.assertEqual(self.selected()['path'], 'Documentation')
+        code = self.repo / 'code.R'
+        code.write_text('1\n')
+        self.commit_all()
+        self.assertEqual(self.selected()['path'], 'Full')
+        code.unlink()
+        self.commit_all()
+        self.assertEqual(self.selected()['path'], 'Documentation')
+        (self.repo / 'README.md').unlink()
+        self.commit_all()
+        self.assertEqual(self.selected()['path'], 'Documentation')
+
     def test_binary_or_unknown_encoding_markdown_is_full(self):
         self.repository_branch()
         for contents in (b'binary\0payload', b'unknown\xffencoding', b'control\x01character'):
@@ -172,6 +214,17 @@ sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
                 selection = self.selected()
                 self.assertEqual(selection['path'], 'Full')
                 self.assertIn('unsupported prose content', ' '.join(selection['reasons']))
+
+    def test_documentation_text_requires_utf8_and_protocol_two(self):
+        self.repository_branch()
+        readme = self.repo / 'README.md'
+        readme.write_bytes(b'bad\x00text')
+        self.commit_all()
+        self.assertEqual(self.selected()['path'], 'Full')
+        readme.write_text('Documentation\n')
+        (self.repo / 'tools/review-ready-check.R').write_text('# Review-ready selection protocol: 1\n')
+        self.commit_all()
+        self.assertIn('lacks selection protocol', ' '.join(self.selected()['reasons']))
 
     def test_comparison_errors_and_unclassifiable_records_fall_back_to_full(self):
         self.repository_branch()
@@ -242,12 +295,13 @@ sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
         self.repository_branch()
         baseline = self.git(self.repo, 'rev-parse', 'HEAD')
         for name in ('design/script.R', 'investigation/script.py', 'tools/unknown.py',
-                     'README.md', 'README.qmd', 'NEWS.md', 'LICENSE.md', '.github/job.yaml'):
+                     'man/unknown.R', 'man/figures/payload.exe', 'vignettes/unknown.py',
+                     'R/help.R', 'DESCRIPTION', 'LICENSE.md', '.github/job.yaml'):
             with self.subTest(name=name):
                 self.git(self.repo, 'reset', '--hard', baseline)
                 path = self.repo / name
                 path.parent.mkdir(parents=True, exist_ok=True)
-                path.write_text('unknown\n')
+                path.write_text('Package: marginplyr\nTitle: Changed\n' if name == 'DESCRIPTION' else 'unknown\n')
                 self.commit_all()
                 self.assertEqual(self.selected()['path'], 'Full')
         self.git(self.repo, 'reset', '--hard', baseline)

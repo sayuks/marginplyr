@@ -52,6 +52,8 @@ Config/Needs/preflight:
     spelling,
     urlchecker
 Config/Needs/review:
+    devtools,
+    roxygen2,
     lintr,
     pkgload,
     R6,

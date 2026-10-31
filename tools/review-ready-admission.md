@@ -2,7 +2,8 @@
 
 `marginplyr-review-ready` admits one complete Review-ready check per OS user
 across marginplyr clones and worktrees. Full retains four test workers;
-Repository omits package build/check for supported prose. Both paths use the
+Documentation retains package build/check with `--no-tests` and separate
+documentation assertions; Repository omits build/check for supported prose. All paths use the
 same slot. Waiting does not load R dependencies or run any check stage. CI
 and commands outside this boundary are unchanged. The accepted design is
 [resource admission](../design/specs/review-ready-resource-admission.md),
@@ -49,8 +50,8 @@ existing Full gate; an older installed launcher with new sources also
 retains Full. Refresh the installed launcher from the implementation
 checkout to enable selection; source edits alone never update the standalone
 installed copy. Compare its bytes with `tools/review-ready-admission.py`
-after installation, and verify both a real Full and a real prose-only
-Repository invocation through the installed command. Unmodified older
+after installation, and verify real Full, Documentation and prose-only
+Repository invocations through the installed command. Unmodified older
 scripts invoked directly bypass this cooperative boundary. Installation
 cannot intercept them. The updated R entry point delegates to the common CLI
 when invoked directly; it refuses missing installation. Do not launch a
@@ -69,7 +70,7 @@ or previous-success baseline is used. `Review-ready selection` prints those
 identities, selected path, reasons, and required verifiers as JSON. Paths and
 reasons containing unusual filename characters are JSON escaped. Full is the
 fallback for unavailable or unsupported comparisons. The authoritative path
-and verifier registry is `PROSE`, `REFERENCE_CHECKS`, and `CONTRACTS` in
+and verifier registry is `PROSE`, `DOCUMENTATION`, `GENERATED_INPUTS`, `REFERENCE_CHECKS`, and `CONTRACTS` in
 `tools/review-ready-admission.py`; [local checks](../design/agents/local-checks.md)
 owns the policy. There is no caller-selected path or unrestricted skip flag.
 
@@ -81,12 +82,17 @@ newer revision. After admission, a disposable shared Git clone at the pinned
 SHA invokes that revision's R gate with an internal request-bound selection
 transport. This prevents later source edits, changed HEAD, and untracked
 files from substituting the requested revision, including on older
-worktrees. The gate archives the exact SHA. Both paths run spelling and both
+worktrees. The gate archives the exact SHA. All paths run spelling and both
 linters, loading the package before lintr, plus mapped artifact
-verification. Completed stages are printed individually. Repository
+verification, including generation on Full when mapped inputs change. Completed
+stages are printed individually. Repository
 explicitly omits package build/check and reports its own result. Full
 retains dependency checks, full-suite live progress, snapshots, diagnostics,
-NOTE policy, and authorized native-crash retry. The terminal CLI outcome
+NOTE policy, and authorized native-crash retry. Documentation retains the same
+dependency checks, installation/loading, help, codoc, examples and vignettes,
+runs the registered assertions serially without skips, and explicitly reports
+the complete suite and snapshots omitted. Native-crash retry preserves its
+`--as-cran --no-tests` arguments and tarball. The terminal CLI outcome
 includes the selected path; zero alone does not imply that Full ran. The
 original worktree is never checked out or reset by the CLI.
 
