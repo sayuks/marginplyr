@@ -45,7 +45,8 @@ explicit acknowledgement; installation alone does not reload their guidance.
 Refresh/restart sessions whose instructions or PATH cannot be updated. Older
 worktrees need not merge this implementation: run the installed command from
 their root. Selection requires the submitted R entry
-point's versioned protocol marker (version 3 for admitted R documentation proof). Unsupported older revisions retain their
+point's versioned selection marker and separate R documentation proof marker.
+Unsupported older revisions retain their
 existing Full gate; an older installed launcher with new sources also
 retains Full. Refresh the installed launcher from the implementation
 checkout to enable selection; source edits alone never update the standalone

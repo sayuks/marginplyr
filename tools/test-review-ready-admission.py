@@ -200,7 +200,8 @@ sys.exit(int(os.environ.get("FIXTURE_STATUS", "0")))
 
     def roxygen_branch(self):
         self.repository_branch()
-        (self.repo / 'tools/review-ready-check.R').write_text('# Review-ready selection protocol: 3\n')
+        (self.repo / 'tools/review-ready-check.R').write_text(
+            '# Review-ready selection protocol: 2\n# Review-ready roxygen proof protocol: 1\n')
         for name in ('review-ready-roxygen.R', 'review-ready-check-lib.R'):
             shutil.copyfile(SOURCE.with_name(name), self.repo / 'tools' / name)
         (self.repo / 'R').mkdir()

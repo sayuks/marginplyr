@@ -6,6 +6,7 @@ expect_error <- function(expression, pattern, label) {
   testthat::expect_error(expression, regexp = pattern, fixed = TRUE, info = label)
 }
 source("tools/review-ready-documentation.R")
+source("tools/test-review-ready-roxygen.R")
 
 local({
   root <- tempfile("documentation-assertions-")

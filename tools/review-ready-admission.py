@@ -30,7 +30,7 @@ STALE = 3
 BLOCKED = 4
 SELECTION = 'MARGINPLYR_REVIEW_SELECTION'
 PROTOCOL = b'# Review-ready selection protocol: 2'
-ROXYGEN_PROTOCOL = b'# Review-ready selection protocol: 3'
+ROXYGEN_PROTOCOL = b'# Review-ready roxygen proof protocol: 1'
 
 # Supported prose and its verification routes live here. Other file formats in
 # these directories have no exemption. Checking machinery remains Full.
@@ -48,8 +48,7 @@ REFERENCE_CHECKS = ['.github/scripts/verify-doc-references.R',
 CONTRACTS = [
     (r'(tools/(?:review-ready[^/]*|test-review-ready[^/]*|install-review-ready\.py|dependency-requirements\.R|required-test-suggests\.R)|'
      r'\.github/scripts/verify-review-ready-check\.R|design/(?:agents/local-checks\.md|specs/review-ready[^/]*\.md))',
-     ['.github/scripts/verify-review-ready-check.R', 'tools/test-review-ready-documentation.R',
-      'tools/test-review-ready-roxygen.R']),
+     ['.github/scripts/verify-review-ready-check.R', 'tools/test-review-ready-documentation.R']),
     (r'tools/(?:review-ready[^/]*\.(?:py|R)|test-review-ready[^/]*|install-review-ready\.py)',
      ['tools/test-review-ready-admission.py', 'tools/test-review-ready-progress.R']),
     (GENERATED_INPUTS, ['tools/review-ready-generated.R']),
@@ -135,7 +134,7 @@ def select_path(root, sha):
             if any(re.fullmatch(pattern, name) for name in names):
                 selection['verifiers'].extend(check for check in checks if check not in selection['verifiers'])
         entry = git_bytes(root, 'show', sha + ':tools/review-ready-check.R')
-        if not any(protocol in entry.splitlines() for protocol in (PROTOCOL, ROXYGEN_PROTOCOL)):
+        if PROTOCOL not in entry.splitlines():
             selection['verifiers'] = []
             reasons.append('submitted revision lacks selection protocol; existing Full gate')
         if roxygen and ROXYGEN_PROTOCOL not in entry.splitlines():
