@@ -200,6 +200,9 @@ Old logs, CI results and agent reports cannot establish a baseline. Corrupt or
 missing records/origins, incomplete cleanup, incompatible identities, unknown
 NOTEs, or later same-input/environment stage failures prevent reuse. There is
 no age-only expiry.
+The signed issuance index retains success and failure records in sequence order
+independent of the wall clock. Missing indexed evidence prevents reuse, including
+when the missing record could have superseded an older success.
 
 Environment identities include R and its checker implementation, OS/architecture,
 resolved tools and runtime assets, Python and R libraries with content/change

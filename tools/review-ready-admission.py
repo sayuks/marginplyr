@@ -955,9 +955,11 @@ def finish_request(state, path, record, status):
     if evidence_policy and worker:
         payload = evidence_policy.issue(state, record, worker)
         if payload is not None:
-            save(path.with_name('evidence.json'),
-                 evidence_policy.seal(payload, evidence_policy.signing_key(state, create=True)))
-            say('Retained structured stage evidence: ' + str(path.with_name('evidence.json')))
+            try:
+                evidence_policy.append_evidence(state, path.with_name('evidence.json'), payload, save)
+                say('Retained structured stage evidence: ' + str(path.with_name('evidence.json')))
+            except (OSError, ValueError, KeyError, TypeError) as error:
+                say('Stage evidence issuance unavailable for reuse: ' + str(error))
         else:
             say('Stage evidence unavailable for reuse; terminal gate outcome is retained.')
     say('Review-ready terminal outcome: ' + str(status) + '; request: ' + record['id'] +

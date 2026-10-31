@@ -418,6 +418,7 @@ def read_evidence(path, key, seen=None):
         raise ValueError('Corrupt stage evidence.')
     record = json.loads(path.with_name('record.json').read_text())
     if (payload['schema'] != SCHEMA or payload['request'] != path.parent.name or
+            type(payload.get('sequence')) is not int or payload['sequence'] < 1 or
             payload['user'] != os.getuid() or payload['request'] != record['id'] or
             payload['submitted'] != record['sha'] or payload['selection'] != record['selection'] or
             payload['supervisor'] != record['launcher'] or payload['finished'] != record['finished'] or
@@ -452,11 +453,57 @@ def compatible_unit(candidate, wanted):
     return candidate == wanted or (candidate == 'build-full' and wanted == 'build-documentation')
 
 
+def read_index(state, key):
+    path = state / 'evidence-index.json'
+    if not path.exists():
+        if list((state / 'requests').glob('*/evidence.json')):
+            raise ValueError('Missing common evidence index; records cannot be imported.')
+        return []
+    envelope = json.loads(path.read_text())
+    payload = envelope['payload']
+    if (not hmac.compare_digest(envelope['integrity'], seal(payload, key)['integrity']) or
+            payload['schema'] != SCHEMA or not isinstance(payload['entries'], list)):
+        raise ValueError('Invalid common evidence index.')
+    entries = payload['entries']
+    requests = set()
+    previous = 0
+    for entry in entries:
+        if (not re.fullmatch('[0-9a-f]{32}', entry['request']) or entry['request'] in requests or
+                type(entry['sequence']) is not int or entry['sequence'] <= previous or
+                not re.fullmatch('[0-9a-f]{64}', entry['digest'])):
+            raise ValueError('Invalid evidence issuance ordering.')
+        requests.add(entry['request'])
+        previous = entry['sequence']
+    return entries
+
+
 def records(state, key):
+    """Read the complete signed inventory, including negative outcomes."""
+    entries = read_index(state, key)
+    actual = {path.parent.name for path in (state / 'requests').glob('*/evidence.json')}
+    if actual != {entry['request'] for entry in entries}:
+        raise ValueError('Missing or unindexed common stage evidence.')
     found = []
-    for path in sorted((state / 'requests').glob('*/evidence.json')):
-        found.append(read_evidence(path, key))
-    return sorted(found, key=lambda item: (item['finished'], item['request']), reverse=True)
+    for entry in entries:
+        payload = read_evidence(state / 'requests' / entry['request'] / 'evidence.json', key)
+        if payload['sequence'] != entry['sequence'] or digest(payload) != entry['digest']:
+            raise ValueError('Evidence differs from its issuance index.')
+        found.append(payload)
+    return list(reversed(found))
+
+
+def append_evidence(state, path, payload, writer):
+    """Serialize issuance, independently of wall clocks and Full admission."""
+    import fcntl
+    with (state / 'evidence.lock').open('a+') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        key = signing_key(state, create=True)
+        records(state, key)
+        entries = read_index(state, key)
+        payload['sequence'] = entries[-1]['sequence'] + 1 if entries else 1
+        writer(path, seal(payload, key))
+        entries.append(dict(request=payload['request'], sequence=payload['sequence'], digest=digest(payload)))
+        writer(state / 'evidence-index.json', seal(dict(schema=SCHEMA, entries=entries), key))
 
 
 def plan(root, sha, selection, state, observe=snapshot, now=None, repository_id=None):
@@ -497,7 +544,7 @@ def plan(root, sha, selection, state, observe=snapshot, now=None, repository_id=
                     # Later same-input failures cannot be bypassed by selecting
                     # an older successful record, even from another branch.
                     blocked = any(
-                        later['finished'] >= origin['finished'] and any(
+                        later['sequence'] >= origin['sequence'] and any(
                             compatible_unit(failed, unit) and item['status'] in ('failed', 'unavailable') and
                             item['source'] == entry['source'] and item['environment'] == entry['environment']
                             for failed, item in later['units'].items()) for later in origins)

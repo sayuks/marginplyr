@@ -4,6 +4,7 @@ import copy
 import fcntl
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -20,11 +21,16 @@ process_contract = importlib.machinery.SourceFileLoader(
     'evidence_lifecycle', str(ROOT / 'tools/test-review-ready-admission.py')).load_module()
 
 
+def missing_generation_tools(source):
+    match = policy.VECTOR.search(source)
+    body = re.sub(rb'"(?:devtools|roxygen2)"\s*,\s*', b'', match[2])
+    return source[:match.start(2)] + body + source[match.end(2):]
+
+
 class ExpectationContract(unittest.TestCase):
     def test_1107_correction_preserves_strict_assertion_and_other_code(self):
         current = (ROOT / '.github/scripts/verify-cran-preflight.R').read_bytes()
-        broken = current.replace(b'"altdoc", "devtools",', b'"altdoc",').replace(
-            b'"roxygen2", "spelling"', b'"spelling"')
+        broken = missing_generation_tools(current)
         self.assertNotEqual(broken, current)
         self.assertTrue(policy.recognize_expectation(broken, current))
         self.assertFalse(policy.recognize_expectation(broken, current.replace(
@@ -32,6 +38,15 @@ class ExpectationContract(unittest.TestCase):
         self.assertFalse(policy.recognize_expectation(broken, current + b'\nstop("unknown logic")\n'))
         self.assertFalse(policy.recognize_expectation(broken, current.replace(
             b'review_requirements$package,', b'sort(review_requirements$package),')))
+
+    def test_literal_vector_whitespace_preserves_the_dependency_regression(self):
+        current = (ROOT / policy.EXPECTATION).read_bytes()
+        match = policy.VECTOR.search(current)
+        names = re.findall(rb'"[A-Za-z][A-Za-z0-9.]*"', match[2])
+        formatted = current[:match.start(2)] + b'c(\n    ' + b',\n    '.join(names) + b'\n  )' + current[match.end(2):]
+        broken = missing_generation_tools(formatted)
+        self.assertNotEqual(broken, formatted)
+        self.assertTrue(policy.recognize_expectation(broken, formatted))
 
     def test_timestamp_boundaries_unknown_r_and_rollback(self):
         clock = dict(zip(('r', 'checker', 'timeout'), policy.CHECKER), leeway=300)
@@ -138,7 +153,8 @@ class StageEvidence(unittest.TestCase):
         self.assertIsNotNone(payload)
         (directory / 'record.json').write_text(json.dumps(record))
         evidence = directory / 'evidence.json'
-        evidence.write_text(json.dumps(policy.seal(payload, self.key)))
+        policy.append_evidence(self.state, evidence, payload,
+                               lambda path, value: path.write_text(json.dumps(value)))
         return request, evidence
 
     def plan(self, **kwargs):
@@ -217,6 +233,24 @@ class StageEvidence(unittest.TestCase):
         self.origin(notes=['unknown-note'])
         self.assertEqual(self.plan()['units']['build-full']['action'], 'execute')
 
+    def test_clock_rollback_cannot_hide_a_later_same_input_failure(self):
+        _, evidence = self.origin()
+        finished = json.loads(evidence.read_text())['payload']['finished']
+        def later_failure(record, worker):
+            record['finished'] = finished - 100
+            worker['report']['units']['build-full'] = 'running'
+        self.origin(status=1, mutate=later_failure)
+        self.assertEqual(self.plan()['units']['build-full']['action'], 'execute')
+
+    def test_missing_later_failure_or_index_cannot_restore_an_older_success(self):
+        self.origin()
+        _, failure = self.origin(status=1, mutate=lambda record, worker:
+                                 worker['report']['units'].update({'build-full': 'running'}))
+        failure.unlink()
+        self.assertEqual(self.plan()['units']['build-full']['action'], 'execute')
+        (self.state / 'evidence-index.json').unlink()
+        self.assertEqual(self.plan()['units']['build-full']['action'], 'execute')
+
     def test_retry_requires_complete_success_and_preserved_first_attempt(self):
         check = dict(args=['--as-cran'], status=0, timeout=False, errors=0, warnings=0, notes=[],
                      attempts=[dict(status=0, timeout=False, errors=0, warnings=0, notes=[])])
@@ -270,6 +304,7 @@ class StageEvidence(unittest.TestCase):
         self.assertEqual(plan['units']['build-full']['action'], 'reuse')
         for path in self.state.glob('requests/*/evidence.json'):
             path.unlink()
+        (self.state / 'evidence-index.json').unlink()
         orphan = self.git('commit-tree', self.git('rev-parse', 'HEAD^{tree}'), '-m', 'unrelated same tree')
         self.sha = orphan
         self.origin()
@@ -293,8 +328,7 @@ class EvidenceLifecycle(process_contract.Lifecycle):
                 shutil.copyfile(source, destination)
         self.git(self.repo, 'remote', 'add', 'origin', 'https://github.com/sayuks/marginplyr.git')
         current = (self.repo / policy.EXPECTATION).read_text()
-        (self.repo / policy.EXPECTATION).write_text(current.replace('"altdoc", "devtools",', '"altdoc",').replace(
-            '"roxygen2", "spelling"', '"spelling"'))
+        (self.repo / policy.EXPECTATION).write_bytes(missing_generation_tools(current.encode()))
         self.commit_all()
         if self.git(self.repo, 'branch', '--show-current') != 'main':
             self.git(self.repo, 'branch', '-f', 'main', 'HEAD')

@@ -104,6 +104,8 @@ launchers, old logs and CI passes cannot issue this format.
 The common supervisor writes a sealed `evidence.json` beside a request's
 terminal `record.json` only after confirming process and workspace cleanup.
 The private `evidence.key` binds integrity and provenance to the OS user state.
+`evidence-index.json` seals the complete issuance inventory and sequence;
+`evidence.lock` serializes that short write independently of Full admission.
 Failed stage attempts are retained to prevent choosing an older same-input pass;
 they cannot discharge an obligation. Keep referenced origins available. Missing,
 corrupt or incompatible records disable reuse; they never become omission.
