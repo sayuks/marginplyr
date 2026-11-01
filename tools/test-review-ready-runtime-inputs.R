@@ -21,6 +21,14 @@ run_runtime_input_contracts <- function() {
   observer <- rr_environment
   adapter <- new.env(parent = environment(observer))
   environment(observer) <- adapter
+  fixed_tool <- file.path(fixture, "unchanged-artifact-tool")
+  writeLines("Unrelated artifact-tool bytes", fixed_tool)
+  lookup <- Sys.which
+  adapter$Sys.which <- function(names) {
+    found <- lookup(names)
+    found[names %in% c("jarl", "quarto", "actionlint")] <- fixed_tool
+    found
+  }
   adapter$rr_renderer <- function() list(identity = list())
   adapter$rr_git_environment <- function(...) list()
   adapter$rr_native_file <- function(...) FALSE
