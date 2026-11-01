@@ -129,6 +129,34 @@ test_that("fixed and no-NA-level factor controls retain source equality", {
   }
 })
 
+test_that("dtplyr nesting retains its factor-code equality groups", {
+  skip_if_suggest_absent("dtplyr")
+  input <- tibble::tibble(
+    g = nest_equality_factor(c("A", "a"), c("A", "a", NA_character_)),
+    row_id = 1:2
+  )
+  source <- dtplyr::lazy_dt(input)
+  ordinary <- dplyr::collect(dplyr::summarize(
+    source, ids = list(row_id), .by = g
+  ))
+  expect_identical(ordinary$ids, list(1L, 2L))
+
+  for (verb in list(nest_with_margins, nest_by_with_margins)) {
+    for (label in list("Total", NULL)) {
+      result <- verb(source, .grouping = rollup(g), .id = "set",
+                     .margin_label = label)
+      if (inherits(result, "dtplyr_step")) {
+        result <- dplyr::collect(result)
+      }
+      expect_setequal(
+        lapply(result$data[result$set == 1L], function(cell) cell$row_id),
+        list(1L, 2L)
+      )
+      expect_identical(result$data[[which(result$set == 2L)]]$row_id, 1:2)
+    }
+  }
+})
+
 test_that("factor nesting separates NA levels, missing codes and margins", {
   for (ordered in c(FALSE, TRUE)) {
     g <- structure(c(1L, 1L, 2L, NA_integer_),
