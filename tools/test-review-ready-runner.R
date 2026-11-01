@@ -221,14 +221,15 @@ fixture <- normalizePath(fixture, mustWork = TRUE)
 jobs <- list()
 on.exit({
   for (job in jobs) if (job$is_alive()) { job$signal(2L); job$wait(15000); if (job$is_alive()) job$kill() }
+  table <- rr_processes()
   if (exists("state") && dir.exists(file.path(state, "requests"))) {
     for (item in rr_requests(state, active = FALSE)) if (!is.null(item$record)) {
       for (attempt in 1:100) {
-        table <- rr_processes()
         owned <- rr_owned(table, item$record)
         if (!length(owned)) break
         for (row in table[owned]) if (rr_alive(row$identity)) ps::ps_send_signal(ps::ps_handle(row$identity$pid), 9L)
         Sys.sleep(0.05)
+        table <- rr_processes()
       }
       if (length(owned)) rr_stop("Fixture processing remains; workspace retained: ", fixture)
     }

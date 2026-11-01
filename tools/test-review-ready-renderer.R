@@ -23,7 +23,8 @@ run_renderer_contract <- function() {
   rr_git(checkout, "checkout", "--quiet", "--detach", sha)
   for (path in c("tools/review-ready-generated.R", "tools/verify-site-artifacts.R",
       ".github/scripts/verify-site.R", ".github/scripts/ci-helpers.R")) {
-    if (!file.copy(file.path(fixture_root, path), file.path(checkout, path), overwrite = TRUE)) rr_stop("Accepted renderer helper source unavailable.")
+    target <- rr_owned_path(file.path(checkout, path), checkout)
+    if (!file.copy(file.path(fixture_root, path), target, overwrite = TRUE)) rr_stop("Accepted renderer helper source unavailable.")
   }
   renderer <- rr_renderer()
   paths <- review_ready_render_paths()

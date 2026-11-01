@@ -262,3 +262,31 @@ run_registered_contracts <- function() {
   cat("Every inherited workload and helper-source contract matches the R registry.\n")
 }
 run_registered_contracts()
+
+run_site_authority_contract <- function() {
+  fixture <- tempfile("runner-site-authority-")
+  accepted <- rr_mkdir(file.path(fixture, "accepted/.github/scripts"))
+  archived <- rr_mkdir(file.path(fixture, "archive/.github/scripts"))
+  previous <- getwd()
+  on.exit({ setwd(previous); unlink(fixture, recursive = TRUE) }, add = TRUE)
+  writeLines('cat("ACCEPTED HELPER\\n")', file.path(accepted, "ci-helpers.R"))
+  writeLines(c('source(".github/scripts/ci-helpers.R")', 'cat("ACCEPTED VERIFIER\\n")'), file.path(accepted, "verify-site.R"))
+  writeLines('stop("Candidate helper selected")', file.path(archived, "ci-helpers.R"))
+  writeLines('stop("Candidate verifier selected")', file.path(archived, "verify-site.R"))
+  definitions <- parse(file = file.path(candidate, "tools/verify-site-artifacts.R"))
+  environment <- new.env(parent = globalenv())
+  for (value in definitions) if (is.call(value) && identical(value[[1L]], as.name("<-")) &&
+      identical(value[[2L]], as.name("verify_rendered_site"))) eval(value, environment)
+  setwd(dirname(dirname(archived)))
+  output <- capture.output(environment$verify_rendered_site(dirname(dirname(accepted))))
+  expect(all(c("ACCEPTED HELPER", "ACCEPTED VERIFIER") %in% output),
+    "Internal site archives cannot substitute candidate verification sources")
+  protected <- file.path(fixture, "protected")
+  writeLines("Keep unrelated bytes", protected)
+  unlink(file.path(archived, "ci-helpers.R"))
+  expect(file.symlink(protected, file.path(archived, "ci-helpers.R")), "Create a helper destination link")
+  rejects(environment$verify_rendered_site(dirname(dirname(accepted))), "symlink")
+  expect(identical(readLines(protected), "Keep unrelated bytes"), "A helper destination link cannot overwrite an outside file")
+  cat("Accepted site verifier and helper survive inner archiving; linked destinations are refused.\n")
+}
+run_site_authority_contract()

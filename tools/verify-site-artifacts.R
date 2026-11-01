@@ -1,5 +1,17 @@
 # Installs this source in an isolated library before rendering and verifying
 # site output. The common admission manager owns this process and its children.
+
+# Verify the current rendered archive with the pinned checker and its helper.
+verify_rendered_site <- function(verification_root) {
+  paths <- c(".github", ".github/scripts", ".github/scripts/ci-helpers.R")
+  links <- Sys.readlink(file.path(getwd(), paths))
+  if (any(!is.na(links) & nzchar(links))) stop("Site verification destination crosses a symlink.", call. = FALSE)
+  helper <- file.path(verification_root, ".github/scripts/ci-helpers.R")
+  if (!file.copy(helper, ".github/scripts/ci-helpers.R", overwrite = TRUE))
+    stop("Pinned site verification helper is unavailable.", call. = FALSE)
+  source(file.path(verification_root, ".github/scripts/verify-site.R"), local = new.env(parent = globalenv()))
+}
+
 verify_site_artifacts <- function() {
   workspace <- tempfile("marginplyr-site-")
   dir.create(workspace)
@@ -56,7 +68,7 @@ verify_site_artifacts <- function() {
     quarto::quarto_render(input = "_quarto", quiet = FALSE,
       as_job = FALSE, use_freezer = FALSE)
   }
-  source(".github/scripts/verify-site.R", local = new.env(parent = globalenv()))
+  verify_rendered_site(original_directory)
   cat(
     "Completed site artifact verification:",
     "installed source, rendered site and output markers.\n"
