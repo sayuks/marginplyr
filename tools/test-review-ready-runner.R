@@ -294,6 +294,7 @@ cat("\nrr_account_home <- function() ", deparse(home), "\n", file = file.path(re
 cat('\nrr_environment <- function(root) { mutable <- Sys.getenv("RR_FIXTURE_MUTABLE"); list(digest = rr_digest(list(input = Sys.getenv("RR_FIXTURE_INPUT", "same"), mutable = if (nzchar(mutable)) rr_hash(rr_read(mutable)) else NULL)), clock = list(r = "4.6.1", checker = "2efcaa5190c038e60834bd5c4e502c82", timeout = "34ee7dea5eac7ba7138bd3c60651faee", leeway = 300), r = "4.6.1", libraries = list()) }\n',
   file = file.path(repo, "tools/review-ready-evidence.R"), append = TRUE)
 cat(paste0('\nrr_renderer <- function() {\n',
+  ' invalid <- Sys.getenv("RR_FIXTURE_RENDERER_INVALID"); if (nzchar(invalid) && file.exists(invalid)) rr_stop("Fixture renderer storage became incompatible")\n',
   ' if (Sys.getenv("RR_FIXTURE_MUTATE_BEFORE") == "yes" && Sys.getenv("MARGINPLYR_REVIEW_EPOCH") == "1") writeLines("Changed before validation", Sys.getenv("RR_FIXTURE_MUTABLE"))\n',
   ' if (Sys.getenv("RR_FIXTURE_WORKER_ACTION") == "promote" && Sys.getenv("MARGINPLYR_REVIEW_EPOCH") == "1") {\n',
   '  child <- processx::process$new(file.path(R.home("bin"), "Rscript"), c("-e", "Sys.sleep(60)"), cleanup = FALSE, supervise = FALSE)\n',
@@ -357,6 +358,7 @@ writeLines(c(readLines(file.path(candidate, "tools/review-ready-check-lib.R")),
   '    check=c(attempt,list(args=as.list(c("--as-cran",if(selection$path=="Documentation") "--no-tests")),attempts=list(attempt))))',
   '  if (Sys.getenv("RR_FIXTURE_GATE_STATUS") == "1" && length(units)) report$units[[units[[1L]]]] <- "running"',
   '  writeLines(jsonlite::toJSON(report, auto_unbox=TRUE, null="null", digits=NA), Sys.getenv("MARGINPLYR_REVIEW_STAGE_REPORT"))',
+  '  invalid <- Sys.getenv("RR_FIXTURE_RENDERER_INVALID"); if (nzchar(invalid)) file.create(invalid)',
   '  if (Sys.getenv("RR_FIXTURE_MUTATE_AFTER") == "yes") writeLines("Changed during validation", Sys.getenv("RR_FIXTURE_MUTABLE"))',
   '  trigger <- Sys.getenv("RR_FIXTURE_PUBLICATION_TRIGGER"); if (nzchar(trigger)) file.create(trigger)',
   '  cat("FIXTURE GATE FINISHED\\n")',
@@ -477,6 +479,10 @@ for (transport in c("missing", "replaced")) {
   expect(damaged$status != 0L && !grepl("FIXTURE GATE STARTED", damaged$stdout, fixed = TRUE),
     paste("Invalid transport cannot authorize or fall back to Full:", transport))
 }
+renderer_invalid <- invoke(extra = c(RR_FIXTURE_INPUT = "post-renderer-incompatible",
+  RR_FIXTURE_RENDERER_INVALID = file.path(fixture, "incompatible-renderer")))
+expect(renderer_invalid$status != 0L && grepl("renderer storage became incompatible", renderer_invalid$stdout, fixed = TRUE),
+  "Renderer isolation becoming incompatible during execution cannot produce a passing invocation")
 mutable <- file.path(fixture, "mutable-environment")
 writeLines("Original", mutable)
 mutable_env <- c(RR_FIXTURE_INPUT = "mutable-environment", RR_FIXTURE_MUTABLE = mutable)
@@ -492,7 +498,8 @@ expect(changed_before$status == 0L && changed_record$epoch == 2L && length(chang
   "Pre-gate loss of reused eligibility strengthens the same request to admitted Full execution")
 baseline <- invoke(extra = c(RR_FIXTURE_INPUT = "negative-observation"))
 expect(baseline$status == 0L, "A new environment establishes its own fixture origin")
-failure <- invoke(extra = c(RR_FIXTURE_INPUT = "negative-observation", RR_FIXTURE_FORCE_EXECUTION = "yes", RR_FIXTURE_GATE_STATUS = "1"))
+failure <- invoke(extra = c(RR_FIXTURE_INPUT = "negative-observation", RR_FIXTURE_FORCE_EXECUTION = "yes", RR_FIXTURE_GATE_STATUS = "1",
+  RR_FIXTURE_RENDERER_INVALID = file.path(fixture, "renderer-after-failed-gate")))
 expect(failure$status == 1L, "A failed execution keeps its failure outcome")
 after_failure <- invoke(extra = c(RR_FIXTURE_INPUT = "negative-observation"))
 expect(after_failure$status == 0L && grepl('"build-full":{"action":"execute"}', after_failure$stdout, fixed = TRUE),

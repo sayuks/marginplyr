@@ -445,7 +445,11 @@
           },
           {
             "name": "Verify CI artifacts and their command fixtures",
-            "run": "python3 tools/verify-ci-artifacts.py\npython3 tools/test-ci-artifacts.py\nRscript tools/test-review-ready-runner.R\n"
+            "run": "python3 tools/verify-ci-artifacts.py\npython3 tools/test-ci-artifacts.py\n"
+          },
+          {
+            "name": "Verify R runner process contracts",
+            "run": "sudo useradd --create-home --user-group --groups \"$(id -gn)\" marginplyr-fixture\ngit clone --quiet --no-local . \"$RUNNER_TEMP/review-ready-fixtures\"\nsudo chown -R marginplyr-fixture:marginplyr-fixture \"$RUNNER_TEMP/review-ready-fixtures\"\ncd \"$RUNNER_TEMP/review-ready-fixtures\"\nsudo -H -u marginplyr-fixture env PATH=\"$PATH\" R_LIBS_USER=\"$R_LIBS_USER\" Rscript tools/test-review-ready-runner.R\n"
           },
           {
             "uses": "etiennebacher/setup-jarl@v0.1.1",

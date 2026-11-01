@@ -245,7 +245,8 @@ rr_processes <- function() {
       if (ps::ps_uids(handle)[["real"]] != rr_uid() || ps::ps_status(handle) %in% c("zombie", "dead")) NULL else {
         list(identity = rr_process(handle), parent = ps::ps_ppid(handle), group = unname(groups[as.character(pid)]), env = unclass(ps::ps_environ(handle)))
       }
-    }, no_such_process = function(e) NULL)
+    }, no_such_process = function(e) NULL,
+      error = function(e) rr_stop("Process ownership/environment inspection unavailable for PID ", pid, ": ", conditionMessage(e)))
     if (!is.null(row)) table[[as.character(pid)]] <- row
   }
   if (is.null(table[[as.character(Sys.getpid())]])) rr_stop("Incomplete process inspection.")

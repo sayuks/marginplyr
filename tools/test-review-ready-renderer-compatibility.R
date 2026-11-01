@@ -11,7 +11,7 @@ run_renderer_compatibility_contracts <- function() {
     "args = sys.argv[1:]",
     "if args == ['--version']: print(config['version'])",
     "elif args == ['render', '--help']: print('--to --output' if config.get('render', True) else '--help')",
-    "elif args == ['pandoc', '--version']: print('pandoc 3.10')",
+    "elif args == ['pandoc', '--version']: print('pandoc 3.10\\nUser data directory: ' + config.get('pandoc_data', os.path.join(os.environ['XDG_DATA_HOME'], 'pandoc')))",
     "elif args[:2] == ['check', 'info']:",
     "    cache = config.get('cache', os.path.join(os.environ['XDG_CACHE_HOME'], config.get('layout', 'quarto')))",
     "    if 'cache' not in config: pathlib.Path(cache).mkdir(parents=True, exist_ok=True)",
@@ -47,6 +47,7 @@ run_renderer_compatibility_contracts <- function() {
   writeLines("Keep unrelated bytes", file.path(outside, "sentinel"))
   rejects(probe(list(version = "9.87.65", cache = outside)), "Quarto cache isolation")
   rejects(probe(list(version = "9.87.65", deno_cache = outside)), "Deno cache isolation")
+  rejects(probe(list(version = "9.87.65", pandoc_data = outside)), "Pandoc data isolation")
   rejects(probe(list(version = "9.87.65", temporary = outside)), "Deno temporary storage isolation")
   rejects(probe(list(version = "9.87.65", home = outside)), "Quarto HOME isolation")
   rejects(probe(list(version = "9.87.65", libraries = "reordered libraries")), "ordered R library environment")

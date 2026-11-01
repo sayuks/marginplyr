@@ -20,6 +20,9 @@ source is compiled inside each request during setup, before admission waiting.
 These are development tools, not package
 runtime Imports.
 
+The review and website setup also include cpp11 for the development-dependency
+audit performed by devtools when it installs the source for README generation.
+
 The entry is `Rscript tools/review-ready.R`, from the target root, with no
 check/skip options. `--status` and `--recover REQUEST` operate without a clean
 HEAD or the originating checkout. They do not run a check. Unknown control

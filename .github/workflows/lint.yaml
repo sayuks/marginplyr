@@ -118,7 +118,16 @@ jobs:
         run: |
           python3 tools/verify-ci-artifacts.py
           python3 tools/test-ci-artifacts.py
-          Rscript tools/test-review-ready-runner.R
+
+      # Native fixtures need a complete same-account ownership view. This
+      # account contains only their processing, with the provisioned R library.
+      - name: Verify R runner process contracts
+        run: |
+          sudo useradd --create-home --user-group --groups "$(id -gn)" marginplyr-fixture
+          git clone --quiet --no-local . "$RUNNER_TEMP/review-ready-fixtures"
+          sudo chown -R marginplyr-fixture:marginplyr-fixture "$RUNNER_TEMP/review-ready-fixtures"
+          cd "$RUNNER_TEMP/review-ready-fixtures"
+          sudo -H -u marginplyr-fixture env PATH="$PATH" R_LIBS_USER="$R_LIBS_USER" Rscript tools/test-review-ready-runner.R
 
       # Jarl complements rather than replaces lintr. Package-specific rules
       # need R and installed packages, so this reuses the dependency environment

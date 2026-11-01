@@ -649,6 +649,7 @@ rr_worker <- function(path) {
   writeLines(code, gate)
   result <- processx::run(file.path(R.home("bin"), "Rscript"), gate, wd = checkout, env = rr_child_env(), echo = TRUE, error_on_status = FALSE)
   status <- as.integer(result$status)
+  if (status == 0L) rr_renderer()
   after <- tryCatch(if (length(units)) rr_snapshot(checkout, record$sha, units) else before, error = function(e) NULL)
   if (length(rr_reused(selection)) && (!rr_same(before, after) || !rr_revalidate(checkout, record$sha, selection, state))) status <- 1L
   report <- file.path(record$workspace, "stage-report.json")

@@ -607,14 +607,15 @@ rr_renderer_query <- function(command, args, directory, values) {
     result
   }, error = function(e) rr_stop("Quarto capability query ", paste(args, collapse = " "), ": ", conditionMessage(e)))
 }
-rr_renderer_location <- function(path, directory, role, label) {
+rr_renderer_location <- function(path, directory, role, label, must_exist = FALSE) {
   boundary <- file.path(directory, role)
   valid <- is.character(path) && length(path) == 1L && !is.na(path) &&
     (identical(path, boundary) || startsWith(path, paste0(boundary, "/")))
   if (!isTRUE(valid)) rr_stop(label, " isolation failed: ", rr_json(path), "; expected a location inside ", boundary)
   tryCatch({
     rr_owned_path(path, directory)
-    normalizePath(path, mustWork = TRUE)
+    if (file.exists(path) && !dir.exists(path)) rr_stop("The reported location is not a directory: ", path)
+    normalizePath(path, mustWork = must_exist)
   }, error = function(e) rr_stop(label, " isolation failed: ", conditionMessage(e)))
 }
 rr_renderer <- function(values = rr_child_env()) {
@@ -636,6 +637,13 @@ rr_renderer <- function(values = rr_child_env()) {
     rr_stop("Quarto render lacks required --to or --output functionality.")
   pandoc <- trimws(query(c("pandoc", "--version"))$stdout)
   if (!nzchar(pandoc)) rr_stop("Quarto cannot report its selected Pandoc implementation.")
+  pandoc_lines <- strsplit(pandoc, "\n", fixed = TRUE)[[1L]]
+  data_line <- grep("^User data directory: ", pandoc_lines)
+  if (length(data_line) != 1L) rr_stop("Quarto-selected Pandoc does not expose its user data location; private storage cannot be established.")
+  pandoc_data <- rr_renderer_location(sub("^User data directory: ", "", pandoc_lines[[data_line]]),
+    directory, "cache", "Pandoc data")
+  pandoc_lines[[data_line]] <- paste0("User data directory: <request>/", substring(pandoc_data, nchar(directory) + 2L))
+  pandoc <- paste(pandoc_lines, collapse = "\n")
   info <- file.path(probe, "quarto-info.json")
   query(c("check", "info", "--output", info, "--no-strict"))
   if (!file.exists(info)) rr_stop("Quarto check info does not expose resolved cache storage as JSON.")
@@ -654,8 +662,8 @@ rr_renderer <- function(values = rr_child_env()) {
     error = function(e) rr_stop("Quarto TypeScript/Deno capabilities unavailable: ", conditionMessage(e)))
   if (!is.list(runtime)) rr_stop("Quarto TypeScript/Deno metadata lacks runtime and storage locations.")
   deno_cache <- rr_renderer_location(runtime$cache, directory, "cache", "Deno cache")
-  temporary <- rr_renderer_location(runtime$temporary, directory, "tmp", "Deno temporary storage")
-  home <- rr_renderer_location(runtime$home, directory, "cache", "Quarto HOME")
+  temporary <- rr_renderer_location(runtime$temporary, directory, "tmp", "Deno temporary storage", TRUE)
+  home <- rr_renderer_location(runtime$home, directory, "cache", "Quarto HOME", TRUE)
   if (!identical(home, normalizePath(values[["HOME"]], mustWork = TRUE)) ||
       !identical(runtime$libraries, values[["R_LIBS"]])) rr_stop("Quarto runtime changed the private HOME or ordered R library environment.")
   if (!is.character(runtime$version) || length(runtime$version) != 1L || !nzchar(runtime$version) ||
@@ -666,7 +674,7 @@ rr_renderer <- function(values = rr_child_env()) {
   if (!rr_same(executable, rr_file_identity(quarto))) rr_stop("Quarto executable changed during capability inspection.")
   js <- file.path(dirname(quarto), "quarto.js")
   if (!file.exists(js)) js <- NULL
-  storage <- list(quarto = cache, deno = deno_cache, temporary = file.path(directory, "tmp"), home = home)
+  storage <- list(quarto = cache, deno = deno_cache, pandoc = pandoc_data, temporary = file.path(directory, "tmp"), home = home)
   identity <- list(version = version, executable = executable,
     script = if (!is.null(js)) rr_file_identity(js) else NULL,
     deno = list(version = runtime$version, executable = rr_file_identity(deno)), pandoc = pandoc,
