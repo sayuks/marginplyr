@@ -41,7 +41,12 @@ rr_select <- function(root, sha, main) {
     selection$base <- bases[[1L]]
     records <- rr_split0(rr_git_raw(root, "diff", "--raw", "-z", "--no-abbrev", "--no-ext-diff",
       "--no-textconv", "--ignore-submodules=none", "--no-relative", "--find-renames", bases, sha, "--"))
-    if (!length(records)) rr_stop("Empty cumulative diff.")
+    if (!length(records)) {
+      rr_comparison_inputs(root)
+      selection$reasons <- list("Empty cumulative diff; Full retains the established comparison base.")
+      selection$verifiers <- as.list(c(unlist(rr_reference_checks), "tools/verify-ci-artifacts.py"))
+      return(selection)
+    }
     names <- character()
     recognized <- character()
     reasons <- character()
@@ -118,7 +123,9 @@ rr_select <- function(root, sha, main) {
 
 rr_capabilities <- function(root, sha, patterns) {
   tree <- rr_tree(root, sha)
-  selected <- Filter(function(entry) any(vapply(patterns, function(pattern) grepl(glob2rx(pattern), entry$name), logical(1))), tree)
+  expressions <- vapply(patterns, glob2rx, "")
+  matches <- Reduce(`|`, lapply(expressions, grepl, x = names(tree)))
+  selected <- tree[matches]
   literal <- patterns[!grepl("[?*\\[]", patterns)]
   if (!all(literal %in% names(selected))) rr_stop("Missing accepted contract sources: ", paste(setdiff(literal, names(selected)), collapse = ", "))
   blobs <- rr_blobs(root, vapply(selected, `[[`, "", "oid"))
@@ -138,10 +145,6 @@ rr_eligibility <- function(root, sha, selection, main) {
   patterns <- c(rr_runner_sources, unlist(rr_core_sources))
   if (selection$path == "Documentation") patterns <- c(patterns, unlist(rr_documentation_sources))
   for (stage in unlist(selection$verifiers)) {
-    if (stage == "tools/test-review-ready-runner.R") {
-      patterns <- c(patterns, stage, rr_runner_sources)
-      next
-    }
     registration <- rr_stage_contracts[[stage]]
     if (is.null(registration) || !registration[[1L]] %in% c("serial", "process-fixture", "parallel-fixture-2")) return(paste("Unregistered limited workload:", stage))
     patterns <- c(patterns, stage, unlist(registration[[2L]]))
@@ -396,4 +399,7 @@ rr_stage_contracts <- list(
 )
 rr_stage_contracts[["tools/test-review-ready-renderer.R"]] <- list("serial", as.list(c(
   rr_runner_sources, "tools/review-ready-check-lib.R", "tools/review-ready-generated.R",
-  "tools/verify-site-artifacts.R", ".github/scripts/verify-site.R")))
+  "tools/verify-site-artifacts.R", ".github/scripts/verify-site.R", ".github/scripts/ci-helpers.R")))
+rr_stage_contracts[["tools/test-review-ready-runner.R"]] <- list("process-fixture", as.list(c(
+  rr_runner_sources, "tools/review-ready-environment.R", "tools/review-ready-check.R",
+  "tools/review-ready-check-lib.R", "tools/test-review-ready-inherited.R")))

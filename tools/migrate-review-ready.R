@@ -13,6 +13,9 @@ rr_migrate <- function() {
   if (!identical(rr_capabilities(identity$root, main, sources), rr_capabilities(identity$root, identity$sha, sources)))
     rr_stop("Migration must use the accepted local main implementation.")
   state <- rr_mkdir(rr_state())
+  lock <- rr_lock(file.path(state, "delivery.lock"))
+  if (is.null(lock)) rr_stop("Another delivery migration is active; no state changed.")
+  on.exit(filelock::unlock(lock), add = TRUE)
   command <- file.path(rr_account_home(), ".local/bin/marginplyr-review-ready")
   legacy <- rr_mkdir(file.path(state, "legacy-history"))
   control <- file.path(state, "legacy-control.py")
@@ -68,10 +71,12 @@ rr_migrate <- function() {
         !identical(old$state, "terminal") || !identical(old$cleanup, "confirmed") ||
         !identical(old$owned_capacity, FALSE) || !rr_valid_time(old$finished))
       rr_stop("Unattributed/damaged legacy history requires inspection: ", directory)
-    # Legacy birth strings are compared with the same C-locale lstart spelling.
     legacy_alive <- function(item) {
       row <- table[[as.character(item$pid)]]
       if (is.null(row)) return(FALSE)
+      previous <- Sys.getlocale("LC_TIME")
+      on.exit(Sys.setlocale("LC_TIME", previous), add = TRUE)
+      Sys.setlocale("LC_TIME", "C")
       birth <- format(as.POSIXct(as.numeric(row$identity$birth), origin = "1970-01-01"), "%a %b %e %H:%M:%S %Y")
       identical(gsub(" +", " ", birth), item$birth)
     }

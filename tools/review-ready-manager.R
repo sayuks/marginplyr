@@ -1,5 +1,7 @@
 # Request lifecycle and Full admission for the repository-owned R runner.
 
+# Validates ownership independently of wall-clock age. The collector and stage
+# planner separately refuse future or otherwise untrustworthy ages.
 rr_read_record <- function(path) {
   envelope <- rr_read_json(path)
   if (!is.list(envelope$record) || !is.character(envelope$checksum) ||
@@ -20,7 +22,7 @@ rr_read_record <- function(path) {
     (!record$owned_capacity || (record$may_own_full && record$capacity == "Full")) &&
     (record$capacity != "exempt" || !record$may_own_full) &&
     (record$state != "running" || record$capacity != "Full" || record$owned_capacity) &&
-    (record$state != "terminal" || (identical(record$cleanup, "confirmed") && rr_valid_time(record$finished) &&
+    (record$state != "terminal" || (identical(record$cleanup, "confirmed") && rr_valid_time(record$finished, Inf) &&
       is.numeric(record$outcome) && length(record$outcome) == 1L && is.finite(record$outcome))) &&
     identical(rr_full_required(record$selection), record$capacity == "Full") &&
     setequal(names(record$selection$plan$units), rr_required_units(record$selection))
@@ -48,21 +50,40 @@ rr_requests <- function(state, active = TRUE) {
 }
 
 rr_recover <- function(state, request, automatic = FALSE) {
-  if (!rr_match("[0-9a-f]{32}", request)) rr_stop("Recovery requires one explicit request ID.")
+  candidates <- rr_requests(state)
+  ids <- vapply(candidates, function(item) if (is.null(item$id)) basename(dirname(item$path)) else item$id, "")
+  if (is.null(request) && !length(ids)) {
+    rr_say("No unfinished request to recover. No check was run.")
+    return(0L)
+  }
+  if (is.null(request) || !rr_match("[0-9a-f]{32}", request) ||
+      !file.exists(file.path(state, "requests", request, "record.json"))) {
+    rr_say("Recovery requires one explicit known request ID; candidates: ", rr_json(as.list(ids)), ". No check was run; no state changed.")
+    return(4L)
+  }
   directory <- rr_owned_path(file.path(state, "requests", request), state)
   path <- file.path(directory, "record.json")
   record <- rr_read_record(path)
-  if (record$state == "terminal") return(0L)
+  if (record$state == "terminal") {
+    rr_say("Request ", request, " is already terminal. No check was run; no state changed.")
+    return(0L)
+  }
   lock <- rr_lock(file.path(directory, "manager.lock"))
-  if (is.null(lock)) return(4L)
+  if (is.null(lock)) {
+    if (!automatic) rr_say("An active manager holds request ownership. No check was run.")
+    return(4L)
+  }
   on.exit(filelock::unlock(lock), add = TRUE)
   capacity <- if (record$may_own_full) rr_lock(file.path(state, "admission.lock")) else NULL
-  if (record$may_own_full && is.null(capacity)) return(4L)
+  if (record$may_own_full && is.null(capacity)) {
+    if (!automatic) rr_say("Full capacity is held; recovery refused. No check was run.")
+    return(4L)
+  }
   on.exit(if (!is.null(capacity)) filelock::unlock(capacity), add = TRUE)
   if (identical(record$boot, rr_boot())) {
     for (observation in 1:2) {
       if (rr_alive(record$manager) || length(rr_owned(rr_processes(), record))) {
-        if (!automatic) rr_say("Recovery refused: owned processing remains for ", request)
+        if (!automatic) rr_say("Recovery refused: owned processing remains for ", request, ". No check was run.")
         return(4L)
       }
       if (observation == 1L) Sys.sleep(0.2)
@@ -198,6 +219,7 @@ rr_acquire <- function(state, path, record, cancelled) {
 }
 
 rr_supervise <- function(path, record, cancelled, environment) {
+  rr_check_authority(record)
   record$state <- "running"; record$authorized <- FALSE
   rr_write(path, record)
   directory <- dirname(path)
@@ -296,7 +318,10 @@ rr_publish <- function(state, record, payload) {
     value$next_sequence <- value$next_sequence + 1L
     value$records <- c(value$records, list(list(payload = payload,
       available = as.list(if (payload$kind == "evidence") names(payload$units) else character()))))
-    rr_store_write(state, value)
+    tryCatch(rr_store_write(state, value), error = function(e) {
+      stop(errorCondition(paste("Interrupted evidence publication:", conditionMessage(e)),
+        class = "marginplyr_review_publication_error"))
+    })
     payload
   })
 }
@@ -320,10 +345,19 @@ rr_finish <- function(state, path, record, status) {
   record$gate_outcome <- status
   rr_write(path, record)
   observation <- tryCatch(rr_observe(state, path, record, worker), error = function(e) {
+    if (inherits(e, "marginplyr_review_publication_error")) stop(e)
     rr_say("Stage observation unavailable: ", conditionMessage(e))
     NULL
   })
   if (record$authorized && is.null(observation) && length(rr_reused(record$selection))) status <- 1L
+  completed <- unlist(worker$report$completed, use.names = FALSE)
+  artifacts <- setdiff(unlist(record$selection$verifiers), if ("generation" %in% rr_reused(record$selection)) "tools/review-ready-generated.R")
+  required <- c("Package spelling", "jarl", "package-aware lintr", if (length(artifacts)) paste("Artifact verification:", artifacts))
+  if (record$selection$path != "Repository") required <- c(required, "Test dependency syntax", "Required test Suggests")
+  executed <- names(Filter(function(unit) unit$action == "execute", record$selection$plan$units))
+  complete <- identical(worker$report$request, record$token) && all(required %in% completed) &&
+    all(vapply(executed, function(unit) identical(worker$report$units[[unit]], "passed"), logical(1)))
+  if (!complete && length(rr_reused(record$selection))) status <- 1L
   rr_cleanup(record, dirname(path))
   record$state <- "terminal"; record$cleanup <- "confirmed"; record$outcome <- status
   record$finished <- rr_now(); record$owned_capacity <- FALSE
@@ -331,18 +365,12 @@ rr_finish <- function(state, path, record, status) {
   if (!is.null(observation) && !is.null(worker$before) && rr_same(worker$before, worker$after)) {
     units <- rr_execution_entries(record, worker)
     for (name in names(units)) units[[name]]$observation_sequence <- observation$sequence
-    completed <- unlist(worker$report$completed, use.names = FALSE)
-    required <- c("Package spelling", "jarl", "package-aware lintr",
-      paste("Artifact verification:", setdiff(unlist(record$selection$verifiers), if ("generation" %in% rr_reused(record$selection)) "tools/review-ready-generated.R")))
-    if (record$selection$path != "Repository") required <- c(required, "Test dependency syntax", "Required test Suggests")
-    executed <- names(Filter(function(unit) unit$action == "execute", record$selection$plan$units))
-    complete <- identical(worker$report$request, record$token) && all(required %in% completed) &&
-      all(vapply(executed, function(unit) identical(worker$report$units[[unit]], "passed"), logical(1)))
     if (status != 0L || complete) tryCatch({
       payload <- rr_payload(record, "evidence", units, Filter(function(unit) unit$action == "reuse", record$selection$plan$units))
       payload$observation <- observation$sequence; payload$completed <- worker$report$completed; payload$omitted <- worker$report$omitted
       rr_publish(state, record, payload)
     }, error = function(e) {
+      if (inherits(e, "marginplyr_review_publication_error")) stop(e)
       rr_say("Terminal evidence unavailable: ", conditionMessage(e))
       if (length(rr_reused(record$selection))) { status <<- 1L; record$outcome <<- 1L; rr_write(path, record) }
     })
@@ -371,6 +399,37 @@ rr_authority <- function(root, main) {
   environment
 }
 
+# Copy accepted helpers from blobs, bypassing archive attributes and filters.
+# A materialized worker must execute the generation the manager pinned.
+rr_materialize_authority <- function(root, main, directory) {
+  patterns <- unique(c(rr_runner_sources, unlist(rr_core_sources), names(rr_stage_contracts),
+    unlist(lapply(rr_stage_contracts, function(stage) stage[[2L]]))))
+  capabilities <- rr_capabilities(root, main, patterns)
+  tree <- rr_tree(root, main)[names(capabilities)]
+  blobs <- rr_blobs(root, vapply(tree, `[[`, "", "oid"))
+  manifest <- list()
+  rr_mkdir(directory)
+  for (name in names(tree)) {
+    path <- file.path(directory, name)
+    rr_mkdir(dirname(path))
+    rr_write(path, blobs[[tree[[name]]$oid]], raw = TRUE)
+    Sys.chmod(path, if (tree[[name]]$mode == "100755") "0755" else "0644")
+    manifest[[name]] <- list(mode = tree[[name]]$mode, digest = rr_hash(blobs[[tree[[name]]$oid]]))
+  }
+  manifest
+}
+rr_check_authority <- function(record) {
+  directory <- file.path(record$workspace, "authority")
+  if (!is.list(record$authority) || !all(rr_runner_sources %in% names(record$authority))) rr_stop("Pinned manager manifest is unavailable.")
+  for (name in names(record$authority)) {
+    path <- rr_owned_path(file.path(directory, name), directory)
+    expected <- record$authority[[name]]
+    mode <- if (expected$mode == "100755") strtoi("755", 8L) else strtoi("644", 8L)
+    if (!identical(as.integer(file.info(path)$mode), mode) || !identical(rr_hash(rr_read(path)), expected$digest)) rr_stop("Pinned manager source changed: ", name)
+  }
+  invisible()
+}
+
 rr_entry <- function(args, runner_root) {
   rr_setup()
   state <- rr_mkdir(rr_state())
@@ -391,12 +450,15 @@ rr_entry <- function(args, runner_root) {
     rr_say(rr_json(list(requests = items, operation = "status only; No check was run.")))
     return(0L)
   }
-  if (length(args) == 2L && args[[1L]] == "--recover") return(rr_recover(state, args[[2L]]))
+  if (length(args) %in% 1:2 && args[[1L]] == "--recover")
+    return(rr_recover(state, if (length(args) == 2L) args[[2L]] else NULL))
   if (length(args)) rr_stop("Use no arguments, --status, or --recover REQUEST. No check was run.")
   context <- c("GIT_DIR", "GIT_WORK_TREE", "GIT_COMMON_DIR", "GIT_INDEX_FILE", "GIT_OBJECT_DIRECTORY",
     "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_NAMESPACE", "GIT_REPLACE_REF_BASE", "GIT_ATTR_SOURCE", "GIT_GRAFT_FILE")
   if (any(nzchar(Sys.getenv(context)))) rr_stop("Cannot obtain the target's accepted main authority under Git context overrides; clear them before checking.")
   identity <- rr_identity()
+  if (!identical(normalizePath(runner_root, mustWork = TRUE), identity$root))
+    rr_stop("Invoke the target worktree's tracked tools/review-ready.R from its root; no check was run.")
   main <- tryCatch(rr_git(identity$root, "rev-parse", "--verify", "refs/heads/main^{commit}"),
     error = function(e) rr_stop("Missing local main authority. Update or restore local main; no check was run."))
   authority <- rr_authority(identity$root, main)
@@ -456,15 +518,16 @@ rr_main <- function(identity, main) {
     if (!is.null(capacity)) filelock::unlock(capacity)
   }, add = TRUE)
   authority <- file.path(record$workspace, "authority")
-  rr_mkdir(authority)
-  archive <- file.path(record$workspace, "authority.tar")
-  rr_git(root, "archive", "--format=tar", paste0("--output=", archive), main)
-  utils::untar(archive, exdir = authority)
   environment <- rr_render_env(directory)
   environment[["MARGINPLYR_REVIEW_REQUEST"]] <- record$token
   environment[["MARGINPLYR_REVIEW_RECORD"]] <- path
   environment[["MARGINPLYR_REVIEW_COMMIT"]] <- sha
   environment[["MARGINPLYR_REVIEW_SUPERVISOR"]] <- file.path(authority, "tools/review-ready.R")
+  previous_environment <- options(marginplyr.review.env = environment)
+  on.exit(options(previous_environment), add = TRUE)
+  record$authority <- rr_materialize_authority(root, main, authority)
+  rr_write(path, record)
+  rr_check_authority(record)
   # The accepted native source is setup-only and has no package/check workload.
   signals <- rr_signals(file.path(authority, "tools/review-ready-signals.c"), file.path(record$workspace, "signals"), environment)
   parent <- rr_process(ps::ps_handle(ps::ps_ppid()))
@@ -527,6 +590,7 @@ rr_worker <- function(path) {
       !identical(as.character(record$epoch), Sys.getenv("MARGINPLYR_REVIEW_EPOCH")) ||
       !identical(record$manager$pid, ps::ps_ppid()) || record$state != "running" ||
       !rr_alive(record$manager) || (record$capacity == "Full" && !record$owned_capacity)) rr_stop("Worker lacks matching live supervision.")
+  rr_check_authority(record)
   state <- dirname(dirname(dirname(path)))
   checkout <- file.path(record$workspace, "source")
   rr_run("git", c("clone", "--quiet", "--shared", "--no-checkout", record$root, checkout))

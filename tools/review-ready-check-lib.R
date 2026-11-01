@@ -907,7 +907,7 @@ run_review_ready_verifiers <- function(selection, identity, prerequisites, runne
       paste("Artifact verification:", path),
       list(
         command = command, args = if (!is.null(accepted_root) &&
-          identical(path, "tools/test-review-ready-runner.R"))
+          path %in% c("tools/test-review-ready-runner.R", "tools/test-review-ready-renderer.R"))
           c(file.path(accepted_root, path), identity$root) else path,
         env = c("TESTTHAT_PARALLEL=false", "TESTTHAT_CPUS=1", "MARGINPLYR_REVIEW_STAGE_REPORT=", paste0(
           "MARGINPLYR_REVIEW_BASE=", if (is.null(selection$base)) "" else selection$base

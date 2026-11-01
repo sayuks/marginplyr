@@ -6,6 +6,8 @@ source(file.path(candidate, "tools", "review-ready-core.R"))
 source(file.path(candidate, "tools", "review-ready-registry.R"))
 source(file.path(candidate, "tools", "review-ready-evidence.R"))
 source(file.path(candidate, "tools", "review-ready-manager.R"))
+entry <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[[1L]])
+fixture_root <- dirname(dirname(normalizePath(entry, mustWork = TRUE)))
 
 fail <- function(text) stop(text, call. = FALSE)
 expect <- function(value, text) if (!isTRUE(value)) { cat(text, "\n"); fail("Runner contract failed.") }
@@ -13,6 +15,7 @@ rejects <- function(code, pattern) {
   result <- tryCatch({ force(code); NULL }, error = identity)
   expect(inherits(result, "error") && grepl(pattern, conditionMessage(result)), pattern)
 }
+source(file.path(fixture_root, "tools/test-review-ready-inherited.R"))
 
 # These known answers come from SHA-256 and RFC 4231, independently of the store.
 expect(identical(rr_hash(charToRaw("abc")),
@@ -24,9 +27,12 @@ expect(identical(rr_bytes(list(b = 2, a = "x")), rr_bytes(list(a = "x", b = 2)))
 expect(identical(rawToChar(rr_bytes(1.25)), "marginplyr-review-ready/v2:n1.25;"), "Canonical decimal encoding")
 rejects(rr_bytes(stats::setNames(list(1, 2), c("a", "a"))), "Duplicate")
 rejects(rr_bytes(list(a = Inf)), "finite")
+rejects(rr_seal(list(a = Inf), openssl::rand_bytes(32)), "finite")
 key <- openssl::rand_bytes(32)
 envelope <- rr_seal(list(schema = 2L, value = "kept"), key)
 expect(identical(rr_unseal(envelope, key)$value, "kept"), "authentication roundtrip")
+duplicate <- c(envelope, list(integrity = envelope$integrity))
+rejects(rr_unseal(duplicate, key), "Duplicate")
 rejects(rr_unseal(envelope, openssl::rand_bytes(32)), "authentication")
 envelope$payload$value <- "changed"
 rejects(rr_unseal(envelope, key), "authentication")
@@ -127,9 +133,86 @@ run_store_contracts <- function() {
   rr_write(a$path, envelope)
   rejects(rr_read_record(a$path), "Damaged")
   rr_write(a$path, damaged, raw = TRUE)
+  missing <- tempfile("missing-journal-", tmpdir = state)
+  expect(file.rename(b$path, missing), "Temporarily remove an indexed failure journal")
+  rejects(read(), "cannot open")
+  expect(file.rename(missing, b$path), "Restore the indexed failure journal")
+  wrong_user <- read(); wrong_user$records[[1L]]$payload$user <- rr_uid() + 1L
+  rr_with_lock(file.path(state, "evidence.lock"), rr_store_write(state, wrong_user))
+  rejects(read(), "provenance/order")
+  rr_with_lock(file.path(state, "evidence.lock"), rr_store_write(state, after))
+  forged <- after
+  submitted <- paste(rep("0", 40), collapse = "")
+  for (i in seq_along(forged$records)) if (forged$records[[i]]$payload$request == d$record$id) {
+    forged$records[[i]]$payload$selection$plan$units[["build-full"]]$submitted <- submitted
+    if (forged$records[[i]]$payload$kind == "evidence") forged$records[[i]]$payload$reused[["build-full"]]$submitted <- submitted
+  }
+  changed <- d$record; changed$selection$plan$units[["build-full"]]$submitted <- submitted
+  rr_write(d$path, changed)
+  rr_with_lock(file.path(state, "evidence.lock"), rr_store_write(state, forged))
+  rejects(read(), "inherited origin")
+  rr_write(d$path, d$record)
+  rr_with_lock(file.path(state, "evidence.lock"), rr_store_write(state, after))
+  incomplete <- rr_finish
+  environment(incomplete) <- new.env(parent = environment(rr_finish))
+  snapshot <- list(sources = list(), environment = list(digest = "fixture"))
+  environment(incomplete)$rr_worker_result <- function(...) list(before = snapshot, after = snapshot, report = list())
+  environment(incomplete)$rr_observe <- function(...) list(sequence = 1L)
+  environment(incomplete)$rr_cleanup <- function(...) invisible()
+  environment(incomplete)$rr_publish <- function(...) invisible()
+  original <- rr_read(d$path)
+  invisible(capture.output({ outcome <- incomplete(state, d$path, d$record, 0L) }))
+  expect(outcome == 1L && rr_read_record(d$path)$outcome == 1L,
+    "Incomplete mandatory reports cannot terminally pass through reused work")
+  rr_write(d$path, original, raw = TRUE)
+  later <- make(1L)
+  later_observation <- observe(later, list(`build-full` = stage(source_c, "failed")))
+  terminal(later, later_observation, list(`build-full` = stage(source_c, "failed")))
+  rejects(rr_publish(state, d$record, rr_payload(d$record, "evidence", list(), list(`build-full` = reference))), "superseded")
+  future <- make(finished = now + 3600)
+  expect(!length(rr_requests(state)), "Clock rollback does not turn completed history into active ownership")
+  expect(!future$record$id %in% rr_history(state, now), "Future history remains protected from age-based deletion")
+  interrupted <- make(1L)
+  interrupted$record$state <- "running"; interrupted$record$owned_capacity <- TRUE
+  interrupted$record$cleanup <- "pending"
+  rr_write(interrupted$path, interrupted$record)
+  publisher <- rr_publish
+  environment(publisher) <- new.env(parent = environment(rr_publish))
+  environment(publisher)$rr_store_write <- function(...) stop("Fixture replacement interrupted")
+  error <- tryCatch(publisher(state, interrupted$record,
+    rr_payload(interrupted$record, "observation", list(`build-full` = stage(source_a, "failed")))), error = identity)
+  expect(inherits(error, "marginplyr_review_publication_error"), "An interrupted write differs from an unavailable cache read")
+  finish <- rr_finish
+  environment(finish) <- new.env(parent = environment(rr_finish))
+  environment(finish)$rr_observe <- function(...) stop(error)
+  cleaned <- FALSE
+  environment(finish)$rr_cleanup <- function(...) { cleaned <<- TRUE }
+  rejects(finish(state, interrupted$path, interrupted$record, 1L), "Interrupted evidence publication")
+  retained <- rr_read_record(interrupted$path)
+  expect(!cleaned && retained$state == "running" && retained$owned_capacity,
+    "Interrupted observation writes preserve ownership before cleanup")
   cat("Repository runner observation, retirement, mixed-origin and key-store contracts passed.\n")
 }
 run_store_contracts()
+
+run_marker_contract <- function() {
+  token <- rr_id()
+  environment <- Sys.getenv()
+  environment[["MARGINPLYR_REVIEW_REQUEST"]] <- token
+  child <- processx::process$new(file.path(R.home("bin"), "Rscript"), c("-e", "Sys.sleep(60)"),
+    env = environment, cleanup = FALSE, supervise = FALSE)
+  on.exit({ if (child$is_alive()) child$kill(); child$wait() }, add = TRUE)
+  record <- list(token = token, children = list(), group = NULL)
+  deadline <- rr_now() + 5
+  repeat {
+    table <- rr_processes()
+    if (as.character(child$get_pid()) %in% rr_owned(table, record) || rr_now() >= deadline) break
+    Sys.sleep(0.05)
+  }
+  expect(as.character(child$get_pid()) %in% rr_owned(table, record),
+    "An unregistered detached child remains owned through its request marker")
+}
+run_marker_contract()
 
 run_process_contracts <- function() {
 fixture <- tempfile("repository-runner-contract-", tmpdir = Sys.getenv("TMPDIR", tempdir()))
@@ -150,6 +233,20 @@ on.exit({
       if (length(owned)) rr_stop("Fixture processing remains; workspace retained: ", fixture)
     }
   }
+  # A fault may leave an unreadable journal. The private fixture boundary still
+  # attributes its live children; stop them before deleting their control tree.
+  for (attempt in 1:100) {
+    table <- rr_processes()
+    owned <- Filter(function(row) {
+      path <- unname(row$env["MARGINPLYR_REVIEW_RECORD"])
+      length(path) == 1L && !is.na(path) && startsWith(path, paste0(fixture, "/"))
+    }, table)
+    if (!length(owned)) break
+    for (row in owned) if (rr_alive(row$identity)) ps::ps_send_signal(ps::ps_handle(row$identity$pid,
+      as.POSIXct(as.numeric(row$identity$birth), origin = "1970-01-01", tz = "UTC")), 9L)
+    Sys.sleep(0.05)
+  }
+  if (length(owned)) rr_stop("Fixture children remain; workspace retained: ", fixture)
   unlink(fixture, recursive = TRUE)
 }, add = TRUE)
 repo <- file.path(fixture, "repo")
@@ -158,22 +255,42 @@ dir.create(repo); dir.create(home)
 archive <- file.path(fixture, "source.tar")
 rr_git(candidate, "archive", "--format=tar", paste0("--output=", archive), "HEAD")
 utils::untar(archive, exdir = repo)
-for (path in c(rr_runner_sources, "tools/test-review-ready-runner.R", "tools/review-ready-environment.R", "tools/review-ready-check-lib.R")) {
+for (path in c(rr_runner_sources, "tools/test-review-ready-runner.R", "tools/test-review-ready-inherited.R", "tools/review-ready-environment.R", "tools/review-ready-check.R", "tools/review-ready-check-lib.R")) {
   file.copy(file.path(candidate, path), file.path(repo, path), overwrite = TRUE)
 }
 cat("\nrr_account_home <- function() ", deparse(home), "\n", file = file.path(repo, "tools/review-ready-core.R"), append = TRUE)
 cat('\nrr_environment <- function(root) list(digest = rr_digest(Sys.getenv("RR_FIXTURE_INPUT", "same")), clock = list(r = "4.6.1", checker = "2efcaa5190c038e60834bd5c4e502c82", timeout = "34ee7dea5eac7ba7138bd3c60651faee", leeway = 300), r = "4.6.1", libraries = list())\n',
   file = file.path(repo, "tools/review-ready-evidence.R"), append = TRUE)
-cat('\nrr_renderer <- function() list(fixture = TRUE)\n', file = file.path(repo, "tools/review-ready-evidence.R"), append = TRUE)
+cat(paste0('\nrr_renderer <- function() {\n',
+  ' if (Sys.getenv("RR_FIXTURE_WORKER_ACTION") == "promote" && Sys.getenv("MARGINPLYR_REVIEW_EPOCH") == "1") {\n',
+  '  child <- processx::process$new(file.path(R.home("bin"), "Rscript"), c("-e", "Sys.sleep(60)"), cleanup = FALSE, supervise = FALSE)\n',
+  '  writeLines(as.character(child$get_pid()), Sys.getenv("RR_FIXTURE_PREPARATION_PID"))\n',
+  '  rr_rpc("promote", "Fixture preparation requires Full"); repeat Sys.sleep(.1)\n',
+  ' }; list(fixture = TRUE)\n}\n'), file = file.path(repo, "tools/review-ready-evidence.R"), append = TRUE)
+cat(paste0('\nrr_plan_fixture_original <- rr_plan\n',
+  'rr_plan <- function(root, sha, selection, ...) {\n',
+  ' if (Sys.getenv("RR_FIXTURE_FORCE_EXECUTION") == "yes") return(rr_execute_plan(selection))\n',
+  ' rr_plan_fixture_original(root, sha, selection, ...)\n}\n'), file = file.path(repo, "tools/review-ready-manager.R"), append = TRUE)
+cat(paste0('\nrr_write_fixture_original <- rr_write\n',
+  'rr_write <- function(path, value, raw = FALSE) {\n',
+  ' result <- rr_write_fixture_original(path, value, raw)\n',
+  ' trigger <- Sys.getenv("RR_FIXTURE_PUBLICATION_TRIGGER")\n',
+  ' if (nzchar(trigger) && file.exists(trigger) && basename(path) == "index.json") {\n',
+  '  writeLines(path, paste0(trigger, ".ready")); rr_say("Fixture publication replacement prepared"); repeat Sys.sleep(.1)\n',
+  ' }; invisible(result)\n}\n'), file = file.path(repo, "tools/review-ready-manager.R"), append = TRUE)
 # This is an external package-check stand-in, never a real Full result. The
 # actual R entry/manager, Git, OS locks, signals, records and authentication run.
 writeLines(c(
   'read_review_ready_selection <- function() {',
+  '  transport <- Sys.getenv("RR_FIXTURE_TRANSPORT")',
+  '  if (transport == "missing") unlink(Sys.getenv("MARGINPLYR_REVIEW_SELECTION"))',
+  '  if (transport == "replaced") writeLines("Path: Repository", Sys.getenv("MARGINPLYR_REVIEW_SELECTION"))',
   '  status <- system2(file.path(R.home("bin"), "Rscript"), c(shQuote(Sys.getenv("MARGINPLYR_REVIEW_SUPERVISOR")), "--gate-proof"))',
   '  if (status) stop("Proof refused")',
   '  jsonlite::fromJSON(Sys.getenv("MARGINPLYR_REVIEW_RECORD"), simplifyVector = FALSE)$record$selection',
   '}',
   'review_ready_check_cli <- function(args, expected_root, selection, diagnostic_root, accepted_root) {',
+  '  force(selection)',
   '  record <- jsonlite::fromJSON(Sys.getenv("MARGINPLYR_REVIEW_RECORD"), simplifyVector = FALSE)$record',
   '  survivor <- Sys.getenv("RR_FIXTURE_SURVIVOR")',
   '  if (nzchar(survivor)) { child <- processx::process$new("/bin/sleep", "60", cleanup = FALSE, supervise = FALSE); writeLines(as.character(child$get_pid()), survivor) }',
@@ -186,9 +303,11 @@ writeLines(c(
   '    completed=as.list(c("Package spelling", "jarl", "package-aware lintr", "Test dependency syntax", "Required test Suggests", paste("Artifact verification:", unlist(selection$verifiers)))), omitted=list(),',
   '    timestamps=list(observed=as.numeric(Sys.time()), paths=list(DESCRIPTION=as.numeric(Sys.time()))),',
   '    check=c(attempt,list(args=as.list(c("--as-cran",if(selection$path=="Documentation") "--no-tests")),attempts=list(attempt))))',
+  '  if (Sys.getenv("RR_FIXTURE_GATE_STATUS") == "1" && length(units)) report$units[[units[[1L]]]] <- "running"',
   '  writeLines(jsonlite::toJSON(report, auto_unbox=TRUE, null="null", digits=NA), Sys.getenv("MARGINPLYR_REVIEW_STAGE_REPORT"))',
+  '  trigger <- Sys.getenv("RR_FIXTURE_PUBLICATION_TRIGGER"); if (nzchar(trigger)) file.create(trigger)',
   '  cat("FIXTURE GATE FINISHED\\n")',
-  '  0L',
+  '  as.integer(Sys.getenv("RR_FIXTURE_GATE_STATUS", "0"))',
   '}'
 ), file.path(repo, "tools/review-ready-check-lib.R"))
 rr_run("git", c("init", "-q", "-b", "main"), repo)
@@ -210,12 +329,22 @@ state <- rr_mkdir(file.path(home, ".local/state/marginplyr/review-ready"))
 rr_write(file.path(state, "delivery.json"), list(protocol = rr_protocol, fixture = TRUE))
 first <- invoke()
 expect(first$status == 0L && grepl("terminal outcome: 0", first$stdout), paste("Full fixture lifecycle:", first$stdout, first$stderr))
+delegation_environment <- Sys.getenv()
+delegation_environment <- delegation_environment[!startsWith(names(delegation_environment), "MARGINPLYR_REVIEW_")]
+delegated <- rr_run(file.path(R.home("bin"), "Rscript"), "tools/review-ready-check.R", repo,
+  env = delegation_environment, error = FALSE)
+expect(delegated$status == 0L && grepl("terminal outcome: 0", delegated$stdout),
+  paste("The former direct R gate delegates to the repository entry after cutover:", delegated$stdout, delegated$stderr))
 requests <- rr_requests(state, active = FALSE)
+requests <- Filter(function(item) identical(item$record$selection$plan$units[["build-full"]]$action, "execute"), requests)
 expect(length(requests) == 1L && requests[[1L]]$record$cleanup == "confirmed", "Confirmed request cleanup")
 record <- requests[[1L]]$record
 expect(!dir.exists(record$workspace) && !dir.exists(file.path(dirname(requests[[1L]]$path), "cache")), "Temporary/cache cleanup")
 store <- rr_with_lock(file.path(state,"evidence.lock"), rr_store_read(state))
-expect(length(store$records) == 2L, "Authenticated observation and terminal origin")
+own_records <- Filter(function(entry) identical(entry$payload$request, record$id), store$records)
+executions <- Filter(function(entry) entry$payload$kind == "evidence" && "build-full" %in% names(entry$payload$units), store$records)
+expect(length(own_records) == 2L && length(executions) == 1L,
+  "Authenticated observation and terminal origin; delegation reuse adds no execution")
 writeLines("# fixture prose", file.path(repo, "design", "fixture-followup.md"))
 rr_git(repo, "add", ".")
 rr_git(repo, "commit", "-qm", "Fixture prose follow-up")
@@ -223,10 +352,23 @@ second <- invoke()
 expect(second$status == 0L && grepl('"action":"reuse"', second$stdout, fixed=TRUE), paste("Actual origin reuse fixture:",second$stdout,second$stderr))
 status <- invoke("--status")
 expect(status$status == 0L && grepl("No check was run", status$stdout), "Status is not check evidence")
+entry_root <- rr_mkdir(file.path(fixture, "other-entry"))
+rr_mkdir(file.path(entry_root, "tools"))
+for (path in rr_runner_sources) file.copy(file.path(repo, path), file.path(entry_root, path))
+other_entry <- rr_run(file.path(R.home("bin"), "Rscript"), c(file.path(entry_root, "tools/review-ready.R")), repo,
+  error = FALSE)
+expect(other_entry$status == 2L && grepl("target worktree's tracked", other_entry$stdout, fixed = TRUE),
+  "A different checkout cannot supply the target's entry generation")
+empty_recovery <- invoke("--recover")
+expect(empty_recovery$status == 0L && grepl("No check was run", empty_recovery$stdout), "Empty recovery is not check evidence")
+terminal_recovery <- invoke(c("--recover", record$id))
+expect(terminal_recovery$status == 0L && grepl("No check was run", terminal_recovery$stdout), "Terminal recovery is not check evidence")
 unknown <- invoke("--skip")
 expect(unknown$status != 0L && grepl("Use no arguments", unknown$stdout), "No caller-selected skip")
 
 accepted <- rr_git(repo, "rev-parse", "main")
+empty <- rr_select(repo, accepted, accepted)
+expect(empty$path == "Full" && identical(empty$base, accepted), "Empty valid difference keeps its established base under Full")
 rr_git(repo, "update-ref", "-d", "refs/heads/main")
 missing <- invoke()
 expect(missing$status == 2L && grepl("Missing local main authority", missing$stdout), "Missing authority never self-approves")
@@ -234,6 +376,13 @@ rr_git(repo, "update-ref", "refs/heads/main", accepted)
 writeLines("dirty", file.path(repo, "UNTRACKED"))
 expect(invoke()$status == 2L && invoke("--status")$status == 0L, "Dirty HEAD refuses checks but permits status")
 unlink(file.path(repo, "UNTRACKED"))
+inspection_bin <- rr_mkdir(file.path(fixture, "no-inspection"))
+writeLines(c("#!/bin/sh", "exit 1"), file.path(inspection_bin, "ps"))
+Sys.chmod(file.path(inspection_bin, "ps"), "0755")
+before_inspection <- length(rr_requests(state, active = FALSE))
+unsupported <- invoke(extra = c(PATH = paste(inspection_bin, Sys.getenv("PATH"), sep = .Platform$path.sep)))
+expect(unsupported$status == 2L && !grepl("FIXTURE GATE STARTED", unsupported$stdout, fixed = TRUE) &&
+    length(rr_requests(state, active = FALSE)) == before_inspection, "Unavailable process inspection fails setup before journaled work")
 rr_git(repo, "checkout", "--quiet", "--detach")
 detached <- invoke()
 expect(detached$status == 0L && grepl('"request":"', detached$stdout, fixed = TRUE), "Detached committed revision is eligible")
@@ -246,10 +395,35 @@ rr_git(clone, "config", "user.email", "fixture@example.invalid")
 rr_git(clone, "update-ref", "refs/heads/main", accepted)
 cross_clone <- invoke(root = clone)
 expect(cross_clone$status == 0L && grepl(paste0('"request":"', record$id, '"'), cross_clone$stdout, fixed = TRUE), "Cross-clone reuse retains original execution")
+clone_head <- rr_git(clone, "rev-parse", "HEAD")
+rr_git(clone, "checkout", "--quiet", "--orphan", "unrelated-origin")
+rr_git(clone, "add", "."); rr_git(clone, "commit", "-qm", "Same tree without ancestor provenance")
+nonancestor <- invoke(root = clone)
+expect(nonancestor$status == 0L && grepl('"build-full":{"action":"execute"}', nonancestor$stdout, fixed = TRUE),
+  "An identical tree without the executing ancestor cannot reuse its origin")
+rr_git(clone, "checkout", "--quiet", "--detach", clone_head)
+rr_git(clone, "remote", "set-url", "origin", "https://github.com/fixture/another-repository.git")
+different_repository <- invoke(root = clone)
+expect(different_repository$status == 0L && grepl('"build-full":{"action":"execute"}', different_repository$stdout, fixed = TRUE),
+  "A different repository cannot inherit an executing origin")
+rr_git(clone, "remote", "set-url", "origin", "https://github.com/sayuks/marginplyr.git")
+for (transport in c("missing", "replaced")) {
+  damaged <- invoke(extra = c(RR_FIXTURE_TRANSPORT = transport))
+  expect(damaged$status != 0L && !grepl("FIXTURE GATE STARTED", damaged$stdout, fixed = TRUE),
+    paste("Invalid transport cannot authorize or fall back to Full:", transport))
+}
+baseline <- invoke(extra = c(RR_FIXTURE_INPUT = "negative-observation"))
+expect(baseline$status == 0L, "A new environment establishes its own fixture origin")
+failure <- invoke(extra = c(RR_FIXTURE_INPUT = "negative-observation", RR_FIXTURE_FORCE_EXECUTION = "yes", RR_FIXTURE_GATE_STATUS = "1"))
+expect(failure$status == 1L, "A failed execution keeps its failure outcome")
+after_failure <- invoke(extra = c(RR_FIXTURE_INPUT = "negative-observation"))
+expect(after_failure$status == 0L && grepl('"build-full":{"action":"execute"}', after_failure$stdout, fixed = TRUE),
+  "A later same-input failed stage vetoes the older pass")
 
-start <- function(root = repo, seconds = "20", input = "cancel", release = "", survivor = "") {
+start <- function(root = repo, seconds = "20", input = "cancel", release = "", survivor = "", action = "", preparation = "", publication = "") {
   environment <- c(Sys.getenv(), RR_FIXTURE_SECONDS = seconds, RR_FIXTURE_INPUT = input, RR_FIXTURE_RELEASE = release,
-    RR_FIXTURE_SURVIVOR = survivor)
+    RR_FIXTURE_SURVIVOR = survivor, RR_FIXTURE_WORKER_ACTION = action, RR_FIXTURE_PREPARATION_PID = preparation,
+    RR_FIXTURE_PUBLICATION_TRIGGER = publication)
   environment <- environment[!duplicated(names(environment), fromLast = TRUE)]
   log <- file.path(fixture, paste0("job-", length(jobs), ".log"))
   job <- processx::process$new(file.path(R.home("bin"), "Rscript"), "tools/review-ready.R",
@@ -292,6 +466,76 @@ finish(waiting, 130L)
 file.create(release)
 finish(active, 0L)
 
+promotion_release <- file.path(fixture, "promotion-release")
+preparation <- file.path(fixture, "preparation.pid")
+promoted <- start(root = clone, input = "promotion-active", release = promotion_release,
+  action = "promote", preparation = preparation)
+until(promoted, "FIXTURE GATE STARTED")
+promotion_record <- Filter(function(item) !is.null(item$record) && item$record$state == "running", rr_requests(state))[[1L]]$record
+expect(promotion_record$epoch == 2L && length(promotion_record$promotions) == 1L && promotion_record$owned_capacity,
+  "Promotion preserves the request and acquires real Full capacity")
+preparation_pid <- as.integer(readLines(preparation))
+preparation_stopped <- tryCatch(ps::ps_status(ps::ps_handle(preparation_pid)) %in% c("zombie", "dead"), no_such_process = function(e) TRUE)
+expect(preparation_stopped, "Promotion collects preparation children before Full validation")
+promoted_waiter <- start(root = clone, input = "promotion-waiter", action = "promote",
+  preparation = file.path(fixture, "waiter-preparation.pid"))
+until(promoted_waiter, "Waiting for Review-ready capacity")
+waiting_handle <- promoted_waiter$job$as_ps_handle()
+cpu <- ps::ps_cpu_times(waiting_handle)
+memory <- ps::ps_memory_info(waiting_handle)
+rr_say("R waiting overhead: RSS bytes ", unname(memory[["rss"]]), "; CPU seconds ", sum(cpu[c("user", "system")]),
+  "; elapsed seconds ", rr_now() - as.numeric(ps::ps_create_time(waiting_handle)), "; no package gate started while waiting.")
+expect(!grepl("FIXTURE GATE STARTED", rr_text(promoted_waiter$log), fixed = TRUE), "Promoted requests share one Full slot")
+promoted_waiter$job$signal(15L)
+finish(promoted_waiter, 130L)
+stale <- start(root = clone, input = "promotion-stale", action = "promote",
+  preparation = file.path(fixture, "stale-preparation.pid"))
+until(stale, "Waiting for Review-ready capacity")
+writeLines("Dirty while waiting", file.path(clone, "UNTRACKED"))
+finish(stale, 3L)
+unlink(file.path(clone, "UNTRACKED"))
+file.create(promotion_release)
+finish(promoted, 0L)
+
+publication_trigger <- file.path(fixture, "publication-trigger")
+publishing <- start(input = "interrupted-publication", seconds = ".1", publication = publication_trigger)
+until(publishing, "Fixture publication replacement prepared")
+pending <- Filter(function(item) !is.null(item$record) && item$record$state != "terminal", rr_requests(state))[[1L]]$record
+publishing$job$kill(); publishing$job$wait(5000)
+expect(pending$authorized && pending$owned_capacity && file.exists(paste0(publication_trigger, ".ready")),
+  "A complete unpublished replacement retains authorized ownership after manager death")
+for (attempt in 1:100) {
+  table <- rr_processes(); owned <- rr_owned(table, pending)
+  if (!length(owned)) break
+  for (row in table[owned]) if (rr_alive(row$identity)) ps::ps_send_signal(ps::ps_handle(row$identity$pid), 9L)
+  Sys.sleep(0.05)
+}
+expect(!length(owned), "Interrupted publisher has confirmed stopped children")
+repaired <- invoke(c("--recover", pending$id), root = clone)
+expect(repaired$status == 0L && grepl("No check was run", repaired$stdout, fixed = TRUE),
+  paste("Recovery completes the interrupted observation transaction:", repaired$stdout, repaired$stderr))
+recovered_record <- rr_read_record(file.path(state, "requests", pending$id, "record.json"))
+expect(recovered_record$outcome == 130L, "Recovery does not issue a successful execution origin")
+
+original_record <- rr_read(requests[[1L]]$path)
+corrupt <- rr_read_json(requests[[1L]]$path)
+corrupt$checksum <- paste(rep("0", 64), collapse = "")
+rr_write(requests[[1L]]$path, corrupt)
+independent <- invoke(root = clone)
+expect(independent$status == 0L && grepl('"path":"Repository"', independent$stdout, fixed=TRUE),
+  "Damaged Full recovery state leaves independently supervised Repository work eligible")
+blocked <- invoke()
+expect(blocked$status == 4L, "Damaged ownership protects Full capacity")
+rr_write(requests[[1L]]$path, original_record, raw = TRUE)
+
+rr_git(clone, "checkout", "--quiet", "-b", "documentation", accepted)
+cat("\nFixture documentation.\n", file = file.path(clone, "NEWS.md"), append = TRUE)
+rr_git(clone, "add", "."); rr_git(clone, "commit", "-qm", "Documentation fixture")
+documentation <- invoke(root = clone)
+expect(documentation$status == 0L && grepl('"path":"Documentation"', documentation$stdout, fixed=TRUE) &&
+    grepl('"build-documentation"', documentation$stdout, fixed=TRUE),
+  paste("Documentation selects its own independent package boundary:", documentation$stdout, documentation$stderr))
+
 death <- start(input = "manager-death", release = file.path(fixture, "never-release"), survivor = file.path(fixture, "survivor.pid"))
 until(death, "FIXTURE GATE STARTED")
 death$job$kill()
@@ -320,6 +564,35 @@ expect(file.symlink(protected, link), "Create deletion-boundary fixture")
 rejects(rr_remove(link, fixture), "symlink")
 expect(file.exists(file.path(protected, "sentinel")), "Deletion leaves unrelated target untouched")
 unlink(link)
+
+attributes <- rr_git(repo, "rev-parse", "--path-format=absolute", "--git-path", "info/attributes")
+writeLines("tools/review-ready-core.R export-ignore", attributes)
+materialized <- file.path(fixture, "accepted-sources", "authority")
+manifest <- rr_materialize_authority(repo, accepted, materialized)
+expect(identical(rr_hash(rr_read(file.path(materialized, "tools/review-ready-core.R"))),
+    rr_hash(rr_git_raw(repo, "show", paste0(accepted, ":tools/review-ready-core.R")))),
+  "Pinned manager bytes bypass external archive attributes")
+unlink(attributes)
+authority_record <- list(workspace = dirname(materialized), authority = manifest)
+rr_check_authority(authority_record)
+authority_core <- file.path(materialized, "tools/review-ready-core.R")
+cat("\n# Changed after pinning.\n", file = authority_core, append = TRUE)
+rejects(rr_check_authority(authority_record), "Pinned manager source changed")
+rr_materialize_authority(repo, accepted, materialized)
+Sys.chmod(authority_core, "0755")
+rejects(rr_check_authority(authority_record), "Pinned manager source changed")
+
+request_environment <- Sys.getenv()
+request_environment[["MARGINPLYR_REVIEW_REQUEST"]] <- "setup-child-ownership"
+previous_environment <- options(marginplyr.review.env = request_environment)
+expect(identical(trimws(rr_run(file.path(R.home("bin"), "Rscript"),
+    c("-e", 'cat(Sys.getenv("MARGINPLYR_REVIEW_REQUEST"))'))$stdout), "setup-child-ownership"),
+  "Setup subprocesses inherit persisted request ownership")
+original_request <- Sys.getenv("MARGINPLYR_REVIEW_REQUEST", unset = NA_character_)
+expect(identical(rr_in_environment(request_environment, Sys.getenv("MARGINPLYR_REVIEW_REQUEST")), "setup-child-ownership") &&
+    identical(Sys.getenv("MARGINPLYR_REVIEW_REQUEST", unset = NA_character_), original_request),
+  "Binary-pipe setup restores supervisor environment")
+options(previous_environment)
 
 # At the exact expiry boundary an origin is unavailable even before collection.
 value <- rr_with_lock(file.path(state, "evidence.lock"), rr_store_read(state))

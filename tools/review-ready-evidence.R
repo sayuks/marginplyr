@@ -1,6 +1,7 @@
 # Authenticated evidence storage for ADRs 0038/0039. A generation contains its
 # complete inventory and keys; one pointer rename publishes the transaction.
 rr_seal <- function(payload, key) {
+  rr_bytes(payload)
   payload <- jsonlite::fromJSON(rr_json(payload), simplifyVector = FALSE)
   list(encoding = 2L, payload = payload, integrity = rr_hex(openssl::sha256(rr_bytes(payload), key = key)))
 }
@@ -9,6 +10,7 @@ rr_seal <- function(payload, key) {
 # The comparison cannot reveal a prefix of the original authenticator; see the
 # authentication contract in tools/review-ready-runner.md.
 rr_unseal <- function(envelope, key) {
+  rr_bytes(envelope)
   if (!identical(envelope$encoding, 2L) || !is.character(envelope$integrity) ||
       !rr_match("[0-9a-f]{64}", envelope$integrity)) rr_stop("Invalid evidence authentication envelope.")
   expected <- rr_seal(envelope$payload, key)$integrity
@@ -97,6 +99,13 @@ rr_store_read <- function(state, create = FALSE) {
         if (!rr_match("[0-9a-f]{32}", origin$request) || origin$request == payload$request ||
             !rr_match("[0-9a-f]{40}", origin$submitted) || !rr_compatible_unit(origin$unit, unit) ||
             !rr_same(origin, payload$selection$plan$units[[unit]])) rr_stop("Invalid inherited execution origin.")
+        retained <- Filter(function(item) item$payload$kind == "evidence" && item$payload$request == origin$request, value$records)
+        if (length(retained)) {
+          source <- retained[[1L]]$payload
+          if (length(retained) != 1L || !identical(source$submitted, origin$submitted) ||
+              source$sequence >= payload$observation || !identical(source$outcome, 0L) ||
+              !identical(source$units[[origin$unit]]$status, "passed")) rr_stop("Cyclic or non-executing inherited origin.")
+        }
       }
     }
   }

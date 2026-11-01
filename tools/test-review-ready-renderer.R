@@ -1,9 +1,13 @@
 # Actual generation/site rendering with the repository runner's private roots.
 # This exercises real tools and installed source, not the process stand-in.
-source("tools/review-ready-core.R")
-source("tools/review-ready-registry.R")
-source("tools/review-ready-evidence.R")
-source("tools/review-ready-check-lib.R")
+args <- commandArgs(trailingOnly = TRUE)
+candidate <- if (length(args)) normalizePath(args[[1L]], mustWork = TRUE) else getwd()
+entry <- sub("^--file=", "", grep("^--file=", commandArgs(FALSE), value = TRUE)[[1L]])
+fixture_root <- dirname(dirname(normalizePath(entry, mustWork = TRUE)))
+source(file.path(candidate, "tools/review-ready-core.R"))
+source(file.path(candidate, "tools/review-ready-registry.R"))
+source(file.path(candidate, "tools/review-ready-evidence.R"))
+source(file.path(fixture_root, "tools/review-ready-check-lib.R"))
 
 run_renderer_contract <- function() {
   fixture <- tempfile("runner-renderer-", tmpdir = Sys.getenv("TMPDIR", tempdir()))
@@ -12,13 +16,14 @@ run_renderer_contract <- function() {
   env <- rr_render_env(directory)
   env[["MARGINPLYR_REVIEW_STAGE_REPORT"]] <- ""
   env[["MARGINPLYR_REVIEW_BASE"]] <- ""
-  root <- getwd()
+  root <- candidate
   sha <- rr_git(root, "rev-parse", "HEAD")
   checkout <- file.path(rr_mkdir(file.path(directory, "work")), "source")
   rr_run("git", c("clone", "--quiet", "--shared", "--no-checkout", root, checkout))
   rr_git(checkout, "checkout", "--quiet", "--detach", sha)
-  for (path in c("tools/review-ready-generated.R", "tools/verify-site-artifacts.R")) {
-    if (!file.copy(file.path(root, path), file.path(checkout, path), overwrite = TRUE)) rr_stop("Renderer helper source unavailable.")
+  for (path in c("tools/review-ready-generated.R", "tools/verify-site-artifacts.R",
+      ".github/scripts/verify-site.R", ".github/scripts/ci-helpers.R")) {
+    if (!file.copy(file.path(fixture_root, path), file.path(checkout, path), overwrite = TRUE)) rr_stop("Accepted renderer helper source unavailable.")
   }
   renderer <- rr_renderer()
   paths <- review_ready_render_paths()

@@ -85,6 +85,8 @@ rr_setup <- function() {
   if (length(missing)) rr_stop("Install Review-ready development dependencies: ", paste(missing, collapse = ", "))
   if (!ps::ps_is_supported()) rr_stop("Unsupported process inspection; no check was run.")
   if (!nzchar(openssl::openssl_config()$version)) rr_stop("OpenSSL runtime is unavailable.")
+  rr_processes()
+  rr_boot()
   invisible(TRUE)
 }
 
@@ -109,15 +111,26 @@ rr_with_lock <- function(path, code) {
   force(code)
 }
 
-rr_run <- function(command, args = character(), root = getwd(), env = NULL, error = TRUE) {
+rr_run <- function(command, args = character(), root = getwd(), env = getOption("marginplyr.review.env"), error = TRUE) {
   result <- processx::run(command, args, wd = root, env = env, error_on_status = FALSE, echo = FALSE)
   if (error && result$status != 0L) rr_stop(command, " failed: ", trimws(result$stderr))
   invisible(result)
 }
 rr_git <- function(root, ...) invisible(trimws(rr_run("git", c("--no-replace-objects", "-C", root, ...))$stdout, which = "right"))
+rr_in_environment <- function(values, code) {
+  if (is.null(values)) return(force(code))
+  previous <- Sys.getenv()
+  on.exit({
+    Sys.unsetenv(setdiff(names(Sys.getenv()), names(previous)))
+    do.call(Sys.setenv, as.list(previous))
+  }, add = TRUE)
+  Sys.unsetenv(setdiff(names(previous), names(values)))
+  do.call(Sys.setenv, as.list(values))
+  force(code)
+}
 rr_git_raw <- function(root, ...) {
   command <- paste(vapply(c("git", "--no-replace-objects", "-C", root, ...), shQuote, ""), collapse = " ")
-  connection <- pipe(command, "rb")
+  connection <- rr_in_environment(getOption("marginplyr.review.env"), pipe(command, "rb"))
   closed <- FALSE
   on.exit(if (!closed) close(connection), add = TRUE)
   chunks <- list()
@@ -160,7 +173,7 @@ rr_blobs <- function(root, oids) {
   on.exit(unlink(c(input, output)), add = TRUE)
   writeLines(oids, input)
   result <- processx::run("git", c("--no-replace-objects", "-C", root, "cat-file", "--batch"), stdin = input,
-    stdout = output, stderr = "|", error_on_status = FALSE)
+    stdout = output, stderr = "|", env = getOption("marginplyr.review.env"), error_on_status = FALSE)
   if (result$status != 0L) rr_stop("Unavailable Git object batch: ", result$stderr)
   bytes <- rr_read(output); offset <- 1L; blobs <- list()
   for (oid in oids) {
@@ -223,7 +236,7 @@ rr_processes <- function() {
     row <- tryCatch({
       handle <- ps::ps_handle(pid)
       if (ps::ps_uids(handle)[["real"]] != rr_uid() || ps::ps_status(handle) %in% c("zombie", "dead")) NULL else {
-        list(identity = rr_process(handle), parent = ps::ps_ppid(handle), group = unname(groups[as.character(pid)]), env = ps::ps_environ(handle))
+        list(identity = rr_process(handle), parent = ps::ps_ppid(handle), group = unname(groups[as.character(pid)]), env = unclass(ps::ps_environ(handle)))
       }
     }, no_such_process = function(e) NULL)
     if (!is.null(row)) table[[as.character(pid)]] <- row
