@@ -1,7 +1,7 @@
 # Process contracts for the repository-owned runner. All state is disposable;
 # the account-home adapter is replaced in this harness, never by a CLI option.
 options(error = function() {
-  traceback(20L)
+  traceback(0L, max.lines = 20L)
   quit(status = 1L, save = "no")
 })
 args <- commandArgs(trailingOnly = TRUE)
