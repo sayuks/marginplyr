@@ -420,7 +420,7 @@ amendments below. Each is a count per call, not per pass.
 | A constructor call yielding a specification, and a bare name bound to a specification | 1 | the preflight |
 | A bare name that is a column and is bound to a specification of an admitted kind | 1 | the preflight, per ADR 0026, and then refused |
 | A non-column name bound to an ordinary selection, or a constructor-shaped call returning one | 1 | the preflight; the typed pass resolves the retained value |
-| A column selection not already read by preflight | 1 per compilation pass — 2 where the plan is settled by names alone, 1 otherwise | each pass, against that pass's own proxy |
+| A column selection not already read by preflight | 1 per resolution pass — 2 where the plan is settled by names alone; mixed specifications follow the leading-selection amendment below | each pass, against that pass's own proxy |
 | A call the spelling declines to evaluate, such as a caller's own function | 1 | the selection resolution that refuses it (#190) |
 
 The first row is what moves, from 3 and 2 to 1 and 1 (#260): a recognized
@@ -445,6 +445,21 @@ plan and its consumers. A specification that compiled compiles to the same
 plan, because a reading taken once and a reading taken three times differ only
 where the argument answers differently each time, and an argument that does
 that is one whose count this amendment is about.
+
+## Amendment: leading selections in a mixed specification (#1090)
+
+A mixed specification gets a discarded names-only validation pass before typed
+metadata acquisition. It follows the registry's expansion order across nested
+families and stops the entire pass at the first selection needing types or
+caller evaluation. It never skips that selection to validate a later one.
+Completed nested-family checks retain their precedence over later selections.
+
+Only selections independent of caller functions, assignments, and deferred
+bindings may run in this pass; they resolve twice on success, once here and once
+in canonical compilation. Caller code keeps its canonical evaluation count and
+order, including relative to a typed `.by`. The existing discarded-pass warning
+and lifecycle policy applies. Recognized nested arguments still use the one
+structural preflight record, and typed metadata is still acquired at most once.
 
 ## Amendment: retain a non-specification binding's selection value (#873)
 
