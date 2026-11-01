@@ -14,8 +14,10 @@ askpass/sys closure. OpenSSL headers and libraries are development requirements
 of the openssl R package. A working R C compiler is also needed for the small
 `tools/review-ready-signals.c` receiver: base R exposes interrupts but no
 SIGTERM/SIGHUP receiver. It records cancellation; processx and ps control and
-inspect children. The pinned source is compiled inside each request during
-setup, before admission waiting. These are development tools, not package
+inspect children. Its monotonic clock measures shutdown and mailbox deadlines
+independently of the UTC timestamps used for history and evidence. The pinned
+source is compiled inside each request during setup, before admission waiting.
+These are development tools, not package
 runtime Imports.
 
 The entry is `Rscript tools/review-ready.R`, from the target root, with no
@@ -109,8 +111,9 @@ request's own independent executed unit remains distinct from inherited reuse.
 
 Each request starts with empty private HOME, XDG, Deno, R user cache/config/data,
 and temporary roots. Absolute ordered R libraries and selected installed tools
-are preserved. Quarto 1.10.18's registered app-directory implementation uses
-these private destinations, including macOS `Library/Caches/quarto` and Sass
+are preserved. The registered app-directory implementation in Quarto 1.10.18
+and 1.10.20 uses these private destinations, including macOS
+`Library/Caches/quarto` and Sass
 storage. Other Quarto versions require an updated isolation contract. Retry
 keeps the same tarball, tool identities and private caches until all writers stop.
 Shared caches and personal home settings are not copied into the request.

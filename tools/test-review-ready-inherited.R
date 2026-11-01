@@ -1,6 +1,10 @@
 # Inherited ADR 0038 decisions exercised against the R implementation loaded by
 # the accepted runner fixture. This file is a fixture dependency, not an entry.
 run_inherited_value_contracts <- function() {
+  if (Sys.info()[["sysname"]] == "Linux") {
+    expect(nzchar(trimws(rr_text("/proc/sys/kernel/random/boot_id"))),
+      "Zero-size procfs metadata does not truncate the available boot identity")
+  }
   clock <- list(r = "4.6.1", checker = "2efcaa5190c038e60834bd5c4e502c82",
     timeout = "34ee7dea5eac7ba7138bd3c60651faee", leeway = 300)
   timestamps <- list(observed = 1000, paths = list(DESCRIPTION = 1300))
@@ -42,6 +46,9 @@ run_inherited_value_contracts <- function() {
   configuration <- c(CODEX_REVIEW_BEHAVIOR = "original", CLAUDE_ENV_FILE = "/settings",
     CLAUDE_CODE_SHELL_PREFIX = "wrapper", HTTPS_PROXY = "proxy", MARGINPLYR_REVIEW_REQUEST = "transport")
   expect(identical(rr_child_env(configuration), configuration), "Configuration and supervisor transport remain in children")
+  for (name in c("QUARTO_DART_SASS", "QUARTO_CACHE_DIR", "R_PROFILE_USER")) {
+    rejects(rr_render_env(tempfile("unregistered-renderer-"), stats::setNames("/external", name)), name)
+  }
   state <- rr_state()
   modified <- Sys.getenv(); modified[["HOME"]] <- "/private/tmp/unrelated-account-home"
   modified[["XDG_STATE_HOME"]] <- "/private/tmp/unrelated-state"

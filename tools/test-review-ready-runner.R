@@ -316,6 +316,10 @@ cat(paste0('\nrr_cleanup_fixture_original <- rr_cleanup\n',
   ' release <- Sys.getenv("RR_FIXTURE_CLEANUP_RELEASE")\n',
   ' if (nzchar(release)) { rr_say("Fixture disposable cleanup waiting"); while (!file.exists(release)) Sys.sleep(.05) }\n',
   ' rr_cleanup_fixture_original(record, directory)\n}\n'), file = file.path(repo, "tools/review-ready-manager.R"), append = TRUE)
+cat(paste0('\nrr_now_fixture_original <- rr_now\n',
+  'rr_now <- function() { trigger <- Sys.getenv("RR_FIXTURE_CLOCK_ROLLBACK"); ',
+  'rr_now_fixture_original() - if (nzchar(trigger) && file.exists(trigger)) 3600 else 0 }\n'),
+  file = file.path(repo, "tools/review-ready-manager.R"), append = TRUE)
 # This is an external package-check stand-in, never a real Full result. The
 # actual R entry/manager, Git, OS locks, signals, records and authentication run.
 writeLines(c(readLines(file.path(candidate, "tools/review-ready-check-lib.R")),
@@ -493,11 +497,11 @@ after_failure <- invoke(extra = c(RR_FIXTURE_INPUT = "negative-observation"))
 expect(after_failure$status == 0L && grepl('"build-full":{"action":"execute"}', after_failure$stdout, fixed = TRUE),
   "A later same-input failed stage vetoes the older pass")
 
-start <- function(root = repo, seconds = "20", input = "cancel", release = "", survivor = "", action = "", preparation = "", publication = "", cleanup = "", detached = "", resistant = "") {
+start <- function(root = repo, seconds = "20", input = "cancel", release = "", survivor = "", action = "", preparation = "", publication = "", cleanup = "", detached = "", resistant = "", rollback = "") {
   environment <- c(Sys.getenv(), RR_FIXTURE_SECONDS = seconds, RR_FIXTURE_INPUT = input, RR_FIXTURE_RELEASE = release,
     RR_FIXTURE_SURVIVOR = survivor, RR_FIXTURE_WORKER_ACTION = action, RR_FIXTURE_PREPARATION_PID = preparation,
     RR_FIXTURE_PUBLICATION_TRIGGER = publication, RR_FIXTURE_CLEANUP_RELEASE = cleanup,
-    RR_FIXTURE_DETACHED = detached, RR_FIXTURE_RESISTANT = resistant)
+    RR_FIXTURE_DETACHED = detached, RR_FIXTURE_RESISTANT = resistant, RR_FIXTURE_CLOCK_ROLLBACK = rollback)
   environment <- environment[!duplicated(names(environment), fromLast = TRUE)]
   log <- file.path(fixture, paste0("job-", length(jobs), ".log"))
   job <- processx::process$new(file.path(R.home("bin"), "Rscript"), "tools/review-ready.R",
@@ -567,13 +571,16 @@ finish(detached, 0L)
 sentinel <- processx::process$new(file.path(R.home("bin"), "Rscript"), c("-e", "Sys.sleep(60)"), cleanup = TRUE)
 jobs[[length(jobs) + 1L]] <- sentinel
 resistant_path <- file.path(fixture, "resistant.pid")
-resistant <- start(seconds = "20", input = "resistant-child", detached = resistant_path, resistant = "yes")
+rollback <- file.path(fixture, "rollback-clock")
+resistant <- start(seconds = "20", input = "resistant-child", detached = resistant_path, resistant = "yes", rollback = rollback)
 until(resistant, "FIXTURE GATE STARTED")
 resistant_pid <- as.integer(readLines(resistant_path))
 resistant$job$signal(15L)
+until(resistant, "Stopping owned processing")
+file.create(rollback)
 finish(resistant, 130L)
 resistant_stopped <- tryCatch(ps::ps_status(ps::ps_handle(resistant_pid)) %in% c("zombie", "dead"), no_such_process = function(e) TRUE)
-expect(resistant_stopped && sentinel$is_alive(), "TERM-resistant owned work stops without signalling an unrelated process")
+expect(resistant_stopped && sentinel$is_alive(), "Backward wall clocks cannot delay stopping TERM-resistant owned work or signal an unrelated process")
 sentinel$kill(); sentinel$wait()
 
 # Concurrent real managers use one Full lock; supported prose is independent.

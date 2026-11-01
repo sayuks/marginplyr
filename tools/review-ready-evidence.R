@@ -549,12 +549,12 @@ rr_snapshot <- function(root, sha, units) {
   list(environment = rr_environment(root), sources = stats::setNames(as.list(rep(source, length(units))), units))
 }
 
-# v1 registers the app-directory implementation shipped by Quarto 1.10.18.
+# v1 registers the audited Quarto app-directory implementations below.
 # Fresh private caches are outputs, not reusable inputs. Only these exact role
 # assignments are normalized; arbitrary HOME/cache overrides remain inputs.
 rr_render_env <- function(directory, values = rr_child_env()) {
   unsupported <- c("R_USER", "R_PROFILE", "R_PROFILE_USER", "R_ENVIRON", "R_ENVIRON_USER",
-    "QUARTO_PATH", "QUARTO_DENO", "QUARTO_PANDOC", "QUARTO_USERDATA", "QUARTO_CACHE_DIR")
+    "QUARTO_PATH", "QUARTO_DENO", "QUARTO_PANDOC", "QUARTO_DART_SASS", "QUARTO_USERDATA", "QUARTO_CACHE_DIR")
   supplied <- unsupported[unsupported %in% names(values) & nzchar(values[unsupported]) & !is.na(values[unsupported])]
   if (length(supplied)) rr_stop("Unsupported private renderer configuration: ", paste(supplied, collapse = ", "))
   roles <- c(HOME = "cache/home", XDG_CACHE_HOME = "cache/xdg", XDG_CONFIG_HOME = "cache/config",
@@ -603,10 +603,14 @@ rr_renderer <- function() {
   if (!nzchar(quarto)) rr_stop("Renderer isolation requires Quarto.")
   quarto <- normalizePath(quarto, mustWork = TRUE)
   version <- trimws(rr_run(quarto, "--version")$stdout)
-  if (version != "1.10.18") rr_stop("Unregistered Quarto app/cache isolation: ", version, "; update the renderer contract.")
+  registered <- list(
+    `1.10.18` = c(Darwin = "b5546c2b78d5c78ca88cab8b950b7e2a831b0f117c878ca893764de2a536baac",
+      Linux = "34f291359d2fc61c308193e546b76efba6f0ffcd74d1d3be0ae9264f30ce6b1d"),
+    `1.10.20` = c(Darwin = "7e1ff90e63dd86bd15f0ecc0c70c54aff5f2342da086840ea77361751d2e90fd",
+      Linux = "252c3e1f5df36c2f3d6bed1f1dc415fb72ece460dbe9aa13efccbafdbadb4482"))[[version]]
+  if (is.null(registered)) rr_stop("Unregistered Quarto app/cache isolation: ", version, "; update the renderer contract.")
   js <- file.path(dirname(quarto), "quarto.js")
-  registered <- c(Darwin = "b5546c2b78d5c78ca88cab8b950b7e2a831b0f117c878ca893764de2a536baac",
-    Linux = "34f291359d2fc61c308193e546b76efba6f0ffcd74d1d3be0ae9264f30ce6b1d")[[Sys.info()[["sysname"]]]]
+  registered <- registered[[Sys.info()[["sysname"]]]]
   if (!identical(rr_file_identity(js)$digest, registered)) rr_stop("Unregistered Quarto app/cache implementation; verify and register the installed JS asset.")
   list(executable = quarto, js = js, root = dirname(dirname(quarto)), version = version)
 }

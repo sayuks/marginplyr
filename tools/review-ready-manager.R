@@ -131,10 +131,15 @@ rr_rpc <- function(operation, reason = "") {
     expected = "running", id = id, operation = operation, reason = reason)
   if (operation == "authorize") message$transport <- rr_hash(rr_read(Sys.getenv("MARGINPLYR_REVIEW_SELECTION")))
   rr_write(file.path(directory, paste0(id, ".request.json")), rr_seal(message, charToRaw(token)))
-  deadline <- rr_now() + 15
+  library <- rr_owned_path(file.path(record$workspace, "signals", paste0("review_ready_signals", .Platform$dynlib.ext)), record$workspace)
+  dll <- dyn.load(library)
+  on.exit(dyn.unload(library), add = TRUE)
+  method <- getDLLRegisteredRoutines(dll)$.Call$elapsed_time
+  clock <- function() .Call(method)
+  deadline <- clock() + 15
   reply <- file.path(directory, paste0(id, ".reply.json"))
   while (!file.exists(reply)) {
-    if (!rr_alive(record$manager) || rr_now() > deadline) rr_stop("Supervisor reply unavailable.")
+    if (!rr_alive(record$manager) || clock() > deadline) rr_stop("Supervisor reply unavailable.")
     Sys.sleep(0.05)
   }
   value <- rr_unseal(rr_read_json(reply), charToRaw(token))
@@ -187,7 +192,7 @@ rr_control <- function(path, record, cancelled) {
   list(record = record, promote = promote)
 }
 
-rr_acquire <- function(state, path, record, cancelled) {
+rr_acquire <- function(state, path, record, cancelled, clock) {
   record$state <- "waiting"
   rr_write(path, record)
   displayed <- -Inf
@@ -210,15 +215,15 @@ rr_acquire <- function(state, path, record, cancelled) {
       rr_write(path, record)
       return(list(record = record, lock = lock, status = 0L))
     }
-    if (rr_now() - displayed >= 5) {
+    if (clock() - displayed >= 5) {
       rr_say("Waiting for Review-ready capacity; request ", record$id, "; commit ", record$sha)
-      displayed <- rr_now()
+      displayed <- clock()
     }
     Sys.sleep(0.15)
   }
 }
 
-rr_supervise <- function(path, record, cancelled, environment) {
+rr_supervise <- function(path, record, cancelled, environment, clock) {
   rr_check_authority(record)
   record$state <- "running"; record$authorized <- FALSE
   rr_write(path, record)
@@ -255,13 +260,13 @@ rr_supervise <- function(path, record, cancelled, environment) {
     control <- rr_control(path, record, cancelled())
     record <- control$record; promoting <- promoting || control$promote
     if ((cancelled() || promoting) && is.null(stopping)) {
-      stopping <- rr_now()
+      stopping <- clock()
       record$state <- if (cancelled()) "cancelling" else "promoting"
       rr_write(path, record)
       rr_say("Stopping owned processing; request: ", record$id)
     }
     if (!is.null(stopping)) {
-      signal <- if (rr_now() - stopping < 2) 15L else 9L
+      signal <- if (clock() - stopping < 2) 15L else 9L
       for (item in identities) if (rr_alive(item)) tryCatch(ps::ps_send_signal(ps::ps_handle(item$pid,
         as.POSIXct(as.numeric(item$birth), origin = "1970-01-01", tz = "UTC")), signal), no_such_process = function(e) NULL)
     }
@@ -271,7 +276,7 @@ rr_supervise <- function(path, record, cancelled, environment) {
       if (status == 0L && !promoting && !record$authorized) status <- 2L
       return(list(record = record, status = as.integer(if (status < 0L) 128L - status else status), promote = promoting && !cancelled()))
     }
-    if (!is.null(stopping) && rr_now() - stopping > 10) rr_stop("Owned shutdown is unconfirmed; recovery required.")
+    if (!is.null(stopping) && clock() - stopping > 10) rr_stop("Owned shutdown is unconfirmed; recovery required.")
     Sys.sleep(0.1)
   }
 }
@@ -563,7 +568,7 @@ rr_main <- function(identity, main) {
   repeat {
     status <- 0L
     if (record$capacity == "Full") {
-      admitted <- rr_acquire(state, path, record, cancelled)
+      admitted <- rr_acquire(state, path, record, cancelled, signals$clock)
       record <- admitted$record; capacity <- admitted$lock; status <- admitted$status
     } else {
       current <- tryCatch(rr_identity(root), error = function(e) NULL)
@@ -571,7 +576,7 @@ rr_main <- function(identity, main) {
       if (cancelled()) status <- 130L
     }
     if (status == 0L) {
-      result <- rr_supervise(path, record, cancelled, environment)
+      result <- rr_supervise(path, record, cancelled, environment, signals$clock)
       record <- result$record; status <- result$status
       if (result$promote) {
         record$selection$path <- "Full"; record$selection$roxygen_pending <- FALSE

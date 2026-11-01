@@ -1,9 +1,10 @@
 /* R exposes interrupt conditions but no R-level SIGTERM/SIGHUP receiver. This
- * adapter records cancellation only; processx/ps still own all child control. */
+ * adapter records cancellation and monotonic time; processx/ps own child control. */
 #include <R.h>
 #include <Rinternals.h>
 #include <R_ext/Rdynload.h>
 #include <signal.h>
+#include <time.h>
 
 static volatile sig_atomic_t pending = 0;
 static struct sigaction previous[3];
@@ -11,6 +12,13 @@ static const int watched[3] = {SIGINT, SIGTERM, SIGHUP};
 static int installed = 0;
 
 static void receive_signal(int number) { pending = number; }
+
+static SEXP elapsed_time(void) {
+    struct timespec now;
+    if (clock_gettime(CLOCK_MONOTONIC, &now) != 0)
+        Rf_error("Monotonic process timing is unavailable.");
+    return Rf_ScalarReal((double) now.tv_sec + (double) now.tv_nsec / 1e9);
+}
 
 static SEXP install_signals(void) {
     if (installed) Rf_error("Cancellation receiver is already installed.");
@@ -42,6 +50,7 @@ static SEXP restore_signals(void) {
 }
 
 static const R_CallMethodDef calls[] = {
+    {"elapsed_time", (DL_FUNC) &elapsed_time, 0},
     {"install_signals", (DL_FUNC) &install_signals, 0},
     {"poll_signals", (DL_FUNC) &poll_signals, 0},
     {"restore_signals", (DL_FUNC) &restore_signals, 0},

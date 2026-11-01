@@ -17,10 +17,17 @@ rr_hex <- function(x) paste(format(as.raw(x)), collapse = "")
 rr_hash <- function(x) rr_hex(openssl::sha256(x))
 rr_id <- function() rr_hex(openssl::rand_bytes(16))
 rr_match <- function(pattern, text) grepl(paste0("^(?:", pattern, ")$"), text, perl = TRUE)
+# Virtual process files can report size zero while their stream is nonempty.
 rr_read <- function(path) {
   connection <- file(path, "rb")
   on.exit(close(connection), add = TRUE)
-  readBin(connection, "raw", n = file.info(path)$size)
+  chunks <- list()
+  repeat {
+    chunk <- readBin(connection, "raw", n = 1048576L)
+    if (!length(chunk)) break
+    chunks[[length(chunks) + 1L]] <- chunk
+  }
+  do.call(c, c(list(raw()), chunks))
 }
 rr_text <- function(path) rawToChar(rr_read(path))
 
@@ -290,8 +297,9 @@ rr_signals <- function(source, directory, environment = Sys.getenv()) {
   rr_run(file.path(R.home("bin"), "R"), c("CMD", "SHLIB", "-o", library, file), directory, environment)
   dll <- dyn.load(library)
   methods <- getDLLRegisteredRoutines(dll)$.Call
+  .Call(methods$elapsed_time)
   .Call(methods$install_signals)
-  list(poll = function() .Call(methods$poll_signals), close = function() {
+  list(poll = function() .Call(methods$poll_signals), clock = function() .Call(methods$elapsed_time), close = function() {
     .Call(methods$restore_signals)
     dyn.unload(library)
   })
