@@ -282,26 +282,37 @@ prepare_grouping_plan <- function(.data,
           preflight = preflight
         )
       } else {
-        data_proxy <- if (identical(backend$kind, "dtplyr")) {
+        # Compile with a lazy snapshot, returning it for the operation to reuse.
+        typed_plan <- function(data_proxy) {
+          plan <- compile_grouping_spec(
+            grouping_spec,
+            data_vars = data_vars,
+            data_proxy = data_proxy,
+            .by = if (is.null(by)) {
+              resolve_by_selection(by_quo, data_proxy)
+            } else {
+              by
+            },
+            .duplicates = .duplicates,
+            duplicates_choices = duplicates_choices,
+            preflight = preflight,
+            resolve_leading_names = !preflight$name_only
+          )
+          list(data_proxy = data_proxy, plan = plan)
+        }
+        # Keep the snapshot as a promise until compilation reaches a selection
+        # needing types. A leading names-only failure must precede this read
+        # (ADR 0005); successful selections run only once in this pass.
+        prepared <- typed_plan(if (identical(backend$kind, "dtplyr")) {
           dtplyr_selection_proxy(
             data,
             isolate = !builds_margin_branches && mutable_step
           )
         } else {
           grouping_selection_proxy(data, backend = backend)
-        }
-        if (is.null(by)) {
-          by <- resolve_by_selection(by_quo, data_proxy)
-        }
-        plan <- compile_grouping_spec(
-          grouping_spec,
-          data_vars = data_vars,
-          data_proxy = data_proxy,
-          .by = by,
-          .duplicates = .duplicates,
-          duplicates_choices = duplicates_choices,
-          preflight = preflight
-        )
+        })
+        data_proxy <- prepared$data_proxy
+        plan <- prepared$plan
       }
 
       list(
@@ -953,6 +964,8 @@ admitted_nested_kinds <- local({
 # more than one pass over one specification hands the same preflight to each
 # and no pass reads a nested quosure of its own. A recognized nested argument
 # is therefore evaluated once per call, whichever passes run (ADR-0008).
+# `resolve_leading_names` lets a mixed specification resolve its leading
+# names-only selections before forcing `data_proxy` or typed `.by` promises.
 compile_grouping_spec <- function(
   .grouping,
   data_vars,
@@ -960,7 +973,8 @@ compile_grouping_spec <- function(
   .by = character(),
   .duplicates = duplicates_choices,
   duplicates_choices,
-  preflight = preflight_grouping_spec(.grouping, data_vars)
+  preflight = preflight_grouping_spec(.grouping, data_vars),
+  resolve_leading_names = FALSE
 ) {
   .duplicates <- match_margin_choice(
     .duplicates,
@@ -974,7 +988,8 @@ compile_grouping_spec <- function(
     data_proxy = data_proxy,
     .by = .by,
     .duplicates = .duplicates,
-    duplicates_choices = duplicates_choices
+    duplicates_choices = duplicates_choices,
+    resolve_leading_names = resolve_leading_names
   )
 }
 
@@ -985,12 +1000,42 @@ compile_grouping_spec_impl <- function(preflight,
                                        data_proxy,
                                        .by,
                                        .duplicates,
-                                       duplicates_choices) {
-  stopifnot(is.character(.by), !anyNA(.by))
+                                       duplicates_choices,
+                                       resolve_leading_names) {
   stopifnot(.duplicates %in% duplicates_choices)
-  if (is.null(data_proxy)) {
-    data_proxy <- grouping_name_proxy(data_vars)
+  if (!resolve_leading_names) {
+    force(.by)
   }
+  resolution <- new.env(parent = emptyenv())
+  resolution$leading_names <- resolve_leading_names
+
+  # Expansion owns selection order, including nested families. Once a selection
+  # needs types, resolve fixed keys before it and use the one snapshot for the
+  # rest of the pass. Neither classification nor a names-only failure forces
+  # the caller's metadata promise.
+  resolve_selection <- function(arg) {
+    if (resolution$leading_names && is_name_only_selection(arg, data_vars)) {
+      return(resolve_grouping_selection(arg, grouping_name_proxy(data_vars)))
+    }
+    resolution$leading_names <- FALSE
+    proxy <- if (is.null(data_proxy)) {
+      grouping_name_proxy(data_vars)
+    } else {
+      data_proxy
+    }
+    force(.by)
+    resolve_grouping_selection(arg, proxy)
+  }
+
+  if (is.null(preflight$spec)) {
+    preflight <- preflight_grouping_spec(
+      new_grouping_spec("set", list()),
+      data_vars
+    )
+  }
+
+  expanded <- unname(expand_grouping_family(preflight, resolve_selection))
+  stopifnot(is.character(.by), !anyNA(.by))
 
   # A backstop behind the resolutions that produce `.by`, not a Package
   # condition: each of them binds every value to `data_vars` already, so no
@@ -1014,17 +1059,6 @@ compile_grouping_spec_impl <- function(preflight,
     )
   }
 
-  # The absent `.grouping` stands for the empty grouping set. Preflighted
-  # rather than written out here, so that one function answers what a record
-  # holds.
-  if (is.null(preflight$spec)) {
-    preflight <- preflight_grouping_spec(
-      new_grouping_spec("set", list()),
-      data_vars
-    )
-  }
-
-  expanded <- unname(expand_grouping_family(preflight, data_proxy))
   dimensions <- unique(unlist(expanded, use.names = FALSE))
 
   overlap <- intersect(.by, dimensions)
@@ -1117,20 +1151,20 @@ compile_grouping_spec_impl <- function(preflight,
 # preflight the caller holds, and reads each argument's reading off the record
 # beside that argument's quosure rather than taking one (ADR 0008). A column
 # selection is resolved here and not there, so it is resolved once per pass,
-# against the proxy that pass was given.
-expand_grouping_family <- function(preflight, data_proxy) {
+# through the resolver that pass supplies.
+expand_grouping_family <- function(preflight, resolve_selection) {
   rule <- find_grouping_kind_rule(preflight$spec$type)
   if (is.null(rule)) {
     stop("Unknown Grouping specification kind.", call. = FALSE)
   }
-  rule$expand(preflight, data_proxy)
+  rule$expand(preflight, resolve_selection)
 }
 
-expand_single_grouping_set <- function(preflight, data_proxy) {
-  list(resolve_grouping_set(preflight, data_proxy))
+expand_single_grouping_set <- function(preflight, resolve_selection) {
+  list(resolve_grouping_set(preflight, resolve_selection))
 }
 
-resolve_grouping_set <- function(preflight, data_proxy) {
+resolve_grouping_set <- function(preflight, resolve_selection) {
   if (length(preflight$args) == 0L) {
     return(character())
   }
@@ -1142,7 +1176,7 @@ resolve_grouping_set <- function(preflight, data_proxy) {
         # A `set` admits no nested kind, so the preflight refused one before
         # this ran (ADR 0015, #159).
         stopifnot(is.null(arg$nested))
-        resolve_grouping_selection(arg$quo, data_proxy)
+        resolve_selection(arg$quo)
       }
     ),
     use.names = FALSE
@@ -1150,35 +1184,35 @@ resolve_grouping_set <- function(preflight, data_proxy) {
   unique(cols)
 }
 
-expand_grouping_sets <- function(preflight, data_proxy) {
+expand_grouping_sets <- function(preflight, resolve_selection) {
   unlist(
     lapply(
       preflight$args,
       function(arg) {
         if (is.null(arg$nested)) {
-          return(list(resolve_grouping_selection(arg$quo, data_proxy)))
+          return(list(resolve_selection(arg$quo)))
         }
-        expand_grouping_family(arg$nested, data_proxy)
+        expand_grouping_family(arg$nested, resolve_selection)
       }
     ),
     recursive = FALSE
   )
 }
 
-resolve_grouping_units <- function(preflight, data_proxy) {
+resolve_grouping_units <- function(preflight, resolve_selection) {
   units <- unlist(
     lapply(
       preflight$args,
       function(arg) {
         if (is.null(arg$nested)) {
-          cols <- resolve_grouping_selection(arg$quo, data_proxy)
+          cols <- resolve_selection(arg$quo)
           return(lapply(cols, function(col) col))
         }
         # Classified as the guard that admitted this argument classifies
         # (#324): a comparison on the field as read fires here, untyped, for
         # exactly the population that guard now admits.
         stopifnot(identical(grouping_kind_name(arg$nested$spec$type), "set"))
-        cols <- resolve_grouping_set(arg$nested, data_proxy)
+        cols <- resolve_grouping_set(arg$nested, resolve_selection)
         if (length(cols) == 0L) {
           abort_empty_composite()
         }
@@ -1194,8 +1228,8 @@ resolve_grouping_units <- function(preflight, data_proxy) {
   units
 }
 
-expand_rollup <- function(preflight, data_proxy) {
-  units <- resolve_grouping_units(preflight, data_proxy)
+expand_rollup <- function(preflight, resolve_selection) {
+  units <- resolve_grouping_units(preflight, resolve_selection)
   lapply(
     rev(seq.int(0L, length(units))),
     function(n) {
@@ -1204,8 +1238,8 @@ expand_rollup <- function(preflight, data_proxy) {
   )
 }
 
-expand_cube <- function(preflight, data_proxy) {
-  units <- resolve_grouping_units(preflight, data_proxy)
+expand_cube <- function(preflight, resolve_selection) {
+  units <- resolve_grouping_units(preflight, resolve_selection)
   n <- length(units)
   indices <- unlist(
     lapply(
@@ -1223,7 +1257,7 @@ expand_cube <- function(preflight, data_proxy) {
   )
 }
 
-expand_grouping_product <- function(preflight, data_proxy) {
+expand_grouping_product <- function(preflight, resolve_selection) {
   product <- list(character())
   if (length(preflight$args) == 0L) {
     return(product)
@@ -1231,9 +1265,9 @@ expand_grouping_product <- function(preflight, data_proxy) {
 
   for (arg in preflight$args) {
     family <- if (is.null(arg$nested)) {
-      list(resolve_grouping_selection(arg$quo, data_proxy))
+      list(resolve_selection(arg$quo))
     } else {
-      expand_grouping_family(arg$nested, data_proxy)
+      expand_grouping_family(arg$nested, resolve_selection)
     }
 
     product <- unlist(
