@@ -530,6 +530,8 @@ rr_git_environment <- function(root) {
   home <- rr_account_home()
   xdg <- Sys.getenv("XDG_CONFIG_HOME", file.path(home, ".config"))
   execution <- dirname(dirname(rr_git(root, "--exec-path")))
+  actual_git <- file.path(execution, "bin/git")
+  if (!file.exists(actual_git)) rr_stop("Unresolved Git implementation from --exec-path: ", actual_git)
   files <- union(files, c(file.path(home, ".gitconfig"), file.path(xdg, "git/config"), "/etc/gitconfig", file.path(execution, "etc/gitconfig")))
   files <- union(files, Sys.getenv(c("GIT_CONFIG_GLOBAL", "GIT_CONFIG_SYSTEM")))
   attributes <- c(file.path(xdg, "git/attributes"), "/etc/gitattributes", file.path(execution, "etc/gitattributes"))
@@ -539,9 +541,42 @@ rr_git_environment <- function(root) {
   info <- rr_git(root, "rev-parse", "--path-format=absolute", "--git-path", "info/attributes")
   if (file.exists(info)) rr_stop("Unregistered repository-local Git attributes.")
   if (any(file.exists(attributes) & file.info(attributes)$size > 0L, na.rm = TRUE)) rr_stop("Unregistered external Git attributes.")
-  paths <- sort(unique(c(files[nzchar(files)], attributes)))
+  paths <- sort(unique(c(files[nzchar(files)], attributes, actual_git)))
   if (!all(startsWith(paths, "/"))) rr_stop("Unregistered relative Git configuration input.")
-  list(configuration = values, files = lapply(paths, function(path) if (file.exists(path)) rr_file_identity(path) else list(path, "absent")))
+  list(configuration = values, executable = normalizePath(actual_git, mustWork = TRUE),
+    files = lapply(paths, function(path) if (file.exists(path)) rr_file_identity(path) else list(path, "absent")))
+}
+
+# Observe startup modules and selected stdlib caches through the actual Python
+# runtime; unregistered module closures cannot issue or consume reusable evidence.
+rr_python_environment <- function(values) {
+  code <- paste(c("import importlib.util, json, pathlib, sys, sysconfig",
+    "roots = sorted({sysconfig.get_path('stdlib'), sysconfig.get_path('platstdlib')})",
+    "cached = set()",
+    "for library in roots:",
+    "    for source in pathlib.Path(library).rglob('*.py'):",
+    "        path = pathlib.Path(importlib.util.cache_from_source(str(source)))",
+    "        if path.is_file(): cached.add(str(path.resolve()))",
+    "modules = set()",
+    "for name, module in list(sys.modules.items()):",
+    "    source = getattr(module, '__file__', None)",
+    "    if name != '__main__' and source and pathlib.Path(source).is_file():",
+    "        modules.add(str(pathlib.Path(source).resolve()))",
+    "print(json.dumps(dict(prefix=str(pathlib.Path(sys.base_prefix).resolve()), executable=sys.executable,",
+    "    roots=roots, modules=sorted(modules), cached=sorted(cached))))"), collapse = "\n")
+  output <- rr_run(unname(Sys.which("python3")), c("-c", code), env = values)$stdout
+  metadata <- tryCatch(jsonlite::fromJSON(output, simplifyVector = FALSE),
+    error = function(e) rr_stop("Python runtime input inventory unavailable: ", conditionMessage(e)))
+  scalar <- function(value) is.character(value) && length(value) == 1L && !is.na(value) && startsWith(value, "/")
+  if (!is.list(metadata) || !scalar(metadata$prefix) || !scalar(metadata$executable) ||
+      !is.list(metadata$roots) || !length(metadata$roots) || !is.list(metadata$modules) ||
+      !is.list(metadata$cached) || !all(vapply(c(metadata$roots, metadata$modules, metadata$cached), scalar, logical(1))))
+    rr_stop("Python runtime input inventory lacks absolute executable, roots, modules or cache paths.")
+  for (path in unlist(metadata$modules)) {
+    if (!startsWith(path, paste0(metadata$prefix, "/"))) rr_stop("Unregistered Python startup/module input: ", path)
+  }
+  list(executable = normalizePath(metadata$executable, mustWork = TRUE),
+    roots = unique(c(metadata$prefix, unlist(metadata$roots))), files = lapply(metadata$cached, rr_file_identity))
 }
 
 rr_snapshot <- function(root, sha, units) {
@@ -725,10 +760,14 @@ rr_environment <- function(root) {
   }
   # Python remains an external artifact-verifier runtime; no Python supervisor
   # or evidence implementation is invoked by the R runner.
-  python <- rr_run(unname(Sys.which("python3")), c("-c",
-    "import json,sys,sysconfig; print(json.dumps([sys.base_prefix,sysconfig.get_path('stdlib'),sysconfig.get_path('platstdlib')]))"))$stdout
-  python_roots <- unique(unlist(jsonlite::fromJSON(python)))
-  roots <- unique(c(unlist(probe$libraries), unlist(probe$runtime_roots), python_roots))
+  python <- rr_python_environment(values)
+  files <- c(files, python$files, list(rr_file_identity(python$executable)))
+  for (command in c(git$executable, python$executable)) {
+    if (rr_native_file(command)) {
+      natives <- union(natives, normalizePath(command)); executables <- union(executables, normalizePath(command))
+    }
+  }
+  roots <- unique(c(unlist(probe$libraries), unlist(probe$runtime_roots), python$roots))
   for (path in roots) {
     identified <- rr_directory_identity(path)
     directories <- c(directories, list(list(path, identified$digest)))
