@@ -250,6 +250,12 @@ fixture <- tempfile("repository-runner-contract-", tmpdir = Sys.getenv("TMPDIR",
 dir.create(fixture)
 fixture <- normalizePath(fixture, mustWork = TRUE)
 jobs <- list()
+kill_owned <- function(item) {
+  tryCatch({
+    if (rr_alive(item)) ps::ps_send_signal(ps::ps_handle(item$pid,
+      as.POSIXct(as.numeric(item$birth), origin = "1970-01-01", tz = "UTC")), 9L)
+  }, error = function(e) { if (rr_alive(item)) stop(e) })
+}
 on.exit({
   for (job in jobs) if (job$is_alive()) { job$signal(2L); job$wait(15000); if (job$is_alive()) job$kill() }
   table <- rr_processes()
@@ -258,7 +264,7 @@ on.exit({
       for (attempt in 1:100) {
         owned <- rr_owned(table, item$record)
         if (!length(owned)) break
-        for (row in table[owned]) if (rr_alive(row$identity)) ps::ps_send_signal(ps::ps_handle(row$identity$pid), 9L)
+        for (row in table[owned]) kill_owned(row$identity)
         Sys.sleep(0.05)
         table <- rr_processes()
       }
@@ -274,8 +280,7 @@ on.exit({
       length(path) == 1L && !is.na(path) && startsWith(path, paste0(fixture, "/"))
     }, table)
     if (!length(owned)) break
-    for (row in owned) if (rr_alive(row$identity)) ps::ps_send_signal(ps::ps_handle(row$identity$pid,
-      as.POSIXct(as.numeric(row$identity$birth), origin = "1970-01-01", tz = "UTC")), 9L)
+    for (row in owned) kill_owned(row$identity)
     Sys.sleep(0.05)
   }
   if (length(owned)) rr_stop("Fixture children remain; workspace retained: ", fixture)
@@ -299,6 +304,7 @@ cat(paste0('\nrr_renderer <- function() {\n',
   ' if (Sys.getenv("RR_FIXTURE_MUTATE_BEFORE") == "yes" && Sys.getenv("MARGINPLYR_REVIEW_EPOCH") == "1") writeLines("Changed before validation", Sys.getenv("RR_FIXTURE_MUTABLE"))\n',
   ' if (Sys.getenv("RR_FIXTURE_WORKER_ACTION") == "promote" && Sys.getenv("MARGINPLYR_REVIEW_EPOCH") == "1") {\n',
   '  child <- processx::process$new(file.path(R.home("bin"), "Rscript"), c("-e", "Sys.sleep(60)"), cleanup = FALSE, supervise = FALSE)\n',
+  '  rr_write(paste0(Sys.getenv("RR_FIXTURE_PREPARATION_PID"), ".identity"), rr_process(ps::ps_handle(child$get_pid())))\n',
   '  writeLines(as.character(child$get_pid()), Sys.getenv("RR_FIXTURE_PREPARATION_PID"))\n',
   '  rr_rpc("promote", "Fixture preparation requires Full"); repeat Sys.sleep(.1)\n',
   ' }; list(fixture = TRUE)\n}\n'), file = file.path(repo, "tools/review-ready-evidence.R"), append = TRUE)
@@ -586,11 +592,12 @@ rollback <- file.path(fixture, "rollback-clock")
 resistant <- start(seconds = "20", input = "resistant-child", detached = resistant_path, resistant = "yes", rollback = rollback)
 until(resistant, "FIXTURE GATE STARTED")
 resistant_pid <- as.integer(readLines(resistant_path))
+resistant_identity <- rr_process(ps::ps_handle(resistant_pid))
 resistant$job$signal(15L)
 until(resistant, "Stopping owned processing")
 file.create(rollback)
 finish(resistant, 130L)
-resistant_stopped <- tryCatch(ps::ps_status(ps::ps_handle(resistant_pid)) %in% c("zombie", "dead"), no_such_process = function(e) TRUE)
+resistant_stopped <- !rr_alive(resistant_identity)
 expect(resistant_stopped && sentinel$is_alive(), "Backward wall clocks cannot delay stopping TERM-resistant owned work or signal an unrelated process")
 sentinel$kill(); sentinel$wait()
 
@@ -623,8 +630,8 @@ until(promoted, "FIXTURE GATE STARTED")
 promotion_record <- Filter(function(item) !is.null(item$record) && item$record$state == "running", rr_requests(state))[[1L]]$record
 expect(promotion_record$epoch == 2L && length(promotion_record$promotions) == 1L && promotion_record$owned_capacity,
   "Promotion preserves the request and acquires real Full capacity")
-preparation_pid <- as.integer(readLines(preparation))
-preparation_stopped <- tryCatch(ps::ps_status(ps::ps_handle(preparation_pid)) %in% c("zombie", "dead"), no_such_process = function(e) TRUE)
+preparation_identity <- rr_read_json(paste0(preparation, ".identity"))
+preparation_stopped <- !rr_alive(preparation_identity)
 expect(preparation_stopped, "Promotion collects preparation children before Full validation")
 promoted_waiter <- start(root = clone, input = "promotion-waiter", action = "promote",
   preparation = file.path(fixture, "waiter-preparation.pid"))
@@ -663,7 +670,7 @@ expect(pending$authorized && pending$owned_capacity && file.exists(paste0(public
 for (attempt in 1:100) {
   table <- rr_processes(); owned <- rr_owned(table, pending)
   if (!length(owned)) break
-  for (row in table[owned]) if (rr_alive(row$identity)) ps::ps_send_signal(ps::ps_handle(row$identity$pid), 9L)
+  for (row in table[owned]) kill_owned(row$identity)
   Sys.sleep(0.05)
 }
 expect(!length(owned), "Interrupted publisher has confirmed stopped children")
@@ -725,7 +732,7 @@ expect(invoke()$status == 4L, "A killed manager's surviving work blocks another 
 for (attempt in 1:100) {
   table <- rr_processes(); owned <- rr_owned(table, interrupted)
   if (!length(owned)) break
-  for (row in table[owned]) ps::ps_send_signal(ps::ps_handle(row$identity$pid), 9L)
+  for (row in table[owned]) kill_owned(row$identity)
   Sys.sleep(0.05)
 }
 expect(!length(owned), "Fixture owner collects every interrupted child")
