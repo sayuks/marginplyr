@@ -66,6 +66,46 @@ test_that("mixed selections preserve evaluation order and counts", {
       all_of(choose_names()), where(numeric_column), last_selection()
     ))
     expect_identical(events, c("names", "typed", "typed", "last"))
+
+    events <- character()
+    fixed <- function(x) {
+      events <<- c(events, "fixed")
+      FALSE
+    }
+    verb(data, where(fixed), grouping_set(
+      all_of(choose_names()), where(numeric_column), last_selection()
+    ))
+    expect_identical(
+      events, c("fixed", "fixed", "names", "typed", "typed", "last")
+    )
+
+    events <- character()
+    verb(data, where(fixed), grouping_set(
+      all_of({
+        events <<- c(events, "assignment")
+        "x"
+      }),
+      where(numeric_column)
+    ))
+    expect_identical(
+      events, c("fixed", "fixed", "assignment", "typed", "typed")
+    )
+  }
+})
+
+test_that("a discarded leading pass does not duplicate selection warnings", {
+  data <- data.frame(x = 1L, value = 2L)
+  for (verb in forwarded_verbs) {
+    warnings <- character()
+    withCallingHandlers(
+      verb(data, NULL, grouping_set(one_of("absent"), where(is.numeric))),
+      warning = function(cnd) {
+        warnings <<- c(warnings, conditionMessage(cnd))
+        invokeRestart("muffleWarning")
+      }
+    )
+    expect_length(warnings, 1L)
+    expect_match(warnings, "absent")
   }
 })
 

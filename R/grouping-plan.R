@@ -261,6 +261,13 @@ prepare_grouping_plan <- function(.data,
           )),
           lifecycle_verbosity = discarded_pass_verbosity()
         )
+      } else {
+        rlang::with_options(
+          suppressWarnings(validate_leading_selections(
+            preflight, data_vars
+          )),
+          lifecycle_verbosity = discarded_pass_verbosity()
+        )
       }
       # Inspection needs no typed snapshot when names settle both selections.
       # Its canonical pass uses the name proxy too, preserving the two-pass
@@ -282,37 +289,26 @@ prepare_grouping_plan <- function(.data,
           preflight = preflight
         )
       } else {
-        # Compile with a lazy snapshot, returning it for the operation to reuse.
-        typed_plan <- function(data_proxy) {
-          plan <- compile_grouping_spec(
-            grouping_spec,
-            data_vars = data_vars,
-            data_proxy = data_proxy,
-            .by = if (is.null(by)) {
-              resolve_by_selection(by_quo, data_proxy)
-            } else {
-              by
-            },
-            .duplicates = .duplicates,
-            duplicates_choices = duplicates_choices,
-            preflight = preflight,
-            resolve_leading_names = !preflight$name_only
-          )
-          list(data_proxy = data_proxy, plan = plan)
-        }
-        # Keep the snapshot as a promise until compilation reaches a selection
-        # needing types. A leading names-only failure must precede this read
-        # (ADR 0005); successful selections run only once in this pass.
-        prepared <- typed_plan(if (identical(backend$kind, "dtplyr")) {
+        data_proxy <- if (identical(backend$kind, "dtplyr")) {
           dtplyr_selection_proxy(
             data,
             isolate = !builds_margin_branches && mutable_step
           )
         } else {
           grouping_selection_proxy(data, backend = backend)
-        })
-        data_proxy <- prepared$data_proxy
-        plan <- prepared$plan
+        }
+        if (is.null(by)) {
+          by <- resolve_by_selection(by_quo, data_proxy)
+        }
+        plan <- compile_grouping_spec(
+          grouping_spec,
+          data_vars = data_vars,
+          data_proxy = data_proxy,
+          .by = by,
+          .duplicates = .duplicates,
+          duplicates_choices = duplicates_choices,
+          preflight = preflight
+        )
       }
 
       list(
@@ -437,7 +433,9 @@ selection_refused_operators <- function() {
 # against the typed snapshot and is correct however that shape reads. Callers
 # hold `env` as the expression's own environment and `data_vars` as the input's
 # column names, which is the pair the symbol branch decides from.
-is_name_only_expr <- function(expr, env, data_vars) {
+# `allow_caller_code = FALSE` also withholds caller functions and assignments,
+# so a discarded mixed-selection pass cannot change their evaluation order.
+is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE) {
   # `is_name_part()` rather than `rlang::is_symbol()`, for the reason its
   # header gives: a part read by subscript may be R's empty argument.
   if (is_name_part(expr)) {
@@ -500,7 +498,8 @@ is_name_only_expr <- function(expr, env, data_vars) {
       static_call_args(expr),
       is_name_only_helper_arg,
       logical(1),
-      env = env
+      env = env,
+      allow_caller_code = allow_caller_code
     )))
   }
   # tidyselect refuses only a bare operator head. Qualified or parenthesized
@@ -527,7 +526,8 @@ is_name_only_expr <- function(expr, env, data_vars) {
     is_name_only_expr,
     logical(1),
     env = env,
-    data_vars = data_vars
+    data_vars = data_vars,
+    allow_caller_code = allow_caller_code
   ))
 }
 
@@ -535,10 +535,13 @@ is_name_only_expr <- function(expr, env, data_vars) {
 # its lexical environment; `bound` names a closure's formals, whose actual
 # arguments were checked before its body. Unknown calls and bindings defer to
 # typed selection rather than running caller code to classify it.
+# A discarded mixed-selection pass sets `allow_caller_code = FALSE` to exclude
+# caller closures and assignments even when their result needs no column types.
 is_name_only_helper_arg <- function(expr,
                                     env,
                                     bound = character(),
-                                    seen = list()) {
+                                    seen = list(),
+                                    allow_caller_code = TRUE) {
   if (is_name_part(expr)) {
     name <- as.character(expr)
     if (name %in% bound) {
@@ -568,7 +571,8 @@ is_name_only_helper_arg <- function(expr,
     return(TRUE)
   }
   if (!all(vapply(args, is_name_only_helper_arg, logical(1),
-                  env = env, bound = bound, seen = seen))) {
+                  env = env, bound = bound, seen = seen,
+                  allow_caller_code = allow_caller_code))) {
     return(FALSE)
   }
   if (identical(fn, tidyselect::peek_vars)) {
@@ -588,11 +592,14 @@ is_name_only_helper_arg <- function(expr,
     "paste", "paste0", "sprintf", "substr", "substring", "gsub", "sub",
     "grep", "grepl", "strsplit", "nchar", "nzchar", "unlist"
   ), envir = baseenv(), inherits = FALSE)
+  if (!allow_caller_code) {
+    name_operations[c("<-", "<<-", "=")] <- NULL
+  }
   if (any(vapply(name_operations, identical, logical(1), fn))) {
     return(TRUE)
   }
   if (
-    is.primitive(fn) || isNamespace(environment(fn)) ||
+    !allow_caller_code || is.primitive(fn) || isNamespace(environment(fn)) ||
       identical(environment(fn), baseenv()) ||
       any(vapply(seen, identical, logical(1), fn))
   ) {
@@ -702,16 +709,34 @@ discarded_pass_verbosity <- function() {
   "quiet"
 }
 
-is_name_only_selection <- function(arg, data_vars) {
+is_name_only_selection <- function(arg, data_vars, allow_caller_code = TRUE) {
   is_name_only_expr(
     rlang::quo_get_expr(arg),
     env = rlang::quo_get_env(arg),
-    data_vars = data_vars
+    data_vars = data_vars,
+    allow_caller_code = allow_caller_code
   )
 }
 
 grouping_name_proxy <- function(data_vars) {
   stats::setNames(as.list(seq_along(data_vars)), data_vars)
+}
+
+# Validate a mixed specification's leading selections without running caller
+# code. Expansion supplies the canonical order and nested-family validation;
+# the first unresolved selection stops the discarded pass, not just its family.
+validate_leading_selections <- function(preflight, data_vars) {
+  proxy <- grouping_name_proxy(data_vars)
+  withRestarts(
+    expand_grouping_family(preflight, function(arg) {
+      if (!is_name_only_selection(arg, data_vars, allow_caller_code = FALSE)) {
+        invokeRestart("needs_typed_selection")
+      }
+      resolve_grouping_selection(arg, proxy)
+    }),
+    needs_typed_selection = function() NULL
+  )
+  invisible(NULL)
 }
 
 # The only site that reads a nested argument. It answers with the
@@ -964,8 +989,6 @@ admitted_nested_kinds <- local({
 # more than one pass over one specification hands the same preflight to each
 # and no pass reads a nested quosure of its own. A recognized nested argument
 # is therefore evaluated once per call, whichever passes run (ADR-0008).
-# `resolve_leading_names` lets a mixed specification resolve its leading
-# names-only selections before forcing `data_proxy` or typed `.by` promises.
 compile_grouping_spec <- function(
   .grouping,
   data_vars,
@@ -973,8 +996,7 @@ compile_grouping_spec <- function(
   .by = character(),
   .duplicates = duplicates_choices,
   duplicates_choices,
-  preflight = preflight_grouping_spec(.grouping, data_vars),
-  resolve_leading_names = FALSE
+  preflight = preflight_grouping_spec(.grouping, data_vars)
 ) {
   .duplicates <- match_margin_choice(
     .duplicates,
@@ -988,8 +1010,7 @@ compile_grouping_spec <- function(
     data_proxy = data_proxy,
     .by = .by,
     .duplicates = .duplicates,
-    duplicates_choices = duplicates_choices,
-    resolve_leading_names = resolve_leading_names
+    duplicates_choices = duplicates_choices
   )
 }
 
@@ -1000,42 +1021,12 @@ compile_grouping_spec_impl <- function(preflight,
                                        data_proxy,
                                        .by,
                                        .duplicates,
-                                       duplicates_choices,
-                                       resolve_leading_names) {
-  stopifnot(.duplicates %in% duplicates_choices)
-  if (!resolve_leading_names) {
-    force(.by)
-  }
-  resolution <- new.env(parent = emptyenv())
-  resolution$leading_names <- resolve_leading_names
-
-  # Expansion owns selection order, including nested families. Once a selection
-  # needs types, resolve fixed keys before it and use the one snapshot for the
-  # rest of the pass. Neither classification nor a names-only failure forces
-  # the caller's metadata promise.
-  resolve_selection <- function(arg) {
-    if (resolution$leading_names && is_name_only_selection(arg, data_vars)) {
-      return(resolve_grouping_selection(arg, grouping_name_proxy(data_vars)))
-    }
-    resolution$leading_names <- FALSE
-    proxy <- if (is.null(data_proxy)) {
-      grouping_name_proxy(data_vars)
-    } else {
-      data_proxy
-    }
-    force(.by)
-    resolve_grouping_selection(arg, proxy)
-  }
-
-  if (is.null(preflight$spec)) {
-    preflight <- preflight_grouping_spec(
-      new_grouping_spec("set", list()),
-      data_vars
-    )
-  }
-
-  expanded <- unname(expand_grouping_family(preflight, resolve_selection))
+                                       duplicates_choices) {
   stopifnot(is.character(.by), !anyNA(.by))
+  stopifnot(.duplicates %in% duplicates_choices)
+  if (is.null(data_proxy)) {
+    data_proxy <- grouping_name_proxy(data_vars)
+  }
 
   # A backstop behind the resolutions that produce `.by`, not a Package
   # condition: each of them binds every value to `data_vars` already, so no
@@ -1059,6 +1050,19 @@ compile_grouping_spec_impl <- function(preflight,
     )
   }
 
+  # The absent `.grouping` stands for the empty grouping set. Preflighted
+  # rather than written out here, so that one function answers what a record
+  # holds.
+  if (is.null(preflight$spec)) {
+    preflight <- preflight_grouping_spec(
+      new_grouping_spec("set", list()),
+      data_vars
+    )
+  }
+
+  expanded <- unname(expand_grouping_family(
+    preflight, function(arg) resolve_grouping_selection(arg, data_proxy)
+  ))
   dimensions <- unique(unlist(expanded, use.names = FALSE))
 
   overlap <- intersect(.by, dimensions)
