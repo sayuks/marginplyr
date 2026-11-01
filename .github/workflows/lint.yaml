@@ -97,7 +97,7 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::lintr, any::pkgload, any::spelling, local::., any::testthat, any::yaml, any::jsonlite
+          extra-packages: any::lintr, any::pkgload, any::spelling, local::., any::testthat, any::yaml, any::jsonlite, any::processx, any::ps, any::filelock, any::openssl
           needs: lint
 
       - name: Verify suite-coverage worker execution
@@ -118,6 +118,7 @@ jobs:
         run: |
           python3 tools/verify-ci-artifacts.py
           python3 tools/test-ci-artifacts.py
+          Rscript tools/test-review-ready-runner.R
 
       # Jarl complements rather than replaces lintr. Package-specific rules
       # need R and installed packages, so this reuses the dependency environment

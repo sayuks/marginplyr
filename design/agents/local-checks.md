@@ -33,6 +33,20 @@ execution, valid reuse under [ADR 0038](../adr/0038-reuse-unaffected-review-read
 or omission; a Full obligation discharged by reuse is not a new Full pass.
 Focused tests and the wider release process have separate roles.
 
+### Delivery generation
+
+Before the drained R-runner cutover, the installed common CLI below remains
+required. After local main contains the accepted R manager and migration
+publishes the account's protocol-4 `delivery.json`, invoke
+`Rscript tools/review-ready.R` from the target root. Its `--status` and
+`--recover REQUEST` modes use the same shared ownership boundary.
+[Repository-owned delivery](../../tools/review-ready-runner.md) owns R setup,
+main-based registration, authenticated inventory transactions, seven-day
+retention and key renewal, private rendering, and the cutover procedure.
+Installed-generation details below apply until that transition; the R guide
+replaces those delivery/storage details while preserving this gate's cumulative
+obligations, bounded work and execution-handle rules.
+
 ## Boundary
 
 Run the Review-ready check before any of these transitions:
@@ -497,7 +511,8 @@ resume publication separately without holding up formal review.
 
 Before the next check, every participating existing agent session rereads this
 section and [shared admission](../../tools/review-ready-admission.md), then
-explicitly acknowledges the common CLI, the continuing same-agent loop, its
+explicitly acknowledges the active entry under *Delivery generation*, the
+continuing same-agent loop, its
 execution ownership, and the terminal-completion transitions. Refresh or restart
 a session that cannot load the updated guidance. For an invocation already in
 flight, refresh at the next natural work boundary while preserving its original

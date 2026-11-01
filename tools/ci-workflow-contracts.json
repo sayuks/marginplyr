@@ -178,7 +178,7 @@
             "uses": "r-lib/actions/setup-r-dependencies@v2",
             "with": {
               "install-pandoc": "false",
-              "extra-packages": "local::.",
+              "extra-packages": "local::., any::openssl, any::filelock, any::ps, any::processx, any::jsonlite, any::devtools, any::roxygen2",
               "needs": "website"
             }
           },
@@ -190,6 +190,10 @@
           {
             "name": "Verify site output",
             "run": "Rscript .github/scripts/verify-site.R"
+          },
+          {
+            "name": "Verify private renderer storage",
+            "run": "Rscript tools/test-review-ready-renderer.R"
           },
           {
             "name": "Configure GitHub Pages",
@@ -420,7 +424,7 @@
           {
             "uses": "r-lib/actions/setup-r-dependencies@v2",
             "with": {
-              "extra-packages": "any::lintr, any::pkgload, any::spelling, local::., any::testthat, any::yaml, any::jsonlite",
+              "extra-packages": "any::lintr, any::pkgload, any::spelling, local::., any::testthat, any::yaml, any::jsonlite, any::processx, any::ps, any::filelock, any::openssl",
               "needs": "lint"
             }
           },
@@ -441,7 +445,7 @@
           },
           {
             "name": "Verify CI artifacts and their command fixtures",
-            "run": "python3 tools/verify-ci-artifacts.py\npython3 tools/test-ci-artifacts.py\n"
+            "run": "python3 tools/verify-ci-artifacts.py\npython3 tools/test-ci-artifacts.py\nRscript tools/test-review-ready-runner.R\n"
           },
           {
             "uses": "etiennebacher/setup-jarl@v0.1.1",

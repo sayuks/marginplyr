@@ -1,5 +1,12 @@
 # Shared local Review-ready admission
 
+This describes the installed generation used until the drained cutover in
+[repository-owned R delivery](review-ready-runner.md). After that transition,
+the tracked R entry and its guide own delivery, registration and storage.
+The installed check entry is retired; existing worktrees incorporate the
+accepted runner before their next check. Its bootstrap and historical
+regression fixtures remain available during the replacement's verification.
+
 `marginplyr-review-ready` admits one complete Full Review-ready check per OS user
 across marginplyr clones and worktrees. Full retains four test workers;
 Documentation retains package build/check with `--no-tests` and separate

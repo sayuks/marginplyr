@@ -159,8 +159,9 @@ expect_identical(
 )
 expect_identical(
   fixture_review_packages,
-  c("altdoc", "devtools", "jsonlite", "lintr", "pkgload", "R6", "rcmdcheck",
-    "roxygen2", "spelling", "testthat", "yaml"),
+  c("altdoc", "askpass", "devtools", "filelock", "jsonlite", "lintr", "openssl",
+    "pkgload", "processx", "ps", "R6", "rcmdcheck", "roxygen2", "spelling", "sys",
+    "testthat", "yaml"),
   "the declared review packages"
 )
 expect_error(
@@ -1270,3 +1271,18 @@ local({
   expect_identical(failed, 1L, "failed documentation assertions fail the invocation")
 
 })
+
+# The installed accepted manager bootstraps the first R implementation. Its
+# Full boundary runs these dedicated fixtures; protocol 4 maps them explicitly.
+transport <- Sys.getenv("MARGINPLYR_REVIEW_SELECTION")
+if (nzchar(Sys.getenv("MARGINPLYR_REVIEW_REQUEST")) && nzchar(transport)) {
+  admitted <- read.dcf(transport)
+  if (nrow(admitted) == 1L && identical(admitted[[1L, "Protocol"]], "3") &&
+      identical(admitted[[1L, "Capacity"]], "Full")) {
+    for (fixture in c("tools/test-review-ready-runner.R", "tools/test-review-ready-renderer.R")) {
+      cat("\n==> R replacement contract: ", fixture, "\n", sep = "")
+      status <- system2(file.path(R.home("bin"), "Rscript"), shQuote(fixture))
+      if (status != 0L) stop("R replacement contract failed: ", fixture, call. = FALSE)
+    }
+  }
+}

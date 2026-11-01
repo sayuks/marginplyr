@@ -39,6 +39,23 @@ verify_site_artifacts <- function() {
   )))
   if (status != 0L) stop("Site package installation failed.", call. = FALSE)
   altdoc::render_docs(parallel = FALSE, freeze = FALSE)
+  # Quarto's default directory walk skips an absolute hidden ancestor. The
+  # request root is under .local; explicit generated inputs preserve its normal
+  # nonhidden inventory without replacing a submitted project.render policy.
+  project <- file.path("_quarto", "_quarto.yml")
+  configuration <- yaml::read_yaml(project)
+  hidden <- grepl("(^|/)[.][^/]", normalizePath(getwd()))
+  if (hidden && is.null(configuration$project$render)) {
+    inputs <- list.files("_quarto", recursive = TRUE,
+      pattern = "[.](qmd|md|Rmd|ipynb)$")
+    inputs <- inputs[!grepl("(^|/)[._]|(^|/)(README[.]|AGENTS[.]|CLAUDE[.])|[.]llms[.]md$", inputs)]
+    if (!length(inputs)) stop("No generated site inputs to render.", call. = FALSE)
+    configuration$project$render <- as.list(inputs)
+    yaml::write_yaml(configuration, project,
+      handlers = list(logical = yaml::verbatim_logical))
+    quarto::quarto_render(input = "_quarto", quiet = FALSE,
+      as_job = FALSE, use_freezer = FALSE)
+  }
   source(".github/scripts/verify-site.R", local = new.env(parent = globalenv()))
   cat(
     "Completed site artifact verification:",

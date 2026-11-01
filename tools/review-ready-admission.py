@@ -70,6 +70,15 @@ DOCUMENTATION_SOURCES = (
 # Policies describe reviewed workloads, never a guess from source spellings.
 # Only the progress fixture exercises testthat workers outside Full capacity.
 STAGE_CONTRACTS = {
+    'tools/test-review-ready-renderer.R': ('serial', (
+        'tools/review-ready-core.R', 'tools/review-ready-registry.R',
+        'tools/review-ready-evidence.R', 'tools/review-ready-check-lib.R',
+        'tools/review-ready-generated.R', 'tools/verify-site-artifacts.R',
+        '.github/scripts/verify-site.R')),
+    'tools/test-review-ready-runner.R': ('process-fixture', (
+        'tools/review-ready.R', 'tools/review-ready-core.R',
+        'tools/review-ready-registry.R', 'tools/review-ready-evidence.R',
+        'tools/review-ready-manager.R', 'tools/review-ready-signals.c')),
     'tools/review-ready-followup-contract.R': ('serial', (
         'tools/dependency-requirements.R', 'tools/review-ready-generated.R', 'DESCRIPTION')),
     'tools/test-review-ready-evidence.py': ('process-fixture', (
@@ -255,6 +264,8 @@ CONTRACTS = [
                                 '.github/scripts/verify-agent-network-policy.R',
                                 '.github/scripts/verify-codex-config.R']),
     (CHECKING, ['.github/scripts/verify-review-ready-check.R',
+                'tools/test-review-ready-runner.R',
+                'tools/test-review-ready-renderer.R',
                 'tools/test-review-ready-admission.py', 'tools/test-review-ready-progress.R',
                 'tools/test-review-ready-evidence.py',
                 'tools/test-ci-artifacts.py', 'tools/verify-ci-artifacts.py',
@@ -1212,6 +1223,8 @@ def main(args=None):
     try:
         state = USER_HOME / '.local/state/marginplyr/review-ready'
         state.mkdir(parents=True, exist_ok=True, mode=0o700)
+        if (state / 'delivery.json').exists() and not options.status and options.recover is None:
+            raise RuntimeError('Installed check entry retired; use Rscript tools/review-ready.R from the target root')
         if options.status:
             records = []
             table = processes()

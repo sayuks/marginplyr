@@ -13,6 +13,11 @@ hooks <- c("R_PROFILE", "R_PROFILE_USER", "R_ENVIRON", "R_ENVIRON_USER",
 unknown <- hooks[nzchar(Sys.getenv(hooks))]
 # R itself sets its library defaults. Their resolved ordered paths are recorded.
 unknown <- setdiff(unknown, c("R_LIBS_USER", "R_LIBS_SITE"))
+isolation <- Sys.getenv("MARGINPLYR_REVIEW_ISOLATION")
+if (nzchar(isolation) && identical(Sys.getenv("R_LIBS"),
+    Sys.getenv("MARGINPLYR_REVIEW_LIBRARY_PATHS"))) {
+  unknown <- setdiff(unknown, "R_LIBS")
+}
 custom <- configuration[!configuration %in% file.path(R.home("etc"), c("Renviron", "Makeconf"))]
 unknown <- c(unknown, custom[file.exists(custom)])
 dated <- intersect(c("Date", "Date/Publication"), colnames(description))
@@ -48,7 +53,7 @@ cat(jsonlite::toJSON(list(
   executables = list(file.path(R.home("bin"), "exec", "R")),
   configuration = as.list(setdiff(configuration, custom[!file.exists(custom)])),
   locale = Sys.getlocale(), timezone = Sys.timezone(),
-  loader_defaults = as.list(Sys.getenv(c("LD_LIBRARY_PATH", "DYLD_FALLBACK_LIBRARY_PATH"))),
+  loader_defaults = as.list(Sys.getenv(c("LD_LIBRARY_PATH", "DYLD_LIBRARY_PATH", "DYLD_FALLBACK_LIBRARY_PATH"))),
   clock = list(r = as.character(getRversion()), checker = checksum(".check_packages"),
     timeout = checksum("get_timeout"), leeway = leeway),
   metadata_audit = list(version = 4L, names = as.list(execution_metadata),
