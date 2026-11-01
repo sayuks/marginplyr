@@ -34,7 +34,7 @@ jobs:
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           install-pandoc: false
-          extra-packages: local::., any::openssl, any::filelock, any::ps, any::processx, any::jsonlite, any::devtools, any::roxygen2
+          extra-packages: local::., any::openssl, any::filelock, any::ps, any::processx, any::jsonlite, any::devtools, any::roxygen2, any::fs
           # altdoc is declared in DESCRIPTION's `Config/Needs/website` rather
           # than in Suggests, because nothing outside `.Rbuildignore`d paths
           # uses it, so a Suggests entry installed a dependency closure for a

@@ -159,7 +159,7 @@ expect_identical(
 )
 expect_identical(
   fixture_review_packages,
-  c("altdoc", "askpass", "cpp11", "devtools", "filelock", "jsonlite", "lintr", "openssl",
+  c("altdoc", "askpass", "cpp11", "devtools", "filelock", "fs", "jsonlite", "lintr", "openssl",
     "pkgload", "processx", "ps", "R6", "rcmdcheck", "roxygen2", "spelling", "sys",
     "testthat", "yaml"),
   "the declared review packages"

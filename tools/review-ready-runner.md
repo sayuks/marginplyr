@@ -9,7 +9,7 @@ command required by [local checks](../design/agents/local-checks.md).
 ## Setup and authority
 
 Install the packages in `DESCRIPTION`'s `Config/Needs/review` field. The runner
-directly validates processx, ps, filelock, openssl, jsonlite, and openssl's
+directly validates processx, ps, filelock, fs, openssl, jsonlite, and openssl's
 askpass/sys closure. OpenSSL headers and libraries are development requirements
 of the openssl R package. A working R C compiler is also needed for the small
 `tools/review-ready-signals.c` receiver: base R exposes interrupts but no
@@ -19,6 +19,10 @@ independently of the UTC timestamps used for history and evidence. The pinned
 source is compiled inside each request during setup, before admission waiting.
 These are development tools, not package
 runtime Imports.
+
+`fs::file_info()` supplies regular-file type and device/inode metadata in one
+in-process query, so special files are refused before opening a stream.
+For source installation, follow fs's `SystemRequirements` metadata.
 
 The review and website setup also include cpp11 for the development-dependency
 audit performed by devtools when it installs the source for README generation.

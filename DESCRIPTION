@@ -57,6 +57,7 @@ Config/Needs/review:
     cpp11,
     devtools,
     filelock,
+    fs,
     jsonlite,
     lintr,
     openssl,

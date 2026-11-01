@@ -87,7 +87,7 @@ rr_write <- function(path, value, raw = FALSE) {
 
 rr_setup <- function() {
   if (!Sys.info()[["sysname"]] %in% c("Darwin", "Linux")) rr_stop("Review-ready requires macOS or Linux.")
-  packages <- c("processx", "ps", "filelock", "openssl", "askpass", "sys", "jsonlite")
+  packages <- c("processx", "ps", "filelock", "fs", "openssl", "askpass", "sys", "jsonlite")
   missing <- packages[!vapply(packages, requireNamespace, logical(1), quietly = TRUE)]
   if (length(missing)) rr_stop("Install Review-ready development dependencies: ", paste(missing, collapse = ", "))
   if (!ps::ps_is_supported()) rr_stop("Unsupported process inspection; no check was run.")

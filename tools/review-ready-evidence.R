@@ -398,15 +398,26 @@ rr_source_inputs <- function(root, sha) {
   rr_digest(inputs)
 }
 rr_file_identity <- function(path) {
-  before <- file.info(path)
-  if (is.na(before$size) || before$isdir) rr_stop("External file unavailable: ", path)
-  connection <- file(path, "rb")
+  metadata <- function() {
+    resolved <- normalizePath(path, mustWork = TRUE)
+    info <- fs::file_info(resolved, follow = FALSE)
+    required <- c("type", "permissions", "size", "modification_time", "change_time", "device_id", "inode", "user", "group")
+    if (nrow(info) != 1L || !all(required %in% names(info))) rr_stop("External file metadata unavailable: ", path)
+    if (!identical(as.character(info$type), "file")) rr_stop("Unregistered external file type: ", path)
+    stat_values <- vapply(info[c("size", "modification_time", "change_time", "device_id", "inode")], as.numeric, 0)
+    if (!all(is.finite(stat_values)) || any(stat_values[c("size", "device_id", "inode")] < 0)) rr_stop("External file metadata unavailable: ", path)
+    info$resolved <- resolved
+    info
+  }
+  before <- metadata()
+  connection <- file(before$resolved, "rb", blocking = FALSE)
   hash <- tryCatch(rr_hash(connection), finally = close(connection))
-  after <- file.info(path)
-  fields <- c("mode", "size", "mtime", "ctime", "uid", "gid")
+  after <- metadata()
+  fields <- c("resolved", "type", "permissions", "size", "modification_time", "change_time", "device_id", "inode", "user", "group")
   if (!identical(before[fields], after[fields])) rr_stop("External input changed while identifying it: ", path)
-  list(path = path, resolved = normalizePath(path, mustWork = TRUE), mode = as.integer(after$mode),
-    size = after$size, mtime = as.numeric(after$mtime), ctime = as.numeric(after$ctime), digest = hash)
+  list(path = path, resolved = after$resolved, mode = bitwAnd(as.integer(after$permissions), 4095L),
+    size = as.numeric(after$size), mtime = as.numeric(after$modification_time), ctime = as.numeric(after$change_time),
+    device_id = as.numeric(after$device_id), inode = as.numeric(after$inode), digest = hash)
 }
 rr_native_file <- function(path) {
   connection <- file(path, "rb")
@@ -422,7 +433,10 @@ rr_directory_identity <- function(root) {
       if (resolved %in% seen) rr_stop("Cyclic external directory: ", path)
       seen <<- c(seen, resolved)
       rows[[length(rows) + 1L]] <<- list(relative, "directory", resolved, as.integer(info$mode))
-      for (child in sort(list.files(path, all.files = TRUE, full.names = TRUE, no.. = TRUE), method = "radix")) visit(child, paste0(relative, "/", basename(child)))
+      # Dot entries distinguish an empty listing from an unreadable path skipped by list.files().
+      children <- list.files(path, all.files = TRUE, no.. = FALSE)
+      if (!all(c(".", "..") %in% children)) rr_stop("External directory inventory unavailable: ", path)
+      for (child in sort(setdiff(children, c(".", "..")), method = "radix")) visit(file.path(path, child), paste0(relative, "/", child))
       after <- file.info(path)
       if (!identical(info$mtime, after$mtime) || !identical(info$ctime, after$ctime)) rr_stop("External directory changed: ", path)
       seen <<- setdiff(seen, resolved)
