@@ -92,7 +92,7 @@ run_inherited_value_contracts <- function() {
   rejects(rr_alive(list(pid = -1L, birth = "invalid")), "Invalid process identity")
   inspect <- rr_processes
   environment(inspect) <- new.env(parent = environment(rr_processes))
-  environment(inspect)$rr_uid <- function() -1L
+  environment(inspect)$rr_process_details <- function(...) NULL
   rejects(inspect(), "Incomplete process inspection")
   cat("Inherited clock, NOTE/retry, metadata, expectation and PID contracts passed.\n")
 }
