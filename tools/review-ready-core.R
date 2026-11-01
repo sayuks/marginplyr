@@ -234,19 +234,29 @@ rr_alive <- function(item) {
     ps::ps_is_running(handle) && !ps::ps_status(handle) %in% c("zombie", "dead")
   }, no_such_process = function(e) FALSE)
 }
+# Reads same-account metadata after the caller captures the handle's birth.
+rr_process_details <- function(handle, group) {
+  if (ps::ps_uids(handle)[["real"]] != rr_uid() || ps::ps_status(handle) %in% c("zombie", "dead")) return(NULL)
+  list(parent = ps::ps_ppid(handle), group = group, env = unclass(ps::ps_environ(handle)))
+}
 rr_processes <- function() {
   table <- list()
   groups <- strsplit(trimws(rr_run("ps", c("-axo", "pid=,pgid="))$stdout), "\n", fixed = TRUE)[[1L]]
   groups <- lapply(groups, function(line) as.integer(strsplit(trimws(line), "[[:space:]]+")[[1L]]))
   groups <- stats::setNames(vapply(groups, `[[`, integer(1), 2L), vapply(groups, function(row) as.character(row[[1L]]), ""))
   for (pid in ps::ps_pids()) {
+    identity <- NULL
     row <- tryCatch({
       handle <- ps::ps_handle(pid)
-      if (ps::ps_uids(handle)[["real"]] != rr_uid() || ps::ps_status(handle) %in% c("zombie", "dead")) NULL else {
-        list(identity = rr_process(handle), parent = ps::ps_ppid(handle), group = unname(groups[as.character(pid)]), env = unclass(ps::ps_environ(handle)))
-      }
-    }, no_such_process = function(e) NULL,
-      error = function(e) rr_stop("Process ownership/environment inspection unavailable for PID ", pid, ": ", conditionMessage(e)))
+      identity <- rr_process(handle)
+      details <- rr_process_details(handle, unname(groups[as.character(pid)]))
+      if (!is.null(details)) c(list(identity = identity), details) else NULL
+    }, no_such_process = function(e) NULL, error = function(e) {
+      # A raced metadata read alone does not establish that ownership stopped.
+      stopped <- !is.null(identity) && tryCatch(!rr_alive(identity), error = function(e) FALSE)
+      if (stopped) return(NULL)
+      rr_stop("Process ownership/environment inspection unavailable for PID ", pid, ": ", conditionMessage(e))
+    })
     if (!is.null(row)) table[[as.character(pid)]] <- row
   }
   if (is.null(table[[as.character(Sys.getpid())]])) rr_stop("Incomplete process inspection.")

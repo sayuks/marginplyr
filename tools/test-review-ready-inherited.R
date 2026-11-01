@@ -342,3 +342,29 @@ run_deletion_contracts <- function() {
   cat("Owned deletion treats wildcard characters literally and preserves unrelated paths.\n")
 }
 run_deletion_contracts()
+
+run_process_observation_contracts <- function() {
+  child <- processx::process$new(file.path(R.home("bin"), "Rscript"), c("-e", "Sys.sleep(60)"), cleanup = TRUE)
+  on.exit({ if (child$is_alive()) child$kill(); child$wait() }, add = TRUE)
+  pid <- child$get_pid()
+  observe <- rr_processes
+  environment(observe) <- new.env(parent = environment(rr_processes))
+  details <- rr_process_details
+  environment(observe)$rr_process_details <- function(handle, group) {
+    if (ps::ps_pid(handle) == pid) stop("Permission denied")
+    details(handle, group)
+  }
+  rejects(observe(), paste0("PID ", pid, ": Permission denied"))
+  environment(observe)$rr_process_details <- function(handle, group) {
+    if (ps::ps_pid(handle) == pid) {
+      child$kill(); child$wait()
+      stop("No such file or directory")
+    }
+    details(handle, group)
+  }
+  table <- observe()
+  expect(is.null(table[[as.character(pid)]]) && !child$is_alive(),
+    "A process exiting between birth capture and metadata read is independently confirmed stopped")
+  cat("Process observation races omit confirmed exits and protect unreadable live owners.\n")
+}
+run_process_observation_contracts()
