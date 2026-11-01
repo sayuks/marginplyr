@@ -350,6 +350,17 @@ run_process_observation_contracts <- function() {
   observe <- rr_processes
   environment(observe) <- new.env(parent = environment(rr_processes))
   details <- rr_process_details
+  reads <- 0L
+  environment(observe)$rr_process_details <- function(handle, group) {
+    if (ps::ps_pid(handle) == pid) {
+      reads <<- reads + 1L
+      if (reads == 1L) stop("Permission denied")
+    }
+    details(handle, group)
+  }
+  table <- observe()
+  expect(!is.null(table[[as.character(pid)]]) && child$is_alive() && reads >= 2L,
+    "A transient metadata failure requires a successful complete reread")
   environment(observe)$rr_process_details <- function(handle, group) {
     if (ps::ps_pid(handle) == pid) stop("Permission denied")
     details(handle, group)
@@ -365,6 +376,25 @@ run_process_observation_contracts <- function() {
   table <- observe()
   expect(is.null(table[[as.character(pid)]]) && !child$is_alive(),
     "A process exiting between birth capture and metadata read is independently confirmed stopped")
-  cat("Process observation races omit confirmed exits and protect unreadable live owners.\n")
+  child <- processx::process$new(file.path(R.home("bin"), "Rscript"), c("-e", "Sys.sleep(60)"), cleanup = TRUE)
+  pid <- child$get_pid()
+  environment(observe)$rr_process_details <- details
+  process <- rr_process
+  environment(observe)$rr_process <- function(handle) {
+    if (ps::ps_pid(handle) == pid) stop("Permission denied")
+    process(handle)
+  }
+  rejects(observe(), paste0("PID ", pid, ": Permission denied"))
+  environment(observe)$rr_process <- function(handle) {
+    if (ps::ps_pid(handle) == pid) {
+      child$kill(); child$wait()
+      stop("No such file or directory")
+    }
+    process(handle)
+  }
+  table <- observe()
+  expect(is.null(table[[as.character(pid)]]) && !child$is_alive(),
+    "A process exiting before birth capture requires independent PID absence")
+  cat("Process observations reread transient failures, confirm exits, and protect unreadable live owners.\n")
 }
 run_process_observation_contracts()
