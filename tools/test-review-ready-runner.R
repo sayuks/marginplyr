@@ -16,6 +16,8 @@ rejects <- function(code, pattern) {
   expect(inherits(result, "error") && grepl(pattern, conditionMessage(result)), pattern)
 }
 source(file.path(fixture_root, "tools/test-review-ready-inherited.R"))
+source(file.path(fixture_root, "tools/test-review-ready-capabilities.R"))
+source(file.path(fixture_root, "tools/test-review-ready-migration.R"))
 
 # These known answers come from SHA-256 and RFC 4231, independently of the store.
 expect(identical(rr_hash(charToRaw("abc")),
@@ -136,7 +138,15 @@ run_store_contracts <- function() {
   missing <- tempfile("missing-journal-", tmpdir = state)
   expect(file.rename(b$path, missing), "Temporarily remove an indexed failure journal")
   rejects(read(), "cannot open")
+  expect(any(vapply(rr_requests(state), function(item) identical(item$path, b$path) && !is.null(item$error), logical(1))),
+    "A missing ownership journal remains protected recovery state")
   expect(file.rename(missing, b$path), "Restore the indexed failure journal")
+  unknown_record <- a$record; unknown_record$protocol <- rr_protocol + 1L
+  rr_write(a$path, unknown_record)
+  unknown_bytes <- rr_read(a$path)
+  rejects(rr_recover(state, a$record$id), "Unknown request version")
+  expect(identical(rr_read(a$path), unknown_bytes), "Unknown versions refuse recovery mutations")
+  rr_write(a$path, a$record)
   wrong_user <- read(); wrong_user$records[[1L]]$payload$user <- rr_uid() + 1L
   rr_with_lock(file.path(state, "evidence.lock"), rr_store_write(state, wrong_user))
   rejects(read(), "provenance/order")
@@ -191,6 +201,26 @@ run_store_contracts <- function() {
   retained <- rr_read_record(interrupted$path)
   expect(!cleaned && retained$state == "running" && retained$owned_capacity,
     "Interrupted observation writes preserve ownership before cleanup")
+  recovery <- rr_recover
+  environment(recovery) <- new.env(parent = environment(rr_recover))
+  environment(recovery)$rr_boot <- function() interrupted$record$boot
+  inspections <- 0L
+  environment(recovery)$rr_processes <- function() {
+    inspections <<- inspections + 1L
+    if (inspections == 2L) stop("Fixture final inspection unavailable")
+    list()
+  }
+  before_recovery <- rr_read(interrupted$path)
+  rejects(recovery(state, interrupted$record$id), "Fixture final inspection unavailable")
+  expect(inspections == 2L && identical(before_recovery, rr_read(interrupted$path)),
+    "A failed final shutdown observation cannot release ownership or rewrite its journal")
+  prior_boot <- make(1L)
+  prior_boot$record$state <- "recovery"; prior_boot$record$cleanup <- "unconfirmed"
+  prior_boot$record$authorized <- FALSE; prior_boot$record$owned_capacity <- TRUE
+  rr_write(prior_boot$path, prior_boot$record)
+  invisible(capture.output({ recovered <- rr_recover(state, prior_boot$record$id) }))
+  expect(recovered == 0L && rr_read_record(prior_boot$path)$outcome == 130L,
+    "Recovery after an earlier OS boot confirms interruption without running a check")
   cat("Repository runner observation, retirement, mixed-origin and key-store contracts passed.\n")
 }
 run_store_contracts()
@@ -256,13 +286,14 @@ dir.create(repo); dir.create(home)
 archive <- file.path(fixture, "source.tar")
 rr_git(candidate, "archive", "--format=tar", paste0("--output=", archive), "HEAD")
 utils::untar(archive, exdir = repo)
-for (path in c(rr_runner_sources, "tools/test-review-ready-runner.R", "tools/test-review-ready-inherited.R", "tools/review-ready-environment.R", "tools/review-ready-check.R", "tools/review-ready-check-lib.R")) {
+for (path in c(rr_runner_sources, "tools/test-review-ready-runner.R", "tools/test-review-ready-inherited.R", "tools/test-review-ready-capabilities.R", "tools/test-review-ready-migration.R", "tools/review-ready-environment.R", "tools/review-ready-check.R", "tools/review-ready-check-lib.R")) {
   file.copy(file.path(candidate, path), file.path(repo, path), overwrite = TRUE)
 }
 cat("\nrr_account_home <- function() ", deparse(home), "\n", file = file.path(repo, "tools/review-ready-core.R"), append = TRUE)
-cat('\nrr_environment <- function(root) list(digest = rr_digest(Sys.getenv("RR_FIXTURE_INPUT", "same")), clock = list(r = "4.6.1", checker = "2efcaa5190c038e60834bd5c4e502c82", timeout = "34ee7dea5eac7ba7138bd3c60651faee", leeway = 300), r = "4.6.1", libraries = list())\n',
+cat('\nrr_environment <- function(root) { mutable <- Sys.getenv("RR_FIXTURE_MUTABLE"); list(digest = rr_digest(list(input = Sys.getenv("RR_FIXTURE_INPUT", "same"), mutable = if (nzchar(mutable)) rr_hash(rr_read(mutable)) else NULL)), clock = list(r = "4.6.1", checker = "2efcaa5190c038e60834bd5c4e502c82", timeout = "34ee7dea5eac7ba7138bd3c60651faee", leeway = 300), r = "4.6.1", libraries = list()) }\n',
   file = file.path(repo, "tools/review-ready-evidence.R"), append = TRUE)
 cat(paste0('\nrr_renderer <- function() {\n',
+  ' if (Sys.getenv("RR_FIXTURE_MUTATE_BEFORE") == "yes" && Sys.getenv("MARGINPLYR_REVIEW_EPOCH") == "1") writeLines("Changed before validation", Sys.getenv("RR_FIXTURE_MUTABLE"))\n',
   ' if (Sys.getenv("RR_FIXTURE_WORKER_ACTION") == "promote" && Sys.getenv("MARGINPLYR_REVIEW_EPOCH") == "1") {\n',
   '  child <- processx::process$new(file.path(R.home("bin"), "Rscript"), c("-e", "Sys.sleep(60)"), cleanup = FALSE, supervise = FALSE)\n',
   '  writeLines(as.character(child$get_pid()), Sys.getenv("RR_FIXTURE_PREPARATION_PID"))\n',
@@ -279,15 +310,21 @@ cat(paste0('\nrr_write_fixture_original <- rr_write\n',
   ' if (nzchar(trigger) && file.exists(trigger) && basename(path) == "index.json") {\n',
   '  writeLines(path, paste0(trigger, ".ready")); rr_say("Fixture publication replacement prepared"); repeat Sys.sleep(.1)\n',
   ' }; invisible(result)\n}\n'), file = file.path(repo, "tools/review-ready-manager.R"), append = TRUE)
+cat(paste0('\nrr_cleanup_fixture_original <- rr_cleanup\n',
+  'rr_cleanup <- function(record, directory) {\n',
+  ' if (Sys.getenv("RR_FIXTURE_CLEANUP_FAIL") == "yes") rr_stop("Fixture cleanup failure")\n',
+  ' release <- Sys.getenv("RR_FIXTURE_CLEANUP_RELEASE")\n',
+  ' if (nzchar(release)) { rr_say("Fixture disposable cleanup waiting"); while (!file.exists(release)) Sys.sleep(.05) }\n',
+  ' rr_cleanup_fixture_original(record, directory)\n}\n'), file = file.path(repo, "tools/review-ready-manager.R"), append = TRUE)
 # This is an external package-check stand-in, never a real Full result. The
 # actual R entry/manager, Git, OS locks, signals, records and authentication run.
-writeLines(c(
+writeLines(c(readLines(file.path(candidate, "tools/review-ready-check-lib.R")),
+  'rr_fixture_read_selection <- read_review_ready_selection',
   'read_review_ready_selection <- function() {',
   '  transport <- Sys.getenv("RR_FIXTURE_TRANSPORT")',
   '  if (transport == "missing") unlink(Sys.getenv("MARGINPLYR_REVIEW_SELECTION"))',
   '  if (transport == "replaced") writeLines("Path: Repository", Sys.getenv("MARGINPLYR_REVIEW_SELECTION"))',
-  '  status <- system2(file.path(R.home("bin"), "Rscript"), c(shQuote(Sys.getenv("MARGINPLYR_REVIEW_SUPERVISOR")), "--gate-proof"))',
-  '  if (status) stop("Proof refused")',
+  '  rr_fixture_read_selection()',
   '  jsonlite::fromJSON(Sys.getenv("MARGINPLYR_REVIEW_RECORD"), simplifyVector = FALSE)$record$selection',
   '}',
   'review_ready_check_cli <- function(args, expected_root, selection, diagnostic_root, accepted_root) {',
@@ -295,6 +332,15 @@ writeLines(c(
   '  record <- jsonlite::fromJSON(Sys.getenv("MARGINPLYR_REVIEW_RECORD"), simplifyVector = FALSE)$record',
   '  survivor <- Sys.getenv("RR_FIXTURE_SURVIVOR")',
   '  if (nzchar(survivor)) { child <- processx::process$new("/bin/sleep", "60", cleanup = FALSE, supervise = FALSE); writeLines(as.character(child$get_pid()), survivor) }',
+  '  detached <- Sys.getenv("RR_FIXTURE_DETACHED")',
+  '  if (nzchar(detached)) {',
+  '    code <- paste0("args <- commandArgs(TRUE); ",',
+  '      if (Sys.getenv("RR_FIXTURE_RESISTANT") == "yes") "dll <- dyn.load(args[[3L]]); invisible(.Call(getDLLRegisteredRoutines(dll)$.Call$install_signals)); " else "",',
+  '      "writeLines(as.character(Sys.getpid()), args[[1L]]); while (!file.exists(args[[2L]])) Sys.sleep(.05)")',
+  '    child <- processx::process$new(file.path(R.home("bin"), "Rscript"), c("-e", code, detached, paste0(detached, ".release"),',
+  '      file.path(record$workspace, "signals", paste0("review_ready_signals", .Platform$dynlib.ext))), cleanup = FALSE, supervise = FALSE)',
+  '    while (!file.exists(detached)) Sys.sleep(.05)',
+  '  }',
   '  cat("FIXTURE GATE STARTED\\n"); flush.console()',
   '  release <- Sys.getenv("RR_FIXTURE_RELEASE")',
   '  if (nzchar(release)) { while (!file.exists(release)) Sys.sleep(0.05) } else Sys.sleep(as.numeric(Sys.getenv("RR_FIXTURE_SECONDS", "0.1")))',
@@ -306,6 +352,7 @@ writeLines(c(
   '    check=c(attempt,list(args=as.list(c("--as-cran",if(selection$path=="Documentation") "--no-tests")),attempts=list(attempt))))',
   '  if (Sys.getenv("RR_FIXTURE_GATE_STATUS") == "1" && length(units)) report$units[[units[[1L]]]] <- "running"',
   '  writeLines(jsonlite::toJSON(report, auto_unbox=TRUE, null="null", digits=NA), Sys.getenv("MARGINPLYR_REVIEW_STAGE_REPORT"))',
+  '  if (Sys.getenv("RR_FIXTURE_MUTATE_AFTER") == "yes") writeLines("Changed during validation", Sys.getenv("RR_FIXTURE_MUTABLE"))',
   '  trigger <- Sys.getenv("RR_FIXTURE_PUBLICATION_TRIGGER"); if (nzchar(trigger)) file.create(trigger)',
   '  cat("FIXTURE GATE FINISHED\\n")',
   '  as.integer(Sys.getenv("RR_FIXTURE_GATE_STATUS", "0"))',
@@ -368,6 +415,17 @@ unknown <- invoke("--skip")
 expect(unknown$status != 0L && grepl("Use no arguments", unknown$stdout), "No caller-selected skip")
 
 accepted <- rr_git(repo, "rev-parse", "main")
+submitted <- rr_git(repo, "rev-parse", "HEAD")
+rr_git(repo, "rm", "--quiet", "tools/review-ready-progress.R")
+rr_git(repo, "commit", "-qm", "Missing required candidate source")
+missing_source <- invoke()
+unfinished_setup <- rr_requests(state)
+expect(missing_source$status == 2L && length(unfinished_setup) == 1L && !is.null(unfinished_setup[[1L]]$record),
+  "Missing candidate contract sources retain recoverable setup ownership")
+setup_recovery <- invoke(c("--recover", unfinished_setup[[1L]]$record$id))
+expect(setup_recovery$status == 0L && grepl("No check was run", setup_recovery$stdout, fixed = TRUE),
+  "Missing-source setup can be recovered without the missing helper")
+rr_git(repo, "checkout", "--quiet", "--detach", submitted)
 empty <- rr_select(repo, accepted, accepted)
 expect(empty$path == "Full" && identical(empty$base, accepted), "Empty valid difference keeps its established base under Full")
 rr_git(repo, "update-ref", "-d", "refs/heads/main")
@@ -397,11 +455,12 @@ rr_git(clone, "update-ref", "refs/heads/main", accepted)
 cross_clone <- invoke(root = clone)
 expect(cross_clone$status == 0L && grepl(paste0('"request":"', record$id, '"'), cross_clone$stdout, fixed = TRUE), "Cross-clone reuse retains original execution")
 clone_head <- rr_git(clone, "rev-parse", "HEAD")
-rr_git(clone, "checkout", "--quiet", "--orphan", "unrelated-origin")
-rr_git(clone, "add", "."); rr_git(clone, "commit", "-qm", "Same tree without ancestor provenance")
+rr_git(clone, "checkout", "--quiet", "--detach", accepted)
+rr_git(clone, "read-tree", "--reset", "-u", clone_head)
+rr_git(clone, "commit", "-qm", "Same tree on a sibling without executing ancestor provenance")
 nonancestor <- invoke(root = clone)
 expect(nonancestor$status == 0L && grepl('"build-full":{"action":"execute"}', nonancestor$stdout, fixed = TRUE),
-  "An identical tree without the executing ancestor cannot reuse its origin")
+  paste("An identical tree without the executing ancestor cannot reuse its origin:", nonancestor$stdout, nonancestor$stderr))
 rr_git(clone, "checkout", "--quiet", "--detach", clone_head)
 rr_git(clone, "remote", "set-url", "origin", "https://github.com/fixture/another-repository.git")
 different_repository <- invoke(root = clone)
@@ -413,6 +472,19 @@ for (transport in c("missing", "replaced")) {
   expect(damaged$status != 0L && !grepl("FIXTURE GATE STARTED", damaged$stdout, fixed = TRUE),
     paste("Invalid transport cannot authorize or fall back to Full:", transport))
 }
+mutable <- file.path(fixture, "mutable-environment")
+writeLines("Original", mutable)
+mutable_env <- c(RR_FIXTURE_INPUT = "mutable-environment", RR_FIXTURE_MUTABLE = mutable)
+expect(invoke(extra = mutable_env)$status == 0L, "Establish a mutable-environment execution origin")
+changed_during <- invoke(extra = c(mutable_env, RR_FIXTURE_MUTATE_AFTER = "yes"))
+expect(changed_during$status == 1L && !grepl('"target":"Full"', changed_during$stdout, fixed = TRUE),
+  "An environment change during reused validation fails without replacing the gate with Full")
+writeLines("Original", mutable)
+changed_before <- invoke(extra = c(mutable_env, RR_FIXTURE_MUTATE_BEFORE = "yes"))
+changed_id <- regmatches(changed_before$stdout, regexec("Review-ready request: ([0-9a-f]{32});", changed_before$stdout))[[1L]][[2L]]
+changed_record <- rr_read_record(file.path(state, "requests", changed_id, "record.json"))
+expect(changed_before$status == 0L && changed_record$epoch == 2L && length(changed_record$promotions) == 1L,
+  "Pre-gate loss of reused eligibility strengthens the same request to admitted Full execution")
 baseline <- invoke(extra = c(RR_FIXTURE_INPUT = "negative-observation"))
 expect(baseline$status == 0L, "A new environment establishes its own fixture origin")
 failure <- invoke(extra = c(RR_FIXTURE_INPUT = "negative-observation", RR_FIXTURE_FORCE_EXECUTION = "yes", RR_FIXTURE_GATE_STATUS = "1"))
@@ -421,10 +493,11 @@ after_failure <- invoke(extra = c(RR_FIXTURE_INPUT = "negative-observation"))
 expect(after_failure$status == 0L && grepl('"build-full":{"action":"execute"}', after_failure$stdout, fixed = TRUE),
   "A later same-input failed stage vetoes the older pass")
 
-start <- function(root = repo, seconds = "20", input = "cancel", release = "", survivor = "", action = "", preparation = "", publication = "") {
+start <- function(root = repo, seconds = "20", input = "cancel", release = "", survivor = "", action = "", preparation = "", publication = "", cleanup = "", detached = "", resistant = "") {
   environment <- c(Sys.getenv(), RR_FIXTURE_SECONDS = seconds, RR_FIXTURE_INPUT = input, RR_FIXTURE_RELEASE = release,
     RR_FIXTURE_SURVIVOR = survivor, RR_FIXTURE_WORKER_ACTION = action, RR_FIXTURE_PREPARATION_PID = preparation,
-    RR_FIXTURE_PUBLICATION_TRIGGER = publication)
+    RR_FIXTURE_PUBLICATION_TRIGGER = publication, RR_FIXTURE_CLEANUP_RELEASE = cleanup,
+    RR_FIXTURE_DETACHED = detached, RR_FIXTURE_RESISTANT = resistant)
   environment <- environment[!duplicated(names(environment), fromLast = TRUE)]
   log <- file.path(fixture, paste0("job-", length(jobs), ".log"))
   job <- processx::process$new(file.path(R.home("bin"), "Rscript"), "tools/review-ready.R",
@@ -445,11 +518,63 @@ finish <- function(run, status) {
   run$job$wait(45000)
   expect(identical(run$job$get_exit_status(), status), paste("Fixture terminal exit:", rr_text(run$log)))
 }
+cached_cancel <- start(input = "same", release = file.path(fixture, "never-cached-release"))
+until(cached_cancel, "FIXTURE GATE STARTED")
+cached_record <- Filter(function(item) !is.null(item$record) && item$record$state == "running", rr_requests(state))[[1L]]$record
+expect(cached_record$capacity == "exempt" && cached_record$selection$plan$units[["build-full"]]$action == "reuse",
+  "Cached Full work runs under independent supervision")
+cached_cancel$job$signal(15L)
+finish(cached_cancel, 130L)
+after_cached_cancel <- invoke()
+expect(after_cached_cancel$status == 0L && grepl(paste0('"request":"', cached_record$selection$plan$units[["build-full"]]$request, '"'), after_cached_cancel$stdout, fixed = TRUE),
+  "Reused cancellation retains exit 130 and the original executing origin")
+failed_cleanup <- invoke(extra = c(RR_FIXTURE_INPUT = "same", RR_FIXTURE_FORCE_EXECUTION = "yes",
+  RR_FIXTURE_GATE_STATUS = "1", RR_FIXTURE_CLEANUP_FAIL = "yes"))
+expect(failed_cleanup$status == 2L, "Cleanup failure retains unfinished ownership")
+cleanup_record <- Filter(function(item) !is.null(item$record) && item$record$state == "recovery", rr_requests(state))[[1L]]$record
+expect(cleanup_record$owned_capacity && cleanup_record$cleanup == "unconfirmed", "Failed current cleanup cannot release confirmed Full ownership")
+cleanup_recovery <- invoke(c("--recover", cleanup_record$id), root = clone)
+expect(cleanup_recovery$status == 0L && grepl("No check was run", cleanup_recovery$stdout, fixed = TRUE),
+  "Recovery completes failed cleanup without a successful execution")
+after_cleanup <- invoke()
+expect(after_cleanup$status == 0L && grepl('"build-full":{"action":"execute"}', after_cleanup$stdout, fixed = TRUE),
+  "A failed stage survives cleanup failure and recovery to veto the earlier pass")
+cleanup_release <- file.path(fixture, "cleanup-release")
+cleaning <- start(seconds = ".1", input = "cleanup-holder", cleanup = cleanup_release)
+until(cleaning, "Fixture disposable cleanup waiting")
+live_record <- Filter(function(item) !is.null(item$record) && item$record$state == "running", rr_requests(state))[[1L]]$record
+expect(invoke(c("--recover", live_record$id), root = clone)$status == 4L && cleaning$job$is_alive(),
+  "Recovery refuses a live manager without signalling it")
+cleanup_waiter <- start(seconds = ".1", input = "cleanup-waiter")
+until(cleanup_waiter, "Waiting for Review-ready capacity")
+expect(!grepl("FIXTURE GATE STARTED", rr_text(cleanup_waiter$log), fixed = TRUE), "Full capacity remains held through disposable-source cleanup")
+file.create(cleanup_release)
+finish(cleaning, 0L); finish(cleanup_waiter, 0L)
 cancel <- start()
 until(cancel, "FIXTURE GATE STARTED")
 cancel$job$signal(15L)
 finish(cancel, 130L)
 expect(grepl("cleanup: confirmed", rr_text(cancel$log), fixed=TRUE), "SIGTERM cancellation confirms cleanup")
+detached_path <- file.path(fixture, "detached.pid")
+detached <- start(seconds = ".1", input = "detached-parent-exit", detached = detached_path)
+until(detached, "FIXTURE GATE FINISHED")
+detached$job$wait(500)
+slot <- rr_lock(file.path(state, "admission.lock"))
+if (!is.null(slot)) filelock::unlock(slot)
+expect(detached$job$is_alive() && is.null(slot), "A normal parent exit retains Full capacity while its detached child writes")
+file.create(paste0(detached_path, ".release"))
+finish(detached, 0L)
+sentinel <- processx::process$new(file.path(R.home("bin"), "Rscript"), c("-e", "Sys.sleep(60)"), cleanup = TRUE)
+jobs[[length(jobs) + 1L]] <- sentinel
+resistant_path <- file.path(fixture, "resistant.pid")
+resistant <- start(seconds = "20", input = "resistant-child", detached = resistant_path, resistant = "yes")
+until(resistant, "FIXTURE GATE STARTED")
+resistant_pid <- as.integer(readLines(resistant_path))
+resistant$job$signal(15L)
+finish(resistant, 130L)
+resistant_stopped <- tryCatch(ps::ps_status(ps::ps_handle(resistant_pid)) %in% c("zombie", "dead"), no_such_process = function(e) TRUE)
+expect(resistant_stopped && sentinel$is_alive(), "TERM-resistant owned work stops without signalling an unrelated process")
+sentinel$kill(); sentinel$wait()
 
 # Concurrent real managers use one Full lock; supported prose is independent.
 rr_git(clone, "checkout", "--quiet", "-b", "prose", accepted)
@@ -458,6 +583,7 @@ rr_git(clone, "add", "."); rr_git(clone, "commit", "-qm", "Repository fixture")
 release <- file.path(fixture, "release")
 active <- start(input = "concurrency", release = release)
 until(active, "FIXTURE GATE STARTED")
+rr_git(repo, "update-ref", "refs/heads/main", rr_git(repo, "rev-parse", "HEAD"))
 waiting <- start(seconds = "0.1", input = "concurrency")
 until(waiting, "Waiting for Review-ready capacity")
 limited <- invoke(root = clone)
@@ -466,6 +592,10 @@ waiting$job$signal(1L)
 finish(waiting, 130L)
 file.create(release)
 finish(active, 0L)
+active_record <- Filter(function(item) !is.null(item$record) && identical(item$record$manager$pid, active$job$get_pid()), rr_requests(state, active = FALSE))[[1L]]$record
+expect(identical(active_record$main, accepted) && identical(active_record$selection$base, accepted),
+  "A later main update cannot replace an admitted request's pinned authority or comparison")
+rr_git(repo, "update-ref", "refs/heads/main", accepted)
 
 promotion_release <- file.path(fixture, "promotion-release")
 preparation <- file.path(fixture, "preparation.pid")
@@ -495,6 +625,13 @@ until(stale, "Waiting for Review-ready capacity")
 writeLines("Dirty while waiting", file.path(clone, "UNTRACKED"))
 finish(stale, 3L)
 unlink(file.path(clone, "UNTRACKED"))
+clean_stale <- start(root = clone, input = "promotion-clean-stale", action = "promote",
+  preparation = file.path(fixture, "clean-stale-preparation.pid"))
+until(clean_stale, "Waiting for Review-ready capacity")
+clean_head <- rr_git(clone, "rev-parse", "HEAD")
+rr_git(clone, "checkout", "--quiet", "--detach", accepted)
+finish(clean_stale, 3L)
+rr_git(clone, "checkout", "--quiet", "--detach", clean_head)
 file.create(promotion_release)
 finish(promoted, 0L)
 
@@ -537,6 +674,27 @@ expect(documentation$status == 0L && grepl('"path":"Documentation"', documentati
     grepl('"build-documentation"', documentation$stdout, fixed=TRUE),
   paste("Documentation selects its own independent package boundary:", documentation$stdout, documentation$stderr))
 
+parent_log <- file.path(fixture, "management-parent.log")
+parent_environment <- c(Sys.getenv(), RR_FIXTURE_INPUT = "management-parent", RR_FIXTURE_SECONDS = "60")
+parent_environment <- parent_environment[!duplicated(names(parent_environment), fromLast = TRUE)]
+parent_code <- paste0('args <- commandArgs(TRUE); child <- processx::process$new(file.path(R.home("bin"), "Rscript"), ',
+  '"tools/review-ready.R", wd=args[[1L]], stdout=args[[2L]], stderr="2>&1", cleanup=FALSE, supervise=FALSE); repeat Sys.sleep(.05)')
+parent <- processx::process$new(file.path(R.home("bin"), "Rscript"), c("-e", parent_code, repo, parent_log),
+  env = parent_environment, cleanup = TRUE)
+jobs[[length(jobs) + 1L]] <- parent
+parent_run <- list(job = parent, log = parent_log)
+until(parent_run, "FIXTURE GATE STARTED")
+parent_record <- Filter(function(item) !is.null(item$record) && item$record$state == "running", rr_requests(state))[[1L]]
+parent$kill(); parent$wait()
+deadline <- rr_now() + 45
+repeat {
+  observed <- rr_read_record(parent_record$path)
+  if (observed$state == "terminal" || rr_now() >= deadline) break
+  Sys.sleep(0.1)
+}
+expect(observed$state == "terminal" && observed$outcome == 130L && observed$cleanup == "confirmed" &&
+    !length(rr_owned(rr_processes(), observed)), "Management-parent termination cancels and collects the request's owned work")
+
 death <- start(input = "manager-death", release = file.path(fixture, "never-release"), survivor = file.path(fixture, "survivor.pid"))
 until(death, "FIXTURE GATE STARTED")
 death$job$kill()
@@ -545,6 +703,7 @@ unfinished <- Filter(function(item) !is.null(item$record) && item$record$state !
 expect(length(unfinished) == 1L, "Manager death retains one recoverable request")
 interrupted <- unfinished[[1L]]$record
 expect(invoke(c("--recover", interrupted$id), root = clone)$status != 0L, "Surviving owned child prevents recovery")
+expect(invoke()$status == 4L, "A killed manager's surviving work blocks another Full admission")
 for (attempt in 1:100) {
   table <- rr_processes(); owned <- rr_owned(table, interrupted)
   if (!length(owned)) break
@@ -606,6 +765,7 @@ renewal$key_created <- rr_now() - rr_week
 old_key <- renewal$key
 renewal <- rr_store_retire(renewal, character())
 expect(!identical(old_key, renewal$key) && rr_same(renewal$records, value$records), "Key renewal preserves evidence and original deadlines")
+run_migration_contracts(repo, home, state)
 cat("Repository runner authority, cross-clone, cancellation, concurrency and expiry contracts passed.\n")
 cat("Repository runner process lifecycle and reuse contracts passed.\n")
 }

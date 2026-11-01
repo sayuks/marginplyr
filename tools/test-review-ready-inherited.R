@@ -76,9 +76,17 @@ run_inherited_value_contracts <- function() {
   names(table) <- as.character(Sys.getpid())
   record <- list(token = "owned", children = list(modifyList(identity, list(birth = "2.000000"))), group = NULL)
   expect(!length(rr_owned(table, record)), "A reused PID is not an owned process")
+  record$children <- list(identity)
+  expect(identical(rr_owned(table, record), as.character(Sys.getpid())),
+    "A recorded detached identity stays owned without its environment marker")
+  record$children <- list()
   record$group <- 321L
   rejects(rr_owned(table, record), "no confirmed owned member")
   rejects(rr_alive(list(pid = -1L, birth = "invalid")), "Invalid process identity")
+  inspect <- rr_processes
+  environment(inspect) <- new.env(parent = environment(rr_processes))
+  environment(inspect)$rr_uid <- function() -1L
+  rejects(inspect(), "Incomplete process inspection")
   cat("Inherited clock, NOTE/retry, metadata, expectation and PID contracts passed.\n")
 }
 run_inherited_value_contracts()
@@ -187,6 +195,17 @@ run_selection_contracts <- function() {
     "Unavailable comparisons retain unresolved artifact verification")
   empty <- rr_select(root, base, base)
   expect(empty$path == "Full" && identical(empty$base, base), "Empty known differences retain Full and their real base")
+  unavailable <- rr_select
+  environment(unavailable) <- new.env(parent = environment(rr_select))
+  for (bytes in list(charToRaw("unterminated"), c(charToRaw("unclassifiable"), as.raw(0)))) {
+    environment(unavailable)$rr_git_raw <- function(...) bytes
+    result <- unavailable(root, reverted, base)
+    expect(result$path == "Full" && is.null(result$base) && "tools/verify-ci-artifacts.py" %in% unlist(result$verifiers),
+      "Malformed raw comparisons retain unresolved verification without inventing a base")
+  }
+  environment(unavailable)$rr_git <- function(...) paste(base, base, sep = "\n")
+  result <- unavailable(root, reverted, base)
+  expect(result$path == "Full" && is.null(result$base), "Ambiguous merge-bases cannot provide a verification base")
 
   external <- file.path(root, "installed-library")
   rr_mkdir(external); writeLines("Version: 1.0", file.path(external, "DESCRIPTION"))
@@ -243,6 +262,15 @@ run_control_contracts <- function() {
   expect(!send(limited, "promote")$reply$ok, "Started validation cannot be replaced by Full promotion")
   expect(!send(begun$record, "discard-reuse")$reply$ok, "Started validation cannot discard reused obligations")
   expect(!send(initial, "resolve-documentation")$reply$ok, "Absent documentation proof cannot resolve its selection")
+  pending <- initial
+  pending$selection$path <- "Documentation"; pending$selection$roxygen_pending <- TRUE
+  pending$selection$base <- paste(rep("b", 40), collapse = "")
+  pending$selection$verifiers <- list("tools/verify-ci-artifacts.py")
+  writeLines("Documentation", file.path(initial$workspace, "roxygen-path"))
+  resolved <- send(pending, "resolve-documentation")
+  expected <- pending; expected$selection$roxygen_pending <- FALSE
+  expect(resolved$reply$ok && rr_same(resolved$record, expected),
+    "Resolving documentation preserves request, token, epoch, pinned base, plan and CI routes")
   cat("Inherited authenticated control, transport and promotion boundaries passed.\n")
 }
 run_control_contracts()

@@ -349,7 +349,7 @@ rr_finish <- function(state, path, record, status) {
     rr_say("Stage observation unavailable: ", conditionMessage(e))
     NULL
   })
-  if (record$authorized && is.null(observation) && length(rr_reused(record$selection))) status <- 1L
+  if (status == 0L && record$authorized && is.null(observation) && length(rr_reused(record$selection))) status <- 1L
   completed <- unlist(worker$report$completed, use.names = FALSE)
   artifacts <- setdiff(unlist(record$selection$verifiers), if ("generation" %in% rr_reused(record$selection)) "tools/review-ready-generated.R")
   required <- c("Package spelling", "jarl", "package-aware lintr", if (length(artifacts)) paste("Artifact verification:", artifacts))
@@ -357,7 +357,7 @@ rr_finish <- function(state, path, record, status) {
   executed <- names(Filter(function(unit) unit$action == "execute", record$selection$plan$units))
   complete <- identical(worker$report$request, record$token) && all(required %in% completed) &&
     all(vapply(executed, function(unit) identical(worker$report$units[[unit]], "passed"), logical(1)))
-  if (!complete && length(rr_reused(record$selection))) status <- 1L
+  if (status == 0L && !complete && length(rr_reused(record$selection))) status <- 1L
   rr_cleanup(record, dirname(path))
   record$state <- "terminal"; record$cleanup <- "confirmed"; record$outcome <- status
   record$finished <- rr_now(); record$owned_capacity <- FALSE
@@ -372,9 +372,9 @@ rr_finish <- function(state, path, record, status) {
     }, error = function(e) {
       if (inherits(e, "marginplyr_review_publication_error")) stop(e)
       rr_say("Terminal evidence unavailable: ", conditionMessage(e))
-      if (length(rr_reused(record$selection))) { status <<- 1L; record$outcome <<- 1L; rr_write(path, record) }
+      if (status == 0L && length(rr_reused(record$selection))) { status <<- 1L; record$outcome <<- 1L; rr_write(path, record) }
     })
-  } else if (length(rr_reused(record$selection))) {
+  } else if (status == 0L && length(rr_reused(record$selection))) {
     status <- 1L; record$outcome <- status; rr_write(path, record)
   }
   rr_say("Review-ready terminal outcome: ", status, "; request: ", record$id, "; checked commit: ", record$sha,
@@ -475,33 +475,22 @@ rr_main <- function(identity, main) {
   rr_auto_recover(state)
   tryCatch(rr_maintenance(state), error = function(e) rr_say("Evidence maintenance unavailable; reuse disabled: ", conditionMessage(e)))
   id <- rr_id()
+  token <- rr_id(); boot <- rr_boot(); manager <- rr_process(); started <- rr_now()
   directory <- rr_mkdir(file.path(state, "requests", id))
   lock <- rr_lock(file.path(directory, "manager.lock"))
   if (is.null(lock)) rr_stop("Cannot acquire new request ownership.")
   on.exit(filelock::unlock(lock), add = TRUE)
-  for (child in c("logs", "diagnostics", "work", "tmp", "cache")) rr_mkdir(file.path(directory, child))
-  previous_options <- options(marginplyr.review.tmp = file.path(directory, "tmp"))
-  on.exit(options(previous_options), add = TRUE)
   root <- identity$root; sha <- identity$sha
-  selection <- rr_select(root, sha, main)
+  selection <- list(submitted = sha, main = main, base = NULL, path = "Full",
+    reasons = list("Preparing accepted workload registration."), verifiers = rr_reference_checks)
   selection$plan <- rr_execute_plan(selection)
-  trust <- unique(c(rr_runner_sources, unlist(rr_core_sources), "tools/test-review-ready-runner.R"))
-  core_changed <- !identical(rr_capabilities(root, main, trust), rr_capabilities(root, sha, trust))
-  if (core_changed) {
-    selection$path <- "Full"; selection$roxygen_pending <- FALSE
-    selection$verifiers <- as.list(union(unlist(selection$verifiers), "tools/test-review-ready-runner.R"))
-    selection$reasons <- c(selection$reasons, list("Trust core differs: pinned main owns the outer Full supervisor and gate."))
-    selection$plan <- rr_execute_plan(selection, "Changed trust core")
-  }
-  record <- list(version = 3L, protocol = rr_protocol, id = id, token = rr_id(), sha = sha, root = root,
-    boot = rr_boot(), manager = rr_process(), group = NULL, children = list(), started = rr_now(),
+  record <- list(version = 3L, protocol = rr_protocol, id = id, token = token, sha = sha, root = root,
+    boot = boot, manager = manager, group = NULL, children = list(), started = started,
     selection = selection, state = "preparing", capacity = "Full", may_own_full = FALSE, owned_capacity = FALSE,
     epoch = 1L, authorized = FALSE, gate_started = FALSE, promotions = list(), workspace = file.path(directory, "work"),
-    cleanup = "pending", repository = rr_repository(root), main = main, core_changed = core_changed,
-    launcher = rr_digest(rr_capabilities(root, main, rr_runner_sources)))
+    cleanup = "pending", repository = NULL, main = main, core_changed = FALSE, launcher = NULL)
   path <- file.path(directory, "record.json")
   # Even setup child processes have recovery metadata before they can start.
-  record$capacity <- if (rr_full_required(selection)) "Full" else "exempt"
   rr_write(path, record)
   rr_say("Review-ready request: ", id, "; management record: ", path)
   capacity <- NULL; signals <- NULL; finalized <- FALSE
@@ -517,6 +506,9 @@ rr_main <- function(identity, main) {
     }
     if (!is.null(capacity)) filelock::unlock(capacity)
   }, add = TRUE)
+  for (child in c("logs", "diagnostics", "work", "tmp", "cache")) rr_mkdir(file.path(directory, child))
+  previous_options <- options(marginplyr.review.tmp = file.path(directory, "tmp"))
+  on.exit(options(previous_options), add = TRUE)
   authority <- file.path(record$workspace, "authority")
   environment <- rr_render_env(directory)
   environment[["MARGINPLYR_REVIEW_REQUEST"]] <- record$token
@@ -525,6 +517,21 @@ rr_main <- function(identity, main) {
   environment[["MARGINPLYR_REVIEW_SUPERVISOR"]] <- file.path(authority, "tools/review-ready.R")
   previous_environment <- options(marginplyr.review.env = environment)
   on.exit(options(previous_environment), add = TRUE)
+  selection <- rr_select(root, sha, main)
+  selection$plan <- rr_execute_plan(selection)
+  trust <- unique(c(rr_runner_sources, unlist(rr_core_sources), "tools/test-review-ready-runner.R"))
+  core_changed <- !identical(rr_capabilities(root, main, trust), rr_capabilities(root, sha, trust))
+  if (core_changed) {
+    selection$path <- "Full"; selection$roxygen_pending <- FALSE
+    selection$verifiers <- as.list(union(unlist(selection$verifiers), "tools/test-review-ready-runner.R"))
+    selection$reasons <- c(selection$reasons, list("Trust core differs: pinned main owns the outer Full supervisor and gate."))
+    selection$plan <- rr_execute_plan(selection, "Changed trust core")
+  }
+  record$selection <- selection
+  record$capacity <- if (rr_full_required(selection)) "Full" else "exempt"
+  record$core_changed <- core_changed
+  record$repository <- rr_repository(root)
+  record$launcher <- rr_digest(rr_capabilities(root, main, rr_runner_sources))
   record$authority <- rr_materialize_authority(root, main, authority)
   rr_write(path, record)
   rr_check_authority(record)
