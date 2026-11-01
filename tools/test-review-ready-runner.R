@@ -18,6 +18,7 @@ rejects <- function(code, pattern) {
 source(file.path(fixture_root, "tools/test-review-ready-inherited.R"))
 source(file.path(fixture_root, "tools/test-review-ready-capabilities.R"))
 source(file.path(fixture_root, "tools/test-review-ready-migration.R"))
+source(file.path(fixture_root, "tools/test-review-ready-renderer-compatibility.R"))
 
 # These known answers come from SHA-256 and RFC 4231, independently of the store.
 expect(identical(rr_hash(charToRaw("abc")),
@@ -286,7 +287,7 @@ dir.create(repo); dir.create(home)
 archive <- file.path(fixture, "source.tar")
 rr_git(candidate, "archive", "--format=tar", paste0("--output=", archive), "HEAD")
 utils::untar(archive, exdir = repo)
-for (path in c(rr_runner_sources, "tools/test-review-ready-runner.R", "tools/test-review-ready-inherited.R", "tools/test-review-ready-capabilities.R", "tools/test-review-ready-migration.R", "tools/review-ready-environment.R", "tools/review-ready-check.R", "tools/review-ready-check-lib.R")) {
+for (path in c(rr_runner_sources, "tools/test-review-ready-runner.R", "tools/test-review-ready-inherited.R", "tools/test-review-ready-capabilities.R", "tools/test-review-ready-migration.R", "tools/test-review-ready-renderer-compatibility.R", "tools/review-ready-environment.R", "tools/review-ready-check.R", "tools/review-ready-check-lib.R")) {
   file.copy(file.path(candidate, path), file.path(repo, path), overwrite = TRUE)
 }
 cat("\nrr_account_home <- function() ", deparse(home), "\n", file = file.path(repo, "tools/review-ready-core.R"), append = TRUE)

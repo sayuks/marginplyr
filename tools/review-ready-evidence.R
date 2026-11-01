@@ -549,7 +549,7 @@ rr_snapshot <- function(root, sha, units) {
   list(environment = rr_environment(root), sources = stats::setNames(as.list(rep(source, length(units))), units))
 }
 
-# v1 registers the audited Quarto app-directory implementations below.
+# Request storage roles are independent of renderer versions and cache layouts.
 # Fresh private caches are outputs, not reusable inputs. Only these exact role
 # assignments are normalized; arbitrary HOME/cache overrides remain inputs.
 rr_render_env <- function(directory, values = rr_child_env()) {
@@ -598,21 +598,81 @@ rr_normalize_environment <- function(values) {
   trees <- names(values)[rr_match("PROCESSX_PS[0-9a-f]+_[0-9]+", names(values)) & values == "YES"]
   as.list(values[!names(values) %in% c(internal, trees)])
 }
-rr_renderer <- function() {
+# Queries renderer capabilities and storage in the request's private environment.
+rr_renderer_query <- function(command, args, directory, values) {
+  tryCatch({
+    result <- processx::run(command, args, wd = directory, env = values,
+      error_on_status = FALSE, timeout = 15, cleanup_tree = TRUE)
+    if (result$status != 0L) rr_stop(trimws(paste(result$stderr, result$stdout)))
+    result
+  }, error = function(e) rr_stop("Quarto capability query ", paste(args, collapse = " "), ": ", conditionMessage(e)))
+}
+rr_renderer_location <- function(path, directory, role, label) {
+  boundary <- file.path(directory, role)
+  valid <- is.character(path) && length(path) == 1L && !is.na(path) &&
+    (identical(path, boundary) || startsWith(path, paste0(boundary, "/")))
+  if (!isTRUE(valid)) rr_stop(label, " isolation failed: ", rr_json(path), "; expected a location inside ", boundary)
+  tryCatch({
+    rr_owned_path(path, directory)
+    normalizePath(path, mustWork = TRUE)
+  }, error = function(e) rr_stop(label, " isolation failed: ", conditionMessage(e)))
+}
+rr_renderer <- function(values = rr_child_env()) {
   quarto <- unname(Sys.which("quarto"))
   if (!nzchar(quarto)) rr_stop("Renderer isolation requires Quarto.")
   quarto <- normalizePath(quarto, mustWork = TRUE)
-  version <- trimws(rr_run(quarto, "--version")$stdout)
-  registered <- list(
-    `1.10.18` = c(Darwin = "b5546c2b78d5c78ca88cab8b950b7e2a831b0f117c878ca893764de2a536baac",
-      Linux = "34f291359d2fc61c308193e546b76efba6f0ffcd74d1d3be0ae9264f30ce6b1d"),
-    `1.10.20` = c(Darwin = "7e1ff90e63dd86bd15f0ecc0c70c54aff5f2342da086840ea77361751d2e90fd",
-      Linux = "252c3e1f5df36c2f3d6bed1f1dc415fb72ece460dbe9aa13efccbafdbadb4482"))[[version]]
-  if (is.null(registered)) rr_stop("Unregistered Quarto app/cache isolation: ", version, "; update the renderer contract.")
+  directory <- values[["MARGINPLYR_REVIEW_ISOLATION"]]
+  if (is.null(directory) || !startsWith(directory, "/")) rr_stop("Quarto capability inspection requires a private request environment.")
+  directory <- normalizePath(directory, mustWork = TRUE)
+  work <- rr_mkdir(file.path(directory, "work"))
+  probe <- rr_mkdir(tempfile("renderer-capabilities-", tmpdir = work))
+  on.exit(rr_remove(probe, directory), add = TRUE)
+  query <- function(args) rr_renderer_query(quarto, args, probe, values)
+  executable <- rr_file_identity(quarto)
+  version <- trimws(query("--version")$stdout)
+  if (!nzchar(version)) rr_stop("Quarto did not report its actual version for evidence.")
+  help <- query(c("render", "--help"))$stdout
+  if (!all(vapply(c("--to", "--output"), function(flag) grepl(paste0(flag, "([[:space:]=<]|$)"), help), logical(1))))
+    rr_stop("Quarto render lacks required --to or --output functionality.")
+  pandoc <- trimws(query(c("pandoc", "--version"))$stdout)
+  if (!nzchar(pandoc)) rr_stop("Quarto cannot report its selected Pandoc implementation.")
+  info <- file.path(probe, "quarto-info.json")
+  query(c("check", "info", "--output", info, "--no-strict"))
+  if (!file.exists(info)) rr_stop("Quarto check info does not expose resolved cache storage as JSON.")
+  metadata <- tryCatch(rr_read_json(info), error = function(e) rr_stop("Quarto cache metadata unavailable: ", conditionMessage(e)))
+  if (!is.list(metadata) || !is.list(metadata$info)) rr_stop("Quarto cache metadata lacks info.cacheDir; private storage cannot be established.")
+  cache <- rr_renderer_location(metadata$info$cacheDir, directory, "cache", "Quarto cache")
+  script <- file.path(probe, "runtime.ts")
+  writeLines(c(
+    'const temporary = await Deno.makeTempDir();',
+    'const result = await new Deno.Command(Deno.execPath(), {args: ["info", "--json"], stdout: "piped", stderr: "piped"}).output();',
+    'if (!result.success) throw new Error("Deno cannot report its cache location");',
+    'const info = JSON.parse(new TextDecoder().decode(result.stdout));',
+    'console.log(JSON.stringify({version: Deno.version.deno, executable: Deno.execPath(), cache: info.denoDir,',
+    '  temporary, home: Deno.env.get("HOME"), libraries: Deno.env.get("R_LIBS")}));'), script)
+  runtime <- tryCatch(jsonlite::fromJSON(query(c("run", script))$stdout, simplifyVector = FALSE),
+    error = function(e) rr_stop("Quarto TypeScript/Deno capabilities unavailable: ", conditionMessage(e)))
+  if (!is.list(runtime)) rr_stop("Quarto TypeScript/Deno metadata lacks runtime and storage locations.")
+  deno_cache <- rr_renderer_location(runtime$cache, directory, "cache", "Deno cache")
+  temporary <- rr_renderer_location(runtime$temporary, directory, "tmp", "Deno temporary storage")
+  home <- rr_renderer_location(runtime$home, directory, "cache", "Quarto HOME")
+  if (!identical(home, normalizePath(values[["HOME"]], mustWork = TRUE)) ||
+      !identical(runtime$libraries, values[["R_LIBS"]])) rr_stop("Quarto runtime changed the private HOME or ordered R library environment.")
+  if (!is.character(runtime$version) || length(runtime$version) != 1L || !nzchar(runtime$version) ||
+      !is.character(runtime$executable) || length(runtime$executable) != 1L || !startsWith(runtime$executable, "/"))
+    rr_stop("Quarto runtime did not report the selected Deno version and executable.")
+  deno <- normalizePath(runtime$executable, mustWork = TRUE)
+  rr_remove(temporary, directory)
+  if (!rr_same(executable, rr_file_identity(quarto))) rr_stop("Quarto executable changed during capability inspection.")
   js <- file.path(dirname(quarto), "quarto.js")
-  registered <- registered[[Sys.info()[["sysname"]]]]
-  if (!identical(rr_file_identity(js)$digest, registered)) rr_stop("Unregistered Quarto app/cache implementation; verify and register the installed JS asset.")
-  list(executable = quarto, js = js, root = dirname(dirname(quarto)), version = version)
+  if (!file.exists(js)) js <- NULL
+  storage <- list(quarto = cache, deno = deno_cache, temporary = file.path(directory, "tmp"), home = home)
+  identity <- list(version = version, executable = executable,
+    script = if (!is.null(js)) rr_file_identity(js) else NULL,
+    deno = list(version = runtime$version, executable = rr_file_identity(deno)), pandoc = pandoc,
+    storage = lapply(storage, function(path) paste0("<request>/", substring(path, nchar(directory) + 2L))))
+  list(executable = quarto, js = js, root = dirname(dirname(quarto)), version = version,
+    deno = deno, storage = storage, identity = identity)
 }
 rr_environment <- function(root) {
   git <- rr_git_environment(root)
@@ -637,6 +697,9 @@ rr_environment <- function(root) {
     if (rr_native_file(command)) {
       natives <- union(natives, normalizePath(command)); executables <- union(executables, normalizePath(command))
     }
+  }
+  if (!is.null(renderer$deno) && rr_native_file(renderer$deno)) {
+    natives <- union(natives, renderer$deno); executables <- union(executables, renderer$deno)
   }
   # Python remains an external artifact-verifier runtime; no Python supervisor
   # or evidence implementation is invoked by the R runner.
@@ -664,8 +727,9 @@ rr_environment <- function(root) {
     }, "", USE.NAMES = FALSE))
     value
   }
-  list(digest = rr_digest(list(probe = normalized_probe, files = normalize_paths(files), directories = directories, git = normalize_paths(git),
+  list(digest = rr_digest(list(probe = normalized_probe, renderer = renderer$identity,
+    files = normalize_paths(files), directories = directories, git = normalize_paths(git),
     linkage = rr_linkage(natives, roots, union(executables, unlist(probe$executables))),
     variables = rr_digest(rr_normalize_environment(values)), platform = as.list(Sys.info()[c("sysname", "release", "version", "machine")]))),
-    clock = probe$clock, r = probe$r, libraries = probe$libraries, metadata_audit = audit)
+    clock = probe$clock, r = probe$r, libraries = probe$libraries, metadata_audit = audit, renderer = renderer$identity)
 }

@@ -403,4 +403,5 @@ rr_stage_contracts[["tools/test-review-ready-renderer.R"]] <- list("serial", as.
 rr_stage_contracts[["tools/test-review-ready-runner.R"]] <- list("process-fixture", as.list(c(
   rr_runner_sources, "tools/review-ready-environment.R", "tools/review-ready-check.R",
   "tools/review-ready-check-lib.R", "tools/test-review-ready-inherited.R", "tools/test-review-ready-capabilities.R",
-  "tools/test-review-ready-migration.R", "tools/migrate-review-ready.R", "tools/verify-site-artifacts.R")))
+  "tools/test-review-ready-migration.R", "tools/test-review-ready-renderer-compatibility.R",
+  "tools/migrate-review-ready.R", "tools/verify-site-artifacts.R")))

@@ -26,7 +26,7 @@ run_renderer_contract <- function() {
     target <- rr_owned_path(file.path(checkout, path), checkout)
     if (!file.copy(file.path(fixture_root, path), target, overwrite = TRUE)) rr_stop("Accepted renderer helper source unavailable.")
   }
-  renderer <- rr_renderer()
+  renderer <- rr_renderer(env)
   paths <- review_ready_render_paths()
   deno <- rr_run(unname(paths[["Deno"]]), c("info", "--json"), root, env)
   info <- jsonlite::fromJSON(deno$stdout)
@@ -37,15 +37,14 @@ run_renderer_contract <- function() {
   if (!startsWith(observed$tmp, directory) || !startsWith(observed$cache, directory) ||
       !identical(unname(observed$libraries), unname(.libPaths()))) rr_stop("R renderer storage/library isolation failed.")
   rr_say("Real renderer contract: commit ", sha, "; Quarto ", renderer$version,
-    "; JS SHA-256 ", rr_file_identity(renderer$js)$digest)
+    "; executable SHA-256 ", renderer$identity$executable$digest,
+    "; runtime ", renderer$identity$deno$version)
   for (path in c("tools/review-ready-generated.R", "tools/verify-site-artifacts.R")) {
     result <- processx::run(file.path(R.home("bin"), "Rscript"), path, wd = checkout, env = env,
       echo = TRUE, error_on_status = FALSE, cleanup_tree = TRUE)
     if (result$status != 0L) rr_stop("Private renderer contract failed: ", path)
   }
-  expected <- if (Sys.info()[["sysname"]] == "Darwin") file.path(env[["HOME"]], "Library/Caches/quarto") else
-    file.path(env[["XDG_CACHE_HOME"]], "quarto")
-  if (!dir.exists(expected)) rr_stop("Quarto did not use the registered private app/cache directory.")
+  if (!dir.exists(renderer$storage$quarto)) rr_stop("Quarto did not preserve its resolved private cache directory.")
   rr_say("Real README/help/figures and site renderer isolation passed; all owned writers collected.")
 }
 run_renderer_contract()

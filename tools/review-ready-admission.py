@@ -82,7 +82,8 @@ STAGE_CONTRACTS = {
         'tools/test-review-ready-inherited.R', 'tools/review-ready-environment.R',
         'tools/review-ready-check.R', 'tools/review-ready-check-lib.R',
         'tools/verify-site-artifacts.R', 'tools/test-review-ready-capabilities.R',
-        'tools/test-review-ready-migration.R', 'tools/migrate-review-ready.R')),
+        'tools/test-review-ready-migration.R', 'tools/test-review-ready-renderer-compatibility.R',
+        'tools/migrate-review-ready.R')),
     'tools/review-ready-followup-contract.R': ('serial', (
         'tools/dependency-requirements.R', 'tools/review-ready-generated.R', 'DESCRIPTION')),
     'tools/test-review-ready-evidence.py': ('process-fixture', (

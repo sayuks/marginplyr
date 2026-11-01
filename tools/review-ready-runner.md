@@ -111,10 +111,13 @@ request's own independent executed unit remains distinct from inherited reuse.
 
 Each request starts with empty private HOME, XDG, Deno, R user cache/config/data,
 and temporary roots. Absolute ordered R libraries and selected installed tools
-are preserved. The registered app-directory implementation in Quarto 1.10.18
-and 1.10.20 uses these private destinations, including macOS
-`Library/Caches/quarto` and Sass
-storage. Other Quarto versions require an updated isolation contract. Retry
+are preserved. Metadata queries check the required render/Pandoc and TypeScript
+features and the actual Quarto/Deno cache, HOME and temporary destinations.
+Compatible versions and private storage layouts are accepted; unavailable
+features, external storage and unsupported overrides name their refusal reason.
+CI continues to use current stable Quarto. Actual versions and content remain
+evidence inputs, so accepting an update does not reuse the previous tools'
+results. Retry
 keeps the same tarball, tool identities and private caches until all writers stop.
 Shared caches and personal home settings are not copied into the request.
 
