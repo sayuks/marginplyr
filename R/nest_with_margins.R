@@ -399,16 +399,13 @@ execute_margin_nest <- function(operation, .key, .keep, rowwise) {
                 if (!identity_encoded[[col]]) {
                   return(value)
                 }
-                info <- factors_by_col[[col]]
-                rlang::call2(
-                  marginplyr_private_call("encode_factor_for_margin"),
-                  value,
-                  missing_sentinel = factor_missing_sentinel(
-                    info,
-                    margin_label_of(operation$margin_labels, col)
-                  ),
-                  preserve_missing_value = TRUE
-                )
+                if (identical(operation$backend$kind, "dtplyr")) {
+                  # data.table groups factors by their stored codes rather
+                  # than a vctrs equality proxy.
+                  return(rlang::expr(as.integer(unclass(!!value))))
+                }
+                # Group identifiers retain source equality.
+                rlang::expr(vctrs::vec_group_id(!!value))
               }
             )
             names(identity_exprs) <- unname(identity_cols)
@@ -420,7 +417,7 @@ execute_margin_nest <- function(operation, .key, .keep, rowwise) {
         plan$dimensions,
         function(col) {
           if (identity_encoded[[col]]) {
-            NA_character_
+            NA_integer_
           } else {
             column_info$prototypes[[col]]
           }
