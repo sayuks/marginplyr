@@ -72,7 +72,7 @@ rr_read_json <- function(path) {
 # OS crash/power-loss durability is deliberately outside ADR 0039's guarantee.
 rr_write <- function(path, value, raw = FALSE) {
   temporary <- tempfile(".replace-", tmpdir = dirname(path))
-  on.exit(unlink(temporary), add = TRUE)
+  on.exit(unlink(temporary, expand = FALSE), add = TRUE)
   if (!raw && basename(path) == "record.json" && identical(value$version, 3L)) {
     value <- jsonlite::fromJSON(rr_json(value), simplifyVector = FALSE)
     value <- list(record = value, checksum = rr_digest(value))
@@ -177,7 +177,7 @@ rr_blobs <- function(root, oids) {
   temporary <- getOption("marginplyr.review.tmp", tempdir())
   input <- tempfile("git-batch-input-", tmpdir = temporary)
   output <- tempfile("git-batch-output-", tmpdir = temporary)
-  on.exit(unlink(c(input, output)), add = TRUE)
+  on.exit(unlink(c(input, output), expand = FALSE), add = TRUE)
   writeLines(oids, input)
   result <- processx::run("git", c("--no-replace-objects", "-C", root, "cat-file", "--batch"), stdin = input,
     stdout = output, stderr = "|", env = getOption("marginplyr.review.env"), error_on_status = FALSE)
@@ -221,7 +221,7 @@ rr_owned_path <- function(path, root) {
 }
 rr_remove <- function(path, root) {
   rr_owned_path(path, root)
-  if (unlink(path, recursive = TRUE, force = TRUE) != 0L || file.exists(path) || dir.exists(path)) rr_stop("Owned cleanup failed: ", path)
+  if (unlink(path, recursive = TRUE, force = TRUE, expand = FALSE) != 0L || file.exists(path) || dir.exists(path)) rr_stop("Owned cleanup failed: ", path)
   invisible(TRUE)
 }
 

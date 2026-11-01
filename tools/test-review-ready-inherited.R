@@ -325,3 +325,20 @@ run_site_authority_contract <- function() {
   cat("Accepted site verifier and helper survive inner archiving; linked destinations are refused.\n")
 }
 run_site_authority_contract()
+
+run_deletion_contracts <- function() {
+  fixture <- rr_mkdir(tempfile("runner-literal-deletion-"))
+  on.exit(unlink(fixture, recursive = TRUE, expand = FALSE), add = TRUE)
+  for (name in c("owned[1]", "owned?", "owned*")) {
+    directory <- rr_mkdir(file.path(fixture, rr_id()))
+    owned <- rr_mkdir(file.path(directory, name))
+    unrelated <- rr_mkdir(file.path(directory, "owned1/work"))
+    rr_mkdir(file.path(owned, "work"))
+    writeLines("Unrelated bytes", file.path(unrelated, "sentinel"))
+    rr_remove(file.path(owned, "work"), owned)
+    expect(!dir.exists(file.path(owned, "work")) && file.exists(file.path(unrelated, "sentinel")),
+      paste("Validated deletion paths are literal, never glob patterns:", name))
+  }
+  cat("Owned deletion treats wildcard characters literally and preserves unrelated paths.\n")
+}
+run_deletion_contracts()

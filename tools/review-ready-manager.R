@@ -187,7 +187,7 @@ rr_control <- function(path, record, cancelled) {
       reply$ok <- TRUE; reply$error <- NULL
     }, error = function(e) { reply$error <<- conditionMessage(e) })
     rr_write(file.path(directory, paste0(id, ".reply.json")), rr_seal(reply, charToRaw(record$token)))
-    unlink(file)
+    unlink(file, expand = FALSE)
   }
   list(record = record, promote = promote)
 }
