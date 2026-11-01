@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Both dtplyr nesting verbs preserve displayed grouping keys independently of
+  caller bindings for `min` and `seq_len`, including bindings changed after
+  lazy result construction (#1089).
+
 * Ordinary local summary selections resolve function arguments and local
   bindings at execution while retaining the environments of injected
   `quosures` (#1070).
