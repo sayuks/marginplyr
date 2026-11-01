@@ -808,15 +808,16 @@ run_review_ready_rcmdcheck <- function(
 # Obtains one live manager authorization over its request-private channel.
 review_ready_supervision_proof <- function() {
   supervisor <- Sys.getenv("MARGINPLYR_REVIEW_SUPERVISOR")
-  python <- Sys.which("python3")
-  if (!nzchar(supervisor) || !file.exists(supervisor) || !nzchar(python)) {
+  command <- if (endsWith(supervisor, ".R")) file.path(R.home("bin"), "Rscript") else
+    Sys.which("python3")
+  if (!nzchar(supervisor) || !file.exists(supervisor) || !nzchar(command)) {
     stop(
       "Review-ready supervision is required; refresh the common CLI.",
       call. = FALSE
     )
   }
   output <- system2(
-    python, c(shQuote(supervisor), "--gate-proof"), stdout = TRUE
+    command, c(shQuote(supervisor), "--gate-proof"), stdout = TRUE
   )
   if (!is.null(attr(output, "status"))) {
     stop("Review-ready supervisor refused gate authorization.", call. = FALSE)
@@ -847,7 +848,7 @@ read_review_ready_selection <- function(
   )
   if (nrow(record) != 1L || !all(required %in% colnames(record)) ||
         !record[[1L, "Path"]] %in% c("Full", "Repository", "Documentation") ||
-        !identical(record[[1L, "Protocol"]], "3") ||
+        !record[[1L, "Protocol"]] %in% c("3", "4") ||
         !record[[1L, "Capacity"]] %in% c("Full", "exempt") ||
         !grepl("^[0-9a-f]{40}$", record[[1L, "Commit"]]) ||
         !nzchar(Sys.getenv("MARGINPLYR_REVIEW_REQUEST")) ||
@@ -881,7 +882,8 @@ read_review_ready_selection <- function(
     path = record[[1L, "Path"]], sha = record[[1L, "Commit"]],
     base = record[[1L, "Base"]],
     verifiers = if (is.na(verifiers) || !nzchar(verifiers)) character() else
-      strsplit(verifiers, " ", fixed = TRUE)[[1L]]
+      strsplit(verifiers, " ", fixed = TRUE)[[1L]],
+    protocol = record[[1L, "Protocol"]], capacity = record[[1L, "Capacity"]]
   )
   if (length(reused)) selection$reused <- reused
   selection
@@ -889,7 +891,7 @@ read_review_ready_selection <- function(
 
 # Runs the manager's artifact routes in the pinned disposable Git checkout;
 # reference verifiers need its tracked index, which an archive does not carry.
-run_review_ready_verifiers <- function(selection, identity, prerequisites, runner) {
+run_review_ready_verifiers <- function(selection, identity, prerequisites, runner, accepted_root = NULL) {
   for (path in selection$verifiers) {
     generation <- identical(path, "tools/review-ready-generated.R")
     if (generation && "generation" %in% selection$reused) {
@@ -905,7 +907,9 @@ run_review_ready_verifiers <- function(selection, identity, prerequisites, runne
     run_review_ready_step(
       paste("Artifact verification:", path),
       list(
-        command = command, args = path,
+        command = command, args = if (!is.null(accepted_root) &&
+          path %in% c("tools/test-review-ready-runner.R", "tools/test-review-ready-renderer.R"))
+          c(file.path(accepted_root, path), identity$root) else path,
         env = c("TESTTHAT_PARALLEL=false", "TESTTHAT_CPUS=1", "MARGINPLYR_REVIEW_STAGE_REPORT=", paste0(
           "MARGINPLYR_REVIEW_BASE=", if (is.null(selection$base)) "" else selection$base
         ))
@@ -915,6 +919,24 @@ run_review_ready_verifiers <- function(selection, identity, prerequisites, runne
     cat("Completed artifact verification: ", path, "\n", sep = "")
     if (generation) review_ready_report(unit = "generation", state = "passed")
   }
+}
+
+# The public entry supplies authenticated transport metadata. The installed
+# Full boundary owns bootstrap; the R manager maps its contracts explicitly.
+run_review_ready_bootstrap <- function(selection, identity, prerequisites, runner) {
+  if (!identical(selection$protocol, "3") || !identical(selection$capacity, "Full") ||
+      !identical(selection$path, "Full")) return(invisible())
+  fixtures <- c("tools/test-review-ready-runner.R", "tools/test-review-ready-renderer.R")
+  missing <- fixtures[!file.exists(file.path(identity$root, fixtures))]
+  if (length(missing)) stop("Required R replacement contract is missing: ", paste(missing, collapse = ", "), call. = FALSE)
+  for (fixture in fixtures) {
+    label <- paste("R replacement contract:", fixture)
+    run_review_ready_step(label, list(command = prerequisites$rscript, args = fixture,
+      env = c("TESTTHAT_PARALLEL=false", "TESTTHAT_CPUS=1", "MARGINPLYR_REVIEW_STAGE_REPORT=")),
+      identity$root, runner = runner)
+    cat("Completed: ", label, "\n", sep = "")
+  }
+  invisible()
 }
 
 # Runs the selected fixed gate and returns its identity and path.
@@ -929,7 +951,8 @@ run_review_ready_check <- function(
   system = Sys.info()[["sysname"]],
   retry_identity = review_ready_retry_identity,
   preserver = preserve_review_ready_failure,
-  selection = list(path = "Full", verifiers = character())
+  selection = list(path = "Full", verifiers = character()),
+  accepted_root = NULL
 ) {
   if (!is.null(selection$sha) && !identical(selection$sha, identity$sha)) {
     stop("Admitted selection does not match the checked commit.", call. = FALSE)
@@ -969,7 +992,8 @@ run_review_ready_check <- function(
     run_review_ready_step(label, steps[[label]], source_root, runner = runner)
     cat("Completed: ", label, "\n", sep = "")
   }
-  run_review_ready_verifiers(selection, identity, prerequisites, runner)
+  run_review_ready_verifiers(selection, identity, prerequisites, runner, accepted_root)
+  run_review_ready_bootstrap(selection, identity, prerequisites, runner)
   if (identical(selection$path, "Repository")) {
     cat("\nReview-ready Repository passed for ", identity$sha,
       "; package build/check omitted.\n", sep = "")

@@ -34,7 +34,7 @@ jobs:
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
           install-pandoc: false
-          extra-packages: local::.
+          extra-packages: local::., any::openssl, any::filelock, any::ps, any::processx, any::jsonlite, any::devtools, any::roxygen2, any::fs
           # altdoc is declared in DESCRIPTION's `Config/Needs/website` rather
           # than in Suggests, because nothing outside `.Rbuildignore`d paths
           # uses it, so a Suggests entry installed a dependency closure for a
@@ -59,6 +59,9 @@ jobs:
 
       - name: Verify site output
         run: Rscript .github/scripts/verify-site.R
+
+      - name: Verify private renderer storage
+        run: Rscript tools/test-review-ready-renderer.R
 
       - name: Configure GitHub Pages
         if: github.ref == 'refs/heads/main'

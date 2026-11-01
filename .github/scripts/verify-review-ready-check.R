@@ -159,8 +159,9 @@ expect_identical(
 )
 expect_identical(
   fixture_review_packages,
-  c("altdoc", "devtools", "jsonlite", "lintr", "pkgload", "R6", "rcmdcheck",
-    "roxygen2", "spelling", "testthat", "yaml"),
+  c("altdoc", "askpass", "cpp11", "devtools", "filelock", "fs", "jsonlite", "lintr", "openssl",
+    "pkgload", "processx", "ps", "R6", "rcmdcheck", "roxygen2", "spelling", "sys",
+    "testthat", "yaml"),
   "the declared review packages"
 )
 expect_error(
@@ -622,7 +623,7 @@ local({
   proof <- function() list(path = "Repository", capacity = "exempt")
   expect_identical(read_review_ready_selection(proof),
     list(path = "Repository", sha = clean_identity$sha, base = clean_identity$sha,
-      verifiers = ".github/scripts/verify-context-budget.R"),
+      verifiers = ".github/scripts/verify-context-budget.R", protocol = "3", capacity = "exempt"),
     "the admitted worker's Repository transport retains its pinned comparison")
   writeLines(sub(paste("Base:", clean_identity$sha), "Base: invalid", valid, fixed = TRUE), transport)
   expect_error(read_review_ready_selection(proof), "Invalid admitted comparison base",
@@ -1269,4 +1270,71 @@ local({
     checker = function(...) stop("No check after failed assertions"), selection = route))
   expect_identical(failed, 1L, "failed documentation assertions fail the invocation")
 
+})
+
+local({
+  root <- tempfile("review-ready-bootstrap-")
+  dir.create(file.path(root, "tools"), recursive = TRUE)
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  fixtures <- c("tools/test-review-ready-runner.R", "tools/test-review-ready-renderer.R")
+  expect_true(all(file.create(file.path(root, fixtures))), "bootstrap fixture sources")
+  commands <- list()
+  runner <- function(command, args, directory, ...) {
+    commands[[length(commands) + 1L]] <<- list(command = command, args = args, directory = directory)
+    list(status = 0L)
+  }
+  selection <- list(path = "Full", protocol = "3", capacity = "Full")
+  identity <- list(root = root)
+  prerequisites <- list(rscript = "fixture-Rscript")
+  capture.output(run_review_ready_bootstrap(selection, identity, prerequisites, runner))
+  expect_identical(vapply(commands, `[[`, "", "args"), fixtures,
+    "the admitted installed Full gate executes both replacement contracts")
+  expect_true(all(vapply(commands, function(command) identical(command$directory, root), logical(1))),
+    "bootstrap contracts run against the submitted checkout")
+  for (route in list(list(path = "Full", protocol = "3", capacity = "exempt"),
+      list(path = "Repository", protocol = "3", capacity = "Full"),
+      list(path = "Documentation", protocol = "3", capacity = "Full"),
+      list(path = "Full", protocol = "4", capacity = "Full"),
+      list(path = "Full"))) {
+    commands <- list()
+    run_review_ready_bootstrap(route, identity, prerequisites, runner)
+    expect_identical(length(commands), 0L, "only the admitted installed Full boundary bootstraps")
+  }
+  commands <- list()
+  unlink(file.path(root, fixtures[[2L]]))
+  expect_error(run_review_ready_bootstrap(selection, identity, prerequisites, runner),
+    "Required R replacement contract is missing", "missing bootstrap source")
+  expect_identical(length(commands), 0L, "missing bootstrap inputs stop before executing either fixture")
+  file.create(file.path(root, fixtures[[2L]]))
+  failed <- function(...) { runner(...); list(status = 7L) }
+  expect_error(run_review_ready_bootstrap(selection, identity, prerequisites, failed),
+    "failed with status 7", "a failed replacement contract")
+  expect_identical(length(commands), 1L, "bootstrap failure stops the second replacement contract")
+})
+
+local({
+  calls <- character()
+  directories <- character()
+  fixtures <- c("tools/test-review-ready-runner.R", "tools/test-review-ready-renderer.R")
+  runner <- function(command, args, directory, ...) {
+    if (length(args) == 1L && args %in% fixtures) {
+      calls <<- c(calls, args)
+      directories <<- c(directories, directory)
+    } else if (identical(args[1:2], c("CMD", "build"))) {
+      calls <<- c(calls, "build")
+    }
+    fixture_runner(command, args, directory, ...)
+  }
+  checker <- function(...) {
+    calls <<- c(calls, "check")
+    empty_result
+  }
+  capture.output(run_review_ready_check(getwd(), identity = clean_identity,
+    prerequisites = prerequisites, runner = runner, checker = checker,
+    diagnostic_root = diagnostic_root,
+    selection = list(path = "Full", protocol = "3", capacity = "Full")))
+  expect_identical(calls, c(fixtures, "build", "check"),
+    "the fixed Full gate runs both replacement contracts once before package build/check")
+  expect_identical(directories, rep(clean_identity$root, 2L),
+    "the fixed gate bootstraps against the admitted checkout")
 })

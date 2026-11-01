@@ -14,6 +14,15 @@ if (!nzchar(Sys.getenv("MARGINPLYR_REVIEW_REQUEST"))) {
     cat("The review-ready check takes no arguments.\n", file = stderr())
     quit(status = 2L, save = "no")
   }
+  core <- file.path(getwd(), "tools/review-ready-core.R")
+  if (file.exists(core)) {
+    supervisor <- new.env(parent = baseenv())
+    sys.source(core, envir = supervisor)
+    if (file.exists(file.path(supervisor$rr_state(), "delivery.json"))) {
+      status <- system2(file.path(R.home("bin"), "Rscript"), "tools/review-ready.R")
+      quit(status = status, save = "no")
+    }
+  }
   launcher <- Sys.which("marginplyr-review-ready")
   if (!nzchar(launcher)) {
     cat(

@@ -53,14 +53,22 @@ Config/Needs/preflight:
     urlchecker
 Config/Needs/review:
     altdoc (>= 0.7.3),
+    askpass,
+    cpp11,
     devtools,
+    filelock,
+    fs,
     jsonlite,
     lintr,
+    openssl,
     pkgload,
+    processx,
+    ps,
     R6,
     rcmdcheck,
     roxygen2,
     spelling,
+    sys,
     testthat,
     yaml
 Config/Needs/release:
@@ -264,6 +272,7 @@ SystemRequirements: Quarto command line tool
 Config/Needs/website:
     altdoc (>= 0.7.3),
     arrow,
+    cpp11,
     DBI,
     dtplyr,
     duckdb,
@@ -275,4 +284,4 @@ Encoding: UTF-8
 Language: en-US
 LazyData: true
 Roxygen: list(markdown = TRUE)
-Config/roxygen2/version: 8.1.0
+Config/roxygen2/version: 8.1.1

@@ -20,6 +20,8 @@ def main():
     import pwd
     home = Path(pwd.getpwuid(os.getuid()).pw_dir)
     destination = home / '.local/bin/marginplyr-review-ready'
+    if (home / '.local/state/marginplyr/review-ready/delivery.json').exists():
+        sys.exit('The installed check entry is retired. Use Rscript tools/review-ready.R from the target root.')
     source = Path(__file__).with_name('review-ready-admission.py')
     admission = importlib.machinery.SourceFileLoader('admission_installer', str(source)).load_module()
     installed = admission.installed_source(source.parent.parent)
