@@ -1,9 +1,5 @@
 # Process contracts for the repository-owned runner. All state is disposable;
 # the account-home adapter is replaced in this harness, never by a CLI option.
-options(error = function() {
-  traceback(0L, max.lines = 20L)
-  quit(status = 1L, save = "no")
-})
 args <- commandArgs(trailingOnly = TRUE)
 candidate <- if (length(args)) normalizePath(args[[1L]], mustWork = TRUE) else getwd()
 source(file.path(candidate, "tools", "review-ready-core.R"))
@@ -791,4 +787,8 @@ run_migration_contracts(repo, home, state)
 cat("Repository runner authority, cross-clone, cancellation, concurrency and expiry contracts passed.\n")
 cat("Repository runner process lifecycle and reuse contracts passed.\n")
 }
-run_process_contracts()
+# Capture the primary fault before on.exit cleanup can replace its diagnostic.
+withCallingHandlers(run_process_contracts(), error = function(e) {
+  rr_say("Runner process contract error: ", conditionMessage(e))
+  traceback(0L, max.lines = 20L)
+})
