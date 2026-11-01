@@ -1,5 +1,9 @@
 # Process contracts for the repository-owned runner. All state is disposable;
 # the account-home adapter is replaced in this harness, never by a CLI option.
+options(error = function() {
+  traceback(20L)
+  quit(status = 1L, save = "no")
+})
 args <- commandArgs(trailingOnly = TRUE)
 candidate <- if (length(args)) normalizePath(args[[1L]], mustWork = TRUE) else getwd()
 source(file.path(candidate, "tools", "review-ready-core.R"))
@@ -295,6 +299,7 @@ cat('\nrr_environment <- function(root) { mutable <- Sys.getenv("RR_FIXTURE_MUTA
   file = file.path(repo, "tools/review-ready-evidence.R"), append = TRUE)
 cat(paste0('\nrr_renderer <- function() {\n',
   ' invalid <- Sys.getenv("RR_FIXTURE_RENDERER_INVALID"); if (nzchar(invalid) && file.exists(invalid)) rr_stop("Fixture renderer storage became incompatible")\n',
+  ' writeLines("Metadata query output", file.path(Sys.getenv("MARGINPLYR_REVIEW_ISOLATION"), "cache", "renderer-capability.fixture"))\n',
   ' if (Sys.getenv("RR_FIXTURE_MUTATE_BEFORE") == "yes" && Sys.getenv("MARGINPLYR_REVIEW_EPOCH") == "1") writeLines("Changed before validation", Sys.getenv("RR_FIXTURE_MUTABLE"))\n',
   ' if (Sys.getenv("RR_FIXTURE_WORKER_ACTION") == "promote" && Sys.getenv("MARGINPLYR_REVIEW_EPOCH") == "1") {\n',
   '  child <- processx::process$new(file.path(R.home("bin"), "Rscript"), c("-e", "Sys.sleep(60)"), cleanup = FALSE, supervise = FALSE)\n',
@@ -335,6 +340,8 @@ writeLines(c(readLines(file.path(candidate, "tools/review-ready-check-lib.R")),
   '}',
   'review_ready_check_cli <- function(args, expected_root, selection, diagnostic_root, accepted_root) {',
   '  force(selection)',
+  '  cached <- list.files(file.path(Sys.getenv("MARGINPLYR_REVIEW_ISOLATION"), "cache"), all.files = TRUE, recursive = TRUE, full.names = TRUE)',
+  '  if (any(!dir.exists(cached))) stop("Validation started with populated renderer caches")',
   '  record <- jsonlite::fromJSON(Sys.getenv("MARGINPLYR_REVIEW_RECORD"), simplifyVector = FALSE)$record',
   '  survivor <- Sys.getenv("RR_FIXTURE_SURVIVOR")',
   '  if (nzchar(survivor)) { child <- processx::process$new("/bin/sleep", "60", cleanup = FALSE, supervise = FALSE); writeLines(as.character(child$get_pid()), survivor) }',

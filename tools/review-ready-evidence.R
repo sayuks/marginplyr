@@ -598,6 +598,20 @@ rr_normalize_environment <- function(values) {
   trees <- names(values)[rr_match("PROCESSX_PS[0-9a-f]+_[0-9]+", names(values)) & values == "YES"]
   as.list(values[!names(values) %in% c(internal, trees)])
 }
+
+# All capability/proof children are collected before resetting their owned
+# cache outputs. Validation starts empty; retries retain the gate's caches.
+rr_empty_renderer_cache <- function(values = rr_child_env()) {
+  directory <- values[["MARGINPLYR_REVIEW_ISOLATION"]]
+  if (is.null(directory) || !startsWith(directory, "/")) rr_stop("Private renderer cache reset requires a request environment.")
+  cache <- file.path(directory, "cache")
+  rr_owned_path(cache, directory)
+  rr_normalize_environment(values)
+  rr_remove(cache, directory)
+  rr_render_env(directory, values)
+  invisible()
+}
+
 # Queries renderer capabilities and storage in the request's private environment.
 rr_renderer_query <- function(command, args, directory, values) {
   tryCatch({

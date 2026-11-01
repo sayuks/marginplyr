@@ -7,7 +7,6 @@ fixture_root <- dirname(dirname(normalizePath(entry, mustWork = TRUE)))
 source(file.path(candidate, "tools/review-ready-core.R"))
 source(file.path(candidate, "tools/review-ready-registry.R"))
 source(file.path(candidate, "tools/review-ready-evidence.R"))
-source(file.path(fixture_root, "tools/review-ready-check-lib.R"))
 
 run_renderer_contract <- function() {
   fixture <- tempfile("runner-renderer-", tmpdir = Sys.getenv("TMPDIR", tempdir()))
@@ -27,8 +26,7 @@ run_renderer_contract <- function() {
     if (!file.copy(file.path(fixture_root, path), target, overwrite = TRUE)) rr_stop("Accepted renderer helper source unavailable.")
   }
   renderer <- rr_renderer(env)
-  paths <- review_ready_render_paths()
-  deno <- rr_run(unname(paths[["Deno"]]), c("info", "--json"), root, env)
+  deno <- rr_run(renderer$deno, c("info", "--json"), root, env)
   info <- jsonlite::fromJSON(deno$stdout)
   if (!startsWith(info$denoDir, directory)) rr_stop("Deno resolved a shared cache: ", info$denoDir)
   probe <- rr_run(file.path(R.home("bin"), "Rscript"), c("-e",
@@ -39,6 +37,7 @@ run_renderer_contract <- function() {
   rr_say("Real renderer contract: commit ", sha, "; Quarto ", renderer$version,
     "; executable SHA-256 ", renderer$identity$executable$digest,
     "; runtime ", renderer$identity$deno$version)
+  rr_empty_renderer_cache(env)
   for (path in c("tools/review-ready-generated.R", "tools/verify-site-artifacts.R")) {
     result <- processx::run(file.path(R.home("bin"), "Rscript"), path, wd = checkout, env = env,
       echo = TRUE, error_on_status = FALSE, cleanup_tree = TRUE)

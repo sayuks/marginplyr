@@ -639,6 +639,7 @@ rr_worker <- function(path) {
   transport <- file.path(record$workspace, "selection.dcf")
   rr_write(transport, charToRaw(rr_selection_transport(record)), raw = TRUE)
   Sys.setenv(MARGINPLYR_REVIEW_SELECTION = transport, MARGINPLYR_REVIEW_STAGE_REPORT = file.path(record$workspace, "stage-report.json"))
+  rr_empty_renderer_cache()
   rr_rpc("begin-gate")
   # The accepted outer gate owns the plan even when candidate gate code changes.
   authority <- file.path(record$workspace, "authority")

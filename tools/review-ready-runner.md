@@ -120,8 +120,9 @@ Compatible versions and private storage layouts are accepted; unavailable
 features, external storage and unsupported overrides name their refusal reason.
 CI continues to use current stable Quarto. Actual versions and content remain
 evidence inputs, so accepting an update does not reuse the previous tools'
-results. Retry
-keeps the same tarball, tool identities and private caches until all writers stop.
+results. After capability and identity queries finish, the worker empties its
+owned cache tree before starting validation. Retry keeps the same tarball, tool
+identities and private caches until all writers stop.
 Shared caches and personal home settings are not copied into the request.
 
 Registered request storage roles are normalized in environment

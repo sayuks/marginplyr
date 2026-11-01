@@ -88,6 +88,20 @@ run_renderer_compatibility_contracts <- function() {
   expect(plan(original)$units[["build-full"]]$action == "reuse", "Unchanged compatible renderer identity permits its original execution")
   expect(plan(same_version)$units[["build-full"]]$action == "execute" && plan(future)$units[["build-full"]]$action == "execute",
     "Compatible renderer upgrades execute instead of reusing old-version or old-content evidence")
+  cached <- file.path(rr_mkdir(file.path(directory, "cache", "future-layout")), "probe-output")
+  writeLines("Metadata output", cached)
+  before <- rr_normalize_environment(values)
+  rr_empty_renderer_cache(values)
+  remaining <- list.files(file.path(directory, "cache"), all.files = TRUE, recursive = TRUE, full.names = TRUE)
+  expect(!any(!dir.exists(remaining)) && rr_same(before, rr_normalize_environment(values)),
+    "Validation resets all private cache layouts without changing its registered environment")
+  expect(identical(readLines(file.path(outside, "sentinel")), "Keep unrelated bytes"),
+    "Resetting a private cache removes inner links without following them")
+  rr_remove(file.path(directory, "cache"), directory)
+  expect(file.symlink(outside, file.path(directory, "cache")), "Create a misleading cache root")
+  rejects(rr_empty_renderer_cache(values), "symlink")
+  expect(!dir.exists(file.path(outside, "home")) && identical(readLines(file.path(outside, "sentinel")), "Keep unrelated bytes"),
+    "A linked cache root is refused before creating any external role directory")
   cat("Renderer capabilities accept compatible updates, reject escaping storage, and invalidate old evidence.\n")
 }
 run_renderer_compatibility_contracts()
