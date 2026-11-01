@@ -140,6 +140,9 @@ marker names/values remain inputs. The mechanism is documented by
 `Rscript tools/test-review-ready-runner.R` runs the new authentication and
 isolated process contracts. `jarl check .`, package-aware lintr, the existing
 admission/evidence fixtures and R gate verifier remain part of bootstrap Full.
+The admitted protocol-3 Full gate runs the R process and actual renderer
+contracts before package build/check. The shared R gate verifier stays bounded
+when invoked inside those fixtures; protocol 4 routes contracts through its registry.
 CI also runs the R process contracts with their declared tool dependencies.
 Acceptance records distinguish these fixtures from real package checks and
 operational rollout.

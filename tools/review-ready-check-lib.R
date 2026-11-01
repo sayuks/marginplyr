@@ -882,7 +882,8 @@ read_review_ready_selection <- function(
     path = record[[1L, "Path"]], sha = record[[1L, "Commit"]],
     base = record[[1L, "Base"]],
     verifiers = if (is.na(verifiers) || !nzchar(verifiers)) character() else
-      strsplit(verifiers, " ", fixed = TRUE)[[1L]]
+      strsplit(verifiers, " ", fixed = TRUE)[[1L]],
+    protocol = record[[1L, "Protocol"]], capacity = record[[1L, "Capacity"]]
   )
   if (length(reused)) selection$reused <- reused
   selection
@@ -918,6 +919,24 @@ run_review_ready_verifiers <- function(selection, identity, prerequisites, runne
     cat("Completed artifact verification: ", path, "\n", sep = "")
     if (generation) review_ready_report(unit = "generation", state = "passed")
   }
+}
+
+# The public entry supplies authenticated transport metadata. The installed
+# Full boundary owns bootstrap; the R manager maps its contracts explicitly.
+run_review_ready_bootstrap <- function(selection, identity, prerequisites, runner) {
+  if (!identical(selection$protocol, "3") || !identical(selection$capacity, "Full") ||
+      !identical(selection$path, "Full")) return(invisible())
+  fixtures <- c("tools/test-review-ready-runner.R", "tools/test-review-ready-renderer.R")
+  missing <- fixtures[!file.exists(file.path(identity$root, fixtures))]
+  if (length(missing)) stop("Required R replacement contract is missing: ", paste(missing, collapse = ", "), call. = FALSE)
+  for (fixture in fixtures) {
+    label <- paste("R replacement contract:", fixture)
+    run_review_ready_step(label, list(command = prerequisites$rscript, args = fixture,
+      env = c("TESTTHAT_PARALLEL=false", "TESTTHAT_CPUS=1", "MARGINPLYR_REVIEW_STAGE_REPORT=")),
+      identity$root, runner = runner)
+    cat("Completed: ", label, "\n", sep = "")
+  }
+  invisible()
 }
 
 # Runs the selected fixed gate and returns its identity and path.
@@ -974,6 +993,7 @@ run_review_ready_check <- function(
     cat("Completed: ", label, "\n", sep = "")
   }
   run_review_ready_verifiers(selection, identity, prerequisites, runner, accepted_root)
+  run_review_ready_bootstrap(selection, identity, prerequisites, runner)
   if (identical(selection$path, "Repository")) {
     cat("\nReview-ready Repository passed for ", identity$sha,
       "; package build/check omitted.\n", sep = "")
