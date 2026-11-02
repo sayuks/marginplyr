@@ -90,8 +90,8 @@ holds the exact calls, causal separation, source contract and searches.
 A one-row native DuckDB two-dimension rollup returned sequence values four,
 five and six, with Parent fractions two, five-sixths and one. The detail ratio
 should have been four-fifths. A one-dimension rollup with a fixed key also
-returned a Total fraction of three for displayed detail/Grand total values
-three/four. Construction left the sequence uninitialized in both cases.
+disagreed with the displayed detail/Grand total ratio of three-fourths.
+Construction left the sequence uninitialized in both cases.
 
 The 96-call matrix compared 128 share columns with displayed-row ratios:
 32 native comparisons disagreed, and all 64 portable comparisons agreed.

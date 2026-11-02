@@ -22,7 +22,7 @@ which grouping-set row the engine evaluated first.
 
 The same script's `--total` mode needed only k = east and g = a. With fixed
 k, rollup(g), and Total share, the displayed detail and Grand total values
-were three and four. The detail fraction was three, rather than three-fourths.
+were three and four; the returned detail fraction disagreed with three-fourths.
 Thus multiple Parent windows were sufficient to expose the defect but were
 not necessary: a fixed key exposed a Total-share path too.
 
