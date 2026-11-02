@@ -1,14 +1,13 @@
 # Measured test order and FIFO Review-ready admission
 
-Status: ordering workflow reopened, 2026-11-02. The maintainer clarified that
-the CI question was exploratory, not a request to introduce a dedicated timing
-pipeline. The previous record of CI as an agreed requirement is withdrawn.
-A replacement ordering workflow awaits confirmation. FIFO remains the original
-independent request; implementation and adoption are not claimed.
+Status: final draft awaiting maintainer confirmation, 2026-11-03. The individual
+design decisions below are agreed; this consolidated replacement awaits final
+approval. FIFO remains the original independent request. Implementation and
+adoption are not claimed.
 [ADR 0040](../adr/0040-learn-local-test-order-and-admit-heavy-checks-fifo.md)
 records the scope boundary. Existing package CI is unchanged.
 
-## Requirements and unresolved choices
+## Scope and requirements
 
 The task has two independent goals:
 
@@ -23,21 +22,25 @@ checks, pinned committed source, one shared heavy slot, four workers, complete
 suite/snapshots, terminal-result authority and retained execution ownership.
 
 A shared local timing database, per-worktree rolling history and mandatory
-CI artifact retrieval are not execution prerequisites. A dedicated measurement
-CI job is not an agreed requirement. Existing CI checks and runner regression
+CI artifact retrieval are not execution prerequisites. Add no dedicated timing
+CI job. Existing CI checks and runner regression
 fixtures retain their existing validation role.
 
-The source of measurements and the update/application workflow are reopened.
-Do not treat earlier approval of the CI-dependent ticket breakdown as authority
-to implement that design after this clarification.
+This draft replaces the previous CI-dependent ordering proposal. That proposal's
+earlier approval does not authorize implementing or republishing it.
 
-## Recommended smaller proposal — not yet approved
+## Agreed measurement and application boundaries
 
 Reuse the full Review-ready check that the caller already requested. Measure
 worker file intervals within that check, rather than introduce a separate
 measurement-only full run or dedicated CI job. Keep observations with the
 invocation's ordinary artifacts; they are outputs of that invocation, not a
 persistent store required by later test execution.
+
+Use the one successful complete full invocation to prepare a proposal. Routine
+operation requires neither three repeated full invocations nor a rolling median.
+Retained run artifacts are evidence for that invocation, not timing history
+consulted by later execution.
 
 After a successful complete check, use its eligible measurements and the
 committed priority to prepare an update proposal. The proposal records its SHA,
@@ -48,22 +51,136 @@ and cleanup with startup and worker-wide teardown kept separate.
 
 The [three-run calibration](../../investigation/review-ready-order-calibration-2026-11-02.md)
 remains evidence for conservative margins. Its >50% and >10-second stable
-promotions are a candidate initial rule, not an assurance of zero churn or an
-automatic merge decision. Include estimated whole-suite benefit so an agent can
-distinguish worthwhile changes from negligible suggestions.
+promotions reduced changes but still admitted a later proposal with only
+0.006 seconds of modeled incremental benefit. The agreed criteria below
+therefore distinguish constructing a candidate from adopting its reordering.
 
-A candidate priority update would become effective through an explicit Git
-commit at a normal work boundary. Its new SHA needs its own applicable
-verification; the measurement result cannot certify it. Later validation must
+A candidate priority update becomes effective through an explicit Git commit
+alongside the next ordinary code change. That commit may be in the same pull
+request; neither a separate pull request nor a main merge is required before
+that worktree can use it. Git integration shares the priority with other
+worktrees. Its new SHA needs its own applicable verification; the measurement
+result cannot certify it. Later validation must
 not automatically apply another proposal or create an edit/recheck loop. A
 fresh clone executes the committed priority without a prior local history.
 Concurrent or stale proposals follow the existing
 [integration workflow](../agents/integration.md).
 
-Before implementing or republishing the ordering tickets, confirm whether this
-smaller proposal is the chosen replacement, when a proposal should be generated,
-and how adoption avoids unnecessary extra verification for negligible gains.
-The recommendation does not create a new approved implementation scope.
+The consolidated replacement specification awaits final approval before
+implementation or a revised ticket breakdown is published.
+
+## Agreed unregistered-first dispatch
+
+For full Review-ready, dispatch discovered files absent from the tracked
+priority before the registered priorities, without consulting timing history.
+Within the unregistered group, preserve deterministic test discovery order;
+within the registered group, preserve the tracked priority. This is dispatch
+priority, not a guarantee of worker start timestamps or completion order.
+
+Here, "unregistered" is an observable Git-state property, not proof that a file
+has never run. A newly added or renamed file is unregistered; changing the body
+under an already registered filename does not make it unregistered. Such a
+change is measured in the next full check and can inform a later priority
+proposal. Successful measurement alone does not change registration: only a
+committed priority update does.
+
+The calibration measured native testthat dispatch, which placed unregistered
+files after the registered list. Its modeled improvement is therefore not a
+measurement of the agreed unregistered-first behavior. The design worktree
+changes no production priority or execution path.
+
+## Agreed registration of newly measured files
+
+Include every successfully and validly measured unregistered file in the next
+priority-update proposal, including lightweight files. All-skipped files and
+files without eligible measurements stay unregistered. Otherwise, lightweight
+files would remain in the unregistered-first group on every invocation. The
+commit records priority membership and order, not historical duration samples.
+Generating the proposal does not itself register a file.
+
+Remove entries for deleted test files as priority-list maintenance. A renamed
+file therefore loses its old entry and follows the unregistered-file rules at
+its new name. These membership updates do not depend on the optional
+existing-file reordering threshold.
+
+## Agreed reordering and adoption criteria
+
+Keep new-file registration separate from optional changes to the relative order
+of already registered files. Construct a registration-only baseline by placing
+eligible new files using their measured duration while preserving the relative
+order of existing entries. Process new files by descending measured duration,
+breaking new-file ties by filename. Insert each before the first existing entry
+with a strictly shorter eligible measured duration, or append it if none exists.
+Equal duration is not a shorter-duration match. Ineligible observations do not
+supply comparison evidence.
+
+For an optional existing-file reordering candidate, use stable insertion: move
+a file left past its predecessor only when both observations are eligible and
+it is both more than 50% and more than 10 seconds slower. Comparisons within
+those margins preserve order.
+
+Adopt that optional reordering only when a greedy four-worker replay estimates
+at least ten seconds of whole-suite improvement over the registration-only
+baseline. Both schedules use the same invocation's measured file durations;
+this calculation requires no additional test execution. If the estimate is
+smaller, retain the existing relative order and keep eligible registrations in
+the proposal. Report the adopted proposal's estimated effect against the actual
+unregistered-first dispatch as well, without substituting native append-last
+behavior as that baseline. An estimate is not a measured speedup or a
+statistical guarantee; ten seconds is the initial operating threshold.
+
+Apply the resulting proposal alongside the next ordinary code-change commit,
+which may be in the same pull request. If no such change remains, defer
+priority adoption rather than automatically create a priority-only commit and
+another full invocation. Its later adoption must use
+eligible, available evidence and current integration checks. An adopted new SHA
+still needs its usual verification; a verification run does not automatically
+adopt another proposal.
+
+## Agreed instrumentation overhead acceptance bound
+
+Record small worker-local file-boundary events, not a disk event for every
+test or expectation. Compute the single agreed priority proposal once after a
+successful full invocation; routine execution does not repeat the calibration's
+multi-policy or three-run research analysis.
+
+The [component cost investigation](../../investigation/review-ready-ordering-overhead-2026-11-03.md)
+measures recording and proposal calculation separately. It is neither a
+production implementation benchmark nor a measured whole-suite speedup.
+
+On the maintainer Mac at the reference scale of 196 files and four workers,
+verify that the implementation's median incremental cost of hook setup, recording,
+parsing, computation and proposal output stays below one second. Record the
+sample distribution and method rather than infer this result from estimated
+scheduling gains. This is an implementation acceptance measurement, not an
+additional routine full check, timing CI job or runtime failure threshold.
+
+## Agreed stale-proposal and failure policy
+
+When only tracked priority changes after measurement, recalculate against that
+priority using the same eligible run evidence rather than blindly applying an
+old patch. If the measured test set, test/helper contents or required dependency
+environment changed, or the evidence expired or is unavailable, defer that
+proposal until the next ordinarily required successful full measurement. No additional full
+run is forced solely to recover an ordering proposal. Existing Git integration
+and the new revision's verification remain necessary.
+
+Before dispatch, an unsupported optimization API may fall back to ordinary
+testthat execution with the tracked priority and a visible diagnostic. In that
+case disable proposal generation for that invocation. Timing-recorder,
+proposal-output or calculation failures likewise disable the proposal and report the reason while
+preserving the complete check's actual outcome. Isolate only optimization
+failures: never swallow a package-test, worker or ordinary runner failure. Do
+not retry a suite after dispatch has begun. FIFO state/ownership errors retain
+their separate visible-failure policy below.
+
+Activate recording and adjusted dispatch only for full Review-ready. Source
+scope, ordinary package tests and ordinary package CI retain their existing
+execution paths. Keep any testthat-private adapter narrow and check its
+supported shape before dispatch. The optimized path must execute the same
+discovered files exactly once with the ordinary failure, snapshot and parallel
+semantics. Do not rewrite the committed, tarball or installed DESCRIPTION to
+inject an invocation's order.
 
 ## FIFO heavy admission
 
@@ -79,8 +196,9 @@ Only the oldest live waiting request may acquire the existing stable
 liveness pruning and admission transitions, never through waiting or build/check.
 Preserve bounded-resource waiting from #1135 and its implementation in PR #1152;
 do not reintroduce repeated failed nonblocking lock acquisition. Release the
-metadata lock before any blocking wait for capacity or another request owner. Remove the admitted request from the waiting set in
-that transition, retaining its active ownership record until cleanup. New
+metadata lock before any blocking wait for capacity or another request owner.
+Remove the admitted request from the waiting set in that transition, retaining
+its active ownership record until cleanup. New
 arrivals cannot overtake earlier live waiters by polling more often. Keep the
 heavy lock through owned-process cleanup. No agent-ready acknowledgment or
 priority lane is added.
@@ -129,7 +247,10 @@ exclusion but may overtake participating requests. No old-session migration,
 fleet inventory or compatibility launcher is required. Actual Mac adoption is
 separate evidence from disposable CI fixtures or design approval.
 
-## Ticket status after reconsideration
+## Ticket disposition pending a revised breakdown
+
+The earlier CI-specific breakdown is held as recorded after reconsideration.
+Final approval of this specification does not itself republish that breakdown.
 
 - [#1155](https://github.com/sayuks/marginplyr/issues/1155), the dedicated CI
   measurement proposal, is `needs-info` with its previous scope retained only

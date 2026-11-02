@@ -1,0 +1,17 @@
+Historical source directory, 2026-11-03: /private/tmp/marginplyr-order-cost.LzFy9Y
+Directory references in the original record below refer to that temporary location.
+
+The first base-R benchmark driver invocation exited 1 with "unexpected end of input".
+Seven fresh Rscript child pipelines and thirty warm in-process pipelines had run.
+Two driver function definitions lacked closing braces; the error occurred after
+the pipeline loops and before aggregation/checkpoint output.
+
+The seven original fresh inner-pipeline results remain as r-fresh-01.rds through
+r-fresh-07.rds in this directory. Their original stdout/stderr files also remain.
+Fresh-process outer wall durations and the initial warm results were not saved;
+they are unknown and must not be reconstructed or reported as measured values.
+
+The parent explicitly authorized one replacement batch: seven fresh Rscript
+samples plus thirty warm iterations, after parse-only validation and with an
+immediate checkpoint after each iteration. The corrected driver writes that
+batch to the distinct base-r-recorded subdirectory and preserves this history.
