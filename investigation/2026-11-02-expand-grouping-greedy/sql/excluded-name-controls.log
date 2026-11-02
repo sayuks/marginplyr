@@ -1,0 +1,4 @@
+source: Can't select columns with `.data`.
+✖ `.data` must be numeric or character, not a <rlang_data_pronoun> object.
+expanded: Can't select columns with `.data`.
+✖ `.data` must be numeric or character, not a <rlang_data_pronoun> object.

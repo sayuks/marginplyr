@@ -1,0 +1,19 @@
+dataset_union dimension
+[1] TRUE
+actual levels: a b ; ordinary levels: a b
+dataset_union payload
+[1] "Component “g”: Attributes: < Component “levels”: 2 string mismatches >"
+actual levels: a b ; ordinary levels: b a
+dataset_union fixed
+[1] "Component “g”: Attributes: < Component “levels”: 2 string mismatches >"
+actual levels: b a ; ordinary levels: a b
+dataset_join dimension
+[1] TRUE
+actual levels: a b ; ordinary levels: a b
+dataset_join payload
+[1] TRUE
+actual levels: a b ; ordinary levels: a b
+dataset_join fixed
+[1] "Component “g”: Attributes: < Component “levels”: 2 string mismatches >"
+actual levels: a b ; ordinary levels: b a
+All six normalized value/schema controls passed

@@ -1,0 +1,16 @@
+
+        pass source_error
+        2400          240
+
+            pass source_error
+  anti       240            0
+  cross        0          240
+  full       240            0
+  inner      240            0
+  intersect  240            0
+  left       240            0
+  right      240            0
+  semi       240            0
+  setdiff    240            0
+  union      240            0
+  union_all  240            0

@@ -1,0 +1,46 @@
+        status
+backend  error match
+  duckdb    48  2416
+  sqlite    32  2432
+ backend  name      role         path status
+  sqlite   ... dimension construction  error
+  sqlite   ...     fixed construction  error
+  sqlite   ...   payload construction  error
+  sqlite   ...        id construction  error
+  sqlite   ..1 dimension construction  error
+  sqlite   ..1     fixed construction  error
+  sqlite   ..1   payload construction  error
+  sqlite   ..1        id construction  error
+  duckdb .data dimension      compute  error
+  duckdb .data     fixed      compute  error
+  duckdb .data   payload      compute  error
+  duckdb .data        id      compute  error
+  duckdb   ... dimension construction  error
+  duckdb   ...     fixed construction  error
+  duckdb   ...   payload construction  error
+  duckdb   ...        id construction  error
+  duckdb   ..1 dimension construction  error
+  duckdb   ..1     fixed construction  error
+  duckdb   ..1   payload construction  error
+  duckdb   ..1        id construction  error
+                                                                                                                                                                                                                                  detail
+ Column 2 must not have names of the form ... or ..j.\nUse `.name_repair` to specify repair.\nCaused by error in `repaired_names()`:\n! Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..." at location 1.
+ Column 1 must not have names of the form ... or ..j.\nUse `.name_repair` to specify repair.\nCaused by error in `repaired_names()`:\n! Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..." at location 1.
+ Column 3 must not have names of the form ... or ..j.\nUse `.name_repair` to specify repair.\nCaused by error in `repaired_names()`:\n! Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..." at location 1.
+                                                                                                                                        Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..." at location 1.
+ Column 2 must not have names of the form ... or ..j.\nUse `.name_repair` to specify repair.\nCaused by error in `repaired_names()`:\n! Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..1" at location 1.
+ Column 1 must not have names of the form ... or ..j.\nUse `.name_repair` to specify repair.\nCaused by error in `repaired_names()`:\n! Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..1" at location 1.
+ Column 3 must not have names of the form ... or ..j.\nUse `.name_repair` to specify repair.\nCaused by error in `repaired_names()`:\n! Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..1" at location 1.
+                                                                                                                                        Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..1" at location 1.
+                                                                                                                          Can't select columns with `.data`.\n✖ `.data` must be numeric or character, not a <rlang_data_pronoun> object.
+                                                                                                                          Can't select columns with `.data`.\n✖ `.data` must be numeric or character, not a <rlang_data_pronoun> object.
+                                                                                                                          Can't select columns with `.data`.\n✖ `.data` must be numeric or character, not a <rlang_data_pronoun> object.
+                                                                                                                          Can't select columns with `.data`.\n✖ `.data` must be numeric or character, not a <rlang_data_pronoun> object.
+ Column 2 must not have names of the form ... or ..j.\nUse `.name_repair` to specify repair.\nCaused by error in `repaired_names()`:\n! Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..." at location 1.
+ Column 1 must not have names of the form ... or ..j.\nUse `.name_repair` to specify repair.\nCaused by error in `repaired_names()`:\n! Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..." at location 1.
+ Column 3 must not have names of the form ... or ..j.\nUse `.name_repair` to specify repair.\nCaused by error in `repaired_names()`:\n! Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..." at location 1.
+                                                                                                                                        Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..." at location 1.
+ Column 2 must not have names of the form ... or ..j.\nUse `.name_repair` to specify repair.\nCaused by error in `repaired_names()`:\n! Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..1" at location 1.
+ Column 1 must not have names of the form ... or ..j.\nUse `.name_repair` to specify repair.\nCaused by error in `repaired_names()`:\n! Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..1" at location 1.
+ Column 3 must not have names of the form ... or ..j.\nUse `.name_repair` to specify repair.\nCaused by error in `repaired_names()`:\n! Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..1" at location 1.
+                                                                                                                                        Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..1" at location 1.

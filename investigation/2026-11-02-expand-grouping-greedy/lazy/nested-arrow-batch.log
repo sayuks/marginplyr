@@ -1,0 +1,13 @@
+
+        both_error control_only_error               pass
+                12                  2                 82
+
+                     both_error control_only_error pass
+  chunked_dictionary          0                  2   10
+  chunked_struct              0                  0   12
+  extension                   2                  0   10
+  list_map                    2                  0   10
+  list_struct                 2                  0   10
+  nested_list                 2                  0   10
+  struct_extension            2                  0   10
+  struct_nested               2                  0   10

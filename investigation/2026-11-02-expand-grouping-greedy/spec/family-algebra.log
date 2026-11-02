@@ -1,0 +1,6 @@
+
+expected-duplicate-refusal                      match
+                       242                       2758
+[1] fixture  fixed    policy   status   source   observed
+<0 rows> (or 0-length row.names)
+Executed plan comparisons: 3000

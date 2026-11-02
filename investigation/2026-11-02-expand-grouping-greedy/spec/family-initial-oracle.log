@@ -1,0 +1,21 @@
+
+          candidate-values expected-duplicate-refusal
+                       614                        242
+                     match
+                      2144
+ fixture fixed policy           status          source observed
+       1 FALSE  error candidate-values  grouping_set()        0
+       1 FALSE   drop candidate-values  grouping_set()        0
+       1 FALSE   keep candidate-values  grouping_set()        0
+       1  TRUE  error candidate-values  grouping_set()        0
+       1  TRUE   drop candidate-values  grouping_set()        0
+       1  TRUE   keep candidate-values  grouping_set()        0
+       2 FALSE  error candidate-values grouping_spec()        0
+       2 FALSE   drop candidate-values grouping_spec()        0
+       2 FALSE   keep candidate-values grouping_spec()        0
+       2  TRUE  error candidate-values grouping_spec()        0
+       2  TRUE   drop candidate-values grouping_spec()        0
+       2  TRUE   keep candidate-values grouping_spec()        0
+Executed plan comparisons: 3000
+Error: !any(grepl("candidate", results$status)) is not TRUE
+Execution halted

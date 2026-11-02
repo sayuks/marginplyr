@@ -1,0 +1,68 @@
+
+       candidate-error expected-empty-refusal                  match
+                   220                    204                   4064
+ frame expression        parent          status        source
+     1         18  grouping_set candidate-error    !!!literal
+     1         18 grouping_sets candidate-error    !!!literal
+     1         18        rollup candidate-error    !!!literal
+     1         18          cube candidate-error    !!!literal
+     1         18 grouping_spec candidate-error    !!!literal
+     1         44  grouping_set candidate-error    !!!literal
+     1         44 grouping_sets candidate-error    !!!literal
+     1         44        rollup candidate-error    !!!literal
+     1         44          cube candidate-error    !!!literal
+     1         44 grouping_spec candidate-error    !!!literal
+     1         61  grouping_set candidate-error   !!!symbol_a
+     1         61 grouping_sets candidate-error   !!!symbol_a
+     1         61        rollup candidate-error   !!!symbol_a
+     1         61          cube candidate-error   !!!symbol_a
+     1         61 grouping_spec candidate-error   !!!symbol_a
+     1         69  grouping_set candidate-error        !!!q_a
+     1         69 grouping_sets candidate-error        !!!q_a
+     1         69        rollup candidate-error        !!!q_a
+     1         69          cube candidate-error        !!!q_a
+     1         69 grouping_spec candidate-error        !!!q_a
+     1         75  grouping_set candidate-error    !!!q_where
+     1         75 grouping_sets candidate-error    !!!q_where
+     1         75        rollup candidate-error    !!!q_where
+     1         75          cube candidate-error    !!!q_where
+     1         75 grouping_spec candidate-error    !!!q_where
+     1         76  grouping_set candidate-error !!!q_external
+     1         76 grouping_sets candidate-error !!!q_external
+     1         76        rollup candidate-error !!!q_external
+     1         76          cube candidate-error !!!q_external
+     1         76 grouping_spec candidate-error !!!q_external
+                        oracle actual
+ Can't use `!!!` at top level.    b,a
+ Can't use `!!!` at top level.      b
+ Can't use `!!!` at top level.    b,a
+ Can't use `!!!` at top level.    b,a
+ Can't use `!!!` at top level.    b,a
+ Can't use `!!!` at top level.    b,a
+ Can't use `!!!` at top level.      b
+ Can't use `!!!` at top level.    b,a
+ Can't use `!!!` at top level.    b,a
+ Can't use `!!!` at top level.    b,a
+ Can't use `!!!` at top level.      a
+ Can't use `!!!` at top level.      a
+ Can't use `!!!` at top level.      a
+ Can't use `!!!` at top level.      a
+ Can't use `!!!` at top level.      a
+ Can't use `!!!` at top level.      a
+ Can't use `!!!` at top level.      a
+ Can't use `!!!` at top level.      a
+ Can't use `!!!` at top level.      a
+ Can't use `!!!` at top level.      a
+ Can't use `!!!` at top level.      a
+ Can't use `!!!` at top level.      a
+ Can't use `!!!` at top level.      a
+ Can't use `!!!` at top level.      a
+ Can't use `!!!` at top level.      a
+ Can't use `!!!` at top level.    a,c
+ Can't use `!!!` at top level.    a,c
+ Can't use `!!!` at top level.    a,c
+ Can't use `!!!` at top level.    a,c
+ Can't use `!!!` at top level.    a,c
+Executed comparisons: 4488
+Error: nrow(candidates) == 0L is not TRUE
+Execution halted

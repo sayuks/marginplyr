@@ -1,0 +1,23 @@
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l1dcachesize'. Detail: [errno 1] Operation not permitted
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l2cachesize'. Detail: [errno 1] Operation not permitted
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l3cachesize'. Detail: [errno 1] Operation not permitted
+LEAD chunked_dictionary FALSE dataset_union payload none value_diff
+LEAD chunked_dictionary FALSE dataset_union fixed none value_diff
+LEAD chunked_dictionary FALSE dataset_join dimension none value_diff
+LEAD chunked_dictionary FALSE dataset_join payload none value_diff
+LEAD chunked_dictionary FALSE dataset_join fixed none value_diff
+
+        both_error control_only_error               pass       source_error
+                52                 12                363                240
+        value_diff
+                 5
+
+                     both_error control_only_error pass source_error value_diff
+  chunked_dictionary          0                 12   55           12          5
+  chunked_struct              0                  0   48           36          0
+  extension                  12                  0   60           12          0
+  list_map                    8                  0   40           36          0
+  list_struct                 8                  0   40           36          0
+  nested_list                 8                  0   40           36          0
+  struct_extension            8                  0   40           36          0
+  struct_nested               8                  0   40           36          0
