@@ -8,9 +8,8 @@ The original task requested measured heavy-first test dispatch and FIFO local
 heavy admission. Keep the tracked start-first setting as the persistent order
 source and retain the existing heavy lock, pinned source and terminal-result
 authority. The [specification](../specs/review-ready-adaptive-order-fifo.md)
-records the ordering workflow and independent FIFO requirements. The dispatch
-mechanism was reopened after the maintainer challenged the private execution
-adapter needed by unregistered-first dispatch; a replacement awaits confirmation.
+records the agreed ordinary-dispatch workflow and independent FIFO requirements.
+The consolidated final draft awaits maintainer confirmation.
 
 A dedicated timing CI pipeline is not an approved requirement. The maintainer
 clarified that asking about CI was exploratory, and reopened the prior approval.
@@ -22,17 +21,17 @@ The agreed replacement boundaries use measurements from one already-requested,
 successful complete full Review-ready check, without a shared timing database
 or rolling local history. Proposals may join the next ordinary code-change
 commit in the same pull request; the new revision still needs its applicable
-verification. The earlier unregistered-first choice is held pending an informed
-decision about its execution-adapter burden. The recommended replacement keeps
-ordinary `test_check()`, accepts native append-last ordering for a file's first
-measurement, and updates tracked priority for later checks. This recommendation
-is not approved yet. Pre-commit priority edits or a private execution adapter
-remain alternatives if first-run priority is essential. The separate private
-worker-timing hook remains a maintenance dependency even under native dispatch.
+verification. Keep ordinary `test_check()`, accept native append-last ordering
+for unregistered files until a measured priority update is committed, and use
+that tracked priority for later checks. First-run unregistered priority does
+not justify a private execution adapter or provisional registration. The
+separate private worker-timing hook remains a maintenance dependency, isolated
+from test dispatch and guarded by compatibility checks and actual-worker
+measurement fixtures.
 
 Changing an already registered file under the same name does not make it
-unregistered. Every eligible newly measured file,
-including lightweight files, belongs in the next registration proposal.
+unregistered. Every eligible newly measured file, including lightweight files,
+belongs in the next registration proposal.
 Optional existing-file reorderings cross only differences greater than both
 50% and ten seconds, and are adopted only for at least ten seconds of modeled
 whole-suite improvement over registration alone. Without a remaining ordinary
@@ -42,15 +41,15 @@ on the maintainer Mac at the reference scale of 196 files and four workers,
 measured during implementation acceptance rather than every invocation.
 Recalculate a stale priority-only proposal against the current list using
 eligible evidence; defer proposals when measured test inputs or dependency
-environment changed, or evidence expired. Unsupported optimization may select
-ordinary tracked-priority execution before dispatch, with a diagnostic and no
-proposal. Recording or calculation errors disable proposals while preserving
-the complete check's actual outcome. Genuine check and FIFO ownership failures
+environment changed, or evidence expired. An unsupported timing hook disables
+recording and proposals with a diagnostic while ordinary tracked-priority
+execution continues. Recording or calculation errors disable proposals while
+preserving the complete check's actual outcome. Genuine check and FIFO ownership failures
 remain failures, and no dispatched suite is retried.
 
-The three-run local calibration remains evidence for the former native
-dispatch, not an observed speedup under unregistered-first dispatch. The
-complete replacement decision awaits final approval.
+The three-run local calibration measured the selected native dispatch and
+supports priority proposals, not an observed speedup under reordered execution.
+The complete replacement decision awaits final approval.
 
 FIFO remains independent: use minimal live coordination with the established
 heavy lock, preserve bounded waiting from #1135, and retain ADR 0039's process

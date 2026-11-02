@@ -1,12 +1,9 @@
 # Measured test order and FIFO Review-ready admission
 
-Status: dispatch mechanism reopened, 2026-11-03. The maintainer challenged the
-implementation and maintenance burden of unregistered-first dispatch. The
-previous final draft did not adequately explain its private execution-adapter
-dependency. The recommendation below awaits approval; the earlier
-unregistered-first agreement is held pending that choice. Other agreed
-boundaries and the independent FIFO request remain. Implementation and adoption
-are not claimed.
+Status: final draft awaiting consolidated maintainer confirmation, 2026-11-03.
+The individual decisions below are agreed, including ordinary testthat dispatch
+with no first-run priority guarantee for unregistered files. The independent
+FIFO request remains. Implementation and adoption are not claimed.
 [ADR 0040](../adr/0040-learn-local-test-order-and-admit-heavy-checks-fifo.md)
 records the scope boundary. Existing package CI is unchanged.
 
@@ -63,8 +60,8 @@ alongside the next ordinary code change. That commit may be in the same pull
 request; neither a separate pull request nor a main merge is required before
 that worktree can use it. Git integration shares the priority with other
 worktrees. Its new SHA needs its own applicable verification; the measurement
-result cannot certify it. Later validation must
-not automatically apply another proposal or create an edit/recheck loop. A
+result cannot certify it. Later validation must not automatically apply another
+proposal or create an edit/recheck loop. A
 fresh clone executes the committed priority without a prior local history.
 Concurrent or stale proposals follow the existing
 [integration workflow](../agents/integration.md).
@@ -72,7 +69,7 @@ Concurrent or stale proposals follow the existing
 The consolidated replacement specification awaits final approval before
 implementation or a revised ticket breakdown is published.
 
-## Dispatch mechanism — reopened decision
+## Agreed ordinary testthat dispatch
 
 testthat 3.3.2 supports tracked start-first patterns, followed by remaining
 files alphabetically. Its `test_dir()` reads the setting itself, so passing
@@ -81,33 +78,23 @@ argument. A public discovery function accepting an order is not an execution
 override. See the [parallel-testing guide](https://testthat.r-lib.org/articles/parallel.html)
 and [versioned implementation](https://github.com/r-lib/testthat/blob/v3.3.2/R/test-files.R).
 
-The previous unregistered-first draft required a private execution adapter;
-it was not achievable by unchanged metadata and ordinary `test_check()` alone.
-That burden was insufficiently explained in the approval summary.
+Use ordinary `test_check()` dispatch with the committed priority. A file absent
+from that list follows registered priorities alphabetically until a priority
+update is committed. After successful measurement, propose its tracked priority
+using the registration and adoption rules below. A later check can use the
+updated committed order without local timing history.
 
-The replacement recommendation, not yet approved, is ordinary `test_check()`
-dispatch with the committed priority. A file absent from the priority may run
-late on its first full check. After successful measurement, propose its tracked
-priority using the agreed registration and adoption rules, effective after a
-normal Git commit. This retains the original next-run learning goal while
-removing the custom execution adapter and provisional-registration state.
+Accepting initial append-last behavior avoids a private execution adapter and
+pre-measurement provisional registration. The original goal is learning from
+one check for later checks; first-run priority is not a requirement. Do not
+introduce a pre-commit missing-file prefix or rewrite the runtime order.
 
-Two alternatives remain available if first-run priority is essential:
-
-- Prepend missing filenames to DESCRIPTION before the code commit, then use
-  ordinary `test_check()`. This changes ordinary package/CI priority as well.
-  Membership no longer identifies previously measured files. Preserving the
-  existing registration exception and all-skipped rules would need separately
-  tracked provisional status, or a revision of those rules.
-- Retain the earlier Review-ready-only private execution adapter, with its
-  compatibility checks, actual-worker fixtures and fallback behavior. This
-  preserves first-run priority at the cost of maintaining the execution seam.
-
-The maintainer has not selected among these alternatives. Do not treat the
-recommendation as implementation authorization. Removing the execution
-adapter does not remove the separate private worker-timing hook used by the
-calibration; accurate file intervals and cleanup still need that narrow
-observational seam. Controller reporter replay is not a replacement clock.
+The separate private worker-timing hook remains a maintenance dependency:
+accurate file intervals and cleanup still need that narrow observational seam.
+Check its supported shape before recording, isolate it from dispatch, and use
+actual-worker fixtures to establish the measurement boundary. Controller
+reporter replay is not a replacement clock. Ordinary package tests and CI
+continue using the committed testthat setting without this local recorder.
 
 Here, "unregistered" is an observable Git-state property, not proof that a file
 has never run. A newly added or renamed file is unregistered; changing the body
@@ -117,7 +104,7 @@ proposal. Successful measurement alone does not change registration: only a
 committed priority update does.
 
 The calibration measured native testthat dispatch, which placed unregistered
-files after the registered list. It therefore matches the recommended first-run
+files after the registered list. It therefore matches the agreed first-run
 ordering, but its modeled proposals still do not establish an observed speedup
 after adoption. Dispatch priority never guarantees worker start timestamps or
 completion order. The design worktree changes no production priority or
@@ -159,16 +146,15 @@ baseline. Both schedules use the same invocation's measured file durations;
 this calculation requires no additional test execution. If the estimate is
 smaller, retain the existing relative order and keep eligible registrations in
 the proposal. Report the adopted proposal's estimated effect against the actual
-dispatch of the measured invocation as well. Under the new recommendation that
-baseline is native registered-first dispatch, not the previous draft's
-unregistered-first schedule. An estimate is not a measured speedup or a
-statistical guarantee; ten seconds is the initial operating threshold.
+native registered-first dispatch of the measured invocation as well. An
+estimate is not a measured speedup or a statistical guarantee; ten seconds is
+the initial operating threshold.
 
 Apply the resulting proposal alongside the next ordinary code-change commit,
 which may be in the same pull request. If no such change remains, defer
 priority adoption rather than automatically create a priority-only commit and
-another full invocation. Its later adoption must use
-eligible, available evidence and current integration checks. An adopted new SHA
+another full invocation. Its later adoption must use eligible, available evidence
+and current integration checks. An adopted new SHA
 still needs its usual verification; a verification run does not automatically
 adopt another proposal.
 
@@ -184,8 +170,8 @@ measures recording and proposal calculation separately. It is neither a
 production implementation benchmark nor a measured whole-suite speedup.
 
 On the maintainer Mac at the reference scale of 196 files and four workers,
-verify that the implementation's median incremental cost of hook setup, recording,
-parsing, computation and proposal output stays below one second. Record the
+verify that the implementation's median incremental cost of hook setup,
+recording, parsing, computation and proposal output stays below one second. Record the
 sample distribution and method rather than infer this result from estimated
 scheduling gains. This is an implementation acceptance measurement, not an
 additional routine full check, timing CI job or runtime failure threshold.
@@ -196,28 +182,26 @@ When only tracked priority changes after measurement, recalculate against that
 priority using the same eligible run evidence rather than blindly applying an
 old patch. If the measured test set, test/helper contents or required dependency
 environment changed, or the evidence expired or is unavailable, defer that
-proposal until the next ordinarily required successful full measurement. No additional full
-run is forced solely to recover an ordering proposal. Existing Git integration
+proposal until the next ordinarily required successful full measurement. No
+additional full run is forced solely to recover an ordering proposal. Existing Git integration
 and the new revision's verification remain necessary.
 
-Before dispatch, an unsupported optimization API may fall back to ordinary
-testthat execution with the tracked priority and a visible diagnostic. In that
-case disable proposal generation for that invocation. Timing-recorder,
-proposal-output or calculation failures likewise disable the proposal and report the reason while
-preserving the complete check's actual outcome. Isolate only optimization
+If the private timing hook is unsupported, disable recording and proposal
+generation with a visible diagnostic, and execute ordinary `test_check()` with
+the tracked priority. Timing-recorder, proposal-output or calculation failures
+likewise disable the proposal and report the reason while preserving the
+complete check's actual outcome. Isolate only optimization
 failures: never swallow a package-test, worker or ordinary runner failure. Do
 not retry a suite after dispatch has begun. FIFO state/ownership errors retain
 their separate visible-failure policy below.
 
-Activate recording only for full Review-ready. Under the recommended native
-dispatch design, all invocations retain ordinary `test_check()` execution;
-recording observes worker boundaries without replacing test dispatch. The
-earlier adjusted-dispatch and execution-adapter provisions apply only if the
-maintainer chooses that held alternative. Every path must execute the same
-discovered files exactly once with ordinary failure, snapshot and parallel
+Activate recording only for full Review-ready. All invocations retain ordinary
+`test_check()` execution; recording observes worker boundaries without replacing
+test dispatch. Every path must execute the same discovered files exactly once
+with ordinary failure, snapshot and parallel
 semantics. Do not rewrite a pinned source, tarball or installed DESCRIPTION to
-inject an invocation's order. Any pre-commit metadata alternative needs its
-explicitly revised registration rules agreed before implementation.
+inject an invocation's order. The committed priority changes only through the
+explicit Git application workflow above.
 
 ## FIFO heavy admission
 
