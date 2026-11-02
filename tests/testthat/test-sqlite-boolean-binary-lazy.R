@@ -50,8 +50,12 @@ test_that("SQLite binary Boolean-word inputs with pronouns remain lazy", {
     dplyr::arrange(as.data.frame(x), .data$g, .data[["TRUE"]])
   }
   for (cte in c(FALSE, TRUE)) {
-    # CTE set operations also lose Boolean names on ordinary SQLite inputs.
-    for (i in if (cte) seq_len(4L) else seq_along(derived)) {
+    ordinary <- dplyr::collect(
+      dplyr::union_all(source, source),
+      sql_options = dbplyr::sql_options(cte = cte)
+    )
+    expect_equal(canonical(ordinary), canonical(rbind(rows, rows)))
+    for (i in seq_along(derived)) {
       actual <- dplyr::collect(
         derived[[i]], sql_options = dbplyr::sql_options(cte = cte)
       )

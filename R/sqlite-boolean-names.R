@@ -22,14 +22,30 @@ sqlite_boolean_public_query <- function(result) {
   result
 }
 
-# Keep the public projection symbolic until joins have had a chance to inline
-# it; generated pronoun references need quoting only when SQL is built.
+# Keep the public projection symbolic until joins can inline it. Once built,
+# keep it opaque so CTE flattening cannot lift its public Boolean aliases.
+# The caller supplies a public projection over a privately named SQLite query.
 #' @exportS3Method dbplyr::sql_build
 #' @noRd
 sql_build.lazy_margin_public_query <- function(op, con, ...,
                                                sql_options = NULL) {
   op <- sql_quote_generated_query(op)
-  NextMethod()
+  query <- NextMethod()
+  sql <- dbplyr::sql_render(query, con = con, sql_options = sql_options)
+  relation <- dplyr::tbl(con, sql, vars = dbplyr::op_vars(op))
+  dbplyr::sql_build(relation, con = con, sql_options = sql_options)
+}
+
+# Render a root public projection without lifting its aliases into a CTE.
+# Its built query is already opaque SQL, including any derived predicates.
+#' @exportS3Method dbplyr::sql_render
+#' @noRd
+sql_render.lazy_margin_public_query <- function(query, con = NULL, ...,
+                                                sql_options = NULL,
+                                                subquery = FALSE, lvl = 0) {
+  built <- dbplyr::sql_build(query, con = con, sql_options = sql_options)
+  dbplyr::sql_render(built, con = con, ..., sql_options = sql_options,
+                     subquery = subquery, lvl = lvl)
 }
 
 # Repair aliases at final rendering after ordinary verbs add query layers.
