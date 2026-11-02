@@ -97,7 +97,7 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::lintr, any::pkgload, any::spelling, local::., any::testthat, any::yaml, any::jsonlite, any::processx, any::ps, any::filelock, any::openssl, any::fs
+          extra-packages: any::lintr, any::pkgload, any::spelling, local::., any::testthat, any::yaml, any::jsonlite, any::processx, any::ps, any::filelock, any::R6, any::rcmdcheck
           needs: lint
 
       - name: Verify suite-coverage worker execution
@@ -119,15 +119,11 @@ jobs:
           python3 tools/verify-ci-artifacts.py
           python3 tools/test-ci-artifacts.py
 
-      # Native fixtures need a complete same-account ownership view. This
-      # account contains only their processing, with the provisioned R library.
       - name: Verify R runner process contracts
-        run: |
-          sudo useradd --create-home --user-group --groups "$(id -gn)" marginplyr-fixture
-          git clone --quiet --no-local . "$RUNNER_TEMP/review-ready-fixtures"
-          sudo chown -R marginplyr-fixture:marginplyr-fixture "$RUNNER_TEMP/review-ready-fixtures"
-          cd "$RUNNER_TEMP/review-ready-fixtures"
-          sudo -H -u marginplyr-fixture env PATH="$PATH" R_LIBS_USER="$R_LIBS_USER" Rscript tools/test-review-ready-runner.R
+        run: Rscript tools/test-review-ready-runner.R
+
+      - name: Verify Review-ready progress and worker diagnostics
+        run: Rscript tools/test-review-ready-progress.R
 
       # Jarl complements rather than replaces lintr. Package-specific rules
       # need R and installed packages, so this reuses the dependency environment

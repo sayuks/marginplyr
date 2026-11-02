@@ -1,152 +1,91 @@
-# Repository-owned R delivery
+# Repository-owned Review-ready runner
 
-This is the R generation's setup and operating guide under
-[ADR 0039](../design/adr/0039-run-review-ready-from-the-target-worktree.md).
-The [runner specification](../design/specs/review-ready-repository-runner.md)
-owns acceptance. Until its drained cutover is established, use the installed
-command required by [local checks](../design/agents/local-checks.md).
+[Local checks](../design/agents/local-checks.md) owns scope judgment and agent
+workflow. The [specification](../design/specs/review-ready-repository-runner.md)
+and [ADR 0039](../design/adr/0039-run-review-ready-from-the-target-worktree.md)
+own the accepted design. The installed command remains active until the
+[drained cutover](review-ready-admission.md) is complete; these instructions
+describe the target repository entry.
 
-## Setup and authority
+## Setup and invocation
 
-Install the packages in `DESCRIPTION`'s `Config/Needs/review` field. The runner
-directly validates processx, ps, filelock, fs, openssl, jsonlite, and openssl's
-askpass/sys closure. OpenSSL headers and libraries are development requirements
-of the openssl R package. A working R C compiler is also needed for the small
-`tools/review-ready-signals.c` receiver: base R exposes interrupts but no
-SIGTERM/SIGHUP receiver. It records cancellation; processx and ps control and
-inspect children. Its monotonic clock measures shutdown and mailbox deadlines
-independently of the UTC timestamps used for history and evidence. The pinned
-source is compiled inside each request during setup, before admission waiting.
-These are development tools, not package
-runtime Imports.
+Install `DESCRIPTION`'s `Config/Needs/review` development tools and make `jarl`
+and `Rscript` available on PATH. These tools are separate from package runtime
+Imports. The checked-out repository supplies the runner; adopting another
+revision through Git updates it without installing a separate launcher.
 
-`fs::file_info()` supplies regular-file type and device/inode metadata in one
-in-process query, so special files are refused before opening a stream.
-For source installation, follow fs's `SystemRequirements` metadata.
+From a clean committed worktree root:
 
-The review and website setup also include cpp11 for the development-dependency
-audit performed by devtools when it installs the source for README generation.
+```sh
+Rscript tools/review-ready.R --scope source --reason 'Explain the heavy-check omission.'
+Rscript tools/review-ready.R --scope full --reason 'Explain why package build/check is needed.'
+```
 
-The entry is `Rscript tools/review-ready.R`, from the target root, with no
-check/skip options. `--status` and `--recover REQUEST` operate without a clean
-HEAD or the originating checkout. They do not run a check. Unknown control
-versions remain visible and require compatible recovery code.
+Both forms run the five mandatory checks before any shared-slot request.
+`source` ends with an explicit heavy-check omission. `full` waits inside the
+same command, then starts automatically when its OS advisory lock is available.
+Keep the same execution handle through checking, cleanup and terminal output.
+The result always names the submitted SHA, scope and reason.
 
-For checks, local main supplies accepted R sources through pinned Git objects.
-A missing main or accepted R manager stops setup. The manager and registered
-helpers are materialized before waiting; later Git updates cannot substitute
-them. `tools/review-ready-registry.R` owns the R generation's classification
-and workload registration. A candidate that changes the trust core uses main's
-outer Full supervisor and gate. The accepted runner fixture reads the candidate
-implementation as its test subject. A candidate hash is not its own acceptance.
+The lock at `~/.local/state/marginplyr/review-ready-heavy.lock` is shared by
+this user's marginplyr clones/worktrees on the Mac. The account home is resolved
+independently of caller HOME/cache overrides. Its stable target is an operating primitive, not an expiring run artifact.
+Keep it in place while owners or waiters may exist. Focused tests have the
+separate per-worktree allowance in local checks; four package workers are not
+a user-wide process cap.
 
-## Drained cutover
+## Cancellation
 
-After the accepted implementation and its required verification are available
-on local main, run `Rscript tools/migrate-review-ready.R` from that revision.
-It checks legacy status, retires the installed check entry, rechecks status and
-live launcher processes, and refuses unfinished or damaged ownership. Owners
-finish/cancel their own work and confirm cleanup. A retained legacy adapter
-supports status/recovery during an interrupted cutover; it cannot launch a
-check. `delivery.json` is published only after the drain and history attribution.
-Normal R requests require that marker. Updating a worktree subsequently updates
-its tracked runner without reinstalling an executable.
+Cancel the original invocation through its retained execution handle. An
+ordinary cancellation stops and collects its owned child work before releasing
+the heavy slot. A cancelled waiter must never start later. Retain available
+logs and collect the terminal cancellation result before editing and resubmitting.
 
-Refresh participating sessions to acknowledge the repository entry, same-agent
-bounded investigation, retained execution handle, cancellation propagation,
-and terminal cleanup transitions in local checks. Verify actual Full,
-Documentation and supported Repository invocations and actual cross-clone
-reuse with a new R Full origin. A process fixture's checker stand-in is not
-that execution evidence. The first implementation is bootstrapped through the
-installed command's Full check; it cannot adopt itself as local main authority.
+Abrupt R termination uses the existing process library's cleanup facilities.
+It may release the lock before every descendant stops; strict crash-time
+exclusion is outside this contract. Record actual Mac cleanup observations
+and their limits during adoption. A free lock or absent process is not a
+successful check result. There is no recovery command, watchdog, durable
+recovery ledger or automatic retry.
 
-## Request storage and retention
+## Artifacts and retention
 
-The OS account database supplies the shared root independently of HOME/XDG:
-`.local/state/marginplyr/review-ready/requests/<request>/`. A request contains
-`logs/`, `diagnostics/`, `work/`, `tmp/`, `cache/`, its manager lock, and a
-checksummed control record. State is published by a closed complete write and
-same-directory rename. Manager termination is recoverable; latest-write
-durability across OS crashes or power loss is not promised.
+Each invocation records one UTC start timestamp and groups all substantial
+runner-owned data in `<worktree-root>/.review-ready/runs/<run-id>/`, outside
+Git's administrative directory. This includes the pinned source and archive,
+built tarball, check/install work, progress events, logs, result, and supported
+child temporary/cache output. Git and R source builds exclude `.review-ready/`.
+Supported child environment settings direct owned temporary and cache output
+there without a separate renderer capability registry.
 
-Owned processes must stop before work, temporary files and caches are removed.
-Terminal history and diagnostics expire seven days after confirmed completion.
-Startup/completion maintenance recovers only confirmed stopped ownership, and
-protects live, unknown or damaged state. Safely retired histories are renamed
-before recursive deletion so partial deletion cannot become an active blocker.
-Older-history deletion failures are reported and retried. The current request's
-cleanup failure still protects capacity. Shared empty lock files remain.
+One lifetime covers every artifact and every outcome: seven consecutive
+24-hour periods from the recorded UTC start time. Reads, log writes and a
+missing finish record do not renew or change that clock. On a later invocation
+in the same worktree, the runner may delete an expired inactive run directory
+as one unit. An OS-backed liveness guard protects active data. Skip data whose
+ownership or safety cannot be established, and report cleanup problems.
 
-Migration attributes terminal legacy request directories separately and keeps
-their original completion times. Unattributed manual captures, shared caches,
-Git worktrees, installed developer libraries/tools, tracked research and OS
-crash reports are outside runtime deletion. Historical diagnostics outside the
-common request tree require individual provenance; a matching filename alone
-is insufficient.
+Seven days establishes deletion eligibility, not a maximum on-disk age. Other
+worktrees are never swept; an unused worktree retains eligible data until its
+next invocation. Deleting a worktree can remove its logs. Stable shared locks,
+installed developer tools/libraries, unrelated shared caches, tracked research,
+Codex history and OS crash reports are outside routine cleanup.
 
-## Evidence transactions and authentication
+## Development and CI verification
 
-`tools/review-ready-evidence.R` owns issuance, validation and collection. The
-v2 store holds a complete authenticated inventory in a generation directory.
-An atomic `current.json` replacement publishes retirement, ordering and key
-changes together under the permanent evidence lock. Readers use the same lock.
-Unpublished generations cannot authorize reuse. A terminal origin is bound to
-the authorized request and its pre-cleanup observation, source/environment,
-actual executed units and original completion deadline.
+Routine invocation runs the baseline and chosen heavy portion only. It does
+not run infrastructure self-tests or regenerate the real README/site, including
+on a branch with no earlier result. CI runs the retained runner and dedicated
+progress regression suites on every PR without path conditions:
 
-The byte protocol length-prefixes UTF-8 strings, sorts unique map keys, retains
-array order, distinguishes null and booleans, and accepts finite numbers only.
-Sealing first normalizes through the store's JSON representation, then applies
-the v2 encoding. SHA-256 and HMAC-SHA256 use openssl. Key files require the
-account owner, mode 0600 and exactly 32 secure-random bytes. Secret environment
-values are represented by fingerprints, never plaintext.
+```sh
+Rscript tools/test-review-ready-runner.R
+Rscript tools/test-review-ready-progress.R
+```
 
-Verification blinds both fixed-length authenticators with a fresh random
-HMAC key before comparing the blinded results. This follows the random-key
-[double-HMAC comparison strategy](https://www.paragonie.com/blog/2015/11/preventing-timing-attacks-on-string-comparison-with-double-hmac-strategy):
-comparison behavior cannot reveal a prefix of the original MAC. It does not
-claim that R's `identical()` is a constant-time primitive. Known-answer and
-tamper fixtures establish the protocol separately from that comparison argument.
-
-Keys renew after seven days through the same generation transaction. Renewal
-changes authentication, not origin identity, sequence, outcome or deadline.
-Retirement removes the successes vetoed by an expiring negative observation in
-that same transaction. References do not extend origin eligibility. A retained
-request's own independent executed unit remains distinct from inherited reuse.
-
-## Renderer isolation
-
-Each request starts with empty private HOME, XDG, Deno, R user cache/config/data,
-and temporary roots. Absolute ordered R libraries and selected installed tools
-are preserved. Metadata queries check the required render/Pandoc and TypeScript
-features and the actual Quarto/Deno cache, HOME and temporary destinations.
-Compatible versions and private storage layouts are accepted; unavailable
-features, external storage and unsupported overrides name their refusal reason.
-CI continues to use current stable Quarto. Actual versions and content remain
-evidence inputs, so accepting an update does not reuse the previous tools'
-results. After capability and identity queries finish, the worker empties its
-owned cache tree before starting validation. Retry keeps the same tarball, tool
-identities and private caches until all writers stop.
-Shared caches and personal home settings are not copied into the request.
-
-Registered request storage roles are normalized in environment
-identity; HOME and cache configuration remain represented. The same effective
-child environment reaches the identity probe, documentation proof, gate and
-descendants. The metadata-removal rules of ADR 0038 still apply.
-The R startup paper-size value is recorded before child startup. Known-format
-processx/ps tree markers with value `YES` are supervisor transport: they remain
-in children for cleanup and are excluded from package-input identity. Unknown
-marker names/values remain inputs. The mechanism is documented by
-[processx process cleanup](https://processx.r-lib.org/articles/cleanup.html).
-
-## Verification entry
-
-`Rscript tools/test-review-ready-runner.R` runs the new authentication and
-isolated process contracts. `jarl check .`, package-aware lintr, the existing
-admission/evidence fixtures and R gate verifier remain part of bootstrap Full.
-The admitted protocol-3 Full gate runs the R process and actual renderer
-contracts before package build/check. The shared R gate verifier stays bounded
-when invoked inside those fixtures; protocol 4 routes contracts through its registry.
-CI also runs the R process contracts with their declared tool dependencies.
-Acceptance records distinguish these fixtures from real package checks and
-operational rollout.
+The command/process boundary is the approved test seam: tiny disposable
+repositories/packages establish pinned inputs, scopes, admission, failure,
+cancellation and retention. Progress fixtures exercise real workers, passing
+and failing packages, and startup/exit/teardown diagnostics. Fixture results
+are separate from real package-check and rollout evidence. Workflow contracts,
+CI artifact checks and the release matrix retain their independent roles.

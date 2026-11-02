@@ -1,518 +1,136 @@
 # Repository-owned Review-ready runner
 
-Design for [#1114](https://github.com/sayuks/marginplyr/issues/1114), under
-[ADR 0039](../adr/0039-run-review-ready-from-the-target-worktree.md).
-Status: accepted through 2026-11-01, including the merged evidence-reuse
-integration. The policy interview is complete. This is a design, not an
-implemented replacement or authorization to delete existing data.
-
-The approved direction replaces the issue's proposed automatic refresh of an
-installed CLI with repository-owned delivery, eliminating that copy's
-synchronization requirement. [Local checks](../agents/local-checks.md) and
-[shared admission](../../tools/review-ready-admission.md) remain the operational
-authority until implementation and the accepted cutover establish the new
-entry point.
-
-The implementation baseline includes [PR #1115](https://github.com/sayuks/marginplyr/pull/1115),
-merged at `be9e81e9c3d977b8a2607f3971468b5acf64faf1`. Stage evidence reuse
-under [ADR 0038](../adr/0038-reuse-unaffected-review-ready-stage-evidence.md)
-is implemented at that baseline. Preserving it is part of replacing the
-runner; it is not an unimplemented future capability.
-
-## Accepted direction
-
-Each target worktree uses its own repository-tracked entry script and runner
-version. Updating that worktree through Git updates those sources without a
-separate installation step. A common installed executable and an authoritative
-checkout supplying the latest runner to every branch are not required.
-
-Use R for the entry point, supervision, and evidence issuance and validation.
-This includes replacing the supervisor's Python invocation from the R gate;
-an R wrapper around the Python supervisor or evidence implementation does not
-fulfill this direction.
-
-Prefer base R and keep external R dependencies few. Select an external
-package only when it naturally owns the required task and offers a clear,
-substantial benefit over the base-R alternative. Assess the concrete APIs,
-transitive dependencies, supported platforms, and maintenance burden; existing
-installation or transitive availability alone is not an adoption reason.
-No package is selected merely because it appeared in the tooling investigation.
-
-Use `processx` for asynchronous process handles, output collection, exit status,
-signaling, and cleanup primitives. Use `ps` for PID/start-time identity,
-process ownership inspection, and recovery observations. These tasks justify
-the two dependencies; they do not replace the request and recovery protocol.
-Use `filelock` for OS advisory locking, retaining its lock object for the
-manager's lifetime and explicitly releasing it after confirmed cleanup.
-An available OS lock is not evidence that a previous request's children
-stopped. Use the request records and process observations before granting
-capacity. Do not replace this protocol with stale-directory deletion.
-Use `openssl` for SHA-256, HMAC-SHA256, and cryptographically secure key bytes.
-These existing cryptographic APIs justify the additional focused dependency.
-Declare and validate its `askpass`/`sys` dependency closure and OpenSSL system
-requirement as development-tool setup, without adding package runtime Imports.
-Use an explicit versioned byte encoding and authentication-verification
-contract with fixtures; adopting the package alone does not establish those
-protocol properties. Keep keys out of external command arguments and logs.
-Use base R for ordinary synchronous orchestration. Do not introduce direct
-`callr` API use or a general worker/pipeline framework for this runner.
-
-Worktrees predating this runner must incorporate the required changes before
-using it. Compatible older runner versions may cooperate; unsupported versions
-must stop before execution and explain the required update. Supporting every
-historical version is not required.
-
-Before cutover, old waiting and running requests must finish or their owners
-must cancel them and confirm owned-process and workspace cleanup. Do not
-silently cancel another owner's work. Retire the old launch entry points and
-refresh participating sessions before allowing new requests under the new
-protocol. Concurrent old-installed and new-runner operation is not required;
-the migration must establish that the old generation cannot continue
-launching checks through a supported entry point.
-
-Use each clone's local `main`, pinned at invocation acceptance, as the accepted
-registration authority for limited workloads. Adopting a registration into
-`main` is the acceptance event, replacing installation. Candidate-branch
-changes to selection, admission, trusted registration, or other trust-core
-machinery require Full plus dedicated contract/process verification. An
-implementation must not turn candidate-source hashes into their own limited
-execution approval.
-
-Read the accepted registration and classification code from pinned main Git
-objects. For ordinary requests, use the worktree runner whose trust core agrees
-with that accepted contract. If the candidate changes the trust core, pinned
-main's accepted manager owns the outer Full slot, required verification plan,
-cancellation, and cleanup. Test the candidate runner through dedicated process
-fixtures inside that boundary. Passing only a `Full` value to the candidate
-manager is insufficient: the accepted outer manager must enforce it. If an
-accepted manager or required verification route is unavailable or incompatible,
-stop with an update diagnostic rather than accept an unverified replacement.
-
-Any compatible worktree may inspect the user's shared requests and recover
-one explicitly selected request without the originating worktree being present.
-Status and recovery do not require a clean submitted HEAD or launch a check.
-Keep unknown record versions visible; refuse recovery mutations and identify
-the required compatible runner. Do not execute code from a disappeared source
-or guess that its processes have stopped.
-
-## Invocation and immutable execution
-
-The planned public entry is an R script invoked from the target repository
-root. The implementation selects its tracked filename; `ENTRY_SCRIPT` below
-stands for that path. Its modes preserve the existing check/status/recovery
-distinction:
-
-```sh
-Rscript ENTRY_SCRIPT
-Rscript ENTRY_SCRIPT --status
-Rscript ENTRY_SCRIPT --recover REQUEST
-```
-
-Git updates the tracked runner without an installer refresh or Git hook. The
-entry performs no automatic fetch and exposes no caller-selected check/skip
-path. Invoking a check requires the resulting clean committed HEAD. A
-detached or intentionally older commit is eligible when its runner, gate, and
-registration protocols are supported. Unsupported revisions require the
-necessary update or backport rather than a silent change of target.
-
-At acceptance, pin submitted HEAD, local main, the accepted registration, and
-the selected runner/manager source generation. Pin the unique merge-base when
-the comparison establishes one; otherwise retain the unavailable comparison
-and its reason. Limited classification requires the registered comparison
-evidence. Comparison errors, ambiguous or absent bases, empty differences,
-and unsupported changes retain the existing conservative Full selection and
-required artifact routes. Full does not supply a missing comparison base or
-resolve an artifact assertion that cannot be established.
-Materialize that runner/manager's source and registered helper-source inputs;
-later Git updates must not replace them. Revalidate submitted HEAD and
-cleanliness before admission, cancelling a stale request. A later main update
-does not replace the pinned authority or comparison base.
-
-If the submitted source, accepted manager/registration, or objects required to
-obtain them cannot be obtained, stop with the missing identity and an
-update/setup diagnostic. Missing local main prevents obtaining this design's
-accepted authority and therefore stops setup; this explicitly replaces the
-installed manager's ability to select Full without local main. A comparison
-failure under an available accepted manager follows the conservative selection
-and unresolved-artifact rules above. Do not silently
-choose another checkout, revision, authority, or unrestricted fallback. A
-missing checkout cannot turn an incomplete invocation into success; shared
-ownership state remains available for compatible-worktree recovery.
-
-Retain the existing per-user, cross-clone Full capacity and four internal test
-workers. Derive capacity from the work actually executed: a cumulative Full
-obligation whose package unit is validly reused may use independent supervision
-when all remaining work has an accepted limited-workload contract. Eligible
-Documentation and Repository work also remains independently supervised.
-Preserve the cumulative comparison and mapped verification, the same execution
-handle, cancellation propagation, ownership observations, cleanup, and terminal
-result. The same-agent bounded investigation loop remains part of waiting/checking.
-
-R waiting may load the accepted supervisor components, but must not start
-package dependency checks, marginplyr loading, lint, build, rendering, or tests.
-Measure that waiting overhead when validating the R implementation. Keep the
-existing macOS/Linux and local-filesystem scope; Windows supervision is not
-added by adopting cross-platform R packages. Resolve common state from the OS
-account identity, independently of environment HOME/cache overrides. Record
-the supervisor packages as direct development-tool dependencies rather than
-relying on incidental transitive installation or adding runtime Imports.
-
-## Existing evidence contract to preserve
-
-Inherit the behavioral contract at PR #1115's pinned merge above:
-[ADR 0038](../adr/0038-reuse-unaffected-review-ready-stage-evidence.md), the
-[verification follow-up specification](review-ready-verification-followups.md),
-the implemented [stage-reuse contract](../agents/local-checks.md#reusing-unaffected-stages),
-and [shared admission](../../tools/review-ready-admission.md).
-This specification owns the amendments for repository delivery, R supervision
-and evidence machinery, main-based registration authority, bounded retention
-and key renewal, private renderer storage, and their rollout. Other behavior
-and conservative refusals remain obligations. Python representations and
-installed-entry mechanics may change under those amendments; their replacement
-must preserve the decisions, actual work, provenance, and lifecycle guarantees.
-
-Keep cumulative Full/Documentation/Repository obligations distinct from the
-executed, reused, and omitted units. Retain original executing origins across
-repeated reuse and compatible clones; inherited evidence is not a new Full
-execution. Common source checks, dependency checks required by the cumulative
-path, and affected-artifact contracts still execute at the submitted SHA.
-
-Carry the complete registered source, tool, dependency, environment, and
-clock-dependent identities into the R implementation. Missing evidence or an
-unknown identity schedules execution of the required work; assertion failure
-does not become a successful Full fallback. Revalidate before gate start and
-at terminal issuance. Invalidation before validation can strengthen the same
-request's plan; invalidation after validation starts fails that request.
-
-Preserve the actual child-environment policy for known-format Codex and Claude
-execution metadata. Apply it consistently to the identity probe, documentation
-proof, gate, and descendants, while retaining unknown values, configuration,
-and supervisor transport. Evidence must describe that effective environment.
-The renderer's private HOME/cache and ordered R libraries must be accounted for
-too. Normalize request-specific paths only through registered rules establishing
-their irrelevance; do not omit HOME or cache configuration merely to obtain a
-match. Otherwise execute the affected unit. Identity probes do not authorize
-running verification stages before admission; include their cost in startup
-and waiting-overhead validation.
-
-Preserve authenticated terminal evidence, pre-cleanup stage observations,
-complete issuance ordering independent of wall clocks, and the veto from later
-failed, unavailable, or unobserved executions. A dead manager or an available
-OS lock cannot remove that veto. Missing or corrupt evidence must never make
-an older successful origin eligible again.
-
-The seven-day policy must cover these added artifacts as well as logs. The
-baseline store has no collector: its index requires every indexed evidence
-and observation file and the associated request record to remain available.
-Deleting individual files with `unlink()` alone would break that store's
-completeness checks. The replacement therefore needs a coordinated evidence
-retirement protocol, not only file deletion. The accepted evidence retirement
-and key lifecycle below govern that replacement store.
-
-## Failure model and persisted state
-
-Support manager/process termination, including abrupt termination between
-spawning a child and registering that child, without treating a released OS
-lock or dead manager as shutdown evidence. Persist the request's identity and
-recovery metadata before spawning work. Validate state and process ownership
-before changing capacity or marking a request terminal. Persistence failures
-before spawning prevent execution; failures after work starts preserve an
-uncertain request and protect affected capacity until shutdown is established.
-
-Write replacement records completely before publishing them, and detect
-incomplete, missing, corrupt, or incompatible records. Establish the guarantee
-with interrupted-write, manager-death, and recovery process fixtures; replacing
-the current sync calls with an assumed equivalent is insufficient.
-
-OS crashes and power loss do not carry a guarantee that the latest record is
-preserved. On restart, refuse unsafe admission or recovery when state or boot
-evidence is unavailable or damaged, and require inspection and restoration.
-Lost or interrupted execution never becomes successful check evidence.
-
-## Retention and automatic pruning
-
-Retain terminal request history, combined logs, and failed/retried attempt
-diagnostics for seven days after terminal completion with confirmed shutdown
-and temporary-work cleanup. Apply one period to successful, failed, and
-cancelled requests. Remove temporary copies, installations, render outputs,
-fixture/backend data, and isolated caches after confirmed shutdown rather than
-retaining them for seven days.
-
-Run automatic pruning at normal check startup and completion using base R file
-discovery and `unlink()`. Do not add a resident service or OS scheduler. When
-the runner is unused, physical deletion waits until a later invocation.
-
-If an older, safely completed request's history cannot be removed, report the
-failure and retry at a later invocation without failing a new check solely for
-that failure. This does not weaken current-request shutdown and temporary-work
-cleanup: their failure still prevents successful completion and protects
-affected capacity.
-
-Inventory every Review-ready-created by-product before selecting the full
-pruning scope, including outputs outside the common request directory. The
-scope includes logs, diagnostic and retry bundles, request metadata, source
-copies and archives, check trees, generated documentation and figures,
-temporary installations and libraries, fixture repositories and data, progress
-and transport files, sockets, and tool caches written by a check. Select
-cleanup by the owned directory and recorded provenance rather than by log
-extensions alone. Permanent historical storage is not required.
-
-Identify execution-control state separately: nonterminal requests and
-uncertain cleanup cannot be forgotten by age alone. The supported handling of
-stale or damaged control state must be specified before claiming that all
-such files can expire. List shared tool caches, OS-created reports, and
-historical artifacts copied into the repository too; do not assume exclusive
-ownership or authorize a broad deletion merely from their names or location.
-
-At normal check startup, automatically recover a request whose manager is gone
-only after the same complete ownership and shutdown observations required by
-explicit recovery establish that all owned processing stopped. Record an
-interrupted outcome and confirmed cleanup before applying retention. Do not
-signal another owner's live work as a side effect of pruning. Leave unconfirmed,
-corrupt, or unknown-version records unchanged and explain the required action.
-
-Apply the policy to attributed old request history, diagnostics, and temporary
-outputs at their existing locations too. Establish provenance individually for
-manual captures. Runtime pruning does not modify Git-tracked historical data;
-any removal of committed research outputs is a separate reviewed Git change
-that accounts for citations.
-
-The [file inventory](../../investigation/review-ready-file-inventory-2026-11-01.md)
-records the producing functions, fixed names and variable directory families,
-baseline cleanup, observed storage, and candidate deletion boundaries. Its
-[evidence-storage extension](../../investigation/review-ready-evidence-retention-2026-11-01.md)
-adds the artifacts and retirement constraints established after PR #1115.
-
-### Evidence retirement and key lifecycle
-
-The seven-day deadline for reusable evidence belongs to the original executing
-request's terminal completion with confirmed shutdown and temporary-work
-cleanup. Reuse, references from newer requests, index updates, and authentication
-renewal do not extend it. Expired or missing origins make dependent reuse
-unavailable; execute the required units when planning. A dependent request's
-own raw outcome and logs retain their own terminal-history deadline without
-becoming a new executing origin.
-
-When retiring a failed, unavailable, or unobserved execution observation,
-retire the earlier successful units it still vetoes in the same transaction.
-Account for observation order rather than cleanup completion order, including
-unknown source/environment observations that veto broader sets of origins.
-Keep unrelated valid evidence usable. Do not accumulate permanent tombstones
-or restore eligibility merely because a later failure has expired.
-
-Serialize retirement, inventory updates, authentication renewal, and issuance
-through the evidence-store protocol. Validation must not observe an incomplete
-transition, including after manager termination. Revalidate referenced origins
-at gate start and terminal publication. Expiration before validation can
-strengthen the same request's execution plan; loss of required eligibility
-after validation starts fails the invocation. An active operation may delay
-physical collection needed for safe completion or recovery, but does not
-extend an origin's eligibility deadline.
-
-Rotate evidence authentication keys after seven days from creation. Perform
-that work at normal startup/completion; when unused, physical rotation waits
-until the next normal invocation. Verify and reauthenticate still-retained
-evidence without changing its original request/SHA, execution and completion
-times, observation order, outcome, executed/reused distinction, or expiration.
-Authentication renewal is not a new execution. Retire old keys after confirming
-that no protected operation or recovery state needs them. Key rotation alone
-must not invalidate still-valid origins.
-
-Compact the authenticated inventory to retained evidence and necessary active
-or recovery control state. An index is not an exemption for accumulated
-history. Preserve complete provenance and ordering across compaction without
-retaining an unbounded retired-record list. Interrupted or failed maintenance
-must not expose negative-observation removal without the corresponding origin
-invalidation. Existing rules for unavailable reuse, protected recovery state,
-and nonfatal old-history deletion failures still apply.
-
-### Storage layout
-
-Group check-owned artifacts under one request directory in the account-wide
-state root, separate from the developer's Git worktree. Its children
-are `logs/`, `diagnostics/`, `work/`, `tmp/`, and `cache/`, alongside request
-control metadata. `work/` contains disposable source copies, archives, check
-trees, temporary libraries, and generated publications. Configure subprocess
-temporary roots before starting them so fixtures and backend data are owned
-by that request too.
-
-The request root is the OS account home plus
-`.local/state/marginplyr/review-ready/requests/<request-id>/`. Use the accepted
-renderer isolation below rather than assuming `TMPDIR` relocates every cache.
-Existing shared caches are outside automatic deletion; OS reports follow the
-boundary below.
-
-Keep global, empty shared lock targets while their protocols operate, including
-admission and evidence-publication locks. They contain no history and do not
-grow with requests. Do not delete or recreate them during normal pruning;
-remove them only after the corresponding protocol is fully retired.
-Request-specific lock files may be collected with their safely retired request.
-OS-generated crash reports remain under OS policy, outside automatic
-Review-ready deletion. Copies retained by this runner follow the seven-day
-diagnostic policy.
-
-## Renderer and cache isolation
-
-Give Quarto and its descendants a request-owned HOME, temporary directories,
-and cache environment. Preserve the selected R, Quarto, and Deno executable
-identities and absolute paths, and the gate's ordered absolute R library paths,
-including its temporary installed package. Do not implicitly copy personal
-home settings or credentials into the render environment. Keep the outer
-supervisor's HOME and account-derived state/lock identity unchanged.
-
-Register and verify the supported renderer/cache behavior, including Quarto
-app-directory and Sass storage, Deno, project scratch, R user caches, and
-temporary files. Configure those resolved destinations inside the owned root.
-Unknown or unsupported configurations stop with a diagnostic naming the tool
-or location; they do not fall back to shared-cache writes. Existing shared
-caches are not deleted, moved, or initialized by the check.
-
-This is a contract for supported tools and registered artifact families, not
-an OS sandbox against arbitrary native filesystem side effects. Check the
-actual resolved destinations and observed writes in fixtures and real renders.
-Do not infer exclusive ownership from a shared directory's before/after
-differences while other work may run.
-
-Start validation with empty isolated caches. Preserve README/help/NAMESPACE
-and figure regeneration comparisons, vignette execution, and site verification
-with its existing markers. During an authorized retry, keep the same tarball,
-tools, render HOME/cache, and library environment; do not reset caches between
-attempts. Remove owned cache and render trees only after all writers stopped.
-
-The delivery choice supersedes the common-installation direction in
-[resource admission](review-ready-resource-admission.md). Admission and
-process-lifecycle requirements remain constraints except for the explicitly
-accepted R-supervisor startup and delivery changes described here.
-
-## Component research
-
-The [R tooling investigation](../../investigation/review-ready-r-tools-2026-10-31.md)
-records the first-party evidence on focused testing, scheduling, profiling,
-incremental pipelines, and process-management components. `processx`, `ps`,
-`filelock`, and `openssl` are selected. The failure model, seven-day history,
-rendering environment, and ownership boundaries are accepted; implementation
-evidence remains to be produced.
-
-The evidence-storage extension also records the R cryptographic-component
-comparison supporting the accepted OpenSSL R package. Its hashing, HMAC, and
-secure-random APIs justify the dependency; installed availability alone does
-not. The `askpass`/`sys` closure and OpenSSL system dependency are part of setup.
-A versioned byte encoding and authentication-verification contract still
-require explicit implementation and fixtures.
-
-## Decision status
-
-All policy branches, including the PR #1115 integration and its evidence-store
-lifecycle and cryptographic component, are accepted. No interview questions
-remain open.
-Protocol numbers, protected-file registration, record representation, and
-fixture/API names are implementation choices constrained by this contract.
-
-## Implementation acceptance and rollout
-
-Use process fixtures in isolated test state before real rollout. Preserve the
-existing lifecycle scenarios while replacing Python-specific test harness
-mechanics as needed. For the pinned baseline, map every declared evidence and
-admission regression case, the R gate verifier's cases, and registered contract
-fixtures to a preserved case, an equivalent replacement, or an amendment
-explicitly owned by this specification. Record the mapping and corresponding
-new assertions in the implementation's validation record. An unchanged test
-count is not evidence of equivalent assertions; a case may not disappear
-silently during the language change.
-
-Report inherited-behavior verification separately from the new retirement,
-key-renewal, renderer-isolation, and authority-model verification. Establish
-the preserved contracts in isolated state, then their interaction with the
-amendments. Both are required before operational cutover.
-
-The [contract audit](../../investigation/review-ready-1115-contract-audit-2026-11-01.md)
-records the inspected baseline and case inventory. The following cases establish
-the replacement contract in addition to the inherited requirements:
-
-| Case | Required observation |
-| --- | --- |
-| Git update, old commit, detached HEAD | The selected tracked version runs without reinstall; unsupported versions stop with an actionable diagnostic |
-| HEAD/cleanliness changes while waiting | Stale request cancels without checking a newer commit; main-only updates leave pinned identities unchanged |
-| Source or accepted manager unavailable | No silent source substitution, fetch, self-approval, or unrestricted gate fallback |
-| Comparison unavailable with accepted manager available | Preserve conservative Full selection and required routes without inventing a base; unresolved artifact verification fails; missing main authority separately stops setup |
-| Trust-core/registration/required-fixture changes | Accepted main manager holds Full and enforces its required verification; protocol equality alone does not grant capability |
-| Concurrent clones/worktrees | One real Full slot; limited work follows its existing independent supervision and bounded workloads |
-| Existing stage reuse | Preserve cumulative obligations, original execution origins, current mandatory checks, actual-work capacity, and same-request promotion |
-| Origin eligibility | Same OS user and repository, ancestor commit, deterministic selection, authorized terminal-success request with confirmed cleanup/capacity release and matching observations; reject partial success, same-tree non-ancestors, and inherited results presented as executions |
-| Stage boundaries | Keep Full and Documentation build/check, generation, and Documentation assertions distinct; Full may discharge matching Documentation obligations, never the reverse; Repository makes no package-execution claim |
-| Source and contract identity | Preserve all tracked path/type/mode/object inputs and whole DESCRIPTION; exclusions need audited registration; protected expectation normalization preserves strict assertions and independent positive/negative contracts |
-| Unknown source and external inputs | Cover Git replacements/grafts/attributes/configuration, committed links/submodules, executable or non-text exclusions, undeclared startup/build hooks, and unsupported native resolution; retain the applicable execution or refusal instead of assuming identity |
-| Environment contents and changes | Compare actual tool/runtime/native assets, ordered libraries and installed contents, content and change metadata, symlink targets and directory structure before/after execution; equal package versions alone do not suffice; fingerprint secret environment values without storing their plaintext |
-| Real reuse after replacement | Establish a new R-runner Full origin, then demonstrate the protected follow-up in another clone with private render paths and unchanged identity guarantees |
-| Child environment | Probe, documentation proof, gate and descendants use the same registered environment; known-format Codex/Claude IDs are actually absent, unknown values/configuration stay inputs, and an outdated visible-name audit cannot qualify |
-| Time-dependent eligibility | Preserve version-bound checker identity, effective leeway, equality/future boundaries, original timestamp inventory, current archive timestamps and clock rollback handling; unknown conditions require execution |
-| NOTE and retry eligibility | A manual NOTE explanation does not make an origin reusable; require shared-policy classifications, exact check arguments/counts, complete attempts, and the preserved eligible first failure and unchanged retry identities |
-| Stage observation and recovery | Bind reports to authorized work; retain failed/unavailable observations before cleanup, including cleanup failure and manager loss; incomplete/empty reports and pending observations cannot become successful origins; recovery repairs observations, not successful execution claims |
-| Evidence ordering and publication | Use observation order, complete authenticated inventory and original references; missing/corrupt/cyclic evidence and unobserved work fence older successes; revalidate the pinned origin/unit plan under issuance synchronization, including a failure arriving after worker validation, without silently choosing a different origin |
-| Cache reads versus interrupted writes | Unavailable cache reads disable reuse without blocking an executed gate's cleanup; interrupted observation/publication writes preserve required recovery ownership; a request relying on reuse cannot pass after issuance failure |
-| Authentication protocol | Establish deterministic versioned bytes, known-answer hash/HMAC cases, malformed/ambiguous input rejection, wrong-key/tampered record/index rejection, schema/provenance checks, private key owner/mode/length checks, and verification across renewal |
-| Evidence retirement | Expiration and interrupted/concurrent pruning cannot resurrect successes, leave an inconsistent issuance inventory, or silently omit an obligation |
-| Key rotation | Still-valid origins survive authentication renewal with their original deadlines; no incomplete rotation exposes partially migrated evidence or prematurely removes a needed key |
-| Cancellation, manager death, spawn-registration gap | Owned children are tracked and stopped; uncertain cleanup protects capacity and never produces a pass |
-| Recovery from another worktree | Compatible code can recover a stopped request without the originating checkout; live, corrupt, or unknown state is not guessed away |
-| Seven-day boundary, future/invalid timestamps | Use the validated terminal time, not mtime; test before/at the boundary and refuse untrustworthy age calculations |
-| Concurrent pruning and terminal handoff | Do not delete a live manager, active writer, or request still delivering its terminal result |
-| Partial deletion or interrupted pruning | Old-history failure is reported/retried without turning a partially removed history directory into a new active-recovery blocker |
-| Automatic recovery | Complete stopped-ownership evidence precedes interrupted outcome and retention; a surviving child prevents recovery |
-| Current-request cleanup failure | No terminal success or premature capacity release, regardless of history-pruning policy |
-| Renderer isolation | Actual README, help/figures, vignettes, and site render from empty private caches with the correct installed package; registered writes stay owned |
-| Renderer failure, retry, cancellation | Preserve same-request render identities/cache through retry and remove them only after writer shutdown |
-| Deletion boundaries | Original clones/worktrees, Git-tracked research, shared caches, installed developer libraries/tools, and OS reports remain untouched |
-
-Apply request ownership and path validation to every deletion. Cover symlinks,
-Git alternates, unrelated temporary names, missing timestamps, and partially
-written legacy bundles. Associate retained diagnostics with their request so
-the collector does not need to guess from filename prefixes. Demonstrate that
-temporary R, fixture, backend, generation, and site data are enclosed by the
-request's roots even after interruption.
-
-Exercise evidence retirement with inverted observation/cleanup order, broad
-unknown-input vetoes, repeated origins and dependent references, an origin
-expiring during reuse, and concurrent terminal publication. Exercise rotation
-with idle intervals, valid reusable origins, and termination before old-key
-retirement or during record/index replacement. Establish that renewal changes
-authentication only, retains the original deadlines, and leaves no permanent
-negative-history archive.
-
-Cover a retained request containing both an inherited unit and its own newly
-executed unit when the inherited origin expires. Retire the dependent reuse
-without destroying the independent unit's valid provenance. Before accepting
-the R authentication implementation, document the supported comparison
-mechanism preserving the protections of the baseline's `hmac.compare_digest`.
-Equal-output tests and timing measurements alone do not establish that property.
-
-Bootstrap the first implementation through the currently required installed
-CLI's Full check plus dedicated new-runner fixtures. Until local main contains
-an accepted R manager, the new entry stops rather than adopting its own
-candidate implementation as authority. Fixture runs use isolated test state
-under their admitted outer verification, not competing normal user requests.
-
-At migration, verify old waiting/running requests have finished or been
-cancelled by their owners with confirmed cleanup; resolve old recovery state
-before retiring its entry points. Refresh instructions and participating
-sessions, then demonstrate real Full, Documentation, and supported Repository
-invocations through the new R entry. Preserve one handle through each terminal
-result. Missing dependencies or unsupported process/lock inspection must fail
-setup rather than bypass the boundary.
-
-Establish reusable origins through actual executions under the new R
-implementation. The old Python machinery is itself part of the registered
-source and environment identity; rereading or reauthenticating its records
-cannot establish that those identities match the replacement. Do not import
-legacy results as newly executed R evidence. Attribute and retire their
-history and control artifacts under the accepted migration/retention policy.
-
-Update installation/update guidance, local-check entry points and retention
-wording, direct-entry delegation, registered contracts, dependency declarations,
-and relevant CI fixtures together. Until that rollout, existing instructions
-still require the installed common command for actual checks. This design
-neither runs migration nor deletes current or historical artifacts.
-
-Preserve the evidence reuse implemented by PR #1115 under ADR 0038 while
-replacing its Python machinery and introducing bounded storage. Do not add
-new limited-execution recognition routes as part of this delivery change.
+Status: accepted consolidated target from
+[#1114](https://github.com/sayuks/marginplyr/issues/1114), 2026-11-02.
+[ADR 0039](../adr/0039-run-review-ready-from-the-target-worktree.md) records
+the amended decision. Implementation and real Mac rollout acceptance are
+separate: [local checks](../agents/local-checks.md#rollout-state) records the
+active entry until the installed generation is drained and retired.
+The entry spelling is fixed as
+`Rscript tools/review-ready.R --scope source|full --reason TEXT`.
+
+## Problem Statement
+
+Running several marginplyr worktrees concurrently can start several four-worker test suites on the same Mac and make it unresponsive. Review-ready has also accumulated routing, evidence reuse, infrastructure self-tests, recovery, and delivery machinery whose complexity is disproportionate to the original coordination problem. Infrastructure self-tests can take longer than the package tests they precede.
+
+The maintainer wants a small, understandable local workflow: preserve useful checks and progress reporting, serialize the expensive package check, and avoid waiting for that slot merely to discover a lint error. Light documentation changes must still receive the five mandatory source/environment checks. The AI should decide whether the expensive local package check is necessary by reasoning about the change, rather than introducing another automatic classifier.
+
+The installed legacy CLI and instructions directing agents to use it must eventually be retired together. Local check by-products must have one simple retention policy instead of accumulating indefinitely.
+
+## Solution
+
+Use one repository-owned R entry with two explicit execution forms. Both run the same five mandatory checks against a pinned committed revision. The AI decides and records whether local package build/check is needed. A five-check-only invocation ends after those checks without requesting the shared slot. A heavy invocation requests the slot only after those checks pass, then automatically starts package build and the complete source-tarball check when admitted.
+
+One heavy Review-ready check may run at a time across this user's marginplyr clones and worktrees on the Mac; its testthat suite uses four workers. Keep ordinary polling of the same execution handle, existing progress reporting, the existing investigation loop, and the existing bounded additional focused-test policy. Remove automatic crash retries, routine local infrastructure self-tests, automatic AI stop/resume messages, stage reuse, and custom coordination services. Retained infrastructure tests run in CI on every relevant PR.
+
+Keep all runner-managed artifacts for an invocation together in one ignored directory inside its submitting worktree, outside Git's administrative directory. Seven days after the recorded UTC start time, that directory becomes eligible for deletion on the next invocation in the same worktree. Never delete active data.
+
+## User Stories
+
+1. As a maintainer, I want one repository-owned R entry, so that the checked-out code supplies the check implementation without synchronizing an installed launcher.
+2. As a maintainer using several worktrees, I want expensive Review-ready checks serialized across them, so that their four-worker suites do not all overload my Mac at once.
+3. As a maintainer using separate clones, I want the same shared slot to apply across clones, so that another clone cannot accidentally bypass the load limit.
+4. As a developer, I want four testthat workers within the admitted package check, so that a single check retains its existing useful parallelism.
+5. As an agent, I want checks to use the submitted committed revision even after waiting, so that I can identify exactly what the result establishes.
+6. As a reviewer, I want the result to name the submitted SHA, so that later edits cannot be presented as already checked.
+7. As an agent making a light documentation change, I want all five mandatory checks to run, so that omitting the expensive package check does not omit basic verification.
+8. As a maintainer, I want the AI to judge whether local package build/check is necessary from the diff and its effects, so that another path-based classifier is unnecessary.
+9. As a reviewer, I want the reason for omitting local package build/check recorded, so that the AI's judgment is reviewable.
+10. As an agent, I want an explicit five-check-only execution form, so that a justified omission does not require waiting for the heavy slot.
+11. As a reviewer, I want a five-check-only result distinguished from a full package-check pass, so that the result cannot overstate what ran.
+12. As a developer, I want test dependency declarations checked mechanically, so that this validation does not depend on AI recollection.
+13. As a developer, I want required optional test dependencies and their versions checked mechanically, so that a green suite cannot merely reflect avoidable skips.
+14. As a developer, I want package spelling checked before joining the heavy-check wait, so that spelling failures are found promptly.
+15. As a developer, I want jarl checked before joining the heavy-check wait, so that a lint failure does not waste a long admission wait.
+16. As a developer, I want lintr to run with the package loaded before joining the heavy-check wait, so that internal symbols are resolved correctly and lint failures are found promptly.
+17. As an agent, I want a failed mandatory check to end the invocation, so that build/check does not proceed after a known failure.
+18. As a maintainer, I want fixes made and committed explicitly before a new invocation, so that the runner does not silently edit code or retry against an unclear revision.
+19. As an agent waiting for capacity, I want the command to start automatically when the slot becomes available, so that no admission acknowledgment is needed.
+20. As an agent, I want to retain and poll the same execution handle through terminal completion, so that I do not launch duplicate checks or infer success from partial output.
+21. As a maintainer, I want no queued AI resumption messages, so that a stale message cannot restart a conversation after its work is already complete.
+22. As an agent, I want the existing meaningful investigation loop retained while waiting or checking, so that I can use that time to examine the submitted change.
+23. As an agent, I want the existing bounded focused-test allowance retained, so that I can test a concrete hypothesis without launching another full suite.
+24. As a maintainer, I want the distinction between the shared heavy slot and extra focused tests documented, so that four workers is not mistaken for an account-wide process cap.
+25. As an observer, I want existing elapsed-time, completed-file, percentage, and last-file progress reporting preserved, so that a long package check remains understandable.
+26. As a developer, I want native worker startup and failure diagnostics visible, so that failures before or after reporter completion are not hidden.
+27. As a reviewer, I want the terminal check result to determine the verdict, so that progress output is never mistaken for success.
+28. As a maintainer, I want check failures to stop without an automatic native-crash retry, so that the runner avoids a special retry classification subsystem.
+29. As an agent, I want ordinary cancellation to stop owned child work before releasing capacity, so that the next admitted check does not overlap normally cancelled work.
+30. As an agent, I want cancellation during admission waiting to prevent later automatic start, so that a cancelled request stays cancelled.
+31. As a maintainer, I want abrupt-termination cleanup to use existing libraries with explicit limits, so that strict crash recovery does not recreate a custom supervision platform.
+32. As a developer making routine package changes, I want infrastructure regression suites excluded from the normal local command, so that those suites do not dominate every check.
+33. As a maintainer, I want retained infrastructure tests executed in CI on every relevant PR, so that removing them from routine local orchestration does not leave them untested.
+34. As a maintainer, I want actual CI invocations for retained progress and runner tests, so that registering a test is not mistaken for executing it.
+35. As a maintainer, I want all runner-managed source copies, archives, check outputs, caches, logs, and results grouped per invocation, so that cleanup is understandable.
+36. As a maintainer, I want output storage inside the worktree but outside Git's administrative directory, so that artifacts have an ordinary local location without entering Git or the source package.
+37. As a maintainer, I want one seven-day lifetime for all artifacts and outcomes, so that separate success, failure, cache, and log retention rules are unnecessary.
+38. As a maintainer, I want retention measured from one recorded UTC start time, so that log updates and missing finish records do not change the deadline.
+39. As a maintainer, I want expired data deleted on a later invocation in the same worktree, so that no background cleanup service is required.
+40. As a maintainer, I want cleanup restricted to the current worktree and inactive owned data, so that a check cannot sweep another worktree or delete live work.
+41. As a maintainer, I want unrelated installed tools, libraries, caches, research files, and OS reports left alone, so that retention cleanup stays within its ownership boundary.
+42. As a maintainer who is the only legacy CLI user, I want a one-time retirement and instruction update, so that permanent compatibility machinery is unnecessary.
+43. As a maintainer, I want old worktrees and their existing AI sessions excluded from migration, so that adoption does not become a fleet-upgrade exercise.
+44. As a maintainer, I want obsolete checker-owned state removed only after old work has stopped, so that retirement does not interrupt live work or keep unneeded history forever.
+45. As an implementer, I want the old ADRs and operational guidance reconciled with this specification, so that future agents do not receive contradictory entry-point, reuse, or retention instructions.
+
+## Implementation Decisions
+
+1. **Entry and scope.** Keep a repository-tracked R command as the interface. Implement a small orchestration boundary around existing check, progress, process, and locking facilities. Prefer existing focused R libraries and base R over a new admission service, custom queue manager, or general recovery framework.
+2. **Two explicit execution forms.** Support the five mandatory checks alone and the same checks followed by heavy package verification. The AI explicitly supplies the chosen scope and records its reasoning. Exact option spelling is an implementation detail. This is not a new automatically inferred classification system.
+3. **AI decision boundary.** The AI examines the submitted diff and its effects to decide whether local package build/check is required. Package-affecting changes require it. Light documentation, prose, or research changes may omit it when their effects justify omission. Neither a directory name, extension, nor exclusion from the source package alone proves that omission is justified. The AI may omit only the heavy portion, never the mandatory five-check baseline.
+4. **Pinned input.** Check one clean committed revision, pinned at invocation, through a disposable committed-source copy. All preflight and heavy checks use that revision. Waiting does not switch to a later HEAD, and an earlier result does not certify later changes. Do not introduce cross-run stage reuse or a branch's first-success requirement.
+5. **Mandatory checks.** A successful invocation requires the mechanical test dependency-declaration scan, required optional test Suggests presence/version check, package spelling, jarl, and package-aware lintr. Load the package before lintr so namespace-dependent symbol resolution works. Preserve these existing checks rather than substituting AI judgment for their execution.
+6. **Pre-admission failure.** Run the five checks before requesting the heavy slot. A failure ends that invocation without joining admission waiting or starting build/check. The agent corrects the issue, commits the correction, and starts a new invocation. The command does not edit code or silently retry failed checks.
+7. **Five-check-only completion.** After the five checks succeed, report their outcome, submitted SHA, heavy-check omission, and the agent's reason, then exit without requesting the heavy slot. Do not report this as a full package-check pass. The same artifact and retention policy applies to this form.
+8. **Heavy-check admission.** Use one stable OS-backed advisory lock for this user's marginplyr clones/worktrees on the Mac. After successful preflight, wait inside the command and start automatically when admitted. Do not add an agent-ready handshake. Keep the same invocation and execution identity through waiting, checking, cleanup, and terminal completion.
+9. **Heavy-check contents.** Under that slot, build a source tarball and run the existing as-CRAN package-check contents, including examples, vignette rebuilding, the complete test suite, and snapshots once, with four testthat workers and without coverage measurement. Preserve the existing required-Suggests enforcement and local/offline check environment. Do not copy unrelated complexity merely because it exists in an older runner.
+10. **Check outcomes.** ERROR, WARNING, nonzero process exit, and timeout fail the invocation. Print every NOTE; classifications outside the existing shared policy need a written disposition before review readiness. Retain the ordinary result and logs. Remove the native-rendering-crash recognizer, automatic retry, retry eligibility rules, and passed-after-retry outcome.
+11. **Progress.** Preserve existing custom test progress: elapsed time, completed files versus total, percentage, last completed file, native worker-count announcement, and worker startup/exit/teardown diagnostics. Keep observing diagnostics through terminal completion, including failures before reporter startup or after reporter completion. Percentages describe file completion, not passing tests or an estimate of remaining time. Progress is observational; only the terminal result determines the verdict.
+12. **AI observation.** Retain ordinary polling of the same execution handle until its terminal result. Do not infer completion from elapsed time, partial logs, or process absence, and do not silently replace a lost invocation. Avoid repeated idle narration. Do not implement AI stop/resume coordination or completion-message queues; zero-token waiting is not a guarantee of this design.
+13. **Investigation policy retained.** Preserve the existing same-agent hypothesis, investigation, evidence, and disposition loop while waiting or checking. Investigate meaningful hypotheses; once they are exhausted, checkpoint and wait on the original invocation. Retaining the loop does not require endless activity or repeated waiting messages.
+14. **Focused-test policy retained.** Each submitting worktree may have at most one additional focused-test or reproduction execution at a time, with testthat parallelism disabled. Select the target explicitly, inspect its helpers and owned child work, and use a separate execution handle. Do not reconstruct a full suite through successive selections. Stop and collect that work before the next focused execution and when handling the Review-ready terminal transition.
+15. **Concurrency boundary.** The shared slot covers the heavy Review-ready package check, not all R processes. Additional permitted focused tests may overlap across worktrees; there is no aggregate account-wide cap for them. Five worktrees can add five nonparallel focused-test executions alongside the four-worker package check. Do not introduce another scheduler to change that explicitly retained policy.
+16. **Ordinary cancellation.** Stop the invocation's owned children and confirm their exit before releasing heavy-check capacity. A cancelled waiter must not later start checking. Retain available logs and report cancellation through the original handle.
+17. **Abrupt termination.** Use existing process-library cleanup facilities when the R process itself is terminated abruptly. The maintainer accepts that a subsequent check may begin before all descendants stop. Do not recreate strict crash-time exclusion, a custom watchdog, or a durable recovery ledger. Verify actual library behavior on the target Mac instead of claiming normal R cleanup always runs after forced termination.
+18. **Infrastructure verification.** Exclude infrastructure regression suites and real site/README regeneration verification from the routine local orchestration. Do not force an initial infrastructure self-test solely because a branch has no prior result. Keep appropriate change-specific development verification and CI. Run retained infrastructure tests on every relevant PR without adding change-path conditions for this simplification, and explicitly wire every retained runner/progress regression suite into CI. Remove suites for deleted machinery rather than preserving their old coverage counts.
+19. **Artifacts.** Group all substantial runner-owned data per invocation in a dedicated output directory at the submitting worktree root, outside Git's administrative directory. This includes committed-source copies and archives, built tarballs, check/install work, supported child temporary/cache outputs, progress data, logs, and results. Exclude this output root from both Git tracking and R source builds. Use supported child environment settings to keep owned temporary/cache data under the run directory without recreating an isolation capability registry.
+20. **Retention.** Record one UTC start timestamp when creating the run directory. Seven days means seven consecutive 24-hour periods from that recorded timestamp for all outcomes and artifact types. Reading or updating files does not renew it; a missing finish record does not require a different clock. On a subsequent invocation, remove eligible inactive run directories as a unit, only in the current worktree. Use a small existing OS-backed liveness guard, skip active or safety-undetermined data, and report cleanup problems rather than deleting uncertain data.
+21. **Retention limits and exclusions.** Seven days is deletion eligibility, not a maximum on-disk age: an unused worktree is not swept by invocations elsewhere. Do not promise to preserve logs after worktree deletion. Stable shared-lock targets are operating primitives, not retained run history; do not expire or recreate them while owners or waiters may exist. Installed developer packages/tools, unrelated shared caches, tracked research, Codex history, and OS-owned crash reports are outside routine cleanup scope.
+22. **One-time retirement.** After existing old checks finish or are cancelled and their work stops, adopt the simplified R entry, uninstall the legacy CLI, remove obsolete delivery/coordination machinery, and update repository plus user-wide Codex/Claude instructions together. Clean up obsolete checker-owned state and diagnostics after shutdown. Old worktrees and already-running sessions are explicitly outside migration scope: do not inventory, update, or provide a compatibility launcher for them.
+23. **Documentation reconciliation.** Amend or supersede conflicting operational guidance and ADR decisions as part of eventual implementation and rollout. Preserve the useful repository-owned-entry decision while removing requirements for stage reuse, authenticated evidence, strict recovery, and migration of old worktrees that conflict with this approved simplification. Retain decision history without retaining the retired runtime machinery.
+
+## Testing Decisions
+
+- **Primary seam:** reuse the already-discussed repository R command/process boundary. Observe its exit/result, streamed output, owned child behavior, lock contention, and retained files. Prefer this highest existing seam over adding test-only service APIs or separately testing each orchestration helper.
+- **Prior art:** existing disposable-package progress fixtures and runner process-contract fixtures already exercise real subprocesses, passing/failing tests, worker startup/exit/teardown failures, and process/lock boundaries. Reuse the applicable parts and retire tests for removed protocols. Registration consistency is not evidence that a fixture actually executes.
+- **Good tests establish external behavior:** use tiny disposable repositories/packages and isolated fixture state to prove the requested workflow. Do not snapshot internal function layout, reproduce the implementation in assertions, or require the production package suite for every fixture case.
+- **Mandatory baseline and scope:** prove that a light documentation-only invocation still executes all five checks, reports the AI-supplied heavy-check omission and reason, and never requests the heavy slot. Prove that heavy requests execute the same baseline first. A failed preflight must return failure without waiting for capacity or starting build/check.
+- **Pinned revision:** submit one committed revision, hold capacity elsewhere, make later changes, and prove that the admitted check and its result still identify and use the submitted revision. An omitted heavy check must never be represented as a full package-check pass.
+- **Real shared exclusion:** launch invocations from distinct worktrees and separate clones, prove at most one heavy check is admitted, then prove a waiter starts automatically when the slot is released. Preserve real four-worker behavior within the admitted package check. Do not assert a machine-wide four-process cap that contradicts the retained focused-test allowance.
+- **Check execution and failure:** exercise successful and failing package-check fixtures, including preflight errors, check warnings/errors, nonzero exits, and timeout reporting. Preserve ordinary NOTE handling. Prove a supported native rendering failure ends once without an automatic retry or a passed-after-retry result.
+- **Progress:** exercise real passing and failing disposable packages, file-completion reporting, actual worker-count announcements, startup failure, unexpected exit, and teardown failure. Prove diagnostics remain visible before progress events and after reporter completion, and that progress completion cannot override a failing terminal result.
+- **Cancellation:** exercise a waiting cancellation that never subsequently starts, and an ordinary running cancellation with owned child work that stops before the slot becomes available. Exercise the available abrupt-parent cleanup on the actual Mac and document its accepted limits rather than asserting strict crash-time exclusion.
+- **Artifacts and expiry:** demonstrate owned output confinement and exclusion from Git/source builds. Cover just-before/at/after the seven-day threshold from the recorded UTC start time, modified logs not extending retention, a killed run without a finish record, active/uncertain runs being protected, and another worktree's data remaining untouched. Verify success and failure use the same policy and deletion removes an eligible run as a unit.
+- **Routine versus infrastructure checks:** prove a normal local invocation does not launch infrastructure regression suites, including on a branch without prior check history. Ensure every retained infrastructure suite has an actual every-PR CI invocation; specifically retain coverage for the preserved progress functionality. Ordinary package tests may use the reporter without running its regression suite.
+- **Retirement acceptance:** verify the installed legacy entry and obsolete live machinery are removed at cutover, current shared instructions name the new entry, unrelated user data is untouched, and no old-worktree inventory or migration is required. Reconcile ADR and operational guidance conflicts before claiming rollout complete.
+- **Execution policy:** infrastructure integration fixtures run in their CI/change-specific context, not as another prerequisite of every routine local invocation. One-time adoption evidence must cover the actual Mac and real execution handles. Record those acceptance results separately from this specification.
+
+## Out of Scope
+
+- Automatic three/four-way change classification, cross-run or cross-worktree stage reuse, authenticated evidence stores, key rotation, or a branch-baseline success requirement.
+- A custom admission server, queue manager, watchdog, general recovery platform, strict forced-termination exclusion, or a scheduler for every R command.
+- Automatic AI stopping/resumption, queued completion messages, or a zero-token waiting guarantee.
+- Automatic native-crash retries or permanent legacy compatibility code.
+- Migration, inspection, or individual instruction refresh of old worktrees and their existing AI sessions.
+- Scheduled cleanup, sweeping other worktrees, distinct artifact lifetimes, permanent result storage, and cleanup of unrelated user/tool/OS data.
+- Coverage measurement inside routine Review-ready, replacing the release matrix, or redesigning unrelated CI and release checks.
+
+## Further Notes
+
+- This is the consolidated specification for #1114 following the maintainer's 2026-11-02 design reset. Earlier interview proposals are historical where they conflict. Implementation and adoption evidence are tracked separately in #1121, #1122 and #1123.
+- The agreed output layout is `<worktree-root>/.review-ready/runs/<run-id>/`, explicitly outside `.git`. The directory must be ignored by both Git and R builds during implementation.
+- The retained six verification contents were established from historical commit `b5f851a25b227eb511127b4fef19d60817bbbc71`, immediately before shared admission was introduced. Reuse those verification contents, not the entire historical runner implementation.
+- #1117 merged an earlier R bootstrap, but merge alone did not establish local cutover. Current operational instructions remain in force until the separately performed implementation/migration reconciles them.
+- This target intentionally contradicts parts of accepted ADR 0038 and ADR 0039: reusable authenticated evidence, strict recovery, temporary-work cleanup before the common retention deadline, and compulsory old-worktree migration are not retained. ADR 0038 is superseded and ADR 0039 amended accordingly; their historical texts remain available through pinned links.
+- The existing CI audit found a gate-contract invocation, a runner-process fixture invocation, and a renderer fixture invocation, but no direct workflow invocation for the dedicated progress fixture. CI rewiring must follow the simplified retained implementation. Required-status branch protection was not verified; do not claim these checks are already required merge statuses.
+- A prior Codex notification experiment is not part of this target. Do not carry its probe, callback, or queued-message behavior into the implementation.
