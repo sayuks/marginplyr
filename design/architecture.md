@@ -391,7 +391,9 @@ The lazy adapters read one staged relation so a volatile source summary's
 visible denominator is the one used in its shares. Partition keys retain the
 backend's grouping equivalence, including SQL collation and missing keys.
 SQL fixed keys receive private aliases while window partitions are built so
-pronoun-like column names remain columns. No adapter collects or materializes
+pronoun-like column names remain columns. DuckDB binds the staged values in
+an execution-time CTE before calculating either share kind (ADR 0014's #1141
+amendment). No adapter collects or materializes
 an input while constructing the result.
 
 Arrow is rejected at the immediately earlier executor boundary because no

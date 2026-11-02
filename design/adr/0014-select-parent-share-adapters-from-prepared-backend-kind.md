@@ -27,6 +27,24 @@ the old lazy join for those dialects is rejected because it would retain
 #919's mismatch; imposing a deterministic-source restriction is rejected
 because it cannot be established from an arbitrary summary expression.
 
+## Amendment (#1141): DuckDB binds staged values at query execution
+
+Before either share kind is calculated, DuckDB's staged summary is enclosed
+in one `AS MATERIALIZED` CTE shared by all requested shares. A single textual
+grouping relation with windows does not prevent DuckDB from reevaluating a
+volatile projection between windows. The CTE binds the displayed summary
+values and their denominators to the same evaluation.
+
+The returned query contains this boundary for both native and portable
+aggregation. Construction only renders SQL and supplies the known column
+names; it executes no CTE, creates no table, and reads no source data. ADR 0020
+is unchanged. The database performs the CTE work only when the caller executes
+the query. Other SQL backends retain their existing window query.
+
+This supersedes the rejection below of an always-CTE query boundary for
+DuckDB shares: here it establishes the displayed-value contract rather than
+reducing repeated query text. No deterministic-source restriction is added.
+
 ## Amendment (2026-09-12): SQL carries the Parent plan as one inline relation
 
 The decision below that Parent mapping construction is shared by every backend
