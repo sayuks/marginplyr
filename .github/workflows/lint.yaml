@@ -83,7 +83,8 @@ jobs:
         run: Rscript .github/scripts/verify-review-ready-check.R
 
   lint:
-    runs-on: ubuntu-latest
+    # Review-ready process contracts target the maintainer's Mac workflow.
+    runs-on: macos-latest
     # Includes R and dependency setup before either linter can run.
     timeout-minutes: 60
     env:
@@ -94,6 +95,16 @@ jobs:
           fetch-depth: 0
 
       - uses: r-lib/actions/setup-r@v2
+
+      # Match R-CMD-check.yaml's macOS binary preinstall before pak resolution.
+      - name: Preinstall Zstandard-compressed macOS dependencies
+        run: |
+          install.packages(
+            c("knitr", "xfun"),
+            dependencies = NA,
+            type = "binary"
+          )
+        shell: Rscript {0}
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
