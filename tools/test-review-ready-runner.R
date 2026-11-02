@@ -136,6 +136,10 @@ local({
   collected_output <- function(run) {
     paste0(captured[[as.character(run$get_pid())]], collapse = "")
   }
+  fail_command <- function(run, label, output = collected_output(run)) {
+    cat(output, "\n", sep = "")
+    stop(label, call. = FALSE)
+  }
   finish <- function(run, status = 0L, timeout = 120000L) {
     deadline <- Sys.time() + timeout / 1000
     repeat {
@@ -146,13 +150,16 @@ local({
     if (timed_out) {
       run$kill_tree()
       run$wait()
-      stop("Command timed out after ", timeout / 1000,
-        " seconds. Child output:\n", collected_output(run), call. = FALSE)
+      fail_command(run, paste0("Command timed out after ", timeout / 1000,
+        " seconds; expected status ", status, ", actual status ", run$get_exit_status(), "."))
     }
     run$wait()
     output <- paste0(collected_output(run), run$read_all_output())
     captured[[as.character(run$get_pid())]] <- NULL
-    if (!identical(run$get_exit_status(), status)) stop(output, call. = FALSE)
+    if (!identical(run$get_exit_status(), status)) {
+      fail_command(run, paste0("Command failed: expected status ", status,
+        ", actual status ", run$get_exit_status(), "."), output)
+    }
     output
   }
   repo <- make_repo("first")
@@ -201,7 +208,9 @@ local({
     drain_output(waiter, 100L)
     observed <- collected_output(waiter)
     if (grepl("Waiting for heavy", observed, fixed = TRUE)) break
-    if (!waiter$is_alive() || Sys.time() > deadline) stop(observed)
+    if (!waiter$is_alive() || Sys.time() > deadline) {
+      fail_command(waiter, "Full fixture did not reach shared admission.")
+    }
   }
   # Change HEAD only after the submission has reached the occupied slot.
   writeLines("later", file.path(repo, "inst", "revision.txt"))
@@ -220,7 +229,8 @@ local({
       drain_output(run, 50L)
       if (predicate()) return(invisible(NULL))
       if (!run$is_alive() || Sys.time() > deadline) {
-        stop(paste(label, collected_output(run)), call.=FALSE)
+        actual <- if (run$is_alive()) "running" else run$get_exit_status()
+        fail_command(run, paste0(label, ": readiness condition unmet; actual status ", actual, "."))
       }
       Sys.sleep(0.05)
     }
