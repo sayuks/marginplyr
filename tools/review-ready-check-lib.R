@@ -5,11 +5,15 @@ review_ready_account_home <- function() {
   path.expand(paste0("~", Sys.info()[["user"]]))
 }
 
-# Takes process-library identity handles while the owned parent is still alive.
-# Inspection errors remain errors; only a process that has exited has no children.
+# Collects descendant identities while the owned parent is still alive.
+# Inspection errors remain errors unless its processx handle confirms exit.
 review_ready_children <- function(process) {
+  if (!process$is_alive()) return(list())
   tryCatch(ps::ps_children(ps::ps_handle(process$get_pid()), recursive = TRUE),
-    no_such_process = function(cnd) list())
+    error = function(cnd) {
+      if (!process$is_alive()) return(list())
+      stop(cnd)
+    })
 }
 
 # Stops owned descendants and confirms exit before capacity may be released.
@@ -30,7 +34,7 @@ review_ready_stop_process <- function(process, children = list()) {
       if (isTRUE(stopped)) break
       if (inherits(stopped, "error") && !identical(reported, conditionMessage(stopped))) {
         reported <- conditionMessage(stopped)
-        cat("Cleanup cannot yet confirm owned-process exit; capacity remains held: ",
+        cat("Waiting for owned-process cleanup: ",
           reported, "\n", sep = "")
       }
       Sys.sleep(0.2)
