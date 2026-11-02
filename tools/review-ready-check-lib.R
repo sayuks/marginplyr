@@ -488,7 +488,8 @@ run_review_ready_source <- function(source_root, prerequisites, runner = review_
   verify_review_ready_test_packages(source_root)
   cat("\n==> Required test Suggests\n")
   required <- required_test_suggests(source_root)
-  for (label in names(steps <- review_ready_source_steps(prerequisites))) {
+  steps <- review_ready_source_steps(prerequisites)
+  for (label in names(steps)) {
     run_review_ready_step(label, steps[[label]], source_root, runner = runner)
   }
   required
