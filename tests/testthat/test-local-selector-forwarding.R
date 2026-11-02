@@ -107,6 +107,30 @@ test_that("selection wrappers and function forwarding retain dplyr results", {
   }
 })
 
+test_that("top-level function forwarding keeps dplyr expansion timing", {
+  data <- data.frame(g = c("a", "a", "b"), x = 1:3)
+  run <- function(mode) {
+    state <- new.env(parent = emptyenv())
+    state$events <- integer()
+    factory <- function() {
+      offset <- dplyr::n()
+      state$events <- c(state$events, offset)
+      function(x) sum(x) + offset
+    }
+    wrapper <- function(...) {
+      if (mode == "dplyr") {
+        dplyr::summarise(data, dplyr::across(x, ...), .by = g)
+      } else {
+        summarize_with_margins(data, dplyr::across(x, ...), .by = g)
+      }
+    }
+    list(result = wrapper(factory()), events = state$events)
+  }
+  expected <- run("dplyr")
+  expect_identical(expected$events, 0L)
+  expect_identical(run("margin"), expected)
+})
+
 test_that("forwarded arguments keep their evaluation order and environments", {
   data <- data.frame(g = c("a", "a", "b"), x = 1:3, y = c(7, 9, 11))
   for (helper in c("across", "if_any", "if_all")) {
