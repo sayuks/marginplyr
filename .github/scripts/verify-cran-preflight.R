@@ -51,7 +51,7 @@ expect_identical(
 )
 curly_quoted_submission <- sub(
   "'Yusuke Sasaki <sayuks.dev@gmail.com>'",
-  "‘Yusuke Sasaki <sayuks.dev@gmail.com>’",
+  "\u2018Yusuke Sasaki <sayuks.dev@gmail.com>\u2019",
   new_submission,
   fixed = TRUE
 )
@@ -60,6 +60,30 @@ expect_identical(
   "allowed-note",
   "the initial-submission NOTE rendered with R quotes"
 )
+local({
+  original <- Sys.getlocale("LC_CTYPE")
+  on.exit(Sys.setlocale("LC_CTYPE", original), add = TRUE)
+  expect_identical(Sys.setlocale("LC_CTYPE", "C"), "C", "the ASCII policy fixture locale")
+  policy <- new.env(parent = baseenv())
+  source(".github/scripts/cran-note-policy.R", local = policy)
+  expect_identical(
+    policy$normalize_cran_note("An ordinary ASCII NOTE"),
+    "An ordinary ASCII NOTE",
+    "an ordinary NOTE sourced under the C locale"
+  )
+  quoted <- sub("'Yusuke Sasaki <sayuks.dev@gmail.com>'",
+    "\u2018Yusuke Sasaki <sayuks.dev@gmail.com>\u2019", new_submission, fixed = TRUE)
+  expect_identical(
+    policy$classify_cran_note(quoted, "unpublished")$status,
+    "allowed-note",
+    "UTF-8 quotes under the C locale"
+  )
+  expect_identical(
+    policy$classify_cran_note(paste(quoted, "Another finding", sep = "\n"), "unpublished")$status,
+    "unknown-note",
+    "the C locale does not widen the NOTE allowance"
+  )
+})
 
 near_miss <- paste(new_submission, "Possibly misspelled words", sep = "\n")
 expect_identical(

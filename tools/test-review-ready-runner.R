@@ -120,9 +120,12 @@ local({
   start <- function(repo, scope = "source", extra = character()) {
     cat("Runner fixture: ", basename(repo), " --scope ", scope, "\n", sep = "")
     flush.console()
+    values <- Sys.getenv()
+    values[names(env)] <- env
+    values[names(extra)] <- extra
     run <- processx::process$new(rscript,
       c("tools/review-ready.R", "--scope", scope, "--reason", "fixture explicit judgment"),
-      wd = repo, env = c(env, extra), stdout = "|", stderr = "2>&1",
+      wd = repo, env = values, stdout = "|", stderr = "2>&1",
       cleanup_tree = TRUE, supervise = TRUE)
     runs[[length(runs) + 1L]] <<- run
     run

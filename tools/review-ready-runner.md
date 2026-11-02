@@ -18,6 +18,10 @@ If the checkout lacks the `--scope`/`--reason` interface, report that the checko
 must be updated before Review-ready can run. The retired installed command has
 no reinstall or fallback path; old worktrees are outside migration scope.
 
+Full scope also needs a working TeX distribution with `pdflatex` on PATH for
+the PDF reference manual. [TinyTeX](https://yihui.org/tinytex/) is one option;
+the CI process fixtures install its full bundle. Source scope does not need TeX.
+
 From a clean committed worktree root:
 
 ```sh
