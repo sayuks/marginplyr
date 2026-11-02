@@ -58,3 +58,6 @@ sandbox/
 /checktor-report/
 /doc/
 /Meta/
+
+# Retained local Review-ready invocations
+/.review-ready/

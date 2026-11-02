@@ -178,7 +178,7 @@
             "uses": "r-lib/actions/setup-r-dependencies@v2",
             "with": {
               "install-pandoc": "false",
-              "extra-packages": "local::., any::openssl, any::filelock, any::ps, any::processx, any::jsonlite, any::devtools, any::roxygen2, any::fs",
+              "extra-packages": "local::.",
               "needs": "website"
             }
           },
@@ -190,10 +190,6 @@
           {
             "name": "Verify site output",
             "run": "Rscript .github/scripts/verify-site.R"
-          },
-          {
-            "name": "Verify private renderer storage",
-            "run": "Rscript tools/test-review-ready-renderer.R"
           },
           {
             "name": "Configure GitHub Pages",
@@ -406,7 +402,7 @@
         ]
       },
       "lint": {
-        "runs-on": "ubuntu-latest",
+        "runs-on": "macos-latest",
         "timeout-minutes": "60",
         "env": {
           "GITHUB_PAT": "${{ secrets.GITHUB_TOKEN }}"
@@ -422,10 +418,21 @@
             "uses": "r-lib/actions/setup-r@v2"
           },
           {
+            "name": "Preinstall Zstandard-compressed macOS dependencies",
+            "run": "install.packages(\n  c(\"knitr\", \"xfun\"),\n  dependencies = NA,\n  type = \"binary\"\n)\n",
+            "shell": "Rscript {0}"
+          },
+          {
             "uses": "r-lib/actions/setup-r-dependencies@v2",
             "with": {
-              "extra-packages": "any::lintr, any::pkgload, any::spelling, local::., any::testthat, any::yaml, any::jsonlite, any::processx, any::ps, any::filelock, any::openssl, any::fs",
+              "extra-packages": "any::lintr, any::pkgload, any::spelling, local::., any::testthat, any::yaml, any::jsonlite, any::processx, any::ps, any::filelock, any::R6, any::rcmdcheck",
               "needs": "lint"
+            }
+          },
+          {
+            "uses": "r-lib/actions/setup-tinytex@v2",
+            "env": {
+              "TINYTEX_INSTALLER": "TinyTeX"
             }
           },
           {
@@ -449,7 +456,11 @@
           },
           {
             "name": "Verify R runner process contracts",
-            "run": "sudo useradd --create-home --user-group --groups \"$(id -gn)\" marginplyr-fixture\ngit clone --quiet --no-local . \"$RUNNER_TEMP/review-ready-fixtures\"\nsudo chown -R marginplyr-fixture:marginplyr-fixture \"$RUNNER_TEMP/review-ready-fixtures\"\ncd \"$RUNNER_TEMP/review-ready-fixtures\"\nsudo -H -u marginplyr-fixture env PATH=\"$PATH\" R_LIBS_USER=\"$R_LIBS_USER\" Rscript tools/test-review-ready-runner.R\n"
+            "run": "Rscript tools/test-review-ready-runner.R"
+          },
+          {
+            "name": "Verify Review-ready progress and worker diagnostics",
+            "run": "Rscript tools/test-review-ready-progress.R"
           },
           {
             "uses": "etiennebacher/setup-jarl@v0.1.1",

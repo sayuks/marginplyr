@@ -7,7 +7,8 @@
 # second incoming finding cannot inherit the disposition of the first.
 normalize_cran_note <- function(note) {
   note <- gsub("\033\\[[0-9;]*[[:alpha:]]", "", note)
-  note <- chartr("‘’", "''", note)
+  # Unicode escapes retain UTF-8 marking when this file is sourced in the C locale.
+  note <- chartr("\u2018\u2019", "''", note)
   lines <- strsplit(gsub("\r\n?", "\n", note), "\n", fixed = TRUE)[[1L]]
   lines <- trimws(lines)
   if (length(lines) > 0L) {

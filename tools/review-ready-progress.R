@@ -64,9 +64,8 @@ review_ready_progress_check <- function(
     path = path, args = args, build_args = build_args,
     check_dir = check_dir, env = env, repos = repos
   )
-  on.exit({
-    if (process$is_alive()) process$kill()
-  }, add = TRUE)
+  children <- list()
+  on.exit(review_ready_stop_process(process, children), add = TRUE)
   started <- NULL
   displayed <- -Inf
   finished <- FALSE
@@ -75,9 +74,12 @@ review_ready_progress_check <- function(
   reported_until <- 0L
   transcript_read_at <- -Inf
   repeat {
+    for (child in review_ready_children(process)) {
+      children[[as.character(ps::ps_pid(child))]] <- child
+    }
     process$poll_io(250L)
     lines <- process$read_output_lines()
-    if (length(lines)) cat(lines, sep = "\n")
+    if (length(lines)) cat(paste0(lines, "\n"), sep = "")
     alive <- process$is_alive()
     snapshot <- review_ready_progress_snapshot(progress)
     now <- proc.time()[["elapsed"]]
@@ -100,7 +102,7 @@ review_ready_progress_check <- function(
       if (!is.null(diagnostic_start) && length(transcript) > reported_until) {
         if (reported_until == 0L) cat("\nTest worker diagnostic:\n")
         first <- max(diagnostic_start, reported_until + 1L)
-        cat(transcript[seq.int(first, length(transcript))], sep = "\n")
+        cat(paste0(transcript[seq.int(first, length(transcript))], "\n"), sep = "")
         flush.console()
         reported_until <- length(transcript)
       }
@@ -129,6 +131,6 @@ review_ready_progress_check <- function(
   }
   process$wait()
   lines <- process$read_output_lines()
-  if (length(lines)) cat(lines, sep = "\n")
+  if (length(lines)) cat(paste0(lines, "\n"), sep = "")
   process$parse_results()
 }
