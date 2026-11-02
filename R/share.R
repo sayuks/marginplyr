@@ -4553,11 +4553,9 @@ scope_callee_is_shadowed <- function(callee, name, bound, lookup) {
     if (is.null(binding)) {
       return(FALSE)
     }
-    environment <- if (identical(resolver, "getFunction")) {
-      call_formal_argument(callee, "where", positional = FALSE)
-    } else {
-      base_call_argument(callee, c("envir", "pos"))
-    }
+    environment <- base_call_argument(
+      callee, c("envir", "pos", "where"), definition = binding
+    )
     if (length(environment) > 0L) {
       env <- lookup_environment_value(environment[[1L]], bound, lookup)
       if (is.null(env)) {
@@ -4667,12 +4665,17 @@ removal_retained_bound <- function(expr, bound) {
 }
 
 # The first supplied formal in priority order, or an empty list for defaults.
-# Match a recognized base primitive without evaluating caller expressions.
-base_call_argument <- function(expr, formals) {
+# Match without evaluating caller expressions. A non-base resolver supplies its
+# verified definition; other callers use the recognized base primitive.
+base_call_argument <- function(expr, formals, definition = NULL) {
   callee <- resolved_callee_name(expr)
   matched <- tryCatch(
     match.call(
-      args(get(callee, envir = baseenv())),
+      if (is.null(definition)) {
+        args(get(callee, envir = baseenv()))
+      } else {
+        args(definition)
+      },
       rlang::call2(callee, !!!static_call_args(expr)),
       envir = emptyenv()
     ),

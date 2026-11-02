@@ -180,6 +180,36 @@ test_that("function resolvers retain caller shadows in the top environment", {
         expect_equal(result$derived, c(2, 2, 2))
       }
     }
+    for (removal in alist(
+      (getFunction("rm", where = baseenv()))("prior"),
+      (getFunction("rm", wh = baseenv()))("prior"),
+      (getFunction("rm", TRUE, TRUE, baseenv()))("prior")
+    )) {
+      expression <- rlang::new_quosure(rlang::expr({
+        prior <- 2
+        !!removal
+        sum(prior)
+      }), globalenv())
+      for (kind in c("parent", "total")) {
+        helper <- rlang::call2(paste0("share_of_", kind), quote(value))
+        expect_error(
+          summarize_with_margins(
+            data, prior = sum(x), value = !!expression,
+            fraction = !!helper, .grouping = rollup(group)
+          ),
+          "depends on earlier summary alias `prior`",
+          class = "marginplyr_error"
+        )
+        expect_error(
+          summarize_with_margins(
+            data, value = sum(x), prior = !!helper,
+            derived = !!expression, .grouping = rollup(group)
+          ),
+          "Ordinary summaries cannot use an earlier .* share",
+          class = "marginplyr_error"
+        )
+      }
+    }
   }, finally = {
     if (had_binding) {
       assign("rm", original, envir = globalenv())
