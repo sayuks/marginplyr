@@ -1,0 +1,18 @@
+Warning message:
+In rapi_execute(stmt, convert_opts) :
+  Coercing nanoseconds to a lower resolution may result in a loss of data.
+status
+        match package_error  source_error
+          285             3             4
+   type      role        status
+    bit    source  source_error
+   json     setup  source_error
+  array    source  source_error
+ struct dimension package_error
+  union    source  source_error
+                                                                                                                                                                                                                                                                                                                                                                                                   detail
+                                                                                                                                                                                                                    Can't query fields.\nℹ Using SQL: SELECT * FROM (FROM src) AS q01 WHERE (0 = 1)\nCaused by error in `dbSendQuery()`:\n! Unknown column type for prepare: BIT\nℹ Context: rapi_prepare
+ Extension Autoloading Error: An error occurred while trying to automatically install the required extension 'json':\nExtension "/var/folders/jv/m3wxfdhx765fl9k6nym08g0r0000gn/T//RtmpaILuch/duckdb/extensions/v1.5.5/osx_arm64/json.duckdb_extension" not found.\nExtension "json" is an existing extension.\n\nInstall it first using "INSTALL json".\nℹ Context: rapi_prepare\nℹ Error type: AUTOLOAD
+                                                                                                                                                                          Can't query fields.\nℹ Using SQL: SELECT * FROM (FROM src) AS q01 WHERE (0 = 1)\nCaused by error in `duckdb_result()`:\n! Use `dbConnect(array = "matrix")` to enable arrays to be returned to R.\nℹ Context: duckdb_r_allocate
+                                                                                                                                                                                                                A non-missing `.margin_label` cannot label packed grouping dimensions:\nℹ `k`.\nℹ Use `NULL` or `NA_character_` for a typed-missing label, or unpack the dimension into separate columns.
+                                                                                                                                                                                                     Can't query fields.\nℹ Using SQL: SELECT * FROM (FROM src) AS q01 WHERE (0 = 1)\nCaused by error in `dbSendQuery()`:\n! Unknown column type for prepare: UNION(num INTEGER)\nℹ Context: rapi_prepare

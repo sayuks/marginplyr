@@ -1,0 +1,6 @@
+
+expected-empty-refusal                  match
+                   204                   4284
+[1] frame      expression parent     status     source     oracle     actual
+<0 rows> (or 0-length row.names)
+Executed comparisons: 4488

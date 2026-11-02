@@ -1,0 +1,81 @@
+source_left_join_rhs: OK
+# A tibble: 1 × 2
+  g     `FALSE`
+  <chr>   <int>
+1 b          19
+source_left_join_lhs: OK
+# A tibble: 1 × 2
+  g     `FALSE`
+  <chr>   <int>
+1 b          19
+source_union_rhs: OK
+# A tibble: 2 × 2
+  g     `FALSE`
+  <chr>   <int>
+1 b          19
+2 b          19
+source_union_lhs: OK
+# A tibble: 2 × 2
+  g     `FALSE`
+  <chr>   <int>
+1 b          19
+2 b          19
+source_intersect_rhs: OK
+# A tibble: 1 × 2
+  g     `FALSE`
+  <chr>   <int>
+1 b          19
+materialized_left_join_rhs: OK
+# A tibble: 1 × 2
+  g     `FALSE`
+  <chr>   <int>
+1 b          19
+materialized_left_join_lhs: OK
+# A tibble: 2 × 2
+  g     `FALSE`
+  <chr>   <int>
+1 b          19
+2 Total      19
+materialized_union_rhs: OK
+# A tibble: 3 × 2
+  g     `FALSE`
+  <chr>   <int>
+1 b          19
+2 b          19
+3 Total      19
+materialized_union_lhs: OK
+# A tibble: 3 × 2
+  g     `FALSE`
+  <chr>   <int>
+1 b          19
+2 Total      19
+3 b          19
+materialized_intersect_rhs: OK
+# A tibble: 1 × 2
+  g     `FALSE`
+  <chr>   <int>
+1 b          19
+expanded_left_join_rhs: Failed to collect lazy table.
+Caused by error:
+! no such column: FALSE
+expanded_left_join_lhs: Failed to collect lazy table.
+Caused by error:
+! no such column: FALSE
+expanded_union_rhs: Failed to collect lazy table.
+Caused by error:
+! no such column: FALSE
+expanded_union_lhs: OK
+# A tibble: 3 × 2
+  g     `FALSE`
+  <chr>   <int>
+1 b          19
+2 Total      19
+3 b          19
+expanded_intersect_rhs: Failed to collect lazy table.
+Caused by error:
+! no such column: FALSE
+join LHS special class: TRUE
+union RHS special class: FALSE
+union LHS special class: TRUE
+Error: all(vapply(results, `[[`, logical(1), "ok")) is not TRUE
+Execution halted

@@ -1,0 +1,30 @@
+<error/rlang_error>
+Error in `collect()`:
+! Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE
+---
+Backtrace:
+     ▆
+  1. ├─global capture(collect(left_join(keys, expanded, by = "g")))
+  2. │ ├─base::tryCatch(suppressWarnings(force(expr)), error = identity)
+  3. │ │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+  4. │ │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+  5. │ │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+  6. │ ├─base::suppressWarnings(force(expr))
+  7. │ │ └─base::withCallingHandlers(...)
+  8. │ └─base::force(expr)
+  9. ├─dplyr::collect(left_join(keys, expanded, by = "g"))
+ 10. └─dbplyr:::collect.tbl_sql(left_join(keys, expanded, by = "g"))
+ 11.   ├─base::withCallingHandlers(...)
+ 12.   ├─dbplyr::db_collect(...)
+ 13.   └─dbplyr:::db_collect.DBIConnection(...)
+ 14.     ├─DBI::dbSendQuery(con, sql)
+ 15.     └─DBI::dbSendQuery(con, sql)
+ 16.       └─RSQLite (local) .local(conn, statement, ...)
+ 17.         ├─methods::new(...)
+ 18.         │ ├─methods::initialize(value, ...)
+ 19.         │ └─methods::initialize(value, ...)
+ 20.         └─RSQLite:::result_create(conn@ptr, statement)
+Error: !inherits(minimal, "error") is not TRUE
+Execution halted

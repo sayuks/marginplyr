@@ -1,0 +1,24 @@
+
+CAUSE union_lhs
+OUTER marginplyr_sqlite_typed_result/tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+ROOT lazy_union_query/lazy_query
+BEFORE success
+AFTER success
+
+CAUSE union_rhs
+OUTER tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+ROOT lazy_union_query/lazy_query
+BEFORE no such column: TRUE
+AFTER success
+
+CAUSE join_lhs
+OUTER marginplyr_sqlite_typed_result/tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+ROOT lazy_multi_join_query/lazy_query
+BEFORE no such column: TRUE
+AFTER no such column: TRUE
+
+CAUSE join_rhs
+OUTER tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+ROOT lazy_multi_join_query/lazy_query
+BEFORE no such column: TRUE
+AFTER no such column: TRUE

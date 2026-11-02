@@ -1,0 +1,69 @@
+"operation","input","status","class","names","n","detail"
+"direct","source","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",1,""
+"direct","materialized","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",2,""
+"direct","expanded","success","marginplyr_sqlite_typed_result/tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",2,""
+"head","source","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",1,""
+"head","materialized","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",1,""
+"head","expanded","success","marginplyr_sqlite_typed_result/tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",1,""
+"collapse","source","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",1,""
+"collapse","materialized","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",2,""
+"collapse","expanded","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",2,""
+"collapse_head","source","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/column2",1,""
+"collapse_head","materialized","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/column2",1,""
+"collapse_head","expanded","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/column2",1,""
+"left_join_lhs","source","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",1,""
+"left_join_lhs","materialized","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",2,""
+"left_join_lhs","expanded","error","marginplyr_sqlite_typed_result/tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","",NA,"Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"left_join_rhs","source","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",1,""
+"left_join_rhs","materialized","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",1,""
+"left_join_rhs","expanded","error","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","",NA,"Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"inner_join_lhs","source","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",1,""
+"inner_join_lhs","materialized","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",1,""
+"inner_join_lhs","expanded","error","marginplyr_sqlite_typed_result/tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","",NA,"Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"inner_join_rhs","source","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",1,""
+"inner_join_rhs","materialized","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",1,""
+"inner_join_rhs","expanded","error","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","",NA,"Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"union_all_lhs","source","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",2,""
+"union_all_lhs","materialized","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",3,""
+"union_all_lhs","expanded","success","marginplyr_sqlite_typed_result/tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",3,""
+"union_all_rhs","source","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",2,""
+"union_all_rhs","materialized","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",3,""
+"union_all_rhs","expanded","error","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","",NA,"Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"union_lhs","source","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",1,""
+"union_lhs","materialized","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",2,""
+"union_lhs","expanded","success","marginplyr_sqlite_typed_result/tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",2,""
+"union_rhs","source","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",1,""
+"union_rhs","materialized","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",2,""
+"union_rhs","expanded","error","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","",NA,"Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"intersect_lhs","source","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",1,""
+"intersect_lhs","materialized","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",1,""
+"intersect_lhs","expanded","error","marginplyr_sqlite_typed_result/tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","",NA,"Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"intersect_rhs","source","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",1,""
+"intersect_rhs","materialized","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",1,""
+"intersect_rhs","expanded","error","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","",NA,"Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"setdiff_lhs","source","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",0,""
+"setdiff_lhs","materialized","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",1,""
+"setdiff_lhs","expanded","error","marginplyr_sqlite_typed_result/tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","",NA,"Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"setdiff_rhs","source","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",0,""
+"setdiff_rhs","materialized","success","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","g/TRUE",0,""
+"setdiff_rhs","expanded","error","tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl","",NA,"Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"

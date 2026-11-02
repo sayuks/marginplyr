@@ -1,0 +1,32 @@
+
+CASE name
+inspect_grouping(x, .grouping = grouping_sets(`~`(grouping_set)(a)), .format = "list")
+# A tibble: 1 × 6
+  set_id fixed     included  omitted   grouping_bits grouping_id
+   <int> <list>    <list>    <list>    <list>              <int>
+1      1 <chr [0]> <chr [1]> <chr [0]> <int [1]>               0
+reads: 1
+
+CASE call
+inspect_grouping(x, .grouping = grouping_sets(`~`((grouping_set))(a)), .format = "list")
+# A tibble: 1 × 6
+  set_id fixed     included  omitted   grouping_bits grouping_id
+   <int> <list>    <list>    <list>    <list>              <int>
+1      1 <chr [0]> <chr [1]> <chr [0]> <int [1]>               0
+reads: 1
+
+CASE qualified-call
+inspect_grouping(x, .grouping = grouping_sets(`~`(marginplyr::grouping_set)(a)),
+.format = "list")
+# A tibble: 1 × 6
+  set_id fixed     included  omitted   grouping_bits grouping_id
+   <int> <list>    <list>    <list>    <list>              <int>
+1      1 <chr [0]> <chr [1]> <chr [0]> <int [1]>               0
+reads: 1
+identifier dimensions: 0 passed
+identifier dimensions: 1 passed
+identifier dimensions: 30 passed
+identifier dimensions: 31 passed
+identifier dimensions: 32 passed
+identifier dimensions: 40 passed
+capture and identifier boundary assertions passed

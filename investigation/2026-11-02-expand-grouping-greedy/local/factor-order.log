@@ -1,0 +1,6 @@
+
+match
+ 1944
+ [1] level_id   ordered    n          persistent plan_name  label_name
+ [7] position   sort       status     detail
+<0 rows> (or 0-length row.names)

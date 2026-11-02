@@ -1,0 +1,1417 @@
+
+CASE direct source
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `source`
+# A tibble: 1 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+
+CASE direct materialized
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `temp`.`materialized`
+# A tibble: 2 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+2 Total      7
+
+CASE direct expanded
+CLASS marginplyr_sqlite_typed_result/tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `source`
+WHERE (0)
+
+UNION ALL
+
+SELECT `g`, `..marginplyr_boolean_1` AS `TRUE`
+FROM (
+  SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+  FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT CAST(`g` AS TEXT) AS `g`, `..marginplyr_boolean_1`
+    FROM (
+      SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+      FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+
+    UNION ALL
+
+    SELECT 'Total' AS `g`, `..marginplyr_boolean_1`
+    FROM (
+      SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+      FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+WHERE (1)
+# A tibble: 2 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+2 Total      7
+
+CASE head source
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `source`
+LIMIT 1
+# A tibble: 1 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+
+CASE head materialized
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `temp`.`materialized`
+LIMIT 1
+# A tibble: 1 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+
+CASE head expanded
+CLASS marginplyr_sqlite_typed_result/tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT `g`, `..marginplyr_boolean_1` AS `TRUE`
+FROM (
+  SELECT `g`, `TRUE` AS `..marginplyr_boolean_1`
+  FROM `source`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+    FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+    ) AS `q01`
+    WHERE (0)
+
+    UNION ALL
+
+    SELECT *
+    FROM (
+      SELECT CAST(`g` AS TEXT) AS `g`, `..marginplyr_boolean_1`
+      FROM (
+        SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+        FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+        ) AS `q01`
+      ) AS `q01`
+
+      UNION ALL
+
+      SELECT 'Total' AS `g`, `..marginplyr_boolean_1`
+      FROM (
+        SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+        FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+        ) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+    WHERE (1)
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+LIMIT 1
+# A tibble: 1 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+
+CASE collapse source
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `source`
+# A tibble: 1 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+
+CASE collapse materialized
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `temp`.`materialized`
+# A tibble: 2 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+2 Total      7
+
+CASE collapse expanded
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `source`
+WHERE (0)
+
+UNION ALL
+
+SELECT `g`, `..marginplyr_boolean_1` AS `TRUE`
+FROM (
+  SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+  FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT CAST(`g` AS TEXT) AS `g`, `..marginplyr_boolean_1`
+    FROM (
+      SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+      FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+
+    UNION ALL
+
+    SELECT 'Total' AS `g`, `..marginplyr_boolean_1`
+    FROM (
+      SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+      FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+WHERE (1)
+# A tibble: 2 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+2 Total      7
+
+CASE collapse_head source
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM (
+SELECT *
+FROM `source`
+) AS `q01`
+LIMIT 1
+# A tibble: 1 × 2
+  g     column2
+  <chr>   <int>
+1 a           7
+
+CASE collapse_head materialized
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM (
+SELECT *
+FROM `temp`.`materialized`
+) AS `q01`
+LIMIT 1
+# A tibble: 1 × 2
+  g     column2
+  <chr>   <int>
+1 a           7
+
+CASE collapse_head expanded
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM (
+SELECT *
+FROM `source`
+WHERE (0)
+
+UNION ALL
+
+SELECT `g`, `..marginplyr_boolean_1` AS `TRUE`
+FROM (
+  SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+  FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT CAST(`g` AS TEXT) AS `g`, `..marginplyr_boolean_1`
+    FROM (
+      SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+      FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+
+    UNION ALL
+
+    SELECT 'Total' AS `g`, `..marginplyr_boolean_1`
+    FROM (
+      SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+      FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+WHERE (1)
+) AS `q01`
+LIMIT 1
+# A tibble: 1 × 2
+  g     column2
+  <chr>   <int>
+1 a           7
+
+CASE left_join_lhs source
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT `source_LHS`.*
+FROM `source` AS `source_LHS`
+LEFT JOIN `source` AS `source_RHS`
+  ON (`source_LHS`.`g` = `source_RHS`.`g`)
+# A tibble: 1 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+
+CASE left_join_lhs materialized
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT `materialized`.*
+FROM `temp`.`materialized`
+LEFT JOIN `source`
+  ON (`materialized`.`g` = `source`.`g`)
+# A tibble: 2 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+2 Total      7
+
+CASE left_join_lhs expanded
+CLASS marginplyr_sqlite_typed_result/tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT `LHS`.*
+FROM (
+  SELECT *
+  FROM `source`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+    FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+    ) AS `q01`
+    WHERE (0)
+
+    UNION ALL
+
+    SELECT *
+    FROM (
+      SELECT CAST(`g` AS TEXT) AS `g`, `TRUE`
+      FROM (
+        SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+        FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+        ) AS `q01`
+      ) AS `q01`
+
+      UNION ALL
+
+      SELECT 'Total' AS `g`, `TRUE`
+      FROM (
+        SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+        FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+        ) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+    WHERE (1)
+  ) AS `q01`
+  WHERE (1)
+) AS `LHS`
+LEFT JOIN `source`
+  ON (`LHS`.`g` = `source`.`g`)
+ERROR rlang_error Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE
+
+CASE left_join_rhs source
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT `source_LHS`.`g` AS `g`, `source_RHS`.`TRUE` AS `TRUE`
+FROM `source` AS `source_LHS`
+LEFT JOIN `source` AS `source_RHS`
+  ON (`source_LHS`.`g` = `source_RHS`.`g`)
+# A tibble: 1 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+
+CASE left_join_rhs materialized
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT `source`.`g` AS `g`, `materialized`.`TRUE` AS `TRUE`
+FROM `source`
+LEFT JOIN `temp`.`materialized`
+  ON (`source`.`g` = `materialized`.`g`)
+# A tibble: 1 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+
+CASE left_join_rhs expanded
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT `source`.`g` AS `g`, `RHS`.`TRUE` AS `TRUE`
+FROM `source`
+LEFT JOIN (
+  SELECT *
+  FROM `source`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+    FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+    ) AS `q01`
+    WHERE (0)
+
+    UNION ALL
+
+    SELECT *
+    FROM (
+      SELECT CAST(`g` AS TEXT) AS `g`, `TRUE`
+      FROM (
+        SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+        FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+        ) AS `q01`
+      ) AS `q01`
+
+      UNION ALL
+
+      SELECT 'Total' AS `g`, `TRUE`
+      FROM (
+        SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+        FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+        ) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+    WHERE (1)
+  ) AS `q01`
+  WHERE (1)
+) AS `RHS`
+  ON (`source`.`g` = `RHS`.`g`)
+ERROR rlang_error Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE
+
+CASE inner_join_lhs source
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT `source_LHS`.*
+FROM `source` AS `source_LHS`
+INNER JOIN `source` AS `source_RHS`
+  ON (`source_LHS`.`g` = `source_RHS`.`g`)
+# A tibble: 1 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+
+CASE inner_join_lhs materialized
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT `materialized`.*
+FROM `temp`.`materialized`
+INNER JOIN `source`
+  ON (`materialized`.`g` = `source`.`g`)
+# A tibble: 1 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+
+CASE inner_join_lhs expanded
+CLASS marginplyr_sqlite_typed_result/tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT `LHS`.*
+FROM (
+  SELECT *
+  FROM `source`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+    FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+    ) AS `q01`
+    WHERE (0)
+
+    UNION ALL
+
+    SELECT *
+    FROM (
+      SELECT CAST(`g` AS TEXT) AS `g`, `TRUE`
+      FROM (
+        SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+        FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+        ) AS `q01`
+      ) AS `q01`
+
+      UNION ALL
+
+      SELECT 'Total' AS `g`, `TRUE`
+      FROM (
+        SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+        FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+        ) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+    WHERE (1)
+  ) AS `q01`
+  WHERE (1)
+) AS `LHS`
+INNER JOIN `source`
+  ON (`LHS`.`g` = `source`.`g`)
+ERROR rlang_error Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE
+
+CASE inner_join_rhs source
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT `source_LHS`.`g` AS `g`, `source_RHS`.`TRUE` AS `TRUE`
+FROM `source` AS `source_LHS`
+INNER JOIN `source` AS `source_RHS`
+  ON (`source_LHS`.`g` = `source_RHS`.`g`)
+# A tibble: 1 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+
+CASE inner_join_rhs materialized
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT `source`.`g` AS `g`, `materialized`.`TRUE` AS `TRUE`
+FROM `source`
+INNER JOIN `temp`.`materialized`
+  ON (`source`.`g` = `materialized`.`g`)
+# A tibble: 1 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+
+CASE inner_join_rhs expanded
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT `source`.`g` AS `g`, `RHS`.`TRUE` AS `TRUE`
+FROM `source`
+INNER JOIN (
+  SELECT *
+  FROM `source`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+    FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+    ) AS `q01`
+    WHERE (0)
+
+    UNION ALL
+
+    SELECT *
+    FROM (
+      SELECT CAST(`g` AS TEXT) AS `g`, `TRUE`
+      FROM (
+        SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+        FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+        ) AS `q01`
+      ) AS `q01`
+
+      UNION ALL
+
+      SELECT 'Total' AS `g`, `TRUE`
+      FROM (
+        SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+        FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+        ) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+    WHERE (1)
+  ) AS `q01`
+  WHERE (1)
+) AS `RHS`
+  ON (`source`.`g` = `RHS`.`g`)
+ERROR rlang_error Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE
+
+CASE union_all_lhs source
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `source`
+
+UNION ALL
+
+SELECT *
+FROM `other`
+# A tibble: 2 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+2 a          7
+
+CASE union_all_lhs materialized
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `temp`.`materialized`
+
+UNION ALL
+
+SELECT *
+FROM `other`
+# A tibble: 3 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+2 Total      7
+3 a          7
+
+CASE union_all_lhs expanded
+CLASS marginplyr_sqlite_typed_result/tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `source`
+WHERE (0)
+
+UNION ALL
+
+SELECT `g`, `..marginplyr_boolean_1` AS `TRUE`
+FROM (
+  SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+  FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT CAST(`g` AS TEXT) AS `g`, `..marginplyr_boolean_1`
+    FROM (
+      SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+      FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+
+    UNION ALL
+
+    SELECT 'Total' AS `g`, `..marginplyr_boolean_1`
+    FROM (
+      SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+      FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+WHERE (1)
+
+UNION ALL
+
+SELECT *
+FROM `other`
+# A tibble: 3 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+2 Total      7
+3 a          7
+
+CASE union_all_rhs source
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `other`
+
+UNION ALL
+
+SELECT *
+FROM `source`
+# A tibble: 2 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+2 a          7
+
+CASE union_all_rhs materialized
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `other`
+
+UNION ALL
+
+SELECT *
+FROM `temp`.`materialized`
+# A tibble: 3 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+2 a          7
+3 Total      7
+
+CASE union_all_rhs expanded
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `other`
+
+UNION ALL
+
+SELECT *
+FROM `source`
+WHERE (0)
+
+UNION ALL
+
+SELECT *
+FROM (
+  SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+  FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT CAST(`g` AS TEXT) AS `g`, `TRUE`
+    FROM (
+      SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+      FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+
+    UNION ALL
+
+    SELECT 'Total' AS `g`, `TRUE`
+    FROM (
+      SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+      FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+WHERE (1)
+ERROR rlang_error Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE
+
+CASE union_lhs source
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `source`
+
+UNION
+
+SELECT *
+FROM `other`
+# A tibble: 1 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+
+CASE union_lhs materialized
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `temp`.`materialized`
+
+UNION
+
+SELECT *
+FROM `other`
+# A tibble: 2 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 Total      7
+2 a          7
+
+CASE union_lhs expanded
+CLASS marginplyr_sqlite_typed_result/tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `source`
+WHERE (0)
+
+UNION ALL
+
+SELECT `g`, `..marginplyr_boolean_1` AS `TRUE`
+FROM (
+  SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+  FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT CAST(`g` AS TEXT) AS `g`, `..marginplyr_boolean_1`
+    FROM (
+      SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+      FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+
+    UNION ALL
+
+    SELECT 'Total' AS `g`, `..marginplyr_boolean_1`
+    FROM (
+      SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+      FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+WHERE (1)
+
+UNION
+
+SELECT *
+FROM `other`
+# A tibble: 2 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 Total      7
+2 a          7
+
+CASE union_rhs source
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `other`
+
+UNION
+
+SELECT *
+FROM `source`
+# A tibble: 1 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+
+CASE union_rhs materialized
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `other`
+
+UNION
+
+SELECT *
+FROM `temp`.`materialized`
+# A tibble: 2 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 Total      7
+2 a          7
+
+CASE union_rhs expanded
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `other`
+
+UNION
+
+SELECT *
+FROM `source`
+WHERE (0)
+
+UNION ALL
+
+SELECT *
+FROM (
+  SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+  FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT CAST(`g` AS TEXT) AS `g`, `TRUE`
+    FROM (
+      SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+      FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+
+    UNION ALL
+
+    SELECT 'Total' AS `g`, `TRUE`
+    FROM (
+      SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+      FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+WHERE (1)
+ERROR rlang_error Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE
+
+CASE intersect_lhs source
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `source`
+INTERSECT
+SELECT *
+FROM `other`
+# A tibble: 1 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+
+CASE intersect_lhs materialized
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `temp`.`materialized`
+INTERSECT
+SELECT *
+FROM `other`
+# A tibble: 1 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+
+CASE intersect_lhs expanded
+CLASS marginplyr_sqlite_typed_result/tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `source`
+WHERE (0)
+
+UNION ALL
+
+SELECT *
+FROM (
+  SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+  FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT CAST(`g` AS TEXT) AS `g`, `TRUE`
+    FROM (
+      SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+      FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+
+    UNION ALL
+
+    SELECT 'Total' AS `g`, `TRUE`
+    FROM (
+      SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+      FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+WHERE (1)
+INTERSECT
+SELECT *
+FROM `other`
+ERROR rlang_error Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE
+
+CASE intersect_rhs source
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `other`
+INTERSECT
+SELECT *
+FROM `source`
+# A tibble: 1 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+
+CASE intersect_rhs materialized
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `other`
+INTERSECT
+SELECT *
+FROM `temp`.`materialized`
+# A tibble: 1 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+
+CASE intersect_rhs expanded
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `other`
+INTERSECT
+SELECT *
+FROM `source`
+WHERE (0)
+
+UNION ALL
+
+SELECT *
+FROM (
+  SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+  FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT CAST(`g` AS TEXT) AS `g`, `TRUE`
+    FROM (
+      SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+      FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+
+    UNION ALL
+
+    SELECT 'Total' AS `g`, `TRUE`
+    FROM (
+      SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+      FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+WHERE (1)
+ERROR rlang_error Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE
+
+CASE setdiff_lhs source
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `source`
+EXCEPT
+SELECT *
+FROM `other`
+# A tibble: 0 × 2
+# ℹ 2 variables: g <chr>, TRUE <int>
+
+CASE setdiff_lhs materialized
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `temp`.`materialized`
+EXCEPT
+SELECT *
+FROM `other`
+# A tibble: 1 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 Total      7
+
+CASE setdiff_lhs expanded
+CLASS marginplyr_sqlite_typed_result/tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `source`
+WHERE (0)
+
+UNION ALL
+
+SELECT *
+FROM (
+  SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+  FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT CAST(`g` AS TEXT) AS `g`, `TRUE`
+    FROM (
+      SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+      FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+
+    UNION ALL
+
+    SELECT 'Total' AS `g`, `TRUE`
+    FROM (
+      SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+      FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+WHERE (1)
+EXCEPT
+SELECT *
+FROM `other`
+ERROR rlang_error Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE
+
+CASE setdiff_rhs source
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `other`
+EXCEPT
+SELECT *
+FROM `source`
+# A tibble: 0 × 2
+# ℹ 2 variables: g <chr>, TRUE <int>
+
+CASE setdiff_rhs materialized
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `other`
+EXCEPT
+SELECT *
+FROM `temp`.`materialized`
+# A tibble: 0 × 2
+# ℹ 2 variables: g <chr>, TRUE <int>
+
+CASE setdiff_rhs expanded
+CLASS tbl_SQLiteConnection/tbl_dbi/tbl_sql/tbl_lazy/tbl
+SELECT *
+FROM `other`
+EXCEPT
+SELECT *
+FROM `source`
+WHERE (0)
+
+UNION ALL
+
+SELECT *
+FROM (
+  SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+  FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT CAST(`g` AS TEXT) AS `g`, `TRUE`
+    FROM (
+      SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+      FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+
+    UNION ALL
+
+    SELECT 'Total' AS `g`, `TRUE`
+    FROM (
+      SELECT `g`, `..marginplyr_input_1` AS `TRUE`
+      FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `source`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+WHERE (1)
+ERROR rlang_error Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE
+
+SUMMARY
+      operation        input  status     names  n
+         direct       source success    g/TRUE  1
+         direct materialized success    g/TRUE  2
+         direct     expanded success    g/TRUE  2
+           head       source success    g/TRUE  1
+           head materialized success    g/TRUE  1
+           head     expanded success    g/TRUE  1
+       collapse       source success    g/TRUE  1
+       collapse materialized success    g/TRUE  2
+       collapse     expanded success    g/TRUE  2
+  collapse_head       source success g/column2  1
+  collapse_head materialized success g/column2  1
+  collapse_head     expanded success g/column2  1
+  left_join_lhs       source success    g/TRUE  1
+  left_join_lhs materialized success    g/TRUE  2
+  left_join_lhs     expanded   error           NA
+  left_join_rhs       source success    g/TRUE  1
+  left_join_rhs materialized success    g/TRUE  1
+  left_join_rhs     expanded   error           NA
+ inner_join_lhs       source success    g/TRUE  1
+ inner_join_lhs materialized success    g/TRUE  1
+ inner_join_lhs     expanded   error           NA
+ inner_join_rhs       source success    g/TRUE  1
+ inner_join_rhs materialized success    g/TRUE  1
+ inner_join_rhs     expanded   error           NA
+  union_all_lhs       source success    g/TRUE  2
+  union_all_lhs materialized success    g/TRUE  3
+  union_all_lhs     expanded success    g/TRUE  3
+  union_all_rhs       source success    g/TRUE  2
+  union_all_rhs materialized success    g/TRUE  3
+  union_all_rhs     expanded   error           NA
+      union_lhs       source success    g/TRUE  1
+      union_lhs materialized success    g/TRUE  2
+      union_lhs     expanded success    g/TRUE  2
+      union_rhs       source success    g/TRUE  1
+      union_rhs materialized success    g/TRUE  2
+      union_rhs     expanded   error           NA
+  intersect_lhs       source success    g/TRUE  1
+  intersect_lhs materialized success    g/TRUE  1
+  intersect_lhs     expanded   error           NA
+  intersect_rhs       source success    g/TRUE  1
+  intersect_rhs materialized success    g/TRUE  1
+  intersect_rhs     expanded   error           NA
+    setdiff_lhs       source success    g/TRUE  0
+    setdiff_lhs materialized success    g/TRUE  1
+    setdiff_lhs     expanded   error           NA
+    setdiff_rhs       source success    g/TRUE  0
+    setdiff_rhs materialized success    g/TRUE  0
+    setdiff_rhs     expanded   error           NA
