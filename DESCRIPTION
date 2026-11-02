@@ -52,25 +52,15 @@ Config/Needs/preflight:
     spelling,
     urlchecker
 Config/Needs/review:
-    altdoc (>= 0.7.3),
-    askpass,
-    cpp11,
-    devtools,
     filelock,
-    fs,
-    jsonlite,
     lintr,
-    openssl,
     pkgload,
     processx,
     ps,
     R6,
     rcmdcheck,
-    roxygen2,
     spelling,
-    sys,
-    testthat,
-    yaml
+    testthat
 Config/Needs/release:
     attachment,
     devtools,

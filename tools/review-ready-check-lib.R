@@ -1,66 +1,83 @@
-# Implementation of the fixed, non-mutating review-ready check.
+# Checks a pinned committed source tree through the repository command.
 
-# Updates the private supervisor's stage report; stdout is never reuse evidence.
-review_ready_report <- function(completed = NULL, unit = NULL, state = NULL,
-                                check = NULL, timestamps = NULL, omitted = NULL) {
-  path <- Sys.getenv("MARGINPLYR_REVIEW_STAGE_REPORT")
-  if (!nzchar(path)) return(invisible())
-  report <- if (file.exists(path)) jsonlite::fromJSON(path, simplifyVector = FALSE) else
-    list(request = Sys.getenv("MARGINPLYR_REVIEW_REQUEST"), units = list(), completed = list())
-  if (!is.null(completed)) report$completed <- c(report$completed, list(completed))
-  if (!is.null(unit)) report$units[[unit]] <- state
-  if (!is.null(check)) report$check <- check
-  if (!is.null(timestamps)) report$timestamps <- timestamps
-  if (!is.null(omitted)) report$omitted <- as.list(omitted)
-  temporary <- paste0(path, ".new")
-  writeLines(jsonlite::toJSON(report, auto_unbox = TRUE, null = "null"), temporary)
-  if (!file.rename(temporary, path)) stop("Cannot retain supervised stage report.", call. = FALSE)
-  invisible()
+# Resolves the account home independently of caller HOME and cache overrides.
+review_ready_account_home <- function() {
+  path.expand(paste0("~", Sys.info()[["user"]]))
 }
 
-# Captures the top-level paths whose mtimes the supported R checker inspects.
-review_ready_timestamps <- function(tarball, workspace) {
-  copy <- file.path(workspace, "timestamp-inventory")
-  dir.create(copy)
-  utils::untar(tarball, exdir = copy)
-  roots <- list.dirs(copy, recursive = FALSE, full.names = TRUE)
-  if (length(roots) != 1L) stop("Unknown source tarball timestamp layout.", call. = FALSE)
-  paths <- list.files(roots, all.files = TRUE, full.names = TRUE, include.dirs = TRUE, no.. = TRUE)
-  values <- as.numeric(file.mtime(paths))
-  if (!length(paths) || anyNA(values)) stop("Timestamp inventory unavailable.", call. = FALSE)
-  list(observed = as.numeric(Sys.time()), paths = stats::setNames(as.list(values), basename(paths)))
+# Takes process-library identity handles while the owned parent is still alive.
+# Inspection errors remain errors; only a process that has exited has no children.
+review_ready_children <- function(process) {
+  tryCatch(ps::ps_children(ps::ps_handle(process$get_pid()), recursive = TRUE),
+    no_such_process = function(cnd) list())
 }
 
-# Runs one subprocess from a named directory and returns its exit status and,
-# when requested, its combined output.
-review_ready_run_system <- function(
-  command,
-  args = character(),
-  directory,
-  env = character(),
-  capture = FALSE
-) {
-  original_directory <- setwd(directory)
-  on.exit(setwd(original_directory), add = TRUE)
-  destination <- if (capture) TRUE else ""
-  result <- suppressWarnings(system2(
-    command,
-    vapply(args, shQuote, character(1)),
-    stdout = destination,
-    stderr = destination,
-    env = env
-  ))
-  if (is.character(result)) {
-    status <- attr(result, "status")
-    if (is.null(status)) {
-      status <- 0L
+# Stops owned descendants and confirms exit before capacity may be released.
+review_ready_stop_process <- function(process, children = list()) {
+  suspendInterrupts({
+    reported <- NULL
+    repeat {
+      stopped <- tryCatch({
+        current <- review_ready_children(process)
+        for (child in current) children[[as.character(ps::ps_pid(child))]] <- child
+        if (process$is_alive()) process$kill_tree()
+        process$wait()
+        if (!length(children)) TRUE else {
+          ps::ps_kill(children)
+          all(ps::ps_wait(children, timeout = 1000L))
+        }
+      }, error = function(cnd) cnd)
+      if (isTRUE(stopped)) break
+      if (inherits(stopped, "error") && !identical(reported, conditionMessage(stopped))) {
+        reported <- conditionMessage(stopped)
+        cat("Cleanup cannot yet confirm owned-process exit; capacity remains held: ",
+          reported, "\n", sep = "")
+      }
+      Sys.sleep(0.2)
     }
-    return(list(status = as.integer(status), output = result))
-  }
-  list(status = as.integer(result), output = character())
+  })
+  invisible(NULL)
 }
 
-# Returns one git query's output or refuses a failed query.
+# Streams one external command and retains its process handle through cleanup.
+review_ready_run_system <- function(command, args = character(), directory,
+                                    env = character(), capture = FALSE) {
+  process <- processx::process$new(command, args, wd = directory,
+    env = { current <- Sys.getenv(); current[names(env)] <- env; current }, stdout = "|", stderr = "|",
+    cleanup_tree = TRUE, supervise = TRUE)
+  children <- list()
+  on.exit(review_ready_stop_process(process, children), add = TRUE)
+  output <- character()
+  errors <- character()
+  repeat {
+    current <- review_ready_children(process)
+    for (child in current) children[[as.character(ps::ps_pid(child))]] <- child
+    process$poll_io(200L)
+    lines <- process$read_output_lines()
+    diagnostic <- process$read_error_lines()
+    if (capture) errors <- c(errors, diagnostic) else if (length(diagnostic)) cat(paste0(diagnostic, "\n"), sep = "")
+    if (capture) output <- c(output, lines) else if (length(lines)) cat(paste0(lines, "\n"), sep = "")
+    if (!process$is_alive()) break
+  }
+  process$wait()
+  lines <- process$read_all_output_lines()
+  if (capture) output <- c(output, lines) else if (length(lines)) cat(paste0(lines, "\n"), sep = "")
+  diagnostic <- process$read_all_error_lines()
+  if (capture) errors <- c(errors, diagnostic) else if (length(diagnostic)) cat(paste0(diagnostic, "\n"), sep = "")
+  if (process$get_exit_status() != 0L) output <- c(output, errors)
+  list(status = process$get_exit_status(), output = output)
+}
+
+# Both scopes require an explicit human-readable AI judgment.
+parse_review_ready_args <- function(args) {
+  if (length(args) != 4L || !identical(args[c(1L, 3L)], c("--scope", "--reason")) ||
+      !args[[2L]] %in% c("source", "full") || !nzchar(trimws(args[[4L]]))) {
+    stop("Usage: Rscript tools/review-ready.R --scope source|full --reason TEXT", call. = FALSE)
+  }
+  list(scope = args[[2L]], reason = args[[4L]])
+}
+
+# Returns the stdout from a successful Git query.
 review_ready_git_output <- function(repository_root, args) {
   result <- review_ready_run_system(
     "git",
@@ -74,7 +91,7 @@ review_ready_git_output <- function(repository_root, args) {
   result$output
 }
 
-# Binds the check to one clean commit in the repository holding the entry point.
+# Pins a clean committed revision in the repository containing the command.
 review_ready_identity <- function(
   repository_root,
   git_output = review_ready_git_output
@@ -108,15 +125,7 @@ review_ready_identity <- function(
   list(root = expected_root, sha = sha)
 }
 
-# Rejects configuration knobs: the command is one fixed gate by design.
-parse_review_ready_args <- function(args) {
-  if (length(args) > 0L) {
-    stop("The review-ready check takes no arguments.", call. = FALSE)
-  }
-  list()
-}
-
-# Checks the tools needed before allocating or running the disposable checkout.
+# Requires the declared local review tools before starting checks.
 review_ready_prerequisites <- function(
   description = read.dcf("DESCRIPTION"),
   package_available = function(package) {
@@ -151,9 +160,7 @@ review_ready_prerequisites <- function(
   )
 }
 
-# Returns package names that R's test-source scan cannot match to DESCRIPTION.
-# The fixed gate refuses them before using empty local repository indexes, so
-# the offline check cannot hide a misspelled or undeclared dependency.
+# Finds test package references missing from dependency declarations.
 review_ready_test_package_candidates <- function(
   source_root,
   scanner = function(description, files) {
@@ -175,8 +182,7 @@ review_ready_test_package_candidates <- function(
   )))
 }
 
-# Refuses a test dependency that an empty offline repository would otherwise
-# make R's package-usage check discard as a non-package name.
+# Refuses undeclared test dependencies before the offline package check.
 verify_review_ready_test_packages <- function(
   source_root,
   candidates = review_ready_test_package_candidates(source_root)
@@ -193,7 +199,7 @@ verify_review_ready_test_packages <- function(
   invisible(TRUE)
 }
 
-# Defines the working-tree checks before the source-tarball boundary.
+# Preserves spelling, jarl and package-aware lintr before admission.
 review_ready_source_steps <- function(prerequisites) {
   list(
     `Package spelling` = list(
@@ -223,12 +229,12 @@ review_ready_source_steps <- function(prerequisites) {
           "lintr::lint_package()"
         )
       ),
-      env = "LINTR_ERROR_ON_LINT=true"
+      env = c(LINTR_ERROR_ON_LINT = "true")
     )
   )
 }
 
-# Runs one named fixed step and stops before later, more expensive work.
+# Runs one mandatory check and stops immediately on failure.
 run_review_ready_step <- function(
   label,
   specification,
@@ -246,12 +252,10 @@ run_review_ready_step <- function(
   if (result$status != 0L) {
     stop(label, " failed with status ", result$status, ".", call. = FALSE)
   }
-  review_ready_report(completed = label)
   invisible(TRUE)
 }
 
-# Expands the exact committed tree without allowing ignored local files to
-# influence any check.
+# Extracts only the submitted committed revision into the run directory.
 archive_review_ready_source <- function(
   identity,
   workspace,
@@ -273,7 +277,7 @@ archive_review_ready_source <- function(
   source_root
 }
 
-# Builds exactly one source tarball from the disposable committed tree.
+# Builds exactly one source tarball from the pinned source copy.
 build_review_ready_tarball <- function(
   source_root,
   workspace,
@@ -304,7 +308,7 @@ build_review_ready_tarball <- function(
   tarballs[[1L]]
 }
 
-# Reduces the source-tarball result to the automatic verdict and NOTE review.
+# Combines terminal process status and check findings using the shared NOTE policy.
 review_ready_check_outcome <- function(result, cran_status) {
   classifications <- lapply(
     result$notes,
@@ -335,23 +339,19 @@ review_ready_check_outcome <- function(result, cran_status) {
   )
 }
 
-# Names the environment entries because rcmdcheck applies names as variable
-# keys. Remote incoming checks and the external clock belong to the release
-# flow. The caller supplies the validated suite Suggests; NOT_CRAN enables
-# snapshot comparisons within the tarball's single test-suite run.
-review_ready_rcmdcheck_env <- function(required_suggests, path = "Full") {
+# Enforces required Suggests, offline checks, snapshots and four test workers.
+review_ready_rcmdcheck_env <- function(required_suggests) {
   c(
     `_R_CHECK_CRAN_INCOMING_REMOTE_` = "false",
     `_R_CHECK_SYSTEM_CLOCK_` = "false",
     NOT_CRAN = "true",
-    TESTTHAT_PARALLEL = if (identical(path, "Documentation")) "false" else "true",
+    TESTTHAT_PARALLEL = "true",
     TESTTHAT_CPUS = "4",
     MARGINPLYR_REQUIRED_SUGGESTS = paste(required_suggests, collapse = ",")
   )
 }
 
-# Creates the four named repository indexes R consults under --as-cran without
-# allowing the fixed local gate to reach a network service.
+# Provides the empty local repository indexes used by the offline check.
 review_ready_offline_repositories <- function(workspace) {
   root <- file.path(workspace, "offline-repository")
   contribution <- file.path(root, "src", "contrib")
@@ -368,7 +368,7 @@ review_ready_offline_repositories <- function(workspace) {
   )
 }
 
-# Prints every NOTE and whether the shared CRAN policy already explains it.
+# Prints every NOTE with its existing shared-policy disposition.
 report_review_ready_notes <- function(result, outcome) {
   if (outcome$notes == 0L) {
     cat("No NOTEs.\n")
@@ -392,670 +392,206 @@ report_review_ready_notes <- function(result, outcome) {
   invisible()
 }
 
-# Reads a tool version without letting an unavailable tool hide the check error.
-review_ready_tool_version <- function(command) {
-  if (!nzchar(command)) {
-    return("unavailable (executable not found)")
+# Refuses linked output roots so managed data cannot escape the worktree.
+review_ready_runs_root <- function(root) {
+  paths <- file.path(root, c(".review-ready", ".review-ready/runs"))
+  links <- Sys.readlink(paths)
+  if (any(!is.na(links) & nzchar(links))) {
+    stop("Review-ready output directories must not be symlinks.", call. = FALSE)
   }
-  tryCatch({
-    output <- suppressWarnings(system2(
-      command, "--version", stdout = TRUE, stderr = TRUE, timeout = 5
-    ))
-    status <- attr(output, "status")
-    paste(c(command, output, if (!is.null(status)) paste("exit", status)),
-      collapse = " | ")
-  }, error = function(cnd) paste(command, conditionMessage(cnd), sep = " | "))
+  paths[[2L]]
 }
 
-# Identifies the Quarto on the check's search path and its bundled or overridden
-# Deno, rather than an unrelated Deno on PATH.
-review_ready_render_paths <- function() {
-  quarto <- Sys.getenv("QUARTO_PATH", unname(Sys.which("quarto")))
-  deno <- Sys.getenv("QUARTO_DENO")
-  if (!nzchar(deno) && file.exists(quarto) && !dir.exists(quarto)) {
-    bin <- dirname(normalizePath(quarto, winslash = "/"))
-    machine <- Sys.info()[["machine"]]
-    if (identical(Sys.info()[["sysname"]], "Darwin")) {
-      brand <- suppressWarnings(system2("/usr/sbin/sysctl",
-        c("-n", "machdep.cpu.brand_string"), stdout = TRUE, stderr = FALSE))
-      if (any(grepl("Apple|ARM", brand))) machine <- "aarch64"
-      if (any(grepl("Intel|Xeon|Core", brand))) machine <- "x86_64"
-    }
-    architecture <- if (grepl("arm|aarch64", machine)) {
-      "aarch64"
-    } else {
-      "x86_64"
-    }
-    candidates <- file.path(bin, c(
-      paste0("tools/", architecture, "/deno"),
-      "tools/x86_64/deno.exe", "tools/deno.exe", "tools/deno"
-    ))
-    found <- candidates[file.exists(candidates)]
-    if (length(found) > 0L) {
-      deno <- found[[1L]]
-    }
-  }
-  c(Quarto = quarto, Deno = deno)
-}
-
-# Records the versions of the tools selected by the rendering environment.
-review_ready_render_versions <- function() {
-  vapply(review_ready_render_paths(), review_ready_tool_version, character(1))
-}
-
-# Snapshots input bytes and the release launcher's selected executables. An
-# unavailable identity disables recovery without preventing the initial check.
-review_ready_retry_identity <- function(tarball) {
-  paths <- review_ready_render_paths()
-  files <- c(tarball = tarball, paths)
-  if (!all(startsWith(files, "/")) || !all(file.exists(files)) ||
-      any(dir.exists(files)) || any(file.access(paths, 1L) != 0L)) {
-    return(NULL)
-  }
-  files <- normalizePath(files, winslash = "/", mustWork = TRUE)
-  names(files) <- c("tarball", "Quarto", "Deno")
-  target <- file.path(dirname(files[["Quarto"]]), "quarto.js")
-  if (!file.exists(target) || dir.exists(target)) return(NULL)
-  files <- c(files, Quarto_script = target)
-  versions <- vapply(files[c("Quarto", "Deno")], function(command) {
-    output <- suppressWarnings(system2(command, "--version",
-      stdout = TRUE, stderr = TRUE, timeout = 5))
-    if (!is.null(attr(output, "status")) || length(output) == 0L) {
-      stop("Could not identify rendering executable.", call. = FALSE)
-    }
-    paste(output, collapse = "\n")
-  }, character(1))
-  hashes <- tools::md5sum(files)
-  names(hashes) <- names(files)
-  if (anyNA(hashes)) return(NULL)
-  list(paths = files[c("Quarto", "Deno")], hashes = hashes, versions = versions)
-}
-
-# Offers native crash metadata locations without reading reports or changing
-# crash collection. A missing native report does not invalidate the bundle.
-review_ready_crash_guidance <- function(system = Sys.info()[["sysname"]]) {
-  switch(system,
-    Darwin = paste(
-      "macOS: candidate reports: ~/Library/Logs/DiagnosticReports/deno-*.ips",
-      "(also /Library/Logs/DiagnosticReports/). Open Console > Crash Reports",
-      "and match the executable, timestamp, and image UUID."
-    ),
-    Windows = paste(
-      "Windows: Event Viewer > Windows Logs > Application; look for",
-      "Application Error (Event ID 1000) at the failure time and match",
-      "the executable and faulting module."
-    ),
-    Linux = paste(
-      "Linux with systemd-coredump: inspect coredumpctl list and",
-      "coredumpctl info for the executable and failure time (metadata only).",
-      "Do not use coredumpctl dump or debug."
-    ),
-    "Consult the operating system's application crash log for this timestamp."
-  ) |>
-    paste(
-      "If the facility or matching report is unavailable, retain this bundle",
-      "and record that absence; no OS setting change or memory dump is needed.",
-      "Native reports are not copied automatically."
-    )
-}
-
-# Copies the available check and console logs, refusing a partial copy.
-copy_review_ready_logs <- function(workspace, destination) {
-  logs <- list.files(workspace,
-    pattern = "([.]log|[.]Rout([.]fail|[.]save)?)$",
-    recursive = TRUE, all.files = TRUE
-  )
-  logs <- logs[logs == "console.log" | startsWith(logs, "check/")]
-  for (relative in logs) {
-    target <- file.path(destination, relative)
-    dir.create(dirname(target), recursive = TRUE, showWarnings = FALSE)
-    if (!file.copy(file.path(workspace, relative), target)) {
-      stop("Could not retain log: ", relative, call. = FALSE)
-    }
-  }
-}
-
-# Retains only diagnostic text outside the repository before workspace cleanup.
-# The caller supplies the original error even when rcmdcheck returned no result.
-preserve_review_ready_failure <- function(
-  workspace, identity, started, result, error, diagnostic_root
-) {
-  dir.create(diagnostic_root, recursive = TRUE, showWarnings = FALSE)
-  root <- normalizePath(diagnostic_root, winslash = "/", mustWork = TRUE)
-  repository <- normalizePath(identity$root, winslash = "/", mustWork = TRUE)
-  if (identical(root, repository) || startsWith(root, paste0(repository, "/"))) {
-    stop("The diagnostic directory must be outside the repository.", call. = FALSE)
-  }
-  bundle <- tempfile(
-    paste0(format(started, "%Y%m%dT%H%M%SZ-", tz = "UTC"),
-      substr(identity$sha, 1L, 12L), "-"),
-    tmpdir = root
-  )
-  if (!dir.create(bundle, mode = "0700")) {
-    stop("Could not create the diagnostic bundle: ", bundle, call. = FALSE)
-  }
-  cat("Review-ready failure diagnostics: ", bundle, "\n", sep = "")
-  status <- if (is.null(result$status)) "unavailable (check raised an error)" else result$status
-  metadata <- c(
-    paste("Commit:", identity$sha),
-    paste("Started (UTC):", format(started, tz = "UTC", usetz = TRUE)),
-    paste("Failed (UTC):", format(Sys.time(), tz = "UTC", usetz = TRUE)),
-    paste("Process status:", status),
-    paste("Timeout:", if (is.null(result$timeout)) "unavailable" else result$timeout),
-    paste("Error class:", paste(class(error), collapse = ", ")),
-    paste("R:", R.version.string),
-    paste("OS:", paste(Sys.info()[c("sysname", "release", "version", "machine")], collapse = " | "))
-  )
-  writeLines(metadata, file.path(bundle, "metadata.txt"))
-  writeLines(conditionMessage(error), file.path(bundle, "error.txt"))
-  for (stream in c("stdout", "stderr")) {
-    writeLines(as.character(c(result[[stream]], error[[stream]])),
-      file.path(bundle, paste0(stream, ".txt")))
-  }
-  writeLines(as.character(c(result$errors, result$warnings, result$notes)),
-    file.path(bundle, "check-findings.txt"))
-  copy_review_ready_logs(workspace, bundle)
-  versions <- review_ready_render_versions()
-  cat(paste(names(versions), versions, sep = ": "),
-    file = file.path(bundle, "metadata.txt"), sep = "\n", append = TRUE)
-  guidance <- review_ready_crash_guidance()
-  writeLines(guidance, file.path(bundle, "native-crash-guidance.txt"))
-  cat(guidance, "\n")
-  invisible(bundle)
-}
-
-# Recognizes the measured macOS launcher/quarto-R failure form, including its
-# complete R vignette envelope. Unknown wrappers or additional failures refuse
-# recovery; this does not identify a particular native defect.
-review_ready_native_crash <- function(result, tool_identity, system) {
-  if (!identical(system, "Darwin") || is.null(tool_identity) ||
-      !isTRUE(result$status == 1L) ||
-      !identical(result$timeout, FALSE) || length(result$warnings) != 0L ||
-      length(result$test_fail) != 0L || !is.character(result$errors) ||
-      length(result$errors) != 1L || anyNA(result$errors)) return(FALSE)
-  launcher <- tool_identity$paths[["Quarto"]]
-  if (length(launcher) != 1L || is.na(launcher) || !nzchar(launcher)) return(FALSE)
-  lines <- trimws(strsplit(result$errors, "\n", fixed = TRUE)[[1L]])
-  lines <- chartr("‘’", "''", lines[nzchar(lines)])
-  header <- paste0("^(\\* )?checking re-building of vignette outputs [.][.][.] ",
-    "(\\[([0-9]+s/[0-9]+s|[0-9]+m/[0-9]+m)\\] )?ERROR$")
-  if (length(lines) < 3L || !grepl(header, lines[[1L]]) ||
-      lines[[2L]] != "Error(s) in re-building vignettes:") return(FALSE)
-  cursor <- 3L
-  failed <- character()
-  while (cursor <= length(lines) && startsWith(lines[[cursor]], "--- re-building ")) {
-    start <- regexec("^--- re-building '([^']+)' using ([[:alnum:]_.-]+)$", lines[[cursor]])
-    fields <- regmatches(lines[[cursor]], start)[[1L]]
-    if (length(fields) != 3L) return(FALSE)
-    filename <- fields[[2L]]
-    endings <- which(startsWith(lines, "--- failed re-building ") |
-      startsWith(lines, "--- finished re-building "))
-    endings <- endings[endings > cursor]
-    if (length(endings) == 0L) return(FALSE)
-    end <- endings[[1L]]
-    body <- if (end == cursor + 1L) character() else lines[seq.int(cursor + 1L, end - 1L)]
-    if (any(startsWith(body, "--- re-building "))) return(FALSE)
-    prefix <- paste0(launcher, ": line ")
-    signal <- startsWith(body, prefix) & grepl(
-      '^[0-9]+: [[:space:]]*[0-9]+ Segmentation fault: 11[[:space:]]+"\\$\\{QUARTO_DENO\\}" ',
-      substring(body, nchar(prefix) + 1L)
-    )
-    if (lines[[end]] == paste0("--- finished re-building '", filename, "'")) {
-      if (any(signal)) return(FALSE)
-    } else if (lines[[end]] == paste0("--- failed re-building '", filename, "'")) {
-      if (fields[[3L]] != "html" || !endsWith(filename, ".qmd") ||
-          sum(signal) != 1L) return(FALSE)
-      wrapper <- c(
-        paste0("Error: processing vignette '", filename, "' failed with diagnostics:"),
-        "! Error running quarto CLI from R.",
-        "Caused by error:",
-        "! Could not evaluate cli `{}` expression: `QUARTO_DENO`.",
-        "Caused by error:",
-        "! object 'QUARTO_DENO' not found"
-      )
-      signal_index <- which(signal)
-      invocation <- sub('^[0-9]+: [[:space:]]*[0-9]+ Segmentation fault: 11[[:space:]]+',
-        "", substring(body[[signal_index]], nchar(prefix) + 1L))
-      if (!identical(invocation, paste(
-        '"${QUARTO_DENO}" ${QUARTO_ACTION} ${QUARTO_DENO_OPTIONS}',
-        '${QUARTO_DENO_EXTRA_OPTIONS} "${QUARTO_TARGET}" "$@"'
-      ))) return(FALSE)
-      if (!identical(body[seq.int(signal_index + 1L, length(body))], wrapper)) return(FALSE)
-      preceding <- head(body, signal_index - 1L)
-      if (any(grepl("error|warning|failed|segmentation fault", preceding,
-        ignore.case = TRUE))) return(FALSE)
-      failed <- c(failed, filename)
-    } else {
-      return(FALSE)
-    }
-    cursor <- end + 1L
-  }
-  if (length(failed) != 1L || cursor > length(lines)) return(FALSE)
-  remaining <- lines[seq.int(cursor, length(lines))]
-  if (identical(tail(remaining, 1L), "Execution halted")) remaining <- head(remaining, -1L)
-  identical(remaining, c("SUMMARY: processing the following file failed:",
-    paste0("'", failed, "'"), "Error: Vignette re-building failed."))
-}
-
-# Runs one complete check in a fresh directory and captures its terminal state.
-review_ready_check_attempt <- function(tarball, workspace, checker, repositories, env, args) {
-  attempt <- tempfile("check-attempt-", tmpdir = workspace)
-  dir.create(attempt)
-  started <- Sys.time()
-  result <- NULL
-  outcome <- NULL
-  error <- tryCatch({
-    console <- file(file.path(attempt, "console.log"), open = "wt")
-    sink(console, split = TRUE)
-    result <- tryCatch(withCallingHandlers(checker(
-      tarball,
-      args = args,
-      build_args = NULL,
-      check_dir = file.path(attempt, "check"),
-      error_on = "never",
-      env = env,
-      repos = repositories
-    ), message = function(cnd) {
-      cat(conditionMessage(cnd), file = console)
-    }, warning = function(cnd) {
-      cat(conditionMessage(cnd), "\n", file = console)
-    }), finally = {
-      sink()
-      close(console)
-    })
-    outcome <- review_ready_check_outcome(
-      result,
-      cran_status = cran_status_from_tarball(tarball)
-    )
-    cat(
-      "\nR CMD check process status: ", outcome$process_status, ".\n",
-      "R CMD check: ", outcome$errors, " ERROR(s), ",
-      outcome$warnings, " WARNING(s), ", outcome$notes, " NOTE(s).\n",
-      sep = ""
-    )
-    report_review_ready_notes(result, outcome)
-    if (!outcome$passed) {
-      stop("The source-tarball R CMD check did not pass.", call. = FALSE)
-    }
-    NULL
-  }, error = function(cnd) cnd)
-  list(workspace = attempt, started = started, finished = Sys.time(),
-    result = result, outcome = outcome, error = error)
-}
-
-# Records both verdicts in the first failure bundle, including a pending retry
-# if the invocation is interrupted before its second terminal result.
-record_review_ready_retry <- function(bundle, identity, state, second = NULL,
-                                      second_bundle = NULL) {
-  writeLines(c(
-    "Attempt 1: failed",
-    "Eligibility: macOS Quarto launcher reported Deno SIGSEGV during vignette rebuilding.",
-    paste("Attempt 2:", state),
-    if (!is.null(second)) c(
-      paste("Started (UTC):", format(second$started, tz = "UTC", usetz = TRUE)),
-      paste("Finished (UTC):", format(second$finished, tz = "UTC", usetz = TRUE)),
-      if (is.null(second$result)) "Check result: unavailable (check raised an error)" else c(
-        paste("Process status:", second$result$status),
-        paste("Timeout:", second$result$timeout),
-        paste("ERRORs:", length(second$result$errors)),
-        paste("WARNINGs:", length(second$result$warnings)),
-        paste("NOTEs:", length(second$result$notes))
-      ),
-      if (!is.null(second$error)) paste("Error:", conditionMessage(second$error)),
-      if (!is.null(second$error) && is.null(second_bundle)) "Diagnostics: incomplete",
-      if (!is.null(second_bundle)) paste("Failure diagnostics:", second_bundle)
-    )
-  ), file.path(bundle, "retry-result.txt"))
-  dput(identity, file = file.path(bundle, "retry-identity.txt"))
-  if (!is.null(second$result)) {
-    writeLines(as.character(c(second$result$errors, second$result$warnings,
-      second$result$notes)), file.path(bundle, "retry-findings.txt"))
-  }
-  if (!is.null(second) && is.null(second$error)) {
-    copy_review_ready_logs(second$workspace, file.path(bundle, "retry"))
-  }
-}
-
-# Preserves every failed attempt; only the supported native crash can consume
-# the single retry authorized by design/agents/local-checks.md.
-run_review_ready_rcmdcheck <- function(
-  tarball, workspace, identity, diagnostic_root, env,
-  checker = review_ready_progress_check,
-  system = Sys.info()[["sysname"]],
-  retry_identity = review_ready_retry_identity,
-  preserver = preserve_review_ready_failure,
-  path = "Full"
-) {
-  args <- c("--as-cran", if (identical(path, "Documentation")) "--no-tests")
-  cat("\n==> Source-tarball R CMD check ", paste(args, collapse = " "), "\n", sep = "")
-  snapshot <- function() tryCatch(retry_identity(tarball), error = function(cnd) NULL)
-  before <- if (identical(system, "Darwin")) snapshot() else NULL
-  repositories <- review_ready_offline_repositories(workspace)
-  first_failure <- NULL
-  attempt_records <- list()
-  for (number in 1:2) {
-    cat("R CMD check attempt ", number, ".\n", sep = "")
-    attempt <- review_ready_check_attempt(tarball, workspace, checker, repositories, env, args)
-    if (!is.null(attempt$result)) {
-      attempt_records[[number]] <- list(
-        status = attempt$result$status, timeout = attempt$result$timeout,
-        errors = length(attempt$result$errors), warnings = length(attempt$result$warnings),
-        notes = as.list(vapply(attempt$outcome$classifications, `[[`, character(1), "status"))
-      )
-    }
-    bundle <- NULL
-    if (!is.null(attempt$error)) {
-      bundle <- tryCatch({
-        retained <- preserver(attempt$workspace, identity, attempt$started,
-          attempt$result, attempt$error, diagnostic_root)
-        dput(before, file = file.path(retained, "attempt-identity.txt"))
-        writeLines(c(paste("Path:", path), paste("Arguments:", paste(args, collapse = " "))),
-          file.path(retained, "attempt-selection.txt"))
-        retained
-      }, error = function(cnd) {
-        cat("Could not retain all diagnostics: ", conditionMessage(cnd),
-          "\n", file = stderr(), sep = "")
-        NULL
-      })
-    }
-    if (number == 2L) {
-      record_review_ready_retry(first_failure, before,
-        if (is.null(attempt$error)) "passed" else "failed", attempt, bundle)
-    }
-    if (is.null(attempt$error)) {
-      outcome <- attempt$outcome
-      outcome$attempts <- number
-      outcome$retried <- number == 2L
-      outcome$first_failure <- first_failure
-      review_ready_report(check = list(
-        args = as.list(args), status = attempt$result$status, timeout = attempt$result$timeout,
-        errors = outcome$errors, warnings = outcome$warnings,
-        notes = as.list(vapply(outcome$classifications, `[[`, character(1), "status")),
-        attempts = attempt_records, retry_verified = number == 2L,
-        first_failure = first_failure, retry_identity = if (number == 2L) before else NULL
-      ))
-      if (outcome$retried) {
-        cat("Source-tarball check passed-after-retry; attempt 1 remains failed.\n",
-          "First failure diagnostics: ", first_failure, "\n", sep = "")
+# Removes only owned inactive runs seven consecutive days after recorded UTC start.
+# Missing metadata, linked paths and unavailable guards remain untouched.
+review_ready_prune <- function(root) {
+  runs <- review_ready_runs_root(root)
+  if (!dir.exists(runs)) return(invisible(NULL))
+  now <- Sys.time()
+  for (path in list.dirs(runs, recursive = FALSE, full.names = TRUE)) {
+    tryCatch({
+      owned <- file.path(path, c("invocation.rds", "active.lock"))
+      links <- Sys.readlink(c(path, owned))
+      if (any(!is.na(links) & nzchar(links)) ||
+          !all(file.exists(owned))) {
+        cat("Retention skipped safety-undetermined data: ", path, "\n", sep = "")
+        next
       }
-      return(outcome)
-    }
-    if (number == 2L) stop(attempt$error)
-    if (is.null(bundle)) {
-      cat("No retry: diagnostic preservation was incomplete.\n")
-      stop(attempt$error)
-    }
-    if (is.null(before)) {
-      cat("No retry: tarball or Quarto/Deno identity is unavailable.\n")
-      stop(attempt$error)
-    }
-    if (is.null(attempt$outcome) ||
-        !review_ready_native_crash(attempt$result, before, system)) {
-      cat("No retry: this failure is not an unambiguous supported Deno crash.\n")
-      stop(attempt$error)
-    }
-    after <- snapshot()
-    if (is.null(after) || !identical(before, after)) {
-      cat("No retry: tarball or Quarto/Deno identity is unavailable or changed.\n")
-      stop(attempt$error)
-    }
-    first_failure <- bundle
-    record_review_ready_retry(first_failure, before, "pending")
-    cat("Retrying the same source tarball once after the recorded Deno SIGSEGV.\n")
+      metadata <- readRDS(owned[[1L]])
+      stamp <- metadata$started_utc
+      if (!identical(metadata$version, 1L) || !is.character(stamp) || length(stamp) != 1L ||
+          is.na(stamp) || !grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{6}Z$", stamp)) {
+        stop("Unrecognized invocation start metadata.")
+      }
+      started <- as.POSIXct(strptime(stamp, "%Y-%m-%dT%H:%M:%OSZ", tz = "UTC"))
+      if (is.na(started)) stop("Invalid invocation start timestamp.")
+      if (as.numeric(difftime(now, started, units = "secs")) < 7 * 24 * 60 * 60) next
+      guard <- filelock::lock(owned[[2L]], timeout = 0)
+      if (is.null(guard)) {
+        cat("Retention skipped active run: ", path, "\n", sep = "")
+        next
+      }
+      tryCatch({
+        if (unlink(path, recursive = TRUE) != 0L || dir.exists(path)) {
+          stop("Could not remove expired run.")
+        }
+        cat("Removed expired Review-ready run: ", path, "\n", sep = "")
+      }, finally = filelock::unlock(guard))
+    }, error = function(cnd) {
+      cat("Retention skipped ", path, ": ", conditionMessage(cnd), "\n", sep = "")
+    })
+  }
+  invisible(NULL)
+}
+
+# Creates a retained invocation directory outside Git's administrative files.
+review_ready_new_run <- function(root, identity, selection) {
+  runs <- review_ready_runs_root(root)
+  dir.create(runs, recursive = TRUE, showWarnings = FALSE)
+  directory <- tempfile(paste0(format(Sys.time(), "%Y%m%dT%H%M%SZ-", tz = "UTC"),
+    Sys.getpid(), "-"), tmpdir = runs)
+  if (!dir.create(directory, mode = "0700")) stop("Cannot create run directory.")
+  directory <- normalizePath(directory, winslash = "/", mustWork = TRUE)
+  guard <- filelock::lock(file.path(directory, "active.lock"), timeout = 0)
+  if (is.null(guard)) stop("Cannot guard the new run directory.")
+  metadata <- c(list(version = 1L, sha = identity$sha,
+    started_utc = format(Sys.time(), "%Y-%m-%dT%H:%M:%OS6Z", tz = "UTC")), selection)
+  saveRDS(metadata, file.path(directory, "invocation.rds"))
+  list(directory = directory, guard = guard, metadata = metadata)
+}
+
+# Supported child temp/cache settings keep check by-products with the run.
+review_ready_child_env <- function(directory) {
+  # macOS Quarto uses HOME/Library/Caches and has no cache-directory override.
+  paths <- c(TMPDIR = "tmp", TMP = "tmp", TEMP = "tmp", XDG_CACHE_HOME = "cache",
+    R_USER_CACHE_DIR = "cache", R_USER_CONFIG_DIR = "config", R_USER_DATA_DIR = "data",
+    DENO_DIR = "cache/deno", HOME = "cache/home", XDG_CONFIG_HOME = "config",
+    XDG_DATA_HOME = "data", XDG_STATE_HOME = "state", XDG_RUNTIME_DIR = "runtime")
+  values <- file.path(directory, paths)
+  for (path in unique(values)) dir.create(path, recursive = TRUE, showWarnings = FALSE)
+  c(stats::setNames(values, names(paths)),
+    R_LIBS = paste(normalizePath(.libPaths(), mustWork = TRUE), collapse = .Platform$path.sep))
+}
+
+# Applies private storage only to check children; the runner keeps its account home.
+review_ready_child_runner <- function(environment) {
+  force(environment)
+  function(command, args = character(), directory, env = character(), capture = FALSE) {
+    values <- environment
+    values[names(env)] <- env
+    review_ready_run_system(command, args, directory, env = values, capture = capture)
   }
 }
 
-# Obtains one live manager authorization over its request-private channel.
-review_ready_supervision_proof <- function() {
-  supervisor <- Sys.getenv("MARGINPLYR_REVIEW_SUPERVISOR")
-  command <- if (endsWith(supervisor, ".R")) file.path(R.home("bin"), "Rscript") else
-    Sys.which("python3")
-  if (!nzchar(supervisor) || !file.exists(supervisor) || !nzchar(command)) {
-    stop(
-      "Review-ready supervision is required; refresh the common CLI.",
-      call. = FALSE
-    )
-  }
-  output <- system2(
-    command, c(shQuote(supervisor), "--gate-proof"), stdout = TRUE
-  )
-  if (!is.null(attr(output, "status"))) {
-    stop("Review-ready supervisor refused gate authorization.", call. = FALSE)
-  }
-  connection <- textConnection(output)
-  on.exit(close(connection), add = TRUE)
-  proof <- read.dcf(connection)
-  if (nrow(proof) != 1L || !all(c("Path", "Capacity") %in% colnames(proof))) {
-    stop("Invalid Review-ready supervision proof.", call. = FALSE)
-  }
-  list(path = proof[[1L, "Path"]], capacity = proof[[1L, "Capacity"]])
-}
-
-# Missing or corrupt transport never grants Full; proof comes from the manager.
-read_review_ready_selection <- function(
-  proof = review_ready_supervision_proof
-) {
-  path <- Sys.getenv("MARGINPLYR_REVIEW_SELECTION")
-  if (!nzchar(path)) {
-    stop(
-      "Supervised selection transport is required; no Full fallback.",
-      call. = FALSE
-    )
-  }
-  record <- read.dcf(path)
-  required <- c(
-    "Path", "Commit", "Request", "Verifiers", "Protocol", "Capacity", "Base"
-  )
-  if (nrow(record) != 1L || !all(required %in% colnames(record)) ||
-        !record[[1L, "Path"]] %in% c("Full", "Repository", "Documentation") ||
-        !record[[1L, "Protocol"]] %in% c("3", "4") ||
-        !record[[1L, "Capacity"]] %in% c("Full", "exempt") ||
-        !grepl("^[0-9a-f]{40}$", record[[1L, "Commit"]]) ||
-        !nzchar(Sys.getenv("MARGINPLYR_REVIEW_REQUEST")) ||
-        !identical(record[[1L, "Request"]],
-                   Sys.getenv("MARGINPLYR_REVIEW_REQUEST"))) {
-    stop("Invalid admitted Review-ready selection.", call. = FALSE)
-  }
-  verifiers <- record[[1L, "Verifiers"]]
-  if (record[[1L, "Path"]] %in% c("Repository", "Documentation") &&
-        (is.na(verifiers) || !nzchar(verifiers))) {
-    stop("Selected path requires mapped artifact verification.", call. = FALSE)
-  }
-  if (is.na(record[[1L, "Base"]]) ||
-      !grepl("^[0-9a-f]{40}$", record[[1L, "Base"]])) {
-    stop("Invalid admitted comparison base; CI validation remains unresolved.",
-      call. = FALSE)
-  }
-  authorization <- proof()
-  reused <- if ("Reused" %in% colnames(record) && !is.na(record[[1L, "Reused"]]) &&
-                 nzchar(record[[1L, "Reused"]])) strsplit(record[[1L, "Reused"]], " ", fixed = TRUE)[[1L]] else
-    character()
-  if (!all(reused %in% c("build-full", "build-documentation", "generation", "documentation-assertions")) ||
-      anyDuplicated(reused)) stop("Invalid stage reuse transport.", call. = FALSE)
-  if (!identical(authorization$path, record[[1L, "Path"]]) ||
-        !identical(authorization$capacity, record[[1L, "Capacity"]]) ||
-        (identical(authorization$path, "Full") &&
-           !"build-full" %in% reused && !identical(authorization$capacity, "Full"))) {
-    stop("Selection does not match owned supervisor capacity.", call. = FALSE)
-  }
-  selection <- list(
-    path = record[[1L, "Path"]], sha = record[[1L, "Commit"]],
-    base = record[[1L, "Base"]],
-    verifiers = if (is.na(verifiers) || !nzchar(verifiers)) character() else
-      strsplit(verifiers, " ", fixed = TRUE)[[1L]],
-    protocol = record[[1L, "Protocol"]], capacity = record[[1L, "Capacity"]]
-  )
-  if (length(reused)) selection$reused <- reused
-  selection
-}
-
-# Runs the manager's artifact routes in the pinned disposable Git checkout;
-# reference verifiers need its tracked index, which an archive does not carry.
-run_review_ready_verifiers <- function(selection, identity, prerequisites, runner, accepted_root = NULL) {
-  for (path in selection$verifiers) {
-    generation <- identical(path, "tools/review-ready-generated.R")
-    if (generation && "generation" %in% selection$reused) {
-      cat("Reused: generation (original execution in supervised plan).\n")
-      next
-    }
-    if (!file.exists(file.path(identity$root, path))) {
-      stop("Required Review-ready verifier is missing: ", path, call. = FALSE)
-    }
-    command <- if (endsWith(path, ".py")) unname(Sys.which("python3")) else
-      prerequisites$rscript
-    if (generation) review_ready_report(unit = "generation", state = "running")
-    run_review_ready_step(
-      paste("Artifact verification:", path),
-      list(
-        command = command, args = if (!is.null(accepted_root) &&
-          path %in% c("tools/test-review-ready-runner.R", "tools/test-review-ready-renderer.R"))
-          c(file.path(accepted_root, path), identity$root) else path,
-        env = c("TESTTHAT_PARALLEL=false", "TESTTHAT_CPUS=1", "MARGINPLYR_REVIEW_STAGE_REPORT=", paste0(
-          "MARGINPLYR_REVIEW_BASE=", if (is.null(selection$base)) "" else selection$base
-        ))
-      ),
-      identity$root, runner = runner
-    )
-    cat("Completed artifact verification: ", path, "\n", sep = "")
-    if (generation) review_ready_report(unit = "generation", state = "passed")
-  }
-}
-
-# The public entry supplies authenticated transport metadata. The installed
-# Full boundary owns bootstrap; the R manager maps its contracts explicitly.
-run_review_ready_bootstrap <- function(selection, identity, prerequisites, runner) {
-  if (!identical(selection$protocol, "3") || !identical(selection$capacity, "Full") ||
-      !identical(selection$path, "Full")) return(invisible())
-  fixtures <- c("tools/test-review-ready-runner.R", "tools/test-review-ready-renderer.R")
-  missing <- fixtures[!file.exists(file.path(identity$root, fixtures))]
-  if (length(missing)) stop("Required R replacement contract is missing: ", paste(missing, collapse = ", "), call. = FALSE)
-  for (fixture in fixtures) {
-    label <- paste("R replacement contract:", fixture)
-    run_review_ready_step(label, list(command = prerequisites$rscript, args = fixture,
-      env = c("TESTTHAT_PARALLEL=false", "TESTTHAT_CPUS=1", "MARGINPLYR_REVIEW_STAGE_REPORT=")),
-      identity$root, runner = runner)
-    cat("Completed: ", label, "\n", sep = "")
-  }
-  invisible()
-}
-
-# Runs the selected fixed gate and returns its identity and path.
-# Package paths also return source-tarball outcome and NOTE disposition.
-run_review_ready_check <- function(
-  repository_root,
-  identity = review_ready_identity(repository_root),
-  prerequisites = review_ready_prerequisites(),
-  runner = review_ready_run_system,
-  checker = review_ready_progress_check,
-  diagnostic_root = file.path(tools::R_user_dir("marginplyr", "cache"), "review-ready-failures"),
-  system = Sys.info()[["sysname"]],
-  retry_identity = review_ready_retry_identity,
-  preserver = preserve_review_ready_failure,
-  selection = list(path = "Full", verifiers = character()),
-  accepted_root = NULL
-) {
-  if (!is.null(selection$sha) && !identical(selection$sha, identity$sha)) {
-    stop("Admitted selection does not match the checked commit.", call. = FALSE)
-  }
-  if (!selection$path %in% c("Full", "Repository", "Documentation")) {
-    stop("Unsupported Review-ready path.", call. = FALSE)
-  }
-  workspace <- tempfile("marginplyr-review-ready-")
-  dir.create(workspace)
-  on.exit(unlink(workspace, recursive = TRUE), add = TRUE)
-  source_root <- archive_review_ready_source(identity, workspace, runner = runner)
-
-  cat("Review-ready commit: ", identity$sha, "\n", sep = "")
-  cat("Disposable source: ", source_root, "\n", sep = "")
-  cat("Review-ready path: ", selection$path, "\n", sep = "")
-  if (length(selection$reused)) cat("Reused units: ", paste(selection$reused, collapse = ", "),
-    "; this invocation is not a new Full pass.\n", sep = "")
-  review_ready_report(omitted = c(
-    if (identical(selection$path, "Repository")) c("package build/check", "full suite", "snapshots"),
-    if (identical(selection$path, "Documentation")) c("full suite", "snapshots")
-  ))
-  if (!identical(selection$path, "Repository")) {
-    verify_review_ready_test_packages(source_root)
-    review_ready_report(completed = "Test dependency syntax")
-    cat("Completed: Test dependency syntax\n\n==> Required test Suggests\n")
-    check_env <- review_ready_rcmdcheck_env(required_test_suggests(source_root), selection$path)
-    cat("Completed: Required test Suggests\n")
-    review_ready_report(completed = "Required test Suggests")
-    check_env[["MARGINPLYR_REVIEW_PROGRESS_REPORTER"]] <- file.path(
-      source_root, "tools", "review-ready-progress-reporter.R"
-    )
-  } else {
-    cat("Repository omits package build and R CMD check (full suite and snapshots).\n")
-  }
-  steps <- review_ready_source_steps(prerequisites)
-  for (label in names(steps)) {
+# Runs the five mandatory source/environment checks without requesting capacity.
+run_review_ready_source <- function(source_root, prerequisites, runner = review_ready_run_system) {
+  verify_review_ready_test_packages(source_root)
+  cat("\n==> Required test Suggests\n")
+  required <- required_test_suggests(source_root)
+  for (label in names(steps <- review_ready_source_steps(prerequisites))) {
     run_review_ready_step(label, steps[[label]], source_root, runner = runner)
-    cat("Completed: ", label, "\n", sep = "")
   }
-  run_review_ready_verifiers(selection, identity, prerequisites, runner, accepted_root)
-  run_review_ready_bootstrap(selection, identity, prerequisites, runner)
-  if (identical(selection$path, "Repository")) {
-    cat("\nReview-ready Repository passed for ", identity$sha,
-      "; package build/check omitted.\n", sep = "")
-    return(invisible(list(identity = identity, path = "Repository")))
-  }
-  if (identical(selection$path, "Documentation")) {
-    cat("Documentation: full suite and snapshots omitted; running selected assertions.\n")
-    if ("documentation-assertions" %in% selection$reused) {
-      cat("Reused: documentation-assertions (original execution in supervised plan).\n")
-    } else {
-      review_ready_report(unit = "documentation-assertions", state = "running")
-      run_review_ready_step("Documentation assertions",
-      list(command = prerequisites$rscript, args = "tools/review-ready-documentation.R",
-        env = c("MARGINPLYR_REVIEW_STAGE_REPORT=", paste0("MARGINPLYR_REQUIRED_SUGGESTS=",
-          check_env[["MARGINPLYR_REQUIRED_SUGGESTS"]]))),
-        source_root, runner = runner)
-      review_ready_report(unit = "documentation-assertions", state = "passed")
-    }
-  }
-  unit <- if (identical(selection$path, "Full")) "build-full" else "build-documentation"
-  if (unit %in% selection$reused) {
-    cat("Reused: ", unit, "; package build/check not executed.\n", sep = "")
-    return(invisible(list(identity = identity, path = selection$path, reused = selection$reused)))
-  }
-  review_ready_report(unit = unit, state = "running")
-  tarball <- build_review_ready_tarball(
-    source_root,
-    workspace,
-    prerequisites$r,
-    runner = runner
-  )
-  cat("Completed: Build source tarball\n")
-  if (nzchar(Sys.getenv("MARGINPLYR_REVIEW_STAGE_REPORT"))) {
-    review_ready_report(timestamps = review_ready_timestamps(tarball, workspace))
-  }
-  outcome <- run_review_ready_rcmdcheck(tarball, workspace, identity,
-    checker = checker, diagnostic_root = diagnostic_root, env = check_env, system = system,
-    retry_identity = retry_identity, preserver = preserver, path = selection$path)
-  review_ready_report(unit = unit, state = "passed")
-
-  verdict <- if (outcome$retried) "passed-after-retry" else "passed"
-  cat("Completed: R CMD check --as-cran\n")
-  cat("\nReview-ready ", selection$path, " check ", verdict, " for ", identity$sha, ".\n", sep = "")
-  if (length(outcome$unexpected_notes) > 0L) {
-    cat(
-      "Review and explain every unclassified NOTE before publishing this ",
-      "commit for review.\n",
-      sep = ""
-    )
-  }
-  invisible(list(identity = identity, path = selection$path, outcome = outcome))
+  required
 }
 
-# Command-line boundary: invalid invocation or any failed step exits nonzero.
-review_ready_check_cli <- function(args, expected_root, ...) {
-  result <- tryCatch({
-    parse_review_ready_args(args)
-    run_review_ready_check(expected_root, ...)
+# Uses one stable account-wide advisory target across clones and worktrees.
+review_ready_heavy_lock <- function() {
+  target <- file.path(review_ready_account_home(), ".local", "state", "marginplyr",
+    "review-ready-heavy.lock")
+  dir.create(dirname(target), recursive = TRUE, showWarnings = FALSE)
+  cat("\nWaiting for heavy package-check capacity.\n")
+  flush.console()
+  repeat {
+    lock <- filelock::lock(target, timeout = 0)
+    if (!is.null(lock)) {
+      cat("Heavy package-check capacity acquired.\n")
+      return(lock)
+    }
+    Sys.sleep(0.2)
+  }
+}
+
+# Builds and checks once in a child whose temporary storage belongs to this run.
+run_review_ready_heavy <- function(source_root, workspace, required, r_command) {
+  tarball <- build_review_ready_tarball(source_root, workspace, r_command)
+  env <- review_ready_rcmdcheck_env(required)
+  env[["MARGINPLYR_REVIEW_PROGRESS_REPORTER"]] <- file.path(
+    source_root, "tools", "review-ready-progress-reporter.R")
+  cat("\n==> Source-tarball R CMD check --as-cran (one attempt)\n")
+  result <- review_ready_progress_check(tarball, args = "--as-cran", build_args = NULL,
+    check_dir = file.path(workspace, "check"), error_on = "never", env = env,
+    repos = review_ready_offline_repositories(workspace))
+  saveRDS(result, file.path(workspace, "check-result.rds"))
+  outcome <- review_ready_check_outcome(result, cran_status_from_tarball(tarball))
+  cat("\nR CMD check process status: ", outcome$process_status,
+    "; timeout: ", outcome$timeout, ".\nR CMD check: ", outcome$errors,
+    " ERROR(s), ", outcome$warnings, " WARNING(s), ", outcome$notes, " NOTE(s).\n", sep = "")
+  report_review_ready_notes(result, outcome)
+  if (!outcome$passed) stop("The source-tarball R CMD check did not pass.", call. = FALSE)
+  if (length(outcome$unexpected_notes)) {
+    cat("Review and explain every unclassified NOTE before publishing this commit for review.\n")
+  }
+  invisible(outcome)
+}
+
+# The same parent holds capacity until its isolated check child has been collected.
+run_review_ready_full <- function(source_root, run, required, prerequisites, runner = review_ready_run_system) {
+  lock <- review_ready_heavy_lock()
+  on.exit(filelock::unlock(lock), add = TRUE)
+  arguments <- list(source_root = source_root, workspace = run$directory,
+    required = required, r_command = prerequisites$r)
+  saveRDS(arguments, file.path(run$directory, "worker-arguments.rds"))
+  worker <- file.path(run$directory, "worker.R")
+  writeLines(c(
+    'args <- readRDS(commandArgs(trailingOnly=TRUE)[[1L]])',
+    'for (relative in c(".github/scripts/cran-note-policy.R", "tools/review-ready-check-lib.R", "tools/review-ready-progress.R")) source(file.path(args$source_root, relative))',
+    'do.call(run_review_ready_heavy, args)'
+  ), worker)
+  result <- runner(prerequisites$rscript,
+    c(worker, file.path(run$directory, "worker-arguments.rds")), directory = run$directory)
+  if (result$status != 0L) stop("Package build/check failed with status ", result$status, ".", call. = FALSE)
+}
+
+# The command records one result for one committed revision; it never retries.
+review_ready_check_cli <- function(args, expected_root) {
+  run <- NULL
+  console <- NULL
+  status <- tryCatch({
+    selection <- parse_review_ready_args(args)
+    identity <- review_ready_identity(expected_root)
+    review_ready_prune(expected_root)
+    run <- review_ready_new_run(expected_root, identity, selection)
+    on.exit(filelock::unlock(run$guard), add = TRUE)
+    console <- file(file.path(run$directory, "console.log"), open = "wt")
+    sink(console, split = TRUE)
+    on.exit({ sink(); close(console) }, add = TRUE, after = FALSE)
+    cat("Review-ready commit: ", identity$sha, "\nArtifacts: ", run$directory,
+      "\nScope: ", selection$scope, "\nReason: ", selection$reason, "\n", sep = "")
+    child_env <- review_ready_child_env(run$directory)
+    runner <- review_ready_child_runner(child_env)
+    source_root <- archive_review_ready_source(identity, run$directory, runner = runner)
+    prerequisites <- review_ready_prerequisites(read.dcf(file.path(source_root, "DESCRIPTION")))
+    required <- run_review_ready_source(source_root, prerequisites, runner = runner)
+    if (selection$scope == "source") {
+      cat("\nFive mandatory checks passed for ", identity$sha, ".\n",
+        "Heavy package check omitted: ", selection$reason, "\n", sep = "")
+    } else {
+      run_review_ready_full(source_root, run, required, prerequisites, runner = runner)
+      cat("\nFull package check passed for ", identity$sha, ".\n", sep = "")
+    }
+    saveRDS(c(run$metadata, list(status = "passed", heavy_check = if (selection$scope == "source") "omitted" else "passed")),
+      file.path(run$directory, "result.rds"))
     0L
+  }, interrupt = function(cnd) {
+    cat("Review-ready cancelled.\n")
+    130L
   }, error = function(cnd) {
-    cat("Review-ready check failed: ", conditionMessage(cnd), "\n", file = stderr(), sep = "")
+    cat("Review-ready failed: ", conditionMessage(cnd), "\n", sep = "")
     1L
   })
-  as.integer(result)
+  if (!is.null(run) && status != 0L) {
+    saveRDS(c(run$metadata, list(status = if (status == 130L) "cancelled" else "failed")),
+      file.path(run$directory, "result.rds"))
+  }
+  as.integer(status)
 }
