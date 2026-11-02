@@ -1,5 +1,5 @@
 # Public-command contracts use disposable Git repositories and real OS locks.
-# Only external lint tools and the account-home adapter use fixture replacements.
+# External tools, process inspection and the account-home adapter use replacements.
 local({
   root <- normalizePath(".", winslash = "/")
   workspace <- tempfile("review-ready-process-")
@@ -169,6 +169,17 @@ local({
   expect(grepl("Five mandatory checks passed", flooded, fixed = TRUE) &&
     length(gregexpr("fixture stdout payload", flooded, fixed = TRUE)[[1L]]) == 65536L,
     "source completes and retains child output larger than a pipe buffer")
+  profile <- file.path(root, "tools", "fixtures", "review-ready-ps-errors.R")
+  race_marker <- file.path(workspace, "race-injected")
+  actual_git <- unname(Sys.which("git"))
+  writeLines(c("#!/bin/sh", "sleep 0.2", paste("exec", shQuote(actual_git), '"$@"')),
+    file.path(bin, "git"))
+  Sys.chmod(file.path(bin, "git"), "0755")
+  exited <- finish(start(repo, extra = c(R_PROFILE_USER = profile,
+    FIXTURE_INSPECTION_MODE = "exited", FIXTURE_RACE_INJECTED = race_marker)), timeout = 10000L)
+  unlink(file.path(bin, "git"))
+  expect(file.exists(race_marker) && grepl("Five mandatory checks passed", exited, fixed = TRUE),
+    "an exited leader's generic process-inspection error does not fail the command")
   shared <- file.path(account, ".local", "state", "marginplyr", "review-ready-heavy.lock")
   dir.create(dirname(shared), recursive = TRUE)
   lock <- filelock::lock(shared, timeout = 0)
@@ -295,6 +306,32 @@ local({
     Sys.sleep(0.02)
   }
   finish(running,130L)
+
+  inspection_env <- owned("live-inspection")
+  inspection_gate <- file.path(workspace, "inspection-gate")
+  inspection_blocked <- file.path(workspace, "inspection-blocked")
+  file.create(inspection_gate)
+  inspecting <- start(repo, "full", c(inspection_env, R_PROFILE_USER = profile,
+    FIXTURE_INSPECTION_MODE = "live", FIXTURE_INSPECTION_GATE = inspection_gate,
+    FIXTURE_INSPECTION_BLOCKED = inspection_blocked))
+  wait_for(inspecting, function() file.exists(inspection_blocked) &&
+    grepl("Waiting for owned-process cleanup", collected_output(inspecting), fixed = TRUE),
+    "live inspection failure reaches guarded cleanup")
+  child <- ps::ps_handle(as.integer(readLines(inspection_env[["FIXTURE_READY"]])[[1L]]))
+  leader <- ps::ps_handle(as.integer(readLines(inspection_blocked)[[1L]]))
+  probe <- filelock::lock(shared, timeout = 0)
+  if (!is.null(probe)) filelock::unlock(probe)
+  expect(is.null(probe) && inspecting$is_alive() &&
+    ps::ps_is_running(leader) && ps::ps_is_running(child),
+    "live inspection errors keep capacity occupied while owned children remain")
+  unlink(inspection_gate)
+  inspected <- finish(inspecting, 1L, 10000L)
+  expect(grepl("No such file or directory", inspected, fixed = TRUE) &&
+    !grepl("Full package check passed", inspected, fixed = TRUE) && !ps::ps_is_running(child),
+    "live inspection failure is preserved after owned child cleanup")
+  probe <- filelock::lock(shared, timeout = 0)
+  expect(!is.null(probe), "capacity is released after the unknown live work is collected")
+  filelock::unlock(probe)
 
   # Observe processx's actual abrupt-parent cleanup without promising exclusion.
   abrupt_env <- owned("abrupt-cancel")
