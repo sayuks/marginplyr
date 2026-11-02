@@ -1,0 +1,20 @@
+materialized FALSE matches FALSE sequence 14
+     g    h gid  v         p
+1    b    y   0  8 1.6000000
+2    a    x   0  9 1.5000000
+3    a    y   0 10 1.6666667
+4    b    x   0 11 2.2000000
+5    b <NA>   1 12 0.8571429
+6    a <NA>   1 13 0.9285714
+7 <NA> <NA>   3 14 1.0000000
+Expected: 0.6666667 0.6923077 0.7692308 0.9166667 0.8571429 0.9285714 1
+materialized TRUE matches TRUE sequence 7
+     g    h gid v         p
+1    a    x   0 4 0.8000000
+2    a <NA>   1 5 0.7142857
+3    a    y   0 2 0.4000000
+4 <NA> <NA>   3 7 1.0000000
+5    b    x   0 3 0.5000000
+6    b    y   0 1 0.1666667
+7    b <NA>   1 6 0.8571429
+Expected: 0.8 0.7142857 0.4 1 0.5 0.1666667 0.8571429

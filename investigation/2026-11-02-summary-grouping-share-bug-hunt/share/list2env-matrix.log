@@ -1,0 +1,4 @@
+Investigated calls: 120
+Missing dependency refusals: 120
+Successful no-share controls: 120
+Successful canonical/external/unrelated/shadow controls: 96

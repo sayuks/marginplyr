@@ -1,0 +1,20 @@
+ellipsis captured expression: "x"
+x
+1
+dot1 captured expression: "x"
+x
+1
+Quoted expression: ...
+[1] "'...' used in an incorrect context"
+Quoted expression: ..1
+[1] "Can't select columns that don't exist.\n✖ Column `..1` doesn't exist."
+Warning message:
+Using an external vector in selections was deprecated in tidyselect 1.1.0.
+ℹ Please use `all_of()` or `any_of()` instead.
+  # Was:
+  data %>% select(...)
+
+  # Now:
+  data %>% select(all_of(...))
+
+See <https://tidyselect.r-lib.org/reference/faq-external-vector.html>.

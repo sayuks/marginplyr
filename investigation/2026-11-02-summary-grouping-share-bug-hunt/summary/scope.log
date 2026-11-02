@@ -1,0 +1,321 @@
+CASE 253 eval(parse(text = "{ cols <- 'x'; pred <- is.numeric; across(where(pred), sum) }")) prefix  named FALSE
+$value
+# A tibble: 2 × 1
+  g
+  <chr>
+1 a
+2 b
+
+$warnings
+character(0)
+
+$value
+<error/rlang_error>
+Error in `summarize_with_margins()`:
+ℹ In argument: `eval(parse(text = "{ cols <- 'x'; pred <- is.numeric;
+  across(where(pred), sum) }"))`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `across()`:
+! Can't compute column `g`.
+Caused by error in `fn()`:
+! invalid 'type' (character) of argument
+---
+Backtrace:
+     ▆
+  1. ├─global capture(...)
+  2. │ ├─base::tryCatch(...)
+  3. │ │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+  4. │ │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+  5. │ │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+  6. │ ├─base::withCallingHandlers(...)
+  7. │ └─base::eval(expr, env)
+  8. │   └─base::eval(expr, env)
+  9. │     └─marginplyr::summarize_with_margins(...)
+ 10. │       └─marginplyr:::execute_margin_summary(operation, dots, check_share_source = .check_share_source) at bughunt-summary-grouping-share-20261102/R/summarize_with_margins.R:1103:3
+ 11. │         ├─marginplyr:::with_margin_error_call(...) at bughunt-summary-grouping-share-20261102/R/summarize_with_margins.R:1156:3
+ 12. │         │ └─base::tryCatch(...) at bughunt-summary-grouping-share-20261102/R/margin-operation.R:97:3
+ 13. │         │   └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 14. │         │     └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 15. │         │       └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 16. │         └─marginplyr:::stage_margin_summaries(...) at bughunt-summary-grouping-share-20261102/R/summarize_with_margins.R:1265:7
+ 17. │           ├─base::tryCatch(...) at bughunt-summary-grouping-share-20261102/R/summarize_with_margins.R:1456:3
+ 18. │           │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 19. │           │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 20. │           │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 21. │           └─marginplyr:::summarize_margin_union(...) at bughunt-summary-grouping-share-20261102/R/summarize_with_margins.R:1479:9
+ 22. │             ├─base::tryCatch(...) at bughunt-summary-grouping-share-20261102/R/grouping-adapter-union.R:695:3
+ 23. │             │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 24. │             │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 25. │             │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 26. │             └─base::Map(...) at bughunt-summary-grouping-share-20261102/R/grouping-adapter-union.R:696:5
+ 27. │               └─base::mapply(FUN = f, ..., SIMPLIFY = FALSE)
+ 28. │                 └─marginplyr (local) `<fn>`(dots[[1L]][[1L]], dots[[2L]][[1L]])
+ 29. │                   ├─marginplyr:::with_branch_conditions(...) at bughunt-summary-grouping-share-20261102/R/grouping-adapter-union.R:754:9
+ 30. │                   │ ├─base::tryCatch(...) at bughunt-summary-grouping-share-20261102/R/conditions.R:204:3
+ 31. │                   │ │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 32. │                   │ │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 33. │                   │ │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 34. │                   │ └─base::withCallingHandlers(...)
+ 35. │                   └─marginplyr:::summarize_margin_branch(...) at bughunt-summary-grouping-share-20261102/R/grouping-adapter-union.R:754:9
+ 36. │                     ├─base::withCallingHandlers(...) at bughunt-summary-grouping-share-20261102/R/grouping-adapter-union.R:524:3
+ 37. │                     └─marginplyr (local) run_summary() at bughunt-summary-grouping-share-20261102/R/grouping-adapter-union.R:524:3
+ 38. │                       ├─rlang::inject(...) at bughunt-summary-grouping-share-20261102/R/grouping-adapter-union.R:518:5
+ 39. │                       ├─dplyr::summarize(...)
+ 40. │                       └─dplyr:::summarise.data.frame(...)
+ 41. │                         └─dplyr:::summarise_cols(.data, dplyr_quosures(...), by, "summarise")
+ 42. │                           ├─base::withCallingHandlers(...)
+ 43. │                           └─dplyr:::map(quosures, summarise_eval_one, mask = mask)
+ 44. │                             └─base::lapply(.x, .f, ...)
+ 45. │                               └─dplyr (local) FUN(X[[i]], ...)
+ 46. │                                 └─mask$eval_all_summarise(quo)
+ 47. │                                   └─dplyr (local) eval()
+ 48. ├─marginplyr:::local_assigned_summary_value(...)
+ 49. └─base::eval(parse(text = "{ cols <- 'x'; pred <- is.numeric; across(where(pred), sum) }")) at bughunt-summary-grouping-share-20261102/R/summary-selections.R:310:3
+ 50.   └─base::eval(parse(text = "{ cols <- 'x'; pred <- is.numeric; across(where(pred), sum) }"))
+ 51.     └─dplyr::across(where(pred), sum)
+ 52.       └─base::withCallingHandlers(...)
+
+$warnings
+character(0)
+
+CASE 254 eval(parse(text = "{ cols <- 'x'; pred <- is.numeric; across(where(pred), sum) }")) prefix  named TRUE
+$value
+# A tibble: 2 × 2
+  g     answer
+  <chr> <tibble[,0]>
+1 a
+2 b
+
+$warnings
+character(0)
+
+$value
+<error/rlang_error>
+Error in `summarize_with_margins()`:
+ℹ In argument: `answer = eval(parse(text = "{ cols <- 'x'; pred <-
+  is.numeric; across(where(pred), sum) }"))`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `across()`:
+! Can't compute column `g`.
+Caused by error in `fn()`:
+! invalid 'type' (character) of argument
+---
+Backtrace:
+     ▆
+  1. ├─global capture(...)
+  2. │ ├─base::tryCatch(...)
+  3. │ │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+  4. │ │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+  5. │ │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+  6. │ ├─base::withCallingHandlers(...)
+  7. │ └─base::eval(expr, env)
+  8. │   └─base::eval(expr, env)
+  9. │     └─marginplyr::summarize_with_margins(...)
+ 10. │       └─marginplyr:::execute_margin_summary(operation, dots, check_share_source = .check_share_source) at bughunt-summary-grouping-share-20261102/R/summarize_with_margins.R:1103:3
+ 11. │         ├─marginplyr:::with_margin_error_call(...) at bughunt-summary-grouping-share-20261102/R/summarize_with_margins.R:1156:3
+ 12. │         │ └─base::tryCatch(...) at bughunt-summary-grouping-share-20261102/R/margin-operation.R:97:3
+ 13. │         │   └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 14. │         │     └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 15. │         │       └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 16. │         └─marginplyr:::stage_margin_summaries(...) at bughunt-summary-grouping-share-20261102/R/summarize_with_margins.R:1265:7
+ 17. │           ├─base::tryCatch(...) at bughunt-summary-grouping-share-20261102/R/summarize_with_margins.R:1456:3
+ 18. │           │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 19. │           │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 20. │           │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 21. │           └─marginplyr:::summarize_margin_union(...) at bughunt-summary-grouping-share-20261102/R/summarize_with_margins.R:1479:9
+ 22. │             ├─base::tryCatch(...) at bughunt-summary-grouping-share-20261102/R/grouping-adapter-union.R:695:3
+ 23. │             │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 24. │             │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 25. │             │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 26. │             └─base::Map(...) at bughunt-summary-grouping-share-20261102/R/grouping-adapter-union.R:696:5
+ 27. │               └─base::mapply(FUN = f, ..., SIMPLIFY = FALSE)
+ 28. │                 └─marginplyr (local) `<fn>`(dots[[1L]][[1L]], dots[[2L]][[1L]])
+ 29. │                   ├─marginplyr:::with_branch_conditions(...) at bughunt-summary-grouping-share-20261102/R/grouping-adapter-union.R:754:9
+ 30. │                   │ ├─base::tryCatch(...) at bughunt-summary-grouping-share-20261102/R/conditions.R:204:3
+ 31. │                   │ │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 32. │                   │ │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 33. │                   │ │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 34. │                   │ └─base::withCallingHandlers(...)
+ 35. │                   └─marginplyr:::summarize_margin_branch(...) at bughunt-summary-grouping-share-20261102/R/grouping-adapter-union.R:754:9
+ 36. │                     ├─base::withCallingHandlers(...) at bughunt-summary-grouping-share-20261102/R/grouping-adapter-union.R:524:3
+ 37. │                     └─marginplyr (local) run_summary() at bughunt-summary-grouping-share-20261102/R/grouping-adapter-union.R:524:3
+ 38. │                       ├─rlang::inject(...) at bughunt-summary-grouping-share-20261102/R/grouping-adapter-union.R:518:5
+ 39. │                       ├─dplyr::summarize(...)
+ 40. │                       └─dplyr:::summarise.data.frame(...)
+ 41. │                         └─dplyr:::summarise_cols(.data, dplyr_quosures(...), by, "summarise")
+ 42. │                           ├─base::withCallingHandlers(...)
+ 43. │                           └─dplyr:::map(quosures, summarise_eval_one, mask = mask)
+ 44. │                             └─base::lapply(.x, .f, ...)
+ 45. │                               └─dplyr (local) FUN(X[[i]], ...)
+ 46. │                                 └─mask$eval_all_summarise(quo)
+ 47. │                                   └─dplyr (local) eval()
+ 48. └─base::eval(parse(text = "{ cols <- 'x'; pred <- is.numeric; across(where(pred), sum) }"))
+ 49.   └─base::eval(parse(text = "{ cols <- 'x'; pred <- is.numeric; across(where(pred), sum) }"))
+ 50.     └─dplyr::across(where(pred), sum)
+ 51.       └─base::withCallingHandlers(...)
+
+$warnings
+character(0)
+
+CASE 255 eval(parse(text = "{ cols <- 'x'; pred <- is.numeric; across(where(pred), sum) }")) prefix prior = sum(y),  named FALSE
+$value
+# A tibble: 2 × 2
+  g     prior
+  <chr> <dbl>
+1 a        16
+2 b        11
+
+$warnings
+character(0)
+
+$value
+<error/rlang_error>
+Error in `summarize_with_margins()`:
+ℹ In argument: `eval(parse(text = "{ cols <- 'x'; pred <- is.numeric;
+  across(where(pred), sum) }"))`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `across()`:
+! Can't compute column `g`.
+Caused by error in `fn()`:
+! invalid 'type' (character) of argument
+---
+Backtrace:
+     ▆
+  1. ├─global capture(...)
+  2. │ ├─base::tryCatch(...)
+  3. │ │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+  4. │ │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+  5. │ │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+  6. │ ├─base::withCallingHandlers(...)
+  7. │ └─base::eval(expr, env)
+  8. │   └─base::eval(expr, env)
+  9. │     └─marginplyr::summarize_with_margins(...)
+ 10. │       └─marginplyr:::execute_margin_summary(operation, dots, check_share_source = .check_share_source) at bughunt-summary-grouping-share-20261102/R/summarize_with_margins.R:1103:3
+ 11. │         ├─marginplyr:::with_margin_error_call(...) at bughunt-summary-grouping-share-20261102/R/summarize_with_margins.R:1156:3
+ 12. │         │ └─base::tryCatch(...) at bughunt-summary-grouping-share-20261102/R/margin-operation.R:97:3
+ 13. │         │   └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 14. │         │     └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 15. │         │       └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 16. │         └─marginplyr:::stage_margin_summaries(...) at bughunt-summary-grouping-share-20261102/R/summarize_with_margins.R:1265:7
+ 17. │           ├─base::tryCatch(...) at bughunt-summary-grouping-share-20261102/R/summarize_with_margins.R:1456:3
+ 18. │           │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 19. │           │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 20. │           │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 21. │           └─marginplyr:::summarize_margin_union(...) at bughunt-summary-grouping-share-20261102/R/summarize_with_margins.R:1479:9
+ 22. │             ├─base::tryCatch(...) at bughunt-summary-grouping-share-20261102/R/grouping-adapter-union.R:695:3
+ 23. │             │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 24. │             │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 25. │             │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 26. │             └─base::Map(...) at bughunt-summary-grouping-share-20261102/R/grouping-adapter-union.R:696:5
+ 27. │               └─base::mapply(FUN = f, ..., SIMPLIFY = FALSE)
+ 28. │                 └─marginplyr (local) `<fn>`(dots[[1L]][[1L]], dots[[2L]][[1L]])
+ 29. │                   ├─marginplyr:::with_branch_conditions(...) at bughunt-summary-grouping-share-20261102/R/grouping-adapter-union.R:754:9
+ 30. │                   │ ├─base::tryCatch(...) at bughunt-summary-grouping-share-20261102/R/conditions.R:204:3
+ 31. │                   │ │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 32. │                   │ │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 33. │                   │ │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 34. │                   │ └─base::withCallingHandlers(...)
+ 35. │                   └─marginplyr:::summarize_margin_branch(...) at bughunt-summary-grouping-share-20261102/R/grouping-adapter-union.R:754:9
+ 36. │                     ├─base::withCallingHandlers(...) at bughunt-summary-grouping-share-20261102/R/grouping-adapter-union.R:524:3
+ 37. │                     └─marginplyr (local) run_summary() at bughunt-summary-grouping-share-20261102/R/grouping-adapter-union.R:524:3
+ 38. │                       ├─rlang::inject(...) at bughunt-summary-grouping-share-20261102/R/grouping-adapter-union.R:518:5
+ 39. │                       ├─dplyr::summarize(...)
+ 40. │                       └─dplyr:::summarise.data.frame(...)
+ 41. │                         └─dplyr:::summarise_cols(.data, dplyr_quosures(...), by, "summarise")
+ 42. │                           ├─base::withCallingHandlers(...)
+ 43. │                           └─dplyr:::map(quosures, summarise_eval_one, mask = mask)
+ 44. │                             └─base::lapply(.x, .f, ...)
+ 45. │                               └─dplyr (local) FUN(X[[i]], ...)
+ 46. │                                 └─mask$eval_all_summarise(quo)
+ 47. │                                   └─dplyr (local) eval()
+ 48. ├─marginplyr:::local_assigned_summary_value(...)
+ 49. └─base::eval(parse(text = "{ cols <- 'x'; pred <- is.numeric; across(where(pred), sum) }")) at bughunt-summary-grouping-share-20261102/R/summary-selections.R:310:3
+ 50.   └─base::eval(parse(text = "{ cols <- 'x'; pred <- is.numeric; across(where(pred), sum) }"))
+ 51.     └─dplyr::across(where(pred), sum)
+ 52.       └─base::withCallingHandlers(...)
+
+$warnings
+character(0)
+
+CASE 256 eval(parse(text = "{ cols <- 'x'; pred <- is.numeric; across(where(pred), sum) }")) prefix prior = sum(y),  named TRUE
+$value
+# A tibble: 2 × 3
+  g     prior answer
+  <chr> <dbl> <tibble[,0]>
+1 a        16
+2 b        11
+
+$warnings
+character(0)
+
+$value
+<error/rlang_error>
+Error in `summarize_with_margins()`:
+ℹ In argument: `answer = eval(parse(text = "{ cols <- 'x'; pred <-
+  is.numeric; across(where(pred), sum) }"))`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `across()`:
+! Can't compute column `g`.
+Caused by error in `fn()`:
+! invalid 'type' (character) of argument
+---
+Backtrace:
+     ▆
+  1. ├─global capture(...)
+  2. │ ├─base::tryCatch(...)
+  3. │ │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+  4. │ │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+  5. │ │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+  6. │ ├─base::withCallingHandlers(...)
+  7. │ └─base::eval(expr, env)
+  8. │   └─base::eval(expr, env)
+  9. │     └─marginplyr::summarize_with_margins(...)
+ 10. │       └─marginplyr:::execute_margin_summary(operation, dots, check_share_source = .check_share_source) at bughunt-summary-grouping-share-20261102/R/summarize_with_margins.R:1103:3
+ 11. │         ├─marginplyr:::with_margin_error_call(...) at bughunt-summary-grouping-share-20261102/R/summarize_with_margins.R:1156:3
+ 12. │         │ └─base::tryCatch(...) at bughunt-summary-grouping-share-20261102/R/margin-operation.R:97:3
+ 13. │         │   └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 14. │         │     └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 15. │         │       └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 16. │         └─marginplyr:::stage_margin_summaries(...) at bughunt-summary-grouping-share-20261102/R/summarize_with_margins.R:1265:7
+ 17. │           ├─base::tryCatch(...) at bughunt-summary-grouping-share-20261102/R/summarize_with_margins.R:1456:3
+ 18. │           │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 19. │           │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 20. │           │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 21. │           └─marginplyr:::summarize_margin_union(...) at bughunt-summary-grouping-share-20261102/R/summarize_with_margins.R:1479:9
+ 22. │             ├─base::tryCatch(...) at bughunt-summary-grouping-share-20261102/R/grouping-adapter-union.R:695:3
+ 23. │             │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 24. │             │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 25. │             │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 26. │             └─base::Map(...) at bughunt-summary-grouping-share-20261102/R/grouping-adapter-union.R:696:5
+ 27. │               └─base::mapply(FUN = f, ..., SIMPLIFY = FALSE)
+ 28. │                 └─marginplyr (local) `<fn>`(dots[[1L]][[1L]], dots[[2L]][[1L]])
+ 29. │                   ├─marginplyr:::with_branch_conditions(...) at bughunt-summary-grouping-share-20261102/R/grouping-adapter-union.R:754:9
+ 30. │                   │ ├─base::tryCatch(...) at bughunt-summary-grouping-share-20261102/R/conditions.R:204:3
+ 31. │                   │ │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 32. │                   │ │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 33. │                   │ │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 34. │                   │ └─base::withCallingHandlers(...)
+ 35. │                   └─marginplyr:::summarize_margin_branch(...) at bughunt-summary-grouping-share-20261102/R/grouping-adapter-union.R:754:9
+ 36. │                     ├─base::withCallingHandlers(...) at bughunt-summary-grouping-share-20261102/R/grouping-adapter-union.R:524:3
+ 37. │                     └─marginplyr (local) run_summary() at bughunt-summary-grouping-share-20261102/R/grouping-adapter-union.R:524:3
+ 38. │                       ├─rlang::inject(...) at bughunt-summary-grouping-share-20261102/R/grouping-adapter-union.R:518:5
+ 39. │                       ├─dplyr::summarize(...)
+ 40. │                       └─dplyr:::summarise.data.frame(...)
+ 41. │                         └─dplyr:::summarise_cols(.data, dplyr_quosures(...), by, "summarise")
+ 42. │                           ├─base::withCallingHandlers(...)
+ 43. │                           └─dplyr:::map(quosures, summarise_eval_one, mask = mask)
+ 44. │                             └─base::lapply(.x, .f, ...)
+ 45. │                               └─dplyr (local) FUN(X[[i]], ...)
+ 46. │                                 └─mask$eval_all_summarise(quo)
+ 47. │                                   └─dplyr (local) eval()
+ 48. └─base::eval(parse(text = "{ cols <- 'x'; pred <- is.numeric; across(where(pred), sum) }"))
+ 49.   └─base::eval(parse(text = "{ cols <- 'x'; pred <- is.numeric; across(where(pred), sum) }"))
+ 50.     └─dplyr::across(where(pred), sum)
+ 51.       └─base::withCallingHandlers(...)
+
+$warnings
+character(0)
+
+
+  DIVERGENCE        match paired-error
+           4          276           56

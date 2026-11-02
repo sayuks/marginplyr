@@ -1,0 +1,59 @@
+# A tibble: 3 × 5
+  g     h       set value fraction
+  <chr> <chr> <int> <dbl>    <dbl>
+1 a     x         1     4    2
+2 a     Total     2     5    0.833
+3 Total Total     3     6    1
+Expected fractions by displayed parent values:
+[1] 0.8000000 0.8333333 1.0000000
+Generated SQL:
+ SELECT
+  g,
+  h,
+  "..marginplyr_set_id_1" AS "set",
+  "value",
+  CASE WHEN ("..marginplyr_set_id_1" IN (3)) THEN 1.0 WHEN NOT ("..marginplyr_set_id_1" IN (3)) THEN (CASE WHEN (("value" IS NULL) OR ("..marginplyr_denominator_of_value_1" IS NULL) OR "..marginplyr_denominator_of_value_1" = 0.0) THEN NULL WHEN NOT (("value" IS NULL) OR ("..marginplyr_denominator_of_value_1" IS NULL) OR "..marginplyr_denominator_of_value_1" = 0.0) THEN (TRY_CAST("value" * 1 AS DOUBLE) / TRY_CAST("..marginplyr_denominator_of_value_1" AS DOUBLE)) END) END AS fraction
+FROM (
+  SELECT
+    g,
+    h,
+    "value",
+    fraction,
+    "..marginplyr_set_id_1",
+    "..marginplyr_parent_original_1",
+    "..marginplyr_parent_original_2",
+    CASE WHEN ("..marginplyr_set_id_1" IN (2)) THEN (MAX(CASE WHEN ("..marginplyr_set_id_1" = 3) THEN "value" WHEN NOT ("..marginplyr_set_id_1" = 3) THEN NULL END) OVER ()) WHEN NOT ("..marginplyr_set_id_1" IN (2)) THEN "..marginplyr_denominator_of_value_1" END AS "..marginplyr_denominator_of_value_1"
+  FROM (
+    SELECT
+      *,
+      MAX(CASE WHEN ("..marginplyr_set_id_1" = 2) THEN "value" WHEN NOT ("..marginplyr_set_id_1" = 2) THEN NULL END) OVER (PARTITION BY "..marginplyr_parent_original_1") AS "..marginplyr_denominator_of_value_1"
+    FROM (
+      SELECT
+        CASE WHEN ("..marginplyr_grouping_1" = 1) THEN 'Total' WHEN NOT ("..marginplyr_grouping_1" = 1) THEN (TRY_CAST(g AS TEXT)) END AS g,
+        CASE WHEN ("..marginplyr_grouping_2" = 1) THEN 'Total' WHEN NOT ("..marginplyr_grouping_2" = 1) THEN (TRY_CAST(h AS TEXT)) END AS h,
+        "value",
+        fraction,
+        "..marginplyr_set_id_1",
+        "..marginplyr_parent_original_1",
+        "..marginplyr_parent_original_2"
+      FROM (
+        SELECT
+          *,
+          g AS "..marginplyr_parent_original_1",
+          h AS "..marginplyr_parent_original_2"
+        FROM (
+          SELECT
+            g,
+            h,
+            nextval('parent_stamp') AS "value",
+            NULL AS fraction,
+            CASE WHEN GROUPING(g) = 0 AND GROUPING(h) = 0 THEN 1 WHEN GROUPING(g) = 0 AND GROUPING(h) = 1 THEN 2 WHEN GROUPING(g) = 1 AND GROUPING(h) = 1 THEN 3 END AS "..marginplyr_set_id_1",
+            GROUPING(g) AS "..marginplyr_grouping_1",
+            GROUPING(h) AS "..marginplyr_grouping_2"
+          FROM parent_source
+          GROUP BY GROUPING SETS ((g, h), (g), ())
+        ) AS q01
+      ) AS q01
+    ) AS q01
+  ) AS q01
+) AS q01

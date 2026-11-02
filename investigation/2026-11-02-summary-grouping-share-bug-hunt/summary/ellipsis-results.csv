@@ -1,0 +1,2773 @@
+"class","helper","spelling","plan","named","preceded","matches","error"
+"frame","across","positional","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..., sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","positional","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..., sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","positional","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..., sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","positional","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..., sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","positional","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..., sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","positional","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..., sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","positional","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..., sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","positional","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..., sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","positional","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..., sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","positional","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..., sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","positional","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..., sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","positional","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..., sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","named","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(.cols = ..., .fns =
+  sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","named","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(.cols = ..., .fns =
+  sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","named","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(.cols = ..., .fns
+  = sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","named","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(.cols = ..., .fns
+  = sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","named","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(.cols = ..., .fns =
+  sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","named","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(.cols = ..., .fns =
+  sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","named","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(.cols = ..., .fns
+  = sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","named","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(.cols = ..., .fns
+  = sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","named","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(.cols = ..., .fns =
+  sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","named","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(.cols = ..., .fns =
+  sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","named","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(.cols = ..., .fns
+  = sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","named","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(.cols = ..., .fns
+  = sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","forwarded","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(...))(.cols = ""x"", .fns =
+  sum)`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","forwarded","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(...))(.cols = ""x"", .fns =
+  sum)`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","forwarded","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(...))(.cols = ""x"",
+  .fns = sum)`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","forwarded","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(...))(.cols = ""x"",
+  .fns = sum)`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","forwarded","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(...))(.cols = ""x"", .fns =
+  sum)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","forwarded","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(...))(.cols = ""x"", .fns =
+  sum)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","forwarded","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(...))(.cols = ""x"",
+  .fns = sum)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","forwarded","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(...))(.cols = ""x"",
+  .fns = sum)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","forwarded","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(...))(.cols = ""x"", .fns =
+  sum)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","forwarded","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(...))(.cols = ""x"", .fns =
+  sum)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","forwarded","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(...))(.cols = ""x"",
+  .fns = sum)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","forwarded","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(...))(.cols = ""x"",
+  .fns = sum)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","across","dot1","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..1, sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","across","dot1","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..1, sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","across","dot1","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..1, sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","across","dot1","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..1, sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","across","dot1","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..1, sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","across","dot1","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..1, sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","across","dot1","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..1, sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","across","dot1","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..1, sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","across","dot1","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..1, sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","across","dot1","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..1, sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","across","dot1","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..1, sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","across","dot1","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..1, sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","if_any","positional","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..., ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","positional","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..., ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","positional","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..., ~.x >
+  2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","positional","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..., ~.x >
+  2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","positional","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..., ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","positional","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..., ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","positional","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..., ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","positional","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..., ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","positional","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..., ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","positional","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..., ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","positional","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..., ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","positional","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..., ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","named","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","named","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","named","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","named","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","named","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","named","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","named","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","named","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","named","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","named","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","named","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","named","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","forwarded","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(...)))(...)`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","forwarded","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(...)))(...)`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","forwarded","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(...)))(...)`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","forwarded","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(...)))(...)`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","forwarded","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","forwarded","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","forwarded","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","forwarded","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","forwarded","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","forwarded","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","forwarded","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","forwarded","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_any","dot1","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..1, ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","if_any","dot1","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..1, ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","if_any","dot1","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..1, ~.x >
+  2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","if_any","dot1","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..1, ~.x >
+  2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","if_any","dot1","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..1, ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","if_any","dot1","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..1, ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","if_any","dot1","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..1, ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","if_any","dot1","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..1, ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","if_any","dot1","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..1, ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","if_any","dot1","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..1, ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","if_any","dot1","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..1, ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","if_any","dot1","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..1, ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","if_all","positional","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..., ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","positional","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..., ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","positional","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..., ~.x >
+  2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","positional","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..., ~.x >
+  2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","positional","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..., ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","positional","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..., ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","positional","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..., ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","positional","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..., ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","positional","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..., ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","positional","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..., ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","positional","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..., ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","positional","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..., ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","named","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","named","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","named","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","named","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","named","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","named","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","named","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","named","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","named","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","named","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","named","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","named","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","forwarded","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(...)))(...)`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","forwarded","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(...)))(...)`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","forwarded","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(...)))(...)`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","forwarded","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(...)))(...)`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","forwarded","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","forwarded","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","forwarded","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","forwarded","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","forwarded","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","forwarded","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","forwarded","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","forwarded","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"frame","if_all","dot1","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..1, ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","if_all","dot1","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..1, ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","if_all","dot1","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..1, ~.x >
+  2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","if_all","dot1","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..1, ~.x >
+  2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","if_all","dot1","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..1, ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","if_all","dot1","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..1, ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","if_all","dot1","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..1, ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","if_all","dot1","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..1, ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","if_all","dot1","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..1, ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","if_all","dot1","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..1, ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","if_all","dot1","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..1, ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","if_all","dot1","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..1, ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","across","positional","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..., sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","positional","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..., sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","positional","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..., sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","positional","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..., sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","positional","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..., sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","positional","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..., sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","positional","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..., sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","positional","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..., sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","positional","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..., sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","positional","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..., sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","positional","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..., sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","positional","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..., sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","named","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(.cols = ..., .fns =
+  sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","named","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(.cols = ..., .fns =
+  sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","named","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(.cols = ..., .fns
+  = sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","named","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(.cols = ..., .fns
+  = sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","named","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(.cols = ..., .fns =
+  sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","named","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(.cols = ..., .fns =
+  sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","named","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(.cols = ..., .fns
+  = sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","named","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(.cols = ..., .fns
+  = sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","named","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(.cols = ..., .fns =
+  sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","named","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(.cols = ..., .fns =
+  sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","named","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(.cols = ..., .fns
+  = sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","named","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(.cols = ..., .fns
+  = sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","forwarded","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(...))(.cols = ""x"", .fns =
+  sum)`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","forwarded","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(...))(.cols = ""x"", .fns =
+  sum)`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","forwarded","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(...))(.cols = ""x"",
+  .fns = sum)`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","forwarded","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(...))(.cols = ""x"",
+  .fns = sum)`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","forwarded","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(...))(.cols = ""x"", .fns =
+  sum)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","forwarded","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(...))(.cols = ""x"", .fns =
+  sum)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","forwarded","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(...))(.cols = ""x"",
+  .fns = sum)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","forwarded","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(...))(.cols = ""x"",
+  .fns = sum)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","forwarded","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(...))(.cols = ""x"", .fns =
+  sum)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","forwarded","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(...))(.cols = ""x"", .fns =
+  sum)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","forwarded","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(...))(.cols = ""x"",
+  .fns = sum)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","forwarded","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(...))(.cols = ""x"",
+  .fns = sum)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","across","dot1","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..1, sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","across","dot1","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..1, sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","across","dot1","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..1, sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","across","dot1","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..1, sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","across","dot1","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..1, sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","across","dot1","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..1, sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","across","dot1","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..1, sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","across","dot1","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..1, sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","across","dot1","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..1, sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","across","dot1","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..1, sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","across","dot1","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..1, sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","across","dot1","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..1, sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","if_any","positional","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..., ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","positional","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..., ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","positional","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..., ~.x >
+  2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","positional","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..., ~.x >
+  2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","positional","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..., ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","positional","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..., ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","positional","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..., ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","positional","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..., ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","positional","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..., ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","positional","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..., ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","positional","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..., ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","positional","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..., ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","named","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","named","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","named","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","named","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","named","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","named","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","named","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","named","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","named","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","named","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","named","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","named","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","forwarded","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(...)))(...)`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","forwarded","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(...)))(...)`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","forwarded","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(...)))(...)`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","forwarded","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(...)))(...)`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","forwarded","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","forwarded","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","forwarded","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","forwarded","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","forwarded","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","forwarded","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","forwarded","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","forwarded","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_any","dot1","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..1, ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","if_any","dot1","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..1, ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","if_any","dot1","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..1, ~.x >
+  2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","if_any","dot1","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..1, ~.x >
+  2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","if_any","dot1","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..1, ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","if_any","dot1","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..1, ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","if_any","dot1","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..1, ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","if_any","dot1","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..1, ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","if_any","dot1","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..1, ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","if_any","dot1","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..1, ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","if_any","dot1","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..1, ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","if_any","dot1","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..1, ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","if_all","positional","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..., ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","positional","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..., ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","positional","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..., ~.x >
+  2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","positional","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..., ~.x >
+  2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","positional","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..., ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","positional","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..., ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","positional","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..., ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","positional","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..., ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","positional","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..., ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","positional","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..., ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","positional","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..., ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","positional","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..., ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","named","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","named","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","named","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","named","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","named","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","named","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","named","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","named","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","named","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","named","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","named","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","named","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","forwarded","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(...)))(...)`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","forwarded","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(...)))(...)`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","forwarded","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(...)))(...)`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","forwarded","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(...)))(...)`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","forwarded","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","forwarded","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","forwarded","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","forwarded","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","forwarded","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","forwarded","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","forwarded","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","forwarded","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"tibble","if_all","dot1","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..1, ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","if_all","dot1","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..1, ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","if_all","dot1","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..1, ~.x >
+  2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","if_all","dot1","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..1, ~.x >
+  2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","if_all","dot1","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..1, ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","if_all","dot1","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..1, ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","if_all","dot1","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..1, ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","if_all","dot1","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..1, ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","if_all","dot1","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..1, ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","if_all","dot1","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..1, ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","if_all","dot1","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..1, ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","if_all","dot1","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..1, ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","across","positional","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..., sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","positional","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..., sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","positional","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..., sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","positional","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..., sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","positional","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..., sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","positional","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..., sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","positional","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..., sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","positional","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..., sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","positional","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..., sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","positional","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..., sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","positional","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..., sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","positional","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..., sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","named","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(.cols = ..., .fns =
+  sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","named","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(.cols = ..., .fns =
+  sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","named","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(.cols = ..., .fns
+  = sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","named","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(.cols = ..., .fns
+  = sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","named","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(.cols = ..., .fns =
+  sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","named","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(.cols = ..., .fns =
+  sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","named","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(.cols = ..., .fns
+  = sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","named","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(.cols = ..., .fns
+  = sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","named","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(.cols = ..., .fns =
+  sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","named","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(.cols = ..., .fns =
+  sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","named","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(.cols = ..., .fns
+  = sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","named","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(.cols = ..., .fns
+  = sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","forwarded","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(...))(.cols = ""x"", .fns =
+  sum)`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","forwarded","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(...))(.cols = ""x"", .fns =
+  sum)`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","forwarded","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(...))(.cols = ""x"",
+  .fns = sum)`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","forwarded","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(...))(.cols = ""x"",
+  .fns = sum)`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","forwarded","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(...))(.cols = ""x"", .fns =
+  sum)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","forwarded","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(...))(.cols = ""x"", .fns =
+  sum)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","forwarded","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(...))(.cols = ""x"",
+  .fns = sum)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","forwarded","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(...))(.cols = ""x"",
+  .fns = sum)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","forwarded","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(...))(.cols = ""x"", .fns =
+  sum)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","forwarded","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(...))(.cols = ""x"", .fns =
+  sum)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","forwarded","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(...))(.cols = ""x"",
+  .fns = sum)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","forwarded","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(...))(.cols = ""x"",
+  .fns = sum)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","across","dot1","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..1, sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","across","dot1","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..1, sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","across","dot1","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..1, sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","across","dot1","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..1, sum))(""x"")`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","across","dot1","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..1, sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","across","dot1","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..1, sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","across","dot1","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..1, sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","across","dot1","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..1, sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","across","dot1","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..1, sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","across","dot1","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) dplyr::across(..1, sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","across","dot1","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..1, sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","across","dot1","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) dplyr::across(..1, sum))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::across()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","if_any","positional","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..., ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","positional","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..., ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","positional","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..., ~.x >
+  2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","positional","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..., ~.x >
+  2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","positional","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..., ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","positional","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..., ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","positional","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..., ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","positional","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..., ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","positional","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..., ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","positional","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..., ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","positional","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..., ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","positional","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..., ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","named","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","named","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","named","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","named","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","named","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","named","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","named","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","named","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","named","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","named","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","named","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","named","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","forwarded","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(...)))(...)`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","forwarded","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(...)))(...)`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","forwarded","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(...)))(...)`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","forwarded","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(...)))(...)`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","forwarded","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","forwarded","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","forwarded","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","forwarded","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","forwarded","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","forwarded","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","forwarded","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","forwarded","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_any","dot1","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..1, ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","if_any","dot1","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..1, ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","if_any","dot1","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..1, ~.x >
+  2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","if_any","dot1","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..1, ~.x >
+  2)))(""x"")`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","if_any","dot1","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..1, ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","if_any","dot1","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..1, ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","if_any","dot1","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..1, ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","if_any","dot1","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..1, ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","if_any","dot1","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..1, ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","if_any","dot1","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_any(..1, ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","if_any","dot1","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..1, ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","if_any","dot1","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_any(..1, ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_any()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","if_all","positional","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..., ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","positional","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..., ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","positional","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..., ~.x >
+  2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","positional","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..., ~.x >
+  2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","positional","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..., ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","positional","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..., ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","positional","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..., ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","positional","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..., ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","positional","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..., ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","positional","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..., ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","positional","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..., ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","positional","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..., ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","named","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","named","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","named","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","named","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","named","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","named","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","named","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","named","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","named","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","named","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(.cols = ..., .fns = ~.x
+  > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","named","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","named","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(.cols = ...,
+  .fns = ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","forwarded","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(...)))(...)`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","forwarded","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(...)))(...)`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","forwarded","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(...)))(...)`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","forwarded","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(...)))(...)`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","forwarded","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","forwarded","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","forwarded","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","forwarded","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","forwarded","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","forwarded","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","forwarded","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","forwarded","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(...)))(...)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `list2()`:
+! '...' used in an incorrect context"
+"data_table","if_all","dot1","none",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..1, ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","if_all","dot1","none",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..1, ~.x > 2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","if_all","dot1","none",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..1, ~.x >
+  2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","if_all","dot1","none",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..1, ~.x >
+  2)))(""x"")`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","if_all","dot1","fixed",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..1, ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","if_all","dot1","fixed",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..1, ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","if_all","dot1","fixed",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..1, ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","if_all","dot1","fixed",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..1, ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","if_all","dot1","rollup",FALSE,FALSE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..1, ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","if_all","dot1","rollup",FALSE,TRUE,FALSE,"ℹ In argument: `(function(...) sum(dplyr::if_all(..1, ~.x > 2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","if_all","dot1","rollup",TRUE,FALSE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..1, ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"data_table","if_all","dot1","rollup",TRUE,TRUE,FALSE,"ℹ In argument: `answer = (function(...) sum(dplyr::if_all(..1, ~.x >
+  2)))(""x"")`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::if_all()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at bughunt-summary-grouping-share-20261102/R/summary-selections.R:1542:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."

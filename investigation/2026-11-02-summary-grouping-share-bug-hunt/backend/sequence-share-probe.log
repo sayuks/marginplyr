@@ -1,0 +1,38 @@
+dims 1 kind parent source raw adapter native match TRUE
+dims 1 kind parent source raw adapter portable match TRUE
+dims 1 kind parent source aggregate adapter native match TRUE
+dims 1 kind parent source aggregate adapter portable match TRUE
+dims 1 kind total source raw adapter native match TRUE
+dims 1 kind total source raw adapter portable match TRUE
+dims 1 kind total source aggregate adapter native match TRUE
+dims 1 kind total source aggregate adapter portable match TRUE
+dims 2 kind parent source raw adapter native match FALSE
+# A tibble: 7 × 5
+  g     h       set     v     p
+  <chr> <chr> <int> <dbl> <dbl>
+1 b     y         1     8 1.33
+2 a     x         1     9 1.8
+3 a     y         1    10 2
+4 b     x         1    11 1.83
+5 b     Total     2    12 0.857
+6 a     Total     2    13 0.929
+7 Total Total     3    14 1
+[1] 0.6666667 0.6923077 0.7692308 0.9166667 0.8571429 0.9285714 1.0000000
+dims 2 kind parent source raw adapter portable match TRUE
+dims 2 kind parent source aggregate adapter native match FALSE
+# A tibble: 7 × 5
+  g     h       set     v     p
+  <chr> <chr> <int> <dbl> <dbl>
+1 b     y         1    12 1
+2 a     x         1    10 1
+3 a     y         1    12 1.2
+4 b     x         1    14 1.17
+5 b     Total     2    19 0.792
+6 a     Total     2    16 0.667
+7 Total Total     3    24 1
+[1] 0.6315789 0.6250000 0.7500000 0.7368421 0.7916667 0.6666667 1.0000000
+dims 2 kind parent source aggregate adapter portable match TRUE
+dims 2 kind total source raw adapter native match TRUE
+dims 2 kind total source raw adapter portable match TRUE
+dims 2 kind total source aggregate adapter native match TRUE
+dims 2 kind total source aggregate adapter portable match TRUE
