@@ -18,6 +18,11 @@ same five checks against a pinned committed source copy before requesting any
 heavy capacity. The AI decides whether package build/check is required and
 records its reason. A source-only result explicitly records the heavy omission.
 
+The supported operational target is the maintainer's Mac, where one user's
+clones and worktrees share local capacity. Run the retained process/progress
+CI contracts on macOS for that target. The package OS checks and release matrix
+continue to establish package portability independently of the local runner.
+
 After successful baseline checks, `full` waits on one stable OS-backed advisory
 lock across this user's marginplyr clones/worktrees on the Mac, then starts
 automatically. Its package build/check runs the complete suite and snapshots

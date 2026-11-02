@@ -8,6 +8,11 @@ own the accepted design. The repository entry below became active in the
 not a check result; [PR #1124](https://github.com/sayuks/marginplyr/pull/1124)
 records per-revision `source` and `full` results.
 
+The supported operational target is the maintainer's Mac. Its shared local
+heavy slot coordinates that user's clones and worktrees; macOS CI validates
+the runner and progress process contracts. Package portability remains covered
+by the package OS checks and release matrix.
+
 ## Setup and invocation
 
 Install `DESCRIPTION`'s `Config/Needs/review` development tools and make `jarl`
@@ -84,7 +89,7 @@ Codex history and OS crash reports are outside routine cleanup.
 Routine invocation runs the baseline and chosen heavy portion only. It does
 not run infrastructure self-tests or regenerate the real README/site, including
 on a branch with no earlier result. CI runs the retained runner and dedicated
-progress regression suites on every PR without path conditions:
+progress regression suites on macOS for every PR without path conditions:
 
 ```sh
 Rscript tools/test-review-ready-runner.R
