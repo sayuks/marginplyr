@@ -1,4 +1,4 @@
-"""Exercise artifact verification through its command boundary on Git fixtures."""
+"""Exercise CI artifact verification through its command boundary."""
 import json
 import os
 from pathlib import Path
@@ -19,7 +19,7 @@ class Artifacts(unittest.TestCase):
         self.git('config', 'user.name', 'Artifact fixture')
         self.git('config', 'user.email', 'artifact@example.com')
         # Exercise current checker sources during the implementation loop too.
-        for relative in ('tools/review-ready-admission.py', 'tools/verify-ci-artifacts.py',
+        for relative in ('tools/verify-ci-artifacts.py',
                          'tools/ci-workflow-contracts.json',
                          '.github/scripts/verify-doc-references.R',
                          '.github/scripts/summarize-check-log.R'):
@@ -27,7 +27,6 @@ class Artifacts(unittest.TestCase):
         for path in (SOURCE / '.github/workflows').glob('*.yaml'):
             shutil.copyfile(path, self.repo / '.github/workflows' / path.name)
         self.commit()
-        self.base = self.git('rev-parse', 'HEAD').strip()
 
     def git(self, *args, cwd=None):
         return subprocess.check_output(['git', *args], cwd=cwd or self.repo,
@@ -40,7 +39,6 @@ class Artifacts(unittest.TestCase):
     def check(self, status=0, fragment='workflow executable contracts'):
         self.commit()
         result = subprocess.run(['python3', 'tools/verify-ci-artifacts.py'], cwd=self.repo,
-                                env=dict(os.environ, MARGINPLYR_REVIEW_BASE=self.base),
                                 capture_output=True, text=True)
         output = result.stdout + result.stderr
         self.assertEqual(result.returncode, status, output)
@@ -48,6 +46,14 @@ class Artifacts(unittest.TestCase):
 
     def workflow(self, name='lint.yaml'):
         return self.repo / '.github/workflows' / name
+
+    def test_verification_is_independent_of_retired_admission_and_git_history(self):
+        (self.repo / 'tools/review-ready-admission.py').unlink(missing_ok=True)
+        shutil.rmtree(self.repo / '.git')
+        result = subprocess.run(['python3', 'tools/verify-ci-artifacts.py'], cwd=self.repo,
+                                capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn('workflow executable contracts', result.stdout)
 
     def test_comments_keep_the_executable_contract(self):
         path = self.workflow()
@@ -68,6 +74,10 @@ class Artifacts(unittest.TestCase):
             (original.replace('  context-budget:\n',
                               "  context-budget:\n    if: github.event_name == 'push'\n"),
              'Workflow executable contract changed'),
+            (original.replace('Rscript tools/test-review-ready-progress.R', 'echo skipped'),
+             'Workflow executable contract changed'),
+            (original.replace('Rscript tools/test-review-ready-runner.R', 'echo skipped'),
+             'Workflow executable contract changed'),
             (original.replace('LINTR_ERROR_ON_LINT: true', 'LINTR_ERROR_ON_LINT: false'),
              'Workflow executable contract changed'),
             (original.replace('LINTR_ERROR_ON_LINT: true', 'LINTR_ERROR_ON_LINT: yes'),
@@ -80,21 +90,22 @@ class Artifacts(unittest.TestCase):
                 self.check(1, fragment)
         path.write_text(original)
 
-    def test_unknown_workflow_and_script_are_unresolved_even_with_full(self):
-        for name in ('.github/workflows/unknown.yaml', '.github/scripts/unknown.R',
-                     'altdoc/pkgdown.yml'):
-            with self.subTest(name=name):
-                path = self.repo / name
-                path.write_text('# no verified contract\n')
-                self.check(1, 'CI validation unresolved')
-                path.unlink()
+    def test_unknown_workflow_is_outside_the_contract_inventory(self):
+        self.workflow('unknown.yaml').write_text('# no verified contract\n')
+        self.check(1, 'workflow inventory differs')
+
+    def test_invalid_claude_json_fails(self):
+        path = self.repo / '.claude/settings.json'
+        path.parent.mkdir(exist_ok=True)
+        path.write_text('{invalid json')
+        self.check(1, 'Expecting property name')
 
     def test_changed_contract_cannot_silently_drop_a_workflow(self):
         path = self.repo / 'tools/ci-workflow-contracts.json'
         contract = json.loads(path.read_text())
         del contract['.github/workflows/lint.yaml']
         path.write_text(json.dumps(contract))
-        self.check(1, 'Workflow executable contract changed')
+        self.check(1, 'workflow inventory differs')
 
     def test_missing_actionlint_fails_without_package_fallback(self):
         bin_path = Path(self.temp.name) / 'bin'
