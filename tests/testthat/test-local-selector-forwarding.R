@@ -131,6 +131,19 @@ test_that("top-level function forwarding keeps dplyr expansion timing", {
   expect_identical(run("margin"), expected)
 })
 
+test_that("forwarded function arguments retain their names", {
+  data <- data.frame(x = 1:3)
+  f <- function(x, ...) sum(x) + sum(unlist(list(...)))
+  expression <- rlang::expr((function(...) dplyr::across(...))(
+    .cols = x, .fns = f, .ignore_empty = 2, .named = 3, .ignore_null = 4,
+    .unquote_names = 5, .homonyms = 6, .check_assign = 7
+  ))
+  expected <- suppressWarnings(dplyr::summarise(data, value = !!expression))
+  expect_identical(expected$value$x, 33)
+  actual <- suppressWarnings(summarize_with_margins(data, value = !!expression))
+  expect_identical(actual, expected)
+})
+
 test_that("forwarded arguments keep their evaluation order and environments", {
   data <- data.frame(g = c("a", "a", "b"), x = 1:3, y = c(7, 9, 11))
   for (helper in c("across", "if_any", "if_all")) {

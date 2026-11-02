@@ -1534,7 +1534,7 @@ rewrite_local_across_selection <- function(expr, group_vars,
 # The caller supplies a recognized local helper and its selection exclusions.
 local_forwarded_selection <- function(helper, group_vars, forbidden_names) {
   function(...) {
-    args <- rlang::enquos(..., .ignore_empty = "none")
+    args <- rlang::enquos0(...)
     expr <- rlang::call2(helper, !!!args, .ns = "dplyr")
     expr <- rewrite_local_across_selection(expr, group_vars, forbidden_names)
     rlang::eval_tidy(expr)
