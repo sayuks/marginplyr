@@ -132,9 +132,11 @@ local({
   output <- finish(start(repo))
   expect(all(vapply(c("Test dependency syntax", "Required test Suggests",
     "fixture spelling executed", "fixture jarl executed", "fixture package loaded",
-    "fixture package-aware lintr executed", "Heavy package check omitted",
+    "fixture package-aware lintr executed",
     "fixture explicit judgment", git(repo, "rev-parse", "HEAD")),
     grepl, logical(1), x = output, fixed = TRUE)), "source executes five checks and records its scope/reason/SHA")
+  expect(grepl("Package build/check, the complete suite and snapshots omitted: fixture explicit judgment",
+    output, fixed = TRUE), "source explicitly records package build/check, complete suite and snapshots omission")
   expect(!grepl("Waiting for heavy", output, fixed = TRUE), "source never requests admission")
   shared <- file.path(account, ".local", "state", "marginplyr", "review-ready-heavy.lock")
   dir.create(dirname(shared), recursive = TRUE)
