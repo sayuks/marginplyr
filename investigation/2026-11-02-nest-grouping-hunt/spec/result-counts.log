@@ -1,0 +1,23 @@
+
+                   package-error selection-error success
+  empty-unit-error            36               0       0
+  rename-refusal              45               0       0
+  selection-error              0             420       0
+  success                      0               0     264
+
+                     getvarError: argument "value" is missing, with no default
+  empty-unit refusal                                                        40
+  success                                                                   80
+
+                     marginplyr_error: `cube()` requires at least one dimension.
+  empty-unit refusal                                                          10
+  success                                                                      0
+
+                     marginplyr_error: `rollup()` requires at least one dimension.
+  empty-unit refusal                                                            10
+  success                                                                        0
+
+                     success
+  empty-unit refusal       0
+  success                220
+Retained: 765  Dots: 360

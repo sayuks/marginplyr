@@ -1,0 +1,7 @@
+SHA: 978d7bef4247bf1348af5b90bfab47924db25500
+R version 4.6.1 (2026-06-24)
+dplyr 1.2.1
+vctrs 0.7.3
+tibble 3.3.1
+pkgload 1.5.3
+bit64 4.8.6

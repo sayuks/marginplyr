@@ -1,0 +1,15 @@
+Scalar output-name/empty-cardinality public calls: 500 all matched
+Historical package-version source equality: both verbs matched
+ordinary dplyr source and union controls preserved one source group
+[[1]]
+[[1]][[1]]
+[1] 1 2
+
+
+[[2]]
+[[2]][[1]]
+[1] 1 2
+
+
+removing the unused NA level or selecting the source as a fixed key restored one cell
+Historical NA-level factor source equality: both verbs matched

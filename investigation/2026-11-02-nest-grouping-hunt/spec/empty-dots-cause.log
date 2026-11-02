@@ -1,0 +1,15 @@
+Dots populated: FALSE
+Binding deferred: FALSE
+Helper-argument reader:
+<evalError in name_only_helper_arg(quote(...), env): argument "value" is missing, with no default>
+Wrapped helper fixed keys:
+Explicit empty-vector fixed keys:
+Dots populated: TRUE
+Binding deferred: FALSE
+Helper-argument reader:
+[1] FALSE
+Wrapped helper fixed keys: a
+Explicit empty-vector fixed keys:
+Three hypotheses tested: classifier ordinary binding read (confirmed);
+tidy-eval capture loses the dots environment (refuted by same-quosure direct selection);
+constructor retention is responsible (refuted by the .by-only minimal call).

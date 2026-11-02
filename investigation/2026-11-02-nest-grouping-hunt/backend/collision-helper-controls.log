@@ -1,0 +1,18 @@
+SHA: 978d7bef4247bf1348af5b90bfab47924db25500
+as.character nest : masked validation reads 1 ; result dtplyr_step_call/dtplyr_step
+as.character nest_by : masked validation reads 2 ; result rowwise_df/tbl_df/tbl/data.frame
+as.character expand : masked validation reads 1 ; result dtplyr_step_set/dtplyr_step
+as.character summarize : masked validation reads 1 ; result dtplyr_step_set/dtplyr_step
+sum nest : masked validation reads 1 ; result dtplyr_step_call/dtplyr_step
+sum nest_by : masked validation reads 1 ; result rowwise_df/tbl_df/tbl/data.frame
+sum expand : masked validation reads 1 ; result dtplyr_step_set/dtplyr_step
+sum summarize : masked validation reads 1 ; result dtplyr_step_set/dtplyr_step
+       helper      verb collision_reads refused
+ as.character      nest               1   FALSE
+ as.character   nest_by               2   FALSE
+ as.character    expand               1   FALSE
+ as.character summarize               1   FALSE
+          sum      nest               1   FALSE
+          sum   nest_by               1   FALSE
+          sum    expand               1   FALSE
+          sum summarize               1   FALSE

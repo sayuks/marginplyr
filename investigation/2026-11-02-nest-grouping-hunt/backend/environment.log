@@ -1,0 +1,15 @@
+R version 4.6.1 (2026-06-24)
+ sysname  release  machine
+"Darwin" "25.6.0"  "arm64"
+dplyr 1.2.1
+dtplyr 1.3.3
+data.table 1.18.6.1
+arrow 25.0.1
+duckdb 1.5.5
+RSQLite 3.53.3
+vctrs 0.7.3
+tidyr 1.3.2
+tibble 3.3.1
+pkgload 1.5.3
+bit64 4.8.6
+hms 1.1.4

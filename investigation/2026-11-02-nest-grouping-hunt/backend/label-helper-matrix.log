@@ -1,0 +1,23 @@
+SHA: 978d7bef4247bf1348af5b90bfab47924db25500
+              status
+helper         error match mismatch
+  as.character     0   112       32
+  length          36   104        4
+  rep              0   120       24
+Total: 432
+        helper   status reads
+1       length    error    52
+2 as.character    match    16
+3       length    match    44
+4          rep    match    12
+5 as.character mismatch    32
+6       length mismatch     8
+7          rep mismatch    24
+        helper   status warnings
+1       length    error        8
+2 as.character    match        0
+3       length    match        8
+4          rep    match        0
+5 as.character mismatch        0
+6       length mismatch        8
+7          rep mismatch        0

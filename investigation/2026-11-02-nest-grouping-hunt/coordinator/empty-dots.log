@@ -1,0 +1,7 @@
+inspect_by : getvarError argument "value" is missing, with no default
+inspect_spec : getvarError argument "value" is missing, with no default
+nest_by_key : getvarError argument "value" is missing, with no default
+nest_spec : getvarError argument "value" is missing, with no default
+rowwise_by : getvarError argument "value" is missing, with no default
+rowwise_spec : getvarError argument "value" is missing, with no default
+Six empty-dots failures independently confirmed; all populated controls passed.
