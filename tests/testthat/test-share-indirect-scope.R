@@ -152,6 +152,43 @@ test_that("parent changes invalidate inherited callee shadows", {
   }
 })
 
+test_that("function resolvers retain caller shadows in the top environment", {
+  data <- data.frame(group = c("a", "b"), x = c(1, 3))
+  had_binding <- exists("rm", envir = globalenv(), inherits = FALSE)
+  original <- if (had_binding) get("rm", envir = globalenv()) else NULL
+  assign("rm", function(...) NULL, envir = globalenv())
+  tryCatch({
+    for (resolver in c("match.fun", "getFunction")) {
+      removal <- rlang::call2(rlang::call2(resolver, "rm"), "prior")
+      expression <- rlang::new_quosure(rlang::expr({
+        prior <- 2
+        !!removal
+        sum(prior)
+      }), globalenv())
+      for (kind in c("parent", "total")) {
+        helper <- rlang::call2(paste0("share_of_", kind), quote(value))
+        result <- summarize_with_margins(
+          data, prior = sum(x), value = !!expression,
+          fraction = !!helper, .grouping = rollup(group)
+        )
+        expect_equal(result$value, c(2, 2, 2))
+        expect_equal(result$fraction, c(1, 1, 1))
+        result <- summarize_with_margins(
+          data, value = sum(x), prior = !!helper,
+          derived = !!expression, .grouping = rollup(group)
+        )
+        expect_equal(result$derived, c(2, 2, 2))
+      }
+    }
+  }, finally = {
+    if (had_binding) {
+      assign("rm", original, envir = globalenv())
+    } else {
+      base::rm("rm", envir = globalenv())
+    }
+  })
+})
+
 test_that("indirect mutations retain independent lexical and external reads", {
   data <- data.frame(group = c("a", "b"), x = c(1, 3))
   expressions <- alist(

@@ -4563,8 +4563,18 @@ scope_callee_is_shadowed <- function(callee, name, bound, lookup) {
       if (is.null(env)) {
         return(FALSE)
       }
-    } else if (resolver %in% c("match.fun", "getFunction") ||
-                 name %in% lookup$mask) {
+    } else if (resolver %in% c("match.fun", "getFunction")) {
+      # These resolvers can start outside the captured lexical frame. A shadow
+      # confined to that frame cannot establish the function they will find.
+      if (identical(resolver, "match.fun")) {
+        lexical <- ordinary_function_binding(name, env)
+        if (!is.function(lexical) ||
+              identical(lexical, get(name, envir = baseenv()))) {
+          return(FALSE)
+        }
+      }
+      env <- topenv(env)
+    } else if (name %in% lookup$mask) {
       return(FALSE)
     }
   }
