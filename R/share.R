@@ -4568,8 +4568,13 @@ scope_callee_is_shadowed <- function(callee, name, bound, lookup) {
       return(FALSE)
     }
   }
+  if (!lookup_environment_is_external(
+    env, bound, lookup, safe_parents = FALSE
+  )) {
+    return(FALSE)
+  }
   binding <- ordinary_function_binding(name, env)
-  !is.null(binding) && !identical(binding, get(name, envir = baseenv()))
+  is.function(binding) && !identical(binding, get(name, envir = baseenv()))
 }
 
 # Lexical bindings that survive every visibly evaluated removal in this node.
@@ -4595,10 +4600,6 @@ nested_removal_retained_bound <- function(expr, bound, lookup = NULL) {
     return(bound)
   }
   mutation <- scope_mutation_call(expr, bound, lookup)
-  if (!is.null(mutation) &&
-        static_call_name(mutation) %in% c("rm", "remove")) {
-    return(removal_retained_bound(mutation, bound))
-  }
   parts <- c(
     evaluated_call_head(expr), evaluated_call_args(expr, bound = bound),
     evaluated_language_parts(expr)
@@ -4613,6 +4614,11 @@ nested_removal_retained_bound <- function(expr, bound, lookup = NULL) {
   }
   for (index in seq_along(parts)) {
     bound <- nested_removal_retained_bound(parts[[index]], bound, lookup)
+  }
+  # Resolving the head can remove a different binding before this callee runs.
+  if (!is.null(mutation) &&
+        static_call_name(mutation) %in% c("rm", "remove")) {
+    bound <- removal_retained_bound(mutation, bound)
   }
   bound
 }
@@ -4724,10 +4730,12 @@ lookup_environment_value <- function(expr, bound, lookup) {
 }
 
 # Whether a lookup stays outside the mask after visible parent replacements.
-# Non-inheriting reads cannot reach a changed parent. TRUE in `reparented`
+# Non-inheriting reads cannot reach a changed parent. A TRUE target value
 # denotes an unresolved mutation target, which invalidates every proof.
+# Safe parents exclude mask reads, but can still change function lookup.
 lookup_environment_is_external <- function(expr, bound, lookup,
-                                           inherits = TRUE) {
+                                           inherits = TRUE,
+                                           safe_parents = TRUE) {
   value <- lookup_environment_value(expr, bound, lookup)
   if (is.null(value)) {
     return(FALSE)
@@ -4737,7 +4745,8 @@ lookup_environment_is_external <- function(expr, bound, lookup,
   }
   while (!identical(value, emptyenv())) {
     if (any(vapply(lookup$reparented, function(target) {
-      isTRUE(target) || identical(target, value)
+      !(safe_parents && target$safe_parent) &&
+        (isTRUE(target$value) || identical(target$value, value))
     }, logical(1)))) {
       return(FALSE)
     }
@@ -4746,9 +4755,8 @@ lookup_environment_is_external <- function(expr, bound, lookup,
   TRUE
 }
 
-# Existing environments whose visibly replaced parent may reach the mask.
-# Targets are compared by identity across summaries and quosure environments;
-# an unreadable target invalidates all proofs. No caller expression is run.
+# Visible parent replacements: target identities and mask-excluding parents.
+# An unreadable target is TRUE; no caller expression is run.
 lookup_reparented_environments <- function(
   expr, env, mask, rebound = lookup_rebound_names(expr)) {
   if (rlang::is_quosure(expr)) {
@@ -4789,12 +4797,12 @@ lookup_reparented_environments <- function(
       is_known_base_call(parent, parent_name, character(), list(
         env = env, rebound = rebound
       ))
-    if (!safe_parent) {
-      value <- lookup_environment_value(target[[1L]], character(), list(
-        env = env, mask = mask, rebound = rebound
-      ))
-      targets <- list(if (is.null(value)) TRUE else value)
-    }
+    value <- lookup_environment_value(target[[1L]], character(), list(
+      env = env, mask = mask, rebound = rebound
+    ))
+    targets <- list(list(
+      value = if (is.null(value)) TRUE else value, safe_parent = safe_parent
+    ))
   }
   c(targets, unlist(lapply(
     searched_call_parts(expr),

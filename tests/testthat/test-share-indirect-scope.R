@@ -7,7 +7,11 @@ test_that("resolved removals expose both share dependency directions", {
     (getFunction("remove"))(prior),
     do.call("rm", list("prior")),
     do.call(base::remove, list("prior")),
-    do.call(get("rm"), list("prior"))
+    do.call(get("rm"), list("prior")),
+    (get("rm", envir = {
+      base::rm(prior)
+      baseenv()
+    }))("other")
   )
   for (input in list(data, dbplyr::tbl_lazy(data))) {
     for (kind in c("parent", "total")) {
@@ -15,6 +19,7 @@ test_that("resolved removals expose both share dependency directions", {
       for (removal in removals) {
         expression <- rlang::expr({
           prior <- 2
+          other <- 0
           identity(!!removal)
           sum(prior)
         })
@@ -64,6 +69,16 @@ test_that("caller functions with mutation names keep ordinary lookup", {
     },
     {
       prior <- 2
+      (get("rm", envir = functions))("prior")
+      sum(prior)
+    },
+    {
+      prior <- 2
+      (get("rm", envir = child))("prior")
+      sum(prior)
+    },
+    {
+      prior <- 2
       do.call("rm", list("prior"))
       sum(prior)
     },
@@ -95,6 +110,7 @@ test_that("caller functions with mutation names keep ordinary lookup", {
         `parent.env<-` = function(...) NULL
       )
       scope$functions <- scope
+      scope$child <- new.env(parent = scope)
       expression <- rlang::new_quosure(expression, scope)
       result <- summarize_with_margins(
         data, prior = sum(x), value = !!expression,
@@ -108,6 +124,30 @@ test_that("caller functions with mutation names keep ordinary lookup", {
       )
       expect_equal(result$derived, c(2, 2, 2))
       expect_identical(parent.env(outside), baseenv())
+    }
+  }
+})
+
+test_that("parent changes invalidate inherited callee shadows", {
+  data <- data.frame(group = c("a", "b"), x = c(1, 3))
+  for (input in list(data, dbplyr::tbl_lazy(data))) {
+    for (kind in c("parent", "total")) {
+      functions <- rlang::env(baseenv(), rm = function(...) NULL)
+      outside <- new.env(parent = functions)
+      helper <- rlang::call2(paste0("share_of_", kind), quote(value))
+      expect_error(
+        summarize_with_margins(
+          input, prior = sum(x), value = {
+            prior <- 2
+            parent.env(outside) <- baseenv()
+            (get("rm", envir = outside))("prior")
+            sum(prior)
+          }, fraction = !!helper, .grouping = rollup(group)
+        ),
+        "depends on earlier summary alias `prior`",
+        class = "marginplyr_error"
+      )
+      expect_identical(parent.env(outside), functions)
     }
   }
 })
