@@ -1499,9 +1499,11 @@ rewrite_local_across_selection <- function(expr, group_vars,
                                            forbidden_names) {
   parsed <- parse_across_arguments(expr)
   call_args <- parsed$call_args
-  if (any(vapply(call_args, rlang::is_symbol, logical(1), "...")) ||
+  if (
+    any(vapply(call_args, rlang::is_symbol, logical(1), "...")) ||
       (rlang::is_symbol(parsed$cols) &&
-         grepl("^\\.\\.[1-9][0-9]*$", rlang::as_string(parsed$cols)))) {
+         grepl("^\\.\\.[1-9][0-9]*$", rlang::as_string(parsed$cols)))
+  ) {
     return(rlang::call2(
       rlang::call2(
         marginplyr_private_call("local_forwarded_selection"),

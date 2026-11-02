@@ -76,7 +76,7 @@ test_that("populated selectors agree with dplyr across eager summary shapes", {
   }
 })
 
-test_that("selection wrappers and function forwarding retain ordinary results", {
+test_that("selection wrappers and function forwarding retain dplyr results", {
   data <- data.frame(g = c("a", "a", "b"), x = 1:3, y = c(7, 9, 11))
   for (helper in c("across", "if_any", "if_all")) {
     fn <- if (helper == "across") quote(sum) else quote(function(x) x > 2)
@@ -112,10 +112,11 @@ test_that("forwarded arguments keep their evaluation order and environments", {
   for (helper in c("across", "if_any", "if_all")) {
     for (spelling in c("whole", "first")) {
       run <- function(mode) {
-        events <- character()
+        state <- new.env(parent = emptyenv())
+        state$events <- character()
         cols <- "x"
         mark <- function(event, value) {
-          events <<- c(events, paste(event, dplyr::n()))
+          state$events <- c(state$events, paste(event, dplyr::n()))
           value
         }
         fn <- if (helper == "across") sum else function(x) x > 2
@@ -154,7 +155,7 @@ test_that("forwarded arguments keep their evaluation order and environments", {
             .grouping = rollup(g), .margin_label = NULL
           )
         }
-        list(result = result, events = events)
+        list(result = result, events = state$events)
       }
       expected <- run("dplyr")
       expect_identical(sum(grepl("body", expected$events)), 3L)
