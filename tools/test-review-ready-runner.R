@@ -10,6 +10,7 @@ local({
   dir.create(library)
   rscript <- file.path(R.home("bin"), "Rscript")
   runs <- list()
+  captured <- new.env(parent = emptyenv())
   on.exit(for (run in runs) {
     if (run$is_alive()) run$kill_tree()
     run$wait()
@@ -37,6 +38,8 @@ local({
     'spell_check_package <- function(...) {',
     '  cat("fixture spelling executed\\n")',
     '  if (Sys.getenv("FIXTURE_LARGE_OUTPUT") == "true") cat(strrep("fixture stdout payload\\n", 65536L))',
+    '  ready <- Sys.getenv("FIXTURE_OUTPUT_READY")',
+    '  if (nzchar(ready)) writeLines("ready", ready)',
     '  if (file.exists("spelling-failure")) return(data.frame(word="failure"))',
     '  data.frame()', '}'
   ), "spell_check_package")
@@ -124,12 +127,19 @@ local({
     runs[[length(runs) + 1L]] <<- run
     run
   }
+  drain_output <- function(run, timeout = 0L) {
+    run$poll_io(timeout)
+    key <- as.character(run$get_pid())
+    captured[[key]] <- c(captured[[key]], run$read_output())
+    invisible(NULL)
+  }
+  collected_output <- function(run) {
+    paste0(captured[[as.character(run$get_pid())]], collapse = "")
+  }
   finish <- function(run, status = 0L, timeout = 120000L) {
     deadline <- Sys.time() + timeout / 1000
-    output <- character()
     repeat {
-      run$poll_io(50L)
-      output <- c(output, run$read_output())
+      drain_output(run, 50L)
       if (!run$is_alive() || Sys.time() >= deadline) break
     }
     timed_out <- run$is_alive()
@@ -137,10 +147,11 @@ local({
       run$kill_tree()
       run$wait()
       stop("Command timed out after ", timeout / 1000,
-        " seconds. Child output:\n", paste0(output, collapse = ""), call. = FALSE)
+        " seconds. Child output:\n", collected_output(run), call. = FALSE)
     }
     run$wait()
-    output <- paste0(c(output, run$read_all_output()), collapse = "")
+    output <- paste0(collected_output(run), run$read_all_output())
+    captured[[as.character(run$get_pid())]] <- NULL
     if (!identical(run$get_exit_status(), status)) stop(output, call. = FALSE)
     output
   }
@@ -174,13 +185,12 @@ local({
   git(repo, "commit", "--quiet", "-m", "repair preflight")
   submitted <- git(repo, "rev-parse", "HEAD")
   waiter <- start(repo, "full")
-  observed <- character()
   deadline <- Sys.time() + 30
   repeat {
-    waiter$poll_io(100L)
-    observed <- c(observed, waiter$read_output_lines())
-    if (any(grepl("Waiting for heavy", observed, fixed = TRUE))) break
-    if (!waiter$is_alive() || Sys.time() > deadline) stop(paste(observed, collapse="\n"))
+    drain_output(waiter, 100L)
+    observed <- collected_output(waiter)
+    if (grepl("Waiting for heavy", observed, fixed = TRUE)) break
+    if (!waiter$is_alive() || Sys.time() > deadline) stop(observed)
   }
   # Change HEAD only after the submission has reached the occupied slot.
   writeLines("later", file.path(repo, "inst", "revision.txt"))
@@ -196,22 +206,27 @@ local({
   wait_for <- function(run, predicate, label, timeout = 45) {
     deadline <- Sys.time() + timeout
     repeat {
+      drain_output(run, 50L)
       if (predicate()) return(invisible(NULL))
       if (!run$is_alive() || Sys.time() > deadline) {
-        stop(paste(label, paste(run$read_output_lines(), collapse="\n")), call.=FALSE)
+        stop(paste(label, collected_output(run)), call.=FALSE)
       }
       Sys.sleep(0.05)
     }
   }
   waiting <- function(run) {
-    output <- character()
     wait_for(run, function() {
-      run$poll_io(50L)
-      output <<- c(output, run$read_output_lines())
-      any(grepl("Waiting for heavy", output, fixed=TRUE))
+      grepl("Waiting for heavy", collected_output(run), fixed=TRUE)
     }, "waiter reached admission")
-    paste(output, collapse="\n")
+    collected_output(run)
   }
+  marker <- file.path(workspace, "ready-after-output")
+  buffered <- start(repo, extra = c(FIXTURE_LARGE_OUTPUT = "true", FIXTURE_OUTPUT_READY = marker))
+  wait_for(buffered, function() file.exists(marker), "marker follows large child output", 10)
+  buffered_output <- finish(buffered)
+  expect(grepl("Five mandatory checks passed", buffered_output, fixed = TRUE) &&
+    length(gregexpr("fixture stdout payload", buffered_output, fixed = TRUE)[[1L]]) == 65536L,
+    "marker wait retains every child output record until terminal completion")
   # A cancelled waiter remains cancelled after the occupied slot is released.
   lock <- filelock::lock(shared, timeout=0)
   cancelled <- start(repo,"full")
@@ -241,6 +256,8 @@ local({
   lock <- NULL
   deadline <- Sys.time()+60
   while (!any(file.exists(c(first_env[["FIXTURE_READY"]],second_env[["FIXTURE_READY"]])))) {
+    drain_output(first)
+    drain_output(second)
     expect(Sys.time()<deadline && first$is_alive() && second$is_alive(), "one shared invocation starts")
     Sys.sleep(0.05)
   }
@@ -267,6 +284,7 @@ local({
   running$signal(2L)
   deadline <- Sys.time()+30
   repeat {
+    drain_output(running)
     probe <- filelock::lock(shared,timeout=0)
     if (!is.null(probe)) {
       expect(!ps::ps_is_running(child), "owned child exits before shared slot is released")
