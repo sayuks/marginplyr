@@ -574,7 +574,8 @@ review_ready_check_cli <- function(args, expected_root) {
     required <- run_review_ready_source(source_root, prerequisites, runner = runner)
     if (selection$scope == "source") {
       cat("\nFive mandatory checks passed for ", identity$sha, ".\n",
-        "Heavy package check omitted: ", selection$reason, "\n", sep = "")
+        "Package build/check, the complete suite and snapshots omitted: ",
+        selection$reason, "\n", sep = "")
     } else {
       run_review_ready_full(source_root, run, required, prerequisites, runner = runner)
       cat("\nFull package check passed for ", identity$sha, ".\n", sep = "")
