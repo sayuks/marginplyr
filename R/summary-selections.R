@@ -1499,6 +1499,17 @@ rewrite_local_across_selection <- function(expr, group_vars,
                                            forbidden_names) {
   parsed <- parse_across_arguments(expr)
   call_args <- parsed$call_args
+  if (any(vapply(call_args, rlang::is_symbol, logical(1), "...")) ||
+      (rlang::is_symbol(parsed$cols) &&
+         grepl("^\\.\\.[1-9][0-9]*$", rlang::as_string(parsed$cols)))) {
+    return(rlang::call2(
+      rlang::call2(
+        marginplyr_private_call("local_forwarded_selection"),
+        static_call_name(expr), group_vars, forbidden_names
+      ),
+      !!!call_args
+    ))
+  }
   selection <- local_summary_selection_expr(
     parsed$cols, group_vars, forbidden_names
   )
@@ -1508,6 +1519,17 @@ rewrite_local_across_selection <- function(expr, group_vars,
     call_args[[parsed$cols_index]] <- selection
   }
   rebuild_static_call(expr, call_args)
+}
+
+# Captures expanded helper arguments at execution, before matching `.cols`.
+# The caller supplies a recognized local helper and its selection exclusions.
+local_forwarded_selection <- function(helper, group_vars, forbidden_names) {
+  function(...) {
+    args <- rlang::enquos(..., .ignore_empty = "none")
+    expr <- rlang::call2(helper, !!!args, .ns = "dplyr")
+    expr <- rewrite_local_across_selection(expr, group_vars, forbidden_names)
+    rlang::eval_tidy(expr)
+  }
 }
 
 # Applies the same deferred local selection to `pick()`.

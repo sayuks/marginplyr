@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Ordinary local `across()`, `if_any()`, and `if_all()` selectors preserve
+  populated `...` and `..1` forwarding through inline functions (#1138).
+
 * Both dtplyr nesting verbs preserve displayed grouping keys independently of
   caller bindings for `min` and `seq_len`, including bindings changed after
   lazy result construction (#1089).
