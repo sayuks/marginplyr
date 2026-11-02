@@ -276,7 +276,8 @@ test_that("resolver lookup options cannot expose a hidden base mutation", {
       helper <- rlang::call2(paste0("share_of_", kind), quote(value))
       for (removal in removals) {
         functions <- rlang::env(
-          baseenv(), rm = structure(function(...) NULL, class = "genericFunction")
+          baseenv(),
+          rm = structure(function(...) NULL, class = "genericFunction")
         )
         scope <- rlang::env(
           rm = function(...) NULL, functions = functions,

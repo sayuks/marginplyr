@@ -4606,7 +4606,8 @@ scope_callee_is_shadowed <- function(callee, name, bound, lookup) {
   }
   binding <- if (own_lookup) {
     if (!exists(name, envir = env, inherits = FALSE) ||
-          bindingIsActive(name, env) || rlang::env_binding_are_lazy(env, name)) {
+          bindingIsActive(name, env) ||
+          rlang::env_binding_are_lazy(env, name)) {
       return(FALSE)
     }
     get(name, envir = env, inherits = FALSE)
