@@ -16,10 +16,9 @@ instructions were updated together. The
 [retirement guide](../../tools/review-ready-admission.md) records the operation.
 Old worktrees and their existing sessions are outside migration scope.
 
-Cutover completion does not establish a package-check result. Real `source`
-and `full` acceptance runs on the integrated committed revision remain pending;
-record their pinned SHA and terminal outcomes separately before claiming that
-revision ready for review.
+Cutover completion does not establish a package-check result.
+[PR #1124](https://github.com/sayuks/marginplyr/pull/1124) records real `source`
+and `full` results by pinned SHA, retained execution handle and terminal outcome.
 
 ## Boundary and scope
 

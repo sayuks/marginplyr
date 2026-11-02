@@ -4,9 +4,9 @@
 workflow. The [specification](../design/specs/review-ready-repository-runner.md)
 and [ADR 0039](../design/adr/0039-run-review-ready-from-the-target-worktree.md)
 own the accepted design. The repository entry below became active in the
-[drained Mac cutover](review-ready-admission.md) on 2026-11-02. Real production
-`source` and `full` acceptance on the integrated committed revision is still
-pending; cutover alone is not a check result.
+[drained Mac cutover](review-ready-admission.md) on 2026-11-02. Cutover alone is
+not a check result; [PR #1124](https://github.com/sayuks/marginplyr/pull/1124)
+records per-revision `source` and `full` results.
 
 ## Setup and invocation
 
