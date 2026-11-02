@@ -30,7 +30,7 @@ run_external_selector <- function(data, expression, named, preceding,
 
 # The selectors and independent-summary control differ only at the public call.
 expect_external_selectors <- function(data) {
-  withr::local_options(lifecycle_verbosity = "warning")
+  rlang::local_options(lifecycle_verbosity = "warning")
   expressions <- rlang::exprs(
     dplyr::across(cols, sum),
     dplyr::across(dplyr::all_of(cols), sum),
@@ -70,7 +70,7 @@ expect_external_selectors <- function(data) {
 }
 
 test_that("first local selections preserve external binding evaluation", {
-  withr::local_options(lifecycle_verbosity = "warning")
+  rlang::local_options(lifecycle_verbosity = "warning")
   data <- data.frame(g = c("a", "a", "b"), x = 1:3, y = 5:7)
   first <- run_external_selector(
     data, quote(dplyr::across(cols, sum)), named = FALSE, preceding = FALSE,
