@@ -202,7 +202,8 @@ local({
   git(repo, "rm", "--quiet", "jarl-failure")
   git(repo, "commit", "--quiet", "-m", "repair preflight")
   submitted <- git(repo, "rev-parse", "HEAD")
-  waiter <- start(repo, "full")
+  waiter <- start(repo, "full", c(R_PROFILE_USER = file.path(root, "tools", "fixtures",
+    "review-ready-error-trace.R")))
   deadline <- Sys.time() + 30
   repeat {
     drain_output(waiter, 100L)
