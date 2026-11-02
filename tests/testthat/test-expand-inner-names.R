@@ -1,4 +1,4 @@
-test_that("expansion combines summary payloads using ordinary inner-name repair", {
+test_that("expansion applies ordinary inner-name repair to summary payloads", {
   input <- tibble::tibble(g = "a", payload = summary(1)[1L])
   control <- suppressMessages(dplyr::union_all(
     input, dplyr::mutate(input, g = "Total")
@@ -30,9 +30,8 @@ test_that("public suffix names remain exact while inner names are repaired", {
 
 # Ordinary branch mutation and binding supply the class-combination oracle;
 # neither the fixture nor the assertions restore attributes (ADR 0016).
-expect_ordinary_inner_name_expansion <- function(convert,
-                                                kinds = c("summary", "table"),
-                                                packed_columns = c(FALSE, TRUE)) {
+expect_inner_name_expansion <- function(convert, kinds = c("summary", "table"),
+                                        packed_columns = c(FALSE, TRUE)) {
   values <- list(summary = summary(1:3), table = table(c("a", "b", "b")))
   plans <- list(
     rollup = c(TRUE, FALSE),
@@ -61,7 +60,11 @@ expect_ordinary_inner_name_expansion <- function(convert,
             for (plan_name in names(plans)) {
               included <- plans[[plan_name]]
               sets <- lapply(included, function(keep) {
-                if (keep) grouping_set(dplyr::all_of(dimension)) else grouping_set()
+                if (keep) {
+                  grouping_set(dplyr::all_of(dimension))
+                } else {
+                  grouping_set()
+                }
               })
               spec <- grouping_sets(!!!sets)
               branches <- lapply(seq_along(included), function(i) {
@@ -92,9 +95,13 @@ expect_ordinary_inner_name_expansion <- function(convert,
                 ))
                 result <- dplyr::arrange(result, .data$set, .data$row)
                 expect_identical(names(result), names(control), info = info)
-                expect_identical(nrow(result), size * length(included), info = info)
+                expect_identical(
+                  nrow(result), size * length(included), info = info
+                )
                 for (column in names(control)) {
-                  expect_identical(result[[column]], control[[column]], info = info)
+                  expect_identical(
+                    result[[column]], control[[column]], info = info
+                  )
                 }
               }
             }
@@ -107,17 +114,17 @@ expect_ordinary_inner_name_expansion <- function(convert,
 }
 
 test_that("data-frame expansion follows ordinary vector-internal name rules", {
-  expect_ordinary_inner_name_expansion(identity)
+  expect_inner_name_expansion(identity)
 })
 
 test_that("tibble expansion follows ordinary vector-internal name rules", {
-  expect_ordinary_inner_name_expansion(tibble::as_tibble)
+  expect_inner_name_expansion(tibble::as_tibble)
 })
 
 test_that("data-table expansion follows ordinary vector-internal name rules", {
   skip_if_suggest_absent("data.table")
   # Ordinary data.table binding cannot combine these table or packed columns.
-  expect_ordinary_inner_name_expansion(
+  expect_inner_name_expansion(
     data.table::as.data.table, kinds = "summary", packed_columns = FALSE
   )
 })
