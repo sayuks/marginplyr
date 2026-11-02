@@ -30,7 +30,9 @@ test_that("known fixed-key overlaps precede unsafe dtplyr metadata", {
         } else {
           first
         }
-        mixed <- expect_error(verb(input, !!by, spec), class = "marginplyr_error")
+        mixed <- expect_error(
+          verb(input, !!by, spec), class = "marginplyr_error"
+        )
         expect_identical(conditionMessage(mixed), conditionMessage(original))
       }
     }
@@ -262,7 +264,8 @@ test_that("DuckDB leading selection failures invoke no metadata query", {
   }
   expect_identical(predicates, 0L)
 
-  for (spec in leading_error_specs(quote(x), rlang::quo(where(numeric_column)))) {
+  specs <- leading_error_specs(quote(x), rlang::quo(where(numeric_column)))
+  for (spec in specs) {
     for (verb in verbs) {
       original <- expect_error(verb(data, x, grouping_set(x)))
       mixed <- expect_error(verb(remote, x, spec), class = "marginplyr_error")
