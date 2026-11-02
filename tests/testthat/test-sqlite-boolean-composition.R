@@ -155,3 +155,37 @@ test_that("SQLite Boolean-word composition beside .env stays lazy", {
     dplyr::arrange(actual, .data$set, .data[["FALSE"]]), expected
   )
 })
+
+test_that("SQLite Boolean-word aliases survive repeated query layers", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(
+    con, data.frame(`TRUE` = c("b", "a"), `FALSE` = c(7L, 19L),
+                    .env = c("x", "y"), check.names = FALSE), "layer_source"
+  )
+  query <- expand_with_margins(
+    source, .grouping = rollup(dplyr::all_of("TRUE")), .id = "set"
+  )
+  derived <- query |>
+    dplyr::mutate(..MARGINPLYR_BOOLEAN_1 = 99L) |>
+    dplyr::mutate(changed = .data[["FALSE"]] + .data$..MARGINPLYR_BOOLEAN_1) |>
+    dplyr::select(-dplyr::all_of("..MARGINPLYR_BOOLEAN_1")) |>
+    dplyr::filter(.data$changed > 110L)
+  expected <- data.frame(
+    `TRUE` = c("a", "Total"), set = c(1L, 2L), `FALSE` = c(19L, 19L),
+    .env = c("y", "y"), changed = c(118L, 118L), check.names = FALSE
+  )
+  for (cte in c(FALSE, TRUE)) {
+    actual <- as.data.frame(dplyr::collect(
+      derived, sql_options = dbplyr::sql_options(cte = cte)
+    ))
+    expect_identical(dplyr::arrange(actual, .data$set), expected)
+    limited <- as.data.frame(dplyr::collect(derived, n = 1L))
+    expect_identical(names(limited), names(expected))
+    expect_identical(nrow(limited), 1L)
+    expect_identical(limited[["FALSE"]], 19L)
+    expect_identical(limited$changed, 118L)
+  }
+  expect_identical(dplyr::collect(query)[["FALSE"]], c(7L, 19L, 7L, 19L))
+})

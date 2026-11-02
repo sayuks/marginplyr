@@ -4,7 +4,38 @@ sqlite_boolean_columns <- function(names) {
   names[tolower(names) %in% c("true", "false")]
 }
 
-# Keep Boolean-word outputs private below the direct result boundary (#826).
+# Repair aliases at final rendering after ordinary verbs add query layers.
+# The caller holds a derived live SQLite result; types and order stay delegated.
+sqlite_boolean_derived_query <- function(result) {
+  columns <- sqlite_boolean_query_columns(result$lazy_query)
+  boolean <- sqlite_boolean_columns(columns)
+  if (length(boolean) == 0L) {
+    return(result)
+  }
+  aliases <- stats::setNames(new_margin_internal_names(
+    length(boolean), columns, prefix = "..marginplyr_boolean_",
+    backend = grouping_backend(result)
+  ), boolean)
+  result <- sqlite_boolean_query(result, source = NULL, aliases = aliases)
+  sql_quote_generated_columns(result)
+}
+
+# All output names in the select/union graph the alias rewrite can traverse.
+# Include hidden intermediate outputs when allocating fresh private aliases.
+sqlite_boolean_query_columns <- function(query) {
+  columns <- dbplyr::op_vars(query)
+  if (inherits(query, c("lazy_select_query", "lazy_union_query"))) {
+    columns <- c(columns, sqlite_boolean_query_columns(query$x))
+  }
+  if (inherits(query, "lazy_union_query")) {
+    columns <- c(columns, unlist(lapply(query$unions$table, function(table) {
+      sqlite_boolean_query_columns(table$lazy_query)
+    }), use.names = FALSE))
+  }
+  unique(columns)
+}
+
+# Keep Boolean-word outputs private below the outermost result projection.
 # The source query remains untouched; aliases are allocated against all known
 # source and result names. `public` leaves only the outermost aliases public.
 sqlite_boolean_query <- function(result, source, aliases, public = TRUE) {
