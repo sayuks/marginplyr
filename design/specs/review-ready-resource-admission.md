@@ -1,131 +1,21 @@
 # Coordinate local review-ready checks across worktrees
 
-Status: accepted design, amended by
-[issue #1108](https://github.com/sayuks/marginplyr/issues/1108) for independent
-Documentation and Repository supervision. The original common-slot implementation
-is tracked in [issue #1065](https://github.com/sayuks/marginplyr/issues/1065).
+Status: historical; superseded by the consolidated 2026-11-02
+[#1114](https://github.com/sayuks/marginplyr/issues/1114) specification in
+[repository-owned Review-ready runner](review-ready-repository-runner.md).
+[ADR 0039](../adr/0039-run-review-ready-from-the-target-worktree.md) records
+the amended decision. [Local checks](../agents/local-checks.md) owns the active
+entry and rollout state.
 
-The common-installation delivery direction is superseded in design by
-[ADR 0039](../adr/0039-run-review-ready-from-the-target-worktree.md).
-Admission and lifecycle requirements remain in force; the installed command
-remains the operational entry point until the replacement is implemented.
+The original shared-slot safeguard addressed concurrent four-worker checks in
+[#1065](https://github.com/sayuks/marginplyr/issues/1065).
+[#1108](https://github.com/sayuks/marginplyr/issues/1108) subsequently added
+independently supervised Documentation/Repository paths. The simplified design
+retains one heavy slot across this user's clones/worktrees, but runs the five
+mandatory checks before waiting and lets the AI choose source or full with a
+reason. Automatic classification, independent supervision protocols and strict
+recovery are retired.
 
-## Problem
-
-The user reported on 2026-10-30 that four or five concurrent worktree checks
-made the Mac unresponsive enough to require a restart. The pre-restart CPU,
-memory, and swap measurements are unavailable, so their relative contributions
-are not established.
-
-At the inspected main commit `b5f851a25b227eb511127b4fef19d60817bbbc71`,
-`review_ready_rcmdcheck_env()` configures four test workers per check and there
-is no shared admission limit. Several worktrees can therefore multiply the
-number of test workers. Build and vignette rendering are also part of the
-check, so limiting only its test stage would leave other heavy stages free to
-overlap.
-
-The existing [local-check policy](../agents/local-checks.md) remains the
-authority for what a Review-ready check proves and how its terminal evidence
-is retained. Progress and a released execution slot are not success evidence.
-
-## Settled decisions
-
-- Apply the initial safeguard to Review-ready checks across worktrees. Other
-  full test runs, coverage, preflight, and site rendering are outside this
-  initial scope.
-- Prefer Mac responsiveness and stability, accepting longer waits for an
-  individual branch to finish checking.
-- When capacity is occupied, wait automatically and start when capacity
-  becomes available. Waiting status messages are in English.
-- Use a common launch command and align agent instructions so existing
-  worktrees participate without first incorporating a change into every
-  branch. Direct execution of an older script would bypass this cooperative
-  limit; rollout must account for that entry point.
-- Share capacity across all marginplyr clones under the same user on the same
-  Mac. Other projects are outside this initial scope.
-- Keep execution control agent-neutral. Codex, Claude Code, Grok Build, other
-  AI agents, and a human terminal use the same CLI and admission mechanism.
-  Agent-specific instructions explain invocation; agent SDKs, plugins,
-  instruction formats, or agent-owned directories do not own the safeguard.
-- Admit at most one complete Full Review-ready check at a time, retaining four
-  internal test workers through lint, build, rendering, tests, retry and cleanup.
-  Eligible Documentation and Repository requests start independently without
-  that slot or a separate aggregate limit. Their trusted stage contracts and
-  installed source capabilities restrict limited verification to serial tests
-  and registered small parallel-behavior fixtures using at most two test workers.
-  Unclassified workloads require Full. Two concurrent Full checks with four workers each are a later candidate,
-  not the initial default. Compare responsiveness, memory pressure, swap growth,
-  and completion time before deciding whether to adopt that configuration.
-- Require a clean committed HEAD and pin that commit before waiting.
-  Immediately before admission,
-  cancel the request if HEAD changed or the worktree became dirty. Report the
-  cancellation rather than silently selecting another commit; the caller must
-  submit a fresh request.
-- Do not require strict FIFO ordering. A later request may acquire capacity
-  before an earlier waiter; automatic waiting does not promise a queue position
-  or a bounded waiting time.
-- Observe cancellation at the common CLI boundary: an explicit cancellation
-  notification, or termination of the CLI or its management process. Stop the
-  request's owned child processes and return capacity only after confirming
-  their shutdown.
-  If abnormal termination leaves shutdown unconfirmed, preserve that request's
-  recovery record. Full uncertainty protects Full admission; an unfinished exempt
-  request alone does not block other requests.
-- Do not infer cancellation merely because an AI conversation or user interface
-  closes. Its execution backend may continue running. Callers retain the
-  execution handle and propagate cancellation through their execution tool.
-  Product-specific application/session termination detection is not required
-  by the initial implementation.
-
-## Interface and rollout
-
-The common command is `marginplyr-review-ready`, invoked from the target
-worktree. Its stable installation and shared state live in user-scoped,
-agent-independent locations. It dispatches the worktree's existing fixed
-Review-ready check, keeping that check's source and terminal evidence intact.
-Missing setup fails with an English explanation; it does not fall back to an
-unrestricted direct invocation.
-
-Full waiting processes do not start dependency loading, lint, build, rendering,
-or tests. Exempt requests have their own supervision, output and disposable source.
-If later eligibility requires Full, stop and collect preparation, authenticate and
-persist the transition, then acquire Full and revalidate the pinned submission
-before running the entire Full gate under the same request and execution handle.
-English waiting output identifies the requested commit, elapsed wait,
-and the active check where known. It promises neither a queue position nor an
-ETA. The launched command remains attached to one retained execution handle
-through waiting, checking, cleanup, and terminal completion; queue registration
-or admission alone is not a successful exit.
-
-Rollout includes installing the common command, exposing it to each execution
-environment in use, and updating applicable agent instructions for marginplyr.
-Existing sessions must acknowledge the new entry point before starting another
-check; refresh or restart those sessions when necessary. Old worktrees need
-not merge the change merely to invoke the common launcher. This is a
-cooperative command boundary: an unmodified old script invoked directly does
-not participate and cannot be described as protected.
-
-Automatic load-based tuning, result caching, shared results between requests,
-and agent-specific background job services are outside the initial
-implementation. Each admitted request retains its own check outcome. Two
-concurrent four-worker checks remain a separate, later measurement.
-
-## Verification before rollout
-
-- Use lightweight subprocess fixtures from distinct worktrees and clones to
-  prove exempt requests start while Full runs or needs recovery, while another
-  Full waits. Exercise simultaneous promotion and isolated request recovery.
-- Exercise cancellation while waiting and running, abnormal launcher exit,
-  stale commits, dirty worktrees, and incomplete cleanup. Unknown cleanup
-  blocks admission instead of reporting success or guessing that resources
-  have been released.
-- Preserve the complete check and its exact SHA/terminal-result evidence.
-  Run one real Review-ready check only after the safeguard is in place.
-- Verify the shared command from the execution environments actually used,
-  without making product-specific integrations part of its core.
-
-## Implementation reference
-
-[Shared admission](../../tools/review-ready-admission.md) owns the implemented
-CLI contract, platform support, installation, and session migration. The local
-check policy remains authoritative for the fixed gate and its evidence.
+The [original specification](https://github.com/sayuks/marginplyr/blob/1a9dd00a/design/specs/review-ready-resource-admission.md)
+preserves the acceptance cases and operating assumptions of that generation.
+It is history, not a current implementation or rollout requirement.
