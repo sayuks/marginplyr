@@ -1,0 +1,1006 @@
+"value","shape","parens","parent","reads","match","observed"
+"null","binding",0,"grouping_set",1,TRUE,""
+"null","binding",0,"grouping_sets",1,TRUE,""
+"null","binding",0,"rollup",1,TRUE,"`rollup()` requires at least one dimension."
+"null","binding",0,"cube",1,TRUE,"`cube()` requires at least one dimension."
+"null","binding",0,"grouping_spec",1,TRUE,""
+"null","binding",1,"grouping_set",1,TRUE,""
+"null","binding",1,"grouping_sets",1,TRUE,""
+"null","binding",1,"rollup",1,TRUE,"`rollup()` requires at least one dimension."
+"null","binding",1,"cube",1,TRUE,"`cube()` requires at least one dimension."
+"null","binding",1,"grouping_spec",1,TRUE,""
+"null","binding",2,"grouping_set",1,TRUE,""
+"null","binding",2,"grouping_sets",1,TRUE,""
+"null","binding",2,"rollup",1,TRUE,"`rollup()` requires at least one dimension."
+"null","binding",2,"cube",1,TRUE,"`cube()` requires at least one dimension."
+"null","binding",2,"grouping_spec",1,TRUE,""
+"null","constructor_call",0,"grouping_set",1,TRUE,""
+"null","constructor_call",0,"grouping_sets",1,TRUE,""
+"null","constructor_call",0,"rollup",1,TRUE,"`rollup()` requires at least one dimension."
+"null","constructor_call",0,"cube",1,TRUE,"`cube()` requires at least one dimension."
+"null","constructor_call",0,"grouping_spec",1,TRUE,""
+"null","constructor_call",1,"grouping_set",1,TRUE,""
+"null","constructor_call",1,"grouping_sets",1,TRUE,""
+"null","constructor_call",1,"rollup",1,TRUE,"`rollup()` requires at least one dimension."
+"null","constructor_call",1,"cube",1,TRUE,"`cube()` requires at least one dimension."
+"null","constructor_call",1,"grouping_spec",1,TRUE,""
+"null","constructor_call",2,"grouping_set",1,TRUE,""
+"null","constructor_call",2,"grouping_sets",1,TRUE,""
+"null","constructor_call",2,"rollup",1,TRUE,"`rollup()` requires at least one dimension."
+"null","constructor_call",2,"cube",1,TRUE,"`cube()` requires at least one dimension."
+"null","constructor_call",2,"grouping_spec",1,TRUE,""
+"empty_integer","binding",0,"grouping_set",1,TRUE,""
+"empty_integer","binding",0,"grouping_sets",1,TRUE,""
+"empty_integer","binding",0,"rollup",1,TRUE,"`rollup()` requires at least one dimension."
+"empty_integer","binding",0,"cube",1,TRUE,"`cube()` requires at least one dimension."
+"empty_integer","binding",0,"grouping_spec",1,TRUE,""
+"empty_integer","binding",1,"grouping_set",1,TRUE,""
+"empty_integer","binding",1,"grouping_sets",1,TRUE,""
+"empty_integer","binding",1,"rollup",1,TRUE,"`rollup()` requires at least one dimension."
+"empty_integer","binding",1,"cube",1,TRUE,"`cube()` requires at least one dimension."
+"empty_integer","binding",1,"grouping_spec",1,TRUE,""
+"empty_integer","binding",2,"grouping_set",1,TRUE,""
+"empty_integer","binding",2,"grouping_sets",1,TRUE,""
+"empty_integer","binding",2,"rollup",1,TRUE,"`rollup()` requires at least one dimension."
+"empty_integer","binding",2,"cube",1,TRUE,"`cube()` requires at least one dimension."
+"empty_integer","binding",2,"grouping_spec",1,TRUE,""
+"empty_integer","constructor_call",0,"grouping_set",1,TRUE,""
+"empty_integer","constructor_call",0,"grouping_sets",1,TRUE,""
+"empty_integer","constructor_call",0,"rollup",1,TRUE,"`rollup()` requires at least one dimension."
+"empty_integer","constructor_call",0,"cube",1,TRUE,"`cube()` requires at least one dimension."
+"empty_integer","constructor_call",0,"grouping_spec",1,TRUE,""
+"empty_integer","constructor_call",1,"grouping_set",1,TRUE,""
+"empty_integer","constructor_call",1,"grouping_sets",1,TRUE,""
+"empty_integer","constructor_call",1,"rollup",1,TRUE,"`rollup()` requires at least one dimension."
+"empty_integer","constructor_call",1,"cube",1,TRUE,"`cube()` requires at least one dimension."
+"empty_integer","constructor_call",1,"grouping_spec",1,TRUE,""
+"empty_integer","constructor_call",2,"grouping_set",1,TRUE,""
+"empty_integer","constructor_call",2,"grouping_sets",1,TRUE,""
+"empty_integer","constructor_call",2,"rollup",1,TRUE,"`rollup()` requires at least one dimension."
+"empty_integer","constructor_call",2,"cube",1,TRUE,"`cube()` requires at least one dimension."
+"empty_integer","constructor_call",2,"grouping_spec",1,TRUE,""
+"empty_character","binding",0,"grouping_set",1,TRUE,""
+"empty_character","binding",0,"grouping_sets",1,TRUE,""
+"empty_character","binding",0,"rollup",1,TRUE,"`rollup()` requires at least one dimension."
+"empty_character","binding",0,"cube",1,TRUE,"`cube()` requires at least one dimension."
+"empty_character","binding",0,"grouping_spec",1,TRUE,""
+"empty_character","binding",1,"grouping_set",1,TRUE,""
+"empty_character","binding",1,"grouping_sets",1,TRUE,""
+"empty_character","binding",1,"rollup",1,TRUE,"`rollup()` requires at least one dimension."
+"empty_character","binding",1,"cube",1,TRUE,"`cube()` requires at least one dimension."
+"empty_character","binding",1,"grouping_spec",1,TRUE,""
+"empty_character","binding",2,"grouping_set",1,TRUE,""
+"empty_character","binding",2,"grouping_sets",1,TRUE,""
+"empty_character","binding",2,"rollup",1,TRUE,"`rollup()` requires at least one dimension."
+"empty_character","binding",2,"cube",1,TRUE,"`cube()` requires at least one dimension."
+"empty_character","binding",2,"grouping_spec",1,TRUE,""
+"empty_character","constructor_call",0,"grouping_set",1,TRUE,""
+"empty_character","constructor_call",0,"grouping_sets",1,TRUE,""
+"empty_character","constructor_call",0,"rollup",1,TRUE,"`rollup()` requires at least one dimension."
+"empty_character","constructor_call",0,"cube",1,TRUE,"`cube()` requires at least one dimension."
+"empty_character","constructor_call",0,"grouping_spec",1,TRUE,""
+"empty_character","constructor_call",1,"grouping_set",1,TRUE,""
+"empty_character","constructor_call",1,"grouping_sets",1,TRUE,""
+"empty_character","constructor_call",1,"rollup",1,TRUE,"`rollup()` requires at least one dimension."
+"empty_character","constructor_call",1,"cube",1,TRUE,"`cube()` requires at least one dimension."
+"empty_character","constructor_call",1,"grouping_spec",1,TRUE,""
+"empty_character","constructor_call",2,"grouping_set",1,TRUE,""
+"empty_character","constructor_call",2,"grouping_sets",1,TRUE,""
+"empty_character","constructor_call",2,"rollup",1,TRUE,"`rollup()` requires at least one dimension."
+"empty_character","constructor_call",2,"cube",1,TRUE,"`cube()` requires at least one dimension."
+"empty_character","constructor_call",2,"grouping_spec",1,TRUE,""
+"first","binding",0,"grouping_set",1,TRUE,"a"
+"first","binding",0,"grouping_sets",1,TRUE,"a"
+"first","binding",0,"rollup",1,TRUE,"a"
+"first","binding",0,"cube",1,TRUE,"a"
+"first","binding",0,"grouping_spec",1,TRUE,"a"
+"first","binding",1,"grouping_set",1,TRUE,"a"
+"first","binding",1,"grouping_sets",1,TRUE,"a"
+"first","binding",1,"rollup",1,TRUE,"a"
+"first","binding",1,"cube",1,TRUE,"a"
+"first","binding",1,"grouping_spec",1,TRUE,"a"
+"first","binding",2,"grouping_set",1,TRUE,"a"
+"first","binding",2,"grouping_sets",1,TRUE,"a"
+"first","binding",2,"rollup",1,TRUE,"a"
+"first","binding",2,"cube",1,TRUE,"a"
+"first","binding",2,"grouping_spec",1,TRUE,"a"
+"first","constructor_call",0,"grouping_set",1,TRUE,"a"
+"first","constructor_call",0,"grouping_sets",1,TRUE,"a"
+"first","constructor_call",0,"rollup",1,TRUE,"a"
+"first","constructor_call",0,"cube",1,TRUE,"a"
+"first","constructor_call",0,"grouping_spec",1,TRUE,"a"
+"first","constructor_call",1,"grouping_set",1,TRUE,"a"
+"first","constructor_call",1,"grouping_sets",1,TRUE,"a"
+"first","constructor_call",1,"rollup",1,TRUE,"a"
+"first","constructor_call",1,"cube",1,TRUE,"a"
+"first","constructor_call",1,"grouping_spec",1,TRUE,"a"
+"first","constructor_call",2,"grouping_set",1,TRUE,"a"
+"first","constructor_call",2,"grouping_sets",1,TRUE,"a"
+"first","constructor_call",2,"rollup",1,TRUE,"a"
+"first","constructor_call",2,"cube",1,TRUE,"a"
+"first","constructor_call",2,"grouping_spec",1,TRUE,"a"
+"negative","binding",0,"grouping_set",1,TRUE,"Selections can't have negative values."
+"negative","binding",0,"grouping_sets",1,TRUE,"Selections can't have negative values."
+"negative","binding",0,"rollup",1,TRUE,"Selections can't have negative values."
+"negative","binding",0,"cube",1,TRUE,"Selections can't have negative values."
+"negative","binding",0,"grouping_spec",1,TRUE,"Selections can't have negative values."
+"negative","binding",1,"grouping_set",1,TRUE,"Selections can't have negative values."
+"negative","binding",1,"grouping_sets",1,TRUE,"Selections can't have negative values."
+"negative","binding",1,"rollup",1,TRUE,"Selections can't have negative values."
+"negative","binding",1,"cube",1,TRUE,"Selections can't have negative values."
+"negative","binding",1,"grouping_spec",1,TRUE,"Selections can't have negative values."
+"negative","binding",2,"grouping_set",1,TRUE,"Selections can't have negative values."
+"negative","binding",2,"grouping_sets",1,TRUE,"Selections can't have negative values."
+"negative","binding",2,"rollup",1,TRUE,"Selections can't have negative values."
+"negative","binding",2,"cube",1,TRUE,"Selections can't have negative values."
+"negative","binding",2,"grouping_spec",1,TRUE,"Selections can't have negative values."
+"negative","constructor_call",0,"grouping_set",1,TRUE,"Selections can't have negative values."
+"negative","constructor_call",0,"grouping_sets",1,TRUE,"Selections can't have negative values."
+"negative","constructor_call",0,"rollup",1,TRUE,"Selections can't have negative values."
+"negative","constructor_call",0,"cube",1,TRUE,"Selections can't have negative values."
+"negative","constructor_call",0,"grouping_spec",1,TRUE,"Selections can't have negative values."
+"negative","constructor_call",1,"grouping_set",1,TRUE,"Selections can't have negative values."
+"negative","constructor_call",1,"grouping_sets",1,TRUE,"Selections can't have negative values."
+"negative","constructor_call",1,"rollup",1,TRUE,"Selections can't have negative values."
+"negative","constructor_call",1,"cube",1,TRUE,"Selections can't have negative values."
+"negative","constructor_call",1,"grouping_spec",1,TRUE,"Selections can't have negative values."
+"negative","constructor_call",2,"grouping_set",1,TRUE,"Selections can't have negative values."
+"negative","constructor_call",2,"grouping_sets",1,TRUE,"Selections can't have negative values."
+"negative","constructor_call",2,"rollup",1,TRUE,"Selections can't have negative values."
+"negative","constructor_call",2,"cube",1,TRUE,"Selections can't have negative values."
+"negative","constructor_call",2,"grouping_spec",1,TRUE,"Selections can't have negative values."
+"all","binding",0,"grouping_set",1,TRUE,"a,b,c"
+"all","binding",0,"grouping_sets",1,TRUE,"a,b,c"
+"all","binding",0,"rollup",1,TRUE,"a,b,c"
+"all","binding",0,"cube",1,TRUE,"a,b,c"
+"all","binding",0,"grouping_spec",1,TRUE,"a,b,c"
+"all","binding",1,"grouping_set",1,TRUE,"a,b,c"
+"all","binding",1,"grouping_sets",1,TRUE,"a,b,c"
+"all","binding",1,"rollup",1,TRUE,"a,b,c"
+"all","binding",1,"cube",1,TRUE,"a,b,c"
+"all","binding",1,"grouping_spec",1,TRUE,"a,b,c"
+"all","binding",2,"grouping_set",1,TRUE,"a,b,c"
+"all","binding",2,"grouping_sets",1,TRUE,"a,b,c"
+"all","binding",2,"rollup",1,TRUE,"a,b,c"
+"all","binding",2,"cube",1,TRUE,"a,b,c"
+"all","binding",2,"grouping_spec",1,TRUE,"a,b,c"
+"all","constructor_call",0,"grouping_set",1,TRUE,"a,b,c"
+"all","constructor_call",0,"grouping_sets",1,TRUE,"a,b,c"
+"all","constructor_call",0,"rollup",1,TRUE,"a,b,c"
+"all","constructor_call",0,"cube",1,TRUE,"a,b,c"
+"all","constructor_call",0,"grouping_spec",1,TRUE,"a,b,c"
+"all","constructor_call",1,"grouping_set",1,TRUE,"a,b,c"
+"all","constructor_call",1,"grouping_sets",1,TRUE,"a,b,c"
+"all","constructor_call",1,"rollup",1,TRUE,"a,b,c"
+"all","constructor_call",1,"cube",1,TRUE,"a,b,c"
+"all","constructor_call",1,"grouping_spec",1,TRUE,"a,b,c"
+"all","constructor_call",2,"grouping_set",1,TRUE,"a,b,c"
+"all","constructor_call",2,"grouping_sets",1,TRUE,"a,b,c"
+"all","constructor_call",2,"rollup",1,TRUE,"a,b,c"
+"all","constructor_call",2,"cube",1,TRUE,"a,b,c"
+"all","constructor_call",2,"grouping_spec",1,TRUE,"a,b,c"
+"truth","binding",0,"grouping_set",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not `TRUE`."
+"truth","binding",0,"grouping_sets",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not `TRUE`."
+"truth","binding",0,"rollup",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not `TRUE`."
+"truth","binding",0,"cube",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not `TRUE`."
+"truth","binding",0,"grouping_spec",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not `TRUE`."
+"truth","binding",1,"grouping_set",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not `TRUE`."
+"truth","binding",1,"grouping_sets",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not `TRUE`."
+"truth","binding",1,"rollup",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not `TRUE`."
+"truth","binding",1,"cube",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not `TRUE`."
+"truth","binding",1,"grouping_spec",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not `TRUE`."
+"truth","binding",2,"grouping_set",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not `TRUE`."
+"truth","binding",2,"grouping_sets",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not `TRUE`."
+"truth","binding",2,"rollup",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not `TRUE`."
+"truth","binding",2,"cube",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not `TRUE`."
+"truth","binding",2,"grouping_spec",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not `TRUE`."
+"truth","constructor_call",0,"grouping_set",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not `TRUE`."
+"truth","constructor_call",0,"grouping_sets",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not `TRUE`."
+"truth","constructor_call",0,"rollup",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not `TRUE`."
+"truth","constructor_call",0,"cube",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not `TRUE`."
+"truth","constructor_call",0,"grouping_spec",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not `TRUE`."
+"truth","constructor_call",1,"grouping_set",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not `TRUE`."
+"truth","constructor_call",1,"grouping_sets",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not `TRUE`."
+"truth","constructor_call",1,"rollup",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not `TRUE`."
+"truth","constructor_call",1,"cube",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not `TRUE`."
+"truth","constructor_call",1,"grouping_spec",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not `TRUE`."
+"truth","constructor_call",2,"grouping_set",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not `TRUE`."
+"truth","constructor_call",2,"grouping_sets",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not `TRUE`."
+"truth","constructor_call",2,"rollup",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not `TRUE`."
+"truth","constructor_call",2,"cube",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not `TRUE`."
+"truth","constructor_call",2,"grouping_spec",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not `TRUE`."
+"falsehood","binding",0,"grouping_set",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not `FALSE`."
+"falsehood","binding",0,"grouping_sets",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not `FALSE`."
+"falsehood","binding",0,"rollup",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not `FALSE`."
+"falsehood","binding",0,"cube",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not `FALSE`."
+"falsehood","binding",0,"grouping_spec",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not `FALSE`."
+"falsehood","binding",1,"grouping_set",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not `FALSE`."
+"falsehood","binding",1,"grouping_sets",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not `FALSE`."
+"falsehood","binding",1,"rollup",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not `FALSE`."
+"falsehood","binding",1,"cube",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not `FALSE`."
+"falsehood","binding",1,"grouping_spec",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not `FALSE`."
+"falsehood","binding",2,"grouping_set",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not `FALSE`."
+"falsehood","binding",2,"grouping_sets",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not `FALSE`."
+"falsehood","binding",2,"rollup",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not `FALSE`."
+"falsehood","binding",2,"cube",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not `FALSE`."
+"falsehood","binding",2,"grouping_spec",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not `FALSE`."
+"falsehood","constructor_call",0,"grouping_set",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not `FALSE`."
+"falsehood","constructor_call",0,"grouping_sets",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not `FALSE`."
+"falsehood","constructor_call",0,"rollup",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not `FALSE`."
+"falsehood","constructor_call",0,"cube",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not `FALSE`."
+"falsehood","constructor_call",0,"grouping_spec",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not `FALSE`."
+"falsehood","constructor_call",1,"grouping_set",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not `FALSE`."
+"falsehood","constructor_call",1,"grouping_sets",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not `FALSE`."
+"falsehood","constructor_call",1,"rollup",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not `FALSE`."
+"falsehood","constructor_call",1,"cube",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not `FALSE`."
+"falsehood","constructor_call",1,"grouping_spec",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not `FALSE`."
+"falsehood","constructor_call",2,"grouping_set",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not `FALSE`."
+"falsehood","constructor_call",2,"grouping_sets",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not `FALSE`."
+"falsehood","constructor_call",2,"rollup",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not `FALSE`."
+"falsehood","constructor_call",2,"cube",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not `FALSE`."
+"falsehood","constructor_call",2,"grouping_spec",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not `FALSE`."
+"missing","binding",0,"grouping_set",1,TRUE,"Selections can't have missing values."
+"missing","binding",0,"grouping_sets",1,TRUE,"Selections can't have missing values."
+"missing","binding",0,"rollup",1,TRUE,"Selections can't have missing values."
+"missing","binding",0,"cube",1,TRUE,"Selections can't have missing values."
+"missing","binding",0,"grouping_spec",1,TRUE,"Selections can't have missing values."
+"missing","binding",1,"grouping_set",1,TRUE,"Selections can't have missing values."
+"missing","binding",1,"grouping_sets",1,TRUE,"Selections can't have missing values."
+"missing","binding",1,"rollup",1,TRUE,"Selections can't have missing values."
+"missing","binding",1,"cube",1,TRUE,"Selections can't have missing values."
+"missing","binding",1,"grouping_spec",1,TRUE,"Selections can't have missing values."
+"missing","binding",2,"grouping_set",1,TRUE,"Selections can't have missing values."
+"missing","binding",2,"grouping_sets",1,TRUE,"Selections can't have missing values."
+"missing","binding",2,"rollup",1,TRUE,"Selections can't have missing values."
+"missing","binding",2,"cube",1,TRUE,"Selections can't have missing values."
+"missing","binding",2,"grouping_spec",1,TRUE,"Selections can't have missing values."
+"missing","constructor_call",0,"grouping_set",1,TRUE,"Selections can't have missing values."
+"missing","constructor_call",0,"grouping_sets",1,TRUE,"Selections can't have missing values."
+"missing","constructor_call",0,"rollup",1,TRUE,"Selections can't have missing values."
+"missing","constructor_call",0,"cube",1,TRUE,"Selections can't have missing values."
+"missing","constructor_call",0,"grouping_spec",1,TRUE,"Selections can't have missing values."
+"missing","constructor_call",1,"grouping_set",1,TRUE,"Selections can't have missing values."
+"missing","constructor_call",1,"grouping_sets",1,TRUE,"Selections can't have missing values."
+"missing","constructor_call",1,"rollup",1,TRUE,"Selections can't have missing values."
+"missing","constructor_call",1,"cube",1,TRUE,"Selections can't have missing values."
+"missing","constructor_call",1,"grouping_spec",1,TRUE,"Selections can't have missing values."
+"missing","constructor_call",2,"grouping_set",1,TRUE,"Selections can't have missing values."
+"missing","constructor_call",2,"grouping_sets",1,TRUE,"Selections can't have missing values."
+"missing","constructor_call",2,"rollup",1,TRUE,"Selections can't have missing values."
+"missing","constructor_call",2,"cube",1,TRUE,"Selections can't have missing values."
+"missing","constructor_call",2,"grouping_spec",1,TRUE,"Selections can't have missing values."
+"character","binding",0,"grouping_set",1,TRUE,"a"
+"character","binding",0,"grouping_sets",1,TRUE,"a"
+"character","binding",0,"rollup",1,TRUE,"a"
+"character","binding",0,"cube",1,TRUE,"a"
+"character","binding",0,"grouping_spec",1,TRUE,"a"
+"character","binding",1,"grouping_set",1,TRUE,"a"
+"character","binding",1,"grouping_sets",1,TRUE,"a"
+"character","binding",1,"rollup",1,TRUE,"a"
+"character","binding",1,"cube",1,TRUE,"a"
+"character","binding",1,"grouping_spec",1,TRUE,"a"
+"character","binding",2,"grouping_set",1,TRUE,"a"
+"character","binding",2,"grouping_sets",1,TRUE,"a"
+"character","binding",2,"rollup",1,TRUE,"a"
+"character","binding",2,"cube",1,TRUE,"a"
+"character","binding",2,"grouping_spec",1,TRUE,"a"
+"character","constructor_call",0,"grouping_set",1,TRUE,"a"
+"character","constructor_call",0,"grouping_sets",1,TRUE,"a"
+"character","constructor_call",0,"rollup",1,TRUE,"a"
+"character","constructor_call",0,"cube",1,TRUE,"a"
+"character","constructor_call",0,"grouping_spec",1,TRUE,"a"
+"character","constructor_call",1,"grouping_set",1,TRUE,"a"
+"character","constructor_call",1,"grouping_sets",1,TRUE,"a"
+"character","constructor_call",1,"rollup",1,TRUE,"a"
+"character","constructor_call",1,"cube",1,TRUE,"a"
+"character","constructor_call",1,"grouping_spec",1,TRUE,"a"
+"character","constructor_call",2,"grouping_set",1,TRUE,"a"
+"character","constructor_call",2,"grouping_sets",1,TRUE,"a"
+"character","constructor_call",2,"rollup",1,TRUE,"a"
+"character","constructor_call",2,"cube",1,TRUE,"a"
+"character","constructor_call",2,"grouping_spec",1,TRUE,"a"
+"characters","binding",0,"grouping_set",1,TRUE,"b,a"
+"characters","binding",0,"grouping_sets",1,TRUE,"b,a"
+"characters","binding",0,"rollup",1,TRUE,"b,a"
+"characters","binding",0,"cube",1,TRUE,"b,a"
+"characters","binding",0,"grouping_spec",1,TRUE,"b,a"
+"characters","binding",1,"grouping_set",1,TRUE,"b,a"
+"characters","binding",1,"grouping_sets",1,TRUE,"b,a"
+"characters","binding",1,"rollup",1,TRUE,"b,a"
+"characters","binding",1,"cube",1,TRUE,"b,a"
+"characters","binding",1,"grouping_spec",1,TRUE,"b,a"
+"characters","binding",2,"grouping_set",1,TRUE,"b,a"
+"characters","binding",2,"grouping_sets",1,TRUE,"b,a"
+"characters","binding",2,"rollup",1,TRUE,"b,a"
+"characters","binding",2,"cube",1,TRUE,"b,a"
+"characters","binding",2,"grouping_spec",1,TRUE,"b,a"
+"characters","constructor_call",0,"grouping_set",1,TRUE,"b,a"
+"characters","constructor_call",0,"grouping_sets",1,TRUE,"b,a"
+"characters","constructor_call",0,"rollup",1,TRUE,"b,a"
+"characters","constructor_call",0,"cube",1,TRUE,"b,a"
+"characters","constructor_call",0,"grouping_spec",1,TRUE,"b,a"
+"characters","constructor_call",1,"grouping_set",1,TRUE,"b,a"
+"characters","constructor_call",1,"grouping_sets",1,TRUE,"b,a"
+"characters","constructor_call",1,"rollup",1,TRUE,"b,a"
+"characters","constructor_call",1,"cube",1,TRUE,"b,a"
+"characters","constructor_call",1,"grouping_spec",1,TRUE,"b,a"
+"characters","constructor_call",2,"grouping_set",1,TRUE,"b,a"
+"characters","constructor_call",2,"grouping_sets",1,TRUE,"b,a"
+"characters","constructor_call",2,"rollup",1,TRUE,"b,a"
+"characters","constructor_call",2,"cube",1,TRUE,"b,a"
+"characters","constructor_call",2,"grouping_spec",1,TRUE,"b,a"
+"language","binding",0,"grouping_set",1,TRUE,"a"
+"language","binding",0,"grouping_sets",1,TRUE,"a"
+"language","binding",0,"rollup",1,TRUE,"a"
+"language","binding",0,"cube",1,TRUE,"a"
+"language","binding",0,"grouping_spec",1,TRUE,"a"
+"language","binding",1,"grouping_set",1,TRUE,"a"
+"language","binding",1,"grouping_sets",1,TRUE,"a"
+"language","binding",1,"rollup",1,TRUE,"a"
+"language","binding",1,"cube",1,TRUE,"a"
+"language","binding",1,"grouping_spec",1,TRUE,"a"
+"language","binding",2,"grouping_set",1,TRUE,"a"
+"language","binding",2,"grouping_sets",1,TRUE,"a"
+"language","binding",2,"rollup",1,TRUE,"a"
+"language","binding",2,"cube",1,TRUE,"a"
+"language","binding",2,"grouping_spec",1,TRUE,"a"
+"language","constructor_call",0,"grouping_set",1,TRUE,"a"
+"language","constructor_call",0,"grouping_sets",1,TRUE,"a"
+"language","constructor_call",0,"rollup",1,TRUE,"a"
+"language","constructor_call",0,"cube",1,TRUE,"a"
+"language","constructor_call",0,"grouping_spec",1,TRUE,"a"
+"language","constructor_call",1,"grouping_set",1,TRUE,"a"
+"language","constructor_call",1,"grouping_sets",1,TRUE,"a"
+"language","constructor_call",1,"rollup",1,TRUE,"a"
+"language","constructor_call",1,"cube",1,TRUE,"a"
+"language","constructor_call",1,"grouping_spec",1,TRUE,"a"
+"language","constructor_call",2,"grouping_set",1,TRUE,"a"
+"language","constructor_call",2,"grouping_sets",1,TRUE,"a"
+"language","constructor_call",2,"rollup",1,TRUE,"a"
+"language","constructor_call",2,"cube",1,TRUE,"a"
+"language","constructor_call",2,"grouping_spec",1,TRUE,"a"
+"call","binding",0,"grouping_set",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a call."
+"call","binding",0,"grouping_sets",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a call."
+"call","binding",0,"rollup",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a call."
+"call","binding",0,"cube",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a call."
+"call","binding",0,"grouping_spec",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a call."
+"call","binding",1,"grouping_set",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a call."
+"call","binding",1,"grouping_sets",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a call."
+"call","binding",1,"rollup",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a call."
+"call","binding",1,"cube",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a call."
+"call","binding",1,"grouping_spec",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a call."
+"call","binding",2,"grouping_set",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a call."
+"call","binding",2,"grouping_sets",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a call."
+"call","binding",2,"rollup",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a call."
+"call","binding",2,"cube",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a call."
+"call","binding",2,"grouping_spec",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a call."
+"call","constructor_call",0,"grouping_set",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a call."
+"call","constructor_call",0,"grouping_sets",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a call."
+"call","constructor_call",0,"rollup",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a call."
+"call","constructor_call",0,"cube",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a call."
+"call","constructor_call",0,"grouping_spec",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a call."
+"call","constructor_call",1,"grouping_set",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a call."
+"call","constructor_call",1,"grouping_sets",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a call."
+"call","constructor_call",1,"rollup",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a call."
+"call","constructor_call",1,"cube",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a call."
+"call","constructor_call",1,"grouping_spec",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a call."
+"call","constructor_call",2,"grouping_set",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a call."
+"call","constructor_call",2,"grouping_sets",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a call."
+"call","constructor_call",2,"rollup",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a call."
+"call","constructor_call",2,"cube",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a call."
+"call","constructor_call",2,"grouping_spec",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a call."
+"expression","binding",0,"grouping_set",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not an expression vector."
+"expression","binding",0,"grouping_sets",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not an expression vector."
+"expression","binding",0,"rollup",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not an expression vector."
+"expression","binding",0,"cube",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not an expression vector."
+"expression","binding",0,"grouping_spec",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not an expression vector."
+"expression","binding",1,"grouping_set",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not an expression vector."
+"expression","binding",1,"grouping_sets",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not an expression vector."
+"expression","binding",1,"rollup",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not an expression vector."
+"expression","binding",1,"cube",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not an expression vector."
+"expression","binding",1,"grouping_spec",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not an expression vector."
+"expression","binding",2,"grouping_set",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not an expression vector."
+"expression","binding",2,"grouping_sets",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not an expression vector."
+"expression","binding",2,"rollup",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not an expression vector."
+"expression","binding",2,"cube",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not an expression vector."
+"expression","binding",2,"grouping_spec",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not an expression vector."
+"expression","constructor_call",0,"grouping_set",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not an expression vector."
+"expression","constructor_call",0,"grouping_sets",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not an expression vector."
+"expression","constructor_call",0,"rollup",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not an expression vector."
+"expression","constructor_call",0,"cube",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not an expression vector."
+"expression","constructor_call",0,"grouping_spec",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not an expression vector."
+"expression","constructor_call",1,"grouping_set",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not an expression vector."
+"expression","constructor_call",1,"grouping_sets",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not an expression vector."
+"expression","constructor_call",1,"rollup",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not an expression vector."
+"expression","constructor_call",1,"cube",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not an expression vector."
+"expression","constructor_call",1,"grouping_spec",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not an expression vector."
+"expression","constructor_call",2,"grouping_set",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not an expression vector."
+"expression","constructor_call",2,"grouping_sets",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not an expression vector."
+"expression","constructor_call",2,"rollup",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not an expression vector."
+"expression","constructor_call",2,"cube",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not an expression vector."
+"expression","constructor_call",2,"grouping_spec",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not an expression vector."
+"quosure","binding",0,"grouping_set",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a <quosure> object."
+"quosure","binding",0,"grouping_sets",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a <quosure> object."
+"quosure","binding",0,"rollup",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a <quosure> object."
+"quosure","binding",0,"cube",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a <quosure> object."
+"quosure","binding",0,"grouping_spec",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a <quosure> object."
+"quosure","binding",1,"grouping_set",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a <quosure> object."
+"quosure","binding",1,"grouping_sets",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a <quosure> object."
+"quosure","binding",1,"rollup",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a <quosure> object."
+"quosure","binding",1,"cube",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a <quosure> object."
+"quosure","binding",1,"grouping_spec",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a <quosure> object."
+"quosure","binding",2,"grouping_set",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a <quosure> object."
+"quosure","binding",2,"grouping_sets",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a <quosure> object."
+"quosure","binding",2,"rollup",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a <quosure> object."
+"quosure","binding",2,"cube",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a <quosure> object."
+"quosure","binding",2,"grouping_spec",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a <quosure> object."
+"quosure","constructor_call",0,"grouping_set",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a <quosure> object."
+"quosure","constructor_call",0,"grouping_sets",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a <quosure> object."
+"quosure","constructor_call",0,"rollup",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a <quosure> object."
+"quosure","constructor_call",0,"cube",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a <quosure> object."
+"quosure","constructor_call",0,"grouping_spec",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a <quosure> object."
+"quosure","constructor_call",1,"grouping_set",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a <quosure> object."
+"quosure","constructor_call",1,"grouping_sets",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a <quosure> object."
+"quosure","constructor_call",1,"rollup",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a <quosure> object."
+"quosure","constructor_call",1,"cube",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a <quosure> object."
+"quosure","constructor_call",1,"grouping_spec",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a <quosure> object."
+"quosure","constructor_call",2,"grouping_set",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a <quosure> object."
+"quosure","constructor_call",2,"grouping_sets",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a <quosure> object."
+"quosure","constructor_call",2,"rollup",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a <quosure> object."
+"quosure","constructor_call",2,"cube",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a <quosure> object."
+"quosure","constructor_call",2,"grouping_spec",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a <quosure> object."
+"list","binding",0,"grouping_set",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a list."
+"list","binding",0,"grouping_sets",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a list."
+"list","binding",0,"rollup",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a list."
+"list","binding",0,"cube",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a list."
+"list","binding",0,"grouping_spec",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a list."
+"list","binding",1,"grouping_set",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a list."
+"list","binding",1,"grouping_sets",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a list."
+"list","binding",1,"rollup",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a list."
+"list","binding",1,"cube",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a list."
+"list","binding",1,"grouping_spec",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a list."
+"list","binding",2,"grouping_set",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a list."
+"list","binding",2,"grouping_sets",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a list."
+"list","binding",2,"rollup",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a list."
+"list","binding",2,"cube",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a list."
+"list","binding",2,"grouping_spec",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not a list."
+"list","constructor_call",0,"grouping_set",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a list."
+"list","constructor_call",0,"grouping_sets",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a list."
+"list","constructor_call",0,"rollup",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a list."
+"list","constructor_call",0,"cube",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a list."
+"list","constructor_call",0,"grouping_spec",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a list."
+"list","constructor_call",1,"grouping_set",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a list."
+"list","constructor_call",1,"grouping_sets",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a list."
+"list","constructor_call",1,"rollup",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a list."
+"list","constructor_call",1,"cube",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a list."
+"list","constructor_call",1,"grouping_spec",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a list."
+"list","constructor_call",2,"grouping_set",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a list."
+"list","constructor_call",2,"grouping_sets",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a list."
+"list","constructor_call",2,"rollup",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a list."
+"list","constructor_call",2,"cube",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a list."
+"list","constructor_call",2,"grouping_spec",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not a list."
+"factor","binding",0,"grouping_set",1,TRUE,"a"
+"factor","binding",0,"grouping_sets",1,TRUE,"a"
+"factor","binding",0,"rollup",1,TRUE,"a"
+"factor","binding",0,"cube",1,TRUE,"a"
+"factor","binding",0,"grouping_spec",1,TRUE,"a"
+"factor","binding",1,"grouping_set",1,TRUE,"a"
+"factor","binding",1,"grouping_sets",1,TRUE,"a"
+"factor","binding",1,"rollup",1,TRUE,"a"
+"factor","binding",1,"cube",1,TRUE,"a"
+"factor","binding",1,"grouping_spec",1,TRUE,"a"
+"factor","binding",2,"grouping_set",1,TRUE,"a"
+"factor","binding",2,"grouping_sets",1,TRUE,"a"
+"factor","binding",2,"rollup",1,TRUE,"a"
+"factor","binding",2,"cube",1,TRUE,"a"
+"factor","binding",2,"grouping_spec",1,TRUE,"a"
+"factor","constructor_call",0,"grouping_set",1,TRUE,"a"
+"factor","constructor_call",0,"grouping_sets",1,TRUE,"a"
+"factor","constructor_call",0,"rollup",1,TRUE,"a"
+"factor","constructor_call",0,"cube",1,TRUE,"a"
+"factor","constructor_call",0,"grouping_spec",1,TRUE,"a"
+"factor","constructor_call",1,"grouping_set",1,TRUE,"a"
+"factor","constructor_call",1,"grouping_sets",1,TRUE,"a"
+"factor","constructor_call",1,"rollup",1,TRUE,"a"
+"factor","constructor_call",1,"cube",1,TRUE,"a"
+"factor","constructor_call",1,"grouping_spec",1,TRUE,"a"
+"factor","constructor_call",2,"grouping_set",1,TRUE,"a"
+"factor","constructor_call",2,"grouping_sets",1,TRUE,"a"
+"factor","constructor_call",2,"rollup",1,TRUE,"a"
+"factor","constructor_call",2,"cube",1,TRUE,"a"
+"factor","constructor_call",2,"grouping_spec",1,TRUE,"a"
+"complex","binding",0,"grouping_set",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not the complex number 1+0i."
+"complex","binding",0,"grouping_sets",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not the complex number 1+0i."
+"complex","binding",0,"rollup",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not the complex number 1+0i."
+"complex","binding",0,"cube",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not the complex number 1+0i."
+"complex","binding",0,"grouping_spec",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not the complex number 1+0i."
+"complex","binding",1,"grouping_set",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not the complex number 1+0i."
+"complex","binding",1,"grouping_sets",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not the complex number 1+0i."
+"complex","binding",1,"rollup",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not the complex number 1+0i."
+"complex","binding",1,"cube",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not the complex number 1+0i."
+"complex","binding",1,"grouping_spec",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not the complex number 1+0i."
+"complex","binding",2,"grouping_set",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not the complex number 1+0i."
+"complex","binding",2,"grouping_sets",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not the complex number 1+0i."
+"complex","binding",2,"rollup",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not the complex number 1+0i."
+"complex","binding",2,"cube",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not the complex number 1+0i."
+"complex","binding",2,"grouping_spec",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not the complex number 1+0i."
+"complex","constructor_call",0,"grouping_set",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not the complex number 1+0i."
+"complex","constructor_call",0,"grouping_sets",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not the complex number 1+0i."
+"complex","constructor_call",0,"rollup",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not the complex number 1+0i."
+"complex","constructor_call",0,"cube",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not the complex number 1+0i."
+"complex","constructor_call",0,"grouping_spec",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not the complex number 1+0i."
+"complex","constructor_call",1,"grouping_set",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not the complex number 1+0i."
+"complex","constructor_call",1,"grouping_sets",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not the complex number 1+0i."
+"complex","constructor_call",1,"rollup",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not the complex number 1+0i."
+"complex","constructor_call",1,"cube",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not the complex number 1+0i."
+"complex","constructor_call",1,"grouping_spec",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not the complex number 1+0i."
+"complex","constructor_call",2,"grouping_set",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not the complex number 1+0i."
+"complex","constructor_call",2,"grouping_sets",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not the complex number 1+0i."
+"complex","constructor_call",2,"rollup",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not the complex number 1+0i."
+"complex","constructor_call",2,"cube",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not the complex number 1+0i."
+"complex","constructor_call",2,"grouping_spec",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not the complex number 1+0i."
+"raw","binding",0,"grouping_set",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not the raw value 01."
+"raw","binding",0,"grouping_sets",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not the raw value 01."
+"raw","binding",0,"rollup",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not the raw value 01."
+"raw","binding",0,"cube",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not the raw value 01."
+"raw","binding",0,"grouping_spec",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not the raw value 01."
+"raw","binding",1,"grouping_set",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not the raw value 01."
+"raw","binding",1,"grouping_sets",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not the raw value 01."
+"raw","binding",1,"rollup",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not the raw value 01."
+"raw","binding",1,"cube",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not the raw value 01."
+"raw","binding",1,"grouping_spec",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not the raw value 01."
+"raw","binding",2,"grouping_set",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not the raw value 01."
+"raw","binding",2,"grouping_sets",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not the raw value 01."
+"raw","binding",2,"rollup",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not the raw value 01."
+"raw","binding",2,"cube",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not the raw value 01."
+"raw","binding",2,"grouping_spec",1,TRUE,"Can't select columns with `selected`.
+✖ `selected` must be numeric or character, not the raw value 01."
+"raw","constructor_call",0,"grouping_set",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not the raw value 01."
+"raw","constructor_call",0,"grouping_sets",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not the raw value 01."
+"raw","constructor_call",0,"rollup",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not the raw value 01."
+"raw","constructor_call",0,"cube",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not the raw value 01."
+"raw","constructor_call",0,"grouping_spec",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not the raw value 01."
+"raw","constructor_call",1,"grouping_set",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not the raw value 01."
+"raw","constructor_call",1,"grouping_sets",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not the raw value 01."
+"raw","constructor_call",1,"rollup",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not the raw value 01."
+"raw","constructor_call",1,"cube",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not the raw value 01."
+"raw","constructor_call",1,"grouping_spec",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not the raw value 01."
+"raw","constructor_call",2,"grouping_set",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not the raw value 01."
+"raw","constructor_call",2,"grouping_sets",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not the raw value 01."
+"raw","constructor_call",2,"rollup",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not the raw value 01."
+"raw","constructor_call",2,"cube",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not the raw value 01."
+"raw","constructor_call",2,"grouping_spec",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ `grouping_set(unforced_argument)` must be numeric or character, not the raw value 01."
+"matrix","binding",0,"grouping_set",1,TRUE,"Can't select columns with `selected`.
+✖ Subscript `selected` must be a simple vector, not a matrix."
+"matrix","binding",0,"grouping_sets",1,TRUE,"Can't select columns with `selected`.
+✖ Subscript `selected` must be a simple vector, not a matrix."
+"matrix","binding",0,"rollup",1,TRUE,"Can't select columns with `selected`.
+✖ Subscript `selected` must be a simple vector, not a matrix."
+"matrix","binding",0,"cube",1,TRUE,"Can't select columns with `selected`.
+✖ Subscript `selected` must be a simple vector, not a matrix."
+"matrix","binding",0,"grouping_spec",1,TRUE,"Can't select columns with `selected`.
+✖ Subscript `selected` must be a simple vector, not a matrix."
+"matrix","binding",1,"grouping_set",1,TRUE,"Can't select columns with `selected`.
+✖ Subscript `selected` must be a simple vector, not a matrix."
+"matrix","binding",1,"grouping_sets",1,TRUE,"Can't select columns with `selected`.
+✖ Subscript `selected` must be a simple vector, not a matrix."
+"matrix","binding",1,"rollup",1,TRUE,"Can't select columns with `selected`.
+✖ Subscript `selected` must be a simple vector, not a matrix."
+"matrix","binding",1,"cube",1,TRUE,"Can't select columns with `selected`.
+✖ Subscript `selected` must be a simple vector, not a matrix."
+"matrix","binding",1,"grouping_spec",1,TRUE,"Can't select columns with `selected`.
+✖ Subscript `selected` must be a simple vector, not a matrix."
+"matrix","binding",2,"grouping_set",1,TRUE,"Can't select columns with `selected`.
+✖ Subscript `selected` must be a simple vector, not a matrix."
+"matrix","binding",2,"grouping_sets",1,TRUE,"Can't select columns with `selected`.
+✖ Subscript `selected` must be a simple vector, not a matrix."
+"matrix","binding",2,"rollup",1,TRUE,"Can't select columns with `selected`.
+✖ Subscript `selected` must be a simple vector, not a matrix."
+"matrix","binding",2,"cube",1,TRUE,"Can't select columns with `selected`.
+✖ Subscript `selected` must be a simple vector, not a matrix."
+"matrix","binding",2,"grouping_spec",1,TRUE,"Can't select columns with `selected`.
+✖ Subscript `selected` must be a simple vector, not a matrix."
+"matrix","constructor_call",0,"grouping_set",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ Subscript `grouping_set(unforced_argument)` must be a simple vector, not a matrix."
+"matrix","constructor_call",0,"grouping_sets",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ Subscript `grouping_set(unforced_argument)` must be a simple vector, not a matrix."
+"matrix","constructor_call",0,"rollup",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ Subscript `grouping_set(unforced_argument)` must be a simple vector, not a matrix."
+"matrix","constructor_call",0,"cube",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ Subscript `grouping_set(unforced_argument)` must be a simple vector, not a matrix."
+"matrix","constructor_call",0,"grouping_spec",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ Subscript `grouping_set(unforced_argument)` must be a simple vector, not a matrix."
+"matrix","constructor_call",1,"grouping_set",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ Subscript `grouping_set(unforced_argument)` must be a simple vector, not a matrix."
+"matrix","constructor_call",1,"grouping_sets",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ Subscript `grouping_set(unforced_argument)` must be a simple vector, not a matrix."
+"matrix","constructor_call",1,"rollup",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ Subscript `grouping_set(unforced_argument)` must be a simple vector, not a matrix."
+"matrix","constructor_call",1,"cube",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ Subscript `grouping_set(unforced_argument)` must be a simple vector, not a matrix."
+"matrix","constructor_call",1,"grouping_spec",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ Subscript `grouping_set(unforced_argument)` must be a simple vector, not a matrix."
+"matrix","constructor_call",2,"grouping_set",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ Subscript `grouping_set(unforced_argument)` must be a simple vector, not a matrix."
+"matrix","constructor_call",2,"grouping_sets",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ Subscript `grouping_set(unforced_argument)` must be a simple vector, not a matrix."
+"matrix","constructor_call",2,"rollup",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ Subscript `grouping_set(unforced_argument)` must be a simple vector, not a matrix."
+"matrix","constructor_call",2,"cube",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ Subscript `grouping_set(unforced_argument)` must be a simple vector, not a matrix."
+"matrix","constructor_call",2,"grouping_spec",1,TRUE,"Can't select columns with `grouping_set(unforced_argument)`.
+✖ Subscript `grouping_set(unforced_argument)` must be a simple vector, not a matrix."
+"predicate","binding",0,"grouping_set",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"predicate","binding",0,"grouping_sets",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"predicate","binding",0,"rollup",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"predicate","binding",0,"cube",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"predicate","binding",0,"grouping_spec",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"predicate","binding",1,"grouping_set",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"predicate","binding",1,"grouping_sets",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"predicate","binding",1,"rollup",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"predicate","binding",1,"cube",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"predicate","binding",1,"grouping_spec",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"predicate","binding",2,"grouping_set",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"predicate","binding",2,"grouping_sets",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"predicate","binding",2,"rollup",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"predicate","binding",2,"cube",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"predicate","binding",2,"grouping_spec",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"predicate","constructor_call",0,"grouping_set",1,TRUE,"a"
+"predicate","constructor_call",0,"grouping_sets",1,TRUE,"a"
+"predicate","constructor_call",0,"rollup",1,TRUE,"a"
+"predicate","constructor_call",0,"cube",1,TRUE,"a"
+"predicate","constructor_call",0,"grouping_spec",1,TRUE,"a"
+"predicate","constructor_call",1,"grouping_set",1,TRUE,"a"
+"predicate","constructor_call",1,"grouping_sets",1,TRUE,"a"
+"predicate","constructor_call",1,"rollup",1,TRUE,"a"
+"predicate","constructor_call",1,"cube",1,TRUE,"a"
+"predicate","constructor_call",1,"grouping_spec",1,TRUE,"a"
+"predicate","constructor_call",2,"grouping_set",1,TRUE,"a"
+"predicate","constructor_call",2,"grouping_sets",1,TRUE,"a"
+"predicate","constructor_call",2,"rollup",1,TRUE,"a"
+"predicate","constructor_call",2,"cube",1,TRUE,"a"
+"predicate","constructor_call",2,"grouping_spec",1,TRUE,"a"
+"local_predicate","binding",0,"grouping_set",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"local_predicate","binding",0,"grouping_sets",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"local_predicate","binding",0,"rollup",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"local_predicate","binding",0,"cube",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"local_predicate","binding",0,"grouping_spec",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"local_predicate","binding",1,"grouping_set",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"local_predicate","binding",1,"grouping_sets",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"local_predicate","binding",1,"rollup",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"local_predicate","binding",1,"cube",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"local_predicate","binding",1,"grouping_spec",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"local_predicate","binding",2,"grouping_set",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"local_predicate","binding",2,"grouping_sets",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"local_predicate","binding",2,"rollup",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"local_predicate","binding",2,"cube",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"local_predicate","binding",2,"grouping_spec",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"local_predicate","constructor_call",0,"grouping_set",1,TRUE,"b"
+"local_predicate","constructor_call",0,"grouping_sets",1,TRUE,"b"
+"local_predicate","constructor_call",0,"rollup",1,TRUE,"b"
+"local_predicate","constructor_call",0,"cube",1,TRUE,"b"
+"local_predicate","constructor_call",0,"grouping_spec",1,TRUE,"b"
+"local_predicate","constructor_call",1,"grouping_set",1,TRUE,"b"
+"local_predicate","constructor_call",1,"grouping_sets",1,TRUE,"b"
+"local_predicate","constructor_call",1,"rollup",1,TRUE,"b"
+"local_predicate","constructor_call",1,"cube",1,TRUE,"b"
+"local_predicate","constructor_call",1,"grouping_spec",1,TRUE,"b"
+"local_predicate","constructor_call",2,"grouping_set",1,TRUE,"b"
+"local_predicate","constructor_call",2,"grouping_sets",1,TRUE,"b"
+"local_predicate","constructor_call",2,"rollup",1,TRUE,"b"
+"local_predicate","constructor_call",2,"cube",1,TRUE,"b"
+"local_predicate","constructor_call",2,"grouping_spec",1,TRUE,"b"
+"bad_predicate","binding",0,"grouping_set",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"bad_predicate","binding",0,"grouping_sets",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"bad_predicate","binding",0,"rollup",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"bad_predicate","binding",0,"cube",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"bad_predicate","binding",0,"grouping_spec",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"bad_predicate","binding",1,"grouping_set",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"bad_predicate","binding",1,"grouping_sets",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"bad_predicate","binding",1,"rollup",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"bad_predicate","binding",1,"cube",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"bad_predicate","binding",1,"grouping_spec",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"bad_predicate","binding",2,"grouping_set",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"bad_predicate","binding",2,"grouping_sets",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"bad_predicate","binding",2,"rollup",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"bad_predicate","binding",2,"cube",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"bad_predicate","binding",2,"grouping_spec",1,TRUE,"Can't select columns that don't exist.
+✖ Column `selected` doesn't exist."
+"bad_predicate","constructor_call",0,"grouping_set",1,TRUE,"Predicate must return `TRUE` or `FALSE`, not a logical vector."
+"bad_predicate","constructor_call",0,"grouping_sets",1,TRUE,"Predicate must return `TRUE` or `FALSE`, not a logical vector."
+"bad_predicate","constructor_call",0,"rollup",1,TRUE,"Predicate must return `TRUE` or `FALSE`, not a logical vector."
+"bad_predicate","constructor_call",0,"cube",1,TRUE,"Predicate must return `TRUE` or `FALSE`, not a logical vector."
+"bad_predicate","constructor_call",0,"grouping_spec",1,TRUE,"Predicate must return `TRUE` or `FALSE`, not a logical vector."
+"bad_predicate","constructor_call",1,"grouping_set",1,TRUE,"Predicate must return `TRUE` or `FALSE`, not a logical vector."
+"bad_predicate","constructor_call",1,"grouping_sets",1,TRUE,"Predicate must return `TRUE` or `FALSE`, not a logical vector."
+"bad_predicate","constructor_call",1,"rollup",1,TRUE,"Predicate must return `TRUE` or `FALSE`, not a logical vector."
+"bad_predicate","constructor_call",1,"cube",1,TRUE,"Predicate must return `TRUE` or `FALSE`, not a logical vector."
+"bad_predicate","constructor_call",1,"grouping_spec",1,TRUE,"Predicate must return `TRUE` or `FALSE`, not a logical vector."
+"bad_predicate","constructor_call",2,"grouping_set",1,TRUE,"Predicate must return `TRUE` or `FALSE`, not a logical vector."
+"bad_predicate","constructor_call",2,"grouping_sets",1,TRUE,"Predicate must return `TRUE` or `FALSE`, not a logical vector."
+"bad_predicate","constructor_call",2,"rollup",1,TRUE,"Predicate must return `TRUE` or `FALSE`, not a logical vector."
+"bad_predicate","constructor_call",2,"cube",1,TRUE,"Predicate must return `TRUE` or `FALSE`, not a logical vector."
+"bad_predicate","constructor_call",2,"grouping_spec",1,TRUE,"Predicate must return `TRUE` or `FALSE`, not a logical vector."

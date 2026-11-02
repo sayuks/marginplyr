@@ -1,0 +1,62 @@
+, , share = parent, matched = FALSE
+
+    adapter
+dims native portable
+   1      8        0
+   2     16        0
+
+, , share = total, matched = FALSE
+
+    adapter
+dims native portable
+   1      4        0
+   2      4        0
+
+, , share = parent, matched = TRUE
+
+    adapter
+dims native portable
+   1      8       16
+   2      0       16
+
+, , share = total, matched = TRUE
+
+    adapter
+dims native portable
+   1     12       16
+   2     12       16
+
+    dims fixed   kind adapter aggregate   label  share matched
+33     1  TRUE parent  native     FALSE    text parent   FALSE
+34     1  TRUE parent  native     FALSE missing parent   FALSE
+35     1  TRUE parent  native      TRUE    text parent   FALSE
+36     1  TRUE parent  native      TRUE missing parent   FALSE
+41     1  TRUE  total  native     FALSE    text  total   FALSE
+42     1  TRUE  total  native     FALSE missing  total   FALSE
+43     1  TRUE  total  native      TRUE    text  total   FALSE
+44     1  TRUE  total  native      TRUE missing  total   FALSE
+49     1  TRUE   both  native     FALSE    text parent   FALSE
+51     1  TRUE   both  native     FALSE missing parent   FALSE
+53     1  TRUE   both  native      TRUE    text parent   FALSE
+55     1  TRUE   both  native      TRUE missing parent   FALSE
+65     2 FALSE parent  native     FALSE    text parent   FALSE
+66     2 FALSE parent  native     FALSE missing parent   FALSE
+67     2 FALSE parent  native      TRUE    text parent   FALSE
+68     2 FALSE parent  native      TRUE missing parent   FALSE
+81     2 FALSE   both  native     FALSE    text parent   FALSE
+83     2 FALSE   both  native     FALSE missing parent   FALSE
+85     2 FALSE   both  native      TRUE    text parent   FALSE
+87     2 FALSE   both  native      TRUE missing parent   FALSE
+97     2  TRUE parent  native     FALSE    text parent   FALSE
+98     2  TRUE parent  native     FALSE missing parent   FALSE
+99     2  TRUE parent  native      TRUE    text parent   FALSE
+100    2  TRUE parent  native      TRUE missing parent   FALSE
+105    2  TRUE  total  native     FALSE    text  total   FALSE
+106    2  TRUE  total  native     FALSE missing  total   FALSE
+107    2  TRUE  total  native      TRUE    text  total   FALSE
+108    2  TRUE  total  native      TRUE missing  total   FALSE
+113    2  TRUE   both  native     FALSE    text parent   FALSE
+115    2  TRUE   both  native     FALSE missing parent   FALSE
+117    2  TRUE   both  native      TRUE    text parent   FALSE
+119    2  TRUE   both  native      TRUE missing parent   FALSE
+Calls: 96 share-column comparisons: 128 mismatches: 32

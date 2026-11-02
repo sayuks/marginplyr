@@ -1,0 +1,47 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+        margin
+backend  FALSE TRUE
+  duckdb     9   90
+  sqlite     6   93
+ backend         name   role control margin
+  sqlite          ... output   FALSE  FALSE
+  sqlite          ...  share   FALSE  FALSE
+  sqlite          ...     id   FALSE  FALSE
+  sqlite ..2147483648 output   FALSE  FALSE
+  sqlite ..2147483648  share   FALSE  FALSE
+  sqlite ..2147483648     id   FALSE  FALSE
+  duckdb        .data output    TRUE  FALSE
+  duckdb        .data  share    TRUE  FALSE
+  duckdb        .data     id    TRUE  FALSE
+  duckdb          ... output   FALSE  FALSE
+  duckdb          ...  share   FALSE  FALSE
+  duckdb          ...     id   FALSE  FALSE
+  duckdb ..2147483648 output   FALSE  FALSE
+  duckdb ..2147483648  share   FALSE  FALSE
+  duckdb ..2147483648     id   FALSE  FALSE
+                                                                                                        message
+               Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..." at location 1.
+               Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..." at location 1.
+               Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..." at location 1.
+      Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..2147483648" at location 1.
+      Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..2147483648" at location 1.
+      Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..2147483648" at location 1.
+ Can't select columns with `.data`.\n✖ `.data` must be numeric or character, not a <rlang_data_pronoun> object.
+ Can't select columns with `.data`.\n✖ `.data` must be numeric or character, not a <rlang_data_pronoun> object.
+ Can't select columns with `.data`.\n✖ `.data` must be numeric or character, not a <rlang_data_pronoun> object.
+               Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..." at location 1.
+               Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..." at location 1.
+               Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..." at location 1.
+      Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..2147483648" at location 1.
+      Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..2147483648" at location 1.
+      Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..2147483648" at location 1.

@@ -1,0 +1,47 @@
+CASE 9 (function(...) across(..., sum))('x') prefix  named FALSE
+$value
+# A tibble: 2 × 2
+  g         x
+  <chr> <int>
+1 a         3
+2 b         3
+
+$error
+[1] "ℹ In argument: `(function(...) across(..., sum))(\"x\")`.\nℹ In group 1: `g = \"a\"`.\nCaused by error in `dplyr::across()`:\nℹ In argument: `tidyselect::all_of(...)`.\nCaused by error in `list2()`:\n! '...' used in an incorrect context"
+
+CASE 10 (function(...) across(..., sum))('x') prefix  named TRUE
+$value
+# A tibble: 2 × 2
+  g     answer$x
+  <chr>    <int>
+1 a            3
+2 b            3
+
+$error
+[1] "ℹ In argument: `answer = (function(...) across(..., sum))(\"x\")`.\nℹ In group 1: `g = \"a\"`.\nCaused by error in `dplyr::across()`:\nℹ In argument: `tidyselect::all_of(...)`.\nCaused by error in `list2()`:\n! '...' used in an incorrect context"
+
+CASE 11 (function(...) across(..., sum))('x') prefix prior = sum(y),  named FALSE
+$value
+# A tibble: 2 × 3
+  g     prior     x
+  <chr> <dbl> <int>
+1 a        16     3
+2 b        11     3
+
+$error
+[1] "ℹ In argument: `(function(...) across(..., sum))(\"x\")`.\nℹ In group 1: `g = \"a\"`.\nCaused by error in `dplyr::across()`:\nℹ In argument: `tidyselect::all_of(...)`.\nCaused by error in `list2()`:\n! '...' used in an incorrect context"
+
+CASE 12 (function(...) across(..., sum))('x') prefix prior = sum(y),  named TRUE
+$value
+# A tibble: 2 × 3
+  g     prior answer$x
+  <chr> <dbl>    <int>
+1 a        16        3
+2 b        11        3
+
+$error
+[1] "ℹ In argument: `answer = (function(...) across(..., sum))(\"x\")`.\nℹ In group 1: `g = \"a\"`.\nCaused by error in `dplyr::across()`:\nℹ In argument: `tidyselect::all_of(...)`.\nCaused by error in `list2()`:\n! '...' used in an incorrect context"
+
+
+  DIVERGENCE        match paired-error
+           4           92           24

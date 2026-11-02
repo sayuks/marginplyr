@@ -1,0 +1,6 @@
+# A tibble: 1 × 1
+  .data
+  <dbl>
+1     4
+Can't select columns with `.data`.
+✖ `.data` must be numeric or character, not a <rlang_data_pronoun> object.

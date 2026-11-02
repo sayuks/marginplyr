@@ -1,0 +1,21 @@
+source list2env result:
+# A tibble: 3 × 4
+  g     prior value fraction
+  <chr> <dbl> <dbl>    <dbl>
+1 a         1     1     0.25
+2 b         3     3     0.75
+3 Total     4     4     1
+assign control: Total share `fraction` cannot use source summary `value` because it depends on earlier summary alias `prior`.
+ℹ Combine the calculation into one ordinary summary expression.
+later list2env result:
+# A tibble: 3 × 4
+  g     value prior derived
+  <chr> <dbl> <dbl>   <dbl>
+1 a         1  0.25     100
+2 b         3  0.75     300
+3 Total     4  1        400
+assign control: Ordinary summaries cannot use an earlier Total share (`prior`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values.
+Missing dependency refusals: 2
+Error: missing == 0L is not TRUE
+Execution halted

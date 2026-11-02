@@ -1,0 +1,51 @@
+[
+  {
+    "command": [
+      "Rscript",
+      "investigation/2026-11-02-summary-grouping-share-bug-hunt/backend/native-parent-reproduction.R"
+    ],
+    "log": "backend/native-parent-reproduction.log",
+    "exit_code": 0,
+    "expected_exit_code": 0
+  },
+  {
+    "command": [
+      "Rscript",
+      "investigation/2026-11-02-summary-grouping-share-bug-hunt/backend/native-parent-reproduction.R",
+      "--total"
+    ],
+    "log": "backend/native-total-reproduction.log",
+    "exit_code": 0,
+    "expected_exit_code": 0
+  },
+  {
+    "command": [
+      "Rscript",
+      "investigation/2026-11-02-summary-grouping-share-bug-hunt/backend/native-parent-reproduction.R",
+      "--assert"
+    ],
+    "log": "backend/native-parent-assert.log",
+    "exit_code": 1,
+    "expected_exit_code": 1
+  },
+  {
+    "command": [
+      "Rscript",
+      "investigation/2026-11-02-summary-grouping-share-bug-hunt/backend/native-parent-reproduction.R",
+      "--total",
+      "--assert"
+    ],
+    "log": "backend/native-total-assert.log",
+    "exit_code": 1,
+    "expected_exit_code": 1
+  },
+  {
+    "command": [
+      "Rscript",
+      "investigation/2026-11-02-summary-grouping-share-bug-hunt/backend/data-output-control.R"
+    ],
+    "log": "backend/data-output-control.log",
+    "exit_code": 0,
+    "expected_exit_code": 0
+  }
+]

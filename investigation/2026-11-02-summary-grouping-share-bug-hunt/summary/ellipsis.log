@@ -1,0 +1,10 @@
+Forwarding comparisons: 432
+
+FALSE
+  432
+Successful c/all_of controls: 45
+Minimized ordinary result:
+  x
+1 6
+Minimized Margin result:
+[1] "ℹ In argument: `(function(...) dplyr::across(..., sum))(\"x\")`.\nCaused by error in `dplyr::across()`:\nℹ In argument: `tidyselect::all_of(...)`.\nCaused by error in `list2()`:\n! '...' used in an incorrect context"

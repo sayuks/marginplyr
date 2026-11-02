@@ -1,0 +1,71 @@
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+CASE local names-only
+Columns cannot appear in both `.by` and `.grouping`:
+ℹ `a`.
+CASE local typed
+Columns cannot appear in both `.by` and `.grouping`:
+ℹ `a`.
+CASE dtplyr names-only
+Columns cannot appear in both `.by` and `.grouping`:
+ℹ `a`.
+CASE dtplyr typed
+Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+CASE duckdb names-only
+Columns cannot appear in both `.by` and `.grouping`:
+ℹ `a`.
+Tracing function ".local" in package "duckdb"
+CASE duckdb typed
+Columns cannot appear in both `.by` and `.grouping`:
+ℹ `a`.
+[1] "SELECT *\nFROM mixed_plan_preflight\nLIMIT 0"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+, , overlap = FALSE, queries = 0
+
+        typed
+backend  FALSE TRUE
+  dtplyr     0   25
+  duckdb     0    0
+  local      0    0
+
+, , overlap = TRUE, queries = 0
+
+        typed
+backend  FALSE TRUE
+  dtplyr    25    0
+  duckdb    15    0
+  local     25   25
+
+, , overlap = FALSE, queries = 1
+
+        typed
+backend  FALSE TRUE
+  dtplyr     0    0
+  duckdb     0    0
+  local      0    0
+
+, , overlap = TRUE, queries = 1
+
+        typed
+backend  FALSE TRUE
+  dtplyr     0    0
+  duckdb     0   15
+  local      0    0
+
+total cases 130
+Error in run() : all(records$overlap) is not TRUE
+Calls: run -> stopifnot
+Execution halted
