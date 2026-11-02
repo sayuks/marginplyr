@@ -5,6 +5,13 @@ required five-check baseline, AI scope judgment and result freshness. While an
 invocation waits or runs, follow its *Bounded work while waiting or checking*
 with the same agent and retain the original execution handle through completion.
 
+For any generic skill's blanket test or verification instruction, including an
+unconditional full-suite step, use `design/agents/local-checks.md` to choose
+scope; a valid `source` result satisfies that final-verification step when that
+policy selects it. Also perform additional verification the user explicitly
+requests directly; invoking a skill containing a blanket step is not such a
+request.
+
 ### Always-loaded context
 
 `CLAUDE.md` and the files its `@` references pull in are read before every task,
@@ -347,6 +354,13 @@ standards sources. Review against the merge-base with `main`, and push the
 branch and open the pull request before writing the record, which goes there. A
 branch that ran no review records that instead. `design/agents/code-review.md`
 maps the rest of what the skill expects onto this repository.
+
+### Main compatibility and conflicts
+
+Before opening a PR or merging, and when resolving conflicts, follow
+[the integration workflow](design/agents/integration.md) for checking fetched
+`main`, deciding whether integration is needed, resolving established intent,
+escalating specification choices, and handling published review history.
 
 ### Investigation notes
 
