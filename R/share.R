@@ -4013,7 +4013,7 @@ expression_alias_dependencies <- function(expr, aliases, env = emptyenv(),
   }
   symbols <- unique(expression_data_symbols(
     expr, lookup = list(
-      env = env, mask = mask, rebound = lookup_rebound_names(expr),
+      env = env, mask = mask, rebound = lookup_rebound_names(expr, env, mask),
       reparented = reparented
     )
   ))
@@ -4027,21 +4027,46 @@ expression_alias_dependencies <- function(expr, aliases, env = emptyenv(),
 # definite `bound` set, conditional assignments also prevent a lexical
 # environment value from proving an external lookup. An unresolved reflective
 # assignment reports the lookup marker, excluding every lexical binding.
-lookup_rebound_names <- function(expr) {
+# Literal list2env keys invalidate only the bindings they name.
+lookup_rebound_names <- function(expr, env = emptyenv(), mask = character()) {
+  rebound <- expression_rebound_names(expr)
+  unique(c(rebound, expression_rebound_names(expr, list(
+    env = env, mask = mask, rebound = rebound
+  ))))
+}
+
+# Rebindings visible in evaluated syntax. The first pass supplies ordinary
+# assignments before the second pass resolves mutation callees against them.
+expression_rebound_names <- function(expr, lookup = NULL) {
+  if (rlang::is_quosure(expr) && !is.null(lookup)) {
+    lookup$env <- rlang::quo_get_env(expr)
+  }
   if (!rlang::is_call(expr)) {
     return(character())
   }
   if (is_parenthesized(expr)) {
-    return(lookup_rebound_names(unparenthesized_value(expr)))
+    return(expression_rebound_names(unparenthesized_value(expr), lookup))
   }
   assigned <- lookup_assignment_names(expr)
+  if (!is.null(lookup)) {
+    mutation <- scope_mutation_call(expr, character(), lookup)
+    if (!is.null(mutation) &&
+          identical(static_call_name(mutation), "list2env")) {
+      values <- base_call_argument(mutation, "x")
+      if (length(values) > 0L &&
+            identical(static_call_name(values[[1L]]), "list") &&
+            is_known_base_call(values[[1L]], "list", character(), lookup)) {
+        assigned <- c(assigned, names(static_call_args(values[[1L]])))
+      }
+    }
+  }
   parts <- evaluated_call_args(expr)
   head <- static_call_head(expr)
   if (!rlang::is_symbol(head)) {
     parts <- c(list(head), parts)
   }
   unique(c(assigned, unlist(lapply(
-    parts, lookup_rebound_names
+    parts, expression_rebound_names, lookup = lookup
   ), use.names = FALSE)))
 }
 
@@ -4476,7 +4501,7 @@ is_known_base_call <- function(expr, name, bound, lookup) {
 scope_mutation_call <- function(expr, bound, lookup) {
   name <- resolved_callee_name(expr)
   if (is.null(name) ||
-        !name %in% c("rm", "remove", "parent.env<-", "do.call")) {
+        !name %in% c("rm", "remove", "parent.env<-", "list2env", "do.call")) {
     return(NULL)
   }
   head <- static_call_head(expr)
@@ -4515,7 +4540,8 @@ scope_mutation_call <- function(expr, bound, lookup) {
   } else {
     parts <- static_call_args(expr)
   }
-  if (is.null(name) || !name %in% c("rm", "remove", "parent.env<-")) {
+  if (is.null(name) ||
+        !name %in% c("rm", "remove", "parent.env<-", "list2env")) {
     return(NULL)
   }
   if (scope_callee_is_shadowed(head, name, callee_bound, callee_lookup)) {
@@ -4806,7 +4832,7 @@ lookup_environment_is_external <- function(expr, bound, lookup,
 # Visible parent replacements: target identities and mask-excluding parents.
 # An unreadable target is TRUE; no caller expression is run.
 lookup_reparented_environments <- function(
-  expr, env, mask, rebound = lookup_rebound_names(expr)) {
+  expr, env, mask, rebound = lookup_rebound_names(expr, env, mask)) {
   if (rlang::is_quosure(expr)) {
     env <- rlang::quo_get_env(expr)
   }
