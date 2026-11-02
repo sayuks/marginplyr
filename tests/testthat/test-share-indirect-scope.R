@@ -152,6 +152,98 @@ test_that("parent changes invalidate inherited callee shadows", {
   }
 })
 
+test_that("string do.call targets use their explicit lookup environment", {
+  data <- data.frame(group = c("a", "b"), x = c(1, 3), prior = c(100, 300))
+  for (input in list(data, dbplyr::tbl_lazy(data))) {
+    for (kind in c("parent", "total")) {
+      outside <- new.env(parent = baseenv())
+      scope <- rlang::env(
+        outside = outside, `parent.env<-` = function(...) NULL
+      )
+      expression <- rlang::new_quosure(quote({
+        do.call("parent.env<-", list(outside, environment()), envir = baseenv())
+        get("prior", envir = outside)
+      }), scope)
+      helper <- rlang::call2(paste0("share_of_", kind), quote(value))
+      expect_error(
+        summarize_with_margins(
+          input, prior = sum(x), value = !!expression,
+          fraction = !!helper, .grouping = rollup(group)
+        ),
+        "depends on earlier summary alias `prior`",
+        class = "marginplyr_error"
+      )
+      expect_error(
+        summarize_with_margins(
+          input, value = sum(x), prior = !!helper,
+          derived = !!expression, .grouping = rollup(group)
+        ),
+        "Ordinary summaries cannot use an earlier .* share",
+        class = "marginplyr_error"
+      )
+      expect_identical(parent.env(outside), baseenv())
+    }
+  }
+})
+
+test_that("do.call separates function values from string target lookup", {
+  data <- data.frame(group = c("a", "b"), x = c(1, 3))
+  expressions <- alist(
+    {
+      prior <- 2
+      do.call("rm", list("prior"), envir = functions)
+      sum(prior)
+    },
+    {
+      prior <- 2
+      do.call(get("rm"), list("prior"), envir = baseenv())
+      sum(prior)
+    }
+  )
+  for (kind in c("parent", "total")) {
+    helper <- rlang::call2(paste0("share_of_", kind), quote(value))
+    for (expression in expressions) {
+      scope <- rlang::env(
+        functions = rlang::env(baseenv(), rm = function(...) NULL),
+        rm = function(...) NULL
+      )
+      expression <- rlang::new_quosure(expression, scope)
+      result <- summarize_with_margins(
+        data, prior = sum(x), value = !!expression,
+        fraction = !!helper, .grouping = rollup(group)
+      )
+      expect_equal(result$value, c(2, 2, 2))
+      expect_equal(result$fraction, c(1, 1, 1))
+      result <- summarize_with_margins(
+        data, value = sum(x), prior = !!helper,
+        derived = !!expression, .grouping = rollup(group)
+      )
+      expect_equal(result$derived, c(2, 2, 2))
+    }
+    for (input in list(data, dbplyr::tbl_lazy(data))) {
+      calls <- rlang::env(n = 0L)
+      scope <- rlang::env(rm = function(...) NULL, target = function() {
+        calls$n <- calls$n + 1L
+        stop("Caller environment expression ran during planning")
+      })
+      expression <- rlang::new_quosure(quote({
+        prior <- 2
+        do.call("rm", list("prior"), envir = target())
+        sum(prior)
+      }), scope)
+      expect_error(
+        summarize_with_margins(
+          input, prior = sum(x), value = !!expression,
+          fraction = !!helper, .grouping = rollup(group)
+        ),
+        "depends on earlier summary alias `prior`",
+        class = "marginplyr_error"
+      )
+      expect_identical(calls$n, 0L)
+    }
+  }
+})
+
 test_that("function resolvers retain caller shadows in the top environment", {
   data <- data.frame(group = c("a", "b"), x = c(1, 3))
   had_binding <- exists("rm", envir = globalenv(), inherits = FALSE)

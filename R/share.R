@@ -4480,6 +4480,8 @@ scope_mutation_call <- function(expr, bound, lookup) {
     return(NULL)
   }
   head <- static_call_head(expr)
+  callee_bound <- bound
+  callee_lookup <- lookup
   if (identical(name, "do.call")) {
     if (scope_callee_is_shadowed(head, name, bound, lookup)) {
       return(NULL)
@@ -4490,6 +4492,16 @@ scope_mutation_call <- function(expr, bound, lookup) {
     }
     name <- static_callee_name(target[[1L]])
     head <- target[[1L]]
+    environment <- base_call_argument(expr, "envir")
+    # String targets use envir; function values are evaluated in the caller.
+    if (length(static_character_value(head)) == 1L &&
+          length(environment) > 0L) {
+      callee_lookup$env <- lookup_environment_value(
+        environment[[1L]], bound, lookup
+      )
+      callee_lookup$mask <- character()
+      callee_bound <- character()
+    }
     arguments <- base_call_argument(expr, "args")
     parts <- if (length(arguments) > 0L &&
                    identical(static_call_name(arguments[[1L]]), "list") &&
@@ -4506,7 +4518,7 @@ scope_mutation_call <- function(expr, bound, lookup) {
   if (is.null(name) || !name %in% c("rm", "remove", "parent.env<-")) {
     return(NULL)
   }
-  if (scope_callee_is_shadowed(head, name, bound, lookup)) {
+  if (scope_callee_is_shadowed(head, name, callee_bound, callee_lookup)) {
     return(NULL)
   }
   rlang::call2(name, !!!parts)
