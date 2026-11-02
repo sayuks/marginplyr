@@ -1,7 +1,7 @@
 Dots populated: FALSE
 Binding deferred: FALSE
 Helper-argument reader:
-<evalError in marginplyr:::is_name_only_helper_arg(quote(...), env): argument "value" is missing, with no default>
+<evalError in name_only_helper_arg(quote(...), env): argument "value" is missing, with no default>
 Wrapped helper fixed keys:
 Explicit empty-vector fixed keys:
 Dots populated: TRUE
