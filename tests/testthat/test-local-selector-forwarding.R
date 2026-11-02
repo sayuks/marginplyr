@@ -144,6 +144,20 @@ test_that("forwarded function arguments retain their names", {
   expect_identical(actual, expected)
 })
 
+test_that("forwarded empty function arguments remain missing", {
+  data <- data.frame(x = 1:3)
+  f <- function(x, extra = 10) {
+    if (missing(extra)) sum(x) else sum(x) + extra
+  }
+  expression <- rlang::expr((function(...) dplyr::across(...))(
+    .cols = x, .fns = f, extra =
+  ))
+  expected <- suppressWarnings(dplyr::summarise(data, value = !!expression))
+  expect_identical(expected$value$x, 6L)
+  actual <- suppressWarnings(summarize_with_margins(data, value = !!expression))
+  expect_identical(actual, expected)
+})
+
 test_that("forwarded arguments keep their evaluation order and environments", {
   data <- data.frame(g = c("a", "a", "b"), x = 1:3, y = c(7, 9, 11))
   for (helper in c("across", "if_any", "if_all")) {

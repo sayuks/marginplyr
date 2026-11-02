@@ -1536,6 +1536,19 @@ local_forwarded_selection <- function(helper, group_vars, forbidden_names) {
   function(...) {
     args <- rlang::enquos0(...)
     expr <- rlang::call2(helper, !!!args, .ns = "dplyr")
+    cols_index <- parse_across_arguments(expr)$cols_index
+    arg_names <- names(args)
+    # An injected empty selection has its own meaning; other empty arguments
+    # must remain missing when the helper or its function receives them.
+    args <- lapply(seq_along(args), function(i) {
+      if (i != cols_index && rlang::quo_is_missing(args[[i]])) {
+        rlang::missing_arg()
+      } else {
+        args[[i]]
+      }
+    })
+    names(args) <- arg_names
+    expr <- rlang::call2(helper, !!!args, .ns = "dplyr")
     expr <- rewrite_local_across_selection(expr, group_vars, forbidden_names)
     rlang::eval_tidy(expr)
   }
