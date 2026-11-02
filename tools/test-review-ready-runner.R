@@ -175,7 +175,7 @@ local({
   expect(grepl("Package build/check, the complete suite and snapshots omitted: fixture explicit judgment",
     output, fixed = TRUE), "source explicitly records package build/check, complete suite and snapshots omission")
   expect(!grepl("Waiting for heavy", output, fixed = TRUE), "source never requests admission")
-  flooded <- finish(start(repo, extra = c(FIXTURE_LARGE_OUTPUT = "true")), timeout = 10000L)
+  flooded <- finish(start(repo, extra = c(FIXTURE_LARGE_OUTPUT = "true")))
   expect(grepl("Five mandatory checks passed", flooded, fixed = TRUE) &&
     length(gregexpr("fixture stdout payload", flooded, fixed = TRUE)[[1L]]) == 65536L,
     "source completes and retains child output larger than a pipe buffer")
@@ -186,12 +186,12 @@ local({
     file.path(bin, "git"))
   Sys.chmod(file.path(bin, "git"), "0755")
   exited <- finish(start(repo, extra = c(R_PROFILE_USER = profile,
-    FIXTURE_INSPECTION_MODE = "exited", FIXTURE_RACE_INJECTED = race_marker)), timeout = 10000L)
+    FIXTURE_INSPECTION_MODE = "exited", FIXTURE_RACE_INJECTED = race_marker)))
   expect(file.exists(race_marker) && grepl("Five mandatory checks passed", exited, fixed = TRUE),
     "an exited leader's generic process-inspection error does not fail the command")
   transient_marker <- file.path(workspace, "transient-race")
   refreshed <- finish(start(repo, extra = c(R_PROFILE_USER = profile,
-    FIXTURE_INSPECTION_MODE = "transient", FIXTURE_RACE_INJECTED = transient_marker)), timeout = 10000L)
+    FIXTURE_INSPECTION_MODE = "transient", FIXTURE_RACE_INJECTED = transient_marker)))
   unlink(file.path(bin, "git"))
   expect(file.exists(transient_marker) && file.exists(paste0(transient_marker, "-refreshed")) &&
     identical(readLines(transient_marker)[[2L]], "live leader") &&
@@ -242,7 +242,6 @@ local({
         actual <- if (run$is_alive()) "running" else run$get_exit_status()
         fail_command(run, paste0(label, ": readiness condition unmet; actual status ", actual, "."))
       }
-      Sys.sleep(0.05)
     }
   }
   waiting <- function(run) {
@@ -253,7 +252,7 @@ local({
   }
   marker <- file.path(workspace, "ready-after-output")
   buffered <- start(repo, extra = c(FIXTURE_LARGE_OUTPUT = "true", FIXTURE_OUTPUT_READY = marker))
-  wait_for(buffered, function() file.exists(marker), "marker follows large child output", 10)
+  wait_for(buffered, function() file.exists(marker), "marker follows large child output")
   buffered_output <- finish(buffered)
   expect(grepl("Five mandatory checks passed", buffered_output, fixed = TRUE) &&
     length(gregexpr("fixture stdout payload", buffered_output, fixed = TRUE)[[1L]]) == 65536L,
@@ -345,7 +344,7 @@ local({
     ps::ps_is_running(leader) && ps::ps_is_running(child),
     "live inspection errors keep capacity occupied while owned children remain")
   unlink(inspection_gate)
-  inspected <- finish(inspecting, 1L, 10000L)
+  inspected <- finish(inspecting, 1L)
   expect(grepl("No such file or directory", inspected, fixed = TRUE) &&
     !grepl("Full package check passed", inspected, fixed = TRUE) && !ps::ps_is_running(child),
     "live inspection failure is preserved after owned child cleanup")
