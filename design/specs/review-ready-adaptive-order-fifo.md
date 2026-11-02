@@ -1,9 +1,12 @@
 # Measured test order and FIFO Review-ready admission
 
-Status: final draft awaiting maintainer confirmation, 2026-11-03. The individual
-design decisions below are agreed; this consolidated replacement awaits final
-approval. FIFO remains the original independent request. Implementation and
-adoption are not claimed.
+Status: dispatch mechanism reopened, 2026-11-03. The maintainer challenged the
+implementation and maintenance burden of unregistered-first dispatch. The
+previous final draft did not adequately explain its private execution-adapter
+dependency. The recommendation below awaits approval; the earlier
+unregistered-first agreement is held pending that choice. Other agreed
+boundaries and the independent FIFO request remain. Implementation and adoption
+are not claimed.
 [ADR 0040](../adr/0040-learn-local-test-order-and-admit-heavy-checks-fifo.md)
 records the scope boundary. Existing package CI is unchanged.
 
@@ -69,13 +72,42 @@ Concurrent or stale proposals follow the existing
 The consolidated replacement specification awaits final approval before
 implementation or a revised ticket breakdown is published.
 
-## Agreed unregistered-first dispatch
+## Dispatch mechanism — reopened decision
 
-For full Review-ready, dispatch discovered files absent from the tracked
-priority before the registered priorities, without consulting timing history.
-Within the unregistered group, preserve deterministic test discovery order;
-within the registered group, preserve the tracked priority. This is dispatch
-priority, not a guarantee of worker start timestamps or completion order.
+testthat 3.3.2 supports tracked start-first patterns, followed by remaining
+files alphabetically. Its `test_dir()` reads the setting itself, so passing
+`start_first` through `test_check(...)` duplicates an internally supplied
+argument. A public discovery function accepting an order is not an execution
+override. See the [parallel-testing guide](https://testthat.r-lib.org/articles/parallel.html)
+and [versioned implementation](https://github.com/r-lib/testthat/blob/v3.3.2/R/test-files.R).
+
+The previous unregistered-first draft required a private execution adapter;
+it was not achievable by unchanged metadata and ordinary `test_check()` alone.
+That burden was insufficiently explained in the approval summary.
+
+The replacement recommendation, not yet approved, is ordinary `test_check()`
+dispatch with the committed priority. A file absent from the priority may run
+late on its first full check. After successful measurement, propose its tracked
+priority using the agreed registration and adoption rules, effective after a
+normal Git commit. This retains the original next-run learning goal while
+removing the custom execution adapter and provisional-registration state.
+
+Two alternatives remain available if first-run priority is essential:
+
+- Prepend missing filenames to DESCRIPTION before the code commit, then use
+  ordinary `test_check()`. This changes ordinary package/CI priority as well.
+  Membership no longer identifies previously measured files. Preserving the
+  existing registration exception and all-skipped rules would need separately
+  tracked provisional status, or a revision of those rules.
+- Retain the earlier Review-ready-only private execution adapter, with its
+  compatibility checks, actual-worker fixtures and fallback behavior. This
+  preserves first-run priority at the cost of maintaining the execution seam.
+
+The maintainer has not selected among these alternatives. Do not treat the
+recommendation as implementation authorization. Removing the execution
+adapter does not remove the separate private worker-timing hook used by the
+calibration; accurate file intervals and cleanup still need that narrow
+observational seam. Controller reporter replay is not a replacement clock.
 
 Here, "unregistered" is an observable Git-state property, not proof that a file
 has never run. A newly added or renamed file is unregistered; changing the body
@@ -85,17 +117,19 @@ proposal. Successful measurement alone does not change registration: only a
 committed priority update does.
 
 The calibration measured native testthat dispatch, which placed unregistered
-files after the registered list. Its modeled improvement is therefore not a
-measurement of the agreed unregistered-first behavior. The design worktree
-changes no production priority or execution path.
+files after the registered list. It therefore matches the recommended first-run
+ordering, but its modeled proposals still do not establish an observed speedup
+after adoption. Dispatch priority never guarantees worker start timestamps or
+completion order. The design worktree changes no production priority or
+execution path.
 
 ## Agreed registration of newly measured files
 
 Include every successfully and validly measured unregistered file in the next
 priority-update proposal, including lightweight files. All-skipped files and
-files without eligible measurements stay unregistered. Otherwise, lightweight
-files would remain in the unregistered-first group on every invocation. The
-commit records priority membership and order, not historical duration samples.
+files without eligible measurements stay unregistered. This records all
+eligible observations as priority membership, not only expensive promotions.
+The commit records membership and order, not historical duration samples.
 Generating the proposal does not itself register a file.
 
 Remove entries for deleted test files as priority-list maintenance. A renamed
@@ -125,8 +159,9 @@ baseline. Both schedules use the same invocation's measured file durations;
 this calculation requires no additional test execution. If the estimate is
 smaller, retain the existing relative order and keep eligible registrations in
 the proposal. Report the adopted proposal's estimated effect against the actual
-unregistered-first dispatch as well, without substituting native append-last
-behavior as that baseline. An estimate is not a measured speedup or a
+dispatch of the measured invocation as well. Under the new recommendation that
+baseline is native registered-first dispatch, not the previous draft's
+unregistered-first schedule. An estimate is not a measured speedup or a
 statistical guarantee; ten seconds is the initial operating threshold.
 
 Apply the resulting proposal alongside the next ordinary code-change commit,
@@ -174,13 +209,15 @@ failures: never swallow a package-test, worker or ordinary runner failure. Do
 not retry a suite after dispatch has begun. FIFO state/ownership errors retain
 their separate visible-failure policy below.
 
-Activate recording and adjusted dispatch only for full Review-ready. Source
-scope, ordinary package tests and ordinary package CI retain their existing
-execution paths. Keep any testthat-private adapter narrow and check its
-supported shape before dispatch. The optimized path must execute the same
-discovered files exactly once with the ordinary failure, snapshot and parallel
-semantics. Do not rewrite the committed, tarball or installed DESCRIPTION to
-inject an invocation's order.
+Activate recording only for full Review-ready. Under the recommended native
+dispatch design, all invocations retain ordinary `test_check()` execution;
+recording observes worker boundaries without replacing test dispatch. The
+earlier adjusted-dispatch and execution-adapter provisions apply only if the
+maintainer chooses that held alternative. Every path must execute the same
+discovered files exactly once with ordinary failure, snapshot and parallel
+semantics. Do not rewrite a pinned source, tarball or installed DESCRIPTION to
+inject an invocation's order. Any pre-commit metadata alternative needs its
+explicitly revised registration rules agreed before implementation.
 
 ## FIFO heavy admission
 

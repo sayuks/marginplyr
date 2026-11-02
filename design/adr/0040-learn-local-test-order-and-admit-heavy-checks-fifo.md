@@ -8,8 +8,9 @@ The original task requested measured heavy-first test dispatch and FIFO local
 heavy admission. Keep the tracked start-first setting as the persistent order
 source and retain the existing heavy lock, pinned source and terminal-result
 authority. The [specification](../specs/review-ready-adaptive-order-fifo.md)
-records the consolidated ordering workflow and independent FIFO requirements;
-its final draft awaits maintainer confirmation.
+records the ordering workflow and independent FIFO requirements. The dispatch
+mechanism was reopened after the maintainer challenged the private execution
+adapter needed by unregistered-first dispatch; a replacement awaits confirmation.
 
 A dedicated timing CI pipeline is not an approved requirement. The maintainer
 clarified that asking about CI was exploratory, and reopened the prior approval.
@@ -21,9 +22,16 @@ The agreed replacement boundaries use measurements from one already-requested,
 successful complete full Review-ready check, without a shared timing database
 or rolling local history. Proposals may join the next ordinary code-change
 commit in the same pull request; the new revision still needs its applicable
-verification. Full Review-ready dispatches files absent from the tracked list
-before registered priorities; changing an already registered file under the
-same name does not make it unregistered. Every eligible newly measured file,
+verification. The earlier unregistered-first choice is held pending an informed
+decision about its execution-adapter burden. The recommended replacement keeps
+ordinary `test_check()`, accepts native append-last ordering for a file's first
+measurement, and updates tracked priority for later checks. This recommendation
+is not approved yet. Pre-commit priority edits or a private execution adapter
+remain alternatives if first-run priority is essential. The separate private
+worker-timing hook remains a maintenance dependency even under native dispatch.
+
+Changing an already registered file under the same name does not make it
+unregistered. Every eligible newly measured file,
 including lightweight files, belongs in the next registration proposal.
 Optional existing-file reorderings cross only differences greater than both
 50% and ten seconds, and are adopted only for at least ten seconds of modeled
