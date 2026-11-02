@@ -205,12 +205,32 @@ sql_margin_type_anchor <- function(.data, branch, source_columns,
 # would hide a defect in the branch builders.
 bind_margin_branches <- function(branches) {
   check_branch_columns(branches)
-  vctrs::vec_rbind(!!!branches, .name_repair = function(names) {
-    if (anyDuplicated(names) || !all(nzchar(names))) {
-      vctrs::vec_as_names(names, repair = "check_unique")
+  public_names <- names(branches[[1L]])
+  private_names <- paste0(
+    "marginplyr_column_", seq_along(public_names), recycle0 = TRUE
+  )
+  branches <- lapply(branches, function(branch) {
+    columns <- names(branch)
+    if (anyDuplicated(columns) || !all(nzchar(columns))) {
+      vctrs::vec_as_names(columns, repair = "check_unique")
     }
-    names
+    # Protect exact public names, including triple-dot suffixes (#784), while
+    # leaving vector-internal name repair to ordinary vctrs combination.
+    rename_margin_branch_columns(branch, public_names, private_names)
   })
+  result <- vctrs::vec_rbind(!!!branches)
+  rename_margin_branch_columns(result, private_names, public_names)
+}
+
+# Rename a branch's known columns through dplyr so subclass metadata follows.
+# Dot-dot names need a column frame because tidyselect refuses those names.
+rename_margin_branch_columns <- function(data, from, to) {
+  if (any(margin_dot_dot_names(c(from, to)))) {
+    return(rlang::set_names(
+      margin_column_source(data), to[match(names(data), from)]
+    ))
+  }
+  dplyr::rename(data, !!!stats::setNames(from, to))
 }
 
 # `names()` rather than `get_col_names()`: this runs on data frames only, where
