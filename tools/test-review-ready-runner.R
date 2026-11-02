@@ -36,6 +36,7 @@ local({
   install_tool("spelling", c(
     'spell_check_package <- function(...) {',
     '  cat("fixture spelling executed\\n")',
+    '  if (Sys.getenv("FIXTURE_LARGE_OUTPUT") == "true") cat(strrep("fixture stdout payload\\n", 65536L))',
     '  if (file.exists("spelling-failure")) return(data.frame(word="failure"))',
     '  data.frame()', '}'
   ), "spell_check_package")
@@ -124,16 +125,22 @@ local({
     run
   }
   finish <- function(run, status = 0L, timeout = 120000L) {
-    run$wait(timeout)
+    deadline <- Sys.time() + timeout / 1000
+    output <- character()
+    repeat {
+      run$poll_io(50L)
+      output <- c(output, run$read_output())
+      if (!run$is_alive() || Sys.time() >= deadline) break
+    }
     timed_out <- run$is_alive()
     if (timed_out) {
-      output <- run$read_output()
       run$kill_tree()
       run$wait()
       stop("Command timed out after ", timeout / 1000,
-        " seconds. Child output:\n", output, call. = FALSE)
+        " seconds. Child output:\n", paste0(output, collapse = ""), call. = FALSE)
     }
-    output <- paste(run$read_all_output_lines(), collapse = "\n")
+    run$wait()
+    output <- paste0(c(output, run$read_all_output()), collapse = "")
     if (!identical(run$get_exit_status(), status)) stop(output, call. = FALSE)
     output
   }
@@ -147,6 +154,10 @@ local({
   expect(grepl("Package build/check, the complete suite and snapshots omitted: fixture explicit judgment",
     output, fixed = TRUE), "source explicitly records package build/check, complete suite and snapshots omission")
   expect(!grepl("Waiting for heavy", output, fixed = TRUE), "source never requests admission")
+  flooded <- finish(start(repo, extra = c(FIXTURE_LARGE_OUTPUT = "true")), timeout = 10000L)
+  expect(grepl("Five mandatory checks passed", flooded, fixed = TRUE) &&
+    length(gregexpr("fixture stdout payload", flooded, fixed = TRUE)[[1L]]) == 65536L,
+    "source completes and retains child output larger than a pipe buffer")
   shared <- file.path(account, ".local", "state", "marginplyr", "review-ready-heavy.lock")
   dir.create(dirname(shared), recursive = TRUE)
   lock <- filelock::lock(shared, timeout = 0)
