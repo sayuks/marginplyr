@@ -158,6 +158,23 @@ test_that("forwarded empty function arguments remain missing", {
   expect_identical(actual, expected)
 })
 
+test_that("injected empty quosures remain supplied function arguments", {
+  data <- data.frame(x = 1:3)
+  f <- function(x, extra = 10) if (missing(extra)) 100 else 300
+  for (env in list(rlang::global_env(), rlang::empty_env())) {
+    empty <- rlang::new_quosure(rlang::missing_arg(), env)
+    expression <- rlang::expr((function(...) dplyr::across(...))(
+      .cols = x, .fns = f, extra = !!empty
+    ))
+    expected <- suppressWarnings(dplyr::summarise(data, value = !!expression))
+    expect_identical(expected$value$x, 300)
+    actual <- suppressWarnings(
+      summarize_with_margins(data, value = !!expression)
+    )
+    expect_identical(actual, expected)
+  }
+})
+
 test_that("forwarded arguments keep their evaluation order and environments", {
   data <- data.frame(g = c("a", "a", "b"), x = 1:3, y = c(7, 9, 11))
   for (helper in c("across", "if_any", "if_all")) {
