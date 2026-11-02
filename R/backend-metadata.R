@@ -481,7 +481,7 @@ margin_column_info <- function(data_proxy,
   schema <- proxy_columns(data_proxy, read)
 
   prototypes <- lapply(schema[dimensions], function(x) {
-    if (is.data.frame(x) || is.array(x)) {
+    if (identical(backend$kind, "local") || is.data.frame(x) || is.array(x)) {
       vctrs::vec_init(x, 1L)
     } else if (identical(backend$kind, "duckdb")) {
       dbplyr::sql("NULL")
