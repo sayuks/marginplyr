@@ -114,6 +114,8 @@ local({
     repo
   }
   start <- function(repo, scope = "source", extra = character()) {
+    cat("Runner fixture: ", basename(repo), " --scope ", scope, "\n", sep = "")
+    flush.console()
     run <- processx::process$new(rscript,
       c("tools/review-ready.R", "--scope", scope, "--reason", "fixture explicit judgment"),
       wd = repo, env = c(env, extra), stdout = "|", stderr = "2>&1",
@@ -123,7 +125,14 @@ local({
   }
   finish <- function(run, status = 0L, timeout = 120000L) {
     run$wait(timeout)
-    expect(!run$is_alive(), "command reached terminal completion")
+    timed_out <- run$is_alive()
+    if (timed_out) {
+      output <- run$read_output()
+      run$kill_tree()
+      run$wait()
+      stop("Command timed out after ", timeout / 1000,
+        " seconds. Child output:\n", output, call. = FALSE)
+    }
     output <- paste(run$read_all_output_lines(), collapse = "\n")
     if (!identical(run$get_exit_status(), status)) stop(output, call. = FALSE)
     output
