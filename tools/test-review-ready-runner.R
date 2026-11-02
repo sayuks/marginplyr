@@ -355,7 +355,7 @@ local({
   symlink <- file.path(runs_root,"foreign-symlink")
   expect(file.symlink(outside,symlink), "fixture symlink")
   finish(start(repo))
-  expect(all(!dir.exists(c(boundary,old_failure,killed))) &&
+  expect(!any(dir.exists(c(boundary,old_failure,killed))) &&
     all(dir.exists(c(young,active,uncertain,invalid,outside))),
     "seven-day start-time expiry protects active, uncertain and foreign data")
   filelock::unlock(guard)
