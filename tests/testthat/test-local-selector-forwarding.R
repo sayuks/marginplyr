@@ -151,7 +151,7 @@ test_that("forwarded empty function arguments remain missing", {
   }
   expression <- rlang::expr((function(...) dplyr::across(...))(
     .cols = x, .fns = f, extra =
-  ))
+    ))
   expected <- suppressWarnings(dplyr::summarise(data, value = !!expression))
   expect_identical(expected$value$x, 6L)
   actual <- suppressWarnings(summarize_with_margins(data, value = !!expression))
