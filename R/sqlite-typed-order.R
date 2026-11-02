@@ -131,6 +131,9 @@ sqlite_typed_result <- function(operation, unsorted, ordered,
     )
     public_query <- sqlite_boolean_query(public_query, source, boolean_aliases)
   }
+  if (length(boolean_aliases) > 0L) {
+    ordered <- sqlite_boolean_public_query(ordered)
+  }
   class(ordered) <- c("marginplyr_sqlite_typed_result", class(ordered))
   attr(ordered, "marginplyr_anchored_input") <- !is.null(input_anchor)
   attr(ordered, "marginplyr_boolean_aliases") <- boolean_aliases[
