@@ -339,6 +339,8 @@ This is a single-context repo. Read the root `CONTEXT.md` and relevant ADRs unde
 
 ### Code review
 
+For PR bodies, use `pr` with [the repository mapping](design/agents/pr.md).
+
 Reviews run through `mattpocock-skills:code-review`. Pass what a finding about
 prose may be — *Answering a review* in `design/architecture.md` — alongside the
 standards sources. Review against the merge-base with `main`, and push the
