@@ -1358,7 +1358,8 @@ resolve_summary_selections <- function(dots,
           defer_nested_local = defer_nested_local[[i]],
           skip_nested_deferred = skip_nested_deferred,
           group_vars = group_vars,
-          forbidden_names = dot_forbidden_names
+          forbidden_names = dot_forbidden_names,
+          top_level_unnamed = !nzchar(rlang::names2(dots)[[i]])
         ),
         error = function(cnd) {
           if (is_unsupported_predicate(cnd)) {
@@ -1381,7 +1382,8 @@ rewrite_summary_selections <- function(expr,
                                        defer_nested_local = FALSE,
                                        skip_nested_deferred = FALSE,
                                        group_vars = character(),
-                                       forbidden_names = character()) {
+                                       forbidden_names = character(),
+                                       top_level_unnamed = FALSE) {
   if (!rlang::is_call(expr)) {
     return(expr)
   }
@@ -1434,8 +1436,11 @@ rewrite_summary_selections <- function(expr,
 
   if (call_name %in% c("across", "if_any", "if_all")) {
     if (defer_local) {
+      # An unnamed top-level across uses dplyr's expansion path (ADR 0019).
       return(rewrite_local_across_selection(
-        expr, group_vars, forbidden_names
+        expr, group_vars, forbidden_names,
+        capture_forwarded = !(top_level_unnamed &&
+                                identical(call_name, "across"))
       ))
     }
     return(rewrite_across_selection(
@@ -1496,13 +1501,15 @@ local_summary_selection_expr <- function(selection, group_vars,
 
 # Leaves `.cols` for local dplyr to resolve against its current summary mask.
 rewrite_local_across_selection <- function(expr, group_vars,
-                                           forbidden_names) {
+                                           forbidden_names,
+                                           capture_forwarded = TRUE) {
   parsed <- parse_across_arguments(expr)
   call_args <- parsed$call_args
   if (
-    rlang::is_symbol(parsed$cols, "...") ||
-      (rlang::is_symbol(parsed$cols) &&
-         grepl("^\\.\\.[1-9][0-9]*$", rlang::as_string(parsed$cols)))
+    capture_forwarded &&
+      (rlang::is_symbol(parsed$cols, "...") ||
+         (rlang::is_symbol(parsed$cols) &&
+            grepl("^\\.\\.[1-9][0-9]*$", rlang::as_string(parsed$cols))))
   ) {
     return(rlang::call2(
       rlang::call2(
