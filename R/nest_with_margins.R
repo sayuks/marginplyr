@@ -402,7 +402,7 @@ execute_margin_nest <- function(operation, .key, .keep, rowwise) {
                 if (identical(operation$backend$kind, "dtplyr")) {
                   # data.table groups factors by their stored codes rather
                   # than a vctrs equality proxy.
-                  return(rlang::expr(as.integer(unclass(!!value))))
+                  return(rlang::expr(base::as.integer(base::unclass(!!value))))
                 }
                 # Group identifiers retain source equality.
                 rlang::expr(vctrs::vec_group_id(!!value))

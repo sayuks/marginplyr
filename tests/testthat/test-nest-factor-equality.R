@@ -157,6 +157,30 @@ test_that("dtplyr nesting retains its factor-code equality groups", {
   }
 })
 
+test_that("dtplyr factor nesting ignores caller integer helpers", {
+  skip_if_suggest_absent("dtplyr")
+  input <- tibble::tibble(
+    g = factor(c("A", "a"), levels = c("A", "a", NA_character_),
+               exclude = NULL),
+    row_id = 1:2
+  )
+  rlang::local_bindings(
+    as.integer = function(...) stop("caller as.integer was captured"),
+    unclass = function(...) stop("caller unclass was captured")
+  )
+  source <- dtplyr::lazy_dt(input)
+
+  for (verb in list(nest_with_margins, nest_by_with_margins)) {
+    result <- verb(source, .grouping = grouping_set(g))
+    if (inherits(result, "dtplyr_step")) {
+      result <- dplyr::collect(result)
+    }
+    expect_identical(
+      lapply(result$data, function(cell) cell$row_id), list(1L, 2L)
+    )
+  }
+})
+
 test_that("factor nesting separates NA levels, missing codes and margins", {
   for (ordered in c(FALSE, TRUE)) {
     g <- structure(c(1L, 1L, 2L, NA_integer_),
