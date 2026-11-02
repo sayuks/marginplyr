@@ -4541,6 +4541,7 @@ scope_callee_is_shadowed <- function(callee, name, bound, lookup) {
     return(FALSE)
   }
   env <- lookup$env
+  own_lookup <- exclude_generic <- FALSE
   if (rlang::is_call(callee)) {
     resolver <- static_call_name(callee)
     if (is.null(resolver) || is.null(function_naming_formal(resolver))) {
@@ -4565,6 +4566,16 @@ scope_callee_is_shadowed <- function(callee, name, bound, lookup) {
     if (is.null(binding)) {
       return(FALSE)
     }
+    if (resolver %in% c("get", "get0")) {
+      inherited <- base_call_argument(callee, "inherits", definition = binding)
+      own_lookup <- length(inherited) > 0L &&
+        !identical(unparenthesized_value(inherited[[1L]]), TRUE)
+    }
+    if (identical(resolver, "getFunction")) {
+      generic <- base_call_argument(callee, "generic", definition = binding)
+      exclude_generic <- length(generic) > 0L &&
+        !identical(unparenthesized_value(generic[[1L]]), TRUE)
+    }
     environment <- base_call_argument(
       callee, c("envir", "pos", "where"), definition = binding
     )
@@ -4584,16 +4595,27 @@ scope_callee_is_shadowed <- function(callee, name, bound, lookup) {
         }
       }
       env <- topenv(env)
-    } else if (name %in% lookup$mask) {
+    } else if (own_lookup || name %in% lookup$mask) {
       return(FALSE)
     }
   }
   if (!lookup_environment_is_external(
-    env, bound, lookup, safe_parents = FALSE
+    env, bound, lookup, inherits = !own_lookup, safe_parents = FALSE
   )) {
     return(FALSE)
   }
-  binding <- ordinary_function_binding(name, env)
+  binding <- if (own_lookup) {
+    if (!exists(name, envir = env, inherits = FALSE) ||
+          bindingIsActive(name, env) || rlang::env_binding_are_lazy(env, name)) {
+      return(FALSE)
+    }
+    get(name, envir = env, inherits = FALSE)
+  } else {
+    ordinary_function_binding(name, env)
+  }
+  if (exclude_generic && inherits(binding, "genericFunction")) {
+    return(FALSE)
+  }
   is.function(binding) && !identical(binding, get(name, envir = baseenv()))
 }
 

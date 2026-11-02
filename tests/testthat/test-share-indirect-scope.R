@@ -74,6 +74,22 @@ test_that("caller functions with mutation names keep ordinary lookup", {
     },
     {
       prior <- 2
+      base::`parent.env<-`(functions, environment())
+      (get0("rm", envir = functions, inherits = FALSE))("prior")
+      sum(prior)
+    },
+    {
+      prior <- 2
+      (getFunction("rm", generic = FALSE, where = functions))("prior")
+      sum(prior)
+    },
+    {
+      prior <- 2
+      (getFunction("rm", generic = TRUE, where = generics))("prior")
+      sum(prior)
+    },
+    {
+      prior <- 2
       (get("rm", envir = child))("prior")
       sum(prior)
     },
@@ -109,8 +125,11 @@ test_that("caller functions with mutation names keep ordinary lookup", {
         outside = outside, rm = function(...) NULL,
         `parent.env<-` = function(...) NULL
       )
-      scope$functions <- scope
-      scope$child <- new.env(parent = scope)
+      scope$functions <- rlang::env(baseenv(), rm = function(...) NULL)
+      scope$child <- new.env(parent = scope$functions)
+      scope$generics <- rlang::env(
+        baseenv(), rm = structure(function(...) NULL, class = "genericFunction")
+      )
       expression <- rlang::new_quosure(expression, scope)
       result <- summarize_with_margins(
         data, prior = sum(x), value = !!expression,
@@ -240,6 +259,51 @@ test_that("do.call separates function values from string target lookup", {
         class = "marginplyr_error"
       )
       expect_identical(calls$n, 0L)
+    }
+  }
+})
+
+test_that("resolver lookup options cannot expose a hidden base mutation", {
+  data <- data.frame(group = c("a", "b"), x = c(1, 3), prior = c(100, 300))
+  removals <- alist(
+    (get0("rm", inherits = FALSE, ifnotfound = base::rm))("prior"),
+    (get0("rm", envir = outside, inherits = FALSE,
+          ifnotfound = base::rm))("prior"),
+    (getFunction("rm", generic = FALSE, where = functions))("prior")
+  )
+  for (input in list(data, dbplyr::tbl_lazy(data))) {
+    for (kind in c("parent", "total")) {
+      helper <- rlang::call2(paste0("share_of_", kind), quote(value))
+      for (removal in removals) {
+        functions <- rlang::env(
+          baseenv(), rm = structure(function(...) NULL, class = "genericFunction")
+        )
+        scope <- rlang::env(
+          rm = function(...) NULL, functions = functions,
+          outside = new.env(parent = functions)
+        )
+        expression <- rlang::new_quosure(rlang::expr({
+          prior <- 2
+          !!removal
+          sum(prior)
+        }), scope)
+        expect_error(
+          summarize_with_margins(
+            input, prior = sum(x), value = !!expression,
+            fraction = !!helper, .grouping = rollup(group)
+          ),
+          "depends on earlier summary alias `prior`",
+          class = "marginplyr_error"
+        )
+        expect_error(
+          summarize_with_margins(
+            input, value = sum(x), prior = !!helper,
+            derived = !!expression, .grouping = rollup(group)
+          ),
+          "Ordinary summaries cannot use an earlier .* share",
+          class = "marginplyr_error"
+        )
+      }
     }
   }
 })
