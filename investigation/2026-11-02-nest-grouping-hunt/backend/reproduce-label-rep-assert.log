@@ -1,0 +1,20 @@
+SHA: 978d7bef4247bf1348af5b90bfab47924db25500
+Unmasked lazy query:
+setcolorder(funion(copy(`_DT1`)[, `:=`(..marginplyr_nest_1 = g)][,
+    `:=`(..marginplyr_nest_2 = g)][, `:=`(g = as.character(g))][,
+    `:=`(set = 1L)], copy(`_DT1`)[, `:=`(..marginplyr_nest_1 = g)][,
+    `:=`(..marginplyr_nest_2 = g)][, `:=`(g = rep("Total", length(g)))][,
+    `:=`(..marginplyr_nest_2 = vctrs::vec_rep(NA_character_,
+        length(g)))][, `:=`(set = 2L)], all = TRUE)[, .(data = list(data.table::as.data.table(list(g = ..marginplyr_nest_1,
+    row_id = row_id))), g = vctrs::vec_slice(g, base::seq_len(base::min(vctrs::vec_size(g),
+    1L)))), keyby = .(set, ..marginplyr_nest_2)][, `:=`(..marginplyr_nest_2 = NULL)],
+    c("g", "set", "data"))
+Masked previously built lazy result; helper reads: 1
+# A tibble: 2 × 3
+  g       set data
+  <chr> <int> <list>
+1 a         1 <dt [1 × 2]>
+2 MASK      2 <dt [1 × 2]>
+Restoring only the helper binding made the same query's keys: a, Total
+Error: identical(actual$g, expected) is not TRUE
+Execution halted

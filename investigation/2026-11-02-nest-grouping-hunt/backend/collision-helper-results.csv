@@ -1,0 +1,9 @@
+"helper","verb","collision_reads","refused"
+"as.character","nest",1,FALSE
+"as.character","nest_by",2,FALSE
+"as.character","expand",1,FALSE
+"as.character","summarize",1,FALSE
+"sum","nest",1,FALSE
+"sum","nest_by",1,FALSE
+"sum","expand",1,FALSE
+"sum","summarize",1,FALSE

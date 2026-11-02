@@ -1,0 +1,8 @@
+source : 2, 1, 2 => 2, 1, 2
+native : 1, 2 => 1, 2
+nest : 1, 2, Total => CORRUPTED, CORRUPTED, Total
+rowwise : 1, 2, Total => CORRUPTED, CORRUPTED, Total
+expand : 2, 1, 2, Total, Total, Total => CORRUPTED, CORRUPTED, CORRUPTED, Total, Total, Total
+summary : 1, 2, Total => CORRUPTED, CORRUPTED, Total
+Error: identical(base$nest$g, masked$nest$g) is not TRUE
+Execution halted

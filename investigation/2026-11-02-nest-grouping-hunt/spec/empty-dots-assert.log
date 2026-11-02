@@ -1,0 +1,6 @@
+Minimal result:
+<getvarError in FUN(X[[i]], ...): argument "value" is missing, with no default>
+Direct tidyselect control:
+named integer(0)
+Error: !inherits(minimal, "error") is not TRUE
+Execution halted

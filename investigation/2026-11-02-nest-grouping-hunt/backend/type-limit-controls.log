@@ -1,0 +1,9 @@
+SHA: 978d7bef4247bf1348af5b90bfab47924db25500
+raw nest one-set successful; multi-set: unsupported column type found in x or y: [raw]
+raw nest_by one-set successful; multi-set: unsupported column type found in x or y: [raw]
+raw native union: unsupported column type found in x or y: [raw]
+complex nest one-set successful; multi-set: unsupported column type found in x or y: [complex]
+complex nest_by one-set successful; multi-set: unsupported column type found in x or y: [complex]
+complex native union: unsupported column type found in x or y: [complex]
+list native grouping: Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process.
+rcrd native row selection: Column 2 ['p'] is length 2 but column 1 is length 4; malformed data.table.
