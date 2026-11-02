@@ -1,110 +1,69 @@
-# CI-measured test order and FIFO Review-ready admission
+# Measured test order and FIFO Review-ready admission
 
-Status: accepted and ticketed, 2026-11-02. The maintainer approved FIFO,
-rejected local timing-history dependencies, chose CI-centralized measurement,
-and approved the implementation-ticket breakdown. Implementation and rollout
-remain pending. This revision replaces local measurement/update automation and
-the earlier shared timing-cache proposal.
+Status: ordering workflow reopened, 2026-11-02. The maintainer clarified that
+the CI question was exploratory, not a request to introduce a dedicated timing
+pipeline. The previous record of CI as an agreed requirement is withdrawn.
+A replacement ordering workflow awaits confirmation. FIFO remains the original
+independent request; implementation and adoption are not claimed.
 [ADR 0040](../adr/0040-learn-local-test-order-and-admit-heavy-checks-fifo.md)
-records the decision history and amendment to the accepted
-[runner specification](review-ready-repository-runner.md).
+records the scope boundary. Existing package CI is unchanged.
 
-## Goals and boundaries
+## Requirements and unresolved choices
 
-Use one canonical CI measurement to improve subsequent test-file ordering
-through Git-managed configuration. Admit local heavy checks in acceptance
-order, preventing repeated overtaking of an earlier waiter.
+The task has two independent goals:
 
-`DESCRIPTION`'s `Config/testthat/start-first` remains the sole persistent
-priority authority. A checkout at a given SHA needs neither a home-directory
-cache nor previous measurements. CI publishes measurements and a reviewable
-update patch as artifacts; applying, committing and merging that patch are
-ordinary agent/reviewer actions, not automatic CI writes to Git.
+1. Use measured test-file duration to keep expensive files, including new files,
+   from being dispatched too late in later Review-ready checks.
+2. Admit heavy Review-ready requests in acceptance order across this user's
+   clones and worktrees.
 
-Retain local Review-ready's repository entry, source/full judgment, five checks,
-pinned input, one shared heavy slot, four workers, complete suite and snapshots,
-terminal-result authority, original execution handle, ordinary cancellation and
-bounded same-agent investigation. It uses its committed order without querying
-CI artifacts or measuring files for automatic order updates. Shared FIFO state
-coordinates current processes on the same machine and contains no timing
-history.
+The existing tracked `Config/testthat/start-first` setting remains the priority
+source. Preserve the repository command, source/full judgment, five baseline
+checks, pinned committed source, one shared heavy slot, four workers, complete
+suite/snapshots, terminal-result authority and retained execution ownership.
 
-## Canonical CI measurement
+A shared local timing database, per-worktree rolling history and mandatory
+CI artifact retrieval are not execution prerequisites. A dedicated measurement
+CI job is not an agreed requirement. Existing CI checks and runner regression
+fixtures retain their existing validation role.
 
-Use one macOS / R-release, four-worker, noncoverage configuration with the
-complete test suite, snapshots enabled and registered required Suggests
-asserted present. Do not mix CRAN-semantic snapshot-skipping jobs, coverage
-measurements, backend-withholding jobs, other platforms or R versions. Preserve
-those jobs' existing responsibilities rather than silently changing their
-semantics. A dedicated main-push/manual job is the recommended initial host;
-PR infrastructure fixtures verify this feature without requiring an additional
-full measurement suite on every PR.
+The source of measurements and the update/application workflow are reopened.
+Do not treat earlier approval of the CI-dependent ticket breakdown as authority
+to implement that design after this clarification.
 
-Measure worker elapsed time around each file's execution including its file
-cleanup. Queue waiting, worker startup, worker-wide helper/setup and final
-worker teardown are outside file duration. Controller callbacks are buffered
-and replayed, so their arrival times are not measurements.
+## Recommended smaller proposal — not yet approved
 
-Publish an artifact with run/attempt identity, measured SHA, environment and
-dependency versions, actual worker count, discovered file identities, and
-per-file start/end/duration/skip status. Retain diagnostics on failure, but mark
-measurements eligible only after a successful complete check and validation of
-one matching start/end pair per discovered file, finite nonnegative durations
-and the expected worker configuration. Failed, cancelled, partial, duplicate
-or malformed observations cannot produce an update. All-skipped files provide
-no promotion evidence.
+Reuse the full Review-ready check that the caller already requested. Measure
+worker file intervals within that check, rather than introduce a separate
+measurement-only full run or dedicated CI job. Keep observations with the
+invocation's ordinary artifacts; they are outputs of that invocation, not a
+persistent store required by later test execution.
 
-Use opt-in worker instrumentation, isolating any required private testthat hook.
-Preserve normal `test_check()` execution, helpers/setup, snapshots, reporters,
-cleanup and failure behavior. Unsupported instrumentation or invalid timings
-must suppress a proposal with a visible explanation, never turn a failed test
-into a pass or launch a replacement suite. Configure finite CI artifact
-retention; no rolling timing store is needed for future execution.
+After a successful complete check, use its eligible measurements and the
+committed priority to prepare an update proposal. The proposal records its SHA,
+file identities and reasons for moving files. Failed, interrupted, incomplete
+or all-skipped observations provide no promotion evidence. Controller reporter
+replay cannot supply worker duration; measurement surrounds actual file work
+and cleanup with startup and worker-wide teardown kept separate.
 
-## Stable priority proposals and Git integration
+The [three-run calibration](../../investigation/review-ready-order-calibration-2026-11-02.md)
+remains evidence for conservative margins. Its >50% and >10-second stable
+promotions are a candidate initial rule, not an assurance of zero churn or an
+automatic merge decision. Include estimated whole-suite benefit so an agent can
+distinguish worthwhile changes from negligible suggestions.
 
-Generate a deterministic patch and summary from one eligible canonical CI
-result. Include its source SHA/run, moved files and measured evidence. The
-proposal includes every discovered file exactly once and removes obsolete
-literal entries. Newly added heavy files can be promoted after their first
-eligible measurement. Retain no three-sample median, cross-run timing history,
-raw seconds or refreshing timestamps in tracked configuration.
+A candidate priority update would become effective through an explicit Git
+commit at a normal work boundary. Its new SHA needs its own applicable
+verification; the measurement result cannot certify it. Later validation must
+not automatically apply another proposal or create an edit/recheck loop. A
+fresh clone executes the committed priority without a prior local history.
+Concurrent or stale proposals follow the existing
+[integration workflow](../agents/integration.md).
 
-The initial conservative rule promotes a file only if it is both more than
-50 percent and more than 10 seconds slower than a file it overtakes. Starting
-from normal priority/discovery order, use stable insertion: process each next
-file, moving it left while both margins hold against the immediately preceding
-file. Stop at a close or ineligible comparison. Equal/short comparisons preserve
-existing priority. A new file starts at its normal unlisted position. This is
-coarse heavy-first ordering, not a statistical error bound or an optimal sort;
-a severe single-run outlier can still influence a reviewable proposal.
-
-A 180s new file can overtake an existing 40s file; existing 100s and 110s files
-keep their relative order. An unchanged list produces no configuration diff.
-Do not create measurement-only commits or force every worktree to merge every
-new measurement.
-
-The [three-run local calibration](../../investigation/review-ready-order-calibration-2026-11-02.md)
-supported these margins as an initial filter, not a zero-churn guarantee or a
-hosted-CI result. Include baseline/candidate four-worker greedy makespan
-estimates and their difference in the proposal summary, clearly labelled as
-modeled benefit. Agents may decline negligible suggestions at the normal Git
-integration boundary; a nonempty patch alone does not justify merging it.
-
-Allow an agent to select the identified CI artifact and apply its proposal to
-an appropriate branch through the normal PR workflow. Reject or regenerate
-stale proposals when relevant measured test contents or priority configuration
-changed; follow the existing [integration workflow](../agents/integration.md).
-Do not combine concurrent proposals by concatenating lists or blindly selecting
-one conflict side. An independent fresh clone after Git integration must use
-the updated priority with no local measurement history or artifact access.
-
-A priority commit has a new SHA and receives the applicable verification under
-[local checks](../agents/local-checks.md). Prior CI or local evidence does not
-certify it. Subsequent validation may publish another suggestion but never
-applies or commits it, avoiding a measure/edit/recheck loop. All invocations keep
-using their original committed order while running; CI never edits its tested
-source or installed metadata in place.
+Before implementing or republishing the ordering tickets, confirm whether this
+smaller proposal is the chosen replacement, when a proposal should be generated,
+and how adoption avoids unnecessary extra verification for negligible gains.
+The recommendation does not create a new approved implementation scope.
 
 ## FIFO heavy admission
 
@@ -156,42 +115,33 @@ Running cancellation collects owned children before releasing capacity. Abrupt
 running-parent termination retains ADR 0039's accepted descendant-cleanup limits;
 FIFO adds neither strict crash-time exclusion nor automatic retries.
 
-## Policy amendment and adoption
+## FIFO policy boundary and adoption
 
-The proposed exception to the accepted runner's exclusion of a custom queue
-manager is limited to minimal FIFO bookkeeping. Timing history remains outside
-local execution dependencies. CI artifacts are evidence for a Git update, not
-an online ordering service. No daemon, watchdog, durable result ledger, AI
-notification/resumption or focused-test scheduler is introduced.
+Minimal FIFO bookkeeping remains separate from timing history. It coordinates
+live processes using the existing heavy-lock target; it is not a measurement
+store, CI service, daemon or general recovery platform. Preserve bounded waiting
+from [#1135](https://github.com/sayuks/marginplyr/issues/1135) /
+[PR #1152](https://github.com/sayuks/marginplyr/pull/1152).
 
-The FIFO implementation follows the bounded-wait repair in
-[#1135](https://github.com/sayuks/marginplyr/issues/1135) /
-[PR #1152](https://github.com/sayuks/marginplyr/pull/1152), preserving its resource
-and cancellation guarantees. Reconcile ADR 0039, the accepted runner
-specification, runner guide and local-check guidance as behavior is implemented.
-Keep the heavy-lock target. Drain pre-FIFO checks and waiters before claiming
-adoption: an older runner respects exclusion but may overtake participants.
-FIFO covers upgraded participants without old-session migration, fleet
-inventory or a compatibility launcher. Unknown queue formats fail visibly
-rather than starting independent queues.
+Reconcile the accepted runner guidance when FIFO is implemented. Drain pre-FIFO
+checks and waiters before claiming adoption: older runners still preserve
+exclusion but may overtake participating requests. No old-session migration,
+fleet inventory or compatibility launcher is required. Actual Mac adoption is
+separate evidence from disposable CI fixtures or design approval.
 
-## Implementation slices
+## Ticket status after reconsideration
 
-1. [#1155: Canonical CI worker timings](https://github.com/sayuks/marginplyr/issues/1155)
-   publishes eligible worker measurements with real worker fixtures and preserved
-   check verdicts. No blocking ticket.
-2. [#1158: Stable priority updates](https://github.com/sayuks/marginplyr/issues/1158)
-   produces noise-resistant patches, reports estimated whole-suite benefit and
-   verifies Git-based application in a fresh clone. Blocked by #1155.
-3. [#1156: FIFO heavy admission](https://github.com/sayuks/marginplyr/issues/1156)
-   provides bounded waiting, cancellation, dead-waiter pruning and real
-   cross-clone/worktree process fixtures. Blocked by existing #1135, independently
-   of either CI slice.
-4. [#1157: Actual Mac adoption](https://github.com/sayuks/marginplyr/issues/1157)
-   reconciles operational guidance and records retained-handle/cutover evidence.
-   Blocked by #1156 only.
+- [#1155](https://github.com/sayuks/marginplyr/issues/1155), the dedicated CI
+  measurement proposal, is `needs-info` with its previous scope retained only
+  as context. It is not approved implementation work.
+- [#1158](https://github.com/sayuks/marginplyr/issues/1158), the CI-dependent
+  priority-update proposal, is also `needs-info` until its input and workflow
+  are agreed again. Existing dependency links are retained pending revision.
+- [#1156](https://github.com/sayuks/marginplyr/issues/1156) retains the independent
+  FIFO request and its dependency on #1135.
+- [#1157](https://github.com/sayuks/marginplyr/issues/1157) retains actual Mac FIFO
+  adoption, blocked by #1156. Its CI-timing prerequisite was removed; FIFO
+  adoption does not depend on choosing or implementing the ordering workflow.
 
-Each ticket owns its regression coverage and applicable policy updates. Actual
-Mac adoption remains distinct from CI fixture results. Native GitHub blocking
-relationships record the approved edges. This specification and its calibration
-changed no production runner, FIFO state or tracked priority.
+The calibration records remain unchanged. No production runner, test priority,
+CI workflow or live queue was changed by this specification correction.
