@@ -19,15 +19,15 @@ The requested scope was investigation and ticket publication. No package
 implementation, package regression tests, dependency metadata, generated
 documentation or build exclusions were changed. The user delegated ticket
 granularity and publication, so the interactive breakdown checkpoint of
-`to-tickets` was omitted. Four independent P2 deliveries were recommended;
-none needed another as a blocker.
+`to-tickets` was omitted. Four independent P2 tickets were published with
+`bug` and `ready-for-agent`; none needed another as a blocker.
 
-| Finding | Delivery | Established effect |
+| Finding | Ticket | Established effect |
 | --- | --- | --- |
-| F1 | Preserve populated dots forwarding in local summary selectors | Ordinary dplyr accepted the inline selector; the Margin rewrite failed |
-| F2 | Reject known fixed-key overlap before typed metadata | DuckDB sent an avoidable metadata query; dtplyr hid the overlap diagnostic |
-| F3 | Track visible list2env rebinding in share dependency analysis | Forbidden dependencies were accepted and a derived column read input payload instead of the displayed share |
-| F4 | Keep native DuckDB shares bound to displayed volatile values | Eligible sequence summaries produced fractions inconsistent with their visible parent or Grand total |
+| F1 | [#1138](https://github.com/sayuks/marginplyr/issues/1138) | Ordinary dplyr accepted the inline selector; the Margin rewrite failed |
+| F2 | [#1139](https://github.com/sayuks/marginplyr/issues/1139) | DuckDB sent an avoidable metadata query; dtplyr hid the overlap diagnostic |
+| F3 | [#1140](https://github.com/sayuks/marginplyr/issues/1140) | Forbidden dependencies were accepted and a derived column read input payload instead of the displayed share |
+| F4 | [#1141](https://github.com/sayuks/marginplyr/issues/1141) | Eligible sequence summaries produced fractions inconsistent with their visible parent or Grand total |
 
 ## Confirmed findings and evidence
 
