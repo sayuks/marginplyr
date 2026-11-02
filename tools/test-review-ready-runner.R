@@ -184,9 +184,16 @@ local({
   Sys.chmod(file.path(bin, "git"), "0755")
   exited <- finish(start(repo, extra = c(R_PROFILE_USER = profile,
     FIXTURE_INSPECTION_MODE = "exited", FIXTURE_RACE_INJECTED = race_marker)), timeout = 10000L)
-  unlink(file.path(bin, "git"))
   expect(file.exists(race_marker) && grepl("Five mandatory checks passed", exited, fixed = TRUE),
     "an exited leader's generic process-inspection error does not fail the command")
+  transient_marker <- file.path(workspace, "transient-race")
+  refreshed <- finish(start(repo, extra = c(R_PROFILE_USER = profile,
+    FIXTURE_INSPECTION_MODE = "transient", FIXTURE_RACE_INJECTED = transient_marker)), timeout = 10000L)
+  unlink(file.path(bin, "git"))
+  expect(file.exists(transient_marker) && file.exists(paste0(transient_marker, "-refreshed")) &&
+    identical(readLines(transient_marker)[[2L]], "live leader") &&
+    grepl("Five mandatory checks passed", refreshed, fixed = TRUE),
+    "a transient child-handle ENOENT accepts a fresh valid snapshot while its leader lives")
   shared <- file.path(account, ".local", "state", "marginplyr", "review-ready-heavy.lock")
   dir.create(dirname(shared), recursive = TRUE)
   lock <- filelock::lock(shared, timeout = 0)
@@ -202,8 +209,7 @@ local({
   git(repo, "rm", "--quiet", "jarl-failure")
   git(repo, "commit", "--quiet", "-m", "repair preflight")
   submitted <- git(repo, "rev-parse", "HEAD")
-  waiter <- start(repo, "full", c(R_PROFILE_USER = file.path(root, "tools", "fixtures",
-    "review-ready-error-trace.R")))
+  waiter <- start(repo, "full")
   deadline <- Sys.time() + 30
   repeat {
     drain_output(waiter, 100L)

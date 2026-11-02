@@ -5,14 +5,20 @@ review_ready_account_home <- function() {
   path.expand(paste0("~", Sys.info()[["user"]]))
 }
 
-# Collects descendant identities while the owned parent is still alive.
-# Inspection errors remain errors unless its processx handle confirms exit.
+# Collects descendant identities; a ps child-disappearance race gets one refresh.
+# A live parent's unresolved inspection error remains fatal.
 review_ready_children <- function(process) {
   if (!process$is_alive()) return(list())
-  tryCatch(ps::ps_children(ps::ps_handle(process$get_pid()), recursive = TRUE),
+  snapshot <- function() ps::ps_children(ps::ps_handle(process$get_pid()), recursive = TRUE)
+  tryCatch(snapshot(),
     error = function(cnd) {
       if (!process$is_alive()) return(list())
-      stop(cnd)
+      if (!inherits(cnd, "os_error") || !inherits(cnd, "ps_error") || !identical(cnd$errno, 2L)) stop(cnd)
+      # Linux ps can lose a child between its PID map and handle creation.
+      tryCatch(snapshot(), error = function(repeated) {
+        if (!process$is_alive()) return(list())
+        stop(cnd)
+      })
     })
 }
 
