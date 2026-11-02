@@ -30,9 +30,10 @@ expect_true <- function(actual, label) {
   expect_identical(isTRUE(actual), TRUE, label)
 }
 
+fixture_maintainer <- "Example Maintainer <maintainer@example.invalid>"
 new_submission <- paste(
   "* checking CRAN incoming feasibility ... NOTE",
-  "Maintainer: 'Yusuke Sasaki <sayuks.dev@gmail.com>'",
+  paste0("Maintainer: '", fixture_maintainer, "'"),
   "",
   "New submission",
   sep = "\n"
@@ -50,8 +51,8 @@ expect_identical(
   "the required cran-comments marker"
 )
 curly_quoted_submission <- sub(
-  "'Yusuke Sasaki <sayuks.dev@gmail.com>'",
-  "\u2018Yusuke Sasaki <sayuks.dev@gmail.com>\u2019",
+  paste0("'", fixture_maintainer, "'"),
+  paste0("\u2018", fixture_maintainer, "\u2019"),
   new_submission,
   fixed = TRUE
 )
@@ -71,15 +72,14 @@ local({
     "An ordinary ASCII NOTE",
     "an ordinary NOTE sourced under the C locale"
   )
-  quoted <- sub("'Yusuke Sasaki <sayuks.dev@gmail.com>'",
-    "\u2018Yusuke Sasaki <sayuks.dev@gmail.com>\u2019", new_submission, fixed = TRUE)
   expect_identical(
-    policy$classify_cran_note(quoted, "unpublished")$status,
+    policy$classify_cran_note(curly_quoted_submission, "unpublished")$status,
     "allowed-note",
     "UTF-8 quotes under the C locale"
   )
+  extra_finding <- paste(curly_quoted_submission, "Another finding", sep = "\n")
   expect_identical(
-    policy$classify_cran_note(paste(quoted, "Another finding", sep = "\n"), "unpublished")$status,
+    policy$classify_cran_note(extra_finding, "unpublished")$status,
     "unknown-note",
     "the C locale does not widen the NOTE allowance"
   )
