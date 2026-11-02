@@ -1,0 +1,8 @@
+policy,relative_margin,absolute_margin_s,sequential_post_first_updates_min,sequential_post_first_updates_max,moved_positions_run_1,moved_positions_run_2,moved_positions_run_3,promoted_files_run_1,promoted_files_run_2,promoted_files_run_3,new_promoted_each_run,mean_crossing_agreement,crossing_union,crossings_supported_all_3,held_out_median_gain_s,held_out_min_gain_s,held_out_max_gain_s
+0.5-relative+10s,0.5,10,1,2,192,190,190,4,4,4,4/4/4,0.989054,489,484,59.5315,58.966,60.914
+0.5-relative+5s,0.5,5,1,2,193,191,191,8,8,8,8/8/8,0.97682,835,826,62.7095,61.872,62.798
+0.25-relative+10s,0.25,10,0,2,192,192,192,4,4,4,4/4/4,0.991809,489,486,59.5305,58.963,60.914
+0.25-relative+5s,0.25,5,1,2,193,193,193,8,8,8,8/8/8,0.98337,923,916,62.7075,61.893,62.797
+0.2-relative+5s,0.2,5,2,2,193,193,193,8,8,8,8/8/8,0.982648,924,916,62.7115,61.893,62.789
+0.1-relative+2s,0.1,2,2,2,194,193,193,9,9,9,9/9/9,0.986445,1236,1221,65.266,64.443,65.673
+0-relative+0s,0.0,0,2,2,192,192,188,108,108,115,10/10/10,0.871042,1774,1443,65.528,64.582,65.87

@@ -1,0 +1,247 @@
+Review-ready commit: 69599fb59b050cdab9f93e2b473117f8e643ac8e
+Artifacts: /private/tmp/marginplyr-review-ready-order-calibration-20261102/.review-ready/runs/20261102T130419Z-46030-b3ce7e2e91d6
+Scope: full
+Reason: User-requested calibration 2/3: repeat the same committed four-worker full check and measure worker file intervals to evaluate the proposed 50-percent plus 10-second ordering margin.
+
+==> Test dependency syntax
+
+==> Required test Suggests
+
+==> Package spelling
+Package spelling passed.
+
+==> jarl
+── Summary ──────────────────────────────────────
+All checks passed!
+
+==> package-aware lintr
+ℹ No lints found.
+
+Waiting for heavy package-check capacity.
+Heavy package-check capacity acquired.
+
+==> Build source tarball
+* checking for file ‘/private/tmp/marginplyr-review-ready-order-calibration-20261102/.review-ready/runs/20261102T130419Z-46030-b3ce7e2e91d6/source/DESCRIPTION’ ... OK
+* preparing ‘marginplyr’:
+* checking DESCRIPTION meta-information ... OK
+* installing the package (it is needed to build vignettes)
+* creating vignettes ... OK
+* checking for LF line-endings in source and make files and shell scripts
+* checking for empty or unneeded directories
+* building ‘marginplyr_0.1.0.tar.gz’
+
+
+==> Source-tarball R CMD check --as-cran (one attempt)
+* using log directory ‘/private/tmp/marginplyr-review-ready-order-calibration-20261102/.review-ready/runs/20261102T130419Z-46030-b3ce7e2e91d6/check/marginplyr.Rcheck’
+* using R version 4.6.1 (2026-06-24)
+* using platform: aarch64-apple-darwin23
+* R was compiled by
+    Apple clang version 17.0.0 (clang-1700.3.19.1)
+    GNU Fortran (GCC) 14.2.0
+* running under: macOS Tahoe 26.6.2
+* using session charset: UTF-8
+* current time: 2026-11-02 13:05:14 UTC
+* using option ‘--as-cran’
+* checking for file ‘marginplyr/DESCRIPTION’ ... OK
+* this is package ‘marginplyr’ version ‘0.1.0’
+* package encoding: UTF-8
+* checking CRAN incoming feasibility ... OK
+* checking package namespace information ... OK
+* checking package dependencies ... OK
+* checking if this is a source package ... OK
+* checking if there is a namespace ... OK
+* checking for executable files ... OK
+* checking for hidden files and directories ... OK
+* checking for portable file names ... OK
+* checking for sufficient/correct file permissions ... OK
+* checking whether package ‘marginplyr’ can be installed ... OK
+* checking installed package size ... OK
+* checking package directory ... OK
+* checking for future file timestamps ... OK
+* checking ‘build’ directory ... OK
+* checking DESCRIPTION meta-information ... OK
+* checking top-level files ... OK
+* checking for left-over files ... OK
+* checking index information ... OK
+* checking package subdirectories ... OK
+* checking code files for non-ASCII characters ... OK
+* checking R files for syntax errors ... OK
+* checking whether the package can be loaded ... OK
+* checking whether the package can be loaded with stated dependencies ... OK
+* checking whether the package can be unloaded cleanly ... OK
+* checking whether the namespace can be loaded with stated dependencies ... OK
+* checking whether the namespace can be unloaded cleanly ... OK
+* checking loading without being on the library search path ... OK
+* checking use of S3 registration ... OK
+* checking dependencies in R code ... OK
+* checking S3 generic/method consistency ... OK
+* checking replacement functions ... OK
+* checking foreign function calls ... OK
+* checking R code for possible problems ... OK
+* checking Rd files ... OK
+* checking Rd metadata ... OK
+* checking Rd line widths ... OK
+* checking Rd cross-references ... OK
+* checking for missing documentation entries ... OK
+* checking for code/documentation mismatches ... OK
+* checking Rd \usage sections ... OK
+* checking Rd contents ... OK
+* checking for unstated dependencies in examples ... OK
+* checking contents of ‘data’ directory ... OK
+* checking data for non-ASCII characters ... OK
+* checking LazyData ... OK
+* checking data for ASCII and uncompressed saves ... OK
+* checking installed files from ‘inst/doc’ ... OK
+* checking files in ‘vignettes’ ... OK
+* checking examples ... OK
+* checking for unstated dependencies in ‘tests’ ... OK
+* checking tests ...
+Starting 4 test processes.
+[tests 00:00] 0/196 files completed (0.0%); last: none
+[tests 00:05] 0/196 files completed (0.0%); last: none
+[tests 00:10] 0/196 files completed (0.0%); last: none
+[tests 00:15] 0/196 files completed (0.0%); last: none
+[tests 00:20] 0/196 files completed (0.0%); last: none
+[tests 00:25] 0/196 files completed (0.0%); last: none
+[tests 00:30] 0/196 files completed (0.0%); last: none
+[tests 00:35] 0/196 files completed (0.0%); last: none
+[tests 00:40] 0/196 files completed (0.0%); last: none
+[tests 00:45] 0/196 files completed (0.0%); last: none
+[tests 00:50] 0/196 files completed (0.0%); last: none
+[tests 00:55] 0/196 files completed (0.0%); last: none
+[tests 01:00] 0/196 files completed (0.0%); last: none
+[tests 01:05] 0/196 files completed (0.0%); last: none
+[tests 01:10] 1/196 files completed (0.5%); last: test-query-policy.R
+[tests 01:15] 1/196 files completed (0.5%); last: test-query-policy.R
+[tests 01:20] 1/196 files completed (0.5%); last: test-query-policy.R
+[tests 01:25] 1/196 files completed (0.5%); last: test-query-policy.R
+[tests 01:30] 1/196 files completed (0.5%); last: test-query-policy.R
+[tests 01:35] 2/196 files completed (1.0%); last: test-sql-expansion-input-limits.R
+[tests 01:40] 2/196 files completed (1.0%); last: test-sql-expansion-input-limits.R
+[tests 01:45] 2/196 files completed (1.0%); last: test-sql-expansion-input-limits.R
+[tests 01:50] 2/196 files completed (1.0%); last: test-sql-expansion-input-limits.R
+[tests 01:55] 2/196 files completed (1.0%); last: test-sql-expansion-input-limits.R
+[tests 02:00] 2/196 files completed (1.0%); last: test-sql-expansion-input-limits.R
+[tests 02:05] 2/196 files completed (1.0%); last: test-sql-expansion-input-limits.R
+[tests 02:10] 2/196 files completed (1.0%); last: test-sql-expansion-input-limits.R
+[tests 02:15] 3/196 files completed (1.5%); last: test-sqlite-wide-expansion.R
+[tests 02:20] 4/196 files completed (2.0%); last: test-sqlite-wide-plan-threshold.R
+[tests 02:25] 4/196 files completed (2.0%); last: test-sqlite-wide-plan-threshold.R
+[tests 02:30] 4/196 files completed (2.0%); last: test-sqlite-wide-plan-threshold.R
+[tests 02:35] 4/196 files completed (2.0%); last: test-sqlite-wide-plan-threshold.R
+[tests 02:40] 5/196 files completed (2.6%); last: test-sqlite-boolean-names.R
+[tests 02:45] 5/196 files completed (2.6%); last: test-sqlite-boolean-names.R
+[tests 02:50] 5/196 files completed (2.6%); last: test-sqlite-boolean-names.R
+[tests 02:55] 5/196 files completed (2.6%); last: test-sqlite-boolean-names.R
+[tests 03:00] 5/196 files completed (2.6%); last: test-sqlite-boolean-names.R
+[tests 03:05] 5/196 files completed (2.6%); last: test-sqlite-boolean-names.R
+[tests 03:10] 7/196 files completed (3.6%); last: test-dtplyr-special-nesting.R
+[tests 03:15] 7/196 files completed (3.6%); last: test-dtplyr-special-nesting.R
+[tests 03:20] 8/196 files completed (4.1%); last: test-dtplyr-special-fixed-shares.R
+[tests 03:25] 8/196 files completed (4.1%); last: test-dtplyr-special-fixed-shares.R
+[tests 03:30] 8/196 files completed (4.1%); last: test-dtplyr-special-fixed-shares.R
+[tests 03:35] 8/196 files completed (4.1%); last: test-dtplyr-special-fixed-shares.R
+[tests 03:40] 8/196 files completed (4.1%); last: test-dtplyr-special-fixed-shares.R
+[tests 03:45] 10/196 files completed (5.1%); last: test-dtplyr-special-names.R
+[tests 03:51] 10/196 files completed (5.1%); last: test-dtplyr-special-names.R
+[tests 03:56] 11/196 files completed (5.6%); last: test-parenthesized-across-sources.R
+[tests 04:01] 11/196 files completed (5.6%); last: test-parenthesized-across-sources.R
+[tests 04:06] 11/196 files completed (5.6%); last: test-parenthesized-across-sources.R
+[tests 04:11] 11/196 files completed (5.6%); last: test-parenthesized-across-sources.R
+[tests 04:16] 12/196 files completed (6.1%); last: test-duckdb-structured-missing.R
+[tests 04:21] 13/196 files completed (6.6%); last: test-local-selection-scope-matrix.R
+[tests 04:26] 14/196 files completed (7.1%); last: test-followup-summary.R
+[tests 04:31] 15/196 files completed (7.7%); last: test-sql-dot-dot-summary.R
+[tests 04:36] 15/196 files completed (7.7%); last: test-sql-dot-dot-summary.R
+[tests 04:41] 16/196 files completed (8.2%); last: test-competing-process.R
+[tests 04:46] 16/196 files completed (8.2%); last: test-competing-process.R
+[tests 04:51] 17/196 files completed (8.7%); last: test-sqlite-interruption.R
+[tests 04:56] 19/196 files completed (9.7%); last: test-contextual-helpers.R
+[tests 05:01] 19/196 files completed (9.7%); last: test-contextual-helpers.R
+[tests 05:06] 20/196 files completed (10.2%); last: test-sqlite-boolean-env-input.R
+[tests 05:11] 20/196 files completed (10.2%); last: test-sqlite-boolean-env-input.R
+[tests 05:16] 22/196 files completed (11.2%); last: test-share-collation.R
+[tests 05:21] 23/196 files completed (11.7%); last: test-dtplyr-dot-dot-identifiers.R
+[tests 05:26] 23/196 files completed (11.7%); last: test-dtplyr-dot-dot-identifiers.R
+[tests 05:31] 24/196 files completed (12.2%); last: test-arrow-narrow-partitions.R
+[tests 05:36] 26/196 files completed (13.3%); last: test-partial-source-summary.R
+[tests 05:41] 27/196 files completed (13.8%); last: test-sqlite-data-expansion.R
+[tests 05:46] 27/196 files completed (13.8%); last: test-sqlite-data-expansion.R
+[tests 05:51] 28/196 files completed (14.3%); last: test-sqlite-typed-order.R
+[tests 05:56] 30/196 files completed (15.3%); last: test-arrow-dictionary-dimensions.R
+[tests 06:01] 31/196 files completed (15.8%); last: test-local-summary-types.R
+[tests 06:06] 32/196 files completed (16.3%); last: test-pronoun-margin-dimensions.R
+[tests 06:11] 33/196 files completed (16.8%); last: test-arrow-partition-expansion.R
+[tests 06:16] 35/196 files completed (17.9%); last: test-dtplyr-share-special-measures.R
+[tests 06:21] 35/196 files completed (17.9%); last: test-dtplyr-share-special-measures.R
+[tests 06:26] 38/196 files completed (19.4%); last: test-sent-query-lifecycle-process.R
+[tests 06:31] 39/196 files completed (19.9%); last: test-margin-order.R
+[tests 06:36] 41/196 files completed (20.9%); last: test-arrow-reexpansion.R
+[tests 06:41] 43/196 files completed (21.9%); last: test-execution-conditions.R
+[tests 06:46] 44/196 files completed (22.4%); last: test-selection-dispatch.R
+[tests 06:51] 47/196 files completed (24.0%); last: test-sqlite-env-keys.R
+[tests 06:56] 48/196 files completed (24.5%); last: test-share-lookup-environments.R
+[tests 07:01] 51/196 files completed (26.0%); last: test-sqlite-env-output.R
+[tests 07:06] 52/196 files completed (26.5%); last: test-sql-env-keys.R
+[tests 07:11] 55/196 files completed (28.1%); last: test-qualified-selection-bindings.R
+[tests 07:16] 58/196 files completed (29.6%); last: test-dtplyr-asis-nesting.R
+[tests 07:21] 60/196 files completed (30.6%); last: test-dtplyr-generated-share-outputs.R
+[tests 07:26] 63/196 files completed (32.1%); last: test-sql-env-share-source.R
+[tests 07:31] 66/196 files completed (33.7%); last: test-sql-env-identifier.R
+[tests 07:36] 67/196 files completed (34.2%); last: test-duckdb-env-compute.R
+[tests 07:41] 71/196 files completed (36.2%); last: test-dtplyr-cached-metadata.R
+[tests 07:46] 75/196 files completed (38.3%); last: test-local-selection-scope.R
+[tests 07:52] 78/196 files completed (39.8%); last: test-branch-union.R
+[tests 07:57] 82/196 files completed (41.8%); last: test-sqlite-declared-boundary.R
+[tests 08:02] 86/196 files completed (43.9%); last: test-sql-share-fixed-keys.R
+[tests 08:07] 90/196 files completed (45.9%); last: test-verb-argument-admission.R
+[tests 08:12] 94/196 files completed (48.0%); last: test-dtplyr-share-by-measure.R
+[tests 08:17] 99/196 files completed (50.5%); last: test-metamorphic-margin-semantics.R
+[tests 08:22] 104/196 files completed (53.1%); last: test-sqlite-empty-declared-types.R
+[tests 08:27] 111/196 files completed (56.6%); last: test-arrow-caller-warnings.R
+[tests 08:32] 122/196 files completed (62.2%); last: test-summarize-operation.R
+[tests 08:37] 137/196 files completed (69.9%); last: test-parenthesized-forwarding.R
+[tests 08:42] 160/196 files completed (81.6%); last: test-dot-data-summary.R
+[tests 08:47] 187/196 files completed (95.4%); last: test-first-local-across-conditions.R
+[tests 08:52] 188/196 files completed (95.9%); last: test-classed-scalar-expansion.R
+[tests 08:57] 189/196 files completed (96.4%); last: test-grouping-leading-errors.R
+[tests 09:02] 189/196 files completed (96.4%); last: test-grouping-leading-errors.R
+[tests 09:07] 192/196 files completed (98.0%); last: test-nest-factor-equality.R
+[tests 09:12] 193/196 files completed (98.5%); last: test-nest-display-helpers.R
+[tests 09:17] 194/196 files completed (99.0%); last: test-expand-inner-names.R
+[tests 09:22] 195/196 files completed (99.5%); last: test-share-indirect-scope.R
+[tests 09:27] 195/196 files completed (99.5%); last: test-share-indirect-scope.R
+[tests 09:32] 195/196 files completed (99.5%); last: test-share-indirect-scope.R
+[tests 09:37] 195/196 files completed (99.5%); last: test-share-indirect-scope.R
+[tests 09:42] 195/196 files completed (99.5%); last: test-share-indirect-scope.R
+[tests 09:47] 195/196 files completed (99.5%); last: test-share-indirect-scope.R
+[tests 09:52] 195/196 files completed (99.5%); last: test-share-indirect-scope.R
+[tests 09:57] 195/196 files completed (99.5%); last: test-share-indirect-scope.R
+[tests 10:02] 195/196 files completed (99.5%); last: test-share-indirect-scope.R
+[tests 10:07] 195/196 files completed (99.5%); last: test-share-indirect-scope.R
+[tests 10:12] 195/196 files completed (99.5%); last: test-share-indirect-scope.R
+[tests 10:17] 195/196 files completed (99.5%); last: test-share-indirect-scope.R
+[tests 10:22] 195/196 files completed (99.5%); last: test-share-indirect-scope.R
+[tests 10:27] 195/196 files completed (99.5%); last: test-share-indirect-scope.R
+[tests 10:32] 195/196 files completed (99.5%); last: test-share-indirect-scope.R
+[tests 10:37] 195/196 files completed (99.5%); last: test-share-indirect-scope.R
+[tests 10:40] 196/196 files completed (100.0%); last: test-sqlite-boolean-composition.R
+  Running ‘testthat.R’ [39m/11m]
+ [39m/11m] OK
+* checking for unstated dependencies in vignettes ... OK
+* checking package vignettes ... OK
+* checking re-building of vignette outputs ... [16s/16s] OK
+* checking PDF version of manual ... OK
+* checking HTML version of manual ... OK
+* checking for non-standard things in the check directory ... OK
+* checking for detritus in the temp directory ... OK
+* DONE
+
+Status: OK
+
+
+R CMD check process status: 0; timeout: FALSE.
+R CMD check: 0 ERROR(s), 0 WARNING(s), 0 NOTE(s).
+No NOTEs.
+
+Full package check passed for 69599fb59b050cdab9f93e2b473117f8e643ac8e.

@@ -1,0 +1,4 @@
+run,session_id,exit_code,files,workers,worker_span_s,last_file_tail_s,sum_file_s,errors,warnings,notes,artifact_directory
+1,44332,0,196,4,621.482316,81.499279,2203.239,0,0,0,/private/tmp/marginplyr-review-ready-order-calibration-20261102/.review-ready/runs/20261102T125152Z-42424-a5b8342782f3
+2,14899,0,196,4,639.743292,81.132606,2278.979,0,0,0,/private/tmp/marginplyr-review-ready-order-calibration-20261102/.review-ready/runs/20261102T130419Z-46030-b3ce7e2e91d6
+3,96347,0,196,4,640.175316,83.185378,2275.788,0,0,0,/private/tmp/marginplyr-review-ready-order-calibration-20261102/.review-ready/runs/20261102T131707Z-48909-bf0d73902bd7
