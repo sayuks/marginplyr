@@ -9,15 +9,17 @@ run_external_selector <- function(data, expression, named, preceding,
   }, environment())
   dots <- list(rlang::new_quosure(expression, rlang::env(environment())))
   if (named) names(dots) <- "value"
-  if (preceding) dots <- c(rlang::quos(ordinary = sum(y)), dots)
+  if (preceding) {
+    dots <- c(list(ordinary = rlang::new_quosure(quote(sum(y)))), dots)
+  }
   warnings <- character()
   error <- NULL
   result <- tryCatch(withCallingHandlers(if (margin) {
     rlang::inject(summarize_with_margins(
-      data, !!!dots, .grouping = grouping_set(g)
+      data, !!!dots, .grouping = grouping_set("g")
     ))
   } else {
-    rlang::inject(dplyr::summarise(data, !!!dots, .by = g))
+    rlang::inject(dplyr::summarise(data, !!!dots, .by = "g"))
   }, warning = function(cnd) {
     warnings <<- c(warnings, conditionMessage(cnd))
     invokeRestart("muffleWarning")
@@ -31,18 +33,20 @@ run_external_selector <- function(data, expression, named, preceding,
 # The selectors and independent-summary control differ only at the public call.
 expect_external_selectors <- function(data) {
   rlang::local_options(lifecycle_verbosity = "warning")
-  expressions <- rlang::exprs(
-    dplyr::across(cols, sum),
-    dplyr::across(dplyr::all_of(cols), sum),
-    dplyr::across((cols), sum),
-    dplyr::across(.env$cols, sum),
-    sum(dplyr::pick(cols))
+  expressions <- list(
+    quote(dplyr::across(cols, sum)),
+    quote(dplyr::across(dplyr::all_of(cols), sum)),
+    quote(dplyr::across((cols), sum)),
+    quote(dplyr::across(.env$cols, sum)),
+    quote(sum(dplyr::pick(cols)))
   )
   for (expression in expressions) {
     for (named in c(FALSE, TRUE)) {
       for (preceding in c(FALSE, TRUE)) {
         for (read_once in c(FALSE, TRUE)) {
-          info <- paste(rlang::as_label(expression), named, preceding, read_once)
+          info <- paste(
+            rlang::as_label(expression), named, preceding, read_once
+          )
           expected <- run_external_selector(
             data, expression, named, preceding, read_once, margin = FALSE
           )
@@ -54,7 +58,9 @@ expect_external_selectors <- function(data) {
           if (is.null(expected$error)) {
             expect_null(actual$error, info = info)
           } else {
-            expect_match(conditionMessage(expected$error), "selector read twice")
+            expect_match(
+              conditionMessage(expected$error), "selector read twice"
+            )
             expect_s3_class(actual$error, class(expected$error)[[1L]])
             expect_match(conditionMessage(actual$error), "selector read twice")
           }
@@ -104,7 +110,7 @@ test_that("external selectors are not forced before Margin-label validation", {
   expect_identical(reads, 0L)
 })
 
-test_that("static selection errors retain precedence over Margin-label errors", {
+test_that("static selection errors precede Margin-label errors", {
   data <- data.frame(first = "a", second = "b", x = 1L)
   empty_pair <- rlang::call2("(", rlang::missing_arg())
   for (empty in c(FALSE, TRUE)) {
