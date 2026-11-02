@@ -28,10 +28,10 @@ The operation verified that all unrelated instruction bytes were preserved.
 A checkout lacking the new `--scope`/`--reason` interface needs an update before
 checking; there is no installed-CLI reinstall or fallback path.
 
-Real `source` and `full` acceptance on the integrated committed revision remains
-pending. The cutover's terminal exit 0 establishes retirement and instruction
-replacement, not a package-check pass. Record the actual invocations' pinned
-SHA, retained execution handles and terminal outcomes separately.
+The cutover's terminal exit 0 establishes retirement and instruction replacement.
+[PR #1124](https://github.com/sayuks/marginplyr/pull/1124) records real `source`
+and `full` results by pinned SHA, retained execution handle and terminal outcome;
+cutover alone is not a package-check pass.
 
 Old worktrees and their existing sessions were not inventoried or migrated.
 They remain outside migration scope, with no individual refresh, compatibility

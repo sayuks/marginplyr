@@ -5,8 +5,9 @@ Status: accepted consolidated target from
 [ADR 0039](../adr/0039-run-review-ready-from-the-target-worktree.md) records
 the amended decision. Implementation and real Mac rollout acceptance are
 separate: [local checks](../agents/local-checks.md#rollout-state) records the
-active entry after the drained Mac cutover on 2026-11-02 and the remaining
-real production acceptance.
+active entry after the drained Mac cutover on 2026-11-02.
+[PR #1124](https://github.com/sayuks/marginplyr/pull/1124) records per-revision
+real `source` and `full` results.
 The entry spelling is fixed as
 `Rscript tools/review-ready.R --scope source|full --reason TEXT`.
 
@@ -131,7 +132,7 @@ Keep all runner-managed artifacts for an invocation together in one ignored dire
 - This is the consolidated specification for #1114 following the maintainer's 2026-11-02 design reset. Earlier interview proposals are historical where they conflict. Implementation and adoption evidence are tracked separately in #1121, #1122 and #1123.
 - The agreed output layout is `<worktree-root>/.review-ready/runs/<run-id>/`, explicitly outside `.git`. The directory must be ignored by both Git and R builds during implementation.
 - The retained six verification contents were established from historical commit `b5f851a25b227eb511127b4fef19d60817bbbc71`, immediately before shared admission was introduced. Reuse those verification contents, not the entire historical runner implementation.
-- #1117 merged an earlier R bootstrap, but merge alone did not establish local cutover. Current operational instructions remain in force until the separately performed implementation/migration reconciles them.
+- #1117 merged an earlier R bootstrap without establishing local cutover. The [retirement guide](../../tools/review-ready-admission.md) records the drained Mac cutover on 2026-11-02.
 - This target intentionally contradicts parts of accepted ADR 0038 and ADR 0039: reusable authenticated evidence, strict recovery, temporary-work cleanup before the common retention deadline, and compulsory old-worktree migration are not retained. ADR 0038 is superseded and ADR 0039 amended accordingly; their historical texts remain available through pinned links.
 - The existing CI audit found a gate-contract invocation, a runner-process fixture invocation, and a renderer fixture invocation, but no direct workflow invocation for the dedicated progress fixture. CI rewiring must follow the simplified retained implementation. Required-status branch protection was not verified; do not claim these checks are already required merge statuses.
 - A prior Codex notification experiment is not part of this target. Do not carry its probe, callback, or queued-message behavior into the implementation.
