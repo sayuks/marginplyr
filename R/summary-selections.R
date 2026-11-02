@@ -1235,10 +1235,8 @@ predictable_local_across_names <- function(dots, input_names) {
   predicted
 }
 
-# A bare name in the first local selection can only name an input column.
-# The empty pair is also statically invalid. Checking these before operation
-# validation preserves tidyselect's condition and refusal order without
-# evaluating a caller predicate.
+# Checks the first local selection's statically decidable names and empty pair
+# before operation validation. External bindings stay with runtime tidyselect.
 preflight_local_selection <- function(dot, selection_proxy) {
   expr <- rlang::quo_get_expr(dot)
   selection <- if (is_static_spelling_call(expr, "selection", "across")) {
@@ -1251,10 +1249,15 @@ preflight_local_selection <- function(dot, selection_proxy) {
   empty_pair <- rlang::is_call(selection, "(") &&
     length(selection) == 2L &&
     rlang::is_missing(selection[[2L]])
-  if (rlang::is_symbol(selection) || empty_pair) {
+  env <- rlang::quo_get_env(dot)
+  static_name <- rlang::is_symbol(selection) && (
+    rlang::as_string(selection) %in% names(selection_proxy) ||
+      !rlang::env_has(env, rlang::as_string(selection), inherit = TRUE)
+  )
+  if (static_name || empty_pair) {
     resolve_summary_selection(
       selection,
-      env = rlang::quo_get_env(dot),
+      env = env,
       data_proxy = selection_proxy
     )
   }
