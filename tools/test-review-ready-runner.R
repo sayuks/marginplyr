@@ -61,7 +61,7 @@ local({
   env <- c(R_LIBS = paste(c(library, .libPaths()), collapse = .Platform$path.sep),
     PATH = paste(bin, Sys.getenv("PATH"), sep = .Platform$path.sep),
     TESTTHAT_PARALLEL = "false")
-  make_repo <- function(name) {
+  make_repo <- function(name, account_home = account) {
     repo <- file.path(workspace, name)
     dir.create(repo)
     paths <- c("tools/review-ready.R", "tools/review-ready-check-lib.R",
@@ -77,7 +77,7 @@ local({
     expect(sum(grepl('path.expand(paste0("~", Sys.info()[["user"]]))', text, fixed=TRUE)) == 1L,
       "fixture must replace exactly one account-home adapter before invoking the runner")
     text <- sub('path.expand(paste0("~", Sys.info()[["user"]]))',
-      encodeString(account, quote = '"'), text, fixed = TRUE)
+      encodeString(account_home, quote = '"'), text, fixed = TRUE)
     writeLines(text, runner)
     writeLines(c("Package: fixture", "Version: 0.0.1", "Title: Process Fixture",
       "Description: Exercises the repository command in a disposable package.",
@@ -165,6 +165,12 @@ local({
     }
     output
   }
+  result_record <- function(output) {
+    lines <- strsplit(output, "\n", fixed = TRUE)[[1L]]
+    directory <- sub("^Artifacts: ", "", grep("^Artifacts: ", lines, value = TRUE))
+    expect(length(directory) == 1L, "command names exactly one artifact directory")
+    readRDS(file.path(directory, "result.rds"))
+  }
   repo <- make_repo("first")
   output <- finish(start(repo))
   expect(all(vapply(c("Test dependency syntax", "Required test Suggests",
@@ -175,6 +181,35 @@ local({
   expect(grepl("Package build/check, the complete suite and snapshots omitted: fixture explicit judgment",
     output, fixed = TRUE), "source explicitly records package build/check, complete suite and snapshots omission")
   expect(!grepl("Waiting for heavy", output, fixed = TRUE), "source never requests admission")
+  # Only the dependency's infinite-wait return is replaced; guards use real locks.
+  null_lock_profile <- file.path(workspace, "null-lock.R")
+  writeLines(c(
+    'local({',
+    '  namespace <- asNamespace("filelock")',
+    '  lock <- filelock::lock',
+    '  unlockBinding("lock", namespace)',
+    '  assign("lock", function(path, exclusive = TRUE, timeout = Inf) {',
+    '    if (is.infinite(timeout)) return(NULL)',
+    '    lock(path, exclusive = exclusive, timeout = timeout)',
+    '  }, namespace)',
+    '  lockBinding("lock", namespace)',
+    '})'
+  ), null_lock_profile)
+  null_lock <- finish(start(repo, "full", c(R_PROFILE_USER = null_lock_profile)), 1L)
+  expect(grepl("Cannot acquire heavy package-check capacity", null_lock, fixed = TRUE) &&
+    !grepl("capacity acquired|Source-tarball R CMD check", null_lock) &&
+    identical(result_record(null_lock)$status, "failed"),
+    "an unexpected infinite-wait timeout fails without starting package work")
+
+  unusable_home <- file.path(workspace, "unusable-account")
+  dir.create(file.path(unusable_home, ".local", "state", "marginplyr", "review-ready-heavy.lock"),
+    recursive = TRUE)
+  unusable_repo <- make_repo("unusable-lock", unusable_home)
+  unusable <- finish(start(unusable_repo, "full"), 1L, 30000L)
+  expect(grepl("Cannot open lock file", unusable, fixed = TRUE) &&
+    !grepl("capacity acquired|Source-tarball R CMD check", unusable) &&
+    identical(result_record(unusable)$status, "failed"),
+    "an unusable heavy-lock target fails without starting package work")
   flooded <- finish(start(repo, extra = c(FIXTURE_LARGE_OUTPUT = "true")))
   expect(grepl("Five mandatory checks passed", flooded, fixed = TRUE) &&
     length(gregexpr("fixture stdout payload", flooded, fixed = TRUE)[[1L]]) == 65536L,
@@ -198,7 +233,7 @@ local({
     grepl("Five mandatory checks passed", refreshed, fixed = TRUE),
     "a transient child-handle ENOENT accepts a fresh valid snapshot while its leader lives")
   shared <- file.path(account, ".local", "state", "marginplyr", "review-ready-heavy.lock")
-  dir.create(dirname(shared), recursive = TRUE)
+  dir.create(dirname(shared), recursive = TRUE, showWarnings = FALSE)
   lock <- filelock::lock(shared, timeout = 0)
   on.exit(if (!is.null(lock)) filelock::unlock(lock), add = TRUE)
   # Capacity is occupied, yet source-only work and failed preflight finish.
@@ -222,6 +257,17 @@ local({
       fail_command(waiter, "Full fixture did not reach shared admission.")
     }
   }
+  # Observe only the waiting runner, after baseline children have exited.
+  waiter_handle <- ps::ps_handle(waiter$get_pid())
+  descriptors <- vapply(c(1, 1, 2), function(delay) {
+    Sys.sleep(delay)
+    drain_output(waiter)
+    expect(waiter$is_alive() && !grepl("capacity acquired", collected_output(waiter), fixed = TRUE),
+      "occupied capacity keeps the measured runner waiting")
+    ps::ps_num_fds(waiter_handle)
+  }, integer(1))
+  cat("Waiting runner descriptors at 1/2/4 seconds: ", paste(descriptors, collapse = "/"), "\n", sep = "")
+  expect(diff(range(descriptors)) <= 2L, "heavy admission waiting keeps descriptor use bounded")
   # Change HEAD only after the submission has reached the occupied slot.
   writeLines("later", file.path(repo, "inst", "revision.txt"))
   git(repo, "add", ".")
@@ -231,6 +277,7 @@ local({
   checked <- finish(waiter)
   expect(grepl(submitted, checked, fixed=TRUE) &&
     grepl("Starting 4 test processes.", checked, fixed=TRUE) &&
+    length(gregexpr("Source-tarball R CMD check --as-cran", checked, fixed = TRUE)[[1L]]) == 1L &&
     grepl("Full package check passed", checked, fixed=TRUE),
     "automatic admission checks submitted source once with four workers")
   wait_for <- function(run, predicate, label, timeout = 45) {
@@ -261,12 +308,15 @@ local({
   lock <- filelock::lock(shared, timeout=0)
   cancelled <- start(repo,"full")
   waiting(cancelled)
+  Sys.sleep(0.5)
   cancelled$signal(2L)
-  cancelled_output <- finish(cancelled,130L)
+  cancelled_output <- finish(cancelled,130L,30000L)
   filelock::unlock(lock)
   lock <- NULL
   expect(grepl("cancelled",cancelled_output,fixed=TRUE) &&
-    !grepl("capacity acquired",cancelled_output,fixed=TRUE), "cancelled waiter never starts")
+    !grepl("capacity acquired|Source-tarball R CMD check",cancelled_output) &&
+    identical(result_record(cancelled_output)$status, "cancelled") && !cancelled$is_alive(),
+    "cancelled waiter records cancellation and never starts after release")
 
   git(repo,"reset","--hard",submitted)
   clone <- file.path(workspace,"separate-clone")

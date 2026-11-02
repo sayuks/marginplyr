@@ -1,8 +1,7 @@
 # Bounded resource use while waiting for heavy capacity
 
-Status: proposed for [#1135](https://github.com/sayuks/marginplyr/issues/1135),
-2026-11-02; awaiting maintainer approval. This document specifies a repair;
-it does not implement it or amend the accepted operating instructions.
+Status: accepted for [#1135](https://github.com/sayuks/marginplyr/issues/1135),
+approved by the maintainer on 2026-11-02.
 
 ## Problem and existing contract
 
@@ -19,7 +18,7 @@ automatic admission after the five mandatory checks, the same execution
 identity, and cancellation that prevents a waiter from starting later. This
 repair adds an explicit resource bound to that wait.
 
-## Recommended decisions
+## Decisions
 
 1. **One acquisition call.** Replace the R retry/sleep loop with one
    `filelock::lock(target, timeout = Inf)` call in the existing runner process.
@@ -156,10 +155,10 @@ the production runner fixture. Execution records were `c8244c` for the lock
 probe and `39438c` for finalizer diagnosis, both terminal zero with no live
 session. These were small probes, not package or Review-ready results.
 
-The proposal therefore relies on process termination to reclaim the one
+The design relies on process termination to reclaim the one
 unacquired descriptor left by interruption. It does not claim that filelock
 closes that descriptor inside an interrupt handler, or support catching
 interrupts and repeatedly restarting acquisition in a long-lived process.
 The production runner's existing cancellation handler terminates the command.
 Longer process-boundary descriptor measurements and production-command
-cancellation remain implementation acceptance work above.
+cancellation are required by the implementation acceptance plan above.

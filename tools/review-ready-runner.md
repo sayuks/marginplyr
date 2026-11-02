@@ -37,6 +37,8 @@ Rscript tools/review-ready.R --scope full --reason 'Explain why package build/ch
 Both forms run the five mandatory checks before any shared-slot request.
 `source` ends with an explicit heavy-check omission. `full` waits inside the
 same command, then starts automatically when its OS advisory lock is available.
+Waiting uses one interruptible lock acquisition, keeping descriptor use bounded
+regardless of wait duration. A lock-acquisition error fails the invocation.
 Keep the same execution handle through checking, cleanup and terminal output.
 The result always names the submitted SHA, scope and reason.
 
