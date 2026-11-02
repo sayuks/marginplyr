@@ -130,6 +130,17 @@ sqlite_typed_result <- function(operation, unsorted, ordered,
       public_anchor, source, boolean_aliases, public = FALSE
     )
     public_query <- sqlite_boolean_query(public_query, source, boolean_aliases)
+    # Later verbs use this ordinary query, whose compound outputs must stay
+    # private until the final public-name projection (#1095).
+    ordered <- sqlite_boolean_query(
+      ordered, source, boolean_aliases, public = FALSE
+    )
+    ordered <- dplyr::rename(
+      ordered, dplyr::all_of(boolean_aliases[
+        intersect(public_columns, names(boolean_aliases))
+      ])
+    )
+    ordered <- sql_quote_generated_columns(ordered)
   }
   class(ordered) <- c("marginplyr_sqlite_typed_result", class(ordered))
   attr(ordered, "marginplyr_anchored_input") <- !is.null(input_anchor)
