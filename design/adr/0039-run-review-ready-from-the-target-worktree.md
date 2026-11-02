@@ -63,6 +63,7 @@ inventory, per-session update or compatibility launcher is required.
 The drained Mac cutover completed on 2026-11-02; the installed command and
 obsolete checker-owned state and diagnostics were removed, and both user-wide
 instruction files were updated. The
-[retirement guide](../../tools/review-ready-admission.md) records the operation
-and outstanding real `source`/`full` acceptance. This ADR's accepted status and
-the cutover alone do not establish a package-check result.
+[retirement guide](../../tools/review-ready-admission.md) records the operation;
+[PR #1124](https://github.com/sayuks/marginplyr/pull/1124) records per-revision
+`source` and `full` results. This ADR's accepted status and the cutover alone
+do not establish a package-check result.
