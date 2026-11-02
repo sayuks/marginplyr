@@ -1,10 +1,9 @@
 ## Local checks
 
-Package-affecting changes need the Review-ready check before
-review; `design/agents/local-checks.md` owns its triggers and freshness.
-When an invocation waits for admission or runs, follow that document's
-*Bounded work while waiting or checking* with the same agent; refresh existing
-sessions under *Session refresh* before their next check.
+Before review, follow `design/agents/local-checks.md` for the active entry,
+required five-check baseline, AI scope judgment and result freshness. While an
+invocation waits or runs, follow its *Bounded work while waiting or checking*
+with the same agent and retain the original execution handle through completion.
 
 ### Always-loaded context
 
