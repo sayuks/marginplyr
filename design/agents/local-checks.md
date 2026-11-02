@@ -9,14 +9,17 @@ authority.
 
 ## Rollout state
 
-The target entry is the repository-owned R command below. Until the maintainer
-completes the drained cutover and updates the user-wide instructions, the
-installed `/Users/sayuks/.local/bin/marginplyr-review-ready` remains the required
-operational entry. Follow that active instruction for production checks; the
-presence of the new files alone does not establish cutover. The
-[retirement guide](../../tools/review-ready-admission.md) records this one-time
-transition. Old worktrees and their existing sessions are outside migration
-scope.
+The drained Mac cutover completed on 2026-11-02. The repository-owned R
+command below is the required operational entry. The installed CLI and obsolete
+checker-owned state and diagnostics were removed, and the user-wide Codex/Claude
+instructions were updated together. The
+[retirement guide](../../tools/review-ready-admission.md) records the operation.
+Old worktrees and their existing sessions are outside migration scope.
+
+Cutover completion does not establish a package-check result. Real `source`
+and `full` acceptance runs on the integrated committed revision remain pending;
+record their pinned SHA and terminal outcomes separately before claiming that
+revision ready for review.
 
 ## Boundary and scope
 
@@ -26,7 +29,7 @@ pull request already ready for review. Alternatively return the pull request
 to draft before pushing, and check before making it ready again.
 
 Inspect the submitted diff and its effects, choose a scope, and supply a
-concrete reason. Run from the worktree root after cutover:
+concrete reason. Run from the worktree root:
 
 ```sh
 Rscript tools/review-ready.R --scope source --reason 'Explain why package build/check can be omitted.'

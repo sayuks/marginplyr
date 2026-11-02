@@ -3,27 +3,39 @@
 The maintainer accepted the simplified repository-owned runner in
 [#1114](https://github.com/sayuks/marginplyr/issues/1114).
 [Local checks](../design/agents/local-checks.md) and the
-[runner guide](review-ready-runner.md) describe its target behavior.
+[runner guide](review-ready-runner.md) describe the active repository entry.
 
-## Drained cutover
+## Completed Mac cutover
 
-Until the maintainer completes this transition, the existing user-wide
-instruction still requires `/Users/sayuks/.local/bin/marginplyr-review-ready`.
-An updated checkout alone does not retire the installed command or authorize
-concurrent use of both admission generations.
+The one-time drained cutover completed on 2026-11-02 at 01:08 UTC. Immediately
+before removal, the installed CLI's `--status` returned exit 0 with
+`requests: []`. The operation held the old admission, evidence and any request
+manager locks after acquiring them without waiting, and held the new stable
+heavy lock through the mutations. No waiting or running check was cancelled.
 
-After all old waiting/running checks finish or their owners cancel them and
-confirm owned work has stopped, adopt the repository R entry, uninstall the
-legacy CLI, and update repository plus user-wide Codex/Claude instructions
-together. Remove obsolete checker-owned coordination state and diagnostics
-only after shutdown, using established ownership rather than a matching name.
-Keep unrelated tools, libraries, shared caches, research and OS reports.
-Record the actual Mac acceptance and terminal-handle evidence before claiming
-rollout complete.
+The operation removed only the installed
+`/Users/sayuks/.local/bin/marginplyr-review-ready`, the obsolete checker-owned
+`~/.local/state/marginplyr/review-ready/`, and the old checker's
+`review-ready-failures` directory under `tools::R_user_dir("marginplyr", "cache")`.
+The new `~/.local/state/marginplyr/review-ready-heavy.lock` remains in place.
+Unrelated tools, libraries, caches, research, history and OS reports were outside
+the operation's targets.
 
-Old worktrees and their existing sessions are outside migration scope. This
-cutover requires no inventory, individual refresh, compatibility launcher,
-status/recovery adapter or automatic migration service for them.
+The marginplyr sections in user-wide Codex `AGENTS.md` and Claude `CLAUDE.md`
+were replaced together with the explicit repository R entry, five mandatory
+checks, AI scope judgment, shared heavy slot and original execution ownership.
+The operation verified that all unrelated instruction bytes were preserved.
+A checkout lacking the new `--scope`/`--reason` interface needs an update before
+checking; there is no installed-CLI reinstall or fallback path.
+
+Real `source` and `full` acceptance on the integrated committed revision remains
+pending. The cutover's terminal exit 0 establishes retirement and instruction
+replacement, not a package-check pass. Record the actual invocations' pinned
+SHA, retained execution handles and terminal outcomes separately.
+
+Old worktrees and their existing sessions were not inventoried or migrated.
+They remain outside migration scope, with no individual refresh, compatibility
+launcher, status/recovery adapter or automatic migration service.
 
 ## History
 
