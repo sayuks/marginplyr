@@ -425,6 +425,12 @@
             }
           },
           {
+            "uses": "r-lib/actions/setup-tinytex@v2",
+            "env": {
+              "TINYTEX_INSTALLER": "TinyTeX"
+            }
+          },
+          {
             "name": "Verify suite-coverage worker execution",
             "run": "Rscript tools/test-suite-coverage-workers.R"
           },

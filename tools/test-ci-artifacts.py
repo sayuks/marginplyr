@@ -78,6 +78,11 @@ class Artifacts(unittest.TestCase):
              'Workflow executable contract changed'),
             (original.replace('Rscript tools/test-review-ready-runner.R', 'echo skipped'),
              'Workflow executable contract changed'),
+            (original.replace('      - uses: r-lib/actions/setup-tinytex@v2\n'
+                              '        env:\n          TINYTEX_INSTALLER: TinyTeX\n\n', ''),
+             'Workflow executable contract changed'),
+            (original.replace('TINYTEX_INSTALLER: TinyTeX', 'TINYTEX_INSTALLER: TinyTeX-0'),
+             'Workflow executable contract changed'),
             (original.replace('LINTR_ERROR_ON_LINT: true', 'LINTR_ERROR_ON_LINT: false'),
              'Workflow executable contract changed'),
             (original.replace('LINTR_ERROR_ON_LINT: true', 'LINTR_ERROR_ON_LINT: yes'),
