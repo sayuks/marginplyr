@@ -66,6 +66,11 @@ test_that("list2env preserves independent lookups and ordinary evaluation", {
   data <- data.frame(group = c("a", "b"), x = c(1, 3), prior = c(100, 300))
   controls <- alist(
     NULL,
+    base::list2env(list(outside = environment())),
+    base::list2env(list(outside = environment()), envir = NULL),
+    base::list2env(list(outside = environment()), envir = (NULL),
+                   parent = environment()),
+    do.call("list2env", list(list(outside = environment()))),
     base::list2env(list(other = environment()), envir = environment()),
     base::list2env(list(), envir = environment()),
     quote(base::list2env(list(outside = environment()), envir = environment())),
