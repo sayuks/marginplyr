@@ -154,12 +154,13 @@ sqlite_typed_result_direct <- function(x) {
   identical(x$lazy_query, attr(x, "marginplyr_original_query"))
 }
 
-# Render the query direct collection runs, keeping the Sent query record
-# aligned with that SQL (ADR 0027).
+# Render direct execution SQL or repair aliases in a derived public query.
+# Direct rendering keeps the Sent query record aligned with that SQL (ADR 0027).
 #' @exportS3Method dbplyr::sql_render
 #' @noRd
 sql_render.marginplyr_sqlite_typed_result <- function(query, ...) {
   if (!sqlite_typed_result_direct(query)) {
+    query <- sqlite_boolean_derived_query(query)
     return(NextMethod())
   }
   union <- attr(query, "marginplyr_typed_union")
