@@ -60,7 +60,9 @@ Drain old checks before retiring the installed CLI, obsolete owned state and
 coordination machinery. Update repository and user-wide instructions together.
 Old worktrees and their running sessions are outside migration scope; no fleet
 inventory, per-session update or compatibility launcher is required.
-The installed command remains operational until this one-time cutover is
-complete. The [retirement guide](../../tools/review-ready-admission.md) records
-the transition. This ADR's accepted status alone does not assert implementation
-or successful rollout.
+The drained Mac cutover completed on 2026-11-02; the installed command and
+obsolete checker-owned state and diagnostics were removed, and both user-wide
+instruction files were updated. The
+[retirement guide](../../tools/review-ready-admission.md) records the operation
+and outstanding real `source`/`full` acceptance. This ADR's accepted status and
+the cutover alone do not establish a package-check result.

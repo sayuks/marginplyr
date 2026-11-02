@@ -31,6 +31,6 @@ reason. The new runner does not classify paths, reuse stages or authenticate
 evidence. Its per-worktree artifacts use one seven-day lifetime from UTC start.
 [Local checks](../agents/local-checks.md) owns scope and outcome reporting;
 [the runner guide](../../tools/review-ready-runner.md) owns execution and storage.
-The installed entry remains operational only until the separately drained
-cutover recorded there. Earlier implementation history does not constitute
-that cutover.
+The installed generation was retired in the drained Mac cutover on
+2026-11-02, recorded in the [retirement guide](../../tools/review-ready-admission.md).
+That operational change does not establish a package-check result.

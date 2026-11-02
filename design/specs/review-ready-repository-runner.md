@@ -5,7 +5,8 @@ Status: accepted consolidated target from
 [ADR 0039](../adr/0039-run-review-ready-from-the-target-worktree.md) records
 the amended decision. Implementation and real Mac rollout acceptance are
 separate: [local checks](../agents/local-checks.md#rollout-state) records the
-active entry until the installed generation is drained and retired.
+active entry after the drained Mac cutover on 2026-11-02 and the remaining
+real production acceptance.
 The entry spelling is fixed as
 `Rscript tools/review-ready.R --scope source|full --reason TEXT`.
 

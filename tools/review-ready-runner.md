@@ -3,9 +3,10 @@
 [Local checks](../design/agents/local-checks.md) owns scope judgment and agent
 workflow. The [specification](../design/specs/review-ready-repository-runner.md)
 and [ADR 0039](../design/adr/0039-run-review-ready-from-the-target-worktree.md)
-own the accepted design. The installed command remains active until the
-[drained cutover](review-ready-admission.md) is complete; these instructions
-describe the target repository entry.
+own the accepted design. The repository entry below became active in the
+[drained Mac cutover](review-ready-admission.md) on 2026-11-02. Real production
+`source` and `full` acceptance on the integrated committed revision is still
+pending; cutover alone is not a check result.
 
 ## Setup and invocation
 
@@ -13,6 +14,9 @@ Install `DESCRIPTION`'s `Config/Needs/review` development tools and make `jarl`
 and `Rscript` available on PATH. These tools are separate from package runtime
 Imports. The checked-out repository supplies the runner; adopting another
 revision through Git updates it without installing a separate launcher.
+If the checkout lacks the `--scope`/`--reason` interface, report that the checkout
+must be updated before Review-ready can run. The retired installed command has
+no reinstall or fallback path; old worktrees are outside migration scope.
 
 From a clean committed worktree root:
 
