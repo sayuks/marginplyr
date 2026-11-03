@@ -105,6 +105,7 @@ class Artifacts(unittest.TestCase):
 
     def test_job_deadlines_require_matching_workflow_contracts(self):
         for name, old, new in (
+                ('R-CMD-check.yaml', 'timeout-minutes: 90', 'timeout-minutes: 89'),
                 ('release-matrix.yaml', 'timeout-minutes: 360', 'timeout-minutes: 359'),
                 ('release-matrix.yaml', 'timeout-minutes: 90', 'timeout-minutes: 89'),
                 ('test-coverage.yaml', 'timeout-minutes: 180', 'timeout-minutes: 179')):
