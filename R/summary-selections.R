@@ -1314,11 +1314,15 @@ context_summary_bindings_safe <- function(expr, lookup, proxy) {
   if (!rlang::is_call(expr)) {
     return(!is.object(expr) && (is.atomic(expr) || is.null(expr)))
   }
+  if (is_parenthesized(static_call_head(expr))) return(FALSE)
   if (is_across_call(expr)) {
     parsed <- parse_across_arguments(expr)
     if (is.null(attr(parsed$names, "marginplyr_across_names", exact = TRUE))) {
       return(FALSE)
     }
+    if (!is.null(parsed$unpack) && !isFALSE(parsed$unpack)) return(FALSE)
+    if (!all(vapply(parsed$additional_args, context_summary_bindings_safe,
+                    logical(1), lookup = lookup, proxy = proxy))) return(FALSE)
     cols <- static_call_args(parsed$cols)
     if (length(cols) != 1L) return(FALSE)
     selected <- static_character_value(cols[[1L]])
@@ -2646,6 +2650,7 @@ parse_across_arguments <- function(expr) {
     fns = if (supplied(fns_index)) call_args[[fns_index]] else NULL,
     names = if (supplied(names_index)) call_args[[names_index]] else NULL,
     unpack = if (supplied(unpack_index)) call_args[[unpack_index]] else NULL,
-    additional = additional_names
+    additional = additional_names,
+    additional_args = call_args[additional]
   )
 }

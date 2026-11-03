@@ -431,6 +431,67 @@ test_that("caller data getters remain opaque to name caching", {
   }
 })
 
+test_that("all evaluated prefix arguments retain ordinary naming effects", {
+  for (kind in c("additional", "unpack", "head", "literal")) {
+    observations <- list()
+    for (mode in c("ordinary", "margin")) {
+      env <- rlang::env(environment(), template = "{.col}_old", calls = 0L)
+      env$change <- evalq(function() {
+        calls <<- calls + 1L
+        template <<- "{.col}_new"
+        TRUE
+      }, env)
+      prefix <- switch(kind,
+        additional = quote(dplyr::across(
+          x, sum, na.rm = change(), .names = "{.col}_first"
+        )),
+        unpack = quote(dplyr::across(
+          x, sum, .unpack = {
+            change()
+            FALSE
+          }, .names = "{.col}_first"
+        )),
+        literal = quote(dplyr::across(
+          x, sum, na.rm = TRUE, .unpack = FALSE, .names = "{.col}_first"
+        )),
+        head = quote((sum)(x))
+      )
+      expressions <- if (kind == "head") {
+        env[["("]] <- evalq(function(x) {
+          change()
+          x
+        }, env)
+        list(prior = prefix)
+      } else {
+        c(rlang::exprs(prior = sum(x)), list(prefix))
+      }
+      expressions <- c(expressions, rlang::exprs(dplyr::across(
+        y, sum, .names = template
+      )))
+      dots <- lapply(expressions, rlang::new_quosure, env = env)
+      data <- data.frame(x = 1:3, y = 5:7)
+      shares <- if (kind == "literal") {
+        rlang::exprs(p = share_of_total(y_old))
+      } else {
+        rlang::exprs(p = share_of_total(prior))
+      }
+      # Legacy across dots warn in dplyr while retaining their evaluation.
+      result <- suppressWarnings(if (mode == "ordinary") {
+        dplyr::summarise(data, !!!dots)
+      } else {
+        summarize_with_margins(data, !!!dots, !!!shares)
+      })
+      observations[[mode]] <- list(
+        result = result[setdiff(names(result), "p")], calls = env$calls
+      )
+    }
+    expect_identical(observations$margin, observations$ordinary, info = kind)
+    expect_identical(observations$ordinary$calls, as.integer(kind != "literal"))
+    expected <- if (kind == "literal") "y_old" else "y_new"
+    expect_true(expected %in% names(observations$margin$result))
+  }
+})
+
 test_that("plain summary prefixes retain complete-name source proofs", {
   data <- data.frame(x = 1:3, y = 5:7, unused = factor("a"))
   for (prior in rlang::exprs(sum(x), dplyr::n(), sum(.data$x),
