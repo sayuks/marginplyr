@@ -70,7 +70,7 @@ local({
     dir.create(repo)
     paths <- c("tools/review-ready.R", "tools/review-ready-check-lib.R", "tools/review-ready-fifo.R",
       "tools/review-ready-progress.R", "tools/review-ready-progress-reporter.R",
-      "tools/review-ready-timing.R",
+      "tools/review-ready-timing.R", "tools/review-ready-priority.R",
       "tools/dependency-requirements.R", "tools/required-test-suggests.R",
       ".github/scripts/cran-note-policy.R", "inst/suggests/guard.R")
     for (relative in paths) {

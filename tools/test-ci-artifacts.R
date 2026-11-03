@@ -56,6 +56,7 @@ main <- function() {
     c("run: Rscript .github/scripts/verify-context-budget.R", "run: echo skipped"),
     c("  context-budget:\n", "  context-budget:\n    if: github.event_name == 'push'\n"),
     c("Rscript tools/test-review-ready-progress.R", "echo skipped"),
+    c("Rscript tools/test-review-ready-priority.R", "echo skipped"),
     c("Rscript tools/test-review-ready-runner.R", "echo skipped"),
     c("Rscript tools/verify-ci-artifacts.R", "echo skipped"),
     c("Rscript tools/test-ci-artifacts.R", "echo skipped"),

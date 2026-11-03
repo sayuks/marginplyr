@@ -569,6 +569,8 @@ finish_review_ready_timing <- function(source_root, run) {
     review_ready_timing_finish(file.path(run$directory, "timing"),
       readRDS(file.path(run$directory, "result.rds")),
       review_ready_test_transcript(file.path(run$directory, "check")))
+    source(file.path(source_root, "tools", "review-ready-priority.R"), local = TRUE)
+    review_ready_priority_propose(source_root, run$directory)
   }, error = function(cnd) cat("Review-ready timing disabled: ", conditionMessage(cnd), "\n", sep = ""))
 }
 
