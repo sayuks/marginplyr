@@ -135,8 +135,8 @@ review_requirements <- dependency_requirements(description_value(
 expect_identical(
   review_requirements$package,
   c(
-    "filelock", "lintr", "pkgload", "processx", "ps", "R6", "rcmdcheck", "spelling",
-    "testthat"
+    "digest", "filelock", "jsonlite", "lintr", "pkgload", "processx", "ps", "R6",
+    "rcmdcheck", "spelling", "testthat", "yaml"
   ),
   "the review dependency set"
 )
