@@ -23,6 +23,143 @@ test_that("dtplyr shares preserve a lexical .BY formal", {
   }
 })
 
+test_that("dtplyr shares refuse list2env-owned special measure reads", {
+  skip_if_suggest_absent("dtplyr")
+  # dtplyr imports data.table; only one optional backend is required.
+  for (column in c(".BY", ".SD", ".GRP", ".NGRP", ".SDall", ".xSD", ".iSD")) {
+    input <- data.table::data.table(
+      f = c("F", "F", NA, NA), g = c("a", "b", "a", "b"),
+      x = c(2, 6, 4, 12), unused = c(1, 3, 2, 6)
+    )
+    data.table::setnames(input, "unused", column)
+    before <- data.table::copy(input)
+    for (shape in c("local", "lambda")) {
+      values <- rlang::call2("list", !!!setNames(list(quote(c(5, 7))), column))
+      binding <- rlang::expr({
+        base::list2env(!!values, envir = environment())
+        sum(!!rlang::sym(column))
+      })
+      expr <- if (shape == "local") {
+        rlang::expr(local(!!binding))
+      } else {
+        rlang::expr((function() !!binding)())
+      }
+      for (helper in c("share_of_parent", "share_of_total")) {
+        for (role in c("source", "independent")) {
+          source <- if (role == "source") expr else quote(sum(x))
+          for (style in c("direct", "across")) {
+            dots <- if (style == "direct") {
+              list(value = source)
+            } else {
+              rlang::exprs(dplyr::across(x, ~ !!source, .names = "value"))
+            }
+            if (role == "independent") dots$independent <- expr
+            summarize <- function(data) {
+              summarize_with_margins(
+                data, !!!dots, fraction = !!rlang::call2(helper, quote(value)),
+                .by = f, .grouping = rollup(g)
+              )
+            }
+            local <- summarize(tibble::as_tibble(input))
+            output <- if (role == "source") "value" else "independent"
+            expect_equal(local[[output]], rep(12, 6))
+            if (helper == "share_of_total" && role == "independent" &&
+                  style == "direct") {
+              safe <- dplyr::rename(
+                tibble::as_tibble(input), unused = dplyr::all_of(column)
+              )
+              control <- dplyr::collect(summarize(dtplyr::lazy_dt(safe)))
+              expect_equal(control$independent, rep(12, 6))
+              expect_equal(control$fraction, c(0.25, 0.75, 0.25, 0.75, 1, 1))
+            }
+            expect_error(summarize(dtplyr::lazy_dt(input)),
+                         "input and lexical", class = "marginplyr_error")
+            expect_identical(input, before)
+          }
+        }
+      }
+    }
+  }
+})
+
+test_that("dtplyr list2env setter spellings retain conservative ownership", {
+  skip_if_suggest_absent("dtplyr")
+  input <- tibble::tibble(g = c("a", "b"), .BY = c(1, 3), x = c(2, 6))
+  observed <- rlang::env(calls = 0L)
+  keys <- function() {
+    observed$calls <- observed$calls + 1L
+    list(.BY = c(5, 7))
+  }
+  setters <- alist(
+    list2env(list(.BY = c(5, 7)), envir = environment()),
+    (base::list2env)(x = base::list(.BY = c(5, 7)), en = environment()),
+    (get("list2env"))(list(.BY = c(5, 7)), envir = environment()),
+    do.call("list2env", list(list(.BY = c(5, 7)), envir = environment())),
+    base::list2env({
+      list(.BY = c(5, 7))
+    }, envir = environment()),
+    base::list2env(keys(), envir = environment())
+  )
+  for (setter in setters) for (kind in c("parent", "total")) {
+    expr <- rlang::expr(local({
+      !!setter
+      sum(.BY)
+    }))
+    expect_error(
+      summarize_with_margins(
+        dtplyr::lazy_dt(input), value = sum(x), independent = !!expr,
+        fraction = !!rlang::call2(paste0("share_of_", kind), quote(value)),
+        .grouping = rollup(g)
+      ),
+      "input and lexical", class = "marginplyr_error"
+    )
+    expect_identical(observed$calls, 0L)
+  }
+})
+
+test_that("independent list2env calls retain lazy special input reads", {
+  skip_if_suggest_absent("dtplyr")
+  # dtplyr imports data.table; only one optional backend is required.
+  input <- data.table::data.table(g = c("a", "b"), .BY = c(1, 3))
+  before <- data.table::copy(input)
+  observed <- rlang::env(rows = 0L)
+  observe <- function(x) {
+    observed$rows <- observed$rows + length(x)
+    TRUE
+  }
+  source <- dplyr::filter(dtplyr::lazy_dt(input), observe(.BY))
+  controls <- alist(
+    base::list2env(base::list(other = 12), envir = environment()),
+    base::list2env(base::list(), envir = environment()),
+    base::list2env({
+      list(.BY = c(5, 7))
+    }),
+    base::list2env({
+      list(.BY = c(5, 7))
+    }, envir = NULL),
+    quote(base::list2env(list(.BY = c(5, 7)), envir = environment()))
+  )
+  for (setter in controls) {
+    observed$rows <- 0L
+    expr <- rlang::expr(local({
+      !!setter
+      sum(.BY)
+    }))
+    query <- summarize_with_margins(
+      source, value = !!expr, fraction = share_of_total(value),
+      .grouping = rollup(g)
+    )
+    expect_s3_class(query, "dtplyr_step")
+    expect_identical(observed$rows, 0L)
+    expect_identical(input, before)
+    actual <- dplyr::collect(query)
+    expect_equal(actual$value, c(1, 3, 4))
+    expect_identical(actual$fraction, c(0.25, 0.75, 1))
+    expect_gt(observed$rows, 0L)
+    expect_identical(input, before)
+  }
+})
+
 test_that("evaluated language retains its .BY bindings with dtplyr shares", {
   skip_if_suggest_absent("dtplyr")
   input <- tibble::tibble(g = c("a", "b"), .BY = c(1, 3), x = c(2, 6))

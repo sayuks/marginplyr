@@ -35,6 +35,10 @@ Rscript tools/review-ready.R --scope full --reason 'Explain why package build/ch
 ```
 
 Both forms run the five mandatory checks before any shared-slot request.
+First, submitted priority metadata must contain unique literal filename stems.
+Invalid metadata fails before those checks and admission, reporting the
+submitted SHA, duplicate stems and positions. The runner preserves committed
+source; repairs use the recovery procedure below.
 `source` ends with an explicit heavy-check omission. After those checks pass,
 `full` atomically registers under a shared metadata lock. Acceptance sequence,
 not launch time, orders live waiters across clones and worktrees. Only the
@@ -144,6 +148,13 @@ Source scope and failed/incomplete/unsupported timing supply no proposal.
 Proposal errors report the reason and preserve the actual check result and
 ordinary NOTE handling.
 
+An archived measurement's repeated literal registrations are read by first
+occurrence, matching native testthat dispatch. The diagnostic, explanation and
+proposal RDS record that normalization. Archived bytes and hashes stay intact;
+every ordinary evidence eligibility check still applies. Current and proposed
+metadata remain strict, and empty entries or glob registrations are refused
+even in historical metadata.
+
 Every eligible unregistered filename, including a lightweight file, is proposed
 for registration. Deleted names are removed; a rename is a new name. Editing
 an already registered file does not unregister it. Registration preserves the
@@ -197,6 +208,43 @@ unavailable, record its diagnostic and complete the actual check outcome.
 Only membership/order is committed, without durations, timestamps or history.
 A fresh clone uses that setting through ordinary `test_check()` without any
 measurement artifacts. FIFO admission is independent of proposal adoption.
+
+## Duplicate priority recovery
+
+An implementing agent repairs a confirmed literal duplicate in its submitted
+priority within the active task, including one inherited from main. A separate
+issue alone does not complete this repair. Use an explicit Git edit that
+retains the first occurrence; validate strict parsing and exact native ordered
+discovery before/after, including every discovered file once. Use disposable
+copies for investigation while an invocation is active.
+
+| Detection point | Action before review readiness |
+| --- | --- |
+| Before invocation or in failed preflight | Collect the failed terminal result, repair and commit, then check the new clean SHA at the scope its implementation requires. An incomplete full run supplies no successful full evidence. |
+| While waiting or checking | Follow *Required fix confirmed* in local checks: cancel through the retained original handle and collect terminal completion and owned children before editing, committing or resubmitting. |
+| After a successful full invocation | Collect and preserve that terminal success for its SHA, record proposal failure separately, repair and commit metadata, and revalidate the repaired SHA under local checks. Full success does not certify the later repair. |
+| Only in archived measurement metadata | With valid target metadata, recalculate the proposal through the historical reader, inspect its disposition and report normalization. Historical duplication alone needs no source edit or suite. |
+| In a proposed patch or integration result | Reject the invalid state, repair the target and recalculate using still-eligible evidence and the assessed current main. Validate the resulting SHA before review readiness. |
+
+If an invocation finishes before planned cancellation, collect its actual
+terminal result and use the completed case. Preserve failures as failures.
+The metadata-only `source` allowance is defined by
+[local checks](../design/agents/local-checks.md#boundary-and-scope).
+
+If recovery is unavailable or evidence expired or changed, repair the tracked
+duplicate and record why optimization is deferred to the next ordinarily
+required full check. Keep the original retention deadline and evidence checks;
+do not edit manifests or run a suite solely to replace timings. Verification
+required by the actual repair remains necessary.
+
+Glob registrations, empty entries, ambiguous intent, or a changed native
+ordered filename vector fall outside mechanical duplicate removal. Establish
+intended dispatch from the specification and obtain a maintainer decision only
+if it remains unresolved. Report the concrete blocker while retaining the
+implementation and valid evidence. Tracked metadata must be valid before
+claiming final readiness. A validation proposal alone starts no second
+optimization cycle; a new duplicate is an unresolved defect, so investigate
+its recurrence rather than repeatedly applying the same patch.
 
 ## Development and CI verification
 

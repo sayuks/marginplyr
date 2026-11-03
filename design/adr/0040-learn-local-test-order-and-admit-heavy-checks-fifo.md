@@ -60,6 +60,14 @@ execution continues. Recording or calculation errors disable proposals while
 preserving the complete check's actual outcome. Genuine check and FIFO ownership failures
 remain failures, and no dispatched suite is retried.
 
+Validate tracked priority metadata before local checks and in CI: concurrent
+valid registrations can merge into a duplicate list. Current and proposed
+lists require unique literal stems. An archived measurement may contain
+repeated literal stems; interpret those by first occurrence, as native
+testthat does, while preserving raw evidence and all eligibility checks.
+The runner guide's *Duplicate priority recovery* owns the agent's repair
+workflow; local checks owns verification scope for the repaired SHA.
+
 The three-run local calibration measured the selected native dispatch and
 supports priority proposals, not an observed speedup under reordered execution.
 The replacement decision is accepted; implementation and operational evidence

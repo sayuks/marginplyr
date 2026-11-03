@@ -593,6 +593,10 @@ review_ready_check_cli <- function(args, expected_root) {
       MARGINPLYR_REVIEW_TIMING = "", MARGINPLYR_REVIEW_TIMING_HELPER = "")
     runner <- review_ready_child_runner(child_env)
     source_root <- archive_review_ready_source(identity, run$directory, runner = runner)
+    source(file.path(source_root, "tools", "review-ready-priority.R"), local = TRUE)
+    cat("\n==> Test priority metadata\n")
+    review_ready_priority_read(readLines(file.path(source_root, "DESCRIPTION")),
+      context = paste0("submitted DESCRIPTION (SHA ", identity$sha, ")"))
     prerequisites <- review_ready_prerequisites(read.dcf(file.path(source_root, "DESCRIPTION")))
     required <- run_review_ready_source(source_root, prerequisites, runner = runner)
     if (selection$scope == "source") {

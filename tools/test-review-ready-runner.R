@@ -178,6 +178,24 @@ local({
     expect(length(directory) == 1L, "command names exactly one artifact directory")
     readRDS(file.path(directory, "result.rds"))
   }
+  duplicate_repo <- make_repo("duplicate-priority")
+  cat("Config/testthat/start-first: revision, additional-1, revision\n",
+    file = file.path(duplicate_repo, "DESCRIPTION"), append = TRUE)
+  git(duplicate_repo, "add", "DESCRIPTION")
+  git(duplicate_repo, "commit", "-qm", "concurrent duplicate registrations")
+  duplicate_sha <- git(duplicate_repo, "rev-parse", "HEAD")
+  for (scope in c("source", "full")) {
+    rejected <- finish(start(duplicate_repo, scope), 1L)
+    expect(grepl("revision (positions 1, 3)", rejected, fixed = TRUE) &&
+      grepl(duplicate_sha, rejected, fixed = TRUE) &&
+      identical(result_record(rejected)$status, "failed") &&
+      !grepl("Waiting for heavy|Source-tarball R CMD check|fixture spelling executed", rejected),
+      "both scopes reject duplicate submitted metadata before heavy admission without source edits")
+    expect(identical(git(duplicate_repo, "status", "--porcelain"), "") &&
+      identical(git(duplicate_repo, "rev-parse", "HEAD"), duplicate_sha),
+      "duplicate preflight preserves the committed source and SHA")
+  }
+
   repo <- make_repo("first")
   output <- finish(start(repo))
   expect(all(vapply(c("Test dependency syntax", "Required test Suggests",
