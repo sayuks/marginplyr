@@ -1345,6 +1345,9 @@ context_summary_bindings_safe <- function(expr, lookup, proxy) {
   }
   if (!is.null(name) && name %in% c("$", "[[") && is.null(namespace) &&
         length(expr) == 3L && rlang::is_symbol(expr[[2L]], ".data")) {
+    if (!is_unrebound_name(name, lookup)) return(FALSE)
+    binding <- ordinary_function_binding(name, lookup$env)
+    if (!identical(binding, getExportedValue("base", name))) return(FALSE)
     column <- if (rlang::is_symbol(expr[[3L]]) && name == "$") {
       rlang::as_string(expr[[3L]])
     } else {

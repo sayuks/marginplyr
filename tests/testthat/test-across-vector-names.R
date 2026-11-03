@@ -395,6 +395,42 @@ test_that("preceding callbacks retain runtime naming bindings", {
   }
 })
 
+test_that("caller data getters remain opaque to name caching", {
+  for (getter in c("$", "[[")) {
+    observations <- list()
+    for (mode in c("ordinary", "margin")) {
+      env <- rlang::env(environment(), data = data.frame(x = 1:3, y = 5:7),
+                         template = "{.col}_old", calls = 0L)
+      env[[getter]] <- evalq(function(value, name) {
+        calls <<- calls + 1L
+        template <<- "{.col}_new"
+        base::`[[`(value, "x")
+      }, env)
+      prior <- if (getter == "$") {
+        quote(sum(.data$x))
+      } else {
+        quote(sum(.data[["x"]]))
+      }
+      dot <- rlang::new_quosure(prior, env)
+      across <- rlang::new_quosure(quote(dplyr::across(
+        c(x, y), sum, .names = template
+      )), env)
+      result <- if (mode == "ordinary") {
+        dplyr::summarise(env$data, prior = !!dot, !!across)
+      } else {
+        summarize_with_margins(
+          env$data, prior = !!dot, !!across, p = share_of_total(prior)
+        )
+      }
+      observations[[mode]] <- list(
+        result = result[setdiff(names(result), "p")], calls = env$calls
+      )
+    }
+    expect_identical(observations$margin, observations$ordinary, info = getter)
+    expect_identical(observations$ordinary$calls, 1L)
+  }
+})
+
 test_that("plain summary prefixes retain complete-name source proofs", {
   data <- data.frame(x = 1:3, y = 5:7, unused = factor("a"))
   for (prior in rlang::exprs(sum(x), dplyr::n(), sum(.data$x),
