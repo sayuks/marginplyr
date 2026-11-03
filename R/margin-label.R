@@ -346,10 +346,21 @@ check_observed_label_collision <- function(data,
           } else {
             rlang::data_sym(safe_name(col))
           }
+          # dtplyr defers these helpers in the input's root environment.
+          conversion <- if (inherits(source, "dtplyr_step")) {
+            rlang::expr(base::as.character(!!column))
+          } else {
+            rlang::expr(as.character(!!column))
+          }
+          aggregate <- if (inherits(source, "dtplyr_step")) {
+            rlang::expr(base::sum)
+          } else {
+            rlang::sym("sum")
+          }
           rlang::expr(
-            sum(
+            (!!aggregate)(
               dplyr::if_else(
-                as.character(!!column) == !!margin_label,
+                !!conversion == !!margin_label,
                 1L,
                 0L,
                 missing = 0L
@@ -598,6 +609,11 @@ label_margin_branch <- function(.data,
         # `across()` resolves these names as pronouns when a source column is
         # named `.data` or `.env`; the generated lookup must name the column.
         conversions <- lapply(safe_columns, function(col) {
+          if (inherits(source, "dtplyr_step")) {
+            return(rlang::expr(base::as.character(
+              !!margin_column_pronoun(col)
+            )))
+          }
           rlang::expr(as.character(!!margin_column_pronoun(col)))
         })
         names(conversions) <- safe_columns
@@ -632,21 +648,21 @@ label_margin_branch <- function(.data,
           # column. A summary branch may have removed the dimension.
           source_col <- safe_name(col)
           branch_size <- if (source_col %in% dtplyr_columns) {
-            rlang::expr(length(!!margin_column_pronoun(source_col)))
+            rlang::expr(base::length(!!margin_column_pronoun(source_col)))
           } else {
             rlang::expr(dplyr::n())
           }
           label <- margin_labels[[col]]
           if (!is_missing_margin_label(label)) {
             if (dtplyr_full_size_label) {
-              return(rlang::expr(rep(!!label, !!branch_size)))
+              return(rlang::expr(base::rep(!!label, !!branch_size)))
             }
             return(label)
           }
           if (col %in% missing_label_encoded) {
             # The typed missing this margin row carries, spelled as the
             # included branches spell one (ADR 0012).
-            return(rlang::expr(rep(!!sentinels[[col]], !!branch_size)))
+            return(rlang::expr(base::rep(!!sentinels[[col]], !!branch_size)))
           }
           value <- prototypes[[col]]
           if (dtplyr_full_size_label && is.list(value) &&
