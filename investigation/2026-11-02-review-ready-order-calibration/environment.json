@@ -1,0 +1,12 @@
+{
+  "R": "4.6.1",
+  "testthat": "3.3.2",
+  "filelock": "1.0.3",
+  "platform": "aarch64-apple-darwin23",
+  "macOS": "Tahoe 26.6.2",
+  "workers": 4,
+  "coverage": false,
+  "NOT_CRAN": true,
+  "installed_package_versions_unchanged": true,
+  "package_count": 295
+}

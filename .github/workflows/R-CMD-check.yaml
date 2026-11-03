@@ -17,7 +17,8 @@ concurrency:
 jobs:
   R-CMD-check:
     runs-on: ${{ matrix.config.os }}
-    timeout-minutes: 60
+    # Includes setup, vignette rebuilding and the complete test suite.
+    timeout-minutes: 90
 
     name: ${{ matrix.config.os }} (${{ matrix.config.r }})
 
@@ -81,8 +82,8 @@ jobs:
       # hosted-runner measurement recorded in
       # `investigation/github-actions-modernization.md` compiled the full
       # Suggests set on R-devel for over 55 minutes and was still building
-      # arrow when the job was stopped -- past the `timeout-minutes: 60` set
-      # above. Whether arrow and duckdb build from source under R-devel is
+      # arrow when the job was stopped, near the then 60-minute job limit.
+      # Whether arrow and duckdb build from source under R-devel is
       # their maintainers' and CRAN's question, not this package's: when a
       # CRAN r-devel flavor lacks them the tests skip, and
       # `release-matrix.yaml`'s `depends-only` job already proves skipping is

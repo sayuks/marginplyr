@@ -1,0 +1,38 @@
+Run date UTC: 2026-11-02 15:55:27
+Source SHA: 68fb4775bfe10370f45a5f9b0472f77cfe1db003
+Helper MD5: 1a1ed7d3f7125622b2c663bb06a77043
+No package tests executed; empty traced queue_task harness.
+Each sample: 5 x 196 calls, reported per 196 files.
+Recording incremental seconds per 196 files:
+       min     median        max
+0.01482019 0.01699772 0.02000241
+Recording total seconds per 196 files:
+       min     median        max
+0.01483998 0.01702156 0.02002859
+Recording bytes per 196 files:
+   min median    max
+ 26072  26072  26072
+Real testthat trace install seconds per worker:
+         min       median          max
+0.0002748966 0.0002801418 0.0166749954
+R version 4.6.1 (2026-06-24)
+Platform: aarch64-apple-darwin23
+Running under: macOS Tahoe 26.6.2
+
+Matrix products: default
+BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib
+LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1
+
+locale:
+[1] C.UTF-8/C.UTF-8/C.UTF-8/C/C.UTF-8/C.UTF-8
+
+time zone: Asia/Tokyo
+tzcode source: internal
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base
+
+loaded via a namespace (and not attached):
+ [1] compiler_4.6.1  magrittr_2.0.5  R6_2.6.1        cli_3.6.6
+ [5] tools_4.6.1     otel_0.2.0      brio_1.1.5      testthat_3.3.2
+ [9] lifecycle_1.0.5 rlang_1.3.0
