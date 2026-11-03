@@ -85,6 +85,16 @@ main <- function() {
   unlink(workflow)
   check(1L, "workflow inventory differs")
   write(original, workflow)
+  postgres <- file.path(repo, ".github/workflows/postgres-transactions.yaml")
+  postgres_original <- read(postgres)
+  alias_step <- paste0(
+    "      - name: Verify share aliases survive identifier limits\n",
+    "        run: Rscript tools/postgres-share-identifiers.R\n"
+  )
+  expect(grepl(alias_step, postgres_original, fixed = TRUE), "Missing alias step")
+  write(sub(alias_step, "", postgres_original, fixed = TRUE), postgres)
+  check(1L, "Workflow executable contract changed")
+  write(postgres_original, postgres)
   deadlines <- list(c("R-CMD-check.yaml", "90", "89"),
                     c("release-matrix.yaml", "360", "359"),
                     c("release-matrix.yaml", "90", "89"),
