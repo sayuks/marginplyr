@@ -2,7 +2,8 @@ test_that("scope proofs unwrap parenthesized callees without evaluating them", {
   scope <- rlang::env(rm = function(...) stop("Caller function ran"))
   lookup <- list(env = scope, rebound = character(), mask = character())
 
-  expect_true(scope_callee_is_shadowed(quote(((rm))), "rm", character(), lookup))
+  callee <- rlang::call2("(", quote(rm))
+  expect_true(scope_callee_is_shadowed(callee, "rm", character(), lookup))
   expect_false(scope_callee_is_shadowed(
     quote((base::rm)), "rm", character(), lookup
   ))
