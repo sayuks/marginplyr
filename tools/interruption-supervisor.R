@@ -54,10 +54,12 @@ supervisor_case <- function(root, directory, case, kind, timeout) {
   elapsed <- function() unname(proc.time()[["elapsed"]])
   deadline <- elapsed() + timeout
   tryCatch({
-    worker <- processx::process$new(file.path(R.home("bin"), "Rscript"),
-      c(file.path(root, "tools", kind, "worker.R"), root, directory), wd = root,
-      stdout = file.path(directory, "worker.log"), stderr = "2>&1",
-      cleanup_tree = TRUE, supervise = TRUE)
+    suspendInterrupts({
+      worker <- processx::process$new(file.path(R.home("bin"), "Rscript"),
+        c(file.path(root, "tools", kind, "worker.R"), root, directory), wd = root,
+        stdout = file.path(directory, "worker.log"), stderr = "2>&1",
+        cleanup_tree = TRUE, supervise = TRUE)
+    })
     if (kind == "competing-conditions" || case$mode == "sigint") {
       reached <- file.path(directory, "reached.json")
       while (!file.exists(reached) && worker$is_alive() && elapsed() < deadline) Sys.sleep(0.01)
