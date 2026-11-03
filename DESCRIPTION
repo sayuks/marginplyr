@@ -194,6 +194,7 @@ Config/testthat/start-first:
     sf-summary,
     share-selector-sources,
     share-scope-callees,
+    dtplyr-label-helpers,
     arrow-caller-warnings,
     dtplyr-cached-inputs,
     dtplyr-binding-metadata,
