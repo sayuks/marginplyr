@@ -1,0 +1,25 @@
+          status
+boundary   error match schema_difference
+  collapse     0   144               288
+  cte        288   144                 0
+, , status = error
+
+          sort
+name       first last none
+  fAlSe       48   48   48
+  ordinary     0    0    0
+  TRUE        48   48   48
+
+, , status = match
+
+          sort
+name       first last none
+  fAlSe        0    0    0
+  ordinary    48   48   48
+  TRUE         0    0    0
+
+       status
+sort    match schema_difference
+  first     0               144
+  last      0               144
+  none    144                 0

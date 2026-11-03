@@ -1,0 +1,10 @@
+Ordinary filtered-source CTE control succeeded.
+Default expansion collection succeeded.
+CTE raw schema: g column2
+      g column2
+1     a       7
+2 Total       7
+CTE collect error: undefined columns selected
+Error in eval(quote({ : !inherits(result, "error") is not TRUE
+Calls: local ... eval.parent -> eval -> eval -> eval -> eval -> stopifnot
+Execution halted

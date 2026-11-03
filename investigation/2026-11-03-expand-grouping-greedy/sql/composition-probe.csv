@@ -1,0 +1,1653 @@
+"backend","name","sort","shape","option","status","detail"
+"sqlite","TRUE","none","identity","default","match",""
+"sqlite","TRUE","none","identity","cte","ordinary_error","undefined columns selected"
+"sqlite","TRUE","none","identity","no_star","match",""
+"sqlite","TRUE","none","collapse","default","match",""
+"sqlite","TRUE","none","collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite","TRUE","none","collapse","no_star","match",""
+"sqlite","TRUE","none","cte_collapse","default","match",""
+"sqlite","TRUE","none","cte_collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite","TRUE","none","cte_collapse","no_star","match",""
+"sqlite","TRUE","none","head","default","match",""
+"sqlite","TRUE","none","head","cte","match",""
+"sqlite","TRUE","none","head","no_star","match",""
+"sqlite","TRUE","none","distinct","default","match",""
+"sqlite","TRUE","none","distinct","cte","match",""
+"sqlite","TRUE","none","distinct","no_star","match",""
+"sqlite","TRUE","none","transmute","default","match",""
+"sqlite","TRUE","none","transmute","cte","ordinary_error","undefined columns selected"
+"sqlite","TRUE","none","transmute","no_star","match",""
+"sqlite","TRUE","none","row_number","default","match",""
+"sqlite","TRUE","none","row_number","cte","match",""
+"sqlite","TRUE","none","row_number","no_star","match",""
+"sqlite","TRUE","none","row_filter","default","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite","TRUE","none","row_filter","cte","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite","TRUE","none","row_filter","no_star","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite","TRUE","none","group","default","match",""
+"sqlite","TRUE","none","group","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite","TRUE","none","group","no_star","match",""
+"sqlite","TRUE","none","union_self","default","match",""
+"sqlite","TRUE","none","union_self","cte","match",""
+"sqlite","TRUE","none","union_self","no_star","match",""
+"sqlite","TRUE","none","semi_self","default","match",""
+"sqlite","TRUE","none","semi_self","cte","match",""
+"sqlite","TRUE","none","semi_self","no_star","match",""
+"sqlite","TRUE","none","anti_self","default","match",""
+"sqlite","TRUE","none","anti_self","cte","match",""
+"sqlite","TRUE","none","anti_self","no_star","match",""
+"sqlite","TRUE","none","full_self","default","match",""
+"sqlite","TRUE","none","full_self","cte","match",""
+"sqlite","TRUE","none","full_self","no_star","match",""
+"sqlite","TRUE","none","cross_self","default","match",""
+"sqlite","TRUE","none","cross_self","cte","match",""
+"sqlite","TRUE","none","cross_self","no_star","match",""
+"sqlite","TRUE","none","nest_join","default","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite","TRUE","none","nest_join","cte","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite","TRUE","none","nest_join","no_star","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite","TRUE","none","rename","default","match",""
+"sqlite","TRUE","none","rename","cte","match",""
+"sqlite","TRUE","none","rename","no_star","match",""
+"sqlite","TRUE","first","identity","default","match",""
+"sqlite","TRUE","first","identity","cte","package_error","undefined columns selected"
+"sqlite","TRUE","first","identity","no_star","match",""
+"sqlite","TRUE","first","collapse","default","difference",""
+"sqlite","TRUE","first","collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite","TRUE","first","collapse","no_star","difference",""
+"sqlite","TRUE","first","cte_collapse","default","difference",""
+"sqlite","TRUE","first","cte_collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite","TRUE","first","cte_collapse","no_star","difference",""
+"sqlite","TRUE","first","head","default","difference",""
+"sqlite","TRUE","first","head","cte","difference",""
+"sqlite","TRUE","first","head","no_star","difference",""
+"sqlite","TRUE","first","distinct","default","match",""
+"sqlite","TRUE","first","distinct","cte","match",""
+"sqlite","TRUE","first","distinct","no_star","match",""
+"sqlite","TRUE","first","transmute","default","match",""
+"sqlite","TRUE","first","transmute","cte","package_error","undefined columns selected"
+"sqlite","TRUE","first","transmute","no_star","match",""
+"sqlite","TRUE","first","row_number","default","difference",""
+"sqlite","TRUE","first","row_number","cte","difference",""
+"sqlite","TRUE","first","row_number","no_star","difference",""
+"sqlite","TRUE","first","row_filter","default","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite","TRUE","first","row_filter","cte","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite","TRUE","first","row_filter","no_star","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite","TRUE","first","group","default","match",""
+"sqlite","TRUE","first","group","cte","match",""
+"sqlite","TRUE","first","group","no_star","match",""
+"sqlite","TRUE","first","union_self","default","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite","TRUE","first","union_self","cte","difference",""
+"sqlite","TRUE","first","union_self","no_star","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite","TRUE","first","semi_self","default","difference",""
+"sqlite","TRUE","first","semi_self","cte","difference",""
+"sqlite","TRUE","first","semi_self","no_star","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite","TRUE","first","anti_self","default","difference",""
+"sqlite","TRUE","first","anti_self","cte","difference",""
+"sqlite","TRUE","first","anti_self","no_star","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite","TRUE","first","full_self","default","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: LHS.TRUE"
+"sqlite","TRUE","first","full_self","cte","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: LHS.TRUE"
+"sqlite","TRUE","first","full_self","no_star","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: LHS.TRUE"
+"sqlite","TRUE","first","cross_self","default","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: LHS.TRUE"
+"sqlite","TRUE","first","cross_self","cte","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: LHS.TRUE"
+"sqlite","TRUE","first","cross_self","no_star","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: LHS.TRUE"
+"sqlite","TRUE","first","nest_join","default","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite","TRUE","first","nest_join","cte","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite","TRUE","first","nest_join","no_star","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite","TRUE","first","rename","default","match",""
+"sqlite","TRUE","first","rename","cte","match",""
+"sqlite","TRUE","first","rename","no_star","match",""
+"sqlite","TRUE","last","identity","default","match",""
+"sqlite","TRUE","last","identity","cte","package_error","undefined columns selected"
+"sqlite","TRUE","last","identity","no_star","match",""
+"sqlite","TRUE","last","collapse","default","difference",""
+"sqlite","TRUE","last","collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite","TRUE","last","collapse","no_star","difference",""
+"sqlite","TRUE","last","cte_collapse","default","difference",""
+"sqlite","TRUE","last","cte_collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite","TRUE","last","cte_collapse","no_star","difference",""
+"sqlite","TRUE","last","head","default","match",""
+"sqlite","TRUE","last","head","cte","match",""
+"sqlite","TRUE","last","head","no_star","match",""
+"sqlite","TRUE","last","distinct","default","match",""
+"sqlite","TRUE","last","distinct","cte","match",""
+"sqlite","TRUE","last","distinct","no_star","match",""
+"sqlite","TRUE","last","transmute","default","match",""
+"sqlite","TRUE","last","transmute","cte","package_error","undefined columns selected"
+"sqlite","TRUE","last","transmute","no_star","match",""
+"sqlite","TRUE","last","row_number","default","difference",""
+"sqlite","TRUE","last","row_number","cte","difference",""
+"sqlite","TRUE","last","row_number","no_star","difference",""
+"sqlite","TRUE","last","row_filter","default","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite","TRUE","last","row_filter","cte","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite","TRUE","last","row_filter","no_star","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite","TRUE","last","group","default","match",""
+"sqlite","TRUE","last","group","cte","match",""
+"sqlite","TRUE","last","group","no_star","match",""
+"sqlite","TRUE","last","union_self","default","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite","TRUE","last","union_self","cte","difference",""
+"sqlite","TRUE","last","union_self","no_star","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite","TRUE","last","semi_self","default","difference",""
+"sqlite","TRUE","last","semi_self","cte","difference",""
+"sqlite","TRUE","last","semi_self","no_star","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite","TRUE","last","anti_self","default","difference",""
+"sqlite","TRUE","last","anti_self","cte","difference",""
+"sqlite","TRUE","last","anti_self","no_star","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite","TRUE","last","full_self","default","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: LHS.TRUE"
+"sqlite","TRUE","last","full_self","cte","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: LHS.TRUE"
+"sqlite","TRUE","last","full_self","no_star","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: LHS.TRUE"
+"sqlite","TRUE","last","cross_self","default","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: LHS.TRUE"
+"sqlite","TRUE","last","cross_self","cte","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: LHS.TRUE"
+"sqlite","TRUE","last","cross_self","no_star","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: LHS.TRUE"
+"sqlite","TRUE","last","nest_join","default","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite","TRUE","last","nest_join","cte","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite","TRUE","last","nest_join","no_star","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite","TRUE","last","rename","default","match",""
+"sqlite","TRUE","last","rename","cte","match",""
+"sqlite","TRUE","last","rename","no_star","match",""
+"sqlite","FALSE","none","identity","default","match",""
+"sqlite","FALSE","none","identity","cte","ordinary_error","undefined columns selected"
+"sqlite","FALSE","none","identity","no_star","match",""
+"sqlite","FALSE","none","collapse","default","match",""
+"sqlite","FALSE","none","collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite","FALSE","none","collapse","no_star","match",""
+"sqlite","FALSE","none","cte_collapse","default","match",""
+"sqlite","FALSE","none","cte_collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite","FALSE","none","cte_collapse","no_star","match",""
+"sqlite","FALSE","none","head","default","match",""
+"sqlite","FALSE","none","head","cte","match",""
+"sqlite","FALSE","none","head","no_star","match",""
+"sqlite","FALSE","none","distinct","default","match",""
+"sqlite","FALSE","none","distinct","cte","match",""
+"sqlite","FALSE","none","distinct","no_star","match",""
+"sqlite","FALSE","none","transmute","default","match",""
+"sqlite","FALSE","none","transmute","cte","ordinary_error","undefined columns selected"
+"sqlite","FALSE","none","transmute","no_star","match",""
+"sqlite","FALSE","none","row_number","default","match",""
+"sqlite","FALSE","none","row_number","cte","match",""
+"sqlite","FALSE","none","row_number","no_star","match",""
+"sqlite","FALSE","none","row_filter","default","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: FALSE"
+"sqlite","FALSE","none","row_filter","cte","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: FALSE"
+"sqlite","FALSE","none","row_filter","no_star","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: FALSE"
+"sqlite","FALSE","none","group","default","match",""
+"sqlite","FALSE","none","group","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite","FALSE","none","group","no_star","match",""
+"sqlite","FALSE","none","union_self","default","match",""
+"sqlite","FALSE","none","union_self","cte","match",""
+"sqlite","FALSE","none","union_self","no_star","match",""
+"sqlite","FALSE","none","semi_self","default","match",""
+"sqlite","FALSE","none","semi_self","cte","match",""
+"sqlite","FALSE","none","semi_self","no_star","match",""
+"sqlite","FALSE","none","anti_self","default","match",""
+"sqlite","FALSE","none","anti_self","cte","match",""
+"sqlite","FALSE","none","anti_self","no_star","match",""
+"sqlite","FALSE","none","full_self","default","match",""
+"sqlite","FALSE","none","full_self","cte","match",""
+"sqlite","FALSE","none","full_self","no_star","match",""
+"sqlite","FALSE","none","cross_self","default","match",""
+"sqlite","FALSE","none","cross_self","cte","match",""
+"sqlite","FALSE","none","cross_self","no_star","match",""
+"sqlite","FALSE","none","nest_join","default","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite","FALSE","none","nest_join","cte","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite","FALSE","none","nest_join","no_star","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite","FALSE","none","rename","default","match",""
+"sqlite","FALSE","none","rename","cte","match",""
+"sqlite","FALSE","none","rename","no_star","match",""
+"sqlite","FALSE","first","identity","default","match",""
+"sqlite","FALSE","first","identity","cte","package_error","undefined columns selected"
+"sqlite","FALSE","first","identity","no_star","match",""
+"sqlite","FALSE","first","collapse","default","difference",""
+"sqlite","FALSE","first","collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite","FALSE","first","collapse","no_star","difference",""
+"sqlite","FALSE","first","cte_collapse","default","difference",""
+"sqlite","FALSE","first","cte_collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite","FALSE","first","cte_collapse","no_star","difference",""
+"sqlite","FALSE","first","head","default","difference",""
+"sqlite","FALSE","first","head","cte","difference",""
+"sqlite","FALSE","first","head","no_star","difference",""
+"sqlite","FALSE","first","distinct","default","match",""
+"sqlite","FALSE","first","distinct","cte","match",""
+"sqlite","FALSE","first","distinct","no_star","match",""
+"sqlite","FALSE","first","transmute","default","match",""
+"sqlite","FALSE","first","transmute","cte","package_error","undefined columns selected"
+"sqlite","FALSE","first","transmute","no_star","match",""
+"sqlite","FALSE","first","row_number","default","difference",""
+"sqlite","FALSE","first","row_number","cte","difference",""
+"sqlite","FALSE","first","row_number","no_star","difference",""
+"sqlite","FALSE","first","row_filter","default","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: FALSE"
+"sqlite","FALSE","first","row_filter","cte","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: FALSE"
+"sqlite","FALSE","first","row_filter","no_star","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: FALSE"
+"sqlite","FALSE","first","group","default","match",""
+"sqlite","FALSE","first","group","cte","match",""
+"sqlite","FALSE","first","group","no_star","match",""
+"sqlite","FALSE","first","union_self","default","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite","FALSE","first","union_self","cte","difference",""
+"sqlite","FALSE","first","union_self","no_star","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite","FALSE","first","semi_self","default","difference",""
+"sqlite","FALSE","first","semi_self","cte","difference",""
+"sqlite","FALSE","first","semi_self","no_star","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: FALSE"
+"sqlite","FALSE","first","anti_self","default","difference",""
+"sqlite","FALSE","first","anti_self","cte","difference",""
+"sqlite","FALSE","first","anti_self","no_star","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: FALSE"
+"sqlite","FALSE","first","full_self","default","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: LHS.FALSE"
+"sqlite","FALSE","first","full_self","cte","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: LHS.FALSE"
+"sqlite","FALSE","first","full_self","no_star","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: LHS.FALSE"
+"sqlite","FALSE","first","cross_self","default","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: LHS.FALSE"
+"sqlite","FALSE","first","cross_self","cte","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: LHS.FALSE"
+"sqlite","FALSE","first","cross_self","no_star","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: LHS.FALSE"
+"sqlite","FALSE","first","nest_join","default","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite","FALSE","first","nest_join","cte","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite","FALSE","first","nest_join","no_star","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite","FALSE","first","rename","default","match",""
+"sqlite","FALSE","first","rename","cte","match",""
+"sqlite","FALSE","first","rename","no_star","match",""
+"sqlite","FALSE","last","identity","default","match",""
+"sqlite","FALSE","last","identity","cte","package_error","undefined columns selected"
+"sqlite","FALSE","last","identity","no_star","match",""
+"sqlite","FALSE","last","collapse","default","difference",""
+"sqlite","FALSE","last","collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite","FALSE","last","collapse","no_star","difference",""
+"sqlite","FALSE","last","cte_collapse","default","difference",""
+"sqlite","FALSE","last","cte_collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite","FALSE","last","cte_collapse","no_star","difference",""
+"sqlite","FALSE","last","head","default","match",""
+"sqlite","FALSE","last","head","cte","match",""
+"sqlite","FALSE","last","head","no_star","match",""
+"sqlite","FALSE","last","distinct","default","match",""
+"sqlite","FALSE","last","distinct","cte","match",""
+"sqlite","FALSE","last","distinct","no_star","match",""
+"sqlite","FALSE","last","transmute","default","match",""
+"sqlite","FALSE","last","transmute","cte","package_error","undefined columns selected"
+"sqlite","FALSE","last","transmute","no_star","match",""
+"sqlite","FALSE","last","row_number","default","difference",""
+"sqlite","FALSE","last","row_number","cte","difference",""
+"sqlite","FALSE","last","row_number","no_star","difference",""
+"sqlite","FALSE","last","row_filter","default","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: FALSE"
+"sqlite","FALSE","last","row_filter","cte","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: FALSE"
+"sqlite","FALSE","last","row_filter","no_star","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: FALSE"
+"sqlite","FALSE","last","group","default","match",""
+"sqlite","FALSE","last","group","cte","match",""
+"sqlite","FALSE","last","group","no_star","match",""
+"sqlite","FALSE","last","union_self","default","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite","FALSE","last","union_self","cte","difference",""
+"sqlite","FALSE","last","union_self","no_star","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite","FALSE","last","semi_self","default","difference",""
+"sqlite","FALSE","last","semi_self","cte","difference",""
+"sqlite","FALSE","last","semi_self","no_star","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: FALSE"
+"sqlite","FALSE","last","anti_self","default","difference",""
+"sqlite","FALSE","last","anti_self","cte","difference",""
+"sqlite","FALSE","last","anti_self","no_star","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: FALSE"
+"sqlite","FALSE","last","full_self","default","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: LHS.FALSE"
+"sqlite","FALSE","last","full_self","cte","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: LHS.FALSE"
+"sqlite","FALSE","last","full_self","no_star","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: LHS.FALSE"
+"sqlite","FALSE","last","cross_self","default","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: LHS.FALSE"
+"sqlite","FALSE","last","cross_self","cte","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: LHS.FALSE"
+"sqlite","FALSE","last","cross_self","no_star","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! no such column: LHS.FALSE"
+"sqlite","FALSE","last","nest_join","default","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite","FALSE","last","nest_join","cte","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite","FALSE","last","nest_join","no_star","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite","FALSE","last","rename","default","match",""
+"sqlite","FALSE","last","rename","cte","match",""
+"sqlite","FALSE","last","rename","no_star","match",""
+"sqlite",".env","none","identity","default","match",""
+"sqlite",".env","none","identity","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite",".env","none","identity","no_star","match",""
+"sqlite",".env","none","collapse","default","match",""
+"sqlite",".env","none","collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite",".env","none","collapse","no_star","match",""
+"sqlite",".env","none","cte_collapse","default","match",""
+"sqlite",".env","none","cte_collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite",".env","none","cte_collapse","no_star","match",""
+"sqlite",".env","none","head","default","match",""
+"sqlite",".env","none","head","cte","match",""
+"sqlite",".env","none","head","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","none","distinct","default","match",""
+"sqlite",".env","none","distinct","cte","match",""
+"sqlite",".env","none","distinct","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","none","transmute","default","match",""
+"sqlite",".env","none","transmute","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite",".env","none","transmute","no_star","match",""
+"sqlite",".env","none","row_number","default","match",""
+"sqlite",".env","none","row_number","cte","match",""
+"sqlite",".env","none","row_number","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","none","row_filter","default","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","none","row_filter","cte","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","none","row_filter","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","none","group","default","match",""
+"sqlite",".env","none","group","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite",".env","none","group","no_star","match",""
+"sqlite",".env","none","union_self","default","match",""
+"sqlite",".env","none","union_self","cte","match",""
+"sqlite",".env","none","union_self","no_star","match",""
+"sqlite",".env","none","semi_self","default","match",""
+"sqlite",".env","none","semi_self","cte","match",""
+"sqlite",".env","none","semi_self","no_star","match",""
+"sqlite",".env","none","anti_self","default","match",""
+"sqlite",".env","none","anti_self","cte","match",""
+"sqlite",".env","none","anti_self","no_star","match",""
+"sqlite",".env","none","full_self","default","match",""
+"sqlite",".env","none","full_self","cte","match",""
+"sqlite",".env","none","full_self","no_star","match",""
+"sqlite",".env","none","cross_self","default","match",""
+"sqlite",".env","none","cross_self","cte","match",""
+"sqlite",".env","none","cross_self","no_star","match",""
+"sqlite",".env","none","nest_join","default","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite",".env","none","nest_join","cte","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite",".env","none","nest_join","no_star","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite",".env","none","rename","default","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","none","rename","cte","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","none","rename","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","first","identity","default","match",""
+"sqlite",".env","first","identity","cte","match",""
+"sqlite",".env","first","identity","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","first","collapse","default","difference",""
+"sqlite",".env","first","collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite",".env","first","collapse","no_star","difference",""
+"sqlite",".env","first","cte_collapse","default","difference",""
+"sqlite",".env","first","cte_collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite",".env","first","cte_collapse","no_star","difference",""
+"sqlite",".env","first","head","default","match",""
+"sqlite",".env","first","head","cte","match",""
+"sqlite",".env","first","head","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","first","distinct","default","match",""
+"sqlite",".env","first","distinct","cte","match",""
+"sqlite",".env","first","distinct","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","first","transmute","default","match",""
+"sqlite",".env","first","transmute","cte","match",""
+"sqlite",".env","first","transmute","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","first","row_number","default","difference",""
+"sqlite",".env","first","row_number","cte","match",""
+"sqlite",".env","first","row_number","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","first","row_filter","default","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","first","row_filter","cte","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","first","row_filter","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","first","group","default","match",""
+"sqlite",".env","first","group","cte","match",""
+"sqlite",".env","first","group","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","first","union_self","default","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite",".env","first","union_self","cte","match",""
+"sqlite",".env","first","union_self","no_star","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite",".env","first","semi_self","default","match",""
+"sqlite",".env","first","semi_self","cte","match",""
+"sqlite",".env","first","semi_self","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","first","anti_self","default","match",""
+"sqlite",".env","first","anti_self","cte","match",""
+"sqlite",".env","first","anti_self","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","first","full_self","default","match",""
+"sqlite",".env","first","full_self","cte","match",""
+"sqlite",".env","first","full_self","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","first","cross_self","default","match",""
+"sqlite",".env","first","cross_self","cte","match",""
+"sqlite",".env","first","cross_self","no_star","ordinary_error","ℹ In index: 1.
+Caused by error:
+! Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","first","nest_join","default","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite",".env","first","nest_join","cte","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite",".env","first","nest_join","no_star","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite",".env","first","rename","default","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","first","rename","cte","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","first","rename","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","last","identity","default","match",""
+"sqlite",".env","last","identity","cte","match",""
+"sqlite",".env","last","identity","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","last","collapse","default","difference",""
+"sqlite",".env","last","collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite",".env","last","collapse","no_star","difference",""
+"sqlite",".env","last","cte_collapse","default","difference",""
+"sqlite",".env","last","cte_collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite",".env","last","cte_collapse","no_star","difference",""
+"sqlite",".env","last","head","default","match",""
+"sqlite",".env","last","head","cte","match",""
+"sqlite",".env","last","head","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","last","distinct","default","match",""
+"sqlite",".env","last","distinct","cte","match",""
+"sqlite",".env","last","distinct","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","last","transmute","default","match",""
+"sqlite",".env","last","transmute","cte","match",""
+"sqlite",".env","last","transmute","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","last","row_number","default","difference",""
+"sqlite",".env","last","row_number","cte","match",""
+"sqlite",".env","last","row_number","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","last","row_filter","default","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","last","row_filter","cte","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","last","row_filter","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","last","group","default","match",""
+"sqlite",".env","last","group","cte","match",""
+"sqlite",".env","last","group","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","last","union_self","default","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite",".env","last","union_self","cte","match",""
+"sqlite",".env","last","union_self","no_star","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite",".env","last","semi_self","default","match",""
+"sqlite",".env","last","semi_self","cte","match",""
+"sqlite",".env","last","semi_self","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","last","anti_self","default","match",""
+"sqlite",".env","last","anti_self","cte","match",""
+"sqlite",".env","last","anti_self","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","last","full_self","default","match",""
+"sqlite",".env","last","full_self","cte","match",""
+"sqlite",".env","last","full_self","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","last","cross_self","default","match",""
+"sqlite",".env","last","cross_self","cte","match",""
+"sqlite",".env","last","cross_self","no_star","ordinary_error","ℹ In index: 1.
+Caused by error:
+! Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","last","nest_join","default","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite",".env","last","nest_join","cte","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite",".env","last","nest_join","no_star","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite",".env","last","rename","default","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","last","rename","cte","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite",".env","last","rename","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite","normal","none","identity","default","match",""
+"sqlite","normal","none","identity","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite","normal","none","identity","no_star","match",""
+"sqlite","normal","none","collapse","default","match",""
+"sqlite","normal","none","collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite","normal","none","collapse","no_star","match",""
+"sqlite","normal","none","cte_collapse","default","match",""
+"sqlite","normal","none","cte_collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite","normal","none","cte_collapse","no_star","match",""
+"sqlite","normal","none","head","default","match",""
+"sqlite","normal","none","head","cte","match",""
+"sqlite","normal","none","head","no_star","match",""
+"sqlite","normal","none","distinct","default","match",""
+"sqlite","normal","none","distinct","cte","match",""
+"sqlite","normal","none","distinct","no_star","match",""
+"sqlite","normal","none","transmute","default","match",""
+"sqlite","normal","none","transmute","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite","normal","none","transmute","no_star","match",""
+"sqlite","normal","none","row_number","default","match",""
+"sqlite","normal","none","row_number","cte","match",""
+"sqlite","normal","none","row_number","no_star","match",""
+"sqlite","normal","none","row_filter","default","match",""
+"sqlite","normal","none","row_filter","cte","match",""
+"sqlite","normal","none","row_filter","no_star","match",""
+"sqlite","normal","none","group","default","match",""
+"sqlite","normal","none","group","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite","normal","none","group","no_star","match",""
+"sqlite","normal","none","union_self","default","match",""
+"sqlite","normal","none","union_self","cte","match",""
+"sqlite","normal","none","union_self","no_star","match",""
+"sqlite","normal","none","semi_self","default","match",""
+"sqlite","normal","none","semi_self","cte","match",""
+"sqlite","normal","none","semi_self","no_star","match",""
+"sqlite","normal","none","anti_self","default","match",""
+"sqlite","normal","none","anti_self","cte","match",""
+"sqlite","normal","none","anti_self","no_star","match",""
+"sqlite","normal","none","full_self","default","match",""
+"sqlite","normal","none","full_self","cte","match",""
+"sqlite","normal","none","full_self","no_star","match",""
+"sqlite","normal","none","cross_self","default","match",""
+"sqlite","normal","none","cross_self","cte","match",""
+"sqlite","normal","none","cross_self","no_star","match",""
+"sqlite","normal","none","nest_join","default","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite","normal","none","nest_join","cte","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite","normal","none","nest_join","no_star","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite","normal","none","rename","default","match",""
+"sqlite","normal","none","rename","cte","match",""
+"sqlite","normal","none","rename","no_star","match",""
+"sqlite","normal","first","identity","default","match",""
+"sqlite","normal","first","identity","cte","match",""
+"sqlite","normal","first","identity","no_star","match",""
+"sqlite","normal","first","collapse","default","difference",""
+"sqlite","normal","first","collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite","normal","first","collapse","no_star","difference",""
+"sqlite","normal","first","cte_collapse","default","difference",""
+"sqlite","normal","first","cte_collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite","normal","first","cte_collapse","no_star","difference",""
+"sqlite","normal","first","head","default","match",""
+"sqlite","normal","first","head","cte","match",""
+"sqlite","normal","first","head","no_star","match",""
+"sqlite","normal","first","distinct","default","match",""
+"sqlite","normal","first","distinct","cte","match",""
+"sqlite","normal","first","distinct","no_star","match",""
+"sqlite","normal","first","transmute","default","match",""
+"sqlite","normal","first","transmute","cte","match",""
+"sqlite","normal","first","transmute","no_star","match",""
+"sqlite","normal","first","row_number","default","difference",""
+"sqlite","normal","first","row_number","cte","difference",""
+"sqlite","normal","first","row_number","no_star","difference",""
+"sqlite","normal","first","row_filter","default","difference",""
+"sqlite","normal","first","row_filter","cte","difference",""
+"sqlite","normal","first","row_filter","no_star","difference",""
+"sqlite","normal","first","group","default","match",""
+"sqlite","normal","first","group","cte","match",""
+"sqlite","normal","first","group","no_star","match",""
+"sqlite","normal","first","union_self","default","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite","normal","first","union_self","cte","match",""
+"sqlite","normal","first","union_self","no_star","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite","normal","first","semi_self","default","match",""
+"sqlite","normal","first","semi_self","cte","match",""
+"sqlite","normal","first","semi_self","no_star","match",""
+"sqlite","normal","first","anti_self","default","match",""
+"sqlite","normal","first","anti_self","cte","match",""
+"sqlite","normal","first","anti_self","no_star","match",""
+"sqlite","normal","first","full_self","default","match",""
+"sqlite","normal","first","full_self","cte","match",""
+"sqlite","normal","first","full_self","no_star","match",""
+"sqlite","normal","first","cross_self","default","match",""
+"sqlite","normal","first","cross_self","cte","match",""
+"sqlite","normal","first","cross_self","no_star","match",""
+"sqlite","normal","first","nest_join","default","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite","normal","first","nest_join","cte","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite","normal","first","nest_join","no_star","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite","normal","first","rename","default","match",""
+"sqlite","normal","first","rename","cte","match",""
+"sqlite","normal","first","rename","no_star","match",""
+"sqlite","normal","last","identity","default","match",""
+"sqlite","normal","last","identity","cte","match",""
+"sqlite","normal","last","identity","no_star","match",""
+"sqlite","normal","last","collapse","default","difference",""
+"sqlite","normal","last","collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite","normal","last","collapse","no_star","difference",""
+"sqlite","normal","last","cte_collapse","default","difference",""
+"sqlite","normal","last","cte_collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"sqlite","normal","last","cte_collapse","no_star","difference",""
+"sqlite","normal","last","head","default","match",""
+"sqlite","normal","last","head","cte","match",""
+"sqlite","normal","last","head","no_star","match",""
+"sqlite","normal","last","distinct","default","match",""
+"sqlite","normal","last","distinct","cte","match",""
+"sqlite","normal","last","distinct","no_star","match",""
+"sqlite","normal","last","transmute","default","match",""
+"sqlite","normal","last","transmute","cte","match",""
+"sqlite","normal","last","transmute","no_star","match",""
+"sqlite","normal","last","row_number","default","difference",""
+"sqlite","normal","last","row_number","cte","difference",""
+"sqlite","normal","last","row_number","no_star","difference",""
+"sqlite","normal","last","row_filter","default","match",""
+"sqlite","normal","last","row_filter","cte","match",""
+"sqlite","normal","last","row_filter","no_star","match",""
+"sqlite","normal","last","group","default","match",""
+"sqlite","normal","last","group","cte","match",""
+"sqlite","normal","last","group","no_star","match",""
+"sqlite","normal","last","union_self","default","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite","normal","last","union_self","cte","match",""
+"sqlite","normal","last","union_self","no_star","ordinary_error","Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before"
+"sqlite","normal","last","semi_self","default","match",""
+"sqlite","normal","last","semi_self","cte","match",""
+"sqlite","normal","last","semi_self","no_star","match",""
+"sqlite","normal","last","anti_self","default","match",""
+"sqlite","normal","last","anti_self","cte","match",""
+"sqlite","normal","last","anti_self","no_star","match",""
+"sqlite","normal","last","full_self","default","match",""
+"sqlite","normal","last","full_self","cte","match",""
+"sqlite","normal","last","full_self","no_star","match",""
+"sqlite","normal","last","cross_self","default","match",""
+"sqlite","normal","last","cross_self","cte","match",""
+"sqlite","normal","last","cross_self","no_star","match",""
+"sqlite","normal","last","nest_join","default","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite","normal","last","nest_join","cte","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite","normal","last","nest_join","no_star","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_sqlite_typed_result', 'tbl_SQLiteConnection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"sqlite","normal","last","rename","default","match",""
+"sqlite","normal","last","rename","cte","match",""
+"sqlite","normal","last","rename","no_star","match",""
+"duckdb","TRUE","none","identity","default","match",""
+"duckdb","TRUE","none","identity","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","TRUE","none","identity","no_star","match",""
+"duckdb","TRUE","none","collapse","default","match",""
+"duckdb","TRUE","none","collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","TRUE","none","collapse","no_star","match",""
+"duckdb","TRUE","none","cte_collapse","default","match",""
+"duckdb","TRUE","none","cte_collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","TRUE","none","cte_collapse","no_star","match",""
+"duckdb","TRUE","none","head","default","match",""
+"duckdb","TRUE","none","head","cte","match",""
+"duckdb","TRUE","none","head","no_star","match",""
+"duckdb","TRUE","none","distinct","default","match",""
+"duckdb","TRUE","none","distinct","cte","match",""
+"duckdb","TRUE","none","distinct","no_star","match",""
+"duckdb","TRUE","none","transmute","default","match",""
+"duckdb","TRUE","none","transmute","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","TRUE","none","transmute","no_star","match",""
+"duckdb","TRUE","none","row_number","default","match",""
+"duckdb","TRUE","none","row_number","cte","match",""
+"duckdb","TRUE","none","row_number","no_star","match",""
+"duckdb","TRUE","none","row_filter","default","match",""
+"duckdb","TRUE","none","row_filter","cte","match",""
+"duckdb","TRUE","none","row_filter","no_star","match",""
+"duckdb","TRUE","none","group","default","match",""
+"duckdb","TRUE","none","group","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","TRUE","none","group","no_star","match",""
+"duckdb","TRUE","none","union_self","default","match",""
+"duckdb","TRUE","none","union_self","cte","match",""
+"duckdb","TRUE","none","union_self","no_star","match",""
+"duckdb","TRUE","none","semi_self","default","match",""
+"duckdb","TRUE","none","semi_self","cte","match",""
+"duckdb","TRUE","none","semi_self","no_star","match",""
+"duckdb","TRUE","none","anti_self","default","match",""
+"duckdb","TRUE","none","anti_self","cte","match",""
+"duckdb","TRUE","none","anti_self","no_star","match",""
+"duckdb","TRUE","none","full_self","default","match",""
+"duckdb","TRUE","none","full_self","cte","match",""
+"duckdb","TRUE","none","full_self","no_star","match",""
+"duckdb","TRUE","none","cross_self","default","match",""
+"duckdb","TRUE","none","cross_self","cte","match",""
+"duckdb","TRUE","none","cross_self","no_star","match",""
+"duckdb","TRUE","none","nest_join","default","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb","TRUE","none","nest_join","cte","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb","TRUE","none","nest_join","no_star","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb","TRUE","none","rename","default","match",""
+"duckdb","TRUE","none","rename","cte","match",""
+"duckdb","TRUE","none","rename","no_star","match",""
+"duckdb","TRUE","first","identity","default","match",""
+"duckdb","TRUE","first","identity","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","TRUE","first","identity","no_star","match",""
+"duckdb","TRUE","first","collapse","default","match",""
+"duckdb","TRUE","first","collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","TRUE","first","collapse","no_star","match",""
+"duckdb","TRUE","first","cte_collapse","default","match",""
+"duckdb","TRUE","first","cte_collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","TRUE","first","cte_collapse","no_star","match",""
+"duckdb","TRUE","first","head","default","match",""
+"duckdb","TRUE","first","head","cte","match",""
+"duckdb","TRUE","first","head","no_star","match",""
+"duckdb","TRUE","first","distinct","default","match",""
+"duckdb","TRUE","first","distinct","cte","match",""
+"duckdb","TRUE","first","distinct","no_star","match",""
+"duckdb","TRUE","first","transmute","default","match",""
+"duckdb","TRUE","first","transmute","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","TRUE","first","transmute","no_star","match",""
+"duckdb","TRUE","first","row_number","default","difference",""
+"duckdb","TRUE","first","row_number","cte","difference",""
+"duckdb","TRUE","first","row_number","no_star","difference",""
+"duckdb","TRUE","first","row_filter","default","difference",""
+"duckdb","TRUE","first","row_filter","cte","difference",""
+"duckdb","TRUE","first","row_filter","no_star","difference",""
+"duckdb","TRUE","first","group","default","match",""
+"duckdb","TRUE","first","group","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","TRUE","first","group","no_star","match",""
+"duckdb","TRUE","first","union_self","default","package_error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 35: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb","TRUE","first","union_self","cte","match",""
+"duckdb","TRUE","first","union_self","no_star","package_error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 35: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb","TRUE","first","semi_self","default","match",""
+"duckdb","TRUE","first","semi_self","cte","match",""
+"duckdb","TRUE","first","semi_self","no_star","match",""
+"duckdb","TRUE","first","anti_self","default","match",""
+"duckdb","TRUE","first","anti_self","cte","match",""
+"duckdb","TRUE","first","anti_self","no_star","match",""
+"duckdb","TRUE","first","full_self","default","match",""
+"duckdb","TRUE","first","full_self","cte","match",""
+"duckdb","TRUE","first","full_self","no_star","match",""
+"duckdb","TRUE","first","cross_self","default","match",""
+"duckdb","TRUE","first","cross_self","cte","match",""
+"duckdb","TRUE","first","cross_self","no_star","match",""
+"duckdb","TRUE","first","nest_join","default","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb","TRUE","first","nest_join","cte","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb","TRUE","first","nest_join","no_star","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb","TRUE","first","rename","default","match",""
+"duckdb","TRUE","first","rename","cte","match",""
+"duckdb","TRUE","first","rename","no_star","match",""
+"duckdb","TRUE","last","identity","default","match",""
+"duckdb","TRUE","last","identity","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","TRUE","last","identity","no_star","match",""
+"duckdb","TRUE","last","collapse","default","match",""
+"duckdb","TRUE","last","collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","TRUE","last","collapse","no_star","match",""
+"duckdb","TRUE","last","cte_collapse","default","match",""
+"duckdb","TRUE","last","cte_collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","TRUE","last","cte_collapse","no_star","match",""
+"duckdb","TRUE","last","head","default","match",""
+"duckdb","TRUE","last","head","cte","match",""
+"duckdb","TRUE","last","head","no_star","match",""
+"duckdb","TRUE","last","distinct","default","match",""
+"duckdb","TRUE","last","distinct","cte","match",""
+"duckdb","TRUE","last","distinct","no_star","match",""
+"duckdb","TRUE","last","transmute","default","match",""
+"duckdb","TRUE","last","transmute","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","TRUE","last","transmute","no_star","match",""
+"duckdb","TRUE","last","row_number","default","difference",""
+"duckdb","TRUE","last","row_number","cte","difference",""
+"duckdb","TRUE","last","row_number","no_star","difference",""
+"duckdb","TRUE","last","row_filter","default","match",""
+"duckdb","TRUE","last","row_filter","cte","match",""
+"duckdb","TRUE","last","row_filter","no_star","match",""
+"duckdb","TRUE","last","group","default","match",""
+"duckdb","TRUE","last","group","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","TRUE","last","group","no_star","match",""
+"duckdb","TRUE","last","union_self","default","package_error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 35: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb","TRUE","last","union_self","cte","match",""
+"duckdb","TRUE","last","union_self","no_star","package_error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 35: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb","TRUE","last","semi_self","default","match",""
+"duckdb","TRUE","last","semi_self","cte","match",""
+"duckdb","TRUE","last","semi_self","no_star","match",""
+"duckdb","TRUE","last","anti_self","default","match",""
+"duckdb","TRUE","last","anti_self","cte","match",""
+"duckdb","TRUE","last","anti_self","no_star","match",""
+"duckdb","TRUE","last","full_self","default","match",""
+"duckdb","TRUE","last","full_self","cte","match",""
+"duckdb","TRUE","last","full_self","no_star","match",""
+"duckdb","TRUE","last","cross_self","default","match",""
+"duckdb","TRUE","last","cross_self","cte","match",""
+"duckdb","TRUE","last","cross_self","no_star","match",""
+"duckdb","TRUE","last","nest_join","default","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb","TRUE","last","nest_join","cte","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb","TRUE","last","nest_join","no_star","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb","TRUE","last","rename","default","match",""
+"duckdb","TRUE","last","rename","cte","match",""
+"duckdb","TRUE","last","rename","no_star","match",""
+"duckdb","FALSE","none","identity","default","match",""
+"duckdb","FALSE","none","identity","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","FALSE","none","identity","no_star","match",""
+"duckdb","FALSE","none","collapse","default","match",""
+"duckdb","FALSE","none","collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","FALSE","none","collapse","no_star","match",""
+"duckdb","FALSE","none","cte_collapse","default","match",""
+"duckdb","FALSE","none","cte_collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","FALSE","none","cte_collapse","no_star","match",""
+"duckdb","FALSE","none","head","default","match",""
+"duckdb","FALSE","none","head","cte","match",""
+"duckdb","FALSE","none","head","no_star","match",""
+"duckdb","FALSE","none","distinct","default","match",""
+"duckdb","FALSE","none","distinct","cte","match",""
+"duckdb","FALSE","none","distinct","no_star","match",""
+"duckdb","FALSE","none","transmute","default","match",""
+"duckdb","FALSE","none","transmute","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","FALSE","none","transmute","no_star","match",""
+"duckdb","FALSE","none","row_number","default","match",""
+"duckdb","FALSE","none","row_number","cte","match",""
+"duckdb","FALSE","none","row_number","no_star","match",""
+"duckdb","FALSE","none","row_filter","default","match",""
+"duckdb","FALSE","none","row_filter","cte","match",""
+"duckdb","FALSE","none","row_filter","no_star","match",""
+"duckdb","FALSE","none","group","default","match",""
+"duckdb","FALSE","none","group","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","FALSE","none","group","no_star","match",""
+"duckdb","FALSE","none","union_self","default","match",""
+"duckdb","FALSE","none","union_self","cte","match",""
+"duckdb","FALSE","none","union_self","no_star","match",""
+"duckdb","FALSE","none","semi_self","default","match",""
+"duckdb","FALSE","none","semi_self","cte","match",""
+"duckdb","FALSE","none","semi_self","no_star","match",""
+"duckdb","FALSE","none","anti_self","default","match",""
+"duckdb","FALSE","none","anti_self","cte","match",""
+"duckdb","FALSE","none","anti_self","no_star","match",""
+"duckdb","FALSE","none","full_self","default","match",""
+"duckdb","FALSE","none","full_self","cte","match",""
+"duckdb","FALSE","none","full_self","no_star","match",""
+"duckdb","FALSE","none","cross_self","default","match",""
+"duckdb","FALSE","none","cross_self","cte","match",""
+"duckdb","FALSE","none","cross_self","no_star","match",""
+"duckdb","FALSE","none","nest_join","default","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb","FALSE","none","nest_join","cte","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb","FALSE","none","nest_join","no_star","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb","FALSE","none","rename","default","match",""
+"duckdb","FALSE","none","rename","cte","match",""
+"duckdb","FALSE","none","rename","no_star","match",""
+"duckdb","FALSE","first","identity","default","match",""
+"duckdb","FALSE","first","identity","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","FALSE","first","identity","no_star","match",""
+"duckdb","FALSE","first","collapse","default","match",""
+"duckdb","FALSE","first","collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","FALSE","first","collapse","no_star","match",""
+"duckdb","FALSE","first","cte_collapse","default","match",""
+"duckdb","FALSE","first","cte_collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","FALSE","first","cte_collapse","no_star","match",""
+"duckdb","FALSE","first","head","default","match",""
+"duckdb","FALSE","first","head","cte","match",""
+"duckdb","FALSE","first","head","no_star","match",""
+"duckdb","FALSE","first","distinct","default","match",""
+"duckdb","FALSE","first","distinct","cte","match",""
+"duckdb","FALSE","first","distinct","no_star","match",""
+"duckdb","FALSE","first","transmute","default","match",""
+"duckdb","FALSE","first","transmute","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","FALSE","first","transmute","no_star","match",""
+"duckdb","FALSE","first","row_number","default","difference",""
+"duckdb","FALSE","first","row_number","cte","difference",""
+"duckdb","FALSE","first","row_number","no_star","difference",""
+"duckdb","FALSE","first","row_filter","default","difference",""
+"duckdb","FALSE","first","row_filter","cte","difference",""
+"duckdb","FALSE","first","row_filter","no_star","difference",""
+"duckdb","FALSE","first","group","default","match",""
+"duckdb","FALSE","first","group","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","FALSE","first","group","no_star","match",""
+"duckdb","FALSE","first","union_self","default","package_error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 35: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb","FALSE","first","union_self","cte","match",""
+"duckdb","FALSE","first","union_self","no_star","package_error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 35: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb","FALSE","first","semi_self","default","match",""
+"duckdb","FALSE","first","semi_self","cte","match",""
+"duckdb","FALSE","first","semi_self","no_star","match",""
+"duckdb","FALSE","first","anti_self","default","match",""
+"duckdb","FALSE","first","anti_self","cte","match",""
+"duckdb","FALSE","first","anti_self","no_star","match",""
+"duckdb","FALSE","first","full_self","default","match",""
+"duckdb","FALSE","first","full_self","cte","match",""
+"duckdb","FALSE","first","full_self","no_star","match",""
+"duckdb","FALSE","first","cross_self","default","match",""
+"duckdb","FALSE","first","cross_self","cte","match",""
+"duckdb","FALSE","first","cross_self","no_star","match",""
+"duckdb","FALSE","first","nest_join","default","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb","FALSE","first","nest_join","cte","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb","FALSE","first","nest_join","no_star","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb","FALSE","first","rename","default","match",""
+"duckdb","FALSE","first","rename","cte","match",""
+"duckdb","FALSE","first","rename","no_star","match",""
+"duckdb","FALSE","last","identity","default","match",""
+"duckdb","FALSE","last","identity","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","FALSE","last","identity","no_star","match",""
+"duckdb","FALSE","last","collapse","default","match",""
+"duckdb","FALSE","last","collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","FALSE","last","collapse","no_star","match",""
+"duckdb","FALSE","last","cte_collapse","default","match",""
+"duckdb","FALSE","last","cte_collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","FALSE","last","cte_collapse","no_star","match",""
+"duckdb","FALSE","last","head","default","match",""
+"duckdb","FALSE","last","head","cte","match",""
+"duckdb","FALSE","last","head","no_star","match",""
+"duckdb","FALSE","last","distinct","default","match",""
+"duckdb","FALSE","last","distinct","cte","match",""
+"duckdb","FALSE","last","distinct","no_star","match",""
+"duckdb","FALSE","last","transmute","default","match",""
+"duckdb","FALSE","last","transmute","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","FALSE","last","transmute","no_star","match",""
+"duckdb","FALSE","last","row_number","default","difference",""
+"duckdb","FALSE","last","row_number","cte","difference",""
+"duckdb","FALSE","last","row_number","no_star","difference",""
+"duckdb","FALSE","last","row_filter","default","match",""
+"duckdb","FALSE","last","row_filter","cte","match",""
+"duckdb","FALSE","last","row_filter","no_star","match",""
+"duckdb","FALSE","last","group","default","match",""
+"duckdb","FALSE","last","group","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","FALSE","last","group","no_star","match",""
+"duckdb","FALSE","last","union_self","default","package_error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 35: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb","FALSE","last","union_self","cte","match",""
+"duckdb","FALSE","last","union_self","no_star","package_error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 35: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb","FALSE","last","semi_self","default","match",""
+"duckdb","FALSE","last","semi_self","cte","match",""
+"duckdb","FALSE","last","semi_self","no_star","match",""
+"duckdb","FALSE","last","anti_self","default","match",""
+"duckdb","FALSE","last","anti_self","cte","match",""
+"duckdb","FALSE","last","anti_self","no_star","match",""
+"duckdb","FALSE","last","full_self","default","match",""
+"duckdb","FALSE","last","full_self","cte","match",""
+"duckdb","FALSE","last","full_self","no_star","match",""
+"duckdb","FALSE","last","cross_self","default","match",""
+"duckdb","FALSE","last","cross_self","cte","match",""
+"duckdb","FALSE","last","cross_self","no_star","match",""
+"duckdb","FALSE","last","nest_join","default","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb","FALSE","last","nest_join","cte","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb","FALSE","last","nest_join","no_star","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb","FALSE","last","rename","default","match",""
+"duckdb","FALSE","last","rename","cte","match",""
+"duckdb","FALSE","last","rename","no_star","match",""
+"duckdb",".env","none","identity","default","match",""
+"duckdb",".env","none","identity","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb",".env","none","identity","no_star","match",""
+"duckdb",".env","none","collapse","default","match",""
+"duckdb",".env","none","collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb",".env","none","collapse","no_star","match",""
+"duckdb",".env","none","cte_collapse","default","match",""
+"duckdb",".env","none","cte_collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb",".env","none","cte_collapse","no_star","match",""
+"duckdb",".env","none","head","default","match",""
+"duckdb",".env","none","head","cte","match",""
+"duckdb",".env","none","head","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb",".env","none","distinct","default","match",""
+"duckdb",".env","none","distinct","cte","match",""
+"duckdb",".env","none","distinct","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb",".env","none","transmute","default","match",""
+"duckdb",".env","none","transmute","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb",".env","none","transmute","no_star","match",""
+"duckdb",".env","none","row_number","default","match",""
+"duckdb",".env","none","row_number","cte","match",""
+"duckdb",".env","none","row_number","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb",".env","none","row_filter","default","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb",".env","none","row_filter","cte","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb",".env","none","row_filter","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb",".env","none","group","default","match",""
+"duckdb",".env","none","group","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb",".env","none","group","no_star","match",""
+"duckdb",".env","none","union_self","default","match",""
+"duckdb",".env","none","union_self","cte","match",""
+"duckdb",".env","none","union_self","no_star","match",""
+"duckdb",".env","none","semi_self","default","match",""
+"duckdb",".env","none","semi_self","cte","match",""
+"duckdb",".env","none","semi_self","no_star","match",""
+"duckdb",".env","none","anti_self","default","match",""
+"duckdb",".env","none","anti_self","cte","match",""
+"duckdb",".env","none","anti_self","no_star","match",""
+"duckdb",".env","none","full_self","default","match",""
+"duckdb",".env","none","full_self","cte","match",""
+"duckdb",".env","none","full_self","no_star","match",""
+"duckdb",".env","none","cross_self","default","match",""
+"duckdb",".env","none","cross_self","cte","match",""
+"duckdb",".env","none","cross_self","no_star","match",""
+"duckdb",".env","none","nest_join","default","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_duckdb_env', 'tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb",".env","none","nest_join","cte","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_duckdb_env', 'tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb",".env","none","nest_join","no_star","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_duckdb_env', 'tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb",".env","none","rename","default","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb",".env","none","rename","cte","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb",".env","none","rename","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb",".env","first","identity","default","match",""
+"duckdb",".env","first","identity","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb",".env","first","identity","no_star","match",""
+"duckdb",".env","first","collapse","default","match",""
+"duckdb",".env","first","collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb",".env","first","collapse","no_star","match",""
+"duckdb",".env","first","cte_collapse","default","match",""
+"duckdb",".env","first","cte_collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb",".env","first","cte_collapse","no_star","match",""
+"duckdb",".env","first","head","default","match",""
+"duckdb",".env","first","head","cte","match",""
+"duckdb",".env","first","head","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb",".env","first","distinct","default","match",""
+"duckdb",".env","first","distinct","cte","match",""
+"duckdb",".env","first","distinct","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb",".env","first","transmute","default","match",""
+"duckdb",".env","first","transmute","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb",".env","first","transmute","no_star","match",""
+"duckdb",".env","first","row_number","default","difference",""
+"duckdb",".env","first","row_number","cte","match",""
+"duckdb",".env","first","row_number","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb",".env","first","row_filter","default","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb",".env","first","row_filter","cte","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb",".env","first","row_filter","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb",".env","first","group","default","match",""
+"duckdb",".env","first","group","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb",".env","first","group","no_star","match",""
+"duckdb",".env","first","union_self","default","package_error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 35: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb",".env","first","union_self","cte","match",""
+"duckdb",".env","first","union_self","no_star","package_error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 35: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb",".env","first","semi_self","default","match",""
+"duckdb",".env","first","semi_self","cte","match",""
+"duckdb",".env","first","semi_self","no_star","match",""
+"duckdb",".env","first","anti_self","default","match",""
+"duckdb",".env","first","anti_self","cte","match",""
+"duckdb",".env","first","anti_self","no_star","match",""
+"duckdb",".env","first","full_self","default","match",""
+"duckdb",".env","first","full_self","cte","match",""
+"duckdb",".env","first","full_self","no_star","match",""
+"duckdb",".env","first","cross_self","default","match",""
+"duckdb",".env","first","cross_self","cte","match",""
+"duckdb",".env","first","cross_self","no_star","match",""
+"duckdb",".env","first","nest_join","default","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_duckdb_env', 'tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb",".env","first","nest_join","cte","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_duckdb_env', 'tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb",".env","first","nest_join","no_star","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_duckdb_env', 'tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb",".env","first","rename","default","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb",".env","first","rename","cte","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb",".env","first","rename","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb",".env","last","identity","default","match",""
+"duckdb",".env","last","identity","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb",".env","last","identity","no_star","match",""
+"duckdb",".env","last","collapse","default","match",""
+"duckdb",".env","last","collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb",".env","last","collapse","no_star","match",""
+"duckdb",".env","last","cte_collapse","default","match",""
+"duckdb",".env","last","cte_collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb",".env","last","cte_collapse","no_star","match",""
+"duckdb",".env","last","head","default","match",""
+"duckdb",".env","last","head","cte","match",""
+"duckdb",".env","last","head","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb",".env","last","distinct","default","match",""
+"duckdb",".env","last","distinct","cte","match",""
+"duckdb",".env","last","distinct","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb",".env","last","transmute","default","match",""
+"duckdb",".env","last","transmute","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb",".env","last","transmute","no_star","match",""
+"duckdb",".env","last","row_number","default","difference",""
+"duckdb",".env","last","row_number","cte","match",""
+"duckdb",".env","last","row_number","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb",".env","last","row_filter","default","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb",".env","last","row_filter","cte","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb",".env","last","row_filter","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb",".env","last","group","default","match",""
+"duckdb",".env","last","group","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb",".env","last","group","no_star","match",""
+"duckdb",".env","last","union_self","default","package_error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 35: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb",".env","last","union_self","cte","match",""
+"duckdb",".env","last","union_self","no_star","package_error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 35: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb",".env","last","semi_self","default","match",""
+"duckdb",".env","last","semi_self","cte","match",""
+"duckdb",".env","last","semi_self","no_star","match",""
+"duckdb",".env","last","anti_self","default","match",""
+"duckdb",".env","last","anti_self","cte","match",""
+"duckdb",".env","last","anti_self","no_star","match",""
+"duckdb",".env","last","full_self","default","match",""
+"duckdb",".env","last","full_self","cte","match",""
+"duckdb",".env","last","full_self","no_star","match",""
+"duckdb",".env","last","cross_self","default","match",""
+"duckdb",".env","last","cross_self","cte","match",""
+"duckdb",".env","last","cross_self","no_star","match",""
+"duckdb",".env","last","nest_join","default","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_duckdb_env', 'tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb",".env","last","nest_join","cte","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_duckdb_env', 'tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb",".env","last","nest_join","no_star","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('marginplyr_duckdb_env', 'tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb",".env","last","rename","default","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb",".env","last","rename","cte","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb",".env","last","rename","no_star","ordinary_error","Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb","normal","none","identity","default","match",""
+"duckdb","normal","none","identity","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","normal","none","identity","no_star","match",""
+"duckdb","normal","none","collapse","default","match",""
+"duckdb","normal","none","collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","normal","none","collapse","no_star","match",""
+"duckdb","normal","none","cte_collapse","default","match",""
+"duckdb","normal","none","cte_collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","normal","none","cte_collapse","no_star","match",""
+"duckdb","normal","none","head","default","match",""
+"duckdb","normal","none","head","cte","match",""
+"duckdb","normal","none","head","no_star","match",""
+"duckdb","normal","none","distinct","default","match",""
+"duckdb","normal","none","distinct","cte","match",""
+"duckdb","normal","none","distinct","no_star","match",""
+"duckdb","normal","none","transmute","default","match",""
+"duckdb","normal","none","transmute","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","normal","none","transmute","no_star","match",""
+"duckdb","normal","none","row_number","default","match",""
+"duckdb","normal","none","row_number","cte","match",""
+"duckdb","normal","none","row_number","no_star","match",""
+"duckdb","normal","none","row_filter","default","match",""
+"duckdb","normal","none","row_filter","cte","match",""
+"duckdb","normal","none","row_filter","no_star","match",""
+"duckdb","normal","none","group","default","match",""
+"duckdb","normal","none","group","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","normal","none","group","no_star","match",""
+"duckdb","normal","none","union_self","default","match",""
+"duckdb","normal","none","union_self","cte","match",""
+"duckdb","normal","none","union_self","no_star","match",""
+"duckdb","normal","none","semi_self","default","match",""
+"duckdb","normal","none","semi_self","cte","match",""
+"duckdb","normal","none","semi_self","no_star","match",""
+"duckdb","normal","none","anti_self","default","match",""
+"duckdb","normal","none","anti_self","cte","match",""
+"duckdb","normal","none","anti_self","no_star","match",""
+"duckdb","normal","none","full_self","default","match",""
+"duckdb","normal","none","full_self","cte","match",""
+"duckdb","normal","none","full_self","no_star","match",""
+"duckdb","normal","none","cross_self","default","match",""
+"duckdb","normal","none","cross_self","cte","match",""
+"duckdb","normal","none","cross_self","no_star","match",""
+"duckdb","normal","none","nest_join","default","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb","normal","none","nest_join","cte","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb","normal","none","nest_join","no_star","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb","normal","none","rename","default","match",""
+"duckdb","normal","none","rename","cte","match",""
+"duckdb","normal","none","rename","no_star","match",""
+"duckdb","normal","first","identity","default","match",""
+"duckdb","normal","first","identity","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","normal","first","identity","no_star","match",""
+"duckdb","normal","first","collapse","default","match",""
+"duckdb","normal","first","collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","normal","first","collapse","no_star","match",""
+"duckdb","normal","first","cte_collapse","default","match",""
+"duckdb","normal","first","cte_collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","normal","first","cte_collapse","no_star","match",""
+"duckdb","normal","first","head","default","match",""
+"duckdb","normal","first","head","cte","match",""
+"duckdb","normal","first","head","no_star","match",""
+"duckdb","normal","first","distinct","default","match",""
+"duckdb","normal","first","distinct","cte","match",""
+"duckdb","normal","first","distinct","no_star","match",""
+"duckdb","normal","first","transmute","default","match",""
+"duckdb","normal","first","transmute","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","normal","first","transmute","no_star","match",""
+"duckdb","normal","first","row_number","default","difference",""
+"duckdb","normal","first","row_number","cte","difference",""
+"duckdb","normal","first","row_number","no_star","difference",""
+"duckdb","normal","first","row_filter","default","difference",""
+"duckdb","normal","first","row_filter","cte","difference",""
+"duckdb","normal","first","row_filter","no_star","difference",""
+"duckdb","normal","first","group","default","match",""
+"duckdb","normal","first","group","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","normal","first","group","no_star","match",""
+"duckdb","normal","first","union_self","default","package_error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 35: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb","normal","first","union_self","cte","match",""
+"duckdb","normal","first","union_self","no_star","package_error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 35: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb","normal","first","semi_self","default","match",""
+"duckdb","normal","first","semi_self","cte","match",""
+"duckdb","normal","first","semi_self","no_star","match",""
+"duckdb","normal","first","anti_self","default","match",""
+"duckdb","normal","first","anti_self","cte","match",""
+"duckdb","normal","first","anti_self","no_star","match",""
+"duckdb","normal","first","full_self","default","match",""
+"duckdb","normal","first","full_self","cte","match",""
+"duckdb","normal","first","full_self","no_star","match",""
+"duckdb","normal","first","cross_self","default","match",""
+"duckdb","normal","first","cross_self","cte","match",""
+"duckdb","normal","first","cross_self","no_star","match",""
+"duckdb","normal","first","nest_join","default","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb","normal","first","nest_join","cte","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb","normal","first","nest_join","no_star","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb","normal","first","rename","default","match",""
+"duckdb","normal","first","rename","cte","match",""
+"duckdb","normal","first","rename","no_star","match",""
+"duckdb","normal","last","identity","default","match",""
+"duckdb","normal","last","identity","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","normal","last","identity","no_star","match",""
+"duckdb","normal","last","collapse","default","match",""
+"duckdb","normal","last","collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","normal","last","collapse","no_star","match",""
+"duckdb","normal","last","cte_collapse","default","match",""
+"duckdb","normal","last","cte_collapse","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","normal","last","cte_collapse","no_star","match",""
+"duckdb","normal","last","head","default","match",""
+"duckdb","normal","last","head","cte","match",""
+"duckdb","normal","last","head","no_star","match",""
+"duckdb","normal","last","distinct","default","match",""
+"duckdb","normal","last","distinct","cte","match",""
+"duckdb","normal","last","distinct","no_star","match",""
+"duckdb","normal","last","transmute","default","match",""
+"duckdb","normal","last","transmute","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","normal","last","transmute","no_star","match",""
+"duckdb","normal","last","row_number","default","difference",""
+"duckdb","normal","last","row_number","cte","difference",""
+"duckdb","normal","last","row_number","no_star","difference",""
+"duckdb","normal","last","row_filter","default","match",""
+"duckdb","normal","last","row_filter","cte","match",""
+"duckdb","normal","last","row_filter","no_star","match",""
+"duckdb","normal","last","group","default","match",""
+"duckdb","normal","last","group","cte","ordinary_error","Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex"
+"duckdb","normal","last","group","no_star","match",""
+"duckdb","normal","last","union_self","default","package_error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 35: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb","normal","last","union_self","cte","match",""
+"duckdb","normal","last","union_self","no_star","package_error","Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near ""UNION""
+
+LINE 35: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER"
+"duckdb","normal","last","semi_self","default","match",""
+"duckdb","normal","last","semi_self","cte","match",""
+"duckdb","normal","last","semi_self","no_star","match",""
+"duckdb","normal","last","anti_self","default","match",""
+"duckdb","normal","last","anti_self","cte","match",""
+"duckdb","normal","last","anti_self","no_star","match",""
+"duckdb","normal","last","full_self","default","match",""
+"duckdb","normal","last","full_self","cte","match",""
+"duckdb","normal","last","full_self","no_star","match",""
+"duckdb","normal","last","cross_self","default","match",""
+"duckdb","normal","last","cross_self","cte","match",""
+"duckdb","normal","last","cross_self","no_star","match",""
+"duckdb","normal","last","nest_join","default","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb","normal","last","nest_join","cte","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb","normal","last","nest_join","no_star","ordinary_error","no applicable method for 'nest_join' applied to an object of class ""c('tbl_duckdb_connection', 'tbl_dbi', 'tbl_sql', 'tbl_lazy', 'tbl')"""
+"duckdb","normal","last","rename","default","match",""
+"duckdb","normal","last","rename","cte","match",""
+"duckdb","normal","last","rename","no_star","match",""

@@ -1,0 +1,185 @@
+
+Expanded result:
+      g sid rid TRUE
+1     a   1   2   11
+2     b   1   1    7
+3  <NA>   1   3   19
+4 Total   2   1    7
+5 Total   2   2   11
+6 Total   2   3   19
+Materialized control:
+# A tibble: 6 × 4
+  g       sid   rid `TRUE`
+  <chr> <int> <int>  <int>
+1 a         1     2     11
+2 b         1     1      7
+3 <NA>      1     3     19
+4 Total     2     1      7
+5 Total     2     2     11
+6 Total     2     3     19
+
+Expanded result:
+# A tibble: 5 × 4
+  g       sid   rid `TRUE`
+  <chr> <int> <int>  <int>
+1 b         1     1      7
+2 a         1     2     11
+3 Total     2     1      7
+4 Total     2     2     11
+5 Total     2     3     19
+Materialized control:
+# A tibble: 5 × 4
+  g       sid   rid column4
+  <chr> <int> <int>   <int>
+1 a         1     2      11
+2 b         1     1       7
+3 Total     2     1       7
+4 Total     2     2      11
+5 Total     2     3      19
+
+Expanded result:
+# A tibble: 1 × 4
+  g       sid   rid `TRUE`
+  <lgl> <int> <int>  <int>
+1 NA        1     3     19
+Materialized control:
+# A tibble: 1 × 4
+  g       sid   rid column4
+  <chr> <int> <int>   <int>
+1 <NA>      1     3      19
+
+Raw direct physical columns:
+[1] "g"                    "sid"                  "rid"
+[4] "TRUE"                 "..marginplyr_order_1" "..marginplyr_order_2"
+[7] "..marginplyr_order_3" "..marginplyr_order_4"
+
+Collapsed physical columns:
+[1] "g"                    "sid"                  "rid"
+[4] "TRUE"                 "..marginplyr_order_1" "..marginplyr_order_2"
+[7] "..marginplyr_order_3" "..marginplyr_order_4"
+
+Explicit public selection after collapse:
+# A tibble: 6 × 8
+  g       sid   rid `TRUE` ..marginplyr_order_1 ..marginplyr_order_2
+  <chr> <int> <int>  <int>                <int>                <int>
+1 a         1     2     11                    0                    0
+2 b         1     1      7                    0                    0
+3 <NA>      1     3     19                    0                    1
+4 Total     2     1      7                    1                    0
+5 Total     2     2     11                    1                    0
+6 Total     2     3     19                    1                    0
+# ℹ 2 more variables: ..marginplyr_order_3 <chr>, ..marginplyr_order_4 <int>
+
+Public lazy query and raw direct CTE query schemas:
+[1] "g"    "sid"  "rid"  "TRUE"
+[1] "g"                    "sid"                  "rid"
+[4] "column4"              "..marginplyr_order_1" "..marginplyr_order_2"
+[7] "..marginplyr_order_3" "..marginplyr_order_4"
+
+Sorted companion raw CTE SQL:
+WITH `q01` AS (
+  SELECT
+    CAST(NULL AS TEXT) AS `g`,
+    CAST(NULL AS INTEGER) AS `sid`,
+    `rid`,
+    `TRUE`,
+    NULL AS `..marginplyr_order_1`,
+    NULL AS `..marginplyr_order_2`,
+    NULL AS `..marginplyr_order_3`,
+    NULL AS `..marginplyr_order_4`
+  FROM `src`
+  WHERE (0)
+),
+`q02` AS (
+  SELECT `g`, `rid`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+  FROM (
+SELECT `g`, `rid`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `rid`, `TRUE` AS `..marginplyr_input_1`
+FROM `src`
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+),
+`q03` AS (
+  SELECT *, NULL AS `sid`
+  FROM `q02` AS `q01`
+),
+`q04` AS (
+  SELECT `g`, `rid`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+  FROM (
+SELECT `g`, `rid`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `rid`, `TRUE` AS `..marginplyr_input_1`
+FROM `src`
+) AS `q01`
+  ) AS `q01`
+),
+`q05` AS (
+  SELECT CAST(`g` AS TEXT) AS `g`, `rid`, `..marginplyr_boolean_1`
+  FROM `q04` AS `q01`
+),
+`q06` AS (
+  SELECT *, 1 AS `sid`
+  FROM `q05` AS `q01`
+),
+`q07` AS (
+  SELECT 'Total' AS `g`, `rid`, `..marginplyr_boolean_1`
+  FROM `q04` AS `q01`
+),
+`q08` AS (
+  SELECT *, 2 AS `sid`
+  FROM `q07` AS `q01`
+),
+`q09` AS (
+  SELECT *
+  FROM `q06`
+
+  UNION ALL
+
+  SELECT *
+  FROM `q08`
+),
+`q10` AS (
+  SELECT *
+  FROM `q09` AS `q01`
+  WHERE (1)
+),
+`q11` AS (
+  SELECT *
+  FROM `q03`
+
+  UNION ALL
+
+  SELECT *
+  FROM `q10`
+),
+`q12` AS (
+  SELECT
+    `g`,
+    `sid`,
+    `rid`,
+    `..marginplyr_boolean_1` AS `TRUE`,
+    CASE WHEN (`sid` IN (2)) THEN 1 WHEN NOT (`sid` IN (2)) THEN 0 END AS `..marginplyr_order_1`,
+    CASE WHEN ((`g` IS NULL)) THEN 1 WHEN NOT ((`g` IS NULL)) THEN 0 END AS `..marginplyr_order_2`,
+    `g` AS `..marginplyr_order_3`,
+    `sid` AS `..marginplyr_order_4`
+  FROM `q11` AS `q01`
+)
+SELECT *
+FROM `q01`
+
+UNION ALL
+
+SELECT *
+FROM `q12`
+ORDER BY `..marginplyr_order_1`, `..marginplyr_order_2`, `..marginplyr_order_3`, `..marginplyr_order_4`
+Warning messages:
+1: ORDER BY is ignored in subqueries without LIMIT
+ℹ Do you need to move arrange() later in the pipeline or use window_order() instead?
+2: ORDER BY is ignored in subqueries without LIMIT
+ℹ Do you need to move arrange() later in the pipeline or use window_order() instead?
+3: ORDER BY is ignored in subqueries without LIMIT
+ℹ Do you need to move arrange() later in the pipeline or use window_order() instead?
+4: ORDER BY is ignored in subqueries without LIMIT
+ℹ Do you need to move arrange() later in the pipeline or use window_order() instead?

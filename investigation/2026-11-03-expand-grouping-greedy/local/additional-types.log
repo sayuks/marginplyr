@@ -1,0 +1,374 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+
+               difference             fixture_error                     match
+                       21                       161                      3579
+   ordinary_control_error      ordinary_order_error ordinary_shape_limitation
+                       39                       356                        10
+        family n   shape      role  container                    status
+    expression 0 fixture   fixture    fixture             fixture_error
+    expression 1 fixture   fixture    fixture             fixture_error
+    expression 3 fixture   fixture    fixture             fixture_error
+       POSIXlt 0  packed dimension data.table             fixture_error
+       POSIXlt 0  packed     fixed data.table             fixture_error
+       POSIXlt 0  packed   payload data.table             fixture_error
+       POSIXlt 0  nested dimension data.table             fixture_error
+       POSIXlt 0  nested     fixed data.table             fixture_error
+       POSIXlt 0  nested   payload data.table             fixture_error
+       POSIXlt 1  packed dimension data.table             fixture_error
+       POSIXlt 1  packed     fixed data.table             fixture_error
+       POSIXlt 1  packed   payload data.table             fixture_error
+       POSIXlt 1  nested dimension data.table             fixture_error
+       POSIXlt 1  nested     fixed data.table             fixture_error
+       POSIXlt 1  nested   payload data.table             fixture_error
+       POSIXlt 3  packed dimension data.table             fixture_error
+       POSIXlt 3  packed     fixed data.table             fixture_error
+       POSIXlt 3  packed   payload data.table             fixture_error
+       POSIXlt 3  nested dimension data.table             fixture_error
+       POSIXlt 3  nested     fixed data.table             fixture_error
+       POSIXlt 3  nested   payload data.table             fixture_error
+      timeDate 0 fixture   fixture    fixture             fixture_error
+      timeDate 1 fixture   fixture    fixture             fixture_error
+      timeDate 3 fixture   fixture    fixture             fixture_error
+          mcmc 0  direct dimension data.table             fixture_error
+          mcmc 0  direct     fixed data.table             fixture_error
+          mcmc 0  direct   payload data.table             fixture_error
+          mcmc 0  packed dimension data.table             fixture_error
+          mcmc 0  packed     fixed data.table             fixture_error
+          mcmc 0  packed   payload data.table             fixture_error
+          mcmc 0  nested dimension data.table             fixture_error
+          mcmc 0  nested     fixed data.table             fixture_error
+          mcmc 0  nested   payload data.table             fixture_error
+          mcmc 1  direct dimension data.table             fixture_error
+          mcmc 1  direct     fixed data.table             fixture_error
+          mcmc 1  direct   payload data.table             fixture_error
+          mcmc 1  packed dimension data.table             fixture_error
+          mcmc 1  packed     fixed data.table             fixture_error
+          mcmc 1  packed   payload data.table             fixture_error
+          mcmc 1  nested dimension data.table             fixture_error
+          mcmc 1  nested     fixed data.table             fixture_error
+          mcmc 1  nested   payload data.table             fixture_error
+          mcmc 3  direct dimension data.table             fixture_error
+          mcmc 3  direct     fixed data.table             fixture_error
+          mcmc 3  direct   payload data.table             fixture_error
+          mcmc 3  packed dimension data.table             fixture_error
+          mcmc 3  packed     fixed data.table             fixture_error
+          mcmc 3  packed   payload data.table             fixture_error
+          mcmc 3  nested dimension data.table             fixture_error
+          mcmc 3  nested     fixed data.table             fixture_error
+          mcmc 3  nested   payload data.table             fixture_error
+ matrix_sparse 0 fixture   fixture    fixture             fixture_error
+ matrix_sparse 1 fixture   fixture    fixture             fixture_error
+ matrix_sparse 3 fixture   fixture    fixture             fixture_error
+          hilo 0  direct   payload data.table                difference
+          hilo 0  packed dimension data.table             fixture_error
+          hilo 0  packed     fixed data.table             fixture_error
+          hilo 0  packed   payload data.table             fixture_error
+          hilo 0  nested dimension data.table             fixture_error
+          hilo 0  nested     fixed data.table             fixture_error
+          hilo 0  nested   payload data.table             fixture_error
+          hilo 1  direct   payload data.table                difference
+          hilo 1  packed dimension data.table ordinary_shape_limitation
+          hilo 1  packed     fixed data.table ordinary_shape_limitation
+          hilo 1  packed   payload data.table                difference
+          hilo 1  nested dimension data.table ordinary_shape_limitation
+          hilo 1  nested     fixed data.table ordinary_shape_limitation
+          hilo 1  nested   payload data.table                difference
+          hilo 3  direct dimension data.table ordinary_shape_limitation
+          hilo 3  direct     fixed data.table ordinary_shape_limitation
+          hilo 3  direct   payload data.table                difference
+          hilo 3  packed dimension data.table ordinary_shape_limitation
+          hilo 3  packed     fixed data.table ordinary_shape_limitation
+          hilo 3  packed   payload data.table                difference
+          hilo 3  nested dimension data.table ordinary_shape_limitation
+          hilo 3  nested     fixed data.table ordinary_shape_limitation
+          hilo 3  nested   payload data.table                difference
+  rvar_integer 1  direct dimension data.table             fixture_error
+  rvar_integer 1  direct     fixed data.table             fixture_error
+  rvar_integer 1  direct   payload data.table             fixture_error
+  rvar_integer 1  packed dimension data.table             fixture_error
+  rvar_integer 1  packed     fixed data.table             fixture_error
+  rvar_integer 1  packed   payload data.table             fixture_error
+  rvar_integer 1  nested dimension data.table             fixture_error
+  rvar_integer 1  nested     fixed data.table             fixture_error
+  rvar_integer 1  nested   payload data.table             fixture_error
+  rvar_integer 3  direct dimension data.table             fixture_error
+  rvar_integer 3  direct     fixed data.table             fixture_error
+  rvar_integer 3  direct   payload data.table             fixture_error
+  rvar_integer 3  packed dimension data.table             fixture_error
+  rvar_integer 3  packed     fixed data.table             fixture_error
+  rvar_integer 3  packed   payload data.table             fixture_error
+  rvar_integer 3  nested dimension data.table             fixture_error
+  rvar_integer 3  nested     fixed data.table             fixture_error
+  rvar_integer 3  nested   payload data.table             fixture_error
+  rvar_logical 1  direct dimension data.table             fixture_error
+  rvar_logical 1  direct     fixed data.table             fixture_error
+  rvar_logical 1  direct   payload data.table             fixture_error
+  rvar_logical 1  packed dimension data.table             fixture_error
+  rvar_logical 1  packed     fixed data.table             fixture_error
+  rvar_logical 1  packed   payload data.table             fixture_error
+  rvar_logical 1  nested dimension data.table             fixture_error
+  rvar_logical 1  nested     fixed data.table             fixture_error
+  rvar_logical 1  nested   payload data.table             fixture_error
+  rvar_logical 3  direct dimension data.table             fixture_error
+  rvar_logical 3  direct     fixed data.table             fixture_error
+  rvar_logical 3  direct   payload data.table             fixture_error
+  rvar_logical 3  packed dimension data.table             fixture_error
+  rvar_logical 3  packed     fixed data.table             fixture_error
+  rvar_logical 3  packed   payload data.table             fixture_error
+  rvar_logical 3  nested dimension data.table             fixture_error
+  rvar_logical 3  nested     fixed data.table             fixture_error
+  rvar_logical 3  nested   payload data.table             fixture_error
+   rvar_factor 1  direct dimension data.table             fixture_error
+   rvar_factor 1  direct     fixed data.table             fixture_error
+   rvar_factor 1  direct   payload data.table             fixture_error
+   rvar_factor 1  packed dimension data.table             fixture_error
+   rvar_factor 1  packed     fixed data.table             fixture_error
+   rvar_factor 1  packed   payload data.table             fixture_error
+   rvar_factor 1  nested dimension data.table             fixture_error
+   rvar_factor 1  nested     fixed data.table             fixture_error
+   rvar_factor 1  nested   payload data.table             fixture_error
+   rvar_factor 3  direct dimension data.table             fixture_error
+   rvar_factor 3  direct     fixed data.table             fixture_error
+   rvar_factor 3  direct   payload data.table             fixture_error
+   rvar_factor 3  packed dimension data.table             fixture_error
+   rvar_factor 3  packed     fixed data.table             fixture_error
+   rvar_factor 3  packed   payload data.table             fixture_error
+   rvar_factor 3  nested dimension data.table             fixture_error
+   rvar_factor 3  nested     fixed data.table             fixture_error
+   rvar_factor 3  nested   payload data.table             fixture_error
+  rvar_ordered 1  direct dimension data.table             fixture_error
+  rvar_ordered 1  direct     fixed data.table             fixture_error
+  rvar_ordered 1  direct   payload data.table             fixture_error
+  rvar_ordered 1  packed dimension data.table             fixture_error
+  rvar_ordered 1  packed     fixed data.table             fixture_error
+  rvar_ordered 1  packed   payload data.table             fixture_error
+  rvar_ordered 1  nested dimension data.table             fixture_error
+  rvar_ordered 1  nested     fixed data.table             fixture_error
+  rvar_ordered 1  nested   payload data.table             fixture_error
+  rvar_ordered 3  direct dimension data.table             fixture_error
+  rvar_ordered 3  direct     fixed data.table             fixture_error
+  rvar_ordered 3  direct   payload data.table             fixture_error
+  rvar_ordered 3  packed dimension data.table             fixture_error
+  rvar_ordered 3  packed     fixed data.table             fixture_error
+  rvar_ordered 3  packed   payload data.table             fixture_error
+  rvar_ordered 3  nested dimension data.table             fixture_error
+  rvar_ordered 3  nested     fixed data.table             fixture_error
+  rvar_ordered 3  nested   payload data.table             fixture_error
+          json 3 fixture   fixture    fixture             fixture_error
+          html 3 fixture   fixture    fixture             fixture_error
+ df_zero_width 0  direct dimension data.table             fixture_error
+ df_zero_width 0  direct     fixed data.table             fixture_error
+ df_zero_width 0  direct   payload data.table             fixture_error
+ df_zero_width 0  packed dimension data.table             fixture_error
+ df_zero_width 0  packed     fixed data.table             fixture_error
+ df_zero_width 0  packed   payload data.table             fixture_error
+ df_zero_width 0  nested dimension data.table             fixture_error
+ df_zero_width 0  nested     fixed data.table             fixture_error
+ df_zero_width 0  nested   payload data.table             fixture_error
+ df_zero_width 1  direct dimension data.table             fixture_error
+ df_zero_width 1  direct     fixed data.table             fixture_error
+ df_zero_width 1  direct   payload data.table             fixture_error
+ df_zero_width 1  packed dimension data.table             fixture_error
+ df_zero_width 1  packed     fixed data.table             fixture_error
+ df_zero_width 1  packed   payload data.table             fixture_error
+ df_zero_width 1  nested dimension data.table             fixture_error
+ df_zero_width 1  nested     fixed data.table             fixture_error
+ df_zero_width 1  nested   payload data.table             fixture_error
+ df_zero_width 3  direct dimension data.table             fixture_error
+ df_zero_width 3  direct     fixed data.table             fixture_error
+ df_zero_width 3  direct   payload data.table             fixture_error
+ df_zero_width 3  packed dimension data.table             fixture_error
+ df_zero_width 3  packed     fixed data.table             fixture_error
+ df_zero_width 3  packed   payload data.table             fixture_error
+ df_zero_width 3  nested dimension data.table             fixture_error
+ df_zero_width 3  nested     fixed data.table             fixture_error
+ df_zero_width 3  nested   payload data.table             fixture_error
+                                                                                                                                                                                         detail
+                                                            `x` must be a vector, not an expression vector.\nℹ Read our FAQ about scalar types (`?vctrs::faq_error_scalar_type`) to learn more.
+                                                            `x` must be a vector, not an expression vector.\nℹ Read our FAQ about scalar types (`?vctrs::faq_error_scalar_type`) to learn more.
+                                                            `x` must be a vector, not an expression vector.\nℹ Read our FAQ about scalar types (`?vctrs::faq_error_scalar_type`) to learn more.
+ Column 2 has class 'POSIXlt'. Please convert it to POSIXct (using as.POSIXct) and run setDT() again. We do not recommend the use of POSIXlt at all because it uses 40 bytes to store one date.
+ Column 2 has class 'POSIXlt'. Please convert it to POSIXct (using as.POSIXct) and run setDT() again. We do not recommend the use of POSIXlt at all because it uses 40 bytes to store one date.
+ Column 2 has class 'POSIXlt'. Please convert it to POSIXct (using as.POSIXct) and run setDT() again. We do not recommend the use of POSIXlt at all because it uses 40 bytes to store one date.
+                                                                                                                                                             a valid "POSIXlt" object has names
+                                                                                                                                                             a valid "POSIXlt" object has names
+                                                                                                                                                             a valid "POSIXlt" object has names
+                                                                                                                                                             a valid "POSIXlt" object has names
+                                                                                                                                                             a valid "POSIXlt" object has names
+                                                                                                                                                             a valid "POSIXlt" object has names
+                                                                                                                                                             a valid "POSIXlt" object has names
+                                                                                                                                                             a valid "POSIXlt" object has names
+                                                                                                                                                             a valid "POSIXlt" object has names
+                                                                                                                                                             a valid "POSIXlt" object has names
+                                                                                                                                                             a valid "POSIXlt" object has names
+                                                                                                                                                             a valid "POSIXlt" object has names
+                                                                                                                                                             a valid "POSIXlt" object has names
+                                                                                                                                                             a valid "POSIXlt" object has names
+                                                                                                                                                             a valid "POSIXlt" object has names
+                                                             `x` must be a vector, not a <timeDate> object.\nℹ Read our FAQ about scalar types (`?vctrs::faq_error_scalar_type`) to learn more.
+                                                             `x` must be a vector, not a <timeDate> object.\nℹ Read our FAQ about scalar types (`?vctrs::faq_error_scalar_type`) to learn more.
+                                                             `x` must be a vector, not a <timeDate> object.\nℹ Read our FAQ about scalar types (`?vctrs::faq_error_scalar_type`) to learn more.
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                            `x` must be a vector, not a <dgCMatrix> object.\nℹ Read our FAQ about scalar types (`?vctrs::faq_error_scalar_type`) to learn more.
+                                                            `x` must be a vector, not a <dgCMatrix> object.\nℹ Read our FAQ about scalar types (`?vctrs::faq_error_scalar_type`) to learn more.
+                                                            `x` must be a vector, not a <dgCMatrix> object.\nℹ Read our FAQ about scalar types (`?vctrs::faq_error_scalar_type`) to learn more.
+                                                                                                             Component “key”: Attributes: < Length mismatch: comparison on first 1 components >
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 3 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 3 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 3 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 3 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 3 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 3 has length 0 whereas the first non-empty input had length 3
+                                                                                                             Component “key”: Attributes: < Length mismatch: comparison on first 1 components >
+                                                                                                                                                 got nrow 3 control nrow 3 column sizes 6,6,6,6
+                                                                                                                                                 got nrow 3 control nrow 3 column sizes 6,6,6,6
+                                                                                                             Component “key”: Attributes: < Length mismatch: comparison on first 1 components >
+                                                                                                                                                 got nrow 3 control nrow 3 column sizes 6,6,6,6
+                                                                                                                                                 got nrow 3 control nrow 3 column sizes 6,6,6,6
+                                                                                                             Component “key”: Attributes: < Length mismatch: comparison on first 1 components >
+                                                                                                                                                 got nrow 3 control nrow 3 column sizes 6,6,6,6
+                                                                                                                                                 got nrow 3 control nrow 3 column sizes 6,6,6,6
+                                                                                                             Component “key”: Attributes: < Length mismatch: comparison on first 1 components >
+                                                                                                                                                 got nrow 3 control nrow 3 column sizes 6,6,6,6
+                                                                                                                                                 got nrow 3 control nrow 3 column sizes 6,6,6,6
+                                                                                                             Component “key”: Attributes: < Length mismatch: comparison on first 1 components >
+                                                                                                                                                 got nrow 3 control nrow 3 column sizes 6,6,6,6
+                                                                                                                                                 got nrow 3 control nrow 3 column sizes 6,6,6,6
+                                                                                                             Component “key”: Attributes: < Length mismatch: comparison on first 1 components >
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 1
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                       All elements in argument 'x' to 'setDT' must be of equal length, but input 2 has length 0 whereas the first non-empty input had length 3
+                                                                                              Can't subset elements past the end.\nℹ Locations 2 and 3 don't exist.\nℹ There is only 1 element.
+                                                                                              Can't subset elements past the end.\nℹ Locations 2 and 3 don't exist.\nℹ There is only 1 element.
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column
+                                                                                                                     Ordinary container conversion expanded or renamed the requested key column

@@ -1,0 +1,11 @@
+Collapse public names: key occurrence value
+Collapse collected names: key occurrence value ..marginplyr_order_1 ..marginplyr_order_2
+Ordinary/source and explicit-materialization schema controls passed.
+CTE expected public names: group FaLsE
+CTE raw query names: group column2
+CTE collect class: simpleError
+CTE collect message: undefined columns selected
+Ordinary/source and explicit-materialization CTE controls passed.
+Error in eval(quote({ : !inherits(cte_y, "error") is not TRUE
+Calls: local ... eval.parent -> eval -> eval -> eval -> eval -> stopifnot
+Execution halted

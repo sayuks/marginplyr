@@ -1,0 +1,16 @@
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l1dcachesize'. Detail: [errno 1] Operation not permitted
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l2cachesize'. Detail: [errno 1] Operation not permitted
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l3cachesize'. Detail: [errno 1] Operation not permitted
+              shape outcome  n
+1         join_left   match 96
+2        join_right   match 96
+3  union_after_join   match 96
+4       union_files   match 96
+5    union_filtered   match 96
+6       union_mixed   match 96
+7      union_nested   match 96
+8     union_ordered   match 96
+9       union_query   match 96
+10    union_renamed   match 96
+[1] hidden  shape   label   sort    id      fixed   outcome detail
+<0 rows> (or 0-length row.names)
