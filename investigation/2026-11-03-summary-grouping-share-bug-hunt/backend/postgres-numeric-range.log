@@ -1,0 +1,18 @@
+PostgreSQL 17.11 (Homebrew) on aarch64-apple-darwin25.6.0, compiled by Apple clang version 21.0.0 (clang-2100.1.1.101), 64-bit
+NOTICE:  table "facts" does not exist, skipping
+
+ exponent   kind pass      actual
+     -400  total TRUE 0.25,0.75,1
+     -400 parent TRUE 0.25,0.75,1
+     -310  total TRUE 0.25,0.75,1
+     -310 parent TRUE 0.25,0.75,1
+     -300  total TRUE 0.25,0.75,1
+     -300 parent TRUE 0.25,0.75,1
+        0  total TRUE 0.25,0.75,1
+        0 parent TRUE 0.25,0.75,1
+      300  total TRUE 0.25,0.75,1
+      300 parent TRUE 0.25,0.75,1
+      310  total TRUE 0.25,0.75,1
+      310 parent TRUE 0.25,0.75,1
+      400  total TRUE 0.25,0.75,1
+      400 parent TRUE 0.25,0.75,1

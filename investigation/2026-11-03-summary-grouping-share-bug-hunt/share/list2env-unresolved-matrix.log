@@ -1,0 +1,25 @@
+SHA: 4b34fdecb2d8a41034b3d9b5d5af8e51592555e1
+Missing refusals: 72 Controls: 168
+, , error = FALSE
+
+           shares
+setter      FALSE TRUE
+  assign        0    0
+  block        24   24
+  external      0   24
+  identity     24   24
+  keys         24   24
+  literal       0    0
+  unrelated     0   24
+
+, , error = TRUE
+
+           shares
+setter      FALSE TRUE
+  assign        0   24
+  block         0    0
+  external      0    0
+  identity      0    0
+  keys          0    0
+  literal       0   24
+  unrelated     0    0

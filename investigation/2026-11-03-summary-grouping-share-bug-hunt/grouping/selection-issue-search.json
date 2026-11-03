@@ -1,0 +1,881 @@
+{
+  "query": "gh issue list --state all --limit 500 --search 'grouping selection' --json number,title,state,url,body",
+  "results": [
+    {
+      "number": 1090,
+      "title": "[P2] Reject leading names-only Grouping errors before typed metadata acquisition",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/1090"
+    },
+    {
+      "number": 1139,
+      "title": "[P2] Reject known fixed-key overlaps before typed Grouping metadata",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/1139"
+    },
+    {
+      "number": 1144,
+      "title": "[P2] Preserve empty dots forwarding in Grouping selectors",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/1144"
+    },
+    {
+      "number": 781,
+      "title": "Preserve independent data-mask ownership inside nested margin summaries",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/781"
+    },
+    {
+      "number": 946,
+      "title": "[P2] Retain constructor-shaped ordinary selections after their preflight read",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/946"
+    },
+    {
+      "number": 969,
+      "title": "[P2] Preserve enclosing Contextual helpers in named rowwise inputs",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/969"
+    },
+    {
+      "number": 825,
+      "title": "[P2] Resolve type-dependent selection-helper arguments against typed metadata",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/825"
+    },
+    {
+      "number": 1083,
+      "title": "[P2] Preserve first local selector timing beside selection-based shares",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/1083"
+    },
+    {
+      "number": 1017,
+      "title": "[P2] Validate every repeated dtplyr column update before trusting metadata",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/1017"
+    },
+    {
+      "number": 1038,
+      "title": "[P2] Retain qualified constructor selections after their preflight read",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/1038"
+    },
+    {
+      "number": 1070,
+      "title": "[P2] Resolve local summary selectors in their execution scope",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/1070"
+    },
+    {
+      "number": 889,
+      "title": "[P2] Resolve qualified selection operators in their typed context",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/889"
+    },
+    {
+      "number": 995,
+      "title": "[P2] Respect typed dispatch when resolving Grouping selectors",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/995"
+    },
+    {
+      "number": 954,
+      "title": "[P3] Retain constructor-call selections already evaluated by preflight",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/954"
+    },
+    {
+      "number": 947,
+      "title": "[P2] Preserve .SD columns in derived dtplyr selection metadata",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/947"
+    },
+    {
+      "number": 868,
+      "title": "[P2] Preserve typed selections behind qualified arithmetic call heads",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/868"
+    },
+    {
+      "number": 994,
+      "title": "[P2] Keep ordered SQL Server inputs valid inside expansion source relations",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/994"
+    },
+    {
+      "number": 873,
+      "title": "[P3] Honor the typed-pass evaluation budget for bound column selections",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/873"
+    },
+    {
+      "number": 999,
+      "title": "[P2] Keep dtplyr shares working with dot and dot-dot fixed keys",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/999"
+    },
+    {
+      "number": 1041,
+      "title": "[P2] Preserve compatible unspecified values in unnamed frame summaries",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/1041"
+    },
+    {
+      "number": 1043,
+      "title": "[P2] Keep dtplyr typed grouping faithful with active arithmetic bindings",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/1043"
+    },
+    {
+      "number": 924,
+      "title": "[P2] Resolve foreign qualified selection helpers against typed metadata",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/924"
+    },
+    {
+      "number": 975,
+      "title": "[P2] Resolve ordinary .data subscripting against typed selection metadata",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/975"
+    },
+    {
+      "number": 925,
+      "title": "[P2] Preserve omitted arguments through parenthesized tidy forwarding",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/925"
+    },
+    {
+      "number": 892,
+      "title": "[P2] Accept metadata-preserving dtplyr ordering after derived steps",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/892"
+    },
+    {
+      "number": 837,
+      "title": "[P2] Accept metadata-preserving grouped dtplyr derivations",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/837"
+    },
+    {
+      "number": 1092,
+      "title": "[P3] Avoid extra evaluation of bare external selectors in first local summaries",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/1092"
+    },
+    {
+      "number": 1024,
+      "title": "[P2] Preserve typed metadata across cached shared-source dtplyr graphs",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/1024"
+    },
+    {
+      "number": 922,
+      "title": "[P2] Preserve valid dot-dot summary output names on Arrow",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/922"
+    },
+    {
+      "number": 993,
+      "title": "[P2] Keep active sf geometry in the leading expansion Margin columns",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/993"
+    },
+    {
+      "number": 827,
+      "title": "[P2] Preserve dplyr-compatible dot-dot summary output names",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/827"
+    },
+    {
+      "number": 898,
+      "title": "[P2] Preserve valid special column names in grouping and share-source reads",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/898"
+    },
+    {
+      "number": 871,
+      "title": "[P2] Keep the first unnamed ordinary selector in its summary context beside shares",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/871"
+    },
+    {
+      "number": 950,
+      "title": "[P2] Preserve dot-dot list-column names through both nesting Margin verbs",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/950"
+    },
+    {
+      "number": 951,
+      "title": "[P2] Keep local sf metadata valid while building nested Margin results",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/951"
+    },
+    {
+      "number": 1039,
+      "title": "[P2] Resolve caller-defined qualified selection calls against typed metadata",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/1039"
+    },
+    {
+      "number": 864,
+      "title": "Document the metadata-only boundary of lazy selection predicates",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/864"
+    },
+    {
+      "number": 921,
+      "title": "[P2] Preserve dtplyr fixed .N keys when labelling omitted dimensions",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/921"
+    },
+    {
+      "number": 622,
+      "title": "Apply Contextual helper rules inside evaluated call heads",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/622"
+    },
+    {
+      "number": 782,
+      "title": "Require faithful dtplyr metadata for scalar column overwrites",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/782"
+    },
+    {
+      "number": 992,
+      "title": "[P2] Protect Arrow expansion aliases from hidden Dataset partition fields",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/992"
+    },
+    {
+      "number": 604,
+      "title": "Let local summary selections see preceding ordinary outputs",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/604"
+    },
+    {
+      "number": 686,
+      "title": "Allow prior-summary selections before an unrelated contextual share",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/686"
+    },
+    {
+      "number": 1138,
+      "title": "[P2] Preserve populated dots forwarding in local summary selectors",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/1138"
+    },
+    {
+      "number": 949,
+      "title": "[P2] Keep data-frame subclass invariants valid during nesting column renames",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/949"
+    },
+    {
+      "number": 1170,
+      "title": "[P2] Preserve forwarded function-factory evaluation under dynamic across unpacking",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/1170"
+    },
+    {
+      "number": 863,
+      "title": "Materialize SQLite expansion identifiers named .data",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/863"
+    },
+    {
+      "number": 523,
+      "title": "Complete the selection-predicate inspection causal chain",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/523"
+    },
+    {
+      "number": 683,
+      "title": "Prevent dynamic frame outputs from overwriting grouping keys",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/683"
+    },
+    {
+      "number": 625,
+      "title": "Clarify the zero-row metadata exemption for full dtplyr input execution",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/625"
+    },
+    {
+      "number": 778,
+      "title": "Keep reentrant Margin SQL audit records attributable to one operation",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/778"
+    },
+    {
+      "number": 997,
+      "title": "[P3] Preserve dimensional scalar identifiers in empty rowwise nesting",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/997"
+    },
+    {
+      "number": 809,
+      "title": "[P2] Preserve lifecycle warning behavior when SQL diagnostics are enabled",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/809"
+    },
+    {
+      "number": 351,
+      "title": "Read an empty argument inside a .by or .grouping selection as tidyselect reads one",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/351"
+    },
+    {
+      "number": 599,
+      "title": "Restore Margin-operation correctness at grouping and backend boundaries",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/599"
+    },
+    {
+      "number": 453,
+      "title": "where() on a backend with no readable schema is refused with a bare tidyselect diagnostic",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/453"
+    },
+    {
+      "number": 706,
+      "title": "Preserve numeric types for direct Grouping helpers in empty results",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/706"
+    },
+    {
+      "number": 689,
+      "title": "Preserve unrelated .N columns when labelling dtplyr Margin rows",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/689"
+    },
+    {
+      "number": 1051,
+      "title": "[P2] Ignore discarded dot-dot source names when acquiring dtplyr metadata",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/1051"
+    },
+    {
+      "number": 455,
+      "title": "last_sent_queries() spans two calls when Margin verbs are piped",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/455"
+    },
+    {
+      "number": 255,
+      "title": "A nested Grouping specification position reads a bound specification as a column selection when a column shares its name",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/255"
+    },
+    {
+      "number": 346,
+      "title": "Settle the two selection shapes the name-only reader still cannot reach",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/346"
+    },
+    {
+      "number": 684,
+      "title": "Avoid extra .names evaluation before an unrelated contextual share",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/684"
+    },
+    {
+      "number": 621,
+      "title": "Preserve R argument matching when rewriting across selections",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/621"
+    },
+    {
+      "number": 259,
+      "title": "A nested specification position does not read through redundant parentheses when recognizing a name, or when deciding whose diagnostic a refusal gets",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/259"
+    },
+    {
+      "number": 386,
+      "title": "Decide whether the record needs a SQL-detection predicate",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/386"
+    },
+    {
+      "number": 601,
+      "title": "Protect every input of a dtplyr Mutable-step graph",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/601"
+    },
+    {
+      "number": 103,
+      "title": "Renaming selections in .grouping build a plan naming a nonexistent column",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/103"
+    },
+    {
+      "number": 516,
+      "title": "Make Margin-label remediation safe across collision opt-outs and explicit collection",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/516"
+    },
+    {
+      "number": 265,
+      "title": "A specification stored as a function is read by tidyselect as a predicate, so #190's refusal never fires",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/265"
+    },
+    {
+      "number": 260,
+      "title": "The two shapes a nested position recognizes as a specification have no asserted evaluation count",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/260"
+    },
+    {
+      "number": 261,
+      "title": "A leading or interior empty argument in a Grouping specification constructor reports an rlang argument name",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/261"
+    },
+    {
+      "number": 365,
+      "title": "A verb argument written inside rollup() becomes a grouping dimension",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/365"
+    },
+    {
+      "number": 461,
+      "title": "Reference pages front-load design rationale ahead of usage",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/461"
+    },
+    {
+      "number": 512,
+      "title": "Make user-facing failure paths causally consistent",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/512"
+    },
+    {
+      "number": 190,
+      "title": "A nested specification position refuses a genuine Grouping specification a caller's function returns",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/190"
+    },
+    {
+      "number": 193,
+      "title": "Two modules write out the same tidyselect subscript-chain walk",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/193"
+    },
+    {
+      "number": 342,
+      "title": "Answer the name-only selection reader from what tidyselect settles from names alone",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/342"
+    },
+    {
+      "number": 357,
+      "title": "Stage a share across() without re-expanding an injected selection",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/357"
+    },
+    {
+      "number": 664,
+      "title": "Accept data.table inputs when ordering expanded Margin results",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/664"
+    },
+    {
+      "number": 653,
+      "title": "Preserve declared share and Grouping set identifier types in empty SQLite Margin results",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/653"
+    },
+    {
+      "number": 271,
+      "title": "`CONTEXT.md`'s *Nested specification position* carries evaluation order and execution counts, which ADR 0026 owns",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/271"
+    },
+    {
+      "number": 159,
+      "title": "The `Unknown `.by` column` branch is unreachable from the public interface",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/159"
+    },
+    {
+      "number": 383,
+      "title": "Decide whether a caller reads back the last call's SQL, and from what",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/383"
+    },
+    {
+      "number": 409,
+      "title": "`last_sent_queries()` returns a stale prior-call record when a call fails before `reset_sent_queries()`",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/409"
+    },
+    {
+      "number": 439,
+      "title": "An assigned summary name diverges from dplyr's for an expression long enough to abbreviate",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/439"
+    },
+    {
+      "number": 350,
+      "title": "Answer an empty across() .names without evaluating the empty symbol",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/350"
+    },
+    {
+      "number": 378,
+      "title": "Re-identify #318's query sites and precedents against the current code",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/378"
+    },
+    {
+      "number": 134,
+      "title": "Renaming selections in .by are accepted, silently fixing on a column the caller did not select",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/134"
+    },
+    {
+      "number": 291,
+      "title": "`## Module responsibilities` reads as a map of `R/` and names thirteen of its twenty-three files",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/291"
+    },
+    {
+      "number": 336,
+      "title": "check_ambiguous_nested_name()'s surviving header re-derives ADR 0008, which neither #272 nor #273 checked it against",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/336"
+    },
+    {
+      "number": 375,
+      "title": "A three-level rollup has no share against an intermediate ancestor",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/375"
+    },
+    {
+      "number": 318,
+      "title": "Record the SQL marginplyr sends, and read it back with last_sent_queries()",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/318"
+    },
+    {
+      "number": 179,
+      "title": "Respect non-evaluation boundaries in static summary analysis",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/179"
+    },
+    {
+      "number": 224,
+      "title": "Pin both arms of every pluralizing diagnostic before the cli re-authoring",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/224"
+    },
+    {
+      "number": 262,
+      "title": "A malformed Grouping specification whose class sits on an atomic vector raises an untyped base-R error",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/262"
+    },
+    {
+      "number": 9,
+      "title": "Route margin summaries through the Margin operation lifecycle",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/9"
+    },
+    {
+      "number": 495,
+      "title": "Seven smaller standards and spec findings from the final readiness review",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/495"
+    },
+    {
+      "number": 25,
+      "title": "Restore single-capture Parent-share planning and across() diagnostics",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/25"
+    },
+    {
+      "number": 540,
+      "title": "Fix dtplyr share joins for fixed-key names containing backticks",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/540"
+    },
+    {
+      "number": 225,
+      "title": "Pin the plural arm of the duplicate-grouping-set refusal",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/225"
+    },
+    {
+      "number": 619,
+      "title": "Preserve sequential summary semantics for unnamed rewritten data frames",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/619"
+    },
+    {
+      "number": 400,
+      "title": "Record the Sent queries of one call, read back with last_sent_queries()",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/400"
+    },
+    {
+      "number": 452,
+      "title": "Arrow: a factor dimension or fixed key with a typed-missing label fails to collect under .sort",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/452"
+    },
+    {
+      "number": 163,
+      "title": "Static analysis asks a one-sided formula for a call name and aborts with an untyped error",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/163"
+    },
+    {
+      "number": 349,
+      "title": "Terminate the share walk on a pair of parentheses holding the empty argument",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/349"
+    },
+    {
+      "number": 7,
+      "title": "Refactor margin verbs around a shared margin-operation lifecycle",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/7"
+    },
+    {
+      "number": 11,
+      "title": "Consolidate Margin operation module responsibilities",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/11"
+    },
+    {
+      "number": 377,
+      "title": "Map: recording the SQL marginplyr sends",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/377"
+    },
+    {
+      "number": 19,
+      "title": "Plan and execute contextual Parent shares locally",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/19"
+    },
+    {
+      "number": 8,
+      "title": "Route margin expansion through the Margin operation lifecycle",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/8"
+    },
+    {
+      "number": 36,
+      "title": "Make function references the canonical user contract",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/36"
+    },
+    {
+      "number": 23,
+      "title": "Harden marginplyr for its first CRAN release",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/23"
+    },
+    {
+      "number": 165,
+      "title": "Rewriting a summary expression flattens an injected quosure into a plain formula",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/165"
+    },
+    {
+      "number": 18,
+      "title": "Add inspect_grouping() for backend-independent Grouping plans",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/18"
+    },
+    {
+      "number": 107,
+      "title": "abort_share_selection_error() drops the original condition class and parent",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/107"
+    },
+    {
+      "number": 236,
+      "title": "ADR 0023's census of pluralizing sites is stale, and nothing counts it",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/236"
+    },
+    {
+      "number": 39,
+      "title": "Reconcile architecture, ADRs, and the review disposition ledger",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/39"
+    },
+    {
+      "number": 10,
+      "title": "Route margin nesting through the Margin operation lifecycle",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/10"
+    },
+    {
+      "number": 172,
+      "title": "Define how unqualified contextual helper names resolve",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/172"
+    },
+    {
+      "number": 415,
+      "title": "dtplyr backend drops a declared NA factor level from a column that is not a Margin dimension",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/415"
+    },
+    {
+      "number": 40,
+      "title": "Run the final CRAN-readiness review",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/40"
+    },
+    {
+      "number": 245,
+      "title": "Two source comments cite a precedent `R/share.R` does not hold",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/245"
+    },
+    {
+      "number": 26,
+      "title": "Establish the private Parent-share adapter seam",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/26"
+    },
+    {
+      "number": 169,
+      "title": "A helper taking bare column names rejects an injected quosure, naming a fault the caller does not have",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/169"
+    },
+    {
+      "number": 791,
+      "title": "Expose internal query outcomes and conditions in a detailed Sent query view",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/791"
+    },
+    {
+      "number": 15,
+      "title": "Remove legacy ordering and grouping-output arguments",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/15"
+    },
+    {
+      "number": 21,
+      "title": "Document Grouping identity, Parent shares, labels, and completion",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/21"
+    },
+    {
+      "number": 385,
+      "title": "Write ADR 0027 and rewrite #318 to the settled specification",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/385"
+    },
+    {
+      "number": 168,
+      "title": "An empty argument in a summary expression aborts the share walk with an untyped condition",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/168"
+    },
+    {
+      "number": 663,
+      "title": "Allow column selection and renaming after materializing SQLite Margin order",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/663"
+    },
+    {
+      "number": 371,
+      "title": "`.margin_label` cannot express a per-dimension `NULL`, and both halves of the collision check depend on one",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/371"
+    },
+    {
+      "number": 257,
+      "title": "The caused-read gate does not watch as.data.frame()",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/257"
+    },
+    {
+      "number": 223,
+      "title": "Re-author shipped diagnostics in the cli idiom",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/223"
+    },
+    {
+      "number": 85,
+      "title": "Add .sort for a structural Margin order",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/85"
+    },
+    {
+      "number": 12,
+      "title": "Document the finalized Margin operation architecture",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/12"
+    },
+    {
+      "number": 381,
+      "title": "Decide the marginplyr_query_sql condition: whether, where, and what it promises",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/381"
+    },
+    {
+      "number": 32,
+      "title": "Migrate remaining package errors to marginplyr_error",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/32"
+    },
+    {
+      "number": 76,
+      "title": "Stop source columns from shadowing internal locals in generated expressions",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/76"
+    },
+    {
+      "number": 175,
+      "title": "Preserve source-row cardinality in zero-column nested data",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/175"
+    },
+    {
+      "number": 756,
+      "title": "Implement condition precedence and cause preservation during interruption",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/756"
+    },
+    {
+      "number": 662,
+      "title": "Respect caller transactions when materializing SQLite Margin results",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/662"
+    },
+    {
+      "number": 667,
+      "title": "Spec: adopt B-direct for SQLite typed Margin results",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/667"
+    },
+    {
+      "number": 196,
+      "title": "share_of_parent() reads the caller's data on every dbplyr backend without being asked",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/196"
+    },
+    {
+      "number": 301,
+      "title": "The caused-read gate does not watch tibble::as_tibble(), so a dtplyr materialisation goes uncounted",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/301"
+    },
+    {
+      "number": 661,
+      "title": "Preserve schema-qualified destinations when materializing SQLite Margin results",
+      "state": "CLOSED",
+      "url": "https://github.com/sayuks/marginplyr/issues/661"
+    }
+  ]
+}

@@ -1,0 +1,366 @@
+[
+  {
+    "kind": "issue",
+    "query": "warn=2",
+    "command": "gh issue list --state all --limit 100 --search 'warn=2' --json number,title,state,url",
+    "results": [
+      {
+        "number": 468,
+        "state": "OPEN",
+        "title": "Draft the upstream dtplyr report for the immutable = FALSE multi-reference hazard",
+        "url": "https://github.com/sayuks/marginplyr/issues/468"
+      },
+      {
+        "number": 754,
+        "state": "CLOSED",
+        "title": "Preserve the later External error when buffered warnings are replayed with warn = 2",
+        "url": "https://github.com/sayuks/marginplyr/issues/754"
+      },
+      {
+        "number": 256,
+        "state": "OPEN",
+        "title": "Report Arrow's inheriting call lookup upstream",
+        "url": "https://github.com/sayuks/marginplyr/issues/256"
+      },
+      {
+        "number": 654,
+        "state": "CLOSED",
+        "title": "Retain ordinary finite-n collection semantics for SQLite typed Margin order",
+        "url": "https://github.com/sayuks/marginplyr/issues/654"
+      },
+      {
+        "number": 946,
+        "state": "CLOSED",
+        "title": "[P2] Retain constructor-shaped ordinary selections after their preflight read",
+        "url": "https://github.com/sayuks/marginplyr/issues/946"
+      },
+      {
+        "number": 1072,
+        "state": "CLOSED",
+        "title": "[P2] Preserve caller warnings on supported Arrow summaries",
+        "url": "https://github.com/sayuks/marginplyr/issues/1072"
+      },
+      {
+        "number": 655,
+        "state": "CLOSED",
+        "title": "Keep SQL auditing from consuming warning failures or losing sent SQL content",
+        "url": "https://github.com/sayuks/marginplyr/issues/655"
+      },
+      {
+        "number": 891,
+        "state": "CLOSED",
+        "title": "[P3] Contain general R conditions from SQL diagnostic work",
+        "url": "https://github.com/sayuks/marginplyr/issues/891"
+      },
+      {
+        "number": 756,
+        "state": "CLOSED",
+        "title": "Implement condition precedence and cause preservation during interruption",
+        "url": "https://github.com/sayuks/marginplyr/issues/756"
+      },
+      {
+        "number": 493,
+        "state": "CLOSED",
+        "title": "`.sort = \"none\"` clears a window ordering on the portable UNION ALL path, where the reference says it clears none",
+        "url": "https://github.com/sayuks/marginplyr/issues/493"
+      },
+      {
+        "number": 625,
+        "state": "CLOSED",
+        "title": "Clarify the zero-row metadata exemption for full dtplyr input execution",
+        "url": "https://github.com/sayuks/marginplyr/issues/625"
+      },
+      {
+        "number": 342,
+        "state": "CLOSED",
+        "title": "Answer the name-only selection reader from what tidyselect settles from names alone",
+        "url": "https://github.com/sayuks/marginplyr/issues/342"
+      },
+      {
+        "number": 40,
+        "state": "CLOSED",
+        "title": "Run the final CRAN-readiness review",
+        "url": "https://github.com/sayuks/marginplyr/issues/40"
+      },
+      {
+        "number": 254,
+        "state": "CLOSED",
+        "title": "A Margin summary over an Arrow table fails with an untyped error when Arrow cannot translate the expression",
+        "url": "https://github.com/sayuks/marginplyr/issues/254"
+      },
+      {
+        "number": 104,
+        "state": "CLOSED",
+        "title": "additional_names subassignment emits recycling warnings and mis-numbers unnamed arguments",
+        "url": "https://github.com/sayuks/marginplyr/issues/104"
+      },
+      {
+        "number": 381,
+        "state": "CLOSED",
+        "title": "Decide the marginplyr_query_sql condition: whether, where, and what it promises",
+        "url": "https://github.com/sayuks/marginplyr/issues/381"
+      },
+      {
+        "number": 384,
+        "state": "CLOSED",
+        "title": "Decide the on-disk audit log: whether, what format, and whose failure",
+        "url": "https://github.com/sayuks/marginplyr/issues/384"
+      },
+      {
+        "number": 78,
+        "state": "CLOSED",
+        "title": "Stop signaling a lifecycle condition on every generated column reference",
+        "url": "https://github.com/sayuks/marginplyr/issues/78"
+      },
+      {
+        "number": 213,
+        "state": "CLOSED",
+        "title": "Growing an option vocabulary breaks a caller wrapper written against the old signature",
+        "url": "https://github.com/sayuks/marginplyr/issues/213"
+      },
+      {
+        "number": 159,
+        "state": "CLOSED",
+        "title": "The `Unknown `.by` column` branch is unreachable from the public interface",
+        "url": "https://github.com/sayuks/marginplyr/issues/159"
+      },
+      {
+        "number": 122,
+        "state": "CLOSED",
+        "title": "A factor level equal to .margin_label is silently duplicated and reordered on lazy backends",
+        "url": "https://github.com/sayuks/marginplyr/issues/122"
+      },
+      {
+        "number": 141,
+        "state": "CLOSED",
+        "title": "A warning from a user summary expression is repeated once per grouping set, with internal names in its context",
+        "url": "https://github.com/sayuks/marginplyr/issues/141"
+      },
+      {
+        "number": 76,
+        "state": "CLOSED",
+        "title": "Stop source columns from shadowing internal locals in generated expressions",
+        "url": "https://github.com/sayuks/marginplyr/issues/76"
+      },
+      {
+        "number": 77,
+        "state": "CLOSED",
+        "title": "Reject misspelled options and unsupported input in the caller's terms",
+        "url": "https://github.com/sayuks/marginplyr/issues/77"
+      },
+      {
+        "number": 130,
+        "state": "CLOSED",
+        "title": "expression_data_symbols() does not scope function definitions, and does not walk call heads",
+        "url": "https://github.com/sayuks/marginplyr/issues/130"
+      },
+      {
+        "number": 83,
+        "state": "CLOSED",
+        "title": "Add share_of_total() for the grand total denominator",
+        "url": "https://github.com/sayuks/marginplyr/issues/83"
+      }
+    ]
+  },
+  {
+    "kind": "issue",
+    "query": "discarded warning",
+    "command": "gh issue list --state all --limit 100 --search 'discarded warning' --json number,title,state,url",
+    "results": [
+      {
+        "number": 256,
+        "state": "OPEN",
+        "title": "Report Arrow's inheriting call lookup upstream",
+        "url": "https://github.com/sayuks/marginplyr/issues/256"
+      },
+      {
+        "number": 451,
+        "state": "CLOSED",
+        "title": "expand_with_margins() and nest_with_margins() corrupt a dtplyr input built with immutable = FALSE and return a wrong result",
+        "url": "https://github.com/sayuks/marginplyr/issues/451"
+      }
+    ]
+  },
+  {
+    "kind": "issue",
+    "query": "one_of warning metadata",
+    "command": "gh issue list --state all --limit 100 --search 'one_of warning metadata' --json number,title,state,url",
+    "results": []
+  },
+  {
+    "kind": "issue",
+    "query": "warning preflight",
+    "command": "gh issue list --state all --limit 100 --search 'warning preflight' --json number,title,state,url",
+    "results": [
+      {
+        "number": 554,
+        "state": "OPEN",
+        "title": "Release marginplyr 0.1.0 to CRAN",
+        "url": "https://github.com/sayuks/marginplyr/issues/554"
+      },
+      {
+        "number": 821,
+        "state": "CLOSED",
+        "title": "[P2] Restore warning options after interrupted Sent query rendering",
+        "url": "https://github.com/sayuks/marginplyr/issues/821"
+      },
+      {
+        "number": 571,
+        "state": "CLOSED",
+        "title": "Classify an incomplete CRAN preflight check as unavailable",
+        "url": "https://github.com/sayuks/marginplyr/issues/571"
+      },
+      {
+        "number": 946,
+        "state": "CLOSED",
+        "title": "[P2] Retain constructor-shaped ordinary selections after their preflight read",
+        "url": "https://github.com/sayuks/marginplyr/issues/946"
+      },
+      {
+        "number": 1038,
+        "state": "CLOSED",
+        "title": "[P2] Retain qualified constructor selections after their preflight read",
+        "url": "https://github.com/sayuks/marginplyr/issues/1038"
+      },
+      {
+        "number": 1110,
+        "state": "CLOSED",
+        "title": "Avoid unnecessary Full reruns for verification-only follow-ups",
+        "url": "https://github.com/sayuks/marginplyr/issues/1110"
+      },
+      {
+        "number": 505,
+        "state": "CLOSED",
+        "title": "Add a non-mutating, tarball-based CRAN preflight command",
+        "url": "https://github.com/sayuks/marginplyr/issues/505"
+      },
+      {
+        "number": 507,
+        "state": "CLOSED",
+        "title": "Add an agent-operated CRAN release playbook",
+        "url": "https://github.com/sayuks/marginplyr/issues/507"
+      },
+      {
+        "number": 712,
+        "state": "CLOSED",
+        "title": "Investigate Quarto/Deno crashes and recover local Review-ready checks",
+        "url": "https://github.com/sayuks/marginplyr/issues/712"
+      },
+      {
+        "number": 1114,
+        "state": "CLOSED",
+        "title": "Simplify Review-ready with a repository-owned R runner and one shared heavy-check slot",
+        "url": "https://github.com/sayuks/marginplyr/issues/1114"
+      }
+    ]
+  },
+  {
+    "kind": "pr",
+    "query": "warn=2 grouping",
+    "command": "gh pr list --state all --limit 100 --search 'warn=2 grouping' --json number,title,state,url",
+    "results": [
+      {
+        "number": 813,
+        "state": "MERGED",
+        "title": "Preserve lifecycle warnings when SQL diagnostics are enabled",
+        "url": "https://github.com/sayuks/marginplyr/pull/813"
+      },
+      {
+        "number": 1087,
+        "state": "MERGED",
+        "title": "Preserve first local selector timing beside selection-based shares",
+        "url": "https://github.com/sayuks/marginplyr/pull/1087"
+      },
+      {
+        "number": 759,
+        "state": "MERGED",
+        "title": "Preserve later summary errors during buffered warning replay",
+        "url": "https://github.com/sayuks/marginplyr/pull/759"
+      },
+      {
+        "number": 748,
+        "state": "MERGED",
+        "title": "Verify public Margin results at the R 4.1.0 floor",
+        "url": "https://github.com/sayuks/marginplyr/pull/748"
+      },
+      {
+        "number": 281,
+        "state": "MERGED",
+        "title": "Print a specification whose kind is no name",
+        "url": "https://github.com/sayuks/marginplyr/pull/281"
+      },
+      {
+        "number": 243,
+        "state": "MERGED",
+        "title": "Reduce the element-count comment to a citation of ADR 0023",
+        "url": "https://github.com/sayuks/marginplyr/pull/243"
+      },
+      {
+        "number": 353,
+        "state": "MERGED",
+        "title": "Settle a formula and the `.data$name` pronoun from the names (#346)",
+        "url": "https://github.com/sayuks/marginplyr/pull/353"
+      },
+      {
+        "number": 267,
+        "state": "MERGED",
+        "title": "Establish the specification can be read before reading a field of it",
+        "url": "https://github.com/sayuks/marginplyr/pull/267"
+      },
+      {
+        "number": 227,
+        "state": "MERGED",
+        "title": "Pin the plural arm of the duplicate-grouping-set refusal",
+        "url": "https://github.com/sayuks/marginplyr/pull/227"
+      },
+      {
+        "number": 338,
+        "state": "MERGED",
+        "title": "Cite ADR 0008 in check_ambiguous_nested_name()'s header (#336)",
+        "url": "https://github.com/sayuks/marginplyr/pull/338"
+      },
+      {
+        "number": 316,
+        "state": "MERGED",
+        "title": "Classify a grouping kind with its class off",
+        "url": "https://github.com/sayuks/marginplyr/pull/316"
+      },
+      {
+        "number": 448,
+        "state": "MERGED",
+        "title": "Bind the share source where the plan builds no ratio",
+        "url": "https://github.com/sayuks/marginplyr/pull/448"
+      },
+      {
+        "number": 200,
+        "state": "MERGED",
+        "title": "Report a repeated execution condition once, in the caller's names",
+        "url": "https://github.com/sayuks/marginplyr/pull/200"
+      },
+      {
+        "number": 142,
+        "state": "MERGED",
+        "title": "Number an unnamed `across()` argument by its own position",
+        "url": "https://github.com/sayuks/marginplyr/pull/142"
+      },
+      {
+        "number": 79,
+        "state": "MERGED",
+        "title": "Stop source columns from shadowing internal locals in generated expressions",
+        "url": "https://github.com/sayuks/marginplyr/pull/79"
+      },
+      {
+        "number": 143,
+        "state": "MERGED",
+        "title": "Admit only the documented spelling of an option value",
+        "url": "https://github.com/sayuks/marginplyr/pull/143"
+      },
+      {
+        "number": 148,
+        "state": "MERGED",
+        "title": "Combine grouping-set branches without folding pairwise",
+        "url": "https://github.com/sayuks/marginplyr/pull/148"
+      }
+    ]
+  }
+]

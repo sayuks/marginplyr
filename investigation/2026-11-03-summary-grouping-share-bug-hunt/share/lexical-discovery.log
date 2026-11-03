@@ -1,0 +1,136 @@
+SHA: 4b34fdecb2d8a41034b3d9b5d5af8e51592555e1
+R version 4.6.1 (2026-06-24)
+dplyr 1.2.1
+rlang 1.3.0
+dtplyr 1.3.3
+data.table 1.18.6.1
+pkgload 1.5.3
+share_of_total source direct marginplyr_error
+share_of_total source literal marginplyr_error
+share_of_total source dynamic_setnames 1,3,4
+share_of_total source dynamic_structure 1,3,4
+share_of_total source block_list 1,3,4
+share_of_total source identity_list 1,3,4
+share_of_total source c_list 1,3,4
+share_of_total source local_list rlang_error
+share_of_total source eval_list 1,3,4
+share_of_total source assigned_list 1,3,4
+share_of_total source bracket_setter rlang_error
+share_of_total source dollar_setter rlang_error
+share_of_total source env_bind 1,3,4
+share_of_total source env_poke 1,3,4
+share_of_total source assign_inherits marginplyr_error
+share_of_total source within_literal marginplyr_error
+share_of_total later direct marginplyr_error
+share_of_total later literal marginplyr_error
+share_of_total later dynamic_setnames 100,300,400
+share_of_total later dynamic_structure 100,300,400
+share_of_total later block_list 100,300,400
+share_of_total later identity_list 100,300,400
+share_of_total later c_list 100,300,400
+share_of_total later local_list rlang_error
+share_of_total later eval_list 100,300,400
+share_of_total later assigned_list 100,300,400
+share_of_total later bracket_setter rlang_error
+share_of_total later dollar_setter rlang_error
+share_of_total later env_bind 100,300,400
+share_of_total later env_poke 100,300,400
+share_of_total later assign_inherits marginplyr_error
+share_of_total later within_literal marginplyr_error
+share_of_parent source direct marginplyr_error
+share_of_parent source literal marginplyr_error
+share_of_parent source dynamic_setnames 1,3,4
+share_of_parent source dynamic_structure 1,3,4
+share_of_parent source block_list 1,3,4
+share_of_parent source identity_list 1,3,4
+share_of_parent source c_list 1,3,4
+share_of_parent source local_list rlang_error
+share_of_parent source eval_list 1,3,4
+share_of_parent source assigned_list 1,3,4
+share_of_parent source bracket_setter rlang_error
+share_of_parent source dollar_setter rlang_error
+share_of_parent source env_bind 1,3,4
+share_of_parent source env_poke 1,3,4
+share_of_parent source assign_inherits marginplyr_error
+share_of_parent source within_literal marginplyr_error
+share_of_parent later direct marginplyr_error
+share_of_parent later literal marginplyr_error
+share_of_parent later dynamic_setnames 100,300,400
+share_of_parent later dynamic_structure 100,300,400
+share_of_parent later block_list 100,300,400
+share_of_parent later identity_list 100,300,400
+share_of_parent later c_list 100,300,400
+share_of_parent later local_list rlang_error
+share_of_parent later eval_list 100,300,400
+share_of_parent later assigned_list 100,300,400
+share_of_parent later bracket_setter rlang_error
+share_of_parent later dollar_setter rlang_error
+share_of_parent later env_bind 100,300,400
+share_of_parent later env_poke 100,300,400
+share_of_parent later assign_inherits marginplyr_error
+share_of_parent later within_literal marginplyr_error
+          helper direction            setter refused error      values
+  share_of_total    source            direct    TRUE  TRUE
+  share_of_total    source           literal    TRUE  TRUE
+  share_of_total    source  dynamic_setnames   FALSE FALSE       1,3,4
+  share_of_total    source dynamic_structure   FALSE FALSE       1,3,4
+  share_of_total    source        block_list   FALSE FALSE       1,3,4
+  share_of_total    source     identity_list   FALSE FALSE       1,3,4
+  share_of_total    source            c_list   FALSE FALSE       1,3,4
+  share_of_total    source        local_list   FALSE  TRUE
+  share_of_total    source         eval_list   FALSE FALSE       1,3,4
+  share_of_total    source     assigned_list   FALSE FALSE       1,3,4
+  share_of_total    source    bracket_setter   FALSE  TRUE
+  share_of_total    source     dollar_setter   FALSE  TRUE
+  share_of_total    source          env_bind   FALSE FALSE       1,3,4
+  share_of_total    source          env_poke   FALSE FALSE       1,3,4
+  share_of_total    source   assign_inherits    TRUE  TRUE
+  share_of_total    source    within_literal    TRUE  TRUE
+  share_of_total     later            direct    TRUE  TRUE
+  share_of_total     later           literal    TRUE  TRUE
+  share_of_total     later  dynamic_setnames   FALSE FALSE 100,300,400
+  share_of_total     later dynamic_structure   FALSE FALSE 100,300,400
+  share_of_total     later        block_list   FALSE FALSE 100,300,400
+  share_of_total     later     identity_list   FALSE FALSE 100,300,400
+  share_of_total     later            c_list   FALSE FALSE 100,300,400
+  share_of_total     later        local_list   FALSE  TRUE
+  share_of_total     later         eval_list   FALSE FALSE 100,300,400
+  share_of_total     later     assigned_list   FALSE FALSE 100,300,400
+  share_of_total     later    bracket_setter   FALSE  TRUE
+  share_of_total     later     dollar_setter   FALSE  TRUE
+  share_of_total     later          env_bind   FALSE FALSE 100,300,400
+  share_of_total     later          env_poke   FALSE FALSE 100,300,400
+  share_of_total     later   assign_inherits    TRUE  TRUE
+  share_of_total     later    within_literal    TRUE  TRUE
+ share_of_parent    source            direct    TRUE  TRUE
+ share_of_parent    source           literal    TRUE  TRUE
+ share_of_parent    source  dynamic_setnames   FALSE FALSE       1,3,4
+ share_of_parent    source dynamic_structure   FALSE FALSE       1,3,4
+ share_of_parent    source        block_list   FALSE FALSE       1,3,4
+ share_of_parent    source     identity_list   FALSE FALSE       1,3,4
+ share_of_parent    source            c_list   FALSE FALSE       1,3,4
+ share_of_parent    source        local_list   FALSE  TRUE
+ share_of_parent    source         eval_list   FALSE FALSE       1,3,4
+ share_of_parent    source     assigned_list   FALSE FALSE       1,3,4
+ share_of_parent    source    bracket_setter   FALSE  TRUE
+ share_of_parent    source     dollar_setter   FALSE  TRUE
+ share_of_parent    source          env_bind   FALSE FALSE       1,3,4
+ share_of_parent    source          env_poke   FALSE FALSE       1,3,4
+ share_of_parent    source   assign_inherits    TRUE  TRUE
+ share_of_parent    source    within_literal    TRUE  TRUE
+ share_of_parent     later            direct    TRUE  TRUE
+ share_of_parent     later           literal    TRUE  TRUE
+ share_of_parent     later  dynamic_setnames   FALSE FALSE 100,300,400
+ share_of_parent     later dynamic_structure   FALSE FALSE 100,300,400
+ share_of_parent     later        block_list   FALSE FALSE 100,300,400
+ share_of_parent     later     identity_list   FALSE FALSE 100,300,400
+ share_of_parent     later            c_list   FALSE FALSE 100,300,400
+ share_of_parent     later        local_list   FALSE  TRUE
+ share_of_parent     later         eval_list   FALSE FALSE 100,300,400
+ share_of_parent     later     assigned_list   FALSE FALSE 100,300,400
+ share_of_parent     later    bracket_setter   FALSE  TRUE
+ share_of_parent     later     dollar_setter   FALSE  TRUE
+ share_of_parent     later          env_bind   FALSE FALSE 100,300,400
+ share_of_parent     later          env_poke   FALSE FALSE 100,300,400
+ share_of_parent     later   assign_inherits    TRUE  TRUE
+ share_of_parent     later    within_literal    TRUE  TRUE

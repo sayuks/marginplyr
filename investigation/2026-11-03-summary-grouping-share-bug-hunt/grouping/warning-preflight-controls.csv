@@ -1,0 +1,31 @@
+"warn","backend","position","error","converted","metadata_refusal","queries","warning_count","condition_class","message","sql"
+1,"local","fixed",FALSE,FALSE,FALSE,0,1,"","<success>",""
+1,"local","variable",FALSE,FALSE,FALSE,0,1,"","<success>",""
+1,"dtplyr","fixed",FALSE,FALSE,FALSE,0,1,"","<success>",""
+1,"dtplyr","variable",FALSE,FALSE,FALSE,0,1,"","<success>",""
+1,"duckdb","fixed",FALSE,FALSE,FALSE,1,1,"","<success>","SELECT *
+FROM warning_preflight
+LIMIT 0"
+1,"duckdb","variable",FALSE,FALSE,FALSE,1,1,"","<success>","SELECT *
+FROM warning_preflight
+LIMIT 0"
+2,"local","fixed",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+2,"local","variable",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+2,"dtplyr","fixed",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+2,"dtplyr","variable",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+2,"duckdb","fixed",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+2,"duckdb","variable",TRUE,TRUE,FALSE,1,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`","SELECT *
+FROM warning_preflight
+LIMIT 0"

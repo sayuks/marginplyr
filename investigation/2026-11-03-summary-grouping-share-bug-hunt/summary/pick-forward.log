@@ -1,0 +1,180 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+ordinary
+  value
+1     6
+margin
+<error/rlang_error>
+Error in `summarize_with_margins()`:
+ℹ In argument: `value = (function(...) sum(pick(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+---
+Backtrace:
+     ▆
+  1. ├─base::print(...)
+  2. ├─base::tryCatch(...)
+  3. │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+  4. │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+  5. │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+  6. ├─marginplyr::summarize_with_margins(x, value = (function(...) sum(pick(..1)))(x))
+  7. │ └─marginplyr:::execute_margin_summary(operation, dots, check_share_source = .check_share_source) at summary-grouping-share-bughunt-2026-11-03/R/summarize_with_margins.R:1103:3
+  8. │   ├─marginplyr:::with_margin_error_call(...) at summary-grouping-share-bughunt-2026-11-03/R/summarize_with_margins.R:1156:3
+  9. │   │ └─base::tryCatch(...) at summary-grouping-share-bughunt-2026-11-03/R/margin-operation.R:97:3
+ 10. │   │   └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 11. │   │     └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 12. │   │       └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 13. │   └─marginplyr:::stage_margin_summaries(...) at summary-grouping-share-bughunt-2026-11-03/R/summarize_with_margins.R:1265:7
+ 14. │     ├─base::tryCatch(...) at summary-grouping-share-bughunt-2026-11-03/R/summarize_with_margins.R:1456:3
+ 15. │     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 16. │     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 17. │     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 18. │     └─marginplyr:::summarize_margin_union(...) at summary-grouping-share-bughunt-2026-11-03/R/summarize_with_margins.R:1479:9
+ 19. │       ├─base::tryCatch(...) at summary-grouping-share-bughunt-2026-11-03/R/grouping-adapter-union.R:695:3
+ 20. │       │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 21. │       │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 22. │       │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 23. │       └─base::Map(...) at summary-grouping-share-bughunt-2026-11-03/R/grouping-adapter-union.R:696:5
+ 24. │         └─base::mapply(FUN = f, ..., SIMPLIFY = FALSE)
+ 25. │           └─marginplyr (local) `<fn>`(dots[[1L]][[1L]], dots[[2L]][[1L]])
+ 26. │             ├─marginplyr:::with_branch_conditions(...) at summary-grouping-share-bughunt-2026-11-03/R/grouping-adapter-union.R:754:9
+ 27. │             │ ├─base::tryCatch(...) at summary-grouping-share-bughunt-2026-11-03/R/conditions.R:204:3
+ 28. │             │ │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 29. │             │ │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 30. │             │ │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 31. │             │ └─base::withCallingHandlers(...)
+ 32. │             └─marginplyr:::summarize_margin_branch(...)
+ 33. │               ├─base::withCallingHandlers(...) at summary-grouping-share-bughunt-2026-11-03/R/grouping-adapter-union.R:524:3
+ 34. │               └─marginplyr (local) run_summary()
+ 35. │                 ├─rlang::inject(...) at summary-grouping-share-bughunt-2026-11-03/R/grouping-adapter-union.R:518:5
+ 36. │                 ├─dplyr::summarize(...)
+ 37. │                 └─dplyr:::summarise.data.frame(...)
+ 38. │                   └─dplyr:::summarise_cols(.data, dplyr_quosures(...), by, "summarise")
+ 39. │                     ├─base::withCallingHandlers(...)
+ 40. │                     └─dplyr:::map(quosures, summarise_eval_one, mask = mask)
+ 41. │                       └─base::lapply(.x, .f, ...)
+ 42. │                         └─dplyr (local) FUN(X[[i]], ...)
+ 43. │                           └─mask$eval_all_summarise(quo)
+ 44. │                             └─dplyr (local) eval()
+ 45. ├─(function(...) sum(dplyr::pick(tidyselect::all_of(marginplyr:::local_summary_selection(quote(c(..1)), ...
+ 46. │ └─dplyr::pick(...)
+ 47. │   └─tidyselect::eval_select(expr = expr, data = data, allow_rename = FALSE)
+ 48. │     └─tidyselect:::eval_select_impl(...)
+ 49. │       ├─tidyselect:::with_subscript_errors(...)
+ 50. │       │ └─base::withCallingHandlers(...)
+ 51. │       └─tidyselect:::vars_select_eval(...)
+ 52. │         └─tidyselect:::walk_data_tree(expr, data_mask, context_mask)
+ 53. │           └─tidyselect:::eval_c(expr, data_mask, context_mask)
+ 54. │             └─tidyselect:::reduce_sels(node, data_mask, context_mask, init = init)
+ 55. │               └─tidyselect:::walk_data_tree(new, data_mask, context_mask)
+ 56. │                 └─tidyselect:::eval_context(expr, context_mask, call = error_call)
+ 57. │                   ├─tidyselect:::with_chained_errors(...)
+ 58. │                   │ └─base::withCallingHandlers(...)
+ 59. │                   └─rlang::eval_tidy(as_quosure(expr, env), context_mask)
+ 60. ├─tidyselect::all_of(...)
+ 61. │ └─tidyselect:::as_indices_impl(x, vars = vars, strict = TRUE)
+ 62. ├─marginplyr:::local_summary_selection(...)
+ 63. │ └─marginplyr:::resolve_summary_selection(...) at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3
+ 64. │   └─tidyselect::eval_select(...) at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1789:3
+ 65. │     └─tidyselect:::eval_select_impl(...)
+ 66. │       ├─tidyselect:::with_subscript_errors(...)
+ 67. │       │ └─base::withCallingHandlers(...)
+ 68. │       └─tidyselect:::vars_select_eval(...)
+ 69. │         └─tidyselect:::walk_data_tree(expr, data_mask, context_mask)
+ 70. │           └─tidyselect:::eval_c(expr, data_mask, context_mask)
+ 71. │             └─tidyselect:::reduce_sels(node, data_mask, context_mask, init = init)
+ 72. │               └─tidyselect:::walk_data_tree(new, data_mask, context_mask)
+ 73. │                 └─tidyselect:::as_indices_sel_impl(...)
+ 74. │                   └─tidyselect:::as_indices_impl(...)
+ 75. │                     └─tidyselect:::chr_as_locations(x, vars, call = call, arg = arg)
+ 76. │                       └─vctrs::vec_as_location(...)
+ 77. ├─vctrs (local) `<fn>`() at vctrs/R/subscript-loc.R:84:3
+ 78. │ └─vctrs:::stop_subscript_oob(...)
+ 79. │   └─vctrs:::stop_subscript(...) at vctrs/R/subscript-loc.R:503:3
+ 80. │     └─rlang::abort(...) at vctrs/R/subscript.R:150:3
+ 81. │       └─rlang:::signal_abort(cnd, .file)
+ 82. │         └─base::signalCondition(cnd)
+ 83. ├─tidyselect (local) `<fn>`(`<vctrs___>`)
+ 84. │ └─rlang::cnd_signal(cnd)
+ 85. │   └─rlang:::signal_abort(cnd)
+ 86. │     └─base::signalCondition(cnd)
+ 87. └─tidyselect (local) `<fn>`(`<vctrs___>`)
+ 88.   └─cli::cli_abort(c(i = msg), call = call, parent = cnd)
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.
+---
+Backtrace:
+     ▆
+  1. ├─base::print(...)
+  2. ├─base::tryCatch(...)
+  3. │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+  4. │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+  5. │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+  6. ├─marginplyr::summarize_with_margins(x, value = (function(...) sum(pick(..1)))(x))
+  7. │ └─marginplyr:::execute_margin_summary(operation, dots, check_share_source = .check_share_source) at summary-grouping-share-bughunt-2026-11-03/R/summarize_with_margins.R:1103:3
+  8. │   ├─marginplyr:::with_margin_error_call(...) at summary-grouping-share-bughunt-2026-11-03/R/summarize_with_margins.R:1156:3
+  9. │   │ └─base::tryCatch(...) at summary-grouping-share-bughunt-2026-11-03/R/margin-operation.R:97:3
+ 10. │   │   └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 11. │   │     └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 12. │   │       └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 13. │   └─marginplyr:::stage_margin_summaries(...) at summary-grouping-share-bughunt-2026-11-03/R/summarize_with_margins.R:1265:7
+ 14. │     ├─base::tryCatch(...) at summary-grouping-share-bughunt-2026-11-03/R/summarize_with_margins.R:1456:3
+ 15. │     │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 16. │     │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 17. │     │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 18. │     └─marginplyr:::summarize_margin_union(...) at summary-grouping-share-bughunt-2026-11-03/R/summarize_with_margins.R:1479:9
+ 19. │       ├─base::tryCatch(...) at summary-grouping-share-bughunt-2026-11-03/R/grouping-adapter-union.R:695:3
+ 20. │       │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 21. │       │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 22. │       │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 23. │       └─base::Map(...) at summary-grouping-share-bughunt-2026-11-03/R/grouping-adapter-union.R:696:5
+ 24. │         └─base::mapply(FUN = f, ..., SIMPLIFY = FALSE)
+ 25. │           └─marginplyr (local) `<fn>`(dots[[1L]][[1L]], dots[[2L]][[1L]])
+ 26. │             ├─marginplyr:::with_branch_conditions(...) at summary-grouping-share-bughunt-2026-11-03/R/grouping-adapter-union.R:754:9
+ 27. │             │ ├─base::tryCatch(...) at summary-grouping-share-bughunt-2026-11-03/R/conditions.R:204:3
+ 28. │             │ │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 29. │             │ │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 30. │             │ │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 31. │             │ └─base::withCallingHandlers(...)
+ 32. │             └─marginplyr:::summarize_margin_branch(...)
+ 33. │               ├─base::withCallingHandlers(...) at summary-grouping-share-bughunt-2026-11-03/R/grouping-adapter-union.R:524:3
+ 34. │               └─marginplyr (local) run_summary()
+ 35. │                 ├─rlang::inject(...) at summary-grouping-share-bughunt-2026-11-03/R/grouping-adapter-union.R:518:5
+ 36. │                 ├─dplyr::summarize(...)
+ 37. │                 └─dplyr:::summarise.data.frame(...)
+ 38. │                   └─dplyr:::summarise_cols(.data, dplyr_quosures(...), by, "summarise")
+ 39. │                     ├─base::withCallingHandlers(...)
+ 40. │                     └─dplyr:::map(quosures, summarise_eval_one, mask = mask)
+ 41. │                       └─base::lapply(.x, .f, ...)
+ 42. │                         └─dplyr (local) FUN(X[[i]], ...)
+ 43. │                           └─mask$eval_all_summarise(quo)
+ 44. │                             └─dplyr (local) eval()
+ 45. ├─(function(...) sum(dplyr::pick(tidyselect::all_of(marginplyr:::local_summary_selection(quote(c(..1)), ...
+ 46. │ └─dplyr::pick(...)
+ 47. │   └─tidyselect::eval_select(expr = expr, data = data, allow_rename = FALSE)
+ 48. │     └─tidyselect:::eval_select_impl(...)
+ 49. │       ├─tidyselect:::with_subscript_errors(...)
+ 50. │       │ └─base::withCallingHandlers(...)
+ 51. │       └─tidyselect:::vars_select_eval(...)
+ 52. │         └─tidyselect:::walk_data_tree(expr, data_mask, context_mask)
+ 53. │           └─tidyselect:::eval_c(expr, data_mask, context_mask)
+ 54. │             └─tidyselect:::reduce_sels(node, data_mask, context_mask, init = init)
+ 55. │               └─tidyselect:::walk_data_tree(new, data_mask, context_mask)
+ 56. │                 └─tidyselect:::eval_context(expr, context_mask, call = error_call)
+ 57. │                   ├─tidyselect:::with_chained_errors(...)
+ 58. │                   │ └─base::withCallingHandlers(...)
+ 59. │                   └─rlang::eval_tidy(as_quosure(expr, env), context_mask)
+ 60. ├─tidyselect::all_of(...)
+ 61. │ └─tidyselect:::as_indices_impl(x, vars = vars, strict = TRUE)
+ 62. └─marginplyr:::local_summary_selection(...)
+ 63.   └─marginplyr:::resolve_summary_selection(selection, env = env, data_proxy = data) at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3

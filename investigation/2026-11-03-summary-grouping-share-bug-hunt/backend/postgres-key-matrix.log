@@ -1,0 +1,20 @@
+NOTICE:  table "facts" does not exist, skipping
+
+
+                TRUE
+  array            8
+  boolean          8
+  bytes            8
+  date             8
+  integer64        8
+  interval         8
+  jsonb            8
+  large_numeric    8
+  numeric          8
+  padded           8
+  range            8
+  text             8
+  timestamp        8
+  tiny_numeric     8
+[1] type     fixed    portable sorted   pass     outcome
+<0 rows> (or 0-length row.names)

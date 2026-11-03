@@ -1,0 +1,8 @@
+options(lifecycle_verbosity = "quiet")
+pkgload::load_all(quiet = TRUE)
+library(dplyr)
+x <- data.frame(x = 1:3)
+cat("ordinary\n")
+print(summarise(x, value = (function(...) sum(pick(..1)))(x)))
+cat("margin\n")
+print(tryCatch(summarize_with_margins(x, value = (function(...) sum(pick(..1)))(x)), error = function(cnd) cnd))

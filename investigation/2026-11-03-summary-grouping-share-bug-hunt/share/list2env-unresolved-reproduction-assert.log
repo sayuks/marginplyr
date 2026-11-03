@@ -1,0 +1,13 @@
+SHA: 4b34fdecb2d8a41034b3d9b5d5af8e51592555e1
+      g prior value fraction
+1     a     1     1     0.25
+2     b     3     3     0.75
+3 Total     4     4     1.00
+      g value prior derived
+1     a     1  0.25     100
+2     b     3  0.75     300
+3 Total     4  1.00     400
+Literal-list control: Total share `fraction` cannot use source summary `value` because it depends on earlier summary alias `prior`.
+ℹ Combine the calculation into one ordinary summary expression.
+Error: inherits(source, "marginplyr_error") is not TRUE
+Execution halted

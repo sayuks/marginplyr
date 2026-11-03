@@ -1,0 +1,17 @@
+ordinary dtplyr:
+# A tibble: 1 × 2
+    x_1   y_2
+  <int> <int>
+1     6    18
+Margin dtplyr:
+# A tibble: 1 × 2
+    x_1   y_1
+  <int> <int>
+1     6    18
+no-share local control:
+  x_1 y_2
+1   6  18
+local share source:
+Total share `fraction` refers to unknown preceding ordinary summary `y_2`.
+whole glue context: x_1 y_2
+scalar-pair context: x_1 y_1

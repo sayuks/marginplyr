@@ -1,0 +1,16 @@
+Warning: Unknown columns: `absent`
+Warning: Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `"a"` instead of `.data$a`
+   selector verbosity warn proxy_reads warnings error converted lifecycle_error
+1    one_of   warning    0           1        1 FALSE     FALSE           FALSE
+2    one_of   warning    1           1        1 FALSE     FALSE           FALSE
+3    one_of   warning    2           1        1  TRUE      TRUE           FALSE
+4   pronoun     quiet    0           1        0 FALSE     FALSE           FALSE
+5   pronoun     quiet    1           1        0 FALSE     FALSE           FALSE
+6   pronoun     quiet    2           1        0 FALSE     FALSE           FALSE
+7   pronoun   warning    0           1        2 FALSE     FALSE           FALSE
+8   pronoun   warning    1           1        2 FALSE     FALSE           FALSE
+9   pronoun   warning    2           1        2  TRUE      TRUE           FALSE
+10  pronoun     error    0           0        0  TRUE     FALSE            TRUE
+11  pronoun     error    1           0        0  TRUE     FALSE            TRUE
+12  pronoun     error    2           0        0  TRUE     FALSE            TRUE

@@ -1,0 +1,74 @@
+character fixed local pass 20
+character fixed dtplyr pass 20
+character dimension local pass 16
+character dimension dtplyr pass 16
+double_nan fixed local pass 20
+double_nan fixed dtplyr pass 20
+double_nan dimension local pass 16
+double_nan dimension dtplyr pass 16
+factor fixed local pass 20
+factor fixed dtplyr pass 20
+factor dimension local pass 16
+factor dimension dtplyr pass 16
+factor_na_level fixed local pass 20
+factor_na_level fixed dtplyr pass 20
+factor_na_level dimension local paired_error 0
+factor_na_level dimension dtplyr paired_error 0
+ordered fixed local pass 20
+ordered fixed dtplyr pass 20
+ordered dimension local pass 16
+ordered dimension dtplyr pass 16
+Date fixed local pass 20
+Date fixed dtplyr pass 20
+Date dimension local pass 16
+Date dimension dtplyr pass 16
+POSIXct fixed local pass 20
+POSIXct fixed dtplyr pass 20
+POSIXct dimension local pass 16
+POSIXct dimension dtplyr pass 16
+POSIXlt fixed local pass 20
+POSIXlt fixed dtplyr paired_error 0
+POSIXlt dimension local pass 16
+POSIXlt dimension dtplyr paired_error 0
+difftime fixed local pass 20
+difftime fixed dtplyr pass 20
+difftime dimension local pass 16
+difftime dimension dtplyr pass 16
+complex fixed local pass 20
+complex fixed dtplyr paired_error 0
+complex dimension local pass 16
+complex dimension dtplyr paired_error 0
+raw fixed local pass 20
+raw fixed dtplyr paired_error 0
+raw dimension local paired_error 0
+raw dimension dtplyr paired_error 0
+list fixed local pass 20
+list fixed dtplyr paired_error 0
+list dimension local pass 16
+list dimension dtplyr paired_error 0
+packed fixed local pass 20
+packed fixed dtplyr paired_error 0
+packed dimension local pass 16
+packed dimension dtplyr paired_error 0
+matrix fixed local pass 20
+matrix fixed dtplyr paired_error 0
+matrix dimension local pass 16
+matrix dimension dtplyr paired_error 0
+array fixed local pass 20
+array fixed dtplyr pass 20
+array dimension local pass 16
+array dimension dtplyr pass 16
+integer64 fixed local pass 20
+integer64 fixed dtplyr pass 20
+integer64 dimension local pass 16
+integer64 dimension dtplyr pass 16
+Warning messages:
+1: In setDT(ans, key = key) :
+  Some columns are a multi-column type (such as a matrix column), for example column 3. setDT will retain these columns as-is but subsequent operations like grouping and joining may fail. Please consider as.data.table() instead which will create a new column for each embedded column.
+2: In setDT(ans, key = key) :
+  Some columns are a multi-column type (such as a matrix column), for example column 4. setDT will retain these columns as-is but subsequent operations like grouping and joining may fail. Please consider as.data.table() instead which will create a new column for each embedded column.
+SHA: 4b34fdecb2d8a41034b3d9b5d5af8e51592555e1
+
+paired_error         pass
+          15           49
+Checked ratios: 888

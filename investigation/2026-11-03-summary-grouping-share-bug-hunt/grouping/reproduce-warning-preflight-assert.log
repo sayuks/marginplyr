@@ -1,0 +1,24 @@
+Tracing function ".local" in package "duckdb"
+SHA: 4b34fdecb2d8a41034b3d9b5d5af8e51592555e1
+Expected: the converted warning before any metadata request.
+Direct selector: ℹ In argument: `one_of("absent")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`
+Local: ℹ In argument: `one_of("absent")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`
+dtplyr typed sibling: Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+DuckDB: ℹ In argument: `one_of("absent")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`
+DuckDB actual variable-selection queries: 1
+SELECT *
+FROM warning_preflight_minimal
+LIMIT 0
+
+DuckDB fixed-key control queries: 0
+Error in run() : converted(typed) is not TRUE
+Calls: run -> stopifnot
+Execution halted

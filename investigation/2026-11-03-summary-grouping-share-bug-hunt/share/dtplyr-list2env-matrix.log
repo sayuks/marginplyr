@@ -1,0 +1,7 @@
+SHA: 4b34fdecb2d8a41034b3d9b5d5af8e51592555e1
+Wrong lexical values: 112 Controls: 224
+         lexical
+mode      FALSE TRUE
+  lazy      112    0
+  local       0  112
+  renamed     0  112

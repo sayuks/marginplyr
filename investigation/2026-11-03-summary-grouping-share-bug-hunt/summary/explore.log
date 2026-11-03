@@ -1,0 +1,96 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+
+EXPR: (function(...) pick(...))(x)
+equal: FALSE
+[1] "rlang_error ℹ In argument: `(function(...) pick(...))(x)`.\nℹ In group 1: `g = \"a\"`.\nCaused by error:\n! `(function(...) pick(...))(x)` must be size 1, not 2.\nℹ To return more or less than 1 row per group, use `reframe()`."
+[1] "rlang_error ℹ In argument: `(function(...) pick(...))(x)`.\nℹ In group 1: `g = \"a\"`.\nCaused by error:\n! `marginplyr:::local_assigned_summary_value(...)` must be size 1, not\n  2.\nℹ To return more or less than 1 row per group, use `reframe()`."
+
+EXPR: (function(...) pick(..1))(x)
+equal: FALSE
+[1] "rlang_error ℹ In argument: `(function(...) pick(..1))(x)`.\nℹ In group 1: `g = \"a\"`.\nCaused by error:\n! `(function(...) pick(..1))(x)` must be size 1, not 2.\nℹ To return more or less than 1 row per group, use `reframe()`."
+[1] "rlang_error ℹ In argument: `(function(...) pick(..1))(x)`.\nℹ In group 1: `g = \"a\"`.\nCaused by error in `dplyr::pick()`:\nℹ In argument: `tidyselect::all_of(...)`.\nCaused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:\n! Can't select columns that don't exist.\n✖ Column `..1` doesn't exist."
+
+EXPR: (function(...) pick(c(...)))(x)
+equal: FALSE
+[1] "rlang_error ℹ In argument: `(function(...) pick(c(...)))(x)`.\nℹ In group 1: `g = \"a\"`.\nCaused by error:\n! `(function(...) pick(c(...)))(x)` must be size 1, not 2.\nℹ To return more or less than 1 row per group, use `reframe()`."
+[1] "rlang_error ℹ In argument: `(function(...) pick(c(...)))(x)`.\nℹ In group 1: `g = \"a\"`.\nCaused by error:\n! `marginplyr:::local_assigned_summary_value(...)` must be size 1, not\n  2.\nℹ To return more or less than 1 row per group, use `reframe()`."
+
+EXPR: (function(...) across(c(...), sum))(x)
+equal: TRUE
+
+EXPR: (function(...) across(all_of(...), sum))("x")
+equal: TRUE
+
+EXPR: (function(...) across((...), sum))(x)
+equal: FALSE
+[1] "rlang_error ℹ In argument: `(function(...) across((...), sum))(x)`.\nℹ In group 1: `g = \"a\"`.\nCaused by error in `list2()`:\n! '...' used in an incorrect context"
+[1] "rlang_error ℹ In argument: `(function(...) across((...), sum))(x)`.\nℹ In group 1: `g = \"a\"`.\nCaused by error in `dplyr::across()`:\nℹ In argument: `tidyselect::all_of(...)`.\nCaused by error in `list2()`:\n! '...' used in an incorrect context"
+
+EXPR: (function(...) across((..1), sum))(x)
+equal: FALSE
+[1] "rlang_error ℹ In argument: `(function(...) across((..1), sum))(x)`.\nℹ In group 1: `g = \"a\"`.\nCaused by error in `across()`:\n! Can't select columns that don't exist.\n✖ Column `..1` doesn't exist."
+[1] "rlang_error ℹ In argument: `(function(...) across((..1), sum))(x)`.\nℹ In group 1: `g = \"a\"`.\nCaused by error in `dplyr::across()`:\nℹ In argument: `tidyselect::all_of(...)`.\nCaused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:\n! Can't select columns that don't exist.\n✖ Column `..1` doesn't exist."
+
+EXPR: (function(...) across(c(..1), sum))(x)
+equal: FALSE
+[1] "rlang_error ℹ In argument: `(function(...) across(c(..1), sum))(x)`.\nℹ In group 1: `g = \"a\"`.\nCaused by error in `across()`:\n! Can't select columns that don't exist.\n✖ Column `..1` doesn't exist."
+[1] "rlang_error ℹ In argument: `(function(...) across(c(..1), sum))(x)`.\nℹ In group 1: `g = \"a\"`.\nCaused by error in `dplyr::across()`:\nℹ In argument: `tidyselect::all_of(...)`.\nCaused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:\n! Can't select columns that don't exist.\n✖ Column `..1` doesn't exist."
+
+EXPR: (function(...) across({ ... }, sum))(x)
+equal: FALSE
+[1] "rlang_error ℹ In argument: `(function(...) across({...`.\nℹ In group 1: `g = \"a\"`.\nCaused by error:\n! Could not evaluate cli `{}` expression: ` ... `.\nCaused by error:\n! '...' used in an incorrect context"
+[1] "rlang_error ℹ In argument: `(function(...) across({...`.\nℹ In group 1: `g = \"a\"`.\nCaused by error in `dplyr::across()`:\nℹ In argument: `tidyselect::all_of(...)`.\nCaused by error:\n! Could not evaluate cli `{}` expression: ` ... `.\nCaused by error:\n! '...' used in an incorrect context"
+
+EXPR: (function(...) across(identity(...), sum))(x)
+equal: FALSE
+[1] "rlang_error ℹ In argument: `(function(...) across(identity(...), sum))(x)`.\nℹ In group 2: `g = \"b\"`.\nCaused by error in `across()`:\n! Can't select columns past the end.\nℹ Location 3 doesn't exist.\nℹ There are only 2 columns."
+[1] "rlang_error ℹ In argument: `(function(...) across(identity(...), sum))(x)`.\nℹ In group 2: `g = \"b\"`.\nCaused by error in `dplyr::across()`:\nℹ In argument: `tidyselect::all_of(...)`.\nCaused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:\n! Can't select columns past the end.\nℹ Location 3 doesn't exist.\nℹ There are only 2 columns."
+
+EXPR: (function(...) across(...))(x, sum)
+equal: TRUE
+
+EXPR: (function(...) if_any(...))(x, ~ .x > 2)
+equal: FALSE
+[1] "rlang_error ℹ In argument: `(function(...) if_any(...))(x, ~.x > 2)`.\nℹ In group 1: `g = \"a\"`.\nCaused by error:\n! `(function(...) if_any(...))(x, ~.x > 2)` must be size 1, not 2.\nℹ To return more or less than 1 row per group, use `reframe()`."
+[1] "rlang_error ℹ In argument: `(function(...) if_any(...))(x, ~.x > 2)`.\nℹ In group 1: `g = \"a\"`.\nCaused by error:\n! `marginplyr:::local_assigned_summary_value(...)` must be size 1, not\n  2.\nℹ To return more or less than 1 row per group, use `reframe()`."
+
+EXPR: (function(...) across(.cols = ..., .fns = ..2))(x, sum)
+equal: FALSE
+[1] "rlang_error ℹ In argument: `(function(...) across(.cols = ..., .fns = ..2))(x,\n  sum)`.\nℹ In group 1: `g = \"a\"`.\nCaused by error in `across()`:\n! Can't compute column `x`.\nCaused by error in `fn()`:\n! invalid 'type' (builtin) of argument"
+[1] "rlang_error ℹ In argument: `(function(...) across(.cols = ..., .fns = ..2))(x,\n  sum)`.\nℹ In group 1: `g = \"a\"`.\nCaused by error in `dplyr::across()`:\n! Can't compute column `x`.\nCaused by error in `fn()`:\n! invalid 'type' (builtin) of argument"
+
+EXPR: (function(...) across(..1, ..2))(x, sum)
+equal: TRUE
+
+EXPR: (function(...) across(x, ..1, .unpack = TRUE))(function(v) data.frame(z = sum(v)))
+equal: TRUE
+
+EXPR: (function(...) across(x, ..1, .unpack = FALSE))(sum)
+equal: TRUE
+
+EXPR: (function(...) across(x, .fns = ..1, .names = "{.col}_{.fn}"))(sum)
+equal: TRUE
+
+EXPR: (function(...) { across(x, ...)})(sum)
+equal: TRUE
+
+EXPR: (function(...) { across(x, .fns = ..., .unpack = TRUE)})(function(v) data.frame(z = sum(v)))
+equal: TRUE
+
+EXPR: (function(...) { across(x, .fns = ..., .unpack = FALSE)})(sum)
+equal: TRUE
+
+EXPR: (function(...) pick(all_of(...)))("x")
+equal: FALSE
+[1] "rlang_error ℹ In argument: `(function(...) pick(all_of(...)))(\"x\")`.\nℹ In group 1: `g = \"a\"`.\nCaused by error:\n! `(function(...) pick(all_of(...)))(\"x\")` must be size 1, not 2.\nℹ To return more or less than 1 row per group, use `reframe()`."
+[1] "rlang_error ℹ In argument: `(function(...) pick(all_of(...)))(\"x\")`.\nℹ In group 1: `g = \"a\"`.\nCaused by error:\n! `marginplyr:::local_assigned_summary_value(...)` must be size 1, not\n  2.\nℹ To return more or less than 1 row per group, use `reframe()`."

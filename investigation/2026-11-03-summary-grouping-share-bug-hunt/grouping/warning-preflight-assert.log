@@ -1,0 +1,115 @@
+SHA: 4b34fdecb2d8a41034b3d9b5d5af8e51592555e1
+R version 4.6.1 (2026-06-24)
+dplyr 1.2.1
+tidyselect 1.2.1
+rlang 1.3.0
+dtplyr 1.3.3
+data.table 1.18.6.1
+duckdb 1.5.5
+dbplyr 2.6.0
+DBI 1.3.0
+pkgload 1.5.3
+
+Tracing function ".local" in package "duckdb"
+Minimal DuckDB result:
+  error converted metadata_refusal queries warning_count
+1  TRUE      TRUE            FALSE       1             1
+              condition_class
+1 rlang_error/error/condition
+                                                                                                     message
+1 ℹ In argument: `one_of("absent")`.\nCaused by error:\n! (converted from warning) Unknown columns: `absent`
+                                        sql
+1 SELECT *\nFROM warning_preflight\nLIMIT 0
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+  backend later converted metadata_refusal queries
+1  dtplyr names        10               40       0
+2  duckdb names        30                0      30
+3   local names        50                0       0
+4  dtplyr typed         0               50       0
+5  duckdb typed        30                0      30
+6   local typed        50                0       0
+Completed public calls: 260
+Warning: Unknown columns: `absent`
+Warning: Unknown columns: `absent`
+Warning: Unknown columns: `absent`
+Warning: Unknown columns: `absent`
+Warning: Unknown columns: `absent`
+Tracing function ".local" in package "duckdb"
+Tracing function ".local" in package "duckdb"
+Warning: Unknown columns: `absent`
+Tracing function ".local" in package "duckdb"
+   warn backend position converted queries warning_count
+1     1   local    fixed     FALSE       0             1
+2     1   local variable     FALSE       0             1
+3     1  dtplyr    fixed     FALSE       0             1
+4     1  dtplyr variable     FALSE       0             1
+5     1  duckdb    fixed     FALSE       1             1
+6     1  duckdb variable     FALSE       1             1
+7     2   local    fixed      TRUE       0             1
+8     2   local variable      TRUE       0             1
+9     2  dtplyr    fixed      TRUE       0             1
+10    2  dtplyr variable      TRUE       0             1
+11    2  duckdb    fixed      TRUE       0             1
+12    2  duckdb variable      TRUE       1             1
+Error in run() : all(results$converted) is not TRUE
+Calls: run -> stopifnot
+Execution halted

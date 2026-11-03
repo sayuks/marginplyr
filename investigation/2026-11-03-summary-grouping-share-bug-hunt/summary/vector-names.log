@@ -1,0 +1,47 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+
+TEMPLATE: {.col}_{seq_along(.col)}
+  x_1 y_2
+1   6  18
+[1] "Total share `p` refers to unknown preceding ordinary summary `y_2`."
+# A tibble: 1 × 2
+    x_1   y_1
+  <int> <int>
+1     6    18
+
+TEMPLATE: {.col}_{length(.col)}
+  x_2 y_2
+1   6  18
+[1] "Total share `p` refers to unknown preceding ordinary summary `y_2`."
+# A tibble: 1 × 2
+    x_1   y_1
+  <int> <int>
+1     6    18
+
+TEMPLATE: {.col}_{rev(.col)}
+  x_y y_x
+1   6  18
+[1] "Total share `p` refers to unknown preceding ordinary summary `y_2`."
+# A tibble: 1 × 2
+    x_x   y_y
+  <int> <int>
+1     6    18
+
+TEMPLATE: {.col}_{match(.col, .col)}
+  x_1 y_2
+1   6  18
+[1] "Total share `p` refers to unknown preceding ordinary summary `y_2`."
+# A tibble: 1 × 2
+    x_1   y_1
+  <int> <int>
+1     6    18

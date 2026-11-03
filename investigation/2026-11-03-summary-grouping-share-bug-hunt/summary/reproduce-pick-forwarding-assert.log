@@ -1,0 +1,18 @@
+ordinary result:
+  value
+1     6
+all-dots pick control:
+  value
+1     6
+across first-dots control:
+  value
+1     6
+investigated Margin result:
+ℹ In argument: `value = (function(...) sum(dplyr::pick(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.
+Error: !inherits(margin, "error") is not TRUE
+Execution halted
