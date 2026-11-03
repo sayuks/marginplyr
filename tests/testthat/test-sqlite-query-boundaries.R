@@ -63,6 +63,8 @@ test_that("SQLite collapsed Margin schemas compose across result shapes", {
             materializable <- dplyr::rename(
               collapsed, key = tidyselect::all_of(dimension)
             )
+            boolean <- tolower(dimension) %in% c("true", "false")
+            if (boolean) materializable <- collapsed
             saved <- dplyr::compute(materializable, name = "collapsed_result",
                                     overwrite = TRUE)
             for (result in list(collapsed, selected)) {
@@ -70,7 +72,7 @@ test_that("SQLite collapsed Margin schemas compose across result shapes", {
                                canonical(expected), info = info)
             }
             saved_expected <- expected
-            names(saved_expected)[[1L]] <- "key"
+            if (!boolean) names(saved_expected)[[1L]] <- "key"
             expect_identical(canonical(dplyr::collect(saved)),
                              canonical(saved_expected), info = info)
             mutated <- dplyr::mutate(collapsed, extra = v + 1L)
@@ -101,11 +103,40 @@ test_that("SQLite direct CTE collection preserves Boolean-word payload names", {
     if (identical(sort, "first")) expected <- expected[2:1, ]
     rownames(expected) <- NULL
     expect_identical(as.data.frame(dplyr::collect(query)), expected)
-    expect_identical(as.data.frame(dplyr::collect(query, sql_options = options)),
-                     expected)
+    expect_identical(as.data.frame(dplyr::collect(
+      query, sql_options = options
+    )), expected)
     expect_match(as.character(dbplyr::sql_render(query, sql_options = options)),
                  "WITH", fixed = TRUE)
   }
+})
+
+test_that("SQLite collapsed Boolean names survive ordinary materialization", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(
+    con, data.frame(g = "a", `TRUE` = 7L, check.names = FALSE),
+    "collapse_boolean"
+  )
+  query <- expand_with_margins(source, .grouping = rollup(g), .sort = "last")
+  collapsed <- dplyr::collapse(query)
+  expected <- data.frame(g = c("a", "Total"), `TRUE` = c(7L, 7L),
+                         check.names = FALSE)
+  for (cte in c(FALSE, TRUE)) {
+    for (input in list(collapsed, dplyr::filter(collapsed, TRUE))) {
+      saved <- dplyr::compute(
+        input, name = "collapsed_boolean_result", overwrite = TRUE,
+        indexes = list("TRUE"), sql_options = dbplyr::sql_options(cte = cte)
+      )
+      expect_identical(as.data.frame(dplyr::collect(saved)), expected)
+    }
+  }
+  expect_error(dplyr::compute(
+    collapsed, name = "collapsed_boolean_result", overwrite = TRUE,
+    unique_indexes = list("TRUE")
+  ), "UNIQUE constraint failed", fixed = TRUE)
+  expect_identical(as.data.frame(dplyr::collect(saved)), expected)
 })
 
 test_that("SQLite direct CTE execution keeps public names, copies and types", {

@@ -362,8 +362,8 @@ sqlite_with_compute_savepoint <- function(con, destination, code) {
   value
 }
 
-# Materialize the public query directly into the typed destination (ADR 0031).
-# The caller holds the unmodified direct result; later dplyr verbs delegate.
+# Materialize the direct result or preserve Boolean names in a derived result.
+# Only the direct companion supplies declared types and Margin order (ADR 0031).
 #' @exportS3Method dplyr::compute
 #' @noRd
 compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
@@ -374,8 +374,27 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
                                                    analyze = TRUE, ...,
                                                    sql_options = NULL,
                                                    in_transaction = FALSE) {
-  if (!sqlite_typed_result_direct(x)) {
+  direct <- sqlite_typed_result_direct(x)
+  public <- if (direct) attr(x, "marginplyr_public_columns") else
+    as.character(dplyr::tbl_vars(x))
+  if (!direct && length(sqlite_boolean_columns(public)) == 0L) {
     return(NextMethod())
+  }
+  if (direct) {
+    public_query <- attr(x, "marginplyr_public_query")
+    anchor <- attr(x, "marginplyr_public_anchor")
+    boolean_aliases <- attr(x, "marginplyr_boolean_aliases")
+    sorted <- length(attr(x, "marginplyr_order_keys")) > 0L
+  } else {
+    public_query <- sqlite_boolean_derived_query(x)
+    class(public_query) <- setdiff(class(public_query),
+                                   "marginplyr_sqlite_typed_result")
+    aliases <- sqlite_boolean_query_aliases(public_query)
+    boolean_aliases <- aliases[intersect(public, names(aliases))]
+    anchor <- sqlite_boolean_query(
+      dplyr::filter(public_query, FALSE), NULL, aliases, public = FALSE
+    )
+    sorted <- FALSE
   }
   if (!rlang::is_bool(temporary)) {
     abort_marginplyr("`temporary` must be TRUE or FALSE.",
@@ -395,13 +414,11 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
   }
   sql_options_given <- !missing(sql_options)
   con <- x$con
-  public <- attr(x, "marginplyr_public_columns")
   pronoun_output <- any(c(".data", ".env") %in% public)
   if (pronoun_output && is.null(name) && !temporary) {
     abort_marginplyr("`name` must be provided when `temporary = FALSE`.",
                      call = rlang::caller_call())
   }
-  boolean_aliases <- attr(x, "marginplyr_boolean_aliases")
   private_indexes <- function(index) {
     positions <- match(tolower(index), tolower(names(boolean_aliases)))
     matched <- !is.na(positions)
@@ -410,7 +427,6 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
   }
   unique_indexes <- lapply(unique_indexes, private_indexes)
   indexes <- lapply(indexes, private_indexes)
-  sorted <- length(attr(x, "marginplyr_order_keys")) > 0L
   rowid_alias <- setdiff(c("rowid", "oid", "_rowid_"), tolower(public))
   if (sorted && length(rowid_alias) == 0L) {
     abort_marginplyr(
@@ -423,11 +439,10 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
   }
   destination <- sqlite_compute_destination(con, name, temporary, overwrite)
   insert_from <- sqlite_boolean_execution_sql(
-    attr(x, "marginplyr_public_query"), sql_options = sql_options
+    public_query, sql_options = sql_options
   )
   columns <- paste(DBI::dbQuoteIdentifier(con, public), collapse = ", ")
   sqlite_with_compute_savepoint(con, destination, function(destination) {
-    anchor <- attr(x, "marginplyr_public_anchor")
     if (pronoun_output) {
       # dbplyr's compute() selects every column by symbol before creating the
       # table; tidyselect reads generated `.data` and `.env` as pronouns.

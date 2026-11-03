@@ -300,6 +300,10 @@ collapsed SQL and regain their public aliases in an outer projection. Subsequent
 verbs retain the existing derived-query alias repair; collapse adds no direct
 type or Margin order guarantee.
 
+Materializing a derived Boolean-named result uses the existing savepoint and
+private-column creation/rename path with a zero-row projection of that derived
+query. It supplies no carried source anchor, declared types or Margin order.
+
 Direct CTE execution keeps the source-column anchor and final public aliases
 outside CTE lifting. Privately named inputs beneath the final projections may
 use CTEs. Collection and the public query inserted by materialization share that
