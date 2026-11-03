@@ -518,6 +518,12 @@ abort_absorbed_margin_labels <- function() {
   ))
 }
 
+# Plain character displays for scalar R dimensions under a non-missing label.
+margin_display_character <- function(x) {
+  # Empty hms conversion can return logical(0); the display owns its type.
+  as.vector(as.character(x), mode = "character")
+}
+
 # One grouping-set branch after label conversion. The caller supplies a
 # validated plan, per-dimension labels, and typed column metadata.
 label_margin_branch <- function(.data,
@@ -609,10 +615,11 @@ label_margin_branch <- function(.data,
         # `across()` resolves these names as pronouns when a source column is
         # named `.data` or `.env`; the generated lookup must name the column.
         conversions <- lapply(safe_columns, function(col) {
-          if (inherits(source, "dtplyr_step")) {
-            return(rlang::expr(base::as.character(
-              !!margin_column_pronoun(col)
-            )))
+          if (is.data.frame(source) || inherits(source, "dtplyr_step")) {
+            return(rlang::call2(
+              marginplyr_private_call("margin_display_character"),
+              margin_column_pronoun(col)
+            ))
           }
           rlang::expr(as.character(!!margin_column_pronoun(col)))
         })

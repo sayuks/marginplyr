@@ -183,6 +183,7 @@ optional_suggest_spec <- function() {
     RSQLite = list(asserted = TRUE, companions = c("DBI", "bit64")),
     RPostgres = list(asserted = TRUE, companions = c("DBI", "bit64")),
     sf = list(asserted = TRUE, companions = c("DBI", "bit64")),
+    hms = list(asserted = TRUE, companions = character()),
     # Every job runs the local integer64 array control; dtplyr also uses keys.
     bit64 = list(asserted = FALSE, companions = character()),
     DBI = list(asserted = FALSE, companions = character()),
