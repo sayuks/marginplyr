@@ -57,6 +57,16 @@ exclusion from the source package alone is insufficient. Use `full` when the
 effects are uncertain. Change-specific checks still establish the changed
 tooling's contract; a package-check pass alone cannot do that.
 
+Measured priority adoption may use `source` when its only check-affecting change
+is `Config/testthat/start-first`, and package code, tests/helpers, installed
+files and dependency declarations are unchanged from a successful full result.
+Verify the proposal's evidence is still eligible, the patch matches that
+proposal, and native dispatch still selects every discovered test exactly once.
+Accompanying instructions or proposal-report wording do not by themselves add
+a full-check obligation. Record the earlier full SHA and these checks as the
+reason for `source`; changed test inputs, dispatch machinery or other package
+effects still require `full`.
+
 Both forms pin the submitted SHA at invocation and use its disposable committed
 source for every check. Waiting never switches to a later HEAD. A later fix
 must be committed and receive a fresh invocation; a result identifies only its

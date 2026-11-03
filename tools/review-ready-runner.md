@@ -182,7 +182,9 @@ ordinarily required successful full measurement. Recalculation never requests
 another suite execution or renews the run's seven-day deadline.
 
 The priority commit receives its own applicable verification for its own SHA.
-The measurement pass certifies only the measured SHA. Inspect and record any
+Choose its scope under [Local checks](../design/agents/local-checks.md#boundary-and-scope),
+including the measured-priority-only `source` case. The measurement pass
+certifies only the measured SHA. Inspect and record any
 proposal from that validation, then complete this task without another priority
 edit or check solely for that proposal. A new implementation change or explicit
 user request can start a later adoption; a validation proposal alone cannot.
