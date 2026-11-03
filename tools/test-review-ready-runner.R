@@ -66,6 +66,7 @@ local({
     dir.create(repo)
     paths <- c("tools/review-ready.R", "tools/review-ready-check-lib.R",
       "tools/review-ready-progress.R", "tools/review-ready-progress-reporter.R",
+      "tools/review-ready-timing.R",
       "tools/dependency-requirements.R", "tools/required-test-suggests.R",
       ".github/scripts/cran-note-policy.R", "inst/suggests/guard.R")
     for (relative in paths) {
@@ -90,6 +91,8 @@ local({
     writeLines(c("/.review-ready/"), file.path(repo, ".gitignore"))
     writeLines(c("^\\.review-ready$", "^tools$", "^\\.github$"), file.path(repo, ".Rbuildignore"))
     dir.create(file.path(repo, "tests", "testthat"), recursive = TRUE)
+    expect(file.copy(file.path(root, "tests/testthat/helper-review-timing.R"),
+      file.path(repo, "tests/testthat/helper-review-timing.R")), "common timing helper")
     writeLines('optional_suggest_spec <- function() list(stats = TRUE)',
       file.path(repo, "tests", "testthat", "helper-optional-backends.R"))
     writeLines(gsub("marginplyr", "fixture", readLines(file.path(root, "tests/testthat.R")), fixed = TRUE),
@@ -280,6 +283,13 @@ local({
     length(gregexpr("Source-tarball R CMD check --as-cran", checked, fixed = TRUE)[[1L]]) == 1L &&
     grepl("Full package check passed", checked, fixed=TRUE),
     "automatic admission checks submitted source once with four workers")
+  timing_files <- list.files(file.path(repo, ".review-ready", "runs"),
+    "^evidence[.]rds$", recursive = TRUE, full.names = TRUE)
+  expect(length(timing_files) == 1L, "only full scope produces timing evidence")
+  timing <- readRDS(timing_files[[1L]])
+  expect(isTRUE(timing$eligible) && identical(timing$sha, submitted) &&
+    timing$actual_workers == 4L && nrow(timing$files) == 5L && all(timing$files$eligible),
+    "terminal full evidence identifies the pinned source and every worker file")
   wait_for <- function(run, predicate, label, timeout = 45) {
     deadline <- Sys.time() + timeout
     repeat {
