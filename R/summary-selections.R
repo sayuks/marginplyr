@@ -425,10 +425,18 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
         }
         index <- parsed$fns_index
         if (index > 0L && !rlang::is_missing(call_args[[index]])) {
-          call_args[[index]] <- rlang::call2(
-            marginplyr_private_call("local_checked_across_fns_arg"),
-            call_args[[index]], state
-          )
+          if (rlang::is_symbol(parsed$fns) &&
+                grepl("^\\.\\.[1-9][0-9]*$", rlang::as_string(parsed$fns))) {
+            # Runtime across must capture the original forwarded promise.
+            # Its cached value is available when FALSE unpacking names outputs.
+            state$forwarded_fns <- parsed$fns
+            state$fns_env <- rlang::quo_get_env(dot)
+          } else {
+            call_args[[index]] <- rlang::call2(
+              marginplyr_private_call("local_checked_across_fns_arg"),
+              call_args[[index]], state
+            )
+          }
         }
         index <- parsed$names_index
         if (index > 0L) {
@@ -502,6 +510,11 @@ local_checked_across_names_arg <- function(value, state) {
     return(value)
   }
   if (is.null(value)) {
+    if (!is.null(state$forwarded_fns)) {
+      local_checked_across_fns_arg(
+        rlang::eval_bare(state$forwarded_fns, state$fns_env), state
+      )
+    }
     value <- if (identical(state$fns_kind, "list")) {
       "{.col}_{.fn}"
     } else {
