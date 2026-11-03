@@ -1215,6 +1215,7 @@ cache_local_context_names <- function(dots, selection_proxy, group_vars) {
   complete <- TRUE
   rebound <- character()
   for (i in seq_along(dots)) {
+    complete <- complete && !unresolved_lookup_name() %in% rebound
     dot <- dots[[i]]
     expr <- rlang::quo_get_expr(dot)
     name <- rlang::names2(dots)[[i]]
@@ -1224,9 +1225,7 @@ cache_local_context_names <- function(dots, selection_proxy, group_vars) {
     )
     if (contains_share_helper(expr)) next
     if (nzchar(name)) {
-      rebound <- unique(c(rebound, lookup_rebound_names(
-        expr, lookup$env, lookup$mask
-      )))
+      rebound <- context_name_rebindings(expr, lookup, selection_proxy)
       available <- unique(c(available, name))
       next
     }
@@ -1276,11 +1275,96 @@ cache_local_context_names <- function(dots, selection_proxy, group_vars) {
     } else if (!is_static_spelling_call(expr, "selection", "pick")) {
       complete <- FALSE
     }
-    rebound <- unique(c(rebound, lookup_rebound_names(
-      expr, lookup$env, lookup$mask
-    )))
+    rebound <- context_name_rebindings(
+      rlang::quo_get_expr(dot), lookup, selection_proxy
+    )
   }
   dots
+}
+
+# Caller code may change bindings without a visible assignment at this site.
+# Known calculations over plain columns preserve the proof for later names.
+context_name_rebindings <- function(expr, lookup, proxy) {
+  rebound <- c(lookup$rebound, lookup_rebound_names(
+    expr, lookup$env, lookup$mask
+  ))
+  if (!context_summary_bindings_safe(expr, lookup, proxy)) {
+    rebound <- c(rebound, unresolved_lookup_name())
+  }
+  unique(rebound)
+}
+
+# A conservative prefix proof; unknown callees and class dispatch stay opaque.
+# Frozen across names still require safe functions on plain input columns.
+context_summary_bindings_safe <- function(expr, lookup, proxy) {
+  if (rlang::is_quosure(expr)) {
+    lookup$env <- rlang::quo_get_env(expr)
+    return(context_summary_bindings_safe(
+      rlang::quo_get_expr(expr), lookup, proxy
+    ))
+  }
+  if (rlang::is_symbol(expr)) {
+    name <- rlang::as_string(expr)
+    if (name %in% lookup$mask) {
+      return(name %in% names(proxy) && is.atomic(proxy[[name]]) &&
+               !is.object(proxy[[name]]))
+    }
+    return(!is.null(known_context_constant(expr, lookup)))
+  }
+  if (!rlang::is_call(expr)) {
+    return(!is.object(expr) && (is.atomic(expr) || is.null(expr)))
+  }
+  if (is_across_call(expr)) {
+    parsed <- parse_across_arguments(expr)
+    if (is.null(attr(parsed$names, "marginplyr_across_names", exact = TRUE))) {
+      return(FALSE)
+    }
+    cols <- static_call_args(parsed$cols)
+    if (length(cols) != 1L) return(FALSE)
+    selected <- static_character_value(cols[[1L]])
+    if (is.null(selected)) return(FALSE)
+    fns <- if (is_known_function_list_call(parsed$fns, lookup$env)) {
+      static_call_args(parsed$fns)
+    } else {
+      list(parsed$fns)
+    }
+    return(all(vapply(fns, function(fn) {
+      if (is.null(fn)) return(FALSE)
+      context_summary_bindings_safe(
+        rlang::call2(fn, !!!rlang::syms(unname(selected))), lookup, proxy
+      )
+    }, logical(1))))
+  }
+  name <- static_call_name(expr)
+  namespace <- static_call_ns(expr)
+  if (identical(name, "n") && length(static_call_args(expr)) == 0L) {
+    if (!is.null(namespace)) return(identical(namespace, "dplyr"))
+    return(is_unrebound_name(name, lookup) && identical(
+      ordinary_function_binding(name, lookup$env, "dplyr"), dplyr::n
+    ))
+  }
+  if (!is.null(name) && name %in% c("$", "[[") && is.null(namespace) &&
+        length(expr) == 3L && rlang::is_symbol(expr[[2L]], ".data")) {
+    column <- if (rlang::is_symbol(expr[[3L]]) && name == "$") {
+      rlang::as_string(expr[[3L]])
+    } else {
+      static_character_value(expr[[3L]])
+    }
+    return(length(column) == 1L && context_summary_bindings_safe(
+      rlang::sym(column), lookup, proxy
+    ))
+  }
+  operations <- c("sum", "prod", "min", "max", "mean", "length", "abs",
+                  "c", "+", "-", "*", "/", "^", "%%", "%/%", ":", "(", "{")
+  if (is.null(name) || !name %in% operations ||
+        (!is.null(namespace) && namespace != "base")) return(FALSE)
+  if (is.null(namespace)) {
+    if (!is_unrebound_name(name, lookup)) return(FALSE)
+    binding <- ordinary_function_binding(name, lookup$env)
+    if (!identical(binding, getExportedValue("base", name))) return(FALSE)
+  }
+  all(vapply(static_call_args(expr), context_summary_bindings_safe,
+             logical(1), lookup = lookup, proxy = proxy))
 }
 
 # Reads only already resolved output names from unnamed local across dots.

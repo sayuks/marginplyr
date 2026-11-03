@@ -358,3 +358,59 @@ test_that("preceding template rebinding stays with ordinary evaluation", {
   expect_identical(names(observations$ordinary), c("prior", "x_new", "y_new"))
   expect_identical(observations$margin, observations$ordinary)
 })
+
+test_that("preceding callbacks retain runtime naming bindings", {
+  data <- data.frame(x = 1:3, y = 5:7)
+  for (binding in c("template", "columns", "seq_along")) {
+    observations <- list()
+    for (mode in c("ordinary", "margin")) {
+      template <- "{.col}_{seq_along(.col)}"
+      columns <- c("x", "y")
+      seq_along <- base::seq_along
+      calls <- 0L
+      change <- function(x) {
+        calls <<- calls + 1L
+        if (binding == "template") template <<- "{.col}_new"
+        if (binding == "columns") columns <<- "y"
+        if (binding == "seq_along") {
+          seq_along <<- function(x) rev(base::seq_along(x))
+        }
+        sum(x)
+      }
+      dots <- rlang::exprs(
+        prior = change(x),
+        dplyr::across(dplyr::all_of(columns), sum, .names = template)
+      )
+      result <- if (mode == "ordinary") {
+        dplyr::summarise(data, !!!dots)
+      } else {
+        summarize_with_margins(data, !!!dots, p = share_of_total(prior))
+      }
+      observations[[mode]] <- list(
+        result = result[setdiff(names(result), "p")], calls = calls
+      )
+    }
+    expect_identical(observations$margin, observations$ordinary, info = binding)
+    expect_identical(observations$ordinary$calls, 1L)
+  }
+})
+
+test_that("plain summary prefixes retain complete-name source proofs", {
+  data <- data.frame(x = 1:3, y = 5:7, unused = factor("a"))
+  for (prior in rlang::exprs(sum(x), dplyr::n(), sum(.data$x),
+                             sum(.data[["x"]]))) {
+    actual <- summarize_with_margins(
+      data, prior = !!prior,
+      dplyr::across(x, sum, .names = "{.col}_first"),
+      dplyr::across(y, sum, .names = "{.col}_{seq_along(.col)}"),
+      p = share_of_total(y_1)
+    )
+    ordinary <- dplyr::summarise(
+      data, prior = !!prior,
+      dplyr::across(x, sum, .names = "{.col}_first"),
+      dplyr::across(y, sum, .names = "{.col}_{seq_along(.col)}")
+    )
+    expect_identical(actual[names(ordinary)], ordinary)
+    expect_identical(actual$p, 1)
+  }
+})
