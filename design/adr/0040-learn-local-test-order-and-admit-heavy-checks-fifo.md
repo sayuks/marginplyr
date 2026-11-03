@@ -10,7 +10,8 @@ source and retain the existing heavy lock, pinned source and terminal-result
 authority. The [specification](../specs/review-ready-adaptive-order-fifo.md)
 records the agreed ordinary-dispatch workflow and independent FIFO requirements.
 The maintainer accepted the replacement specification on 2026-11-03, including
-the private timing hook after comparing public-only alternatives.
+the private timing hook after comparing public-only alternatives, and confirmed
+the R CMD check verification obligation.
 
 A dedicated timing CI pipeline is not an approved requirement. The maintainer
 clarified that asking about CI was exploratory, and reopened the prior approval.
@@ -32,6 +33,11 @@ versions and guard the function shape before recording. Supporting a new
 version requires actual-worker measurement fixtures that prove file identity
 and inclusion of file cleanup. The calibrated 3.3.2 target is `queue_task()`;
 individual test files need no manual timing statements.
+
+The implemented recorder must receive its applicable source-tarball full check
+with recording enabled and diagnostics inspected under the existing NOTE policy.
+The experimental zero-NOTE results do not certify the implementation or make
+the private hook a stable public interface.
 
 Changing an already registered file under the same name does not make it
 unregistered. Every eligible newly measured file, including lightweight files,

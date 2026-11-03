@@ -1,9 +1,10 @@
 # Measured test order and FIFO Review-ready admission
 
 Status: accepted, 2026-11-03. The maintainer selected the narrow private timing
-hook after comparing public-only alternatives. Ordinary testthat dispatch and
-the other agreed decisions below remain, with no first-run priority guarantee
-for unregistered files. The independent FIFO request remains. This records
+hook after comparing public-only alternatives and confirmed the specification
+after checking its R CMD check implications. Ordinary testthat dispatch and the
+other agreed decisions below remain, with no first-run priority guarantee for
+unregistered files. The independent FIFO request remains. This records
 specification agreement; implementation and operational adoption are pending.
 [ADR 0040](../adr/0040-learn-local-test-order-and-admit-heavy-checks-fifo.md)
 records the scope boundary. Existing package CI is unchanged.
@@ -184,6 +185,17 @@ recording, parsing, computation and proposal output stays below one second. Reco
 sample distribution and method rather than infer this result from estimated
 scheduling gains. This is an implementation acceptance measurement, not an
 additional routine full check, timing CI job or runtime failure threshold.
+
+## Source-tarball check compatibility
+
+Verify the implemented recorder with timing enabled in its applicable full
+source-tarball check, including dependency, code and test diagnostics and the
+terminal NOTE count. The three calibrated full checks had zero ERRORs,
+WARNINGs and NOTEs with R 4.6.1 and testthat 3.3.2; that is evidence for the
+experimental helper, not certification of the eventual implementation or
+later dependency versions. Apply the existing local-checks NOTE policy to the
+implementation result. Do not treat absence of a diagnostic as a public API
+or compatibility guarantee.
 
 ## Agreed stale-proposal and failure policy
 
