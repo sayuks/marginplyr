@@ -274,8 +274,10 @@ test_that("preceded naming callbacks stay in the ordinary local context", {
 test_that("preceded name-only selections expose vector names to shares", {
   data <- data.frame(x = 1:3, y = 5:7)
   template <- "{.col}_{seq_along(.col)}"
+  columns <- c("x", "y")
   for (cols in rlang::exprs(x:y, dplyr::everything(),
-                            dplyr::all_of(c("x", "y")))) {
+                            dplyr::all_of(c("x", "y")),
+                            dplyr::all_of(columns))) {
     ordinary <- dplyr::summarise(
       data, prior = sum(x), dplyr::across(!!cols, sum, .names = template)
     )

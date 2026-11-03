@@ -1235,7 +1235,7 @@ cache_local_context_names <- function(dots, selection_proxy, group_vars) {
       parsed <- parse_across_arguments(expr)
       env <- rlang::quo_get_env(dot)
       output <- attr(parsed$names, "marginplyr_across_names", exact = TRUE)
-      template <- known_local_name_template(parsed$names, lookup)
+      template <- known_context_constant(parsed$names, lookup)
       if (is.null(output) && complete && !is.null(template) &&
             (is.null(parsed$unpack) || isFALSE(parsed$unpack)) &&
             is_static_name_selection(parsed$cols, lookup) &&
@@ -1295,20 +1295,20 @@ cached_local_across_names <- function(dots) {
   }), use.names = FALSE)
 }
 
-# Reads a literal or an existing constant caller template without forcing a
+# Reads a literal or an existing plain caller constant without forcing a
 # promise or active binding. Mask names remain owned by local execution.
-known_local_name_template <- function(expr, lookup) {
+known_context_constant <- function(expr, lookup) {
   if (rlang::is_missing(expr)) return(NULL)
   if (rlang::is_quosure(expr)) {
     lookup$env <- rlang::quo_get_env(expr)
-    return(known_local_name_template(
+    return(known_context_constant(
       rlang::quo_get_expr(expr), lookup
     ))
   }
   if (is_parenthesized(expr)) {
-    return(known_local_name_template(unparenthesized_value(expr), lookup))
+    return(known_context_constant(unparenthesized_value(expr), lookup))
   }
-  if (is.null(expr) || (is.character(expr) && !is.object(expr))) {
+  if (is.null(expr) || (is.atomic(expr) && !is.object(expr))) {
     return(list(value = expr))
   }
   if (!rlang::is_symbol(expr) || rlang::as_string(expr) %in% lookup$mask) {
@@ -1322,7 +1322,7 @@ known_local_name_template <- function(expr, lookup) {
       if (bindingIsActive(name, current) ||
             rlang::env_binding_are_lazy(current, name)) return(NULL)
       value <- get(name, envir = current, inherits = FALSE)
-      if (is.null(value) || (is.character(value) && !is.object(value))) {
+      if (is.null(value) || (is.atomic(value) && !is.object(value))) {
         return(list(value = value))
       }
       return(NULL)
@@ -1411,8 +1411,11 @@ is_context_name_template <- function(template, lookup) {
 is_context_only_name_expr <- function(expr, lookup, allow_context = TRUE) {
   if (rlang::is_missing(expr)) return(FALSE)
   if (rlang::is_symbol(expr)) {
-    return(allow_context &&
-             rlang::as_string(expr) %in% c(".col", ".fn", "col", "fn"))
+    if (allow_context) {
+      return(rlang::as_string(expr) %in% c(".col", ".fn", "col", "fn"))
+    }
+    lookup$mask <- c(names(tidyselect::vars_select_helpers), ".data", ".env")
+    return(!is.null(known_context_constant(expr, lookup)))
   }
   if (!rlang::is_call(expr)) {
     return(!is.object(expr) && (is.atomic(expr) || is.null(expr)))
