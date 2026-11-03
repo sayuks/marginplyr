@@ -779,8 +779,11 @@ plan_summary_expressions <- function(dots,
     data_vars = data_vars,
     group_vars = group_vars
   )
+  if (defer_local && has_shares) {
+    dots <- cache_local_context_names(dots, deferred, selection_proxy)
+  }
   predictable_names <- if (defer_local) {
-    predictable_local_across_names(original_dots, names(selection_proxy))
+    predictable_local_across_names(dots, names(selection_proxy))
   } else {
     character()
   }
@@ -1203,6 +1206,82 @@ is_literal_summary_selection <- function(cols, available, allow_names = TRUE) {
     ))
   }
   FALSE
+}
+
+# Resolves deferred local names that need neither summary values nor caller
+# callbacks. Selections must be literal names in the preceding summary mask.
+cache_local_context_names <- function(dots, deferred, selection_proxy) {
+  available <- names(selection_proxy)
+  for (i in seq_along(dots)) {
+    dot <- dots[[i]]
+    expr <- rlang::quo_get_expr(dot)
+    name <- rlang::names2(dots)[[i]]
+    if (deferred[[i]] && !nzchar(name) && is_across_call(expr) &&
+          !contains_share_helper(expr)) {
+      parsed <- parse_across_arguments(expr)
+      template <- unwrap_injected_quosure(parsed$names)
+      env <- rlang::quo_get_env(dot)
+      if ((is.null(parsed$unpack) || isFALSE(parsed$unpack)) &&
+            is_literal_summary_selection(parsed$cols, available) &&
+            is_context_name_template(template, env) &&
+            length(known_across_function_names(parsed, env)) > 0L) {
+        proxy <- stats::setNames(as.list(seq_along(available)), available)
+        output <- known_across_output_names(expr, env, proxy)
+        args <- parsed$call_args
+        args[[parsed$names_index]] <- resolved_across_name_template(output)
+        dot <- rlang::quo_set_expr(dot, rebuild_static_call(expr, args))
+        dots[[i]] <- dot
+      }
+    }
+    available <- unique(c(
+      available, name[nzchar(name)],
+      predictable_local_across_names(list(dot), available)
+    ))
+  }
+  dots
+}
+
+# Reads glue interpolations without evaluating them. The caller supplies a
+# literal template and the lexical environment used to resolve its functions.
+is_context_name_template <- function(template, env) {
+  if (!is.character(template) || length(template) != 1L || is.na(template)) {
+    return(FALSE)
+  }
+  expressions <- list()
+  tryCatch({
+    glue::glue(
+      template, .envir = emptyenv(), .transformer = function(text, envir) {
+        expressions[[length(expressions) + 1L]] <<- rlang::parse_expr(text)
+        ""
+      }
+    )
+    all(vapply(expressions, is_context_only_name_expr, logical(1), env = env))
+  }, error = function(cnd) FALSE)
+}
+
+# Accepts only naming vectors, constants and these base operations on them.
+# Bare function bindings must already be known without forcing caller code.
+is_context_only_name_expr <- function(expr, env) {
+  if (rlang::is_missing(expr)) return(FALSE)
+  if (rlang::is_symbol(expr)) {
+    return(rlang::as_string(expr) %in% c(".col", ".fn", "col", "fn"))
+  }
+  if (!rlang::is_call(expr)) return(is.atomic(expr) || is.null(expr))
+  if (is_parenthesized(static_call_head(expr))) return(FALSE)
+  name <- static_call_name(expr)
+  if (is.null(name) || !name %in% c(
+    "c", "seq_along", "length", "rev", "match", "toupper", "("
+  )) return(FALSE)
+  namespace <- static_call_ns(expr)
+  if (!is.null(namespace)) {
+    if (!identical(namespace, "base")) return(FALSE)
+  } else if (!identical(
+    ordinary_function_binding(name, env), getExportedValue("base", name)
+  )) {
+    return(FALSE)
+  }
+  all(vapply(static_call_args(expr), is_context_only_name_expr,
+             logical(1), env = env))
 }
 
 # Names an unnamed local `across()` only when both its columns and `.names`

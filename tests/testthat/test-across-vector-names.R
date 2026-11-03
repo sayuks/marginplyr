@@ -190,3 +190,83 @@ test_that("Arrow retains ordinary vectorized multi-function names", {
     arrow::arrow_table(data.frame(x = 1:3, y = 5:7)), shares = FALSE
   )
 })
+
+test_that("preceded local across exposes context-only vector names to shares", {
+  data <- data.frame(x = 1:3, y = 5:7)
+  for (fns in rlang::exprs(sum, list(total = sum, average = mean))) {
+    templates <- c(
+      "{.col}_{seq_along(.col)}", "{.col}_{.fn}_{length(.col)}",
+      "{.col}_{rev(.col)}_{.fn}", "{.col}_{match(.col, .col)}_{.fn}"
+    )
+    templates <- c(templates, if (rlang::is_symbol(fns)) {
+      "{c('first', 'second')}"
+    } else {
+      "{c('first', 'second', 'third', 'fourth')}"
+    })
+    for (template in templates) {
+      expression <- rlang::expr(dplyr::across(
+        c(x, y), !!fns, .names = !!template
+      ))
+      ordinary <- dplyr::summarise(data, prior = sum(x), !!expression)
+      source <- tail(names(ordinary), 1L)
+      actual <- summarize_with_margins(
+        data, prior = sum(x), !!expression,
+        p = share_of_total(!!rlang::sym(source))
+      )
+      expect_identical(actual[names(ordinary)], ordinary)
+      expect_identical(actual$p, 1)
+    }
+  }
+})
+
+test_that("preceded name prediction does not invoke active function bindings", {
+  data <- data.frame(x = 1:3, y = 5:7)
+  observations <- list()
+  for (mode in c("ordinary", "margin")) {
+    reads <- 0L
+    env <- rlang::env(environment())
+    makeActiveBinding("seq_along", function() {
+      reads <<- reads + 1L
+      base::seq_along
+    }, env)
+    expression <- rlang::new_quosure(quote(dplyr::across(
+      c(x, y), sum, .names = "{.col}_{seq_along(.col)}"
+    )), env)
+    result <- if (mode == "ordinary") {
+      dplyr::summarise(data, prior = sum(x), !!expression)
+    } else {
+      summarize_with_margins(
+        data, prior = sum(x), !!expression, p = share_of_total(prior)
+      )
+    }
+    observations[[mode]] <- list(result = result[c("prior", "x_1", "y_2")],
+                                 reads = reads)
+  }
+  expect_identical(observations$margin, observations$ordinary)
+  expect_identical(observations$ordinary$reads, 1L)
+})
+
+test_that("preceded naming callbacks stay in the ordinary local context", {
+  data <- data.frame(g = c("a", "a", "b"), x = 1:3, y = 5:7)
+  observations <- list()
+  for (mode in c("ordinary", "margin")) {
+    sizes <- integer()
+    mark <- function(value) {
+      sizes <<- c(sizes, dplyr::n())
+      value
+    }
+    dots <- rlang::exprs(
+      prior = sum(x),
+      dplyr::across(c(x, y), sum, .names = "{.col}_{mark(seq_along(.col))}")
+    )
+    result <- if (mode == "ordinary") {
+      dplyr::summarise(data, !!!dots, .by = g)
+    } else {
+      summarize_with_margins(data, !!!dots, p = share_of_total(prior), .by = g)
+    }
+    observations[[mode]] <- list(result = result[setdiff(names(result), "p")],
+                                 sizes = sizes)
+  }
+  expect_identical(observations$margin, observations$ordinary)
+  expect_length(observations$ordinary$sizes, 1L)
+})
