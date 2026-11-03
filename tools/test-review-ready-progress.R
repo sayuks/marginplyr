@@ -239,12 +239,18 @@ local({
           "test-first.R", "test-second.R", "test-skipped.R", "test-cleanup.R"))),
       identical(tail(events, 1L), "finished")
     )
-    logs <- list.files(result$checkdir, "testthat[.]Rout", recursive = TRUE,
-      full.names = TRUE)
+    if (mode == "unsupported") {
+      # Saved output must not change the native transcript's test verdict.
+      native <- list.files(check_dir, "^testthat[.]Rout$", recursive = TRUE,
+        full.names = TRUE)
+      stopifnot(length(native) == 1L,
+        file.copy(native, paste0(native, ".save")))
+    }
+    transcript <- review_ready_test_transcript(check_dir)
     tally <- if (fail) "[ FAIL 1 | WARN 0 | SKIP 1 | PASS 6 ]" else {
       "[ FAIL 0 | WARN 0 | SKIP 1 | PASS 7 ]"
     }
-    stopifnot(length(logs) == 1L, tally %in% trimws(readLines(logs)))
+    stopifnot(tally %in% trimws(transcript))
   }
   cat("Real progress reporter and process checks passed.\n")
 })
