@@ -55,7 +55,7 @@ order_helper_values <- function(result, sort) {
   )
 }
 
-test_that("nesting orders keys and preserves cells with caller helpers present", {
+test_that("nesting order and cells ignore preexisting caller helpers", {
   skip_if_suggest_absent("dtplyr")
   options <- expand.grid(
     size = c(0L, 4L), fixed = c(FALSE, TRUE), rollup = c(FALSE, TRUE),
@@ -98,7 +98,7 @@ test_that("nesting orders keys and preserves cells with caller helpers present",
   }
 })
 
-test_that("shared Margin ordering preserves lazy and eager execution boundaries", {
+test_that("shared Margin order preserves lazy and eager boundaries", {
   skip_if_suggest_absent("dtplyr")
   root <- new.env(parent = globalenv())
   root$source <- tibble::tibble(g = c(NA_character_, "b", "a"), row_id = 1:3)
@@ -123,7 +123,7 @@ test_that("shared Margin ordering preserves lazy and eager execution boundaries"
       actual <- dplyr::collect(query)
       expect_gt(reads, 0L)
       expected <- dplyr::collect(verb(root$source, .grouping = rollup(g),
-                                     .sort = sort))
+                                      .sort = sort))
       expect_identical(as.list(actual[setdiff(names(actual), "data")]),
                        as.list(expected[setdiff(names(expected), "data")]))
     }

@@ -663,7 +663,9 @@ margin_order_terms <- function(plan,
     terms <- c(
       terms,
       list(
-        margin_missing_last_expr(safe_name(dimension), rowwise, helper_namespace),
+        margin_missing_last_expr(
+          safe_name(dimension), rowwise, helper_namespace
+        ),
         margin_sort_value_expr(safe_name(dimension), value_types)
       )
     )
