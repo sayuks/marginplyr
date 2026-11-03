@@ -20,6 +20,13 @@ Cutover completion does not establish a package-check result.
 [PR #1124](https://github.com/sayuks/marginplyr/pull/1124) records real `source`
 and `full` results by pinned SHA, retained execution handle and terminal outcome.
 
+FIFO adoption completed on the maintainer Mac on 2026-11-03 for
+`604f1aebfeb954234e8c672d773c5906670621ec`. The
+[adoption evidence](../../investigation/review-ready-fifo-adoption-2026-11-03.md)
+records the empty pre-adoption process/queue state, real-process fixtures and
+real full result. Older nonparticipating runners retain heavy exclusion but
+fall outside FIFO; old worktrees remain outside migration scope.
+
 ## Boundary and scope
 
 Run one invocation against a clean committed `HEAD` before opening a non-draft
@@ -70,8 +77,7 @@ After the baseline succeeds, `full` atomically registers in acceptance order
 across this user's marginplyr clones and worktrees on the Mac. Only the oldest
 live waiter may acquire the stable shared heavy lock; admission starts
 automatically. The [runner guide](../../tools/review-ready-runner.md) owns
-sequencing, ownership checks and state failures, and separates this contract
-from actual Mac adoption under #1157. Under that slot it
+sequencing, ownership checks and state failures. Under that slot it
 builds a tarball and runs `R CMD check --as-cran`, including examples, vignette
 rebuilding, the complete test suite and snapshots once. It sets
 `TESTTHAT_PARALLEL=true`, `TESTTHAT_CPUS=4`, `NOT_CRAN=true` and required-Suggests

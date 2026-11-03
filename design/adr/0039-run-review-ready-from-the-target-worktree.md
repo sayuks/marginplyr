@@ -73,3 +73,11 @@ instruction files were updated. The
 [PR #1124](https://github.com/sayuks/marginplyr/pull/1124) records per-revision
 `source` and `full` results. This ADR's accepted status and the cutover alone
 do not establish a package-check result.
+
+FIFO adoption under #1157 completed on the maintainer Mac on 2026-11-03
+for `604f1aebfeb954234e8c672d773c5906670621ec`. The
+[evidence record](../../investigation/review-ready-fifo-adoption-2026-11-03.md)
+records the pre-adoption drain observation, process fixtures, real full
+terminal result and abrupt-termination observations. The ownership and crash
+limits above remain; older nonparticipating runners retain exclusion without
+the FIFO guarantee, and no old-worktree migration is required.

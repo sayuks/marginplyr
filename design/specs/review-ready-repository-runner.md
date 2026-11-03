@@ -7,7 +7,10 @@ the amended decision. Implementation and real Mac rollout acceptance are
 separate: [local checks](../agents/local-checks.md#rollout-state) records the
 active entry after the drained Mac cutover on 2026-11-02.
 [PR #1124](https://github.com/sayuks/marginplyr/pull/1124) records per-revision
-real `source` and `full` results.
+real `source` and `full` results. FIFO adoption on 2026-11-03 is recorded
+separately in the
+[Mac evidence](../../investigation/review-ready-fifo-adoption-2026-11-03.md),
+including its upgraded committed revision and real full result.
 The entry spelling is fixed as
 `Rscript tools/review-ready.R --scope source|full --reason TEXT`.
 

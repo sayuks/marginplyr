@@ -4,8 +4,10 @@ Status: accepted, 2026-11-03. The maintainer selected the narrow private timing
 hook after comparing public-only alternatives and confirmed the specification
 after checking its R CMD check implications. Ordinary testthat dispatch and the
 other agreed decisions below remain, with no first-run priority guarantee for
-unregistered files. The independent FIFO request remains. This records
-specification agreement; implementation and operational adoption are pending.
+unregistered files. This records specification agreement. FIFO implementation
+and Mac adoption are recorded
+under *FIFO policy boundary and adoption* below; timing/order work remains
+independent.
 [ADR 0040](../adr/0040-learn-local-test-order-and-admit-heavy-checks-fifo.md)
 records the scope boundary. Existing package CI is unchanged.
 
@@ -68,9 +70,8 @@ fresh clone executes the committed priority without a prior local history.
 Concurrent or stale proposals follow the existing
 [integration workflow](../agents/integration.md).
 
-The replacement specification is agreed. Production implementation remains a
-separate task. The maintainer authorized updating the existing four issue
-slices and retaining their blocking edges to match this specification; the
+The replacement specification is agreed. The maintainer authorized updating
+the existing four issue slices and retaining their blocking edges to match this specification; the
 old CI-dependent requirements are superseded.
 
 ## Agreed ordinary testthat dispatch
@@ -289,6 +290,16 @@ checks and waiters before claiming adoption: older runners still preserve
 exclusion but may overtake participating requests. No old-session migration,
 fleet inventory or compatibility launcher is required. Actual Mac adoption is
 separate evidence from disposable CI fixtures or design approval.
+
+The #1156 implementation merged in PR #1163. The independent #1157 Mac
+adoption completed on 2026-11-03 for
+`604f1aebfeb954234e8c672d773c5906670621ec`; its
+[evidence record](../../investigation/review-ready-fifo-adoption-2026-11-03.md)
+holds the pre-adoption empty-state observation, isolated process outcomes and
+real full terminal result. The stable heavy lock and live coordination were
+preserved. No timing deployment, priority update or old-worktree migration
+was part of that adoption. Older nonparticipating runners remain outside
+the FIFO guarantee, and the abrupt-termination limits above still apply.
 
 ## Implementation tickets
 

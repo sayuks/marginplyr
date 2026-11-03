@@ -67,5 +67,10 @@ FIFO remains independent: use minimal live coordination with the established
 heavy lock, preserve bounded waiting from #1135, and retain ADR 0039's process
 ownership and crash limits. Its adoption does not require a timing CI job.
 The runner implements FIFO under #1156; [ADR 0039](0039-run-review-ready-from-the-target-worktree.md)
-and the runner guide carry its ownership and operational contract. Actual Mac
-rollout remains separate under #1157.
+and the runner guide carry its ownership and operational contract.
+The independent Mac adoption under #1157 completed on 2026-11-03 for
+`604f1aebfeb954234e8c672d773c5906670621ec`, with
+[drain, process and real full evidence](../../investigation/review-ready-fifo-adoption-2026-11-03.md).
+That adoption preserves the same stable heavy-lock target, live-only FIFO
+coordination, seven-day run retention and accepted abrupt-termination limits;
+it requires no timing deployment or priority update.
