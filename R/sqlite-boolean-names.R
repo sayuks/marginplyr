@@ -4,20 +4,70 @@ sqlite_boolean_columns <- function(names) {
   names[tolower(names) %in% c("true", "false")]
 }
 
+# Expose public names through one inlinable projection over private outputs.
+# Binary dbplyr verbs can consume either input without the result's S3 class.
+# The caller holds a completed live SQLite Margin query with Boolean names.
+sqlite_boolean_public_query <- function(result) {
+  aliases <- sqlite_boolean_query_aliases(result)
+  public <- intersect(names(aliases), dbplyr::op_vars(result$lazy_query))
+  result <- sqlite_boolean_query(result, NULL, aliases, public = FALSE)
+  # Direct execution uses the companion query; this graph delegates ordering.
+  if (inherits(result$lazy_query, "lazy_select_query")) {
+    result$lazy_query$order_by <- NULL
+  }
+  result$lazy_query <- dbplyr::lazy_select_query(result$lazy_query)
+  result <- dplyr::rename(result, dplyr::all_of(aliases[public]))
+  class(result$lazy_query) <- c("lazy_margin_public_query",
+                                class(result$lazy_query))
+  result
+}
+
+# Keep the public projection symbolic until joins can inline it. Once built,
+# keep it opaque so CTE flattening cannot lift its public Boolean aliases.
+# The caller supplies a public projection over a privately named SQLite query.
+#' @exportS3Method dbplyr::sql_build
+#' @noRd
+sql_build.lazy_margin_public_query <- function(op, con, ...,
+                                               sql_options = NULL) {
+  op <- sql_quote_generated_query(op)
+  query <- NextMethod()
+  sql <- dbplyr::sql_render(query, con = con, sql_options = sql_options)
+  relation <- dplyr::tbl(con, sql, vars = dbplyr::op_vars(op))
+  dbplyr::sql_build(relation, con = con, sql_options = sql_options)
+}
+
+# Render a root public projection without lifting its aliases into a CTE.
+# Its built query is already opaque SQL, including any derived predicates.
+#' @exportS3Method dbplyr::sql_render
+#' @noRd
+sql_render.lazy_margin_public_query <- function(query, con = NULL, ...,
+                                                sql_options = NULL,
+                                                subquery = FALSE, lvl = 0) {
+  built <- dbplyr::sql_build(query, con = con, sql_options = sql_options)
+  dbplyr::sql_render(built, con = con, ..., sql_options = sql_options,
+                     subquery = subquery, lvl = lvl)
+}
+
 # Repair aliases at final rendering after ordinary verbs add query layers.
 # The caller holds a derived live SQLite result; types and order stay delegated.
 sqlite_boolean_derived_query <- function(result) {
-  columns <- sqlite_boolean_query_columns(result$lazy_query)
-  boolean <- sqlite_boolean_columns(columns)
-  if (length(boolean) == 0L) {
+  aliases <- sqlite_boolean_query_aliases(result)
+  if (length(aliases) == 0L) {
     return(result)
   }
-  aliases <- stats::setNames(new_margin_internal_names(
+  result <- sqlite_boolean_query(result, source = NULL, aliases = aliases)
+  sql_quote_generated_columns(result)
+}
+
+# Allocate Boolean-word aliases against every output in the traversable graph.
+# The caller supplies a live SQLite result before any output has been renamed.
+sqlite_boolean_query_aliases <- function(result) {
+  columns <- sqlite_boolean_query_columns(result$lazy_query)
+  boolean <- sqlite_boolean_columns(columns)
+  stats::setNames(new_margin_internal_names(
     length(boolean), columns, prefix = "..marginplyr_boolean_",
     backend = grouping_backend(result)
   ), boolean)
-  result <- sqlite_boolean_query(result, source = NULL, aliases = aliases)
-  sql_quote_generated_columns(result)
 }
 
 # All output names in the select/union graph the alias rewrite can traverse.
