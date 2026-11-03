@@ -16,8 +16,9 @@ the R CMD check verification obligation.
 A dedicated timing CI pipeline is not an approved requirement. The maintainer
 clarified that asking about CI was exploratory, and reopened the prior approval.
 The earlier statement that CI-centralized measurement had been chosen no longer
-carries authority. The CI measurement/update issues are `needs-info`; their
-previous bodies are context rather than approved implementation scope.
+carries authority. Existing issues #1155 and #1158 now cover local timing and
+Git priority proposals; #1156 and #1157 retain independent FIFO implementation
+and adoption. Their previous canonical-CI requirements are superseded.
 
 The agreed replacement boundaries use measurements from one already-requested,
 successful complete full Review-ready check, without a shared timing database

@@ -69,8 +69,9 @@ Concurrent or stale proposals follow the existing
 [integration workflow](../agents/integration.md).
 
 The replacement specification is agreed. Production implementation remains a
-separate task, and a revised ticket breakdown needs approval before publication.
-The old CI-dependent breakdown is not revived by this agreement.
+separate task. The maintainer authorized updating the existing four issue
+slices and retaining their blocking edges to match this specification; the
+old CI-dependent requirements are superseded.
 
 ## Agreed ordinary testthat dispatch
 
@@ -289,22 +290,25 @@ exclusion but may overtake participating requests. No old-session migration,
 fleet inventory or compatibility launcher is required. Actual Mac adoption is
 separate evidence from disposable CI fixtures or design approval.
 
-## Ticket disposition pending a revised breakdown
+## Implementation tickets
 
-The earlier CI-specific breakdown is held as recorded after reconsideration.
-Acceptance of this specification does not itself republish that breakdown.
+The existing issue numbers and vertical slices are retained with the approved
+local workflow. Their native blocking relationships are:
 
-- [#1155](https://github.com/sayuks/marginplyr/issues/1155), the dedicated CI
-  measurement proposal, is `needs-info` with its previous scope retained only
-  as context. It is not approved implementation work.
-- [#1158](https://github.com/sayuks/marginplyr/issues/1158), the CI-dependent
-  priority-update proposal, is also `needs-info` until its input and workflow
-  are agreed again. Existing dependency links are retained pending revision.
-- [#1156](https://github.com/sayuks/marginplyr/issues/1156) retains the independent
-  FIFO request and its dependency on #1135.
-- [#1157](https://github.com/sayuks/marginplyr/issues/1157) retains actual Mac FIFO
-  adoption, blocked by #1156. Its CI-timing prerequisite was removed; FIFO
-  adoption does not depend on choosing or implementing the ordering workflow.
+- [#1155](https://github.com/sayuks/marginplyr/issues/1155): record eligible
+  worker file durations within an ordinarily requested local full check.
+  No blocker; no dedicated timing CI workflow.
+- [#1158](https://github.com/sayuks/marginplyr/issues/1158): generate and apply
+  stable Git-tracked priority proposals from those local measurements.
+  Blocked by #1155.
+- [#1156](https://github.com/sayuks/marginplyr/issues/1156): implement independent
+  FIFO heavy admission. Blocked by #1135, the bounded-wait repair.
+- [#1157](https://github.com/sayuks/marginplyr/issues/1157): establish actual Mac
+  FIFO adoption with recorded evidence. Blocked by #1156, with no dependency on
+  timing collection or order-maintenance automation.
+
+These are implementation work, distinct from this specification and archived
+calibration evidence. The previous canonical-CI ticket requirements do not apply.
 
 The calibration records remain unchanged. No production runner, test priority,
 CI workflow or live queue was changed by this specification correction.
