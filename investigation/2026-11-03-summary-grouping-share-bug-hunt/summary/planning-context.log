@@ -1,0 +1,137 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+
+ across(x, (function(v) { force(v); function(z) sum(z) + sum(v) })(x))
+shares FALSE
+[1] "ℹ In argument: `across(...)`.\nCaused by error:\n! object 'x' not found"
+[1] "ℹ In argument: `across(...)`.\nCaused by error:\n! object 'x' not found"
+shares TRUE
+[1] "ℹ In argument: `across(...)`.\nCaused by error:\n! object 'x' not found"
+[1] "Total share `fraction` refers to unknown preceding ordinary summary `x`."
+
+ across(x, (function(v) { force(v); function(z) sum(z) + v })(n()))
+shares FALSE
+# A tibble: 2 × 2
+  g         x
+  <chr> <int>
+1 a         3
+2 b         3
+# A tibble: 3 × 3
+  g       set     x
+  <chr> <int> <int>
+1 a         1     3
+2 b         1     3
+3 Total     2     6
+shares TRUE
+# A tibble: 2 × 2
+  g         x
+  <chr> <int>
+1 a         3
+2 b         3
+[1] "Total share `fraction` refers to unknown preceding ordinary summary `x`."
+
+ across(x, (function(v) { force(v); function(z) sum(z) + v })(sum(x)))
+shares FALSE
+[1] "ℹ In argument: `across(...)`.\nCaused by error:\n! object 'x' not found"
+[1] "ℹ In argument: `across(...)`.\nCaused by error:\n! object 'x' not found"
+shares TRUE
+[1] "ℹ In argument: `across(...)`.\nCaused by error:\n! object 'x' not found"
+[1] "Total share `fraction` refers to unknown preceding ordinary summary `x`."
+
+ across(x, local({v <- sum(x); function(z) sum(z) + v}))
+shares FALSE
+[1] "ℹ In argument: `across(...)`.\nCaused by error:\n! object 'x' not found"
+[1] "ℹ In argument: `across(...)`.\nCaused by error:\n! object 'x' not found"
+shares TRUE
+[1] "ℹ In argument: `across(...)`.\nCaused by error:\n! object 'x' not found"
+[1] "Total share `fraction` refers to unknown preceding ordinary summary `x`."
+
+ across(x, local({v <- n(); function(z) sum(z) + v}))
+shares FALSE
+# A tibble: 2 × 2
+  g         x
+  <chr> <int>
+1 a         3
+2 b         3
+# A tibble: 3 × 3
+  g       set     x
+  <chr> <int> <int>
+1 a         1     3
+2 b         1     3
+3 Total     2     6
+shares TRUE
+# A tibble: 2 × 2
+  g         x
+  <chr> <int>
+1 a         3
+2 b         3
+[1] "Total share `fraction` refers to unknown preceding ordinary summary `x`."
+
+ across(x, ~ sum(.x) + sum(y))
+shares FALSE
+# A tibble: 2 × 2
+  g         x
+  <chr> <int>
+1 a        14
+2 b        10
+# A tibble: 3 × 3
+  g       set     x
+  <chr> <int> <int>
+1 a         1    14
+2 b         1    10
+3 Total     2    24
+shares TRUE
+# A tibble: 2 × 2
+  g         x
+  <chr> <int>
+1 a        14
+2 b        10
+# A tibble: 3 × 4
+  g       set     x fraction
+  <chr> <int> <int>    <dbl>
+1 a         1    14    0.583
+2 b         1    10    0.417
+3 Total     2    24    1
+
+ across(x, function(z) sum(z) + sum(y))
+shares FALSE
+# A tibble: 2 × 2
+  g         x
+  <chr> <int>
+1 a        14
+2 b        10
+# A tibble: 3 × 3
+  g       set     x
+  <chr> <int> <int>
+1 a         1    14
+2 b         1    10
+3 Total     2    24
+shares TRUE
+# A tibble: 2 × 2
+  g         x
+  <chr> <int>
+1 a        14
+2 b        10
+# A tibble: 3 × 4
+  g       set     x fraction
+  <chr> <int> <int>    <dbl>
+1 a         1    14    0.583
+2 b         1    10    0.417
+3 Total     2    24    1
+
+ across(x, list(total = (function(v) { force(v); function(z) sum(z) + v })(sum(y))))
+shares FALSE
+[1] "ℹ In argument: `across(...)`.\nCaused by error:\n! object 'y' not found"
+[1] "ℹ In argument: `across(...)`.\nCaused by error:\n! object 'y' not found"
+shares TRUE
+[1] "ℹ In argument: `across(...)`.\nCaused by error:\n! object 'y' not found"
+[1] "ℹ In argument: `across(...)`.\nCaused by error:\n! object 'y' not found"

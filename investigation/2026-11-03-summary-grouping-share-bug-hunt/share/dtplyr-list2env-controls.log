@@ -1,0 +1,4 @@
+Construction visited 0 input rows.
+Explicit collection visited 4 input rows.
+Ordinary refusal: cannot change value of locked binding for '.BY'
+No-share refusal: cannot change value of locked binding for '.BY'

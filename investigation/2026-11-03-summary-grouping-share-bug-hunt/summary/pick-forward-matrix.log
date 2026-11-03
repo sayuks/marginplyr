@@ -1,0 +1,28 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+                   status
+form                margin_error match
+  across_dots                  0    36
+  across_first                 0    36
+  all_dots                     0    36
+  first                       36     0
+  head_paren                  36     0
+  literal                      0    36
+  named                       36     0
+  namespace                   36     0
+  qualified_paren             36     0
+  second                      36     0
+  selection_wrapper            0    36
+  two                         36     0
+  whole_paren                 36     0
+  wrapped                      0    36
+cases: 504

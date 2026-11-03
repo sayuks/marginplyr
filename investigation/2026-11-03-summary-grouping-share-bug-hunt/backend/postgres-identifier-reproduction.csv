@@ -1,0 +1,65 @@
+"alphabet","short","kind","count","portable","pass","condition"
+"ascii",FALSE,"total",1,FALSE,TRUE,"pass"
+"ascii",FALSE,"total",1,TRUE,TRUE,"pass"
+"ascii",FALSE,"total",2,FALSE,FALSE,"Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  column reference ""..marginplyr_denominator_of_sssssssssssssssssssssssssssssssssss"" is ambiguous
+LINE 6: ...ssssssssssssssssssssssssssssssssssa"" IS NULL) OR (""..marginp...
+                                                             ^"
+"ascii",FALSE,"total",2,TRUE,FALSE,"Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  column reference ""..marginplyr_denominator_of_sssssssssssssssssssssssssssssssssss"" is ambiguous
+LINE 6: ...ssssssssssssssssssssssssssssssssssa"" IS NULL) OR (""..marginp...
+                                                             ^"
+"ascii",FALSE,"parent",1,FALSE,TRUE,"pass"
+"ascii",FALSE,"parent",1,TRUE,TRUE,"pass"
+"ascii",FALSE,"parent",2,FALSE,FALSE,"Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  column reference ""..marginplyr_denominator_of_sssssssssssssssssssssssssssssssssss"" is ambiguous
+LINE 6: ...ssssssssssssssssssssssssssssssssssa"" IS NULL) OR (""..marginp...
+                                                             ^"
+"ascii",FALSE,"parent",2,TRUE,FALSE,"Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  column reference ""..marginplyr_denominator_of_sssssssssssssssssssssssssssssssssss"" is ambiguous
+LINE 6: ...ssssssssssssssssssssssssssssssssssa"" IS NULL) OR (""..marginp...
+                                                             ^"
+"ascii",TRUE,"total",1,FALSE,TRUE,"pass"
+"ascii",TRUE,"total",1,TRUE,TRUE,"pass"
+"ascii",TRUE,"total",2,FALSE,TRUE,"pass"
+"ascii",TRUE,"total",2,TRUE,TRUE,"pass"
+"ascii",TRUE,"parent",1,FALSE,TRUE,"pass"
+"ascii",TRUE,"parent",1,TRUE,TRUE,"pass"
+"ascii",TRUE,"parent",2,FALSE,TRUE,"pass"
+"ascii",TRUE,"parent",2,TRUE,TRUE,"pass"
+"utf8",FALSE,"total",1,FALSE,TRUE,"pass"
+"utf8",FALSE,"total",1,TRUE,TRUE,"pass"
+"utf8",FALSE,"total",2,FALSE,FALSE,"Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  column reference ""..marginplyr_denominator_of_計計計計計計計計計計計"" is ambiguous
+LINE 6: ...E WHEN ((""計計計計計計計計計計計計a"" IS NULL) OR (""..marginp...
+                                                             ^"
+"utf8",FALSE,"total",2,TRUE,FALSE,"Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  column reference ""..marginplyr_denominator_of_計計計計計計計計計計計"" is ambiguous
+LINE 6: ...E WHEN ((""計計計計計計計計計計計計a"" IS NULL) OR (""..marginp...
+                                                             ^"
+"utf8",FALSE,"parent",1,FALSE,TRUE,"pass"
+"utf8",FALSE,"parent",1,TRUE,TRUE,"pass"
+"utf8",FALSE,"parent",2,FALSE,FALSE,"Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  column reference ""..marginplyr_denominator_of_計計計計計計計計計計計"" is ambiguous
+LINE 6: ...E WHEN ((""計計計計計計計計計計計計a"" IS NULL) OR (""..marginp...
+                                                             ^"
+"utf8",FALSE,"parent",2,TRUE,FALSE,"Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  column reference ""..marginplyr_denominator_of_計計計計計計計計計計計"" is ambiguous
+LINE 6: ...E WHEN ((""計計計計計計計計計計計計a"" IS NULL) OR (""..marginp...
+                                                             ^"
+"utf8",TRUE,"total",1,FALSE,TRUE,"pass"
+"utf8",TRUE,"total",1,TRUE,TRUE,"pass"
+"utf8",TRUE,"total",2,FALSE,TRUE,"pass"
+"utf8",TRUE,"total",2,TRUE,TRUE,"pass"
+"utf8",TRUE,"parent",1,FALSE,TRUE,"pass"
+"utf8",TRUE,"parent",1,TRUE,TRUE,"pass"
+"utf8",TRUE,"parent",2,FALSE,TRUE,"pass"
+"utf8",TRUE,"parent",2,TRUE,TRUE,"pass"

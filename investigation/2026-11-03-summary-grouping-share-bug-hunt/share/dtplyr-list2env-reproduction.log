@@ -1,0 +1,18 @@
+SHA: 4b34fdecb2d8a41034b3d9b5d5af8e51592555e1
+Lazy expression:
+# A tibble: 3 × 4
+  g     value independent fraction
+  <chr> <dbl>       <dbl>    <dbl>
+1 a         2           1     0.25
+2 b         6           3     0.75
+3 Total     8           4     1
+      g value independent fraction
+1     a     2          12     0.25
+2     b     6          12     0.75
+3 Total     8          12     1.00
+# A tibble: 3 × 4
+  g     value independent fraction
+  <chr> <dbl>       <dbl>    <dbl>
+1 a         2          12     0.25
+2 b         6          12     0.75
+3 Total     8          12     1

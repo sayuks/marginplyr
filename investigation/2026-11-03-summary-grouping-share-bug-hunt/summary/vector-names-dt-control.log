@@ -1,0 +1,8 @@
+# A tibble: 1 × 2
+    x_1   y_2
+  <int> <int>
+1     6    18
+# A tibble: 1 × 2
+    x_2   y_2
+  <int> <int>
+1     6    18

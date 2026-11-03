@@ -1,0 +1,35 @@
+"source_bytes","sources","ordinary","margin"
+2,1,"pass","pass"
+2,2,"pass","pass"
+31,1,"pass","pass"
+31,2,"pass","pass"
+36,1,"pass","pass"
+36,2,"pass","Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  column reference ""..marginplyr_denominator_of_sssssssssssssssssssssssssssssssssss"" is ambiguous
+LINE 6: ...ssssssssssssssssssssssssssssssssss1"" IS NULL) OR (""..marginp...
+                                                             ^"
+37,1,"pass","pass"
+37,2,"pass","Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  column reference ""..marginplyr_denominator_of_sssssssssssssssssssssssssssssssssss"" is ambiguous
+LINE 6: ...ssssssssssssssssssssssssssssssssss1"" IS NULL) OR (""..marginp...
+                                                             ^"
+38,1,"pass","pass"
+38,2,"pass","Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  column reference ""..marginplyr_denominator_of_sssssssssssssssssssssssssssssssssss"" is ambiguous
+LINE 6: ...ssssssssssssssssssssssssssssssssss1"" IS NULL) OR (""..marginp...
+                                                             ^"
+41,1,"pass","pass"
+41,2,"pass","Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  column reference ""..marginplyr_denominator_of_sssssssssssssssssssssssssssssssssss"" is ambiguous
+LINE 6: ...ssssssssssssssssssssssssssssssssss1"" IS NULL) OR (""..marginp...
+                                                             ^"
+51,1,"pass","pass"
+51,2,"pass","Failed to collect lazy table.
+Caused by error:
+! Failed to prepare query : ERROR:  column reference ""..marginplyr_denominator_of_sssssssssssssssssssssssssssssssssss"" is ambiguous
+LINE 6: ...ssssssssssssssssssssssssssssssssss1"" IS NULL) OR (""..marginp...
+                                                             ^"

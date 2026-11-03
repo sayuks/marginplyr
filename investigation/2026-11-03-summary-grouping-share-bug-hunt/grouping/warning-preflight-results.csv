@@ -1,0 +1,816 @@
+"selector","later","constructor","backend","consumer","error","converted","metadata_refusal","queries","warning_count","condition_class","message","sql"
+"unknown_one_of","names","grouping_set","local","inspect",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","names","grouping_set","local","summarize",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","names","grouping_set","local","expand",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","names","grouping_set","local","nest",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","names","grouping_set","local","nest_by",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","names","grouping_set","dtplyr","inspect",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","names","grouping_set","dtplyr","summarize",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","names","grouping_set","dtplyr","expand",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","names","grouping_set","dtplyr","nest",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","names","grouping_set","dtplyr","nest_by",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","names","grouping_set","duckdb","inspect",TRUE,TRUE,FALSE,1,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"unknown_one_of","names","grouping_set","duckdb","summarize",TRUE,TRUE,FALSE,1,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"unknown_one_of","names","grouping_set","duckdb","expand",TRUE,TRUE,FALSE,1,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"unknown_one_of","names","grouping_sets","local","inspect",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","names","grouping_sets","local","summarize",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","names","grouping_sets","local","expand",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","names","grouping_sets","local","nest",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","names","grouping_sets","local","nest_by",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","names","grouping_sets","dtplyr","inspect",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","names","grouping_sets","dtplyr","summarize",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","names","grouping_sets","dtplyr","expand",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","names","grouping_sets","dtplyr","nest",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","names","grouping_sets","dtplyr","nest_by",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","names","grouping_sets","duckdb","inspect",TRUE,TRUE,FALSE,1,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"unknown_one_of","names","grouping_sets","duckdb","summarize",TRUE,TRUE,FALSE,1,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"unknown_one_of","names","grouping_sets","duckdb","expand",TRUE,TRUE,FALSE,1,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"unknown_one_of","names","rollup","local","inspect",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","names","rollup","local","summarize",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","names","rollup","local","expand",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","names","rollup","local","nest",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","names","rollup","local","nest_by",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","names","rollup","dtplyr","inspect",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","names","rollup","dtplyr","summarize",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","names","rollup","dtplyr","expand",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","names","rollup","dtplyr","nest",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","names","rollup","dtplyr","nest_by",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","names","rollup","duckdb","inspect",TRUE,TRUE,FALSE,1,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"unknown_one_of","names","rollup","duckdb","summarize",TRUE,TRUE,FALSE,1,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"unknown_one_of","names","rollup","duckdb","expand",TRUE,TRUE,FALSE,1,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"unknown_one_of","names","cube","local","inspect",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","names","cube","local","summarize",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","names","cube","local","expand",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","names","cube","local","nest",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","names","cube","local","nest_by",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","names","cube","dtplyr","inspect",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","names","cube","dtplyr","summarize",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","names","cube","dtplyr","expand",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","names","cube","dtplyr","nest",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","names","cube","dtplyr","nest_by",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","names","cube","duckdb","inspect",TRUE,TRUE,FALSE,1,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"unknown_one_of","names","cube","duckdb","summarize",TRUE,TRUE,FALSE,1,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"unknown_one_of","names","cube","duckdb","expand",TRUE,TRUE,FALSE,1,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"unknown_one_of","names","grouping_spec","local","inspect",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","names","grouping_spec","local","summarize",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","names","grouping_spec","local","expand",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","names","grouping_spec","local","nest",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","names","grouping_spec","local","nest_by",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","names","grouping_spec","dtplyr","inspect",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","names","grouping_spec","dtplyr","summarize",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","names","grouping_spec","dtplyr","expand",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","names","grouping_spec","dtplyr","nest",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","names","grouping_spec","dtplyr","nest_by",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","names","grouping_spec","duckdb","inspect",TRUE,TRUE,FALSE,1,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"unknown_one_of","names","grouping_spec","duckdb","summarize",TRUE,TRUE,FALSE,1,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"unknown_one_of","names","grouping_spec","duckdb","expand",TRUE,TRUE,FALSE,1,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"unknown_one_of","typed","grouping_set","local","inspect",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","typed","grouping_set","local","summarize",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","typed","grouping_set","local","expand",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","typed","grouping_set","local","nest",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","typed","grouping_set","local","nest_by",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","typed","grouping_set","dtplyr","inspect",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","typed","grouping_set","dtplyr","summarize",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","typed","grouping_set","dtplyr","expand",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","typed","grouping_set","dtplyr","nest",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","typed","grouping_set","dtplyr","nest_by",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","typed","grouping_set","duckdb","inspect",TRUE,TRUE,FALSE,1,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"unknown_one_of","typed","grouping_set","duckdb","summarize",TRUE,TRUE,FALSE,1,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"unknown_one_of","typed","grouping_set","duckdb","expand",TRUE,TRUE,FALSE,1,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"unknown_one_of","typed","grouping_sets","local","inspect",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","typed","grouping_sets","local","summarize",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","typed","grouping_sets","local","expand",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","typed","grouping_sets","local","nest",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","typed","grouping_sets","local","nest_by",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","typed","grouping_sets","dtplyr","inspect",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","typed","grouping_sets","dtplyr","summarize",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","typed","grouping_sets","dtplyr","expand",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","typed","grouping_sets","dtplyr","nest",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","typed","grouping_sets","dtplyr","nest_by",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","typed","grouping_sets","duckdb","inspect",TRUE,TRUE,FALSE,1,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"unknown_one_of","typed","grouping_sets","duckdb","summarize",TRUE,TRUE,FALSE,1,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"unknown_one_of","typed","grouping_sets","duckdb","expand",TRUE,TRUE,FALSE,1,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"unknown_one_of","typed","rollup","local","inspect",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","typed","rollup","local","summarize",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","typed","rollup","local","expand",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","typed","rollup","local","nest",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","typed","rollup","local","nest_by",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","typed","rollup","dtplyr","inspect",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","typed","rollup","dtplyr","summarize",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","typed","rollup","dtplyr","expand",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","typed","rollup","dtplyr","nest",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","typed","rollup","dtplyr","nest_by",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","typed","rollup","duckdb","inspect",TRUE,TRUE,FALSE,1,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"unknown_one_of","typed","rollup","duckdb","summarize",TRUE,TRUE,FALSE,1,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"unknown_one_of","typed","rollup","duckdb","expand",TRUE,TRUE,FALSE,1,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"unknown_one_of","typed","cube","local","inspect",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","typed","cube","local","summarize",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","typed","cube","local","expand",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","typed","cube","local","nest",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","typed","cube","local","nest_by",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","typed","cube","dtplyr","inspect",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","typed","cube","dtplyr","summarize",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","typed","cube","dtplyr","expand",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","typed","cube","dtplyr","nest",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","typed","cube","dtplyr","nest_by",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","typed","cube","duckdb","inspect",TRUE,TRUE,FALSE,1,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"unknown_one_of","typed","cube","duckdb","summarize",TRUE,TRUE,FALSE,1,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"unknown_one_of","typed","cube","duckdb","expand",TRUE,TRUE,FALSE,1,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"unknown_one_of","typed","grouping_spec","local","inspect",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","typed","grouping_spec","local","summarize",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","typed","grouping_spec","local","expand",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","typed","grouping_spec","local","nest",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","typed","grouping_spec","local","nest_by",TRUE,TRUE,FALSE,0,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`",""
+"unknown_one_of","typed","grouping_spec","dtplyr","inspect",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","typed","grouping_spec","dtplyr","summarize",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","typed","grouping_spec","dtplyr","expand",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","typed","grouping_spec","dtplyr","nest",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","typed","grouping_spec","dtplyr","nest_by",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"unknown_one_of","typed","grouping_spec","duckdb","inspect",TRUE,TRUE,FALSE,1,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"unknown_one_of","typed","grouping_spec","duckdb","summarize",TRUE,TRUE,FALSE,1,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"unknown_one_of","typed","grouping_spec","duckdb","expand",TRUE,TRUE,FALSE,1,1,"rlang_error/error/condition","ℹ In argument: `one_of(""absent"")`.
+Caused by error:
+! (converted from warning) Unknown columns: `absent`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"pronoun_deprecation","names","grouping_set","local","inspect",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","names","grouping_set","local","summarize",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","names","grouping_set","local","expand",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","names","grouping_set","local","nest",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","names","grouping_set","local","nest_by",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","names","grouping_set","dtplyr","inspect",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","names","grouping_set","dtplyr","summarize",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","names","grouping_set","dtplyr","expand",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","names","grouping_set","dtplyr","nest",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","names","grouping_set","dtplyr","nest_by",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","names","grouping_set","duckdb","inspect",TRUE,TRUE,FALSE,1,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"pronoun_deprecation","names","grouping_set","duckdb","summarize",TRUE,TRUE,FALSE,1,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"pronoun_deprecation","names","grouping_set","duckdb","expand",TRUE,TRUE,FALSE,1,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"pronoun_deprecation","names","grouping_sets","local","inspect",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","names","grouping_sets","local","summarize",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","names","grouping_sets","local","expand",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","names","grouping_sets","local","nest",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","names","grouping_sets","local","nest_by",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","names","grouping_sets","dtplyr","inspect",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","names","grouping_sets","dtplyr","summarize",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","names","grouping_sets","dtplyr","expand",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","names","grouping_sets","dtplyr","nest",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","names","grouping_sets","dtplyr","nest_by",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","names","grouping_sets","duckdb","inspect",TRUE,TRUE,FALSE,1,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"pronoun_deprecation","names","grouping_sets","duckdb","summarize",TRUE,TRUE,FALSE,1,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"pronoun_deprecation","names","grouping_sets","duckdb","expand",TRUE,TRUE,FALSE,1,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"pronoun_deprecation","names","rollup","local","inspect",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","names","rollup","local","summarize",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","names","rollup","local","expand",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","names","rollup","local","nest",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","names","rollup","local","nest_by",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","names","rollup","dtplyr","inspect",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","names","rollup","dtplyr","summarize",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","names","rollup","dtplyr","expand",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","names","rollup","dtplyr","nest",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","names","rollup","dtplyr","nest_by",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","names","rollup","duckdb","inspect",TRUE,TRUE,FALSE,1,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"pronoun_deprecation","names","rollup","duckdb","summarize",TRUE,TRUE,FALSE,1,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"pronoun_deprecation","names","rollup","duckdb","expand",TRUE,TRUE,FALSE,1,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"pronoun_deprecation","names","cube","local","inspect",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","names","cube","local","summarize",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","names","cube","local","expand",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","names","cube","local","nest",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","names","cube","local","nest_by",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","names","cube","dtplyr","inspect",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","names","cube","dtplyr","summarize",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","names","cube","dtplyr","expand",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","names","cube","dtplyr","nest",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","names","cube","dtplyr","nest_by",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","names","cube","duckdb","inspect",TRUE,TRUE,FALSE,1,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"pronoun_deprecation","names","cube","duckdb","summarize",TRUE,TRUE,FALSE,1,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"pronoun_deprecation","names","cube","duckdb","expand",TRUE,TRUE,FALSE,1,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"pronoun_deprecation","names","grouping_spec","local","inspect",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","names","grouping_spec","local","summarize",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","names","grouping_spec","local","expand",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","names","grouping_spec","local","nest",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","names","grouping_spec","local","nest_by",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","names","grouping_spec","dtplyr","inspect",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","names","grouping_spec","dtplyr","summarize",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","names","grouping_spec","dtplyr","expand",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","names","grouping_spec","dtplyr","nest",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","names","grouping_spec","dtplyr","nest_by",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","names","grouping_spec","duckdb","inspect",TRUE,TRUE,FALSE,1,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"pronoun_deprecation","names","grouping_spec","duckdb","summarize",TRUE,TRUE,FALSE,1,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"pronoun_deprecation","names","grouping_spec","duckdb","expand",TRUE,TRUE,FALSE,1,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"pronoun_deprecation","typed","grouping_set","local","inspect",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","typed","grouping_set","local","summarize",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","typed","grouping_set","local","expand",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","typed","grouping_set","local","nest",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","typed","grouping_set","local","nest_by",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","typed","grouping_set","dtplyr","inspect",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","typed","grouping_set","dtplyr","summarize",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","typed","grouping_set","dtplyr","expand",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","typed","grouping_set","dtplyr","nest",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","typed","grouping_set","dtplyr","nest_by",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","typed","grouping_set","duckdb","inspect",TRUE,TRUE,FALSE,1,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"pronoun_deprecation","typed","grouping_set","duckdb","summarize",TRUE,TRUE,FALSE,1,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"pronoun_deprecation","typed","grouping_set","duckdb","expand",TRUE,TRUE,FALSE,1,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"pronoun_deprecation","typed","grouping_sets","local","inspect",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","typed","grouping_sets","local","summarize",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","typed","grouping_sets","local","expand",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","typed","grouping_sets","local","nest",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","typed","grouping_sets","local","nest_by",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","typed","grouping_sets","dtplyr","inspect",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","typed","grouping_sets","dtplyr","summarize",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","typed","grouping_sets","dtplyr","expand",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","typed","grouping_sets","dtplyr","nest",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","typed","grouping_sets","dtplyr","nest_by",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","typed","grouping_sets","duckdb","inspect",TRUE,TRUE,FALSE,1,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"pronoun_deprecation","typed","grouping_sets","duckdb","summarize",TRUE,TRUE,FALSE,1,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"pronoun_deprecation","typed","grouping_sets","duckdb","expand",TRUE,TRUE,FALSE,1,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"pronoun_deprecation","typed","rollup","local","inspect",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","typed","rollup","local","summarize",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","typed","rollup","local","expand",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","typed","rollup","local","nest",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","typed","rollup","local","nest_by",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","typed","rollup","dtplyr","inspect",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","typed","rollup","dtplyr","summarize",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","typed","rollup","dtplyr","expand",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","typed","rollup","dtplyr","nest",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","typed","rollup","dtplyr","nest_by",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","typed","rollup","duckdb","inspect",TRUE,TRUE,FALSE,1,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"pronoun_deprecation","typed","rollup","duckdb","summarize",TRUE,TRUE,FALSE,1,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"pronoun_deprecation","typed","rollup","duckdb","expand",TRUE,TRUE,FALSE,1,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"pronoun_deprecation","typed","cube","local","inspect",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","typed","cube","local","summarize",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","typed","cube","local","expand",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","typed","cube","local","nest",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","typed","cube","local","nest_by",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","typed","cube","dtplyr","inspect",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","typed","cube","dtplyr","summarize",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","typed","cube","dtplyr","expand",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","typed","cube","dtplyr","nest",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","typed","cube","dtplyr","nest_by",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","typed","cube","duckdb","inspect",TRUE,TRUE,FALSE,1,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"pronoun_deprecation","typed","cube","duckdb","summarize",TRUE,TRUE,FALSE,1,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"pronoun_deprecation","typed","cube","duckdb","expand",TRUE,TRUE,FALSE,1,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"pronoun_deprecation","typed","grouping_spec","local","inspect",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","typed","grouping_spec","local","summarize",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","typed","grouping_spec","local","expand",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","typed","grouping_spec","local","nest",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","typed","grouping_spec","local","nest_by",TRUE,TRUE,FALSE,0,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`",""
+"pronoun_deprecation","typed","grouping_spec","dtplyr","inspect",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","typed","grouping_spec","dtplyr","summarize",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","typed","grouping_spec","dtplyr","expand",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","typed","grouping_spec","dtplyr","nest",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","typed","grouping_spec","dtplyr","nest_by",TRUE,FALSE,TRUE,0,0,"marginplyr_error/rlang_error/error/condition","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",""
+"pronoun_deprecation","typed","grouping_spec","duckdb","inspect",TRUE,TRUE,FALSE,1,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"pronoun_deprecation","typed","grouping_spec","duckdb","summarize",TRUE,TRUE,FALSE,1,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`","SELECT *
+FROM warning_preflight
+LIMIT 0"
+"pronoun_deprecation","typed","grouping_spec","duckdb","expand",TRUE,TRUE,FALSE,1,2,"simpleError/error/condition","(converted from warning) Use of .data in tidyselect expressions was deprecated in tidyselect 1.2.0.
+ℹ Please use `""a""` instead of `.data$a`","SELECT *
+FROM warning_preflight
+LIMIT 0"

@@ -1,0 +1,33 @@
+local margin FALSE
+  first second
+1     6     18
+local margin TRUE
+  first second
+1     6     18
+dtplyr margin FALSE
+# A tibble: 1 × 2
+  first second
+  <int>  <int>
+1     6     18
+dtplyr margin TRUE
+[1] "marginplyr_error"
+[2] "The `across()` `.names` template `{c('first','second')}` must produce one name per column, but it produced 2 for column `x`.\nℹ Use a template that expands to a single name."
+arrow margin FALSE
+# A tibble: 1 × 2
+  first second
+  <int>  <int>
+1     6     18
+arrow margin TRUE
+[1] "marginplyr_error"
+[2] "The `across()` `.names` template `{c('first','second')}` must produce one name per column, but it produced 2 for column `x`.\nℹ Use a template that expands to a single name."
+sql margin FALSE
+<SQL>
+SELECT SUM("x") AS "first", SUM("y") AS "second"
+FROM "df"
+sql margin TRUE
+[1] "marginplyr_error"
+[2] "The `across()` `.names` template `{c('first','second')}` must produce one name per column, but it produced 2 for column `x`.\nℹ Use a template that expands to a single name."
+Warning message:
+Missing values are always removed in SQL aggregation functions.
+Use `na.rm = TRUE` to silence this warning
+This warning is displayed once every 8 hours.

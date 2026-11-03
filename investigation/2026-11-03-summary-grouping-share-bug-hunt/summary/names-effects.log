@@ -1,0 +1,76 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+variable: FALSE shares: FALSE
+$out
+  g a_x
+1 a   3
+2 b   3
+
+$calls
+[1] 1
+
+$out
+  g a_x
+1 a   3
+2 b   3
+
+$calls
+[1] 1
+
+variable: FALSE shares: TRUE
+$out
+  g a_x
+1 a   3
+2 b   3
+
+$calls
+[1] 1
+
+$out
+  g a_x fraction
+1 a   3        1
+2 b   3        1
+
+$calls
+[1] 3
+
+variable: TRUE shares: FALSE
+$out
+  g a_x
+1 a   3
+2 b   3
+
+$calls
+[1] 1
+
+$out
+  g a_x
+1 a   3
+2 b   3
+
+$calls
+[1] 1
+
+variable: TRUE shares: TRUE
+$out
+  g a_x
+1 a   3
+2 b   3
+
+$calls
+[1] 1
+
+$out
+[1] "Total share `fraction` requires source summary `a_x` to return exactly one value per grouping row.\nℹ Define `a_x` as one scalar summary; for multiple statistics, create separate named summaries and a Total share for each one."
+
+$calls
+[1] 2

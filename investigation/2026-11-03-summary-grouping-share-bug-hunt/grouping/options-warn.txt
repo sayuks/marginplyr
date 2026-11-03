@@ -1,0 +1,18 @@
+          integer value to set the handling of warning messages by the
+          default warning handler.  In the future, this value is
+          checked to be one of ‘-1, 0, 1, 2’.  For now, setting
+          environment variable ‘R_WARN_BOUNDS_OPT’ to ‘"yes"’ activates
+          that check.  If ‘warn’ is negative all warnings are ignored.
+          If ‘warn’ is zero (the default) warnings are stored until the
+          top-level function returns.  If 10 or fewer warnings were
+          signalled they will be printed otherwise a message saying how
+          many were signalled.  An object called ‘last.warning’ is
+          created and can be printed through the function ‘warnings’.
+          If ‘warn’ is one, warnings are printed as they occur.  If
+          ‘warn’ is two (or larger, coercible to integer), all warnings
+          are turned into errors.  While sometimes useful for
+          debugging, turning warnings into errors may trigger bugs and
+          resource leaks that would not have been triggered otherwise.
+
+     ‘warnPartialMatchArgs’:
+          logical.  If true, warns if partial matching is used in

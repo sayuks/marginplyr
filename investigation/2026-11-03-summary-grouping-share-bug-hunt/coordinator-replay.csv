@@ -1,0 +1,6 @@
+"target","exit_status"
+"summary/reproduce-pick-forwarding.R",0
+"summary/reproduce-vector-names.R",0
+"grouping/reproduce-warning-preflight.R",0
+"share/list2env-unresolved-reproduction.R",0
+"share/dtplyr-list2env-reproduction.R",0

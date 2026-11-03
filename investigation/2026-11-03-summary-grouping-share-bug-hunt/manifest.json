@@ -1,0 +1,714 @@
+{
+  "investigated": "2026-11-03",
+  "source_sha": "4b34fdecb2d8a41034b3d9b5d5af8e51592555e1",
+  "files": [
+    {
+      "path": "backend/findings.md",
+      "bytes": 6620,
+      "sha256": "a5b3b4adcbae19a8c37bb7bd53b0d8c07eb741a836be523c8987b5b5f4210366",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/backend/findings.md"
+    },
+    {
+      "path": "backend/postgres-fixture.R",
+      "bytes": 904,
+      "sha256": "dde52ea8c436e033fc657506212877f445237db9c980d1824c24554839342ac0",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/backend/postgres-fixture.R"
+    },
+    {
+      "path": "backend/postgres-identifier-assert.log",
+      "bytes": 27510,
+      "sha256": "d0814dbbc3a2837066694736878ab329861d3a1c0322a41c40fc3ac683bbeb16",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/backend/postgres-identifier-assert.log"
+    },
+    {
+      "path": "backend/postgres-identifier-reproduction.csv",
+      "bytes": 3956,
+      "sha256": "1fb062ea6ddb2bf3c8ee70dadaead0ca34779925292388853f371a74183c2dae",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/backend/postgres-identifier-reproduction.csv"
+    },
+    {
+      "path": "backend/postgres-identifier-reproduction.log",
+      "bytes": 27400,
+      "sha256": "ceb6fae0f6e0bc97ff29df8df67cadc66373f977921d49c4a348251f98c8d7d9",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/backend/postgres-identifier-reproduction.log"
+    },
+    {
+      "path": "backend/postgres-identifier-reproduction.R",
+      "bytes": 2857,
+      "sha256": "c5ec5623677ce888387f4810ab9502618442830730db9b11623c7c5bc45e3e02",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/backend/postgres-identifier-reproduction.R"
+    },
+    {
+      "path": "backend/postgres-key-matrix.csv",
+      "bytes": 10644,
+      "sha256": "e2cb41ecf337fbaafef6ab544c3b419c391eddeeee12af4000b61d9118c6d6cc",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/backend/postgres-key-matrix.csv"
+    },
+    {
+      "path": "backend/postgres-key-matrix.log",
+      "bytes": 455,
+      "sha256": "eb3b60452066fc28983d042b1963a636221742bfa922d33ffe2539a978746c0a",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/backend/postgres-key-matrix.log"
+    },
+    {
+      "path": "backend/postgres-key-matrix.R",
+      "bytes": 2964,
+      "sha256": "4946b83adc4e90261bf0b620428419fe65495f1bf2c5c65cdc6a59bf5ee7889c",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/backend/postgres-key-matrix.R"
+    },
+    {
+      "path": "backend/postgres-long-sources.csv",
+      "bytes": 1889,
+      "sha256": "05804040e77760acdbf5e65cb033f553bdb6c2688625e149e133b80c40eb0bd5",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/backend/postgres-long-sources.csv"
+    },
+    {
+      "path": "backend/postgres-long-sources.log",
+      "bytes": 21936,
+      "sha256": "49d50aaa059881ede3ee6fa06e82a1549c6a7c0b3e68ca1af664daa81a7c68a9",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/backend/postgres-long-sources.log"
+    },
+    {
+      "path": "backend/postgres-long-sources.R",
+      "bytes": 1872,
+      "sha256": "8f75fa3427a87bc2a870997a94c7bb5f86b90a707559421220e8e830dbd99518",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/backend/postgres-long-sources.R"
+    },
+    {
+      "path": "backend/postgres-numeric-range.csv",
+      "bytes": 477,
+      "sha256": "0299ef7b49a14dcc8cc7ccb18e91be25c012acd837f732be0faee1f59bd893d5",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/backend/postgres-numeric-range.csv"
+    },
+    {
+      "path": "backend/postgres-numeric-range.log",
+      "bytes": 686,
+      "sha256": "e2869d2ace53f4f5fd7bf2e6e26f2f20d27d2667d6a1f7edb729e34bf5d5e5d4",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/backend/postgres-numeric-range.log"
+    },
+    {
+      "path": "backend/postgres-numeric-range.R",
+      "bytes": 1803,
+      "sha256": "c0142738057ee7177cd8aa646271a1010c87fa4635a533b881b6416037b25aec",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/backend/postgres-numeric-range.R"
+    },
+    {
+      "path": "coordinator-dtplyr-list2env-reproduction.log",
+      "bytes": 585,
+      "sha256": "27bf211be5e58384a9591c8c916f38c0b505226cca693e75d45d80e727b8ada0",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/coordinator-dtplyr-list2env-reproduction.log"
+    },
+    {
+      "path": "coordinator-list2env-unresolved-reproduction.log",
+      "bytes": 472,
+      "sha256": "6d28afca2daed35d22dd817aec21c88cf12bec03f73d870a1af64554845aa7d2",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/coordinator-list2env-unresolved-reproduction.log"
+    },
+    {
+      "path": "coordinator-replay.csv",
+      "bytes": 229,
+      "sha256": "b023a861306731046e4536734c5c9dd97460b4dd15063e6737698ec55b5afba7",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/coordinator-replay.csv"
+    },
+    {
+      "path": "coordinator-replay.R",
+      "bytes": 947,
+      "sha256": "fa52c298c12060a3402102d262f76009a04656b62ccf8ed1b762b2ed4d0236e3",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/coordinator-replay.R"
+    },
+    {
+      "path": "coordinator-reproduce-pick-forwarding.log",
+      "bytes": 490,
+      "sha256": "e3a2c0b8739ffc56877be8beafae414babd7faafa58aeb465a78a2f337bdedab",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/coordinator-reproduce-pick-forwarding.log"
+    },
+    {
+      "path": "coordinator-reproduce-vector-names.log",
+      "bytes": 350,
+      "sha256": "37330ca699441b354fe6fcb940443c3b8aef947b46b63451253d966bce509667",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/coordinator-reproduce-vector-names.log"
+    },
+    {
+      "path": "coordinator-reproduce-warning-preflight.log",
+      "bytes": 947,
+      "sha256": "d4e29dd121b2301d9ddfddc785f9230db664ec947020d030a8f8576c41791d1d",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/coordinator-reproduce-warning-preflight.log"
+    },
+    {
+      "path": "environment.txt",
+      "bytes": 849,
+      "sha256": "48ba76de44b6fe6c972508f8f4b3aaa9be0555d2177f1900e1767b4b7904bbbe",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/environment.txt"
+    },
+    {
+      "path": "grouping/duplicate-warning-search.json",
+      "bytes": 13128,
+      "sha256": "62af445d8f318850e080014091d070141ebe3b3221ce881a78f5d7b02094e8d9",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/grouping/duplicate-warning-search.json"
+    },
+    {
+      "path": "grouping/environment.txt",
+      "bytes": 852,
+      "sha256": "34185f96f87dba35e99d9456cc046d601883c2b251111efc6a2118180f317d59",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/grouping/environment.txt"
+    },
+    {
+      "path": "grouping/findings.md",
+      "bytes": 11314,
+      "sha256": "8f70b32cff8702bde54ec1965bee8d857599a852048979674a781dad519901b2",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/grouping/findings.md"
+    },
+    {
+      "path": "grouping/issue-1090.json",
+      "bytes": 2822,
+      "sha256": "33d7fb2aea7a706f6de4e3695b9903a8f32214783a307bfa8f4e9eab88202909",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/grouping/issue-1090.json"
+    },
+    {
+      "path": "grouping/issue-346.json",
+      "bytes": 3485,
+      "sha256": "b6e2804c6d0d5990eb9e6a5ea65d6a66753e238dc89f0ece9558b7cc2c8806d8",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/grouping/issue-346.json"
+    },
+    {
+      "path": "grouping/issue-754.json",
+      "bytes": 3149,
+      "sha256": "c81b1e4eedaa565504ec1b4ecd1405559fca02b5a5c81e8275a8809d1ede59de",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/grouping/issue-754.json"
+    },
+    {
+      "path": "grouping/known-selection-issues.json",
+      "bytes": 25191,
+      "sha256": "26dd58dd24bdd2f87f7da4b8652a11863e29652e774b039237a5d4c790926a76",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/grouping/known-selection-issues.json"
+    },
+    {
+      "path": "grouping/options-warn.txt",
+      "bytes": 1172,
+      "sha256": "494d20ca35d9ce7dea1bdbfa955b59b67ad126e58f2e63e2a516d803ef34afee",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/grouping/options-warn.txt"
+    },
+    {
+      "path": "grouping/pr-1120.json",
+      "bytes": 3683,
+      "sha256": "afdb66c73c8bd4ecfb76ce3495ff52c988cdaab796687c018974fee2f490a0e3",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/grouping/pr-1120.json"
+    },
+    {
+      "path": "grouping/pr-353.json",
+      "bytes": 5978,
+      "sha256": "2e60c038aaf777c09006ddd0bfca52d85513c07ba521e02701e6249eed60b236",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/grouping/pr-353.json"
+    },
+    {
+      "path": "grouping/reproduce-warning-preflight-assert.log",
+      "bytes": 1033,
+      "sha256": "531abb45f46aa494929ee0209bf54e4fa450d5717a2cc8e164f02ec737f48480",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/grouping/reproduce-warning-preflight-assert.log"
+    },
+    {
+      "path": "grouping/reproduce-warning-preflight.log",
+      "bytes": 946,
+      "sha256": "c861bed8d533b2f41b610422664ab6b776a67db7e570dad01339fffd2944a2b2",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/grouping/reproduce-warning-preflight.log"
+    },
+    {
+      "path": "grouping/reproduce-warning-preflight.R",
+      "bytes": 2812,
+      "sha256": "b787911f1676c6472bfd4cebb8b3f04faedac83bff5d76321170e778ab0f3cb6",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/grouping/reproduce-warning-preflight.R"
+    },
+    {
+      "path": "grouping/selection-issue-search.json",
+      "bytes": 31095,
+      "sha256": "b95f202ed6079b2b9f6ca1d4d256513c889e4fa1c10850532b29cb82e7befbef",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/grouping/selection-issue-search.json"
+    },
+    {
+      "path": "grouping/warning-mode-controls.csv",
+      "bytes": 596,
+      "sha256": "bb89bc419a196d14de33c8d0ebaec6db29e18ab4b559e35a920078f415ab1166",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/grouping/warning-mode-controls.csv"
+    },
+    {
+      "path": "grouping/warning-mode-controls.log",
+      "bytes": 1201,
+      "sha256": "2be4dd0bfea67a72d07da8375b4543b43e3c10be74403b634648116561612e28",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/grouping/warning-mode-controls.log"
+    },
+    {
+      "path": "grouping/warning-mode-controls.R",
+      "bytes": 2585,
+      "sha256": "e9940c82852f883f3d179277663b687192764aa5f795cb7597ae5ca2ea59d386",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/grouping/warning-mode-controls.R"
+    },
+    {
+      "path": "grouping/warning-preflight-assert.log",
+      "bytes": 5078,
+      "sha256": "240bfb5aed3827e858f726dd168a047f505fbaca6006b6f71a6b76dedc59e686",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/grouping/warning-preflight-assert.log"
+    },
+    {
+      "path": "grouping/warning-preflight-controls.csv",
+      "bytes": 1710,
+      "sha256": "77fc36f8c92c3288b06c981278c4df23f09d1efe38e9ba1ff06a79b941bfe004",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/grouping/warning-preflight-controls.csv"
+    },
+    {
+      "path": "grouping/warning-preflight-results.csv",
+      "bytes": 81044,
+      "sha256": "11475d3e954c600da624e3d984d7e79909ce4dfbaedfaf6fcbad8f1006886f25",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/grouping/warning-preflight-results.csv"
+    },
+    {
+      "path": "grouping/warning-preflight.log",
+      "bytes": 4985,
+      "sha256": "44bbf31d49aa3e31a78b0e721de4aedce24ed08d8007296708dcf6d800f151fc",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/grouping/warning-preflight.log"
+    },
+    {
+      "path": "grouping/warning-preflight.R",
+      "bytes": 6648,
+      "sha256": "a27b461b2202920624ec2bdc8c9a47f5117df1334fd8c6f943519516432918c5",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/grouping/warning-preflight.R"
+    },
+    {
+      "path": "share/dtplyr-lexical-discovery.csv",
+      "bytes": 15511,
+      "sha256": "f95006ebcc70f88f348fe62fa7fd07f3449a734ca4e399e78b4f3d5922189742",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/dtplyr-lexical-discovery.csv"
+    },
+    {
+      "path": "share/dtplyr-lexical-discovery.log",
+      "bytes": 8307,
+      "sha256": "25f0846821782cc170213c1b4b21f1522c4ae0bafeaa66348d96695fdfe3f794",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/dtplyr-lexical-discovery.log"
+    },
+    {
+      "path": "share/dtplyr-lexical-discovery.R",
+      "bytes": 2608,
+      "sha256": "4b19918818cad796578fa5ad8bc98a64f5a8002191a4b19b98cfa7f7ab083940",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/dtplyr-lexical-discovery.R"
+    },
+    {
+      "path": "share/dtplyr-list2env-controls.log",
+      "bytes": 209,
+      "sha256": "06a6b90413b0a6419ee97ae0e130755dc411b2976053eb657a74ef724435131d",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/dtplyr-list2env-controls.log"
+    },
+    {
+      "path": "share/dtplyr-list2env-controls.R",
+      "bytes": 1694,
+      "sha256": "beaf2b7fab87bd768e3410f9ef3a69167c2895d98269a91badad2a9e4e61fe99",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/dtplyr-list2env-controls.R"
+    },
+    {
+      "path": "share/dtplyr-list2env-matrix.csv",
+      "bytes": 33465,
+      "sha256": "c2b7c78e453f6579fc7721c5971304b299d0e644d5508f2ec58f639384f0dcb7",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/dtplyr-list2env-matrix.csv"
+    },
+    {
+      "path": "share/dtplyr-list2env-matrix.log",
+      "bytes": 187,
+      "sha256": "4239069c482edd41217e874e32255f34ea80536ae9a7330f2d8cb66fa7ed0978",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/dtplyr-list2env-matrix.log"
+    },
+    {
+      "path": "share/dtplyr-list2env-matrix.R",
+      "bytes": 2943,
+      "sha256": "b5c8890e31720381cdd10ea85f685be89844a1c19d892ca66fe84bef693a3efa",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/dtplyr-list2env-matrix.R"
+    },
+    {
+      "path": "share/dtplyr-list2env-reproduction-assert.log",
+      "bytes": 697,
+      "sha256": "179aa5b9f8772b4168389bf3eab856f1c15ef3149e67cea5e03474df45a21e41",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/dtplyr-list2env-reproduction-assert.log"
+    },
+    {
+      "path": "share/dtplyr-list2env-reproduction.log",
+      "bytes": 585,
+      "sha256": "27bf211be5e58384a9591c8c916f38c0b505226cca693e75d45d80e727b8ada0",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/dtplyr-list2env-reproduction.log"
+    },
+    {
+      "path": "share/dtplyr-list2env-reproduction.R",
+      "bytes": 1309,
+      "sha256": "4058f4d5819da7345c43082975b46f89e86956dec0015b9e175fee40a0805a13",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/dtplyr-list2env-reproduction.R"
+    },
+    {
+      "path": "share/duplicates-dtplyr-lexical-issues.json",
+      "bytes": 1997,
+      "sha256": "5516867e4220a534cc886db3be3b3635f37c51968cb72e4377cffadd3379ab20",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/duplicates-dtplyr-lexical-issues.json"
+    },
+    {
+      "path": "share/duplicates-list2env-issues.json",
+      "bytes": 339,
+      "sha256": "15b0269633e22d37c6a384799370b8b5c28bbd8be7f78d6edcbc0c643013041c",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/duplicates-list2env-issues.json"
+    },
+    {
+      "path": "share/duplicates-list2env-prs.json",
+      "bytes": 476,
+      "sha256": "178bf4f09345cd5398631c7f5d4c82e689bd4b9fade1fcb389bf0175fe9d17ce",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/duplicates-list2env-prs.json"
+    },
+    {
+      "path": "share/environment.txt",
+      "bytes": 726,
+      "sha256": "c3b98b1caf42203522e61791ff1c00974a16f1fae4d25afb6c8c85abe263aa9b",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/environment.txt"
+    },
+    {
+      "path": "share/findings.md",
+      "bytes": 13118,
+      "sha256": "eea38647bb24eb789d2b7c9ffff01267667e05e922f7ec6c1ad19ead8ceca0b0",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/findings.md"
+    },
+    {
+      "path": "share/issue-1049.json",
+      "bytes": 2952,
+      "sha256": "99989c84f83f6850b709606a0a5bbc08ca8892cfa95a551163b8ff070a092de4",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/issue-1049.json"
+    },
+    {
+      "path": "share/issue-1140.json",
+      "bytes": 3168,
+      "sha256": "68417d2e7960e5fb5ec7cf5016a838156c1b5c3af74807cee7685671b9003864",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/issue-1140.json"
+    },
+    {
+      "path": "share/lexical-discovery.csv",
+      "bytes": 8607,
+      "sha256": "e212e5ee12812e473c9b539067b702af13ff2374c7cb68fcbfc9b2f13aa2f1df",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/lexical-discovery.csv"
+    },
+    {
+      "path": "share/lexical-discovery.log",
+      "bytes": 7353,
+      "sha256": "086169d120cad5c75ab5ed69bab6aebdd080de076c51b8dc60440f13f8735180",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/lexical-discovery.log"
+    },
+    {
+      "path": "share/lexical-discovery.R",
+      "bytes": 3425,
+      "sha256": "81c729071fdfbfc2c78e6dc043b4ccbdb9941d7dfc197dca92e7429347de5a52",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/lexical-discovery.R"
+    },
+    {
+      "path": "share/list2env-unresolved-matrix.csv",
+      "bytes": 29537,
+      "sha256": "d1ddd05aa537e51265cb3a3354b78538625bba102fc9a47270ba40a985a7a29d",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/list2env-unresolved-matrix.csv"
+    },
+    {
+      "path": "share/list2env-unresolved-matrix.log",
+      "bytes": 523,
+      "sha256": "f671ef087cc2642b266103005cdffa579f251bd39a96425d765b496ae21212a9",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/list2env-unresolved-matrix.log"
+    },
+    {
+      "path": "share/list2env-unresolved-matrix.R",
+      "bytes": 3337,
+      "sha256": "9975c88139095af5d76db009ddaf90dd447b292c50ad302a0f61cab6d524dc45",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/list2env-unresolved-matrix.R"
+    },
+    {
+      "path": "share/list2env-unresolved-reproduction-assert.log",
+      "bytes": 545,
+      "sha256": "985cca56c4535ab1e6b0c7de8629b3c739d25ab975fabec85b6f21e29c1c78de",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/list2env-unresolved-reproduction-assert.log"
+    },
+    {
+      "path": "share/list2env-unresolved-reproduction.log",
+      "bytes": 472,
+      "sha256": "6d28afca2daed35d22dd817aec21c88cf12bec03f73d870a1af64554845aa7d2",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/list2env-unresolved-reproduction.log"
+    },
+    {
+      "path": "share/list2env-unresolved-reproduction.R",
+      "bytes": 1612,
+      "sha256": "89f98a9862f4b506b7fcec0fc5809b7c2f45db502a890ae4893e5feb8d8a6cad",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/list2env-unresolved-reproduction.R"
+    },
+    {
+      "path": "share/typed-denominator-oracle.csv",
+      "bytes": 4702,
+      "sha256": "5246308687a080f619a7f859338d29c31676dab3df285fe5f4a765d8bd357073",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/typed-denominator-oracle.csv"
+    },
+    {
+      "path": "share/typed-denominator-oracle.log",
+      "bytes": 2828,
+      "sha256": "d1ab43453672d0e64f97ff81c2382f39c2f202c5f432121854ceafb108747cce",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/typed-denominator-oracle.log"
+    },
+    {
+      "path": "share/typed-denominator-oracle.R",
+      "bytes": 4246,
+      "sha256": "964ea68f124a8db9a15e1faadeb8f2b65761e6165b114de6a45311b08f9a21a4",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/typed-denominator-oracle.R"
+    },
+    {
+      "path": "summary/duplicate-searches.json",
+      "bytes": 35589,
+      "sha256": "0fb86c9d8df16755ac982ab2134bce255c076d854cb54210266835371e54556d",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/duplicate-searches.json"
+    },
+    {
+      "path": "summary/duplicate-searches.log",
+      "bytes": 32,
+      "sha256": "8b46fb07e9a371d7d6ba75d1e275122338be1421e3d5caf4c53b9e236ded55df",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/duplicate-searches.log"
+    },
+    {
+      "path": "summary/duplicate-searches.R",
+      "bytes": 1077,
+      "sha256": "90f9cec03511a163c92640d22c6f080ca6f6c334a8c54063f8093c85c3e2c4e8",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/duplicate-searches.R"
+    },
+    {
+      "path": "summary/environment.log",
+      "bytes": 853,
+      "sha256": "0e8a899a90c7a35c13c9f8d128751adc9ee799b0dcc7a7aed458887c94105edc",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/environment.log"
+    },
+    {
+      "path": "summary/environment.R",
+      "bytes": 410,
+      "sha256": "2180ecb01083d4cdae503b3921da3b897ec4c3dcd57112708192d4c1bc4f9ed4",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/environment.R"
+    },
+    {
+      "path": "summary/explore.log",
+      "bytes": 7660,
+      "sha256": "a3960bd440e56847369ccf8b5ba80881388afc5eb45ff79b827c4d6c63a7402d",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/explore.log"
+    },
+    {
+      "path": "summary/explore.R",
+      "bytes": 1747,
+      "sha256": "b4ab34e576f604504192ef82e97904c1ae24ee8eff1695b639d0a36d4e8cdaf7",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/explore.R"
+    },
+    {
+      "path": "summary/findings.md",
+      "bytes": 12136,
+      "sha256": "a87ca5e30d5705c95dd57365d2b9ea41c2d8add3e86a28d610f780bbe6ab3d84",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/findings.md"
+    },
+    {
+      "path": "summary/issue-100.json",
+      "bytes": 10971,
+      "sha256": "1be786f325c7a45a0b474286bbe93e5fa05e90bef4b8f18f0cb0840b63da469c",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/issue-100.json"
+    },
+    {
+      "path": "summary/issue-1070.json",
+      "bytes": 3656,
+      "sha256": "4c8770d51cb7f44e2d9e69ff9eb9ba549e1e5bb85f4b654e8dd806fe4167c0e0",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/issue-1070.json"
+    },
+    {
+      "path": "summary/issue-1138.json",
+      "bytes": 2292,
+      "sha256": "ade88d234077cc52fd44d080045d789e5a71920dd0fd2679bdb8aed95e43ab7e",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/issue-1138.json"
+    },
+    {
+      "path": "summary/issue-1151.json",
+      "bytes": 2053,
+      "sha256": "ee0644b36a52933126de08ec9e092e7c33c2fea6f59509bca342b250fc514b97",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/issue-1151.json"
+    },
+    {
+      "path": "summary/issue-1154.json",
+      "bytes": 1839,
+      "sha256": "4b11dfd18028f0dc08a4f917e863ef0fda95e51ffb1734c14f0be1c5973cca13",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/issue-1154.json"
+    },
+    {
+      "path": "summary/issue-630.json",
+      "bytes": 3726,
+      "sha256": "f0af7ca632fdbd356c9e2f4ddd68cdfea3b1e33f1aca031d99454c5065eec7d0",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/issue-630.json"
+    },
+    {
+      "path": "summary/issue-700.json",
+      "bytes": 3335,
+      "sha256": "8270cb6b26d8a5359ae4e246a31fdfb1c3ad7cecdaceeff52710487e696f9a53",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/issue-700.json"
+    },
+    {
+      "path": "summary/issue-701.json",
+      "bytes": 3050,
+      "sha256": "0b51afe8fc506693df291780c77fb0ea19a6d9305c9595d1827f1d66252b5218",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/issue-701.json"
+    },
+    {
+      "path": "summary/issue-870.json",
+      "bytes": 2259,
+      "sha256": "4a73461af330d8c7651d47743320f29f9ea85d411b48a9db7fc5da05d63de232",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/issue-870.json"
+    },
+    {
+      "path": "summary/issue-953.json",
+      "bytes": 2626,
+      "sha256": "02ac20ae18a2f7ada20d844af7f3f2d9295a3ca3da0e62bb5d4abb258593a328",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/issue-953.json"
+    },
+    {
+      "path": "summary/names-effects.log",
+      "bytes": 915,
+      "sha256": "0da7ee5991686fd92a9e79bdd07b140fc0b6db26f4ceedc034572adf846dfb30",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/names-effects.log"
+    },
+    {
+      "path": "summary/names-effects.R",
+      "bytes": 745,
+      "sha256": "a89e501988e2199fd1a9cb17cb3164419377e94d236d776baf39e292e6faf1a1",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/names-effects.R"
+    },
+    {
+      "path": "summary/pick-forward-matrix.log",
+      "bytes": 832,
+      "sha256": "abee28cb56ce5cef07fc53c17d4032f01f7872602bc7e9206190b1f472b4e70d",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/pick-forward-matrix.log"
+    },
+    {
+      "path": "summary/pick-forward-matrix.R",
+      "bytes": 3342,
+      "sha256": "9dd388fea95d8328cd5b7a24af71cdea1bc5fcb769f296d6418857e9f13011fd",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/pick-forward-matrix.R"
+    },
+    {
+      "path": "summary/pick-forward-results.csv",
+      "bytes": 130864,
+      "sha256": "a54e36a9eee8302cbe351a0fc087f053502424e9a1100fb8a3c5f49155bd2808",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/pick-forward-results.csv"
+    },
+    {
+      "path": "summary/pick-forward.log",
+      "bytes": 13382,
+      "sha256": "e6f6abb75accfcf51f8e05d9ecc39894e70b13c53f4c358355f9065ebdf5782f",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/pick-forward.log"
+    },
+    {
+      "path": "summary/pick-forward.R",
+      "bytes": 321,
+      "sha256": "e4a2f17444864afdc40c17cc46b60f17e632652028c1d25f3f5fa7273043322f",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/pick-forward.R"
+    },
+    {
+      "path": "summary/planning-context.log",
+      "bytes": 3726,
+      "sha256": "f89791fe3f2adae7a9f48490ed86aff2c51733cc2f9e11d4733af275eff1defe",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/planning-context.log"
+    },
+    {
+      "path": "summary/planning-context.R",
+      "bytes": 1204,
+      "sha256": "db98cf90ea7933e575d58d4d8dc27eef95654623c9b86aa849359bdb53eed731",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/planning-context.R"
+    },
+    {
+      "path": "summary/pr-1087.json",
+      "bytes": 12266,
+      "sha256": "e52864058c3029ccde0bde577e4f4d3a8d886a58a58751a938a24c29cbdd5d29",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/pr-1087.json"
+    },
+    {
+      "path": "summary/pr-1149.json",
+      "bytes": 19012,
+      "sha256": "89c7a396390bc9498eccb2ed4fec3fb02c9dfb2c19103ae6ccb9ea2ee9b8a569",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/pr-1149.json"
+    },
+    {
+      "path": "summary/reproduce-pick-forwarding-assert.log",
+      "bytes": 553,
+      "sha256": "12a888fd704ba36439e876d389875f86f0c1ec9ba53415e0e1348780417235b6",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/reproduce-pick-forwarding-assert.log"
+    },
+    {
+      "path": "summary/reproduce-pick-forwarding.log",
+      "bytes": 490,
+      "sha256": "e3a2c0b8739ffc56877be8beafae414babd7faafa58aeb465a78a2f337bdedab",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/reproduce-pick-forwarding.log"
+    },
+    {
+      "path": "summary/reproduce-pick-forwarding.R",
+      "bytes": 1338,
+      "sha256": "060f6c62123576eb33ab4aeb62cea98b75c4657ba8465519e51f4c612b4d80c1",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/reproduce-pick-forwarding.R"
+    },
+    {
+      "path": "summary/reproduce-vector-names-assert.log",
+      "bytes": 428,
+      "sha256": "b4ac9a5d82bc700992917edb156dd1ddc78c12c3851d48e899564833bf36ee8e",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/reproduce-vector-names-assert.log"
+    },
+    {
+      "path": "summary/reproduce-vector-names.log",
+      "bytes": 350,
+      "sha256": "37330ca699441b354fe6fcb940443c3b8aef947b46b63451253d966bce509667",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/reproduce-vector-names.log"
+    },
+    {
+      "path": "summary/reproduce-vector-names.R",
+      "bytes": 2161,
+      "sha256": "216b64afdc69eda17fb9fae9b43790c1fc3d358a02ca257b4ddd590c39add28c",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/reproduce-vector-names.R"
+    },
+    {
+      "path": "summary/vector-name-literals.log",
+      "bytes": 1184,
+      "sha256": "e656e60cd29a09a349a955a208436e9cd87e67eb567b0b9ba825e06af2f4d769",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/vector-name-literals.log"
+    },
+    {
+      "path": "summary/vector-name-literals.R",
+      "bytes": 764,
+      "sha256": "839503576fe4c2eb3369f0d0ca276afb19339f00b724d05140211026f362ae66",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/vector-name-literals.R"
+    },
+    {
+      "path": "summary/vector-names-dt-control.log",
+      "bytes": 122,
+      "sha256": "6e7c2723f0c967bc7b290befcbdb7b9b4284c5bf5e6f7b901439a2734d03cfea",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/vector-names-dt-control.log"
+    },
+    {
+      "path": "summary/vector-names-matrix.log",
+      "bytes": 1295,
+      "sha256": "6e03b03d08f63a5241c021abd921da4d2917e8afdc8484a132781a75f64f1365",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/vector-names-matrix.log"
+    },
+    {
+      "path": "summary/vector-names-matrix.R",
+      "bytes": 4967,
+      "sha256": "af7df2eba6150db342ec3501c62991f77b69750d96781940d3485c405cdc3369",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/vector-names-matrix.R"
+    },
+    {
+      "path": "summary/vector-names-results.csv",
+      "bytes": 28780,
+      "sha256": "b52db3a835f8bf55742327604ad8bd1dc7f66855f6ac56666a7632f14ed073b7",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/vector-names-results.csv"
+    },
+    {
+      "path": "summary/vector-names.log",
+      "bytes": 967,
+      "sha256": "5d77495b8cd1f4efb6fd54e5e8407d92413ca922177c53a99332852ad1ac9017",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/vector-names.log"
+    },
+    {
+      "path": "summary/vector-names.R",
+      "bytes": 579,
+      "sha256": "f035c797f367ab0552ef8dc21e1a07a8e73b69f50a1d10c25f1829180af40fda",
+      "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/summary/vector-names.R"
+    }
+  ]
+}

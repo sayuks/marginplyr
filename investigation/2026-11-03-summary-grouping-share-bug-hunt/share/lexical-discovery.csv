@@ -1,0 +1,117 @@
+"helper","direction","setter","refused","error","values","message"
+"share_of_total","source","direct",TRUE,TRUE,"","Total share `fraction` cannot use source summary `value` because it depends on earlier summary alias `prior`.
+ℹ Combine the calculation into one ordinary summary expression."
+"share_of_total","source","literal",TRUE,TRUE,"","Total share `fraction` cannot use source summary `value` because it depends on earlier summary alias `prior`.
+ℹ Combine the calculation into one ordinary summary expression."
+"share_of_total","source","dynamic_setnames",FALSE,FALSE,"1,3,4",""
+"share_of_total","source","dynamic_structure",FALSE,FALSE,"1,3,4",""
+"share_of_total","source","block_list",FALSE,FALSE,"1,3,4",""
+"share_of_total","source","identity_list",FALSE,FALSE,"1,3,4",""
+"share_of_total","source","c_list",FALSE,FALSE,"1,3,4",""
+"share_of_total","source","local_list",FALSE,TRUE,"","ℹ In argument: `value = { ... }`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `get()`:
+! object 'prior' not found"
+"share_of_total","source","eval_list",FALSE,FALSE,"1,3,4",""
+"share_of_total","source","assigned_list",FALSE,FALSE,"1,3,4",""
+"share_of_total","source","bracket_setter",FALSE,TRUE,"","ℹ In argument: `value = { ... }`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `environment()[[""outside""]] <- environment()`:
+! invalid (NULL) left side of assignment"
+"share_of_total","source","dollar_setter",FALSE,TRUE,"","ℹ In argument: `value = { ... }`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `environment()$outside <- environment()`:
+! invalid (NULL) left side of assignment"
+"share_of_total","source","env_bind",FALSE,FALSE,"1,3,4",""
+"share_of_total","source","env_poke",FALSE,FALSE,"1,3,4",""
+"share_of_total","source","assign_inherits",TRUE,TRUE,"","Total share `fraction` cannot use source summary `value` because it depends on earlier summary alias `prior`.
+ℹ Combine the calculation into one ordinary summary expression."
+"share_of_total","source","within_literal",TRUE,TRUE,"","Total share `fraction` cannot use source summary `value` because it depends on earlier summary alias `prior`.
+ℹ Combine the calculation into one ordinary summary expression."
+"share_of_total","later","direct",TRUE,TRUE,"","Ordinary summaries cannot use an earlier Total share (`prior`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values."
+"share_of_total","later","literal",TRUE,TRUE,"","Ordinary summaries cannot use an earlier Total share (`prior`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values."
+"share_of_total","later","dynamic_setnames",FALSE,FALSE,"100,300,400",""
+"share_of_total","later","dynamic_structure",FALSE,FALSE,"100,300,400",""
+"share_of_total","later","block_list",FALSE,FALSE,"100,300,400",""
+"share_of_total","later","identity_list",FALSE,FALSE,"100,300,400",""
+"share_of_total","later","c_list",FALSE,FALSE,"100,300,400",""
+"share_of_total","later","local_list",FALSE,TRUE,"","ℹ In argument: `derived = { ... }`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `get()`:
+! object 'prior' not found"
+"share_of_total","later","eval_list",FALSE,FALSE,"100,300,400",""
+"share_of_total","later","assigned_list",FALSE,FALSE,"100,300,400",""
+"share_of_total","later","bracket_setter",FALSE,TRUE,"","ℹ In argument: `derived = { ... }`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `environment()[[""outside""]] <- environment()`:
+! invalid (NULL) left side of assignment"
+"share_of_total","later","dollar_setter",FALSE,TRUE,"","ℹ In argument: `derived = { ... }`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `environment()$outside <- environment()`:
+! invalid (NULL) left side of assignment"
+"share_of_total","later","env_bind",FALSE,FALSE,"100,300,400",""
+"share_of_total","later","env_poke",FALSE,FALSE,"100,300,400",""
+"share_of_total","later","assign_inherits",TRUE,TRUE,"","Ordinary summaries cannot use an earlier Total share (`prior`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values."
+"share_of_total","later","within_literal",TRUE,TRUE,"","Ordinary summaries cannot use an earlier Total share (`prior`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values."
+"share_of_parent","source","direct",TRUE,TRUE,"","Parent share `fraction` cannot use source summary `value` because it depends on earlier summary alias `prior`.
+ℹ Combine the calculation into one ordinary summary expression."
+"share_of_parent","source","literal",TRUE,TRUE,"","Parent share `fraction` cannot use source summary `value` because it depends on earlier summary alias `prior`.
+ℹ Combine the calculation into one ordinary summary expression."
+"share_of_parent","source","dynamic_setnames",FALSE,FALSE,"1,3,4",""
+"share_of_parent","source","dynamic_structure",FALSE,FALSE,"1,3,4",""
+"share_of_parent","source","block_list",FALSE,FALSE,"1,3,4",""
+"share_of_parent","source","identity_list",FALSE,FALSE,"1,3,4",""
+"share_of_parent","source","c_list",FALSE,FALSE,"1,3,4",""
+"share_of_parent","source","local_list",FALSE,TRUE,"","ℹ In argument: `value = { ... }`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `get()`:
+! object 'prior' not found"
+"share_of_parent","source","eval_list",FALSE,FALSE,"1,3,4",""
+"share_of_parent","source","assigned_list",FALSE,FALSE,"1,3,4",""
+"share_of_parent","source","bracket_setter",FALSE,TRUE,"","ℹ In argument: `value = { ... }`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `environment()[[""outside""]] <- environment()`:
+! invalid (NULL) left side of assignment"
+"share_of_parent","source","dollar_setter",FALSE,TRUE,"","ℹ In argument: `value = { ... }`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `environment()$outside <- environment()`:
+! invalid (NULL) left side of assignment"
+"share_of_parent","source","env_bind",FALSE,FALSE,"1,3,4",""
+"share_of_parent","source","env_poke",FALSE,FALSE,"1,3,4",""
+"share_of_parent","source","assign_inherits",TRUE,TRUE,"","Parent share `fraction` cannot use source summary `value` because it depends on earlier summary alias `prior`.
+ℹ Combine the calculation into one ordinary summary expression."
+"share_of_parent","source","within_literal",TRUE,TRUE,"","Parent share `fraction` cannot use source summary `value` because it depends on earlier summary alias `prior`.
+ℹ Combine the calculation into one ordinary summary expression."
+"share_of_parent","later","direct",TRUE,TRUE,"","Ordinary summaries cannot use an earlier Parent share (`prior`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values."
+"share_of_parent","later","literal",TRUE,TRUE,"","Ordinary summaries cannot use an earlier Parent share (`prior`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values."
+"share_of_parent","later","dynamic_setnames",FALSE,FALSE,"100,300,400",""
+"share_of_parent","later","dynamic_structure",FALSE,FALSE,"100,300,400",""
+"share_of_parent","later","block_list",FALSE,FALSE,"100,300,400",""
+"share_of_parent","later","identity_list",FALSE,FALSE,"100,300,400",""
+"share_of_parent","later","c_list",FALSE,FALSE,"100,300,400",""
+"share_of_parent","later","local_list",FALSE,TRUE,"","ℹ In argument: `derived = { ... }`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `get()`:
+! object 'prior' not found"
+"share_of_parent","later","eval_list",FALSE,FALSE,"100,300,400",""
+"share_of_parent","later","assigned_list",FALSE,FALSE,"100,300,400",""
+"share_of_parent","later","bracket_setter",FALSE,TRUE,"","ℹ In argument: `derived = { ... }`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `environment()[[""outside""]] <- environment()`:
+! invalid (NULL) left side of assignment"
+"share_of_parent","later","dollar_setter",FALSE,TRUE,"","ℹ In argument: `derived = { ... }`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `environment()$outside <- environment()`:
+! invalid (NULL) left side of assignment"
+"share_of_parent","later","env_bind",FALSE,FALSE,"100,300,400",""
+"share_of_parent","later","env_poke",FALSE,FALSE,"100,300,400",""
+"share_of_parent","later","assign_inherits",TRUE,TRUE,"","Ordinary summaries cannot use an earlier Parent share (`prior`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values."
+"share_of_parent","later","within_literal",TRUE,TRUE,"","Ordinary summaries cannot use an earlier Parent share (`prior`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values."

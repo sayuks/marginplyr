@@ -1,0 +1,2137 @@
+"kind","partition","preceded","named","form","status","message"
+"frame","none",FALSE,FALSE,"first","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","none",FALSE,FALSE,"second","margin_error","ℹ In argument: `(function(...) sum(pick(..2)))(y, x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"frame","none",FALSE,FALSE,"two","margin_error","ℹ In argument: `(function(...) sum(pick(..1, ..2)))(x, y)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","none",FALSE,FALSE,"named","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(cols = x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","none",FALSE,FALSE,"namespace","margin_error","ℹ In argument: `(function(...) sum(dplyr::pick(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","none",FALSE,FALSE,"head_paren","margin_error","ℹ In argument: `(function(...) sum((pick)(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","none",FALSE,FALSE,"whole_paren","margin_error","ℹ In argument: `(function(...) sum((pick(..1))))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","none",FALSE,FALSE,"qualified_paren","margin_error","ℹ In argument: `(function(...) sum((dplyr::pick)(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","none",FALSE,FALSE,"all_dots","match",""
+"frame","none",FALSE,FALSE,"literal","match",""
+"frame","none",FALSE,FALSE,"wrapped","match",""
+"frame","none",FALSE,FALSE,"selection_wrapper","match",""
+"frame","none",FALSE,FALSE,"across_first","match",""
+"frame","none",FALSE,FALSE,"across_dots","match",""
+"frame","none",FALSE,TRUE,"first","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","none",FALSE,TRUE,"second","margin_error","ℹ In argument: `value = (function(...) sum(pick(..2)))(y, x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"frame","none",FALSE,TRUE,"two","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1, ..2)))(x, y)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","none",FALSE,TRUE,"named","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(cols = x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","none",FALSE,TRUE,"namespace","margin_error","ℹ In argument: `value = (function(...) sum(dplyr::pick(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","none",FALSE,TRUE,"head_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick)(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","none",FALSE,TRUE,"whole_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick(..1))))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","none",FALSE,TRUE,"qualified_paren","margin_error","ℹ In argument: `value = (function(...) sum((dplyr::pick)(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","none",FALSE,TRUE,"all_dots","match",""
+"frame","none",FALSE,TRUE,"literal","match",""
+"frame","none",FALSE,TRUE,"wrapped","match",""
+"frame","none",FALSE,TRUE,"selection_wrapper","match",""
+"frame","none",FALSE,TRUE,"across_first","match",""
+"frame","none",FALSE,TRUE,"across_dots","match",""
+"frame","none",TRUE,FALSE,"first","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","none",TRUE,FALSE,"second","margin_error","ℹ In argument: `(function(...) sum(pick(..2)))(y, x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"frame","none",TRUE,FALSE,"two","margin_error","ℹ In argument: `(function(...) sum(pick(..1, ..2)))(x, y)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","none",TRUE,FALSE,"named","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(cols = x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","none",TRUE,FALSE,"namespace","margin_error","ℹ In argument: `(function(...) sum(dplyr::pick(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","none",TRUE,FALSE,"head_paren","margin_error","ℹ In argument: `(function(...) sum((pick)(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","none",TRUE,FALSE,"whole_paren","margin_error","ℹ In argument: `(function(...) sum((pick(..1))))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","none",TRUE,FALSE,"qualified_paren","margin_error","ℹ In argument: `(function(...) sum((dplyr::pick)(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","none",TRUE,FALSE,"all_dots","match",""
+"frame","none",TRUE,FALSE,"literal","match",""
+"frame","none",TRUE,FALSE,"wrapped","match",""
+"frame","none",TRUE,FALSE,"selection_wrapper","match",""
+"frame","none",TRUE,FALSE,"across_first","match",""
+"frame","none",TRUE,FALSE,"across_dots","match",""
+"frame","none",TRUE,TRUE,"first","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","none",TRUE,TRUE,"second","margin_error","ℹ In argument: `value = (function(...) sum(pick(..2)))(y, x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"frame","none",TRUE,TRUE,"two","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1, ..2)))(x, y)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","none",TRUE,TRUE,"named","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(cols = x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","none",TRUE,TRUE,"namespace","margin_error","ℹ In argument: `value = (function(...) sum(dplyr::pick(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","none",TRUE,TRUE,"head_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick)(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","none",TRUE,TRUE,"whole_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick(..1))))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","none",TRUE,TRUE,"qualified_paren","margin_error","ℹ In argument: `value = (function(...) sum((dplyr::pick)(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","none",TRUE,TRUE,"all_dots","match",""
+"frame","none",TRUE,TRUE,"literal","match",""
+"frame","none",TRUE,TRUE,"wrapped","match",""
+"frame","none",TRUE,TRUE,"selection_wrapper","match",""
+"frame","none",TRUE,TRUE,"across_first","match",""
+"frame","none",TRUE,TRUE,"across_dots","match",""
+"frame","fixed",FALSE,FALSE,"first","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","fixed",FALSE,FALSE,"second","margin_error","ℹ In argument: `(function(...) sum(pick(..2)))(y, x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"frame","fixed",FALSE,FALSE,"two","margin_error","ℹ In argument: `(function(...) sum(pick(..1, ..2)))(x, y)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","fixed",FALSE,FALSE,"named","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(cols = x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","fixed",FALSE,FALSE,"namespace","margin_error","ℹ In argument: `(function(...) sum(dplyr::pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","fixed",FALSE,FALSE,"head_paren","margin_error","ℹ In argument: `(function(...) sum((pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","fixed",FALSE,FALSE,"whole_paren","margin_error","ℹ In argument: `(function(...) sum((pick(..1))))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","fixed",FALSE,FALSE,"qualified_paren","margin_error","ℹ In argument: `(function(...) sum((dplyr::pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","fixed",FALSE,FALSE,"all_dots","match",""
+"frame","fixed",FALSE,FALSE,"literal","match",""
+"frame","fixed",FALSE,FALSE,"wrapped","match",""
+"frame","fixed",FALSE,FALSE,"selection_wrapper","match",""
+"frame","fixed",FALSE,FALSE,"across_first","match",""
+"frame","fixed",FALSE,FALSE,"across_dots","match",""
+"frame","fixed",FALSE,TRUE,"first","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","fixed",FALSE,TRUE,"second","margin_error","ℹ In argument: `value = (function(...) sum(pick(..2)))(y, x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"frame","fixed",FALSE,TRUE,"two","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1, ..2)))(x, y)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","fixed",FALSE,TRUE,"named","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(cols = x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","fixed",FALSE,TRUE,"namespace","margin_error","ℹ In argument: `value = (function(...) sum(dplyr::pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","fixed",FALSE,TRUE,"head_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","fixed",FALSE,TRUE,"whole_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick(..1))))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","fixed",FALSE,TRUE,"qualified_paren","margin_error","ℹ In argument: `value = (function(...) sum((dplyr::pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","fixed",FALSE,TRUE,"all_dots","match",""
+"frame","fixed",FALSE,TRUE,"literal","match",""
+"frame","fixed",FALSE,TRUE,"wrapped","match",""
+"frame","fixed",FALSE,TRUE,"selection_wrapper","match",""
+"frame","fixed",FALSE,TRUE,"across_first","match",""
+"frame","fixed",FALSE,TRUE,"across_dots","match",""
+"frame","fixed",TRUE,FALSE,"first","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","fixed",TRUE,FALSE,"second","margin_error","ℹ In argument: `(function(...) sum(pick(..2)))(y, x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"frame","fixed",TRUE,FALSE,"two","margin_error","ℹ In argument: `(function(...) sum(pick(..1, ..2)))(x, y)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","fixed",TRUE,FALSE,"named","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(cols = x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","fixed",TRUE,FALSE,"namespace","margin_error","ℹ In argument: `(function(...) sum(dplyr::pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","fixed",TRUE,FALSE,"head_paren","margin_error","ℹ In argument: `(function(...) sum((pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","fixed",TRUE,FALSE,"whole_paren","margin_error","ℹ In argument: `(function(...) sum((pick(..1))))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","fixed",TRUE,FALSE,"qualified_paren","margin_error","ℹ In argument: `(function(...) sum((dplyr::pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","fixed",TRUE,FALSE,"all_dots","match",""
+"frame","fixed",TRUE,FALSE,"literal","match",""
+"frame","fixed",TRUE,FALSE,"wrapped","match",""
+"frame","fixed",TRUE,FALSE,"selection_wrapper","match",""
+"frame","fixed",TRUE,FALSE,"across_first","match",""
+"frame","fixed",TRUE,FALSE,"across_dots","match",""
+"frame","fixed",TRUE,TRUE,"first","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","fixed",TRUE,TRUE,"second","margin_error","ℹ In argument: `value = (function(...) sum(pick(..2)))(y, x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"frame","fixed",TRUE,TRUE,"two","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1, ..2)))(x, y)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","fixed",TRUE,TRUE,"named","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(cols = x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","fixed",TRUE,TRUE,"namespace","margin_error","ℹ In argument: `value = (function(...) sum(dplyr::pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","fixed",TRUE,TRUE,"head_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","fixed",TRUE,TRUE,"whole_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick(..1))))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","fixed",TRUE,TRUE,"qualified_paren","margin_error","ℹ In argument: `value = (function(...) sum((dplyr::pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","fixed",TRUE,TRUE,"all_dots","match",""
+"frame","fixed",TRUE,TRUE,"literal","match",""
+"frame","fixed",TRUE,TRUE,"wrapped","match",""
+"frame","fixed",TRUE,TRUE,"selection_wrapper","match",""
+"frame","fixed",TRUE,TRUE,"across_first","match",""
+"frame","fixed",TRUE,TRUE,"across_dots","match",""
+"frame","rollup",FALSE,FALSE,"first","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","rollup",FALSE,FALSE,"second","margin_error","ℹ In argument: `(function(...) sum(pick(..2)))(y, x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"frame","rollup",FALSE,FALSE,"two","margin_error","ℹ In argument: `(function(...) sum(pick(..1, ..2)))(x, y)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","rollup",FALSE,FALSE,"named","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(cols = x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","rollup",FALSE,FALSE,"namespace","margin_error","ℹ In argument: `(function(...) sum(dplyr::pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","rollup",FALSE,FALSE,"head_paren","margin_error","ℹ In argument: `(function(...) sum((pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","rollup",FALSE,FALSE,"whole_paren","margin_error","ℹ In argument: `(function(...) sum((pick(..1))))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","rollup",FALSE,FALSE,"qualified_paren","margin_error","ℹ In argument: `(function(...) sum((dplyr::pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","rollup",FALSE,FALSE,"all_dots","match",""
+"frame","rollup",FALSE,FALSE,"literal","match",""
+"frame","rollup",FALSE,FALSE,"wrapped","match",""
+"frame","rollup",FALSE,FALSE,"selection_wrapper","match",""
+"frame","rollup",FALSE,FALSE,"across_first","match",""
+"frame","rollup",FALSE,FALSE,"across_dots","match",""
+"frame","rollup",FALSE,TRUE,"first","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","rollup",FALSE,TRUE,"second","margin_error","ℹ In argument: `value = (function(...) sum(pick(..2)))(y, x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"frame","rollup",FALSE,TRUE,"two","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1, ..2)))(x, y)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","rollup",FALSE,TRUE,"named","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(cols = x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","rollup",FALSE,TRUE,"namespace","margin_error","ℹ In argument: `value = (function(...) sum(dplyr::pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","rollup",FALSE,TRUE,"head_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","rollup",FALSE,TRUE,"whole_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick(..1))))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","rollup",FALSE,TRUE,"qualified_paren","margin_error","ℹ In argument: `value = (function(...) sum((dplyr::pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","rollup",FALSE,TRUE,"all_dots","match",""
+"frame","rollup",FALSE,TRUE,"literal","match",""
+"frame","rollup",FALSE,TRUE,"wrapped","match",""
+"frame","rollup",FALSE,TRUE,"selection_wrapper","match",""
+"frame","rollup",FALSE,TRUE,"across_first","match",""
+"frame","rollup",FALSE,TRUE,"across_dots","match",""
+"frame","rollup",TRUE,FALSE,"first","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","rollup",TRUE,FALSE,"second","margin_error","ℹ In argument: `(function(...) sum(pick(..2)))(y, x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"frame","rollup",TRUE,FALSE,"two","margin_error","ℹ In argument: `(function(...) sum(pick(..1, ..2)))(x, y)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","rollup",TRUE,FALSE,"named","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(cols = x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","rollup",TRUE,FALSE,"namespace","margin_error","ℹ In argument: `(function(...) sum(dplyr::pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","rollup",TRUE,FALSE,"head_paren","margin_error","ℹ In argument: `(function(...) sum((pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","rollup",TRUE,FALSE,"whole_paren","margin_error","ℹ In argument: `(function(...) sum((pick(..1))))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","rollup",TRUE,FALSE,"qualified_paren","margin_error","ℹ In argument: `(function(...) sum((dplyr::pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","rollup",TRUE,FALSE,"all_dots","match",""
+"frame","rollup",TRUE,FALSE,"literal","match",""
+"frame","rollup",TRUE,FALSE,"wrapped","match",""
+"frame","rollup",TRUE,FALSE,"selection_wrapper","match",""
+"frame","rollup",TRUE,FALSE,"across_first","match",""
+"frame","rollup",TRUE,FALSE,"across_dots","match",""
+"frame","rollup",TRUE,TRUE,"first","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","rollup",TRUE,TRUE,"second","margin_error","ℹ In argument: `value = (function(...) sum(pick(..2)))(y, x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"frame","rollup",TRUE,TRUE,"two","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1, ..2)))(x, y)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","rollup",TRUE,TRUE,"named","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(cols = x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","rollup",TRUE,TRUE,"namespace","margin_error","ℹ In argument: `value = (function(...) sum(dplyr::pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","rollup",TRUE,TRUE,"head_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","rollup",TRUE,TRUE,"whole_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick(..1))))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","rollup",TRUE,TRUE,"qualified_paren","margin_error","ℹ In argument: `value = (function(...) sum((dplyr::pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"frame","rollup",TRUE,TRUE,"all_dots","match",""
+"frame","rollup",TRUE,TRUE,"literal","match",""
+"frame","rollup",TRUE,TRUE,"wrapped","match",""
+"frame","rollup",TRUE,TRUE,"selection_wrapper","match",""
+"frame","rollup",TRUE,TRUE,"across_first","match",""
+"frame","rollup",TRUE,TRUE,"across_dots","match",""
+"tibble","none",FALSE,FALSE,"first","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","none",FALSE,FALSE,"second","margin_error","ℹ In argument: `(function(...) sum(pick(..2)))(y, x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"tibble","none",FALSE,FALSE,"two","margin_error","ℹ In argument: `(function(...) sum(pick(..1, ..2)))(x, y)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","none",FALSE,FALSE,"named","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(cols = x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","none",FALSE,FALSE,"namespace","margin_error","ℹ In argument: `(function(...) sum(dplyr::pick(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","none",FALSE,FALSE,"head_paren","margin_error","ℹ In argument: `(function(...) sum((pick)(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","none",FALSE,FALSE,"whole_paren","margin_error","ℹ In argument: `(function(...) sum((pick(..1))))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","none",FALSE,FALSE,"qualified_paren","margin_error","ℹ In argument: `(function(...) sum((dplyr::pick)(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","none",FALSE,FALSE,"all_dots","match",""
+"tibble","none",FALSE,FALSE,"literal","match",""
+"tibble","none",FALSE,FALSE,"wrapped","match",""
+"tibble","none",FALSE,FALSE,"selection_wrapper","match",""
+"tibble","none",FALSE,FALSE,"across_first","match",""
+"tibble","none",FALSE,FALSE,"across_dots","match",""
+"tibble","none",FALSE,TRUE,"first","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","none",FALSE,TRUE,"second","margin_error","ℹ In argument: `value = (function(...) sum(pick(..2)))(y, x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"tibble","none",FALSE,TRUE,"two","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1, ..2)))(x, y)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","none",FALSE,TRUE,"named","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(cols = x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","none",FALSE,TRUE,"namespace","margin_error","ℹ In argument: `value = (function(...) sum(dplyr::pick(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","none",FALSE,TRUE,"head_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick)(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","none",FALSE,TRUE,"whole_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick(..1))))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","none",FALSE,TRUE,"qualified_paren","margin_error","ℹ In argument: `value = (function(...) sum((dplyr::pick)(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","none",FALSE,TRUE,"all_dots","match",""
+"tibble","none",FALSE,TRUE,"literal","match",""
+"tibble","none",FALSE,TRUE,"wrapped","match",""
+"tibble","none",FALSE,TRUE,"selection_wrapper","match",""
+"tibble","none",FALSE,TRUE,"across_first","match",""
+"tibble","none",FALSE,TRUE,"across_dots","match",""
+"tibble","none",TRUE,FALSE,"first","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","none",TRUE,FALSE,"second","margin_error","ℹ In argument: `(function(...) sum(pick(..2)))(y, x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"tibble","none",TRUE,FALSE,"two","margin_error","ℹ In argument: `(function(...) sum(pick(..1, ..2)))(x, y)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","none",TRUE,FALSE,"named","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(cols = x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","none",TRUE,FALSE,"namespace","margin_error","ℹ In argument: `(function(...) sum(dplyr::pick(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","none",TRUE,FALSE,"head_paren","margin_error","ℹ In argument: `(function(...) sum((pick)(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","none",TRUE,FALSE,"whole_paren","margin_error","ℹ In argument: `(function(...) sum((pick(..1))))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","none",TRUE,FALSE,"qualified_paren","margin_error","ℹ In argument: `(function(...) sum((dplyr::pick)(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","none",TRUE,FALSE,"all_dots","match",""
+"tibble","none",TRUE,FALSE,"literal","match",""
+"tibble","none",TRUE,FALSE,"wrapped","match",""
+"tibble","none",TRUE,FALSE,"selection_wrapper","match",""
+"tibble","none",TRUE,FALSE,"across_first","match",""
+"tibble","none",TRUE,FALSE,"across_dots","match",""
+"tibble","none",TRUE,TRUE,"first","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","none",TRUE,TRUE,"second","margin_error","ℹ In argument: `value = (function(...) sum(pick(..2)))(y, x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"tibble","none",TRUE,TRUE,"two","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1, ..2)))(x, y)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","none",TRUE,TRUE,"named","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(cols = x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","none",TRUE,TRUE,"namespace","margin_error","ℹ In argument: `value = (function(...) sum(dplyr::pick(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","none",TRUE,TRUE,"head_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick)(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","none",TRUE,TRUE,"whole_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick(..1))))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","none",TRUE,TRUE,"qualified_paren","margin_error","ℹ In argument: `value = (function(...) sum((dplyr::pick)(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","none",TRUE,TRUE,"all_dots","match",""
+"tibble","none",TRUE,TRUE,"literal","match",""
+"tibble","none",TRUE,TRUE,"wrapped","match",""
+"tibble","none",TRUE,TRUE,"selection_wrapper","match",""
+"tibble","none",TRUE,TRUE,"across_first","match",""
+"tibble","none",TRUE,TRUE,"across_dots","match",""
+"tibble","fixed",FALSE,FALSE,"first","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","fixed",FALSE,FALSE,"second","margin_error","ℹ In argument: `(function(...) sum(pick(..2)))(y, x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"tibble","fixed",FALSE,FALSE,"two","margin_error","ℹ In argument: `(function(...) sum(pick(..1, ..2)))(x, y)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","fixed",FALSE,FALSE,"named","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(cols = x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","fixed",FALSE,FALSE,"namespace","margin_error","ℹ In argument: `(function(...) sum(dplyr::pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","fixed",FALSE,FALSE,"head_paren","margin_error","ℹ In argument: `(function(...) sum((pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","fixed",FALSE,FALSE,"whole_paren","margin_error","ℹ In argument: `(function(...) sum((pick(..1))))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","fixed",FALSE,FALSE,"qualified_paren","margin_error","ℹ In argument: `(function(...) sum((dplyr::pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","fixed",FALSE,FALSE,"all_dots","match",""
+"tibble","fixed",FALSE,FALSE,"literal","match",""
+"tibble","fixed",FALSE,FALSE,"wrapped","match",""
+"tibble","fixed",FALSE,FALSE,"selection_wrapper","match",""
+"tibble","fixed",FALSE,FALSE,"across_first","match",""
+"tibble","fixed",FALSE,FALSE,"across_dots","match",""
+"tibble","fixed",FALSE,TRUE,"first","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","fixed",FALSE,TRUE,"second","margin_error","ℹ In argument: `value = (function(...) sum(pick(..2)))(y, x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"tibble","fixed",FALSE,TRUE,"two","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1, ..2)))(x, y)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","fixed",FALSE,TRUE,"named","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(cols = x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","fixed",FALSE,TRUE,"namespace","margin_error","ℹ In argument: `value = (function(...) sum(dplyr::pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","fixed",FALSE,TRUE,"head_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","fixed",FALSE,TRUE,"whole_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick(..1))))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","fixed",FALSE,TRUE,"qualified_paren","margin_error","ℹ In argument: `value = (function(...) sum((dplyr::pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","fixed",FALSE,TRUE,"all_dots","match",""
+"tibble","fixed",FALSE,TRUE,"literal","match",""
+"tibble","fixed",FALSE,TRUE,"wrapped","match",""
+"tibble","fixed",FALSE,TRUE,"selection_wrapper","match",""
+"tibble","fixed",FALSE,TRUE,"across_first","match",""
+"tibble","fixed",FALSE,TRUE,"across_dots","match",""
+"tibble","fixed",TRUE,FALSE,"first","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","fixed",TRUE,FALSE,"second","margin_error","ℹ In argument: `(function(...) sum(pick(..2)))(y, x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"tibble","fixed",TRUE,FALSE,"two","margin_error","ℹ In argument: `(function(...) sum(pick(..1, ..2)))(x, y)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","fixed",TRUE,FALSE,"named","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(cols = x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","fixed",TRUE,FALSE,"namespace","margin_error","ℹ In argument: `(function(...) sum(dplyr::pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","fixed",TRUE,FALSE,"head_paren","margin_error","ℹ In argument: `(function(...) sum((pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","fixed",TRUE,FALSE,"whole_paren","margin_error","ℹ In argument: `(function(...) sum((pick(..1))))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","fixed",TRUE,FALSE,"qualified_paren","margin_error","ℹ In argument: `(function(...) sum((dplyr::pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","fixed",TRUE,FALSE,"all_dots","match",""
+"tibble","fixed",TRUE,FALSE,"literal","match",""
+"tibble","fixed",TRUE,FALSE,"wrapped","match",""
+"tibble","fixed",TRUE,FALSE,"selection_wrapper","match",""
+"tibble","fixed",TRUE,FALSE,"across_first","match",""
+"tibble","fixed",TRUE,FALSE,"across_dots","match",""
+"tibble","fixed",TRUE,TRUE,"first","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","fixed",TRUE,TRUE,"second","margin_error","ℹ In argument: `value = (function(...) sum(pick(..2)))(y, x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"tibble","fixed",TRUE,TRUE,"two","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1, ..2)))(x, y)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","fixed",TRUE,TRUE,"named","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(cols = x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","fixed",TRUE,TRUE,"namespace","margin_error","ℹ In argument: `value = (function(...) sum(dplyr::pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","fixed",TRUE,TRUE,"head_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","fixed",TRUE,TRUE,"whole_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick(..1))))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","fixed",TRUE,TRUE,"qualified_paren","margin_error","ℹ In argument: `value = (function(...) sum((dplyr::pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","fixed",TRUE,TRUE,"all_dots","match",""
+"tibble","fixed",TRUE,TRUE,"literal","match",""
+"tibble","fixed",TRUE,TRUE,"wrapped","match",""
+"tibble","fixed",TRUE,TRUE,"selection_wrapper","match",""
+"tibble","fixed",TRUE,TRUE,"across_first","match",""
+"tibble","fixed",TRUE,TRUE,"across_dots","match",""
+"tibble","rollup",FALSE,FALSE,"first","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","rollup",FALSE,FALSE,"second","margin_error","ℹ In argument: `(function(...) sum(pick(..2)))(y, x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"tibble","rollup",FALSE,FALSE,"two","margin_error","ℹ In argument: `(function(...) sum(pick(..1, ..2)))(x, y)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","rollup",FALSE,FALSE,"named","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(cols = x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","rollup",FALSE,FALSE,"namespace","margin_error","ℹ In argument: `(function(...) sum(dplyr::pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","rollup",FALSE,FALSE,"head_paren","margin_error","ℹ In argument: `(function(...) sum((pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","rollup",FALSE,FALSE,"whole_paren","margin_error","ℹ In argument: `(function(...) sum((pick(..1))))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","rollup",FALSE,FALSE,"qualified_paren","margin_error","ℹ In argument: `(function(...) sum((dplyr::pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","rollup",FALSE,FALSE,"all_dots","match",""
+"tibble","rollup",FALSE,FALSE,"literal","match",""
+"tibble","rollup",FALSE,FALSE,"wrapped","match",""
+"tibble","rollup",FALSE,FALSE,"selection_wrapper","match",""
+"tibble","rollup",FALSE,FALSE,"across_first","match",""
+"tibble","rollup",FALSE,FALSE,"across_dots","match",""
+"tibble","rollup",FALSE,TRUE,"first","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","rollup",FALSE,TRUE,"second","margin_error","ℹ In argument: `value = (function(...) sum(pick(..2)))(y, x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"tibble","rollup",FALSE,TRUE,"two","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1, ..2)))(x, y)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","rollup",FALSE,TRUE,"named","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(cols = x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","rollup",FALSE,TRUE,"namespace","margin_error","ℹ In argument: `value = (function(...) sum(dplyr::pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","rollup",FALSE,TRUE,"head_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","rollup",FALSE,TRUE,"whole_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick(..1))))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","rollup",FALSE,TRUE,"qualified_paren","margin_error","ℹ In argument: `value = (function(...) sum((dplyr::pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","rollup",FALSE,TRUE,"all_dots","match",""
+"tibble","rollup",FALSE,TRUE,"literal","match",""
+"tibble","rollup",FALSE,TRUE,"wrapped","match",""
+"tibble","rollup",FALSE,TRUE,"selection_wrapper","match",""
+"tibble","rollup",FALSE,TRUE,"across_first","match",""
+"tibble","rollup",FALSE,TRUE,"across_dots","match",""
+"tibble","rollup",TRUE,FALSE,"first","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","rollup",TRUE,FALSE,"second","margin_error","ℹ In argument: `(function(...) sum(pick(..2)))(y, x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"tibble","rollup",TRUE,FALSE,"two","margin_error","ℹ In argument: `(function(...) sum(pick(..1, ..2)))(x, y)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","rollup",TRUE,FALSE,"named","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(cols = x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","rollup",TRUE,FALSE,"namespace","margin_error","ℹ In argument: `(function(...) sum(dplyr::pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","rollup",TRUE,FALSE,"head_paren","margin_error","ℹ In argument: `(function(...) sum((pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","rollup",TRUE,FALSE,"whole_paren","margin_error","ℹ In argument: `(function(...) sum((pick(..1))))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","rollup",TRUE,FALSE,"qualified_paren","margin_error","ℹ In argument: `(function(...) sum((dplyr::pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","rollup",TRUE,FALSE,"all_dots","match",""
+"tibble","rollup",TRUE,FALSE,"literal","match",""
+"tibble","rollup",TRUE,FALSE,"wrapped","match",""
+"tibble","rollup",TRUE,FALSE,"selection_wrapper","match",""
+"tibble","rollup",TRUE,FALSE,"across_first","match",""
+"tibble","rollup",TRUE,FALSE,"across_dots","match",""
+"tibble","rollup",TRUE,TRUE,"first","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","rollup",TRUE,TRUE,"second","margin_error","ℹ In argument: `value = (function(...) sum(pick(..2)))(y, x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"tibble","rollup",TRUE,TRUE,"two","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1, ..2)))(x, y)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","rollup",TRUE,TRUE,"named","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(cols = x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","rollup",TRUE,TRUE,"namespace","margin_error","ℹ In argument: `value = (function(...) sum(dplyr::pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","rollup",TRUE,TRUE,"head_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","rollup",TRUE,TRUE,"whole_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick(..1))))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","rollup",TRUE,TRUE,"qualified_paren","margin_error","ℹ In argument: `value = (function(...) sum((dplyr::pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"tibble","rollup",TRUE,TRUE,"all_dots","match",""
+"tibble","rollup",TRUE,TRUE,"literal","match",""
+"tibble","rollup",TRUE,TRUE,"wrapped","match",""
+"tibble","rollup",TRUE,TRUE,"selection_wrapper","match",""
+"tibble","rollup",TRUE,TRUE,"across_first","match",""
+"tibble","rollup",TRUE,TRUE,"across_dots","match",""
+"table","none",FALSE,FALSE,"first","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","none",FALSE,FALSE,"second","margin_error","ℹ In argument: `(function(...) sum(pick(..2)))(y, x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"table","none",FALSE,FALSE,"two","margin_error","ℹ In argument: `(function(...) sum(pick(..1, ..2)))(x, y)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","none",FALSE,FALSE,"named","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(cols = x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","none",FALSE,FALSE,"namespace","margin_error","ℹ In argument: `(function(...) sum(dplyr::pick(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","none",FALSE,FALSE,"head_paren","margin_error","ℹ In argument: `(function(...) sum((pick)(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","none",FALSE,FALSE,"whole_paren","margin_error","ℹ In argument: `(function(...) sum((pick(..1))))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","none",FALSE,FALSE,"qualified_paren","margin_error","ℹ In argument: `(function(...) sum((dplyr::pick)(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","none",FALSE,FALSE,"all_dots","match",""
+"table","none",FALSE,FALSE,"literal","match",""
+"table","none",FALSE,FALSE,"wrapped","match",""
+"table","none",FALSE,FALSE,"selection_wrapper","match",""
+"table","none",FALSE,FALSE,"across_first","match",""
+"table","none",FALSE,FALSE,"across_dots","match",""
+"table","none",FALSE,TRUE,"first","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","none",FALSE,TRUE,"second","margin_error","ℹ In argument: `value = (function(...) sum(pick(..2)))(y, x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"table","none",FALSE,TRUE,"two","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1, ..2)))(x, y)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","none",FALSE,TRUE,"named","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(cols = x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","none",FALSE,TRUE,"namespace","margin_error","ℹ In argument: `value = (function(...) sum(dplyr::pick(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","none",FALSE,TRUE,"head_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick)(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","none",FALSE,TRUE,"whole_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick(..1))))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","none",FALSE,TRUE,"qualified_paren","margin_error","ℹ In argument: `value = (function(...) sum((dplyr::pick)(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","none",FALSE,TRUE,"all_dots","match",""
+"table","none",FALSE,TRUE,"literal","match",""
+"table","none",FALSE,TRUE,"wrapped","match",""
+"table","none",FALSE,TRUE,"selection_wrapper","match",""
+"table","none",FALSE,TRUE,"across_first","match",""
+"table","none",FALSE,TRUE,"across_dots","match",""
+"table","none",TRUE,FALSE,"first","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","none",TRUE,FALSE,"second","margin_error","ℹ In argument: `(function(...) sum(pick(..2)))(y, x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"table","none",TRUE,FALSE,"two","margin_error","ℹ In argument: `(function(...) sum(pick(..1, ..2)))(x, y)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","none",TRUE,FALSE,"named","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(cols = x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","none",TRUE,FALSE,"namespace","margin_error","ℹ In argument: `(function(...) sum(dplyr::pick(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","none",TRUE,FALSE,"head_paren","margin_error","ℹ In argument: `(function(...) sum((pick)(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","none",TRUE,FALSE,"whole_paren","margin_error","ℹ In argument: `(function(...) sum((pick(..1))))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","none",TRUE,FALSE,"qualified_paren","margin_error","ℹ In argument: `(function(...) sum((dplyr::pick)(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","none",TRUE,FALSE,"all_dots","match",""
+"table","none",TRUE,FALSE,"literal","match",""
+"table","none",TRUE,FALSE,"wrapped","match",""
+"table","none",TRUE,FALSE,"selection_wrapper","match",""
+"table","none",TRUE,FALSE,"across_first","match",""
+"table","none",TRUE,FALSE,"across_dots","match",""
+"table","none",TRUE,TRUE,"first","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","none",TRUE,TRUE,"second","margin_error","ℹ In argument: `value = (function(...) sum(pick(..2)))(y, x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"table","none",TRUE,TRUE,"two","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1, ..2)))(x, y)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","none",TRUE,TRUE,"named","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(cols = x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","none",TRUE,TRUE,"namespace","margin_error","ℹ In argument: `value = (function(...) sum(dplyr::pick(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","none",TRUE,TRUE,"head_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick)(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","none",TRUE,TRUE,"whole_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick(..1))))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","none",TRUE,TRUE,"qualified_paren","margin_error","ℹ In argument: `value = (function(...) sum((dplyr::pick)(..1)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","none",TRUE,TRUE,"all_dots","match",""
+"table","none",TRUE,TRUE,"literal","match",""
+"table","none",TRUE,TRUE,"wrapped","match",""
+"table","none",TRUE,TRUE,"selection_wrapper","match",""
+"table","none",TRUE,TRUE,"across_first","match",""
+"table","none",TRUE,TRUE,"across_dots","match",""
+"table","fixed",FALSE,FALSE,"first","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","fixed",FALSE,FALSE,"second","margin_error","ℹ In argument: `(function(...) sum(pick(..2)))(y, x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"table","fixed",FALSE,FALSE,"two","margin_error","ℹ In argument: `(function(...) sum(pick(..1, ..2)))(x, y)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","fixed",FALSE,FALSE,"named","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(cols = x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","fixed",FALSE,FALSE,"namespace","margin_error","ℹ In argument: `(function(...) sum(dplyr::pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","fixed",FALSE,FALSE,"head_paren","margin_error","ℹ In argument: `(function(...) sum((pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","fixed",FALSE,FALSE,"whole_paren","margin_error","ℹ In argument: `(function(...) sum((pick(..1))))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","fixed",FALSE,FALSE,"qualified_paren","margin_error","ℹ In argument: `(function(...) sum((dplyr::pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","fixed",FALSE,FALSE,"all_dots","match",""
+"table","fixed",FALSE,FALSE,"literal","match",""
+"table","fixed",FALSE,FALSE,"wrapped","match",""
+"table","fixed",FALSE,FALSE,"selection_wrapper","match",""
+"table","fixed",FALSE,FALSE,"across_first","match",""
+"table","fixed",FALSE,FALSE,"across_dots","match",""
+"table","fixed",FALSE,TRUE,"first","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","fixed",FALSE,TRUE,"second","margin_error","ℹ In argument: `value = (function(...) sum(pick(..2)))(y, x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"table","fixed",FALSE,TRUE,"two","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1, ..2)))(x, y)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","fixed",FALSE,TRUE,"named","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(cols = x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","fixed",FALSE,TRUE,"namespace","margin_error","ℹ In argument: `value = (function(...) sum(dplyr::pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","fixed",FALSE,TRUE,"head_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","fixed",FALSE,TRUE,"whole_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick(..1))))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","fixed",FALSE,TRUE,"qualified_paren","margin_error","ℹ In argument: `value = (function(...) sum((dplyr::pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","fixed",FALSE,TRUE,"all_dots","match",""
+"table","fixed",FALSE,TRUE,"literal","match",""
+"table","fixed",FALSE,TRUE,"wrapped","match",""
+"table","fixed",FALSE,TRUE,"selection_wrapper","match",""
+"table","fixed",FALSE,TRUE,"across_first","match",""
+"table","fixed",FALSE,TRUE,"across_dots","match",""
+"table","fixed",TRUE,FALSE,"first","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","fixed",TRUE,FALSE,"second","margin_error","ℹ In argument: `(function(...) sum(pick(..2)))(y, x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"table","fixed",TRUE,FALSE,"two","margin_error","ℹ In argument: `(function(...) sum(pick(..1, ..2)))(x, y)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","fixed",TRUE,FALSE,"named","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(cols = x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","fixed",TRUE,FALSE,"namespace","margin_error","ℹ In argument: `(function(...) sum(dplyr::pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","fixed",TRUE,FALSE,"head_paren","margin_error","ℹ In argument: `(function(...) sum((pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","fixed",TRUE,FALSE,"whole_paren","margin_error","ℹ In argument: `(function(...) sum((pick(..1))))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","fixed",TRUE,FALSE,"qualified_paren","margin_error","ℹ In argument: `(function(...) sum((dplyr::pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","fixed",TRUE,FALSE,"all_dots","match",""
+"table","fixed",TRUE,FALSE,"literal","match",""
+"table","fixed",TRUE,FALSE,"wrapped","match",""
+"table","fixed",TRUE,FALSE,"selection_wrapper","match",""
+"table","fixed",TRUE,FALSE,"across_first","match",""
+"table","fixed",TRUE,FALSE,"across_dots","match",""
+"table","fixed",TRUE,TRUE,"first","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","fixed",TRUE,TRUE,"second","margin_error","ℹ In argument: `value = (function(...) sum(pick(..2)))(y, x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"table","fixed",TRUE,TRUE,"two","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1, ..2)))(x, y)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","fixed",TRUE,TRUE,"named","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(cols = x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","fixed",TRUE,TRUE,"namespace","margin_error","ℹ In argument: `value = (function(...) sum(dplyr::pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","fixed",TRUE,TRUE,"head_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","fixed",TRUE,TRUE,"whole_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick(..1))))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","fixed",TRUE,TRUE,"qualified_paren","margin_error","ℹ In argument: `value = (function(...) sum((dplyr::pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","fixed",TRUE,TRUE,"all_dots","match",""
+"table","fixed",TRUE,TRUE,"literal","match",""
+"table","fixed",TRUE,TRUE,"wrapped","match",""
+"table","fixed",TRUE,TRUE,"selection_wrapper","match",""
+"table","fixed",TRUE,TRUE,"across_first","match",""
+"table","fixed",TRUE,TRUE,"across_dots","match",""
+"table","rollup",FALSE,FALSE,"first","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","rollup",FALSE,FALSE,"second","margin_error","ℹ In argument: `(function(...) sum(pick(..2)))(y, x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"table","rollup",FALSE,FALSE,"two","margin_error","ℹ In argument: `(function(...) sum(pick(..1, ..2)))(x, y)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","rollup",FALSE,FALSE,"named","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(cols = x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","rollup",FALSE,FALSE,"namespace","margin_error","ℹ In argument: `(function(...) sum(dplyr::pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","rollup",FALSE,FALSE,"head_paren","margin_error","ℹ In argument: `(function(...) sum((pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","rollup",FALSE,FALSE,"whole_paren","margin_error","ℹ In argument: `(function(...) sum((pick(..1))))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","rollup",FALSE,FALSE,"qualified_paren","margin_error","ℹ In argument: `(function(...) sum((dplyr::pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","rollup",FALSE,FALSE,"all_dots","match",""
+"table","rollup",FALSE,FALSE,"literal","match",""
+"table","rollup",FALSE,FALSE,"wrapped","match",""
+"table","rollup",FALSE,FALSE,"selection_wrapper","match",""
+"table","rollup",FALSE,FALSE,"across_first","match",""
+"table","rollup",FALSE,FALSE,"across_dots","match",""
+"table","rollup",FALSE,TRUE,"first","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","rollup",FALSE,TRUE,"second","margin_error","ℹ In argument: `value = (function(...) sum(pick(..2)))(y, x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"table","rollup",FALSE,TRUE,"two","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1, ..2)))(x, y)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","rollup",FALSE,TRUE,"named","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(cols = x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","rollup",FALSE,TRUE,"namespace","margin_error","ℹ In argument: `value = (function(...) sum(dplyr::pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","rollup",FALSE,TRUE,"head_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","rollup",FALSE,TRUE,"whole_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick(..1))))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","rollup",FALSE,TRUE,"qualified_paren","margin_error","ℹ In argument: `value = (function(...) sum((dplyr::pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","rollup",FALSE,TRUE,"all_dots","match",""
+"table","rollup",FALSE,TRUE,"literal","match",""
+"table","rollup",FALSE,TRUE,"wrapped","match",""
+"table","rollup",FALSE,TRUE,"selection_wrapper","match",""
+"table","rollup",FALSE,TRUE,"across_first","match",""
+"table","rollup",FALSE,TRUE,"across_dots","match",""
+"table","rollup",TRUE,FALSE,"first","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","rollup",TRUE,FALSE,"second","margin_error","ℹ In argument: `(function(...) sum(pick(..2)))(y, x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"table","rollup",TRUE,FALSE,"two","margin_error","ℹ In argument: `(function(...) sum(pick(..1, ..2)))(x, y)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","rollup",TRUE,FALSE,"named","margin_error","ℹ In argument: `(function(...) sum(pick(..1)))(cols = x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","rollup",TRUE,FALSE,"namespace","margin_error","ℹ In argument: `(function(...) sum(dplyr::pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","rollup",TRUE,FALSE,"head_paren","margin_error","ℹ In argument: `(function(...) sum((pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","rollup",TRUE,FALSE,"whole_paren","margin_error","ℹ In argument: `(function(...) sum((pick(..1))))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","rollup",TRUE,FALSE,"qualified_paren","margin_error","ℹ In argument: `(function(...) sum((dplyr::pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","rollup",TRUE,FALSE,"all_dots","match",""
+"table","rollup",TRUE,FALSE,"literal","match",""
+"table","rollup",TRUE,FALSE,"wrapped","match",""
+"table","rollup",TRUE,FALSE,"selection_wrapper","match",""
+"table","rollup",TRUE,FALSE,"across_first","match",""
+"table","rollup",TRUE,FALSE,"across_dots","match",""
+"table","rollup",TRUE,TRUE,"first","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","rollup",TRUE,TRUE,"second","margin_error","ℹ In argument: `value = (function(...) sum(pick(..2)))(y, x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"table","rollup",TRUE,TRUE,"two","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1, ..2)))(x, y)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","rollup",TRUE,TRUE,"named","margin_error","ℹ In argument: `value = (function(...) sum(pick(..1)))(cols = x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","rollup",TRUE,TRUE,"namespace","margin_error","ℹ In argument: `value = (function(...) sum(dplyr::pick(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","rollup",TRUE,TRUE,"head_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","rollup",TRUE,TRUE,"whole_paren","margin_error","ℹ In argument: `value = (function(...) sum((pick(..1))))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","rollup",TRUE,TRUE,"qualified_paren","margin_error","ℹ In argument: `value = (function(...) sum((dplyr::pick)(..1)))(x)`.
+ℹ In group 1: `g = ""a""`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at summary-grouping-share-bughunt-2026-11-03/R/summary-selections.R:1613:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"table","rollup",TRUE,TRUE,"all_dots","match",""
+"table","rollup",TRUE,TRUE,"literal","match",""
+"table","rollup",TRUE,TRUE,"wrapped","match",""
+"table","rollup",TRUE,TRUE,"selection_wrapper","match",""
+"table","rollup",TRUE,TRUE,"across_first","match",""
+"table","rollup",TRUE,TRUE,"across_dots","match",""
