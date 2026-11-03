@@ -16,7 +16,7 @@ with_postgres(function(con) {
       value <- if (inherits(query, "error")) query else tryCatch(dplyr::collect(query), error = identity)
       if (!inherits(value, "error")) {
         stopifnot(nrow(value) == 3L)
-        for (i in seq_len(count)) stopifnot(isTRUE(all.equal(sort(value[[paste0("share", i)]]), c(.25, .75, 1))))
+        for (i in seq_len(count)) stopifnot(isTRUE(all.equal(sort(value[[paste0("share", i)]]), c(0.25, 0.75, 1))))
       }
       rows[[length(rows) + 1L]] <- data.frame(source_bytes = length + 1L, sources = count,
         ordinary = if (inherits(ordinary_control, "error")) conditionMessage(ordinary_control) else "pass",

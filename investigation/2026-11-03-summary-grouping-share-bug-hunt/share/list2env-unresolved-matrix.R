@@ -53,8 +53,8 @@ out <- do.call(rbind, rows)
 finding <- out$shares & out$setter %in% c("block", "identity", "keys")
 refusal <- out$shares & out$setter %in% c("literal", "assign")
 accepted <- !finding & !refusal
-stopifnot(all(!out$error[finding]), all(out$package_error[refusal]),
-          all(!out$error[accepted]), all(out$unchanged))
+stopifnot(!any(out$error[finding]), all(out$package_error[refusal]),
+          !any(out$error[accepted]), all(out$unchanged))
 write.csv(out, file.path(dir, "list2env-unresolved-matrix.csv"), row.names = FALSE)
 cat("SHA:", system2("git", c("rev-parse", "HEAD"), stdout = TRUE), "\n")
 cat("Missing refusals:", sum(finding), "Controls:", sum(!finding), "\n")

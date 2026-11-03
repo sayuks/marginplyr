@@ -34,5 +34,5 @@ if ("--assert" %in% commandArgs(trailingOnly = TRUE)) {
               identical(actual$independent, rep(12, 3)))
 } else {
   stopifnot(identical(actual$independent, c(1, 3, 4)),
-            identical(actual$fraction, c(.25, .75, 1)))
+            identical(actual$fraction, c(0.25, 0.75, 1)))
 }

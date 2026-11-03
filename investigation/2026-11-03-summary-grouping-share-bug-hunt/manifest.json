@@ -34,8 +34,8 @@
     },
     {
       "path": "backend/postgres-identifier-reproduction.R",
-      "bytes": 2857,
-      "sha256": "c5ec5623677ce888387f4810ab9502618442830730db9b11623c7c5bc45e3e02",
+      "bytes": 2859,
+      "sha256": "1184408fbda36214042df44b86c17f4d8f9917e167f8dfbf59faa6b46af68e1b",
       "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/backend/postgres-identifier-reproduction.R"
     },
     {
@@ -70,8 +70,8 @@
     },
     {
       "path": "backend/postgres-long-sources.R",
-      "bytes": 1872,
-      "sha256": "8f75fa3427a87bc2a870997a94c7bb5f86b90a707559421220e8e830dbd99518",
+      "bytes": 1874,
+      "sha256": "1159b025ea643f1d0ea79fd572bb0fef1ee85e759b91bea80642290067f86f6c",
       "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/backend/postgres-long-sources.R"
     },
     {
@@ -317,7 +317,7 @@
     {
       "path": "share/dtplyr-list2env-matrix.R",
       "bytes": 2943,
-      "sha256": "b5c8890e31720381cdd10ea85f685be89844a1c19d892ca66fe84bef693a3efa",
+      "sha256": "3dabc8ed2a071cf0712160ee72cdd7b8fb38bd7f6bbbaacbdfce3b8d63219535",
       "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/dtplyr-list2env-matrix.R"
     },
     {
@@ -334,8 +334,8 @@
     },
     {
       "path": "share/dtplyr-list2env-reproduction.R",
-      "bytes": 1309,
-      "sha256": "4058f4d5819da7345c43082975b46f89e86956dec0015b9e175fee40a0805a13",
+      "bytes": 1311,
+      "sha256": "53415e5a91a3789039599e7c9a20c973a8c5711692d7478d03823f2bc57c2717",
       "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/dtplyr-list2env-reproduction.R"
     },
     {
@@ -413,7 +413,7 @@
     {
       "path": "share/list2env-unresolved-matrix.R",
       "bytes": 3337,
-      "sha256": "9975c88139095af5d76db009ddaf90dd447b292c50ad302a0f61cab6d524dc45",
+      "sha256": "4a71e8a173099a6bc50d92a47919a3503f04e3ca01d0d9956947ed8407640c4a",
       "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/list2env-unresolved-matrix.R"
     },
     {
@@ -430,8 +430,8 @@
     },
     {
       "path": "share/list2env-unresolved-reproduction.R",
-      "bytes": 1612,
-      "sha256": "89f98a9862f4b506b7fcec0fc5809b7c2f45db502a890ae4893e5feb8d8a6cad",
+      "bytes": 1614,
+      "sha256": "bb322092c16900ea6c745b80c0f108f02c3e26e7c2a5ecd122215a8431b07367",
       "_row": "investigation/2026-11-03-summary-grouping-share-bug-hunt/share/list2env-unresolved-reproduction.R"
     },
     {

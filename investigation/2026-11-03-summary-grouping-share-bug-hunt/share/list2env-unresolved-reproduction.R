@@ -39,5 +39,5 @@ if ("--assert" %in% commandArgs(trailingOnly = TRUE)) {
 } else {
   stopifnot(identical(source$value, c(1, 3, 4)),
             identical(later$derived, c(100, 300, 400)),
-            identical(later$prior, c(.25, .75, 1)))
+            identical(later$prior, c(0.25, 0.75, 1)))
 }

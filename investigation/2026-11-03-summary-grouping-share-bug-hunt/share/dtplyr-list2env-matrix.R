@@ -52,9 +52,9 @@ for (column in c(".BY", ".SD", ".GRP", ".NGRP", ".SDall", ".xSD", ".iSD")) {
   }
 }
 out <- do.call(rbind, rows)
-stopifnot(all(!out$error), all(out$untouched),
+stopifnot(!any(out$error), all(out$untouched),
           all(out$lexical[out$mode != "lazy"]),
-          all(!out$lexical[out$mode == "lazy"]))
+          !any(out$lexical[out$mode == "lazy"]))
 write.csv(out, file.path(dir, "dtplyr-list2env-matrix.csv"), row.names = FALSE)
 cat("SHA:", system2("git", c("rev-parse", "HEAD"), stdout = TRUE), "\n")
 cat("Wrong lexical values:", sum(out$mode == "lazy"), "Controls:", sum(out$mode != "lazy"), "\n")

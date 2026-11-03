@@ -30,7 +30,7 @@ with_postgres(function(con) {
             pass <- !inherits(value, "error")
             if (pass) {
               for (i in seq_len(count)) stopifnot(isTRUE(all.equal(
-                sort(value[[paste0("fraction", i)]]), c(.25, .75, 1))))
+                sort(value[[paste0("fraction", i)]]), c(0.25, 0.75, 1))))
             }
             rows[[length(rows) + 1L]] <- data.frame(alphabet, short, kind, count,
               portable, pass, condition = if (pass) "pass" else conditionMessage(value))
