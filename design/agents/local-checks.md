@@ -67,10 +67,27 @@ a full-check obligation. Record the earlier full SHA and these checks as the
 reason for `source`; changed test inputs, dispatch machinery or other package
 effects still require `full`.
 
+Pure duplicate removal from `Config/testthat/start-first` may also use `source`
+after a successful full result when all other check-affecting inputs are
+unchanged. Require still-eligible full evidence, unchanged package code,
+test/helper bytes and membership, installed files, dependency declarations and
+dispatch machinery. Remove only later identical literal entries and prove
+strict parsing plus exact equality of native ordered discovery before/after,
+with every discovered file selected once. Record the full SHA, repaired SHA,
+comparison and reason. Accompanying measured adoption still follows its rule
+above. Reader, runner and fixture changes are outside this exception; uncertain
+effects require `full`.
+
+Both scopes validate submitted priority metadata before the five checks and
+heavy admission. On a duplicate, follow the runner guide's
+[Duplicate priority recovery](../../tools/review-ready-runner.md#duplicate-priority-recovery)
+within the active task before reporting review readiness.
+
 Both forms pin the submitted SHA at invocation and use its disposable committed
 source for every check. Waiting never switches to a later HEAD. A later fix
 must be committed and receive a fresh invocation; a result identifies only its
-submitted revision. Every invocation executes these five checks, in order:
+submitted revision. After metadata validation, both scopes run the mandatory
+five-check baseline in order:
 
 1. a mechanical test-source dependency-declaration scan against `DESCRIPTION`;
 2. the registered optional test Suggests presence and version check;

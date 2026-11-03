@@ -2,6 +2,13 @@
 source("tools/review-ready-timing.R")
 source("tools/review-ready-priority.R")
 
+# CI checks the tracked list as well as the disposable proposal fixtures.
+tracked_priority <- review_ready_priority_read(readLines("DESCRIPTION"))
+tracked_files <- testthat::find_test_scripts("tests/testthat", full.names = FALSE)
+tracked_dispatch <- testthat::find_test_scripts("tests/testthat", full.names = FALSE,
+  start_first = tracked_priority)
+stopifnot(!anyDuplicated(tracked_dispatch), setequal(tracked_files, tracked_dispatch))
+
 local({
   workspace <- tempfile("review-ready-priority-")
   dir.create(workspace)
@@ -71,6 +78,58 @@ local({
     result <- propose(f)
     expect(!result$eligible && grepl(pattern, result$reason, fixed = TRUE), pattern)
   }
+
+  historical <- fixture(c("old", "new", "old"), c(old = 5, new = 30, tiny = 0.1))
+  retained_paths <- list.files(historical$run, recursive = TRUE, full.names = TRUE)
+  retained_hashes <- tools::md5sum(retained_paths)
+  set_priority(historical, c("old", "new"))
+  historical_output <- capture.output(recovered <- propose(historical))
+  expect(recovered$eligible && identical(recovered$native, c("old", "new", "tiny")),
+    "historical literal duplicates recover the measured native first-occurrence order")
+  expect(any(grepl("old (positions 1, 3)", historical_output, fixed = TRUE)),
+    "historical normalization reports the duplicate and its positions")
+  expect(identical(tools::md5sum(retained_paths), retained_hashes),
+    "recovery preserves original raw evidence, metadata and terminal outcome")
+  expect(file.exists(file.path(recovered$directory, "proposal.rds")) &&
+    any(grepl("old (positions 1, 3)", readLines(file.path(recovered$directory, "explanation.md")), fixed = TRUE)),
+    "recovered proposal artifacts record historical normalization")
+  for (invalid in list(c("old", "old"), c("old", "*"), c("old", ""))) {
+    set_priority(historical, invalid)
+    bad_description <- readLines(file.path(historical$root, "DESCRIPTION"))
+    rejected <- propose(historical)
+    expect(!rejected$eligible && grepl("current DESCRIPTION", rejected$reason, fixed = TRUE) &&
+      identical(readLines(file.path(historical$root, "DESCRIPTION")), bad_description) &&
+      identical(tools::md5sum(retained_paths), retained_hashes),
+      "a valid historical recovery never silently repairs invalid current metadata")
+  }
+  for (invalid in list(c("old", "*", "old"), c("old", "", "old"), c("old", ""))) {
+    malformed <- fixture(invalid, c(old = 5, new = 30))
+    set_priority(malformed, "old")
+    rejected <- propose(malformed)
+    expect(!rejected$eligible && grepl("archived DESCRIPTION", rejected$reason, fixed = TRUE),
+      "historical tolerance rejects globs and empty entries including a trailing comma")
+  }
+
+  merged <- fixture(letters[1:9], c(stats::setNames(rep(1, 9), letters[1:9]), new = 30))
+  common <- git(merged$root, "rev-parse", "HEAD")
+  first_registration <- c("a", "b", "new", letters[3:9])
+  git(merged$root, "checkout", "-qb", "first-registration")
+  set_priority(merged, first_registration)
+  git(merged$root, "commit", "-qam", "Register near the beginning")
+  git(merged$root, "checkout", "-qb", "second-registration", common)
+  set_priority(merged, c(letters[1:7], "new", letters[8:9]))
+  git(merged$root, "commit", "-qam", "Register near the end")
+  git(merged$root, "merge", "--no-edit", "first-registration")
+  rejected <- propose(merged)
+  expect(!rejected$eligible && grepl("new (positions 3, 9)", rejected$reason, fixed = TRUE),
+    "a clean merge of two unique priority lists is rejected when combined registrations duplicate")
+  before_dispatch <- testthat::find_test_scripts(file.path(merged$root, "tests/testthat"),
+    full.names = FALSE, start_first = c("a", "b", "new", letters[3:7], "new", letters[8:9]))
+  set_priority(merged, first_registration)
+  after_dispatch <- testthat::find_test_scripts(file.path(merged$root, "tests/testthat"),
+    full.names = FALSE, start_first = review_ready_priority_read(readLines(file.path(merged$root, "DESCRIPTION"))))
+  expect(identical(before_dispatch, paste0("test-", first_registration, ".R")) &&
+    identical(before_dispatch, after_dispatch), "explicit later-duplicate removal preserves exact native dispatch")
 
   f <- fixture(c("old", "deleted"), c(old = 5, new = 30, tiny = 0.1, skip = 100), "skip")
   original <- readLines(file.path(f$root, "DESCRIPTION"))
