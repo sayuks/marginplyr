@@ -41,6 +41,10 @@ local({
     '  ready <- Sys.getenv("FIXTURE_OUTPUT_READY")',
     '  if (nzchar(ready)) writeLines("ready", ready)',
     '  if (file.exists("spelling-failure")) return(data.frame(word="failure"))',
+    '  baseline_ready <- Sys.getenv("FIXTURE_BASELINE_READY")',
+    '  baseline_release <- Sys.getenv("FIXTURE_BASELINE_RELEASE")',
+    '  if (nzchar(baseline_ready)) writeLines("ready", baseline_ready)',
+    '  while (nzchar(baseline_release) && !file.exists(baseline_release)) Sys.sleep(0.05)',
     '  data.frame()', '}'
   ), "spell_check_package")
   install_tool("pkgload", c(
@@ -64,7 +68,7 @@ local({
   make_repo <- function(name, account_home = account) {
     repo <- file.path(workspace, name)
     dir.create(repo)
-    paths <- c("tools/review-ready.R", "tools/review-ready-check-lib.R",
+    paths <- c("tools/review-ready.R", "tools/review-ready-check-lib.R", "tools/review-ready-fifo.R",
       "tools/review-ready-progress.R", "tools/review-ready-progress-reporter.R",
       "tools/review-ready-timing.R",
       "tools/dependency-requirements.R", "tools/required-test-suggests.R",
@@ -192,7 +196,7 @@ local({
     '  lock <- filelock::lock',
     '  unlockBinding("lock", namespace)',
     '  assign("lock", function(path, exclusive = TRUE, timeout = Inf) {',
-    '    if (is.infinite(timeout)) return(NULL)',
+    '    if (is.infinite(timeout) && basename(path) == "review-ready-heavy.lock") return(NULL)',
     '    lock(path, exclusive = exclusive, timeout = timeout)',
     '  }, namespace)',
     '  lockBinding("lock", namespace)',
@@ -240,6 +244,8 @@ local({
   lock <- filelock::lock(shared, timeout = 0)
   on.exit(if (!is.null(lock)) filelock::unlock(lock), add = TRUE)
   # Capacity is occupied, yet source-only work and failed preflight finish.
+  queue_state <- file.path(dirname(shared), "review-ready-fifo", "state.rds")
+  before_baselines <- readRDS(queue_state)
   finish(start(repo))
   file.create(file.path(repo, "jarl-failure"))
   git(repo, "add", ".")
@@ -247,6 +253,7 @@ local({
   failed <- finish(start(repo, "full"), 1L)
   expect(grepl("jarl failed", failed, fixed = TRUE) &&
     !grepl("Waiting for heavy", failed, fixed = TRUE), "preflight fails before admission")
+  expect(identical(readRDS(queue_state), before_baselines), "source and failed baselines never register")
   git(repo, "rm", "--quiet", "jarl-failure")
   git(repo, "commit", "--quiet", "-m", "repair preflight")
   submitted <- git(repo, "rev-parse", "HEAD")
@@ -361,33 +368,216 @@ local({
   git(repo,"worktree","add","--quiet","--detach",linked,submitted)
   owned <- function(name) c(FIXTURE_RELEASE=file.path(workspace,paste0(name,"-release")),
     FIXTURE_READY=file.path(workspace,paste0(name,"-ready")))
+  sequence_of <- function(output) {
+    lines <- strsplit(output, "\n", fixed = TRUE)[[1L]]
+    as.numeric(sub("^FIFO accepted sequence ([0-9]+)[.].*$", "\\1",
+      grep("^FIFO accepted sequence ", lines, value = TRUE)))
+  }
+  registered <- function(run, ahead) {
+    wait_for(run, function() {
+      grepl(paste0(": ", ahead, " earlier live waiter(s)."), collected_output(run), fixed = TRUE)
+    }, "observable FIFO registration/count barrier")
+    sequence_of(collected_output(run))
+  }
+  another <- file.path(workspace, "another-worktree")
+  git(repo, "worktree", "add", "--quiet", "--detach", another, submitted)
   first_env <- owned("clone")
   second_env <- owned("linked")
-  lock <- filelock::lock(shared,timeout=0)
-  first <- start(clone,"full",first_env)
-  second <- start(linked,"full",second_env)
-  waiting(first)
-  waiting(second)
+  third_env <- owned("another")
+  lock <- filelock::lock(shared, timeout = 0)
+  first <- start(clone, "full", first_env)
+  b <- registered(first, 0)
+  second <- start(linked, "full", second_env)
+  c_sequence <- registered(second, 1)
+  # A live suspended head keeps its position, including arrivals at release.
+  first$signal(tools::SIGSTOP)
   filelock::unlock(lock)
   lock <- NULL
-  deadline <- Sys.time()+60
-  while (!any(file.exists(c(first_env[["FIXTURE_READY"]],second_env[["FIXTURE_READY"]])))) {
-    drain_output(first)
+  third <- start(another, "full", third_env)
+  d <- registered(third, 2)
+  expect(b < c_sequence && c_sequence < d, "acceptance order is B, C, D across clone/worktrees")
+  descriptors <- vapply(c(1, 1, 2), function(delay) {
+    Sys.sleep(delay)
     drain_output(second)
-    expect(Sys.time()<deadline && first$is_alive() && second$is_alive(), "one shared invocation starts")
-    Sys.sleep(0.05)
+    expect(!any(file.exists(c(first_env[["FIXTURE_READY"]], second_env[["FIXTURE_READY"]],
+      third_env[["FIXTURE_READY"]]))) &&
+      !grepl("capacity acquired", collected_output(second), fixed = TRUE),
+      "a suspended live head prevents successors from taking free capacity")
+    ps::ps_num_fds(ps::ps_handle(second$get_pid()))
+  }, integer(1))
+  cat("FIFO follower descriptors at 1/2/4 seconds: ", paste(descriptors, collapse = "/"), "\n", sep = "")
+  expect(diff(range(descriptors)) <= 2L, "FIFO metadata/liveness polling keeps descriptors bounded")
+  first$signal(tools::SIGCONT)
+  wait_for(first, function() file.exists(first_env[["FIXTURE_READY"]]), "B admitted automatically", 60)
+  expect(!any(file.exists(c(second_env[["FIXTURE_READY"]], third_env[["FIXTURE_READY"]]))),
+    "only B owns heavy capacity")
+  file.create(first_env[["FIXTURE_RELEASE"]])
+  first_output <- finish(first)
+  wait_for(second, function() file.exists(second_env[["FIXTURE_READY"]]), "C follows B", 60)
+  expect(!file.exists(third_env[["FIXTURE_READY"]]), "D cannot overlap or overtake C")
+  file.create(second_env[["FIXTURE_RELEASE"]])
+  finish(second)
+  wait_for(third, function() file.exists(third_env[["FIXTURE_READY"]]), "D follows C", 60)
+  file.create(third_env[["FIXTURE_RELEASE"]])
+  finish(third)
+  expect(grepl("elapsed wait [0-9]+[.][0-9]+ seconds", first_output) &&
+    !grepl("ETA", first_output, fixed = TRUE), "admission reports actual elapsed wait without an ETA")
+
+  # A middle cancellation and dead head leave only the live successor.
+  lock <- filelock::lock(shared, timeout = 0)
+  dead_head <- start(clone, "full")
+  registered(dead_head, 0)
+  middle <- start(linked, "full")
+  middle_sequence <- registered(middle, 1)
+  survivor <- start(another, "full")
+  registered(survivor, 2)
+  middle$signal(2L)
+  middle_output <- finish(middle, 130L)
+  registered(survivor, 1)
+  ps::ps_kill(ps::ps_handle(dead_head$get_pid()))
+  registered(survivor, 0)
+  dead_head$wait()
+  survivor$signal(2L)
+  finish(survivor, 130L)
+  # Killing a middle waiter also lets its successor advance without head death.
+  head <- start(clone, "full")
+  registered(head, 0)
+  dead_middle <- start(linked, "full")
+  registered(dead_middle, 1)
+  tail <- start(another, "full")
+  registered(tail, 2)
+  ps::ps_kill(ps::ps_handle(dead_middle$get_pid()))
+  registered(tail, 1)
+  dead_middle$wait()
+  head$signal(2L)
+  finish(head, 130L)
+  registered(tail, 0)
+  tail$signal(2L)
+  finish(tail, 130L)
+  retry <- start(linked, "full")
+  retry_sequence <- registered(retry, 0)
+  retry$signal(2L)
+  retry_output <- finish(retry, 130L)
+  expect(retry_sequence > middle_sequence &&
+    !identical(result_record(retry_output)$started_utc, result_record(middle_output)$started_utc),
+    "retry has a fresh invocation identity and acceptance sequence")
+  filelock::unlock(lock)
+  lock <- NULL
+
+  # Launch order cannot outrank successful five-check acceptance.
+  lock <- filelock::lock(shared, timeout = 0)
+  baseline_ready <- file.path(workspace, "baseline-ready")
+  baseline_release <- file.path(workspace, "baseline-release")
+  launched_first <- start(clone, "full", c(FIXTURE_BASELINE_READY = baseline_ready,
+    FIXTURE_BASELINE_RELEASE = baseline_release))
+  wait_for(launched_first, function() file.exists(baseline_ready), "first launch is still in baseline")
+  accepted_first <- start(linked, "full")
+  earlier_sequence <- registered(accepted_first, 0)
+  file.create(baseline_release)
+  later_sequence <- registered(launched_first, 1)
+  expect(earlier_sequence < later_sequence, "registration after all five checks decides acceptance order")
+  launched_first$signal(2L)
+  finish(launched_first, 130L)
+  accepted_first$signal(2L)
+  finish(accepted_first, 130L)
+  filelock::unlock(lock)
+  lock <- NULL
+
+  # Kill after guarding but before acceptance to leave an interrupted registration.
+  orphan_profile <- file.path(workspace, "orphan-profile.R")
+  orphan_marker <- file.path(workspace, "orphan-guard")
+  writeLines(c(
+    'local({',
+    '  namespace <- asNamespace("filelock")',
+    '  acquire <- filelock::lock',
+    '  unlockBinding("lock", namespace)',
+    '  assign("lock", function(path, exclusive = TRUE, timeout = Inf) {',
+    '    guard <- acquire(path, exclusive = exclusive, timeout = timeout)',
+    '    if (startsWith(basename(path), "request-") && !is.null(guard)) {',
+    '      writeLines(path, Sys.getenv("FIXTURE_ORPHAN_MARKER"))',
+    '      Sys.sleep(600)',
+    '    }',
+    '    guard',
+    '  }, namespace)',
+    '  lockBinding("lock", namespace)',
+    '})'
+  ), orphan_profile)
+  orphan <- start(clone, "full", c(R_PROFILE_USER = orphan_profile,
+    FIXTURE_ORPHAN_MARKER = orphan_marker))
+  wait_for(orphan, function() file.exists(orphan_marker), "guard predates registration")
+  orphan_path <- readLines(orphan_marker)[[1L]]
+  orphan$signal(9L)
+  orphan$wait()
+  recovered <- start(clone, "full")
+  registered(recovered, 0)
+  expect(!file.exists(orphan_path), "an ended interrupted registration's guard is reclaimed")
+  recovered$signal(2L)
+  finish(recovered, 130L)
+
+  # Corrupt, incompatible and ambiguous state never bypasses FIFO ownership.
+  bad_account <- file.path(workspace, "bad-state-account")
+  bad_repo <- make_repo("bad-state", bad_account)
+  bad_queue <- file.path(bad_account, ".local", "state", "marginplyr", "review-ready-fifo")
+  dir.create(bad_queue, recursive = TRUE)
+  state_path <- file.path(bad_queue, "state.rds")
+  clean_state <- list(version = 1L, counter = 50, requests = list())
+  reject_state <- function(pattern) {
+    output <- finish(start(bad_repo, "full"), 1L, 30000L)
+    expect(grepl(pattern, output, fixed = TRUE) &&
+      !grepl("capacity acquired|Source-tarball R CMD check", output) &&
+      identical(result_record(output)$status, "failed"), "unsafe FIFO state fails visibly before package work")
   }
-  clone_first <- file.exists(first_env[["FIXTURE_READY"]])
-  leader <- if(clone_first) first else second
-  follower <- if(clone_first) second else first
-  leader_env <- if(clone_first) first_env else second_env
-  follower_env <- if(clone_first) second_env else first_env
-  expect(!file.exists(follower_env[["FIXTURE_READY"]]), "clone and linked worktree cannot check concurrently")
-  file.create(leader_env[["FIXTURE_RELEASE"]])
-  finish(leader)
-  wait_for(follower,function() file.exists(follower_env[["FIXTURE_READY"]]), "waiter starts automatically after release",60)
-  file.create(follower_env[["FIXTURE_RELEASE"]])
-  finish(follower)
+  expect(file.symlink(file.path(bad_queue, "missing-state"), state_path), "dangling state fixture")
+  reject_state("Unsafe or missing Review-ready FIFO file")
+  expect(nzchar(Sys.readlink(state_path)), "a dangling state link is preserved on rejection")
+  unlink(state_path)
+  writeLines("corrupt", state_path)
+  reject_state("Review-ready failed")
+  incompatible <- clean_state
+  incompatible$version <- 99L
+  saveRDS(incompatible, state_path)
+  reject_state("Incompatible Review-ready FIFO state")
+  live_orphan_name <- paste0("request-", strrep("b", 32L), "-", Sys.getpid(), "-",
+    sprintf("%.6f", as.numeric(ps::ps_create_time())), ".lock")
+  live_orphan_guard <- filelock::lock(file.path(bad_queue, live_orphan_name), timeout = 0)
+  on.exit(if (!is.null(live_orphan_guard)) filelock::unlock(live_orphan_guard), add = TRUE)
+  live_active <- clean_state
+  live_active$requests <- list(list(sequence = 49, guard = live_orphan_name, phase = "active"))
+  saveRDS(live_active, state_path)
+  reject_state("Review-ready FIFO active ownership conflicts with free capacity")
+  saveRDS(clean_state, state_path)
+  reject_state("Ambiguous live unregistered Review-ready FIFO guard")
+  expect(identical(readRDS(state_path), clean_state), "an unexplained live guard cannot be bypassed")
+  filelock::unlock(live_orphan_guard)
+  live_orphan_guard <- NULL
+  unlink(file.path(bad_queue, live_orphan_name))
+  # A PID with a different OS creation time is not the owner of that registration.
+  ambiguous_name <- paste0("request-", strrep("a", 32L), "-", Sys.getpid(), "-",
+    sprintf("%.6f", as.numeric(ps::ps_create_time()) - 100), ".lock")
+  ambiguous_guard <- filelock::lock(file.path(bad_queue, ambiguous_name), timeout = 0)
+  on.exit(if (!is.null(ambiguous_guard)) filelock::unlock(ambiguous_guard), add = TRUE)
+  ambiguous <- clean_state
+  ambiguous$requests <- list(list(sequence = 49, guard = ambiguous_name, phase = "waiting"))
+  saveRDS(ambiguous, state_path)
+  reject_state("Ambiguous Review-ready FIFO guard ownership")
+  expect(identical(readRDS(state_path), ambiguous), "ambiguous ownership preserves the possible earlier waiter")
+  filelock::unlock(ambiguous_guard)
+  ambiguous_guard <- NULL
+  # The same inactive guard can now be positively acquired and safely reclaimed.
+  after_ambiguity <- start(bad_repo, "full")
+  registered(after_ambiguity, 0)
+  after_ambiguity$signal(2L)
+  finish(after_ambiguity, 130L)
+  expect(!file.exists(file.path(bad_queue, ambiguous_name)), "inactive owned guards are reclaimed with positive evidence")
+  saveRDS(ambiguous, state_path)
+  reject_state("Unsafe or missing Review-ready FIFO file")
+  saveRDS(clean_state, state_path)
+  unlink(state_path)
+  reject_state("Missing Review-ready FIFO state")
+  saveRDS(clean_state, state_path)
+  unlink(file.path(bad_queue, "metadata.lock"))
+  dir.create(file.path(bad_queue, "metadata.lock"))
+  reject_state("Unsafe or missing Review-ready FIFO file")
 
   # Ordinary cancellation must collect owned test work before releasing the slot.
   active_env <- owned("ordinary-cancel")
@@ -534,7 +724,9 @@ local({
   dir.create(outside)
   symlink <- file.path(runs_root,"foreign-symlink")
   expect(file.symlink(outside,symlink), "fixture symlink")
+  before_retention <- readRDS(queue_state)
   finish(start(repo))
+  expect(identical(readRDS(queue_state), before_retention), "retention preserves acceptance sequencing and live coordination")
   expect(!any(dir.exists(c(boundary,old_failure,killed))) &&
     all(dir.exists(c(young,active,uncertain,invalid,outside))),
     "seven-day start-time expiry protects active, uncertain and foreign data")

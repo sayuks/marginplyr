@@ -23,10 +23,11 @@ clones and worktrees share local capacity. Run the retained process/progress
 CI contracts on macOS for that target. The package OS checks and release matrix
 continue to establish package portability independently of the local runner.
 
-After successful baseline checks, `full` waits on one stable OS-backed advisory
-lock across this user's marginplyr clones/worktrees on the Mac, then starts
-automatically. Its package build/check runs the complete suite and snapshots
-once with four testthat workers. Preserve ordinary process/progress reporting,
+After successful baseline checks, `full` registers in acceptance order under
+[ADR 0040](0040-learn-local-test-order-and-admit-heavy-checks-fifo.md). Only the
+oldest live waiter may acquire the stable OS-backed advisory heavy lock across
+this user's clones/worktrees on the Mac, then start automatically. Its package
+build/check runs the complete suite and snapshots once with four testthat workers. Preserve ordinary process/progress reporting,
 the same execution handle, and bounded same-agent investigation. Focused tests
 retain their separate per-worktree allowance with parallelism disabled.
 

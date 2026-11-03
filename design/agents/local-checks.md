@@ -66,8 +66,12 @@ build/check. Correct and commit the fix explicitly before invoking again.
 `source` ends after this baseline and reports its SHA, omission and supplied
 reason. It is a five-check-only result, never a full package-check pass.
 
-After the baseline succeeds, `full` holds one stable OS advisory lock shared
-by this user's marginplyr clones and worktrees on the Mac. Under that slot it
+After the baseline succeeds, `full` atomically registers in acceptance order
+across this user's marginplyr clones and worktrees on the Mac. Only the oldest
+live waiter may acquire the stable shared heavy lock; admission starts
+automatically. The [runner guide](../../tools/review-ready-runner.md) owns
+sequencing, ownership checks and state failures, and separates this contract
+from actual Mac adoption under #1157. Under that slot it
 builds a tarball and runs `R CMD check --as-cran`, including examples, vignette
 rebuilding, the complete test suite and snapshots once. It sets
 `TESTTHAT_PARALLEL=true`, `TESTTHAT_CPUS=4`, `NOT_CRAN=true` and required-Suggests

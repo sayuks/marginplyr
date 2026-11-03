@@ -505,20 +505,6 @@ run_review_ready_source <- function(source_root, prerequisites, runner = review_
   required
 }
 
-# Uses one stable account-wide advisory target across clones and worktrees.
-review_ready_heavy_lock <- function() {
-  target <- file.path(review_ready_account_home(), ".local", "state", "marginplyr",
-    "review-ready-heavy.lock")
-  dir.create(dirname(target), recursive = TRUE, showWarnings = FALSE)
-  cat("\nWaiting for heavy package-check capacity.\n")
-  flush.console()
-  # One interruptible wait avoids filelock 1.0.3's descriptor leak on timeout.
-  lock <- filelock::lock(target, timeout = Inf)
-  if (is.null(lock)) stop("Cannot acquire heavy package-check capacity.", call. = FALSE)
-  cat("Heavy package-check capacity acquired.\n")
-  lock
-}
-
 # Builds and checks once in a child whose temporary storage belongs to this run.
 run_review_ready_heavy <- function(source_root, workspace, required, r_command) {
   timing <- file.path(workspace, "timing")
@@ -558,7 +544,7 @@ run_review_ready_heavy <- function(source_root, workspace, required, r_command) 
 # The same parent holds capacity until its isolated check child has been collected.
 run_review_ready_full <- function(source_root, run, required, prerequisites, runner = review_ready_run_system) {
   lock <- review_ready_heavy_lock()
-  on.exit(filelock::unlock(lock), add = TRUE)
+  on.exit(review_ready_fifo_release(lock), add = TRUE)
   arguments <- list(source_root = source_root, workspace = run$directory,
     required = required, r_command = prerequisites$r)
   saveRDS(arguments, file.path(run$directory, "worker-arguments.rds"))
