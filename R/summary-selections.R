@@ -1731,6 +1731,26 @@ rewrite_across_selection <- function(expr,
     call_args[[selection_index]] <- summary_all_of_expr(selected, data_proxy)
   }
 
+  if (identical(call_name, "across")) {
+    parsed <- parse_across_arguments(rebuild_static_call(expr, call_args))
+    if (!is.null(parsed$names)) {
+      template <- rlang::eval_tidy(parsed$names, env = env)
+      function_names <- known_across_function_names(parsed, env)
+      if (is.character(template) && length(template) == 1L &&
+            !is.na(template) && length(function_names) > 0L &&
+            across_unpack_is_false(parsed$unpack, env)) {
+        output_names <- expand_across_name(
+          template, names(selected), function_names, env
+        )
+        # Planning and every backend consume these same resolved names.
+        template <- paste0(
+          "{", deparse1(rlang::expr(base::c(!!!as.list(output_names)))), "}"
+        )
+      }
+      call_args[parsed$names_index] <- list(template)
+    }
+  }
+
   if (identical(call_name, "across") && normalize_across_names) {
     parsed <- parse_across_arguments(rebuild_static_call(expr, call_args))
     unpack_is_false <- across_unpack_is_false(parsed$unpack, env)
@@ -1741,7 +1761,9 @@ rewrite_across_selection <- function(expr,
         unpack_is_false &&
         length(function_names) == 1L
     ) {
-      output_names <- known_across_output_names(expr, env, data_proxy)
+      output_names <- known_across_output_names(
+        rebuild_static_call(expr, call_args), env, data_proxy
+      )
       if (length(output_names) == length(selected)) {
         names(selected) <- output_names
         call_args[[selection_index]] <- summary_all_of_expr(
@@ -1757,15 +1779,6 @@ rewrite_across_selection <- function(expr,
         }
         call_args <- call_args[-parsed$names_index]
       }
-    }
-  }
-
-  if (identical(call_name, "across")) {
-    parsed <- parse_across_arguments(rebuild_static_call(expr, call_args))
-    if (!is.null(parsed$names)) {
-      call_args[parsed$names_index] <- list(
-        rlang::eval_tidy(parsed$names, env = env)
-      )
     }
   }
 
@@ -2066,50 +2079,38 @@ known_across_output_names <- function(expr, env, data_proxy) {
     return(character())
   }
 
-  unlist(
-    lapply(
-      column_names,
-      function(column) {
-        vapply(
-          function_names,
-          function(fn) {
-            expanded <- expand_across_name(names_template, column, fn, env)
-            check_across_name_count(expanded, names_template, column)
-          },
-          character(1)
-        )
-      }
-    ),
-    use.names = FALSE
-  )
+  expand_across_name(names_template, column_names, function_names, env)
 }
 
+# Expands one template over dplyr's column-major column/function product.
+# Callers supply the selected output labels and known function labels.
 expand_across_name <- function(template, column, function_name, env) {
-  as.character(glue::glue_data(
-    list(.col = column, .fn = function_name),
-    template,
-    .envir = env
-  ))
+  columns <- rep(column, each = length(function_name))
+  functions <- rep(function_name, times = length(column))
+  mask <- rlang::env(env, .col = columns, .fn = functions)
+  rlang::env_bind_active(
+    mask, col = function() mask$.col, fn = function() mask$.fn
+  )
+  expanded <- as.character(glue::glue(template, .envir = mask))
+  if (length(columns) == 0L) {
+    return(character())
+  }
+  check_across_name_count(expanded, template, columns)
 }
 
-# Require one expanded name per selected column before staging the summary.
+# Require one expanded name per column/function pair before staging a summary.
 check_across_name_count <- function(expanded, template, column) {
-  if (length(expanded) == 1L) {
+  if (length(expanded) == length(column)) {
     return(expanded)
   }
 
-  # The template and the column both stay in the main line, under ADR 0023's
-  # element-count reading of its condition 2: each is one caller subject rather
-  # than a part the caller decides the count of, however long a template
-  # renders. `{.code}` is what a spelling the caller typed takes, and the
-  # braces inside one are inert because it arrives interpolated as a value.
   abort_marginplyr(c(
     paste0(
       "The {.fun across} {.arg .names} template {.code {template}} must ",
-      "produce one name per column, but it produced {length(expanded)} for ",
-      "column {.var {column}}."
+      "produce one name per column/function pair, but it produced ",
+      "{length(expanded)} for {length(column)} outputs."
     ),
-    i = "Use a template that expands to a single name."
+    i = "Use a template that expands to one name per output."
   ))
 }
 

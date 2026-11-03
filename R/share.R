@@ -2052,13 +2052,7 @@ plan_across_share <- function(expr,
     kind = kind,
     error_call = expr
   )
-  outputs <- vapply(
-    sources,
-    function(source) {
-      expand_across_name(names_template, source, "1", env)
-    },
-    character(1)
-  )
+  outputs <- expand_across_name(names_template, sources, "1", env)
 
   validate_share_request(
     outputs = outputs,
