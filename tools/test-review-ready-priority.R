@@ -86,6 +86,7 @@ local({
   set_priority(f, c("tiny", "old"))
   updated <- propose(f)
   expect(identical(updated$registration, c("new", "tiny", "old")), "priority-only changes recalculate preserving relative order")
+  expect(identical(updated$native, proposal$native), "recalculation preserves measured native dispatch comparison")
   set_priority(f, proposal$selected)
   unchanged <- propose(f)
   expect(unchanged$eligible && !file.exists(file.path(unchanged$directory, "priority.patch")), "unchanged configuration has no patch")

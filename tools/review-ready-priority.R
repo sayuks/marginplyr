@@ -44,12 +44,12 @@ review_ready_priority_model <- function(order, durations) {
 }
 
 # Separates mandatory registration from conservative optional stable insertion.
-review_ready_priority_calculate <- function(priority, files) {
+review_ready_priority_calculate <- function(priority, files, measured_priority) {
   stems <- sub("[.][rR]$", "", sub("^test[-_.]?", "", files$file))
   if (anyDuplicated(stems)) stop("test filenames do not have unique priority stems")
   duration <- stats::setNames(files$duration, stems)
   eligible <- stats::setNames(files$eligible, stems)
-  native <- c(intersect(priority, stems), setdiff(stems, priority))
+  native <- c(intersect(measured_priority, stems), setdiff(stems, measured_priority))
   registration <- intersect(priority, stems)
   new <- setdiff(stems[eligible], registration)
   new <- new[order(-duration[new], new, method = "radix")]
@@ -144,7 +144,8 @@ review_ready_priority_evidence <- function(root, run) {
     }
   }
   if (any(!is.finite(evidence$files$duration) | evidence$files$duration < 0)) stop("invalid model durations")
-  list(manifest = manifest, evidence = evidence, description = description)
+  list(manifest = manifest, evidence = evidence, description = description,
+    measured_priority = review_ready_priority_read(old_description))
 }
 
 # Writes a deterministic patch and explanation under the identified invocation.
@@ -153,7 +154,8 @@ review_ready_priority_propose <- function(root, run) {
   output <- NULL
   tryCatch(withCallingHandlers({
     input <- review_ready_priority_evidence(root, run)
-    proposal <- review_ready_priority_calculate(review_ready_priority_read(input$description), input$evidence$files)
+    proposal <- review_ready_priority_calculate(review_ready_priority_read(input$description),
+      input$evidence$files, input$measured_priority)
     proposal$sha <- input$manifest$sha
     proposal$identities <- input$manifest$md5
     proposal$movements <- data.frame(file = proposal$selected,

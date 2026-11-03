@@ -1,0 +1,57 @@
+196 files, four real hook installs per sample; serial empty-task recording.
+First sample discarded as warmup; nine retained samples.
+Included preparation, four setups, recording delta, both evidence parses, calculation and output.
+Excluded process startup and actual test work; no full suite executed.
+   sample prepare_s setup_four_s recording_increment_s parsing_s proposal_s
+2       2     0.146        0.018                 0.041     0.066      0.183
+3       3     0.137        0.018                 0.024     0.042      0.123
+4       4     0.087        0.020                 0.033     0.047      0.193
+5       5     0.165        0.022                 0.039     0.064      0.184
+6       6     0.160        0.018                 0.036     0.058      0.191
+7       7     0.141        0.022                 0.042     0.063      0.186
+8       8     0.108        0.019                 0.024     0.047      0.155
+9       9     0.105        0.021                 0.049     0.064      0.187
+10     10     0.142        0.018                 0.046     0.059      0.207
+   combined_s
+2       0.454
+3       0.344
+4       0.380
+5       0.474
+6       0.463
+7       0.454
+8       0.353
+9       0.426
+10      0.472
+       prepare_s setup_four_s recording_increment_s parsing_s proposal_s
+min        0.087        0.018                 0.024     0.042      0.123
+median     0.141        0.019                 0.039     0.059      0.186
+max        0.165        0.022                 0.049     0.066      0.207
+       combined_s
+min         0.344
+median      0.454
+max         0.474
+  /private/tmp/marginplyr-1158/tools/review-ready-timing.R 
+                        "50da4b508324fd2b23660ebe481d8e36" 
+/private/tmp/marginplyr-1158/tools/review-ready-priority.R 
+                        "0dfeb8229147306c76d0712c19d54778" 
+R version 4.6.1 (2026-06-24)
+Platform: aarch64-apple-darwin23
+Running under: macOS Tahoe 26.6.2
+
+Matrix products: default
+BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib 
+LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1
+
+locale:
+[1] C.UTF-8/C.UTF-8/C.UTF-8/C/C.UTF-8/C.UTF-8
+
+time zone: Asia/Tokyo
+tzcode source: internal
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base     
+
+loaded via a namespace (and not attached):
+ [1] processx_3.9.0  compiler_4.6.1  magrittr_2.0.5  R6_2.6.1       
+ [5] cli_3.6.6       tools_4.6.1     otel_0.2.0      digest_0.6.39  
+ [9] brio_1.1.5      testthat_3.3.2  lifecycle_1.0.5 rlang_1.3.0    
