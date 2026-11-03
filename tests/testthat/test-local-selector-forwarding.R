@@ -131,6 +131,99 @@ test_that("top-level function forwarding keeps dplyr expansion timing", {
   expect_identical(run("margin"), expected)
 })
 
+test_that("dynamic unpack preserves forwarded function factory evaluation", {
+  run <- function(verb, unpack = TRUE) {
+    data <- data.frame(g = c("a", "a", "b"), x = 1:3)
+    calls <- 0L
+    factory <- function() {
+      calls <<- calls + 1L
+      offset <- calls
+      function(x) data.frame(value = sum(x) + offset)
+    }
+    wrapper <- function(...) {
+      verb(data, dplyr::across(x, ..., .unpack = unpack), .by = g)
+    }
+    list(result = wrapper(factory()), calls = calls)
+  }
+  expected <- run(dplyr::summarise)
+  expect_identical(expected$calls, 2L)
+  expect_identical(expected$result$x_value, c(5L, 4L))
+  expect_identical(run(summarize_with_margins), expected)
+})
+
+test_that("dynamic unpack retains factory context and naming controls", {
+  data <- data.frame(g = c("a", "a", "b"), x = 1:3)
+  inputs <- list(data, tibble::as_tibble(data))
+  run <- function(verb, input, unpack, listed, forwarded, parenthesized) {
+    events <- integer()
+    factory <- function() {
+      offset <- dplyr::n()
+      events <<- c(events, offset)
+      fn <- function(x) data.frame(value = sum(x) + offset)
+      if (listed) list(total = fn) else fn
+    }
+    wrapper <- function(...) {
+      if (parenthesized) {
+        verb(input, (dplyr::across)(x, ..., .unpack = unpack), .by = g)
+      } else {
+        verb(input, dplyr::across(x, ..., .unpack = unpack), .by = g)
+      }
+    }
+    result <- if (forwarded) {
+      wrapper(factory())
+    } else if (parenthesized) {
+      verb(input, (dplyr::across)(x, factory(), .unpack = unpack), .by = g)
+    } else {
+      verb(input, dplyr::across(x, factory(), .unpack = unpack), .by = g)
+    }
+    list(result = result, events = events)
+  }
+  for (input in inputs) {
+    for (unpack in list(TRUE, "{inner}_{outer}", FALSE)) {
+      for (listed in c(FALSE, TRUE)) {
+        for (forwarded in c(FALSE, TRUE)) {
+          for (parenthesized in c(FALSE, TRUE)) {
+            expected <- run(dplyr::summarise, input, unpack, listed,
+                            forwarded, parenthesized)
+            actual <- run(summarize_with_margins, input, unpack, listed,
+                          forwarded, parenthesized)
+            expect_identical(actual, expected, info = paste(
+              class(input)[[1L]], unpack, listed, forwarded, parenthesized
+            ))
+          }
+        }
+      }
+    }
+  }
+})
+
+test_that("forwarded unpacked functions retain output collision checks", {
+  data <- data.frame(g = c("a", "a", "b"), x = 1:3)
+  unpack <- "{inner}"
+  for (target in c("g", "set", "..marginplyr_key_1")) {
+    factory <- function() {
+      function(x) stats::setNames(data.frame(sum(x)), target)
+    }
+    wrapper <- function(...) {
+      summarize_with_margins(
+        data, dplyr::across(x, ..., .unpack = unpack),
+        .grouping = grouping_set(g), .id = "set"
+      )
+    }
+    expect_error(wrapper(factory()), class = "marginplyr_error",
+                 info = target)
+  }
+  factory <- function() function(x) data.frame(total = sum(x))
+  wrapper <- function(...) {
+    summarize_with_margins(
+      data, total = sum(x), dplyr::across(x, ..., .unpack = unpack),
+      p = share_of_total(total), .grouping = rollup(g)
+    )
+  }
+  error <- expect_error(wrapper(factory()), class = "marginplyr_error")
+  expect_match(conditionMessage(error), "defined exactly once")
+})
+
 test_that("forwarded function arguments retain their names", {
   data <- data.frame(x = 1:3)
   f <- function(x, ...) sum(x) + sum(unlist(list(...)))
