@@ -580,7 +580,7 @@ add_grouping_set_id <- function(result,
   }
   set_id <- as.integer(set_id)
   value <- if (count_branch_rows) {
-    rlang::expr(rep(!!set_id, dplyr::n()))
+    rlang::expr(base::rep(!!set_id, dplyr::n()))
   } else {
     set_id
   }

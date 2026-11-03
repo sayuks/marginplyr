@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Zero-column dtplyr expansion and nesting preserve empty-input results when
+  the caller binds `rep`, including after lazy result construction (#1171).
+
 * Unnamed top-level `across()` summaries preserve populated `...` forwarding
   while retaining dplyr's function-factory evaluation timing (#1151).
 
