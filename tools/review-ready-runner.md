@@ -153,9 +153,17 @@ seconds slower, and is selected only for at least ten seconds of modeled
 whole-suite improvement over registration alone. The report also compares the
 selected order with the sample's native registered-first/append-last dispatch.
 
-Adopt an eligible proposal with the next ordinary code-change commit, including
-in the same PR. If no ordinary change remains, defer adoption. Immediately
-before application, recalculate against the target worktree's current priority:
+After the task's first successful full result, inspect `explanation.md` and
+`proposal.rds` before review or reporting completion. Account for the measured
+durations, registrations/removals, optional existing-file reordering and all
+four schedule estimates (`native`, `registration`, `candidate`, `selected`).
+Proposal generation alone does not complete this step.
+
+Apply an eligible changed proposal in the current task, including a follow-up
+commit in the same PR when implementation is otherwise complete. Registration
+and deletion maintenance do not require the optional reordering gain threshold.
+An unchanged priority completes adoption without an edit. Immediately before
+application, recalculate against the target worktree's current priority:
 
 ```sh
 Rscript tools/propose-test-priority.R --run /absolute/path/to/.review-ready/runs/RUN
@@ -164,7 +172,7 @@ git apply /absolute/path/to/RUN/priority-NEW/priority.patch
 ```
 
 Use the newly printed directory, review its explanation and diff, then commit
-alongside that ordinary change. An unchanged priority has no patch. Do not
+the priority change. An unchanged priority has no patch. Do not
 blindly concatenate concurrent whole-list patches: follow the
 [integration workflow](../design/agents/integration.md), then recalculate. A
 priority-only change since measurement permits recalculation. Changed test or
@@ -174,8 +182,16 @@ ordinarily required successful full measurement. Recalculation never requests
 another suite execution or renews the run's seven-day deadline.
 
 The priority commit receives its own applicable verification for its own SHA.
-The measurement pass certifies only the measured SHA. Later validation may
-produce a new proposal; it never applies it or triggers an edit/recheck loop.
+The measurement pass certifies only the measured SHA. Inspect and record any
+proposal from that validation, then complete this task without another priority
+edit or check solely for that proposal. A new implementation change or explicit
+user request can start a later adoption; a validation proposal alone cannot.
+Record the measured SHA, proposal directory, registration/removal counts,
+optional-reordering decision, schedule estimates and modeled gains in the PR's
+verification record, with the adopted commit or a concrete reason for deferral
+or no change. Summarize the disposition in the completion response. Distinguish
+modeled scheduling gains from observed runtimes. If timing or a proposal is
+unavailable, record its diagnostic and complete the actual check outcome.
 Only membership/order is committed, without durations, timestamps or history.
 A fresh clone uses that setting through ordinary `test_check()` without any
 measurement artifacts. FIFO admission is independent of proposal adoption.

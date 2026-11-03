@@ -191,7 +191,7 @@ review_ready_priority_propose <- function(root, run) {
       utils::capture.output(print(proposal$movements, row.names = FALSE)),
       "", "Recalculate against current priority immediately before explicit Git application.",
       "Changed tests/helpers, DESCRIPTION beyond priority, dependency environment or expired/unavailable evidence defer adoption.",
-      "Include an eligible update alongside the next ordinary code change; otherwise defer.",
+      "Follow tools/review-ready-runner.md#priority-proposals-and-explicit-adoption for inspection and adoption.",
       "The adopted commit needs its own applicable verification; never automatically apply a subsequent proposal.")
     writeLines(report, file.path(output, "explanation.md"))
     saveRDS(proposal, file.path(output, "proposal.rds"))

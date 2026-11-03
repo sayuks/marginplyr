@@ -60,7 +60,7 @@ promotions reduced changes but still admitted a later proposal with only
 therefore distinguish constructing a candidate from adopting its reordering.
 
 A candidate priority update becomes effective through an explicit Git commit
-alongside the next ordinary code change. That commit may be in the same pull
+in the current task. That follow-up commit may be in the same pull
 request; neither a separate pull request nor a main merge is required before
 that worktree can use it. Git integration shares the priority with other
 worktrees. Its new SHA needs its own applicable verification; the measurement
@@ -162,13 +162,13 @@ native registered-first dispatch of the measured invocation as well. An
 estimate is not a measured speedup or a statistical guarantee; ten seconds is
 the initial operating threshold.
 
-Apply the resulting proposal alongside the next ordinary code-change commit,
-which may be in the same pull request. If no such change remains, defer
-priority adoption rather than automatically create a priority-only commit and
-another full invocation. Its later adoption must use eligible, available evidence
-and current integration checks. An adopted new SHA
-still needs its usual verification; a verification run does not automatically
-adopt another proposal.
+Inspect and adopt the first eligible changed proposal in the current task,
+even when implementation is otherwise complete. Use eligible, available evidence
+and current integration checks. An adopted new SHA still needs its usual
+verification. Inspect and record that validation's proposal, then stop adoption
+for this task unless a new implementation change or explicit user request
+requires it. The runner guide's *Priority proposals and explicit adoption*
+defines the required inspection and disposition record.
 
 ## Agreed instrumentation overhead acceptance bound
 

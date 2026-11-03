@@ -88,13 +88,13 @@ and external-clock checks, and retains local future-file-timestamp checking.
 new files still run. There is no admission acknowledgment or AI stop/resume
 coordination.
 
-Eligible full timing produces an invocation-owned priority proposal without
-editing checked source. Follow the runner guide's
-[explicit adoption workflow](../../tools/review-ready-runner.md#priority-proposals-and-explicit-adoption)
-to recalculate against current priority and include it with the next ordinary
-code change. Defer when no ordinary change remains or evidence is stale; the
-adopted commit needs its own applicable verification, without an automatic
-proposal-application/recheck loop.
+After a successful full result, complete the runner guide's
+[timing-proposal disposition](../../tools/review-ready-runner.md#priority-proposals-and-explicit-adoption)
+before review or reporting completion. Inspect the measured durations,
+registrations/removals and modeled scheduling gains, apply an eligible change
+in this task, and verify the adopted SHA. An otherwise finished implementation
+is still eligible for that follow-up commit. The guide defines stale-evidence
+handling and where adoption stops after validation.
 
 The shared slot covers this heavy check, not every R process. Additional
 focused executions follow the recipe below. Routine Review-ready does not run
@@ -319,7 +319,8 @@ any fix before starting another invocation.
 Record the submitted SHA, chosen scope and reason, all five baseline outcomes,
 heavy-check execution or omission, terminal outcome, artifact directory and
 NOTE dispositions in the pull request. A full result includes the source-tarball
-check's errors, warnings and notes. A source result explicitly says
+check's errors, warnings and notes and the timing-proposal disposition required
+by the runner guide. A source result explicitly says
 `package build/check, complete suite and snapshots omitted`.
 
 All runner-owned logs, results, source copies, archives, tarballs, check/install

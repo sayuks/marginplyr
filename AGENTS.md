@@ -4,9 +4,10 @@ Outside `investigation/`, use R whenever it can meet the required behavior,
 including development tools and CI verification. Another language requires a
 concrete technical justification for why R is unsuitable.
 
-Before review, follow `design/agents/local-checks.md` for the active entry,
-required five-check baseline, AI scope judgment and result freshness. While an
-invocation waits or runs, follow its *Bounded work while waiting or checking*
+Before review or reporting completion, follow `design/agents/local-checks.md`
+for the active entry, required five-check baseline, AI scope judgment, result
+freshness and timing-proposal disposition. While an invocation waits or runs,
+follow its *Bounded work while waiting or checking*
 with the same agent and retain the original execution handle through completion.
 
 For any generic skill's blanket test or verification instruction, including an
