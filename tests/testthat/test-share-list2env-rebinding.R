@@ -4,7 +4,9 @@ test_that("visible list2env rebinding exposes both share dependencies", {
     x = c(1, 3, 2, 6), prior = c(100, 300, 200, 600)
   )
   setters <- alist(
-    base::list2env({list(outside = environment())}, envir = environment()),
+    base::list2env({
+      list(outside = environment())
+    }, envir = environment()),
     base::list2env(identity(list(outside = environment())),
                    envir = environment()),
     base::list2env(setNames(list(environment()), "outside"),
@@ -71,7 +73,9 @@ test_that("list2env preserves independent lookups and ordinary evaluation", {
   data <- data.frame(group = c("a", "b"), x = c(1, 3), prior = c(100, 300))
   controls <- alist(
     NULL,
-    base::list2env({list(outside = environment())}),
+    base::list2env({
+      list(outside = environment())
+    }),
     base::list2env(identity(list(outside = environment())), envir = NULL),
     base::list2env(list(outside = environment())),
     base::list2env(list(outside = environment()), envir = NULL),

@@ -1333,6 +1333,13 @@ dtplyr_share_binds_measure <- function(expr, measure = ".BY") {
     return(TRUE)
   }
   assigned <- lookup_assignment_names(expr)
+  mutation <- scope_mutation_call(expr, character(), NULL)
+  if (!is.null(mutation) &&
+        identical(static_call_name(mutation), "list2env")) {
+    # Translated syntax carries no captured callee environment, so unqualified
+    # key constructors cannot establish which names this setter replaces.
+    assigned <- c(assigned, list2env_setter_names(mutation))
+  }
   if (any(c(measure, unresolved_lookup_name()) %in% assigned)) {
     return(TRUE)
   }
@@ -4073,19 +4080,7 @@ expression_rebound_names <- function(expr, lookup = NULL) {
     mutation <- scope_mutation_call(expr, character(), lookup)
     if (!is.null(mutation) &&
           identical(static_call_name(mutation), "list2env")) {
-      values <- base_call_argument(mutation, "x")
-      target <- base_call_argument(mutation, "envir")
-      if (length(target) > 0L &&
-            !is.null(unparenthesized_value(target[[1L]]))) {
-        keys <- if (length(values) > 0L &&
-                      identical(static_call_name(values[[1L]]), "list") &&
-                      is_known_base_call(values[[1L]], "list", character(), lookup)) {
-          names(static_call_args(values[[1L]]))
-        } else {
-          unresolved_lookup_name()
-        }
-        assigned <- c(assigned, keys)
-      }
+      assigned <- c(assigned, list2env_setter_names(mutation, lookup))
     }
   }
   parts <- c(evaluated_call_args(expr), evaluated_language_parts(expr))
@@ -4096,6 +4091,23 @@ expression_rebound_names <- function(expr, lookup = NULL) {
   unique(c(assigned, unlist(lapply(
     parts, expression_rebound_names, lookup = lookup
   ), use.names = FALSE)))
+}
+
+# Binding names replaced by a recognized base list2env call. Omitted/NULL
+# targets construct an environment; unreadable setter keys remain unresolved.
+list2env_setter_names <- function(expr, lookup = NULL) {
+  target <- base_call_argument(expr, "envir")
+  if (length(target) == 0L ||
+        is.null(unparenthesized_value(target[[1L]]))) {
+    return(character())
+  }
+  values <- base_call_argument(expr, "x")
+  if (length(values) > 0L &&
+        identical(static_call_name(values[[1L]]), "list") &&
+        is_known_base_call(values[[1L]], "list", character(), lookup)) {
+    return(names(static_call_args(values[[1L]])))
+  }
+  unresolved_lookup_name()
 }
 
 # Names assigned by this call itself, or the unresolved marker when a reflective
