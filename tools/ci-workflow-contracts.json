@@ -556,6 +556,10 @@
             "run": "Rscript tools/postgres-typed-missing.R"
           },
           {
+            "name": "Verify share aliases survive identifier limits",
+            "run": "Rscript tools/postgres-share-identifiers.R"
+          },
+          {
             "name": "Verify observed label checks on pronoun dimensions",
             "run": "Rscript tools/postgres-env-label-collision.R"
           },
