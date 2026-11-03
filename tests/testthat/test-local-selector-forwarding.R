@@ -224,9 +224,8 @@ test_that("selectors preserve missing formals through grouped forwarding", {
         expected <- suppressWarnings(dplyr::summarise(
           data, value = !!expression, .by = g
         ))
-        expect_identical(
-          expected$value, if (identical(omitted, quote(b))) c(1L, 1L) else c(0L, 0L)
-        )
+        values <- if (identical(omitted, quote(b))) c(1L, 1L) else c(0L, 0L)
+        expect_identical(expected$value, values)
         actual <- suppressWarnings(summarize_with_margins(
           data, value = !!expression, .by = g
         ))
