@@ -1584,6 +1584,20 @@ local_forwarded_selection <- function(helper, group_vars, forbidden_names) {
 # Applies the same deferred local selection to `pick()`.
 rewrite_local_pick_selection <- function(expr, group_vars,
                                          forbidden_names) {
+  call_args <- static_call_args(expr)
+  forwarded <- vapply(call_args, function(arg) {
+    rlang::is_symbol(arg) &&
+      grepl("^\\.\\.[1-9][0-9]*$", rlang::as_string(arg))
+  }, logical(1))
+  if (any(forwarded)) {
+    return(rlang::call2(
+      rlang::call2(
+        marginplyr_private_call("local_forwarded_pick_selection"),
+        group_vars, forbidden_names
+      ),
+      !!!call_args
+    ))
+  }
   selection <- parse_pick_selection(expr)
   if (is.null(selection)) {
     return(expr)
@@ -1592,6 +1606,17 @@ rewrite_local_pick_selection <- function(expr, group_vars,
     selection, group_vars, forbidden_names
   )
   rebuild_static_call(expr, list(selection))
+}
+
+# Captures pick's forwarded promises in their calling scope before selection.
+# The caller supplies the exclusions for the active local summary branch.
+local_forwarded_pick_selection <- function(group_vars, forbidden_names) {
+  function(...) {
+    args <- rlang::enquos0(...)
+    expr <- rlang::call2("pick", !!!args, .ns = "dplyr")
+    expr <- rewrite_local_pick_selection(expr, group_vars, forbidden_names)
+    rlang::eval_tidy(expr)
+  }
 }
 
 # Returns selected current column names for one local dplyr summary branch.
