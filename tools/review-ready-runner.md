@@ -86,6 +86,34 @@ next invocation. Deleting a worktree can remove its logs. Stable shared locks,
 installed developer tools/libraries, unrelated shared caches, tracked research,
 Codex history and OS crash reports are outside routine cleanup.
 
+## File timing evidence
+
+Full scope records worker file intervals in the run's `timing/` directory.
+`manifest.rds` names the pinned SHA, discovered files, archived test input bytes
+and hashes, dependency versions and environment. PID-owned logs pair wall and
+worker elapsed clocks at file entry and exit; `*.worker.rds` identifies each
+recorder environment. `file-results.tsv` records skip and other expectation
+counts, once per file, from the ordinary buffered reporter. Reporter replay
+is not a duration clock.
+
+`evidence.rds` validates those observations after the invocation's terminal
+result. Eligibility requires the same successful full SHA in `result.rds`,
+exactly one valid pair for every discovered file, and the native four-worker
+announcement. Each file explicitly marks all-skipped and empty results; neither
+supplies promotion evidence. Failed, cancelled, incomplete or malformed data
+cannot authorize a priority update. Source scope creates no timing evidence.
+All timing artifacts share the seven-day policy above; later execution uses
+only the committed priority. Proposal construction belongs to #1158.
+
+The common recorder supports **testthat 3.3.2** only. It checks the complete
+`queue_task(path, shuffle = FALSE)` body and signature before tracing entry and
+exit. This private boundary includes file cleanup while excluding worker
+helper/setup and final teardown. A new version requires the real-worker
+fixtures below before adding support. Unsupported instrumentation or recording
+and output errors visibly disable timing eligibility, preserving the complete
+check's actual result without retrying dispatched tests. Individual test files
+carry no recording statements; ordinary `test_check()` owns execution.
+
 ## Development and CI verification
 
 Routine invocation runs the baseline and chosen heavy portion only. It does

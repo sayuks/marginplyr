@@ -521,10 +521,23 @@ review_ready_heavy_lock <- function() {
 
 # Builds and checks once in a child whose temporary storage belongs to this run.
 run_review_ready_heavy <- function(source_root, workspace, required, r_command) {
+  timing <- file.path(workspace, "timing")
+  recording <- tryCatch(withCallingHandlers({
+    source(file.path(source_root, "tools", "review-ready-timing.R"), local = TRUE)
+    review_ready_timing_prepare(source_root, timing,
+      readRDS(file.path(workspace, "invocation.rds")))
+  }, warning = function(cnd) stop(conditionMessage(cnd))), error = function(cnd) {
+    cat("Review-ready timing disabled: ", conditionMessage(cnd), "\n", sep = "")
+    FALSE
+  })
   tarball <- build_review_ready_tarball(source_root, workspace, r_command)
   env <- review_ready_rcmdcheck_env(required)
   env[["MARGINPLYR_REVIEW_PROGRESS_REPORTER"]] <- file.path(
     source_root, "tools", "review-ready-progress-reporter.R")
+  if (recording) {
+    env[["MARGINPLYR_REVIEW_TIMING"]] <- timing
+    env[["MARGINPLYR_REVIEW_TIMING_HELPER"]] <- file.path(source_root, "tools", "review-ready-timing.R")
+  }
   cat("\n==> Source-tarball R CMD check --as-cran (one attempt)\n")
   result <- review_ready_progress_check(tarball, args = "--as-cran", build_args = NULL,
     check_dir = file.path(workspace, "check"), error_on = "never", env = env,
@@ -560,6 +573,19 @@ run_review_ready_full <- function(source_root, run, required, prerequisites, run
   if (result$status != 0L) stop("Package build/check failed with status ", result$status, ".", call. = FALSE)
 }
 
+# Finalizes optional timing inside the caller's terminal interrupt boundary.
+finish_review_ready_timing <- function(source_root, run) {
+  if (run$metadata$scope != "full" || !dir.exists(file.path(run$directory, "timing"))) {
+    return(invisible(NULL))
+  }
+  tryCatch({
+    source(file.path(source_root, "tools", "review-ready-timing.R"), local = TRUE)
+    review_ready_timing_finish(file.path(run$directory, "timing"),
+      readRDS(file.path(run$directory, "result.rds")),
+      review_ready_test_transcript(file.path(run$directory, "check")))
+  }, error = function(cnd) cat("Review-ready timing disabled: ", conditionMessage(cnd), "\n", sep = ""))
+}
+
 # The command records one result for one committed revision; it never retries.
 review_ready_check_cli <- function(args, expected_root) {
   run <- NULL
@@ -575,7 +601,8 @@ review_ready_check_cli <- function(args, expected_root) {
     on.exit({ sink(); close(console) }, add = TRUE, after = FALSE)
     cat("Review-ready commit: ", identity$sha, "\nArtifacts: ", run$directory,
       "\nScope: ", selection$scope, "\nReason: ", selection$reason, "\n", sep = "")
-    child_env <- review_ready_child_env(run$directory)
+    child_env <- c(review_ready_child_env(run$directory),
+      MARGINPLYR_REVIEW_TIMING = "", MARGINPLYR_REVIEW_TIMING_HELPER = "")
     runner <- review_ready_child_runner(child_env)
     source_root <- archive_review_ready_source(identity, run$directory, runner = runner)
     prerequisites <- review_ready_prerequisites(read.dcf(file.path(source_root, "DESCRIPTION")))
@@ -590,6 +617,7 @@ review_ready_check_cli <- function(args, expected_root) {
     }
     saveRDS(c(run$metadata, list(status = "passed", heavy_check = if (selection$scope == "source") "omitted" else "passed")),
       file.path(run$directory, "result.rds"))
+    finish_review_ready_timing(source_root, run)
     0L
   }, interrupt = function(cnd) {
     cat("Review-ready cancelled.\n")
@@ -601,6 +629,9 @@ review_ready_check_cli <- function(args, expected_root) {
   if (!is.null(run) && status != 0L) {
     saveRDS(c(run$metadata, list(status = if (status == 130L) "cancelled" else "failed")),
       file.path(run$directory, "result.rds"))
+    if (dir.exists(file.path(run$directory, "timing"))) {
+      finish_review_ready_timing(source_root, run)
+    }
   }
   as.integer(status)
 }
