@@ -1,9 +1,10 @@
 # Measured test order and FIFO Review-ready admission
 
-Status: final draft awaiting consolidated maintainer confirmation, 2026-11-03.
-The individual decisions below are agreed, including ordinary testthat dispatch
-with no first-run priority guarantee for unregistered files. The independent
-FIFO request remains. Implementation and adoption are not claimed.
+Status: accepted, 2026-11-03. The maintainer selected the narrow private timing
+hook after comparing public-only alternatives. Ordinary testthat dispatch and
+the other agreed decisions below remain, with no first-run priority guarantee
+for unregistered files. The independent FIFO request remains. This records
+specification agreement; implementation and operational adoption are pending.
 [ADR 0040](../adr/0040-learn-local-test-order-and-admit-heavy-checks-fifo.md)
 records the scope boundary. Existing package CI is unchanged.
 
@@ -26,7 +27,7 @@ CI artifact retrieval are not execution prerequisites. Add no dedicated timing
 CI job. Existing CI checks and runner regression
 fixtures retain their existing validation role.
 
-This draft replaces the previous CI-dependent ordering proposal. That proposal's
+This specification replaces the previous CI-dependent ordering proposal. That proposal's
 earlier approval does not authorize implementing or republishing it.
 
 ## Agreed measurement and application boundaries
@@ -66,8 +67,9 @@ fresh clone executes the committed priority without a prior local history.
 Concurrent or stale proposals follow the existing
 [integration workflow](../agents/integration.md).
 
-The consolidated replacement specification awaits final approval before
-implementation or a revised ticket breakdown is published.
+The replacement specification is agreed. Production implementation remains a
+separate task, and a revised ticket breakdown needs approval before publication.
+The old CI-dependent breakdown is not revived by this agreement.
 
 ## Agreed ordinary testthat dispatch
 
@@ -89,12 +91,19 @@ pre-measurement provisional registration. The original goal is learning from
 one check for later checks; first-run priority is not a requirement. Do not
 introduce a pre-commit missing-file prefix or rewrite the runtime order.
 
-The separate private worker-timing hook remains a maintenance dependency:
-accurate file intervals and cleanup still need that narrow observational seam.
-Check its supported shape before recording, isolate it from dispatch, and use
-actual-worker fixtures to establish the measurement boundary. Controller
-reporter replay is not a replacement clock. Ordinary package tests and CI
-continue using the committed testthat setting without this local recorder.
+Adopt a narrow private worker-timing hook as an explicit maintenance dependency.
+Keep it in one common instrumentation helper rather than add timing statements
+to individual test files. For the calibrated testthat 3.3.2 implementation,
+record entry and exit of `queue_task()` around file execution and file cleanup.
+The hook observes that work; ordinary `test_check()` still owns dispatch.
+
+Declare supported testthat versions and check the supported function shape
+before recording. A newly supported version requires actual-worker fixtures
+that establish file identity, matched timing boundaries and inclusion of file
+cleanup. Worker-wide startup, setup and final teardown remain outside the file
+interval. Unsupported versions disable recording and proposals as specified
+below. Controller reporter replay is not a replacement clock. Ordinary package
+tests and CI continue using the committed setting without this local recorder.
 
 Here, "unregistered" is an observable Git-state property, not proof that a file
 has never run. A newly added or renamed file is unregistered; changing the body
@@ -271,7 +280,7 @@ separate evidence from disposable CI fixtures or design approval.
 ## Ticket disposition pending a revised breakdown
 
 The earlier CI-specific breakdown is held as recorded after reconsideration.
-Final approval of this specification does not itself republish that breakdown.
+Acceptance of this specification does not itself republish that breakdown.
 
 - [#1155](https://github.com/sayuks/marginplyr/issues/1155), the dedicated CI
   measurement proposal, is `needs-info` with its previous scope retained only

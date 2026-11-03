@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 ---
 
 # Keep test priorities versioned and admit heavy checks FIFO
@@ -9,7 +9,8 @@ heavy admission. Keep the tracked start-first setting as the persistent order
 source and retain the existing heavy lock, pinned source and terminal-result
 authority. The [specification](../specs/review-ready-adaptive-order-fifo.md)
 records the agreed ordinary-dispatch workflow and independent FIFO requirements.
-The consolidated final draft awaits maintainer confirmation.
+The maintainer accepted the replacement specification on 2026-11-03, including
+the private timing hook after comparing public-only alternatives.
 
 A dedicated timing CI pipeline is not an approved requirement. The maintainer
 clarified that asking about CI was exploratory, and reopened the prior approval.
@@ -25,9 +26,12 @@ verification. Keep ordinary `test_check()`, accept native append-last ordering
 for unregistered files until a measured priority update is committed, and use
 that tracked priority for later checks. First-run unregistered priority does
 not justify a private execution adapter or provisional registration. The
-separate private worker-timing hook remains a maintenance dependency, isolated
-from test dispatch and guarded by compatibility checks and actual-worker
-measurement fixtures.
+separate private worker-timing hook is an accepted maintenance dependency,
+isolated in one common helper from test dispatch. Declare supported testthat
+versions and guard the function shape before recording. Supporting a new
+version requires actual-worker measurement fixtures that prove file identity
+and inclusion of file cleanup. The calibrated 3.3.2 target is `queue_task()`;
+individual test files need no manual timing statements.
 
 Changing an already registered file under the same name does not make it
 unregistered. Every eligible newly measured file, including lightweight files,
@@ -49,7 +53,8 @@ remain failures, and no dispatched suite is retried.
 
 The three-run local calibration measured the selected native dispatch and
 supports priority proposals, not an observed speedup under reordered execution.
-The complete replacement decision awaits final approval.
+The replacement decision is accepted; implementation and operational evidence
+remain separate obligations.
 
 FIFO remains independent: use minimal live coordination with the established
 heavy lock, preserve bounded waiting from #1135, and retain ADR 0039's process
