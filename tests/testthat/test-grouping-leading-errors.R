@@ -9,6 +9,37 @@ leading_error_specs <- function(first, later) {
   )
 }
 
+test_that("known fixed-key overlaps precede unsafe dtplyr metadata", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.frame("fixed  key" = 1L, value = 2L, check.names = FALSE)
+  step <- dtplyr::lazy_dt(data) |> dplyr::mutate(value = as.character(value))
+  predicates <- 0L
+  numeric_column <- function(x) {
+    predicates <<- predicates + 1L
+    is.numeric(x)
+  }
+  first <- rlang::sym("fixed  key")
+  for (spec in leading_error_specs(first, rlang::quo(where(numeric_column)))) {
+    for (verb in forwarded_verbs) {
+      original <- expect_error(verb(data, !!first, grouping_set(!!first)))
+      expect_match(conditionMessage(original), "Columns cannot appear in both")
+      expect_match(conditionMessage(original), "`fixed  key`", fixed = TRUE)
+      for (input in list(data, step, dplyr::group_by(step, !!first))) {
+        by <- if (length(dplyr::group_vars(input)) > 0L) {
+          NULL
+        } else {
+          first
+        }
+        mixed <- expect_error(
+          verb(input, !!by, spec), class = "marginplyr_error"
+        )
+        expect_identical(conditionMessage(mixed), conditionMessage(original))
+      }
+    }
+  }
+  expect_identical(predicates, 0L)
+})
+
 test_that("leading selection errors precede unsafe dtplyr metadata", {
   skip_if_suggest_absent("dtplyr")
   data <- data.frame(x = 1L, value = 2L)
@@ -44,6 +75,26 @@ test_that("leading selection errors precede unsafe dtplyr metadata", {
     "Can't safely determine column metadata", class = "marginplyr_error"
   )
   expect_identical(predicates, 0L)
+})
+
+test_that("leading overlaps retain fixed-key order and selection precedence", {
+  data <- data.frame(x = 1L, value = 2L)
+  predicate <- function(x) stop("typed selection evaluated")
+  for (verb in forwarded_verbs) {
+    original <- expect_error(verb(data, c(value, x), grouping_set(x, value)))
+    mixed <- expect_error(verb(data, c(value, x), grouping_set(
+      x, value, where(predicate)
+    )), class = "marginplyr_error")
+    expect_identical(conditionMessage(mixed), conditionMessage(original))
+    expect_error(
+      verb(data, x, grouping_set(x, absent, where(predicate))),
+      "absent", class = "vctrs_error_subscript_oob"
+    )
+    expect_error(
+      verb(data, x, grouping_set(where(predicate), x)),
+      "typed selection evaluated"
+    )
+  }
 })
 
 test_that("mixed selections preserve evaluation order and counts", {
@@ -209,6 +260,17 @@ test_that("DuckDB leading selection failures invoke no metadata query", {
         expect_identical(conditionMessage(mixed), conditionMessage(original))
         expect_identical(counter$queries, 0L)
       }
+    }
+  }
+  expect_identical(predicates, 0L)
+
+  specs <- leading_error_specs(quote(x), rlang::quo(where(numeric_column)))
+  for (spec in specs) {
+    for (verb in verbs) {
+      original <- expect_error(verb(data, x, grouping_set(x)))
+      mixed <- expect_error(verb(remote, x, spec), class = "marginplyr_error")
+      expect_identical(conditionMessage(mixed), conditionMessage(original))
+      expect_identical(counter$queries, 0L)
     }
   }
   expect_identical(predicates, 0L)

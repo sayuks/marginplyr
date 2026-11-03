@@ -264,7 +264,7 @@ prepare_grouping_plan <- function(.data,
       } else {
         rlang::with_options(
           suppressWarnings(validate_leading_selections(
-            preflight, data_vars
+            preflight, data_vars, .by = by
           )),
           lifecycle_verbosity = discarded_pass_verbosity()
         )
@@ -725,17 +725,36 @@ grouping_name_proxy <- function(data_vars) {
 # Validate a mixed specification's leading selections without running caller
 # code. Expansion supplies the canonical order and nested-family validation;
 # the first unresolved selection stops the discarded pass, not just its family.
-validate_leading_selections <- function(preflight, data_vars) {
+# `.by` holds the fixed keys already resolved from names, or NULL if unresolved.
+validate_leading_selections <- function(preflight, data_vars, .by) {
   proxy <- grouping_name_proxy(data_vars)
+  dimensions <- character()
   withRestarts(
     expand_grouping_family(preflight, function(arg) {
       if (!is_name_only_selection(arg, data_vars, allow_caller_code = FALSE)) {
         invokeRestart("needs_typed_selection")
       }
-      resolve_grouping_selection(arg, proxy)
+      selected <- resolve_grouping_selection(arg, proxy)
+      dimensions <<- union(dimensions, selected)
+      selected
     }),
     needs_typed_selection = function() NULL
   )
+  validate_grouping_overlap(.by, dimensions)
+  invisible(NULL)
+}
+
+# Reject dimensions that are also among the already resolved fixed keys.
+validate_grouping_overlap <- function(.by, dimensions) {
+  overlap <- intersect(.by, dimensions)
+  if (length(overlap) > 0L) {
+    # The columns arrive alone in an `i` bullet, per ADR 0023's condition 2:
+    # how many of them there are is the caller's decision.
+    abort_marginplyr(c(
+      "Columns cannot appear in both {.arg .by} and {.arg .grouping}:",
+      i = "{.var {overlap}}."
+    ))
+  }
   invisible(NULL)
 }
 
@@ -1065,15 +1084,7 @@ compile_grouping_spec_impl <- function(preflight,
   ))
   dimensions <- unique(unlist(expanded, use.names = FALSE))
 
-  overlap <- intersect(.by, dimensions)
-  if (length(overlap) > 0L) {
-    # The columns arrive alone in an `i` bullet, per ADR 0023's condition 2:
-    # how many of them there are is the caller's decision.
-    abort_marginplyr(c(
-      "Columns cannot appear in both {.arg .by} and {.arg .grouping}:",
-      i = "{.var {overlap}}."
-    ))
-  }
+  validate_grouping_overlap(.by, dimensions)
 
   normalized <- lapply(
     expanded,
