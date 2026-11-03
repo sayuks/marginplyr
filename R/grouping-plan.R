@@ -547,7 +547,9 @@ is_name_only_helper_arg <- function(expr,
     if (name %in% bound) {
       return(TRUE)
     }
-    if (selection_binding_deferred(env, name)) {
+    # Dots hold promises rather than an ordinary value; an empty dots binding
+    # reads as R's missing marker. Leave them to selection evaluation.
+    if (name == "..." || selection_binding_deferred(env, name)) {
       return(FALSE)
     }
     value <- rlang::env_get(env, name, default = NULL, inherit = TRUE)
