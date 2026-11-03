@@ -45,12 +45,15 @@ new_margin_internal_names <- function(count, used_names, prefix,
 
   result <- character(count)
   for (i in seq_len(count)) {
+    attempt <- i
     suffix <- i
     candidate <- margin_internal_name_candidate(prefix, suffix, backend)
     while (margin_identifier_key(candidate, backend) %in%
              margin_identifier_key(c(used_names, result), backend)) {
-      suffix <- if (inherits(backend$dialect, "sql_dialect_postgres")) {
-        suffix + 1L
+      suffix <- if (inherits(backend$dialect, "sql_dialect_postgres") &&
+                      nchar(enc2utf8(candidate), type = "bytes") >= 63L) {
+        attempt <- attempt + 1L
+        attempt
       } else {
         paste0(suffix, "_")
       }
