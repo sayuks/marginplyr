@@ -1,6 +1,7 @@
 # Implemented worker recorder acceptance cost
 
 Investigated: 2026-11-03
+Revised: 2026-11-03 — controller recording and finalization evidence added below.
 
 ## Inputs and method
 
@@ -50,3 +51,48 @@ suite or timing CI workflow was run for this benchmark.
 The implementation's own full source-tarball result belongs to its pinned
 Review-ready artifacts and pull-request record, independently of this component
 measurement.
+
+## Revisions (2026-11-03)
+
+The initial setup/recording acceptance statement above was incomplete: it
+omitted controller expectation counting and file-result writes. The Spec review
+of PR #1161 identified that those operations belonged to #1155's recording
+slice, independently of #1158's proposal calculation.
+
+The [supplementary program](2026-11-03-review-ready-worker-timing/benchmark-controller.R)
+used a disposable copy of `fe85e1bb4395f027a7fa4f78c3fdc994e070372d`, whose
+ordinary full invocation completed with exit 0, four workers and 201/201 valid
+file pairs, with zero ERRORs, WARNINGs and NOTEs. The retained run was
+`20261103T061011Z-95400-174a815604ca9`. It read that invocation's actual
+175,884 successful expectations and replayed an equivalent success result
+through the public reporter callbacks, without executing package tests.
+The baseline reporter came from main at
+`6f80064f7dd9e0a1822cbadd25633559c1b0074d` (MD5
+`ae7432672eb5a5d843c63f44f7de06df`).
+
+Nine samples alternated baseline-first and recorded-first. Each replay used
+196 file boundaries while retaining all 201 files' expectation volume, folding
+the final five counts into the last boundary. This conservatively covered the
+reference 196-file scale with the complete actual expectation volume. The
+increment included the new counter callbacks and file-result writes; existing
+reporter dispatch and progress output were present in both arms. Each sample
+checked 196 output records with exactly 175,884 results. Evidence validation
+and output were separately timed against all 201 actual file pairs. Temporary
+replay/evidence outputs were deleted; the source invocation was read-only.
+
+| Additional component, seconds | Minimum | Median | Maximum |
+| --- | ---: | ---: | ---: |
+| Incremental controller recording | 0.062 | 0.292 | 0.495 |
+| Evidence validation and output | 0.036 | 0.045 | 0.083 |
+| Complete recording components, including previous worker/input costs | 0.2086 | 0.4952 | 0.6394 |
+
+The [controller samples](2026-11-03-review-ready-worker-timing/controller-samples.csv),
+[environment](2026-11-03-review-ready-worker-timing/controller-session.txt) and
+[complete component samples](2026-11-03-review-ready-worker-timing/complete-samples.csv)
+retain this measurement. Complete costs sum the independent component samples
+by sample index, retaining the earlier conservative sum across four workers.
+The complete recording median was 0.4952 seconds, below the one-second budget;
+even the sum of the separate component maxima was 0.7672 seconds. These were
+component measurements under ordinary host noise, not a measured whole-suite
+wall-time difference. No additional suite ran. Proposal calculation remained
+outside this implementation slice and was still #1158's acceptance work.
