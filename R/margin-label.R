@@ -357,10 +357,15 @@ check_observed_label_collision <- function(data,
           } else {
             rlang::sym("sum")
           }
+          condition <- rlang::expr(!!conversion == !!margin_label)
+          if (is.data.frame(source) || inherits(source, "dtplyr_step")) {
+            # Scalar displays can retain 1D shape; if_else needs a vector.
+            condition <- rlang::expr(base::as.vector(!!condition))
+          }
           rlang::expr(
             (!!aggregate)(
               dplyr::if_else(
-                !!conversion == !!margin_label,
+                !!condition,
                 1L,
                 0L,
                 missing = 0L
