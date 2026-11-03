@@ -1534,15 +1534,17 @@ rewrite_local_across_selection <- function(expr, group_vars,
 # The caller supplies a recognized local helper and its selection exclusions.
 local_forwarded_selection <- function(helper, group_vars, forbidden_names) {
   function(...) {
-    written_args <- as.list(substitute(list(...)))[-1L]
+    frame <- environment()
     args <- rlang::enquos0(...)
     expr <- rlang::call2(helper, !!!args, .ns = "dplyr")
     cols_index <- parse_across_arguments(expr)$cols_index
     arg_names <- names(args)
-    # An injected empty selection has its own meaning; other empty arguments
-    # must remain missing when the helper or its function receives them.
+    # missing(..i) follows forwarded promises without forcing them and treats
+    # an omitted formal's default as supplied to this nested call.
     args <- lapply(seq_along(args), function(i) {
-      if (i != cols_index && rlang::is_missing(written_args[[i]])) {
+      if (i != cols_index && eval(
+        call("missing", as.name(paste0("..", i))), envir = frame
+      )) {
         rlang::missing_arg()
       } else {
         args[[i]]

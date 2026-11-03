@@ -175,6 +175,67 @@ test_that("injected empty quosures remain supplied function arguments", {
   }
 })
 
+test_that("omitted formals forwarded to selectors remain missing", {
+  data <- data.frame(x = 1:3)
+  f <- function(x, extra = 10) if (missing(extra)) 100 else 300
+  expression <- rlang::expr((function(a, ...) dplyr::across(..., extra = a))(
+    .cols = x, .fns = f
+  ))
+  expected <- suppressWarnings(dplyr::summarise(data, value = !!expression))
+  expect_identical(expected$value$x, 100)
+  actual <- suppressWarnings(summarize_with_margins(data, value = !!expression))
+  expect_identical(actual, expected)
+})
+
+test_that("forwarded formal defaults remain supplied without being forced", {
+  data <- data.frame(x = 1:3)
+  f <- function(x, extra = 10) if (missing(extra)) 100 else 300
+  expressions <- rlang::exprs(
+    (function(a = stop("forced default"), ...) {
+      dplyr::across(..., extra = a)
+    })(.cols = x, .fns = f),
+    (function(a, ...) dplyr::across(..., extra = a))(
+      a = stop("forced argument"), .cols = x, .fns = f
+    )
+  )
+  for (expression in expressions) {
+    expected <- suppressWarnings(dplyr::summarise(data, value = !!expression))
+    expect_identical(expected$value$x, 300)
+    actual <- suppressWarnings(
+      summarize_with_margins(data, value = !!expression)
+    )
+    expect_identical(actual, expected, info = rlang::as_label(expression))
+  }
+})
+
+test_that("selectors preserve missing formals through grouped forwarding", {
+  data <- data.frame(g = c("a", "a", "b"), x = 1:3)
+  f <- function(x, extra = 10) if (missing(extra)) TRUE else FALSE
+  for (helper in c("across", "if_any", "if_all")) {
+    for (cols in list(quote(...), quote(..1))) {
+      body <- rlang::call2(
+        helper, cols, quote(f), extra = quote(a), .ns = "dplyr"
+      )
+      for (omitted in rlang::exprs(a, b)) {
+        body$extra <- omitted
+        expression <- rlang::expr((function(a, ...) {
+          (function(b) sum(!!body))(a)
+        })(.cols = x))
+        expected <- suppressWarnings(dplyr::summarise(
+          data, value = !!expression, .by = g
+        ))
+        expect_identical(
+          expected$value, if (identical(omitted, quote(b))) c(1L, 1L) else c(0L, 0L)
+        )
+        actual <- suppressWarnings(summarize_with_margins(
+          data, value = !!expression, .by = g
+        ))
+        expect_identical(actual, expected, info = paste(helper, omitted, cols))
+      }
+    }
+  }
+})
+
 test_that("forwarded arguments keep their evaluation order and environments", {
   data <- data.frame(g = c("a", "a", "b"), x = 1:3, y = c(7, 9, 11))
   for (helper in c("across", "if_any", "if_all")) {
