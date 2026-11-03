@@ -74,9 +74,10 @@ the terminal cancellation result before editing and resubmitting.
 
 Abrupt R termination uses the existing process library's cleanup facilities.
 It may release the lock before every descendant stops; strict crash-time
-exclusion is outside this contract. Record actual Mac cleanup observations
-and their limits during adoption. A free lock or absent process is not a
-successful check result. There is no recovery command, watchdog, durable
+exclusion is outside this contract. The
+[adoption evidence](../investigation/review-ready-fifo-adoption-2026-11-03.md)
+records actual Mac cleanup observations and their limits. A free lock or absent
+process is not a successful check result. There is no recovery command, watchdog, durable
 recovery ledger or automatic retry.
 
 ## Artifacts and retention
@@ -203,7 +204,11 @@ CI artifact checks and the release matrix retain their independent roles.
 
 The FIFO implementation follows [ADR 0040](../design/adr/0040-learn-local-test-order-and-admit-heavy-checks-fifo.md)
 and its [accepted specification](../design/specs/review-ready-adaptive-order-fifo.md#fifo-heavy-admission).
-Actual maintainer-Mac adoption remains [#1157](https://github.com/sayuks/marginplyr/issues/1157).
-Drain pre-FIFO checks and waiters before claiming adoption: they use the same
-heavy lock and preserve exclusion, but can overtake registered requests.
-Disposable process fixtures establish behavior, not that operational drain.
+The maintainer-Mac adoption completed on 2026-11-03 for
+`604f1aebfeb954234e8c672d773c5906670621ec`; the
+[evidence record](../investigation/review-ready-fifo-adoption-2026-11-03.md)
+separates real-account drain and the successful full result from isolated
+cross-clone/worktree process fixtures. No pre-FIFO owner or waiter remained
+at the observed boundary. Older nonparticipating runners still preserve
+heavy exclusion but can overtake participating requests; FIFO covers upgraded
+participants. Old worktrees and their sessions are not migrated.
