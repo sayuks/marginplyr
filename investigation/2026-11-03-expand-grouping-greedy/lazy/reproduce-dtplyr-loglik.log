@@ -1,0 +1,22 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+Control classes: logLik ; rows: 2
+# A tibble: 2 × 2
+  g           rid
+  <logLik>  <int>
+1 -4.889669     1
+2        NA     1
+Expansion:
+<dt_join_type_mismatch_error in .set_ops_arg_check(x, y, all, block_list = !all): Item 1 of x is 'logLik' but the corresponding item of y is 'numeric'.>
+Zero-row proxy class: logLik
+NA slice class: numeric
+vec_init class: logLik

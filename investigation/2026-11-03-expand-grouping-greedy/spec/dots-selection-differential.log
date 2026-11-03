@@ -1,0 +1,7 @@
+
+                  match matching_external_error  required_empty_refusal
+                    588                     954                      42
+[1] input          expression     arguments      position       status
+[6] native_forces  package_forces expected       observed
+<0 rows> (or 0-length row.names)
+Comparisons: 1584

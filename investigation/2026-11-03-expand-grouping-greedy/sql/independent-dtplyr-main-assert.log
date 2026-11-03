@@ -1,0 +1,5 @@
+Independent ordinary dist control succeeded with typed values 5, NA.
+Independent expansion: Item 1 of x is 'numeric' but the corresponding item of y is 'dist'.
+Error in eval(quote({ : !inherits(result, "error") is not TRUE
+Calls: local ... eval.parent -> eval -> eval -> eval -> eval -> stopifnot
+Execution halted

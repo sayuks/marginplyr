@@ -1,0 +1,37 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+   family      role        outcome   n
+1    dist dimension          match 240
+2    dist dimension ordinary-error  72
+3    dist dimension  package-error  72
+4    dist     fixed          match 312
+5    dist     fixed ordinary-error  72
+6    dist   payload          match 312
+7    dist   payload ordinary-error  72
+8  logLik dimension          match 240
+9  logLik dimension ordinary-error  72
+10 logLik dimension  package-error  72
+11 logLik     fixed          match 312
+12 logLik     fixed ordinary-error  72
+13 logLik   payload          match 312
+14 logLik   payload ordinary-error  72
+Storing counts in `nn`, as `n` already present in input
+ℹ Use `name = "new_name"` to pick a new name.
+  family n          plan nn
+1   dist 1    duplicates 24
+2   dist 1 omitted_first 24
+3   dist 1        rollup 24
+4 logLik 1    duplicates 24
+5 logLik 1 omitted_first 24
+6 logLik 1        rollup 24
+Error: !any(results$outcome %in% c("mismatch", "ordinary-error")) is not TRUE
+Execution halted

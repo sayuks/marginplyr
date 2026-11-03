@@ -1,0 +1,164 @@
+duckdb is storing downloaded extensions and secrets under ~/.duckdb:
+ℹ /Users/sayuks/.duckdb
+This persists across sessions and is shared with the DuckDB CLI and other clients.
+ℹ Run duckdb(shared_home = FALSE) to use a temporary directory instead.
+ℹ See ?duckdb_storage for details and alternatives.
+There were 50 or more warnings (use warnings() to see the first 50)
+        status
+backend  difference match ordinary_error package_error
+  duckdb         29   408            123            16
+  sqlite         81   308            179             8
+ backend   name        shape  option        status
+  sqlite   TRUE     identity     cte package_error
+  sqlite   TRUE     collapse default    difference
+  sqlite   TRUE     collapse no_star    difference
+  sqlite   TRUE cte_collapse default    difference
+  sqlite   TRUE cte_collapse no_star    difference
+  sqlite   TRUE         head default    difference
+  sqlite   TRUE         head     cte    difference
+  sqlite   TRUE         head no_star    difference
+  sqlite   TRUE    transmute     cte package_error
+  sqlite   TRUE   row_number default    difference
+  sqlite   TRUE   row_number     cte    difference
+  sqlite   TRUE   row_number no_star    difference
+  sqlite   TRUE   union_self     cte    difference
+  sqlite   TRUE    semi_self default    difference
+  sqlite   TRUE    semi_self     cte    difference
+  sqlite   TRUE    anti_self default    difference
+  sqlite   TRUE    anti_self     cte    difference
+  sqlite  FALSE     identity     cte package_error
+  sqlite  FALSE     collapse default    difference
+  sqlite  FALSE     collapse no_star    difference
+  sqlite  FALSE cte_collapse default    difference
+  sqlite  FALSE cte_collapse no_star    difference
+  sqlite  FALSE         head default    difference
+  sqlite  FALSE         head     cte    difference
+  sqlite  FALSE         head no_star    difference
+  sqlite  FALSE    transmute     cte package_error
+  sqlite  FALSE   row_number default    difference
+  sqlite  FALSE   row_number     cte    difference
+  sqlite  FALSE   row_number no_star    difference
+  sqlite  FALSE   union_self     cte    difference
+  sqlite  FALSE    semi_self default    difference
+  sqlite  FALSE    semi_self     cte    difference
+  sqlite  FALSE    anti_self default    difference
+  sqlite  FALSE    anti_self     cte    difference
+  sqlite   .env     collapse default    difference
+  sqlite   .env     collapse no_star    difference
+  sqlite   .env cte_collapse default    difference
+  sqlite   .env cte_collapse no_star    difference
+  sqlite   .env   row_number default    difference
+  sqlite normal     collapse default    difference
+  sqlite normal     collapse no_star    difference
+  sqlite normal cte_collapse default    difference
+  sqlite normal cte_collapse no_star    difference
+  sqlite normal   row_number default    difference
+  sqlite normal   row_number     cte    difference
+  sqlite normal   row_number no_star    difference
+  sqlite normal   row_filter default    difference
+  sqlite normal   row_filter     cte    difference
+  sqlite normal   row_filter no_star    difference
+  duckdb   TRUE   row_number default    difference
+  duckdb   TRUE   row_number     cte    difference
+  duckdb   TRUE   row_number no_star    difference
+  duckdb   TRUE   row_filter default    difference
+  duckdb   TRUE   row_filter     cte    difference
+  duckdb   TRUE   row_filter no_star    difference
+  duckdb   TRUE   union_self default package_error
+  duckdb   TRUE   union_self no_star package_error
+  duckdb  FALSE   row_number default    difference
+  duckdb  FALSE   row_number     cte    difference
+  duckdb  FALSE   row_number no_star    difference
+  duckdb  FALSE   row_filter default    difference
+  duckdb  FALSE   row_filter     cte    difference
+  duckdb  FALSE   row_filter no_star    difference
+  duckdb  FALSE   union_self default package_error
+  duckdb  FALSE   union_self no_star package_error
+  duckdb   .env   row_number default    difference
+  duckdb   .env   union_self default package_error
+  duckdb   .env   union_self no_star package_error
+  duckdb normal   row_number default    difference
+  duckdb normal   row_number     cte    difference
+  duckdb normal   row_number no_star    difference
+  duckdb normal   row_filter default    difference
+  duckdb normal   row_filter     cte    difference
+  duckdb normal   row_filter no_star    difference
+  duckdb normal   union_self default package_error
+  duckdb normal   union_self no_star package_error
+                                                                                                                                                                                                    detail
+                                                                                                                                                                                undefined columns selected
+
+
+
+
+
+
+
+                                                                                                                                                                                undefined columns selected
+
+
+
+
+
+
+
+
+                                                                                                                                                                                undefined columns selected
+
+
+
+
+
+
+
+                                                                                                                                                                                undefined columns selected
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ Failed to collect lazy table.\nCaused by error in `DBI::dbSendQuery()`:\n! Parser Error: syntax error at or near "UNION"\n\nLINE 35: UNION ALL\n         ^\nℹ Context: rapi_prepare\nℹ Error type: PARSER
+ Failed to collect lazy table.\nCaused by error in `DBI::dbSendQuery()`:\n! Parser Error: syntax error at or near "UNION"\n\nLINE 35: UNION ALL\n         ^\nℹ Context: rapi_prepare\nℹ Error type: PARSER
+
+
+
+
+
+
+ Failed to collect lazy table.\nCaused by error in `DBI::dbSendQuery()`:\n! Parser Error: syntax error at or near "UNION"\n\nLINE 35: UNION ALL\n         ^\nℹ Context: rapi_prepare\nℹ Error type: PARSER
+ Failed to collect lazy table.\nCaused by error in `DBI::dbSendQuery()`:\n! Parser Error: syntax error at or near "UNION"\n\nLINE 35: UNION ALL\n         ^\nℹ Context: rapi_prepare\nℹ Error type: PARSER
+
+ Failed to collect lazy table.\nCaused by error in `DBI::dbSendQuery()`:\n! Parser Error: syntax error at or near "UNION"\n\nLINE 35: UNION ALL\n         ^\nℹ Context: rapi_prepare\nℹ Error type: PARSER
+ Failed to collect lazy table.\nCaused by error in `DBI::dbSendQuery()`:\n! Parser Error: syntax error at or near "UNION"\n\nLINE 35: UNION ALL\n         ^\nℹ Context: rapi_prepare\nℹ Error type: PARSER
+
+
+
+
+
+
+ Failed to collect lazy table.\nCaused by error in `DBI::dbSendQuery()`:\n! Parser Error: syntax error at or near "UNION"\n\nLINE 35: UNION ALL\n         ^\nℹ Context: rapi_prepare\nℹ Error type: PARSER
+ Failed to collect lazy table.\nCaused by error in `DBI::dbSendQuery()`:\n! Parser Error: syntax error at or near "UNION"\n\nLINE 35: UNION ALL\n         ^\nℹ Context: rapi_prepare\nℹ Error type: PARSER

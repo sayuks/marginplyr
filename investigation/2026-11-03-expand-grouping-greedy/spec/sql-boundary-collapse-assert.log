@@ -1,0 +1,7 @@
+Collapse public names: key occurrence value
+Collapse collected names: key occurrence value ..marginplyr_order_1 ..marginplyr_order_2
+Ordinary/source and explicit-materialization schema controls passed.
+Error in eval(quote({ :
+  identical(names(collapsed), names(direct)) is not TRUE
+Calls: local ... eval.parent -> eval -> eval -> eval -> eval -> stopifnot
+Execution halted

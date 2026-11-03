@@ -1,0 +1,16 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+   action                 outcome  n
+1  expand expected-reader-refusal 44
+2 inspect      inspection-success 44
+[1] shape     selection action    outcome   remaining detail
+<0 rows> (or 0-length row.names)

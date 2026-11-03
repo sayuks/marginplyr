@@ -1,0 +1,133 @@
+"shape","selection","action","outcome","remaining","detail"
+"direct","name","inspect","inspection-success",3,"g;character(0)"
+"direct","name","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"direct","typed","inspect","inspection-success",3,"g;character(0)"
+"direct","typed","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"select","name","inspect","inspection-success",3,"g;character(0)"
+"select","name","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"select","typed","inspect","inspection-success",3,"g;character(0)"
+"select","typed","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"filter","name","inspect","inspection-success",3,"g;character(0)"
+"filter","name","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"filter","typed","inspect","inspection-success",3,"g;character(0)"
+"filter","typed","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"mutate","name","inspect","inspection-success",3,"g;character(0)"
+"mutate","name","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"mutate","typed","inspect","inspection-success",3,"g;character(0)"
+"mutate","typed","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"group","name","inspect","inspection-success",3,"g;character(0)"
+"group","name","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"group","typed","inspect","inspection-success",3,"g;character(0)"
+"group","typed","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"summary","name","inspect","inspection-success",3,"g;character(0)"
+"summary","name","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"summary","typed","inspect","inspection-success",3,"g;character(0)"
+"summary","typed","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"arrange","name","inspect","inspection-success",3,"g;character(0)"
+"arrange","name","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"arrange","typed","inspect","inspection-success",3,"g;character(0)"
+"arrange","typed","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"head","name","inspect","inspection-success",3,"g;character(0)"
+"head","name","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"head","typed","inspect","inspection-success",3,"g;character(0)"
+"head","typed","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"collapse","name","inspect","inspection-success",3,"g;character(0)"
+"collapse","name","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"collapse","typed","inspect","inspection-success",3,"g;character(0)"
+"collapse","typed","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"distinct","name","inspect","inspection-success",3,"g;character(0)"
+"distinct","name","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"distinct","typed","inspect","inspection-success",3,"g;character(0)"
+"distinct","typed","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"join_left","name","inspect","inspection-success",3,"g;character(0)"
+"join_left","name","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"join_left","typed","inspect","inspection-success",3,"g;character(0)"
+"join_left","typed","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"join_right","name","inspect","inspection-success",3,"g;character(0)"
+"join_right","name","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"join_right","typed","inspect","inspection-success",3,"g;character(0)"
+"join_right","typed","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"semi_left","name","inspect","inspection-success",3,"g;character(0)"
+"semi_left","name","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"semi_left","typed","inspect","inspection-success",3,"g;character(0)"
+"semi_left","typed","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"semi_right","name","inspect","inspection-success",3,"g;character(0)"
+"semi_right","name","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"semi_right","typed","inspect","inspection-success",3,"g;character(0)"
+"semi_right","typed","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"anti_left","name","inspect","inspection-success",3,"g;character(0)"
+"anti_left","name","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"anti_left","typed","inspect","inspection-success",3,"g;character(0)"
+"anti_left","typed","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"anti_right","name","inspect","inspection-success",3,"g;character(0)"
+"anti_right","name","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"anti_right","typed","inspect","inspection-success",3,"g;character(0)"
+"anti_right","typed","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"union_left","name","inspect","inspection-success",3,"g;character(0)"
+"union_left","name","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"union_left","typed","inspect","inspection-success",3,"g;character(0)"
+"union_left","typed","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"union_right","name","inspect","inspection-success",3,"g;character(0)"
+"union_right","name","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"union_right","typed","inspect","inspection-success",3,"g;character(0)"
+"union_right","typed","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"union_nested","name","inspect","inspection-success",3,"g;character(0)"
+"union_nested","name","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"union_nested","typed","inspect","inspection-success",3,"g;character(0)"
+"union_nested","typed","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"join_nested","name","inspect","inspection-success",3,"g;character(0)"
+"join_nested","name","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"join_nested","typed","inspect","inspection-success",3,"g;character(0)"
+"join_nested","typed","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"join_union","name","inspect","inspection-success",3,"g;character(0)"
+"join_union","name","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"join_union","typed","inspect","inspection-success",3,"g;character(0)"
+"join_union","typed","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"union_join","name","inspect","inspection-success",3,"g;character(0)"
+"union_join","name","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."
+"union_join","typed","inspect","inspection-success",3,"g;character(0)"
+"union_join","typed","expand","expected-reader-refusal",3,"`.data` must not be or depend on a <RecordBatchReader>.
+ℹ Materialize it with `arrow::as_arrow_table()` first."

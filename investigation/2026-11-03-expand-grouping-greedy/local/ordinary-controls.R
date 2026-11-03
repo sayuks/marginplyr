@@ -1,0 +1,35 @@
+# These controls distinguish data.table and class-combination limitations.
+Sys.setenv(TESTTHAT_PARALLEL = "false")
+pkgload::load_all(Sys.getenv("MARGINPLYR_HUNT_SOURCE", "."), quiet = TRUE)
+library(dplyr)
+capture <- function(x) tryCatch(suppressWarnings(suppressMessages(force(x))), error = identity)
+for (n in c(1L, 3L)) {
+  dat <- tibble(g = rep("a", n), key = distributional::new_hilo(seq_len(n), seq_len(n) + 1L, rep(50, n)), row = seq_len(n)) |> data.table::as.data.table()
+  ordinary <- relocate(dat, key)
+  cat("hilo first-column n", n, ": input", nrow(dat), "ordinary relocate", nrow(ordinary), "row-vector size", vctrs::vec_size(ordinary$key), "\n")
+  got <- capture(expand_with_margins(dat, .grouping = rollup(key), .margin_label = NULL, .id = "occurrence"))
+  ctrl <- capture(mutate(ordinary, occurrence = 1L))
+  if (n == 1L) {
+    stopifnot(inherits(got, "error"), inherits(ctrl, "error"))
+    cat("same error class:", identical(class(got)[[1L]], class(ctrl)[[1L]]), "\n")
+    cat("package:", conditionMessage(got), "\nordinary:", conditionMessage(ctrl), "\n")
+  } else {
+    stopifnot(!inherits(got, "error"), nrow(got) == 3L, all(vapply(got, vctrs::vec_size, integer(1)) == 6L))
+    branches <- list(mutate(dat, occurrence = 1L), mutate(dat, key = vctrs::vec_init(key, n), occurrence = 2L))
+    ctrl <- relocate(bind_rows(branches), key)
+    stopifnot(nrow(ctrl) == 3L, all(vapply(ctrl, vctrs::vec_size, integer(1)) == 6L))
+    cat("ordinary binder/reorder and package both report 3 rows for six values\n")
+  }
+}
+dat <- tibble(g = "a", key = distributional::new_hilo(1, 2, 50)) |> data.table::as.data.table()
+got <- expand_with_margins(dat, .grouping = rollup(g), .margin_label = NULL)
+branches <- list(dat, mutate(dat, g = NA_character_))
+bind <- bind_rows(lapply(branches, data.table::copy))
+rbind <- vctrs::vec_rbind(!!!lapply(branches, data.table::copy))
+proxy_values <- function(x) unname(as.list(vctrs::vec_proxy(x)))
+stopifnot(identical(class(got$key), class(bind$key)), identical(proxy_values(got$key), proxy_values(bind$key)), identical(proxy_values(got$key), proxy_values(rbind$key)))
+cat("hilo payload: package, ordinary vec_rbind and bind_rows have identical class/proxy values; field-name attributes were delegated\n")
+cat("package attributes:"); dput(attributes(got$key))
+cat("vec_rbind attributes:"); dput(attributes(rbind$key))
+cat("bind_rows attributes:"); dput(attributes(bind$key))
+cat("PASS ordinary controls\n")

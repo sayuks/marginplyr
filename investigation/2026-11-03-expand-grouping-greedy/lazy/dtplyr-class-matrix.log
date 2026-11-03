@@ -1,0 +1,29 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+  family      role       outcome   n
+1   dist dimension         match 216
+2   dist dimension package-error  72
+3   dist     fixed         match 288
+4   dist   payload         match 288
+5 logLik dimension         match 216
+6 logLik dimension package-error  72
+7 logLik     fixed         match 288
+8 logLik   payload         match 288
+Storing counts in `nn`, as `n` already present in input
+ℹ Use `name = "new_name"` to pick a new name.
+  family n          plan nn
+1   dist 1    duplicates 24
+2   dist 1 omitted_first 24
+3   dist 1        rollup 24
+4 logLik 1    duplicates 24
+5 logLik 1 omitted_first 24
+6 logLik 1        rollup 24

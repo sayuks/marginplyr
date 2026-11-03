@@ -1,0 +1,32 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+hilo first-column n 1 : input 1 ordinary relocate 3 row-vector size 1
+same error class: TRUE
+package: ℹ In argument: `occurrence = 1L`.
+Caused by error:
+! Can't subset elements past the end.
+ℹ Locations 2 and 3 don't exist.
+ℹ There is only 1 element.
+ordinary: ℹ In argument: `occurrence = 1L`.
+Caused by error:
+! Can't subset elements past the end.
+ℹ Locations 2 and 3 don't exist.
+ℹ There is only 1 element.
+hilo first-column n 3 : input 3 ordinary relocate 3 row-vector size 3
+ordinary binder/reorder and package both report 3 rows for six values
+hilo payload: package, ordinary vec_rbind and bind_rows have identical class/proxy values; field-name attributes were delegated
+package attributes:list(class = c("hilo", "vctrs_rcrd", "vctrs_vctr"))
+vec_rbind attributes:list(class = c("hilo", "vctrs_rcrd", "vctrs_vctr"), names = c("",
+"", ""))
+bind_rows attributes:list(class = c("hilo", "vctrs_rcrd", "vctrs_vctr"), names = c("",
+"", ""))
+PASS ordinary controls

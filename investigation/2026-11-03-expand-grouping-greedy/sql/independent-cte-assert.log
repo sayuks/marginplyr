@@ -1,0 +1,6 @@
+Independent collapse witness public names: k occurrence fAlSe
+Independent collapse witness collected names: k occurrence fAlSe ..marginplyr_order_1 ..marginplyr_order_2 ..marginplyr_order_3 ..marginplyr_order_4
+Independent CTE witness: undefined columns selected
+Error in eval(quote({ : !inherits(cte, "error") is not TRUE
+Calls: local ... eval.parent -> eval -> eval -> eval -> eval -> stopifnot
+Execution halted

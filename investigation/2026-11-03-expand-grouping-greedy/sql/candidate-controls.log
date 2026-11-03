@@ -1,0 +1,638 @@
+
+BACKEND: sqlite
+
+SORT: none
+
+--- direct ---
+# A tibble: 2 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+2 Total      7
+
+--- collapse ---
+# A tibble: 2 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+2 Total      7
+
+--- collapse SQL ---
+<SQL> SELECT *
+FROM `src`
+WHERE (0)
+
+UNION ALL
+
+SELECT `g`, `..marginplyr_boolean_1` AS `TRUE`
+FROM (
+  SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+  FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `src`
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT CAST(`g` AS TEXT) AS `g`, `..marginplyr_boolean_1`
+    FROM (
+      SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+      FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `src`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+
+    UNION ALL
+
+    SELECT 'Total' AS `g`, `..marginplyr_boolean_1`
+    FROM (
+      SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+      FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `src`
+) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+WHERE (1)
+
+--- direct cte ---
+ERROR: undefined columns selected
+CLASS: simpleError
+
+--- direct SQL cte ---
+<SQL> WITH `q01` AS (
+  SELECT *
+  FROM `src`
+  WHERE (0)
+),
+`q02` AS (
+  SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+  FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `src`
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+),
+`q03` AS (
+  SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+  FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `src`
+) AS `q01`
+  ) AS `q01`
+),
+`q04` AS (
+  SELECT CAST(`g` AS TEXT) AS `g`, `..marginplyr_boolean_1`
+  FROM `q03` AS `q01`
+),
+`q05` AS (
+  SELECT 'Total' AS `g`, `..marginplyr_boolean_1`
+  FROM `q03` AS `q01`
+),
+`q06` AS (
+  SELECT *
+  FROM `q04`
+
+  UNION ALL
+
+  SELECT *
+  FROM `q05`
+),
+`q07` AS (
+  SELECT *
+  FROM `q06` AS `q01`
+  WHERE (1)
+),
+`q08` AS (
+  SELECT *
+  FROM `q02`
+
+  UNION ALL
+
+  SELECT *
+  FROM `q07`
+),
+`q09` AS (
+  SELECT `g`, `..marginplyr_boolean_1` AS `TRUE`
+  FROM `q08` AS `q01`
+  WHERE (1)
+)
+SELECT *
+FROM `q01`
+
+UNION ALL
+
+SELECT *
+FROM `q09`
+
+--- ordinary source cte ---
+ERROR: Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex
+CLASS: rlang_error
+
+--- ordinary source collapse ---
+# A tibble: 1 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+
+--- union self ---
+# A tibble: 4 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+2 Total      7
+3 a          7
+4 Total      7
+
+--- ordinary ordered union ---
+ERROR: Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before
+CLASS: rlang_error
+
+SORT: last
+
+--- direct ---
+      g TRUE
+1     a    7
+2 Total    7
+
+--- collapse ---
+# A tibble: 2 × 6
+  g     `TRUE` ..marginplyr_order_1 ..marginplyr_order_2 ..marginplyr_order_3
+  <chr>  <int>                <int>                <int> <chr>
+1 a          7                    0                    0 a
+2 Total      7                    1                    0 Total
+# ℹ 1 more variable: ..marginplyr_order_4 <int>
+
+--- collapse SQL ---
+<SQL> SELECT
+  CAST(NULL AS TEXT) AS `g`,
+  `TRUE`,
+  NULL AS `..marginplyr_order_1`,
+  NULL AS `..marginplyr_order_2`,
+  NULL AS `..marginplyr_order_3`,
+  NULL AS `..marginplyr_order_4`
+FROM `src`
+WHERE (0)
+
+UNION ALL
+
+SELECT
+  `g`,
+  `..marginplyr_boolean_1` AS `TRUE`,
+  CASE WHEN (`..marginplyr_sort_1` IN (2)) THEN 1 WHEN NOT (`..marginplyr_sort_1` IN (2)) THEN 0 END AS `..marginplyr_order_1`,
+  CASE WHEN ((`g` IS NULL)) THEN 1 WHEN NOT ((`g` IS NULL)) THEN 0 END AS `..marginplyr_order_2`,
+  `g` AS `..marginplyr_order_3`,
+  `..marginplyr_sort_1` AS `..marginplyr_order_4`
+FROM (
+  SELECT *, NULL AS `..marginplyr_sort_1`
+  FROM (
+    SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+    FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `src`
+) AS `q01`
+    ) AS `q01`
+    WHERE (0)
+  ) AS `q01`
+
+  UNION ALL
+
+  SELECT *
+  FROM (
+    SELECT *, 1 AS `..marginplyr_sort_1`
+    FROM (
+      SELECT CAST(`g` AS TEXT) AS `g`, `..marginplyr_boolean_1`
+      FROM (
+        SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+        FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `src`
+) AS `q01`
+        ) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+
+    UNION ALL
+
+    SELECT *, 2 AS `..marginplyr_sort_1`
+    FROM (
+      SELECT 'Total' AS `g`, `..marginplyr_boolean_1`
+      FROM (
+        SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+        FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `src`
+) AS `q01`
+        ) AS `q01`
+      ) AS `q01`
+    ) AS `q01`
+  ) AS `q01`
+  WHERE (1)
+) AS `q01`
+ORDER BY `..marginplyr_order_1`, `..marginplyr_order_2`, `..marginplyr_order_3`, `..marginplyr_order_4`
+
+--- direct cte ---
+ERROR: undefined columns selected
+CLASS: simpleError
+
+--- direct SQL cte ---
+<SQL> WITH `q01` AS (
+  SELECT
+    CAST(NULL AS TEXT) AS `g`,
+    `TRUE`,
+    NULL AS `..marginplyr_order_1`,
+    NULL AS `..marginplyr_order_2`,
+    NULL AS `..marginplyr_order_3`,
+    NULL AS `..marginplyr_order_4`
+  FROM `src`
+  WHERE (0)
+),
+`q02` AS (
+  SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+  FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `src`
+) AS `q01`
+  ) AS `q01`
+  WHERE (0)
+),
+`q03` AS (
+  SELECT *, NULL AS `..marginplyr_sort_1`
+  FROM `q02` AS `q01`
+),
+`q04` AS (
+  SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`
+  FROM (
+SELECT `g`, `..marginplyr_input_1`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`
+FROM `src`
+) AS `q01`
+  ) AS `q01`
+),
+`q05` AS (
+  SELECT CAST(`g` AS TEXT) AS `g`, `..marginplyr_boolean_1`
+  FROM `q04` AS `q01`
+),
+`q06` AS (
+  SELECT *, 1 AS `..marginplyr_sort_1`
+  FROM `q05` AS `q01`
+),
+`q07` AS (
+  SELECT 'Total' AS `g`, `..marginplyr_boolean_1`
+  FROM `q04` AS `q01`
+),
+`q08` AS (
+  SELECT *, 2 AS `..marginplyr_sort_1`
+  FROM `q07` AS `q01`
+),
+`q09` AS (
+  SELECT *
+  FROM `q06`
+
+  UNION ALL
+
+  SELECT *
+  FROM `q08`
+),
+`q10` AS (
+  SELECT *
+  FROM `q09` AS `q01`
+  WHERE (1)
+),
+`q11` AS (
+  SELECT *
+  FROM `q03`
+
+  UNION ALL
+
+  SELECT *
+  FROM `q10`
+),
+`q12` AS (
+  SELECT
+    `g`,
+    `..marginplyr_boolean_1` AS `TRUE`,
+    CASE WHEN (`..marginplyr_sort_1` IN (2)) THEN 1 WHEN NOT (`..marginplyr_sort_1` IN (2)) THEN 0 END AS `..marginplyr_order_1`,
+    CASE WHEN ((`g` IS NULL)) THEN 1 WHEN NOT ((`g` IS NULL)) THEN 0 END AS `..marginplyr_order_2`,
+    `g` AS `..marginplyr_order_3`,
+    `..marginplyr_sort_1` AS `..marginplyr_order_4`
+  FROM `q11` AS `q01`
+)
+SELECT *
+FROM `q01`
+
+UNION ALL
+
+SELECT *
+FROM `q12`
+ORDER BY `..marginplyr_order_1`, `..marginplyr_order_2`, `..marginplyr_order_3`, `..marginplyr_order_4`
+
+--- ordinary source cte ---
+ERROR: Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex
+CLASS: rlang_error
+
+--- ordinary source collapse ---
+# A tibble: 1 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+
+--- union self ---
+# A tibble: 4 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+2 Total      7
+3 a          7
+4 Total      7
+
+--- ordinary ordered union ---
+ERROR: Failed to collect lazy table.
+Caused by error:
+! ORDER BY clause should come after UNION ALL not before
+CLASS: rlang_error
+
+BACKEND: duckdb
+duckdb is storing downloaded extensions and secrets under ~/.duckdb:
+ℹ /Users/sayuks/.duckdb
+This persists across sessions and is shared with the DuckDB CLI and other clients.
+ℹ Run duckdb(shared_home = FALSE) to use a temporary directory instead.
+ℹ See ?duckdb_storage for details and alternatives.
+
+SORT: none
+
+--- direct ---
+# A tibble: 2 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+2 Total      7
+
+--- collapse ---
+# A tibble: 2 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+2 Total      7
+
+--- collapse SQL ---
+<SQL> SELECT TRY_CAST(g AS TEXT) AS g, "TRUE"
+FROM (
+SELECT g, "TRUE"
+FROM (
+SELECT *
+FROM src
+) AS q01
+) AS q01
+
+UNION ALL
+
+SELECT 'Total' AS g, "TRUE"
+FROM (
+SELECT g, "TRUE"
+FROM (
+SELECT *
+FROM src
+) AS q01
+) AS q01
+
+--- direct cte ---
+# A tibble: 2 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+2 Total      7
+
+--- direct SQL cte ---
+<SQL> WITH q01 AS (
+  SELECT TRY_CAST(g AS TEXT) AS g, "TRUE"
+  FROM (
+SELECT g, "TRUE"
+FROM (
+SELECT *
+FROM src
+) AS q01
+  ) AS q01
+),
+q02 AS (
+  SELECT 'Total' AS g, "TRUE"
+  FROM (
+SELECT g, "TRUE"
+FROM (
+SELECT *
+FROM src
+) AS q01
+  ) AS q01
+)
+SELECT *
+FROM q01
+
+UNION ALL
+
+SELECT *
+FROM q02
+
+--- ordinary source cte ---
+ERROR: Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex
+CLASS: rlang_error
+
+--- ordinary source collapse ---
+# A tibble: 1 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+
+--- union self ---
+# A tibble: 4 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+2 Total      7
+3 a          7
+4 Total      7
+
+--- ordinary ordered union ---
+ERROR: Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near "UNION"
+
+LINE 5: UNION ALL
+        ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER
+CLASS: rlang_error
+
+SORT: last
+
+--- direct ---
+# A tibble: 2 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+2 Total      7
+
+--- collapse ---
+# A tibble: 2 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+2 Total      7
+
+--- collapse SQL ---
+<SQL> SELECT g, "TRUE"
+FROM (
+  SELECT *, 1 AS "..marginplyr_sort_1"
+  FROM (
+    SELECT TRY_CAST(g AS TEXT) AS g, "TRUE"
+    FROM (
+SELECT g, "TRUE"
+FROM (
+SELECT *
+FROM src
+) AS q01
+    ) AS q01
+  ) AS q01
+
+  UNION ALL
+
+  SELECT *, 2 AS "..marginplyr_sort_1"
+  FROM (
+    SELECT 'Total' AS g, "TRUE"
+    FROM (
+SELECT g, "TRUE"
+FROM (
+SELECT *
+FROM src
+) AS q01
+    ) AS q01
+  ) AS q01
+) AS q01
+ORDER BY
+  CASE WHEN ("..marginplyr_sort_1" IN (2)) THEN 1 WHEN NOT ("..marginplyr_sort_1" IN (2)) THEN 0 END,
+  CASE WHEN ((g IS NULL)) THEN 1 WHEN NOT ((g IS NULL)) THEN 0 END,
+  g,
+  "..marginplyr_sort_1"
+
+--- direct cte ---
+# A tibble: 2 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+2 Total      7
+
+--- direct SQL cte ---
+<SQL> WITH q01 AS (
+  SELECT TRY_CAST(g AS TEXT) AS g, "TRUE"
+  FROM (
+SELECT g, "TRUE"
+FROM (
+SELECT *
+FROM src
+) AS q01
+  ) AS q01
+),
+q02 AS (
+  SELECT *, 1 AS "..marginplyr_sort_1"
+  FROM q01
+),
+q03 AS (
+  SELECT 'Total' AS g, "TRUE"
+  FROM (
+SELECT g, "TRUE"
+FROM (
+SELECT *
+FROM src
+) AS q01
+  ) AS q01
+),
+q04 AS (
+  SELECT *, 2 AS "..marginplyr_sort_1"
+  FROM q03 AS q01
+),
+q05 AS (
+  SELECT *
+  FROM q02
+
+  UNION ALL
+
+  SELECT *
+  FROM q04
+)
+SELECT g, "TRUE"
+FROM q05 AS q01
+ORDER BY
+  CASE WHEN ("..marginplyr_sort_1" IN (2)) THEN 1 WHEN NOT ("..marginplyr_sort_1" IN (2)) THEN 0 END,
+  CASE WHEN ((g IS NULL)) THEN 1 WHEN NOT ((g IS NULL)) THEN 0 END,
+  g,
+  "..marginplyr_sort_1"
+
+--- ordinary source cte ---
+ERROR: Failed to interpolate {query_list[[n]]}.
+Caused by error in `query_list[[n]]`:
+! attempt to select less than one element in integerOneIndex
+CLASS: rlang_error
+
+--- ordinary source collapse ---
+# A tibble: 1 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+
+--- union self ---
+ERROR: Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near "UNION"
+
+LINE 35: UNION ALL
+         ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER
+CLASS: rlang_error
+
+--- ordinary ordered union ---
+ERROR: Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Parser Error: syntax error at or near "UNION"
+
+LINE 5: UNION ALL
+        ^
+ℹ Context: rapi_prepare
+ℹ Error type: PARSER
+CLASS: rlang_error

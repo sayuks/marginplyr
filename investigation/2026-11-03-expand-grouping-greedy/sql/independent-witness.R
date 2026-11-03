@@ -1,0 +1,23 @@
+Sys.setenv(TESTTHAT_PARALLEL = "false")
+pkgload::load_all(Sys.getenv("MARGINPLYR_HUNT_SOURCE", "."), quiet = TRUE)
+suppressPackageStartupMessages(library(dplyr))
+local({
+  con <- DBI::dbConnect(RSQLite::SQLite())
+  on.exit(DBI::dbDisconnect(con))
+  src <- copy_to(con, tibble(k = c("y", "x"), `fAlSe` = c(19L, 31L)), "other_source")
+  # A different word, spelling, fixture size, input selection and plan.
+  control <- collect(filter(src, TRUE), sql_options = dbplyr::sql_options(cte = TRUE))
+  stopifnot(identical(names(control), c("k", "fAlSe")))
+  x <- expand_with_margins(src, .grouping = grouping_sets(grouping_set(), grouping_set(k)),
+                           .margin_label = NULL, .sort = "first", .id = "occurrence")
+  direct <- collect(x)
+  stopifnot(identical(names(direct), c("k", "occurrence", "fAlSe")), nrow(direct) == 4L)
+  folded <- collect(collapse(x))
+  cat("Independent collapse witness public names:", names(direct), "\n")
+  cat("Independent collapse witness collected names:", names(folded), "\n")
+  cte <- tryCatch(collect(x, sql_options = dbplyr::sql_options(cte = TRUE)), error = identity)
+  cat("Independent CTE witness:", if (inherits(cte, "error")) conditionMessage(cte) else paste(names(cte), collapse = ","), "\n")
+  args <- commandArgs(trailingOnly = TRUE)
+  if ("--assert-collapse" %in% args) stopifnot(identical(names(folded), names(direct)))
+  if ("--assert-cte" %in% args) stopifnot(!inherits(cte, "error"), identical(names(cte), names(direct)))
+})
