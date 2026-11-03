@@ -24,7 +24,7 @@ base_env$recurse <- function(x = 0L) if (x) recurse(x - 1L) else tidyselect::pee
 base_env$eager <- function(x = c("a", "b"), y = x) y
 base_env$pick <- function(x = scalar) x
 base_env$arg_order <- function(x = y, y = scalar, ...) c(x, ...)
-base_env$paren <- function(x = (((external)))) (((x)))
+base_env$paren <- eval(parse(text = "function(x = (((external)))) (((x)))"), base_env)
 base_env$kw <- function(alpha = external, beta = empty) c(alpha, beta)
 base_env$names_alias <- base::names
 base_env$peek_alias <- tidyselect::peek_data
