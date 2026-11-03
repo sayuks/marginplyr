@@ -83,7 +83,9 @@ local({
   retained_paths <- list.files(historical$run, recursive = TRUE, full.names = TRUE)
   retained_hashes <- tools::md5sum(retained_paths)
   set_priority(historical, c("old", "new"))
-  historical_output <- capture.output(recovered <- propose(historical))
+  historical_output <- capture.output({
+    recovered <- propose(historical)
+  })
   expect(recovered$eligible && identical(recovered$native, c("old", "new", "tiny")),
     "historical literal duplicates recover the measured native first-occurrence order")
   expect(any(grepl("old (positions 1, 3)", historical_output, fixed = TRUE)),
