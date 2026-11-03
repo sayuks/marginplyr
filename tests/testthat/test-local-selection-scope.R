@@ -1,4 +1,4 @@
-test_that("top-level across retains arguments forwarded through populated dots", {
+test_that("top-level across retains populated dots", {
   data <- data.frame(g = c("a", "a", "b"), x = 1:3)
   ordinary <- function(...) {
     dplyr::summarise(data, dplyr::across(...), .by = g)
@@ -53,8 +53,10 @@ test_that("forwarded across retains omission and missing-argument behavior", {
     summarize_with_margins(data, dplyr::across(...), .by = g)
   }
   expect_identical(margin("x"), ordinary("x"))
-  expect_error(ordinary("x", ), "missing")
-  expect_error(margin("x", ), "missing")
+  expect_error(
+    rlang::inject(ordinary("x", !!rlang::missing_arg())), "missing"
+  )
+  expect_error(rlang::inject(margin("x", !!rlang::missing_arg())), "missing")
 })
 
 test_that("ordinary local selectors use the executing function's arguments", {
