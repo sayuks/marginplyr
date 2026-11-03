@@ -4047,7 +4047,8 @@ expression_alias_dependencies <- function(expr, aliases, env = emptyenv(),
 # definite `bound` set, conditional assignments also prevent a lexical
 # environment value from proving an external lookup. An unresolved reflective
 # assignment reports the lookup marker, excluding every lexical binding.
-# Literal list2env setter keys invalidate only the bindings they name.
+# Literal list2env setter keys invalidate only the bindings they name;
+# unresolved setter keys invalidate every external binding proof.
 lookup_rebound_names <- function(expr, env = emptyenv(), mask = character()) {
   rebound <- expression_rebound_names(expr)
   unique(c(rebound, expression_rebound_names(expr, list(
@@ -4075,11 +4076,15 @@ expression_rebound_names <- function(expr, lookup = NULL) {
       values <- base_call_argument(mutation, "x")
       target <- base_call_argument(mutation, "envir")
       if (length(target) > 0L &&
-            !is.null(unparenthesized_value(target[[1L]])) &&
-            length(values) > 0L &&
-            identical(static_call_name(values[[1L]]), "list") &&
-            is_known_base_call(values[[1L]], "list", character(), lookup)) {
-        assigned <- c(assigned, names(static_call_args(values[[1L]])))
+            !is.null(unparenthesized_value(target[[1L]]))) {
+        keys <- if (length(values) > 0L &&
+                      identical(static_call_name(values[[1L]]), "list") &&
+                      is_known_base_call(values[[1L]], "list", character(), lookup)) {
+          names(static_call_args(values[[1L]]))
+        } else {
+          unresolved_lookup_name()
+        }
+        assigned <- c(assigned, keys)
       }
     }
   }

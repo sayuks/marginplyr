@@ -4,6 +4,11 @@ test_that("visible list2env rebinding exposes both share dependencies", {
     x = c(1, 3, 2, 6), prior = c(100, 300, 200, 600)
   )
   setters <- alist(
+    base::list2env({list(outside = environment())}, envir = environment()),
+    base::list2env(identity(list(outside = environment())),
+                   envir = environment()),
+    base::list2env(setNames(list(environment()), "outside"),
+                   envir = environment()),
     list2env(list(outside = environment()), envir = environment()),
     base::list2env(list(outside = environment()), envir = environment()),
     (get("list2env"))(list(outside = environment()), envir = environment()),
@@ -66,6 +71,8 @@ test_that("list2env preserves independent lookups and ordinary evaluation", {
   data <- data.frame(group = c("a", "b"), x = c(1, 3), prior = c(100, 300))
   controls <- alist(
     NULL,
+    base::list2env({list(outside = environment())}),
+    base::list2env(identity(list(outside = environment())), envir = NULL),
     base::list2env(list(outside = environment())),
     base::list2env(list(outside = environment()), envir = NULL),
     base::list2env(list(outside = environment()), envir = (NULL),
@@ -165,6 +172,40 @@ test_that("list2env rebinding analysis never evaluates caller expressions", {
   )
   expect_identical(calls, 0L)
   expect_length(ls(outside), 0L)
+})
+
+test_that("unresolved list2env keys are never evaluated for lookup proofs", {
+  data <- data.frame(group = c("a", "b"), x = c(1, 3), prior = c(100, 300))
+  outside <- rlang::env(baseenv(), prior = 7)
+  calls <- 0L
+  keys <- function() {
+    calls <<- calls + 1L
+    list(outside = environment())
+  }
+  expression <- quote({
+    base::list2env(keys(), envir = environment())
+    sum(get("prior", envir = outside))
+  })
+  for (kind in c("parent", "total")) {
+    helper <- rlang::call2(paste0("share_of_", kind), quote(value))
+    expect_error(
+      summarize_with_margins(
+        data, prior = sum(x), value = !!expression,
+        fraction = !!helper, .grouping = rollup(group)
+      ),
+      "depends on earlier summary alias `prior`", class = "marginplyr_error"
+    )
+    expect_error(
+      summarize_with_margins(
+        data, value = sum(x), prior = !!helper,
+        derived = !!expression, .grouping = rollup(group)
+      ),
+      "Ordinary summaries cannot use an earlier .* share",
+      class = "marginplyr_error"
+    )
+  }
+  expect_identical(calls, 0L)
+  expect_equal(outside$prior, 7)
 })
 
 test_that("injected list2env syntax keeps its callee environment", {
