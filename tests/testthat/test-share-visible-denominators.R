@@ -85,6 +85,83 @@ test_that("SQLite shares use their displayed random denominator", {
   }
 })
 
+test_that("native DuckDB Parent shares read displayed values at every level", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  source <- dplyr::copy_to(con, data.frame(g = "a", h = "x"), "facts")
+  DBI::dbExecute(con, "CREATE SEQUENCE share_stamp")
+  query <- summarize_with_margins(
+    source, value = dbplyr::sql("nextval('share_stamp')"),
+    parent = share_of_parent(value), .grouping = rollup(g, h), .id = "set"
+  )
+  expect_error(DBI::dbGetQuery(con, "SELECT currval('share_stamp')"),
+               "not yet defined")
+  result <- dplyr::collect(query)
+  values <- result$value[match(1:3, result$set)]
+  expect_equal(result$parent[match(1:3, result$set)],
+               c(values[[1L]] / values[[2L]], values[[2L]] / values[[3L]], 1))
+})
+
+test_that("DuckDB volatile shares use displayed values across query shapes", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  source <- dplyr::copy_to(con, data.frame(
+    fixed = c("east", NA_character_, "east", NA_character_),
+    g = c("a", "a", "b", "b"), h = c("x", "y", "x", "y"), x = 1:4
+  ), "facts")
+  requests <- visible_share_requests()
+  cases <- expand.grid(
+    dimensions = 1:2, fixed = c(FALSE, TRUE), request = names(requests),
+    portable = c(FALSE, TRUE), aggregate = c(FALSE, TRUE),
+    text_label = c(FALSE, TRUE), stringsAsFactors = FALSE
+  )
+  for (case in seq_len(nrow(cases))) {
+    shape <- cases[case, ]
+    DBI::dbExecute(con, "CREATE OR REPLACE SEQUENCE share_stamp")
+    stamp <- dbplyr::sql("nextval('share_stamp')")
+    value <- if (shape$aggregate) rlang::expr(sum(x) + !!stamp) else stamp
+    query <- summarize_with_margins(
+      source, value = !!value, !!!requests[[shape$request]],
+      .by = if (shape$fixed) "fixed" else NULL,
+      .grouping = if (shape$dimensions == 1L) rollup(g) else rollup(g, h),
+      .duplicates = if (shape$portable) "keep" else "error",
+      .margin_label = if (shape$text_label) "Total" else NULL, .id = "set"
+    )
+    sql <- as.character(dbplyr::sql_render(query))
+    expect_identical(grepl("GROUPING SETS", sql, fixed = TRUE), !shape$portable)
+    expect_error(DBI::dbGetQuery(con, "SELECT currval('share_stamp')"),
+                 "not yet defined")
+    result <- dplyr::collect(query)
+    root <- shape$dimensions + 1L
+    for (share in intersect(c("parent", "total"), names(result))) {
+      expected <- vapply(seq_len(nrow(result)), function(row) {
+        if (result$set[[row]] == root) {
+          return(1)
+        }
+        target <- if (share == "total") root else result$set[[row]] + 1L
+        matches <- result$set == target
+        if (shape$fixed) {
+          matches <- matches & vctrs::vec_equal(
+            result$fixed, result$fixed[[row]], na_equal = TRUE
+          )
+        }
+        if (target != root) {
+          matches <- matches & vctrs::vec_equal(
+            result$g, result$g[[row]], na_equal = TRUE
+          )
+        }
+        denominator <- result$value[matches]
+        expect_length(denominator, 1L)
+        result$value[[row]] / denominator
+      }, numeric(1))
+      expect_equal(result[[share]], expected,
+                   info = paste("case", case, "share", share))
+    }
+  }
+})
+
 visible_partition_data <- function() {
   data.frame(
     fixed = rep(c("east", "west", NA_character_), each = 4L),

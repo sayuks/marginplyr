@@ -2396,6 +2396,9 @@ execute_shares <- function(operation,
     requests = requests,
     check_share_source = check_share_source
   )
+  if (identical(operation$backend$kind, "duckdb")) {
+    result <- bind_duckdb_share_values(result)
+  }
   if (identical(operation$backend$kind, "dtplyr")) {
     result <- guard_dtplyr_grouped_result(
       result,
@@ -2445,6 +2448,23 @@ execute_shares <- function(operation,
     return(result)
   }
   drop_margin_staged_identifier(result, staged_set_id_name, operation$backend)
+}
+
+# Keep DuckDB's displayed sources and every share window on one evaluation.
+# The CTE is executed only when the caller executes the returned query.
+bind_duckdb_share_values <- function(result) {
+  con <- dbplyr::remote_con(result)
+  vars <- margin_col_names(result)
+  name <- new_margin_internal_names(
+    1L, used_names = vars, prefix = "..marginplyr_share_stage_",
+    backend = grouping_backend(result)
+  )
+  query <- dbplyr::sql_render(sql_quote_generated_columns(result))
+  sql <- dbplyr::build_sql(
+    "WITH ", dbplyr::ident(name), " AS MATERIALIZED (", query,
+    ") SELECT * FROM ", dbplyr::ident(name), con = con
+  )
+  dplyr::tbl(con, sql, vars = vars)
 }
 
 # Refuse a staged dtplyr result with more than one row per occurrence and
