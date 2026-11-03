@@ -1,6 +1,7 @@
 # Duplicate test priority metadata and retained proposal recovery (#1193)
 
 Investigated: 2026-11-03
+Revised: 2026-11-03 — agent recovery workflow proposal in Revisions below (#1193)
 
 ## Scope and environment
 
@@ -170,3 +171,110 @@ runner/fixture changes are not this investigation's prose-only `source` case.
 Keep #1185/#1186 repairs separate. An eligible retained run must still be
 revalidated immediately before actual proposal adoption, and its original
 seven-day deadline must not be renewed.
+
+## Revisions (2026-11-03)
+
+The maintainer requested that the improvement proposal also specify how an
+implementing AI agent should respond if duplicates escape prevention and are
+discovered during Review-ready. This addition supplements the repair proposal;
+it does not change the findings above. The workflow below is a proposed
+implementation requirement, not an already-installed runner behavior or an
+amendment to the operational authorities.
+
+### Detection and ownership
+
+Extend prevention beyond CI: validate the submitted priority in both local
+scopes before heavy admission, using the same strict reader. Report duplicate
+stems, their positions, pinned SHA and whether the invalid input is submitted
+metadata, archived measurement metadata or a proposed patch. The runner should
+return a failing preflight result for invalid submitted metadata and should
+never edit committed source or silently discard duplicate registrations.
+Preserve all five mandatory baseline checks for valid submissions.
+
+An agent encountering a literal duplicate in the submitted priority should
+repair it within the active implementation task, even when inherited from main
+and even when that implementation is otherwise finished. Opening another issue
+does not discharge the repair. No repeated permission request is needed for
+the mechanically established repair. Preserve the first occurrence and remove
+later occurrences only after strict validation of the normalized list and an
+exact comparison of native ordered discovery, including every discovered file
+once. Perform that comparison on disposable copies while a check is active.
+
+### Response by detection point
+
+| Detection point | Required agent response |
+| --- | --- |
+| Before invocation or a failing metadata preflight | Collect any failed invocation's terminal result. Repair and commit the metadata, then invoke Review-ready for the new clean SHA using the scope required by the implementation. Without an applicable successful full result, a package-affecting implementation still requires `full`. |
+| During admission waiting or active checking, with a confirmed duplicate in the submitted SHA | Follow *Required fix confirmed* in `design/agents/local-checks.md`: cancel through the original retained execution handle, collect terminal completion and owned child work, then repair and commit. Invoke a fresh check for the new SHA; a cancelled or incomplete full invocation supplies no full success or eligible measurement. Do not edit the submitting worktree while the original invocation remains active. |
+| At finalization after a successful full result | Collect the original terminal outcome first. Preserve the full success for its measured SHA and separately report the proposal failure. Repair tracked metadata in the same task, recover/recalculate a proposal from eligible evidence, inspect its disposition, commit and validate the resulting SHA under the scope rule below. Do not claim final review readiness while tracked metadata remains invalid. |
+| Only in archived metadata, with valid submitted metadata | Use the proposed historical reader, report normalization, and revalidate the complete retained evidence. Recalculate only the proposal and inspect its disposition. Historical duplication alone requires neither a metadata commit nor another suite. |
+| In a generated patch or the combined state after integration | Reject the invalid patch or combined state before review readiness. Keep its evidence for diagnosis; repair the target list and recalculate against current main and still-eligible evidence. Verify the resulting SHA. Do not blindly apply a patch or accept a clean textual merge as proof of valid priority membership. |
+
+An observed terminal outcome takes precedence over a planned cancellation. If
+the invocation finished first, collect it and use the appropriate completed
+case; never retroactively label a completed full result cancelled or passed
+based on an intermediate transcript. Preserve actual failed checks as failures.
+
+### Verification and bounded recovery
+
+The repair should explicitly amend *Boundary and scope* in
+`design/agents/local-checks.md` to cover pure duplicate removal after a
+successful full result. Permit `source` for the repaired SHA only when:
+
+- the only check-affecting change since that full SHA is the priority field;
+- package code, test/helper bytes and membership, installed files, dependency
+  declarations and dispatch machinery are unchanged;
+- the evidence remains eligible under the ordinary age/environment checks;
+- the change removes only later identical literal registrations, and strict
+  parsing plus exact native ordered discovery prove unchanged execution; and
+- any accompanying measured adoption satisfies the existing proposal inspection
+  and adoption requirements.
+
+Record both SHAs, the duplicate removal and ordered-discovery evidence, the
+scope reason, baseline outcomes and heavy omission. This is a narrow proposed
+extension to the measured-priority adoption rule, not blanket permission to
+use `source` for DESCRIPTION changes. Until it is adopted in that authority,
+apply the existing scope judgment and use `full` when effects are uncertain.
+Production changes to the reader, runner or fixtures require their own
+applicable verification; they cannot be hidden inside this metadata-only
+exception.
+
+If the recovery mechanism is unavailable or evidence has expired or changed,
+still repair the tracked duplicate, report the proposal diagnostic and defer
+optimization to the next ordinarily required successful full check. Do not
+patch manifests, renew retention, weaken eligibility, or start a full suite
+solely to obtain replacement timings. The scope required to validate an actual
+repair remains a separate obligation.
+
+If the list contains glob registrations, empty entries or another ambiguity,
+or removing duplicates changes the native ordered file vector, stop automatic
+deduplication. Retain the diagnostic, establish the intended dispatch from the
+specification, and seek a maintainer decision only where that intent is
+unresolved. Preserve the implementation and its valid check evidence while
+reporting the concrete remaining blocker.
+
+After a verified repair, the validation run's optional proposal does not start
+another optimization cycle. A newly detected invalid tracked priority is a
+real unresolved defect and still needs repair; it is not waived by the
+no-second-adoption rule. Diagnose repeated recurrence, including intervening
+integration, rather than blindly repeating the same patch/check cycle.
+
+### Implementation homes and acceptance cases
+
+Put the executable validation and diagnostics in the shared local preflight
+and priority tooling. Put the agent recovery steps, evidence preservation and
+proposal disposition in `tools/review-ready-runner.md`, and the narrow scope
+exception in `design/agents/local-checks.md`. Keep CI validation of the actual
+tracked DESCRIPTION. These authorities should own the installed behavior;
+this dated note remains the proposal and its rationale.
+
+Use disposable process/priority fixtures to cover invalid preflight in both
+scopes, cancellation and child collection before resubmission, successful full
+outcome preservation after proposal failure, historical-only normalization,
+invalid proposal rejection, and a concurrent merge introducing a duplicate.
+Verify exact native dispatch equivalence and the metadata-only scope boundary,
+including rejection of that exception when test inputs or dispatch machinery
+change. Assert no automatic source editing, no full-check retry by proposal
+recovery, and no final-ready report with an unresolved tracked duplicate.
+These are tooling acceptance cases, not a request for another measurement-only
+package suite.
