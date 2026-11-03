@@ -134,16 +134,16 @@ test_that("top-level function forwarding keeps dplyr expansion timing", {
 test_that("dynamic unpack preserves forwarded function factory evaluation", {
   run <- function(verb, unpack = TRUE) {
     data <- data.frame(g = c("a", "a", "b"), x = 1:3)
-    calls <- 0L
+    state <- rlang::env(calls = 0L)
     factory <- function() {
-      calls <<- calls + 1L
-      offset <- calls
+      state$calls <- state$calls + 1L
+      offset <- state$calls
       function(x) data.frame(value = sum(x) + offset)
     }
     wrapper <- function(...) {
       verb(data, dplyr::across(x, ..., .unpack = unpack), .by = g)
     }
-    list(result = wrapper(factory()), calls = calls)
+    list(result = wrapper(factory()), calls = state$calls)
   }
   expected <- run(dplyr::summarise)
   expect_identical(expected$calls, 2L)
@@ -155,10 +155,10 @@ test_that("dynamic unpack retains factory context and naming controls", {
   data <- data.frame(g = c("a", "a", "b"), x = 1:3)
   inputs <- list(data, tibble::as_tibble(data))
   run <- function(verb, input, unpack, listed, forwarded, parenthesized) {
-    events <- integer()
+    state <- rlang::env(events = integer())
     factory <- function() {
       offset <- dplyr::n()
-      events <<- c(events, offset)
+      state$events <- c(state$events, offset)
       fn <- function(x) data.frame(value = sum(x) + offset)
       if (listed) list(total = fn) else fn
     }
@@ -176,7 +176,7 @@ test_that("dynamic unpack retains factory context and naming controls", {
     } else {
       verb(input, dplyr::across(x, factory(), .unpack = unpack), .by = g)
     }
-    list(result = result, events = events)
+    list(result = result, events = state$events)
   }
   for (input in inputs) {
     for (unpack in list(TRUE, "{inner}_{outer}", FALSE)) {
