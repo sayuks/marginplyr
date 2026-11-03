@@ -235,7 +235,7 @@ prepare_grouping_plan <- function(.data,
         # against the resolved keys below. Withholding the pass instead would
         # make a `.grouping` error determinable from names alone wait for a
         # backend read, which ADR-0005 forbids.
-        with_discarded_selection_conditions(
+        with_discarded_selections(
           compile_grouping_spec(
             grouping_spec,
             data_vars = data_vars,
@@ -247,7 +247,7 @@ prepare_grouping_plan <- function(.data,
           )
         )
       } else {
-        with_discarded_selection_conditions(
+        with_discarded_selections(
           validate_leading_selections(
             preflight, data_vars, .by = by
           )
@@ -686,7 +686,7 @@ is_data_pronoun <- function(expr) {
 
 # Run a discarded selection pass quietly unless warnings become errors. Those
 # failures must precede metadata acquisition under ADR 0005.
-with_discarded_selection_conditions <- function(expr) {
+with_discarded_selections <- function(expr) {
   rlang::with_options(
     if (getOption("warn") >= 2L) force(expr) else suppressWarnings(expr),
     lifecycle_verbosity = discarded_pass_verbosity()
