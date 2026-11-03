@@ -235,7 +235,7 @@ prepare_grouping_plan <- function(.data,
         # against the resolved keys below. Withholding the pass instead would
         # make a `.grouping` error determinable from names alone wait for a
         # backend read, which ADR-0005 forbids.
-        with_discarded_selections(
+        preflight_warnings <- with_discarded_selections(
           compile_grouping_spec(
             grouping_spec,
             data_vars = data_vars,
@@ -247,7 +247,7 @@ prepare_grouping_plan <- function(.data,
           )
         )
       } else {
-        with_discarded_selections(
+        preflight_warnings <- with_discarded_selections(
           validate_leading_selections(
             preflight, data_vars, .by = by
           )
@@ -263,7 +263,7 @@ prepare_grouping_plan <- function(.data,
           !is.null(by)
       ) {
         data_proxy <- grouping_name_proxy(data_vars)
-        plan <- compile_grouping_spec(
+        plan <- with_preflight_warning_filter(compile_grouping_spec(
           grouping_spec,
           data_vars = data_vars,
           data_proxy = data_proxy,
@@ -271,7 +271,7 @@ prepare_grouping_plan <- function(.data,
           .duplicates = .duplicates,
           duplicates_choices = duplicates_choices,
           preflight = preflight
-        )
+        ), preflight_warnings)
       } else {
         data_proxy <- if (identical(backend$kind, "dtplyr")) {
           dtplyr_selection_proxy(
@@ -284,7 +284,7 @@ prepare_grouping_plan <- function(.data,
         if (is.null(by)) {
           by <- resolve_by_selection(by_quo, data_proxy)
         }
-        plan <- compile_grouping_spec(
+        plan <- with_preflight_warning_filter(compile_grouping_spec(
           grouping_spec,
           data_vars = data_vars,
           data_proxy = data_proxy,
@@ -292,7 +292,7 @@ prepare_grouping_plan <- function(.data,
           .duplicates = .duplicates,
           duplicates_choices = duplicates_choices,
           preflight = preflight
-        )
+        ), preflight_warnings)
       }
 
       list(
@@ -684,13 +684,42 @@ is_data_pronoun <- function(expr) {
   length(parts) == 2L && identical(parts[[1L]], quote(.data))
 }
 
-# Run a discarded selection pass quietly unless warnings become errors. Those
-# failures must precede metadata acquisition under ADR 0005.
+# Run a discarded pass quietly unless warnings become errors (ADR 0005).
+# Return identities of warnings delivered before a caller muffled them.
 with_discarded_selections <- function(expr) {
+  warnings <- list()
   rlang::with_options(
-    if (getOption("warn") >= 2L) force(expr) else suppressWarnings(expr),
+    if (getOption("warn") >= 2L) {
+      withCallingHandlers(expr, warning = function(cnd) {
+        warnings[[length(warnings) + 1L]] <<- selection_warning_key(cnd)
+      })
+    } else {
+      suppressWarnings(expr)
+    },
     lifecycle_verbosity = discarded_pass_verbosity()
   )
+  warnings
+}
+
+# Run canonical selections, withholding only occurrences already delivered by
+# the discarded pass. Each prior occurrence can withhold one canonical warning.
+with_preflight_warning_filter <- function(expr, warnings) {
+  withCallingHandlers(expr, warning = function(cnd) {
+    if (length(warnings) > 0L) {
+      key <- selection_warning_key(cnd)
+      matches <- which(vapply(warnings, identical, logical(1), y = key))
+      if (length(matches) > 0L) {
+        warnings <<- warnings[-matches[[1L]]]
+        tryInvokeRestart("muffleWarning")
+      }
+    }
+  })
+}
+
+# Selection-warning identity includes the blamed call so distinct contexts
+# cannot consume each other's preflight occurrences.
+selection_warning_key <- function(cnd) {
+  list(class(cnd), conditionMessage(cnd), conditionCall(cnd))
 }
 
 # Withhold lifecycle signals so a discarded pass cannot spend a once-per-session

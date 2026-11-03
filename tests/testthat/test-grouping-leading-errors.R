@@ -196,6 +196,57 @@ test_that("warning-promoted selections precede unsafe dtplyr metadata", {
   expect_identical(predicates, 0L)
 })
 
+test_that("caller-muffled preflight warnings are reported once", {
+  data <- data.frame(x = 1L, value = 2L)
+  rlang::local_options(warn = 2L, lifecycle_verbosity = "warning")
+  for (first in list(quote(one_of(c("x", "absent"))), quote(.data$x))) {
+    for (spec in list(
+      grouping_set(!!first), grouping_set(!!first, where(is.numeric))
+    )) {
+      for (verb in forwarded_verbs) {
+        warnings <- list()
+        withCallingHandlers(
+          verb(data, NULL, spec),
+          warning = function(cnd) {
+            warnings[[length(warnings) + 1L]] <<- cnd
+            invokeRestart("muffleWarning")
+          }
+        )
+        expect_length(warnings, 1L)
+      }
+    }
+  }
+})
+
+test_that("preflight warning filtering retains later typed warnings", {
+  data <- data.frame(x = 1L, value = 2L)
+  rlang::local_options(warn = 2L)
+  for (verb in forwarded_verbs) {
+    predicates <- 0L
+    numeric_column <- function(x) {
+      predicates <<- predicates + 1L
+      warning("typed selection warning", call. = FALSE)
+      is.numeric(x)
+    }
+    warnings <- character()
+    withCallingHandlers(
+      verb(data, NULL, grouping_set(
+        one_of(c("x", "absent")), one_of(c("x", "absent")),
+        where(numeric_column)
+      )),
+      warning = function(cnd) {
+        warnings <<- c(warnings, conditionMessage(cnd))
+        invokeRestart("muffleWarning")
+      }
+    )
+    expect_length(warnings, 4L)
+    expect_match(warnings[[1L]], "absent")
+    expect_identical(warnings[[2L]], warnings[[1L]])
+    expect_identical(warnings[3:4], rep("typed selection warning", 2L))
+    expect_identical(predicates, 2L)
+  }
+})
+
 test_that("a leading failure does not force later helper bindings", {
   data <- data.frame(x = 1L, value = 2L)
   for (active in c(FALSE, TRUE)) {
