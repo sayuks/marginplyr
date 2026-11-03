@@ -270,3 +270,89 @@ test_that("preceded naming callbacks stay in the ordinary local context", {
   expect_identical(observations$margin, observations$ordinary)
   expect_length(observations$ordinary$sizes, 1L)
 })
+
+test_that("preceded name-only selections expose vector names to shares", {
+  data <- data.frame(x = 1:3, y = 5:7)
+  template <- "{.col}_{seq_along(.col)}"
+  for (cols in rlang::exprs(x:y, dplyr::everything(),
+                            dplyr::all_of(c("x", "y")))) {
+    ordinary <- dplyr::summarise(
+      data, prior = sum(x), dplyr::across(!!cols, sum, .names = template)
+    )
+    actual <- summarize_with_margins(
+      data, prior = sum(x),
+      dplyr::across(!!cols, sum, .names = template),
+      p = share_of_total(y_2)
+    )
+    expect_identical(actual[names(ordinary)], ordinary)
+    expect_identical(actual$p, 1)
+  }
+})
+
+test_that("preceded helper arguments retain their local data-mask context", {
+  data <- data.frame(x = 1:3, y = 5:7)
+  observations <- list()
+  for (mode in c("ordinary", "margin")) {
+    sizes <- integer()
+    combine <- function(...) {
+      sizes <<- base::c(sizes, dplyr::n())
+      base::c(...)
+    }
+    env <- rlang::env(environment(), c = combine)
+    expression <- rlang::new_quosure(quote(dplyr::across(
+      dplyr::all_of(c("x", "y")), sum,
+      .names = "{.col}_{seq_along(.col)}"
+    )), env)
+    result <- if (mode == "ordinary") {
+      dplyr::summarise(data, prior = sum(x), !!expression)
+    } else {
+      summarize_with_margins(
+        data, prior = sum(x), !!expression, p = share_of_total(prior)
+      )
+    }
+    observations[[mode]] <- list(result = result[c("prior", "x_1")],
+                                 sizes = sizes)
+  }
+  expect_identical(observations$margin, observations$ordinary)
+  expect_identical(observations$ordinary$sizes, 0L)
+})
+
+test_that("bare selection helpers retain tidyselect's own bindings", {
+  data <- data.frame(x = 1:3)
+  all_of <- function(x) stop(paste("caller all_of", x))
+  ordinary <- dplyr::summarise(
+    data, prior = sum(x),
+    dplyr::across(all_of("x"), sum, .names = "{.col}_{seq_along(.col)}")
+  )
+  actual <- summarize_with_margins(
+    data, prior = sum(x),
+    dplyr::across(all_of("x"), sum, .names = "{.col}_{seq_along(.col)}"),
+    p = share_of_total(x_1)
+  )
+  expect_identical(ordinary$x_1, 6L)
+  expect_identical(actual[names(ordinary)], ordinary)
+  expect_identical(actual$p, 1)
+})
+
+test_that("preceding template rebinding stays with ordinary evaluation", {
+  data <- data.frame(x = 1:3, y = 5:7)
+  observations <- list()
+  for (mode in c("ordinary", "margin")) {
+    template <- "{.col}_old"
+    dots <- rlang::exprs(
+      prior = {
+        template <<- "{.col}_new"
+        sum(x)
+      },
+      dplyr::across(c(x, y), sum, .names = template)
+    )
+    result <- if (mode == "ordinary") {
+      dplyr::summarise(data, !!!dots)
+    } else {
+      summarize_with_margins(data, !!!dots, p = share_of_total(prior))
+    }
+    observations[[mode]] <- result[setdiff(names(result), "p")]
+  }
+  expect_identical(names(observations$ordinary), c("prior", "x_new", "y_new"))
+  expect_identical(observations$margin, observations$ordinary)
+})

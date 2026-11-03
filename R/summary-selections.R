@@ -779,14 +779,6 @@ plan_summary_expressions <- function(dots,
     data_vars = data_vars,
     group_vars = group_vars
   )
-  if (defer_local && has_shares) {
-    dots <- cache_local_context_names(dots, deferred, selection_proxy)
-  }
-  predictable_names <- if (defer_local) {
-    predictable_local_across_names(dots, names(selection_proxy))
-  } else {
-    character()
-  }
   if (
     defer_local && length(dots) > 0L &&
       !contains_share_helper(rlang::quo_get_expr(dots[[1L]]))
@@ -817,6 +809,14 @@ plan_summary_expressions <- function(dots,
           )
       )
     }
+    dots <- cache_local_context_names(dots, selection_proxy, group_vars)
+  }
+  predictable_names <- if (!defer_local) {
+    character()
+  } else if (has_shares) {
+    cached_local_across_names(dots)
+  } else {
+    predictable_local_across_names(dots, names(selection_proxy))
   }
   # Against the dots this rewrite received, and before share planning moves
   # one: a share summary carries an output name already, and every rewrite
@@ -1208,42 +1208,188 @@ is_literal_summary_selection <- function(cols, available, allow_names = TRUE) {
   FALSE
 }
 
-# Resolves deferred local names that need neither summary values nor caller
-# callbacks. Selections must be literal names in the preceding summary mask.
-cache_local_context_names <- function(dots, deferred, selection_proxy) {
+# Resolves local names using a known summary schema and context-only templates.
+# Selector helpers must take constant arguments without caller callbacks.
+cache_local_context_names <- function(dots, selection_proxy, group_vars) {
   available <- names(selection_proxy)
+  complete <- TRUE
+  rebound <- character()
   for (i in seq_along(dots)) {
     dot <- dots[[i]]
     expr <- rlang::quo_get_expr(dot)
     name <- rlang::names2(dots)[[i]]
-    if (deferred[[i]] && !nzchar(name) && is_across_call(expr) &&
-          !contains_share_helper(expr)) {
+    lookup <- list(
+      env = rlang::quo_get_env(dot), mask = c(available, group_vars),
+      columns = available, rebound = rebound
+    )
+    if (contains_share_helper(expr)) next
+    if (nzchar(name)) {
+      rebound <- unique(c(rebound, lookup_rebound_names(
+        expr, lookup$env, lookup$mask
+      )))
+      available <- unique(c(available, name))
+      next
+    }
+    output <- NULL
+    if (is_across_call(expr)) {
       parsed <- parse_across_arguments(expr)
-      template <- unwrap_injected_quosure(parsed$names)
       env <- rlang::quo_get_env(dot)
-      if ((is.null(parsed$unpack) || isFALSE(parsed$unpack)) &&
-            is_literal_summary_selection(parsed$cols, available) &&
-            is_context_name_template(template, env) &&
-            length(known_across_function_names(parsed, env)) > 0L) {
-        proxy <- stats::setNames(as.list(seq_along(available)), available)
-        output <- known_across_output_names(expr, env, proxy)
+      output <- attr(parsed$names, "marginplyr_across_names", exact = TRUE)
+      template <- known_local_name_template(parsed$names, lookup)
+      if (is.null(output) && complete && !is.null(template) &&
+            (is.null(parsed$unpack) || isFALSE(parsed$unpack)) &&
+            is_static_name_selection(parsed$cols, lookup) &&
+            (is.null(template$value) ||
+               is_context_name_template(template$value, lookup)) &&
+            known_context_fns(parsed, lookup)) {
+        proxy <- vctrs::new_data_frame(
+          stats::setNames(rep(list(NA), length(available)), available), n = 1L
+        )
         args <- parsed$call_args
-        args[[parsed$names_index]] <- resolved_across_name_template(output)
+        selected <- resolve_summary_selection(parsed$cols, env, proxy)
+        selection <- summary_all_of_expr(selected, proxy)
+        if (parsed$cols_index == 0L) {
+          args <- append(list(.cols = selection), args)
+        } else {
+          args[[parsed$cols_index]] <- selection
+        }
+        prepared <- rebuild_static_call(expr, args)
+        prepared_args <- parse_across_arguments(prepared)
+        args <- prepared_args$call_args
+        if (prepared_args$names_index > 0L) {
+          args[prepared_args$names_index] <- list(template$value)
+        }
+        output <- known_across_output_names(
+          rebuild_static_call(prepared, args), env, proxy
+        )
+        frozen <- resolved_across_name_template(output)
+        if (prepared_args$names_index == 0L) {
+          args <- append(args, list(.names = frozen))
+        } else {
+          args[[prepared_args$names_index]] <- frozen
+        }
         dot <- rlang::quo_set_expr(dot, rebuild_static_call(expr, args))
         dots[[i]] <- dot
       }
+      if (is.null(output)) complete <- FALSE
+      available <- unique(c(available, output))
+    } else if (!is_static_spelling_call(expr, "selection", "pick")) {
+      complete <- FALSE
     }
-    available <- unique(c(
-      available, name[nzchar(name)],
-      predictable_local_across_names(list(dot), available)
-    ))
+    rebound <- unique(c(rebound, lookup_rebound_names(
+      expr, lookup$env, lookup$mask
+    )))
   }
   dots
 }
 
+# Reads only already resolved output names from unnamed local across dots.
+cached_local_across_names <- function(dots) {
+  unlist(lapply(seq_along(dots), function(i) {
+    expr <- rlang::quo_get_expr(dots[[i]])
+    if (nzchar(rlang::names2(dots)[[i]]) || !is_across_call(expr)) {
+      return(character())
+    }
+    attr(parse_across_arguments(expr)$names,
+         "marginplyr_across_names", exact = TRUE)
+  }), use.names = FALSE)
+}
+
+# Reads a literal or an existing constant caller template without forcing a
+# promise or active binding. Mask names remain owned by local execution.
+known_local_name_template <- function(expr, lookup) {
+  if (rlang::is_missing(expr)) return(NULL)
+  if (rlang::is_quosure(expr)) {
+    lookup$env <- rlang::quo_get_env(expr)
+    return(known_local_name_template(
+      rlang::quo_get_expr(expr), lookup
+    ))
+  }
+  if (is_parenthesized(expr)) {
+    return(known_local_name_template(unparenthesized_value(expr), lookup))
+  }
+  if (is.null(expr) || (is.character(expr) && !is.object(expr))) {
+    return(list(value = expr))
+  }
+  if (!rlang::is_symbol(expr) || rlang::as_string(expr) %in% lookup$mask) {
+    return(NULL)
+  }
+  name <- rlang::as_string(expr)
+  if (!is_unrebound_name(name, lookup)) return(NULL)
+  current <- lookup$env
+  while (!identical(current, emptyenv())) {
+    if (exists(name, envir = current, inherits = FALSE)) {
+      if (bindingIsActive(name, current) ||
+            rlang::env_binding_are_lazy(current, name)) return(NULL)
+      value <- get(name, envir = current, inherits = FALSE)
+      if (is.null(value) || (is.character(value) && !is.object(value))) {
+        return(list(value = value))
+      }
+      return(NULL)
+    }
+    current <- parent.env(current)
+  }
+  NULL
+}
+
+# Recognizes name-only tidyselect syntax on a known schema. Tidyselect owns
+# bare helper bindings; helper arguments must be constant base expressions.
+is_static_name_selection <- function(expr, lookup) {
+  if (rlang::is_quosure(expr)) {
+    lookup$env <- rlang::quo_get_env(expr)
+    return(is_static_name_selection(
+      rlang::quo_get_expr(expr), lookup
+    ))
+  }
+  if (rlang::is_missing(expr)) return(FALSE)
+  if (rlang::is_symbol(expr)) {
+    return(rlang::as_string(expr) %in% lookup$columns)
+  }
+  if (!rlang::is_call(expr)) {
+    return(!is.object(expr) && (is.character(expr) || is.numeric(expr)))
+  }
+  if (is_parenthesized(static_call_head(expr))) return(FALSE)
+  name <- static_call_name(expr)
+  namespace <- static_call_ns(expr)
+  args <- static_call_args(expr)
+  if (is.null(name)) return(FALSE)
+  operators <- c("c", ":", "!", "&", "|", "+", "-", "(")
+  if (is.null(namespace) && name %in% operators) {
+    return(all(vapply(args, is_static_name_selection, logical(1),
+                      lookup = lookup)))
+  }
+  helpers <- intersect(
+    names(tidyselect::vars_select_helpers),
+    c("all_of", "any_of", "contains", "ends_with", "everything", "last_col",
+      "matches", "num_range", "starts_with")
+  )
+  if (is.null(name) || !name %in% helpers ||
+        (!is.null(namespace) && !namespace %in% c("dplyr", "tidyselect"))) {
+    return(is_context_only_name_expr(expr, lookup, allow_context = FALSE))
+  }
+  all(vapply(args, is_context_only_name_expr, logical(1),
+             lookup = lookup, allow_context = FALSE))
+}
+
+# Whether prior visible mutations leave a lexical binding proof available.
+is_unrebound_name <- function(name, lookup) {
+  !any(c(name, unresolved_lookup_name()) %in% lookup$rebound)
+}
+
+# Function labels must remain known after earlier ordinary summaries run.
+known_context_fns <- function(parsed, lookup) {
+  fns <- unparenthesized_value(parsed$fns)
+  if (rlang::is_symbol(fns) &&
+        !is_unrebound_name(rlang::as_string(fns), lookup)) return(FALSE)
+  if (is_known_function_list_call(fns, lookup$env) &&
+        is.null(static_call_ns(fns)) &&
+        !is_unrebound_name("list", lookup)) return(FALSE)
+  length(known_across_function_names(parsed, lookup$env)) > 0L
+}
+
 # Reads glue interpolations without evaluating them. The caller supplies a
 # literal template and the lexical environment used to resolve its functions.
-is_context_name_template <- function(template, env) {
+is_context_name_template <- function(template, lookup) {
   if (!is.character(template) || length(template) != 1L || is.na(template)) {
     return(FALSE)
   }
@@ -1255,33 +1401,39 @@ is_context_name_template <- function(template, env) {
         ""
       }
     )
-    all(vapply(expressions, is_context_only_name_expr, logical(1), env = env))
+    all(vapply(expressions, is_context_only_name_expr,
+               logical(1), lookup = lookup))
   }, error = function(cnd) FALSE)
 }
 
 # Accepts only naming vectors, constants and these base operations on them.
 # Bare function bindings must already be known without forcing caller code.
-is_context_only_name_expr <- function(expr, env) {
+is_context_only_name_expr <- function(expr, lookup, allow_context = TRUE) {
   if (rlang::is_missing(expr)) return(FALSE)
   if (rlang::is_symbol(expr)) {
-    return(rlang::as_string(expr) %in% c(".col", ".fn", "col", "fn"))
+    return(allow_context &&
+             rlang::as_string(expr) %in% c(".col", ".fn", "col", "fn"))
   }
-  if (!rlang::is_call(expr)) return(is.atomic(expr) || is.null(expr))
+  if (!rlang::is_call(expr)) {
+    return(!is.object(expr) && (is.atomic(expr) || is.null(expr)))
+  }
   if (is_parenthesized(static_call_head(expr))) return(FALSE)
   name <- static_call_name(expr)
-  if (is.null(name) || !name %in% c(
+  operations <- c(
     "c", "seq_along", "length", "rev", "match", "toupper", "("
-  )) return(FALSE)
+  )
+  if (!allow_context) operations <- c(operations, ":", "+", "-", "*", "/", "^")
+  if (is.null(name) || !name %in% operations) return(FALSE)
   namespace <- static_call_ns(expr)
   if (!is.null(namespace)) {
     if (!identical(namespace, "base")) return(FALSE)
-  } else if (!identical(
-    ordinary_function_binding(name, env), getExportedValue("base", name)
+  } else if (!is_unrebound_name(name, lookup) || !identical(
+    ordinary_function_binding(name, lookup$env), getExportedValue("base", name)
   )) {
     return(FALSE)
   }
   all(vapply(static_call_args(expr), is_context_only_name_expr,
-             logical(1), env = env))
+             logical(1), lookup = lookup, allow_context = allow_context))
 }
 
 # Names an unnamed local `across()` only when both its columns and `.names`
