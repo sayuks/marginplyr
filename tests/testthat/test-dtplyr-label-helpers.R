@@ -21,7 +21,9 @@ test_that("included nesting keys ignore late caller conversion bindings", {
   expect_s3_class(results[[2L]], "rowwise_df")
   for (result in results) {
     expect_identical(result$g, "a")
-    expect_identical(lapply(result$data, as.list), list(list(g = "a", value = 7L)))
+    expect_identical(
+      lapply(result$data, as.list), list(list(g = "a", value = 7L))
+    )
   }
   controls <- list(
     dplyr::collect(input),
@@ -65,7 +67,9 @@ test_that("Margin labels ignore caller repetition and size helpers", {
   )
   for (key in keys) {
     for (size in c(0L, 2L)) {
-      source <- data.table::data.table(g = key[seq_len(size)], value = seq_len(size))
+      source <- data.table::data.table(
+        g = key[seq_len(size)], value = seq_len(size)
+      )
       before <- serialize(source, NULL)
       root <- new.env(parent = globalenv())
       root$source <- source
@@ -74,7 +78,9 @@ test_that("Margin labels ignore caller repetition and size helpers", {
       }
       input <- evalq(dtplyr::lazy_dt(source), root)
       # NA_character_ conflicts with a declared NA factor level (ADR 0012).
-      labels <- if (anyNA(levels(key))) list("Total", NULL) else {
+      labels <- if (anyNA(levels(key))) {
+        list("Total", NULL)
+      } else {
         list("Total", NULL, NA_character_)
       }
       for (label in labels) {
@@ -95,7 +101,7 @@ test_that("Margin labels ignore caller repetition and size helpers", {
   }
 })
 
-test_that("label isolation preserves user expressions and collection boundaries", {
+test_that("label isolation preserves user lookup and collection boundaries", {
   skip_if_suggest_absent("dtplyr")
   root <- new.env(parent = globalenv())
   root$source <- tibble::tibble(g = "a", value = 7L)
@@ -136,7 +142,7 @@ test_that("label isolation preserves user expressions and collection boundaries"
   expect_gt(visits, 0L)
 })
 
-test_that("observed collisions ignore caller conversion and aggregate helpers", {
+test_that("observed collisions ignore caller conversion and aggregation", {
   skip_if_suggest_absent("dtplyr")
   for (helper in c("as.character", "sum")) {
     source <- data.table::data.table(g = "Total", value = 7L)

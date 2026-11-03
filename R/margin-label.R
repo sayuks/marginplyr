@@ -346,7 +346,7 @@ check_observed_label_collision <- function(data,
           } else {
             rlang::data_sym(safe_name(col))
           }
-          # dtplyr defers these generated helpers in the input's root environment.
+          # dtplyr defers these helpers in the input's root environment.
           conversion <- if (inherits(source, "dtplyr_step")) {
             rlang::expr(base::as.character(!!column))
           } else {
@@ -610,7 +610,9 @@ label_margin_branch <- function(.data,
         # named `.data` or `.env`; the generated lookup must name the column.
         conversions <- lapply(safe_columns, function(col) {
           if (inherits(source, "dtplyr_step")) {
-            return(rlang::expr(base::as.character(!!margin_column_pronoun(col))))
+            return(rlang::expr(base::as.character(
+              !!margin_column_pronoun(col)
+            )))
           }
           rlang::expr(as.character(!!margin_column_pronoun(col)))
         })
