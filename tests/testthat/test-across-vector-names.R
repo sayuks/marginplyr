@@ -400,7 +400,7 @@ test_that("caller data getters remain opaque to name caching", {
     observations <- list()
     for (mode in c("ordinary", "margin")) {
       env <- rlang::env(environment(), data = data.frame(x = 1:3, y = 5:7),
-                         template = "{.col}_old", calls = 0L)
+                        template = "{.col}_old", calls = 0L)
       env[[getter]] <- evalq(function(value, name) {
         calls <<- calls + 1L
         template <<- "{.col}_new"
