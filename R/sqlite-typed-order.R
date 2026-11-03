@@ -157,11 +157,29 @@ sqlite_typed_result_direct <- function(x) {
   identical(x$lazy_query, attr(x, "marginplyr_original_query"))
 }
 
+# Collapse consumes the public lazy graph rather than the direct execution SQL.
+# Ordinary dbplyr semantics apply after this composition boundary (ADR 0031).
+#' @exportS3Method dplyr::collapse
+#' @noRd
+collapse.marginplyr_sqlite_typed_result <- function(x, ...) {
+  class(x) <- setdiff(class(x), "marginplyr_sqlite_typed_result")
+  aliases <- sqlite_boolean_query_aliases(x)
+  if (length(aliases) == 0L) {
+    return(dplyr::collapse(x, ...))
+  }
+  x <- sqlite_boolean_query(x, NULL, aliases, public = FALSE)
+  result <- sqlite_boolean_projection(dplyr::collapse(x, ...), aliases)
+  # Derived verbs keep final-render alias repair, without a direct companion.
+  class(result) <- c("marginplyr_sqlite_typed_result", class(result))
+  result
+}
+
 # Render direct execution SQL or repair aliases in a derived public query.
 # Direct rendering keeps the Sent query record aligned with that SQL (ADR 0027).
 #' @exportS3Method dbplyr::sql_render
 #' @noRd
-sql_render.marginplyr_sqlite_typed_result <- function(query, ...) {
+sql_render.marginplyr_sqlite_typed_result <- function(query, ...,
+                                                      sql_options = NULL) {
   if (!sqlite_typed_result_direct(query)) {
     query <- sqlite_boolean_derived_query(query)
     return(NextMethod())
@@ -169,11 +187,13 @@ sql_render.marginplyr_sqlite_typed_result <- function(query, ...) {
   union <- attr(query, "marginplyr_typed_union")
   keys <- attr(query, "marginplyr_order_keys")
   if (length(keys) == 0L) {
-    return(dbplyr::sql_render(
-      attr(query, "marginplyr_public_query"), ...
+    return(sqlite_boolean_execution_sql(
+      attr(query, "marginplyr_public_query"), ..., sql_options = sql_options
     ))
   }
-  sql <- as.character(dbplyr::sql_render(union, ...))
+  sql <- as.character(sqlite_boolean_execution_sql(
+    union, ..., sql_options = sql_options
+  ))
   quoted <- as.character(DBI::dbQuoteIdentifier(query$con, keys))
   dbplyr::sql(paste0(sql, "\nORDER BY ", paste(quoted, collapse = ", ")))
 }
@@ -402,7 +422,7 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
     )
   }
   destination <- sqlite_compute_destination(con, name, temporary, overwrite)
-  insert_from <- dbplyr::sql_render(
+  insert_from <- sqlite_boolean_execution_sql(
     attr(x, "marginplyr_public_query"), sql_options = sql_options
   )
   columns <- paste(DBI::dbQuoteIdentifier(con, public), collapse = ", ")

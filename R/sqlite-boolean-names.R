@@ -4,17 +4,57 @@ sqlite_boolean_columns <- function(names) {
   names[tolower(names) %in% c("true", "false")]
 }
 
+# Render a direct companion without lifting its final aliases or type anchor.
+# Its union arms have private input names except the zero-row source anchor.
+# CTEs belong below each public projection, where SQLite retains those names.
+sqlite_boolean_execution_sql <- function(result,
+                                         con = dbplyr::remote_con(result),
+                                         ..., sql_options = NULL) {
+  if (!isTRUE(sql_options$cte) ||
+        length(sqlite_boolean_columns(dplyr::tbl_vars(result))) == 0L) {
+    return(dbplyr::sql_render(
+      result, con = con, ..., sql_options = sql_options
+    ))
+  }
+  render <- function(op) {
+    if (inherits(op, "lazy_union_query")) {
+      return(dbplyr::sql_query_union(
+        con, render(op$x),
+        list(table = lapply(op$unions$table, function(table) {
+          render(table$lazy_query)
+        }), all = op$unions$all)
+      ))
+    }
+    # The anchor must keep its source projection direct for RSQLite types.
+    # Other arms expose Boolean names only after this privately named input.
+    if (!inherits(op$x, "lazy_base_query") &&
+          length(sqlite_boolean_columns(dbplyr::op_vars(op$x))) == 0L) {
+      input <- dbplyr::sql_render(op$x, con = con, sql_options = sql_options)
+      op$x <- dplyr::tbl(con, input, vars = dbplyr::op_vars(op$x))$lazy_query
+    }
+    built <- dbplyr::sql_build(op, con = con, sql_options = sql_options)
+    dbplyr::sql_render(built, con = con, ..., sql_options = sql_options)
+  }
+  render(result$lazy_query)
+}
+
 # Expose public names through one inlinable projection over private outputs.
 # Binary dbplyr verbs can consume either input without the result's S3 class.
 # The caller holds a completed live SQLite Margin query with Boolean names.
 sqlite_boolean_public_query <- function(result) {
   aliases <- sqlite_boolean_query_aliases(result)
-  public <- intersect(names(aliases), dbplyr::op_vars(result$lazy_query))
   result <- sqlite_boolean_query(result, NULL, aliases, public = FALSE)
   # Direct execution uses the companion query; this graph delegates ordering.
   if (inherits(result$lazy_query, "lazy_select_query")) {
     result$lazy_query$order_by <- NULL
   }
+  sqlite_boolean_projection(result, aliases)
+}
+
+# Restore public Boolean aliases over a privately named query or collapsed SQL.
+# The alias map was allocated before the input acquired its private names.
+sqlite_boolean_projection <- function(result, aliases) {
+  public <- names(aliases)[aliases %in% dbplyr::op_vars(result$lazy_query)]
   result$lazy_query <- dbplyr::lazy_select_query(result$lazy_query)
   result <- dplyr::rename(result, dplyr::all_of(aliases[public]))
   class(result$lazy_query) <- c("lazy_margin_public_query",

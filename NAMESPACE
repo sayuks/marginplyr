@@ -3,6 +3,7 @@
 S3method(dbplyr::sql_build,lazy_margin_public_query)
 S3method(dbplyr::sql_render,lazy_margin_public_query)
 S3method(dbplyr::sql_render,marginplyr_sqlite_typed_result)
+S3method(dplyr::collapse,marginplyr_sqlite_typed_result)
 S3method(dplyr::collect,marginplyr_sqlite_typed_result)
 S3method(dplyr::compute,marginplyr_duckdb_env)
 S3method(dplyr::compute,marginplyr_sqlite_typed_result)

@@ -291,3 +291,17 @@ anchor with private names, then rename the destination columns before inserting
 the public result. Index requests follow those aliases until the columns are
 renamed. All these writes remain inside the existing owned savepoint; they
 introduce no construction-time query or source-data read under ADR 0020.
+
+## Public composition and direct CTE execution (#1179, #1180)
+
+`collapse()` consumes the public lazy graph, rather than the direct companion's
+physical ordering columns. Boolean outputs remain privately named in the
+collapsed SQL and regain their public aliases in an outer projection. Subsequent
+verbs retain the existing derived-query alias repair; collapse adds no direct
+type or Margin order guarantee.
+
+Direct CTE execution keeps the source-column anchor and final public aliases
+outside CTE lifting. Privately named inputs beneath the final projections may
+use CTEs. Collection and the public query inserted by materialization share that
+rendering boundary, retaining the existing direct types, order and destination
+safety. Construction, collapse and rendering execute no query.
