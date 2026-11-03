@@ -1,3 +1,124 @@
+test_that("empty dots select no fixed keys through helper arguments", {
+  data <- tibble::tibble(g = "a", value = 1L)
+  inspect <- function(...) {
+    selected <- tidyselect::eval_select(rlang::quo(all_of(c(...))), data)
+    result <- inspect_grouping(data, .by = all_of(c(...)), .format = "list")
+    expect_identical(result$fixed, list(names(selected)))
+    result
+  }
+
+  expect_identical(inspect()$fixed, list(character()))
+  expect_identical(inspect("g")$fixed, list("g"))
+})
+
+test_that("Grouping consumers preserve empty and populated helper dots", {
+  data <- tibble::tibble(g = "a", value = 1L)
+  constructors <- c("grouping_set", "grouping_sets", "rollup", "cube",
+                    "grouping_spec")
+  for (helper in c("all_of", "any_of")) {
+    selections <- list(
+      rlang::call2(helper, quote(c(...))),
+      rlang::call2(helper, quote(unlist(list(...)))),
+      rlang::call2("identity", rlang::call2(helper, quote(c(...))))
+    )
+    for (selection in selections) {
+      for (position in c(".by", constructors)) {
+        for (verb in forwarded_verbs) {
+          check <- function(...) {
+            captured <- rlang::new_quosure(selection, environment())
+            selected <- tidyselect::eval_select(captured, data)
+            expect_identical(
+              names(selected), if (...length()) "g" else character()
+            )
+            if (position == ".by") {
+              expected <- verb(data, all_of(names(selected)), NULL)
+              expect_identical(verb(data, !!captured, NULL), expected)
+            } else {
+              spec <- rlang::eval_tidy(rlang::call2(position, captured))
+              if (!length(selected) && position %in% c("rollup", "cube")) {
+                expect_error(
+                  verb(data, NULL, spec),
+                  paste0("`", position, "()` requires at least one dimension."),
+                  class = "marginplyr_error", fixed = TRUE
+                )
+              } else {
+                literal <- rlang::call2("all_of", names(selected))
+                expected_spec <- rlang::eval_tidy(
+                  rlang::call2(position, literal)
+                )
+                expect_identical(
+                  verb(data, NULL, spec), verb(data, NULL, expected_spec)
+                )
+              }
+            }
+          }
+          check()
+          check("g")
+        }
+      }
+    }
+  }
+})
+
+test_that("explicitly missing helper dots keep tidyselect's refusal", {
+  data <- tibble::tibble(g = "a", value = 1L)
+  check <- function(...) {
+    selection <- rlang::quo(all_of(c(...)))
+    direct <- expect_error(tidyselect::eval_select(selection, data))
+    for (verb in forwarded_verbs) {
+      fixed <- expect_error(verb(data, !!selection, NULL))
+      dimension <- expect_error(
+        verb(data, NULL, grouping_set(!!selection))
+      )
+      expect_identical(class(fixed), class(direct))
+      expect_identical(class(dimension), class(direct))
+      expect_identical(conditionMessage(fixed), conditionMessage(direct))
+      expect_identical(conditionMessage(dimension), conditionMessage(direct))
+    }
+  }
+
+  rlang::inject(check(!!!list(rlang::missing_arg(), "g")))
+})
+
+test_that("helper dots keep captured environments and evaluation budgets", {
+  data <- tibble::tibble(g = "a", value = 1L)
+  capture <- function(...) rlang::quo(all_of(c(...)))
+  empty <- capture()
+  populated <- capture("g")
+  expect_identical(inspect_grouping(data, .by = !!empty)$fixed, "()")
+  expect_identical(inspect_grouping(data, .by = !!populated)$fixed, "(g)")
+
+  calls <- 0L
+  forced <- 0L
+  record <- function() {
+    calls <<- calls + 1L
+    character()
+  }
+  for (verb in forwarded_verbs) {
+    for (position in c(".by", ".grouping")) {
+      check <- function(...) {
+        selection <- rlang::quo(all_of(c(..., record())))
+        if (position == ".by") {
+          verb(data, !!selection, NULL)
+        } else {
+          verb(data, NULL, grouping_set(!!selection))
+        }
+      }
+      calls <- 0L
+      check()
+      expect_identical(calls, 1L)
+      calls <- 0L
+      forced <- 0L
+      check({
+        forced <- forced + 1L
+        "g"
+      })
+      expect_identical(calls, 1L)
+      expect_identical(forced, 1L)
+    }
+  }
+})
+
 test_that("helper arguments select fixed keys from typed metadata", {
   data <- tibble::tibble(a = c("x", "y"), b = c(1, 1))
   selection <- rlang::expr(tidyselect::all_of(
