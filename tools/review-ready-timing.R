@@ -100,7 +100,13 @@ review_ready_timing_evidence <- function(directory, terminal, transcript) {
     as.integer(sub("^Starting ([0-9]+).*", "\\1", announcements))
   } else NA_integer_
   logs <- list.files(directory, "^[0-9]+[.]tsv$", full.names = TRUE)
-  records <- lapply(logs, readLines, warn = FALSE)
+  records <- lapply(logs, function(log) {
+    bytes <- readBin(log, "raw", n = file.info(log)$size)
+    if (!length(bytes) || !identical(bytes[[length(bytes)]], as.raw(10L))) {
+      stop("unterminated worker observation")
+    }
+    strsplit(rawToChar(bytes), "\n", fixed = TRUE)[[1L]]
+  })
   lines <- unlist(records, use.names = FALSE)
   if (!length(lines)) stop("missing worker observations")
   fields <- strsplit(lines, "\t", fixed = TRUE)

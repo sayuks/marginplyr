@@ -307,6 +307,32 @@ local({
     }, "waiter reached admission")
     collected_output(run)
   }
+  finalizing_repo <- make_repo("timing-finalization")
+  recorder <- file.path(finalizing_repo, "tools", "review-ready-timing.R")
+  text <- readLines(recorder)
+  boundary <- "review_ready_timing_finish <- function(directory, terminal, transcript) {"
+  expect(sum(text == boundary) == 1L, "fixture replaces one timing-output boundary")
+  text[text == boundary] <- paste(boundary, paste(c(
+    '  ready <- Sys.getenv("FIXTURE_FINAL_READY")',
+    '  if (identical(terminal$status, "passed") && nzchar(ready)) {',
+    '    writeLines("ready", ready)',
+    '    repeat Sys.sleep(0.05)',
+    '  }'
+  ), collapse = "\n"), sep = "\n")
+  writeLines(text, recorder)
+  git(finalizing_repo, "add", ".")
+  git(finalizing_repo, "commit", "--quiet", "-m", "timing output barrier")
+  final_marker <- file.path(workspace, "final-output-ready")
+  finalizing <- start(finalizing_repo, "full", c(FIXTURE_FINAL_READY = final_marker))
+  wait_for(finalizing, function() file.exists(final_marker), "timing output reached terminal boundary")
+  finalizing$signal(2L)
+  final_output <- finish(finalizing, 130L, 30000L)
+  expect(identical(result_record(final_output)$status, "cancelled"),
+    "cancellation during timing output replaces the provisional success result")
+  evidence <- list.files(file.path(finalizing_repo, ".review-ready", "runs"),
+    "^evidence[.]rds$", recursive = TRUE, full.names = TRUE)
+  expect(length(evidence) == 1L && identical(readRDS(evidence[[1L]])$eligible, FALSE),
+    "cancelled timing finalization cannot leave eligible evidence")
   marker <- file.path(workspace, "ready-after-output")
   buffered <- start(repo, extra = c(FIXTURE_LARGE_OUTPUT = "true", FIXTURE_OUTPUT_READY = marker))
   wait_for(buffered, function() file.exists(marker), "marker follows large child output")

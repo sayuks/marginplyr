@@ -26,6 +26,7 @@ local({
   repos <- review_ready_offline_repositories(workspace)
   writeLines('test_that("skipped", skip("fixture all skipped"))',
     file.path(package, "tests", "testthat", "test-skipped.R"))
+  # The edition-2 teardown queue exercises cleanup after source_file returns.
   writeLines(c(
     'local({ local_edition(2); teardown({ Sys.sleep(0.15); cat(sprintf("%.9f", as.numeric(Sys.time())), "\\n", file=Sys.getenv("FIXTURE_CLEANUP"), append=TRUE) }) })',
     'test_that("cleanup", expect_snapshot(cat("fixture snapshot\\n")))'
@@ -39,8 +40,8 @@ local({
     helper <- file.path(package, "tests", "testthat", "helper-worker-startup.R")
     writeLines(c(
       'Sys.sleep(0.2)',
-      'cat(paste("setup", Sys.getpid(), sprintf("%.9f", proc.time()[["elapsed"]]), sep="\\t"), "\\n", file=Sys.getenv("FIXTURE_LIFECYCLE"), append=TRUE)',
-      'withr::defer({ cat(paste("teardown", Sys.getpid(), sprintf("%.9f", proc.time()[["elapsed"]]), sep="\\t"), "\\n", file=Sys.getenv("FIXTURE_LIFECYCLE"), append=TRUE); Sys.sleep(0.2) }, envir=.GlobalEnv)'
+      'cat(paste("setup", Sys.getpid(), sprintf("%.9f", proc.time()[["elapsed"]]), sep="\\t"), "\\n", file=paste0(Sys.getenv("FIXTURE_LIFECYCLE"), ".", Sys.getpid()), append=TRUE)',
+      'withr::defer({ cat(paste("teardown", Sys.getpid(), sprintf("%.9f", proc.time()[["elapsed"]]), sep="\\t"), "\\n", file=paste0(Sys.getenv("FIXTURE_LIFECYCLE"), ".", Sys.getpid()), append=TRUE); Sys.sleep(0.2) }, envir=.GlobalEnv)'
     ), helper)
     if (mode == "startup") writeLines('stop("fixture worker startup failure")', helper)
     expression <- switch(mode,
@@ -156,6 +157,11 @@ local({
         log <- list.files(path, "^[0-9]+[.]tsv$", full.names = TRUE)[[1L]]
         writeLines(head(readLines(log), -1L), log)
       })
+      reject("truncated", function(path) {
+        log <- list.files(path, "^[0-9]+[.]tsv$", full.names = TRUE)[[1L]]
+        bytes <- readBin(log, "raw", n = file.info(log)$size)
+        writeBin(head(bytes, -1L), log)
+      })
       reject("malformed", function(path) {
         log <- list.files(path, "^[0-9]+[.]tsv$", full.names = TRUE)[[1L]]
         cat("end\tunknown.R\t1\tNaN\t-1\n", file = log, append = TRUE)
@@ -177,8 +183,10 @@ local({
         any(subset(evidence$observations, event == "end")$wall < min(replay)))
     }
     if (mode %in% c("pass", "delayed")) {
-      lifecycle <- read.delim(file.path(check_dir, "lifecycle.tsv"), header = FALSE,
-        col.names = c("phase", "pid", "elapsed"))
+      lifecycle <- do.call(rbind, lapply(list.files(check_dir,
+        "^lifecycle[.]tsv[.][0-9]+$", full.names = TRUE), function(path) {
+          read.delim(path, header = FALSE, col.names = c("phase", "pid", "elapsed"))
+        }))
       for (pid in unique(evidence$observations$pid)) {
         interval <- evidence$observations[evidence$observations$pid == pid, ]
         setup <- lifecycle$elapsed[lifecycle$pid == pid & lifecycle$phase == "setup"]

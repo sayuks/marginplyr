@@ -573,6 +573,19 @@ run_review_ready_full <- function(source_root, run, required, prerequisites, run
   if (result$status != 0L) stop("Package build/check failed with status ", result$status, ".", call. = FALSE)
 }
 
+# Finalizes optional timing inside the caller's terminal interrupt boundary.
+finish_review_ready_timing <- function(source_root, run) {
+  if (run$metadata$scope != "full" || !dir.exists(file.path(run$directory, "timing"))) {
+    return(invisible(NULL))
+  }
+  tryCatch({
+    source(file.path(source_root, "tools", "review-ready-timing.R"), local = TRUE)
+    review_ready_timing_finish(file.path(run$directory, "timing"),
+      readRDS(file.path(run$directory, "result.rds")),
+      review_ready_test_transcript(file.path(run$directory, "check")))
+  }, error = function(cnd) cat("Review-ready timing disabled: ", conditionMessage(cnd), "\n", sep = ""))
+}
+
 # The command records one result for one committed revision; it never retries.
 review_ready_check_cli <- function(args, expected_root) {
   run <- NULL
@@ -604,6 +617,7 @@ review_ready_check_cli <- function(args, expected_root) {
     }
     saveRDS(c(run$metadata, list(status = "passed", heavy_check = if (selection$scope == "source") "omitted" else "passed")),
       file.path(run$directory, "result.rds"))
+    finish_review_ready_timing(source_root, run)
     0L
   }, interrupt = function(cnd) {
     cat("Review-ready cancelled.\n")
@@ -615,14 +629,9 @@ review_ready_check_cli <- function(args, expected_root) {
   if (!is.null(run) && status != 0L) {
     saveRDS(c(run$metadata, list(status = if (status == 130L) "cancelled" else "failed")),
       file.path(run$directory, "result.rds"))
-  }
-  if (!is.null(run) && selection$scope == "full" && dir.exists(file.path(run$directory, "timing"))) {
-    tryCatch({
-      source(file.path(source_root, "tools", "review-ready-timing.R"), local = TRUE)
-      review_ready_timing_finish(file.path(run$directory, "timing"),
-        readRDS(file.path(run$directory, "result.rds")),
-        review_ready_test_transcript(file.path(run$directory, "check")))
-    }, error = function(cnd) cat("Review-ready timing disabled: ", conditionMessage(cnd), "\n", sep = ""))
+    if (dir.exists(file.path(run$directory, "timing"))) {
+      finish_review_ready_timing(source_root, run)
+    }
   }
   as.integer(status)
 }
