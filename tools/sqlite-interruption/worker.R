@@ -31,8 +31,10 @@ write_json(list(
     as.character(utils::packageVersion(pkg))
   }), c("DBI", "RSQLite", "dbplyr", "dplyr", "rlang", "testthat", "pkgload"))
 ), "environment.json")
+notification <- new.env(parent = emptyenv())
 deliver <- switch(configuration$mode,
   sigint = function() {
+    state <- notification$state
     write_json(list(pid = Sys.getpid(), checkpoint = configuration$checkpoint,
                     hit = state$hit, savepoint = state$savepoint,
                     inserted = state$inserted, rolled_back = state$rolled_back,
@@ -66,6 +68,7 @@ results <- test_that("supervised SQLite interruption acceptance", {
     write_json(list(state = fixture$before, input = fixture$input,
                     expected = fixture$expected), "before.json")
     state <- sqlite_interrupt_hook(configuration$checkpoint, deliver = deliver)
+    notification$state <- state
     on.exit(sqlite_interrupt_unhook(state), add = TRUE)
     out <- NULL
     outcome <- tryCatch({
