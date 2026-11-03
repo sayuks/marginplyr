@@ -1,0 +1,15 @@
+$nest
+[1] NA  "a"
+
+$nest_by
+[1] NA  "a"
+
+$expand
+[1] NA  "a"
+
+$summarize
+[1] NA  "a"
+
+caller is.na calls: 8
+Error: all(vapply(masked, function(x) identical(x$g, c("a", NA_character_)),  .... is not TRUE
+Execution halted

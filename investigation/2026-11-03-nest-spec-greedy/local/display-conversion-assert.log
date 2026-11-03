@@ -1,0 +1,5 @@
+empty hms as.character type: logical
+nest_with_margins : vctrs_error_ptype2 Can't combine `..1$marginplyr_column_1` <logical> and `..2$marginplyr_column_1` <character>.
+nest_by_with_margins : vctrs_error_ptype2 Can't combine `..1$marginplyr_column_1` <logical> and `..2$marginplyr_column_1` <character>.
+Error: all(vapply(minimal_results, function(x) !inherits(x, "error") &&  .... is not TRUE
+Execution halted

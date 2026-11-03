@@ -1,0 +1,129 @@
+"n","draws","source_kind","plan","label_kind","check","verb","verdict","detail"
+1,4,"tibble","single","absent",FALSE,"nest_with_margins","success",""
+1,4,"tibble","single","absent",FALSE,"nest_by_with_margins","success",""
+1,4,"tibble","single","absent",TRUE,"nest_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."
+1,4,"tibble","single","absent",TRUE,"nest_by_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."
+1,4,"tibble","single","present",FALSE,"nest_with_margins","success",""
+1,4,"tibble","single","present",FALSE,"nest_by_with_margins","success",""
+1,4,"tibble","single","present",TRUE,"nest_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."
+1,4,"tibble","single","present",TRUE,"nest_by_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."
+1,4,"tibble","rollup","absent",FALSE,"nest_with_margins","success",""
+1,4,"tibble","rollup","absent",FALSE,"nest_by_with_margins","success",""
+1,4,"tibble","rollup","absent",TRUE,"nest_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."
+1,4,"tibble","rollup","absent",TRUE,"nest_by_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."
+1,4,"tibble","rollup","present",FALSE,"nest_with_margins","success",""
+1,4,"tibble","rollup","present",FALSE,"nest_by_with_margins","success",""
+1,4,"tibble","rollup","present",TRUE,"nest_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."
+1,4,"tibble","rollup","present",TRUE,"nest_by_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."
+1,4,"frame","single","absent",FALSE,"nest_with_margins","success",""
+1,4,"frame","single","absent",FALSE,"nest_by_with_margins","success",""
+1,4,"frame","single","absent",TRUE,"nest_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."
+1,4,"frame","single","absent",TRUE,"nest_by_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."
+1,4,"frame","single","present",FALSE,"nest_with_margins","success",""
+1,4,"frame","single","present",FALSE,"nest_by_with_margins","success",""
+1,4,"frame","single","present",TRUE,"nest_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."
+1,4,"frame","single","present",TRUE,"nest_by_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."
+1,4,"frame","rollup","absent",FALSE,"nest_with_margins","success",""
+1,4,"frame","rollup","absent",FALSE,"nest_by_with_margins","success",""
+1,4,"frame","rollup","absent",TRUE,"nest_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."
+1,4,"frame","rollup","absent",TRUE,"nest_by_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."
+1,4,"frame","rollup","present",FALSE,"nest_with_margins","success",""
+1,4,"frame","rollup","present",FALSE,"nest_by_with_margins","success",""
+1,4,"frame","rollup","present",TRUE,"nest_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."
+1,4,"frame","rollup","present",TRUE,"nest_by_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."
+3,4,"tibble","single","absent",FALSE,"nest_with_margins","success",""
+3,4,"tibble","single","absent",FALSE,"nest_by_with_margins","success",""
+3,4,"tibble","single","absent",TRUE,"nest_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."
+3,4,"tibble","single","absent",TRUE,"nest_by_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."
+3,4,"tibble","single","present",FALSE,"nest_with_margins","success",""
+3,4,"tibble","single","present",FALSE,"nest_by_with_margins","success",""
+3,4,"tibble","single","present",TRUE,"nest_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."
+3,4,"tibble","single","present",TRUE,"nest_by_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."
+3,4,"tibble","rollup","absent",FALSE,"nest_with_margins","success",""
+3,4,"tibble","rollup","absent",FALSE,"nest_by_with_margins","success",""
+3,4,"tibble","rollup","absent",TRUE,"nest_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."
+3,4,"tibble","rollup","absent",TRUE,"nest_by_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."
+3,4,"tibble","rollup","present",FALSE,"nest_with_margins","success",""
+3,4,"tibble","rollup","present",FALSE,"nest_by_with_margins","success",""
+3,4,"tibble","rollup","present",TRUE,"nest_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."
+3,4,"tibble","rollup","present",TRUE,"nest_by_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."
+3,4,"frame","single","absent",FALSE,"nest_with_margins","success",""
+3,4,"frame","single","absent",FALSE,"nest_by_with_margins","success",""
+3,4,"frame","single","absent",TRUE,"nest_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."
+3,4,"frame","single","absent",TRUE,"nest_by_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."
+3,4,"frame","single","present",FALSE,"nest_with_margins","success",""
+3,4,"frame","single","present",FALSE,"nest_by_with_margins","success",""
+3,4,"frame","single","present",TRUE,"nest_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."
+3,4,"frame","single","present",TRUE,"nest_by_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."
+3,4,"frame","rollup","absent",FALSE,"nest_with_margins","success",""
+3,4,"frame","rollup","absent",FALSE,"nest_by_with_margins","success",""
+3,4,"frame","rollup","absent",TRUE,"nest_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."
+3,4,"frame","rollup","absent",TRUE,"nest_by_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."
+3,4,"frame","rollup","present",FALSE,"nest_with_margins","success",""
+3,4,"frame","rollup","present",FALSE,"nest_by_with_margins","success",""
+3,4,"frame","rollup","present",TRUE,"nest_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."
+3,4,"frame","rollup","present",TRUE,"nest_by_with_margins","external_error","ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array."

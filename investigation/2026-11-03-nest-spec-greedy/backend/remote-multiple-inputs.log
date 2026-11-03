@@ -1,0 +1,12 @@
+Tracing function "dbSendQuery" in package "namespace:DBI"
+Untracing function "dbSendQuery" in package "namespace:DBI"
+RSQLite 25 calls; 0 statements, all LIMIT 0
+Tracing function "dbSendQuery" in package "namespace:DBI"
+Untracing function "dbSendQuery" in package "namespace:DBI"
+duckdb 25 calls; 5 statements, all LIMIT 0
+Arrow 16 calls; 8 readers retained all 16 original source rows
+Baseline: 4b34fdecb2d8a41034b3d9b5d5af8e51592555e1
+DBI 1.3.0
+RSQLite 3.53.3
+duckdb 1.5.5
+arrow 25.0.1

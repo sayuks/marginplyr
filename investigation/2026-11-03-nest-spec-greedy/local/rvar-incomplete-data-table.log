@@ -1,0 +1,23 @@
+rvar dimension: 1 display class: array display dim: 1
+[1] "1 ± 0"
+nest_with_margins : ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array.
+nest_by_with_margins : ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array.
+isolated predicate: `condition` must be a logical vector, not a logical 1D array.
+Error in `vec_group_loc()`:
+! Column `g` (size 1) must match the data frame (size 0).
+ℹ In file 'slice.c' at line 188.
+ℹ This is an internal error that was detected in the vctrs package.
+  Please report it at <https://github.com/r-lib/vctrs/issues> with a reprex (<https://tidyverse.org/help/>) and the full backtrace.
+Backtrace:
+    ▆
+ 1. ├─tidyr::nest(tibble::as_tibble(source), .by = g)
+ 2. ├─tidyr:::nest.tbl_df(tibble::as_tibble(source), .by = g)
+ 3. │ └─tidyr::chop(out, cols = all_of(names(cols)), error_call = error_call)
+ 4. │   └─vctrs::vec_group_loc(keys)
+ 5. └─rlang:::stop_internal_c_lib(...) at vctrs/R/group.R:71:3
+ 6.   └─rlang::abort(message, call = call, .internal = TRUE, .frame = frame)
+Execution halted
