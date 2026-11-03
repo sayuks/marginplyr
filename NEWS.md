@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* dtplyr Margin order preserves missing-last and margins-first/last ordering
+  independently of caller bindings for `is.na` and `%in%`, including bindings
+  changed after lazy result construction (#1176).
+
 * Zero-column dtplyr expansion and nesting preserve empty-input results when
   the caller binds `rep`, including after lazy result construction (#1171).
 

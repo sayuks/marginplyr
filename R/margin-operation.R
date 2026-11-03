@@ -506,7 +506,8 @@ order_margin_result <- function(operation, result, execution) {
         sort_id = if (is.null(key_id)) NULL else safe_name(key_id),
         value_types = margin_dictionary_sort_types(data, operation$backend),
         rowwise = rowwise,
-        safe_name = safe_name
+        safe_name = safe_name,
+        helper_namespace = if (operation$backend$kind == "dtplyr") "base"
       )
       if (length(terms) > 0L) dplyr::arrange(data, !!!terms) else data
     }
@@ -620,18 +621,21 @@ forget_margin_window_order <- function(result, backend) {
 # `value_types` maps dictionary columns to the types their value terms use.
 # Only the value term takes it. The cast reaches the key alone, so the result's
 # own column keeps whatever the executor left in it.
+# `helper_namespace` isolates generated dtplyr calls from root bindings;
+# other translators retain the unqualified calls they recognize.
 margin_order_terms <- function(plan,
                                sort,
                                sort_id,
                                value_types = list(),
                                rowwise = character(),
-                               safe_name = identity) {
+                               safe_name = identity,
+                               helper_namespace = NULL) {
   rowwise <- vapply(rowwise, safe_name, character(1), USE.NAMES = FALSE)
   terms <- unlist(
     lapply(plan$by, function(key) {
       key <- safe_name(key)
       list(
-        margin_missing_last_expr(key, rowwise),
+        margin_missing_last_expr(key, rowwise, helper_namespace),
         margin_sort_value_expr(key, value_types)
       )
     }),
@@ -646,7 +650,7 @@ margin_order_terms <- function(plan,
         !is.null(margin_ids) &&
         !any(vapply(seen_margin_ids, identical, logical(1), margin_ids))
     ) {
-      bit <- margin_grouping_bit_expr(sort_id, margin_ids)
+      bit <- margin_grouping_bit_expr(sort_id, margin_ids, helper_namespace)
       terms <- c(terms, list(
         if (identical(sort, "first")) {
           rlang::expr(dplyr::desc(!!bit))
@@ -659,7 +663,7 @@ margin_order_terms <- function(plan,
     terms <- c(
       terms,
       list(
-        margin_missing_last_expr(safe_name(dimension), rowwise),
+        margin_missing_last_expr(safe_name(dimension), rowwise, helper_namespace),
         margin_sort_value_expr(safe_name(dimension), value_types)
       )
     )
@@ -686,12 +690,12 @@ margin_sort_value_expr <- function(column, value_types) {
 # One column's missingness term, using row-vector semantics for local list
 # and array columns (ADR 0018).
 # `if_else()` produces an integer because not every dialect sorts booleans.
-margin_missing_last_expr <- function(column, rowwise) {
+margin_missing_last_expr <- function(column, rowwise, helper_namespace) {
   value <- margin_column_pronoun(column)
   missing <- if (column %in% rowwise) {
     rlang::expr(vctrs::vec_detect_missing(!!value))
   } else {
-    rlang::expr(is.na(!!value))
+    rlang::call2("is.na", value, .ns = helper_namespace)
   }
   rlang::expr(dplyr::if_else(
     !!missing,
@@ -719,9 +723,12 @@ margin_grouping_bit_ids <- function(plan, dimension) {
 # `margin_order_terms()` emits this only once for equal occurrence ids: the
 # repeated term is redundant by ADR 0018 and Arrow cannot materialize two
 # expressions under the same internal field name.
-margin_grouping_bit_expr <- function(sort_id, margin_ids) {
+margin_grouping_bit_expr <- function(sort_id, margin_ids, helper_namespace) {
+  membership <- rlang::call2(
+    "%in%", margin_column_pronoun(sort_id), margin_ids, .ns = helper_namespace
+  )
   rlang::expr(dplyr::if_else(
-    (!!margin_column_pronoun(sort_id)) %in% !!margin_ids,
+    !!membership,
     1L,
     0L
   ))
