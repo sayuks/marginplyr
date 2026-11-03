@@ -44,10 +44,14 @@ expressions <- alist(
   (function(x = "a") x)(),
   ((function(x = "a") x))(),
   (function(x = "a", y = x) y)(),
-  c(, a), all_of(c(, "a")), all_of(...elt(1L)),
+  all_of(...elt(1L)),
   all_of((function(...) ..1)("a")),
   all_of((function(...) ..2)("a", "b"))
 )
+# Parse intentional empty selections as fixture data rather than empty calls.
+expressions <- append(expressions,
+  lapply(c("c(, a)", 'all_of(c(, "a"))'), str2lang),
+  after = length(expressions) - 3L)
 data <- list(
   tibble::tibble(a = c(1L, 2L, 1L), b = c("x", "y", "x"), c = factor(c("q", "p", "q"))),
   tibble::tibble(a = integer(), b = character(), c = factor(levels = c("q", "p"))),
