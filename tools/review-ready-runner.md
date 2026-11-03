@@ -35,26 +35,42 @@ Rscript tools/review-ready.R --scope full --reason 'Explain why package build/ch
 ```
 
 Both forms run the five mandatory checks before any shared-slot request.
-`source` ends with an explicit heavy-check omission. `full` waits inside the
-same command, then starts automatically when its OS advisory lock is available.
-Waiting uses one interruptible lock acquisition, keeping descriptor use bounded
-regardless of wait duration. A lock-acquisition error fails the invocation.
+`source` ends with an explicit heavy-check omission. After those checks pass,
+`full` atomically registers under a shared metadata lock. Acceptance sequence,
+not launch time, orders live waiters across clones and worktrees. Only the
+oldest live waiter may acquire the existing heavy lock; it starts automatically
+through the same command. The runner reports its sequence, changes in earlier
+live-waiter count, and actual elapsed wait at admission, without an ETA.
+
+Metadata access uses short interruptible blocking acquisitions. Followers poll
+live coordination, while the oldest waiter makes one interruptible capacity
+acquisition outside the metadata lock. OS process identities include creation
+time; only an ended identity is probed, and pruning still requires positively
+acquiring its invocation guard. This avoids repeated failed nonblocking lock
+acquisition and keeps descriptors bounded. Suspended live owners retain their
+place. Lock, state and ambiguous-ownership errors fail visibly.
 Keep the same execution handle through checking, cleanup and terminal output.
 The result always names the submitted SHA, scope and reason.
 
 The lock at `~/.local/state/marginplyr/review-ready-heavy.lock` is shared by
 this user's marginplyr clones/worktrees on the Mac. The account home is resolved
 independently of caller HOME/cache overrides. Its stable target is an operating primitive, not an expiring run artifact.
-Keep it in place while owners or waiters may exist. Focused tests have the
-separate per-worktree allowance in local checks; four package workers are not
-a user-wide process cap.
+Keep it in place while owners or waiters may exist. Its sibling
+`review-ready-fifo/` holds a stable metadata lock, the acceptance counter and
+live invocation guards/records. Neither lock targets nor sequencing expire with
+run retention. No timing history or completed-result ledger is stored there.
+Focused tests have the separate per-worktree allowance in local checks; four
+package workers are not a user-wide process cap.
 
 ## Cancellation
 
 Cancel the original invocation through its retained execution handle. An
 ordinary cancellation stops and collects its owned child work before releasing
-the heavy slot. A cancelled waiter must never start later. Retain available
-logs and collect the terminal cancellation result before editing and resubmitting.
+the heavy slot. A cancelled waiter unregisters and must never start later. An
+abruptly ended waiter's OS guard permits successors to prune it; an interrupted
+registration's unreferenced guard is reclaimed by the same ownership check.
+Retrying creates a new identity and sequence. Retain available logs and collect
+the terminal cancellation result before editing and resubmitting.
 
 Abrupt R termination uses the existing process library's cleanup facilities.
 It may release the lock before every descendant stops; strict crash-time
@@ -104,3 +120,12 @@ cancellation and retention. Progress fixtures exercise real workers, passing
 and failing packages, and startup/exit/teardown diagnostics. Fixture results
 are separate from real package-check and rollout evidence. Workflow contracts,
 CI artifact checks and the release matrix retain their independent roles.
+
+## FIFO adoption
+
+The FIFO implementation follows [ADR 0040](../design/adr/0040-learn-local-test-order-and-admit-heavy-checks-fifo.md)
+and its [accepted specification](../design/specs/review-ready-adaptive-order-fifo.md#fifo-heavy-admission).
+Actual maintainer-Mac adoption remains [#1157](https://github.com/sayuks/marginplyr/issues/1157).
+Drain pre-FIFO checks and waiters before claiming adoption: they use the same
+heavy lock and preserve exclusion, but can overtake registered requests.
+Disposable process fixtures establish behavior, not that operational drain.

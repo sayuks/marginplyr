@@ -66,6 +66,6 @@ remain separate obligations.
 FIFO remains independent: use minimal live coordination with the established
 heavy lock, preserve bounded waiting from #1135, and retain ADR 0039's process
 ownership and crash limits. Its adoption does not require a timing CI job.
-Implementation, reconciliation with
-[ADR 0039](0039-run-review-ready-from-the-target-worktree.md) and actual rollout
-remain pending.
+The runner implements FIFO under #1156; [ADR 0039](0039-run-review-ready-from-the-target-worktree.md)
+and the runner guide carry its ownership and operational contract. Actual Mac
+rollout remains separate under #1157.
