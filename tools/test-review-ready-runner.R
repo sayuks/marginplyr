@@ -491,6 +491,10 @@ local({
       !grepl("capacity acquired|Source-tarball R CMD check", output) &&
       identical(result_record(output)$status, "failed"), "unsafe FIFO state fails visibly before package work")
   }
+  expect(file.symlink(file.path(bad_queue, "missing-state"), state_path), "dangling state fixture")
+  reject_state("Unsafe or missing Review-ready FIFO file")
+  expect(nzchar(Sys.readlink(state_path)), "a dangling state link is preserved on rejection")
+  unlink(state_path)
   writeLines("corrupt", state_path)
   reject_state("Review-ready failed")
   incompatible <- clean_state

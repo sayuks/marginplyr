@@ -132,6 +132,8 @@ review_ready_fifo_register <- function(queue, request) {
   metadata <- review_ready_fifo_lock(file.path(queue, "metadata.lock"))
   on.exit(filelock::unlock(metadata), add = TRUE)
   path <- file.path(queue, "state.rds")
+  link <- Sys.readlink(path)
+  if (!is.na(link) && nzchar(link)) review_ready_fifo_file(path)
   if (!file.exists(path)) {
     if (existing || length(list.files(queue, pattern = "^request-"))) {
       stop("Missing Review-ready FIFO state at an existing coordination target.", call. = FALSE)
@@ -140,7 +142,7 @@ review_ready_fifo_register <- function(queue, request) {
   }
   state <- review_ready_fifo_prune(queue, review_ready_fifo_read(queue))
   if (state$counter >= 2^53 - 1) stop("Review-ready FIFO sequence exhausted.", call. = FALSE)
-  random <- file("/dev/urandom", "rb")
+  random <- file("/dev/urandom", "rb", raw = TRUE)
   nonce <- tryCatch(readBin(random, "raw", 16L), finally = close(random))
   if (length(nonce) != 16L) stop("Cannot allocate a unique FIFO identity.")
   request$name <- paste0("request-", paste(sprintf("%02x", as.integer(nonce)), collapse = ""),
