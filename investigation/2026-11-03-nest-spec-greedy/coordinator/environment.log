@@ -1,0 +1,38 @@
+Audited SHA: 4b34fdecb2d8a41034b3d9b5d5af8e51592555e1
+                                                                                                  sysname
+                                                                                                 "Darwin"
+                                                                                                  release
+                                                                                                 "25.6.0"
+                                                                                                  version
+"Darwin Kernel Version 25.6.0: Fri Jul 31 19:11:03 PDT 2026; root:xnu-12377.161.14~5/RELEASE_ARM64_T8132"
+                                                                                                 nodename
+                                                                                 "Sasakis-Mac-mini.local"
+                                                                                                  machine
+                                                                                                  "arm64"
+                                                                                                    login
+                                                                                                   "root"
+                                                                                                     user
+                                                                                                 "sayuks"
+                                                                                           effective_user
+                                                                                                 "sayuks"
+R version 4.6.1 (2026-06-24)
+Platform: aarch64-apple-darwin23
+Running under: macOS Tahoe 26.6.2
+
+Matrix products: default
+BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib
+LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1
+
+locale:
+[1] C.UTF-8/C.UTF-8/C.UTF-8/C/C.UTF-8/C.UTF-8
+
+time zone: Asia/Tokyo
+tzcode source: internal
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base
+
+loaded via a namespace (and not attached):
+[1] compiler_4.6.1
+     dplyr     dtplyr data.table      vctrs      tidyr        hms  posterior
+   "1.2.1"    "1.3.3" "1.18.6.1"    "0.7.3"    "1.3.2"    "1.1.4"    "1.7.0"

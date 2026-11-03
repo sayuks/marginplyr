@@ -1,0 +1,15 @@
+$nest
+[1] "Total" "a"     "b"
+
+$nest_by
+[1] "Total" "a"     "b"
+
+$expand
+[1] "Total" "Total" "a"     "b"
+
+$summarize
+[1] "Total" "a"     "b"
+
+caller %in% calls: 8
+Error: all(vapply(names(masked), function(name) identical(masked[[name]]$g,  .... is not TRUE
+Execution halted

@@ -1,0 +1,10 @@
+rvar dimension: 1 display class: array display dim: 1
+[1] "1 ± 0"
+nest_with_margins : ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array.
+nest_by_with_margins : ℹ In argument: `g = sum(...)`.
+Caused by error in `dplyr::if_else()`:
+! `condition` must be a logical vector, not a logical 1D array.
+Error: all(vapply(minimal, function(z) !inherits(z, "error") && nrow(z) ==  .... is not TRUE
+Execution halted

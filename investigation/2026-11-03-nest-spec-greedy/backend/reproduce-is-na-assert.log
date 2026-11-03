@@ -1,0 +1,16 @@
+Baseline: 4b34fdecb2d8a41034b3d9b5d5af8e51592555e1
+Unmasked lazy query:
+setcolorder(copy(`_DT1`)[, `:=`(..marginplyr_nest_1 = g)][, `:=`(..marginplyr_nest_2 = g)][,
+    `:=`(g = base::as.character(g))][, `:=`(set = 1L)][, .(data = list(data.table::as.data.table(list(g = ..marginplyr_nest_1,
+    row_id = row_id))), g = vctrs::vec_slice(g, base::seq_len(base::min(vctrs::vec_size(g),
+    1L)))), keyby = .(set, ..marginplyr_nest_2)][, `:=`(..marginplyr_nest_2 = NULL)],
+    c("g", "set", "data"))[order(fifelse(is.na(g), 1L, 0L), g)]
+Masked helper: is.na reads: 2
+# A tibble: 2 × 3
+  g       set data
+  <chr> <int> <list>
+1 <NA>      1 <dt [1 × 2]>
+2 a         1 <dt [1 × 2]>
+Restoring only the helper binding recovers the same query's order.
+Error: identical(actual$g, expected$g) is not TRUE
+Execution halted

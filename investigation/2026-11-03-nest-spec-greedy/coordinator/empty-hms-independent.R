@@ -1,0 +1,25 @@
+Sys.setenv(TESTTHAT_PARALLEL = "false")
+pkgload::load_all(quiet = TRUE)
+assert <- "--assert" %in% commandArgs(TRUE)
+x <- tibble::tibble(g = hms::hms(numeric()), row_id = integer())
+before <- serialize(x, NULL)
+verbs <- list(
+  nest = function(data, ...) nest_with_margins(data, .grouping = rollup(g), ...),
+  nest_by = function(data, ...) nest_by_with_margins(data, .grouping = rollup(g), ...),
+  expand = function(data, ...) expand_with_margins(data, .grouping = rollup(g), ...),
+  summarize = function(data, ...) summarize_with_margins(data, .grouping = rollup(g), value = dplyr::n(), ...)
+)
+capture <- function(f) tryCatch(f(), error = identity)
+results <- lapply(verbs, function(f) capture(function() f(x)))
+print(lapply(results, function(x) if (inherits(x, "error")) list(class = class(x), message = conditionMessage(x)) else x))
+stopifnot(identical(serialize(x, NULL), before))
+typed <- lapply(verbs, function(f) f(x, .margin_label = NULL))
+populated <- tibble::tibble(g = hms::hms(1), row_id = 1L)
+controls <- lapply(verbs, function(f) f(populated))
+stopifnot(!any(vapply(c(typed, controls), inherits, logical(1), "error")))
+stopifnot(nrow(dplyr::nest_by(x, g)) == 0L)
+cat("empty hms as.character type:", typeof(as.character(x$g)), "\n")
+cat("populated hms as.character type:", typeof(as.character(populated$g)), "\n")
+if (assert) stopifnot(!any(vapply(results, inherits, logical(1), "error")))
+cat("Observed empty display conversion failure; populated and typed-missing controls succeeded.\n")
+print(sessionInfo())

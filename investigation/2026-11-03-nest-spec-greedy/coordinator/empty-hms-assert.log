@@ -1,0 +1,48 @@
+$nest
+$nest$class
+[1] "vctrs_error_ptype2"            "vctrs_error_incompatible_type"
+[3] "vctrs_error_incompatible"      "vctrs_error"
+[5] "rlang_error"                   "error"
+[7] "condition"
+
+$nest$message
+[1] "Can't combine `..1$marginplyr_column_1` <logical> and `..2$marginplyr_column_1` <character>."
+
+
+$nest_by
+$nest_by$class
+[1] "vctrs_error_ptype2"            "vctrs_error_incompatible_type"
+[3] "vctrs_error_incompatible"      "vctrs_error"
+[5] "rlang_error"                   "error"
+[7] "condition"
+
+$nest_by$message
+[1] "Can't combine `..1$marginplyr_column_1` <logical> and `..2$marginplyr_column_1` <character>."
+
+
+$expand
+$expand$class
+[1] "vctrs_error_ptype2"            "vctrs_error_incompatible_type"
+[3] "vctrs_error_incompatible"      "vctrs_error"
+[5] "rlang_error"                   "error"
+[7] "condition"
+
+$expand$message
+[1] "Can't combine `..1$marginplyr_column_1` <logical> and `..2$marginplyr_column_1` <character>."
+
+
+$summarize
+$summarize$class
+[1] "vctrs_error_ptype2"            "vctrs_error_incompatible_type"
+[3] "vctrs_error_incompatible"      "vctrs_error"
+[5] "rlang_error"                   "error"
+[7] "condition"
+
+$summarize$message
+[1] "Can't combine `..1$marginplyr_column_1` <logical> and `..2$marginplyr_column_1` <character>."
+
+
+empty hms as.character type: logical
+populated hms as.character type: character
+Error: !any(vapply(results, inherits, logical(1), "error")) is not TRUE
+Execution halted

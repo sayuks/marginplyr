@@ -1,0 +1,2281 @@
+"data","expression","position","status","direct","actual"
+1,1,".by","match","a|b",""
+1,1,"grouping_set","match","a|b","a|b"
+1,1,"grouping_sets","match","a|b","a|b"
+1,1,"rollup","match","a|b","a|b;a;"
+1,1,"cube","match","a|b","a|b;a;b;"
+1,1,"grouping_spec","match","a|b","a|b"
+1,1,"rollup_composite","match","a|b","a|b;"
+1,1,"cube_composite","match","a|b","a|b;"
+1,2,".by","match","a|b",""
+1,2,"grouping_set","match","a|b","a|b"
+1,2,"grouping_sets","match","a|b","a|b"
+1,2,"rollup","match","a|b","a|b;a;"
+1,2,"cube","match","a|b","a|b;a;b;"
+1,2,"grouping_spec","match","a|b","a|b"
+1,2,"rollup_composite","match","a|b","a|b;"
+1,2,"cube_composite","match","a|b","a|b;"
+1,3,".by","match","a",""
+1,3,"grouping_set","match","a","a"
+1,3,"grouping_sets","match","a","a"
+1,3,"rollup","match","a","a;"
+1,3,"cube","match","a","a;"
+1,3,"grouping_spec","match","a","a"
+1,3,"rollup_composite","match","a","a;"
+1,3,"cube_composite","match","a","a;"
+1,4,".by","match","b",""
+1,4,"grouping_set","match","b","b"
+1,4,"grouping_sets","match","b","b"
+1,4,"rollup","match","b","b;"
+1,4,"cube","match","b","b;"
+1,4,"grouping_spec","match","b","b"
+1,4,"rollup_composite","match","b","b;"
+1,4,"cube_composite","match","b","b;"
+1,5,".by","match","a|b",""
+1,5,"grouping_set","match","a|b","a|b"
+1,5,"grouping_sets","match","a|b","a|b"
+1,5,"rollup","match","a|b","a|b;a;"
+1,5,"cube","match","a|b","a|b;a;b;"
+1,5,"grouping_spec","match","a|b","a|b"
+1,5,"rollup_composite","match","a|b","a|b;"
+1,5,"cube_composite","match","a|b","a|b;"
+1,6,".by","match","a",""
+1,6,"grouping_set","match","a","a"
+1,6,"grouping_sets","match","a","a"
+1,6,"rollup","match","a","a;"
+1,6,"cube","match","a","a;"
+1,6,"grouping_spec","match","a","a"
+1,6,"rollup_composite","match","a","a;"
+1,6,"cube_composite","match","a","a;"
+1,7,".by","match","b",""
+1,7,"grouping_set","match","b","b"
+1,7,"grouping_sets","match","b","b"
+1,7,"rollup","match","b","b;"
+1,7,"cube","match","b","b;"
+1,7,"grouping_spec","match","b","b"
+1,7,"rollup_composite","match","b","b;"
+1,7,"cube_composite","match","b","b;"
+1,8,".by","match","a",""
+1,8,"grouping_set","match","a","a"
+1,8,"grouping_sets","match","a","a"
+1,8,"rollup","match","a","a;"
+1,8,"cube","match","a","a;"
+1,8,"grouping_spec","match","a","a"
+1,8,"rollup_composite","match","a","a;"
+1,8,"cube_composite","match","a","a;"
+1,9,".by","match","a|b",""
+1,9,"grouping_set","match","a|b","a|b"
+1,9,"grouping_sets","match","a|b","a|b"
+1,9,"rollup","match","a|b","a|b;a;"
+1,9,"cube","match","a|b","a|b;a;b;"
+1,9,"grouping_spec","match","a|b","a|b"
+1,9,"rollup_composite","match","a|b","a|b;"
+1,9,"cube_composite","match","a|b","a|b;"
+1,10,".by","match","",""
+1,10,"grouping_set","match","",""
+1,10,"grouping_sets","match","",""
+1,10,"rollup","empty-unit-refusal","","`rollup()` requires at least one dimension."
+1,10,"cube","empty-unit-refusal","","`cube()` requires at least one dimension."
+1,10,"grouping_spec","match","",""
+1,10,"rollup_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+1,10,"cube_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+1,11,".by","match","",""
+1,11,"grouping_set","match","",""
+1,11,"grouping_sets","match","",""
+1,11,"rollup","empty-unit-refusal","","`rollup()` requires at least one dimension."
+1,11,"cube","empty-unit-refusal","","`cube()` requires at least one dimension."
+1,11,"grouping_spec","match","",""
+1,11,"rollup_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+1,11,"cube_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+1,12,".by","match","a|b|c",""
+1,12,"grouping_set","match","a|b|c","a|b|c"
+1,12,"grouping_sets","match","a|b|c","a|b|c"
+1,12,"rollup","match","a|b|c","a|b|c;a|b;a;"
+1,12,"cube","match","a|b|c","a|b|c;a|b;a|c;b|c;a;b;c;"
+1,12,"grouping_spec","match","a|b|c","a|b|c"
+1,12,"rollup_composite","match","a|b|c","a|b|c;"
+1,12,"cube_composite","match","a|b|c","a|b|c;"
+1,13,".by","match","a",""
+1,13,"grouping_set","match","a","a"
+1,13,"grouping_sets","match","a","a"
+1,13,"rollup","match","a","a;"
+1,13,"cube","match","a","a;"
+1,13,"grouping_spec","match","a","a"
+1,13,"rollup_composite","match","a","a;"
+1,13,"cube_composite","match","a","a;"
+1,14,".by","match","a|c",""
+1,14,"grouping_set","match","a|c","a|c"
+1,14,"grouping_sets","match","a|c","a|c"
+1,14,"rollup","match","a|c","a|c;a;"
+1,14,"cube","match","a|c","a|c;a;c;"
+1,14,"grouping_spec","match","a|c","a|c"
+1,14,"rollup_composite","match","a|c","a|c;"
+1,14,"cube_composite","match","a|c","a|c;"
+1,15,".by","match","a|b|c",""
+1,15,"grouping_set","match","a|b|c","a|b|c"
+1,15,"grouping_sets","match","a|b|c","a|b|c"
+1,15,"rollup","match","a|b|c","a|b|c;a|b;a;"
+1,15,"cube","match","a|b|c","a|b|c;a|b;a|c;b|c;a;b;c;"
+1,15,"grouping_spec","match","a|b|c","a|b|c"
+1,15,"rollup_composite","match","a|b|c","a|b|c;"
+1,15,"cube_composite","match","a|b|c","a|b|c;"
+1,16,".by","match","c|b|a",""
+1,16,"grouping_set","match","c|b|a","c|b|a"
+1,16,"grouping_sets","match","c|b|a","c|b|a"
+1,16,"rollup","match","c|b|a","c|b|a;c|b;c;"
+1,16,"cube","match","c|b|a","c|b|a;c|b;c|a;b|a;c;b;a;"
+1,16,"grouping_spec","match","c|b|a","c|b|a"
+1,16,"rollup_composite","match","c|b|a","c|b|a;"
+1,16,"cube_composite","match","c|b|a","c|b|a;"
+1,17,".by","match","a|c",""
+1,17,"grouping_set","match","a|c","a|c"
+1,17,"grouping_sets","match","a|c","a|c"
+1,17,"rollup","match","a|c","a|c;a;"
+1,17,"cube","match","a|c","a|c;a;c;"
+1,17,"grouping_spec","match","a|c","a|c"
+1,17,"rollup_composite","match","a|c","a|c;"
+1,17,"cube_composite","match","a|c","a|c;"
+1,18,".by","match","a|c",""
+1,18,"grouping_set","match","a|c","a|c"
+1,18,"grouping_sets","match","a|c","a|c"
+1,18,"rollup","match","a|c","a|c;a;"
+1,18,"cube","match","a|c","a|c;a;c;"
+1,18,"grouping_spec","match","a|c","a|c"
+1,18,"rollup_composite","match","a|c","a|c;"
+1,18,"cube_composite","match","a|c","a|c;"
+1,19,".by","match","a|b",""
+1,19,"grouping_set","match","a|b","a|b"
+1,19,"grouping_sets","match","a|b","a|b"
+1,19,"rollup","match","a|b","a|b;a;"
+1,19,"cube","match","a|b","a|b;a;b;"
+1,19,"grouping_spec","match","a|b","a|b"
+1,19,"rollup_composite","match","a|b","a|b;"
+1,19,"cube_composite","match","a|b","a|b;"
+1,20,".by","match","a|b",""
+1,20,"grouping_set","match","a|b","a|b"
+1,20,"grouping_sets","match","a|b","a|b"
+1,20,"rollup","match","a|b","a|b;a;"
+1,20,"cube","match","a|b","a|b;a;b;"
+1,20,"grouping_spec","match","a|b","a|b"
+1,20,"rollup_composite","match","a|b","a|b;"
+1,20,"cube_composite","match","a|b","a|b;"
+1,21,".by","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+1,21,"grouping_set","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+1,21,"grouping_sets","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+1,21,"rollup","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+1,21,"cube","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+1,21,"grouping_spec","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+1,21,"rollup_composite","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+1,21,"cube_composite","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+1,22,".by","match","a|b",""
+1,22,"grouping_set","match","a|b","a|b"
+1,22,"grouping_sets","match","a|b","a|b"
+1,22,"rollup","match","a|b","a|b;a;"
+1,22,"cube","match","a|b","a|b;a;b;"
+1,22,"grouping_spec","match","a|b","a|b"
+1,22,"rollup_composite","match","a|b","a|b;"
+1,22,"cube_composite","match","a|b","a|b;"
+1,23,".by","external-condition-match","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector.","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector."
+1,23,"grouping_set","external-condition-match","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector.","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector."
+1,23,"grouping_sets","external-condition-match","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector.","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector."
+1,23,"rollup","external-condition-match","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector.","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector."
+1,23,"cube","external-condition-match","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector.","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector."
+1,23,"grouping_spec","external-condition-match","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector.","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector."
+1,23,"rollup_composite","external-condition-match","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector.","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector."
+1,23,"cube_composite","external-condition-match","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector.","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector."
+1,24,".by","external-condition-match","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+1,24,"grouping_set","external-condition-match","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+1,24,"grouping_sets","external-condition-match","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+1,24,"rollup","external-condition-match","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+1,24,"cube","external-condition-match","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+1,24,"grouping_spec","external-condition-match","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+1,24,"rollup_composite","external-condition-match","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+1,24,"cube_composite","external-condition-match","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+1,25,".by","external-condition-match","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+1,25,"grouping_set","external-condition-match","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+1,25,"grouping_sets","external-condition-match","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+1,25,"rollup","external-condition-match","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+1,25,"cube","external-condition-match","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+1,25,"grouping_spec","external-condition-match","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+1,25,"rollup_composite","external-condition-match","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+1,25,"cube_composite","external-condition-match","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+1,26,".by","match","a",""
+1,26,"grouping_set","match","a","a"
+1,26,"grouping_sets","match","a","a"
+1,26,"rollup","match","a","a;"
+1,26,"cube","match","a","a;"
+1,26,"grouping_spec","match","a","a"
+1,26,"rollup_composite","match","a","a;"
+1,26,"cube_composite","match","a","a;"
+1,27,".by","match","",""
+1,27,"grouping_set","match","",""
+1,27,"grouping_sets","match","",""
+1,27,"rollup","empty-unit-refusal","","`rollup()` requires at least one dimension."
+1,27,"cube","empty-unit-refusal","","`cube()` requires at least one dimension."
+1,27,"grouping_spec","match","",""
+1,27,"rollup_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+1,27,"cube_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+1,28,".by","match","a",""
+1,28,"grouping_set","match","a","a"
+1,28,"grouping_sets","match","a","a"
+1,28,"rollup","match","a","a;"
+1,28,"cube","match","a","a;"
+1,28,"grouping_spec","match","a","a"
+1,28,"rollup_composite","match","a","a;"
+1,28,"cube_composite","match","a","a;"
+1,29,".by","renaming-refusal","z","Can't rename `.by` column:
+ℹ `z = a`.
+ℹ Fixed `.by` keys must name existing columns."
+1,29,"grouping_set","renaming-refusal","z","Can't rename grouping dimension:
+ℹ `z = a`.
+ℹ Grouping dimensions must name existing columns."
+1,29,"grouping_sets","renaming-refusal","z","Can't rename grouping dimension:
+ℹ `z = a`.
+ℹ Grouping dimensions must name existing columns."
+1,29,"rollup","renaming-refusal","z","Can't rename grouping dimension:
+ℹ `z = a`.
+ℹ Grouping dimensions must name existing columns."
+1,29,"cube","renaming-refusal","z","Can't rename grouping dimension:
+ℹ `z = a`.
+ℹ Grouping dimensions must name existing columns."
+1,29,"grouping_spec","renaming-refusal","z","Can't rename grouping dimension:
+ℹ `z = a`.
+ℹ Grouping dimensions must name existing columns."
+1,29,"rollup_composite","renaming-refusal","z","Can't rename grouping dimension:
+ℹ `z = a`.
+ℹ Grouping dimensions must name existing columns."
+1,29,"cube_composite","renaming-refusal","z","Can't rename grouping dimension:
+ℹ `z = a`.
+ℹ Grouping dimensions must name existing columns."
+1,30,".by","match","a|b",""
+1,30,"grouping_set","match","a|b","a|b"
+1,30,"grouping_sets","match","a|b","a|b"
+1,30,"rollup","match","a|b","a|b;a;"
+1,30,"cube","match","a|b","a|b;a;b;"
+1,30,"grouping_spec","match","a|b","a|b"
+1,30,"rollup_composite","match","a|b","a|b;"
+1,30,"cube_composite","match","a|b","a|b;"
+1,31,".by","match","a|c",""
+1,31,"grouping_set","match","a|c","a|c"
+1,31,"grouping_sets","match","a|c","a|c"
+1,31,"rollup","match","a|c","a|c;a;"
+1,31,"cube","match","a|c","a|c;a;c;"
+1,31,"grouping_spec","match","a|c","a|c"
+1,31,"rollup_composite","match","a|c","a|c;"
+1,31,"cube_composite","match","a|c","a|c;"
+1,32,".by","match","b",""
+1,32,"grouping_set","match","b","b"
+1,32,"grouping_sets","match","b","b"
+1,32,"rollup","match","b","b;"
+1,32,"cube","match","b","b;"
+1,32,"grouping_spec","match","b","b"
+1,32,"rollup_composite","match","b","b;"
+1,32,"cube_composite","match","b","b;"
+1,33,".by","match","a",""
+1,33,"grouping_set","match","a","a"
+1,33,"grouping_sets","match","a","a"
+1,33,"rollup","match","a","a;"
+1,33,"cube","match","a","a;"
+1,33,"grouping_spec","match","a","a"
+1,33,"rollup_composite","match","a","a;"
+1,33,"cube_composite","match","a","a;"
+1,34,".by","match","a",""
+1,34,"grouping_set","match","a","a"
+1,34,"grouping_sets","match","a","a"
+1,34,"rollup","match","a","a;"
+1,34,"cube","match","a","a;"
+1,34,"grouping_spec","match","a","a"
+1,34,"rollup_composite","match","a","a;"
+1,34,"cube_composite","match","a","a;"
+1,35,".by","match","a",""
+1,35,"grouping_set","match","a","a"
+1,35,"grouping_sets","match","a","a"
+1,35,"rollup","match","a","a;"
+1,35,"cube","match","a","a;"
+1,35,"grouping_spec","match","a","a"
+1,35,"rollup_composite","match","a","a;"
+1,35,"cube_composite","match","a","a;"
+1,36,".by","external-condition-match","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found"
+1,36,"grouping_set","external-condition-match","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found"
+1,36,"grouping_sets","external-condition-match","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found"
+1,36,"rollup","external-condition-match","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found"
+1,36,"cube","external-condition-match","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found"
+1,36,"grouping_spec","external-condition-match","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found"
+1,36,"rollup_composite","external-condition-match","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found"
+1,36,"cube_composite","external-condition-match","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found"
+1,37,".by","match","a",""
+1,37,"grouping_set","match","a","a"
+1,37,"grouping_sets","match","a","a"
+1,37,"rollup","match","a","a;"
+1,37,"cube","match","a","a;"
+1,37,"grouping_spec","match","a","a"
+1,37,"rollup_composite","match","a","a;"
+1,37,"cube_composite","match","a","a;"
+1,38,".by","match","c",""
+1,38,"grouping_set","match","c","c"
+1,38,"grouping_sets","match","c","c"
+1,38,"rollup","match","c","c;"
+1,38,"cube","match","c","c;"
+1,38,"grouping_spec","match","c","c"
+1,38,"rollup_composite","match","c","c;"
+1,38,"cube_composite","match","c","c;"
+1,39,".by","match","",""
+1,39,"grouping_set","match","",""
+1,39,"grouping_sets","match","",""
+1,39,"rollup","empty-unit-refusal","","`rollup()` requires at least one dimension."
+1,39,"cube","empty-unit-refusal","","`cube()` requires at least one dimension."
+1,39,"grouping_spec","match","",""
+1,39,"rollup_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+1,39,"cube_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+1,40,".by","match","a|b",""
+1,40,"grouping_set","match","a|b","a|b"
+1,40,"grouping_sets","match","a|b","a|b"
+1,40,"rollup","match","a|b","a|b;a;"
+1,40,"cube","match","a|b","a|b;a;b;"
+1,40,"grouping_spec","match","a|b","a|b"
+1,40,"rollup_composite","match","a|b","a|b;"
+1,40,"cube_composite","match","a|b","a|b;"
+1,41,".by","external-condition-match","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context"
+1,41,"grouping_set","external-condition-match","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context"
+1,41,"grouping_sets","external-condition-match","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context"
+1,41,"rollup","external-condition-match","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context"
+1,41,"cube","external-condition-match","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context"
+1,41,"grouping_spec","external-condition-match","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context"
+1,41,"rollup_composite","external-condition-match","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context"
+1,41,"cube_composite","external-condition-match","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context"
+1,42,".by","match","a",""
+1,42,"grouping_set","match","a","a"
+1,42,"grouping_sets","match","a","a"
+1,42,"rollup","match","a","a;"
+1,42,"cube","match","a","a;"
+1,42,"grouping_spec","match","a","a"
+1,42,"rollup_composite","match","a","a;"
+1,42,"cube_composite","match","a","a;"
+1,43,".by","match","",""
+1,43,"grouping_set","match","",""
+1,43,"grouping_sets","match","",""
+1,43,"rollup","empty-unit-refusal","","`rollup()` requires at least one dimension."
+1,43,"cube","empty-unit-refusal","","`cube()` requires at least one dimension."
+1,43,"grouping_spec","match","",""
+1,43,"rollup_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+1,43,"cube_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+1,44,".by","match","a",""
+1,44,"grouping_set","match","a","a"
+1,44,"grouping_sets","match","a","a"
+1,44,"rollup","match","a","a;"
+1,44,"cube","match","a","a;"
+1,44,"grouping_spec","match","a","a"
+1,44,"rollup_composite","match","a","a;"
+1,44,"cube_composite","match","a","a;"
+1,45,".by","external-condition-match","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector.","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector."
+1,45,"grouping_set","external-condition-match","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector.","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector."
+1,45,"grouping_sets","external-condition-match","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector.","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector."
+1,45,"rollup","external-condition-match","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector.","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector."
+1,45,"cube","external-condition-match","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector.","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector."
+1,45,"grouping_spec","external-condition-match","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector.","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector."
+1,45,"rollup_composite","external-condition-match","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector.","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector."
+1,45,"cube_composite","external-condition-match","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector.","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector."
+1,46,".by","external-condition-match","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list.","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list."
+1,46,"grouping_set","external-condition-match","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list.","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list."
+1,46,"grouping_sets","external-condition-match","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list.","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list."
+1,46,"rollup","external-condition-match","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list.","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list."
+1,46,"cube","external-condition-match","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list.","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list."
+1,46,"grouping_spec","external-condition-match","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list.","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list."
+1,46,"rollup_composite","external-condition-match","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list.","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list."
+1,46,"cube_composite","external-condition-match","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list.","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list."
+1,47,".by","match","",""
+1,47,"grouping_set","match","",""
+1,47,"grouping_sets","match","",""
+1,47,"rollup","empty-unit-refusal","","`rollup()` requires at least one dimension."
+1,47,"cube","empty-unit-refusal","","`cube()` requires at least one dimension."
+1,47,"grouping_spec","match","",""
+1,47,"rollup_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+1,47,"cube_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+1,48,".by","external-condition-match","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`.","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`."
+1,48,"grouping_set","external-condition-match","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`.","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`."
+1,48,"grouping_sets","external-condition-match","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`.","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`."
+1,48,"rollup","external-condition-match","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`.","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`."
+1,48,"cube","external-condition-match","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`.","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`."
+1,48,"grouping_spec","external-condition-match","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`.","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`."
+1,48,"rollup_composite","external-condition-match","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`.","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`."
+1,48,"cube_composite","external-condition-match","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`.","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`."
+1,49,".by","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+1,49,"grouping_set","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+1,49,"grouping_sets","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+1,49,"rollup","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+1,49,"cube","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+1,49,"grouping_spec","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+1,49,"rollup_composite","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+1,49,"cube_composite","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+1,50,".by","match","a",""
+1,50,"grouping_set","match","a","a"
+1,50,"grouping_sets","match","a","a"
+1,50,"rollup","match","a","a;"
+1,50,"cube","match","a","a;"
+1,50,"grouping_spec","match","a","a"
+1,50,"rollup_composite","match","a","a;"
+1,50,"cube_composite","match","a","a;"
+1,51,".by","match","a",""
+1,51,"grouping_set","match","a","a"
+1,51,"grouping_sets","match","a","a"
+1,51,"rollup","match","a","a;"
+1,51,"cube","match","a","a;"
+1,51,"grouping_spec","match","a","a"
+1,51,"rollup_composite","match","a","a;"
+1,51,"cube_composite","match","a","a;"
+1,52,".by","match","a",""
+1,52,"grouping_set","match","a","a"
+1,52,"grouping_sets","match","a","a"
+1,52,"rollup","match","a","a;"
+1,52,"cube","match","a","a;"
+1,52,"grouping_spec","match","a","a"
+1,52,"rollup_composite","match","a","a;"
+1,52,"cube_composite","match","a","a;"
+1,53,".by","match","a",""
+1,53,"grouping_set","match","a","a"
+1,53,"grouping_sets","match","a","a"
+1,53,"rollup","match","a","a;"
+1,53,"cube","match","a","a;"
+1,53,"grouping_spec","match","a","a"
+1,53,"rollup_composite","match","a","a;"
+1,53,"cube_composite","match","a","a;"
+1,54,".by","external-condition-match","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty"
+1,54,"grouping_set","external-condition-match","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty"
+1,54,"grouping_sets","external-condition-match","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty"
+1,54,"rollup","external-condition-match","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty"
+1,54,"cube","external-condition-match","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty"
+1,54,"grouping_spec","external-condition-match","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty"
+1,54,"rollup_composite","external-condition-match","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty"
+1,54,"cube_composite","external-condition-match","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty"
+1,55,".by","match","a",""
+1,55,"grouping_set","match","a","a"
+1,55,"grouping_sets","match","a","a"
+1,55,"rollup","match","a","a;"
+1,55,"cube","match","a","a;"
+1,55,"grouping_spec","match","a","a"
+1,55,"rollup_composite","match","a","a;"
+1,55,"cube_composite","match","a","a;"
+1,56,".by","match","a",""
+1,56,"grouping_set","match","a","a"
+1,56,"grouping_sets","match","a","a"
+1,56,"rollup","match","a","a;"
+1,56,"cube","match","a","a;"
+1,56,"grouping_spec","match","a","a"
+1,56,"rollup_composite","match","a","a;"
+1,56,"cube_composite","match","a","a;"
+1,57,".by","match","b",""
+1,57,"grouping_set","match","b","b"
+1,57,"grouping_sets","match","b","b"
+1,57,"rollup","match","b","b;"
+1,57,"cube","match","b","b;"
+1,57,"grouping_spec","match","b","b"
+1,57,"rollup_composite","match","b","b;"
+1,57,"cube_composite","match","b","b;"
+2,1,".by","match","a|b",""
+2,1,"grouping_set","match","a|b","a|b"
+2,1,"grouping_sets","match","a|b","a|b"
+2,1,"rollup","match","a|b","a|b;a;"
+2,1,"cube","match","a|b","a|b;a;b;"
+2,1,"grouping_spec","match","a|b","a|b"
+2,1,"rollup_composite","match","a|b","a|b;"
+2,1,"cube_composite","match","a|b","a|b;"
+2,2,".by","match","a|b",""
+2,2,"grouping_set","match","a|b","a|b"
+2,2,"grouping_sets","match","a|b","a|b"
+2,2,"rollup","match","a|b","a|b;a;"
+2,2,"cube","match","a|b","a|b;a;b;"
+2,2,"grouping_spec","match","a|b","a|b"
+2,2,"rollup_composite","match","a|b","a|b;"
+2,2,"cube_composite","match","a|b","a|b;"
+2,3,".by","match","a",""
+2,3,"grouping_set","match","a","a"
+2,3,"grouping_sets","match","a","a"
+2,3,"rollup","match","a","a;"
+2,3,"cube","match","a","a;"
+2,3,"grouping_spec","match","a","a"
+2,3,"rollup_composite","match","a","a;"
+2,3,"cube_composite","match","a","a;"
+2,4,".by","match","b",""
+2,4,"grouping_set","match","b","b"
+2,4,"grouping_sets","match","b","b"
+2,4,"rollup","match","b","b;"
+2,4,"cube","match","b","b;"
+2,4,"grouping_spec","match","b","b"
+2,4,"rollup_composite","match","b","b;"
+2,4,"cube_composite","match","b","b;"
+2,5,".by","match","a|b",""
+2,5,"grouping_set","match","a|b","a|b"
+2,5,"grouping_sets","match","a|b","a|b"
+2,5,"rollup","match","a|b","a|b;a;"
+2,5,"cube","match","a|b","a|b;a;b;"
+2,5,"grouping_spec","match","a|b","a|b"
+2,5,"rollup_composite","match","a|b","a|b;"
+2,5,"cube_composite","match","a|b","a|b;"
+2,6,".by","match","a",""
+2,6,"grouping_set","match","a","a"
+2,6,"grouping_sets","match","a","a"
+2,6,"rollup","match","a","a;"
+2,6,"cube","match","a","a;"
+2,6,"grouping_spec","match","a","a"
+2,6,"rollup_composite","match","a","a;"
+2,6,"cube_composite","match","a","a;"
+2,7,".by","match","b",""
+2,7,"grouping_set","match","b","b"
+2,7,"grouping_sets","match","b","b"
+2,7,"rollup","match","b","b;"
+2,7,"cube","match","b","b;"
+2,7,"grouping_spec","match","b","b"
+2,7,"rollup_composite","match","b","b;"
+2,7,"cube_composite","match","b","b;"
+2,8,".by","match","a",""
+2,8,"grouping_set","match","a","a"
+2,8,"grouping_sets","match","a","a"
+2,8,"rollup","match","a","a;"
+2,8,"cube","match","a","a;"
+2,8,"grouping_spec","match","a","a"
+2,8,"rollup_composite","match","a","a;"
+2,8,"cube_composite","match","a","a;"
+2,9,".by","match","a|b",""
+2,9,"grouping_set","match","a|b","a|b"
+2,9,"grouping_sets","match","a|b","a|b"
+2,9,"rollup","match","a|b","a|b;a;"
+2,9,"cube","match","a|b","a|b;a;b;"
+2,9,"grouping_spec","match","a|b","a|b"
+2,9,"rollup_composite","match","a|b","a|b;"
+2,9,"cube_composite","match","a|b","a|b;"
+2,10,".by","match","",""
+2,10,"grouping_set","match","",""
+2,10,"grouping_sets","match","",""
+2,10,"rollup","empty-unit-refusal","","`rollup()` requires at least one dimension."
+2,10,"cube","empty-unit-refusal","","`cube()` requires at least one dimension."
+2,10,"grouping_spec","match","",""
+2,10,"rollup_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+2,10,"cube_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+2,11,".by","match","",""
+2,11,"grouping_set","match","",""
+2,11,"grouping_sets","match","",""
+2,11,"rollup","empty-unit-refusal","","`rollup()` requires at least one dimension."
+2,11,"cube","empty-unit-refusal","","`cube()` requires at least one dimension."
+2,11,"grouping_spec","match","",""
+2,11,"rollup_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+2,11,"cube_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+2,12,".by","match","a|b|c",""
+2,12,"grouping_set","match","a|b|c","a|b|c"
+2,12,"grouping_sets","match","a|b|c","a|b|c"
+2,12,"rollup","match","a|b|c","a|b|c;a|b;a;"
+2,12,"cube","match","a|b|c","a|b|c;a|b;a|c;b|c;a;b;c;"
+2,12,"grouping_spec","match","a|b|c","a|b|c"
+2,12,"rollup_composite","match","a|b|c","a|b|c;"
+2,12,"cube_composite","match","a|b|c","a|b|c;"
+2,13,".by","match","a",""
+2,13,"grouping_set","match","a","a"
+2,13,"grouping_sets","match","a","a"
+2,13,"rollup","match","a","a;"
+2,13,"cube","match","a","a;"
+2,13,"grouping_spec","match","a","a"
+2,13,"rollup_composite","match","a","a;"
+2,13,"cube_composite","match","a","a;"
+2,14,".by","match","a|c",""
+2,14,"grouping_set","match","a|c","a|c"
+2,14,"grouping_sets","match","a|c","a|c"
+2,14,"rollup","match","a|c","a|c;a;"
+2,14,"cube","match","a|c","a|c;a;c;"
+2,14,"grouping_spec","match","a|c","a|c"
+2,14,"rollup_composite","match","a|c","a|c;"
+2,14,"cube_composite","match","a|c","a|c;"
+2,15,".by","match","a|b|c",""
+2,15,"grouping_set","match","a|b|c","a|b|c"
+2,15,"grouping_sets","match","a|b|c","a|b|c"
+2,15,"rollup","match","a|b|c","a|b|c;a|b;a;"
+2,15,"cube","match","a|b|c","a|b|c;a|b;a|c;b|c;a;b;c;"
+2,15,"grouping_spec","match","a|b|c","a|b|c"
+2,15,"rollup_composite","match","a|b|c","a|b|c;"
+2,15,"cube_composite","match","a|b|c","a|b|c;"
+2,16,".by","match","c|b|a",""
+2,16,"grouping_set","match","c|b|a","c|b|a"
+2,16,"grouping_sets","match","c|b|a","c|b|a"
+2,16,"rollup","match","c|b|a","c|b|a;c|b;c;"
+2,16,"cube","match","c|b|a","c|b|a;c|b;c|a;b|a;c;b;a;"
+2,16,"grouping_spec","match","c|b|a","c|b|a"
+2,16,"rollup_composite","match","c|b|a","c|b|a;"
+2,16,"cube_composite","match","c|b|a","c|b|a;"
+2,17,".by","match","a|c",""
+2,17,"grouping_set","match","a|c","a|c"
+2,17,"grouping_sets","match","a|c","a|c"
+2,17,"rollup","match","a|c","a|c;a;"
+2,17,"cube","match","a|c","a|c;a;c;"
+2,17,"grouping_spec","match","a|c","a|c"
+2,17,"rollup_composite","match","a|c","a|c;"
+2,17,"cube_composite","match","a|c","a|c;"
+2,18,".by","match","a|c",""
+2,18,"grouping_set","match","a|c","a|c"
+2,18,"grouping_sets","match","a|c","a|c"
+2,18,"rollup","match","a|c","a|c;a;"
+2,18,"cube","match","a|c","a|c;a;c;"
+2,18,"grouping_spec","match","a|c","a|c"
+2,18,"rollup_composite","match","a|c","a|c;"
+2,18,"cube_composite","match","a|c","a|c;"
+2,19,".by","match","a|b",""
+2,19,"grouping_set","match","a|b","a|b"
+2,19,"grouping_sets","match","a|b","a|b"
+2,19,"rollup","match","a|b","a|b;a;"
+2,19,"cube","match","a|b","a|b;a;b;"
+2,19,"grouping_spec","match","a|b","a|b"
+2,19,"rollup_composite","match","a|b","a|b;"
+2,19,"cube_composite","match","a|b","a|b;"
+2,20,".by","match","a|b",""
+2,20,"grouping_set","match","a|b","a|b"
+2,20,"grouping_sets","match","a|b","a|b"
+2,20,"rollup","match","a|b","a|b;a;"
+2,20,"cube","match","a|b","a|b;a;b;"
+2,20,"grouping_spec","match","a|b","a|b"
+2,20,"rollup_composite","match","a|b","a|b;"
+2,20,"cube_composite","match","a|b","a|b;"
+2,21,".by","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+2,21,"grouping_set","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+2,21,"grouping_sets","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+2,21,"rollup","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+2,21,"cube","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+2,21,"grouping_spec","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+2,21,"rollup_composite","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+2,21,"cube_composite","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+2,22,".by","match","a|b",""
+2,22,"grouping_set","match","a|b","a|b"
+2,22,"grouping_sets","match","a|b","a|b"
+2,22,"rollup","match","a|b","a|b;a;"
+2,22,"cube","match","a|b","a|b;a;b;"
+2,22,"grouping_spec","match","a|b","a|b"
+2,22,"rollup_composite","match","a|b","a|b;"
+2,22,"cube_composite","match","a|b","a|b;"
+2,23,".by","external-condition-match","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector.","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector."
+2,23,"grouping_set","external-condition-match","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector.","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector."
+2,23,"grouping_sets","external-condition-match","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector.","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector."
+2,23,"rollup","external-condition-match","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector.","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector."
+2,23,"cube","external-condition-match","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector.","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector."
+2,23,"grouping_spec","external-condition-match","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector.","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector."
+2,23,"rollup_composite","external-condition-match","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector.","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector."
+2,23,"cube_composite","external-condition-match","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector.","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector."
+2,24,".by","external-condition-match","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+2,24,"grouping_set","external-condition-match","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+2,24,"grouping_sets","external-condition-match","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+2,24,"rollup","external-condition-match","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+2,24,"cube","external-condition-match","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+2,24,"grouping_spec","external-condition-match","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+2,24,"rollup_composite","external-condition-match","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+2,24,"cube_composite","external-condition-match","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+2,25,".by","external-condition-match","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+2,25,"grouping_set","external-condition-match","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+2,25,"grouping_sets","external-condition-match","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+2,25,"rollup","external-condition-match","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+2,25,"cube","external-condition-match","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+2,25,"grouping_spec","external-condition-match","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+2,25,"rollup_composite","external-condition-match","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+2,25,"cube_composite","external-condition-match","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+2,26,".by","match","a",""
+2,26,"grouping_set","match","a","a"
+2,26,"grouping_sets","match","a","a"
+2,26,"rollup","match","a","a;"
+2,26,"cube","match","a","a;"
+2,26,"grouping_spec","match","a","a"
+2,26,"rollup_composite","match","a","a;"
+2,26,"cube_composite","match","a","a;"
+2,27,".by","match","",""
+2,27,"grouping_set","match","",""
+2,27,"grouping_sets","match","",""
+2,27,"rollup","empty-unit-refusal","","`rollup()` requires at least one dimension."
+2,27,"cube","empty-unit-refusal","","`cube()` requires at least one dimension."
+2,27,"grouping_spec","match","",""
+2,27,"rollup_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+2,27,"cube_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+2,28,".by","match","a",""
+2,28,"grouping_set","match","a","a"
+2,28,"grouping_sets","match","a","a"
+2,28,"rollup","match","a","a;"
+2,28,"cube","match","a","a;"
+2,28,"grouping_spec","match","a","a"
+2,28,"rollup_composite","match","a","a;"
+2,28,"cube_composite","match","a","a;"
+2,29,".by","renaming-refusal","z","Can't rename `.by` column:
+ℹ `z = a`.
+ℹ Fixed `.by` keys must name existing columns."
+2,29,"grouping_set","renaming-refusal","z","Can't rename grouping dimension:
+ℹ `z = a`.
+ℹ Grouping dimensions must name existing columns."
+2,29,"grouping_sets","renaming-refusal","z","Can't rename grouping dimension:
+ℹ `z = a`.
+ℹ Grouping dimensions must name existing columns."
+2,29,"rollup","renaming-refusal","z","Can't rename grouping dimension:
+ℹ `z = a`.
+ℹ Grouping dimensions must name existing columns."
+2,29,"cube","renaming-refusal","z","Can't rename grouping dimension:
+ℹ `z = a`.
+ℹ Grouping dimensions must name existing columns."
+2,29,"grouping_spec","renaming-refusal","z","Can't rename grouping dimension:
+ℹ `z = a`.
+ℹ Grouping dimensions must name existing columns."
+2,29,"rollup_composite","renaming-refusal","z","Can't rename grouping dimension:
+ℹ `z = a`.
+ℹ Grouping dimensions must name existing columns."
+2,29,"cube_composite","renaming-refusal","z","Can't rename grouping dimension:
+ℹ `z = a`.
+ℹ Grouping dimensions must name existing columns."
+2,30,".by","match","a|b",""
+2,30,"grouping_set","match","a|b","a|b"
+2,30,"grouping_sets","match","a|b","a|b"
+2,30,"rollup","match","a|b","a|b;a;"
+2,30,"cube","match","a|b","a|b;a;b;"
+2,30,"grouping_spec","match","a|b","a|b"
+2,30,"rollup_composite","match","a|b","a|b;"
+2,30,"cube_composite","match","a|b","a|b;"
+2,31,".by","match","a|c",""
+2,31,"grouping_set","match","a|c","a|c"
+2,31,"grouping_sets","match","a|c","a|c"
+2,31,"rollup","match","a|c","a|c;a;"
+2,31,"cube","match","a|c","a|c;a;c;"
+2,31,"grouping_spec","match","a|c","a|c"
+2,31,"rollup_composite","match","a|c","a|c;"
+2,31,"cube_composite","match","a|c","a|c;"
+2,32,".by","match","b",""
+2,32,"grouping_set","match","b","b"
+2,32,"grouping_sets","match","b","b"
+2,32,"rollup","match","b","b;"
+2,32,"cube","match","b","b;"
+2,32,"grouping_spec","match","b","b"
+2,32,"rollup_composite","match","b","b;"
+2,32,"cube_composite","match","b","b;"
+2,33,".by","match","a",""
+2,33,"grouping_set","match","a","a"
+2,33,"grouping_sets","match","a","a"
+2,33,"rollup","match","a","a;"
+2,33,"cube","match","a","a;"
+2,33,"grouping_spec","match","a","a"
+2,33,"rollup_composite","match","a","a;"
+2,33,"cube_composite","match","a","a;"
+2,34,".by","match","a",""
+2,34,"grouping_set","match","a","a"
+2,34,"grouping_sets","match","a","a"
+2,34,"rollup","match","a","a;"
+2,34,"cube","match","a","a;"
+2,34,"grouping_spec","match","a","a"
+2,34,"rollup_composite","match","a","a;"
+2,34,"cube_composite","match","a","a;"
+2,35,".by","match","a",""
+2,35,"grouping_set","match","a","a"
+2,35,"grouping_sets","match","a","a"
+2,35,"rollup","match","a","a;"
+2,35,"cube","match","a","a;"
+2,35,"grouping_spec","match","a","a"
+2,35,"rollup_composite","match","a","a;"
+2,35,"cube_composite","match","a","a;"
+2,36,".by","external-condition-match","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found"
+2,36,"grouping_set","external-condition-match","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found"
+2,36,"grouping_sets","external-condition-match","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found"
+2,36,"rollup","external-condition-match","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found"
+2,36,"cube","external-condition-match","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found"
+2,36,"grouping_spec","external-condition-match","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found"
+2,36,"rollup_composite","external-condition-match","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found"
+2,36,"cube_composite","external-condition-match","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found"
+2,37,".by","match","a",""
+2,37,"grouping_set","match","a","a"
+2,37,"grouping_sets","match","a","a"
+2,37,"rollup","match","a","a;"
+2,37,"cube","match","a","a;"
+2,37,"grouping_spec","match","a","a"
+2,37,"rollup_composite","match","a","a;"
+2,37,"cube_composite","match","a","a;"
+2,38,".by","match","c",""
+2,38,"grouping_set","match","c","c"
+2,38,"grouping_sets","match","c","c"
+2,38,"rollup","match","c","c;"
+2,38,"cube","match","c","c;"
+2,38,"grouping_spec","match","c","c"
+2,38,"rollup_composite","match","c","c;"
+2,38,"cube_composite","match","c","c;"
+2,39,".by","match","",""
+2,39,"grouping_set","match","",""
+2,39,"grouping_sets","match","",""
+2,39,"rollup","empty-unit-refusal","","`rollup()` requires at least one dimension."
+2,39,"cube","empty-unit-refusal","","`cube()` requires at least one dimension."
+2,39,"grouping_spec","match","",""
+2,39,"rollup_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+2,39,"cube_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+2,40,".by","match","a|b",""
+2,40,"grouping_set","match","a|b","a|b"
+2,40,"grouping_sets","match","a|b","a|b"
+2,40,"rollup","match","a|b","a|b;a;"
+2,40,"cube","match","a|b","a|b;a;b;"
+2,40,"grouping_spec","match","a|b","a|b"
+2,40,"rollup_composite","match","a|b","a|b;"
+2,40,"cube_composite","match","a|b","a|b;"
+2,41,".by","external-condition-match","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context"
+2,41,"grouping_set","external-condition-match","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context"
+2,41,"grouping_sets","external-condition-match","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context"
+2,41,"rollup","external-condition-match","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context"
+2,41,"cube","external-condition-match","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context"
+2,41,"grouping_spec","external-condition-match","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context"
+2,41,"rollup_composite","external-condition-match","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context"
+2,41,"cube_composite","external-condition-match","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context"
+2,42,".by","match","a",""
+2,42,"grouping_set","match","a","a"
+2,42,"grouping_sets","match","a","a"
+2,42,"rollup","match","a","a;"
+2,42,"cube","match","a","a;"
+2,42,"grouping_spec","match","a","a"
+2,42,"rollup_composite","match","a","a;"
+2,42,"cube_composite","match","a","a;"
+2,43,".by","match","",""
+2,43,"grouping_set","match","",""
+2,43,"grouping_sets","match","",""
+2,43,"rollup","empty-unit-refusal","","`rollup()` requires at least one dimension."
+2,43,"cube","empty-unit-refusal","","`cube()` requires at least one dimension."
+2,43,"grouping_spec","match","",""
+2,43,"rollup_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+2,43,"cube_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+2,44,".by","match","a",""
+2,44,"grouping_set","match","a","a"
+2,44,"grouping_sets","match","a","a"
+2,44,"rollup","match","a","a;"
+2,44,"cube","match","a","a;"
+2,44,"grouping_spec","match","a","a"
+2,44,"rollup_composite","match","a","a;"
+2,44,"cube_composite","match","a","a;"
+2,45,".by","external-condition-match","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector.","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector."
+2,45,"grouping_set","external-condition-match","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector.","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector."
+2,45,"grouping_sets","external-condition-match","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector.","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector."
+2,45,"rollup","external-condition-match","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector.","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector."
+2,45,"cube","external-condition-match","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector.","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector."
+2,45,"grouping_spec","external-condition-match","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector.","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector."
+2,45,"rollup_composite","external-condition-match","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector.","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector."
+2,45,"cube_composite","external-condition-match","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector.","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector."
+2,46,".by","external-condition-match","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list.","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list."
+2,46,"grouping_set","external-condition-match","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list.","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list."
+2,46,"grouping_sets","external-condition-match","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list.","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list."
+2,46,"rollup","external-condition-match","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list.","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list."
+2,46,"cube","external-condition-match","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list.","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list."
+2,46,"grouping_spec","external-condition-match","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list.","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list."
+2,46,"rollup_composite","external-condition-match","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list.","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list."
+2,46,"cube_composite","external-condition-match","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list.","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list."
+2,47,".by","match","",""
+2,47,"grouping_set","match","",""
+2,47,"grouping_sets","match","",""
+2,47,"rollup","empty-unit-refusal","","`rollup()` requires at least one dimension."
+2,47,"cube","empty-unit-refusal","","`cube()` requires at least one dimension."
+2,47,"grouping_spec","match","",""
+2,47,"rollup_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+2,47,"cube_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+2,48,".by","external-condition-match","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`.","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`."
+2,48,"grouping_set","external-condition-match","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`.","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`."
+2,48,"grouping_sets","external-condition-match","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`.","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`."
+2,48,"rollup","external-condition-match","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`.","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`."
+2,48,"cube","external-condition-match","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`.","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`."
+2,48,"grouping_spec","external-condition-match","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`.","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`."
+2,48,"rollup_composite","external-condition-match","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`.","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`."
+2,48,"cube_composite","external-condition-match","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`.","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`."
+2,49,".by","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+2,49,"grouping_set","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+2,49,"grouping_sets","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+2,49,"rollup","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+2,49,"cube","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+2,49,"grouping_spec","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+2,49,"rollup_composite","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+2,49,"cube_composite","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+2,50,".by","match","a",""
+2,50,"grouping_set","match","a","a"
+2,50,"grouping_sets","match","a","a"
+2,50,"rollup","match","a","a;"
+2,50,"cube","match","a","a;"
+2,50,"grouping_spec","match","a","a"
+2,50,"rollup_composite","match","a","a;"
+2,50,"cube_composite","match","a","a;"
+2,51,".by","match","a",""
+2,51,"grouping_set","match","a","a"
+2,51,"grouping_sets","match","a","a"
+2,51,"rollup","match","a","a;"
+2,51,"cube","match","a","a;"
+2,51,"grouping_spec","match","a","a"
+2,51,"rollup_composite","match","a","a;"
+2,51,"cube_composite","match","a","a;"
+2,52,".by","match","a",""
+2,52,"grouping_set","match","a","a"
+2,52,"grouping_sets","match","a","a"
+2,52,"rollup","match","a","a;"
+2,52,"cube","match","a","a;"
+2,52,"grouping_spec","match","a","a"
+2,52,"rollup_composite","match","a","a;"
+2,52,"cube_composite","match","a","a;"
+2,53,".by","match","a",""
+2,53,"grouping_set","match","a","a"
+2,53,"grouping_sets","match","a","a"
+2,53,"rollup","match","a","a;"
+2,53,"cube","match","a","a;"
+2,53,"grouping_spec","match","a","a"
+2,53,"rollup_composite","match","a","a;"
+2,53,"cube_composite","match","a","a;"
+2,54,".by","external-condition-match","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty"
+2,54,"grouping_set","external-condition-match","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty"
+2,54,"grouping_sets","external-condition-match","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty"
+2,54,"rollup","external-condition-match","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty"
+2,54,"cube","external-condition-match","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty"
+2,54,"grouping_spec","external-condition-match","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty"
+2,54,"rollup_composite","external-condition-match","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty"
+2,54,"cube_composite","external-condition-match","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty"
+2,55,".by","match","a",""
+2,55,"grouping_set","match","a","a"
+2,55,"grouping_sets","match","a","a"
+2,55,"rollup","match","a","a;"
+2,55,"cube","match","a","a;"
+2,55,"grouping_spec","match","a","a"
+2,55,"rollup_composite","match","a","a;"
+2,55,"cube_composite","match","a","a;"
+2,56,".by","match","a",""
+2,56,"grouping_set","match","a","a"
+2,56,"grouping_sets","match","a","a"
+2,56,"rollup","match","a","a;"
+2,56,"cube","match","a","a;"
+2,56,"grouping_spec","match","a","a"
+2,56,"rollup_composite","match","a","a;"
+2,56,"cube_composite","match","a","a;"
+2,57,".by","match","b",""
+2,57,"grouping_set","match","b","b"
+2,57,"grouping_sets","match","b","b"
+2,57,"rollup","match","b","b;"
+2,57,"cube","match","b","b;"
+2,57,"grouping_spec","match","b","b"
+2,57,"rollup_composite","match","b","b;"
+2,57,"cube_composite","match","b","b;"
+3,1,".by","match","a|b",""
+3,1,"grouping_set","match","a|b","a|b"
+3,1,"grouping_sets","match","a|b","a|b"
+3,1,"rollup","match","a|b","a|b;a;"
+3,1,"cube","match","a|b","a|b;a;b;"
+3,1,"grouping_spec","match","a|b","a|b"
+3,1,"rollup_composite","match","a|b","a|b;"
+3,1,"cube_composite","match","a|b","a|b;"
+3,2,".by","match","a|b",""
+3,2,"grouping_set","match","a|b","a|b"
+3,2,"grouping_sets","match","a|b","a|b"
+3,2,"rollup","match","a|b","a|b;a;"
+3,2,"cube","match","a|b","a|b;a;b;"
+3,2,"grouping_spec","match","a|b","a|b"
+3,2,"rollup_composite","match","a|b","a|b;"
+3,2,"cube_composite","match","a|b","a|b;"
+3,3,".by","match","a",""
+3,3,"grouping_set","match","a","a"
+3,3,"grouping_sets","match","a","a"
+3,3,"rollup","match","a","a;"
+3,3,"cube","match","a","a;"
+3,3,"grouping_spec","match","a","a"
+3,3,"rollup_composite","match","a","a;"
+3,3,"cube_composite","match","a","a;"
+3,4,".by","match","b",""
+3,4,"grouping_set","match","b","b"
+3,4,"grouping_sets","match","b","b"
+3,4,"rollup","match","b","b;"
+3,4,"cube","match","b","b;"
+3,4,"grouping_spec","match","b","b"
+3,4,"rollup_composite","match","b","b;"
+3,4,"cube_composite","match","b","b;"
+3,5,".by","match","a|b",""
+3,5,"grouping_set","match","a|b","a|b"
+3,5,"grouping_sets","match","a|b","a|b"
+3,5,"rollup","match","a|b","a|b;a;"
+3,5,"cube","match","a|b","a|b;a;b;"
+3,5,"grouping_spec","match","a|b","a|b"
+3,5,"rollup_composite","match","a|b","a|b;"
+3,5,"cube_composite","match","a|b","a|b;"
+3,6,".by","match","a",""
+3,6,"grouping_set","match","a","a"
+3,6,"grouping_sets","match","a","a"
+3,6,"rollup","match","a","a;"
+3,6,"cube","match","a","a;"
+3,6,"grouping_spec","match","a","a"
+3,6,"rollup_composite","match","a","a;"
+3,6,"cube_composite","match","a","a;"
+3,7,".by","match","b",""
+3,7,"grouping_set","match","b","b"
+3,7,"grouping_sets","match","b","b"
+3,7,"rollup","match","b","b;"
+3,7,"cube","match","b","b;"
+3,7,"grouping_spec","match","b","b"
+3,7,"rollup_composite","match","b","b;"
+3,7,"cube_composite","match","b","b;"
+3,8,".by","match","a",""
+3,8,"grouping_set","match","a","a"
+3,8,"grouping_sets","match","a","a"
+3,8,"rollup","match","a","a;"
+3,8,"cube","match","a","a;"
+3,8,"grouping_spec","match","a","a"
+3,8,"rollup_composite","match","a","a;"
+3,8,"cube_composite","match","a","a;"
+3,9,".by","match","a|b",""
+3,9,"grouping_set","match","a|b","a|b"
+3,9,"grouping_sets","match","a|b","a|b"
+3,9,"rollup","match","a|b","a|b;a;"
+3,9,"cube","match","a|b","a|b;a;b;"
+3,9,"grouping_spec","match","a|b","a|b"
+3,9,"rollup_composite","match","a|b","a|b;"
+3,9,"cube_composite","match","a|b","a|b;"
+3,10,".by","match","",""
+3,10,"grouping_set","match","",""
+3,10,"grouping_sets","match","",""
+3,10,"rollup","empty-unit-refusal","","`rollup()` requires at least one dimension."
+3,10,"cube","empty-unit-refusal","","`cube()` requires at least one dimension."
+3,10,"grouping_spec","match","",""
+3,10,"rollup_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+3,10,"cube_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+3,11,".by","match","",""
+3,11,"grouping_set","match","",""
+3,11,"grouping_sets","match","",""
+3,11,"rollup","empty-unit-refusal","","`rollup()` requires at least one dimension."
+3,11,"cube","empty-unit-refusal","","`cube()` requires at least one dimension."
+3,11,"grouping_spec","match","",""
+3,11,"rollup_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+3,11,"cube_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+3,12,".by","match","a|b|c",""
+3,12,"grouping_set","match","a|b|c","a|b|c"
+3,12,"grouping_sets","match","a|b|c","a|b|c"
+3,12,"rollup","match","a|b|c","a|b|c;a|b;a;"
+3,12,"cube","match","a|b|c","a|b|c;a|b;a|c;b|c;a;b;c;"
+3,12,"grouping_spec","match","a|b|c","a|b|c"
+3,12,"rollup_composite","match","a|b|c","a|b|c;"
+3,12,"cube_composite","match","a|b|c","a|b|c;"
+3,13,".by","match","",""
+3,13,"grouping_set","match","",""
+3,13,"grouping_sets","match","",""
+3,13,"rollup","empty-unit-refusal","","`rollup()` requires at least one dimension."
+3,13,"cube","empty-unit-refusal","","`cube()` requires at least one dimension."
+3,13,"grouping_spec","match","",""
+3,13,"rollup_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+3,13,"cube_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+3,14,".by","match","a|c",""
+3,14,"grouping_set","match","a|c","a|c"
+3,14,"grouping_sets","match","a|c","a|c"
+3,14,"rollup","match","a|c","a|c;a;"
+3,14,"cube","match","a|c","a|c;a;c;"
+3,14,"grouping_spec","match","a|c","a|c"
+3,14,"rollup_composite","match","a|c","a|c;"
+3,14,"cube_composite","match","a|c","a|c;"
+3,15,".by","match","a|b|c",""
+3,15,"grouping_set","match","a|b|c","a|b|c"
+3,15,"grouping_sets","match","a|b|c","a|b|c"
+3,15,"rollup","match","a|b|c","a|b|c;a|b;a;"
+3,15,"cube","match","a|b|c","a|b|c;a|b;a|c;b|c;a;b;c;"
+3,15,"grouping_spec","match","a|b|c","a|b|c"
+3,15,"rollup_composite","match","a|b|c","a|b|c;"
+3,15,"cube_composite","match","a|b|c","a|b|c;"
+3,16,".by","match","c|b|a",""
+3,16,"grouping_set","match","c|b|a","c|b|a"
+3,16,"grouping_sets","match","c|b|a","c|b|a"
+3,16,"rollup","match","c|b|a","c|b|a;c|b;c;"
+3,16,"cube","match","c|b|a","c|b|a;c|b;c|a;b|a;c;b;a;"
+3,16,"grouping_spec","match","c|b|a","c|b|a"
+3,16,"rollup_composite","match","c|b|a","c|b|a;"
+3,16,"cube_composite","match","c|b|a","c|b|a;"
+3,17,".by","match","a|c",""
+3,17,"grouping_set","match","a|c","a|c"
+3,17,"grouping_sets","match","a|c","a|c"
+3,17,"rollup","match","a|c","a|c;a;"
+3,17,"cube","match","a|c","a|c;a;c;"
+3,17,"grouping_spec","match","a|c","a|c"
+3,17,"rollup_composite","match","a|c","a|c;"
+3,17,"cube_composite","match","a|c","a|c;"
+3,18,".by","match","a|c",""
+3,18,"grouping_set","match","a|c","a|c"
+3,18,"grouping_sets","match","a|c","a|c"
+3,18,"rollup","match","a|c","a|c;a;"
+3,18,"cube","match","a|c","a|c;a;c;"
+3,18,"grouping_spec","match","a|c","a|c"
+3,18,"rollup_composite","match","a|c","a|c;"
+3,18,"cube_composite","match","a|c","a|c;"
+3,19,".by","match","a|b",""
+3,19,"grouping_set","match","a|b","a|b"
+3,19,"grouping_sets","match","a|b","a|b"
+3,19,"rollup","match","a|b","a|b;a;"
+3,19,"cube","match","a|b","a|b;a;b;"
+3,19,"grouping_spec","match","a|b","a|b"
+3,19,"rollup_composite","match","a|b","a|b;"
+3,19,"cube_composite","match","a|b","a|b;"
+3,20,".by","match","a|b",""
+3,20,"grouping_set","match","a|b","a|b"
+3,20,"grouping_sets","match","a|b","a|b"
+3,20,"rollup","match","a|b","a|b;a;"
+3,20,"cube","match","a|b","a|b;a;b;"
+3,20,"grouping_spec","match","a|b","a|b"
+3,20,"rollup_composite","match","a|b","a|b;"
+3,20,"cube_composite","match","a|b","a|b;"
+3,21,".by","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+3,21,"grouping_set","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+3,21,"grouping_sets","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+3,21,"rollup","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+3,21,"cube","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+3,21,"grouping_spec","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+3,21,"rollup_composite","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+3,21,"cube_composite","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+3,22,".by","match","a|b",""
+3,22,"grouping_set","match","a|b","a|b"
+3,22,"grouping_sets","match","a|b","a|b"
+3,22,"rollup","match","a|b","a|b;a;"
+3,22,"cube","match","a|b","a|b;a;b;"
+3,22,"grouping_spec","match","a|b","a|b"
+3,22,"rollup_composite","match","a|b","a|b;"
+3,22,"cube_composite","match","a|b","a|b;"
+3,23,".by","external-condition-match","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector.","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector."
+3,23,"grouping_set","external-condition-match","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector.","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector."
+3,23,"grouping_sets","external-condition-match","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector.","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector."
+3,23,"rollup","external-condition-match","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector.","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector."
+3,23,"cube","external-condition-match","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector.","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector."
+3,23,"grouping_spec","external-condition-match","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector.","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector."
+3,23,"rollup_composite","external-condition-match","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector.","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector."
+3,23,"cube_composite","external-condition-match","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector.","ℹ In argument: `all_of(c(TRUE, FALSE))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be numeric or character, not a logical vector."
+3,24,".by","external-condition-match","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+3,24,"grouping_set","external-condition-match","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+3,24,"grouping_sets","external-condition-match","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+3,24,"rollup","external-condition-match","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+3,24,"cube","external-condition-match","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+3,24,"grouping_spec","external-condition-match","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+3,24,"rollup_composite","external-condition-match","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+3,24,"cube_composite","external-condition-match","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(matrix(c(""a"", ""b""), nrow = 1L))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+3,25,".by","external-condition-match","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+3,25,"grouping_set","external-condition-match","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+3,25,"grouping_sets","external-condition-match","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+3,25,"rollup","external-condition-match","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+3,25,"cube","external-condition-match","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+3,25,"grouping_spec","external-condition-match","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+3,25,"rollup_composite","external-condition-match","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+3,25,"cube_composite","external-condition-match","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix.","ℹ In argument: `all_of(structure(c(""a"", ""b""), dim = c(1L, 2L)))`.
+Caused by error in `all_of()`:
+! Can't subset elements.
+✖ Subscript must be a simple vector, not a matrix."
+3,26,".by","match","a",""
+3,26,"grouping_set","match","a","a"
+3,26,"grouping_sets","match","a","a"
+3,26,"rollup","match","a","a;"
+3,26,"cube","match","a","a;"
+3,26,"grouping_spec","match","a","a"
+3,26,"rollup_composite","match","a","a;"
+3,26,"cube_composite","match","a","a;"
+3,27,".by","match","",""
+3,27,"grouping_set","match","",""
+3,27,"grouping_sets","match","",""
+3,27,"rollup","empty-unit-refusal","","`rollup()` requires at least one dimension."
+3,27,"cube","empty-unit-refusal","","`cube()` requires at least one dimension."
+3,27,"grouping_spec","match","",""
+3,27,"rollup_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+3,27,"cube_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+3,28,".by","match","a",""
+3,28,"grouping_set","match","a","a"
+3,28,"grouping_sets","match","a","a"
+3,28,"rollup","match","a","a;"
+3,28,"cube","match","a","a;"
+3,28,"grouping_spec","match","a","a"
+3,28,"rollup_composite","match","a","a;"
+3,28,"cube_composite","match","a","a;"
+3,29,".by","renaming-refusal","z","Can't rename `.by` column:
+ℹ `z = a`.
+ℹ Fixed `.by` keys must name existing columns."
+3,29,"grouping_set","renaming-refusal","z","Can't rename grouping dimension:
+ℹ `z = a`.
+ℹ Grouping dimensions must name existing columns."
+3,29,"grouping_sets","renaming-refusal","z","Can't rename grouping dimension:
+ℹ `z = a`.
+ℹ Grouping dimensions must name existing columns."
+3,29,"rollup","renaming-refusal","z","Can't rename grouping dimension:
+ℹ `z = a`.
+ℹ Grouping dimensions must name existing columns."
+3,29,"cube","renaming-refusal","z","Can't rename grouping dimension:
+ℹ `z = a`.
+ℹ Grouping dimensions must name existing columns."
+3,29,"grouping_spec","renaming-refusal","z","Can't rename grouping dimension:
+ℹ `z = a`.
+ℹ Grouping dimensions must name existing columns."
+3,29,"rollup_composite","renaming-refusal","z","Can't rename grouping dimension:
+ℹ `z = a`.
+ℹ Grouping dimensions must name existing columns."
+3,29,"cube_composite","renaming-refusal","z","Can't rename grouping dimension:
+ℹ `z = a`.
+ℹ Grouping dimensions must name existing columns."
+3,30,".by","match","a|b",""
+3,30,"grouping_set","match","a|b","a|b"
+3,30,"grouping_sets","match","a|b","a|b"
+3,30,"rollup","match","a|b","a|b;a;"
+3,30,"cube","match","a|b","a|b;a;b;"
+3,30,"grouping_spec","match","a|b","a|b"
+3,30,"rollup_composite","match","a|b","a|b;"
+3,30,"cube_composite","match","a|b","a|b;"
+3,31,".by","match","a|c",""
+3,31,"grouping_set","match","a|c","a|c"
+3,31,"grouping_sets","match","a|c","a|c"
+3,31,"rollup","match","a|c","a|c;a;"
+3,31,"cube","match","a|c","a|c;a;c;"
+3,31,"grouping_spec","match","a|c","a|c"
+3,31,"rollup_composite","match","a|c","a|c;"
+3,31,"cube_composite","match","a|c","a|c;"
+3,32,".by","match","b",""
+3,32,"grouping_set","match","b","b"
+3,32,"grouping_sets","match","b","b"
+3,32,"rollup","match","b","b;"
+3,32,"cube","match","b","b;"
+3,32,"grouping_spec","match","b","b"
+3,32,"rollup_composite","match","b","b;"
+3,32,"cube_composite","match","b","b;"
+3,33,".by","match","a",""
+3,33,"grouping_set","match","a","a"
+3,33,"grouping_sets","match","a","a"
+3,33,"rollup","match","a","a;"
+3,33,"cube","match","a","a;"
+3,33,"grouping_spec","match","a","a"
+3,33,"rollup_composite","match","a","a;"
+3,33,"cube_composite","match","a","a;"
+3,34,".by","match","a",""
+3,34,"grouping_set","match","a","a"
+3,34,"grouping_sets","match","a","a"
+3,34,"rollup","match","a","a;"
+3,34,"cube","match","a","a;"
+3,34,"grouping_spec","match","a","a"
+3,34,"rollup_composite","match","a","a;"
+3,34,"cube_composite","match","a","a;"
+3,35,".by","match","a",""
+3,35,"grouping_set","match","a","a"
+3,35,"grouping_sets","match","a","a"
+3,35,"rollup","match","a","a;"
+3,35,"cube","match","a","a;"
+3,35,"grouping_spec","match","a","a"
+3,35,"rollup_composite","match","a","a;"
+3,35,"cube_composite","match","a","a;"
+3,36,".by","external-condition-match","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found"
+3,36,"grouping_set","external-condition-match","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found"
+3,36,"grouping_sets","external-condition-match","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found"
+3,36,"rollup","external-condition-match","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found"
+3,36,"cube","external-condition-match","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found"
+3,36,"grouping_spec","external-condition-match","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found"
+3,36,"rollup_composite","external-condition-match","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found"
+3,36,"cube_composite","external-condition-match","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found","ℹ In argument: `(.data)$a`.
+Caused by error:
+! object '.data' not found"
+3,37,".by","match","",""
+3,37,"grouping_set","match","",""
+3,37,"grouping_sets","match","",""
+3,37,"rollup","empty-unit-refusal","","`rollup()` requires at least one dimension."
+3,37,"cube","empty-unit-refusal","","`cube()` requires at least one dimension."
+3,37,"grouping_spec","match","",""
+3,37,"rollup_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+3,37,"cube_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+3,38,".by","match","",""
+3,38,"grouping_set","match","",""
+3,38,"grouping_sets","match","",""
+3,38,"rollup","empty-unit-refusal","","`rollup()` requires at least one dimension."
+3,38,"cube","empty-unit-refusal","","`cube()` requires at least one dimension."
+3,38,"grouping_spec","match","",""
+3,38,"rollup_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+3,38,"cube_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+3,39,".by","match","a",""
+3,39,"grouping_set","match","a","a"
+3,39,"grouping_sets","match","a","a"
+3,39,"rollup","match","a","a;"
+3,39,"cube","match","a","a;"
+3,39,"grouping_spec","match","a","a"
+3,39,"rollup_composite","match","a","a;"
+3,39,"cube_composite","match","a","a;"
+3,40,".by","match","b",""
+3,40,"grouping_set","match","b","b"
+3,40,"grouping_sets","match","b","b"
+3,40,"rollup","match","b","b;"
+3,40,"cube","match","b","b;"
+3,40,"grouping_spec","match","b","b"
+3,40,"rollup_composite","match","b","b;"
+3,40,"cube_composite","match","b","b;"
+3,41,".by","external-condition-match","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context"
+3,41,"grouping_set","external-condition-match","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context"
+3,41,"grouping_sets","external-condition-match","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context"
+3,41,"rollup","external-condition-match","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context"
+3,41,"cube","external-condition-match","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context"
+3,41,"grouping_spec","external-condition-match","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context"
+3,41,"rollup_composite","external-condition-match","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context"
+3,41,"cube_composite","external-condition-match","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context","! Could not evaluate cli `{}` expression: ` ... `.
+Caused by error in `eval(expr, envir = envir)`:
+! '...' used in an incorrect context"
+3,42,".by","match","a",""
+3,42,"grouping_set","match","a","a"
+3,42,"grouping_sets","match","a","a"
+3,42,"rollup","match","a","a;"
+3,42,"cube","match","a","a;"
+3,42,"grouping_spec","match","a","a"
+3,42,"rollup_composite","match","a","a;"
+3,42,"cube_composite","match","a","a;"
+3,43,".by","match","",""
+3,43,"grouping_set","match","",""
+3,43,"grouping_sets","match","",""
+3,43,"rollup","empty-unit-refusal","","`rollup()` requires at least one dimension."
+3,43,"cube","empty-unit-refusal","","`cube()` requires at least one dimension."
+3,43,"grouping_spec","match","",""
+3,43,"rollup_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+3,43,"cube_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+3,44,".by","match","a",""
+3,44,"grouping_set","match","a","a"
+3,44,"grouping_sets","match","a","a"
+3,44,"rollup","match","a","a;"
+3,44,"cube","match","a","a;"
+3,44,"grouping_spec","match","a","a"
+3,44,"rollup_composite","match","a","a;"
+3,44,"cube_composite","match","a","a;"
+3,45,".by","external-condition-match","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector.","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector."
+3,45,"grouping_set","external-condition-match","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector.","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector."
+3,45,"grouping_sets","external-condition-match","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector.","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector."
+3,45,"rollup","external-condition-match","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector.","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector."
+3,45,"cube","external-condition-match","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector.","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector."
+3,45,"grouping_spec","external-condition-match","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector.","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector."
+3,45,"rollup_composite","external-condition-match","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector.","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector."
+3,45,"cube_composite","external-condition-match","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector.","Can't select columns with `expression(a)`.
+✖ `expression(a)` must be numeric or character, not an expression vector."
+3,46,".by","external-condition-match","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list.","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list."
+3,46,"grouping_set","external-condition-match","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list.","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list."
+3,46,"grouping_sets","external-condition-match","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list.","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list."
+3,46,"rollup","external-condition-match","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list.","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list."
+3,46,"cube","external-condition-match","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list.","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list."
+3,46,"grouping_spec","external-condition-match","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list.","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list."
+3,46,"rollup_composite","external-condition-match","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list.","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list."
+3,46,"cube_composite","external-condition-match","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list.","Can't select columns with `list(""a"")`.
+✖ `list(""a"")` must be numeric or character, not a list."
+3,47,".by","match","",""
+3,47,"grouping_set","match","",""
+3,47,"grouping_sets","match","",""
+3,47,"rollup","empty-unit-refusal","","`rollup()` requires at least one dimension."
+3,47,"cube","empty-unit-refusal","","`cube()` requires at least one dimension."
+3,47,"grouping_spec","match","",""
+3,47,"rollup_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+3,47,"cube_composite","empty-unit-refusal","","An empty `grouping_set()` cannot be a composite dimension."
+3,48,".by","external-condition-match","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`.","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`."
+3,48,"grouping_set","external-condition-match","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`.","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`."
+3,48,"grouping_sets","external-condition-match","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`.","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`."
+3,48,"rollup","external-condition-match","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`.","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`."
+3,48,"cube","external-condition-match","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`.","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`."
+3,48,"grouping_spec","external-condition-match","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`.","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`."
+3,48,"rollup_composite","external-condition-match","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`.","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`."
+3,48,"cube_composite","external-condition-match","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`.","Can't select columns.
+✖ Subscript must be numeric or character, not `TRUE`."
+3,49,".by","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+3,49,"grouping_set","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+3,49,"grouping_sets","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+3,49,"rollup","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+3,49,"cube","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+3,49,"grouping_spec","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+3,49,"rollup_composite","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+3,49,"cube_composite","external-condition-match","Selections can't have missing values.","Selections can't have missing values."
+3,50,".by","match","a",""
+3,50,"grouping_set","match","a","a"
+3,50,"grouping_sets","match","a","a"
+3,50,"rollup","match","a","a;"
+3,50,"cube","match","a","a;"
+3,50,"grouping_spec","match","a","a"
+3,50,"rollup_composite","match","a","a;"
+3,50,"cube_composite","match","a","a;"
+3,51,".by","match","a",""
+3,51,"grouping_set","match","a","a"
+3,51,"grouping_sets","match","a","a"
+3,51,"rollup","match","a","a;"
+3,51,"cube","match","a","a;"
+3,51,"grouping_spec","match","a","a"
+3,51,"rollup_composite","match","a","a;"
+3,51,"cube_composite","match","a","a;"
+3,52,".by","match","a",""
+3,52,"grouping_set","match","a","a"
+3,52,"grouping_sets","match","a","a"
+3,52,"rollup","match","a","a;"
+3,52,"cube","match","a","a;"
+3,52,"grouping_spec","match","a","a"
+3,52,"rollup_composite","match","a","a;"
+3,52,"cube_composite","match","a","a;"
+3,53,".by","match","a",""
+3,53,"grouping_set","match","a","a"
+3,53,"grouping_sets","match","a","a"
+3,53,"rollup","match","a","a;"
+3,53,"cube","match","a","a;"
+3,53,"grouping_spec","match","a","a"
+3,53,"rollup_composite","match","a","a;"
+3,53,"cube_composite","match","a","a;"
+3,54,".by","external-condition-match","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty"
+3,54,"grouping_set","external-condition-match","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty"
+3,54,"grouping_sets","external-condition-match","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty"
+3,54,"rollup","external-condition-match","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty"
+3,54,"cube","external-condition-match","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty"
+3,54,"grouping_spec","external-condition-match","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty"
+3,54,"rollup_composite","external-condition-match","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty"
+3,54,"cube_composite","external-condition-match","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty","ℹ In argument: `all_of(c(, ""a""))`.
+Caused by error in `c()`:
+! argument 1 is empty"
+3,55,".by","match","a",""
+3,55,"grouping_set","match","a","a"
+3,55,"grouping_sets","match","a","a"
+3,55,"rollup","match","a","a;"
+3,55,"cube","match","a","a;"
+3,55,"grouping_spec","match","a","a"
+3,55,"rollup_composite","match","a","a;"
+3,55,"cube_composite","match","a","a;"
+3,56,".by","match","a",""
+3,56,"grouping_set","match","a","a"
+3,56,"grouping_sets","match","a","a"
+3,56,"rollup","match","a","a;"
+3,56,"cube","match","a","a;"
+3,56,"grouping_spec","match","a","a"
+3,56,"rollup_composite","match","a","a;"
+3,56,"cube_composite","match","a","a;"
+3,57,".by","match","b",""
+3,57,"grouping_set","match","b","b"
+3,57,"grouping_sets","match","b","b"
+3,57,"rollup","match","b","b;"
+3,57,"cube","match","b","b;"
+3,57,"grouping_spec","match","b","b"
+3,57,"rollup_composite","match","b","b;"
+3,57,"cube_composite","match","b","b;"
