@@ -158,8 +158,7 @@ jobs:
   structure:
     name: Suite coverage by construction
     runs-on: ubuntu-latest
-    # Includes setup and seven complete single-backend suites; the provisioned
-    # suite alone can exceed an hour on hosted runners.
+    # Includes setup and a complete suite for every optional backend.
     timeout-minutes: 360
 
     steps:
