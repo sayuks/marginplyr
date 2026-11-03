@@ -10,7 +10,7 @@ scalar_display_input <- function() {
   )
 }
 
-test_that("scalar array displays distinguish observed Margin label collisions", {
+test_that("scalar array displays distinguish Margin label collisions", {
   input <- scalar_display_input()
   before <- serialize(input, NULL)
   native <- dplyr::nest_by(input, g)
@@ -26,7 +26,8 @@ test_that("scalar array displays distinguish observed Margin label collisions", 
       result <- rlang::inject(verb(input, !!!args, .grouping = plan))
       expect_true(all(as.vector(result$g) %in% c("1", "2", "Total")))
       expect_error(
-        rlang::inject(verb(input, !!!args, .grouping = plan, .margin_label = "1")),
+        rlang::inject(verb(input, !!!args, .grouping = plan,
+                           .margin_label = "1")),
         "already present in grouping column", class = "marginplyr_error"
       )
     }
@@ -41,21 +42,23 @@ expect_scalar_display_nesting <- function(as_source) {
   for (verb in list(nest_with_margins, nest_by_with_margins)) {
     for (keep in c(FALSE, TRUE)) {
       for (total in c(FALSE, TRUE)) {
-        plan <- if (total) rollup(g) else grouping_set(g)
+        plan <- if (total) rollup("g") else grouping_set("g")
         result <- verb(input, .grouping = plan, .keep = keep)
         expect_identical(as.vector(result$g), c("1", "2", "Total"[total]))
         expect_identical(lapply(result$data, function(x) x$row),
                          c(list(1:2, 3L), if (total) list(1:3)))
         for (cell in result$data) {
           expect_identical(names(cell), c("g"[keep], "row"))
-          if (keep) expect_identical(cell$g, vctrs::vec_slice(input$g, cell$row))
+          if (keep) {
+            expect_identical(cell$g, vctrs::vec_slice(input$g, cell$row))
+          }
         }
         unchecked <- verb(input, .grouping = plan, .keep = keep,
                           .check_margin_label = FALSE)
         expect_identical(result, unchecked)
       }
       for (label in list(NULL, NA_character_)) {
-        result <- verb(input, .grouping = rollup(g), .keep = keep,
+        result <- verb(input, .grouping = rollup("g"), .keep = keep,
                        .margin_label = label)
         expect_identical(lapply(result$data, function(x) x$row),
                          list(1:2, 3L, 1:3))
@@ -63,7 +66,7 @@ expect_scalar_display_nesting <- function(as_source) {
           vctrs::vec_slice(input$g, c(1L, 3L)), vctrs::vec_init(input$g, 1L)
         ))
       }
-      fixed <- verb(input, .by = g, .grouping = grouping_set(), .keep = keep)
+      fixed <- verb(input, .by = "g", .grouping = grouping_set(), .keep = keep)
       expect_identical(lapply(fixed$data, function(x) x$row), list(1:2, 3L))
       expect_identical(fixed$g, vctrs::vec_slice(input$g, c(1L, 3L)))
     }

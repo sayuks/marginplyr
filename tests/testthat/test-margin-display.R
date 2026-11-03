@@ -10,7 +10,9 @@ test_that("empty hms dimensions have character Margin displays", {
     before <- serialize(input, NULL)
     expect_identical(nrow(dplyr::group_keys(dplyr::group_by(input, g))), 0L)
     expect_identical(nrow(dplyr::nest_by(input, g)), 0L)
-    plans <- list(included = grouping_set(g), rollup = rollup(g), cube = cube(g))
+    plans <- list(
+      included = grouping_set(g), rollup = rollup(g), cube = cube(g)
+    )
     for (kind in names(plans)) {
       plan <- plans[[kind]]
       for (check in c(FALSE, TRUE)) {
@@ -38,7 +40,7 @@ test_that("empty hms dimensions have character Margin displays", {
   }
 })
 
-test_that("hms nesting keeps source keys and payloads under both label policies", {
+test_that("hms nesting keeps source keys and payloads across labels", {
   skip_if_suggest_absent("hms")
   for (as_source in list(identity, as.data.frame)) {
     input <- as_source(tibble::tibble(g = hms::hms(c(1, 1)), row = 1:2))
@@ -57,9 +59,11 @@ test_that("hms nesting keeps source keys and payloads under both label policies"
         for (label in list(NULL, NA_character_)) {
           typed <- verb(input, .grouping = rollup(g),
                         .margin_label = label, .keep = keep)
-          expect_identical(typed$g, vctrs::vec_c(input$g[1L],
-                                               vctrs::vec_init(input$g, 1L)))
-          expect_identical(lapply(typed$data, function(x) x$row), list(1:2, 1:2))
+          expect_identical(typed$g, vctrs::vec_c(
+            input$g[1L], vctrs::vec_init(input$g, 1L)
+          ))
+          expect_identical(lapply(typed$data, function(x) x$row),
+                           list(1:2, 1:2))
         }
         expect_error(
           verb(input, .grouping = rollup(g), .margin_label = "00:00:01"),
