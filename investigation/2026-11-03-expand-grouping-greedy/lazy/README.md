@@ -73,9 +73,7 @@ identifiers, and none/last sorts.
 All ordinary controls succeeded and every caller-owned data.table remained
 identical. There were 1,584 matching comparisons and 144 package-only errors,
 72 per class. Every error was a one-row dimension with an omitted branch.
-Empty, three-row, included-only, fixed-key, and payload controls passed. The
-comparison checked canonical row bags, exact values/types and public column
-placement; it did not supply a separate general Margin-order proof.
+Empty, three-row, included-only, fixed-key, and payload controls passed.
 
 The scalar-class package tests added for #1093 covered local data frames,
 tibbles, and direct data.tables, including the same row counts and plan forms.
