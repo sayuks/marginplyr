@@ -512,14 +512,11 @@ review_ready_heavy_lock <- function() {
   dir.create(dirname(target), recursive = TRUE, showWarnings = FALSE)
   cat("\nWaiting for heavy package-check capacity.\n")
   flush.console()
-  repeat {
-    lock <- filelock::lock(target, timeout = 0)
-    if (!is.null(lock)) {
-      cat("Heavy package-check capacity acquired.\n")
-      return(lock)
-    }
-    Sys.sleep(0.2)
-  }
+  # One interruptible wait avoids filelock 1.0.3's descriptor leak on timeout.
+  lock <- filelock::lock(target, timeout = Inf)
+  if (is.null(lock)) stop("Cannot acquire heavy package-check capacity.", call. = FALSE)
+  cat("Heavy package-check capacity acquired.\n")
+  lock
 }
 
 # Builds and checks once in a child whose temporary storage belongs to this run.

@@ -158,8 +158,8 @@ jobs:
   structure:
     name: Suite coverage by construction
     runs-on: ubuntu-latest
-    # Includes tool/dependency setup and all single-backend suites.
-    timeout-minutes: 90
+    # Includes setup and a complete suite for every optional backend.
+    timeout-minutes: 360
 
     steps:
       - uses: actions/checkout@v7
@@ -474,7 +474,8 @@ jobs:
     name: Live ${{ matrix.backend.name }}
     needs: [build, backend-matrix]
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # Includes setup and the complete suite with one backend installed.
+    timeout-minutes: 90
 
     strategy:
       fail-fast: false

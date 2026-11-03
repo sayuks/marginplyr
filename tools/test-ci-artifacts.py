@@ -103,6 +103,19 @@ class Artifacts(unittest.TestCase):
         self.workflow('unknown.yaml').write_text('# no verified contract\n')
         self.check(1, 'workflow inventory differs')
 
+    def test_job_deadlines_require_matching_workflow_contracts(self):
+        for name, old, new in (
+                ('release-matrix.yaml', 'timeout-minutes: 360', 'timeout-minutes: 359'),
+                ('release-matrix.yaml', 'timeout-minutes: 90', 'timeout-minutes: 89'),
+                ('test-coverage.yaml', 'timeout-minutes: 180', 'timeout-minutes: 179')):
+            with self.subTest(workflow=name, deadline=old):
+                path = self.workflow(name)
+                original = path.read_text()
+                self.assertEqual(original.count(old), 1)
+                path.write_text(original.replace(old, new))
+                self.check(1, 'Workflow executable contract changed')
+                path.write_text(original)
+
     def test_invalid_claude_json_fails(self):
         path = self.repo / '.claude/settings.json'
         path.parent.mkdir(exist_ok=True)
