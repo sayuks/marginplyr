@@ -1,19 +1,42 @@
 # Proposes tracked membership/order from one local full invocation (ADR 0040).
 # Generation writes only invocation artifacts; native testthat owns dispatch.
 
-# Reads exact filename stems; ambiguous glob registrations need human resolution.
-review_ready_priority_read <- function(description) {
+# Parses literal stems and identifies repeated registrations without changing source.
+review_ready_priority_parse <- function(description, context) {
   field <- "Config/testthat/start-first"
   connection <- textConnection(description)
   on.exit(close(connection), add = TRUE)
   value <- read.dcf(connection)
-  if (!field %in% colnames(value)) return(character())
-  priority <- trimws(strsplit(value[[1L, field]], ",", fixed = TRUE)[[1L]])
-  if (!all(nzchar(priority)) || anyDuplicated(priority) ||
+  if (!field %in% colnames(value)) return(list(priority = character(), duplicates = character()))
+  text <- value[[1L, field]]
+  priority <- trimws(strsplit(text, ",", fixed = TRUE)[[1L]])
+  if (!length(priority) || grepl(",[[:space:]]*$", text) || !all(nzchar(priority)) ||
       !all(grepl("^[A-Za-z0-9_.-]+$", priority))) {
-    stop("priority must contain unique literal test filename stems")
+    stop(context, ": priority must contain unique literal test filename stems; invalid or empty entry", call. = FALSE)
   }
-  priority
+  duplicates <- vapply(unique(priority[duplicated(priority)]), function(stem) {
+    paste0(stem, " (positions ", paste(which(priority == stem), collapse = ", "), ")")
+  }, character(1), USE.NAMES = FALSE)
+  list(priority = priority, duplicates = duplicates)
+}
+
+# Reads current metadata strictly; duplicate repair belongs to an explicit Git edit.
+review_ready_priority_read <- function(description, context = "current DESCRIPTION") {
+  parsed <- review_ready_priority_parse(description, context)
+  if (length(parsed$duplicates)) {
+    stop(context, ": priority must contain unique literal test filename stems; duplicates: ",
+      paste(parsed$duplicates, collapse = "; "), call. = FALSE)
+  }
+  parsed$priority
+}
+
+# Archived literal duplicates follow native first-occurrence dispatch semantics.
+review_ready_priority_historical <- function(description, context) {
+  parsed <- review_ready_priority_parse(description, context)
+  if (length(parsed$duplicates)) {
+    cat("Review-ready ", context, " normalized: ", paste(parsed$duplicates, collapse = "; "), "\n", sep = "")
+  }
+  list(priority = unique(parsed$priority), duplicates = parsed$duplicates)
 }
 
 # Replaces just the DCF priority field, preserving every other source line.
@@ -144,8 +167,10 @@ review_ready_priority_evidence <- function(root, run) {
     }
   }
   if (any(!is.finite(evidence$files$duration) | evidence$files$duration < 0)) stop("invalid model durations")
+  historical <- review_ready_priority_historical(old_description,
+    paste0("archived DESCRIPTION (SHA ", manifest$sha, ")"))
   list(manifest = manifest, evidence = evidence, description = description,
-    measured_priority = review_ready_priority_read(old_description))
+    measured_priority = historical$priority, historical_duplicates = historical$duplicates)
 }
 
 # Writes a deterministic patch and explanation under the identified invocation.
@@ -157,12 +182,14 @@ review_ready_priority_propose <- function(root, run) {
     proposal <- review_ready_priority_calculate(review_ready_priority_read(input$description),
       input$evidence$files, input$measured_priority)
     proposal$sha <- input$manifest$sha
+    proposal$historical_duplicates <- input$historical_duplicates
     proposal$identities <- input$manifest$md5
     proposal$movements <- data.frame(file = proposal$selected,
       from = match(proposal$selected, proposal$before), to = seq_along(proposal$selected))
     output <- tempfile("priority-", tmpdir = run)
     if (!dir.create(output)) stop("cannot create invocation-owned proposal directory")
     after <- review_ready_priority_description(input$description, proposal$selected)
+    review_ready_priority_read(after, context = "proposed DESCRIPTION")
     changed <- !identical(proposal$before, proposal$selected)
     # Diff two artifact copies; neither the checked source nor installed metadata is edited.
     writeLines(input$description, file.path(output, "before"))
@@ -171,6 +198,7 @@ review_ready_priority_propose <- function(root, run) {
       "--src-prefix=a/", "--dst-prefix=b/", "before", "after"), wd = output, error_on_status = FALSE) else NULL
     if (changed && patch$status != 1L) stop("could not calculate DESCRIPTION patch")
     report <- c("# Local test priority proposal", paste("Measured SHA:", proposal$sha),
+      paste("Archived duplicate normalization:", paste(proposal$historical_duplicates, collapse = "; ")),
       "Eligibility: one successful complete local full result; four native workers.",
       paste("Registrations:", paste(proposal$registered, collapse = ", ")),
       paste("Removals:", paste(proposal$removed, collapse = ", ")),
