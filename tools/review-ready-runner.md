@@ -119,7 +119,7 @@ announcement. Each file explicitly marks all-skipped and empty results; neither
 supplies promotion evidence. Failed, cancelled, incomplete or malformed data
 cannot authorize a priority update. Source scope creates no timing evidence.
 All timing artifacts share the seven-day policy above; later execution uses
-only the committed priority. Proposal construction belongs to #1158.
+only the committed priority.
 
 The common recorder supports **testthat 3.3.2** only. It checks the complete
 `queue_task(path, shuffle = FALSE)` body and signature before tracing entry and
@@ -129,6 +129,55 @@ fixtures below before adding support. Unsupported instrumentation or recording
 and output errors visibly disable timing eligibility, preserving the complete
 check's actual result without retrying dispatched tests. Individual test files
 carry no recording statements; ordinary `test_check()` owns execution.
+
+## Priority proposals and explicit adoption
+
+After timing finalization, a successful eligible full invocation writes one
+`priority-*/` proposal directory under that run. It contains `explanation.md`,
+`proposal.rds` and, only when membership/order changes, `priority.patch` for
+`DESCRIPTION`. Generation never edits the pinned source, tarball or installed
+metadata. The explanation identifies the measured SHA, archived input hashes,
+file eligibility, registrations/removals, positions and four-worker greedy
+schedule estimates. These models are not observed speedups or guarantees.
+Source scope and failed/incomplete/unsupported timing supply no proposal.
+Proposal errors report the reason and preserve the actual check result and
+ordinary NOTE handling.
+
+Every eligible unregistered filename, including a lightweight file, is proposed
+for registration. Deleted names are removed; a rename is a new name. Editing
+an already registered file does not unregister it. Registration preserves the
+existing relative order. Optional stable insertion crosses adjacent eligible
+observations only when the later file is both more than 50% and more than ten
+seconds slower, and is selected only for at least ten seconds of modeled
+whole-suite improvement over registration alone. The report also compares the
+selected order with the sample's native registered-first/append-last dispatch.
+
+Adopt an eligible proposal with the next ordinary code-change commit, including
+in the same PR. If no ordinary change remains, defer adoption. Immediately
+before application, recalculate against the target worktree's current priority:
+
+```sh
+Rscript tools/propose-test-priority.R --run /absolute/path/to/.review-ready/runs/RUN
+git apply --check /absolute/path/to/RUN/priority-NEW/priority.patch
+git apply /absolute/path/to/RUN/priority-NEW/priority.patch
+```
+
+Use the newly printed directory, review its explanation and diff, then commit
+alongside that ordinary change. An unchanged priority has no patch. Do not
+blindly concatenate concurrent whole-list patches: follow the
+[integration workflow](../design/agents/integration.md), then recalculate. A
+priority-only change since measurement permits recalculation. Changed test or
+helper bytes/membership, DESCRIPTION beyond priority, a changed dependency/R
+environment, or missing/expired evidence defers adoption until the next
+ordinarily required successful full measurement. Recalculation never requests
+another suite execution or renews the run's seven-day deadline.
+
+The priority commit receives its own applicable verification for its own SHA.
+The measurement pass certifies only the measured SHA. Later validation may
+produce a new proposal; it never applies it or triggers an edit/recheck loop.
+Only membership/order is committed, without durations, timestamps or history.
+A fresh clone uses that setting through ordinary `test_check()` without any
+measurement artifacts. FIFO admission is independent of proposal adoption.
 
 ## Development and CI verification
 
@@ -140,6 +189,7 @@ progress regression suites on macOS for every PR without path conditions:
 ```sh
 Rscript tools/test-review-ready-runner.R
 Rscript tools/test-review-ready-progress.R
+Rscript tools/test-review-ready-priority.R
 ```
 
 The command/process boundary is the approved test seam: tiny disposable

@@ -82,6 +82,14 @@ and external-clock checks, and retains local future-file-timestamp checking.
 new files still run. There is no admission acknowledgment or AI stop/resume
 coordination.
 
+Eligible full timing produces an invocation-owned priority proposal without
+editing checked source. Follow the runner guide's
+[explicit adoption workflow](../../tools/review-ready-runner.md#priority-proposals-and-explicit-adoption)
+to recalculate against current priority and include it with the next ordinary
+code change. Defer when no ordinary change remains or evidence is stale; the
+adopted commit needs its own applicable verification, without an automatic
+proposal-application/recheck loop.
+
 The shared slot covers this heavy check, not every R process. Additional
 focused executions follow the recipe below. Routine Review-ready does not run
 infrastructure regression suites or regenerate the real README/site. Retained

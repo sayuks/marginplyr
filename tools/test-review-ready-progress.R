@@ -3,6 +3,7 @@
 source("tools/review-ready-check-lib.R")
 source("tools/review-ready-progress.R")
 source("tools/review-ready-timing.R")
+source("tools/review-ready-priority.R")
 
 local({
   root <- normalizePath(".", winslash = "/")
@@ -61,8 +62,10 @@ local({
     writeLines(expression, file.path(package, "tests", "testthat", "test-second.R"))
     check_dir <- file.path(workspace, mode)
     timing <- file.path(check_dir, "timing")
-    metadata <- list(sha = strrep("a", 40L), started_utc = "2026-11-03T00:00:00.000000Z")
+    metadata <- list(version = 1L, scope = "full", sha = strrep("a", 40L),
+      started_utc = format(Sys.time(), "%Y-%m-%dT%H:%M:%OS6Z", tz = "UTC"))
     stopifnot(review_ready_timing_prepare(package, timing, metadata))
+    saveRDS(metadata, file.path(check_dir, "invocation.rds"))
     recorder <- file.path(root, "tools", "review-ready-timing.R")
     if (mode == "unsupported") {
       text <- readLines(recorder)
@@ -115,6 +118,7 @@ local({
     )
     terminal <- c(metadata, list(status = if (fail) "failed" else "passed",
       heavy_check = if (fail) "failed" else "passed"))
+    saveRDS(terminal, file.path(check_dir, "result.rds"))
     final_output <- capture.output(review_ready_timing_finish(timing, terminal,
       review_ready_test_transcript(check_dir)))
     cat(final_output, sep = "\n")
@@ -138,6 +142,10 @@ local({
       stopifnot(length(cleanup) == 1L, end$wall >= cleanup)
     }
     if (mode == "pass") {
+      proposal <- review_ready_priority_propose(package, check_dir)
+      stopifnot(proposal$eligible, length(proposal$registered) == 3L,
+        !"skipped" %in% proposal$registered,
+        file.exists(file.path(proposal$directory, "priority.patch")))
       reject <- function(name, edit = function(path) NULL, verdict = terminal,
                          transcript = review_ready_test_transcript(check_dir)) {
         copy <- file.path(check_dir, name)

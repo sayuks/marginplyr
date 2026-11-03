@@ -463,6 +463,10 @@
             "run": "Rscript tools/test-review-ready-progress.R"
           },
           {
+            "name": "Verify local test priority proposals",
+            "run": "Rscript tools/test-review-ready-priority.R"
+          },
+          {
             "uses": "etiennebacher/setup-jarl@v0.1.1",
             "with": {
               "version": "0.6.0"
