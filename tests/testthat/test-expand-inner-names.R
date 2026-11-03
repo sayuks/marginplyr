@@ -81,7 +81,22 @@ expect_inner_name_expansion <- function(convert, kinds = c("summary", "table"),
               })
               # Sequential union_all has its own class-transition limits for
               # three branches; bind_rows combines the whole ordinary list.
-              control <- suppressMessages(dplyr::bind_rows(branches))
+              control <- tryCatch(
+                suppressMessages(dplyr::bind_rows(branches)), error = identity
+              )
+              if (inherits(control, "error")) {
+                for (sort in c("none", "last", "first")) {
+                  expect_error(
+                    expand_with_margins(
+                      input, .by = dplyr::all_of(fixed), .grouping = spec,
+                      .margin_label = label, .duplicates = "keep",
+                      .id = "set", .sort = sort
+                    ),
+                    class = class(control)[[1L]]
+                  )
+                }
+                next
+              }
               control <- dplyr::relocate(
                 control, dplyr::all_of(c(fixed, dimension, "set"))
               )
@@ -123,8 +138,9 @@ test_that("tibble expansion follows ordinary vector-internal name rules", {
 
 test_that("data-table expansion follows ordinary vector-internal name rules", {
   skip_if_suggest_absent("data.table")
-  # Ordinary data.table binding cannot combine these table or packed columns.
+  # Ordinary data.table binding can refuse table columns, including sliced
+  # summary vectors on older R versions; compare that refusal as well.
   expect_inner_name_expansion(
-    data.table::as.data.table, kinds = "summary", packed_columns = FALSE
+    data.table::as.data.table, packed_columns = FALSE
   )
 })
