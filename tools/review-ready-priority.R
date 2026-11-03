@@ -58,7 +58,7 @@ review_ready_priority_description <- function(description, priority) {
 
 # Greedy list scheduling uses all observed intervals, including skipped work.
 review_ready_priority_model <- function(order, durations) {
-  workers <- rep(0, 4L)
+  workers <- rep(0, 8L)
   for (file in order) {
     worker <- which.min(workers)
     workers[[worker]] <- workers[[worker]] + durations[[file]]
@@ -128,7 +128,7 @@ review_ready_priority_evidence <- function(root, run) {
   hashes <- vapply(manifest$contents, digest::digest, character(1),
     algo = "md5", serialize = FALSE)
   if (!identical(hashes, manifest$md5)) stop("archived input identities changed")
-  verified <- review_ready_timing_evidence(directory, terminal, "Starting 4 test processes.")
+  verified <- review_ready_timing_evidence(directory, terminal, "Starting 8 test processes.")
   if (!identical(verified, evidence)) stop("available timing evidence changed or is incomplete")
   discovered <- testthat::find_test_scripts(file.path(root, "tests", "testthat"), full.names = FALSE)
   if (!identical(discovered, manifest$discovered)) stop("test membership changed; defer to the next ordinary full check")
@@ -199,11 +199,11 @@ review_ready_priority_propose <- function(root, run) {
     if (changed && patch$status != 1L) stop("could not calculate DESCRIPTION patch")
     report <- c("# Local test priority proposal", paste("Measured SHA:", proposal$sha),
       paste("Archived duplicate normalization:", paste(proposal$historical_duplicates, collapse = "; ")),
-      "Eligibility: one successful complete local full result; four native workers.",
+      "Eligibility: one successful complete local full result; eight native workers.",
       paste("Registrations:", paste(proposal$registered, collapse = ", ")),
       paste("Removals:", paste(proposal$removed, collapse = ", ")),
       paste("Optional existing-file reordering adopted:", proposal$adopt_reordering),
-      "Greedy four-worker schedule models (seconds; not observed speedups or statistical guarantees):",
+      "Greedy eight-worker schedule models (seconds; not observed speedups or statistical guarantees):",
       paste(names(proposal$models), sprintf("%.6f", proposal$models), sep = ": "),
       paste("Modeled gain over registration:", sprintf("%.6f", proposal$models[["registration"]] - proposal$models[["selected"]])),
       paste("Modeled gain over native registered-first/append-last dispatch:",

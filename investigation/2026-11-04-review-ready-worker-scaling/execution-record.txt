@@ -1,0 +1,5 @@
+Original successful measurement launch: exec_command session_id 25984
+Collected terminal result: exit_code = 0
+Final stdout: END 2x4-job-1 exit 0 turnaround_s 1014.649; END 2x4-job-2 exit 0 turnaround_s 1015.708; BATCH COMPLETE 2x4; ALL EIGHT EXPERIMENTAL CHECKS COMPLETE
+The same session was retained through baseline, shared FIFO admission (sequence 34), all eight checks, owned-child cleanup, shared-lock release and terminal completion.
+An initial sandbox launch failed with Operation not permitted before the main function printed its benchmark identity or began a check. Its exit 1 was collected; it supplied no measured check and was not counted. The subsequent authorized measurement launch above supplied all results.

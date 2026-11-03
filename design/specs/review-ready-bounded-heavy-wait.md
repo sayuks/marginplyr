@@ -53,7 +53,7 @@ repair adds an explicit resource bound to that wait.
    not the mechanism of this repair.
 
 These decisions preserve the five-check ordering, pinned SHA, source-only
-behavior, four test workers, progress, artifacts and retention. Runtime changes
+behavior, eight test workers, progress, artifacts and retention. Runtime changes
 are confined to heavy-lock acquisition and its failure handling.
 
 ## Why this mechanism

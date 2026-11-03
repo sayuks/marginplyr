@@ -27,9 +27,16 @@ After successful baseline checks, `full` registers in acceptance order under
 [ADR 0040](0040-learn-local-test-order-and-admit-heavy-checks-fifo.md). Only the
 oldest live waiter may acquire the stable OS-backed advisory heavy lock across
 this user's clones/worktrees on the Mac, then start automatically. Its package
-build/check runs the complete suite and snapshots once with four testthat workers. Preserve ordinary process/progress reporting,
+build/check runs the complete suite and snapshots once with eight testthat workers. Preserve ordinary process/progress reporting,
 the same execution handle, and bounded same-agent investigation. Focused tests
 retain their separate per-worktree allowance with parallelism disabled.
+
+On 2026-11-04, the maintainer selected one slot with eight workers for earlier
+results and lower mean turnaround than two concurrent four-worker checks; the
+[measurement](../../investigation/review-ready-worker-scaling-2026-11-04.md)
+records the comparison. Timing eligibility and priority models use eight
+workers; earlier four-worker evidence cannot authorize a priority update.
+Package CI retains its independently configured worker counts.
 
 Use focused existing process and locking libraries with base R rather than a
 coordination service. Ordinary cancellation collects owned child work before

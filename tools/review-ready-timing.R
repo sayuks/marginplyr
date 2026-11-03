@@ -82,7 +82,7 @@ review_ready_timing_prepare <- function(source_root, directory, metadata) {
     saveRDS(list(version = 1L, sha = metadata$sha, started_utc = metadata$started_utc,
       discovered = discovered, contents = contents, md5 = stats::setNames(tools::md5sum(paths), inputs),
       dependencies = dependencies, session = utils::sessionInfo(),
-      supported_testthat = "3.3.2", boundary = "queue_task", intended_workers = 4L),
+      supported_testthat = "3.3.2", boundary = "queue_task", intended_workers = 8L),
       file.path(directory, "manifest.rds"))
     TRUE
   }, warning = function(cnd) stop(conditionMessage(cnd))),
@@ -128,7 +128,7 @@ review_ready_timing_evidence <- function(directory, terminal, transcript) {
   reasons <- character()
   if (!identical(terminal$status, "passed") || !identical(terminal$sha, manifest$sha) ||
       !identical(terminal$heavy_check, "passed")) reasons <- c(reasons, "full invocation did not pass")
-  if (!identical(workers, 4L)) reasons <- c(reasons, "actual worker count is not four")
+  if (!identical(workers, 8L)) reasons <- c(reasons, "actual worker count is not eight")
   if (nrow(results) != length(manifest$discovered) || anyDuplicated(results$file) ||
       !setequal(results$file, manifest$discovered) ||
       !is.numeric(results$skip) || !is.numeric(results$other) ||

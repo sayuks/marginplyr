@@ -52,7 +52,7 @@ local({
     files <- testthat::find_test_scripts(file.path(root, "tests", "testthat"), full.names = FALSE)
     for (i in seq_along(files)) {
       duration <- durations[[sub("[.]R$", "", sub("^test-", "", files[[i]]))]]
-      pid <- (i - 1L) %% 4L + 1L
+      pid <- (i - 1L) %% 8L + 1L
       write(paste(c("start", "end"), files[[i]], pid,
         c(1000, 1000 + duration), c(0, duration), sep = "\t"),
         file.path(timing, paste0(pid, ".tsv")), append = TRUE)
@@ -63,7 +63,7 @@ local({
     skipped <- files %in% paste0("test-", ineligible, ".R")
     writeLines(paste(files, as.integer(skipped), as.integer(!skipped), sep = "\t"),
       file.path(timing, "file-results.tsv"))
-    evidence <- review_ready_timing_evidence(timing, terminal, "Starting 4 test processes.")
+    evidence <- review_ready_timing_evidence(timing, terminal, "Starting 8 test processes.")
     saveRDS(evidence, file.path(timing, "evidence.rds"))
     list(root = root, run = run, timing = timing)
   }
@@ -180,9 +180,9 @@ local({
   p <- propose(close)
   expect(identical(p$candidate, c("d", "a", "b", "c")) &&
     identical(p$selected, c("a", "b", "c", "d")) && !p$adopt_reordering, "negligible whole-suite gain retains existing order")
-  big <- fixture(letters[1:8], stats::setNames(c(20, 20, 20, 20, 100, 90, 80, 70), letters[1:8]))
+  big <- fixture(letters[1:16], stats::setNames(c(rep(20, 8), rep(c(100, 90, 80, 70), 2)), letters[1:16]))
   p <- propose(big)
-  expect(p$adopt_reordering && identical(p$selected, c("e", "f", "g", "h", "a", "b", "c", "d")) &&
+  expect(p$adopt_reordering && identical(p$selected, c(letters[9:16], letters[1:8])) &&
     p$models[["native"]] == 120 && p$models[["selected"]] == 110, "ten-second adoption boundary uses whole-suite model")
   ties <- fixture(c("old", "skip"), c(old = 5, skip = 0, z = 5, a = 5, tiny = 0.1), "skip")
   expect(identical(propose(ties)$selected, c("old", "skip", "a", "z", "tiny")), "equal-duration new files use filename ties and ineligible entries give no comparison")
@@ -206,6 +206,10 @@ local({
     path <- file.path(f$run, "result.rds")
     x <- readRDS(path); x$status <- "failed"; saveRDS(x, path)
   }, "successful eligible local full")
+  reject(function(f) {
+    path <- file.path(f$timing, "evidence.rds")
+    x <- readRDS(path); x$actual_workers <- 4L; saveRDS(x, path)
+  }, "changed or is incomplete")
   reject(function(f) {
     path <- file.path(f$timing, "manifest.rds")
     x <- readRDS(path)
@@ -241,7 +245,7 @@ local({
   ), script)
   command(file.path(R.home("bin"), "Rscript"), script, file.path(clone, "tests"),
     c(R_LIBS = paste(c(library, .libPaths()), collapse = .Platform$path.sep),
-      TESTTHAT_PARALLEL = "true", TESTTHAT_CPUS = "4", FIXTURE_DISPATCH = dispatch,
+      TESTTHAT_PARALLEL = "true", TESTTHAT_CPUS = "8", FIXTURE_DISPATCH = dispatch,
       FIXTURE_COMPLETIONS = completions, MARGINPLYR_REVIEW_TIMING = "", MARGINPLYR_REVIEW_TIMING_HELPER = ""))
   expect(identical(readLines(dispatch), c("test-new.R", "test-old.R", "test-tiny.R", "test-skip.R")), "native controller dispatch follows committed priorities")
   done <- list.files(completions, full.names = TRUE)
