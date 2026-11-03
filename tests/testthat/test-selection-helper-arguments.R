@@ -27,7 +27,9 @@ test_that("Grouping consumers preserve empty and populated helper dots", {
           check <- function(...) {
             captured <- rlang::new_quosure(selection, environment())
             selected <- tidyselect::eval_select(captured, data)
-            expect_identical(names(selected), if (...length()) "g" else character())
+            expect_identical(
+              names(selected), if (...length()) "g" else character()
+            )
             if (position == ".by") {
               expected <- verb(data, all_of(names(selected)), NULL)
               expect_identical(verb(data, !!captured, NULL), expected)
@@ -41,7 +43,9 @@ test_that("Grouping consumers preserve empty and populated helper dots", {
                 )
               } else {
                 literal <- rlang::call2("all_of", names(selected))
-                expected_spec <- rlang::eval_tidy(rlang::call2(position, literal))
+                expected_spec <- rlang::eval_tidy(
+                  rlang::call2(position, literal)
+                )
                 expect_identical(
                   verb(data, NULL, spec), verb(data, NULL, expected_spec)
                 )
@@ -76,7 +80,7 @@ test_that("explicitly missing helper dots keep tidyselect's refusal", {
   rlang::inject(check(!!!list(rlang::missing_arg(), "g")))
 })
 
-test_that("forwarded helper dots keep captured environments and evaluation budgets", {
+test_that("helper dots keep captured environments and evaluation budgets", {
   data <- tibble::tibble(g = "a", value = 1L)
   capture <- function(...) rlang::quo(all_of(c(...)))
   empty <- capture()
