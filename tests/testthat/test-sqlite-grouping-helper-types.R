@@ -111,9 +111,9 @@ test_that("SQLite uses expanded names without reevaluating across", {
     )
   }
   query <- build(dplyr::filter(source, v < 0))
-  expect_identical(calls$n, 6L)
+  expect_identical(calls$n, 1L)
   expected_names <- c(
-    "g", "v_bit_6", "v_mask_6", "v_total_6", "v_shift_6", "v_text_6"
+    "g", "v_bit_1", "v_mask_1", "v_total_1", "v_shift_1", "v_text_1"
   )
   for (result in list(
     dplyr::collect(query),
@@ -123,23 +123,23 @@ test_that("SQLite uses expanded names without reevaluating across", {
     expect_s3_class(result, "tbl_df")
     expect_identical(names(result), expected_names)
     expect_identical(nrow(result), 0L)
-    expect_identical(result$v_bit_6, integer())
-    expect_identical(result$v_mask_6, integer())
-    expect_identical(result$v_total_6, logical())
-    expect_identical(result$v_shift_6, logical())
-    expect_identical(result$v_text_6, logical())
+    expect_identical(result$v_bit_1, integer())
+    expect_identical(result$v_mask_1, integer())
+    expect_identical(result$v_total_1, logical())
+    expect_identical(result$v_shift_1, logical())
+    expect_identical(result$v_text_1, logical())
   }
-  expect_identical(calls$n, 6L)
+  expect_identical(calls$n, 1L)
   calls$n <- 0L
   populated <- dplyr::collect(build(source))
-  expect_identical(calls$n, 6L)
+  expect_identical(calls$n, 1L)
   expect_s3_class(populated, "tbl_df")
   expect_identical(names(populated), expected_names)
-  expect_identical(populated$v_bit_6, 0L)
-  expect_identical(populated$v_mask_6, 0L)
-  expect_identical(populated$v_total_6, 1)
-  expect_identical(populated$v_shift_6, 1L)
-  expect_identical(populated$v_text_6, "0")
+  expect_identical(populated$v_bit_1, 0L)
+  expect_identical(populated$v_mask_1, 0L)
+  expect_identical(populated$v_total_1, 1)
+  expect_identical(populated$v_shift_1, 1L)
+  expect_identical(populated$v_text_1, "0")
 })
 
 test_that("single literal across lambdas declare only helper outputs", {

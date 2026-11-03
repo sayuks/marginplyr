@@ -2052,7 +2052,9 @@ plan_across_share <- function(expr,
     kind = kind,
     error_call = expr
   )
-  outputs <- expand_across_name(names_template, sources, "1", env)
+  outputs <- expand_across_name(
+    names_template, sources, "1", env, recycle_scalar = TRUE
+  )
 
   validate_share_request(
     outputs = outputs,

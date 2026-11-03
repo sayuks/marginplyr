@@ -1206,8 +1206,8 @@ is_literal_summary_selection <- function(cols, available, allow_names = TRUE) {
 }
 
 # Names an unnamed local `across()` only when both its columns and `.names`
-# template are literal. The input is a name list, so no caller function or
-# summary expression runs while reserving internal key names.
+# template are literal or already resolved. No caller function or summary
+# expression runs while reserving internal key names from the input name list.
 predictable_local_across_names <- function(dots, input_names) {
   available <- input_names
   predicted <- character()
@@ -1216,12 +1216,14 @@ predictable_local_across_names <- function(dots, input_names) {
     dot <- dots[[i]]
     name <- arg_names[[i]]
     expr <- rlang::quo_get_expr(dot)
-    if (is_across_call(expr) && !nzchar(name)) {
+    if (is_across_call(expr) && !nzchar(name) && !contains_share_helper(expr)) {
       parsed <- parse_across_arguments(expr)
       cols <- parsed$cols
       template <- parsed$names
       simple_cols <- is_literal_summary_selection(cols, available)
-      literal_template <- is.null(template) || (
+      literal_template <- !is.null(attr(
+        template, "marginplyr_across_names", exact = TRUE
+      )) || is.null(template) || (
         is.character(template) && length(template) == 1L &&
           !is.na(template) &&
           !grepl("{", gsub(
@@ -1739,13 +1741,14 @@ rewrite_across_selection <- function(expr,
       if (is.character(template) && length(template) == 1L &&
             !is.na(template) && length(function_names) > 0L &&
             across_unpack_is_false(parsed$unpack, env)) {
-        output_names <- expand_across_name(
-          template, names(selected), function_names, env
-        )
+        output_names <- attr(template, "marginplyr_across_names", exact = TRUE)
+        if (is.null(output_names)) {
+          output_names <- expand_across_name(
+            template, names(selected), function_names, env
+          )
+        }
         # Planning and every backend consume these same resolved names.
-        template <- paste0(
-          "{", deparse1(rlang::expr(base::c(!!!as.list(output_names)))), "}"
-        )
+        template <- resolved_across_name_template(output_names)
       }
       call_args[parsed$names_index] <- list(template)
     }
@@ -2035,6 +2038,8 @@ known_injected_argument_name <- function(expr) {
   ""
 }
 
+# Returns statically known across outputs for the supplied selection proxy.
+# Resolved templates carry their names without evaluating glue again.
 known_across_output_names <- function(expr, env, data_proxy) {
   parsed <- parse_across_arguments(expr)
   if (!across_unpack_is_false(parsed$unpack, env)) {
@@ -2066,6 +2071,10 @@ known_across_output_names <- function(expr, env, data_proxy) {
     return(character())
   }
   names_template <- rlang::eval_tidy(parsed$names, env = env)
+  resolved <- attr(names_template, "marginplyr_across_names", exact = TRUE)
+  if (!is.null(resolved)) {
+    return(resolved)
+  }
   if (
     !is.character(names_template) ||
       length(names_template) != 1L ||
@@ -2082,9 +2091,18 @@ known_across_output_names <- function(expr, env, data_proxy) {
   expand_across_name(names_template, column_names, function_names, env)
 }
 
+# Carries expanded names as a backend glue template and a planning result.
+resolved_across_name_template <- function(output_names) {
+  structure(
+    paste0("{", deparse1(rlang::expr(base::c(!!!as.list(output_names)))), "}"),
+    marginplyr_across_names = output_names
+  )
+}
+
 # Expands one template over dplyr's column-major column/function product.
-# Callers supply the selected output labels and known function labels.
-expand_across_name <- function(template, column, function_name, env) {
+# Share callers recycle a scalar name so their duplicate-name check owns it.
+expand_across_name <- function(template, column, function_name, env,
+                               recycle_scalar = FALSE) {
   columns <- rep(column, each = length(function_name))
   functions <- rep(function_name, times = length(column))
   mask <- rlang::env(env, .col = columns, .fn = functions)
@@ -2094,6 +2112,9 @@ expand_across_name <- function(template, column, function_name, env) {
   expanded <- as.character(glue::glue(template, .envir = mask))
   if (length(columns) == 0L) {
     return(character())
+  }
+  if (recycle_scalar && length(expanded) == 1L) {
+    expanded <- rep(expanded, length(columns))
   }
   check_across_name_count(expanded, template, columns)
 }
