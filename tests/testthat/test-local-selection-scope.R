@@ -1,3 +1,64 @@
+test_that("top-level across retains populated dots", {
+  data <- data.frame(g = c("a", "a", "b"), x = 1:3)
+  ordinary <- function(...) {
+    dplyr::summarise(data, dplyr::across(...), .by = g)
+  }
+  margin <- function(...) {
+    summarize_with_margins(data, dplyr::across(...), .by = g)
+  }
+  expected <- ordinary(.cols = "x", .fns = sum)
+  expect_identical(expected$x, c(3L, 3L))
+  expect_identical(margin(.cols = "x", .fns = sum), expected)
+  expect_identical(margin("x", sum), expected)
+  expect_identical(
+    margin(.cols = "x", .fns = sum, .names = "{.col}_sum"),
+    ordinary(.cols = "x", .fns = sum, .names = "{.col}_sum")
+  )
+  expect_error(margin(.cols = "g", .fns = sum), "doesn't exist")
+})
+
+test_that("forwarded across factories retain dplyr's expansion timing", {
+  data <- data.frame(g = c("a", "a", "b"), x = 1:3)
+  run <- function(verb, spelling) {
+    calls <- integer()
+    factory <- function() {
+      size <- dplyr::n()
+      calls <<- c(calls, size)
+      function(x) sum(x) + size
+    }
+    wrapper <- function(...) {
+      summary <- rlang::new_quosure(spelling, rlang::current_env())
+      verb(data, !!summary, .by = g)
+    }
+    result <- wrapper(.cols = "x", .fns = factory())
+    list(result = result, calls = calls)
+  }
+  spellings <- selection_call_spellings(quote(dplyr::across), quote(...))
+  for (i in seq_along(spellings)) {
+    expected <- run(dplyr::summarise, spellings[[i]])
+    if (i == 1L) {
+      expect_identical(expected$calls, 0L)
+      expect_identical(expected$result$x, c(3L, 3L))
+    }
+    expect_identical(run(summarize_with_margins, spellings[[i]]), expected)
+  }
+})
+
+test_that("forwarded across retains omission and missing-argument behavior", {
+  data <- data.frame(g = c("a", "b"), x = 1:2)
+  ordinary <- function(...) {
+    dplyr::summarise(data, dplyr::across(...), .by = g)
+  }
+  margin <- function(...) {
+    summarize_with_margins(data, dplyr::across(...), .by = g)
+  }
+  expect_identical(margin("x"), ordinary("x"))
+  expect_error(
+    rlang::inject(ordinary("x", !!rlang::missing_arg())), "missing"
+  )
+  expect_error(rlang::inject(margin("x", !!rlang::missing_arg())), "missing")
+})
+
 test_that("ordinary local selectors use the executing function's arguments", {
   data <- data.frame(g = c("a", "a", "b"), x = 1:3, y = c(5, 6, 7))
   cols <- "y"

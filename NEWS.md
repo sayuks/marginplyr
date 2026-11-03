@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Unnamed top-level `across()` summaries preserve populated `...` forwarding
+  while retaining dplyr's function-factory evaluation timing (#1151).
+
 * Ordinary local `across()`, `if_any()`, and `if_all()` selectors preserve
   populated `...` and `..1` forwarding through inline functions (#1138).
 

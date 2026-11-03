@@ -1394,6 +1394,17 @@ rewrite_summary_selections <- function(expr,
     env <- rlang::quo_get_env(expr)
   }
 
+  if (top_level_unnamed &&
+        is_static_spelling_call(expr, "selection", "across")) {
+    call_args <- static_call_args(expr)
+    forwarded <- vapply(call_args, rlang::is_symbol, logical(1), "...")
+    if (any(forwarded)) {
+      # Expand promises as dplyr does, before rewriting the selection.
+      expanded <- match.call(dplyr::across, nameable_call(expr), envir = env)
+      expr <- rebuild_static_call(expr, as.list(expanded)[-1L])
+    }
+  }
+
   # A selection the caller quoted is language data, so the walk descends past
   # it and gives the object back as it was written. Resolving it turned
   # `quote(dplyr::across(value, mean))` into
