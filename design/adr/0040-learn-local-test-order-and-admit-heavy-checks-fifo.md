@@ -22,9 +22,9 @@ and adoption. Their previous canonical-CI requirements are superseded.
 
 The agreed replacement boundaries use measurements from one already-requested,
 successful complete full Review-ready check, without a shared timing database
-or rolling local history. Proposals may join the next ordinary code-change
-commit in the same pull request; the new revision still needs its applicable
-verification. Keep ordinary `test_check()`, accept native append-last ordering
+or rolling local history. Adopt an eligible proposal in the current task,
+including a follow-up commit in the same pull request; the new revision still
+needs its applicable verification. Keep ordinary `test_check()`, accept native append-last ordering
 for unregistered files until a measured priority update is committed, and use
 that tracked priority for later checks. First-run unregistered priority does
 not justify a private execution adapter or provisional registration. The
@@ -45,8 +45,10 @@ unregistered. Every eligible newly measured file, including lightweight files,
 belongs in the next registration proposal.
 Optional existing-file reorderings cross only differences greater than both
 50% and ten seconds, and are adopted only for at least ten seconds of modeled
-whole-suite improvement over registration alone. Without a remaining ordinary
-code change, defer adoption instead of triggering a priority-only recheck loop.
+whole-suite improvement over registration alone. Adopt the first eligible change
+even when implementation is otherwise complete; validation of that adoption
+does not itself authorize a second priority edit/check cycle. The runner guide's
+*Priority proposals and explicit adoption* owns inspection and reporting steps.
 Require median incremental hook, recording and proposal cost below one second
 on the maintainer Mac at the reference scale of 196 files and four workers,
 measured during implementation acceptance rather than every invocation.

@@ -4083,7 +4083,7 @@ expression_rebound_names <- function(expr, lookup = NULL) {
       }
     }
   }
-  parts <- evaluated_call_args(expr)
+  parts <- c(evaluated_call_args(expr), evaluated_language_parts(expr))
   head <- static_call_head(expr)
   if (!rlang::is_symbol(head)) {
     parts <- c(list(head), parts)
