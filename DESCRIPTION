@@ -52,7 +52,9 @@ Config/Needs/preflight:
     spelling,
     urlchecker
 Config/Needs/review:
+    digest,
     filelock,
+    jsonlite,
     lintr,
     pkgload,
     processx,
@@ -60,7 +62,8 @@ Config/Needs/review:
     R6,
     rcmdcheck,
     spelling,
-    testthat
+    testthat,
+    yaml
 Config/Needs/release:
     attachment,
     devtools,

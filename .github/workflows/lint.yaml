@@ -108,7 +108,7 @@ jobs:
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
-          extra-packages: any::lintr, any::pkgload, any::spelling, local::., any::testthat, any::yaml, any::jsonlite, any::processx, any::ps, any::filelock, any::R6, any::rcmdcheck
+          extra-packages: any::lintr, any::pkgload, any::spelling, local::., any::testthat, any::yaml, any::jsonlite, any::processx, any::ps, any::filelock, any::R6, any::rcmdcheck, any::digest
           needs: lint
 
       - uses: r-lib/actions/setup-tinytex@v2
@@ -131,8 +131,9 @@ jobs:
 
       - name: Verify CI artifacts and their command fixtures
         run: |
-          python3 tools/verify-ci-artifacts.py
-          python3 tools/test-ci-artifacts.py
+          Rscript tools/verify-ci-artifacts.R
+          Rscript tools/test-ci-artifacts.R
+          Rscript tools/test-interruption-supervisors.R
 
       - name: Verify R runner process contracts
         run: Rscript tools/test-review-ready-runner.R

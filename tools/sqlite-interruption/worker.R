@@ -34,6 +34,8 @@ write_json(list(
 deliver <- switch(configuration$mode,
   sigint = function() {
     write_json(list(pid = Sys.getpid(), checkpoint = configuration$checkpoint,
+                    hit = state$hit, savepoint = state$savepoint,
+                    inserted = state$inserted, rolled_back = state$rolled_back,
                     interrupts_suspended = .Internal(interruptsSuspended()),
                     reached_utc = format(Sys.time(), tz = "UTC", usetz = TRUE)),
                "reached.json")
