@@ -80,8 +80,7 @@ succeeded. Disabling only `.check_margin_label` produced the correct cell and
 display. Typed-missing labels and fixed-key nesting succeeded too. An
 ordinary one-dimensional integer array whose base display discarded its
 dimension also succeeded. Independently evaluating the generated comparison
-and `if_else()` reproduced the shape error, while an unshaped comparison
-counted zero non-collisions or one matching display as required.
+and `if_else()` reproduced the shape error.
 
 `array-display-collision.R` removed the posterior dependency from the witness.
 Its one-dimensional integer-array subclass changed only `as.character()` to
