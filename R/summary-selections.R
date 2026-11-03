@@ -1358,7 +1358,8 @@ resolve_summary_selections <- function(dots,
           defer_nested_local = defer_nested_local[[i]],
           skip_nested_deferred = skip_nested_deferred,
           group_vars = group_vars,
-          forbidden_names = dot_forbidden_names
+          forbidden_names = dot_forbidden_names,
+          top_level_unnamed = !nzchar(rlang::names2(dots)[[i]])
         ),
         error = function(cnd) {
           if (is_unsupported_predicate(cnd)) {
@@ -1381,7 +1382,8 @@ rewrite_summary_selections <- function(expr,
                                        defer_nested_local = FALSE,
                                        skip_nested_deferred = FALSE,
                                        group_vars = character(),
-                                       forbidden_names = character()) {
+                                       forbidden_names = character(),
+                                       top_level_unnamed = FALSE) {
   if (!rlang::is_call(expr)) {
     return(expr)
   }
@@ -1434,8 +1436,11 @@ rewrite_summary_selections <- function(expr,
 
   if (call_name %in% c("across", "if_any", "if_all")) {
     if (defer_local) {
+      # An unnamed top-level across uses dplyr's expansion path (ADR 0019).
       return(rewrite_local_across_selection(
-        expr, group_vars, forbidden_names
+        expr, group_vars, forbidden_names,
+        capture_forwarded = !(top_level_unnamed &&
+                                identical(call_name, "across"))
       ))
     }
     return(rewrite_across_selection(
@@ -1496,9 +1501,24 @@ local_summary_selection_expr <- function(selection, group_vars,
 
 # Leaves `.cols` for local dplyr to resolve against its current summary mask.
 rewrite_local_across_selection <- function(expr, group_vars,
-                                           forbidden_names) {
+                                           forbidden_names,
+                                           capture_forwarded = TRUE) {
   parsed <- parse_across_arguments(expr)
   call_args <- parsed$call_args
+  if (
+    capture_forwarded &&
+      (rlang::is_symbol(parsed$cols, "...") ||
+         (rlang::is_symbol(parsed$cols) &&
+            grepl("^\\.\\.[1-9][0-9]*$", rlang::as_string(parsed$cols))))
+  ) {
+    return(rlang::call2(
+      rlang::call2(
+        marginplyr_private_call("local_forwarded_selection"),
+        static_call_name(expr), group_vars, forbidden_names
+      ),
+      !!!call_args
+    ))
+  }
   selection <- local_summary_selection_expr(
     parsed$cols, group_vars, forbidden_names
   )
@@ -1508,6 +1528,31 @@ rewrite_local_across_selection <- function(expr, group_vars,
     call_args[[parsed$cols_index]] <- selection
   }
   rebuild_static_call(expr, call_args)
+}
+
+# Captures expanded helper arguments at execution, before matching `.cols`.
+# The caller supplies a recognized local helper and its selection exclusions.
+local_forwarded_selection <- function(helper, group_vars, forbidden_names) {
+  function(...) {
+    written_args <- as.list(substitute(list(...)))[-1L]
+    args <- rlang::enquos0(...)
+    expr <- rlang::call2(helper, !!!args, .ns = "dplyr")
+    cols_index <- parse_across_arguments(expr)$cols_index
+    arg_names <- names(args)
+    # An injected empty selection has its own meaning; other empty arguments
+    # must remain missing when the helper or its function receives them.
+    args <- lapply(seq_along(args), function(i) {
+      if (i != cols_index && rlang::is_missing(written_args[[i]])) {
+        rlang::missing_arg()
+      } else {
+        args[[i]]
+      }
+    })
+    names(args) <- arg_names
+    expr <- rlang::call2(helper, !!!args, .ns = "dplyr")
+    expr <- rewrite_local_across_selection(expr, group_vars, forbidden_names)
+    rlang::eval_tidy(expr)
+  }
 }
 
 # Applies the same deferred local selection to `pick()`.
