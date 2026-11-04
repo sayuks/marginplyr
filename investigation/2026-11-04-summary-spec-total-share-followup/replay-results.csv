@@ -1,0 +1,15 @@
+"script","mode","exit"
+"grouping-dots.R","observe",0
+"grouping-dots.R","assert",1
+"grouping-duplicate-prefix.R","observe",0
+"grouping-duplicate-prefix.R","assert",1
+"grouping-matrix.R","observe",0
+"duckdb-interval.R","observe",0
+"duckdb-interval.R","assert",1
+"share-scopes.R","observe",0
+"share-scopes.R","assert",1
+"nested-summary-mask.R","observe",0
+"nested-summary-mask.R","assert",1
+"grouping-named-empty-dots.R","observe",0
+"grouping-named-empty-dots.R","assert",1
+"summary-aggregate-matrix.R","observe",0
