@@ -342,3 +342,18 @@ zero-row type projection run only at that explicit compute boundary. The
 structural query-policy snapshot covers these execution entry points so a
 future construction-time call becomes visible. Neither exemption for
 unrequested reads changes.
+
+## Amendment (#1272): Arrow expansion shares one evaluated input
+
+Collecting or computing a multi-set Arrow expansion evaluates its input once
+into an Arrow Table. The grouping-set branches read that same Table so that
+volatile values and row membership agree across copies. Each execution gets
+its own Table and retains Arrow's nested column types.
+
+The expansion constructs a plan and a reader factory using only metadata.
+Arrow opens the reader while building its execution plan. For plan display
+the factory supplies a schema-only reader. For execution it calls
+`arrow::as_arrow_table()` on the input before Arrow starts the outer plan,
+so the input can itself run R callbacks. The runtime read gate covers
+construction and plan display. The reader-source refusal still applies at
+verb entry.
