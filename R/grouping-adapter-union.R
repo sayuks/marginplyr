@@ -247,9 +247,13 @@ bind_margin_branches <- function(branches) {
 }
 
 # Rename a branch's known columns through dplyr so subclass metadata follows.
-# Dot-dot names need a column frame because tidyselect refuses those names.
+# Dot-dot names and sf branches with multiple geometries use a column frame.
 rename_margin_branch_columns <- function(data, from, to) {
-  if (any(margin_dot_dot_names(c(from, to)))) {
+  # rename.sf() can index past the attribute-geometry relation when the frame
+  # has more than one geometry column.
+  if (any(margin_dot_dot_names(c(from, to))) ||
+        (inherits(data, "sf") &&
+           sum(vapply(data, inherits, logical(1), "sfc")) > 1L)) {
     return(rlang::set_names(
       margin_column_source(data), to[match(names(data), from)]
     ))
