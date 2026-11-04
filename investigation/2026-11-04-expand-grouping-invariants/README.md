@@ -156,7 +156,8 @@ and their dispositions are named with the findings.
 Run from the repository root in fresh R processes. The expected-behavior
 assertions below intentionally exited with status 1 against the investigated
 baseline. Omit `--assert` for observation mode and use `--matrix` for the
-expanded SQLite comparison.
+expanded SQLite comparison. Pass `--trace` to the SQLite replay to capture
+the typed and ordinary materialization statements at the DBI boundary.
 
 ```sh
 evidence=investigation/2026-11-04-expand-grouping-invariants

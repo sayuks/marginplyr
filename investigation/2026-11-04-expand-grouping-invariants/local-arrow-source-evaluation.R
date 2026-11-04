@@ -36,14 +36,21 @@ cat("Equal random payloads for the two copies:", sum(payload_matches),
 filter_source <- filter(root, arrow_random() < 0.5)
 stopifnot(inherits(filter_source, "arrow_dplyr_query"))
 frozen_filter <- collect(filter_source, as_data_frame = FALSE)
-stopifnot(collect(expand(frozen_filter)) |> nrow() == 2L * frozen_filter$num_rows)
+frozen_rows <- collect(expand(frozen_filter))
+frozen_ids <- if (frozen_filter$num_rows == 0L) integer() else c(1L, 2L)
+stopifnot(identical(sort(frozen_rows$sid), frozen_ids))
 filter_query <- expand(filter_source)
-row_counts <- vapply(seq_len(32L), function(i) {
+occurrence_ids <- lapply(seq_len(32L), function(i) {
   rows <- collect(filter_query)
-  stopifnot(all(rows$source_id == 19L), all(rows$sid %in% c(1L, 2L)))
-  nrow(rows)
-}, integer(1))
-print(table(row_counts))
+  stopifnot(all(rows$source_id == 19L))
+  sort(rows$sid)
+})
+filter_matches <- vapply(occurrence_ids, function(ids) {
+  identical(ids, integer()) || identical(ids, c(1L, 2L))
+}, logical(1))
+print(table(lengths(occurrence_ids)))
+cat("Complete occurrence sets:", sum(filter_matches),
+    "of", length(filter_matches), "\n")
 if ("--assert" %in% commandArgs(TRUE)) {
-  stopifnot(all(payload_matches), all(row_counts %in% c(0L, 2L)))
+  stopifnot(all(payload_matches), all(filter_matches))
 }

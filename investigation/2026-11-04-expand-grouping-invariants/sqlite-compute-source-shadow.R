@@ -72,8 +72,19 @@ observe <- function(source_form, destination_form, variant) {
   list(actual = actual, expected = expected)
 }
 
+trace_witness <- function() {
+  loadNamespace("RSQLite")
+  signature <- c("DBIConnection", "character")
+  trace("dbExecute", signature = signature, print = FALSE,
+        tracer = quote(cat("DBI::dbExecute ", statement, "\n", sep = "")),
+        where = asNamespace("DBI"))
+  on.exit(untrace("dbExecute", signature = signature,
+                  where = asNamespace("DBI")), add = TRUE)
+  observe("bare", "same", "sorted")
+}
+
 args <- commandArgs(trailingOnly = TRUE)
-witness <- observe("bare", "same", "sorted")
+witness <- if ("--trace" %in% args) trace_witness() else observe("bare", "same", "sorted")
 cat("Materialized expansion rows:", nrow(witness$actual), "\n")
 print(witness$actual)
 cat("Expected rows, verified by direct collection:", nrow(witness$expected), "\n")
