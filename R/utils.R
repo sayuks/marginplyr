@@ -13,6 +13,13 @@ margin_dot_dot_names <- function(names) {
   grepl("^\\.\\.\\.$|^\\.\\.[[:space:]]*[+-]?[0-9]+$", names)
 }
 
+# Whether a symbol spells a positive numbered-dots reference in R. Capture
+# decides whether that argument is present; this reads no value.
+is_numbered_dot_reference <- function(expr) {
+  rlang::is_symbol(expr) &&
+    grepl("^\\.\\.[[:space:]]*\\+?0*[1-9][0-9]*$", rlang::as_string(expr))
+}
+
 # Evaluate a local operation under safe names for dot-dot columns it reads
 # and any additional names the caller identifies as unsafe for its operation.
 # Other columns keep their names; any retained aliases are restored afterwards.
