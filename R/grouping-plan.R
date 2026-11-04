@@ -249,7 +249,7 @@ prepare_grouping_plan <- function(.data,
       } else {
         preflight_warnings <- with_discarded_selections(
           validate_leading_selections(
-            preflight, data_vars, .by = by
+            preflight, data_vars, .by = by, .duplicates, duplicates_choices
           )
         )
       }
@@ -747,22 +747,42 @@ grouping_name_proxy <- function(data_vars) {
 # Validate a mixed specification's leading selections without running caller
 # code. Expansion supplies the canonical order and nested-family validation;
 # the first unresolved selection stops the discarded pass, not just its family.
+# Completed plan occurrences in that prefix can settle the duplicate error.
 # `.by` holds the fixed keys already resolved from names, or NULL if unresolved.
-validate_leading_selections <- function(preflight, data_vars, .by) {
+validate_leading_selections <- function(preflight, data_vars, .by,
+                                        .duplicates, duplicates_choices) {
   proxy <- grouping_name_proxy(data_vars)
-  dimensions <- character()
+  resolved <- new.env(parent = emptyenv())
+  resolved$dimensions <- character()
+  resolved$completed <- list()
+  resolve_selection <- function(arg) {
+    if (!is_name_only_selection(arg, data_vars, allow_caller_code = FALSE)) {
+      invokeRestart("needs_typed_selection")
+    }
+    selected <- resolve_grouping_selection(arg, proxy)
+    resolved$dimensions <- union(resolved$dimensions, selected)
+    selected
+  }
+  emit <- if (identical(.duplicates, "error")) {
+    function(family) {
+      resolved$completed[[length(resolved$completed) + 1L]] <- family
+      NULL
+    }
+  } else {
+    identity
+  }
   withRestarts(
-    expand_grouping_family(preflight, function(arg) {
-      if (!is_name_only_selection(arg, data_vars, allow_caller_code = FALSE)) {
-        invokeRestart("needs_typed_selection")
-      }
-      selected <- resolve_grouping_selection(arg, proxy)
-      dimensions <<- union(dimensions, selected)
-      selected
-    }),
+    expand_grouping_family(preflight, resolve_selection, emit),
     needs_typed_selection = function() NULL
   )
-  validate_grouping_overlap(.by, dimensions)
+  validate_grouping_overlap(.by, resolved$dimensions)
+  if (length(resolved$completed) > 0L) {
+    prefix <- unlist(resolved$completed, recursive = FALSE)
+    prefix_dimensions <- unique(unlist(prefix, use.names = FALSE))
+    validate_unique_grouping_sets(
+      grouping_set_keys(prefix, prefix_dimensions), duplicates_choices
+    )
+  }
   invisible(NULL)
 }
 
@@ -1127,47 +1147,14 @@ compile_grouping_spec_impl <- function(preflight,
     expanded,
     function(set) c(.by, dimensions[dimensions %in% set])
   )
-  keys <- vapply(
-    normalized,
-    function(set) paste(as.integer(dimensions %in% set), collapse = ""),
-    character(1)
-  )
-  duplicate_keys <- duplicated(keys) | duplicated(keys, fromLast = TRUE)
-
-  if (any(duplicate_keys) && identical(.duplicates, "error")) {
-    groups <- split(which(duplicate_keys), keys[duplicate_keys])
-    # The policies this caller could have asked for instead, which is every
-    # value of its own vocabulary but the one that raised this. Reading them
-    # from the vocabulary is what keeps the nesting verbs, whose `.duplicates`
-    # excludes `"keep"`, from being offered it here (#110).
-    alternatives <- setdiff(duplicates_choices, .duplicates)
-    # Joined here rather than interpolated as a vector, because a group is
-    # itself a comma-joined list of positions, so cli's defaults would
-    # serialise the groups with an `and` inside one -- the reason `R/share.R`
-    # joins a class vector on its own slash. Read only from the cli template
-    # below, which codetools cannot see.
-    # nolint start: object_usage_linter.
-    positions <- paste(
-      vapply(groups, paste, collapse = ", ", character(1)),
-      collapse = "; "
-    )
-    # nolint end
-    offered <- paste0("\"", alternatives, "\"")
-    offered[[1L]] <- paste0(".duplicates = ", offered[[1L]])
-    abort_marginplyr(c(
-      paste0(
-        "Duplicate grouping sets were produced at ",
-        "{cli::qty(length(groups))}{?positions/position groups}:"
-      ),
-      i = "{positions}.",
-      i = "Use {.or {.code {offered}}}."
-    ))
+  keys <- grouping_set_keys(normalized, dimensions)
+  if (identical(.duplicates, "error")) {
+    validate_unique_grouping_sets(keys, duplicates_choices)
   }
 
   if (identical(.duplicates, "drop")) {
     keep <- !duplicated(keys)
     normalized <- normalized[keep]
-    keys <- keys[keep]
   }
 
   masks <- matrix(
@@ -1199,21 +1186,63 @@ compile_grouping_spec_impl <- function(preflight,
   )
 }
 
+# One membership key per occurrence in the caller's ordered dimensions.
+grouping_set_keys <- function(sets, dimensions) {
+  vapply(
+    sets,
+    function(set) paste(as.integer(dimensions %in% set), collapse = ""),
+    character(1)
+  )
+}
+
+# Reject repeated membership keys under the caller's duplicate-error policy.
+validate_unique_grouping_sets <- function(keys, duplicates_choices) {
+  duplicate_keys <- duplicated(keys) | duplicated(keys, fromLast = TRUE)
+  if (!any(duplicate_keys)) {
+    return(invisible(NULL))
+  }
+  groups <- split(which(duplicate_keys), keys[duplicate_keys])
+  # The nesting verbs' vocabulary excludes `"keep"` (#110).
+  alternatives <- setdiff(duplicates_choices, "error")
+  # Each group is already comma-joined. Join groups here to preserve that
+  # formatting through cli; codetools cannot see the use in its template.
+  # nolint start: object_usage_linter.
+  positions <- paste(
+    vapply(groups, paste, collapse = ", ", character(1)),
+    collapse = "; "
+  )
+  # nolint end
+  offered <- paste0("\"", alternatives, "\"")
+  offered[[1L]] <- paste0(".duplicates = ", offered[[1L]])
+  abort_marginplyr(c(
+    paste0(
+      "Duplicate grouping sets were produced at ",
+      "{cli::qty(length(groups))}{?positions/position groups}:"
+    ),
+    i = "{positions}.",
+    i = "Use {.or {.code {offered}}}."
+  ))
+}
+
 # The families a specification expands to. Every function below it takes the
 # preflight the caller holds, and reads each argument's reading off the record
 # beside that argument's quosure rather than taking one (ADR 0008). A column
 # selection is resolved here and not there, so it is resolved once per pass,
-# through the resolver that pass supplies.
-expand_grouping_family <- function(preflight, resolve_selection) {
+# through the resolver that pass supplies. `emit` receives completed families
+# in plan order, including each completed branch of a union. Its default
+# returns the occurrences for assembly into the Grouping plan.
+expand_grouping_family <- function(preflight, resolve_selection,
+                                   emit = identity) {
   rule <- find_grouping_kind_rule(preflight$spec$type)
   if (is.null(rule)) {
     stop("Unknown Grouping specification kind.", call. = FALSE)
   }
-  rule$expand(preflight, resolve_selection)
+  rule$expand(preflight, resolve_selection, emit)
 }
 
-expand_single_grouping_set <- function(preflight, resolve_selection) {
-  list(resolve_grouping_set(preflight, resolve_selection))
+# Emit one occurrence after resolving the entire set.
+expand_single_grouping_set <- function(preflight, resolve_selection, emit) {
+  emit(list(resolve_grouping_set(preflight, resolve_selection)))
 }
 
 resolve_grouping_set <- function(preflight, resolve_selection) {
@@ -1236,15 +1265,16 @@ resolve_grouping_set <- function(preflight, resolve_selection) {
   unique(cols)
 }
 
-expand_grouping_sets <- function(preflight, resolve_selection) {
+# Each branch of a union contributes its occurrences directly to the plan.
+expand_grouping_sets <- function(preflight, resolve_selection, emit) {
   unlist(
     lapply(
       preflight$args,
       function(arg) {
         if (is.null(arg$nested)) {
-          return(list(resolve_selection(arg$quo)))
+          return(emit(list(resolve_selection(arg$quo))))
         }
-        expand_grouping_family(arg$nested, resolve_selection)
+        expand_grouping_family(arg$nested, resolve_selection, emit)
       }
     ),
     recursive = FALSE
@@ -1280,17 +1310,20 @@ resolve_grouping_units <- function(preflight, resolve_selection) {
   units
 }
 
-expand_rollup <- function(preflight, resolve_selection) {
+# Emit the rollup after resolving every unit.
+expand_rollup <- function(preflight, resolve_selection, emit) {
   units <- resolve_grouping_units(preflight, resolve_selection)
-  lapply(
+  family <- lapply(
     rev(seq.int(0L, length(units))),
     function(n) {
       if (n == 0L) character() else unique(unlist(units[seq_len(n)]))
     }
   )
+  emit(family)
 }
 
-expand_cube <- function(preflight, resolve_selection) {
+# Emit the cube after resolving every unit.
+expand_cube <- function(preflight, resolve_selection, emit) {
   units <- resolve_grouping_units(preflight, resolve_selection)
   n <- length(units)
   indices <- unlist(
@@ -1301,19 +1334,19 @@ expand_cube <- function(preflight, resolve_selection) {
     recursive = FALSE
   )
 
-  lapply(
+  family <- lapply(
     indices,
     function(index) {
       if (length(index) == 0L) character() else unique(unlist(units[index]))
     }
   )
+  emit(family)
 }
 
-expand_grouping_product <- function(preflight, resolve_selection) {
+# Emit only the finished Cartesian product. Factor occurrences are local to
+# the product until every factor has been resolved.
+expand_grouping_product <- function(preflight, resolve_selection, emit) {
   product <- list(character())
-  if (length(preflight$args) == 0L) {
-    return(product)
-  }
 
   for (arg in preflight$args) {
     family <- if (is.null(arg$nested)) {
@@ -1330,7 +1363,7 @@ expand_grouping_product <- function(preflight, resolve_selection) {
       recursive = FALSE
     )
   }
-  product
+  emit(product)
 }
 
 grouping_kind_rules <- local({
