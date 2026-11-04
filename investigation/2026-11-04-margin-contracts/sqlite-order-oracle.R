@@ -57,7 +57,8 @@ for (col in c("BINARY", "NOCASE", "RTRIM")) {
               bh <- as.integer(!vapply(specs, function(x) "h" %in% x, logical(1)))
               expected_sorted <- arrange(expected, f, desc * bg[set], g, desc * bh[set],
                 if (is.null(label)) as.integer(h) else h, set)
-              order <- identical(as.numeric(got$value), as.numeric(expected_sorted$value))
+              order <- identical(as.integer(got$set), as.integer(expected_sorted$set)) &&
+                identical(as.numeric(got$value), as.numeric(expected_sorted$value))
             } else order <- NA
             cat(col,boolean,duplicate,sort,is.null(label),retrieval,val,order,"\n")
             if (!is.na(order) && !order) {

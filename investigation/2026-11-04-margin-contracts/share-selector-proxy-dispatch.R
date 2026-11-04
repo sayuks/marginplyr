@@ -32,7 +32,6 @@ run <- function() {
           ))
           # An ordinary lexical function that returns the proxy is understood
           # by the existing guard, just as a direct peek_data() call is.
-          # For the control, use the same dispatch and read an input value.
           independent <- rlang::expr(dplyr::all_of(
             if ((!!read)$z[[1L]] > 5) "x" else "z"
           ))

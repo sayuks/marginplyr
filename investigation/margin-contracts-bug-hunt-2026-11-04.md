@@ -189,11 +189,10 @@ the distinguishing boundary. All-state searches used
 | [Grouping widths](2026-11-04-margin-contracts/grouping-width-controls.R) | 16 inspection and summary pairs covered widths 1, 30, 31 and 32 on eager tibbles, dtplyr, SQLite and DuckDB. Expected bits and occurrence IDs matched. At 32 dimensions, inspection retained bits and the numeric summary identifier was refused. |
 | [SQLite ordering and share oracle](2026-11-04-margin-contracts/sqlite-order-oracle.R) | 144 retrievals matched separate per-set SQL aggregates and fixed-partition ratios under BINARY, NOCASE and RTRIM. The comparisons crossed ordinary and Boolean-word names, leading and repeated Grand total sets, typed missing and string labels, and direct and materialized retrieval. All 96 ordered retrievals also matched the structural order oracle. |
 | [PostgreSQL volatile sources](2026-11-04-margin-contracts/postgres-displayed-denominators.R) | Both shares agreed with the displayed per-occurrence sequence values in six native and portable retrievals. Each result used exactly three sequence values. Construction left the sequence uncalled. |
-| SQLite BLOB keys | 24 direct/materialized pairs agreed on column values and order after aligning the outer data-frame class. Both set orders, three sort options, two label forms and share presence were varied. |
 
-The summary lane also ran 204 eager expression comparisons, 285 ordinary
+Exploratory summary probes covered eager expressions, ordinary
 summary configurations across eager, dtplyr, Arrow, DuckDB and SQLite
-inputs, and 48 lazy callback comparisons. The eager comparisons with a
+inputs, and lazy callbacks. The eager comparisons with a
 successful side agreed on values and warning counts. Paired errors were
 outside that comparison. Arrow's absorbing first/last/nth calls,
 ordinary dtplyr's scalar key lookup and SQL's columnless projection
@@ -202,7 +201,9 @@ limitations explained the observed backend differences. The
 also confirmed the behavior fixed by #1237 and explicit caller-authored
 lookup under both summary verbs.
 
-An exploratory DuckDB aggregate produced a NaN share when the displayed
+Exploratory SQLite BLOB-key comparisons agreed on values and order after
+aligning the outer data-frame class. A DuckDB aggregate produced a NaN
+share when the displayed
 numerator was NaN. ADR 0010 excludes database-native NaN and infinity from
 the portable ratio contract. A callable Grouping specification produced by
 an unrecognized nested factory followed the valid-predicate route already
@@ -225,8 +226,8 @@ RPostgres 1.4.10, Arrow 25.0.1, and DBI 1.3.0. The report modes reproduce and ch
 observations. The contract assertions are expected to fail at this SHA.
 
 In a separate archive of the investigated SHA, eleven report invocations
-exited zero and the seven desired-contract invocations exited one after
-their controls. The [replay results](2026-11-04-margin-contracts/replay-results.csv)
+exited zero and the seven desired-contract invocations exited one on
+their corresponding failure predicates. The [replay results](2026-11-04-margin-contracts/replay-results.csv)
 record both exit statuses. The PostgreSQL replay ran separately against
 the same package source.
 
