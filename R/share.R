@@ -1795,7 +1795,7 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
       )
       analyses[[i]] <- list(records = ordinary_summary_records(
         expr, env, proxy, output_names, output_name,
-        eligibility, i, preceding_names, reparented
+        eligibility, i, preceding_names, reparented, deferred_selection = TRUE
       ), reparented = reparented)
       preceding_names <- c(preceding_names, output_names)
       next
@@ -1848,11 +1848,13 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
 
 # Records each known ordinary output against the aliases preceding its call.
 # The proxy includes those aliases when local selections have been deferred.
+# Deferred selections report their actual inputs during summary evaluation.
 # An output with known across provenance has an explicit column argument.
 # Unknown provenance retains the whole call's dependencies.
 ordinary_summary_records <- function(expr, env, proxy, output_names,
                                      output_name, eligibility, position,
-                                     preceding_names, reparented) {
+                                     preceding_names, reparented,
+                                     deferred_selection = FALSE) {
   expands <- is_across_call(expr) && !nzchar(output_name) &&
     length(output_names) > 0L
   provenance <- across_output_provenance(
@@ -1879,7 +1881,8 @@ ordinary_summary_records <- function(expr, env, proxy, output_names,
     dependencies <- unique(c(
       expression_alias_dependencies(
         dependency_expr, preceding_names, env,
-        c(colnames(proxy), preceding_names), reparented = reparented
+        c(colnames(proxy), preceding_names), reparented = reparented,
+        deferred_selection = deferred_selection
       ),
       intersect(inputs, preceding_names)
     ))
@@ -3164,8 +3167,9 @@ apply_windowed_shares <- function(result, requests, plan, set_id_name, kind,
   target_ids <- share_kind_rule(kind)$target_ids(plan)
   joined_ids <- plan$set_ids[!is.na(target_ids)]
   sources <- share_source_names(requests)
+  backend <- grouping_backend(result)
   denominator_names <- share_denominator_names(
-    sources, margin_col_names(result), grouping_backend(result)
+    sources, margin_col_names(result), backend
   )
   fixed_names <- stats::setNames(plan$by, plan$by)
   # dbplyr reads window keys as symbols, including pronoun-like column names.
@@ -3225,7 +3229,7 @@ apply_windowed_shares <- function(result, requests, plan, set_id_name, kind,
   result <- apply_share_ratios(
     result, share_pairs(requests), sources, denominator_names,
     plan$set_ids[is.na(target_ids)], joined_ids, set_id_name,
-    qualify = !sql_window
+    qualify = !sql_window, duckdb = identical(backend$kind, "duckdb")
   )
   result <- drop_margin_columns(result, intersect(
     unname(denominator_names), margin_col_names(result)
@@ -3247,24 +3251,32 @@ dtplyr_share_denominator <- function(value, identifier, target) {
 # Apply the shared value rules after denominator columns have been attached.
 apply_share_ratios <- function(result, pairs, sources, denominator_names,
                                own_denominator_ids, joined_ids, set_id_name,
-                               qualify = FALSE) {
+                               qualify = FALSE, duckdb = FALSE) {
   outputs <- vapply(pairs, `[[`, character(1), "output")
   margin_safe_column_reads(
     result, c(sources, outputs),
     function(share_result, safe_name) {
       share_exprs <- lapply(pairs, function(pair) {
-        source <- safe_name(pair$source)
+        source <- margin_column_pronoun(safe_name(pair$source))
         denominator <- denominator_names[[pair$source]]
+        # A double multiplier can increase the source's decimal scale (#429).
+        # Refusing dialects reject character sources at multiplication (#429).
+        numerator <- rlang::expr((!!source) * 1L)
+        if (duckdb) {
+          # DuckDB multiplies an INTERVAL by an integer, but cannot subtract
+          # an integer from the product. Binding checks this even when no
+          # row reaches the arithmetic, including a typed SQL NULL (#1229).
+          numerator <- rlang::expr((!!numerator) - 0L)
+        }
         if (length(joined_ids) == 0L) {
           # No denominator was joined, so nothing else in the staged query
-          # names the source: this is what binds it there, for the reason the
-          # ratio's own `* 1L` below gives (#446). Both arms are `1.0`, and
-          # the condition is an `IS NULL`, which SQL never answers with `NULL`,
-          # so no third value leaks from the `CASE` dbplyr renders without an
-          # `ELSE`.
+          # names the source: the null check binds it here (#446).
+          # Both arms are `1.0`, and `IS NULL` never returns SQL NULL,
+          # so no third value leaks from the CASE dbplyr renders without
+          # an ELSE.
           return(rlang::expr(
             dplyr::if_else(
-              is.na((!!margin_column_pronoun(source)) * 1L),
+              is.na(!!numerator),
               1.0,
               1.0
             )
@@ -3276,22 +3288,14 @@ apply_share_ratios <- function(result, pairs, sources, denominator_names,
                            own_denominator_ids),
             1.0,
             dplyr::if_else(
-              is.na(!!margin_column_pronoun(source)) |
+              is.na(!!source) |
                 is.na(!!margin_column_pronoun(denominator)) |
                 (!!margin_column_pronoun(denominator)) == 0,
               NA_real_,
-              # `* 1L` binds the source by type, which is what refuses a
-              # character one on a dialect classified as refusing; the cast
-              # alone accepts a numeric-looking character column there (#429).
-              # The literal is `1L` because a double one changes the source's
-              # declared type, which `DuckDB shares a source at its declared
-              # type's maximum` fails on. The denominator holds the source's
-              # type, so a second copy there refuses nothing new. The cast
-              # stays: it is what makes the ratio a double. The verdict this
-              # rests on is measured with an aggregate while this is
-              # arithmetic, so a dialect answering the two differently
-              # reproduces #429 here.
-              as.double((!!margin_column_pronoun(source)) * 1L) /
+              # The denominator holds the source type, so only the
+              # numerator needs the binding check. The cast makes the ratio
+              # a double.
+              as.double(!!numerator) /
                 as.double(!!margin_column_pronoun(denominator))
             )
           )
@@ -3862,9 +3866,15 @@ resolve_share_selection <- function(expr,
       data = proxy,
       strict = TRUE,
       allow_rename = FALSE,
+      # The proxy carries positions. Tidyselect must reject a function
+      # before applying it, including inside a compound selection.
+      allow_predicates = FALSE,
       error_call = error_call
     )),
     error = function(cnd) {
+      if (is_unsupported_predicate(cnd)) {
+        abort_share_predicate(kind, parent = cnd)
+      }
       abort_share_selection_error(cnd, preceding, context, kind)
     }
   )
@@ -4032,7 +4042,9 @@ contains_selection_predicate <- function(expr) {
   ))
 }
 
-abort_share_predicate <- function(kind) {
+# Refuse a predicate with the share-specific remedy. An evaluated selector
+# carries tidyselect's condition, whose call points to the selection.
+abort_share_predicate <- function(kind, parent = NULL) {
   abort_marginplyr(c(
     paste0(
       "{share_kind_modifier(kind)} {.fun across} only supports name-based ",
@@ -4042,7 +4054,7 @@ abort_share_predicate <- function(kind) {
       "Replace {.fun where} or another type/value predicate with explicit ",
       "summary names."
     )
-  ))
+  ), parent = parent)
 }
 
 # A lookup the walk could not resolve is reported as a read of every alias in
@@ -4059,14 +4071,15 @@ abort_share_predicate <- function(kind) {
 # about the caller's own summaries.
 expression_alias_dependencies <- function(expr, aliases, env = emptyenv(),
                                           mask = character(),
-                                          reparented = list()) {
+                                          reparented = list(),
+                                          deferred_selection = FALSE) {
   if (length(aliases) == 0L) {
     return(character())
   }
   symbols <- unique(expression_data_symbols(
     expr, lookup = list(
       env = env, mask = mask, rebound = lookup_rebound_names(expr, env, mask),
-      reparented = reparented
+      reparented = reparented, deferred_selection = deferred_selection
     )
   ))
   if (unresolved_lookup_name() %in% symbols) {
@@ -4397,6 +4410,16 @@ call_part_symbols <- function(expr, scope, lookup) {
   parts <- scope_call_args(
     expr, static_call_name(expr), scope_bound_names(scope), lookup
   )
+  selection <- if (isTRUE(lookup$deferred_selection)) {
+    static_spelling_name(expr, "selection")
+  }
+  selection_positions <- if (identical(selection, "pick")) {
+    seq_along(parts)
+  } else if (!is.null(selection)) {
+    parse_across_arguments(expr)$cols_index
+  } else {
+    integer()
+  }
   definition <- inline_function_definition(expr)
   reads <- character()
   if (!is.null(definition)) {
@@ -4410,10 +4433,38 @@ call_part_symbols <- function(expr, scope, lookup) {
     scope <- scope_after_removals(call_head, scope, lookup)
   }
   for (index in seq_along(parts)) {
-    reads <- c(reads, scoped_data_symbols(parts[[index]], scope, lookup))
+    read_symbols <- if (index %in% selection_positions) {
+      selection_dependency_symbols
+    } else {
+      scoped_data_symbols
+    }
+    reads <- c(reads, read_symbols(parts[[index]], scope, lookup))
     scope <- scope_after_possible_removals(parts[[index]], scope, lookup)
   }
   unique(reads)
+}
+
+# Read evaluated leaves of a deferred selector in the caller's scope.
+# Runtime selection supplies the actual columns after tidyselect set operations.
+selection_dependency_symbols <- function(expr, scope, lookup) {
+  if (rlang::is_quosure(expr)) {
+    lookup$env <- rlang::quo_get_env(expr)
+    return(selection_dependency_symbols(rlang::quo_get_expr(expr), scope,
+                                        lookup))
+  }
+  if (is_name_part(expr)) {
+    return(scope_promise_symbols(rlang::as_name(expr), scope, lookup))
+  }
+  if (is_selection_data_pronoun(expr)) {
+    return(character())
+  }
+  if (is_selection_walk_call(expr)) {
+    return(unlist(lapply(
+      as.list(expr)[-1L], selection_dependency_symbols, scope = scope,
+      lookup = lookup
+    ), use.names = FALSE))
+  }
+  scoped_data_symbols(expr, scope, lookup)
 }
 
 # The reachable arm of an if with a literal condition, or NULL when both
@@ -4458,17 +4509,17 @@ inline_function_definition <- function(expr) {
   if (rlang::is_call(head, "function") && length(head) >= 3L) head else NULL
 }
 
-# Match an inline function's formals to pending defaults in its own frame
+# Match function formals to pending defaults in their own frame
 # and pending arguments in the caller. Unmatched syntax stays conservative.
-function_scope_frame <- function(definition, invocation) {
-  formals <- as.list(definition[[2L]])
+function_scope_frame <- function(parameters, invocation) {
+  formals <- as.list(parameters)
   defaults <- formals[!vapply(formals, rlang::is_missing, logical(1))]
   supplied <- dots <- unmatched <- list()
   if (!is.null(invocation) && length(invocation) > 1L) {
     actual <- static_call_args(invocation)
     matched <- static_matched_arguments(
       rlang::call2(".inline", !!!actual),
-      rlang::new_function(definition[[2L]], NULL, emptyenv()),
+      rlang::new_function(parameters, NULL, emptyenv()),
       expand_dots = FALSE
     )
     if (is.null(matched)) {
@@ -4500,7 +4551,7 @@ definition_data_symbols <- function(expr, scope, lookup, invocation = NULL) {
       frame
     })
   }
-  frame <- function_scope_frame(expr, invocation)
+  frame <- function_scope_frame(expr[[2L]], invocation)
   inner <- c(list(frame), scope)
   unique(unlist(
     lapply(
@@ -4627,7 +4678,7 @@ scope_has_local_function <- function(scope, name) {
 # Return the inline frame and its surviving enclosing frames. The inline
 # frame still holds any arguments whose demand the body did not establish.
 scope_after_inline_call <- function(expr, definition, scope, lookup) {
-  inner <- c(list(function_scope_frame(definition, expr)), scope)
+  inner <- c(list(function_scope_frame(definition[[2L]], expr)), scope)
   statement_reads_and_scope(
     definition[[3L]], inner, lookup, read_symbols = no_scope_reads
   )$scope
