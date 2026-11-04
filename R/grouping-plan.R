@@ -2024,12 +2024,16 @@ read_grouping_arg <- function(arg, data_vars) {
     # preflight value without forcing the caller's arguments again.
     retained <- if (is_constructor_call) function(...) value else value
     selection_env <- rlang::env(env)
-    if (
-      is_constructor_call &&
-        rlang::is_call(static_call_head(expr), "(", n = 1L, ns = "")
-    ) {
+    constructor_head <- if (is_constructor_call) static_call_head(expr)
+    if (rlang::is_call(constructor_head, "(", n = 1L, ns = "")) {
       # Answer at the outermost pair without forcing any inner callee lookup.
       rlang::env_bind(selection_env, `(` = function(...) retained)
+    } else if (
+      rlang::is_call(constructor_head, "(", n = 1L, ns = "base")
+    ) {
+      # The outer qualifier resolves the parenthesis function before the callee.
+      parenthesis <- function(...) retained
+      rlang::env_bind(selection_env, `::` = function(...) parenthesis)
     } else if (is_constructor_call && !is.null(static_call_ns(expr))) {
       operator <- selection_namespace_operator(expr)
       rlang::env_bind(selection_env, !!operator := function(...) retained)
