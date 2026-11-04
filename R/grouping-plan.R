@@ -579,7 +579,7 @@ is_name_only_helper_arg <- function(expr,
     if (identical(fn, base::`$`) && is_name_part(args[[2L]])) {
       name <- as.character(args[[2L]])
     } else if (rlang::is_string(args[[2L]])) {
-      name <- args[[2L]]
+      name <- rlang::as_string(args[[2L]])
     }
     if (
       is.null(name) || !nzchar(name) || name == "..." ||
