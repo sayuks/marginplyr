@@ -419,6 +419,43 @@ selection_refused_operators <- function() {
   c("&&", "||", "*", "^")
 }
 
+# Arguments left to classify in a selection walk or a base c() call. The
+# caller holds the call's lexical environment. Empty dots and literal column
+# names need no further classification; opaque dots give NULL.
+selection_c_args <- function(args, env) {
+  dots <- vapply(args, identical, logical(1), quote(...))
+  if (!any(dots)) {
+    return(args)
+  }
+  # substitute() reads the promises only from the binding's own environment.
+  while (!identical(env, emptyenv()) && !rlang::env_has(env, "...")) {
+    env <- rlang::env_parent(env)
+  }
+  if (identical(env, emptyenv())) {
+    return(args)
+  }
+  if (selection_binding_deferred(
+    env, "...", allow_namespace_promises = FALSE
+  )) {
+    return(NULL)
+  }
+  # Embed the primitive so substitution cannot read a caller's list binding.
+  # An ordinary binding named ... need not be an R dots binding.
+  probe <- as.call(list(base::list, quote(...)))
+  captured <- tryCatch(
+    do.call(base::substitute, list(probe, env)),
+    error = function(cnd) NULL
+  )
+  if (!is.null(captured) && all(vapply(
+    static_call_args(captured),
+    function(arg) is.character(arg) && !is.object(arg),
+    logical(1)
+  ))) {
+    return(args[!dots])
+  }
+  NULL
+}
+
 # Whether tidyselect settles this expression from the column names alone --
 # its selection where it has one, its failure where it has none. `TRUE` is what
 # lets a failure the names decide be raised before typed metadata is acquired
@@ -509,8 +546,12 @@ is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE) {
   if (!is_selection_walk_call(expr)) {
     return(FALSE)
   }
-  all(vapply(
-    static_call_args(expr),
+  args <- static_call_args(expr)
+  if (identical(call_name, "c")) {
+    args <- selection_c_args(args, env)
+  }
+  !is.null(args) && all(vapply(
+    args,
     is_name_only_expr,
     logical(1),
     env = env,
@@ -602,10 +643,15 @@ is_name_only_helper_arg <- function(expr,
   ) {
     return(TRUE)
   }
-  if (!all(vapply(args, is_name_only_helper_arg, logical(1),
-                  env = env, bound = bound, seen = seen,
-                  allow_caller_code = allow_caller_code,
-                  allow_env_pronoun = allow_env_pronoun))) {
+  if (identical(fn, base::c) && !"..." %in% bound) {
+    args <- selection_c_args(args, env)
+  }
+  if (is.null(args) || !all(vapply(
+    args, is_name_only_helper_arg, logical(1),
+    env = env, bound = bound, seen = seen,
+    allow_caller_code = allow_caller_code,
+    allow_env_pronoun = allow_env_pronoun
+  ))) {
     return(FALSE)
   }
   if (pattern_call || identical(fn, tidyselect::peek_vars)) {
