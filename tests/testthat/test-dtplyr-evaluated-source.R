@@ -76,12 +76,18 @@ test_that("dtplyr deferred Nest shares eligible rows across cells", {
   first <- dplyr::arrange(dplyr::collect(query), sid)
   expect_identical(calls, 1L)
   expect_identical(first$sid, 1:2)
-  expect_identical(lapply(first$data, function(cell) cell$row_id), list(1L, 1L))
+  expect_identical(
+    lapply(first$data, function(cell) cell$row_id),
+    list(1L, 1L)
+  )
 
   second <- dplyr::arrange(dplyr::collect(query), sid)
   expect_identical(calls, 2L)
   expect_identical(second$sid, 1:2)
-  expect_identical(lapply(second$data, function(cell) cell$row_id), list(2L, 2L))
+  expect_identical(
+    lapply(second$data, function(cell) cell$row_id),
+    list(2L, 2L)
+  )
 })
 
 test_that("dtplyr row-wise Nest shares eligible rows across cells", {
@@ -99,5 +105,8 @@ test_that("dtplyr row-wise Nest shares eligible rows across cells", {
   expect_s3_class(result, "rowwise_df")
   expect_identical(calls, 1L)
   expect_identical(sort(result$sid), 1:2)
-  expect_identical(lapply(result$data, function(cell) cell$row_id), list(1L, 1L))
+  expect_identical(
+    lapply(result$data, function(cell) cell$row_id),
+    list(1L, 1L)
+  )
 })
