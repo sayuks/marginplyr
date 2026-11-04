@@ -3154,6 +3154,9 @@ apply_joined_shares <- function(result,
 # The caller supplies typed keys retained before Margin-label conversion.
 apply_windowed_shares <- function(result, requests, plan, set_id_name, kind,
                                   parent_key_names, sql_window) {
+  # dtplyr evaluates generated calls in the root's environment; SQL needs the
+  # unqualified operator for dbplyr translation.
+  membership <- if (sql_window) rlang::sym("%in%") else rlang::expr(base::`%in%`)
   target_ids <- share_kind_rule(kind)$target_ids(plan)
   joined_ids <- plan$set_ids[!is.na(target_ids)]
   sources <- share_source_names(requests)
@@ -3201,7 +3204,8 @@ apply_windowed_shares <- function(result, requests, plan, set_id_name, kind,
           }
           if (index > 1L) {
             denominator <- rlang::expr(dplyr::if_else(
-              (!!identifier) %in% !!plan$set_ids[target_ids %in% target],
+              !!rlang::call2(membership, identifier,
+                             plan$set_ids[target_ids %in% target]),
               !!denominator,
               !!margin_column_pronoun(denominator_names[[source]])
             ))
@@ -3216,7 +3220,8 @@ apply_windowed_shares <- function(result, requests, plan, set_id_name, kind,
   }
   result <- apply_share_ratios(
     result, share_pairs(requests), sources, denominator_names,
-    plan$set_ids[is.na(target_ids)], joined_ids, set_id_name
+    plan$set_ids[is.na(target_ids)], joined_ids, set_id_name,
+    membership = membership
   )
   result <- drop_margin_columns(result, intersect(
     unname(denominator_names), margin_col_names(result)
@@ -3237,7 +3242,8 @@ dtplyr_share_denominator <- function(value, identifier, target) {
 
 # Apply the shared value rules after denominator columns have been attached.
 apply_share_ratios <- function(result, pairs, sources, denominator_names,
-                               own_denominator_ids, joined_ids, set_id_name) {
+                               own_denominator_ids, joined_ids, set_id_name,
+                               membership = rlang::sym("%in%")) {
   outputs <- vapply(pairs, `[[`, character(1), "output")
   margin_safe_column_reads(
     result, c(sources, outputs),
@@ -3262,7 +3268,8 @@ apply_share_ratios <- function(result, pairs, sources, denominator_names,
         }
         rlang::expr(
           dplyr::if_else(
-            (!!margin_column_pronoun(set_id_name)) %in% !!own_denominator_ids,
+            !!rlang::call2(membership, margin_column_pronoun(set_id_name),
+                           own_denominator_ids),
             1.0,
             dplyr::if_else(
               is.na(!!margin_column_pronoun(source)) |
