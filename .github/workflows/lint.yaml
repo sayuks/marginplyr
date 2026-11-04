@@ -144,9 +144,6 @@ jobs:
       - name: Verify local test priority proposals
         run: Rscript tools/test-review-ready-priority.R
 
-      - name: Verify bounded agent retrieval
-        run: Rscript tools/test-retrieve-agent.R
-
       # Jarl complements rather than replaces lintr. Package-specific rules
       # need R and installed packages, so this reuses the dependency environment
       # instead of duplicating it in a separate job. The action and binary are

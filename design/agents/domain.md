@@ -5,7 +5,7 @@ How the engineering skills should consume this repo's domain documentation when 
 ## Before exploring, read these
 
 When required documents or session-log queries may exceed tool output, use
-[bounded retrieval](../../tools/retrieve-agent.md); read every required document
+[existing-tool retrieval](retrieval.md); read every required document
 through complete per-document coverage.
 
 - **`CONTEXT.md`** at the repo root.
