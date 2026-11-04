@@ -467,6 +467,10 @@
             "run": "Rscript tools/test-review-ready-priority.R"
           },
           {
+            "name": "Verify bounded agent retrieval",
+            "run": "Rscript tools/test-retrieve-agent.R"
+          },
+          {
             "uses": "etiennebacher/setup-jarl@v0.1.1",
             "with": {
               "version": "0.6.0"
