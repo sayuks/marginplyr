@@ -265,6 +265,82 @@ test_that("a fixed product factor preserves first occurrence dimensions", {
   expect_identical(plan$set_id, 1L)
 })
 
+test_that("cube products retain first occurrence order and Grouping bits", {
+  data <- data.frame(a = 1L, b = 2L, c = 3L, d = 4L, e = 5L)
+  units <- list(c("b", "a"), c("a", "d"), c("e", "c"), c("b", "e"))
+  alternatives <- list(c("d", "e"), "c", character())
+  fixed <- list(c("a", "e"))
+  unit_specs <- lapply(units, function(cols) {
+    grouping_set(tidyselect::all_of(cols))
+  })
+  cube_spec <- cube(!!!unit_specs)
+  choices <- grouping_sets(grouping_set(d, e), c, grouping_set())
+  required <- grouping_set(a, e)
+
+  # Enumerate every combination in descending cube size and Cartesian order.
+  subsets <- do.call(c, lapply(length(units):0L, function(size) {
+    utils::combn(seq_along(units), size, simplify = FALSE)
+  }))
+  memberships <- lapply(subsets, function(subset) {
+    unique(c(character(), unlist(units[subset], use.names = FALSE)))
+  })
+  wrapped <- grouping_sets(e, cube_spec, grouping_sets(d))
+  wrapped_memberships <- c(list("e"), memberships, list("d"))
+  specs <- list(
+    grouping_spec(cube_spec, grouping_spec(choices, required)),
+    grouping_spec(grouping_spec(required, choices), cube_spec),
+    grouping_spec(wrapped, choices, required),
+    grouping_spec(required, choices, wrapped)
+  )
+  families <- list(
+    list(memberships, alternatives, fixed),
+    list(fixed, alternatives, memberships),
+    list(wrapped_memberships, alternatives, fixed),
+    list(fixed, alternatives, wrapped_memberships)
+  )
+
+  for (i in seq_along(specs)) {
+    expanded <- Reduce(function(left, right) {
+      unlist(lapply(left, function(prefix) {
+        lapply(right, function(suffix) unique(c(prefix, suffix)))
+      }), recursive = FALSE)
+    }, families[[i]])
+    dimensions <- unique(unlist(expanded, use.names = FALSE))
+    included <- unique(lapply(expanded, function(set) {
+      dimensions[dimensions %in% set]
+    }))
+    bits <- lapply(included, function(set) {
+      stats::setNames(as.integer(!dimensions %in% set), dimensions)
+    })
+    plan <- inspect_grouping(
+      data, .grouping = specs[[i]], .duplicates = "drop", .format = "list"
+    )
+
+    expect_identical(plan$included, included)
+    expect_identical(plan$grouping_bits, bits)
+    expect_identical(plan$set_id, seq_along(included))
+  }
+})
+
+test_that("cube products preserve all occurrences for keep and error", {
+  data <- data.frame(a = 1L, b = 2L)
+  specs <- list(
+    grouping_spec(cube(b, a), grouping_set(a, b)),
+    grouping_spec(grouping_set(b, a), cube(a, b))
+  )
+  for (spec in specs) {
+    kept <- inspect_grouping(
+      data, .grouping = spec, .duplicates = "keep", .format = "list"
+    )
+    expect_identical(kept$included, rep(list(c("b", "a")), 4L))
+    expect_identical(kept$set_id, 1:4)
+    expect_error(
+      inspect_grouping(data, .grouping = spec),
+      "1, 2, 3, 4.", fixed = TRUE, class = "marginplyr_error"
+    )
+  }
+})
+
 test_that("duplicate-drop products support wide grouping sets", {
   dimensions <- paste0("dimension_", seq_len(10001L))
   data <- tibble::as_tibble(stats::setNames(rep(list(1L), 10001L), dimensions))
@@ -301,17 +377,28 @@ test_that("dropping repeated sets preserves caller selection order", {
     selected <<- c(selected, label)
     "key"
   }
-  specification <- grouping_spec(
-    cube(pick("first"), pick("second")),
-    grouping_sets(pick("third"), grouping_set())
+  predicate <- function(column) {
+    selected <<- c(selected, "predicate")
+    is.integer(column)
+  }
+  cube_spec <- cube(pick("cube"), tidyselect::where(predicate))
+  required <- grouping_set(pick("required"))
+  specs <- list(
+    grouping_spec(cube_spec, required),
+    grouping_spec(required, cube_spec)
+  )
+  orders <- list(
+    c("cube", "predicate", "required"), c("required", "cube", "predicate")
   )
 
-  plan <- inspect_grouping(
-    data, .grouping = specification, .duplicates = "drop", .format = "list"
-  )
-
-  expect_identical(selected, c("first", "second", "third"))
-  expect_identical(plan$included, list("key", character()))
+  for (i in seq_along(specs)) {
+    selected <- character()
+    plan <- inspect_grouping(
+      data, .grouping = specs[[i]], .duplicates = "drop", .format = "list"
+    )
+    expect_identical(selected, orders[[i]])
+    expect_identical(plan$included, list("key"))
+  }
 })
 
 test_that("inspection shares grouped and row-wise input validation", {
