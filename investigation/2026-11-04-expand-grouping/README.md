@@ -33,8 +33,10 @@ directly to publication. Six new issues retained `ready-for-agent`. G1 and
 G5 were independently reported during the concurrent investigations.
 Post-publication comparison found #1227 and #1228, so the two issues opened
 here for those findings, #1239 and #1246, were closed as duplicates. #1234
-also reproduced G1 and separately covered tagged missing dots. Existing
-issues were left as the other investigations published them.
+also reproduced G1 and separately covered tagged missing dots. The canonical
+issues received the expansion-specific evidence and regression targets for
+[G1](https://github.com/sayuks/marginplyr/issues/1227#issuecomment-6623402313)
+and [G5](https://github.com/sayuks/marginplyr/issues/1228#issuecomment-6623402616).
 
 ### G1 and G2. Nested specification lookup
 
@@ -44,8 +46,8 @@ dot-like names such as `..01` and two zero/negative controls. An injected
 selection quosure or one or three parenthesis pairs triggered an
 incorrect-context dots error in 90 of 120 constructor comparisons. The
 remaining 30 matched. The `..01` witness also failed in row expansion. A
-wrapper forwarding a supplied Grouping set through a parenthesized numbered
-dot selected the forwarded column. With the exact predecessor
+wrapper forwarding a supplied Grouping specification through a parenthesized
+numbered dot selected the forwarded column. With the exact predecessor
 `f5a8d7d1b18c981f044102fd56d92606679c7c52` loaded, the injected and
 parenthesized `..01` witnesses both selected the input column. Bare direct
 capture of a positive dot-like spelling could fail upstream in rlang on both
@@ -53,8 +55,8 @@ revisions. The regression was isolated to already captured references
 entering the new forwarding reader from #1214/#1223.
 
 In [the parenthesis collision probe](parenthesized-collision.R), the input
-had column `s`, and lexical `s` held a Grouping set for `key`. With a local
-parenthesis operator returning the character name `s`, the bare spelling
+had column `s`, and lexical `s` held a Grouping specification for `key`. With a
+local parenthesis operator returning the character name `s`, the bare spelling
 refused the collision. All 16 parenthesized calls across four admitting
 constructors and two consumers accepted the column and invoked the masked
 operator once per call. A noncolliding reference and both explicit
@@ -67,7 +69,7 @@ reproductions.
 ### D1 and F1. Deferred copy and factor reconstruction
 
 [The cache witness](dtplyr-cache-copy.R) used one immutable row, a filtered
-source, an explicit intermediate name and a single default Grouping set.
+source, an explicit intermediate name and a single default grouping set.
 Native collection and native union preserved the row. With cache name
 `copy`, Margin collection raised `could not find function "copy"`, or ran a
 caller's unrelated `copy` once when one was available. The construction
@@ -200,7 +202,9 @@ Rscript "$evidence/grouping-drop-growth.R" --memory
 Rscript "$evidence/grouping-identity-alias.R"
 ```
 
-The defect scripts support `--assert` for desired behavior and intentionally
-fail against the investigated source. The identity-alias script records
-the documented behavior mismatch in observation mode. Review-ready
-verification belongs to the committed evidence SHA and is recorded on the PR.
+Add `--assert` to the defect replays to check desired behavior. The
+duplicate-drop replay takes `--memory --assert` to enable its capped cases.
+These assertions intentionally failed against the investigated source.
+The identity-alias script records the documented behavior mismatch in
+observation mode. Review-ready verification belongs to the committed evidence
+SHA and is recorded on the PR.
