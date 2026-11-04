@@ -39,8 +39,17 @@ dtplyr_margin_input <- function(.data, backend) {
   if (!identical(backend$kind, "dtplyr")) {
     return(.data)
   }
+  dtplyr_deferred_copy(isolate_dtplyr_cached_inputs(.data))
+}
+
+# Build a lazy copy whose call head cannot resolve to a cache or caller
+# binding. step_call() requires a string, but dt_call() accepts a
+# namespaced call head in the stored field.
+dtplyr_deferred_copy <- function(step) {
   step_call <- utils::getFromNamespace("step_call", "dtplyr")
-  step_call(isolate_dtplyr_cached_inputs(.data), "copy")
+  step <- step_call(step, "copy")
+  step[["fun"]] <- quote(data.table::copy)
+  step
 }
 
 # Isolate each cached-table reference in an admitted immutable dtplyr graph.
@@ -56,9 +65,8 @@ isolate_dtplyr_cached_inputs <- function(step) {
   if (inherits(step, "dtplyr_step_assign")) {
     dt_call <- utils::getFromNamespace("dt_call", "dtplyr")
     step[["locals"]][[step[["name"]]]] <- dt_call(step[["parent"]])
-    step_call <- utils::getFromNamespace("step_call", "dtplyr")
     # Copy before a downstream setnames()/setorder() can write to the alias.
-    return(step_call(step, "copy"))
+    return(dtplyr_deferred_copy(step))
   }
   step
 }
