@@ -10,7 +10,6 @@ for (col in c("BINARY", "NOCASE", "RTRIM")) {
     g <- if (boolean) "false" else "g"
     source <- tbl(con, "src")
     if (boolean) source <- rename(source, "true" = "f", "false" = "g")
-    cols <- c(f, g, "h")
     for (duplicate in c(FALSE, TRUE)) {
       specs <- if (duplicate) list(character(), g, c(g, "h"), g, character(), "h") else list(character(), g, c(g, "h"), "h")
       grouping <- rlang::exec(grouping_sets, !!!lapply(specs, function(x) rlang::exec(grouping_set, !!!rlang::syms(x))))
@@ -42,18 +41,13 @@ for (col in c("BINARY", "NOCASE", "RTRIM")) {
           }
           expected$fraction <- mapply(total, expected$f, expected$set, expected$value)
           for (retrieval in c("collect", "compute")) {
-            got <- tryCatch(suppressWarnings({
-              if (retrieval == "compute") {
-                out <- compute(result, name = "dst", analyze = FALSE)
-                on.exit(try(DBI::dbExecute(con, "DROP TABLE IF EXISTS dst"),silent=TRUE),add=TRUE)
-                z <- collect(out)
-                DBI::dbExecute(con,"DROP TABLE dst")
-                z
-              } else collect(result)
-            }), error=identity)
-            if (inherits(got,"error")) {
-              cat(col,boolean,duplicate,sort,is.null(label),retrieval,"ERROR", strsplit(conditionMessage(got),"\n")[[1L]][1L], "\n")
-              next
+            got <- if (retrieval == "compute") {
+              out <- compute(result, name = "dst", analyze = FALSE)
+              materialized <- collect(out)
+              DBI::dbExecute(con, "DROP TABLE dst")
+              materialized
+            } else {
+              collect(result)
             }
             got <- normal(got)
             val <- isTRUE(all.equal(key(got), key(expected), check.attributes=FALSE))
@@ -70,6 +64,7 @@ for (col in c("BINARY", "NOCASE", "RTRIM")) {
               cat("GOT ",paste(got$value,collapse=","),"\n")
               cat("WANT",paste(expected_sorted$value,collapse=","),"\n")
             }
+            stopifnot(val, is.na(order) || order)
           }
         }
       }

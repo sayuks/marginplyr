@@ -72,7 +72,7 @@ run <- function() {
               ratio = !!helper, .grouping = rollup(g)
             )
             stopifnot(identical(unrelated$value, c(1, 3, 4)),
-                      identical(unrelated$ratio, c(.25, .75, 1)))
+                      identical(unrelated$ratio, c(0.25, 0.75, 1)))
           }
           cat(input, helper_name, selector_name, dispatch_name, status, "\n")
         }

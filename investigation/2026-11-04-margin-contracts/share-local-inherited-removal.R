@@ -59,9 +59,9 @@ run <- function() {
                       grepl(expected, conditionMessage(got), fixed = TRUE))
             status <- if (name == "local_only") "false_refusal" else "refused"
           } else {
-            expected_ratio <- if (name == "local_only") rep(1, 3) else c(.25, .75, 1)
+            expected_ratio <- if (name == "local_only") rep(1, 3) else c(0.25, 0.75, 1)
             if (direction == "after_share") {
-              stopifnot(identical(got$prior, c(.25, .75, 1)))
+              stopifnot(identical(got$prior, c(0.25, 0.75, 1)))
               expected_derived <- if (name == "local_only") {
                 rep(1, 3)
               } else {
