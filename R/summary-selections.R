@@ -1446,10 +1446,21 @@ is_static_name_selection <- function(expr, lookup) {
   namespace <- static_call_ns(expr)
   args <- static_call_args(expr)
   if (is.null(name)) return(FALSE)
-  operators <- c("c", ":", "!", "&", "|", "+", "-", "(")
+  operators <- c("c", ":", "!", "&", "|", "+", "-", "/", "(")
   if (is.null(namespace) && name %in% operators) {
     return(all(vapply(args, is_static_name_selection, logical(1),
                       lookup = lookup)))
+  }
+  if (identical(name, "one_of") &&
+        (is.null(namespace) || namespace %in% c("dplyr", "tidyselect"))) {
+    # An absent column warns and .vars can change the positions returned.
+    return(!any(nzchar(rlang::names2(args))) && all(vapply(args, function(arg) {
+      if (!is_context_only_name_expr(arg, lookup, allow_context = FALSE)) {
+        return(FALSE)
+      }
+      value <- static_character_value(arg)
+      !is.null(value) && all(value %in% lookup$columns)
+    }, logical(1))))
   }
   helpers <- intersect(
     names(tidyselect::vars_select_helpers),
