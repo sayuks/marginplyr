@@ -3164,8 +3164,9 @@ apply_windowed_shares <- function(result, requests, plan, set_id_name, kind,
   target_ids <- share_kind_rule(kind)$target_ids(plan)
   joined_ids <- plan$set_ids[!is.na(target_ids)]
   sources <- share_source_names(requests)
+  backend <- grouping_backend(result)
   denominator_names <- share_denominator_names(
-    sources, margin_col_names(result), grouping_backend(result)
+    sources, margin_col_names(result), backend
   )
   fixed_names <- stats::setNames(plan$by, plan$by)
   # dbplyr reads window keys as symbols, including pronoun-like column names.
@@ -3225,7 +3226,7 @@ apply_windowed_shares <- function(result, requests, plan, set_id_name, kind,
   result <- apply_share_ratios(
     result, share_pairs(requests), sources, denominator_names,
     plan$set_ids[is.na(target_ids)], joined_ids, set_id_name,
-    qualify = !sql_window
+    qualify = !sql_window, duckdb = identical(backend$kind, "duckdb")
   )
   result <- drop_margin_columns(result, intersect(
     unname(denominator_names), margin_col_names(result)
@@ -3247,24 +3248,32 @@ dtplyr_share_denominator <- function(value, identifier, target) {
 # Apply the shared value rules after denominator columns have been attached.
 apply_share_ratios <- function(result, pairs, sources, denominator_names,
                                own_denominator_ids, joined_ids, set_id_name,
-                               qualify = FALSE) {
+                               qualify = FALSE, duckdb = FALSE) {
   outputs <- vapply(pairs, `[[`, character(1), "output")
   margin_safe_column_reads(
     result, c(sources, outputs),
     function(share_result, safe_name) {
       share_exprs <- lapply(pairs, function(pair) {
-        source <- safe_name(pair$source)
+        source <- margin_column_pronoun(safe_name(pair$source))
         denominator <- denominator_names[[pair$source]]
+        # Use an integer multiplier to avoid widening a numeric source.
+        # Refusing dialects reject character sources at multiplication (#429).
+        numerator <- rlang::expr((!!source) * 1L)
+        if (duckdb) {
+          # DuckDB multiplies an INTERVAL by an integer, but cannot subtract
+          # an integer from the product. Binding checks this even when no
+          # row reaches the arithmetic, including a typed SQL NULL (#1229).
+          numerator <- rlang::expr((!!numerator) - 0L)
+        }
         if (length(joined_ids) == 0L) {
           # No denominator was joined, so nothing else in the staged query
-          # names the source: this is what binds it there, for the reason the
-          # ratio's own `* 1L` below gives (#446). Both arms are `1.0`, and
-          # the condition is an `IS NULL`, which SQL never answers with `NULL`,
-          # so no third value leaks from the `CASE` dbplyr renders without an
-          # `ELSE`.
+          # names the source: the null check binds it here (#446).
+          # Both arms are `1.0`, and `IS NULL` never returns SQL NULL,
+          # so no third value leaks from the CASE dbplyr renders without
+          # an ELSE.
           return(rlang::expr(
             dplyr::if_else(
-              is.na((!!margin_column_pronoun(source)) * 1L),
+              is.na(!!numerator),
               1.0,
               1.0
             )
@@ -3276,22 +3285,14 @@ apply_share_ratios <- function(result, pairs, sources, denominator_names,
                            own_denominator_ids),
             1.0,
             dplyr::if_else(
-              is.na(!!margin_column_pronoun(source)) |
+              is.na(!!source) |
                 is.na(!!margin_column_pronoun(denominator)) |
                 (!!margin_column_pronoun(denominator)) == 0,
               NA_real_,
-              # `* 1L` binds the source by type, which is what refuses a
-              # character one on a dialect classified as refusing; the cast
-              # alone accepts a numeric-looking character column there (#429).
-              # The literal is `1L` because a double one changes the source's
-              # declared type, which `DuckDB shares a source at its declared
-              # type's maximum` fails on. The denominator holds the source's
-              # type, so a second copy there refuses nothing new. The cast
-              # stays: it is what makes the ratio a double. The verdict this
-              # rests on is measured with an aggregate while this is
-              # arithmetic, so a dialect answering the two differently
-              # reproduces #429 here.
-              as.double((!!margin_column_pronoun(source)) * 1L) /
+              # The denominator holds the source type, so only the
+              # numerator needs the binding check. The cast makes the ratio
+              # a double.
+              as.double(!!numerator) /
                 as.double(!!margin_column_pronoun(denominator))
             )
           )
