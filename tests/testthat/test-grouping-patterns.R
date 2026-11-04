@@ -96,7 +96,7 @@ test_that("malformed stringr regex fails before DuckDB reads metadata", {
 
   old <- options(marginplyr.audit_sql = TRUE)
   on.exit(options(old), add = TRUE)
-  con <- DBI::dbConnect(duckdb::duckdb(shared_home = FALSE))
+  con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   step <- dplyr::copy_to(con, data.frame(a = "x", b = 1L), "pattern_test")
 
