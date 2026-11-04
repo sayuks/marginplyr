@@ -4193,7 +4193,7 @@ scoped_data_symbols <- function(expr, scope, lookup) {
   if (is_name_part(expr)) {
     name <- rlang::as_name(expr)
     if (name %in% scope_bound_names(scope)) {
-      return(character())
+      return(scope_promise_symbols(name, scope, lookup))
     }
     return(name)
   }
@@ -4399,6 +4399,10 @@ call_part_symbols <- function(expr, scope, lookup) {
   reads <- character()
   if (!is.null(definition)) {
     reads <- definition_data_symbols(definition, scope, lookup, expr)
+  } else if (is_name_part(call_head)) {
+    name <- rlang::as_name(call_head)
+    reads <- scope_promise_symbols(name, scope, lookup)
+    scope <- scope_after_promise(name, scope, lookup)
   } else if (!rlang::is_symbol(call_head)) {
     reads <- scoped_data_symbols(call_head, scope, lookup)
     scope <- scope_after_removals(call_head, scope, lookup)
@@ -4427,6 +4431,10 @@ literal_if_parts <- function(expr, name) {
 
 # Call arguments that the read and removal walks may visit.
 scope_call_args <- function(expr, name, bound) {
+  if (!is.null(name) && name %in% c("&&", "||") && length(expr) == 3L &&
+        identical(unparenthesized_value(expr[[2L]]), identical(name, "||"))) {
+    return(list())
+  }
   literal_if_parts(expr, name) %||% evaluated_call_args(expr, bound = bound)
 }
 
@@ -4436,27 +4444,27 @@ inline_function_definition <- function(expr) {
   if (rlang::is_call(head, "function") && length(head) >= 3L) head else NULL
 }
 
-# The formals live in a new frame. Defaults run there, even when a read
-# in a deeper invocation demands one. Match supplied arguments as syntax.
+# Match an inline function's formals to pending defaults in its own frame
+# and pending arguments in the caller. Unmatched syntax stays conservative.
 function_scope_frame <- function(definition, invocation) {
   formals <- as.list(definition[[2L]])
   defaults <- formals[!vapply(formals, rlang::is_missing, logical(1))]
-  if (!is.null(invocation) && length(invocation) > 1L &&
-        length(defaults) > 0L) {
-    matched <- tryCatch(
-      match.call(
-        rlang::new_function(definition[[2L]], NULL, emptyenv()),
-        rlang::call2(".inline", !!!static_call_args(invocation)),
-        expand.dots = FALSE, envir = emptyenv()
-      ),
-      error = function(cnd) NULL
+  supplied <- unmatched <- list()
+  if (!is.null(invocation) && length(invocation) > 1L) {
+    actual <- static_call_args(invocation)
+    matched <- static_matched_arguments(
+      rlang::call2(".inline", !!!actual),
+      rlang::new_function(definition[[2L]], NULL, emptyenv()),
+      expand_dots = FALSE
     )
-    args <- as.list(matched)[-1L]
-    supplied <- names(args)[!vapply(args, rlang::is_missing, logical(1))]
-    defaults[supplied] <- NULL
+    unmatched <- if (is.null(matched)) actual else as.list(matched[["..."]])
+    supplied <- matched[setdiff(names(matched), "...")]
+    supplied <- supplied[!vapply(supplied, rlang::is_missing, logical(1))]
+    defaults[names(supplied)] <- NULL
   }
   list(
-    bound = names(formals), defaults = defaults,
+    bound = names(formals), defaults = defaults, arguments = supplied,
+    unmatched = unmatched,
     invoked = !is.null(invocation)
   )
 }
@@ -4464,6 +4472,13 @@ function_scope_frame <- function(definition, invocation) {
 # Read defaults and the body under the definition's formals. The srcref is
 # metadata. A definition alone does not carry effects back to its enclosure.
 definition_data_symbols <- function(expr, scope, lookup, invocation = NULL) {
+  if (is.null(invocation)) {
+    # A definition can capture names without visibly demanding their promises.
+    scope <- lapply(scope, function(frame) {
+      frame$defaults <- frame$arguments <- NULL
+      frame
+    })
+  }
   frame <- function_scope_frame(expr, invocation)
   inner <- c(list(frame), scope)
   unique(unlist(
@@ -4480,19 +4495,91 @@ scope_bound_names <- function(scope) {
   unlist(lapply(scope, "[[", "bound"), use.names = FALSE)
 }
 
-# A definite local binding replaces any pending default in this frame.
-scope_bind_local <- function(scope, name) {
-  scope[[1L]]$bound <- union(scope[[1L]]$bound, name)
-  scope[[1L]]$defaults[name] <- NULL
+# Find the first binding and the frame in which its pending syntax runs.
+# Clear the promise in the returned scope before following recursive reads.
+scope_promise <- function(name, scope) {
+  for (index in seq_along(scope)) {
+    frame <- scope[[index]]
+    if (!name %in% frame$bound) {
+      next
+    }
+    if (name %in% names(frame$defaults)) {
+      expression <- frame$defaults[[name]]
+      scope[[index]]$defaults[name] <- NULL
+      return(list(
+        expression = expression, scope = scope,
+        evaluation = seq.int(index, length(scope))
+      ))
+    }
+    if (name %in% names(frame$arguments)) {
+      expression <- frame$arguments[[name]]
+      scope[[index]]$arguments[name] <- NULL
+      return(list(
+        expression = expression, scope = scope,
+        evaluation = seq.int(index + 1L, length(scope))
+      ))
+    }
+    break
+  }
+  NULL
+}
+
+# The dependencies of syntax that a lexical read may force.
+scope_promise_symbols <- function(name, scope, lookup) {
+  promise <- scope_promise(name, scope)
+  if (is.null(promise)) {
+    return(character())
+  }
+  scoped_data_symbols(
+    promise$expression, promise$scope[promise$evaluation], lookup
+  )
+}
+
+# Effects of demanding a pending promise in its evaluation frame.
+scope_after_promise <- function(name, scope, lookup) {
+  promise <- scope_promise(name, scope)
+  if (is.null(promise)) {
+    return(scope)
+  }
+  scope <- promise$scope
+  frames <- promise$evaluation
+  scope[frames] <- statement_reads_and_scope(
+    promise$expression, scope[frames], lookup, read_symbols = no_scope_reads
+  )$scope
   scope
 }
 
-# Keep only the surviving enclosing frames when an inline invocation returns.
+# A definite local binding replaces any promise in this frame. A literal
+# function binding also establishes what a bare call head resolves to.
+scope_bind_local <- function(scope, name, value = NULL) {
+  scope[[1L]]$bound <- union(scope[[1L]]$bound, name)
+  scope[[1L]]$defaults[name] <- NULL
+  scope[[1L]]$arguments[name] <- NULL
+  scope[[1L]]$functions <- setdiff(scope[[1L]]$functions, name)
+  if (rlang::is_call(unparenthesized_value(value), "function")) {
+    scope[[1L]]$functions <- union(scope[[1L]]$functions, name)
+  }
+  scope
+}
+
+# Whether the nearest local binding proves that a bare call head is a
+# caller-defined function.
+scope_has_local_function <- function(scope, name) {
+  for (frame in scope) {
+    if (name %in% frame$bound) {
+      return(name %in% frame$functions)
+    }
+  }
+  FALSE
+}
+
+# Return the inline frame and its surviving enclosing frames. The inline
+# frame still holds any arguments whose demand the body did not establish.
 scope_after_inline_call <- function(expr, definition, scope, lookup) {
   inner <- c(list(function_scope_frame(definition, expr)), scope)
   statement_reads_and_scope(
     definition[[3L]], inner, lookup, read_symbols = no_scope_reads
-  )$scope[-1L]
+  )$scope
 }
 
 # Effect-only walks use the statement rules without collecting dependencies.
@@ -4576,7 +4663,7 @@ statement_reads_and_scope <- function(expr, scope, lookup = NULL,
   if (is_name_part(expr[[2L]])) {
     return(list(
       reads = value,
-      scope = scope_bind_local(retained, rlang::as_name(expr[[2L]]))
+      scope = scope_bind_local(retained, rlang::as_name(expr[[2L]]), expr[[3L]])
     ))
   }
   # Read a replacement target and the value in source order. Its eventual
@@ -4670,6 +4757,9 @@ scope_callee_is_shadowed <- function(callee, name, bound, lookup) {
   if (rlang::is_call(callee, c("::", ":::"))) {
     return(!identical(rlang::as_string(callee[[2L]]), "base"))
   }
+  if (rlang::is_symbol(callee) && name %in% lookup$local_functions) {
+    return(TRUE)
+  }
   if (is.null(lookup$env) || name %in% c(bound, lookup$rebound) ||
         unresolved_lookup_name() %in% lookup$rebound) {
     return(FALSE)
@@ -4762,24 +4852,7 @@ scope_after_removals <- function(expr, scope, lookup) {
     lookup$env <- rlang::quo_get_env(expr)
   }
   if (is_name_part(expr)) {
-    name <- rlang::as_name(expr)
-    for (index in seq_along(scope)) {
-      frame <- scope[[index]]
-      if (name %in% frame$bound) {
-        if (name %in% names(frame$defaults)) {
-          default <- frame$defaults[[name]]
-          # Evaluate the syntax in the owning frame, excluding the demander.
-          # Remove the pending default first to bound recursive promises.
-          scope[[index]]$defaults[name] <- NULL
-          enclosing <- seq.int(index, length(scope))
-          scope[enclosing] <- statement_reads_and_scope(
-            default, scope[enclosing], lookup, read_symbols = no_scope_reads
-          )$scope
-        }
-        break
-      }
-    }
-    return(scope)
+    return(scope_after_promise(rlang::as_name(expr), scope, lookup))
   }
   if (!rlang::is_call(expr)) {
     return(scope)
@@ -4788,10 +4861,16 @@ scope_after_removals <- function(expr, scope, lookup) {
     return(scope_after_removals(unparenthesized_value(expr), scope, lookup))
   }
   bound <- scope_bound_names(scope)
+  name <- static_call_name(expr)
+  if (identical(name, "force") && length(expr) == 2L &&
+        is_known_base_call(expr, name, bound, lookup)) {
+    return(statement_reads_and_scope(
+      expr[[2L]], scope, lookup, read_symbols = no_scope_reads
+    )$scope)
+  }
   if (length(bound) == 0L) {
     return(scope)
   }
-  name <- static_call_name(expr)
   if (identical(name, "{")) {
     after <- block_reads_and_scope(expr, scope, lookup, no_scope_reads)$scope
     return(scope_possible_losses(scope, after))
@@ -4802,21 +4881,28 @@ scope_after_removals <- function(expr, scope, lookup) {
            length(base_call_argument(expr, "envir")) == 0L)) {
     return(scope)
   }
-  mutation <- scope_mutation_call(expr, bound, lookup)
-  head <- evaluated_call_head(expr)
-  definition <- inline_function_definition(expr)
-  if (!is.null(definition)) {
-    scope <- scope_after_inline_call(expr, definition, scope, lookup)
-  } else if (length(head) > 0L) {
-    scope <- scope_after_removals(head[[1L]], scope, lookup)
+  mutation_lookup <- lookup
+  if (!is.null(name) && name %in% c("rm", "remove") &&
+        scope_has_local_function(scope, name)) {
+    mutation_lookup$local_functions <- name
   }
+  mutation <- scope_mutation_call(expr, bound, mutation_lookup)
+  head <- static_call_head(expr)
+  definition <- inline_function_definition(expr)
   parts <- c(
     scope_call_args(expr, name, bound), evaluated_language_parts(expr)
   )
+  if (!is.null(definition)) {
+    after <- scope_after_inline_call(expr, definition, scope, lookup)
+    scope <- after[-1L]
+    parts <- c(after[[1L]]$arguments, after[[1L]]$unmatched)
+  } else if (is_name_part(head)) {
+    scope <- scope_after_promise(rlang::as_name(head), scope, lookup)
+  } else if (rlang::is_call(head)) {
+    scope <- scope_after_removals(head, scope, lookup)
+  }
   apply_effects <- scope_after_possible_removals
-  if (length(literal_if_parts(expr, name)) > 0L ||
-        (identical(name, "force") &&
-           is_known_base_call(expr, name, bound, lookup))) {
+  if (length(literal_if_parts(expr, name)) > 0L) {
     apply_effects <- scope_after_removals
   }
   for (index in seq_along(parts)) {
@@ -4835,7 +4921,8 @@ scope_after_possible_removals <- function(expr, scope, lookup) {
   scope_possible_losses(scope, scope_after_removals(expr, scope, lookup))
 }
 
-# Preserve pending defaults in surviving bindings on a possible path.
+# Preserve pending promises in surviving bindings on a possible path. Both
+# stacks contain the same lexical frames in the same order.
 scope_possible_losses <- function(scope, after) {
   if (identical(scope, after)) {
     return(scope)
@@ -4902,6 +4989,8 @@ is_immediate_parent_frame <- function(expr, bound, lookup) {
 retain_scope_bindings <- function(frame, bound) {
   frame$bound <- bound
   frame$defaults <- frame$defaults[names(frame$defaults) %in% bound]
+  frame$arguments <- frame$arguments[names(frame$arguments) %in% bound]
+  frame$functions <- intersect(frame$functions, bound)
   frame
 }
 
@@ -4949,25 +5038,31 @@ literal_removal_names <- function(args) {
 # verified definition; other callers use the recognized base primitive.
 base_call_argument <- function(expr, formals, definition = NULL) {
   callee <- resolved_callee_name(expr)
-  matched <- tryCatch(
-    match.call(
-      if (is.null(definition)) {
-        args(get(callee, envir = baseenv()))
-      } else {
-        args(definition)
-      },
-      rlang::call2(callee, !!!static_call_args(expr)),
-      envir = emptyenv()
-    ),
-    error = function(cnd) NULL
+  args <- static_matched_arguments(
+    rlang::call2(callee, !!!static_call_args(expr)),
+    if (is.null(definition)) {
+      args(get(callee, envir = baseenv()))
+    } else {
+      args(definition)
+    }
   )
-  args <- as.list(matched)[-1L]
   for (formal in formals) {
     if (formal %in% names(args)) {
       return(args[formal])
     }
   }
   list()
+}
+
+# Match a call's syntax in an empty environment. An invalid call retains
+# no matches and can still report its ordinary error at execution.
+static_matched_arguments <- function(expr, definition, expand_dots = TRUE) {
+  tryCatch(
+    as.list(match.call(
+      definition, expr, expand.dots = expand_dots, envir = emptyenv()
+    ))[-1L],
+    error = function(cnd) NULL
+  )
 }
 
 # Existing environment values without forcing caller bindings, or NULL.

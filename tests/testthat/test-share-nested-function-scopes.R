@@ -86,6 +86,27 @@ test_that("visible inline scope changes expose both forbidden dependencies", {
       prior <- 2
       (function() base::force(first))()
       sum(prior)
+    })(),
+    (function(prior = 2, arg = sum(prior)) {
+      (function() {
+        base::rm(prior, envir = parent.frame())
+        arg
+      })()
+    })(),
+    (function(prior = 2) {
+      (function(arg) {
+        base::rm(prior, envir = parent.frame())
+        arg
+      })(sum(prior))
+    })(),
+    (function(prior = {
+      base::rm(prior)
+      function() NULL
+    }) {
+      (function() {
+        prior()
+        sum(prior)
+      })()
     })()
   )
   for (input in list(data, dbplyr::tbl_lazy(data))) {
@@ -176,6 +197,18 @@ test_that("inline scope changes preserve independent and shadowed bindings", {
         sum(prior)
       })()
     })(),
+    (function(prior = {
+      base::rm(prior)
+      stop("Default is shadowed in a forced block.")
+    }) {
+      (function() {
+        base::force({
+          prior <- touch()
+        })
+        prior
+        sum(prior)
+      })()
+    })(),
     (function(prior = touch()) {
       (function(prior = 0) {
         base::rm(prior)
@@ -202,11 +235,34 @@ test_that("inline scope changes preserve independent and shadowed bindings", {
       }
       if (is.function(callback)) sum(prior)
     })(),
+    (function(prior = {
+      base::rm(prior)
+      stop("An uninvoked definition cannot demand this default.")
+    }) {
+      callback <- function() {
+        prior
+        sum(prior)
+      }
+      if (is.function(callback)) touch()
+    })(),
     (function(prior = touch()) {
       (function() {
         quote(base::rm(prior, envir = parent.frame()))
         if (FALSE) base::remove(prior, envir = parent.frame())
         rm(prior, envir = parent.frame())
+      })()
+      sum(prior)
+    })(),
+    (function(prior = touch()) {
+      (function() {
+        rm <- function(...) NULL
+        rm(prior, envir = parent.frame())
+      })()
+      sum(prior)
+    })(),
+    (function(prior = touch()) {
+      (function() {
+        FALSE && base::rm(prior, envir = parent.frame())
       })()
       sum(prior)
     })(),
@@ -322,4 +378,23 @@ test_that("inline scope changes keep ordinary evaluation without shares", {
     expect_identical(counts$calls, control_calls)
   }
   expect_identical(serialize(data, NULL), original)
+})
+
+test_that("invalid inline argument matching keeps the evaluation error", {
+  data <- data.frame(group = c("a", "b"), x = c(1, 3))
+  state <- new.env(parent = emptyenv())
+  state$evaluated <- FALSE
+  expect_error(
+    summarize_with_margins(
+      data, prior = {
+        state$evaluated <- TRUE
+        sum(x)
+      },
+      value = (function(prior = 1) sum(prior))(unused = 2),
+      fraction = share_of_total(value), .grouping = rollup(group)
+    ),
+    "unused argument (unused = 2)",
+    fixed = TRUE
+  )
+  expect_true(state$evaluated)
 })
