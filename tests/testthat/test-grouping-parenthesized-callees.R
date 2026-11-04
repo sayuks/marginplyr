@@ -133,6 +133,7 @@ test_that("explicit qualified parentheses retain the caller's selection", {
   qualified <- quote(base::`(`(marginplyr::rollup)())
   spellings <- list(
     qualified = qualified,
+    quoted_package = quote("base"::`(`(marginplyr::rollup)()),
     internal = quote(base::`(`(marginplyr:::rollup)()),
     bare = quote(base::`(`(rollup)()),
     wrapped = quote((base::`(`(marginplyr::rollup))()),

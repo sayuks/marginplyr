@@ -2028,9 +2028,7 @@ read_grouping_arg <- function(arg, data_vars) {
     if (rlang::is_call(constructor_head, "(", n = 1L, ns = "")) {
       # Answer at the outermost pair without forcing any inner callee lookup.
       rlang::env_bind(selection_env, `(` = function(...) retained)
-    } else if (
-      rlang::is_call(constructor_head, "(", n = 1L, ns = "base")
-    ) {
+    } else if (is_redundant_parens(constructor_head)) {
       # A qualified pair around the whole selection needs the value directly.
       # The pair in the callee needs the function that returns that value.
       constructor_operand <- constructor_head[[2L]]
