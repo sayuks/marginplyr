@@ -150,3 +150,91 @@ test_that("isolated display helpers preserve nesting collection boundaries", {
   expect_identical(rowwise$g, c("a", "b"))
   expect_gt(reads, 0L)
 })
+
+test_that("dtplyr nesting payloads survive changes to caller list bindings", {
+  skip_if_suggest_absent("dtplyr")
+  # dtplyr imports data.table, so the immutable source needs only dtplyr.
+  source <- data.table::data.table(g = "a", v = 1L)
+  before <- serialize(source, NULL)
+  root <- new.env(parent = globalenv())
+  root$source <- source
+  reads <- 0L
+  payload_masks <- 0L
+  on_read <- function() NULL
+  root$observe <- function(value) {
+    if (length(value) > 0L) {
+      reads <<- reads + 1L
+      on_read()
+    }
+    rep(TRUE, length(value))
+  }
+  input <- evalq(dplyr::filter(
+    dtplyr::lazy_dt(source, immutable = TRUE), observe(v)
+  ), root)
+  mask_list <- function(...) {
+    values <- base::list(...)
+    if (identical(names(values), "v")) {
+      payload_masks <<- payload_masks + 1L
+      values$v <- 999L
+    }
+    values
+  }
+
+  query <- nest_with_margins(input, .grouping = grouping_set(g), .key = "cell")
+  expect_s3_class(query, "dtplyr_step")
+  expect_identical(reads, 0L)
+
+  root$list <- mask_list
+  ordinary <- dplyr::collect(query)
+  expect_gt(reads, 0L)
+  expect_identical(ordinary$g, "a")
+  expect_identical(as.list(ordinary$cell[[1L]]), list(v = 1L))
+  expect_identical(as.list(dplyr::collect(input)), list(g = "a", v = 1L))
+
+  retained <- nest_with_margins(
+    input, .grouping = grouping_set(g), .keep = TRUE
+  )
+  expect_identical(
+    as.list(dplyr::collect(retained)$data[[1L]]), list(g = "a", v = 1L)
+  )
+  masked_query <- nest_with_margins(input, .grouping = grouping_set(g))
+  rm("list", envir = root)
+  expect_identical(dplyr::collect(query)$cell[[1L]]$v, 1L)
+  expect_identical(dplyr::collect(masked_query)$data[[1L]]$v, 1L)
+
+  # The row-wise verb collects internally. Change the binding when its
+  # upstream filter reads source rows, after the nested query was built.
+  on_read <- function() root$list <- mask_list
+  rowwise <- nest_by_with_margins(input, .grouping = grouping_set(g))
+  expect_identical(root$list, mask_list)
+  expect_s3_class(rowwise, "rowwise_df")
+  expect_identical(dplyr::group_vars(rowwise), "g")
+  expect_identical(rowwise$g, "a")
+  expect_identical(as.list(rowwise$data[[1L]]), list(v = 1L))
+
+  on_read <- function() {
+    if (!is.null(root$list)) rm("list", envir = root)
+  }
+  rowwise <- nest_by_with_margins(input, .grouping = grouping_set(g))
+  expect_false(exists("list", envir = root, inherits = FALSE))
+  expect_identical(as.list(rowwise$data[[1L]]), list(v = 1L))
+  expect_identical(payload_masks, 0L)
+  expect_identical(serialize(source, NULL), before)
+})
+
+test_that("dtplyr .SD payloads survive caller list bindings", {
+  skip_if_suggest_absent("dtplyr")
+  source <- tibble::tibble(g = "a", v = 1L, .SD = 2L)
+  root <- new.env(parent = globalenv())
+  root$source <- source
+  root$list <- function(...) {
+    values <- base::list(...)
+    if ("v" %in% names(values)) values$v <- 999L
+    values
+  }
+  input <- evalq(dtplyr::lazy_dt(source, immutable = TRUE), root)
+  query <- nest_with_margins(input, .grouping = grouping_set(g))
+  expect_identical(
+    as.list(dplyr::collect(query)$data[[1L]]), list(v = 1L, .SD = 2L)
+  )
+})
