@@ -275,7 +275,38 @@ nest_margin_pipeline <- function(.data,
     .keep = .keep,
     rowwise = rowwise
   )
-  finalize_margin_operation(operation, execution)
+  result <- finalize_margin_operation(operation, execution)
+  if (!rowwise) {
+    return(result)
+  }
+
+  # dtplyr's collect() does not forward name repair to its tibble conversion.
+  is_dtplyr <- identical(operation$backend$kind, "dtplyr")
+  result <- if (is_dtplyr) {
+    dplyr::as_tibble(result, .name_repair = "minimal")
+  } else {
+    dplyr::collect(result)
+  }
+  if (nrow(result) == 0L &&
+      length(c(operation$plan$by, operation$plan$dimensions)) == 0L) {
+    # The prepared proxy already holds the payload schema. Recollecting the
+    # input would execute its upstream dtplyr operations again (ADR 0020).
+    columns <- proxy_columns(operation$data_proxy, operation$data_vars)
+    columns <- lapply(columns, vctrs::vec_slice, integer())
+    cell <- if (is_dtplyr && length(columns) > 0L) {
+      # The data.frame converter also admits payloads named `.SD`.
+      data.table::as.data.table(tibble::new_tibble(columns, nrow = 0L))
+    } else {
+      dplyr::as_tibble(columns)
+    }
+    id <- operation$set_id_name
+    result <- tibble::new_tibble(
+      stats::setNames(c(if (!is.null(id)) list(1L), list(list(cell))),
+                      c(id, unname(.key))),
+      nrow = 1L
+    )
+  }
+  result
 }
 
 # Fold a prepared Margin operation into cells after nesting-specific admission;
