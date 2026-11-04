@@ -114,9 +114,10 @@ test_that("pattern pronouns preserve deferred bindings and caller operators", {
 
   data <- data.frame(a = "x", b = 1L)
   step <- dplyr::mutate(dtplyr::lazy_dt(data), added = paste0(a, "x"))
-  calls <- 0L
+  counter <- new.env(parent = emptyenv())
+  counter$calls <- 0L
   deferred <- function() {
-    calls <<- calls + 1L
+    counter$calls <- counter$calls + 1L
     stringr::regex("^a")
   }
   bindings <- rlang::env()
@@ -137,7 +138,9 @@ test_that("pattern pronouns preserve deferred bindings and caller operators", {
     rlang::new_quosure(quote(matches(.env$pattern)), rebound),
     rlang::new_quosure(quote(matches((make_regex)("^a"))), bindings),
     rlang::new_quosure(quote(matches(stringr::regex(.env$classed))), bindings),
-    rlang::new_quosure(quote(matches(stringr::regex(lexical_prefix()))), bindings)
+    rlang::new_quosure(
+      quote(matches(stringr::regex(lexical_prefix()))), bindings
+    )
   )
 
   for (selection in selections) {
@@ -146,7 +149,7 @@ test_that("pattern pronouns preserve deferred bindings and caller operators", {
       "Can't safely determine column metadata", class = "marginplyr_error"
     )
   }
-  expect_identical(calls, 0L)
+  expect_identical(counter$calls, 0L)
 })
 
 test_that("malformed stringr regex fails before DuckDB reads metadata", {
