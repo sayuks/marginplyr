@@ -4981,19 +4981,23 @@ scope_possible_losses <- function(scope, after) {
   }, scope, after)
 }
 
-# Apply a visible removal to its own frame or the direct inline caller's
-# frame. Unresolved targets retain the conservative current-frame treatment.
+# Apply a visible removal to its own frame or a statically visible caller.
+# Unresolved targets retain the conservative current-frame treatment.
 scope_after_removal_call <- function(expr, scope, lookup) {
   target <- base_call_argument(expr, c("envir", "pos"))
   index <- 1L
   if (length(target) > 0L) {
     envir <- unparenthesized_value(target[[1L]])
     bound <- scope_bound_names(scope)
-    if (is_immediate_parent_frame(envir, bound, lookup)) {
-      if (!isTRUE(scope[[1L]]$invoked)) {
+    depth <- static_parent_frame_depth(envir, bound, lookup)
+    if (!is.null(depth)) {
+      if (depth >= length(scope) ||
+            !all(vapply(scope[seq_len(depth)], function(frame) {
+              isTRUE(frame$invoked)
+            }, logical(1)))) {
         return(scope)
       }
-      index <- 2L
+      index <- depth + 1L
     } else if (!is.null(lookup_environment_value(envir, bound, lookup))) {
       return(scope)
     }
@@ -5004,7 +5008,8 @@ scope_after_removal_call <- function(expr, scope, lookup) {
   )
   inheritance <- base_call_argument(expr, "inherits")
   targets <- if (length(inheritance) > 0L &&
-                   identical(unparenthesized_value(inheritance[[1L]]), TRUE)) {
+                   (identical(unparenthesized_value(inheritance[[1L]]), TRUE) ||
+                      identical(unparenthesized_value(inheritance[[1L]]), 1L))) {
     seq.int(index, length(scope))
   } else {
     index
@@ -5020,18 +5025,41 @@ scope_after_removal_call <- function(expr, scope, lookup) {
   scope
 }
 
-# Whether the written call selects the immediate caller's frame.
-is_immediate_parent_frame <- function(expr, bound, lookup) {
-  if (!identical(static_call_name(expr), "parent.frame") ||
-        !is_known_base_call(expr, "parent.frame", bound, lookup)) {
-    return(FALSE)
+# Literal depth of a recognized base caller-frame expression, or NULL
+# when the target is unknown. No frame expression is evaluated.
+static_parent_frame_depth <- function(expr, bound, lookup) {
+  name <- static_call_name(expr)
+  if (identical(name, "parent.frame") &&
+        is_known_base_call(expr, name, bound, lookup)) {
+    args <- static_call_args(expr)
+    if (length(args) == 0L) {
+      return(1L)
+    }
+    if (length(args) == 1L && argument_names(args)[[1L]] %in% c("", "n")) {
+      if (rlang::is_missing(args[[1L]])) {
+        return(1L)
+      }
+      depth <- unparenthesized_value(args[[1L]])
+      if (identical(depth, 1) || identical(depth, 1L)) {
+        return(1L)
+      }
+      if (identical(depth, 2L)) {
+        return(2L)
+      }
+    }
   }
-  args <- static_call_args(expr)
-  length(args) == 0L ||
-    (length(args) == 1L && argument_names(args)[[1L]] %in% c("", "n") &&
-       (rlang::is_missing(args[[1L]]) ||
-          identical(unparenthesized_value(args[[1L]]), 1) ||
-          identical(unparenthesized_value(args[[1L]]), 1L)))
+  if (identical(name, "sys.frame") && length(expr) == 2L &&
+        is_known_base_call(expr, name, bound, lookup)) {
+    args <- static_call_args(expr)
+    parent <- unparenthesized_value(args[[1L]])
+    if (argument_names(args)[[1L]] %in% c("", "which") &&
+          identical(static_call_name(parent), "sys.parent") &&
+          length(parent) == 1L &&
+          is_known_base_call(parent, "sys.parent", bound, lookup)) {
+      return(1L)
+    }
+  }
+  NULL
 }
 
 # Discard pending defaults whose bindings have been removed.

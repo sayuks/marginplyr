@@ -24,7 +24,34 @@ test_that("visible inline scope changes expose both forbidden dependencies", {
   original <- serialize(data, NULL)
   counters <- new.env(parent = emptyenv())
   counters$default <- counters$body <- counters$summary <- 0L
+  counters$target <- 0L
+  make_target <- function() {
+    counters$target <- counters$target + 1L
+    parent.frame()
+  }
   expressions <- alist(
+    (function() {
+      base::rm("prior", envir = make_target())
+      sum(.data$prior)
+    })(),
+    (function(prior) {
+      (function() {
+        base::rm("prior", envir = sys.frame(sys.parent()))
+      })()
+      sum(prior)
+    })(1),
+    (function(prior) {
+      (function(prior) {
+        (function() {
+          base::rm("prior", envir = base::parent.frame(n = 2L))
+        })()
+      })(2)
+      sum(prior)
+    })(1),
+    (function(prior) {
+      (function() base::rm("prior", inherits = 1L))()
+      sum(prior)
+    })(1),
     (function(prior = {
       counters$default <- counters$default + 1L
       base::rm(prior)
@@ -172,6 +199,7 @@ test_that("visible inline scope changes expose both forbidden dependencies", {
     }
   }
   expect_identical(counters$body, 0L)
+  expect_identical(counters$target, 0L)
   expect_identical(counters$default, 0L)
   expect_identical(counters$summary, 0L)
   expect_identical(serialize(data, NULL), original)
@@ -189,6 +217,18 @@ test_that("inline scope changes preserve independent and shadowed bindings", {
   outside$prior <- 2
   rm <- function(...) NULL
   expressions <- alist(
+    (function(prior = touch()) {
+      (function(prior) {
+        (function() base::rm("prior", envir = sys.frame(sys.parent())))()
+      })(0)
+      sum(prior)
+    })(),
+    (function(prior = touch()) {
+      (function(prior) {
+        (function() base::rm("prior", envir = parent.frame(2L)))()
+        sum(prior)
+      })(touch())
+    })(),
     (function(prior = touch()) {
       (function() {
         base::force(prior)
@@ -384,6 +424,13 @@ test_that("inline scope changes keep ordinary evaluation without shares", {
   expect_equal(control$derived, c(1, 3, 4))
   expect_identical(control_calls, 3L)
   expressions <- alist(
+    (function(prior = 0) {
+      (function() {
+        touch()
+        base::rm("prior", envir = sys.frame(sys.parent()))
+      })()
+      sum(prior)
+    })(),
     (function(prior = {
       touch()
       base::rm(prior)
