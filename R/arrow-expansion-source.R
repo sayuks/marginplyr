@@ -44,7 +44,7 @@ arrow_expansion_schema <- function(result, source) {
 # the reader method supplies the actual source instead of running the stub.
 defer_arrow_expansion <- function(result, source, marker) {
   schema <- arrow_expansion_schema(result, source)
-  stub <- dplyr::mutate(arrow::Table$create(schema = schema))
+  stub <- dplyr::collapse(arrow::Table$create(schema = schema))
   stub$schema <- schema
   stub$union_all <- list(right_data = source)
   stub$head <- 0L
@@ -71,7 +71,7 @@ as_record_batch_reader.margin_arrow_expansion <- function(x, ...) {
   }
 
   expansion <- x$margin_expansion
-  input <- dplyr::mutate(arrow::as_arrow_table(expansion$source))
+  input <- dplyr::collapse(arrow::as_arrow_table(expansion$source))
   query <- bind_arrow_expansion_input(
     expansion$result, expansion$marker, input
   )
