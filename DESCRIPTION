@@ -227,6 +227,7 @@ Config/testthat/start-first:
     sent-query-general-conditions,
     special-column-reads,
     nested-data-masks,
+    dtplyr-share-membership,
     sf-nesting,
     utils,
     parenthesized-forwarding,
