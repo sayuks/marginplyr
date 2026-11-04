@@ -2024,7 +2024,13 @@ read_grouping_arg <- function(arg, data_vars) {
     # preflight value without forcing the caller's arguments again.
     retained <- if (is_constructor_call) function(...) value else value
     selection_env <- rlang::env(env)
-    if (is_constructor_call && !is.null(static_call_ns(expr))) {
+    if (
+      is_constructor_call &&
+        rlang::is_call(static_call_head(expr), "(", n = 1L, ns = "")
+    ) {
+      # Answer at the outermost pair without forcing any inner callee lookup.
+      rlang::env_bind(selection_env, `(` = function(...) retained)
+    } else if (is_constructor_call && !is.null(static_call_ns(expr))) {
       operator <- selection_namespace_operator(expr)
       rlang::env_bind(selection_env, !!operator := function(...) retained)
     } else {
