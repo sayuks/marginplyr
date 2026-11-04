@@ -135,7 +135,9 @@ test_that("explicit qualified parentheses retain the caller's selection", {
     qualified = qualified,
     internal = quote(base::`(`(marginplyr:::rollup)()),
     bare = quote(base::`(`(rollup)()),
-    wrapped = quote((base::`(`(marginplyr::rollup))())
+    wrapped = quote((base::`(`(marginplyr::rollup))()),
+    whole = quote(base::`(`(base::`(`(marginplyr::rollup)())),
+    whole_wrapped = quote((base::`(`(base::`(`(marginplyr::rollup)())))
   )
   one_read <- c(outer = 1L, inner = 1L, selector = 1L)
   for (spelling in names(spellings)) {
@@ -190,13 +192,20 @@ test_that("explicit qualified parentheses retain the caller's selection", {
   expect_identical(tryCatch(inspect(spec), error = identity), failure)
   expect_identical(observed$reads, one_read)
 
-  observed$reads <- no_reads
   choose <- function() list("a")
-  actual <- expect_error(inspect(spec), class = "vctrs_error_subscript_type")
-  expect_identical(observed$reads, one_read)
-  observed$reads <- no_reads
-  direct <- expect_error(tidyselect::eval_select(selection, input),
-                         class = "vctrs_error_subscript_type")
-  expect_identical(actual$subscript_arg, direct$subscript_arg)
-  expect_identical(conditionMessage(actual), conditionMessage(direct))
+  for (spelling in c("qualified", "whole")) {
+    selection <- rlang::new_quosure(spellings[[spelling]], caller)
+    observed$reads <- no_reads
+    outer_limit <- 1L
+    actual <- expect_error(inspect(grouping_sets(!!selection)),
+                           class = "vctrs_error_subscript_type")
+    expect_identical(observed$reads, one_read)
+
+    observed$reads <- no_reads
+    outer_limit <- 2L
+    direct <- expect_error(tidyselect::eval_select(selection, input),
+                           class = "vctrs_error_subscript_type")
+    expect_identical(actual$subscript_arg, direct$subscript_arg)
+    expect_identical(conditionMessage(actual), conditionMessage(direct))
+  }
 })

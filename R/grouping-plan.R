@@ -2031,8 +2031,13 @@ read_grouping_arg <- function(arg, data_vars) {
     } else if (
       rlang::is_call(constructor_head, "(", n = 1L, ns = "base")
     ) {
-      # The outer qualifier resolves the parenthesis function before the callee.
-      parenthesis <- function(...) retained
+      # A qualified pair around the whole selection needs the value directly.
+      # The pair in the callee needs the function that returns that value.
+      constructor_operand <- constructor_head[[2L]]
+      parenthesis <- function(...) {
+        operand <- substitute(list(...))[[2L]]
+        if (identical(operand, constructor_operand)) retained else value
+      }
       rlang::env_bind(selection_env, `::` = function(...) parenthesis)
     } else if (is_constructor_call && !is.null(static_call_ns(expr))) {
       operator <- selection_namespace_operator(expr)
