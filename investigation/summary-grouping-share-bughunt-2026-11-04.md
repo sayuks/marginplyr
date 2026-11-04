@@ -157,8 +157,8 @@ Every research execution and its owned work reached terminal completion before
 Review-ready submission. No disposable database server remained.
 
 The selected publication scope was `source`. The standalone research files
-were excluded from the source package, and no package or verification tool
-consumed these new files. Their effects changed no package-check input;
+were excluded from the source package. Their effects changed no package-check
+input;
 package build/check, the complete suite and snapshots could therefore be
 omitted. The exact committed SHA, five baseline outcomes, retained execution
 handle, terminal result, fetched-main compatibility assessment and two-axis
