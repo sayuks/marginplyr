@@ -287,8 +287,10 @@ nest_margin_pipeline <- function(.data,
   } else {
     dplyr::collect(result)
   }
-  if (nrow(result) == 0L &&
-      length(c(operation$plan$by, operation$plan$dimensions)) == 0L) {
+  if (
+    nrow(result) == 0L &&
+      length(c(operation$plan$by, operation$plan$dimensions)) == 0L
+  ) {
     # The prepared proxy already holds the payload schema. Recollecting the
     # input would execute its upstream dtplyr operations again (ADR 0020).
     columns <- proxy_columns(operation$data_proxy, operation$data_vars)

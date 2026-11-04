@@ -767,7 +767,7 @@ test_that("zero-column and empty nesting match an independent construction", {
 
 test_that("empty keyless row-wise nesting preserves numbered-dot payloads", {
   empty <- tibble::tibble(`..0` = integer(), `..01` = character(),
-                         .name_repair = "minimal")
+                          .name_repair = "minimal")
   for (grouping in list(list(), list(.grouping = grouping_set()))) {
     for (id in list(NULL, "set")) {
       result <- rlang::exec(
@@ -787,7 +787,7 @@ test_that("empty keyless row-wise nesting preserves numbered-dot payloads", {
 test_that("empty keyless dtplyr nesting preserves numbered-dot payloads", {
   skip_if_suggest_absent("dtplyr")
   empty <- tibble::tibble(`..0` = integer(), `..01` = character(),
-                         .name_repair = "minimal")
+                          .name_repair = "minimal")
   input <- dtplyr::lazy_dt(empty, immutable = TRUE)
 
   result <- nest_by_with_margins(input, .grouping = grouping_set(), .id = "set")
@@ -799,7 +799,7 @@ test_that("empty keyless dtplyr nesting preserves numbered-dot payloads", {
   expect_identical(tibble::as_tibble(result$data[[1L]]), empty)
 })
 
-test_that("row-wise nesting evaluates a dtplyr filter once when no rows remain", {
+test_that("empty row-wise nesting evaluates a dtplyr filter once", {
   skip_if_suggest_absent("dtplyr")
   input <- tibble::tibble(value = 1:2)
   expected <- tibble::tibble(value = integer())
