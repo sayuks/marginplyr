@@ -273,7 +273,8 @@ git diff
 
 Record `quarto --version` and `quarto pandoc --version` before the README
 command. `devtools::build_readme()` installs the working tree because its chunks
-load marginplyr, as `AGENTS.md` documents.
+load marginplyr, as `.github/workflows/document.yaml` documents beside
+*Regenerate README.md*.
 
 After the review and required regeneration, inspect `git status --short` and
 `git diff`. Follow exactly one of these paths:

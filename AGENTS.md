@@ -31,9 +31,8 @@ what was added and what paid for it.
 
 Before pushing, run both linters in that check.
 
-`object_usage_linter()` resolves symbols through the package namespace. Without
-`load_all()` it reports every internal marginplyr function as an undefined
-global, and installing the package is not enough — it must be loaded.
+Before running or diagnosing lint, read the *Lint* step's comments in
+`.github/workflows/lint.yaml` for the required package-loading environment.
 
 When a repository needs lint configuration, `.lintr` records it; an inline
 `# nolint` records a fact about one expression. Neither substitutes for giving
@@ -62,17 +61,9 @@ comments run `roxygen2::roxygenise()`; after changing `README.qmd` run
 `.github/workflows/document.yaml` regenerates all three and fails when any
 differs from what its source produces.
 
-The README is the generated file with the widest reach — GitHub shows it and
-the website's home page includes it — and the only one whose source
-`.Rbuildignore` keeps out of the tarball, so nothing a check run reaches
-records what it should have contained. `devtools::build_readme()` installs the
-working tree before rendering, as the site build does.
-
-`document.yaml` uses the current stable Quarto and only its bundled Pandoc;
-neither executable is version-pinned. It logs both versions before the byte
-comparison. A README diff can therefore mean either a stale generated file or
-writer drift after Quarto changed its bundled Pandoc; the failure names both
-possibilities. Regenerate with the current stable Quarto and commit the result.
+Before rendering `README.qmd` or diagnosing a generated-documentation diff,
+read `.github/workflows/document.yaml`'s renderer setup and regeneration/check
+comments for the installation order, current stable Quarto and bundled Pandoc.
 
 ### Installation instructions
 
@@ -322,18 +313,10 @@ grows past the fix. Neither reaches a sentence carrying what this file requires
 to be written down, a header's contract here or the reason a `# nolint` in R
 code names under *Linting*: that one is kept, and corrected where it is wrong.
 
-No scan enforces any of this, and that is a decision rather than a gap. What
-makes a comment wrong is that a paragraph re-derives an argument another file
-owns, which is a semantic property: a scan over `R/` either fires on comments
-that are correct or finds almost nothing, and a bound on a block's length is
-answered by one blank `#` line. A structural gate cannot reach it either: those
-gates read a loaded namespace, per *Structural gates* in
-`design/architecture.md`, and a comment is not in one the way a name and a body
-are. A `srcref` opens at `function(`, so no header is inside any of them, and
-an installed package carries no `srcref` at all, `keep.source.pkgs` being
-`FALSE`. Such a gate would have to skip where every existing one runs, and
-`verify-backend.R` fails a job for a skip naming no withheld backend. This is a
-hand audit for the reason *Dependency metadata* above is one.
+These rules are audited by hand, as *Dependency metadata* above is. Before
+changing comment enforcement, read *Structural gates* in
+`design/architecture.md` for why source scans and namespace gates cannot
+enforce them.
 
 ## Agent skills
 
