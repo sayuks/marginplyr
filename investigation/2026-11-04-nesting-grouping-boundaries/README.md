@@ -33,8 +33,8 @@ direct selection introspection, and compaction across constructor kinds.
 | [Two sf geometries](backend/README.md) | The multi-set Nest failed before returning cells with the two source geometries. | [#1276](https://github.com/sayuks/marginplyr/issues/1276), new |
 | [Named-list label scalar](local/README.md) | A shaped scalar caused collision checking to fail or changed the display column's shape. | [#1278](https://github.com/sayuks/marginplyr/issues/1278), new |
 | [Direct name introspection](spec/README.md) | Derived dtplyr inspection refused locally available names. A locally detectable DuckDB error followed a metadata query. | [#1277](https://github.com/sayuks/marginplyr/issues/1277), new |
-| [Repeated dtplyr evaluation](backend/README.md) | The detail cell and Grand total cell came from different evaluations of one immutable source. | [#1271](https://github.com/sayuks/marginplyr/issues/1271), existing shared expansion defect with independent Nest evidence |
-| [Parenthesized constructor callee](spec/README.md) | A second head evaluation changed the selected key or delivered a later condition. | [#1273](https://github.com/sayuks/marginplyr/issues/1273), existing with independent Nest evidence |
+| [Repeated dtplyr evaluation](backend/README.md) | The detail cell and Grand total cell came from different evaluations of one immutable source. | [#1271](https://github.com/sayuks/marginplyr/issues/1271), existing shared expansion defect with [Nest evidence](https://github.com/sayuks/marginplyr/issues/1271#issuecomment-6629474580) |
+| [Parenthesized constructor callee](spec/README.md) | A second head evaluation changed the selected key or delivered a later condition. | [#1273](https://github.com/sayuks/marginplyr/issues/1273), existing with [Nest evidence](https://github.com/sayuks/marginplyr/issues/1273#issuecomment-6629475031) |
 
 The new tickets can be worked independently. The main SHA was also checked
 against the remote and used to extract a separate source tree for replay.
@@ -90,7 +90,7 @@ a Git archive of the tested SHA, set `evidence` to the absolute path of this
 note's directory in the investigation checkout.
 
 ```sh
-evidence=investigation/2026-11-04-nesting-grouping-boundaries
+evidence="${evidence:-investigation/2026-11-04-nesting-grouping-boundaries}"
 Rscript "$evidence/plan/composition-oracle.R"
 Rscript "$evidence/plan/inspection-boundaries.R"
 R_MAX_VSIZE=96M Rscript "$evidence/plan/composed-cube-memory.R" --expect-defect
