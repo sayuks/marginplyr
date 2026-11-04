@@ -971,6 +971,78 @@ restore_input_window_order <- function(result, input_window_order) {
   result
 }
 
+# Share the expanded source only on live engines with a materialization fence.
+# RSQLite's dbGetInfo() returns the linked engine version without sending SQL.
+sql_expand_shares_source <- function(con) {
+  inherits(con, "duckdb_connection") ||
+    (inherits(con, "SQLiteConnection") && !inherits(con, "TestConnection") &&
+       numeric_version(DBI::dbGetInfo(con)$db.version) >= "3.35.0")
+}
+
+# Substitute a statement-local table for the enclosed input of a multi-set
+# SQL expansion. Avoid shadowing any name in the rendered input itself.
+sql_expand_shared_source <- function(data, backend) {
+  con <- dbplyr::remote_con(data)
+  columns <- margin_col_names(data)
+  boolean_source <- attr(data, "marginplyr_boolean_input_query")
+  input <- boolean_source %||% data$lazy_query
+  input_columns <- dbplyr::op_vars(input)
+  input_sql <- dbplyr::sql_render(input, con = con)
+  input_key <- margin_identifier_key(as.character(input_sql), backend)
+  suffix <- 1L
+  name <- "marginplyr_expand_source_1"
+  while (grepl(name, input_key, fixed = TRUE)) {
+    suffix <- suffix + 1L
+    name <- paste0("marginplyr_expand_source_", suffix)
+  }
+  source <- dplyr::tbl(con, name, vars = input_columns)
+  if (!is.null(boolean_source)) {
+    names(input_columns) <- columns
+    source <- dplyr::rename(source, dplyr::all_of(input_columns))
+  }
+  list(
+    source = source,
+    name = dbplyr::escape(dbplyr::ident(name), con = con),
+    sql = input_sql,
+    order = dbplyr::op_sort(data)
+  )
+}
+
+# Keep the CTE inside the branch union's own relation. The outer SQLite type
+# anchor can still refer directly to the original input (ADR 0031).
+sql_expand_shared_result <- function(result, shared, backend) {
+  con <- dbplyr::remote_con(result)
+  columns <- margin_col_names(result)
+  boolean <- if (inherits(con, "SQLiteConnection")) {
+    sqlite_boolean_columns(columns)
+  } else {
+    character()
+  }
+  aliases <- stats::setNames(new_margin_internal_names(
+    length(boolean), columns, prefix = "..marginplyr_expand_", backend = backend
+  ), boolean)
+  if (length(aliases) > 0L) {
+    result <- sqlite_boolean_query(result, source = NULL, aliases,
+                                   public = FALSE)
+  }
+  if (any(sql_name_needs_quoting(columns))) {
+    result <- sql_quote_generated_columns(result)
+  }
+  sql <- dbplyr::sql(paste0(
+    "WITH ", shared$name, " AS MATERIALIZED (\n", shared$sql, "\n)\n",
+    dbplyr::sql_render(result)
+  ))
+  # SQLite cannot start a later compound operand with WITH.
+  sql <- dbplyr::sql_query_select(
+    con, dbplyr::sql("*"), dbplyr::sql_query_wrap(con, sql)
+  )
+  relation <- dplyr::tbl(con, sql, vars = margin_col_names(result))
+  if (length(aliases) > 0L) {
+    relation <- dplyr::rename(relation, dplyr::all_of(aliases))
+  }
+  restore_input_window_order(relation, shared$order)
+}
+
 # A reusable Arrow input whose filesystem partition guarantees cannot overwrite
 # later expansion projections. Ordering a private constant retains duplicates
 # and nested payload types without reading rows during construction (ADR 0020).
@@ -1035,10 +1107,16 @@ expand_margin_union <- function(.data,
                                 identity_cols = character(),
                                 identity_missing = list()) {
   public_id <- set_id_name
+  shared <- NULL
   if (backend$is_sql) {
     .data <- sql_margin_input_relation(
       .data, backend, margin_col_names(.data)
     )
+    if (length(plan$sets) > 1L &&
+          sql_expand_shares_source(dbplyr::remote_con(.data))) {
+      shared <- sql_expand_shared_source(.data, backend)
+      .data <- shared$source
+    }
   }
   if (identical(backend$kind, "arrow")) {
     source_names <- arrow_source_names(.data)
@@ -1121,6 +1199,7 @@ expand_margin_union <- function(.data,
 
   if (
     identical(backend$kind, "sql") &&
+      is.null(shared) &&
       length(branches) > 1L &&
       length(plan$dimensions) > 0L
   ) {
@@ -1151,6 +1230,9 @@ expand_margin_union <- function(.data,
     result <- dplyr::rename(result, dplyr::all_of(public))
   } else {
     result <- combine_margin_branches(branches)
+  }
+  if (!is.null(shared)) {
+    result <- sql_expand_shared_result(result, shared, backend)
   }
 
   if (!identical(set_id_name, public_id)) {

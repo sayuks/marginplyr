@@ -1,3 +1,35 @@
+test_that("SQLite expansion copies each evaluated SQL payload", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  if (numeric_version(RSQLite::rsqliteVersion()[["library"]]) < "3.35.0") {
+    skip("SQLite before 3.35 cannot materialize a shared expansion source")
+  }
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  DBI::dbExecute(con, paste(
+    "CREATE TEMPORARY TABLE MARGINPLYR_EXPAND_SOURCE_1 AS",
+    "SELECT 'detail' AS g, 7 AS v"
+  ))
+  source <- dplyr::tbl(con, dbplyr::sql(paste(
+    "SELECT g, v, hex(randomblob(16)) AS token",
+    "FROM MARGINPLYR_EXPAND_SOURCE_1"
+  )), vars = c("g", "v", "token"))
+  plan <- grouping_sets(grouping_set(g), grouping_set(), grouping_set(g))
+
+  query <- expand_with_margins(
+    source, .grouping = plan, .duplicates = "keep", .id = "set"
+  )
+  expect_identical(dbplyr::remote_con(query), con)
+  result <- dplyr::collect(query) |>
+    dplyr::arrange(.data$set)
+
+  expect_identical(names(result), c("g", "set", "v", "token"))
+  expect_identical(result$g, c("detail", "Total", "detail"))
+  expect_identical(result$set, 1:3)
+  expect_identical(result$v, c(7L, 7L, 7L))
+  expect_match(result$token[[1L]], "^[0-9A-F]{32}$")
+  expect_identical(result$token, rep(result$token[[1L]], 3L))
+})
+
 test_that("SQLite sorted one-set expansion keeps unchanged source types", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
