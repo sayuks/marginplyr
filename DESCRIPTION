@@ -91,6 +91,7 @@ Config/testthat/start-first:
     followup-summary,
     sqlite-boolean-binary,
     expand-inner-names,
+    factor-source-values,
     competing-process,
     sqlite-interruption,
     dot-dot-nesting,
