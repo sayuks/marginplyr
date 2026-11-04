@@ -1,0 +1,23 @@
+Baseline: 78ebbc36200bdc5cef70838dd4e772c5c4a1401c
+Warning option: 0 
+direct: caller_selector_failure/error/condition
+selector warning promoted by caller 
+local: caller_selector_failure/error/condition
+selector warning promoted by caller 
+typed: marginplyr_error/rlang_error/error/condition
+Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame. 
+duck: caller_selector_failure/error/condition
+selector warning promoted by caller 
+fixed: caller_selector_failure/error/condition
+selector warning promoted by caller 
+DuckDB variable query count: 1 
+SELECT *
+FROM handler_promotion_probe
+LIMIT 0
+
+DuckDB fixed query count: 0 
+Error in run() : identical(typed, promoted) is not TRUE
+Calls: run -> stopifnot
+Execution halted

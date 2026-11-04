@@ -1,0 +1,16 @@
+# A tibble: 2 × 6
+  set_id fixed included omitted grouping_bits grouping_id
+   <int> <chr> <chr>    <chr>   <chr>               <int>
+1      1 ()    (g)      ()      g=0                     0
+2      2 ()    ()       (g)     g=1                     1
+# A tibble: 2 × 2
+  g         k
+  <chr> <int>
+1 a         1
+2 b         2
+Effectful-filter control: construction 0 callbacks; explicit native collection 1
+Native oracle auto.index TRUE : serialized source changed TRUE ; source values retained
+Native oracle auto.index FALSE : serialized source changed FALSE ; source values retained
+R version 4.6.1 (2026-06-24) 
+ sysname  release  machine 
+"Darwin" "25.6.0"  "arm64" 

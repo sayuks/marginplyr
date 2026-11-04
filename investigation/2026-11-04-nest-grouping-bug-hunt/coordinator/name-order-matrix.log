@@ -1,0 +1,83 @@
+R version 4.6.1 (2026-06-24) 
+dplyr 1.2.1 
+dtplyr 1.3.3 
+data.table 1.18.6.1 
+vctrs 0.7.3 
+tibble 3.3.1 
+909 ... fixed local nest_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+910 ... fixed local nest_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+911 ... fixed local nest_by_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+912 ... fixed local nest_by_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+913 ... fixed dtplyr nest_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+914 ... fixed dtplyr nest_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+915 ... fixed dtplyr nest_by_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+916 ... fixed dtplyr nest_by_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+917 ... dimension local nest_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+918 ... dimension local nest_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+919 ... dimension local nest_by_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+920 ... dimension local nest_by_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+921 ... dimension dtplyr nest_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+922 ... dimension dtplyr nest_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+923 ... dimension dtplyr nest_by_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+924 ... dimension dtplyr nest_by_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+925 ... payload local nest_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+926 ... payload local nest_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+927 ... payload local nest_by_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+928 ... payload local nest_by_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+929 ... payload dtplyr nest_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+930 ... payload dtplyr nest_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+931 ... payload dtplyr nest_by_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+932 ... payload dtplyr nest_by_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+949 ..1 fixed local nest_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+950 ..1 fixed local nest_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+951 ..1 fixed local nest_by_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+952 ..1 fixed local nest_by_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+953 ..1 fixed dtplyr nest_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+954 ..1 fixed dtplyr nest_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+955 ..1 fixed dtplyr nest_by_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+956 ..1 fixed dtplyr nest_by_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+957 ..1 dimension local nest_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+958 ..1 dimension local nest_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+959 ..1 dimension local nest_by_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+960 ..1 dimension local nest_by_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+961 ..1 dimension dtplyr nest_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+962 ..1 dimension dtplyr nest_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+963 ..1 dimension dtplyr nest_by_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+964 ..1 dimension dtplyr nest_by_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+965 ..1 payload local nest_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+966 ..1 payload local nest_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+967 ..1 payload local nest_by_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+968 ..1 payload local nest_by_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+969 ..1 payload dtplyr nest_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+970 ..1 payload dtplyr nest_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+971 ..1 payload dtplyr nest_by_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+972 ..1 payload dtplyr nest_by_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+989 ..2 fixed local nest_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+990 ..2 fixed local nest_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+991 ..2 fixed local nest_by_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+992 ..2 fixed local nest_by_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+993 ..2 fixed dtplyr nest_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+994 ..2 fixed dtplyr nest_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+995 ..2 fixed dtplyr nest_by_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+996 ..2 fixed dtplyr nest_by_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+997 ..2 dimension local nest_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+998 ..2 dimension local nest_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+999 ..2 dimension local nest_by_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+1000 ..2 dimension local nest_by_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+1001 ..2 dimension dtplyr nest_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+1002 ..2 dimension dtplyr nest_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+1003 ..2 dimension dtplyr nest_by_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+1004 ..2 dimension dtplyr nest_by_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+1005 ..2 payload local nest_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+1006 ..2 payload local nest_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+1007 ..2 payload local nest_by_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+1008 ..2 payload local nest_by_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+1009 ..2 payload dtplyr nest_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+1010 ..2 payload dtplyr nest_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+1011 ..2 payload dtplyr nest_by_with_margins FALSE error vctrs_error_names_cannot_be_dot_dot 
+1012 ..2 payload dtplyr nest_by_with_margins TRUE error vctrs_error_names_cannot_be_dot_dot 
+        status
+kind     error match
+  dtplyr    36   838
+  local     36   838
+Saved /private/tmp/marginplyr-hunt-coordinator-20261104/name-order-results.rds 

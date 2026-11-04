@@ -1,0 +1,6 @@
+Stored source code: 1 ; outer code: 2 ; retained cell code: 1 
+Stored source code: 1 ; outer code: 2 ; retained cell code: 1 
+Native nesting/union, typed-missing, fixed-key, retained-cell and source controls passed.
+Shared expansion code: 2 ; shared summary code: 2 
+Error: Detail keys must retain source factor values.
+Execution halted
