@@ -107,6 +107,39 @@ test_that("visible inline scope changes expose both forbidden dependencies", {
         prior()
         sum(prior)
       })()
+    })(),
+    (function(prior = {
+      base::rm(prior)
+      function() NULL
+    }) {
+      (function() {
+        prior <- 0
+        prior()
+      })()
+      sum(prior)
+    })(),
+    (function(prior = 1) {
+      (function() {
+        rm <- function(...) NULL
+        if (length(x) > 0L) rm <- 0
+        rm(prior, envir = parent.frame())
+        sum(prior)
+      })()
+    })(),
+    (function(prior = 1) {
+      (function() {
+        rm <- function(...) NULL
+        base::assign("rm", 0)
+        rm(prior, envir = parent.frame())
+        sum(prior)
+      })()
+    })(),
+    (function(prior = 1) {
+      (function() {
+        `&&` <- function(x, y) y
+        FALSE && base::rm(prior, envir = parent.frame())
+        sum(prior)
+      })()
     })()
   )
   for (input in list(data, dbplyr::tbl_lazy(data))) {

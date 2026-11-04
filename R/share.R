@@ -4344,17 +4344,17 @@ scoped_data_symbols <- function(expr, scope, lookup) {
   ) {
     return(scoped_data_symbols(expr[[2L]], scope, lookup))
   }
-  # Element 1 is the function position. A bare symbol there is dropped, and it
-  # is the only head shape that can be: R resolves a symbol in that position
-  # through function lookup, which skips non-function bindings, so a share
-  # named `sum` cannot shadow `sum(x)`. Every other head is evaluated in the
-  # data mask exactly like an argument, so a read hidden in one bypasses the
-  # guard against an ordinary summary using an earlier share (#130).
+  # R resolves a bare head through function lookup, which skips non-function
+  # bindings such as a share named `sum` in `sum(x)`. Function lookup can
+  # demand a pending lexical promise. The walk reports reads of that syntax
+  # in the frame where the promise evaluates. A computed head instead
+  # follows ordinary value lookup in the data mask, including reads of an
+  # earlier share reached while computing the function (#130).
   #
-  # This names the one shape that is excluded rather than listing the shapes
-  # that are walked. #100 could justify only `[[` at the time and listed it,
-  # which left `(fns[[bucket]])(x)` -- a head that is a call to `(`, not to
-  # `[[` -- slipping past, together with `$`, `if`/`else`, and computed heads.
+  # Parentheses around a head make it a value expression in R. The lookup
+  # for `(fns[[bucket]])(x)` therefore reads both the object and the index,
+  # just as a computed head using `$` reads the object and one using `if`
+  # reads its condition.
   #
   # The head comes first so that the walk returns symbols in source order,
   # which is user-visible: the guard names `share_dependency[[1L]]`, so this
@@ -4380,10 +4380,10 @@ pronoun_index_symbols <- function(expr, scope, lookup) {
   ), use.names = FALSE)))
 }
 
-# The reads of a call's own parts: its evaluated arguments, and its head when
-# the head is not a bare symbol. This is the general walk above, reached by name
-# so that the reflective branches can add their resolved names to it instead of
-# answering in its place.
+# Reads of evaluated call arguments and the head, including syntax demanded
+# by a lexical promise in function position. The supplied scope describes the
+# frames visible before the call. Reflective branches add resolved names to
+# these reads.
 #
 # An argument a call captures as language is not one of those parts, and this
 # is where `quote(share)` stops being read as the column `share`: the boundary
@@ -4393,7 +4393,7 @@ pronoun_index_symbols <- function(expr, scope, lookup) {
 call_part_symbols <- function(expr, scope, lookup) {
   call_head <- static_call_head(expr)
   parts <- scope_call_args(
-    expr, static_call_name(expr), scope_bound_names(scope)
+    expr, static_call_name(expr), scope_bound_names(scope), lookup
   )
   definition <- inline_function_definition(expr)
   reads <- character()
@@ -4401,8 +4401,8 @@ call_part_symbols <- function(expr, scope, lookup) {
     reads <- definition_data_symbols(definition, scope, lookup, expr)
   } else if (is_name_part(call_head)) {
     name <- rlang::as_name(call_head)
-    reads <- scope_promise_symbols(name, scope, lookup)
-    scope <- scope_after_promise(name, scope, lookup)
+    reads <- scope_promise_symbols(name, scope, lookup, function_lookup = TRUE)
+    scope <- scope_after_promise(name, scope, lookup, function_lookup = TRUE)
   } else if (!rlang::is_symbol(call_head)) {
     reads <- scoped_data_symbols(call_head, scope, lookup)
     scope <- scope_after_removals(call_head, scope, lookup)
@@ -4416,8 +4416,9 @@ call_part_symbols <- function(expr, scope, lookup) {
 
 # The reachable arm of an if with a literal condition, or NULL when both
 # arms may run. An empty list represents an if with no reachable arm.
-literal_if_parts <- function(expr, name) {
-  if (identical(name, "if") && length(expr) >= 3L) {
+literal_if_parts <- function(expr, name, bound, lookup) {
+  if (identical(name, "if") && length(expr) >= 3L &&
+        is_scope_control_primitive(expr, name, bound, lookup)) {
     condition <- unparenthesized_value(expr[[2L]])
     if (identical(condition, FALSE)) {
       return(if (length(expr) >= 4L) list(expr[[4L]]) else list())
@@ -4430,12 +4431,23 @@ literal_if_parts <- function(expr, name) {
 }
 
 # Call arguments that the read and removal walks may visit.
-scope_call_args <- function(expr, name, bound) {
+scope_call_args <- function(expr, name, bound, lookup) {
   if (!is.null(name) && name %in% c("&&", "||") && length(expr) == 3L &&
-        identical(unparenthesized_value(expr[[2L]]), identical(name, "||"))) {
+        identical(unparenthesized_value(expr[[2L]]), identical(name, "||")) &&
+        is_scope_control_primitive(expr, name, bound, lookup)) {
     return(list())
   }
-  literal_if_parts(expr, name) %||% evaluated_call_args(expr, bound = bound)
+  literal_if_parts(expr, name, bound, lookup) %||%
+    evaluated_call_args(expr, bound = bound)
+}
+
+# Standalone syntax has no captured caller. With a caller, short-circuiting
+# requires the actual base callee.
+is_scope_control_primitive <- function(expr, name, bound, lookup) {
+  if (is.null(lookup$env) && is.null(static_call_ns(expr))) {
+    return(!name %in% bound)
+  }
+  is_known_base_call(expr, name, bound, lookup)
 }
 
 # A literal function in call position is visible through redundant parentheses.
@@ -4497,10 +4509,11 @@ scope_bound_names <- function(scope) {
 
 # Find the first binding and the frame in which its pending syntax runs.
 # Clear the promise in the returned scope before following recursive reads.
-scope_promise <- function(name, scope) {
+scope_promise <- function(name, scope, function_lookup) {
   for (index in seq_along(scope)) {
     frame <- scope[[index]]
-    if (!name %in% frame$bound) {
+    if (!name %in% frame$bound ||
+          (function_lookup && identical(frame$kinds[[name]], "value"))) {
       next
     }
     if (name %in% names(frame$defaults)) {
@@ -4525,8 +4538,9 @@ scope_promise <- function(name, scope) {
 }
 
 # The dependencies of syntax that a lexical read may force.
-scope_promise_symbols <- function(name, scope, lookup) {
-  promise <- scope_promise(name, scope)
+scope_promise_symbols <- function(name, scope, lookup,
+                                  function_lookup = FALSE) {
+  promise <- scope_promise(name, scope, function_lookup)
   if (is.null(promise)) {
     return(character())
   }
@@ -4536,8 +4550,8 @@ scope_promise_symbols <- function(name, scope, lookup) {
 }
 
 # Effects of demanding a pending promise in its evaluation frame.
-scope_after_promise <- function(name, scope, lookup) {
-  promise <- scope_promise(name, scope)
+scope_after_promise <- function(name, scope, lookup, function_lookup = FALSE) {
+  promise <- scope_promise(name, scope, function_lookup)
   if (is.null(promise)) {
     return(scope)
   }
@@ -4549,15 +4563,20 @@ scope_after_promise <- function(name, scope, lookup) {
   scope
 }
 
-# A definite local binding replaces any promise in this frame. A literal
-# function binding also establishes what a bare call head resolves to.
+# A definite local binding replaces any promise in this frame. Literal
+# values establish whether function lookup stops or skips the binding.
 scope_bind_local <- function(scope, name, value = NULL) {
   scope[[1L]]$bound <- union(scope[[1L]]$bound, name)
   scope[[1L]]$defaults[name] <- NULL
   scope[[1L]]$arguments[name] <- NULL
-  scope[[1L]]$functions <- setdiff(scope[[1L]]$functions, name)
-  if (rlang::is_call(unparenthesized_value(value), "function")) {
-    scope[[1L]]$functions <- union(scope[[1L]]$functions, name)
+  scope[[1L]]$kinds[name] <- NULL
+  if (!missing(value)) {
+    value <- unparenthesized_value(value)
+    if (is.function(value) || rlang::is_call(value, "function")) {
+      scope[[1L]]$kinds[[name]] <- "function"
+    } else if (!is.language(value)) {
+      scope[[1L]]$kinds[[name]] <- "value"
+    }
   }
   scope
 }
@@ -4566,8 +4585,9 @@ scope_bind_local <- function(scope, name, value = NULL) {
 # caller-defined function.
 scope_has_local_function <- function(scope, name) {
   for (frame in scope) {
-    if (name %in% frame$bound) {
-      return(name %in% frame$functions)
+    kind <- frame$kinds[[name]]
+    if (name %in% frame$bound && !identical(kind, "value")) {
+      return(identical(kind, "function"))
     }
   }
   FALSE
@@ -4631,7 +4651,7 @@ statement_reads_and_scope <- function(expr, scope, lookup = NULL,
                                       read_symbols = scoped_data_symbols) {
   expr <- unparenthesized_value(expr)
   call_name <- static_call_name(expr)
-  arm <- literal_if_parts(expr, call_name)
+  arm <- literal_if_parts(expr, call_name, scope_bound_names(scope), lookup)
   if (length(arm) > 0L) {
     return(statement_reads_and_scope(arm[[1L]], scope, lookup, read_symbols))
   }
@@ -4871,8 +4891,10 @@ scope_after_removals <- function(expr, scope, lookup) {
   if (length(bound) == 0L) {
     return(scope)
   }
-  if (identical(name, "{")) {
-    after <- block_reads_and_scope(expr, scope, lookup, no_scope_reads)$scope
+  if (is_binding_statement(name, expr)) {
+    after <- statement_reads_and_scope(
+      expr, scope, lookup, read_symbols = no_scope_reads
+    )$scope
     return(scope_possible_losses(scope, after))
   }
   if (identical(name, "function") ||
@@ -4890,19 +4912,21 @@ scope_after_removals <- function(expr, scope, lookup) {
   head <- static_call_head(expr)
   definition <- inline_function_definition(expr)
   parts <- c(
-    scope_call_args(expr, name, bound), evaluated_language_parts(expr)
+    scope_call_args(expr, name, bound, lookup), evaluated_language_parts(expr)
   )
   if (!is.null(definition)) {
     after <- scope_after_inline_call(expr, definition, scope, lookup)
     scope <- after[-1L]
     parts <- c(after[[1L]]$arguments, after[[1L]]$unmatched)
   } else if (is_name_part(head)) {
-    scope <- scope_after_promise(rlang::as_name(head), scope, lookup)
+    scope <- scope_after_promise(
+      rlang::as_name(head), scope, lookup, function_lookup = TRUE
+    )
   } else if (rlang::is_call(head)) {
     scope <- scope_after_removals(head, scope, lookup)
   }
   apply_effects <- scope_after_possible_removals
-  if (length(literal_if_parts(expr, name)) > 0L) {
+  if (length(literal_if_parts(expr, name, bound, lookup)) > 0L) {
     apply_effects <- scope_after_removals
   }
   for (index in seq_along(parts)) {
@@ -4912,7 +4936,26 @@ scope_after_removals <- function(expr, scope, lookup) {
         static_call_name(mutation) %in% c("rm", "remove")) {
     scope <- scope_after_removal_call(mutation, scope, lookup)
   }
+  if (!is.null(name) &&
+        name %in% c("<<-", "assign", "delayedAssign", "makeActiveBinding")) {
+    scope <- scope_forget_kinds(scope, lookup_assignment_names(expr))
+  }
+  if (!is.null(mutation) && identical(static_call_name(mutation), "list2env")) {
+    scope <- scope_forget_kinds(scope, list2env_setter_names(mutation, lookup))
+  }
   scope
+}
+
+# Reflective or nonlocal writes can invalidate a known literal binding kind.
+scope_forget_kinds <- function(scope, assigned) {
+  lapply(scope, function(frame) {
+    frame$kinds <- if (unresolved_lookup_name() %in% assigned) {
+      NULL
+    } else {
+      frame$kinds[!names(frame$kinds) %in% assigned]
+    }
+    frame
+  })
 }
 
 # An argument or conditional arm may never be evaluated. Keep its possible
@@ -4928,7 +4971,13 @@ scope_possible_losses <- function(scope, after) {
     return(scope)
   }
   Map(function(before, reached) {
-    retain_scope_bindings(before, intersect(before$bound, reached$bound))
+    bound <- intersect(before$bound, reached$bound)
+    frame <- retain_scope_bindings(before, bound)
+    stable <- vapply(names(frame$kinds), function(name) {
+      identical(frame$kinds[[name]], reached$kinds[[name]])
+    }, logical(1))
+    frame$kinds <- frame$kinds[stable]
+    frame
   }, scope, after)
 }
 
@@ -4990,7 +5039,7 @@ retain_scope_bindings <- function(frame, bound) {
   frame$bound <- bound
   frame$defaults <- frame$defaults[names(frame$defaults) %in% bound]
   frame$arguments <- frame$arguments[names(frame$arguments) %in% bound]
-  frame$functions <- intersect(frame$functions, bound)
+  frame$kinds <- frame$kinds[names(frame$kinds) %in% bound]
   frame
 }
 
