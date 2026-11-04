@@ -752,6 +752,12 @@ rebuild_static_call <- function(expr, args, head = static_call_head(expr)) {
   # Argument names live in the call's own pairlist tags rather than in an
   # attribute, so this replaces nothing `call2()` just set.
   attributes(rebuilt) <- attributes(expr)
+  # Inside c(), tidyselect distinguishes a bare exclusion from a parenthesized
+  # selection. Keep the boundary around unary minus and ranges.
+  if ((rlang::is_call(rebuilt, "-", n = 1L) ||
+         rlang::is_call(rebuilt, ":", n = 2L)) && is_parenthesized(expr)) {
+    return(rlang::call2("(", rebuilt))
+  }
   # dplyr expands an unnamed top-level across(). Keep a parenthesized call
   # on its per-group evaluation path even when its head is qualified (ADR 0019).
   if (identical(static_spelling_name(expr, "selection"), "across") &&
