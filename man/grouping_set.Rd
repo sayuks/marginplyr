@@ -107,13 +107,15 @@ value: after \code{s <- grouping_set(region)}, write
 under the same name makes \code{s} refer to the new specification itself.
 Reusing a specification in independent branches is allowed.
 
-A dimension is a column of the input, so a name attached to one is
-refused, whether it sits inside a selection or on the constructor's own
-argument: \code{c(area = region)} and \code{rollup(area = region)} are both errors
-rather than a dimension named \code{area}. Rename the result afterwards with
-\code{\link[dplyr:rename]{dplyr::rename()}}. A Margin verb's own argument written in a constructor
-falls under that same rule, so \code{rollup(region, .by = year)} reports the
-name instead of taking \code{year} as a second dimension.
+A Grouping dimension keeps its input column name. Inside a selection,
+\code{c(region = region)} and \code{all_of(c(region = "region"))} both select \code{region}
+under its own name. A selection that changes the name, such as
+\code{c(area = region)}, is refused. Rename the result with \code{\link[dplyr:rename]{dplyr::rename()}}.
+
+Constructors take positional arguments, so \code{rollup(region = region)} and
+\code{rollup(area = region)} both raise errors. A call such as
+\code{rollup(region, .by = year)} reports \code{.by} as a named constructor argument.
+Pass \code{.by = year} to the Margin verb.
 }
 
 \examples{
