@@ -1910,6 +1910,25 @@ test_that("Nest verbs treat attributed list labels as character scalars", {
   }
 })
 
+test_that("Nest verbs normalize classed character labels in every spelling", {
+  data <- tibble::tibble(g = 1:2)
+  verbs <- list(nest_with_margins, nest_by_with_margins)
+  label <- vctrs::new_vctr("All", class = "margin_test_label")
+  named <- vctrs::new_vctr(c(g = "All"), class = "margin_test_label")
+
+  for (verb in verbs) {
+    for (check in c(TRUE, FALSE)) {
+      for (spelling in list(label, named, list(g = label))) {
+        result <- verb(
+          data, .grouping = rollup(g), .margin_label = spelling,
+          .check_margin_label = check, .sort = "last"
+        )
+        expect_identical(result$g, c("1", "2", "All"))
+      }
+    }
+  }
+})
+
 test_that("Nest verbs retain Package conditions for invalid list labels", {
   data <- tibble::tibble(g = 1:2)
   verbs <- list(nest_with_margins, nest_by_with_margins)
@@ -1939,6 +1958,24 @@ test_that("Nest verbs retain Package conditions for invalid list labels", {
         )
       }
     }
+  }
+})
+
+test_that("Margin labels validate the underlying character length", {
+  registerS3method("length", "margin_test_label_length", function(x) 1L,
+                   envir = asNamespace("base"))
+  data <- tibble::tibble(g = 1:2)
+
+  for (values in list(character(), c("All", "Total"))) {
+    label <- structure(values, class = "margin_test_label_length")
+    expect_error(
+      expand_with_margins(
+        data, .grouping = rollup(g), .margin_label = list(g = label)
+      ),
+      "list elements must each be `NULL` or a character scalar",
+      class = "marginplyr_error",
+      fixed = TRUE
+    )
   }
 })
 

@@ -12,13 +12,17 @@ normalize_margin_label <- function(.margin_label) {
   is_label_list <- rlang::is_bare_list(.margin_label) &&
     !is.null(names(.margin_label))
   if (!is_label_list &&
-        (!is.character(.margin_label) || length(.margin_label) == 0L)) {
+        (!is.character(.margin_label) ||
+           rlang::is_character(.margin_label, n = 0L))) {
     abort_marginplyr(paste0(
       "{.arg .margin_label} must be {.code NULL}, an unnamed character ",
       "scalar, or a named character vector or list."
     ))
   }
   label_names <- names(.margin_label)
+  if (!is_label_list) {
+    attributes(.margin_label) <- NULL
+  }
   if (is.null(label_names)) {
     if (length(.margin_label) != 1L) {
       abort_marginplyr(paste0(
@@ -44,7 +48,7 @@ normalize_margin_label <- function(.margin_label) {
       label
     }))
   }
-  as.list(.margin_label)
+  stats::setNames(as.list(.margin_label), label_names)
 }
 
 # Each element of a named-list `.margin_label` is one dimension's label, so it
@@ -53,7 +57,7 @@ validate_margin_label_elements <- function(.margin_label) {
   bad <- vapply(
     .margin_label,
     function(label) {
-      !is.null(label) && !(is.character(label) && length(label) == 1L)
+      !is.null(label) && !rlang::is_character(label, n = 1L)
     },
     logical(1)
   )
