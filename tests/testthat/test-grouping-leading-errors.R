@@ -387,21 +387,9 @@ test_that("DuckDB leading selection failures invoke no metadata query", {
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   remote <- dplyr::copy_to(con, data, "leading_selection_errors")
-  counter <- new.env(parent = emptyenv())
-  counter$queries <- 0L
   # Observe the actual DBI method, beyond construction-time Sent query records.
-  # do.call retains the tracer's closure when S4 tracing wraps .local lazily.
-  suppressMessages(do.call(trace, list(
-    what = "dbSendQuery", signature = c("duckdb_connection", "character"),
-    where = asNamespace("DBI"), print = FALSE,
-    tracer = function() {
-      counter$queries <- counter$queries + 1L
-    }
-  )))
-  on.exit(suppressMessages(untrace(
-    "dbSendQuery", signature = c("duckdb_connection", "character"),
-    where = asNamespace("DBI")
-  )), add = TRUE)
+  counter <- duckdb_query_counter()
+  on.exit(counter$untrace(), add = TRUE)
   predicates <- 0L
   numeric_column <- function(x) {
     predicates <<- predicates + 1L

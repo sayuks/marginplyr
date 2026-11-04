@@ -20,3 +20,24 @@
 duckdb_test_connection <- function(...) {
   DBI::dbConnect(duckdb::duckdb(shared_home = FALSE), ...)
 }
+
+# Count actual query sends. The caller registers `counter$untrace()` on exit.
+duckdb_query_counter <- function() {
+  counter <- new.env(parent = emptyenv())
+  counter$queries <- 0L
+  signature <- c("duckdb_connection", "character")
+  # do.call retains the tracer's closure when S4 tracing wraps .local lazily.
+  suppressMessages(do.call(trace, list(
+    what = "dbSendQuery", signature = signature, where = asNamespace("DBI"),
+    print = FALSE,
+    tracer = function() {
+      counter$queries <- counter$queries + 1L
+    }
+  )))
+  counter$untrace <- function() {
+    suppressMessages(untrace(
+      "dbSendQuery", signature = signature, where = asNamespace("DBI")
+    ))
+  }
+  counter
+}
