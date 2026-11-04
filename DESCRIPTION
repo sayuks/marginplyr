@@ -292,6 +292,7 @@ Config/testthat/start-first:
     grouping-parenthesized-callees,
     duckdb-storage,
     factor,
+    local-selector-quote,
     sent-query-status-unwind,
     sql-audit-condition-storage,
     sent-query-compound-conditions,
