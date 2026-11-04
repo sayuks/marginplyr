@@ -1,0 +1,70 @@
+Calls: 648
+, , id = ,  = FALSE
+
+                  plan
+placement          reversed rollup single
+  geometries_first       24     24      0
+  geometries_last        24     24      0
+  single                  0      0      0
+
+, , id = ..1,  = FALSE
+
+                  plan
+placement          reversed rollup single
+  geometries_first        0      0      0
+  geometries_last         0      0      0
+  single                  0      0      0
+
+, , id = set,  = FALSE
+
+                  plan
+placement          reversed rollup single
+  geometries_first       24     24      0
+  geometries_last        24     24      0
+  single                  0      0      0
+
+, , id = ,  = TRUE
+
+                  plan
+placement          reversed rollup single
+  geometries_first        0      0     24
+  geometries_last         0      0     24
+  single                 24     24     24
+
+, , id = ..1,  = TRUE
+
+                  plan
+placement          reversed rollup single
+  geometries_first       24     24     24
+  geometries_last        24     24     24
+  single                 24     24     24
+
+, , id = set,  = TRUE
+
+                  plan
+placement          reversed rollup single
+  geometries_first        0      0     24
+  geometries_last         0      0     24
+  single                 24     24     24
+
+, ,  = FALSE
+
+    verb
+size nest rowwise
+   0   48      48
+   3   48      48
+
+, ,  = TRUE
+
+    verb
+size nest rowwise
+   0  114     114
+   3  114     114
+
+
+'names' attribute [5] must be the same length as the vector [4]
+                                                             96
+'names' attribute [6] must be the same length as the vector [5]
+                                                             96
+                                                          match
+                                                            456

@@ -1,0 +1,16 @@
+ℹ In argument: `g = sum(...)`.
+Caused by error in `base::as.vector()`:
+! dims [product 1] do not match the length of object [2]
+Unchecked display dimensions: 3 1
+ℹ In argument: `g = sum(...)`.
+Caused by error in `base::as.vector()`:
+! dims [product 1] do not match the length of object [2]
+Unchecked display dimensions: 3 1
+              results
+form           branch_type_error dimension_error match shape_or_class
+  array                        0              32   168             88
+  asis                         0               0   184            104
+  matrix                       0              32   168             88
+  named_scalar                 0               0   176            112
+  noquote                    136               0   152              0
+R version 4.6.1 (2026-06-24)

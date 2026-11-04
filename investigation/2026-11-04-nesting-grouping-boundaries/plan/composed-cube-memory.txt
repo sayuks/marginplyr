@@ -1,0 +1,10 @@
+10 cube_first one complete grouping set
+10 cube_last one complete grouping set
+18 direct one complete grouping set
+18 direct one complete grouping set
+18 direct one complete grouping set
+18 cube_first vector memory limit of 96.0 Mb reached, see mem.maxVSize()
+18 cube_last vector memory limit of 96.0 Mb reached, see mem.maxVSize()
+18 cube_first vector memory limit of 96.0 Mb reached, see mem.maxVSize()
+18 cube_last vector memory limit of 96.0 Mb reached, see mem.maxVSize()
+R version 4.6.1 (2026-06-24) aarch64-apple-darwin23
