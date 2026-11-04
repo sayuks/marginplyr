@@ -663,15 +663,22 @@ is_name_only_helper_arg <- function(expr,
     } else if (rlang::is_string(args[[2L]])) {
       name <- rlang::as_string(args[[2L]])
     }
-    if (
-      is.null(name) || !nzchar(name) || name == "..." ||
-        selection_binding_deferred(
-          env, name, allow_namespace_promises = FALSE
-        )
-    ) {
+    # A numbered dot can force a promise without an ordinary binding.
+    if (is.null(name) || !nzchar(name) || name == "..." ||
+          is_numbered_dot_reference(rlang::sym(name))) {
       return(FALSE)
     }
-    value <- rlang::env_get(env, name, default = NULL, inherit = TRUE)
+    binding_env <- selection_binding_env(env, name)
+    if (identical(binding_env, emptyenv())) {
+      # Tidyselect raises the missing-binding error during selection.
+      return(TRUE)
+    }
+    if (selection_binding_deferred(
+      binding_env, name, allow_namespace_promises = FALSE
+    )) {
+      return(FALSE)
+    }
+    value <- rlang::env_get(binding_env, name)
     return(is_name_only_helper_value(value, allow_stringr_pattern))
   }
   if (

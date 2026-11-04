@@ -56,7 +56,6 @@ test_that("missing selection-context names fail before a DuckDB query", {
   on.exit(counter$untrace(), add = TRUE, after = FALSE)
   expect_identical(DBI::dbGetQuery(con, "SELECT 1 AS n")$n, 1L)
   expect_identical(counter$queries, 1L)
-  counter$queries <- 0L
 
   names <- "nonfunction shadow"
   idx <- 99L
@@ -66,9 +65,12 @@ test_that("missing selection-context names fail before a DuckDB query", {
     tidyselect::all_of(tidyselect::peek_vars()[99L]),
     tidyselect::peek_vars()[.env$idx],
     tidyselect::all_of(tidyselect::peek_vars()[.env[["idx"]]]),
-    names(tidyselect::peek_data())[99L]
+    names(tidyselect::peek_data())[99L],
+    tidyselect::peek_vars()[.env$absent_idx],
+    tidyselect::all_of(tidyselect::peek_vars()[.env[["absent_idx"]]])
   )
   for (selector in selectors) {
+    counter$queries <- 0L
     expected <- expect_error(tidyselect::eval_select(selector, data))
     fixed <- expect_error(inspect_grouping(remote, .by = !!selector))
     dimension <- expect_error(
@@ -101,6 +103,7 @@ test_that("typed and opaque selections retain the dtplyr metadata boundary", {
   }
   makeActiveBinding("active_idx", read_index, rlang::current_env())
   delayedAssign("delayed_idx", read_index())
+  classed_idx <- factor(1L)
   names <- function(x) {
     calls$selector <- calls$selector + 1L
     x
@@ -119,6 +122,7 @@ test_that("typed and opaque selections retain the dtplyr metadata boundary", {
     tidyselect::all_of(tidyselect::peek_vars()[.env$active_idx]),
     tidyselect::peek_vars()[.env[["delayed_idx"]]],
     tidyselect::all_of(tidyselect::peek_vars()[.env[["delayed_idx"]]]),
+    tidyselect::peek_vars()[.env$classed_idx],
     names(tidyselect::peek_data())
   )
   check <- function(selector) {
@@ -142,6 +146,10 @@ test_that("typed and opaque selections retain the dtplyr metadata boundary", {
   }))
   check_dots <- function(...) {
     check(rlang::quo(tidyselect::peek_vars()[..1]))
+    check(rlang::quo(tidyselect::peek_vars()[.env$..1]))
+    check(rlang::quo(
+      tidyselect::all_of(tidyselect::peek_vars()[.env[["..1"]]])
+    ))
   }
   check_missing <- function(idx) {
     check(rlang::quo(tidyselect::peek_vars()[.env$idx]))
