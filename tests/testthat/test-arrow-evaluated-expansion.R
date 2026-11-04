@@ -4,7 +4,9 @@ test_that("Arrow expansion copies one evaluated payload per input row", {
     g = c("a", "b"),
     row_id = 1:2,
     measured = structure(1:2, units = "kg"),
-    nested = arrow::Array$create(list(1:2, 3L), type = arrow::list_of(arrow::int32()))
+    nested = arrow::Array$create(
+      list(1:2, 3L), type = arrow::list_of(arrow::int32())
+    )
   )
   draw <- arrow::Expression$create("random")
   source <- dplyr::mutate(source, payload = !!draw)
@@ -13,8 +15,12 @@ test_that("Arrow expansion copies one evaluated payload per input row", {
   )
   expect_s3_class(query, "arrow_dplyr_query")
 
-  first <- dplyr::collect(query)
-  second <- dplyr::collect(query)
+  collect_rows <- function(query) {
+    rows <- dplyr::collect(query)
+    rows[order(rows$occurrence, rows$row_id), ]
+  }
+  first <- collect_rows(query)
+  second <- collect_rows(query)
   for (rows in list(first, second)) {
     expect_identical(rows$occurrence, c(1L, 1L, 2L, 2L))
     expect_identical(rows$row_id, c(1L, 2L, 1L, 2L))
@@ -30,7 +36,9 @@ test_that("Arrow expansion keeps volatile row membership across occurrences", {
   source <- arrow::Table$create(g = rep("a", 64L), row_id = 1:64)
   draw <- arrow::Expression$create("random")
   source <- dplyr::filter(source, !!draw < 0.5)
-  query <- expand_with_margins(source, .grouping = rollup(g), .id = "occurrence")
+  query <- expand_with_margins(
+    source, .grouping = rollup(g), .id = "occurrence"
+  )
   expect_s3_class(query, "arrow_dplyr_query")
 
   rows <- dplyr::collect(query)

@@ -5,23 +5,18 @@ mark_arrow_expansion_input <- function(input, marker) {
   dplyr::collapse(input)
 }
 
-# Replace Arrow query nodes without descending into a substituted relation.
-# A replacement returns NULL for any node it leaves to the traversal.
-rewrite_arrow_expansion_sources <- function(query, replacement) {
-  if (!inherits(query, "arrow_dplyr_query")) {
-    return(query)
+# Bind the same evaluated input to each marked occurrence. The expansion
+# adds only projections and unions above the marker.
+bind_arrow_expansion_input <- function(query, marker, input) {
+  stopifnot(inherits(query, "arrow_dplyr_query"))
+  if (identical(attr(query, "marginplyr_arrow_expansion_marker"), marker)) {
+    return(input)
   }
-  new_source <- replacement(query)
-  if (!is.null(new_source)) {
-    return(new_source)
-  }
-  query$.data <- rewrite_arrow_expansion_sources(query$.data, replacement)
-  for (node in c("join", "union_all")) {
-    if (!is.null(query[[node]])) {
-      query[[node]]$right_data <- rewrite_arrow_expansion_sources(
-        query[[node]]$right_data, replacement
-      )
-    }
+  query$.data <- bind_arrow_expansion_input(query$.data, marker, input)
+  if (!is.null(query$union_all)) {
+    query$union_all$right_data <- bind_arrow_expansion_input(
+      query$union_all$right_data, marker, input
+    )
   }
   query
 }
@@ -38,7 +33,7 @@ arrow_expansion_schema <- function(result, source) {
   old_schema <- root$schema
   metadata <- old_schema$metadata
   r_metadata <- utils::getFromNamespace("get_r_metadata_from_old_schema",
-                                       "arrow")
+                                        "arrow")
   metadata$r <- r_metadata(schema, old_schema)
   schema$WithMetadata(metadata)
 }
@@ -53,7 +48,9 @@ defer_arrow_expansion <- function(result, source, marker) {
   stub$schema <- schema
   stub$union_all <- list(right_data = source)
   stub$head <- 0L
-  stub$margin_expansion <- list(result = result, source = source, marker = marker)
+  stub$margin_expansion <- list(
+    result = result, source = source, marker = marker
+  )
   class(stub) <- c("margin_arrow_expansion", class(stub))
   dplyr::collapse(stub)
 }
@@ -75,11 +72,8 @@ as_record_batch_reader.margin_arrow_expansion <- function(x, ...) {
 
   expansion <- x$margin_expansion
   input <- dplyr::mutate(arrow::as_arrow_table(expansion$source))
-  query <- rewrite_arrow_expansion_sources(expansion$result, function(query) {
-    if (identical(attr(query, "marginplyr_arrow_expansion_marker"),
-                  expansion$marker)) {
-      input
-    }
-  })
+  query <- bind_arrow_expansion_input(
+    expansion$result, expansion$marker, input
+  )
   arrow::as_record_batch_reader(query)
 }
