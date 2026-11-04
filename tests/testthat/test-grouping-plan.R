@@ -2414,10 +2414,7 @@ test_that("a selection the names settle is refused before the typed snapshot", {
   expect_identical(plan$included, c("(region, area)", "(region)", "()"))
 })
 
-test_that("the discarded name-only pass reports nothing the second does not", {
-  # The pass exists to raise a failure the names decide and its plan is thrown
-  # away, so a condition it signals besides that failure is one the caller
-  # receives twice: the canonical pass resolves the same selection again.
+test_that("names-only selections report each warning once", {
   # `one_of()` is where this is observable, being the one recognized helper
   # that reports an unknown name without failing on it.
   data <- data.frame(region = "East", area = "North", value = 1)
@@ -2479,42 +2476,41 @@ test_that("the discarded name-only pass reports nothing the second does not", {
   )
 })
 
-test_that("the discarded pass withholds a deprecation, not muffles it", {
-  # The count above cannot see what this asserts. lifecycle signals a
-  # deprecation once per session, so the pass that muffles what it signals
-  # spends the caller's only signal and the canonical pass then reports
-  # nothing -- and pinning `lifecycle_verbosity` to make a count repeatable is
-  # exactly the mode where that spend cannot happen. What the two passes run
-  # under is the observable that holds either way (#346).
-  data <- data.frame(region = "East", area = "North", value = 1)
-  compile <- compile_grouping_spec
-  seen <- character()
-  local_mocked_bindings(
-    compile_grouping_spec = function(...) {
-      verbosity <- getOption("lifecycle_verbosity")
-      seen <<- c(seen, if (is.null(verbosity)) NA_character_ else verbosity)
-      compile(...)
+test_that("names-only deprecations retain caller verbosity and frequency", {
+  data <- data.frame(region = "East", value = 1)
+  for (verbosity in list(NULL, "default", "warning", "quiet")) {
+    rlang::local_options(warn = 0L, lifecycle_verbosity = verbosity)
+    id <- tempfile()
+    deprecated_selection <- function() {
+      lifecycle::deprecate_warn(
+        "1.0.0", "caller_selection()", id = id, user_env = rlang::global_env()
+      )
+      "region"
     }
-  )
-
-  # Two passes run for a plan the names settle, and only the discarded one is
-  # withheld: the canonical pass runs under whatever the caller set.
-  rlang::local_options(lifecycle_verbosity = NULL)
-  inspect_grouping(data, .grouping = rollup(region))
-  expect_identical(seen, c("quiet", NA_character_))
-
-  seen <- character()
-  rlang::local_options(lifecycle_verbosity = "warning")
-  inspect_grouping(data, .grouping = rollup(region))
-  expect_identical(seen, c("quiet", "warning"))
-
-  # `"error"` is the caller's own, kept through the discarded pass, because
-  # under it the deprecation is a failure the names decide and withholding it
-  # would send the read first (ADR 0005).
-  seen <- character()
-  rlang::local_options(lifecycle_verbosity = "error")
-  inspect_grouping(data, .grouping = rollup(region))
-  expect_identical(seen, c("error", "error"))
+    spec <- grouping_set(all_of(deprecated_selection()))
+    for (iteration in 1:2) {
+      warnings <- list()
+      plan <- withCallingHandlers(
+        inspect_grouping(data, .grouping = spec),
+        warning = function(cnd) {
+          warnings[[length(warnings) + 1L]] <<- cnd
+          invokeRestart("muffleWarning")
+        }
+      )
+      expected <- if (identical(verbosity, "quiet")) {
+        0L
+      } else if (identical(verbosity, "warning") || iteration == 1L) {
+        1L
+      } else {
+        0L
+      }
+      expect_length(warnings, expected)
+      if (expected > 0L) {
+        expect_s3_class(warnings[[1L]], "lifecycle_warning_deprecated")
+      }
+      expect_identical(plan$included, "(region)")
+    }
+  }
 })
 
 test_that("a deprecation that is an error precedes the read", {

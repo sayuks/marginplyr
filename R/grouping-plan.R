@@ -688,12 +688,9 @@ is_data_pronoun <- function(expr) {
 # Return identities of warnings delivered before a caller muffled them.
 with_discarded_selections <- function(expr) {
   warnings <- list()
-  rlang::with_options(
-    withCallingHandlers(expr, warning = function(cnd) {
-      warnings[[length(warnings) + 1L]] <<- selection_warning_key(cnd)
-    }),
-    lifecycle_verbosity = discarded_pass_verbosity()
-  )
+  withCallingHandlers(expr, warning = function(cnd) {
+    warnings[[length(warnings) + 1L]] <<- selection_warning_key(cnd)
+  })
   warnings
 }
 
@@ -716,16 +713,6 @@ with_preflight_warning_filter <- function(expr, warnings) {
 # cannot consume each other's preflight occurrences.
 selection_warning_key <- function(cnd) {
   list(class(cnd), conditionMessage(cnd), conditionCall(cnd))
-}
-
-# Withhold lifecycle signals so a discarded pass cannot spend a once-per-session
-# warning. Keep the caller's verbosity when it can make a deprecation an error.
-discarded_pass_verbosity <- function() {
-  verbosity <- getOption("lifecycle_verbosity")
-  if (identical(verbosity, "error") || getOption("warn") >= 2L) {
-    return(verbosity)
-  }
-  "quiet"
 }
 
 is_name_only_selection <- function(arg, data_vars, allow_caller_code = TRUE) {
