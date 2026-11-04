@@ -3,8 +3,11 @@ pkgload::load_all(quiet = TRUE)
 removals <- alist(
   base_rm = {base::rm(prior); 1},
   remove_string = {base::remove("prior"); 1},
-  rm_list = {base::rm(list = "prior"); 1},
-  conditional = {if(TRUE) base::rm(prior); 1}
+  rm_list = {base::rm(list = "prior"); 1}
+)
+# The literal-true branch is test input, rather than a harness decision.
+removals$conditional <- rlang::call2(
+  "{", rlang::call2("if", TRUE, quote(base::rm(prior))), 1
 )
 forms <- list(data_frame=identity,tibble=tibble::as_tibble,data_table=data.table::as.data.table)
 rows <- list()
