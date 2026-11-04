@@ -57,7 +57,9 @@ test_that("visible inline scope changes expose both forbidden dependencies", {
     (function(prior = 1) {
       ((function() {
         counters$body <- counters$body + 1L
-        ((base::remove))(list = "prior", envir = ((base::parent.frame())))
+        ((base::remove))(
+          list = "prior", envir = ((base::parent.frame(n = 1L)))
+        )
         sum(prior)
       })())
     })(),
@@ -66,6 +68,16 @@ test_that("visible inline scope changes expose both forbidden dependencies", {
         counters$body <- counters$body + 1L
         base::rm(prior, inherits = TRUE)
       })()
+      sum(prior)
+    })(),
+    (function(first = {
+      counters$default <- counters$default + 1L
+      base::rm(prior)
+      1
+    }, prior = 0) {
+      if (sum(x) < 0) first
+      prior <- 2
+      (function() base::force(first))()
       sum(prior)
     })()
   )
@@ -131,6 +143,16 @@ test_that("inline scope changes preserve independent and shadowed bindings", {
     }) {
       prior <- touch()
       (function() sum(prior))()
+    })(),
+    (function(prior = {
+      base::rm(prior)
+      stop("Default is replaced in a reachable arm.")
+    }) {
+      if (TRUE) prior <- touch()
+      (function() {
+        base::force(prior)
+        sum(prior)
+      })()
     })(),
     (function(prior = {
       base::rm(prior)

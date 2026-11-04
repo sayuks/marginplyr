@@ -4400,18 +4400,19 @@ call_part_symbols <- function(expr, scope, lookup) {
   if (!is.null(definition)) {
     reads <- definition_data_symbols(definition, scope, lookup, expr)
   } else if (!rlang::is_symbol(call_head)) {
-    parts <- c(list(call_head), parts)
+    reads <- scoped_data_symbols(call_head, scope, lookup)
+    scope <- scope_after_removals(call_head, scope, lookup)
   }
   for (index in seq_along(parts)) {
     reads <- c(reads, scoped_data_symbols(parts[[index]], scope, lookup))
-    scope <- scope_after_removals(parts[[index]], scope, lookup)
+    scope <- scope_after_possible_removals(parts[[index]], scope, lookup)
   }
   unique(reads)
 }
 
-# An if with a literal condition exposes only its reachable arm to the
-# dependency and removal walks.
-scope_call_args <- function(expr, name, bound) {
+# The reachable arm of an if with a literal condition, or NULL when both
+# arms may run. An empty list represents an if with no reachable arm.
+literal_if_parts <- function(expr, name) {
   if (identical(name, "if") && length(expr) >= 3L) {
     condition <- unparenthesized_value(expr[[2L]])
     if (identical(condition, FALSE)) {
@@ -4421,7 +4422,12 @@ scope_call_args <- function(expr, name, bound) {
       return(list(expr[[3L]]))
     }
   }
-  evaluated_call_args(expr, bound = bound)
+  NULL
+}
+
+# Call arguments that the read and removal walks may visit.
+scope_call_args <- function(expr, name, bound) {
+  literal_if_parts(expr, name) %||% evaluated_call_args(expr, bound = bound)
 }
 
 # A literal function in call position is visible through redundant parentheses.
@@ -4538,6 +4544,10 @@ statement_reads_and_scope <- function(expr, scope, lookup = NULL,
                                       read_symbols = scoped_data_symbols) {
   expr <- unparenthesized_value(expr)
   call_name <- static_call_name(expr)
+  arm <- literal_if_parts(expr, call_name)
+  if (length(arm) > 0L) {
+    return(statement_reads_and_scope(arm[[1L]], scope, lookup, read_symbols))
+  }
   if (identical(call_name, "{")) {
     return(block_reads_and_scope(expr, scope, lookup, read_symbols))
   }
@@ -4784,11 +4794,7 @@ scope_after_removals <- function(expr, scope, lookup) {
   name <- static_call_name(expr)
   if (identical(name, "{")) {
     after <- block_reads_and_scope(expr, scope, lookup, no_scope_reads)$scope
-    # A block in an expression may run. Its bindings affect reads inside
-    # the block, but only possible losses carry into the following expression.
-    return(Map(function(before, after) {
-      retain_scope_bindings(before, intersect(before$bound, after$bound))
-    }, scope, after))
+    return(scope_possible_losses(scope, after))
   }
   if (identical(name, "function") ||
         (identical(name, "local") &&
@@ -4801,20 +4807,42 @@ scope_after_removals <- function(expr, scope, lookup) {
   definition <- inline_function_definition(expr)
   if (!is.null(definition)) {
     scope <- scope_after_inline_call(expr, definition, scope, lookup)
-    head <- list()
+  } else if (length(head) > 0L) {
+    scope <- scope_after_removals(head[[1L]], scope, lookup)
   }
   parts <- c(
-    head, scope_call_args(expr, name, bound),
-    evaluated_language_parts(expr)
+    scope_call_args(expr, name, bound), evaluated_language_parts(expr)
   )
+  apply_effects <- scope_after_possible_removals
+  if (length(literal_if_parts(expr, name)) > 0L ||
+        (identical(name, "force") &&
+           is_known_base_call(expr, name, bound, lookup))) {
+    apply_effects <- scope_after_removals
+  }
   for (index in seq_along(parts)) {
-    scope <- scope_after_removals(parts[[index]], scope, lookup)
+    scope <- apply_effects(parts[[index]], scope, lookup)
   }
   if (!is.null(mutation) &&
         static_call_name(mutation) %in% c("rm", "remove")) {
     scope <- scope_after_removal_call(mutation, scope, lookup)
   }
   scope
+}
+
+# An argument or conditional arm may never be evaluated. Keep its possible
+# removals without assuming it consumed defaults or installed new bindings.
+scope_after_possible_removals <- function(expr, scope, lookup) {
+  scope_possible_losses(scope, scope_after_removals(expr, scope, lookup))
+}
+
+# Preserve pending defaults in surviving bindings on a possible path.
+scope_possible_losses <- function(scope, after) {
+  if (identical(scope, after)) {
+    return(scope)
+  }
+  Map(function(before, reached) {
+    retain_scope_bindings(before, intersect(before$bound, reached$bound))
+  }, scope, after)
 }
 
 # Apply a visible removal to its own frame or the direct inline caller's
@@ -4825,9 +4853,7 @@ scope_after_removal_call <- function(expr, scope, lookup) {
   if (length(target) > 0L) {
     envir <- unparenthesized_value(target[[1L]])
     bound <- scope_bound_names(scope)
-    if (rlang::is_call(envir, n = 0L) &&
-          identical(static_call_name(envir), "parent.frame") &&
-          is_known_base_call(envir, "parent.frame", bound, lookup)) {
+    if (is_immediate_parent_frame(envir, bound, lookup)) {
       if (!isTRUE(scope[[1L]]$invoked)) {
         return(scope)
       }
@@ -4856,6 +4882,26 @@ scope_after_removal_call <- function(expr, scope, lookup) {
     }
   }
   scope
+}
+
+# Whether the written call selects the immediate caller's frame.
+is_immediate_parent_frame <- function(expr, bound, lookup) {
+  if (!identical(static_call_name(expr), "parent.frame") ||
+        !is_known_base_call(expr, "parent.frame", bound, lookup)) {
+    return(FALSE)
+  }
+  if (length(static_call_args(expr)) == 0L) {
+    return(TRUE)
+  }
+  depth <- base_call_argument(expr, "n")
+  if (length(depth) == 0L) {
+    return(FALSE)
+  }
+  if (rlang::is_missing(depth[[1L]])) {
+    return(TRUE)
+  }
+  value <- unparenthesized_value(depth[[1L]])
+  identical(value, 1) || identical(value, 1L)
 }
 
 # Discard pending defaults whose bindings have been removed.
