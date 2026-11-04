@@ -1,0 +1,78 @@
+Calls: 270
+, , predicate = alternate, agrees = FALSE
+
+                plan
+graph            cube rollup single
+  cached            0      0      0
+  cached_renamed    0      0      0
+  uncached         10     10      0
+
+, , predicate = first_only, agrees = FALSE
+
+                plan
+graph            cube rollup single
+  cached            0      0      0
+  cached_renamed    0      0      0
+  uncached         10     10      0
+
+, , predicate = stable, agrees = FALSE
+
+                plan
+graph            cube rollup single
+  cached            0      0      0
+  cached_renamed    0      0      0
+  uncached          0      0      0
+
+, , predicate = alternate, agrees = TRUE
+
+                plan
+graph            cube rollup single
+  cached           10     10     10
+  cached_renamed   10     10     10
+  uncached          0      0     10
+
+, , predicate = first_only, agrees = TRUE
+
+                plan
+graph            cube rollup single
+  cached           10     10     10
+  cached_renamed   10     10     10
+  uncached          0      0     10
+
+, , predicate = stable, agrees = TRUE
+
+                plan
+graph            cube rollup single
+  cached           10     10     10
+  cached_renamed   10     10     10
+  uncached         10     10     10
+
+, , reads = 1
+
+                plan
+graph            cube rollup single
+  cached           30     30     30
+  cached_renamed   30     30     30
+  uncached          0      0     30
+
+, , reads = 2
+
+                plan
+graph            cube rollup single
+  cached            0      0      0
+  cached_renamed    0      0      0
+  uncached          0     30      0
+
+, , reads = 4
+
+                plan
+graph            cube rollup single
+  cached            0      0      0
+  cached_renamed    0      0      0
+  uncached         30      0      0
+
+         agrees
+verb      FALSE TRUE
+  expand      8   46
+  nest       16   92
+  rowwise    16   92

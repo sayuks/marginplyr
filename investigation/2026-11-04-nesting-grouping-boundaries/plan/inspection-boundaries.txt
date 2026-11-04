@@ -1,0 +1,10 @@
+Arrow reader inspection preserved its unread first batch.
+Typed dtplyr inspection left the filter unevaluated.
+Typed DuckDB inspection left the source sequence unadvanced.
+R version 4.6.1 (2026-06-24) aarch64-apple-darwin23
+arrow 25.0.1
+duckdb 1.5.5
+dtplyr 1.3.3
+data.table 1.18.6.1
+dbplyr 2.6.0
+DBI 1.3.0

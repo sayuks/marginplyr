@@ -1,0 +1,81 @@
+
+issue -- dtplyr "volatile"
+919	CLOSED	[P2] Keep lazy shares consistent with their visible denominator summaries	https://github.com/sayuks/marginplyr/issues/919
+
+pr -- dtplyr "volatile"
+1262	MERGED	Preserve evaluated source rows during lazy expansion	https://github.com/sayuks/marginplyr/pull/1262
+939	MERGED	Fix lazy shares to use their visible denominator summaries	https://github.com/sayuks/marginplyr/pull/939
+
+issue -- dtplyr "single evaluated"
+23	CLOSED	Harden marginplyr for its first CRAN release	https://github.com/sayuks/marginplyr/issues/23
+
+pr -- dtplyr "single evaluated"
+
+issue -- dtplyr "evaluated source"
+837	CLOSED	[P2] Accept metadata-preserving grouped dtplyr derivations	https://github.com/sayuks/marginplyr/issues/837
+892	CLOSED	[P2] Accept metadata-preserving dtplyr ordering after derived steps	https://github.com/sayuks/marginplyr/issues/892
+625	CLOSED	Clarify the zero-row metadata exemption for full dtplyr input execution	https://github.com/sayuks/marginplyr/issues/625
+716	CLOSED	Preserve literal share-source evaluation in local Margin summaries	https://github.com/sayuks/marginplyr/issues/716
+
+pr -- dtplyr "evaluated source"
+1262	MERGED	Preserve evaluated source rows during lazy expansion	https://github.com/sayuks/marginplyr/pull/1262
+648	MERGED	Prevent dtplyr metadata reads from evaluating source rows	https://github.com/sayuks/marginplyr/pull/648
+959	MERGED	Preserve special dtplyr columns and isolate immutable Margin inputs	https://github.com/sayuks/marginplyr/pull/959
+
+issue -- dtplyr "source rows" "branch"
+1003	CLOSED	[P2] Preserve immutable cached dtplyr inputs across Margin branches	https://github.com/sayuks/marginplyr/issues/1003
+833	CLOSED	[P2] Expand omitted dtplyr list dimensions with typed missing labels	https://github.com/sayuks/marginplyr/issues/833
+1171	CLOSED	[P2] Isolate zero-column dtplyr identifier repetition from caller bindings	https://github.com/sayuks/marginplyr/issues/1171
+1241	CLOSED	[P2] Isolate expansion copies from dtplyr cache and caller names	https://github.com/sayuks/marginplyr/issues/1241
+1024	CLOSED	[P2] Preserve typed metadata across cached shared-source dtplyr graphs	https://github.com/sayuks/marginplyr/issues/1024
+947	CLOSED	[P2] Preserve .SD columns in derived dtplyr selection metadata	https://github.com/sayuks/marginplyr/issues/947
+890	CLOSED	[P2] Preserve AsIs identity keys when nesting dtplyr margins	https://github.com/sayuks/marginplyr/issues/890
+889	CLOSED	[P2] Resolve qualified selection operators in their typed context	https://github.com/sayuks/marginplyr/issues/889
+1023	CLOSED	[P2] Keep arranged Arrow inputs executable through Margin summaries	https://github.com/sayuks/marginplyr/issues/1023
+951	CLOSED	[P2] Keep local sf metadata valid while building nested Margin results	https://github.com/sayuks/marginplyr/issues/951
+531	CLOSED	Add nesting-membership metamorphic tests	https://github.com/sayuks/marginplyr/issues/531
+424	CLOSED	dtplyr nesting fails on a column named key, which data.table() reads as its own argument	https://github.com/sayuks/marginplyr/issues/424
+184	CLOSED	Zero-column dtplyr input gains a fabricated row in the union expansion	https://github.com/sayuks/marginplyr/issues/184
+40	CLOSED	Run the final CRAN-readiness review	https://github.com/sayuks/marginplyr/issues/40
+492	CLOSED	Arrow does not reject a `.margin_label` equal to a declared factor level	https://github.com/sayuks/marginplyr/issues/492
+
+pr -- dtplyr "source rows" "branch"
+1262	MERGED	Preserve evaluated source rows during lazy expansion	https://github.com/sayuks/marginplyr/pull/1262
+1009	MERGED	Fix cached dtplyr metadata and immutable branch reuse	https://github.com/sayuks/marginplyr/pull/1009
+850	MERGED	Fix typed-missing dtplyr list expansion	https://github.com/sayuks/marginplyr/pull/850
+955	MERGED	docs: record four nesting and Grouping specification defects	https://github.com/sayuks/marginplyr/pull/955
+959	MERGED	Preserve special dtplyr columns and isolate immutable Margin inputs	https://github.com/sayuks/marginplyr/pull/959
+961	MERGED	fix: shield dtplyr nesting from special column names	https://github.com/sayuks/marginplyr/pull/961
+1118	MERGED	Fix source equality in NA-level factor nesting	https://github.com/sayuks/marginplyr/pull/1118
+1250	MERGED	Preserve Grouping argument resolution and compact duplicate-drop plans	https://github.com/sayuks/marginplyr/pull/1250
+536	MERGED	Add nesting membership metamorphic tests	https://github.com/sayuks/marginplyr/pull/536
+413	MERGED	Keep a declared NA factor level across the dtplyr branch union	https://github.com/sayuks/marginplyr/pull/413
+434	MERGED	Give a summary branch with nothing to select a column (#428)	https://github.com/sayuks/marginplyr/pull/434
+183	MERGED	Count the rows a nested cell stands for when no column can	https://github.com/sayuks/marginplyr/pull/183
+201	MERGED	Attach the Grouping set identifier without inventing a row	https://github.com/sayuks/marginplyr/pull/201
+476	MERGED	Answer three documentation issues against one guide	https://github.com/sayuks/marginplyr/pull/476
+
+issue -- sf "st_agr"
+
+pr -- sf "st_agr"
+
+issue -- "names(agr)"
+
+pr -- "names(agr)"
+
+issue -- "two geometry"
+
+pr -- "two geometry"
+
+issue -- sf "geometry" rollup
+951	CLOSED	[P2] Keep local sf metadata valid while building nested Margin results	https://github.com/sayuks/marginplyr/issues/951
+993	CLOSED	[P2] Keep active sf geometry in the leading expansion Margin columns	https://github.com/sayuks/marginplyr/issues/993
+949	CLOSED	[P2] Keep data-frame subclass invariants valid during nesting column renames	https://github.com/sayuks/marginplyr/issues/949
+
+pr -- sf "geometry" rollup
+966	MERGED	Fix empty sf nesting during label collision checks	https://github.com/sayuks/marginplyr/pull/966
+962	MERGED	Fix subclass invariants during margin nesting	https://github.com/sayuks/marginplyr/pull/962
+
+Direct lookup after a concurrent issue appeared
+1271	OPEN	[P2] Preserve one evaluated dtplyr source across expansion copies	https://github.com/sayuks/marginplyr/issues/1271
+1272	OPEN	[P2] Preserve one evaluated Arrow source across expansion copies	https://github.com/sayuks/marginplyr/issues/1272
