@@ -1621,10 +1621,12 @@ expand_cube <- function(preflight, resolve_selection, emit, drop_duplicates) {
   emit_grouping_family(family, emit)
 }
 
-# Retain the earliest occurrence of each cube set in descending subset size
-# and then combination order. Prepending the same choices preserves that rank.
-distinct_cube_sets <- function(units) {
-  dimensions <- unique(unlist(units, use.names = FALSE))
+# Retain the earliest full set per membership on `dimensions`, in descending
+# subset size and combination order. Prepending the same choices preserves rank.
+distinct_cube_sets <- function(
+  units,
+  dimensions = unique(unlist(units, use.names = FALSE))
+) {
   sets <- list(character())
   sizes <- 0L
   for (unit in rev(units)) {
@@ -1746,31 +1748,59 @@ flatten_product_factors <- function(preflight) {
   unlist(factors, recursive = FALSE)
 }
 
+# Resolve a factor to its sets or deferred cube units, plus the columns every
+# occurrence includes. Resolving units here validates empty selections in order.
+resolve_product_factor <- function(arg, resolve_selection) {
+  if (!is.null(arg$nested) &&
+        identical(grouping_kind_name(arg$nested$spec$type), "cube")) {
+    return(list(
+      units = resolve_grouping_units(arg$nested, resolve_selection),
+      required = character()
+    ))
+  }
+  sets <- expand_grouping_factor(arg, resolve_selection, TRUE)
+  list(sets = sets, required = Reduce(intersect, sets))
+}
+
 # Retain the first occurrence of each product set. Columns required by every
 # choice of a later factor cannot distinguish two prefixes in the final plan.
 distinct_grouping_product <- function(preflight, resolve_selection) {
-  families <- lapply(
-    flatten_product_factors(preflight), expand_grouping_factor,
-    resolve_selection = resolve_selection, drop_duplicates = TRUE
+  factors <- lapply(
+    flatten_product_factors(preflight), resolve_product_factor,
+    resolve_selection = resolve_selection
   )
-  required <- lapply(families, function(family) Reduce(intersect, family))
+  required <- lapply(factors, function(factor) factor$required)
   remaining <- rev(Reduce(union, rev(required), init = character(),
                           accumulate = TRUE))[-1L]
   product <- list(character())
-  for (i in seq_along(families)) {
-    product <- distinct_product_step(product, families[[i]], remaining[[i]])
+  for (i in seq_along(factors)) {
+    product <- distinct_product_step(product, factors[[i]], remaining[[i]])
   }
   product
 }
 
 # Keep the first union of each membership in Cartesian order. Omit required
 # suffix columns from the keys and retain the selected columns as written.
-distinct_product_step <- function(product, family, required) {
-  dimensions <- setdiff(unique(unlist(c(product, family), use.names = FALSE)),
-                        required)
+distinct_product_step <- function(product, factor, required) {
+  family <- factor$sets
+  units <- factor$units
+  factor_columns <- unique(unlist(c(family, units), use.names = FALSE))
+  dimensions <- setdiff(
+    union(unique(unlist(product, use.names = FALSE)), factor_columns), required
+  )
+  cube_dimensions <- setdiff(factor_columns, required)
+  previous_covered <- NULL
   seen <- new.env(parent = emptyenv())
   sets <- list()
   for (left in product) {
+    if (!is.null(units)) {
+      # Columns supplied by the prefix or suffix cannot distinguish cube sets.
+      covered <- intersect(cube_dimensions, left)
+      if (!identical(covered, previous_covered)) {
+        family <- distinct_cube_sets(units, setdiff(cube_dimensions, covered))
+        previous_covered <- covered
+      }
+    }
     for (right in family) {
       set <- union(left, right)
       key <- grouping_set_key(set, dimensions)
