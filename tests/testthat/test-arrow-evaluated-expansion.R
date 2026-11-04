@@ -46,3 +46,16 @@ test_that("Arrow expansion keeps volatile row membership across occurrences", {
   margin <- sort(rows$row_id[rows$occurrence == 2L])
   expect_identical(detail, margin)
 })
+
+test_that("Arrow expansion binding rejects a missing source marker", {
+  skip_if_suggest_absent("arrow")
+  # expand_with_margins() always marks the shared Arrow source before binding,
+  # so exercise the invariant with an unmarked query directly.
+  input <- dplyr::collapse(arrow::Table$create(g = "a"))
+  marker <- new.env(parent = emptyenv())
+
+  expect_error(
+    bind_arrow_expansion_input(input, marker, input),
+    'inherits(query, "arrow_dplyr_query")', fixed = TRUE
+  )
+})
