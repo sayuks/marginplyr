@@ -27,8 +27,8 @@ witnesses <- function() {
   wrapped <- function(...) {
     inspect_grouping(input, .grouping = grouping_sets(alias = (..1), a))
   }
-  empty <- capture(bare(, TRUE))
-  tagged <- capture(wrapped(, TRUE))
+  empty <- capture(rlang::inject(bare(!!!list(rlang::missing_arg(), TRUE))))
+  tagged <- capture(rlang::inject(wrapped(!!!list(rlang::missing_arg(), TRUE))))
   filled <- capture(wrapped(a, TRUE))
   stopifnot(
     inherits(empty, "marginplyr_error"),
@@ -128,9 +128,17 @@ for (i in seq_len(nrow(diag))) {
     consumers[[as.character(case$consumer)]], tibble::tibble(a = 1, b = 2)
   )
   result <- if (identical(dot, "..1")) {
-    if (case$empty) capture(wrapper(, TRUE)) else capture(wrapper(a, TRUE))
+    if (case$empty) {
+      capture(rlang::inject(wrapper(!!!list(rlang::missing_arg(), TRUE))))
+    } else {
+      capture(wrapper(a, TRUE))
+    }
   } else {
-    if (case$empty) capture(wrapper(TRUE, , TRUE)) else capture(wrapper(TRUE, a, TRUE))
+    if (case$empty) {
+      capture(rlang::inject(wrapper(!!!list(TRUE, rlang::missing_arg(), TRUE))))
+    } else {
+      capture(wrapper(TRUE, a, TRUE))
+    }
   }
   diag$outcome[[i]] <- if (!inherits(result, "error")) {
     "success"

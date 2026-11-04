@@ -23,7 +23,8 @@ for (backend in c("local", "dtplyr")) {
         calls <- 0L
         actual <- check(function(q) {
           env <- rlang::quo_get_env(q)
-          expr <- switch(spelling, bare = quote(a - b), wrapped = quote(((a - b))),
+          wrapped <- rlang::call2("(", rlang::call2("(", quote(a - b)))
+          expr <- switch(spelling, bare = quote(a - b), wrapped = wrapped,
                          walk = quote(c(a - b)), qualified = quote(base::`-`(a, b)))
           q <- rlang::new_quosure(expr, env)
           spec <- if (position == ".by") NULL else

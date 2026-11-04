@@ -214,7 +214,9 @@ The final replay loaded a disposable archive of the pinned baseline.
 Terminal session `29933` exited 0 after collecting six observation runs
 at exit 0, six desired-behavior runs at exit 1, and eight additional
 matrix runs at exit 0. All probe processes had exited when the session
-completed.
+completed. Session `79617` repeated the two probes after generating the
+redundant parentheses and empty argument slots explicitly. It exited 0
+with the same counts and numbered-dot assertion failure.
 
 The finite checks cover the named inputs and dispatch boundaries. Hosted
 databases, arbitrary class methods, other R and dependency versions, and
