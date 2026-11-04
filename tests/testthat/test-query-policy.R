@@ -736,6 +736,13 @@ test_that("no Arrow read happens while a Margin verb runs", {
     0L
   )
 
+  expect_identical(
+    count_entry_point_invocations(summarize_with_margins(
+      table, dplyr::across(c(s = v), sum), .grouping = rollup(k)
+    )),
+    0L
+  )
+
   offset <- function() {
     warning("the caller is not pulling data into R", call. = FALSE)
     1

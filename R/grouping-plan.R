@@ -477,13 +477,15 @@ is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE) {
   call_ns <- static_call_ns(expr)
   if (call_name %in% leaf_helpers &&
         (is.null(call_ns) || call_ns %in% c("tidyselect", "dplyr")) &&
+        selection_call_parens_safe(unparenthesized_call(expr), env) &&
         is_name_only_namespace(expr, env)) {
     return(all(vapply(
       static_call_args(expr),
       is_name_only_helper_arg,
       logical(1),
       env = env,
-      allow_caller_code = allow_caller_code
+      allow_caller_code = allow_caller_code,
+      allow_stringr_pattern = identical(call_name, "matches")
     )))
   }
   # tidyselect refuses only a bare operator head. Qualified or parenthesized
@@ -526,11 +528,16 @@ is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE) {
 # typed selection rather than running caller code to classify it.
 # A discarded mixed-selection pass sets `allow_caller_code = FALSE` to exclude
 # caller closures and assignments even when their result needs no column types.
+# Only direct matches() arguments can carry stringr pattern objects. Inside a
+# known modifier, `allow_env_pronoun` permits plain reads in the selection
+# context. Neither permission carries into a caller closure's body or defaults.
 is_name_only_helper_arg <- function(expr,
                                     env,
                                     bound = character(),
                                     seen = list(),
-                                    allow_caller_code = TRUE) {
+                                    allow_caller_code = TRUE,
+                                    allow_stringr_pattern = FALSE,
+                                    allow_env_pronoun = FALSE) {
   if (is_name_part(expr)) {
     name <- as.character(expr)
     if (name %in% bound) {
@@ -542,19 +549,56 @@ is_name_only_helper_arg <- function(expr,
       return(FALSE)
     }
     value <- rlang::env_get(env, name, default = NULL, inherit = TRUE)
-    return(is.atomic(value) && !is.object(value))
+    return(is_name_only_helper_value(value, allow_stringr_pattern))
   }
   if (!rlang::is_call(expr)) {
-    return(rlang::is_missing(expr) || (is.atomic(expr) && !is.object(expr)))
+    return(
+      rlang::is_missing(expr) ||
+        is_name_only_helper_value(expr, allow_stringr_pattern)
+    )
+  }
+  if (!selection_call_parens_safe(expr, env, bound)) {
+    return(FALSE)
+  }
+  if (is_redundant_parens(expr)) {
+    return(is_name_only_helper_arg(
+      expr[[2L]], env, bound, seen, allow_caller_code, allow_stringr_pattern,
+      allow_env_pronoun
+    ))
   }
   fn <- selection_argument_function(expr, env, bound)
-  if (is.null(fn) || identical(fn, tidyselect::peek_data)) {
+  pattern_call <-
+    allow_stringr_pattern && is_stringr_pattern_call(expr, env, bound, fn)
+  if ((!pattern_call && is.null(fn)) || identical(fn, tidyselect::peek_data)) {
     return(FALSE)
   }
   args <- static_call_args(expr)
+  if ((allow_stringr_pattern || allow_env_pronoun) && length(args) == 2L &&
+        identical(args[[1L]], quote(.env)) &&
+        (identical(fn, base::`$`) || identical(fn, base::`[[`))) {
+    # Tidyselect's context mask supplies .env from the caller's quosure.
+    # Only a literal subscript identifies a binding without evaluation.
+    name <- NULL
+    if (identical(fn, base::`$`) && is_name_part(args[[2L]])) {
+      name <- as.character(args[[2L]])
+    } else if (rlang::is_string(args[[2L]])) {
+      name <- rlang::as_string(args[[2L]])
+    }
+    if (
+      is.null(name) || !nzchar(name) || name == "..." ||
+        selection_binding_deferred(
+          env, name, allow_namespace_promises = FALSE
+        )
+    ) {
+      return(FALSE)
+    }
+    value <- rlang::env_get(env, name, default = NULL, inherit = TRUE)
+    return(is_name_only_helper_value(value, allow_stringr_pattern))
+  }
   if (
     identical(fn, base::names) && length(args) == 1L &&
       rlang::is_call(args[[1L]]) &&
+      selection_call_parens_safe(args[[1L]], env, bound) &&
       identical(selection_argument_function(args[[1L]], env, bound),
                 tidyselect::peek_data) &&
       length(static_call_args(args[[1L]])) == 0L
@@ -563,10 +607,11 @@ is_name_only_helper_arg <- function(expr,
   }
   if (!all(vapply(args, is_name_only_helper_arg, logical(1),
                   env = env, bound = bound, seen = seen,
-                  allow_caller_code = allow_caller_code))) {
+                  allow_caller_code = allow_caller_code,
+                  allow_env_pronoun = pattern_call || allow_env_pronoun))) {
     return(FALSE)
   }
-  if (identical(fn, tidyselect::peek_vars)) {
+  if (pattern_call || identical(fn, tidyselect::peek_vars)) {
     return(TRUE)
   }
   # Ordinary S3 generics can dispatch on implicit classes even when every
@@ -604,6 +649,51 @@ is_name_only_helper_arg <- function(expr,
     bound = names(formals(fn)),
     seen = c(seen, list(fn))
   ))
+}
+
+# Parentheses around a helper argument or callee use lexical `(`, unlike the
+# outer selection parentheses tidyselect walks itself. Check the written
+# parentheses before using readers that treat them as transparent.
+selection_call_parens_safe <- function(expr, env, bound = character()) {
+  if (!is_redundant_parens(expr) &&
+        !is_redundant_parens(static_call_head(expr))) {
+    return(TRUE)
+  }
+  identical(selection_argument_function(quote((NULL)), env, bound), base::`(`)
+}
+
+# A helper value with no caller-defined dispatch. Only matches() consumes
+# stringr patterns, and a subclass can introduce its own methods.
+is_name_only_helper_value <- function(value, allow_stringr_pattern) {
+  if (allow_stringr_pattern && is.character(value)) {
+    classes <- class(value)
+    if (classes[[1L]] %in% c(
+      "stringr_regex", "stringr_fixed", "stringr_coll", "stringr_boundary"
+    ) && identical(classes[-1L], c("stringr_pattern", "character"))) {
+      return(TRUE)
+    }
+  }
+  is.atomic(value) && !is.object(value)
+}
+
+# A stringr modifier named by an ordinary namespace lookup or an unmasked
+# lexical binding. Qualified calls can load stringr during selection.
+is_stringr_pattern_call <- function(expr, env, bound, fn) {
+  modifiers <- c("regex", "fixed", "coll", "boundary")
+  namespace <- static_call_ns(expr)
+  name <- static_call_name(expr)
+  if (identical(namespace, "stringr")) {
+    return(name %in% modifiers && is_name_only_namespace(expr, env, bound))
+  }
+  fn_env <- environment(fn)
+  if (!is.null(namespace) || !isNamespace(fn_env) ||
+        !identical(unname(getNamespaceName(fn_env)), "stringr") ||
+        name %in% names(tidyselect::vars_select_helpers)) {
+    return(FALSE)
+  }
+  any(vapply(modifiers, function(modifier) {
+    identical(fn, getExportedValue("stringr", modifier))
+  }, logical(1)))
 }
 
 # Whether the first lexical binding is active or an unforced promise.

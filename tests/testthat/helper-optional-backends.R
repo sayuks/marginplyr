@@ -188,7 +188,9 @@ optional_suggest_spec <- function() {
     bit64 = list(asserted = FALSE, companions = character()),
     DBI = list(asserted = FALSE, companions = character()),
     # Like DBI, blob is imported by dbplyr and cannot be withheld.
-    blob = list(asserted = FALSE, companions = character())
+    blob = list(asserted = FALSE, companions = character()),
+    # dbplyr imports tidyr, which imports stringr.
+    stringr = list(asserted = FALSE, companions = character())
   )
 }
 

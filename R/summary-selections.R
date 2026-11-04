@@ -791,7 +791,6 @@ plan_summary_expressions <- function(dots,
       dots,
       group_vars = group_vars,
       caller_labels = caller_labels,
-      normalize_across_names = FALSE,
       shield_independent_masks = shield_independent_masks,
       skip_shares = TRUE,
       defer_local = deferred,
@@ -934,7 +933,7 @@ plan_summary_expressions <- function(dots,
     summary_plan$dots,
     group_vars = group_vars,
     caller_labels = caller_labels,
-    normalize_across_names = identical(backend_kind, "dtplyr"),
+    across_backend = backend_kind,
     shield_independent_masks = shield_independent_masks,
     defer_local = deferred,
     defer_nested_local = nested_deferred,
@@ -1077,7 +1076,7 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
         !rlang::is_missing(parsed$call_args[[parsed$fns_index]])) {
     probe_expr <- rlang::quo_get_expr(probe)
     fns <- rewrite_summary_selections(
-      parsed$fns, env, selection_data, normalize_across_names = FALSE,
+      parsed$fns, env, selection_data,
       defer_local = TRUE, group_vars = group_vars,
       forbidden_names = nested_state
     )
@@ -1648,11 +1647,13 @@ summary_selection_proxy <- function(data_proxy, data_vars, group_vars) {
 # rather than read off `dots`: the second resolution runs over dots this one
 # rewrote, whose labels are marginplyr's spelling and not the caller's
 # (ADR 0022).
+# The final resolution supplies `across_backend` for backend-specific
+# rewrites after the planning pass has read the selection aliases.
 resolve_summary_selections <- function(dots,
                                        group_vars,
                                        caller_labels,
                                        selection_proxy,
-                                       normalize_across_names = FALSE,
+                                       across_backend = NULL,
                                        shield_independent_masks = TRUE,
                                        skip_shares = FALSE,
                                        defer_local = FALSE,
@@ -1697,7 +1698,7 @@ resolve_summary_selections <- function(dots,
           expr,
           env = rlang::quo_get_env(dot),
           data_proxy = selection_proxy,
-          normalize_across_names = normalize_across_names,
+          across_backend = across_backend,
           shield_independent_masks = shield_independent_masks,
           defer_local = defer_local[[i]],
           defer_nested_local = defer_nested_local[[i]],
@@ -1722,7 +1723,7 @@ resolve_summary_selections <- function(dots,
 rewrite_summary_selections <- function(expr,
                                        env,
                                        data_proxy,
-                                       normalize_across_names,
+                                       across_backend = NULL,
                                        shield_independent_masks = TRUE,
                                        defer_local = FALSE,
                                        defer_nested_local = FALSE,
@@ -1766,7 +1767,7 @@ rewrite_summary_selections <- function(expr,
         part,
         env = env,
         data_proxy = data_proxy,
-        normalize_across_names = normalize_across_names,
+        across_backend = across_backend,
         shield_independent_masks = shield_independent_masks,
         defer_local = defer_local || defer_nested_local,
         group_vars = group_vars,
@@ -1805,8 +1806,8 @@ rewrite_summary_selections <- function(expr,
       expr,
       env,
       data_proxy,
-      normalize_across_names = normalize_across_names,
-      call_name = call_name
+      call_name = call_name,
+      across_backend = across_backend
     ))
   }
   if (identical(call_name, "pick")) {
@@ -2031,8 +2032,8 @@ across_unpack_is_false <- function(unpack, env) {
 rewrite_across_selection <- function(expr,
                                      env,
                                      data_proxy,
-                                     normalize_across_names,
-                                     call_name) {
+                                     call_name,
+                                     across_backend = NULL) {
   parsed <- parse_across_arguments(expr)
   call_args <- parsed$call_args
   selection_index <- parsed$cols_index
@@ -2082,7 +2083,33 @@ rewrite_across_selection <- function(expr,
     }
   }
 
-  if (identical(call_name, "across") && normalize_across_names) {
+  if (identical(call_name, "across") && identical(across_backend, "arrow")) {
+    source_names <- names(data_proxy)[unname(selected)]
+    if (!identical(names(selected), source_names)) {
+      # Arrow uses selection names to look up the input fields.
+      # Freeze output names before removing the selection aliases.
+      if (anyDuplicated(source_names)) {
+        abort_marginplyr(c(
+          "Renamed {.fun across} selects an input column more than once.",
+          i = "On Arrow, write separate summaries for repeated inputs."
+        ))
+      }
+      resolved <- rebuild_static_call(expr, call_args)
+      output_names <- known_across_output_names(resolved, env, data_proxy)
+      if (length(output_names) == 0L) {
+        abort_marginplyr(c(
+          "Arrow cannot determine the output names for renamed {.fun across}.",
+          i = "Use a single function or a literal list of functions."
+        ))
+      }
+      call_args[[selection_index]] <- rlang::expr(
+        dplyr::all_of(!!source_names)
+      )
+      call_args$.names <- resolved_across_name_template(output_names)
+    }
+  }
+
+  if (identical(call_name, "across") && identical(across_backend, "dtplyr")) {
     parsed <- parse_across_arguments(rebuild_static_call(expr, call_args))
     unpack_is_false <- across_unpack_is_false(parsed$unpack, env)
     function_names <- known_across_function_names(parsed, env)
