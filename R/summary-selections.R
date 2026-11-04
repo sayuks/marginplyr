@@ -1795,8 +1795,10 @@ rewrite_summary_selections <- function(expr,
 
   if (shield_independent_masks && any(independent_mask_call_parts(expr))) {
     # dplyr expands pick() in call arguments, so hide the nested call in the
-    # head. Embed the closure so its construction uses package scope.
-    return(rlang::call2(rlang::call2(nested_mask_thunk, expr)))
+    # head. Construct the closure in the package namespace.
+    return(rlang::call2(rlang::call2(
+      marginplyr_private_call("nested_mask_thunk"), expr
+    )))
   }
 
   call_name <- static_spelling_name(expr, "selection")
