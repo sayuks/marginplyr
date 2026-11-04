@@ -4404,6 +4404,7 @@ definition_data_symbols <- function(expr, bound, lookup = NULL) {
   defaults <- formals_list[
     !vapply(formals_list, rlang::is_missing, logical(1))
   ]
+  lookup$defaults <- defaults
   unique(unlist(
     lapply(
       c(defaults, list(expr[[3L]])),
@@ -4699,6 +4700,16 @@ scope_callee_is_shadowed <- function(callee, name, bound, lookup) {
 nested_removal_retained_bound <- function(expr, bound, lookup = NULL) {
   if (rlang::is_quosure(expr)) {
     lookup$env <- rlang::quo_get_env(expr)
+  }
+  if (is_name_part(expr) && rlang::as_name(expr) %in% bound) {
+    name <- rlang::as_name(expr)
+    if (name %in% names(lookup$defaults)) {
+      default <- lookup$defaults[[name]]
+      # Reading a formal may force its default in this frame. Removing it from
+      # the pending defaults bounds recursive promises without evaluating them.
+      lookup$defaults[name] <- NULL
+      return(nested_removal_retained_bound(default, bound, lookup))
+    }
   }
   if (!rlang::is_call(expr) || length(bound) == 0L) {
     return(bound)
