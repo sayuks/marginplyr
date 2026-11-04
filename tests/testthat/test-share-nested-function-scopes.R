@@ -188,6 +188,18 @@ test_that("inline scope changes preserve independent and shadowed bindings", {
         })
       })()
       sum(prior)
+    })(),
+    (function(prior = {
+      base::rm(prior)
+      stop("A dead branch must not run.")
+    }) {
+      if (FALSE) {
+        (function() {
+          base::force(prior)
+          sum(prior)
+        })()
+      }
+      touch()
     })()
   )
   for (kind in c("parent", "total")) {

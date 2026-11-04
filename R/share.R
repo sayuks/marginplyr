@@ -4392,7 +4392,9 @@ pronoun_index_symbols <- function(expr, scope, lookup) {
 # rather than testing for a capture of its own (#179).
 call_part_symbols <- function(expr, scope, lookup) {
   call_head <- static_call_head(expr)
-  parts <- evaluated_call_args(expr, bound = scope_bound_names(scope))
+  parts <- scope_call_args(
+    expr, static_call_name(expr), scope_bound_names(scope)
+  )
   definition <- inline_function_definition(expr)
   reads <- character()
   if (!is.null(definition)) {
@@ -4405,6 +4407,21 @@ call_part_symbols <- function(expr, scope, lookup) {
     scope <- scope_after_removals(parts[[index]], scope, lookup)
   }
   unique(reads)
+}
+
+# An if with a literal condition exposes only its reachable arm to the
+# dependency and removal walks.
+scope_call_args <- function(expr, name, bound) {
+  if (identical(name, "if") && length(expr) >= 3L) {
+    condition <- unparenthesized_value(expr[[2L]])
+    if (identical(condition, FALSE)) {
+      return(if (length(expr) >= 4L) list(expr[[4L]]) else list())
+    }
+    if (identical(condition, TRUE)) {
+      return(list(expr[[3L]]))
+    }
+  }
+  evaluated_call_args(expr, bound = bound)
 }
 
 # A literal function in call position is visible through redundant parentheses.
@@ -4787,17 +4804,9 @@ scope_after_removals <- function(expr, scope, lookup) {
     head <- list()
   }
   parts <- c(
-    head, evaluated_call_args(expr, bound = bound),
+    head, scope_call_args(expr, name, bound),
     evaluated_language_parts(expr)
   )
-  if (identical(name, "if") && length(expr) >= 3L) {
-    condition <- unparenthesized_value(expr[[2L]])
-    if (identical(condition, FALSE)) {
-      parts <- if (length(expr) >= 4L) list(expr[[4L]]) else list()
-    } else if (identical(condition, TRUE)) {
-      parts <- list(expr[[3L]])
-    }
-  }
   for (index in seq_along(parts)) {
     scope <- scope_after_removals(parts[[index]], scope, lookup)
   }
