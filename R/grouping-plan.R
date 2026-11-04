@@ -494,7 +494,8 @@ is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE) {
       logical(1),
       env = env,
       allow_caller_code = allow_caller_code,
-      allow_stringr_pattern = identical(call_name, "matches")
+      allow_stringr_pattern = identical(call_name, "matches"),
+      allow_env_pronoun = TRUE
     )))
   }
   # tidyselect refuses only a bare operator head. Qualified or parenthesized
@@ -524,9 +525,9 @@ is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE) {
 # typed selection rather than running caller code to classify it.
 # A discarded mixed-selection pass sets `allow_caller_code = FALSE` to exclude
 # caller closures and assignments even when their result needs no column types.
-# Only direct matches() arguments can carry stringr pattern objects. Inside a
-# known modifier, `allow_env_pronoun` permits plain reads in the selection
-# context. Neither permission carries into a caller closure's body or defaults.
+# Only direct matches() arguments can carry stringr pattern objects.
+# `allow_env_pronoun` permits literal reads in the selection context. Neither
+# permission carries into a caller closure's body or defaults.
 is_name_only_helper_arg <- function(expr,
                                     env,
                                     bound = character(),
@@ -569,7 +570,7 @@ is_name_only_helper_arg <- function(expr,
     return(FALSE)
   }
   args <- static_call_args(expr)
-  if ((allow_stringr_pattern || allow_env_pronoun) && length(args) == 2L &&
+  if (allow_env_pronoun && length(args) == 2L &&
         identical(args[[1L]], quote(.env)) &&
         (identical(fn, base::`$`) || identical(fn, base::`[[`))) {
     # Tidyselect's context mask supplies .env from the caller's quosure.
@@ -604,7 +605,7 @@ is_name_only_helper_arg <- function(expr,
   if (!all(vapply(args, is_name_only_helper_arg, logical(1),
                   env = env, bound = bound, seen = seen,
                   allow_caller_code = allow_caller_code,
-                  allow_env_pronoun = pattern_call || allow_env_pronoun))) {
+                  allow_env_pronoun = allow_env_pronoun))) {
     return(FALSE)
   }
   if (pattern_call || identical(fn, tidyselect::peek_vars)) {
