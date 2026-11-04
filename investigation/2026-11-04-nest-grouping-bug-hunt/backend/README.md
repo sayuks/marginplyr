@@ -110,6 +110,13 @@ asserted that refusal and its zero-statement boundary; its completed run
 returned exit 0. [Initial](remote-frontier-initial.txt) and
 [completed](remote-frontier.txt) logs kept those outcomes distinct.
 
+The coordinating agent simplified the grouped-window fixture to
+`mutate(position = row_number(), .by = g)` after jarl rejected the explicit
+group/mutate/ungroup spelling. A [replay](remote-frontier-lint-replay.txt)
+against the same baseline retained all SQL/Arrow counts and assertions above;
+session `32214` reached terminal exit 0. Its repeated observations were not
+added to the counts.
+
 ## Replay, environment and limits
 
 Each completed script loaded a disposable `git archive` copy of the baseline

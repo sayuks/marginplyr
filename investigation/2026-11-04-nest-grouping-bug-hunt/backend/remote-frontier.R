@@ -14,7 +14,7 @@ for (engine in c("RSQLite", "duckdb")) {
     union_join = union_all(inner_join(root, rename(one, row2 = row_id), by = "g"), inner_join(root, rename(two, row2 = row_id), by = "g")),
     double_join = left_join(left_join(root, rename(one, row2 = row_id), by = "g"), rename(two, row3 = row_id), by = "g"),
     nested_limits = head(arrange(head(arrange(root, desc(row_id)), 2L), row_id), 1L),
-    grouped_window = root |> group_by(g) |> mutate(position = row_number()) |> ungroup(),
+    grouped_window = root |> mutate(position = row_number(), .by = g),
     projected_join = select(left_join(root, rename(one, row2 = row_id), by = "g"), g, row_id)
   )
   statements <- character()
