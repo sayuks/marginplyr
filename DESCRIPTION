@@ -171,6 +171,7 @@ Config/testthat/start-first:
     sent-queries,
     sent-queries-process,
     sql-share-fixed-keys,
+    share-formal-default-removal,
     sqlite-b-direct-compute,
     injected-nested-grouping,
     verb-argument-admission,
