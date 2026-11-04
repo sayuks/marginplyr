@@ -47,7 +47,7 @@ test_that("Arrow rollups retain typed missing dictionary margins", {
           expect_true(
             arrow::schema(query)$GetFieldByName("g")$type$Equals(type)
           )
-          materialized <- dplyr::compute(query)
+          materialized <- expect_no_warning(dplyr::compute(query))
           expect_true(materialized$schema$GetFieldByName("g")$type$Equals(type))
           actual <- suppressWarnings(dplyr::collect(materialized))
           rows <- order(actual$occurrence, actual$row_id)

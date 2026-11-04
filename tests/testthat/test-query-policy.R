@@ -761,6 +761,14 @@ test_that("no Arrow read happens while a Margin verb runs", {
     0L
   )
 
+  source <- dplyr::mutate(table, computed = v + 1)
+  query <- NULL
+  expect_identical(count_entry_point_invocations({
+    query <- expand_with_margins(source, .grouping = rollup(k))
+    invisible(utils::capture.output(dplyr::show_query(query)))
+  }), 0L)
+  expect_gt(count_entry_point_invocations(dplyr::collect(query)), 0L)
+
   expect_identical(
     count_entry_point_invocations(
       inspect_grouping(
