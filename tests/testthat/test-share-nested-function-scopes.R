@@ -106,9 +106,10 @@ test_that("visible inline scope changes expose both forbidden dependencies", {
 
 test_that("inline scope changes preserve independent and shadowed bindings", {
   data <- data.frame(group = c("a", "b"), x = c(1, 3), prior = c(100, 300))
-  calls <- 0L
+  counts <- new.env(parent = emptyenv())
+  counts$calls <- 0L
   touch <- function() {
-    calls <<- calls + 1L
+    counts$calls <- counts$calls + 1L
     2
   }
   outside <- new.env(parent = emptyenv())
@@ -191,29 +192,29 @@ test_that("inline scope changes preserve independent and shadowed bindings", {
   )
   for (kind in c("parent", "total")) {
     helper <- rlang::call2(paste0("share_of_", kind), quote(value))
-    calls <- 0L
+    counts$calls <- 0L
     control <- summarize_with_margins(
       data, prior = sum(x), value = touch(), fraction = !!helper,
       .grouping = rollup(group)
     )
-    control_calls <- calls
+    control_calls <- counts$calls
     expect_equal(control$value, c(2, 2, 2))
     expect_identical(control_calls, 3L)
     for (expression in expressions) {
-      calls <- 0L
+      counts$calls <- 0L
       result <- summarize_with_margins(
         data, prior = sum(x), value = !!expression, fraction = !!helper,
         .grouping = rollup(group)
       )
       expect_identical(result, control)
-      expect_identical(calls, control_calls)
-      calls <- 0L
+      expect_identical(counts$calls, control_calls)
+      counts$calls <- 0L
       result <- summarize_with_margins(
         data, value = sum(x), prior = !!helper, derived = !!expression,
         .grouping = rollup(group)
       )
       expect_equal(result$derived, control$value)
-      expect_identical(calls, control_calls)
+      expect_identical(counts$calls, control_calls)
     }
   }
   expect_identical(outside$prior, 2)
@@ -222,16 +223,20 @@ test_that("inline scope changes preserve independent and shadowed bindings", {
 test_that("inline scope changes keep ordinary evaluation without shares", {
   data <- data.frame(group = c("a", "b"), x = c(1, 3), prior = c(100, 300))
   original <- serialize(data, NULL)
-  calls <- 0L
+  counts <- new.env(parent = emptyenv())
+  counts$calls <- 0L
   touch <- function() {
-    calls <<- calls + 1L
+    counts$calls <- counts$calls + 1L
     1
   }
   control <- summarize_with_margins(
-    data, prior = sum(x), derived = { touch(); sum(prior) },
+    data, prior = sum(x), derived = {
+      touch()
+      sum(prior)
+    },
     .grouping = rollup(group)
   )
-  control_calls <- calls
+  control_calls <- counts$calls
   expect_equal(control$derived, c(1, 3, 4))
   expect_identical(control_calls, 3L)
   expressions <- alist(
@@ -254,12 +259,12 @@ test_that("inline scope changes keep ordinary evaluation without shares", {
     })()
   )
   for (expression in expressions) {
-    calls <- 0L
+    counts$calls <- 0L
     result <- summarize_with_margins(
       data, prior = sum(x), derived = !!expression, .grouping = rollup(group)
     )
     expect_identical(result, control)
-    expect_identical(calls, control_calls)
+    expect_identical(counts$calls, control_calls)
   }
   expect_identical(serialize(data, NULL), original)
 })

@@ -4833,7 +4833,7 @@ scope_after_removal_call <- function(expr, scope, lookup) {
   )
   inheritance <- base_call_argument(expr, "inherits")
   targets <- if (length(inheritance) > 0L &&
-                 identical(unparenthesized_value(inheritance[[1L]]), TRUE)) {
+                   identical(unparenthesized_value(inheritance[[1L]]), TRUE)) {
     seq.int(index, length(scope))
   } else {
     index
