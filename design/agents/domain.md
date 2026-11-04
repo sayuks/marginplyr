@@ -4,6 +4,10 @@ How the engineering skills should consume this repo's domain documentation when 
 
 ## Before exploring, read these
 
+When required documents or session-log queries may exceed tool output, use
+[existing-tool retrieval](retrieval.md); read every required document
+through complete per-document coverage.
+
 - **`CONTEXT.md`** at the repo root.
 - **`design/adr/`** — read ADRs that touch the area about to be changed.
 
