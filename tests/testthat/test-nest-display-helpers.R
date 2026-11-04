@@ -238,3 +238,41 @@ test_that("dtplyr .SD payloads survive caller list bindings", {
     as.list(dplyr::collect(query)$data[[1L]]), list(v = 1L, .SD = 2L)
   )
 })
+
+test_that("dtplyr nesting wraps cells independently of caller list bindings", {
+  skip_if_suggest_absent("dtplyr")
+  root <- new.env(parent = globalenv())
+  root$source <- tibble::tibble(g = "a", v = 1L)
+  root$observe <- function(value) rep(TRUE, length(value))
+  input <- evalq(dplyr::filter(dtplyr::lazy_dt(source), observe(v)), root)
+  query <- nest_with_margins(input, .grouping = grouping_set(g))
+  expect_s3_class(query, "dtplyr_step")
+
+  mask_list <- function(...) {
+    call <- substitute(list(...))
+    values <- base::list(...)
+    if (
+      length(call) == 2L &&
+        is.call(call[[2L]]) &&
+        identical(call[[2L]][[1L]], quote(data.table::as.data.table))
+    ) {
+      values[[1L]] <- data.table::data.table(v = 999L)
+    }
+    values
+  }
+  root$list <- mask_list
+  expect_identical(dplyr::collect(input)$v, 1L)
+  expect_identical(dplyr::collect(query)$data[[1L]]$v, 1L)
+  rm("list", envir = root)
+  expect_identical(dplyr::collect(query)$data[[1L]]$v, 1L)
+
+  # Install the binding when the row-wise verb's query reads the source.
+  root$observe <- function(value) {
+    if (length(value) > 0L) root$list <- mask_list
+    rep(TRUE, length(value))
+  }
+  rowwise <- nest_by_with_margins(input, .grouping = grouping_set(g))
+  expect_identical(root$list, mask_list)
+  expect_s3_class(rowwise, "rowwise_df")
+  expect_identical(rowwise$data[[1L]]$v, 1L)
+})

@@ -199,8 +199,10 @@ nest_with_margins <- function(.data,
 # it out.
 nest_duplicates_choices <- c("error", "drop")
 
-# Prepare and fold either nesting verb. A row-wise request requires outer
-# keys that dplyr can represent before expansion begins.
+# Prepare and fold either nesting verb. The ordinary result stays lazy for a
+# lazy input. A row-wise request requires representable outer keys and returns
+# a collected table, with one schema-shaped empty cell for a keyless empty
+# input, ready for the caller to mark row-wise.
 nest_margin_pipeline <- function(.data,
                                  by_quo,
                                  grouping_quo,
@@ -371,7 +373,7 @@ execute_margin_nest <- function(operation, .key, .keep, rowwise) {
         utils::tail(available_names, length(plan$dimensions)),
         plan$dimensions
       )
-      data <- slice_local_margin_dimensions(operation)
+      data <- prepare_packed_union_input(operation)
       column_info <- operation$column_info
       if (length(keep_cols) > 0L) {
         data <- margin_safe_column_reads(
@@ -531,13 +533,8 @@ nest_cell_expr <- function(cell_cols, kind) {
     return(quote(dplyr::tibble(.rows = dplyr::n())))
   }
 
-  # A list constructor has only the `...` formal. dtplyr translates a `pick()`
-  # standing where a value stands into a `data.table()` call carrying
-  # one named argument per column: a column named for one of that function's
-  # formals is taken as that argument, so `key` and `check.names` raise and
-  # `keep.rownames` and `stringsAsFactors` are absorbed and leave the column
-  # out of every cell (#424). The conversion is a step of its own for the same
-  # reason, each converter having formals a column could be named for.
+  # Pass the named columns in one list so their names cannot match converter
+  # formals (ADR 0016).
   #
   # `margin_column_pronoun()` rather than a bare symbol, because dtplyr folds a
   # symbol named `T` or `F` to the logical constant before it looks at the
@@ -553,18 +550,16 @@ nest_cell_expr <- function(cell_cols, kind) {
     # `as.data.table.list()` refuses `.SD` as a column name. Build the fresh
     # cell under a private name, then restore the caller's spelling on it.
     special <- intersect(names(columns), ".SD")
+    aliases <- new_margin_internal_names(
+      length(special), used_names = names(columns),
+      prefix = "..marginplyr_cell_"
+    )
+    names(columns)[match(special, names(columns))] <- aliases
+    cell <- rlang::expr(data.table::as.data.table(base::list(!!!columns)))
     if (length(special) > 0L) {
-      aliases <- new_margin_internal_names(
-        length(special), used_names = names(columns),
-        prefix = "..marginplyr_cell_"
-      )
-      names(columns)[match(special, names(columns))] <- aliases
-      return(rlang::expr(data.table::setnames(
-        data.table::as.data.table(base::list(!!!columns)),
-        !!aliases, !!special
-      )))
+      cell <- rlang::expr(data.table::setnames(!!cell, !!aliases, !!special))
     }
-    rlang::expr(data.table::as.data.table(base::list(!!!columns)))
+    cell
   } else {
     rlang::expr(dplyr::as_tibble(list(!!!columns)))
   }
@@ -634,9 +629,10 @@ nest_expanded_margins <- function(.data,
             !!value, base::seq_len(base::min(vctrs::vec_size(!!value), 1L))
           ))
         }), display_cols)
+        # dtplyr evaluates the cell wrapper in the input's environment.
         result <- dplyr::summarize(
           source,
-          "{.key}" := list(!!nest_cell_expr(safe_cells, kind)),
+          "{.key}" := base::list(!!nest_cell_expr(safe_cells, kind)),
           !!!display_exprs,
           .by = dplyr::all_of(setdiff(safe_outer, display_cols))
         )

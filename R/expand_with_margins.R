@@ -151,7 +151,7 @@ execute_margin_expand <- function(operation) {
 
   result <- with_margin_error_call(
     expand_margin_union(
-      slice_local_margin_dimensions(operation),
+      prepare_packed_union_input(operation),
       plan = operation$plan,
       margin_labels = operation$margin_labels,
       column_info = operation$column_info,

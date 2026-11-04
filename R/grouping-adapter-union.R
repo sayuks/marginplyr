@@ -989,9 +989,10 @@ isolate_arrow_partitions <- function(.data) {
   dplyr::collapse(dplyr::select(source, dplyr::all_of(columns)))
 }
 
-# Slice local keys whose typed-missing row uses a packed representation.
-# The operation already holds the plan and the packed dimensions.
-slice_local_margin_dimensions <- function(operation) {
+# Return the operation's input with local dimensions packed where an omitted
+# branch uses a packed typed-missing row. The operation already holds the plan
+# and column metadata.
+prepare_packed_union_input <- function(operation) {
   data <- operation$data
   packed <- operation$column_info$packed
   if (!identical(operation$backend$kind, "local") || length(packed) == 0L) {
