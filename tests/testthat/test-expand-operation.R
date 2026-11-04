@@ -211,6 +211,46 @@ test_that("DuckDB expansion acquires one typed selection proxy", {
   expect_identical(nrow(result), 6L)
 })
 
+test_that("DuckDB expansion copies each evaluated SQL payload", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  DBI::dbExecute(con, "CREATE SEQUENCE payload_counter")
+  source <- dplyr::tbl(con, dbplyr::sql(
+    "SELECT 'detail' AS g, CAST(nextval('payload_counter') AS INTEGER) AS v"
+  ), vars = c("g", "v"))
+
+  query <- expand_with_margins(source, .grouping = rollup(g), .id = "set")
+  expect_identical(dbplyr::remote_con(query), con)
+  result <- dplyr::collect(query) |> dplyr::arrange(.data$set)
+
+  expect_identical(result, tibble::tibble(
+    g = c("detail", "Total"), set = 1:2, v = c(1L, 1L)
+  ))
+  next_value <- DBI::dbGetQuery(con, "SELECT nextval('payload_counter') AS v")
+  expect_equal(as.numeric(next_value$v), 2)
+})
+
+test_that("DuckDB expansion shares rows admitted by a volatile predicate", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  DBI::dbExecute(con, "CREATE SEQUENCE predicate_counter")
+  source <- dplyr::tbl(con, dbplyr::sql(paste(
+    "SELECT 'detail' AS g, 7 AS v",
+    "WHERE nextval('predicate_counter') = 1"
+  )), vars = c("g", "v"))
+
+  query <- expand_with_margins(source, .grouping = rollup(g), .id = "set")
+  result <- dplyr::collect(query) |> dplyr::arrange(.data$set)
+
+  expect_identical(result, tibble::tibble(
+    g = c("detail", "Total"), set = 1:2, v = c(7L, 7L)
+  ))
+  next_value <- DBI::dbGetQuery(con, "SELECT nextval('predicate_counter') AS v")
+  expect_equal(as.numeric(next_value$v), 2)
+})
+
 test_that("portable SQL expansion stays lazy and uses UNION ALL", {
   skip_if_no_sqlite_simulation()
   remote <- dbplyr::tbl_lazy(
