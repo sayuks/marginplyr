@@ -221,12 +221,15 @@ test_that("DuckDB expansion copies each evaluated SQL payload", {
   ), vars = c("g", "v"))
 
   query <- expand_with_margins(source, .grouping = rollup(g), .id = "set")
+  # Collection alone cannot distinguish the caller's connection from another
+  # connection with equivalent input.
   expect_identical(dbplyr::remote_con(query), con)
   result <- dplyr::collect(query) |> dplyr::arrange(.data$set)
 
   expect_identical(result, tibble::tibble(
     g = c("detail", "Total"), set = 1:2, v = c(1L, 1L)
   ))
+  # Equal copies alone do not rule out an extra discarded evaluation.
   next_value <- DBI::dbGetQuery(con, "SELECT nextval('payload_counter') AS v")
   expect_equal(as.numeric(next_value$v), 2)
 })
@@ -247,6 +250,7 @@ test_that("DuckDB expansion shares rows admitted by a volatile predicate", {
   expect_identical(result, tibble::tibble(
     g = c("detail", "Total"), set = 1:2, v = c(7L, 7L)
   ))
+  # The sequence exposes predicate evaluations that return no row.
   next_value <- DBI::dbGetQuery(con, "SELECT nextval('predicate_counter') AS v")
   expect_equal(as.numeric(next_value$v), 2)
 })

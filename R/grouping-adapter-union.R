@@ -42,12 +42,12 @@ dtplyr_margin_input <- function(.data, backend) {
   dtplyr_deferred_copy(isolate_dtplyr_cached_inputs(.data))
 }
 
-# Build a lazy copy whose call head cannot resolve to a cache or caller
-# binding. step_call() requires a string, but dt_call() accepts a
-# namespaced call head in the stored field.
+# Build a lazy copy of an admitted immutable dtplyr step. step_call() requires
+# a string, but dt_call() accepts a namespaced call head in the stored field.
 dtplyr_deferred_copy <- function(step) {
   step_call <- utils::getFromNamespace("step_call", "dtplyr")
   step <- step_call(step, "copy")
+  # The qualified name avoids lookup in a cache or caller binding.
   step[["fun"]] <- quote(data.table::copy)
   step
 }
@@ -979,16 +979,17 @@ restore_input_window_order <- function(result, input_window_order) {
   result
 }
 
-# Share the expanded source only on live engines with a materialization fence.
+# Decide whether the SQL backend can reuse one evaluation of a shared CTE.
 # RSQLite's dbGetInfo() returns the linked engine version without sending SQL.
-sql_expand_shares_source <- function(con) {
-  inherits(con, "duckdb_connection") ||
+sql_expand_shares_source <- function(con, backend) {
+  identical(backend$kind, "postgres") ||
+    inherits(con, "duckdb_connection") ||
     (inherits(con, "SQLiteConnection") && !inherits(con, "TestConnection") &&
        numeric_version(DBI::dbGetInfo(con)$db.version) >= "3.35.0")
 }
 
-# Substitute a statement-local table for the enclosed input of a multi-set
-# SQL expansion. Avoid shadowing any name in the rendered input itself.
+# Substitute a statement-local table for an eligible multi-set SQL input.
+# The caller has enclosed the input and recorded any private Boolean aliases.
 sql_expand_shared_source <- function(data, backend) {
   con <- dbplyr::remote_con(data)
   columns <- margin_col_names(data)
@@ -996,6 +997,7 @@ sql_expand_shared_source <- function(data, backend) {
   input <- boolean_source %||% data$lazy_query
   input_columns <- dbplyr::op_vars(input)
   input_sql <- dbplyr::sql_render(input, con = con)
+  # The CTE name must not shadow any name in the rendered input.
   input_key <- margin_identifier_key(as.character(input_sql), backend)
   suffix <- 1L
   name <- "marginplyr_expand_source_1"
@@ -1019,8 +1021,8 @@ sql_expand_shared_source <- function(data, backend) {
   )
 }
 
-# Keep the CTE inside the branch union's own relation. The outer SQLite type
-# anchor can still refer directly to the original input (ADR 0031).
+# Bind the statement-local table inside the union's relation. The caller
+# supplies a union whose branches use this exact shared source.
 sql_expand_shared_result <- function(result, shared, backend) {
   con <- dbplyr::remote_con(result)
   columns <- margin_col_names(result)
@@ -1039,8 +1041,15 @@ sql_expand_shared_result <- function(result, shared, backend) {
   if (any(sql_name_needs_quoting(columns))) {
     result <- sql_quote_generated_columns(result)
   }
+  # PostgreSQL materializes multiply referenced CTEs with plain AS, including
+  # versions before the MATERIALIZED keyword was introduced.
+  binding <- if (identical(backend$kind, "postgres")) {
+    " AS "
+  } else {
+    " AS MATERIALIZED "
+  }
   sql <- dbplyr::sql(paste0(
-    "WITH ", shared$name, " AS MATERIALIZED (\n", shared$sql, "\n)\n",
+    "WITH ", shared$name, binding, "(\n", shared$sql, "\n)\n",
     dbplyr::sql_render(result)
   ))
   # SQLite cannot start a later compound operand with WITH.
@@ -1124,7 +1133,7 @@ expand_margin_union <- function(.data,
       .data, backend, margin_col_names(.data)
     )
     if (length(plan$sets) > 1L &&
-          sql_expand_shares_source(dbplyr::remote_con(.data))) {
+          sql_expand_shares_source(dbplyr::remote_con(.data), backend)) {
       shared <- sql_expand_shared_source(.data, backend)
       .data <- shared$source
     }
@@ -1210,10 +1219,11 @@ expand_margin_union <- function(.data,
 
   if (
     identical(backend$kind, "sql") &&
-      is.null(shared) &&
       length(branches) > 1L &&
       length(plan$dimensions) > 0L
   ) {
+    # The first compound arm supplies the source column's collation even
+    # when the first grouping set omits that dimension.
     anchor <- sql_margin_type_anchor(
       .data,
       branches[[1L]],

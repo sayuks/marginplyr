@@ -1,8 +1,5 @@
 test_that("SQLite expansion copies each evaluated SQL payload", {
   skip_if_suggest_absent("RSQLite", "DBI")
-  if (numeric_version(RSQLite::rsqliteVersion()[["library"]]) < "3.35.0") {
-    skip("SQLite before 3.35 cannot materialize a shared expansion source")
-  }
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
   DBI::dbExecute(con, paste(
@@ -18,6 +15,8 @@ test_that("SQLite expansion copies each evaluated SQL payload", {
   query <- expand_with_margins(
     source, .grouping = plan, .duplicates = "keep", .id = "set"
   )
+  # Collection alone cannot distinguish the caller's connection from another
+  # connection with equivalent input.
   expect_identical(dbplyr::remote_con(query), con)
   result <- dplyr::collect(query) |>
     dplyr::arrange(.data$set)
@@ -26,8 +25,11 @@ test_that("SQLite expansion copies each evaluated SQL payload", {
   expect_identical(result$g, c("detail", "Total", "detail"))
   expect_identical(result$set, 1:3)
   expect_identical(result$v, c(7L, 7L, 7L))
-  expect_match(result$token[[1L]], "^[0-9A-F]{32}$")
-  expect_identical(result$token, rep(result$token[[1L]], 3L))
+  expect_true(all(grepl("^[0-9A-F]{32}$", result$token)))
+  # SQLite 3.35 introduced the materialization hint for a shared source.
+  if (numeric_version(RSQLite::rsqliteVersion()[["library"]]) >= "3.35.0") {
+    expect_identical(result$token, rep(result$token[[1L]], 3L))
+  }
 })
 
 test_that("SQLite sorted one-set expansion keeps unchanged source types", {
@@ -47,6 +49,29 @@ test_that("SQLite sorted one-set expansion keeps unchanged source types", {
   expect_identical(result$fixed, rep(NA_real_, 2L))
   expect_identical(result$g, c("a", "b"))
   expect_identical(result$payload, rep(NA_integer_, 2L))
+})
+
+test_that("SQLite expansion orders dimensions by their source collation", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  DBI::dbExecute(
+    con, "CREATE TABLE expansion_collation (g TEXT COLLATE NOCASE, v TEXT)"
+  )
+  DBI::dbExecute(con, paste(
+    "INSERT INTO expansion_collation VALUES ('a', 'a'), ('B', 'B'),",
+    "(NULL, NULL)"
+  ))
+  source <- dplyr::tbl(con, "expansion_collation")
+  plan <- grouping_sets(grouping_set(), grouping_set(g))
+
+  query <- expand_with_margins(
+    source, .grouping = plan, .margin_label = NULL, .sort = "last", .id = "set"
+  )
+  expected <- c("a", "B", rep(NA_character_, 4L))
+  expect_identical(dplyr::collect(query)$g, expected)
+  computed <- dplyr::compute(query, name = "expansion_collation_result")
+  expect_identical(dplyr::collect(computed)$g, expected)
 })
 
 test_that("SQLite expansion keeps source types at direct boundaries", {

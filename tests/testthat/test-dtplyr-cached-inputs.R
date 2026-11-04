@@ -248,6 +248,7 @@ test_that("reused immutable caches expand multiple sets without caller copy", {
 
   result <- expand_reused_cache(cached)
   expect_s3_class(result, "dtplyr_step")
+  # The filter counter detects source reads during query construction.
   expect_identical(row_reads, 0L)
   expect_identical(source, before)
   expect_identical(dplyr::collect(cached), expected_input)
@@ -261,5 +262,7 @@ test_that("reused immutable caches expand multiple sets without caller copy", {
   expect_identical(dplyr::collect(result), collected)
   expect_identical(dplyr::collect(cached), expected_input)
   expect_identical(source, before)
+  # The caller binding returns an equivalent copy, so only the counter
+  # detects that it was invoked.
   expect_identical(copy_calls, 0L)
 })
