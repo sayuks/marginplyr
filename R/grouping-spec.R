@@ -84,13 +84,15 @@
 #' under the same name makes `s` refer to the new specification itself.
 #' Reusing a specification in independent branches is allowed.
 #'
-#' A dimension is a column of the input, so a name attached to one is
-#' refused, whether it sits inside a selection or on the constructor's own
-#' argument: `c(area = region)` and `rollup(area = region)` are both errors
-#' rather than a dimension named `area`. Rename the result afterwards with
-#' [dplyr::rename()]. A Margin verb's own argument written in a constructor
-#' falls under that same rule, so `rollup(region, .by = year)` reports the
-#' name instead of taking `year` as a second dimension.
+#' A Grouping dimension keeps its input column name. Inside a selection,
+#' `c(region = region)` and `all_of(c(region = "region"))` both select `region`
+#' under its own name. A selection that changes the name, such as
+#' `c(area = region)`, is refused. Rename the result with [dplyr::rename()].
+#'
+#' Constructors take positional arguments, so `rollup(region = region)` and
+#' `rollup(area = region)` both raise errors. A call such as
+#' `rollup(region, .by = year)` reports `.by` as a named constructor argument.
+#' Pass `.by = year` to the Margin verb.
 #'
 #' @family grouping plans and grouping identity
 #' @seealso [summarize_with_margins()], [expand_with_margins()],
