@@ -1,13 +1,59 @@
 # Build a dots wrapper around a written Nested specification position. The
 # consumer receives the specification without evaluating any dots itself.
 numbered_spec_wrapper <- function(parent, reference, depth, consume,
-                                  following = FALSE) {
+                                  following = FALSE, tagged = FALSE) {
   argument <- as.name(reference)
   for (i in seq_len(depth)) argument <- rlang::call2("(", argument)
   args <- if (following) list(argument, quote(a)) else list(argument)
+  if (tagged) names(args) <- c("first", rep("", length(args) - 1L))
   body <- rlang::call2("consume", rlang::call2(parent, !!!args))
   rlang::new_function(alist(... = ), body, environment())
 }
+
+test_that("a dots-shaped column outside a dots frame is a selection", {
+  data <- data.frame(key = c("a", "b"), value = 1:2)
+  data[["..01"]] <- c("u", "v")
+  expect_identical(
+    inspect_grouping(data, .by = (..01), .format = "list")$fixed,
+    list("..01")
+  )
+
+  alias <- rlang::new_quosure(quote(..01), rlang::current_env())
+  for (parent in c("grouping_set", "grouping_sets", "rollup", "cube",
+                   "grouping_spec")) {
+    constructor <- get(parent, envir = asNamespace("marginplyr"))
+    explicit <- constructor(tidyselect::all_of("..01"))
+    # jarl-ignore unnecessary_parentheses: Redundant pairs are the input.
+    wrapped <- constructor(((..01)))
+    injected <- constructor(!!alias)
+    expected <- inspect_grouping(data, .grouping = explicit, .format = "list")
+    expect_identical(expected$included[[1L]], "..01")
+    expect_identical(
+      inspect_grouping(data, .grouping = wrapped, .format = "list"), expected
+    )
+    expect_identical(
+      inspect_grouping(data, .grouping = injected, .format = "list"), expected
+    )
+    for (consume in forwarded_margin_verbs) {
+      expect_identical(consume(data, grouping = wrapped),
+                       consume(data, grouping = explicit))
+    }
+  }
+
+  expanded <- expand_with_margins(
+    data, .grouping = rollup(!!alias), .margin_label = NULL, .id = "set"
+  )
+  expect_identical(expanded$set, c(1L, 1L, 2L, 2L))
+  expect_identical(expanded$key, rep(c("a", "b"), 2L))
+  expect_identical(expanded[["..01"]], c("u", "v", NA, NA))
+
+  summarized <- summarize_with_margins(
+    data, members = list(value),
+    .grouping = rollup(!!alias), .margin_label = NULL, .id = "set"
+  )
+  expect_identical(summarized$set, c(1L, 1L, 2L))
+  expect_identical(summarized$members, list(1L, 2L, 1:2))
+})
 
 test_that("parenthesized numbered dots retain admitted kinds and refusals", {
   data <- data.frame(a = c("x", "y"), value = 1:2)
@@ -195,6 +241,34 @@ test_that("missing numbered specifications name the public argument boundary", {
   }
 })
 
+test_that("tagged forwarded empty arguments are refused by position", {
+  data <- data.frame(a = "x")
+  consume <- function(spec) inspect_grouping(data, .grouping = spec)
+  for (parent in c("grouping_set", "grouping_sets", "rollup", "cube",
+                   "grouping_spec")) {
+    constructor <- get(parent, envir = asNamespace("marginplyr"))
+    literal <- expect_error(consume(constructor(first = , a)),
+                            class = "marginplyr_error")
+    for (reference in c("..1", "..01")) {
+      for (depth in c(0L, 1L, 3L)) {
+        wrapper <- numbered_spec_wrapper(parent, reference, depth, consume,
+                                         following = TRUE, tagged = TRUE)
+        # jarl-ignore missing_argument: An explicitly missing dot is the input.
+        forwarded <- expect_error(wrapper(, stop("unused dot was forced")),
+                                  class = "marginplyr_error")
+        expect_identical(conditionMessage(forwarded), conditionMessage(literal))
+        expect_error(wrapper(stop("tagged dot was forced")),
+                     "named arguments", class = "marginplyr_error")
+        if (depth > 0L) {
+          invocation <- call("wrapper", quote(!!stop("injection ran")))
+          expect_error(eval(invocation),
+                       "named arguments", class = "marginplyr_error")
+        }
+      }
+    }
+  }
+})
+
 test_that("numbered specifications keep explicit selection and injection", {
   data <- data.frame(a = c("x", "y"), value = 1:2)
   data[["..01"]] <- "same"
@@ -209,6 +283,11 @@ test_that("numbered specifications keep explicit selection and injection", {
   wrapper <- numbered_spec_wrapper("grouping_sets", "..01", 2L, consume)
   expect_identical(wrapper(tidyselect::all_of("..01"))$included, list("..01"))
   child <- grouping_set(a)
+  expect_identical(wrapper(child, stop("unused dot was forced"))$included,
+                   list("a"))
+  later <- numbered_spec_wrapper("grouping_sets", "..02", 2L, consume)
+  expect_identical(later(stop("unused dot was forced"), child)$included,
+                   list("a"))
   injected <- rlang::quo(!!child)
   expect_identical(wrapper(!!injected)$included, list("a"))
   inner <- rlang::env(rlang::current_env(), chosen = child)

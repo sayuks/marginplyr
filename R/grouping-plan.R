@@ -838,20 +838,25 @@ preflight_grouping_spec <- function(grouping_spec,
   list(spec = grouping_spec, args = args, name_only = name_only)
 }
 
-# Every name the caller bound to one constructor call's own arguments, less the
-# ones `abort_empty_grouping_arg()` speaks for. An empty argument has no
-# spelling for a pair to quote (#261), so it is left to the loop below, which
-# refuses it by position.
+# Reject tagged arguments that carry a value, leaving empty arguments for the
+# positional refusal in `preflight_grouping_spec()`.
 check_named_grouping_args <- function(grouping_spec, rule) {
   arg_names <- rlang::names2(grouping_spec$args)
-  empty <- vapply(
-    grouping_spec$args,
-    is_empty_argument,
-    logical(1),
-    USE.NAMES = FALSE
-  )
-  named <- nzchar(arg_names) & !empty
-  if (!any(named)) {
+  named <- which(nzchar(arg_names))
+  if (length(named) == 0L) {
+    return(invisible(NULL))
+  }
+  empty <- vapply(grouping_spec$args[named], function(arg) {
+    # Read the forwarded expression without processing injections. If capture
+    # fails, the tag is still refused before interpreting its contents.
+    captured <- tryCatch(
+      nested_arg_quosure(arg, capture = rlang::enquo0),
+      error = function(cnd) arg
+    )
+    is_empty_argument(captured)
+  }, logical(1))
+  named <- named[!empty]
+  if (length(named) == 0L) {
     return(invisible(NULL))
   }
   abort_named_grouping_arg(
@@ -865,9 +870,10 @@ check_named_grouping_args <- function(grouping_spec, rule) {
 }
 
 # The argument carried through parentheses, injected quosures and numbered
-# dots. Forwarding captures the promise's expression and environment without
-# forcing it; the spelling gate still decides whether that expression runs.
-nested_arg_quosure <- function(arg) {
+# dots. `capture` controls whether to process injections in a forwarded promise.
+# Only the promise's expression and environment are captured, so the spelling
+# gate still decides whether that expression runs.
+nested_arg_quosure <- function(arg, capture = rlang::enquo) {
   repeat {
     if (is_empty_argument(arg)) {
       return(arg)
@@ -877,10 +883,12 @@ nested_arg_quosure <- function(arg) {
       arg <- expr
       next
     }
-    if (is_numbered_dot_reference(expr)) {
-      arg <- rlang::eval_bare(
-        rlang::call2(rlang::enquo, expr), rlang::quo_get_env(arg)
-      )
+    env <- rlang::quo_get_env(arg)
+    # Without lexical dots the spelling can name an input column. With dots,
+    # capture still owns the diagnostic for an absent position.
+    if (is_numbered_dot_reference(expr) &&
+          rlang::env_has(env, "...", inherit = TRUE)) {
+      arg <- rlang::eval_bare(rlang::call2(capture, expr), env)
       next
     }
     return(arg)
