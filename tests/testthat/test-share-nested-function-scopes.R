@@ -122,10 +122,26 @@ test_that("visible inline scope changes expose both forbidden dependencies", {
       sum(prior)
     })(1),
     (function(prior) {
+      # The formal shares the name of the base callee.
+      (function(sys.parent) { # nolint: object_name_linter.
+        base::rm("prior", envir = sys.frame(sys.parent()))
+      })(1)
+      sum(prior)
+    })(1),
+    (function(prior) {
       (function(prior) {
         (function() {
           base::rm("prior", envir = base::parent.frame(n = 2L))
         })()
+      })(2)
+      sum(prior)
+    })(1),
+    (function(prior) {
+      (function(prior) {
+        # The formal shares the name of the base callee.
+        (function(parent.frame) { # nolint: object_name_linter.
+          base::rm("prior", envir = parent.frame(2L))
+        })(1)
       })(2)
       sum(prior)
     })(1),
@@ -324,6 +340,13 @@ test_that("inline scope changes preserve independent and shadowed bindings", {
       sum(prior)
     })(),
     (function(prior = touch()) {
+      # The formal shares the name of the base callee.
+      (function(prior, sys.parent) { # nolint: object_name_linter.
+        base::rm("prior", envir = sys.frame(sys.parent()))
+      })(0, function() base::sys.parent())
+      sum(prior)
+    })(),
+    (function(prior = touch()) {
       (function(prior) {
         (function() base::rm("prior", envir = parent.frame(2L)))()
         sum(prior)
@@ -503,6 +526,18 @@ test_that("inline scope changes preserve independent and shadowed bindings", {
     }
   }
   expect_identical(outside$prior, 2)
+})
+
+test_that("an empty `sys.frame()` argument uses the default frame", {
+  data <- data.frame(group = c("a", "b"), x = c(1L, 3L))
+  result <- summarize_with_margins(
+    data, prior = sum(x), derived = (function(prior) {
+      base::rm(list = character(), envir = base::sys.frame(which = ))
+      sum(x)
+    })(1), ratio = share_of_parent(prior), .grouping = rollup(group)
+  )
+  expect_identical(result$derived, c(1L, 3L, 4L))
+  expect_equal(result$ratio, c(0.25, 0.75, 1))
 })
 
 test_that("inline scope changes keep ordinary evaluation without shares", {

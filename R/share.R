@@ -5020,7 +5020,7 @@ scope_after_removal_call <- function(expr, scope, lookup) {
   if (length(target) > 0L) {
     envir <- unparenthesized_value(target[[1L]])
     bound <- scope_bound_names(scope)
-    depth <- static_parent_frame_depth(envir, bound, lookup)
+    depth <- static_parent_frame_depth(envir, scope, lookup)
     if (!is.null(depth)) {
       invoked <- vapply(
         scope[seq_len(depth)], function(frame) isTRUE(frame$invoked),
@@ -5060,10 +5060,10 @@ scope_after_removal_call <- function(expr, scope, lookup) {
 
 # Literal depth of a recognized base caller-frame expression, or NULL
 # when the target is unknown. No frame expression is evaluated.
-static_parent_frame_depth <- function(expr, bound, lookup) {
+static_parent_frame_depth <- function(expr, scope, lookup) {
   name <- static_call_name(expr)
   if (identical(name, "parent.frame") &&
-        is_known_base_call(expr, name, bound, lookup)) {
+        is_known_base_frame_call(expr, name, scope, lookup)) {
     args <- static_call_args(expr)
     if (length(args) == 0L) {
       return(1L)
@@ -5082,17 +5082,32 @@ static_parent_frame_depth <- function(expr, bound, lookup) {
     }
   }
   if (identical(name, "sys.frame") && length(expr) == 2L &&
-        is_known_base_call(expr, name, bound, lookup)) {
+        is_known_base_frame_call(expr, name, scope, lookup)) {
     args <- static_call_args(expr)
+    # An empty `which` uses the global frame, as does `sys.frame()`.
+    if (rlang::is_missing(args[[1L]])) {
+      return(NULL)
+    }
     parent <- unparenthesized_value(args[[1L]])
     if (argument_names(args)[[1L]] %in% c("", "which") &&
           identical(static_call_name(parent), "sys.parent") &&
           length(parent) == 1L &&
-          is_known_base_call(parent, "sys.parent", bound, lookup)) {
+          is_known_base_frame_call(parent, "sys.parent", scope, lookup)) {
       return(1L)
     }
   }
   NULL
+}
+
+# Check a frame callee against lexical frames before ordinary caller lookup.
+# Bare call heads skip known non-functions in those frames.
+is_known_base_frame_call <- function(expr, name, scope, lookup) {
+  function_lookup <- is_name_part(static_call_head(expr))
+  shadowed <- any(vapply(scope, function(frame) {
+    name %in% frame$bound &&
+      (!function_lookup || !identical(frame$kinds[[name]], "value"))
+  }, logical(1)))
+  is_known_base_call(expr, name, name[shadowed], lookup)
 }
 
 # Discard pending defaults whose bindings have been removed.
