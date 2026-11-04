@@ -144,6 +144,7 @@ Config/testthat/start-first:
     static-expression-analysis,
     dtplyr-asis-nesting,
     dtplyr-generated-share-outputs,
+    dtplyr-share-ratios,
     classed-array-expansion,
     grouping-plan,
     sql-env-share-source,
