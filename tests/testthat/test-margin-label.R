@@ -1652,6 +1652,9 @@ test_that("Margin verbs share scalar, named, NA, and NULL label behavior", {
   labels <- list(
     scalar = "All",
     named = c(group = "All"),
+    shaped = list(group = matrix("All")),
+    attributed = list(group = I("All")),
+    shaped_missing = list(group = matrix(NA_character_)),
     missing = NA_character_,
     absent = NULL
   )
@@ -1691,7 +1694,7 @@ test_that("Margin verbs share scalar, named, NA, and NULL label behavior", {
     for (label_name in names(labels)) {
       result <- operation(labels[[label_name]])
       expect_s3_class(result$group, "factor")
-      if (label_name %in% c("scalar", "named")) {
+      if (label_name %in% c("scalar", "named", "shaped", "attributed")) {
         expect_true("All" %in% levels(result$group))
         expect_true(any(as.character(result$group) == "All"))
       } else {
@@ -1882,6 +1885,61 @@ test_that("a named list means what the equivalent character vector means", {
     operation(list(first = "All first", second = "All second")),
     operation(c(first = "All first", second = "All second"))
   )
+})
+
+test_that("Nest verbs treat attributed list labels as character scalars", {
+  data <- tibble::tibble(g = c(1L, NA_integer_))
+  verbs <- list(nest_with_margins, nest_by_with_margins)
+  labels <- list(matrix("All"), I("All"), matrix(NA_character_))
+  expected <- list(
+    c("1", NA_character_, "All"),
+    c("1", NA_character_, "All"),
+    c(1L, NA_integer_, NA_integer_)
+  )
+
+  for (verb in verbs) {
+    for (check in c(TRUE, FALSE)) {
+      for (i in seq_along(labels)) {
+        result <- verb(
+          data, .grouping = rollup(g), .margin_label = list(g = labels[[i]]),
+          .check_margin_label = check, .sort = "last"
+        )
+        expect_identical(result$g, expected[[i]])
+      }
+    }
+  }
+})
+
+test_that("Nest verbs retain Package conditions for invalid list labels", {
+  data <- tibble::tibble(g = 1:2)
+  verbs <- list(nest_with_margins, nest_by_with_margins)
+
+  for (verb in verbs) {
+    operation <- function(label, check) {
+      verb(
+        data, .grouping = rollup(g), .margin_label = list(g = label),
+        .check_margin_label = check, .sort = "last"
+      )
+    }
+
+    expect_error(
+      operation(matrix("1"), TRUE),
+      "already present in grouping column",
+      class = "marginplyr_error"
+    )
+    expect_identical(operation(matrix("1"), FALSE)$g, c("1", "2", "1"))
+
+    for (check in c(TRUE, FALSE)) {
+      for (invalid in list(character(), matrix(c("All", "Total")))) {
+        expect_error(
+          operation(invalid, check),
+          "list elements must each be `NULL` or a character scalar",
+          class = "marginplyr_error",
+          fixed = TRUE
+        )
+      }
+    }
+  }
 })
 
 test_that("a named list refuses an element that is not a label", {

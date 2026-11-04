@@ -1,7 +1,7 @@
 # The Margin label a caller wrote, as the shape the rest of the operation
 # reads: `NULL`, an unnamed character scalar, or a named list of per-dimension
-# labels. A named character vector is converted to that list here, so the two
-# named spellings are one downstream (ADR 0012).
+# plain character scalars or `NULL`. A named character vector is converted
+# to that list here, so the named spellings are one downstream (ADR 0012).
 normalize_margin_label <- function(.margin_label) {
   if (is.null(.margin_label)) {
     return(NULL)
@@ -39,7 +39,10 @@ normalize_margin_label <- function(.margin_label) {
   }
   if (is_label_list) {
     validate_margin_label_elements(.margin_label)
-    return(.margin_label)
+    return(lapply(.margin_label, function(label) {
+      attributes(label) <- NULL
+      label
+    }))
   }
   as.list(.margin_label)
 }
