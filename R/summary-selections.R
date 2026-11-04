@@ -1795,8 +1795,10 @@ rewrite_summary_selections <- function(expr,
 
   if (shield_independent_masks && any(independent_mask_call_parts(expr))) {
     # dplyr expands pick() in call arguments, so hide the nested call in the
-    # head. Force it as a promise so it still evaluates in the caller's scope.
-    return(rlang::expr((function(value) function() value)(!!expr)()))
+    # head. Construct the closure in the package namespace.
+    return(rlang::call2(rlang::call2(
+      marginplyr_private_call("nested_mask_thunk"), expr
+    )))
   }
 
   call_name <- static_spelling_name(expr, "selection")
@@ -1849,6 +1851,12 @@ rewrite_summary_selections <- function(expr,
   )
 }
 
+# Returns a zero-argument closure for the supplied nested call.
+# Calling the closure forces that promise in the original caller's scope.
+nested_mask_thunk <- function(value) {
+  function() value
+}
+
 # Builds a selection in dplyr's active selection scope, retaining an explicitly
 # injected quosure's environment instead when the selection carries one.
 # An injected missing selection stays empty rather than taking the default.
@@ -1866,7 +1874,8 @@ local_summary_selection_expr <- function(selection, group_vars,
     "all_of",
     rlang::call2(
       marginplyr_private_call("local_summary_selection"),
-      rlang::call2("quote", selection),
+      # Keep this capture independent of the caller's `quote` binding.
+      rlang::call2(rlang::expr(base::quote), selection),
       env,
       group_vars,
       forbidden_names

@@ -200,6 +200,43 @@ test_that("nested pick selections are expanded in their own data mask", {
   }
 })
 
+test_that("nested data-mask wrappers ignore the caller's function binding", {
+  input <- data.frame(x = 1:3)
+  reads <- 0L
+  replacement <- function() data.frame(z = 99L)
+  factory <- function(...) replacement
+  masked_function <- function(...) {
+    reads <<- reads + 1L
+    factory
+  }
+  rlang::env_bind(environment(), `function` = masked_function)
+
+  ordinary <- dplyr::summarize(
+    input, answer = sum(dplyr::mutate(input, z = x)$z)
+  )
+  actual <- summarize_with_margins(
+    input, answer = sum(dplyr::mutate(input, z = x)$z)
+  )
+  expect_identical(ordinary$answer, 6L)
+  expect_identical(actual$answer, 6L)
+  expect_identical(reads, 0L)
+})
+
+test_that("function expressions in a nested verb keep caller lookup", {
+  input <- data.frame(x = 1:3)
+  increment <- function(value) value + 10L
+  rlang::env_bind(environment(), `function` = function(...) increment)
+
+  ordinary <- dplyr::summarize(
+    input, answer = sum(dplyr::mutate(input, z = (function(value) value)(x))$z)
+  )
+  actual <- summarize_with_margins(
+    input, answer = sum(dplyr::mutate(input, z = (function(value) value)(x))$z)
+  )
+  expect_identical(ordinary$answer, 36L)
+  expect_identical(actual$answer, ordinary$answer)
+})
+
 test_that("nested dplyr selections use their own data mask", {
   outer <- tibble::tibble(g = "a", value = 1)
   inner <- tibble::tibble(g = 1, x = 2)
