@@ -338,7 +338,7 @@ execute_margin_nest <- function(operation, .key, .keep, rowwise) {
         utils::tail(available_names, length(plan$dimensions)),
         plan$dimensions
       )
-      data <- operation$data
+      data <- slice_local_margin_dimensions(operation)
       column_info <- operation$column_info
       if (length(keep_cols) > 0L) {
         data <- margin_safe_column_reads(

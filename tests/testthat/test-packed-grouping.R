@@ -207,3 +207,119 @@ test_that("a string label for a packed key names the dimension and remedy", {
     expect_match(conditionMessage(error), "unpack")
   }
 })
+
+# Compare the local Margin verbs with native composition of the same branches.
+union_native_posixlt_branches <- function(detail, grand_first) {
+  missing <- vctrs::vec_init(detail$key, nrow(detail))
+  grand <- dplyr::mutate(detail, key = !!missing)
+  branches <- if (grand_first) list(grand, detail) else list(detail, grand)
+  dplyr::union_all(
+    dplyr::mutate(branches[[1L]], set = 1L),
+    dplyr::mutate(branches[[2L]], set = 2L)
+  )
+}
+
+test_that("nesting AsIs POSIXlt keys follows native typed-missing branches", {
+  for (dates in list(
+    c("2020-01-01", "2020-01-02", "2020-01-01"),
+    c("2020-01-01", "2020-01-02", "2020-01-01", NA_character_)
+  )) {
+    key <- I(as.POSIXlt(dates, format = "%Y-%m-%d", tz = "UTC"))
+    tbl <- tibble::tibble(key = key, row = seq_along(dates))
+    for (input in list(tbl, as.data.frame(tbl))) {
+      sliced <- vctrs::vec_slice(input, seq_len(nrow(input)))
+      for (keep in c(FALSE, TRUE)) {
+        detail <- if (keep) dplyr::mutate(sliced, source_key = key) else sliced
+        for (grand_first in c(FALSE, TRUE)) {
+          specification <- if (grand_first) {
+            grouping_sets(grouping_set(), grouping_set(key))
+          } else {
+            rollup(key)
+          }
+          combined <- union_native_posixlt_branches(detail, grand_first)
+          expected <- dplyr::nest_by(combined, set, key)
+          expected_cells <- lapply(expected$data, function(cell) {
+            if (!keep) return(cell)
+            dplyr::relocate(dplyr::rename(cell, key = source_key), key)
+          })
+          for (label in list(NULL, NA_character_)) {
+            for (nest in list(nest_with_margins, nest_by_with_margins)) {
+              result <- nest(
+                input, .grouping = specification, .margin_label = label,
+                .keep = keep, .id = "set", .sort = "none"
+              )
+              expect_identical(result$set, expected$set)
+              # dplyr can repeat AsIs on grouped slices of the same key.
+              expect_identical(unique(class(result$key)),
+                               unique(class(expected$key)))
+              expect_identical(as.list(result$key), as.list(expected$key))
+              expect_identical(as.list(result$data), expected_cells)
+            }
+          }
+        }
+      }
+    }
+  }
+})
+
+test_that("AsIs POSIXlt expansion follows native typed-missing branches", {
+  tbl <- tibble::tibble(
+    key = I(as.POSIXlt(c("2020-01-01", NA), tz = "UTC")), row = 1:2
+  )
+  for (input in list(tbl, as.data.frame(tbl))) {
+    sliced <- vctrs::vec_slice(input, seq_len(nrow(input)))
+    for (grand_first in c(FALSE, TRUE)) {
+      specification <- if (grand_first) {
+        grouping_sets(grouping_set(), grouping_set(key))
+      } else {
+        rollup(key)
+      }
+      expected <- union_native_posixlt_branches(sliced, grand_first)
+      for (label in list(NULL, NA_character_)) {
+        result <- expand_with_margins(
+          input, .grouping = specification, .margin_label = label,
+          .id = "set", .sort = "none"
+        )
+        expect_identical(result, dplyr::relocate(expected, key, set))
+      }
+    }
+  }
+})
+
+test_that("AsIs POSIXlt keys retain included-only and packed label rules", {
+  timestamp <- as.POSIXlt("2020-01-01", tz = "UTC")
+  ordinary <- tibble::tibble(key = timestamp, row = 1L)
+  packed <- tibble::tibble(key = I(timestamp), row = 1L)
+  expected <- dplyr::nest_by(packed, key)
+
+  for (nest in list(nest_with_margins, nest_by_with_margins)) {
+    for (label in list(NULL, NA_character_)) {
+      included <- nest(
+        packed, .grouping = grouping_set(key), .margin_label = label
+      )
+      expect_identical(as.list(included$key), as.list(expected$key))
+      expect_identical(as.list(included$data), as.list(expected$data))
+
+      result <- nest(
+        ordinary, .grouping = rollup(key), .margin_label = label, .id = "set"
+      )
+      expect_identical(result$set, 1:2)
+      expect_identical(vctrs::vec_detect_missing(result$key), c(FALSE, TRUE))
+      members <- lapply(result$data, function(cell) cell$row)
+      expect_identical(members, list(1L, 1L))
+    }
+    expect_error(
+      nest(packed, .grouping = rollup(key), .margin_label = "All"),
+      "packed grouping dimensions", class = "marginplyr_error"
+    )
+  }
+
+  included <- expand_with_margins(
+    packed, .grouping = grouping_set(key), .margin_label = NULL
+  )
+  expect_identical(included, packed)
+  expect_error(
+    expand_with_margins(packed, .grouping = rollup(key), .margin_label = "All"),
+    "packed grouping dimensions", class = "marginplyr_error"
+  )
+})
