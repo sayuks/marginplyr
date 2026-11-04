@@ -55,7 +55,9 @@ test_that("DuckDB rejects all-missing duration sources in a rollup", {
         .grouping = rollup(g), .duplicates = duplicates,
         .id = "set", .margin_label = NULL
       ))
-      expect_identical(eligible$ratio[eligible$set == 1L], c(NA_real_, NA_real_))
+      expect_identical(
+        eligible$ratio[eligible$set == 1L], c(NA_real_, NA_real_)
+      )
       expect_identical(eligible$ratio[eligible$set == 2L], 1)
       query <- summarize_with_margins(
         remote, value = max(duration, na.rm = TRUE), ratio = !!share,

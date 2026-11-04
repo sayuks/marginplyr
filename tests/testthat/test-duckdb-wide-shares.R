@@ -3,9 +3,17 @@ test_that("DuckDB rollups preserve wide numeric share denominators", {
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   cases <- list(
-    "DECIMAL(38,0)" = c("99999999999999999999999999999999999999", "1e-38"),
-    HUGEINT = c("170141183460469231731687303715884105727", "5.877471754111438e-39"),
-    UHUGEINT = c("340282366920938463463374607431768211455", "2.938735877055719e-39")
+    "DECIMAL(38,0)" = list(
+      maximum = "99999999999999999999999999999999999999", small_share = 1e-38
+    ),
+    HUGEINT = list(
+      maximum = "170141183460469231731687303715884105727",
+      small_share = 5.877471754111438e-39
+    ),
+    UHUGEINT = list(
+      maximum = "340282366920938463463374607431768211455",
+      small_share = 2.938735877055719e-39
+    )
   )
 
   for (type in names(cases)) {
@@ -13,7 +21,7 @@ test_that("DuckDB rollups preserve wide numeric share denominators", {
     source <- dplyr::tbl(con, dbplyr::sql(paste0(
       "SELECT part, g, CASE WHEN nextval('wide_share_read') > 0 THEN ",
       "CAST(v AS ", type, ") END AS amount FROM (VALUES ",
-      "('wide', 'a', '", case[[1L]], "'), ('wide', 'b', '1'), ",
+      "('wide', 'a', '", case$maximum, "'), ('wide', 'b', '1'), ",
       "('wide', 'c', NULL), ('zero', 'a', '0'), ('missing', 'a', NULL)",
       ") AS input(part, g, v)"
     )), vars = c("part", "g", "amount"))
@@ -50,7 +58,7 @@ test_that("DuckDB rollups preserve wide numeric share denominators", {
       for (ratio in list(result$parent, result$total)) {
         expect_type(ratio, "double")
         # Compare on a unit scale so a zero ratio cannot pass by tolerance.
-        expect_equal(ratio[small] / as.double(case[[2L]]), 1)
+        expect_equal(ratio[small] / case$small_share, 1)
         expect_identical(
           ratio[!small], c(NA_real_, 1, 1, NA_real_, 1, NA_real_, 1)
         )
