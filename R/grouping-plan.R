@@ -818,7 +818,7 @@ preflight_grouping_spec <- function(grouping_spec,
   name_only <- TRUE
   args <- vector("list", length(grouping_spec$args))
   for (i in seq_along(grouping_spec$args)) {
-    arg <- grouping_spec$args[[i]]
+    arg <- nested_arg_quosure(grouping_spec$args[[i]])
     # The refusal is here rather than in the reader below because this is the
     # frame holding what the diagnostic names: the constructor and the
     # argument's position (#261). Which spellings count as empty, and why the
@@ -826,7 +826,6 @@ preflight_grouping_spec <- function(grouping_spec,
     if (is_empty_argument(arg)) {
       abort_empty_grouping_arg(rule$constructor, i)
     }
-    arg <- nested_arg_quosure(arg)
     reading <- read_grouping_arg(arg, data_vars)
     if (is.null(reading$nested)) {
       check_ambiguous_nested_name(arg, grouping_spec, rule, data_vars)
@@ -871,15 +870,26 @@ check_named_grouping_args <- function(grouping_spec, rule) {
   )
 }
 
-# The innermost quosure carried through redundant parentheses in a nonempty
-# nested argument. Each injected quosure supplies its own captured environment.
+# The argument carried through parentheses, injected quosures and numbered
+# dots. Forwarding captures the promise's expression and environment without
+# forcing it; the spelling gate still decides whether that expression runs.
 nested_arg_quosure <- function(arg) {
   repeat {
-    expr <- unparenthesized_value(rlang::quo_get_expr(arg))
-    if (!rlang::is_quosure(expr)) {
+    if (is_empty_argument(arg)) {
       return(arg)
     }
-    arg <- expr
+    expr <- unparenthesized_value(rlang::quo_get_expr(arg))
+    if (rlang::is_quosure(expr)) {
+      arg <- expr
+      next
+    }
+    if (is_numbered_dot_reference(expr)) {
+      arg <- rlang::eval_bare(
+        rlang::call2(rlang::enquo, expr), rlang::quo_get_env(arg)
+      )
+      next
+    }
+    return(arg)
   }
 }
 

@@ -425,8 +425,7 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
         }
         index <- parsed$fns_index
         if (index > 0L && !rlang::is_missing(call_args[[index]])) {
-          if (rlang::is_symbol(parsed$fns) &&
-                grepl("^\\.\\.[1-9][0-9]*$", rlang::as_string(parsed$fns))) {
+          if (is_numbered_dot_reference(parsed$fns)) {
             # Runtime across must capture the original forwarded promise.
             # Its cached value is available when FALSE unpacking names outputs.
             state$forwarded_fns <- parsed$fns
@@ -1859,8 +1858,7 @@ rewrite_local_across_selection <- function(expr, group_vars,
   if (
     capture_forwarded &&
       (rlang::is_symbol(parsed$cols, "...") ||
-         (rlang::is_symbol(parsed$cols) &&
-            grepl("^\\.\\.[1-9][0-9]*$", rlang::as_string(parsed$cols))))
+         is_numbered_dot_reference(parsed$cols))
   ) {
     return(rlang::call2(
       rlang::call2(
@@ -1912,10 +1910,7 @@ local_forwarded_selection <- function(helper, group_vars, forbidden_names) {
 rewrite_local_pick_selection <- function(expr, group_vars,
                                          forbidden_names) {
   call_args <- static_call_args(expr)
-  forwarded <- vapply(call_args, function(arg) {
-    rlang::is_symbol(arg) &&
-      grepl("^\\.\\.[1-9][0-9]*$", rlang::as_string(arg))
-  }, logical(1))
+  forwarded <- vapply(call_args, is_numbered_dot_reference, logical(1))
   if (any(forwarded)) {
     return(rlang::call2(
       rlang::call2(
