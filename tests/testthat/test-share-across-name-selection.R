@@ -1,6 +1,9 @@
 test_that("ordinary across name helpers and set difference supply shares", {
-  data <- data.frame(g = c("a", "b"), x = c(1, 3), y = c(10, 30))
-  for (selection in rlang::exprs(dplyr::one_of("x"), x / y)) {
+  data <- data.frame(g = c("a", "b"), y = c(10, 30), x = c(1, 3))
+  cols <- "x"
+  for (selection in rlang::exprs(
+    dplyr::one_of("x"), tidyselect::one_of(cols), x / y, 1 + 1, 3 - 1
+  )) {
     ordinary <- rlang::quos(
       prior = sum(y),
       dplyr::across(!!selection, sum, .names = "sum_{.col}")
@@ -113,4 +116,47 @@ test_that("ordinary one_of arguments stay in their execution context", {
   expect_identical(calls, ordinary_calls)
   expect_identical(calls, c(0L, 0L))
   expect_identical(actual[names(control)], control)
+})
+
+test_that("ordinary one_of leaves warning and deferred bindings to execution", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), y = c(10, 30))
+  reads <- 0L
+  read_cols <- function() {
+    reads <<- reads + 1L
+    "x"
+  }
+  delayedAssign("promise_cols", read_cols())
+  makeActiveBinding("active_cols", read_cols, environment())
+  missing_cols <- c("x", "absent")
+
+  for (columns in rlang::exprs(promise_cols, active_cols, missing_cols)) {
+    ordinary <- rlang::quos(
+      prior = sum(y),
+      dplyr::across(dplyr::one_of(!!columns), sum, .names = "sum_{.col}")
+    )
+    expect_no_warning(expect_error(summarize_with_margins(
+      data, !!!ordinary, share = share_of_total(sum_x), .grouping = rollup(g)
+    ), "unknown preceding ordinary summary", class = "marginplyr_error"))
+    expect_identical(reads, 0L)
+  }
+
+  run <- function(shares) {
+    warnings <- character()
+    result <- withCallingHandlers(summarize_with_margins(
+      data, prior = sum(y),
+      dplyr::across(dplyr::one_of(missing_cols), sum, .names = "sum_{.col}"),
+      !!!shares, .grouping = rollup(g)
+    ), warning = function(cnd) {
+      warnings <<- c(warnings, conditionMessage(cnd))
+      invokeRestart("muffleWarning")
+    })
+    list(result = result, warnings = warnings)
+  }
+  control <- run(list())
+  actual <- run(rlang::quos(share = share_of_total(prior)))
+  expect_match(
+    control$warnings[[1L]], "Unknown columns: `absent`", fixed = TRUE
+  )
+  expect_identical(actual$warnings, control$warnings)
+  expect_identical(actual$result[names(control$result)], control$result)
 })

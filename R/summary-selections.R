@@ -1446,20 +1446,26 @@ is_static_name_selection <- function(expr, lookup) {
   namespace <- static_call_ns(expr)
   args <- static_call_args(expr)
   if (is.null(name)) return(FALSE)
-  operators <- c("c", ":", "!", "&", "|", "+", "-", "/", "(")
-  if (is.null(namespace) && name %in% operators) {
+  if (is_selection_walk_call(expr)) {
     return(all(vapply(args, is_static_name_selection, logical(1),
                       lookup = lookup)))
   }
   if (identical(name, "one_of") &&
         (is.null(namespace) || namespace %in% c("dplyr", "tidyselect"))) {
     # An absent column warns and .vars can change the positions returned.
+    lookup$mask <- c(names(tidyselect::vars_select_helpers), ".data", ".env")
     return(!any(nzchar(rlang::names2(args))) && all(vapply(args, function(arg) {
       if (!is_context_only_name_expr(arg, lookup, allow_context = FALSE)) {
         return(FALSE)
       }
-      value <- static_character_value(arg)
-      !is.null(value) && all(value %in% lookup$columns)
+      constant <- known_context_constant(arg, lookup)
+      value <- if (is.null(constant)) {
+        static_character_value(arg)
+      } else {
+        constant$value
+      }
+      is.character(value) && is.null(dim(value)) &&
+        all(value %in% lookup$columns)
     }, logical(1))))
   }
   helpers <- intersect(
@@ -1977,9 +1983,24 @@ local_summary_selection <- function(selection, env, group_vars,
     )
   }
   data <- data[setdiff(names(data), c(group_vars, forbidden_names))]
-  selected <- resolve_summary_selection(
-    selection, env = env, data_proxy = data
-  )
+  preceding_aliases <- character()
+  if (!is.null(state) && length(state$source_checks) > 0L) {
+    preceding_aliases <- unlist(
+      get("summary_aliases", envir = state, inherits = TRUE)[
+        seq_len(state$position - 1L)
+      ], use.names = FALSE
+    )
+  }
+  # Tidyselect applies a predicate before a later exclusion can remove
+  # the alias whose value it saw.
+  visible_aliases <- intersect(preceding_aliases, names(data))
+  selected <- if (length(visible_aliases) == 0L) {
+    resolve_summary_selection(selection, env = env, data_proxy = data)
+  } else {
+    resolve_share_source_selection(
+      selection, env, data, visible_aliases, state$source_checks[[1L]]
+    )
+  }
   source_names <- names(data)[unname(selected)]
   if (!is.null(state)) {
     for (check in state$source_checks) {
@@ -1996,18 +2017,110 @@ local_summary_selection <- function(selection, env, group_vars,
           deferred_selection = TRUE
         ))
       ))
-      check_share_alias_reads(
-        unlist(get("summary_aliases", envir = state, inherits = TRUE)[
-          seq_len(state$position - 1L)
-        ], use.names = FALSE),
-        list(check)
-      )
+      check_share_alias_reads(preceding_aliases, list(check))
     }
   }
   if (!identical(names(selected), source_names)) {
     names(source_names) <- names(selected)
   }
   source_names
+}
+
+# Resolve a local selector whose proxy includes earlier summary aliases.
+resolve_share_source_selection <- function(selection, env, data, aliases,
+                                           check) {
+  reads <- selection_proxy_value_symbols(
+    selection, env, names(data),
+    bound = c(names(tidyselect::vars_select_helpers),
+              lookup_rebound_names(selection))
+  )
+  dependencies <- intersect(reads, aliases)
+  if (length(dependencies) > 0L) {
+    abort_share_alias_dependency(
+      check$share_kind, check$share_output, check$source_summary,
+      dependencies[[1L]]
+    )
+  }
+  tryCatch(
+    resolve_summary_selection(
+      selection, env = env, data_proxy = data, allow_predicates = FALSE
+    ),
+    error = function(cnd) {
+      if (is_unsupported_predicate(cnd)) {
+        abort_share_alias_dependency(
+          check$share_kind, check$share_output, check$source_summary,
+          aliases[[1L]]
+        )
+      }
+      stop(cnd)
+    }
+  )
+}
+
+# Reads of the active tidyselect data proxy visible in selector syntax or
+# in the body of a known caller closure. Unknown proxy subscripts can read
+# any column. Bindings and argument promises are left for normal evaluation.
+selection_proxy_value_symbols <- function(expr, env, columns, bound,
+                                          seen = list()) {
+  if (rlang::is_quosure(expr)) {
+    return(selection_proxy_value_symbols(
+      rlang::quo_get_expr(expr), rlang::quo_get_env(expr), columns, bound, seen
+    ))
+  }
+  if (!rlang::is_call(expr)) return(character())
+  expr <- unparenthesized_call(expr)
+  fn <- selection_argument_function(expr, env, bound)
+  if (identical(fn, tidyselect::peek_data)) return(columns)
+  args <- static_call_args(expr)
+  if (length(args) > 0L && rlang::is_call(args[[1L]]) &&
+        identical(selection_argument_function(args[[1L]], env, bound),
+                  tidyselect::peek_data)) {
+    if (identical(fn, base::names)) return(character())
+    if (identical(fn, base::`$`) && length(args) == 2L &&
+          is_name_part(args[[2L]])) {
+      return(columns[pmatch(rlang::as_string(args[[2L]]), columns,
+                            nomatch = 0L)])
+    }
+    if (identical(fn, base::`[[`) && length(args) == 2L &&
+          rlang::is_string(args[[2L]])) {
+      return(intersect(columns, args[[2L]]))
+    }
+  }
+  name <- static_call_name(expr)
+  parts <- c(evaluated_call_head(expr),
+             scope_call_args(expr, name, bound, list(env = env)),
+             evaluated_language_parts(expr, name))
+  reads <- unlist(lapply(
+    parts, selection_proxy_value_symbols,
+    env = env, columns = columns, bound = bound, seen = seen
+  ), use.names = FALSE)
+  if (!rlang::is_closure(fn) || isNamespace(environment(fn)) ||
+        identical(environment(fn), baseenv()) ||
+        any(vapply(seen, identical, logical(1), fn))) {
+    return(reads)
+  }
+  callback_body <- body(fn)
+  callback_env <- environment(fn)
+  parameters <- as.list(formals(fn))
+  rebound <- lookup_rebound_names(callback_body)
+  parts <- list(callback_body)
+  defaults <- parameters[!vapply(parameters, rlang::is_missing, logical(1))]
+  if (length(defaults) > 0L) {
+    supplied <- static_matched_arguments(expr, fn, expand_dots = FALSE)
+    supplied <- supplied[!vapply(supplied, rlang::is_missing, logical(1))]
+    # A supplied argument replaces its default. The body must also contain
+    # a visible read of the formal before its default can affect selection.
+    used <- expression_data_symbols(callback_body, lookup = list(
+      env = callback_env, mask = names(parameters), rebound = rebound
+    ))
+    pending <- intersect(setdiff(names(defaults), names(supplied)), used)
+    parts <- c(parts, defaults[pending])
+  }
+  c(reads, unlist(lapply(
+    parts, selection_proxy_value_symbols, env = callback_env,
+    columns = columns, bound = c(names(parameters), rebound),
+    seen = c(seen, list(fn))
+  ), use.names = FALSE))
 }
 
 # Answers whether `.unpack` is known to be FALSE without evaluating an
@@ -2179,7 +2292,8 @@ parse_pick_selection <- function(expr) {
   rlang::call2("c", !!!call_args)
 }
 
-resolve_summary_selection <- function(expr, env, data_proxy) {
+resolve_summary_selection <- function(expr, env, data_proxy,
+                                      allow_predicates = TRUE) {
   # A quosure is passed on rather than wrapped, because it carries the
   # environment `env` would supply and a selection needs the one it was written
   # in. Wrapping produces a quosure whose expression is a quosure, which
@@ -2198,7 +2312,8 @@ resolve_summary_selection <- function(expr, env, data_proxy) {
     selection,
     data = data_proxy,
     strict = TRUE,
-    allow_rename = TRUE
+    allow_rename = TRUE,
+    allow_predicates = allow_predicates
   )
 }
 

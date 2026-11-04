@@ -4455,8 +4455,10 @@ selection_dependency_symbols <- function(expr, scope, lookup) {
   if (is_name_part(expr)) {
     return(scope_promise_symbols(rlang::as_name(expr), scope, lookup))
   }
-  if (rlang::is_call(expr, c("c", "(", ":", "!", "&", "|", "/"), ns = "") ||
-        rlang::is_call(expr, "-", n = 1L, ns = "")) {
+  if (is_selection_data_pronoun(expr)) {
+    return(character())
+  }
+  if (is_selection_walk_call(expr)) {
     return(unlist(lapply(
       as.list(expr)[-1L], selection_dependency_symbols, scope = scope,
       lookup = lookup

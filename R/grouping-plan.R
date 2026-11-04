@@ -404,6 +404,15 @@ selection_walk_operators <- function() {
   c("c", ":", "!", "-", "|", "&", "/")
 }
 
+# Whether tidyselect walks the operands as selectors. Other heads and
+# non-unary minus calls evaluate in the caller context.
+is_selection_walk_call <- function(expr) {
+  name <- static_call_name(expr)
+  !is.null(name) && name %in% c(selection_walk_operators(), "(") &&
+    rlang::is_symbol(static_call_head(expr), name) &&
+    (name != "-" || length(static_call_args(expr)) == 1L)
+}
+
 # The spellings tidyselect refuses in place of one of those. It refuses them on
 # sight, before anything under them is walked.
 selection_refused_operators <- function() {
@@ -493,27 +502,14 @@ is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE) {
   if (call_name %in% selection_refused_operators()) {
     return(rlang::is_symbol(static_call_head(expr), call_name))
   }
-  # Only a bare `$` or `[[` head reads tidyselect's `.data` pronoun.
-  if (call_name %in% c("$", "[[") &&
-        rlang::is_symbol(static_call_head(expr), call_name) &&
-        is_data_pronoun(expr)) {
+  if (is_selection_data_pronoun(expr)) {
     return(TRUE)
   }
-  # Only bare heads use tidyselect's operand walk. An ordinary R call reads
-  # lexical bindings even where an operand names an input column.
-  if (!call_name %in% c(selection_walk_operators(), "(") ||
-        !rlang::is_symbol(static_call_head(expr), call_name)) {
-    return(FALSE)
-  }
-
-  args <- static_call_args(expr)
-  # Tidyselect walks unary minus as a complement. Other minus calls
-  # evaluate their operands in the caller's context.
-  if (call_name == "-" && length(args) != 1L) {
+  if (!is_selection_walk_call(expr)) {
     return(FALSE)
   }
   all(vapply(
-    args,
+    static_call_args(expr),
     is_name_only_expr,
     logical(1),
     env = env,
@@ -764,11 +760,11 @@ selection_argument_function <- function(expr, env, bound) {
   if (is.function(value)) value else NULL
 }
 
-# Whether this call reads the `.data` pronoun, which the caller holds is named
-# `$` or `[[`. Both halves are settled by the column names: `$` looks up the
-# symbol beside it and `[[` a constant subscript, and tidyselect refuses every
-# other spelling under the pronoun on sight -- a subscript that is not
-# constant, one that is no string, a `$` whose right side is no symbol. So the
+# Whether this call reads tidyselect's `.data` pronoun. Only bare `$` and
+# `[[` heads do so. Both halves are settled by the column names. `$` looks
+# up the symbol beside it and `[[` a constant subscript. Tidyselect refuses
+# every other spelling under the pronoun on sight -- a nonconstant subscript,
+# a non-string subscript, or a `$` whose right side is no symbol. So the
 # subject is the pronoun rather than the two shapes of subscript, and #346's
 # premise that `.data[[var]]` costs a read is measured in
 # `investigation/what-the-data-pronoun-settles-in-a-selection.md`.
@@ -776,7 +772,10 @@ selection_argument_function <- function(expr, env, bound) {
 # The operand is compared with the `.data` symbol as written rather than
 # through a redundant pair: tidyselect refuses `(.data)$region`, so reading
 # through the pair here would answer for a spelling it rejects.
-is_data_pronoun <- function(expr) {
+is_selection_data_pronoun <- function(expr) {
+  if (!rlang::is_call(unparenthesized_call(expr), c("$", "[["), ns = "")) {
+    return(FALSE)
+  }
   parts <- static_call_args(expr)
   length(parts) == 2L && identical(parts[[1L]], quote(.data))
 }

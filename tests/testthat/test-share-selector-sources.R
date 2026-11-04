@@ -114,11 +114,14 @@ test_that("named selector sources retain provenance and ordering checks", {
 })
 
 test_that("scalar selectors can exclude earlier aliases from share sources", {
+  rlang::local_options(lifecycle_verbosity = "quiet")
   data <- data.frame(g = c("a", "b"), value = c(1, 3), other = c(7, 9))
   for (selection in list(
     quote(c(dplyr::all_of(select_value()), -prior)),
     quote(dplyr::all_of(select_value()) & !prior),
-    quote(dplyr::all_of(select_value()) / prior)
+    quote(dplyr::all_of(select_value()) / prior),
+    quote(c(dplyr::all_of(select_value()), -.data$prior)),
+    quote(dplyr::all_of(select_value()) & !.data[["prior"]])
   )) {
     sources <- rlang::exprs(
       sum(dplyr::pick(!!selection)),
@@ -160,6 +163,7 @@ test_that("scalar selectors can exclude earlier aliases from share sources", {
 })
 
 test_that("excluding an alias does not conceal reads in a share source", {
+  rlang::local_options(lifecycle_verbosity = "quiet")
   data <- data.frame(g = c("a", "b"), value = c(1, 3), other = c(7, 9))
   choose_value <- function(alias) {
     force(alias)
@@ -167,6 +171,8 @@ test_that("excluding an alias does not conceal reads in a share source", {
   }
   sources <- rlang::exprs(
     sum(dplyr::pick(c(value, prior))),
+    sum(dplyr::pick(c(value, .data$prior))),
+    sum(dplyr::pick(c(value, .data[["prior"]]))),
     sum(dplyr::across(value | prior, identity)),
     sum(dplyr::if_any(c(value, prior), ~ .x > 0)),
     sum(dplyr::if_all(c(value, prior), ~ .x > 0)),
@@ -355,4 +361,116 @@ test_that("omitted across columns retain independent share sources", {
       as.character(dbplyr::sql_render(lazy)), 'SUM("value")', fixed = TRUE
     )
   }
+})
+
+test_that("share source predicates cannot read earlier aliases", {
+  data <- data.frame(g = c("a", "b"), value = c(1, 3), other = c(7, 9))
+  observed <- rlang::env(calls = 0L)
+  predicate <- function(x) {
+    observed$calls <- observed$calls + 1L
+    is.numeric(x)
+  }
+  selection <- rlang::expr(c(tidyselect::where(predicate), -prior, -other))
+  control <- summarize_with_margins(
+    data, prior = sum(other),
+    source = sum(dplyr::pick(!!selection)),
+    .grouping = rollup(g)
+  )
+  expect_identical(control$source, c(1, 3, 4))
+  expect_gt(observed$calls, 0L)
+
+  for (helper in rlang::syms(c("share_of_total", "share_of_parent"))) {
+    observed$calls <- 0L
+    expect_error(summarize_with_margins(
+      data, prior = sum(other),
+      source = sum(dplyr::pick(!!selection)),
+      share = (!!helper)(source), .grouping = rollup(g)
+    ), "depends on earlier summary alias `prior`", class = "marginplyr_error")
+    expect_identical(observed$calls, 0L)
+
+    independent <- summarize_with_margins(
+      data,
+      source = sum(dplyr::pick(c(tidyselect::where(predicate), -other))),
+      share = (!!helper)(source), .grouping = rollup(g)
+    )
+    expect_identical(independent$source, control$source)
+    expect_identical(independent$share, c(0.25, 0.75, 1))
+    expect_gt(observed$calls, 0L)
+  }
+})
+
+test_that("selectors cannot inspect earlier alias values through peek_data", {
+  data <- data.frame(g = c("a", "b"), value = c(1, 3), other = c(7, 9))
+  choose <- function() {
+    prior_value <- tidyselect::peek_data()$prior
+    if (prior_value[[1L]] < 18) "other" else "value"
+  }
+  choose_default <- function(prior_value = tidyselect::peek_data()$prior) {
+    if (prior_value[[1L]] < 18) "other" else "value"
+  }
+  key <- "prior"
+  for (column in rlang::exprs(
+    choose(),
+    choose_default(),
+    if (tidyselect::peek_data()[["prior"]][[1L]] < 18) "other" else "value",
+    if (tidyselect::peek_data()[[key]][[1L]] < 18) "other" else "value"
+  )) {
+    ordinary <- rlang::quos(
+      prior = 10 + sum(other),
+      source = sum(dplyr::pick(c(dplyr::all_of(!!column), -prior)))
+    )
+    control <- summarize_with_margins(data, !!!ordinary, .grouping = rollup(g))
+    expect_identical(control$source, c(7, 9, 4))
+    for (helper in rlang::syms(c("share_of_total", "share_of_parent"))) {
+      expect_error(summarize_with_margins(
+        data, !!!ordinary, share = (!!helper)(source), .grouping = rollup(g)
+      ), "depends on earlier summary alias `prior`", class = "marginplyr_error")
+    }
+  }
+})
+
+test_that("selectors can use other columns and names from peek_data", {
+  data <- data.frame(g = c("a", "b"), value = c(1, 3), other = c(7, 9))
+  ignore_default <- function(column = tidyselect::peek_data()$prior) {
+    "value"
+  }
+  choose <- rlang::new_function(
+    pairlist(column = quote(tidyselect::peek_data()$prior)),
+    rlang::expr({
+      if (FALSE) tidyselect::peek_data()$prior
+      column
+    })
+  )
+  for (column in rlang::exprs(
+    if (sum(tidyselect::peek_data()$other) > 0) "value" else "other",
+    intersect("value", names(tidyselect::peek_data())),
+    choose("value"),
+    ignore_default()
+  )) {
+    result <- summarize_with_margins(
+      data, prior = sum(other),
+      source = sum(dplyr::pick(c(dplyr::all_of(!!column), -prior))),
+      parent = share_of_parent(source), total = share_of_total(source),
+      .grouping = rollup(g)
+    )
+    expect_identical(result$source, c(1, 3, 4))
+    expect_identical(result$parent, c(0.25, 0.75, 1))
+    expect_identical(result$total, c(0.25, 0.75, 1))
+  }
+})
+
+test_that("checked share sources preserve ordinary selector errors", {
+  data <- data.frame(g = c("a", "b"), value = c(1, 3))
+  ordinary <- rlang::quos(
+    prior = sum(value),
+    source = sum(dplyr::pick(dplyr::all_of("absent")))
+  )
+  control <- expect_error(
+    summarize_with_margins(data, !!!ordinary, .grouping = rollup(g)),
+    "Element `absent` doesn't exist"
+  )
+  shared <- expect_error(summarize_with_margins(
+    data, !!!ordinary, share = share_of_total(source), .grouping = rollup(g)
+  ), "Element `absent` doesn't exist")
+  expect_identical(class(shared), class(control))
 })
