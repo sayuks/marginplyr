@@ -1866,7 +1866,8 @@ local_summary_selection_expr <- function(selection, group_vars,
     "all_of",
     rlang::call2(
       marginplyr_private_call("local_summary_selection"),
-      rlang::call2("quote", selection),
+      # Keep this capture independent of the caller's `quote` binding.
+      rlang::call2(rlang::expr(base::quote), selection),
       env,
       group_vars,
       forbidden_names
