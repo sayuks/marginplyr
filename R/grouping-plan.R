@@ -1404,7 +1404,9 @@ expand_grouping_product <- function(preflight, resolve_selection, emit,
   for (i in seq_along(preflight$args)) {
     arg <- preflight$args[[i]]
     if (!is.null(emit) && i == length(preflight$args)) {
-      return(expand_observed_product_tail(product, arg, resolve_selection, emit))
+      return(expand_observed_product_tail(
+        product, arg, resolve_selection, emit
+      ))
     }
     family <- expand_grouping_factor(arg, resolve_selection, drop_duplicates)
     product <- combine_grouping_factors(product, family)
@@ -1424,7 +1426,8 @@ expand_grouping_factor <- function(arg, resolve_selection, drop_duplicates,
 # The first left occurrence crosses the right family before any other left
 # occurrence. Only those combinations are a completed prefix until the last
 # factor resolves. The duplicate-error pass is the only observer.
-expand_observed_product_tail <- function(product, arg, resolve_selection, emit) {
+expand_observed_product_tail <- function(product, arg, resolve_selection,
+                                         emit) {
   first <- product[1L]
   emit_first <- function(family) {
     emit(combine_grouping_factors(first, family))

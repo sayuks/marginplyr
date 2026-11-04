@@ -594,7 +594,9 @@ test_that("completed duplicate occurrences precede unsafe dtplyr metadata", {
   specs <- list(
     grouping_sets(x, x, where(numeric_column)),
     grouping_sets(x, grouping_sets(x, where(numeric_column))),
-    grouping_spec(grouping_set(value), grouping_sets(x, x, where(numeric_column)))
+    grouping_spec(
+      grouping_set(value), grouping_sets(x, x, where(numeric_column))
+    )
   )
   for (verb in forwarded_verbs) {
     original <- expect_error(verb(data, NULL, grouping_sets(x, x, value)),
