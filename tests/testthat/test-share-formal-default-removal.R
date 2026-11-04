@@ -128,6 +128,28 @@ test_that("surviving formal bindings retain values and evaluation counts", {
       prior
       prior <- 2
       sum(prior)
+    })(),
+    (function(prior = {
+      stop("An overwritten default must not run.")
+      base::rm(prior)
+      1
+    }) {
+      touch()
+      ({
+        prior <- 2
+      })
+      prior
+      sum(prior)
+    })(),
+    (function(prior = {
+      stop("An overwritten default must not run.")
+      base::rm(prior)
+      1
+    }) {
+      touch()
+      for (prior in 2) NULL
+      prior
+      sum(prior)
     })()
   )
   for (kind in c("parent", "total")) {
