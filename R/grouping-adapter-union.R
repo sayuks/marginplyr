@@ -52,6 +52,22 @@ dtplyr_deferred_copy <- function(step) {
   step
 }
 
+# Bind the prepared dtplyr source once per execution and give each expansion
+# branch a writable copy. dtplyr evaluates locals in a fresh environment at
+# execution, after the existing cached inputs have been assigned (ADR 0020).
+dtplyr_expand_shared_input <- function(step) {
+  dt_call <- utils::getFromNamespace("dt_call", "dtplyr")
+  dt_sources <- utils::getFromNamespace("dt_sources", "dtplyr")
+  step_locals <- utils::getFromNamespace("step_locals", "dtplyr")
+  unique_name <- utils::getFromNamespace("unique_name", "dtplyr")
+  name <- new_margin_internal_names(
+    1L, c(names(dt_sources(step)), names(step[["locals"]])),
+    prefix = paste0(".marginplyr_source", unique_name(), "_")
+  )
+  source <- step_locals(step, stats::setNames(list(dt_call(step)), name), name)
+  dtplyr_deferred_copy(source)
+}
+
 # Isolate each cached-table reference in an admitted immutable dtplyr graph.
 # Saved cache bindings are rebuilt from the isolated parents so later caches
 # retain the same protection. This constructs deferred steps without row work.
@@ -1154,6 +1170,9 @@ expand_margin_union <- function(.data,
     # collapse() wraps the query without reading or materializing rows.
     .data <- dplyr::collapse(.data)
     .data <- isolate_arrow_partitions(.data)
+  }
+  if (identical(backend$kind, "dtplyr") && length(plan$sets) > 1L) {
+    .data <- dtplyr_expand_shared_input(.data)
   }
   # An expansion branch is the input's own rows, so a column-less one standing
   # for no rows has to stay empty, and only a backend that invents a row when
