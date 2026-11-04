@@ -1,0 +1,14 @@
+, , shadowed_matches = FALSE
+
+        unshadowed_matches
+helper   TRUE
+  across   36
+  if_all   36
+  if_any   36
+  pick     36
+
+        generated_reads
+grain     1  2  3
+  fixed  24 24  0
+  none   48  0  0
+  rollup  0 24 24

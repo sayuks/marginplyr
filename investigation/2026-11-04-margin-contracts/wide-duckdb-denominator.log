@@ -1,0 +1,27 @@
+decimal38 error parent overflow
+decimal38 error total overflow
+decimal38 keep parent overflow
+decimal38 keep total overflow
+decimal37 error parent matches
+decimal37 error total matches
+decimal37 keep parent matches
+decimal37 keep total matches
+decimal_scale1 error parent matches
+decimal_scale1 error total matches
+decimal_scale1 keep parent matches
+decimal_scale1 keep total matches
+hugeint error parent overflow
+hugeint error total overflow
+hugeint keep parent overflow
+hugeint keep total overflow
+uhugeint error parent overflow
+uhugeint error total overflow
+uhugeint keep parent overflow
+uhugeint keep total overflow
+double error parent matches
+double error total matches
+double keep parent matches
+double keep total matches
+result
+ matches overflow
+      12       12
