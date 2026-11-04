@@ -1127,6 +1127,7 @@ expand_margin_union <- function(.data,
                                 identity_cols = character(),
                                 identity_missing = list()) {
   public_id <- set_id_name
+  arrow_source <- NULL
   shared <- NULL
   if (backend$is_sql) {
     .data <- sql_margin_input_relation(
@@ -1154,6 +1155,11 @@ expand_margin_union <- function(.data,
     # collapse() wraps the query without reading or materializing rows.
     .data <- dplyr::collapse(.data)
     .data <- isolate_arrow_partitions(.data)
+    if (length(plan$sets) > 1L) {
+      arrow_source <- .data
+      arrow_marker <- new.env(parent = emptyenv())
+      .data <- mark_arrow_expansion_input(.data, arrow_marker)
+    }
   }
   # An expansion branch is the input's own rows, so a column-less one standing
   # for no rows has to stay empty, and only a backend that invents a row when
@@ -1260,6 +1266,9 @@ expand_margin_union <- function(.data,
     result <- dplyr::mutate(
       result, !!public_id := !!rlang::sym(set_id_name), !!set_id_name := NULL
     )
+  }
+  if (!is.null(arrow_source)) {
+    result <- defer_arrow_expansion(result, arrow_source, arrow_marker)
   }
   result
 }

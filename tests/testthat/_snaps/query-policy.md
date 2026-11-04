@@ -27,6 +27,7 @@
     Code
       cat(reach, sep = "\n")
     Output
+      as_record_batch_reader.margin_arrow_expansion
       check_dialect_share_sources
       check_observed_label_collision
       collect.marginplyr_sqlite_typed_result
