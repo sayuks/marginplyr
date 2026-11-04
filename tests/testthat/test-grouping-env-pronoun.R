@@ -32,6 +32,7 @@ test_that("missing lexical columns fail before DuckDB reads metadata", {
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   input <- dplyr::copy_to(con, data, "grouping_env_pronoun")
   step <- dplyr::mutate(input, added = paste0(a, "x"))
+  # Trace the DBI method to observe query sends before the condition.
   counter <- duckdb_query_counter()
   on.exit(counter$untrace(), add = TRUE)
   expect_equal(DBI::dbGetQuery(con, "SELECT 1 AS n")$n, 1L)

@@ -54,6 +54,7 @@ test_that("absent names forwarded in dots fail before DuckDB reads metadata", {
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   remote <- dplyr::copy_to(con, data, "forwarded_grouping_names")
+  # Trace the DBI method to observe query sends before the condition.
   counter <- duckdb_query_counter()
   on.exit(counter$untrace(), add = TRUE)
   expect_identical(DBI::dbGetQuery(con, "SELECT 1 AS n")$n, 1L)
