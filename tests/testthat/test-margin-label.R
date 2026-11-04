@@ -1929,6 +1929,21 @@ test_that("Nest verbs normalize classed character labels in every spelling", {
   }
 })
 
+test_that("classed named Margin labels keep their dimension mapping", {
+  registerS3method("names", "margin_test_label_names", function(x) {
+    rev(attr(x, "names"))
+  }, envir = asNamespace("base"))
+  data <- tibble::tibble(g = 1L, h = 2L)
+  label <- structure(c(g = "All g", h = "All h"),
+                     class = "margin_test_label_names")
+
+  result <- expand_with_margins(
+    data, .grouping = rollup(g, h), .margin_label = label, .id = "set"
+  )
+  expect_identical(result$g[result$set == 3L], "All g")
+  expect_identical(result$h[result$set == 3L], "All h")
+})
+
 test_that("Nest verbs retain Package conditions for invalid list labels", {
   data <- tibble::tibble(g = 1:2)
   verbs <- list(nest_with_margins, nest_by_with_margins)

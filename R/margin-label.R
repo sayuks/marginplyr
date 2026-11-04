@@ -19,7 +19,7 @@ normalize_margin_label <- function(.margin_label) {
       "scalar, or a named character vector or list."
     ))
   }
-  label_names <- names(.margin_label)
+  label_names <- names(unclass(.margin_label))
   if (!is_label_list) {
     attributes(.margin_label) <- NULL
   }
