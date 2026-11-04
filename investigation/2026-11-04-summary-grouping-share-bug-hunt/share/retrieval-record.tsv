@@ -1,0 +1,12 @@
+path	md5	extent	unit	accepted	unread
+CLAUDE.md	5c27369b226fcf2be8a6cfe52224e767	1	line	1:extent	none
+AGENTS.md	c560df623033f61235f4c1769e232130	364	line	1:extent	none
+CONTEXT.md	0bb177ec946acb93ccf6985ad8a0a2f6	316	line	1:extent	none
+design/agents/local-checks.md	b763cc4841c3725a83de8eed4ff51d8e	373	line	1:extent	none
+design/agents/retrieval.md	911c8984d787269db6b568c5c928d8d0	50	line	1:extent	none
+design/agents/issue-tracker.md	d3686a5971ea9a45eaffadf71b9c2303	51	line	1:extent	none
+design/agents/triage-labels.md	06c53963caea405fafba5863d328873e	15	line	1:extent	none
+design/adr/0010-compute-parent-shares-as-a-contextual-summary.md	cff351065905c24ea2c8ac465112329f	643	line	1:extent	none
+design/adr/0017-calculate-total-shares-against-the-grand-total-set.md	1dc3e2218c1fa2cbffd490b237685c7c	178	line	1:extent	none
+design/adr/0014-select-parent-share-adapters-from-prepared-backend-kind.md	c215acb8f8d879a3d588c54154e28182	267	line	1:extent	none
+design/adr/0019-resolve-contextual-helper-names-by-static-spelling.md	b168ea0f9425ea720085e8dcd6339da7	717	line	1:extent	none

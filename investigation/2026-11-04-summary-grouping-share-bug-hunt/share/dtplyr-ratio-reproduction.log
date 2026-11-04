@@ -1,0 +1,10 @@
+      g value fraction
+1     a     1     0.25
+2     b     3     0.75
+3 Total     4     1.00
+      g value fraction
+1     a     1       NA
+2     b     3       NA
+3 Total     4        1
+Source and no-share controls: passed
+Binding removal restored correct ratios

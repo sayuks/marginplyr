@@ -1,0 +1,5 @@
+         outcome
+unpack    agree value-difference
+  {inner}     6               18
+  FALSE      24                0
+  TRUE        6               18

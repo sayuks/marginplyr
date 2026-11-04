@@ -1,0 +1,26 @@
+parent after_share
+      g value prior derived
+1     a     1  0.25     100
+2     b     3  0.75     300
+3 Total     4  1.00     400
+Body removal control: Package refusal
+parent source
+      g prior value fraction
+1     a     1     1     0.25
+2     b     3     3     0.75
+3 Total     4     4     1.00
+Body removal control: Package refusal
+total after_share
+      g value prior derived
+1     a     1  0.25     100
+2     b     3  0.75     300
+3 Total     4  1.00     400
+Body removal control: Package refusal
+total source
+      g prior value fraction
+1     a     1     1     0.25
+2     b     3     3     0.75
+3 Total     4     4     1.00
+Body removal control: Package refusal
+Error: all(vapply(results, inherits, logical(1), "marginplyr_error")) is not TRUE
+Execution halted

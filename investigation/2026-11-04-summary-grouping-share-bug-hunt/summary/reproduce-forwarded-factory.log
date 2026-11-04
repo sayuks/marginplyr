@@ -1,0 +1,26 @@
+Ordinary:
+$result
+  g x_value
+1 a       5
+2 b       4
+
+$calls
+[1] 2
+
+Noncanonical Margin:
+$result
+  g x_value
+1 a       4
+2 b       4
+
+$calls
+[1] 1
+
+Canonical Margin:
+$result
+  g x_value
+1 a       5
+2 b       4
+
+$calls
+[1] 2

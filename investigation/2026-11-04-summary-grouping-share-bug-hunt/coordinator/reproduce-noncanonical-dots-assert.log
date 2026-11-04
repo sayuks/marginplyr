@@ -1,0 +1,11 @@
+Ordinary value: 6
+Canonical Margin value: 6
+Noncanonical Margin error:
+ ℹ In argument: `value = (function(...) sum(pick(..01)))(x)`.
+Caused by error in `dplyr::pick()`:
+ℹ In argument: `tidyselect::all_of(...)`.
+Caused by error in `resolve_summary_selection()` at marginplyr-summary-grouping-share-20261104/R/summary-selections.R:1965:3:
+! Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.
+Error: !inherits(margin, "error") is not TRUE
+Execution halted

@@ -1,0 +1,41 @@
+default_remove
+      g value prior derived
+1     a     1  0.25     100
+2     b     3  0.75     300
+3 Total     4  1.00     400
+default_force_remove
+      g value prior derived
+1     a     1  0.25     100
+2     b     3  0.75     300
+3 Total     4  1.00     400
+default_explicit_remove
+      g value prior derived
+1     a     1  0.25     100
+2     b     3  0.75     300
+3 Total     4  1.00     400
+inline_remove_control
+<error/marginplyr_error>
+Error in `summarize_with_margins()`:
+! Ordinary summaries cannot use an earlier Total share (`prior`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values.
+---
+Backtrace:
+     ▆
+  1. ├─base::tryCatch(...)
+  2. │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+  3. │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+  4. │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+  5. └─marginplyr::summarize_with_margins(...)
+  6.   └─marginplyr:::execute_margin_summary(operation, dots, check_share_source = .check_share_source) at marginplyr-summary-grouping-share-20261104/R/summarize_with_margins.R:1103:3
+  7.     ├─marginplyr:::with_margin_error_call(...) at marginplyr-summary-grouping-share-20261104/R/summarize_with_margins.R:1156:3
+  8.     │ └─base::tryCatch(...) at marginplyr-summary-grouping-share-20261104/R/margin-operation.R:97:3
+  9.     │   └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 10.     │     └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 11.     │       └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 12.     └─marginplyr:::plan_summary_expressions(...) at marginplyr-summary-grouping-share-20261104/R/summarize_with_margins.R:1160:7
+ 13.       └─marginplyr:::plan_share_expressions(...) at marginplyr-summary-grouping-share-20261104/R/summary-selections.R:831:5
+default_constant_control
+      g value prior derived
+1     a     1  0.25       1
+2     b     3  0.75       1
+3 Total     4  1.00       1
