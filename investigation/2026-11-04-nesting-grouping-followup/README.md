@@ -180,7 +180,7 @@ Closed #1143 and #1089 addressed generated label and order helpers.
 
 | Boundary | Completed evidence |
 | --- | --- |
-| [Backend name frontier](backend-names.R) | 1,220 comparisons across 61 names, five roles, both verbs and both keep choices. 1,190 matched exactly and 30 agreed on refusal. No source mutation or one-sided warning was observed. |
+| [Backend name frontier](backend-names.R) | 1,220 comparisons across 61 names, five roles, both verbs and both keep choices. 1,190 matched in results and warnings. The other 30 pairs both failed. No caller source changed. |
 | [Empty backend matrix](empty-backend-matrix.R) | 560 comparisons of empty and populated inputs, identifier and cell names, and no, fixed or dimension keys agreed. |
 | [Inspection identity](identity-boundaries.R) | 198 comparisons across 0 to 40 dimensions including the 31-bit boundary, duplicate policies, two formats, and grouped, local and simulated PostgreSQL inputs matched the closed-form oracle or required refusal. |
 | [Prior family algebra](../2026-11-04-nest-spec-greedy/spec/family-algebra.R) | 1,080 comparisons on 180 deterministic trees matched on the pinned follow-up baseline. |
@@ -217,6 +217,9 @@ matrix runs at exit 0. All probe processes had exited when the session
 completed. Session `79617` repeated the two probes after generating the
 redundant parentheses and empty argument slots explicitly. It exited 0
 with the same counts and numbered-dot assertion failure.
+Session `89281` replayed the AsIs POSIXlt probe with the one-row expansion,
+summary and ordinary POSIXlt controls retained. Observation returned 0 and
+the desired-behavior assertion returned 1.
 
 The finite checks cover the named inputs and dispatch boundaries. Hosted
 databases, arbitrary class methods, other R and dependency versions, and
