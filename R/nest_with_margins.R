@@ -498,8 +498,8 @@ nest_cell_expr <- function(cell_cols, kind) {
     return(quote(dplyr::tibble(.rows = dplyr::n())))
   }
 
-  # `list()`, whose only formal is `...`, because dtplyr translates a `pick()`
-  # standing where a value stands into a literal `data.table()` call carrying
+  # A list constructor has only the `...` formal. dtplyr translates a `pick()`
+  # standing where a value stands into a `data.table()` call carrying
   # one named argument per column: a column named for one of that function's
   # formals is taken as that argument, so `key` and `check.names` raise and
   # `keep.rownames` and `stringsAsFactors` are absorbed and leave the column
@@ -516,6 +516,7 @@ nest_cell_expr <- function(cell_cols, kind) {
   )
   # Per backend (ADR 0016).
   if (identical(kind, "dtplyr")) {
+    # dtplyr evaluates the constructor in the input's environment.
     # `as.data.table.list()` refuses `.SD` as a column name. Build the fresh
     # cell under a private name, then restore the caller's spelling on it.
     special <- intersect(names(columns), ".SD")
@@ -526,11 +527,11 @@ nest_cell_expr <- function(cell_cols, kind) {
       )
       names(columns)[match(special, names(columns))] <- aliases
       return(rlang::expr(data.table::setnames(
-        data.table::as.data.table(list(!!!columns)),
+        data.table::as.data.table(base::list(!!!columns)),
         !!aliases, !!special
       )))
     }
-    rlang::expr(data.table::as.data.table(list(!!!columns)))
+    rlang::expr(data.table::as.data.table(base::list(!!!columns)))
   } else {
     rlang::expr(dplyr::as_tibble(list(!!!columns)))
   }
