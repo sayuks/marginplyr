@@ -1,0 +1,62 @@
+[
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOOKa0BM8AAAAB72YRhA",
+        "name": "bug",
+        "description": "Something isn't working",
+        "color": "d73a4a"
+      },
+      {
+        "id": "LA_kwDOOKa0BM8AAAACtvbv1Q",
+        "name": "ready-for-agent",
+        "description": "Agent-ready work with sufficient context and acceptance criteria",
+        "color": "0E8A16"
+      }
+    ],
+    "number": 1211,
+    "state": "OPEN",
+    "title": "[P2] Preserve R-supported dots references through Margin summary rewrites",
+    "url": "https://github.com/sayuks/marginplyr/issues/1211"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOOKa0BM8AAAAB72YRhA",
+        "name": "bug",
+        "description": "Something isn't working",
+        "color": "d73a4a"
+      },
+      {
+        "id": "LA_kwDOOKa0BM8AAAACtvbv1Q",
+        "name": "ready-for-agent",
+        "description": "Agent-ready work with sufficient context and acceptance criteria",
+        "color": "0E8A16"
+      }
+    ],
+    "number": 1212,
+    "state": "OPEN",
+    "title": "[P2] Isolate generated dtplyr share ratios from caller helper bindings",
+    "url": "https://github.com/sayuks/marginplyr/issues/1212"
+  },
+  {
+    "labels": [
+      {
+        "id": "LA_kwDOOKa0BM8AAAAB72YRhA",
+        "name": "bug",
+        "description": "Something isn't working",
+        "color": "d73a4a"
+      },
+      {
+        "id": "LA_kwDOOKa0BM8AAAACtvbv1Q",
+        "name": "ready-for-agent",
+        "description": "Agent-ready work with sufficient context and acceptance criteria",
+        "color": "0E8A16"
+      }
+    ],
+    "number": 1213,
+    "state": "OPEN",
+    "title": "[P2] Track formal-default binding removals in contextual-share dependencies",
+    "url": "https://github.com/sayuks/marginplyr/issues/1213"
+  }
+]

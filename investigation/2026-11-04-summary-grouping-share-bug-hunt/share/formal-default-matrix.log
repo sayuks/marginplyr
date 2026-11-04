@@ -1,0 +1,7 @@
+               result
+removal         missing_refusal
+  base_rm                    48
+  conditional                48
+  remove_string              48
+  rm_list                    48
+Rows: 192 ; all body/retained/ordinary/source-byte controls passed

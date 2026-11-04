@@ -1,0 +1,38 @@
+                                                                                                  sysname
+                                                                                                 "Darwin"
+                                                                                                  release
+                                                                                                 "25.6.0"
+                                                                                                  version
+"Darwin Kernel Version 25.6.0: Fri Jul 31 19:11:03 PDT 2026; root:xnu-12377.161.14~5/RELEASE_ARM64_T8132"
+                                                                                                 nodename
+                                                                                 "Sasakis-Mac-mini.local"
+                                                                                                  machine
+                                                                                                  "arm64"
+                                                                                                    login
+                                                                                                   "root"
+                                                                                                     user
+                                                                                                 "sayuks"
+                                                                                           effective_user
+                                                                                                 "sayuks"
+               _
+platform       aarch64-apple-darwin23
+arch           aarch64
+os             darwin23
+system         aarch64, darwin23
+status
+major          4
+minor          6.1
+year           2026
+month          06
+day            24
+svn rev        90187
+language       R
+version.string R version 4.6.1 (2026-06-24)
+nickname       Happy Hop
+dplyr 1.2.1
+rlang 1.3.0
+tidyselect 1.2.1
+vctrs 0.7.3
+pkgload 1.5.3
+tibble 3.3.1
+data.table 1.18.6.1

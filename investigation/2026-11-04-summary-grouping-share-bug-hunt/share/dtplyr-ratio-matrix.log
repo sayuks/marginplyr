@@ -1,0 +1,10 @@
+           result
+helper      callback_error callback_invoked isolated wrong_ratio
+  *                     16               16        0          16
+  /                     16               16        0          16
+  %in%                   0                0       48           0
+  ==                    16               16        0          16
+  |                     16               16        0          16
+  as.double             16               16        0          16
+  is.na                 16               16        0          16
+Rows: 336 ; all no-share/input/source-byte controls passed

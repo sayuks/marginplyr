@@ -1,0 +1,9 @@
+                                target assert status expected pass
+ summary/reproduce-noncanonical-dots.R  FALSE      0        0 TRUE
+ summary/reproduce-noncanonical-dots.R   TRUE      1        1 TRUE
+ summary/reproduce-forwarded-factory.R  FALSE      0        0 TRUE
+ summary/reproduce-forwarded-factory.R   TRUE      1        1 TRUE
+     share/dtplyr-ratio-reproduction.R  FALSE      0        0 TRUE
+     share/dtplyr-ratio-reproduction.R   TRUE      1        1 TRUE
+   share/formal-default-reproduction.R  FALSE      0        0 TRUE
+   share/formal-default-reproduction.R   TRUE      1        1 TRUE

@@ -1,0 +1,33 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+duckdb is storing downloaded extensions and secrets under ~/.duckdb:
+ℹ /Users/sayuks/.duckdb
+This persists across sessions and is shared with the DuckDB CLI and other clients.
+ℹ Run duckdb(shared_home = FALSE) to use a temporary directory instead.
+ℹ See ?duckdb_storage for details and alternatives.
+ backend portable sorted label pass
+  sqlite    FALSE  FALSE FALSE TRUE
+  sqlite    FALSE  FALSE  TRUE TRUE
+  sqlite    FALSE   TRUE FALSE TRUE
+  sqlite    FALSE   TRUE  TRUE TRUE
+  sqlite     TRUE  FALSE FALSE TRUE
+  sqlite     TRUE  FALSE  TRUE TRUE
+  sqlite     TRUE   TRUE FALSE TRUE
+  sqlite     TRUE   TRUE  TRUE TRUE
+  duckdb    FALSE  FALSE FALSE TRUE
+  duckdb    FALSE  FALSE  TRUE TRUE
+  duckdb    FALSE   TRUE FALSE TRUE
+  duckdb    FALSE   TRUE  TRUE TRUE
+  duckdb     TRUE  FALSE FALSE TRUE
+  duckdb     TRUE  FALSE  TRUE TRUE
+  duckdb     TRUE   TRUE FALSE TRUE
+  duckdb     TRUE   TRUE  TRUE TRUE

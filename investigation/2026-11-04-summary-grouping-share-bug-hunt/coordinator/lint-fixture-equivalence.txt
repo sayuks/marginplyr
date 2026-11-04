@@ -1,0 +1,1 @@
+All four removal AST fixtures were identical before and after the jarl-only construction change.

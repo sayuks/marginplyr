@@ -1,0 +1,462 @@
+[
+  {
+    "kind": "issue",
+    "query": "\"noncanonical\"",
+    "results": []
+  },
+  {
+    "kind": "issue",
+    "query": "\"..01\"",
+    "results": [
+      {
+        "number": 971,
+        "state": "CLOSED",
+        "title": "[P2] Preserve valid SQL dot-dot outputs and Grouping set identifier names",
+        "url": "https://github.com/sayuks/marginplyr/issues/971"
+      },
+      {
+        "number": 999,
+        "state": "CLOSED",
+        "title": "[P2] Keep dtplyr shares working with dot and dot-dot fixed keys",
+        "url": "https://github.com/sayuks/marginplyr/issues/999"
+      },
+      {
+        "number": 968,
+        "state": "CLOSED",
+        "title": "[P2] Preserve dot-dot Grouping set identifier names on dtplyr Margin results",
+        "url": "https://github.com/sayuks/marginplyr/issues/968"
+      },
+      {
+        "number": 923,
+        "state": "CLOSED",
+        "title": "[P2] Reject unrepresentable typed-missing raw Margin values",
+        "url": "https://github.com/sayuks/marginplyr/issues/923"
+      },
+      {
+        "number": 620,
+        "state": "CLOSED",
+        "title": "Preserve typed grouping identity when nesting with display labels",
+        "url": "https://github.com/sayuks/marginplyr/issues/620"
+      },
+      {
+        "number": 756,
+        "state": "CLOSED",
+        "title": "Implement condition precedence and cause preservation during interruption",
+        "url": "https://github.com/sayuks/marginplyr/issues/756"
+      },
+      {
+        "number": 673,
+        "state": "CLOSED",
+        "title": "[P1] Preserve SQLite Margin labels through materialization",
+        "url": "https://github.com/sayuks/marginplyr/issues/673"
+      },
+      {
+        "number": 652,
+        "state": "CLOSED",
+        "title": "Preserve typed grouping identity in dtplyr Total-share cardinality validation",
+        "url": "https://github.com/sayuks/marginplyr/issues/652"
+      },
+      {
+        "number": 111,
+        "state": "CLOSED",
+        "title": "Reduce(union_all, branches) is quadratic in the number of grouping sets",
+        "url": "https://github.com/sayuks/marginplyr/issues/111"
+      },
+      {
+        "number": 767,
+        "state": "CLOSED",
+        "title": "Preserve SQLite collation when matching Parent-share denominators",
+        "url": "https://github.com/sayuks/marginplyr/issues/767"
+      },
+      {
+        "number": 266,
+        "state": "CLOSED",
+        "title": "Findings from the review of #255's branch are recorded in commit messages but dispositioned nowhere",
+        "url": "https://github.com/sayuks/marginplyr/issues/266"
+      },
+      {
+        "number": 23,
+        "state": "CLOSED",
+        "title": "Harden marginplyr for its first CRAN release",
+        "url": "https://github.com/sayuks/marginplyr/issues/23"
+      }
+    ]
+  },
+  {
+    "kind": "issue",
+    "query": "\"dots\" \"signed\"",
+    "results": [
+      {
+        "number": 1044,
+        "state": "CLOSED",
+        "title": "[P2] Quote signed and whitespace dot-dot SQL output references",
+        "url": "https://github.com/sayuks/marginplyr/issues/1044"
+      },
+      {
+        "number": 1002,
+        "state": "CLOSED",
+        "title": "[P2] Protect signed dot-dot names in generated local column reads",
+        "url": "https://github.com/sayuks/marginplyr/issues/1002"
+      },
+      {
+        "number": 1051,
+        "state": "CLOSED",
+        "title": "[P2] Ignore discarded dot-dot source names when acquiring dtplyr metadata",
+        "url": "https://github.com/sayuks/marginplyr/issues/1051"
+      }
+    ]
+  },
+  {
+    "kind": "issue",
+    "query": "\"dots\" \"leading\"",
+    "results": [
+      {
+        "number": 993,
+        "state": "CLOSED",
+        "title": "[P2] Keep active sf geometry in the leading expansion Margin columns",
+        "url": "https://github.com/sayuks/marginplyr/issues/993"
+      },
+      {
+        "number": 87,
+        "state": "CLOSED",
+        "title": "Add .sort for a Margin order on every backend",
+        "url": "https://github.com/sayuks/marginplyr/issues/87"
+      },
+      {
+        "number": 77,
+        "state": "CLOSED",
+        "title": "Reject misspelled options and unsupported input in the caller's terms",
+        "url": "https://github.com/sayuks/marginplyr/issues/77"
+      }
+    ]
+  },
+  {
+    "kind": "issue",
+    "query": "\"dots\" \"whitespace\"",
+    "results": [
+      {
+        "number": 1044,
+        "state": "CLOSED",
+        "title": "[P2] Quote signed and whitespace dot-dot SQL output references",
+        "url": "https://github.com/sayuks/marginplyr/issues/1044"
+      },
+      {
+        "number": 1002,
+        "state": "CLOSED",
+        "title": "[P2] Protect signed dot-dot names in generated local column reads",
+        "url": "https://github.com/sayuks/marginplyr/issues/1002"
+      }
+    ]
+  },
+  {
+    "kind": "issue",
+    "query": "\"numbered\" \"forward\"",
+    "results": [
+      {
+        "number": 858,
+        "state": "CLOSED",
+        "title": "[P3] Contain messages from diagnostic SQL rendering",
+        "url": "https://github.com/sayuks/marginplyr/issues/858"
+      },
+      {
+        "number": 254,
+        "state": "CLOSED",
+        "title": "A Margin summary over an Arrow table fails with an untyped error when Arrow cannot translate the expression",
+        "url": "https://github.com/sayuks/marginplyr/issues/254"
+      }
+    ]
+  },
+  {
+    "kind": "issue",
+    "query": "\"unpack\" \"factory\"",
+    "results": [
+      {
+        "number": 1170,
+        "state": "CLOSED",
+        "title": "[P2] Preserve forwarded function-factory evaluation under dynamic across unpacking",
+        "url": "https://github.com/sayuks/marginplyr/issues/1170"
+      },
+      {
+        "number": 693,
+        "state": "CLOSED",
+        "title": "Preserve ordinary .fns evaluation with dynamically false across unpacking",
+        "url": "https://github.com/sayuks/marginplyr/issues/693"
+      },
+      {
+        "number": 700,
+        "state": "CLOSED",
+        "title": "Preserve ordinary across argument evaluation for dynamic unpack values",
+        "url": "https://github.com/sayuks/marginplyr/issues/700"
+      }
+    ]
+  },
+  {
+    "kind": "pr",
+    "query": "\"noncanonical\"",
+    "results": []
+  },
+  {
+    "kind": "pr",
+    "query": "\"..01\"",
+    "results": [
+      {
+        "number": 1008,
+        "state": "MERGED",
+        "title": "Fix generated reads of special fixed keys and share sources",
+        "url": "https://github.com/sayuks/marginplyr/pull/1008"
+      },
+      {
+        "number": 986,
+        "state": "MERGED",
+        "title": "Preserve dot-dot Grouping set identifiers on dtplyr Margin results",
+        "url": "https://github.com/sayuks/marginplyr/pull/986"
+      },
+      {
+        "number": 983,
+        "state": "MERGED",
+        "title": "Record nesting and Grouping specification bug hunt",
+        "url": "https://github.com/sayuks/marginplyr/pull/983"
+      },
+      {
+        "number": 679,
+        "state": "MERGED",
+        "title": "Preserve SQLite Margin labels through materialization (#673)",
+        "url": "https://github.com/sayuks/marginplyr/pull/679"
+      },
+      {
+        "number": 772,
+        "state": "MERGED",
+        "title": "Record nesting data integrity investigation",
+        "url": "https://github.com/sayuks/marginplyr/pull/772"
+      },
+      {
+        "number": 765,
+        "state": "MERGED",
+        "title": "docs: record installed downstream integration investigation",
+        "url": "https://github.com/sayuks/marginplyr/pull/765"
+      },
+      {
+        "number": 1124,
+        "state": "MERGED",
+        "title": "Simplify Review-ready to a pinned R command and one heavy-check slot",
+        "url": "https://github.com/sayuks/marginplyr/pull/1124"
+      },
+      {
+        "number": 775,
+        "state": "MERGED",
+        "title": "Investigate cold-start share transaction safety",
+        "url": "https://github.com/sayuks/marginplyr/pull/775"
+      },
+      {
+        "number": 773,
+        "state": "MERGED",
+        "title": "docs: investigate grouping plan identity and width boundaries",
+        "url": "https://github.com/sayuks/marginplyr/pull/773"
+      },
+      {
+        "number": 770,
+        "state": "MERGED",
+        "title": "docs: investigate SQL query boundaries and processing order",
+        "url": "https://github.com/sayuks/marginplyr/pull/770"
+      },
+      {
+        "number": 764,
+        "state": "MERGED",
+        "title": "Preserve competing conditions within R handler boundaries",
+        "url": "https://github.com/sayuks/marginplyr/pull/764"
+      },
+      {
+        "number": 307,
+        "state": "MERGED",
+        "title": "State each review-record argument once, and record a review that did not run",
+        "url": "https://github.com/sayuks/marginplyr/pull/307"
+      },
+      {
+        "number": 270,
+        "state": "MERGED",
+        "title": "Say what a comment holds, and where its argument lives",
+        "url": "https://github.com/sayuks/marginplyr/pull/270"
+      },
+      {
+        "number": 247,
+        "state": "MERGED",
+        "title": "Author the last diagnostics in the cli idiom and retire the shim",
+        "url": "https://github.com/sayuks/marginplyr/pull/247"
+      }
+    ]
+  },
+  {
+    "kind": "pr",
+    "query": "\"dots\" \"signed\"",
+    "results": [
+      {
+        "number": 1060,
+        "state": "MERGED",
+        "title": "Fix signed and whitespace dot-dot SQL output references",
+        "url": "https://github.com/sayuks/marginplyr/pull/1060"
+      },
+      {
+        "number": 1008,
+        "state": "MERGED",
+        "title": "Fix generated reads of special fixed keys and share sources",
+        "url": "https://github.com/sayuks/marginplyr/pull/1008"
+      },
+      {
+        "number": 1006,
+        "state": "MERGED",
+        "title": "Record summarize, Grouping specification, and share bug hunt",
+        "url": "https://github.com/sayuks/marginplyr/pull/1006"
+      },
+      {
+        "number": 1055,
+        "state": "MERGED",
+        "title": "Record summary, Grouping specification and share boundary bug hunt",
+        "url": "https://github.com/sayuks/marginplyr/pull/1055"
+      }
+    ]
+  },
+  {
+    "kind": "pr",
+    "query": "\"dots\" \"leading\"",
+    "results": [
+      {
+        "number": 1146,
+        "state": "MERGED",
+        "title": "fix: reject known fixed-key overlaps before typed metadata",
+        "url": "https://github.com/sayuks/marginplyr/pull/1146"
+      },
+      {
+        "number": 312,
+        "state": "MERGED",
+        "title": "Refuse an empty argument in a nested specification position",
+        "url": "https://github.com/sayuks/marginplyr/pull/312"
+      },
+      {
+        "number": 81,
+        "state": "MERGED",
+        "title": "Reject misspelled options and unsupported input in the caller's terms",
+        "url": "https://github.com/sayuks/marginplyr/pull/81"
+      },
+      {
+        "number": 247,
+        "state": "MERGED",
+        "title": "Author the last diagnostics in the cli idiom and retire the shim",
+        "url": "https://github.com/sayuks/marginplyr/pull/247"
+      }
+    ]
+  },
+  {
+    "kind": "pr",
+    "query": "\"dots\" \"whitespace\"",
+    "results": [
+      {
+        "number": 1060,
+        "state": "MERGED",
+        "title": "Fix signed and whitespace dot-dot SQL output references",
+        "url": "https://github.com/sayuks/marginplyr/pull/1060"
+      },
+      {
+        "number": 991,
+        "state": "MERGED",
+        "title": "Preserve dot-dot identifiers in Arrow expansions",
+        "url": "https://github.com/sayuks/marginplyr/pull/991"
+      },
+      {
+        "number": 1006,
+        "state": "MERGED",
+        "title": "Record summarize, Grouping specification, and share bug hunt",
+        "url": "https://github.com/sayuks/marginplyr/pull/1006"
+      },
+      {
+        "number": 1008,
+        "state": "MERGED",
+        "title": "Fix generated reads of special fixed keys and share sources",
+        "url": "https://github.com/sayuks/marginplyr/pull/1008"
+      },
+      {
+        "number": 1055,
+        "state": "MERGED",
+        "title": "Record summary, Grouping specification and share boundary bug hunt",
+        "url": "https://github.com/sayuks/marginplyr/pull/1055"
+      },
+      {
+        "number": 1188,
+        "state": "MERGED",
+        "title": "docs: investigate expansion and Grouping specification composition boundaries",
+        "url": "https://github.com/sayuks/marginplyr/pull/1188"
+      },
+      {
+        "number": 957,
+        "state": "MERGED",
+        "title": "docs: record nesting and Grouping specification bug hunt",
+        "url": "https://github.com/sayuks/marginplyr/pull/957"
+      },
+      {
+        "number": 1112,
+        "state": "MERGED",
+        "title": "Run eligible Review-ready paths without Full admission",
+        "url": "https://github.com/sayuks/marginplyr/pull/1112"
+      }
+    ]
+  },
+  {
+    "kind": "pr",
+    "query": "\"numbered\" \"forward\"",
+    "results": [
+      {
+        "number": 1066,
+        "state": "MERGED",
+        "title": "Serialize local Review-ready checks across worktrees",
+        "url": "https://github.com/sayuks/marginplyr/pull/1066"
+      },
+      {
+        "number": 1192,
+        "state": "MERGED",
+        "title": "Fix summary-local pick forwarding and vectorized across names",
+        "url": "https://github.com/sayuks/marginplyr/pull/1192"
+      },
+      {
+        "number": 142,
+        "state": "MERGED",
+        "title": "Number an unnamed `across()` argument by its own position",
+        "url": "https://github.com/sayuks/marginplyr/pull/142"
+      },
+      {
+        "number": 480,
+        "state": "MERGED",
+        "title": "Write NEWS.md as a changelog (#466)",
+        "url": "https://github.com/sayuks/marginplyr/pull/480"
+      },
+      {
+        "number": 441,
+        "state": "MERGED",
+        "title": "Record that the staged share can refuse a character source itself",
+        "url": "https://github.com/sayuks/marginplyr/pull/441"
+      },
+      {
+        "number": 348,
+        "state": "MERGED",
+        "title": "Refuse an empty summary, and select no columns for an empty .by",
+        "url": "https://github.com/sayuks/marginplyr/pull/348"
+      }
+    ]
+  },
+  {
+    "kind": "pr",
+    "query": "\"unpack\" \"factory\"",
+    "results": [
+      {
+        "number": 1174,
+        "state": "MERGED",
+        "title": "fix: preserve forwarded factories under dynamic unpacking",
+        "url": "https://github.com/sayuks/marginplyr/pull/1174"
+      },
+      {
+        "number": 1172,
+        "state": "MERGED",
+        "title": "fix: preserve forwarded selectors in top-level across expansion",
+        "url": "https://github.com/sayuks/marginplyr/pull/1172"
+      }
+    ]
+  }
+]

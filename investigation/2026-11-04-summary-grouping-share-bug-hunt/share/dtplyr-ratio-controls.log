@@ -1,0 +1,3 @@
+Construction: zero callback invocations and zero source-row visits
+Collection: callback invocations 2 ; source-row visits 4 ; source unchanged
+Caller-written is.na retained ordinary root lookup
