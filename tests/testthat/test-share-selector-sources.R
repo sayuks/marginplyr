@@ -113,6 +113,100 @@ test_that("named selector sources retain provenance and ordering checks", {
   }
 })
 
+test_that("scalar selectors can exclude earlier aliases from share sources", {
+  data <- data.frame(g = c("a", "b"), value = c(1, 3), other = c(7, 9))
+  for (selection in list(
+    quote(c(dplyr::all_of(select_value()), -prior)),
+    quote(dplyr::all_of(select_value()) & !prior),
+    quote(dplyr::all_of(select_value()) / prior)
+  )) {
+    sources <- rlang::exprs(
+      sum(dplyr::pick(!!selection)),
+      sum(dplyr::across(!!selection, identity)),
+      sum(value * dplyr::if_any(!!selection, ~ .x < 4)),
+      sum(value * dplyr::if_all(!!selection, ~ .x < 4))
+    )
+    for (source in sources) {
+      run <- function(shares) {
+        selections <- 0L
+        select_value <- function() {
+          selections <<- selections + 1L
+          "value"
+        }
+        result <- summarize_with_margins(
+          data,
+          prior = sum(other),
+          source = !!source,
+          !!!shares,
+          .grouping = rollup(g)
+        ) |>
+          dplyr::arrange(source)
+        list(result = result, selections = selections)
+      }
+
+      control <- run(list())
+      shared <- run(rlang::quos(
+        total_share = share_of_total(source),
+        parent_share = share_of_parent(source)
+      ))
+      expect_equal(control$result$source, c(1, 3, 4))
+      expect_identical(shared$result[names(control$result)], control$result)
+      expect_identical(shared$result$total_share, c(0.25, 0.75, 1))
+      expect_identical(shared$result$parent_share, c(0.25, 0.75, 1))
+      expect_gt(control$selections, 0L)
+      expect_identical(shared$selections, control$selections)
+    }
+  }
+})
+
+test_that("excluding an alias does not conceal reads in a share source", {
+  data <- data.frame(g = c("a", "b"), value = c(1, 3), other = c(7, 9))
+  choose_value <- function(alias) {
+    force(alias)
+    "value"
+  }
+  sources <- rlang::exprs(
+    sum(dplyr::pick(c(value, prior))),
+    sum(dplyr::across(value | prior, identity)),
+    sum(dplyr::if_any(c(value, prior), ~ .x > 0)),
+    sum(dplyr::if_all(c(value, prior), ~ .x > 0)),
+    sum(dplyr::pick(c(value, -prior))) + prior,
+    sum(dplyr::across(value & !prior, ~ .x + prior)),
+    sum(dplyr::pick(c(dplyr::all_of(choose_value(prior)), -prior)))
+  )
+  for (source in sources) {
+    for (helper in c("share_of_total", "share_of_parent")) {
+      error <- expect_error(summarize_with_margins(
+        data,
+        prior = sum(other),
+        source = !!source,
+        share = !!rlang::call2(helper, quote(source)),
+        .grouping = rollup(g)
+      ), "depends on earlier summary alias `prior`")
+      expect_s3_class(error, "marginplyr_error")
+    }
+  }
+})
+
+test_that("excluded aliases may come from a runtime summary name", {
+  data <- data.frame(g = c("a", "b"), value = c(1, 3), other = c(7, 9))
+  make_prior <- function(x) data.frame(prior = sum(x))
+  selection <- rlang::quo(c(value, -prior))
+  result <- summarize_with_margins(
+    data,
+    make_prior(other),
+    source = sum(dplyr::pick(!!selection)),
+    total_share = share_of_total(source),
+    parent_share = share_of_parent(source),
+    .grouping = rollup(g)
+  ) |>
+    dplyr::arrange(source)
+
+  expect_equal(result$source, c(1, 3, 4))
+  expect_identical(result$total_share, c(0.25, 0.75, 1))
+  expect_identical(result$parent_share, c(0.25, 0.75, 1))
+})
+
 test_that("selector sources preserve local evaluation timing and counts", {
   data <- data.frame(g = c("a", "b"), value = c(1, 3))
   for (source in list(

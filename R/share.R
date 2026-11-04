@@ -1795,7 +1795,7 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
       )
       analyses[[i]] <- list(records = ordinary_summary_records(
         expr, env, proxy, output_names, output_name,
-        eligibility, i, preceding_names, reparented
+        eligibility, i, preceding_names, reparented, deferred_selection = TRUE
       ), reparented = reparented)
       preceding_names <- c(preceding_names, output_names)
       next
@@ -1848,11 +1848,13 @@ analyze_ordinary_summaries <- function(dots, selection_proxy,
 
 # Records each known ordinary output against the aliases preceding its call.
 # The proxy includes those aliases when local selections have been deferred.
+# Deferred selections report their actual inputs during summary evaluation.
 # An output with known across provenance has an explicit column argument.
 # Unknown provenance retains the whole call's dependencies.
 ordinary_summary_records <- function(expr, env, proxy, output_names,
                                      output_name, eligibility, position,
-                                     preceding_names, reparented) {
+                                     preceding_names, reparented,
+                                     deferred_selection = FALSE) {
   expands <- is_across_call(expr) && !nzchar(output_name) &&
     length(output_names) > 0L
   provenance <- across_output_provenance(
@@ -1879,7 +1881,8 @@ ordinary_summary_records <- function(expr, env, proxy, output_names,
     dependencies <- unique(c(
       expression_alias_dependencies(
         dependency_expr, preceding_names, env,
-        c(colnames(proxy), preceding_names), reparented = reparented
+        c(colnames(proxy), preceding_names), reparented = reparented,
+        deferred_selection = deferred_selection
       ),
       intersect(inputs, preceding_names)
     ))
@@ -4067,14 +4070,15 @@ abort_share_predicate <- function(kind, parent = NULL) {
 # about the caller's own summaries.
 expression_alias_dependencies <- function(expr, aliases, env = emptyenv(),
                                           mask = character(),
-                                          reparented = list()) {
+                                          reparented = list(),
+                                          deferred_selection = FALSE) {
   if (length(aliases) == 0L) {
     return(character())
   }
   symbols <- unique(expression_data_symbols(
     expr, lookup = list(
       env = env, mask = mask, rebound = lookup_rebound_names(expr, env, mask),
-      reparented = reparented
+      reparented = reparented, deferred_selection = deferred_selection
     )
   ))
   if (unresolved_lookup_name() %in% symbols) {
@@ -4405,6 +4409,16 @@ call_part_symbols <- function(expr, scope, lookup) {
   parts <- scope_call_args(
     expr, static_call_name(expr), scope_bound_names(scope), lookup
   )
+  selection <- if (isTRUE(lookup$deferred_selection)) {
+    static_spelling_name(expr, "selection")
+  }
+  selection_positions <- if (identical(selection, "pick")) {
+    seq_along(parts)
+  } else if (!is.null(selection)) {
+    parse_across_arguments(expr)$cols_index
+  } else {
+    integer()
+  }
   definition <- inline_function_definition(expr)
   reads <- character()
   if (!is.null(definition)) {
@@ -4418,10 +4432,36 @@ call_part_symbols <- function(expr, scope, lookup) {
     scope <- scope_after_removals(call_head, scope, lookup)
   }
   for (index in seq_along(parts)) {
-    reads <- c(reads, scoped_data_symbols(parts[[index]], scope, lookup))
+    read_symbols <- if (index %in% selection_positions) {
+      selection_dependency_symbols
+    } else {
+      scoped_data_symbols
+    }
+    reads <- c(reads, read_symbols(parts[[index]], scope, lookup))
     scope <- scope_after_possible_removals(parts[[index]], scope, lookup)
   }
   unique(reads)
+}
+
+# Read evaluated leaves of a deferred selector in the caller's scope.
+# Runtime selection supplies the actual columns after tidyselect set operations.
+selection_dependency_symbols <- function(expr, scope, lookup) {
+  if (rlang::is_quosure(expr)) {
+    lookup$env <- rlang::quo_get_env(expr)
+    return(selection_dependency_symbols(rlang::quo_get_expr(expr), scope,
+                                        lookup))
+  }
+  if (is_name_part(expr)) {
+    return(scope_promise_symbols(rlang::as_name(expr), scope, lookup))
+  }
+  if (rlang::is_call(expr, c("c", "(", ":", "!", "&", "|", "/"), ns = "") ||
+        rlang::is_call(expr, "-", n = 1L, ns = "")) {
+    return(unlist(lapply(
+      as.list(expr)[-1L], selection_dependency_symbols, scope = scope,
+      lookup = lookup
+    ), use.names = FALSE))
+  }
+  scoped_data_symbols(expr, scope, lookup)
 }
 
 # The reachable arm of an if with a literal condition, or NULL when both

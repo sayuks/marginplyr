@@ -897,7 +897,7 @@ plan_summary_expressions <- function(dots,
               names(selection_proxy),
               rlang::names2(summary_plan$dots)[seq_len(record$position - 1L)]
             ),
-            rebound = lookup_rebound_names(expr)
+            rebound = lookup_rebound_names(expr), deferred_selection = TRUE
           ))
           record
         })
@@ -1992,7 +1992,8 @@ local_summary_selection <- function(selection, env, group_vars,
         check$symbols,
         expression_data_symbols(check$dependency_expr, lookup = list(
           env = env, mask = names(data),
-          rebound = lookup_rebound_names(check$dependency_expr)
+          rebound = lookup_rebound_names(check$dependency_expr),
+          deferred_selection = TRUE
         ))
       ))
       check_share_alias_reads(
