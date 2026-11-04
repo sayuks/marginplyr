@@ -296,6 +296,30 @@ test_that("preflight warning filtering retains later typed warnings", {
   }
 })
 
+test_that("continuing handlers retain later selection warnings", {
+  data <- data.frame(x = 1L, value = 2L)
+  rlang::local_options(warn = -1L, lifecycle_verbosity = "warning")
+  observe <- function(expr) {
+    warnings <- list()
+    withCallingHandlers(expr, warning = function(cnd) {
+      warnings[[length(warnings) + 1L]] <<- list(
+        class(cnd), conditionMessage(cnd), conditionCall(cnd)
+      )
+    })
+    warnings
+  }
+  for (first in list(quote(one_of(c("x", "absent"))), quote(.data$x))) {
+    selection <- rlang::quo(c(!!first, where(is.numeric), !!first))
+    expected <- observe(tidyselect::eval_select(selection, data))
+    for (verb in forwarded_verbs) {
+      actual <- observe(verb(data, NULL, grouping_set(
+        !!first, where(is.numeric), !!first
+      )))
+      expect_identical(actual, expected)
+    }
+  }
+})
+
 test_that("a leading failure does not force later helper bindings", {
   data <- data.frame(x = 1L, value = 2L)
   for (active in c(FALSE, TRUE)) {

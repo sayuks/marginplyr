@@ -685,11 +685,22 @@ is_data_pronoun <- function(expr) {
 }
 
 # Let caller warning handlers run before typed metadata acquisition (ADR 0005).
-# Return identities of warnings delivered before a caller muffled them.
+# Return warning identities per boundary the canonical pass can muffle.
 with_discarded_selections <- function(expr) {
   warnings <- list()
+  restart <- NULL
   withCallingHandlers(expr, warning = function(cnd) {
-    warnings[[length(warnings) + 1L]] <<- selection_warning_key(cnd)
+    key <- selection_warning_key(cnd)
+    # lifecycle signals a warning and then calls warning() under one restart.
+    # The canonical filter muffles that whole boundary, so count it once.
+    if (length(warnings) > 0L &&
+          identical(key, warnings[[length(warnings)]]) &&
+          !is.null(restart) &&
+          any(vapply(computeRestarts(), identical, logical(1), y = restart))) {
+      return(invisible(NULL))
+    }
+    warnings[[length(warnings) + 1L]] <<- key
+    restart <<- findRestart("muffleWarning")
   })
   warnings
 }
