@@ -1,6 +1,6 @@
 # The option transitions are narrower than a backend callback can target.
 # Shadow only the diagnostic renderer's options binding to inject R interrupts
-# at its real stores; preflight's separate lifecycle setting is untouched.
+# at its real stores.
 # The public SQLite Margin call and subsequent warnings are the test seam.
 with_render_option_interrupt <- function(transition, settings, code) {
   skip_if_suggest_absent("RSQLite", "DBI")

@@ -684,20 +684,24 @@ is_data_pronoun <- function(expr) {
   length(parts) == 2L && identical(parts[[1L]], quote(.data))
 }
 
-# Run a discarded pass quietly unless warnings become errors (ADR 0005).
-# Return identities of warnings delivered before a caller muffled them.
+# Let caller warning handlers run before typed metadata acquisition (ADR 0005).
+# Return warning identities per boundary the canonical pass can muffle.
 with_discarded_selections <- function(expr) {
   warnings <- list()
-  rlang::with_options(
-    if (getOption("warn") >= 2L) {
-      withCallingHandlers(expr, warning = function(cnd) {
-        warnings[[length(warnings) + 1L]] <<- selection_warning_key(cnd)
-      })
-    } else {
-      suppressWarnings(expr)
-    },
-    lifecycle_verbosity = discarded_pass_verbosity()
-  )
+  restart <- NULL
+  withCallingHandlers(expr, warning = function(cnd) {
+    key <- selection_warning_key(cnd)
+    # lifecycle signals a warning and then calls warning() under one restart.
+    # The canonical filter muffles that whole boundary, so count it once.
+    if (length(warnings) > 0L &&
+          identical(key, warnings[[length(warnings)]]) &&
+          !is.null(restart) &&
+          any(vapply(computeRestarts(), identical, logical(1), y = restart))) {
+      return(invisible(NULL))
+    }
+    warnings[[length(warnings) + 1L]] <<- key
+    restart <<- findRestart("muffleWarning")
+  })
   warnings
 }
 
@@ -720,16 +724,6 @@ with_preflight_warning_filter <- function(expr, warnings) {
 # cannot consume each other's preflight occurrences.
 selection_warning_key <- function(cnd) {
   list(class(cnd), conditionMessage(cnd), conditionCall(cnd))
-}
-
-# Withhold lifecycle signals so a discarded pass cannot spend a once-per-session
-# warning. Keep the caller's verbosity when it can make a deprecation an error.
-discarded_pass_verbosity <- function() {
-  verbosity <- getOption("lifecycle_verbosity")
-  if (identical(verbosity, "error") || getOption("warn") >= 2L) {
-    return(verbosity)
-  }
-  "quiet"
 }
 
 is_name_only_selection <- function(arg, data_vars, allow_caller_code = TRUE) {

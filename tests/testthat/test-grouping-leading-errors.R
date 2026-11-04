@@ -198,52 +198,125 @@ test_that("warning-promoted selections precede unsafe dtplyr metadata", {
 
 test_that("caller-muffled preflight warnings are reported once", {
   data <- data.frame(x = 1L, value = 2L)
-  rlang::local_options(warn = 2L, lifecycle_verbosity = "warning")
-  for (first in list(quote(one_of(c("x", "absent"))), quote(.data$x))) {
-    for (spec in list(
-      grouping_set(!!first), grouping_set(!!first, where(is.numeric))
-    )) {
-      for (verb in forwarded_verbs) {
-        warnings <- list()
-        withCallingHandlers(
-          verb(data, NULL, spec),
-          warning = function(cnd) {
-            warnings[[length(warnings) + 1L]] <<- cnd
-            invokeRestart("muffleWarning")
-          }
-        )
-        expect_length(warnings, 1L)
+  for (warn in c(-1L, 0L, 1L, 2L)) {
+    rlang::local_options(warn = warn, lifecycle_verbosity = "warning")
+    for (first in list(quote(one_of(c("x", "absent"))), quote(.data$x))) {
+      for (spec in list(
+        grouping_set(!!first), grouping_set(!!first, where(is.numeric))
+      )) {
+        for (verb in forwarded_verbs) {
+          warnings <- list()
+          withCallingHandlers(
+            verb(data, NULL, spec),
+            warning = function(cnd) {
+              warnings[[length(warnings) + 1L]] <<- cnd
+              invokeRestart("muffleWarning")
+            }
+          )
+          expect_length(warnings, 1L)
+        }
       }
     }
   }
 })
 
+test_that("caller-promoted selection warnings precede dtplyr metadata", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.frame(x = 1L, value = 2L)
+  step <- dtplyr::lazy_dt(data) |> dplyr::mutate(x = as.character(x))
+  promoted <- structure(
+    list(message = "caller rejected selection warning", call = quote(select()),
+         token = new.env(parent = emptyenv()), payload = list(value = 42L)),
+    class = c("caller_selection_error", "error", "condition")
+  )
+  capture <- function(expr) {
+    tryCatch(withCallingHandlers(expr, warning = function(cnd) stop(promoted)),
+             error = identity)
+  }
+  predicates <- 0L
+  numeric_column <- function(x) {
+    predicates <<- predicates + 1L
+    is.numeric(x)
+  }
+  for (warn in c(0L, 1L, 2L)) {
+    rlang::local_options(warn = warn, lifecycle_verbosity = "warning")
+    for (first in list(quote(one_of("absent")), quote(.data$x))) {
+      selection <- rlang::new_quosure(first)
+      expect_identical(capture(tidyselect::eval_select(selection, data)),
+                       promoted)
+      specs <- c(list(grouping_set(!!first)), leading_error_specs(
+        first, quote(where(numeric_column))
+      ))
+      for (verb in forwarded_verbs) {
+        for (input in list(data, step)) {
+          expect_identical(capture(verb(input, !!first, grouping_set(value))),
+                           promoted)
+          for (spec in specs) {
+            expect_identical(capture(verb(input, NULL, spec)), promoted)
+          }
+        }
+      }
+    }
+  }
+  expect_identical(predicates, 0L)
+})
+
 test_that("preflight warning filtering retains later typed warnings", {
   data <- data.frame(x = 1L, value = 2L)
-  rlang::local_options(warn = 2L)
-  for (verb in forwarded_verbs) {
-    predicates <- 0L
-    numeric_column <- function(x) {
-      predicates <<- predicates + 1L
-      warning("typed selection warning", call. = FALSE)
-      is.numeric(x)
-    }
-    warnings <- character()
-    withCallingHandlers(
-      verb(data, NULL, grouping_set(
-        one_of(c("x", "absent")), one_of(c("x", "absent")),
-        where(numeric_column)
-      )),
-      warning = function(cnd) {
-        warnings <<- c(warnings, conditionMessage(cnd))
-        invokeRestart("muffleWarning")
+  for (warn in c(-1L, 0L, 1L, 2L)) {
+    rlang::local_options(warn = warn, lifecycle_verbosity = "warning")
+    for (muffle in c(FALSE, TRUE)) {
+      for (verb in forwarded_verbs) {
+        predicates <- 0L
+        numeric_column <- function(x) {
+          predicates <<- predicates + 1L
+          warning("typed selection warning", call. = FALSE)
+          is.numeric(x)
+        }
+        warnings <- character()
+        withCallingHandlers(withCallingHandlers(
+          verb(data, NULL, grouping_set(
+            .data$x,
+            one_of(c("x", "absent")), one_of(c("x", "absent")),
+            where(numeric_column)
+          )),
+          warning = function(cnd) {
+            warnings <<- c(warnings, conditionMessage(cnd))
+            if (muffle) invokeRestart("muffleWarning")
+          }
+        ), warning = function(cnd) invokeRestart("muffleWarning"))
+        expect_length(warnings, 5L)
+        expect_match(warnings[[1L]], ".data")
+        expect_match(warnings[[2L]], "absent")
+        expect_identical(warnings[[3L]], warnings[[2L]])
+        expect_identical(warnings[4:5], rep("typed selection warning", 2L))
+        expect_identical(predicates, 2L)
       }
-    )
-    expect_length(warnings, 4L)
-    expect_match(warnings[[1L]], "absent")
-    expect_identical(warnings[[2L]], warnings[[1L]])
-    expect_identical(warnings[3:4], rep("typed selection warning", 2L))
-    expect_identical(predicates, 2L)
+    }
+  }
+})
+
+test_that("continuing handlers retain later selection warnings", {
+  data <- data.frame(x = 1L, value = 2L)
+  rlang::local_options(warn = -1L, lifecycle_verbosity = "warning")
+  observe <- function(expr) {
+    warnings <- list()
+    withCallingHandlers(expr, warning = function(cnd) {
+      warnings[[length(warnings) + 1L]] <<- list(
+        class(cnd), conditionMessage(cnd), conditionCall(cnd)
+      )
+    })
+    warnings
+  }
+  for (first in list(quote(one_of(c("x", "absent"))), quote(.data$x))) {
+    selection <- rlang::quo(c(!!first, where(is.numeric), !!first))
+    expected <- observe(tidyselect::eval_select(selection, data))
+    for (verb in forwarded_verbs) {
+      actual <- observe(verb(data, NULL, grouping_set(
+        !!first, where(is.numeric), !!first
+      )))
+      expect_identical(actual, expected)
+    }
   }
 })
 
@@ -358,6 +431,37 @@ test_that("DuckDB leading selection failures invoke no metadata query", {
       mixed <- expect_error(verb(remote, x, spec), class = "marginplyr_error")
       expect_identical(conditionMessage(mixed), conditionMessage(original))
       expect_identical(counter$queries, 0L)
+    }
+  }
+  expect_identical(predicates, 0L)
+
+  for (warn in c(0L, 1L)) {
+    rlang::local_options(warn = warn, lifecycle_verbosity = "warning")
+    promoted <- structure(
+      list(message = "caller rejected selection warning",
+           call = quote(select()),
+           token = new.env(parent = emptyenv()), payload = list(value = 42L)),
+      class = c("caller_selection_error", "error", "condition")
+    )
+    capture <- function(expr) {
+      tryCatch(
+        withCallingHandlers(expr, warning = function(cnd) stop(promoted)),
+        error = identity
+      )
+    }
+    for (first in list(quote(one_of("absent")), quote(.data$x))) {
+      specs <- c(list(grouping_set(!!first)), leading_error_specs(
+        first, quote(where(numeric_column))
+      ))
+      for (verb in verbs) {
+        for (spec in specs) {
+          expect_identical(capture(verb(remote, NULL, spec)), promoted)
+          expect_identical(counter$queries, 0L)
+        }
+        expect_identical(capture(verb(remote, !!first, grouping_set(value))),
+                         promoted)
+        expect_identical(counter$queries, 0L)
+      }
     }
   }
   expect_identical(predicates, 0L)
