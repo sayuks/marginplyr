@@ -35,11 +35,13 @@ test_that("DuckDB rollups preserve wide numeric share denominators", {
         .id = "set", .margin_label = NULL
       )
       expect_s3_class(query, "tbl_lazy")
+      # Collected ratios cannot show which rollup path ran.
       expect_match(
         dbplyr::sql_render(query),
         if (duplicates == "keep") "UNION ALL" else "GROUPING SETS",
         fixed = TRUE
       )
+      # The sequence advances only if DuckDB evaluates the input rows.
       expect_error(DBI::dbGetQuery(con, "SELECT currval('wide_share_read')"),
                    "not yet defined")
 
