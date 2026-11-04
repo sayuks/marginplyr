@@ -46,7 +46,8 @@ encode_factor_for_margin <- function(x,
     return(result)
   }
 
-  result[is.na(x)] <- missing_sentinel
+  # A subclass can report an observation on its NA level as missing.
+  result[is.na(unclass(x))] <- missing_sentinel
   result
 }
 

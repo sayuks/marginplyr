@@ -299,3 +299,91 @@ test_that("dtplyr factor display keeps typed-missing and collision controls", {
   skip_if_suggest_absent("dtplyr")
   check_factor_collisions(lazy = TRUE)
 })
+
+registerS3method(
+  "is.na", "na_level_factor",
+  function(x) is.na(as.character.factor(x)),
+  envir = asNamespace("base")
+)
+registerS3method(
+  "vec_ptype2", "na_level_factor.na_level_factor",
+  function(x, y, ...) vctrs::vec_slice(x, integer()),
+  envir = asNamespace("vctrs")
+)
+registerS3method(
+  "vec_cast", "na_level_factor.na_level_factor",
+  function(x, to, ...) x,
+  envir = asNamespace("vctrs")
+)
+
+check_factor_na_level_codes <- function(lazy = FALSE) {
+  codes <- c(1L, 2L, NA_integer_)
+  declared <- c("a", NA_character_)
+  g <- structure(codes, levels = declared,
+                 class = c("na_level_factor", "factor"))
+  input <- tibble::tibble(g = g, row_id = seq_along(g))
+  before <- serialize(input, NULL)
+  source <- if (lazy) dtplyr::lazy_dt(input, immutable = TRUE) else input
+  source_before <- dplyr::collect(source)
+  source_bytes <- serialize(source_before, NULL)
+  expect_identical(is.na(source_before$g), c(FALSE, TRUE, TRUE))
+  expect_identical(as.integer(unclass(source_before$g)), codes)
+  expect_identical(levels(source_before$g), declared)
+
+  native <- dplyr::collect(dplyr::summarise(
+    source, rows = list(.data$row_id), .by = "g"
+  ))
+  native_order <- order(match(native$rows, as.list(input$row_id)))
+  native_members <- native$rows[native_order]
+  expect_identical(native_members, as.list(input$row_id))
+  native_codes <- as.integer(unclass(native$g))[native_order]
+  expect_identical(native_codes, codes)
+  union <- dplyr::union_all(input, input)
+  expect_identical(as.integer(unclass(union$g)), rep(codes, 2L))
+  expect_identical(levels(union$g), declared)
+
+  labels <- if (lazy) list("Total", NULL) else list("Total")
+  for (label in labels) {
+    for (name in names(factor_value_verbs)) {
+      result <- dplyr::collect(factor_value_verbs[[name]](
+        source, .grouping = rollup(g), .id = "set", .margin_label = label,
+        .margin_label_position = "first", .sort = "first"
+      ))
+      detail <- result[result$set == 1L, ]
+      members <- switch(
+        name,
+        nest = lapply(detail$data, function(cell) cell$row_id),
+        nest_by = lapply(detail$data, function(cell) cell$row_id),
+        expand = as.list(detail$row_id),
+        summary = detail$rows
+      )
+      detail_order <- order(match(members, native_members))
+      expect_identical(members[detail_order], native_members, info = name)
+      expect_identical(
+        as.integer(unclass(detail$g))[detail_order],
+        native_codes + as.integer(!is.null(label)),
+        info = name
+      )
+      expect_identical(levels(result$g), c(label, declared), info = name)
+      total <- which(result$set == 2L)
+      expected_total_codes <- if (is.null(label)) NA_integer_ else 1L
+      if (name == "expand") {
+        expected_total_codes <- rep(expected_total_codes, length(input$row_id))
+      }
+      expect_identical(as.integer(unclass(result$g[total])),
+                       expected_total_codes, info = name)
+      expect_identical(total, seq_along(total), info = name)
+    }
+  }
+  expect_identical(serialize(input, NULL), before)
+  expect_identical(serialize(dplyr::collect(source), NULL), source_bytes)
+}
+
+test_that("local Margin verbs keep an NA level under subclass missingness", {
+  check_factor_na_level_codes()
+})
+
+test_that("dtplyr Margin verbs keep an NA level under subclass missingness", {
+  skip_if_suggest_absent("dtplyr")
+  check_factor_na_level_codes(lazy = TRUE)
+})

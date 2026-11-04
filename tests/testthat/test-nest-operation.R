@@ -765,23 +765,81 @@ test_that("zero-column and empty nesting match an independent construction", {
   )
 })
 
-test_that("an empty dtplyr input nests into its backend's cell", {
+test_that("empty keyless row-wise nesting preserves numbered-dot payloads", {
+  empty <- tibble::tibble(`..0` = integer(), `..01` = character(),
+                          .name_repair = "minimal")
+  for (grouping in list(list(), list(.grouping = grouping_set()))) {
+    for (id in list(NULL, "set")) {
+      result <- rlang::exec(
+        nest_by_with_margins, empty, !!!grouping, .id = id
+      )
+      expect_s3_class(result, "rowwise_df")
+      expect_identical(dplyr::group_vars(result), as.character(id))
+      expect_identical(names(result), c(id, "data"))
+      expect_identical(result$data, list(empty))
+      if (!is.null(id)) {
+        expect_identical(result$set, 1L)
+      }
+    }
+  }
+})
+
+test_that("empty keyless dtplyr nesting preserves numbered-dot payloads", {
   skip_if_suggest_absent("dtplyr")
-  # The reconstruction answering an empty ungrouped input runs on a collected
-  # frame, so nothing the expression it builds is evaluated against says which
-  # backend the caller handed in. The cell is that backend's all the same.
-  empty <- data.frame(x = integer(), y = character())
+  empty <- tibble::tibble(`..0` = integer(), `..01` = character(),
+                          .name_repair = "minimal")
+  input <- dtplyr::lazy_dt(empty, immutable = TRUE)
 
-  lazy_by <- nest_by_with_margins(dtplyr::lazy_dt(empty))
-  local_by <- nest_by_with_margins(empty)
+  result <- nest_by_with_margins(input, .grouping = grouping_set(), .id = "set")
+  expect_s3_class(result, "rowwise_df")
+  expect_identical(dplyr::group_vars(result), "set")
+  expect_identical(result$set, 1L)
+  expect_length(result$data, 1L)
+  expect_s3_class(result$data[[1L]], "data.table")
+  expect_identical(tibble::as_tibble(result$data[[1L]]), empty)
+})
 
-  expect_identical(nrow(lazy_by), 1L)
-  expect_s3_class(lazy_by$data[[1L]], "data.table")
-  expect_s3_class(local_by$data[[1L]], "tbl_df")
-  expect_equal(
-    dplyr::as_tibble(lazy_by$data[[1L]]),
-    dplyr::as_tibble(local_by$data[[1L]])
+test_that("empty row-wise nesting evaluates a dtplyr filter once", {
+  skip_if_suggest_absent("dtplyr")
+  input <- tibble::tibble(value = 1:2)
+  expected <- tibble::tibble(value = integer())
+  calls <- list()
+  discard <- function(value) {
+    calls[[length(calls) + 1L]] <<- value
+    if (length(calls) > 1L) stop("upstream filter ran twice")
+    rep(FALSE, length(value))
+  }
+  source <- dplyr::filter(
+    dtplyr::lazy_dt(input, immutable = TRUE), discard(value)
   )
+
+  for (grouping in list(list(), list(.grouping = grouping_set()))) {
+    for (id in list(NULL, "set")) {
+      calls <- list()
+      nested <- rlang::exec(
+        nest_with_margins, source, !!!grouping, .id = id
+      )
+      expect_s3_class(nested, "dtplyr_step")
+      expect_identical(calls, list())
+      expect_identical(nrow(dplyr::collect(nested)), 0L)
+      expect_identical(calls, list(1:2))
+
+      calls <- list()
+      result <- rlang::exec(
+        nest_by_with_margins, source, !!!grouping, .id = id
+      )
+      expect_identical(calls, list(1:2))
+      expect_s3_class(result, "rowwise_df")
+      expect_identical(dplyr::group_vars(result), as.character(id))
+      expect_identical(names(result), c(id, "data"))
+      expect_length(result$data, 1L)
+      expect_s3_class(result$data[[1L]], "data.table")
+      expect_identical(tibble::as_tibble(result$data[[1L]]), expected)
+      if (!is.null(id)) {
+        expect_identical(result$set, 1L)
+      }
+    }
+  }
 })
 
 test_that("nesting rejects unsupported sources with a Package condition", {

@@ -989,6 +989,38 @@ isolate_arrow_partitions <- function(.data) {
   dplyr::collapse(dplyr::select(source, dplyr::all_of(columns)))
 }
 
+# Return the operation's input with local dimensions packed where an omitted
+# branch uses a packed typed-missing row. The operation already holds the plan
+# and column metadata.
+prepare_packed_union_input <- function(operation) {
+  data <- operation$data
+  packed <- operation$column_info$packed
+  if (!identical(operation$backend$kind, "local") || length(packed) == 0L) {
+    return(data)
+  }
+  masks <- operation$plan$grouping_masks[, packed, drop = FALSE]
+  columns <- Filter(function(col) {
+    !is.data.frame(data[[col]]) &&
+      is_missing_margin_label(operation$margin_labels[[col]])
+  }, packed[colSums(masks) > 0L])
+  if (length(columns) == 0L) {
+    return(data)
+  }
+
+  # A row slice of an AsIs POSIXlt is packed, as is its typed-missing
+  # prototype. Slice before nesting copies the key for grouping and .keep
+  # so all three columns can cross the branch union (ADR 0016).
+  margin_safe_column_reads(data, columns, function(source, safe_name) {
+    aliases <- vapply(columns, safe_name, character(1), USE.NAMES = FALSE)
+    rows <- seq_len(nrow(source))
+    values <- lapply(aliases, function(col) {
+      vctrs::vec_slice(source[[col]], rows)
+    })
+    names(values) <- aliases
+    dplyr::mutate(source, !!!values)
+  })
+}
+
 # `backend` is the operation's own, and it sits among the required arguments
 # rather than after the optional one so that no positional call can reach a
 # different arrangement than the two callers write.
