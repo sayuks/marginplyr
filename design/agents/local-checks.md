@@ -107,7 +107,7 @@ automatically. The [runner guide](../../tools/review-ready-runner.md) owns
 sequencing, ownership checks and state failures. Under that slot it
 builds a tarball and runs `R CMD check --as-cran`, including examples, vignette
 rebuilding, the complete test suite and snapshots once. It sets
-`TESTTHAT_PARALLEL=true`, `TESTTHAT_CPUS=4`, `NOT_CRAN=true` and required-Suggests
+`TESTTHAT_PARALLEL=true`, `TESTTHAT_CPUS=8`, `NOT_CRAN=true` and required-Suggests
 enforcement without coverage measurement. The existing local/offline check
 environment uses empty local CRAN/Bioconductor indexes, disables remote incoming
 and external-clock checks, and retains local future-file-timestamp checking.

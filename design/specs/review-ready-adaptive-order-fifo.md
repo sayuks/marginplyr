@@ -22,7 +22,7 @@ The task has two independent goals:
 
 The existing tracked `Config/testthat/start-first` setting remains the priority
 source. Preserve the repository command, source/full judgment, five baseline
-checks, pinned committed source, one shared heavy slot, four workers, complete
+checks, pinned committed source, one shared heavy slot, eight workers, complete
 suite/snapshots, terminal-result authority and retained execution ownership.
 
 A shared local timing database, per-worktree rolling history and mandatory
@@ -152,7 +152,7 @@ a file left past its predecessor only when both observations are eligible and
 it is both more than 50% and more than 10 seconds slower. Comparisons within
 those margins preserve order.
 
-Adopt that optional reordering only when a greedy four-worker replay estimates
+Adopt that optional reordering only when a greedy eight-worker replay estimates
 at least ten seconds of whole-suite improvement over the registration-only
 baseline. Both schedules use the same invocation's measured file durations;
 this calculation requires no additional test execution. If the estimate is

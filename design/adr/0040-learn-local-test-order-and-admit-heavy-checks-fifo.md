@@ -9,6 +9,8 @@ heavy admission. Keep the tracked start-first setting as the persistent order
 source and retain the existing heavy lock, pinned source and terminal-result
 authority. The [specification](../specs/review-ready-adaptive-order-fifo.md)
 records the agreed ordinary-dispatch workflow and independent FIFO requirements.
+Local worker counts and matching proposal models follow
+[ADR 0039](0039-run-review-ready-from-the-target-worktree.md).
 The maintainer accepted the replacement specification on 2026-11-03, including
 the private timing hook after comparing public-only alternatives, and confirmed
 the R CMD check verification obligation.

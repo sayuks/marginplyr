@@ -22,6 +22,8 @@ local({
     file.path(package, "tests", "testthat.R"))
   writeLines('test_that("first", expect_true(TRUE))',
     file.path(package, "tests", "testthat", "test-first.R"))
+  for (i in 1:4) writeLines(paste0('test_that("additional ', i, '", expect_true(TRUE))'),
+    file.path(package, "tests", "testthat", paste0("test-additional-", i, ".R")))
   stopifnot(file.copy("tests/testthat/helper-review-timing.R",
     file.path(package, "tests", "testthat", "helper-review-timing.R")))
   repos <- review_ready_offline_repositories(workspace)
@@ -100,7 +102,7 @@ local({
         package, args = c("--no-manual", "--no-vignettes"), build_args = character(),
         check_dir = check_dir, error_on = "never", repos = repos,
         env = c(
-          TESTTHAT_PARALLEL = "true", TESTTHAT_CPUS = "4", NOT_CRAN = "true",
+          TESTTHAT_PARALLEL = "true", TESTTHAT_CPUS = "8", NOT_CRAN = "true",
           MARGINPLYR_REVIEW_TIMING = timing,
           MARGINPLYR_REVIEW_TIMING_HELPER = recorder,
           FIXTURE_CLEANUP = file.path(check_dir, "cleanup.txt"),
@@ -110,9 +112,9 @@ local({
         )
       )
     })
-    # This registered fixture uses four real workers in a tiny disposable package.
+    # Eight files let native testthat start all eight configured workers.
     stopifnot(
-      "Starting 4 test processes." %in% trimws(output),
+      "Starting 8 test processes." %in% trimws(output),
       identical(result$status == 0L, !fail),
       identical(length(result$errors) == 0L, !fail)
     )
@@ -133,8 +135,8 @@ local({
       stopifnot(identical(evidence$eligible, mode %in% c("pass", "delayed")))
     }
     if (mode %in% c("pass", "delayed")) {
-      stopifnot(evidence$actual_workers == 4L, nrow(evidence$files) == 4L,
-        all(evidence$files$valid_pair), sum(evidence$files$eligible) == 3L,
+      stopifnot(evidence$actual_workers == 8L, nrow(evidence$files) == 8L,
+        all(evidence$files$valid_pair), sum(evidence$files$eligible) == 7L,
         evidence$files$all_skipped[evidence$files$file == "test-skipped.R"],
         evidence$files$duration[evidence$files$file == "test-cleanup.R"] >= 0.15)
       cleanup <- as.numeric(readLines(file.path(check_dir, "cleanup.txt")))
@@ -143,7 +145,7 @@ local({
     }
     if (mode == "pass") {
       proposal <- review_ready_priority_propose(package, check_dir)
-      stopifnot(proposal$eligible, length(proposal$registered) == 3L,
+      stopifnot(proposal$eligible, length(proposal$registered) == 7L,
         !"skipped" %in% proposal$registered,
         file.exists(file.path(proposal$directory, "priority.patch")))
       reject <- function(name, edit = function(path) NULL, verdict = terminal,
@@ -174,7 +176,7 @@ local({
         log <- list.files(path, "^[0-9]+[.]tsv$", full.names = TRUE)[[1L]]
         cat("end\tunknown.R\t1\tNaN\t-1\n", file = log, append = TRUE)
       })
-      reject("count", transcript = "Starting 2 test processes.")
+      reject("count", transcript = "Starting 4 test processes.")
       reject("cancelled", verdict = modifyList(terminal, list(status = "cancelled")))
       reject("stale-sha", verdict = modifyList(terminal, list(sha = strrep("b", 40L))))
       blocked <- file.path(timing, "evidence.rds")
@@ -187,7 +189,7 @@ local({
     }
     if (mode == "delayed") {
       replay <- as.numeric(readLines(file.path(check_dir, "replay.txt")))
-      stopifnot(length(replay) == 4L,
+      stopifnot(length(replay) == 8L,
         any(subset(evidence$observations, event == "end")$wall < min(replay)))
     }
     if (mode %in% c("pass", "delayed")) {
@@ -231,17 +233,24 @@ local({
     }
     events <- readLines(file.path(check_dir, "test-progress.tsv"))
     stopifnot(
-      identical(events[[1L]], "total\t4"),
+      identical(events[[1L]], "total\t8"),
       setequal(events[startsWith(events, "done\t")],
-        paste0("done\t", c("test-first.R", "test-second.R", "test-skipped.R", "test-cleanup.R"))),
+        paste0("done\t", c(paste0("test-additional-", 1:4, ".R"),
+          "test-first.R", "test-second.R", "test-skipped.R", "test-cleanup.R"))),
       identical(tail(events, 1L), "finished")
     )
-    logs <- list.files(result$checkdir, "testthat[.]Rout", recursive = TRUE,
-      full.names = TRUE)
-    tally <- if (fail) "[ FAIL 1 | WARN 0 | SKIP 1 | PASS 2 ]" else {
-      "[ FAIL 0 | WARN 0 | SKIP 1 | PASS 3 ]"
+    if (mode == "unsupported") {
+      # Saved output must not change the native transcript's test verdict.
+      native <- list.files(check_dir, "^testthat[.]Rout$", recursive = TRUE,
+        full.names = TRUE)
+      stopifnot(length(native) == 1L,
+        file.copy(native, paste0(native, ".save")))
     }
-    stopifnot(length(logs) == 1L, tally %in% trimws(readLines(logs)))
+    transcript <- review_ready_test_transcript(check_dir)
+    tally <- if (fail) "[ FAIL 1 | WARN 0 | SKIP 1 | PASS 6 ]" else {
+      "[ FAIL 0 | WARN 0 | SKIP 1 | PASS 7 ]"
+    }
+    stopifnot(tally %in% trimws(transcript))
   }
   cat("Real progress reporter and process checks passed.\n")
 })

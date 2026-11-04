@@ -103,7 +103,7 @@ local({
       file.path(repo, "tests", "testthat.R"))
     writeLines('test_that("committed revision", expect_identical(readLines(system.file("revision.txt", package="fixture")), "submitted"))',
       file.path(repo, "tests", "testthat", "test-revision.R"))
-    for (i in 1:3) writeLines(paste0('test_that("additional ', i, '", expect_true(TRUE))'),
+    for (i in 1:6) writeLines(paste0('test_that("additional ', i, '", expect_true(TRUE))'),
       file.path(repo, "tests", "testthat", paste0("test-additional-", i, ".R")))
     writeLines(c(
       'test_that("owned child", {',
@@ -304,16 +304,16 @@ local({
   lock <- NULL
   checked <- finish(waiter)
   expect(grepl(submitted, checked, fixed=TRUE) &&
-    grepl("Starting 4 test processes.", checked, fixed=TRUE) &&
+    grepl("Starting 8 test processes.", checked, fixed=TRUE) &&
     length(gregexpr("Source-tarball R CMD check --as-cran", checked, fixed = TRUE)[[1L]]) == 1L &&
     grepl("Full package check passed", checked, fixed=TRUE),
-    "automatic admission checks submitted source once with four workers")
+    "automatic admission checks submitted source once with eight workers")
   timing_files <- list.files(file.path(repo, ".review-ready", "runs"),
     "^evidence[.]rds$", recursive = TRUE, full.names = TRUE)
   expect(length(timing_files) == 1L, "only full scope produces timing evidence")
   timing <- readRDS(timing_files[[1L]])
   expect(isTRUE(timing$eligible) && identical(timing$sha, submitted) &&
-    timing$actual_workers == 4L && nrow(timing$files) == 5L && all(timing$files$eligible),
+    timing$actual_workers == 8L && nrow(timing$files) == 8L && all(timing$files$eligible),
     "terminal full evidence identifies the pinned source and every worker file")
   wait_for <- function(run, predicate, label, timeout = 45) {
     deadline <- Sys.time() + timeout

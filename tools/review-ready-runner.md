@@ -63,7 +63,7 @@ Keep it in place while owners or waiters may exist. Its sibling
 `review-ready-fifo/` holds a stable metadata lock, the acceptance counter and
 live invocation guards/records. Neither lock targets nor sequencing expire with
 run retention. No timing history or completed-result ledger is stored there.
-Focused tests have the separate per-worktree allowance in local checks; four
+Focused tests have the separate per-worktree allowance in local checks; eight
 package workers are not a user-wide process cap.
 
 ## Cancellation
@@ -119,7 +119,7 @@ is not a duration clock.
 
 `evidence.rds` validates those observations after the invocation's terminal
 result. Eligibility requires the same successful full SHA in `result.rds`,
-exactly one valid pair for every discovered file, and the native four-worker
+exactly one valid pair for every discovered file, and the native eight-worker
 announcement. Each file explicitly marks all-skipped and empty results; neither
 supplies promotion evidence. Failed, cancelled, incomplete or malformed data
 cannot authorize a priority update. Source scope creates no timing evidence.
@@ -142,9 +142,10 @@ After timing finalization, a successful eligible full invocation writes one
 `proposal.rds` and, only when membership/order changes, `priority.patch` for
 `DESCRIPTION`. Generation never edits the pinned source, tarball or installed
 metadata. The explanation identifies the measured SHA, archived input hashes,
-file eligibility, registrations/removals, positions and four-worker greedy
+file eligibility, registrations/removals, positions and eight-worker greedy
 schedule estimates. These models are not observed speedups or guarantees.
 Source scope and failed/incomplete/unsupported timing supply no proposal.
+Earlier four-worker evidence is ineligible for the eight-worker model.
 Proposal errors report the reason and preserve the actual check result and
 ordinary NOTE handling.
 
