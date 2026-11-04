@@ -553,6 +553,16 @@ is_name_only_helper_arg <- function(expr,
         is_name_only_helper_value(expr, allow_stringr_pattern)
     )
   }
+  if (allow_stringr_pattern && is_redundant_parens(expr)) {
+    # Read the operator before static call lookup unwraps a call inside it.
+    parens <- selection_argument_function(quote((NULL)), env, bound)
+    return(
+      identical(parens, base::`(`) &&
+        is_name_only_helper_arg(
+          expr[[2L]], env, bound, seen, allow_caller_code, allow_stringr_pattern
+        )
+    )
+  }
   fn <- selection_argument_function(expr, env, bound)
   pattern_call <-
     allow_stringr_pattern && is_stringr_pattern_call(expr, env, bound, fn)
@@ -560,6 +570,28 @@ is_name_only_helper_arg <- function(expr,
     return(FALSE)
   }
   args <- static_call_args(expr)
+  if (allow_stringr_pattern && length(args) == 2L &&
+        identical(args[[1L]], quote(.env)) &&
+        (identical(fn, base::`$`) || identical(fn, base::`[[`))) {
+    # Tidyselect's context mask supplies .env from the caller's quosure.
+    # Only a literal subscript identifies a binding without evaluation.
+    name <- NULL
+    if (identical(fn, base::`$`) && is_name_part(args[[2L]])) {
+      name <- as.character(args[[2L]])
+    } else if (rlang::is_string(args[[2L]])) {
+      name <- args[[2L]]
+    }
+    if (
+      is.null(name) || !nzchar(name) || name == "..." ||
+        selection_binding_deferred(
+          env, name, allow_namespace_promises = FALSE
+        )
+    ) {
+      return(FALSE)
+    }
+    value <- rlang::env_get(env, name, default = NULL, inherit = TRUE)
+    return(is_name_only_helper_value(value, allow_stringr_pattern))
+  }
   if (
     identical(fn, base::names) && length(args) == 1L &&
       rlang::is_call(args[[1L]]) &&

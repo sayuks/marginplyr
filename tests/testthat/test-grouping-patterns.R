@@ -11,6 +11,10 @@ test_that("derived dtplyr inspection matches stringr patterns from names", {
   selections <- rlang::quos(
     matches(stringr::regex("^A", ignore_case = TRUE)),
     matches(pattern),
+    matches(.env$pattern),
+    matches(.env[["pattern"]]),
+    matches((pattern)),
+    matches((stringr::regex("^a"))),
     matches(make_pattern("^A", ignore_case = TRUE)),
     !matches(stringr::regex("^a")),
     -matches(pattern),
@@ -57,6 +61,36 @@ test_that("stringr patterns that read types still require typed metadata", {
   }
 })
 
+test_that("pattern pronouns preserve deferred bindings and caller operators", {
+  skip_if_suggest_absent("dtplyr", "stringr")
+
+  data <- data.frame(a = "x", b = 1L)
+  step <- dplyr::mutate(dtplyr::lazy_dt(data), added = paste0(a, "x"))
+  calls <- 0L
+  deferred <- function() {
+    calls <<- calls + 1L
+    stringr::regex("^a")
+  }
+  bindings <- rlang::env()
+  makeActiveBinding("active", deferred, bindings)
+  delayedAssign("delayed", deferred(), assign.env = bindings)
+  rebound <- rlang::env(pattern = stringr::regex("^a"))
+  rebound[["$"]] <- function(...) stop("caller operator ran")
+  selections <- list(
+    rlang::new_quosure(quote(matches(.env$active)), bindings),
+    rlang::new_quosure(quote(matches(.env[["delayed"]])), bindings),
+    rlang::new_quosure(quote(matches(.env$pattern)), rebound)
+  )
+
+  for (selection in selections) {
+    expect_error(
+      inspect_grouping(step, .by = !!selection),
+      "Can't safely determine column metadata", class = "marginplyr_error"
+    )
+  }
+  expect_identical(calls, 0L)
+})
+
 test_that("malformed stringr regex fails before DuckDB reads metadata", {
   skip_if_suggest_absent("duckdb", "DBI", "stringr")
 
@@ -87,7 +121,7 @@ test_that("malformed stringr regex fails before DuckDB reads metadata", {
 
   pattern <- stringr::regex("[")
   expect_error(
-    inspect_grouping(step, .grouping = grouping_set(matches(pattern))),
+    inspect_grouping(step, .grouping = grouping_set(matches(.env$pattern))),
     "U_REGEX_MISSING_CLOSE_BRACKET"
   )
   expect_identical(nrow(last_sent_queries(include_result = FALSE)), 0L)
