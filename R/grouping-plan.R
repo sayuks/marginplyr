@@ -772,7 +772,10 @@ validate_leading_selections <- function(preflight, data_vars, .by,
     identity
   }
   withRestarts(
-    expand_grouping_family(preflight, resolve_selection, emit),
+    expand_grouping_family(
+      preflight, resolve_selection, emit,
+      drop_duplicates = identical(.duplicates, "drop")
+    ),
     needs_typed_selection = function() NULL
   )
   validate_grouping_overlap(.by, resolved$dimensions)
@@ -1137,7 +1140,8 @@ compile_grouping_spec_impl <- function(preflight,
   }
 
   expanded <- unname(expand_grouping_family(
-    preflight, function(arg) resolve_grouping_selection(arg, data_proxy)
+    preflight, function(arg) resolve_grouping_selection(arg, data_proxy),
+    drop_duplicates = identical(.duplicates, "drop")
   ))
   dimensions <- unique(unlist(expanded, use.names = FALSE))
 
@@ -1188,11 +1192,12 @@ compile_grouping_spec_impl <- function(preflight,
 
 # One membership key per occurrence in the caller's ordered dimensions.
 grouping_set_keys <- function(sets, dimensions) {
-  vapply(
-    sets,
-    function(set) paste(as.integer(dimensions %in% set), collapse = ""),
-    character(1)
-  )
+  vapply(sets, grouping_set_key, character(1), dimensions = dimensions)
+}
+
+# Encode membership independently of the order and spelling of set members.
+grouping_set_key <- function(set, dimensions) {
+  paste(as.integer(dimensions %in% set), collapse = "")
 }
 
 # Reject repeated membership keys under the caller's duplicate-error policy.
@@ -1232,16 +1237,17 @@ validate_unique_grouping_sets <- function(keys, duplicates_choices) {
 # in plan order, including each completed branch of a union. Its default
 # returns the occurrences for assembly into the Grouping plan.
 expand_grouping_family <- function(preflight, resolve_selection,
-                                   emit = identity) {
+                                   emit = identity, drop_duplicates = FALSE) {
   rule <- find_grouping_kind_rule(preflight$spec$type)
   if (is.null(rule)) {
     stop("Unknown Grouping specification kind.", call. = FALSE)
   }
-  rule$expand(preflight, resolve_selection, emit)
+  rule$expand(preflight, resolve_selection, emit, drop_duplicates)
 }
 
 # Emit one occurrence after resolving the entire set.
-expand_single_grouping_set <- function(preflight, resolve_selection, emit) {
+expand_single_grouping_set <- function(preflight, resolve_selection, emit,
+                                       drop_duplicates) {
   emit(list(resolve_grouping_set(preflight, resolve_selection)))
 }
 
@@ -1266,7 +1272,8 @@ resolve_grouping_set <- function(preflight, resolve_selection) {
 }
 
 # Each branch of a union contributes its occurrences directly to the plan.
-expand_grouping_sets <- function(preflight, resolve_selection, emit) {
+expand_grouping_sets <- function(preflight, resolve_selection, emit,
+                                 drop_duplicates) {
   unlist(
     lapply(
       preflight$args,
@@ -1274,7 +1281,9 @@ expand_grouping_sets <- function(preflight, resolve_selection, emit) {
         if (is.null(arg$nested)) {
           return(emit(list(resolve_selection(arg$quo))))
         }
-        expand_grouping_family(arg$nested, resolve_selection, emit)
+        expand_grouping_family(
+          arg$nested, resolve_selection, emit, drop_duplicates
+        )
       }
     ),
     recursive = FALSE
@@ -1311,7 +1320,7 @@ resolve_grouping_units <- function(preflight, resolve_selection) {
 }
 
 # Emit the rollup after resolving every unit.
-expand_rollup <- function(preflight, resolve_selection, emit) {
+expand_rollup <- function(preflight, resolve_selection, emit, drop_duplicates) {
   units <- resolve_grouping_units(preflight, resolve_selection)
   family <- lapply(
     rev(seq.int(0L, length(units))),
@@ -1323,8 +1332,11 @@ expand_rollup <- function(preflight, resolve_selection, emit) {
 }
 
 # Emit the cube after resolving every unit.
-expand_cube <- function(preflight, resolve_selection, emit) {
+expand_cube <- function(preflight, resolve_selection, emit, drop_duplicates) {
   units <- resolve_grouping_units(preflight, resolve_selection)
+  if (drop_duplicates) {
+    return(emit(distinct_cube_sets(units)))
+  }
   n <- length(units)
   indices <- unlist(
     lapply(
@@ -1343,27 +1355,78 @@ expand_cube <- function(preflight, resolve_selection, emit) {
   emit(family)
 }
 
+# Retain the earliest occurrence of each cube set in descending subset size
+# and then combination order. Prepending the same choices preserves that rank.
+distinct_cube_sets <- function(units) {
+  dimensions <- unique(unlist(units, use.names = FALSE))
+  sets <- list(character())
+  sizes <- 0L
+  for (unit in rev(units)) {
+    included <- lapply(sets, function(set) union(unit, set))
+    candidates <- c(included, sets)
+    candidate_sizes <- c(sizes + 1L, sizes)
+    # At equal sizes, including this earlier unit precedes skipping it. Stable
+    # ordering keeps the inherited combination order within each branch.
+    ordered <- order(candidate_sizes, decreasing = TRUE, method = "radix")
+    keys <- grouping_set_keys(candidates[ordered], dimensions)
+    retained <- ordered[!duplicated(keys)]
+    sets <- candidates[retained]
+    sizes <- candidate_sizes[retained]
+  }
+  sets
+}
+
 # Emit only the finished Cartesian product. Factor occurrences are local to
 # the product until every factor has been resolved.
-expand_grouping_product <- function(preflight, resolve_selection, emit) {
+expand_grouping_product <- function(preflight, resolve_selection, emit,
+                                    drop_duplicates) {
   product <- list(character())
 
   for (arg in preflight$args) {
     family <- if (is.null(arg$nested)) {
       list(resolve_selection(arg$quo))
     } else {
-      expand_grouping_family(arg$nested, resolve_selection)
+      expand_grouping_family(
+        arg$nested, resolve_selection, drop_duplicates = drop_duplicates
+      )
     }
 
-    product <- unlist(
-      lapply(
-        product,
-        function(left) lapply(family, function(right) unique(c(left, right)))
-      ),
-      recursive = FALSE
-    )
+    product <- if (drop_duplicates) {
+      distinct_grouping_product(product, family)
+    } else {
+      unlist(
+        lapply(
+          product,
+          function(left) lapply(family, function(right) unique(c(left, right)))
+        ),
+        recursive = FALSE
+      )
+    }
   }
   emit(product)
+}
+
+# Keep first unions in Cartesian order. Equal prefixes give equal membership
+# for every later factor, so a discarded occurrence cannot win later.
+distinct_grouping_product <- function(product, family) {
+  dimensions <- unique(unlist(c(product, family), use.names = FALSE))
+  seen <- new.env(parent = emptyenv())
+  sets <- list()
+  for (left in product) {
+    for (right in family) {
+      set <- union(left, right)
+      key <- grouping_set_key(set, dimensions)
+      # Environment names have a byte limit. Compare exact keys within each
+      # short bucket so a hash collision cannot discard a distinct set.
+      bucket <- rlang::hash(key)
+      previous <- seen[[bucket]]
+      if (!key %in% previous) {
+        seen[[bucket]] <- c(previous, key)
+        sets[[length(sets) + 1L]] <- set
+      }
+    }
+  }
+  sets
 }
 
 grouping_kind_rules <- local({
