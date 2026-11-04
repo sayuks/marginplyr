@@ -54,3 +54,27 @@ refusing_arrow_inputs <- function(data) {
     query = dplyr::select(dataset, dplyr::all_of(names(data)))
   )
 }
+
+# Observe both entry and completion: an error after collection must not hide
+# the rows Arrow already read. Tracing the generic also sees automatic collect.
+observe_arrow_collection <- function(expr) {
+  counter <- new.env(parent = emptyenv())
+  counter$entries <- 0L
+  counter$rows <- integer()
+  on.exit(suppressMessages(untrace(
+    "collect", where = asNamespace("dplyr")
+  )), add = TRUE)
+  suppressMessages(trace(
+    "collect", where = asNamespace("dplyr"),
+    tracer = function() {
+      counter$entries <- counter$entries + 1L
+    },
+    exit = function() {
+      frame <- parent.frame()
+      counter$rows <- c(counter$rows, nrow(evalq(returnValue(), frame)))
+    },
+    print = FALSE
+  ))
+  result <- tryCatch(suppressWarnings(force(expr)), error = identity)
+  list(result = result, entries = counter$entries, rows = counter$rows)
+}

@@ -244,3 +244,155 @@ test_that("nested dplyr selections use their own data mask", {
     "no applicable method"
   )
 })
+
+# The direct dplyr calls establish the reference value at each grain.
+expect_nested_input_evaluation <- function(input, expr, total, detail) {
+  ordinary <- dplyr::summarize(input, answer = !!expr)
+  grouped <- dplyr::summarize(input, answer = !!expr, .by = dplyr::all_of("g"))
+  expect_identical(ordinary$answer, total)
+  expect_identical(grouped$answer, detail)
+  expect_identical(
+    summarize_with_margins(input, answer = !!expr)$answer,
+    ordinary$answer
+  )
+  expect_identical(
+    summarize_with_margins(input, answer = !!expr, .by = dplyr::all_of("g"),
+                           .sort = "last")$answer,
+    grouped$answer
+  )
+  expect_identical(
+    summarize_with_margins(
+      input, answer = !!expr, .grouping = rollup(dplyr::all_of("g")),
+      .sort = "last"
+    )$answer,
+    c(grouped$answer, ordinary$answer)
+  )
+}
+
+# The local input classes exercise the same expressions at all three grains.
+nested_scope_inputs <- function() {
+  data <- data.frame(g = c("a", "b"), x = c(1L, 2L))
+  inputs <- list(data, tibble::as_tibble(data))
+  if (suggest_available("data.table")) {
+    inputs <- c(inputs, list(data.table::as.data.table(data)))
+  }
+  inputs
+}
+
+test_that("return from a nested verb input exits the caller function", {
+  expr <- rlang::expr((function() {
+    dplyr::mutate(return(sum(x)), z = 1L)
+    99L
+  })())
+  for (input in nested_scope_inputs()) {
+    expect_nested_input_evaluation(input, expr, 3L, 1:2)
+  }
+})
+
+test_that("assignment in a nested verb input updates the caller variable", {
+  expr <- rlang::expr((function() {
+    value <- 99L
+    dplyr::mutate(
+      {
+        value <- sum(x)
+        data.frame(z = value)
+      },
+      z = z + 1L
+    )
+    value
+  })())
+  for (input in nested_scope_inputs()) {
+    expect_nested_input_evaluation(input, expr, 3L, 1:2)
+  }
+})
+
+test_that("nested pick uses the inner mask after a caller input assignment", {
+  expr <- rlang::expr((function() {
+    value <- 99L
+    nested <- dplyr::mutate(
+      {
+        value <- sum(x)
+        data.frame(z = value)
+      },
+      extra = rowSums(dplyr::pick(z))
+    )
+    value + nested$extra
+  })())
+  for (input in nested_scope_inputs()) {
+    expect_nested_input_evaluation(input, expr, 6, c(2, 4))
+  }
+})
+
+test_that("explicit input evaluation retains ordinary scope and control flow", {
+  direct_return <- rlang::expr((function() {
+    return(sum(x))
+    99L
+  })())
+  explicit_input <- rlang::expr((function() {
+    value <- 99L
+    input <- {
+      value <- sum(x)
+      data.frame(z = value)
+    }
+    nested <- dplyr::mutate(input, extra = rowSums(dplyr::pick(z)))
+    value + nested$extra
+  })())
+  for (input in nested_scope_inputs()) {
+    expect_nested_input_evaluation(input, direct_return, 3L, 1:2)
+    expect_nested_input_evaluation(input, explicit_input, 6, c(2, 4))
+  }
+})
+
+test_that("Arrow Table refuses an unsupported nested summary before reading", {
+  skip_if_suggest_absent("arrow")
+  input <- arrow::Table$create(data.frame(x = c(1L, 2L)))
+  expr <- rlang::expr(dplyr::group_by(tibble::tibble(z = sum(x)), z))
+
+  ordinary <- observe_arrow_collection({
+    expect_warning(
+      result <- dplyr::summarize(input, !!expr),
+      "Pulling data into R"
+    )
+    result
+  })
+  expect_true(ordinary$entries > 0L)
+  expect_identical(ordinary$result$z, 3L)
+
+  actual <- observe_arrow_collection(summarize_with_margins(input, !!expr))
+  expect_identical(actual$entries, 0L)
+  expect_s3_class(actual$result, "marginplyr_error")
+  message <- conditionMessage(actual$result)
+  expect_match(message, rlang::expr_text(expr), fixed = TRUE)
+  expect_match(message, "Collect the Arrow input first", fixed = TRUE)
+  expect_match(message, "Select the columns you need before collecting",
+               fixed = TRUE)
+})
+
+test_that("Arrow Dataset keeps its refusal of an unsupported nested summary", {
+  skip_if_suggest_absent("arrow")
+  input <- arrow::InMemoryDataset$create(arrow::Table$create(x = c(1L, 2L)))
+  expr <- rlang::expr(dplyr::group_by(tibble::tibble(z = sum(x)), z))
+
+  ordinary <- observe_arrow_collection(dplyr::summarize(input, !!expr))
+  expect_identical(ordinary$entries, 0L)
+  expect_s3_class(ordinary$result, "arrow_not_supported")
+
+  actual <- observe_arrow_collection(summarize_with_margins(input, !!expr))
+  expect_identical(actual$entries, 0L)
+  expect_identical(class(actual$result), class(ordinary$result))
+  expect_identical(conditionMessage(actual$result),
+                   conditionMessage(ordinary$result))
+})
+
+test_that("supported Arrow summaries stay lazy until collection", {
+  skip_if_suggest_absent("arrow")
+  table <- arrow::Table$create(x = c(1L, 2L))
+  for (input in list(table, arrow::InMemoryDataset$create(table))) {
+    actual <- observe_arrow_collection(
+      summarize_with_margins(input, answer = sum(x))
+    )
+    expect_identical(actual$entries, 0L)
+    expect_s3_class(actual$result, "arrow_dplyr_query")
+    expect_identical(dplyr::collect(actual$result)$answer, 3L)
+  }
+})
