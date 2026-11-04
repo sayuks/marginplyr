@@ -3225,7 +3225,7 @@ apply_windowed_shares <- function(result, requests, plan, set_id_name, kind,
   result <- apply_share_ratios(
     result, share_pairs(requests), sources, denominator_names,
     plan$set_ids[is.na(target_ids)], joined_ids, set_id_name,
-    membership = membership
+    qualify = !sql_window
   )
   result <- drop_margin_columns(result, intersect(
     unname(denominator_names), margin_col_names(result)
@@ -3247,7 +3247,7 @@ dtplyr_share_denominator <- function(value, identifier, target) {
 # Apply the shared value rules after denominator columns have been attached.
 apply_share_ratios <- function(result, pairs, sources, denominator_names,
                                own_denominator_ids, joined_ids, set_id_name,
-                               membership = rlang::sym("%in%")) {
+                               qualify = FALSE) {
   outputs <- vapply(pairs, `[[`, character(1), "output")
   margin_safe_column_reads(
     result, c(sources, outputs),
@@ -3272,7 +3272,7 @@ apply_share_ratios <- function(result, pairs, sources, denominator_names,
         }
         rlang::expr(
           dplyr::if_else(
-            !!rlang::call2(membership, margin_column_pronoun(set_id_name),
+            !!rlang::call2("%in%", margin_column_pronoun(set_id_name),
                            own_denominator_ids),
             1.0,
             dplyr::if_else(
@@ -3297,12 +3297,30 @@ apply_share_ratios <- function(result, pairs, sources, denominator_names,
           )
         )
       })
+      if (qualify) {
+        share_exprs <- lapply(share_exprs, qualify_dtplyr_share_ratio)
+      }
       names(share_exprs) <- vapply(
         outputs, safe_name, character(1), USE.NAMES = FALSE
       )
       dplyr::mutate(share_result, !!!share_exprs)
     }
   )
+}
+
+# Qualify base calls in a package-generated ratio expression for dtplyr's
+# root-environment evaluation. The expression contains no caller summaries.
+qualify_dtplyr_share_ratio <- function(expr) {
+  if (!is.call(expr)) {
+    return(expr)
+  }
+  parts <- lapply(as.list(expr), qualify_dtplyr_share_ratio)
+  name <- expr[[1L]]
+  if (is.symbol(name) && as.character(name) %in%
+        c("is.na", "as.double", "*", "/", "==", "|", "%in%")) {
+    parts[[1L]] <- rlang::call2("::", rlang::sym("base"), expr[[1L]])
+  }
+  as.call(parts)
 }
 
 # What a kind contributes to the join above is two entries of
