@@ -24,7 +24,115 @@ test_that("visible inline scope changes expose both forbidden dependencies", {
   original <- serialize(data, NULL)
   counters <- new.env(parent = emptyenv())
   counters$default <- counters$body <- counters$summary <- 0L
+  counters$target <- 0L
+  make_target <- function() {
+    counters$target <- counters$target + 1L
+    parent.frame()
+  }
   expressions <- alist(
+    (function(prior, f = {
+      counters$default <- counters$default + 1L
+      base::rm("prior")
+      identity
+    }) {
+      (function(f) f(0))(1)
+      sum(prior)
+    })(1),
+    (function(prior, f = {
+      base::rm("prior")
+      identity
+    }) {
+      (function(f = 1) f(0))()
+      sum(prior)
+    })(1),
+    (function(prior, f = {
+      base::rm("prior")
+      identity
+    }) {
+      (function(f) {
+        f
+        f(0)
+      })(1)
+      sum(prior)
+    })(1),
+    (function(prior, f = {
+      base::rm("prior")
+      identity
+    }) {
+      (function() {
+        f <- 1
+        f(0)
+      })()
+      sum(prior)
+    })(1),
+    (function(prior) {
+      (function(...) {
+        ..1
+        sum(prior)
+      })({
+        counters$body <- counters$body + 1L
+        base::rm("prior")
+        1
+      })
+    })(1),
+    (function(prior) {
+      (function(ignored, ...) {
+        ..2
+        sum(prior)
+      })(first = 0, ignored = stop("The formal is unused."), second = {
+        base::rm("prior")
+        1
+      })
+    })(1),
+    (function(prior) {
+      (function(...) {
+        ..01
+        sum(prior)
+      })({
+        base::rm("prior")
+        1
+      })
+    })(1),
+    (function(prior) {
+      (function(...) {
+        base::force(..1)
+        sum(prior)
+      })({
+        base::rm("prior")
+        1
+      })
+    })(1),
+    (function(prior) {
+      (function(arg) {
+        arg
+        sum(prior)
+      })({
+        base::rm("prior")
+        1
+      })
+    })(1),
+    (function() {
+      base::rm("prior", envir = make_target())
+      sum(.data$prior)
+    })(),
+    (function(prior) {
+      (function() {
+        base::rm("prior", envir = sys.frame(sys.parent()))
+      })()
+      sum(prior)
+    })(1),
+    (function(prior) {
+      (function(prior) {
+        (function() {
+          base::rm("prior", envir = base::parent.frame(n = 2L))
+        })()
+      })(2)
+      sum(prior)
+    })(1),
+    (function(prior) {
+      (function() base::rm("prior", inherits = 1L))()
+      sum(prior)
+    })(1),
     (function(prior = {
       counters$default <- counters$default + 1L
       base::rm(prior)
@@ -172,6 +280,7 @@ test_that("visible inline scope changes expose both forbidden dependencies", {
     }
   }
   expect_identical(counters$body, 0L)
+  expect_identical(counters$target, 0L)
   expect_identical(counters$default, 0L)
   expect_identical(counters$summary, 0L)
   expect_identical(serialize(data, NULL), original)
@@ -189,6 +298,37 @@ test_that("inline scope changes preserve independent and shadowed bindings", {
   outside$prior <- 2
   rm <- function(...) NULL
   expressions <- alist(
+    (function(prior, rm) {
+      rm("prior")
+      sum(prior)
+    })(touch(), function(...) NULL),
+    (function(prior, rm = function(...) NULL) {
+      rm("prior")
+      sum(prior)
+    })(touch()),
+    (function(prior) {
+      rm <- function(...) NULL
+      rm("prior")
+      sum(prior)
+    })(touch()),
+    (function(prior = touch()) {
+      (function(...) sum(prior))({
+        base::rm("prior")
+        stop("An undemanded dot must not run.")
+      })
+    })(),
+    (function(prior = touch()) {
+      (function(prior) {
+        (function() base::rm("prior", envir = sys.frame(sys.parent())))()
+      })(0)
+      sum(prior)
+    })(),
+    (function(prior = touch()) {
+      (function(prior) {
+        (function() base::rm("prior", envir = parent.frame(2L)))()
+        sum(prior)
+      })(touch())
+    })(),
     (function(prior = touch()) {
       (function() {
         base::force(prior)
@@ -358,6 +498,7 @@ test_that("inline scope changes preserve independent and shadowed bindings", {
         .grouping = rollup(group)
       )
       expect_equal(result$derived, control$value)
+      expect_equal(result$prior, c(0.25, 0.75, 1))
       expect_identical(counts$calls, control_calls)
     }
   }
@@ -384,6 +525,31 @@ test_that("inline scope changes keep ordinary evaluation without shares", {
   expect_equal(control$derived, c(1, 3, 4))
   expect_identical(control_calls, 3L)
   expressions <- alist(
+    (function(prior, f = {
+      touch()
+      base::rm("prior")
+      identity
+    }) {
+      (function(f) f(0))(1)
+      sum(prior)
+    })(1),
+    (function(prior) {
+      (function(...) {
+        ..1
+        sum(prior)
+      })({
+        touch()
+        base::rm("prior")
+        1
+      })
+    })(1),
+    (function(prior = 0) {
+      (function() {
+        touch()
+        base::rm("prior", envir = sys.frame(sys.parent()))
+      })()
+      sum(prior)
+    })(),
     (function(prior = {
       touch()
       base::rm(prior)
@@ -410,6 +576,13 @@ test_that("inline scope changes keep ordinary evaluation without shares", {
     expect_identical(result, control)
     expect_identical(counts$calls, control_calls)
   }
+  result <- summarize_with_margins(
+    data, prior = sum(x), derived = (function(prior, rm) {
+      rm("prior")
+      sum(prior)
+    })(1, function(...) NULL), .grouping = rollup(group)
+  )
+  expect_equal(result$derived, c(1, 1, 1))
   expect_identical(serialize(data, NULL), original)
 })
 
