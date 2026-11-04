@@ -1003,7 +1003,10 @@ sql_expand_shared_source <- function(data, backend) {
     suffix <- suffix + 1L
     name <- paste0("marginplyr_expand_source_", suffix)
   }
-  source <- dplyr::tbl(con, name, vars = input_columns)
+  # DuckDB's connection method looks up bare table names. The CTE exists
+  # only in the result statement, and dbplyr already has its columns.
+  src <- dbplyr::src_dbi(con, auto_disconnect = FALSE)
+  source <- dplyr::tbl(src, name, vars = input_columns)
   if (!is.null(boolean_source)) {
     names(input_columns) <- columns
     source <- dplyr::rename(source, dplyr::all_of(input_columns))
