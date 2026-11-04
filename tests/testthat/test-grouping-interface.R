@@ -184,6 +184,57 @@ test_that("Grouping tidyselect conditions retain their class and cause", {
   expect_match(conditionMessage(error), "Column `unknown` doesn't exist")
 })
 
+test_that("masked parentheses leave nested name collisions ambiguous", {
+  data <- data.frame(s = c("x", "y"), key = c("u", "v"))
+  bound <- grouping_set(key)
+  probe <- rlang::env(calls = 0L)
+  parenthesis <- function(x) {
+    probe$calls <- probe$calls + 1L
+    "s"
+  }
+  masked <- rlang::env(s = bound, other = bound, `(` = parenthesis)
+  spellings <- list(
+    bare = quote(grouping_sets(s)),
+    wrapped = quote(grouping_sets((s))),
+    redundant = str2lang("grouping_sets((((s))))"),
+    column = quote(grouping_sets(tidyselect::all_of("s"))),
+    specification = quote(grouping_sets(!!s)),
+    noncolliding = str2lang("grouping_sets((((other))))"),
+    column_only = quote(grouping_set(s))
+  )
+  specs <- lapply(spellings, eval, envir = masked)
+
+  for (consume in list(inspect_grouping, expand_with_margins)) {
+    probe$calls <- 0L
+    bare <- expect_error(
+      consume(data, .grouping = specs$bare),
+      "`s` is both a column",
+      class = "marginplyr_error"
+    )
+    for (spec in list(specs$wrapped, specs$redundant)) {
+      expect_error(
+        consume(data, .grouping = spec),
+        conditionMessage(bare),
+        fixed = TRUE,
+        class = "marginplyr_error"
+      )
+    }
+    expect_identical(probe$calls, 0L)
+
+    column <- consume(data, .grouping = grouping_set(s))
+    specification <- consume(data, .grouping = grouping_set(key))
+    expect_identical(consume(data, .grouping = specs$column), column)
+    expect_identical(consume(data, .grouping = specs$column_only), column)
+    expect_identical(
+      consume(data, .grouping = specs$specification), specification
+    )
+    expect_identical(
+      consume(data, .grouping = specs$noncolliding), specification
+    )
+    expect_identical(probe$calls, 0L)
+  }
+})
+
 test_that("a nested specification from a caller's function names its verb", {
   data <- data.frame(a = c("x", "y"), value = 1:2)
   spec_from_caller <- function(...) rollup(...)

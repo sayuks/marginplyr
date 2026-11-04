@@ -907,12 +907,6 @@ nested_arg_expr <- function(arg) {
 # reading it took and not why. A name nothing binds has no second reading, and
 # a name the data does not hold is resolved by the gate itself.
 #
-# The name is read through the gate's own parenthesis reading, so a refusal
-# `s` gets is a refusal `(s)` gets. Reading the caller's expression here
-# instead would withhold it from the parenthesized spelling, which is the
-# reading ADR 0026 refuses reached by a pair the gate has already dropped
-# (#259).
-#
 # The kinds this position admits are asked before the binding is read: where a
 # position admits none, the answer is already known, and reading a caller's
 # binding to establish it would force a promise for nothing.
@@ -939,11 +933,10 @@ check_ambiguous_nested_name <- function(arg, parent, rule, data_vars) {
   if (!is_name_part(nested_arg_expr(arg))) {
     return(invisible(NULL))
   }
-  name <- rlang::as_string(nested_arg_expr(arg))
-  if (
-    !name %in% data_vars ||
-      !rlang::env_has(rlang::quo_get_env(arg), name, inherit = TRUE)
-  ) {
+  expr <- nested_arg_expr(arg)
+  name <- rlang::as_string(expr)
+  env <- rlang::quo_get_env(arg)
+  if (!name %in% data_vars || !rlang::env_has(env, name, inherit = TRUE)) {
     return(invisible(NULL))
   }
   admitted <- admitted_nested_kinds(parent, rule)
@@ -951,7 +944,11 @@ check_ambiguous_nested_name <- function(arg, parent, rule, data_vars) {
     return(invisible(NULL))
   }
 
-  value <- tryCatch(rlang::eval_tidy(arg), error = function(cnd) NULL)
+  # Read the binding of the unwrapped name even when the caller masks `(`.
+  value <- tryCatch(
+    rlang::eval_tidy(expr, env = env),
+    error = function(cnd) NULL
+  )
   if (!inherits(value, "margin_grouping_spec")) {
     return(invisible(NULL))
   }
