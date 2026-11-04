@@ -3862,9 +3862,15 @@ resolve_share_selection <- function(expr,
       data = proxy,
       strict = TRUE,
       allow_rename = FALSE,
+      # The proxy carries positions. Tidyselect must reject a function
+      # before applying it, including inside a compound selection.
+      allow_predicates = FALSE,
       error_call = error_call
     )),
     error = function(cnd) {
+      if (is_unsupported_predicate(cnd)) {
+        abort_share_predicate(kind, parent = cnd)
+      }
       abort_share_selection_error(cnd, preceding, context, kind)
     }
   )
@@ -4032,7 +4038,9 @@ contains_selection_predicate <- function(expr) {
   ))
 }
 
-abort_share_predicate <- function(kind) {
+# Refuse a predicate with the share-specific remedy. An evaluated selector
+# carries tidyselect's condition, whose call points to the selection.
+abort_share_predicate <- function(kind, parent = NULL) {
   abort_marginplyr(c(
     paste0(
       "{share_kind_modifier(kind)} {.fun across} only supports name-based ",
@@ -4042,7 +4050,7 @@ abort_share_predicate <- function(kind) {
       "Replace {.fun where} or another type/value predicate with explicit ",
       "summary names."
     )
-  ))
+  ), parent = parent)
 }
 
 # A lookup the walk could not resolve is reported as a read of every alias in
