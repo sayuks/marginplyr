@@ -323,8 +323,8 @@ sqlite_compute_shadows_source <- function(con, destination, temporary) {
 
 # Publish the filled destination and create indexes on its requested name.
 # Boolean columns still have their private aliases when indexes are created.
-sqlite_publish_compute_destination <- function(con, private, destination,
-                                               unique_indexes, indexes) {
+sqlite_publish_destination <- function(con, private, destination,
+                                       unique_indexes, indexes) {
   parts <- dbplyr::table_path_components(destination, con)[[1L]]
   table <- parts[[length(parts)]]
   DBI::dbExecute(con, paste(
@@ -526,7 +526,8 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
         con, destination, anchor_sql, temporary = temporary,
         overwrite = overwrite && !publish,
         unique_indexes = create_unique_indexes,
-        indexes = create_indexes, analyze = FALSE, !!!dots, in_transaction = FALSE
+        indexes = create_indexes, analyze = FALSE, !!!dots,
+        in_transaction = FALSE
       )
       result <- dplyr::tbl(con, created, vars = public)
     } else if (is.null(sql_options)) {
@@ -543,7 +544,8 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
         anchor, name = destination, temporary = temporary,
         overwrite = overwrite && !publish,
         unique_indexes = create_unique_indexes,
-        indexes = create_indexes, analyze = FALSE, ..., sql_options = sql_options,
+        indexes = create_indexes, analyze = FALSE, ...,
+        sql_options = sql_options,
         in_transaction = FALSE
       )
     }
@@ -567,7 +569,7 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
       "INSERT INTO ", table_sql, " (", columns, ") ", as.character(insert_from)
     ))
     if (publish) {
-      sqlite_publish_compute_destination(
+      sqlite_publish_destination(
         con, destination, requested, unique_indexes, indexes
       )
       parts <- dbplyr::table_path_components(requested, con)[[1L]]

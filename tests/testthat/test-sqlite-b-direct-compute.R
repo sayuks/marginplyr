@@ -718,7 +718,7 @@ test_that("SQLite direct compute keeps the source of a shadowing expansion", {
     expected <- data.frame(g = c("a", "b", "Total", "Total"))
     if (!is.null(id)) expected$sid <- c(1L, 1L, 2L, 2L)
     for (name in list("facts", "FACTS", DBI::Id(schema = "temp",
-                                               table = "facts"))) {
+                                                table = "facts"))) {
       query <- expand_with_margins(
         dplyr::tbl(con, "facts"), .grouping = rollup(g),
         .sort = sort, .id = id
@@ -768,7 +768,7 @@ test_that("SQLite shadowing compute preserves opaque and qualified sources", {
   expect_identical(DBI::dbReadTable(con, source_id), input)
 })
 
-test_that("failed SQLite shadowing compute preserves the source and temp schema", {
+test_that("failed SQLite shadowing compute restores the temp schema", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
@@ -787,8 +787,10 @@ test_that("failed SQLite shadowing compute preserves the source and temp schema"
                "explicit schema or another name", class = "marginplyr_error")
   expect_identical(temp_schema(), before)
 
-  expect_error(dplyr::compute(query, name = "facts", unique_indexes = list("g")),
-               "UNIQUE constraint failed")
+  expect_error(
+    dplyr::compute(query, name = "facts", unique_indexes = list("g")),
+    "UNIQUE constraint failed"
+  )
   expect_identical(temp_schema(), before)
   expect_identical(DBI::dbReadTable(con, main), input)
   expect_identical(dplyr::collect(dplyr::compute(query, name = "facts"))$g,
