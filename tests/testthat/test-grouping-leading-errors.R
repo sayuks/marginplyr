@@ -439,7 +439,8 @@ test_that("DuckDB leading selection failures invoke no metadata query", {
   duplicate_specs <- list(
     grouping_sets(x, x, !!typed),
     grouping_sets(grouping_sets(x, x, !!typed), value),
-    grouping_sets(x, grouping_sets(x, !!typed))
+    grouping_sets(x, grouping_sets(x, !!typed)),
+    grouping_spec(grouping_set(), grouping_sets(x, x, !!typed))
   )
   for (verb in verbs) {
     original <- expect_error(verb(data, NULL, grouping_sets(x, x, value)),
@@ -592,7 +593,8 @@ test_that("completed duplicate occurrences precede unsafe dtplyr metadata", {
   }
   specs <- list(
     grouping_sets(x, x, where(numeric_column)),
-    grouping_sets(x, grouping_sets(x, where(numeric_column)))
+    grouping_sets(x, grouping_sets(x, where(numeric_column))),
+    grouping_spec(grouping_set(value), grouping_sets(x, x, where(numeric_column)))
   )
   for (verb in forwarded_verbs) {
     original <- expect_error(verb(data, NULL, grouping_sets(x, x, value)),
@@ -605,6 +607,12 @@ test_that("completed duplicate occurrences precede unsafe dtplyr metadata", {
   expect_error(
     inspect_grouping(step, .grouping = grouping_spec(
       grouping_sets(x, x), where(numeric_column)
+    )),
+    "Can.t safely determine column metadata", class = "marginplyr_error"
+  )
+  expect_error(
+    inspect_grouping(step, .grouping = grouping_spec(
+      grouping_sets(x, x), grouping_sets(x, where(numeric_column))
     )),
     "Can.t safely determine column metadata", class = "marginplyr_error"
   )

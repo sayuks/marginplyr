@@ -766,10 +766,7 @@ validate_leading_selections <- function(preflight, data_vars, .by,
   emit <- if (identical(.duplicates, "error")) {
     function(family) {
       resolved$completed[[length(resolved$completed) + 1L]] <- family
-      NULL
     }
-  } else {
-    identity
   }
   withRestarts(
     expand_grouping_family(
@@ -914,13 +911,22 @@ nested_arg_quosure <- function(arg, capture = rlang::enquo) {
     env <- rlang::quo_get_env(arg)
     # Without lexical dots the spelling can name an input column. With dots,
     # capture still owns the diagnostic for an absent position.
-    if (is_numbered_dot_reference(expr) &&
-          rlang::env_has(env, "...", inherit = TRUE)) {
+    if (is_numbered_dot_reference(expr) && has_lexical_dots(env)) {
       arg <- rlang::eval_bare(rlang::call2(capture, expr), env)
       next
     }
     return(arg)
   }
+}
+
+# A call frame stores supplied dots as a dots object and empty dots as the
+# missing marker. An unrelated active binding or promise must remain unforced.
+has_lexical_dots <- function(env) {
+  if (selection_binding_deferred(env, "...")) {
+    return(FALSE)
+  }
+  dots <- rlang::env_get(env, "...", default = NULL, inherit = TRUE)
+  rlang::is_missing(dots) || typeof(dots) == "..."
 }
 
 # The spelling a nested position reads an argument by: the caller's expression
@@ -1195,7 +1201,7 @@ grouping_set_keys <- function(sets, dimensions) {
   vapply(sets, grouping_set_key, character(1), dimensions = dimensions)
 }
 
-# Encode membership independently of the order and spelling of set members.
+# Encode set membership as bits in the order of `dimensions`.
 grouping_set_key <- function(set, dimensions) {
   paste(as.integer(dimensions %in% set), collapse = "")
 }
@@ -1233,11 +1239,11 @@ validate_unique_grouping_sets <- function(keys, duplicates_choices) {
 # preflight the caller holds, and reads each argument's reading off the record
 # beside that argument's quosure rather than taking one (ADR 0008). A column
 # selection is resolved here and not there, so it is resolved once per pass,
-# through the resolver that pass supplies. `emit` receives completed families
-# in plan order, including each completed branch of a union. Its default
-# returns the occurrences for assembly into the Grouping plan.
+# through the resolver that pass supplies. Optional `emit` observes completed
+# occurrences in plan order for prefix validation. Expansion ignores its
+# return value and returns the family of occurrences.
 expand_grouping_family <- function(preflight, resolve_selection,
-                                   emit = identity, drop_duplicates = FALSE) {
+                                   emit = NULL, drop_duplicates = FALSE) {
   rule <- find_grouping_kind_rule(preflight$spec$type)
   if (is.null(rule)) {
     stop("Unknown Grouping specification kind.", call. = FALSE)
@@ -1245,10 +1251,19 @@ expand_grouping_family <- function(preflight, resolve_selection,
   rule$expand(preflight, resolve_selection, emit, drop_duplicates)
 }
 
+# Notify a prefix observer of completed occurrences and return them unchanged.
+emit_grouping_family <- function(family, emit) {
+  if (!is.null(emit) && length(family) > 0L) {
+    emit(family)
+  }
+  family
+}
+
 # Emit one occurrence after resolving the entire set.
 expand_single_grouping_set <- function(preflight, resolve_selection, emit,
                                        drop_duplicates) {
-  emit(list(resolve_grouping_set(preflight, resolve_selection)))
+  emit_grouping_family(list(resolve_grouping_set(preflight, resolve_selection)),
+                       emit)
 }
 
 resolve_grouping_set <- function(preflight, resolve_selection) {
@@ -1279,7 +1294,7 @@ expand_grouping_sets <- function(preflight, resolve_selection, emit,
       preflight$args,
       function(arg) {
         if (is.null(arg$nested)) {
-          return(emit(list(resolve_selection(arg$quo))))
+          return(emit_grouping_family(list(resolve_selection(arg$quo)), emit))
         }
         expand_grouping_family(
           arg$nested, resolve_selection, emit, drop_duplicates
@@ -1328,14 +1343,14 @@ expand_rollup <- function(preflight, resolve_selection, emit, drop_duplicates) {
       if (n == 0L) character() else unique(unlist(units[seq_len(n)]))
     }
   )
-  emit(family)
+  emit_grouping_family(family, emit)
 }
 
 # Emit the cube after resolving every unit.
 expand_cube <- function(preflight, resolve_selection, emit, drop_duplicates) {
   units <- resolve_grouping_units(preflight, resolve_selection)
   if (drop_duplicates) {
-    return(emit(distinct_cube_sets(units)))
+    return(emit_grouping_family(distinct_cube_sets(units), emit))
   }
   n <- length(units)
   indices <- unlist(
@@ -1352,7 +1367,7 @@ expand_cube <- function(preflight, resolve_selection, emit, drop_duplicates) {
       if (length(index) == 0L) character() else unique(unlist(units[index]))
     }
   )
-  emit(family)
+  emit_grouping_family(family, emit)
 }
 
 # Retain the earliest occurrence of each cube set in descending subset size
@@ -1376,40 +1391,91 @@ distinct_cube_sets <- function(units) {
   sets
 }
 
-# Emit only the finished Cartesian product. Factor occurrences are local to
-# the product until every factor has been resolved.
+# Resolve product factors from left to right. Only the last factor can emit
+# final occurrences while its family is incomplete.
 expand_grouping_product <- function(preflight, resolve_selection, emit,
                                     drop_duplicates) {
+  if (drop_duplicates) {
+    family <- distinct_grouping_product(preflight, resolve_selection)
+    return(emit_grouping_family(family, emit))
+  }
   product <- list(character())
 
-  for (arg in preflight$args) {
-    family <- if (is.null(arg$nested)) {
-      list(resolve_selection(arg$quo))
-    } else {
-      expand_grouping_family(
-        arg$nested, resolve_selection, drop_duplicates = drop_duplicates
-      )
+  for (i in seq_along(preflight$args)) {
+    arg <- preflight$args[[i]]
+    if (!is.null(emit) && i == length(preflight$args)) {
+      return(expand_observed_product_tail(product, arg, resolve_selection, emit))
     }
-
-    product <- if (drop_duplicates) {
-      distinct_grouping_product(product, family)
-    } else {
-      unlist(
-        lapply(
-          product,
-          function(left) lapply(family, function(right) unique(c(left, right)))
-        ),
-        recursive = FALSE
-      )
-    }
+    family <- expand_grouping_factor(arg, resolve_selection, drop_duplicates)
+    product <- combine_grouping_factors(product, family)
   }
-  emit(product)
+  emit_grouping_family(product, emit)
 }
 
-# Keep first unions in Cartesian order. Equal prefixes give equal membership
-# for every later factor, so a discarded occurrence cannot win later.
-distinct_grouping_product <- function(product, family) {
-  dimensions <- unique(unlist(c(product, family), use.names = FALSE))
+# Resolve one factor, optionally observing its completed occurrences.
+expand_grouping_factor <- function(arg, resolve_selection, drop_duplicates,
+                                   emit = NULL) {
+  if (is.null(arg$nested)) {
+    return(emit_grouping_family(list(resolve_selection(arg$quo)), emit))
+  }
+  expand_grouping_family(arg$nested, resolve_selection, emit, drop_duplicates)
+}
+
+# The first left occurrence crosses the right family before any other left
+# occurrence. Only those combinations are a completed prefix until the last
+# factor resolves. The duplicate-error pass is the only observer.
+expand_observed_product_tail <- function(product, arg, resolve_selection, emit) {
+  first <- product[1L]
+  emit_first <- function(family) {
+    emit(combine_grouping_factors(first, family))
+  }
+  family <- expand_grouping_factor(arg, resolve_selection, FALSE, emit_first)
+  rest <- combine_grouping_factors(product[-1L], family)
+  c(combine_grouping_factors(first, family), emit_grouping_family(rest, emit))
+}
+
+# Cross fully resolved factors in left-major order, preserving occurrences.
+combine_grouping_factors <- function(product, family) {
+  unlist(
+    lapply(product, function(left) {
+      lapply(family, function(right) union(left, right))
+    }),
+    recursive = FALSE
+  )
+}
+
+# Resolve factors in caller order. A nested Cartesian product can contribute
+# its factors directly because its occurrences have the same left-major order.
+resolve_product_families <- function(preflight, resolve_selection) {
+  families <- lapply(preflight$args, function(arg) {
+    if (!is.null(arg$nested) &&
+          identical(grouping_kind_name(arg$nested$spec$type), "product")) {
+      return(resolve_product_families(arg$nested, resolve_selection))
+    }
+    list(expand_grouping_factor(arg, resolve_selection, TRUE))
+  })
+  unlist(families, recursive = FALSE)
+}
+
+# Retain the first occurrence of each product set. Columns required by every
+# choice of a later factor cannot distinguish two prefixes in the final plan.
+distinct_grouping_product <- function(preflight, resolve_selection) {
+  families <- resolve_product_families(preflight, resolve_selection)
+  required <- lapply(families, function(family) Reduce(intersect, family))
+  remaining <- rev(Reduce(union, rev(required), init = character(),
+                          accumulate = TRUE))[-1L]
+  product <- list(character())
+  for (i in seq_along(families)) {
+    product <- distinct_product_step(product, families[[i]], remaining[[i]])
+  }
+  product
+}
+
+# Keep the first union of each membership in Cartesian order. Omit required
+# suffix columns from the keys and retain the selected columns as written.
+distinct_product_step <- function(product, family, required) {
+  dimensions <- setdiff(unique(unlist(c(product, family), use.names = FALSE)),
+                        required)
   seen <- new.env(parent = emptyenv())
   sets <- list()
   for (left in product) {

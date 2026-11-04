@@ -249,6 +249,22 @@ test_that("duplicate-drop nested products retain the first occurrence order", {
   expect_identical(plan$set_id, 1:6)
 })
 
+test_that("a fixed product factor preserves the first occurrence's dimensions", {
+  data <- data.frame(a = 1L, b = 2L)
+  specification <- grouping_spec(
+    grouping_spec(grouping_sets(b, grouping_set()),
+                  grouping_sets(a, grouping_set())),
+    grouping_set(a, b)
+  )
+  plan <- inspect_grouping(
+    data, .grouping = specification, .duplicates = "drop", .format = "list"
+  )
+
+  expect_identical(plan$included, list(c("b", "a")))
+  expect_identical(plan$grouping_bits, list(c(b = 0L, a = 0L)))
+  expect_identical(plan$set_id, 1L)
+})
+
 test_that("duplicate-drop products support wide grouping sets", {
   dimensions <- paste0("dimension_", seq_len(10001L))
   data <- tibble::as_tibble(stats::setNames(rep(list(1L), 10001L), dimensions))

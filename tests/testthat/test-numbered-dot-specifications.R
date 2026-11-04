@@ -55,6 +55,26 @@ test_that("a dots-shaped column outside a dots frame is a selection", {
   expect_identical(summarized$members, list(1L, 2L, 1:2))
 })
 
+test_that("unrelated dots bindings are not forced for column selection", {
+  data <- data.frame(check.names = FALSE, "..01" = c("a", "b"))
+  env <- rlang::env()
+  calls <- 0L
+  makeActiveBinding("...", function() {
+    calls <<- calls + 1L
+    42L
+  }, env)
+  alias <- rlang::new_quosure(quote((..01)), env)
+  inspect <- function() {
+    inspect_grouping(data, .grouping = grouping_sets(!!alias), .format = "list")
+  }
+
+  expect_identical(inspect()$included, list("..01"))
+  expect_identical(calls, 0L)
+  rm("...", envir = env)
+  delayedAssign("...", stop("unrelated dots forced"), assign.env = env)
+  expect_identical(inspect()$included, list("..01"))
+})
+
 test_that("parenthesized numbered dots retain admitted kinds and refusals", {
   data <- data.frame(a = c("x", "y"), value = 1:2)
   constructors <- c("grouping_set", "grouping_sets", "rollup", "cube",
