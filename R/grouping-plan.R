@@ -507,7 +507,7 @@ is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE) {
     return(TRUE)
   }
   if (!is_selection_walk_call(expr)) {
-    return(FALSE)
+    return(is_selection_name_lookup(expr, env))
   }
   all(vapply(
     static_call_args(expr),
@@ -517,6 +517,44 @@ is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE) {
     data_vars = data_vars,
     allow_caller_code = allow_caller_code
   ))
+}
+
+# Whether a direct call returns selection-context names, possibly indexed.
+# Subscripts must be independent of the typed proxy and of caller code.
+is_selection_name_lookup <- function(expr, env) {
+  if (!rlang::is_call(expr) || !selection_call_parens_safe(expr, env)) {
+    return(FALSE)
+  }
+  fn <- selection_argument_function(expr, env, character(), context = TRUE)
+  args <- static_call_args(expr)
+  if (identical(fn, tidyselect::peek_vars)) {
+    return(length(args) == 0L)
+  }
+  if (identical(fn, base::names)) {
+    return(
+      length(args) == 1L &&
+        is_selection_data_peek(args[[1L]], env, character(), context = TRUE)
+    )
+  }
+  (identical(fn, base::`[`) || identical(fn, base::`[[`)) &&
+    length(args) > 0L &&
+    is_selection_name_lookup(args[[1L]], env) &&
+    all(vapply(
+      args[-1L], is_name_only_helper_arg, logical(1),
+      env = env, allow_caller_code = FALSE
+    ))
+}
+
+# Whether a call reads the current selection data without arguments. Its
+# caller permits only taking names from that data on the name-only path.
+is_selection_data_peek <- function(expr, env, bound, context) {
+  rlang::is_call(expr) &&
+    selection_call_parens_safe(expr, env, bound) &&
+    identical(
+      selection_argument_function(expr, env, bound, context),
+      tidyselect::peek_data
+    ) &&
+    length(static_call_args(expr)) == 0L
 }
 
 # Whether a helper argument is independent of column types. The caller holds
@@ -563,7 +601,8 @@ is_name_only_helper_arg <- function(expr,
       allow_env_pronoun
     ))
   }
-  fn <- selection_argument_function(expr, env, bound)
+  context <- length(seen) == 0L
+  fn <- selection_argument_function(expr, env, bound, context)
   pattern_call <-
     allow_stringr_pattern && is_stringr_pattern_call(expr, env, bound, fn)
   if ((!pattern_call && is.null(fn)) || identical(fn, tidyselect::peek_data)) {
@@ -594,11 +633,7 @@ is_name_only_helper_arg <- function(expr,
   }
   if (
     identical(fn, base::names) && length(args) == 1L &&
-      rlang::is_call(args[[1L]]) &&
-      selection_call_parens_safe(args[[1L]], env, bound) &&
-      identical(selection_argument_function(args[[1L]], env, bound),
-                tidyselect::peek_data) &&
-      length(static_call_args(args[[1L]])) == 0L
+      is_selection_data_peek(args[[1L]], env, bound, context)
   ) {
     return(TRUE)
   }
@@ -741,11 +776,18 @@ is_name_only_namespace <- function(expr, env, bound = character()) {
 
 # A statically named function available without forcing caller bindings, or
 # `NULL` for an unresolved callee. `bound` excludes formals from lexical lookup.
-selection_argument_function <- function(expr, env, bound) {
+# Direct selection expressions see tidyselect's helper mask before `env`.
+selection_argument_function <- function(expr, env, bound, context = FALSE) {
   name <- static_call_name(expr)
   namespace <- static_call_ns(expr)
   if (is.null(name) || (is.null(namespace) && name %in% bound)) {
     return(NULL)
+  }
+  if (is.null(namespace) && context) {
+    helper <- tidyselect::vars_select_helpers[[name]]
+    if (!is.null(helper)) {
+      return(helper)
+    }
   }
   if (!is.null(namespace)) {
     if (!is_name_only_namespace(expr, env, bound) ||
