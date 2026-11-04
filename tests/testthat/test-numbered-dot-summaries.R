@@ -54,6 +54,10 @@ test_that("summary selectors retain R's numeric dots spellings", {
 test_that("numeric dots preserve dynamic unpacking factory boundaries", {
   across <- dplyr::across
   data <- data.frame(g = c("a", "a", "b"), x = 1:3)
+  inputs <- list(data, tibble::as_tibble(data))
+  if (suggest_available("data.table")) {
+    inputs <- c(inputs, list(data.table::as.data.table(data)))
+  }
   run <- function(verb, reference, qualified, unpack, context) {
     calls <- 0L
     factory <- function() {
@@ -77,21 +81,25 @@ test_that("numeric dots preserve dynamic unpacking factory boundaries", {
       body <- rlang::expr(verb(data, !!call, .grouping = rollup(g)))
     }
     wrapper <- rlang::new_function(alist(... = ), body, environment())
-    list(result = wrapper(factory()), calls = calls)
+    list(result = as.data.frame(wrapper(factory(), factory())), calls = calls)
   }
   control <- run(dplyr::summarise, "..1", TRUE, TRUE, "fixed")
   expect_identical(control$calls, 2L)
   expect_identical(control$result$x_value, c(5L, 4L))
-  for (reference in c("..1", "..01", "..001", "..+1", ".. 1", "..\t1")) {
-    for (qualified in c(FALSE, TRUE)) {
-      for (unpack in list(TRUE, "{inner}_{outer}", FALSE)) {
-        for (context in c("none", "fixed", "rollup")) {
-          expected <- run(dplyr::summarise, reference, qualified,
+  for (data in inputs) {
+    for (reference in c("..1", "..2", "..01", "..001", "..02", "..+1", ".. 1",
+                        "..\t1")) {
+      for (qualified in c(FALSE, TRUE)) {
+        for (unpack in list(TRUE, "{inner}_{outer}", FALSE)) {
+          for (context in c("none", "fixed", "rollup")) {
+            expected <- run(dplyr::summarise, reference, qualified,
+                            unpack, context)
+            actual <- run(summarize_with_margins, reference, qualified,
                           unpack, context)
-          actual <- run(summarize_with_margins, reference, qualified,
-                        unpack, context)
-          expect_identical(actual, expected,
-                           info = paste(reference, qualified, unpack, context))
+            expect_identical(actual, expected, info = paste(
+              reference, qualified, unpack, context, class(data)[[1L]]
+            ))
+          }
         }
       }
     }

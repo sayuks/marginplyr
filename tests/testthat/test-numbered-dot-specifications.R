@@ -98,10 +98,11 @@ test_that("numbered specifications retain identifiers and source membership", {
     }
   )
   child <- grouping_set(a)
-  for (parent in c("grouping_sets", "rollup", "cube", "grouping_spec")) {
+  for (parent in c("grouping_set", "grouping_sets", "rollup", "cube",
+                   "grouping_spec")) {
     direct <- eval(rlang::call2(parent, child))
     for (consume in consumers) {
-      expected <- consume(direct)
+      expected <- if (parent == "grouping_set") NULL else consume(direct)
       for (reference in c("..1", "..2", "..01", "..02")) {
         supplied <- if (grepl("2$", reference)) {
           list(NULL, child)
@@ -110,8 +111,14 @@ test_that("numbered specifications retain identifiers and source membership", {
         }
         for (depth in c(0L, 1L, 3L)) {
           wrapper <- numbered_spec_wrapper(parent, reference, depth, consume)
-          expect_identical(do.call(wrapper, supplied), expected,
-                           info = paste(parent, reference, depth))
+          if (parent == "grouping_set") {
+            expect_error(do.call(wrapper, supplied),
+                         "can contain columns, not another grouping family",
+                         class = "marginplyr_error")
+          } else {
+            expect_identical(do.call(wrapper, supplied), expected,
+                             info = paste(parent, reference, depth))
+          }
         }
       }
     }
@@ -191,9 +198,9 @@ test_that("missing numbered specifications name the public argument boundary", {
 test_that("numbered specifications keep explicit selection and injection", {
   data <- data.frame(a = c("x", "y"), value = 1:2)
   data[["..01"]] <- "same"
-  calls <- 0L
+  state <- rlang::env(calls = 0L)
   arbitrary <- function() {
-    calls <<- calls + 1L
+    state$calls <- state$calls + 1L
     grouping_set(a)
   }
   consume <- function(spec) {
@@ -204,11 +211,14 @@ test_that("numbered specifications keep explicit selection and injection", {
   child <- grouping_set(a)
   injected <- rlang::quo(!!child)
   expect_identical(wrapper(!!injected)$included, list("a"))
+  inner <- rlang::env(rlang::current_env(), chosen = child)
+  injected <- rlang::new_quosure(quote(chosen), inner)
+  expect_identical(wrapper((!!injected))$included, list("a"))
   expect_error(wrapper(arbitrary()), "Grouping specification",
                class = "marginplyr_error")
-  expect_identical(calls, 1L)
+  expect_identical(state$calls, 1L)
   expect_error(wrapper(stop("caller error")), "caller error")
-  expect_identical(calls, 1L)
+  expect_identical(state$calls, 1L)
 })
 
 test_that("numbered nested specifications retain unexecuted lazy plans", {
