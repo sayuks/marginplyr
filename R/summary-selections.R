@@ -1851,7 +1851,8 @@ rewrite_summary_selections <- function(expr,
   )
 }
 
-# Keeps the nested verb as a promise evaluated in the caller's scope.
+# Returns a zero-argument closure for the supplied nested call.
+# Calling the closure forces that promise in the original caller's scope.
 nested_mask_thunk <- function(value) {
   function() value
 }
