@@ -106,9 +106,10 @@ All-state issues and PRs were searched for `"ineligible source"`,
 `grand-total-only source`, and `duration share source`. Closed #429 and
 #446 and merged #448 covered the character witness. #446's triage established
 that the type rule applies even if every row is its own denominator.
-The interval witness remained after that repair. The 18-fixture DuckDB
+The interval witness remained after that repair. The exploratory 18-fixture DuckDB
 sweep found four successful numeric controls, ten expected refusals, two
-interval cases and two unsupported fixture setups (BIGNUM and BIT).
+interval cases and two unsupported fixture setups (BIGNUM and BIT). The
+retained replay focused on the interval and its paired controls.
 [Executable interval replay](2026-11-04-summary-spec-total-share-followup/duckdb-interval.R).
 
 ### S2. A removal targeted an enclosing frame through another static form
@@ -229,7 +230,7 @@ identifiers remained numeric, within ADR 0033's guarantee.
 The [evidence directory](2026-11-04-summary-spec-total-share-followup) held
 standalone R scripts. Run them with Rscript from the investigated source
 root. The coordinator ran each replay in a fresh R process sequentially.
-Observation mode checked the recorded outcomes and the controls. The
+Observation mode checked the controls and reported the observed outcomes. The
 `--assert` mode required the desired contract and deliberately exited one
 on the pinned snapshot. The Grouping and aggregate matrices used observation mode only.
 [Replay exit statuses](2026-11-04-summary-spec-total-share-followup/replay-results.csv).

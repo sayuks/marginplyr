@@ -1,5 +1,5 @@
 # From the investigated marginplyr checkout:
-# Rscript /path/to/total-share-interval.R [--assert]
+# Rscript /path/to/duckdb-interval.R [--assert]
 pkgload::load_all(quiet = TRUE)
 
 observe <- function() {

@@ -93,11 +93,11 @@ duplicate-set report was found in the searched results.
 
 ## Replay
 
-Run `dot-shaped-dimension.R`, `duplicate-prefix.R` and `grouping-matrix.R`
+Run `grouping-dots.R`, `grouping-duplicate-prefix.R` and `grouping-matrix.R`
 with Rscript from the examined source root. Each minimal script's observation
 mode and the matrix exited zero. Each minimal script's `--assert` mode
 required the desired behavior and exited one on the pinned main snapshot.
-The archived comparison ran `dot-shaped-dimension.R --before-fix` and
+The archived comparison ran `grouping-dots.R --before-fix` and
 exited zero. These finite probes covered the named fixtures and dependency
 versions, without a general guarantee about arbitrary selectors, hosted
 backends, dependency versions or operating systems.
