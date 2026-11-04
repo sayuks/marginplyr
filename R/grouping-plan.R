@@ -505,6 +505,11 @@ is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE) {
   }
 
   args <- static_call_args(expr)
+  # Tidyselect walks unary minus as a complement. Other minus calls
+  # evaluate their operands in the caller's context.
+  if (call_name == "-" && length(args) != 1L) {
+    return(FALSE)
+  }
   all(vapply(
     args,
     is_name_only_expr,
