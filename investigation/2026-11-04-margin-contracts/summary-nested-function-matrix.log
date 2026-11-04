@@ -1,0 +1,35 @@
+, , shadowed_matches = FALSE
+
+                        unshadowed_matches
+operation                TRUE
+  count                    36
+  expand_with_margins      36
+  filter                   36
+  mutate                   36
+  reframe                  36
+  rowwise                   0
+  select                   36
+  slice_head               36
+  summarise                36
+  summarize_with_margins   36
+
+, , shadowed_matches = TRUE
+
+                        unshadowed_matches
+operation                TRUE
+  count                     0
+  expand_with_margins       0
+  filter                    0
+  mutate                    0
+  reframe                   0
+  rowwise                  36
+  select                    0
+  slice_head                0
+  summarise                 0
+  summarize_with_margins    0
+
+        generated_reads
+grain      0   1   2   3
+  fixed   12   0 108   0
+  none    12 108   0   0
+  rollup  12   0   0 108
