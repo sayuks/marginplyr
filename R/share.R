@@ -3259,7 +3259,7 @@ apply_share_ratios <- function(result, pairs, sources, denominator_names,
       share_exprs <- lapply(pairs, function(pair) {
         source <- margin_column_pronoun(safe_name(pair$source))
         denominator <- denominator_names[[pair$source]]
-        # Use an integer multiplier to avoid widening a numeric source.
+        # A double multiplier can increase the source's decimal scale (#429).
         # Refusing dialects reject character sources at multiplication (#429).
         numerator <- rlang::expr((!!source) * 1L)
         if (duckdb) {
