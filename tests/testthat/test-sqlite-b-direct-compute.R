@@ -825,6 +825,13 @@ test_that("SQLite shadowing compute ignores unrelated invalid temp views", {
   expect_true(DBI::dbExistsTable(
     con, DBI::Id(schema = "temp", table = "broken")
   ))
+
+  DBI::dbExecute(con, "CREATE VIEW main.unavailable AS SELECT * FROM missing")
+  out <- dplyr::compute(query, name = "unavailable")
+  expect_identical(dplyr::collect(out)$g, c("a", "b", "Total", "Total"))
+  expect_true(DBI::dbExistsTable(
+    con, DBI::Id(schema = "main", table = "unavailable")
+  ))
 })
 
 test_that("SQLite compute preserves a source using a table-valued function", {
@@ -903,5 +910,30 @@ test_that("SQLite refuses a shadowing name before an unavailable rename", {
   expect_false(DBI::dbExistsTable(
     con, DBI::Id(schema = "temp", table = "facts")
   ))
+  expect_identical(DBI::dbReadTable(con, "facts")$g, c("b", "a"))
+})
+
+test_that("SQLite generated compute names propagate a failed name probe", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  DBI::dbWriteTable(con, "facts", data.frame(g = c("b", "a")))
+  query <- expand_with_margins(
+    dplyr::tbl(con, "facts"), .grouping = rollup(g), .sort = "last"
+  )
+  get_query <- DBI::dbGetQuery
+  failure <- simpleError("name lookup failed")
+  local_mocked_bindings(
+    dbGetQuery = function(conn, statement, ...) {
+      if (startsWith(statement, "EXPLAIN SELECT 1 FROM")) stop(failure)
+      get_query(conn, statement, ...)
+    },
+    .package = "DBI"
+  )
+
+  outcome <- tryCatch(dplyr::compute(query), error = identity)
+  expect_identical(outcome, failure)
+  catalog <- DBI::dbGetQuery(con, "SELECT name FROM temp.sqlite_master")
+  expect_identical(catalog$name, character())
   expect_identical(DBI::dbReadTable(con, "facts")$g, c("b", "a"))
 })
