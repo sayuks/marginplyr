@@ -179,7 +179,9 @@ definition of the evidence rule:
   `session_id`, continue that same terminal session with `write_stdin` until a
   result includes `exit_code`; do not reduce an in-progress result to `.output`
   alone. An outer wrapper preserves the nested result or keeps waiting on the
-  same execution instead of completing and discarding its handle.
+  same execution instead of completing and discarding its handle. When using
+  nested shell tools, follow [the adapter recipe](codex-terminal-wait.md) for
+  paired wait intervals, cancellation and progress communication.
 
 ### Bounded work while waiting or checking
 
