@@ -289,6 +289,7 @@ Config/testthat/start-first:
     first-local-across-conditions,
     grouping-variadic-names,
     sql-audit-probe-handling,
+    grouping-parenthesized-callees,
     duckdb-storage,
     factor,
     sent-query-status-unwind,
