@@ -223,6 +223,7 @@ Config/testthat/start-first:
     sent-queries-reentry,
     dtplyr-share-lexical-bindings,
     share-visible-denominators,
+    duckdb-wide-shares,
     warning-handler-boundary,
     sqlite-boolean-binary-lazy,
     sqlite-boolean-input,

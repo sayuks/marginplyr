@@ -3288,9 +3288,11 @@ apply_share_ratios <- function(result, pairs, sources, denominator_names,
                            own_denominator_ids),
             1.0,
             dplyr::if_else(
+              # DuckDB can widen a comparison with decimal zero to a scale
+              # that cannot hold a wide integer or decimal denominator.
               is.na(!!source) |
                 is.na(!!margin_column_pronoun(denominator)) |
-                (!!margin_column_pronoun(denominator)) == 0,
+                (!!margin_column_pronoun(denominator)) == 0L,
               NA_real_,
               # The denominator holds the source type, so only the
               # numerator needs the binding check. The cast makes the ratio

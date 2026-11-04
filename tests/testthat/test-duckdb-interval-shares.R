@@ -46,23 +46,28 @@ test_that("DuckDB rejects all-missing duration sources in a rollup", {
     "FROM (VALUES ('a'), ('b')) AS input(g)"
   )), vars = c("g", "duration", "amount"))
 
-  # Each helper must reject the source when it is the only share requested.
-  for (helper in c("share_of_total", "share_of_parent")) {
-    share <- rlang::call2(helper, quote(value))
-    eligible <- dplyr::collect(summarize_with_margins(
-      remote, value = max(amount, na.rm = TRUE), ratio = !!share,
-      .grouping = rollup(g), .id = "set", .margin_label = NULL
-    ))
-    expect_identical(eligible$ratio[eligible$set == 1L], c(NA_real_, NA_real_))
-    expect_identical(eligible$ratio[eligible$set == 2L], 1)
-
-    query <- summarize_with_margins(
-      remote, value = max(duration, na.rm = TRUE), ratio = !!share,
-      .grouping = rollup(g), .id = "set", .margin_label = NULL
-    )
-    expect_s3_class(query, "tbl_lazy")
-    expect_error(
-      dplyr::collect(query), "Binder Error:.*INTERVAL", info = helper
-    )
+  for (duplicates in c("error", "keep")) {
+    # Each helper must reject the source when it is the only share requested.
+    for (helper in c("share_of_total", "share_of_parent")) {
+      share <- rlang::call2(helper, quote(value))
+      eligible <- dplyr::collect(summarize_with_margins(
+        remote, value = max(amount, na.rm = TRUE), ratio = !!share,
+        .grouping = rollup(g), .duplicates = duplicates,
+        .id = "set", .margin_label = NULL
+      ))
+      expect_identical(
+        eligible$ratio[eligible$set == 1L], c(NA_real_, NA_real_)
+      )
+      expect_identical(eligible$ratio[eligible$set == 2L], 1)
+      query <- summarize_with_margins(
+        remote, value = max(duration, na.rm = TRUE), ratio = !!share,
+        .grouping = rollup(g), .duplicates = duplicates,
+        .id = "set", .margin_label = NULL
+      )
+      expect_s3_class(query, "tbl_lazy")
+      expect_error(
+        dplyr::collect(query), "Binder Error:.*INTERVAL", info = helper
+      )
+    }
   }
 })
