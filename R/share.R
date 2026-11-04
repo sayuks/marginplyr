@@ -4890,18 +4890,12 @@ is_immediate_parent_frame <- function(expr, bound, lookup) {
         !is_known_base_call(expr, "parent.frame", bound, lookup)) {
     return(FALSE)
   }
-  if (length(static_call_args(expr)) == 0L) {
-    return(TRUE)
-  }
-  depth <- base_call_argument(expr, "n")
-  if (length(depth) == 0L) {
-    return(FALSE)
-  }
-  if (rlang::is_missing(depth[[1L]])) {
-    return(TRUE)
-  }
-  value <- unparenthesized_value(depth[[1L]])
-  identical(value, 1) || identical(value, 1L)
+  args <- static_call_args(expr)
+  length(args) == 0L ||
+    (length(args) == 1L && argument_names(args)[[1L]] %in% c("", "n") &&
+       (rlang::is_missing(args[[1L]]) ||
+          identical(unparenthesized_value(args[[1L]]), 1) ||
+          identical(unparenthesized_value(args[[1L]]), 1L)))
 }
 
 # Discard pending defaults whose bindings have been removed.
