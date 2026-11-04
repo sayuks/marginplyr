@@ -141,6 +141,6 @@ write.csv(results, file.path(output_dir, "family-algebra.csv"), row.names = FALS
 print(with(results, table(kind, policy, matches)))
 cat("Trees:", length(trees), "Comparisons:", nrow(results),
     "Matches:", sum(results$matches), "\n")
-if (any(!results$matches)) print(results[!results$matches, ], row.names = FALSE)
+if (!all(results$matches)) print(results[!results$matches, ], row.names = FALSE)
 print(sessionInfo())
 stopifnot(nrow(results) == 1080L, all(results$matches))

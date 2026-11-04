@@ -107,6 +107,6 @@ write.csv(companions, file.path(output_dir, "factor-display-companions.csv"), ro
 cat("Scope of the confirmed defect: package factor encoding/reconstruction, not subclass restoration.\n")
 print(sessionInfo())
 if ("--assert" %in% commandArgs(trailingOnly = TRUE) &&
-      (any(results$status != "matched") || any(!companions$matched))) {
+      (any(results$status != "matched") || !all(companions$matched))) {
   stop("Desired behavior failed: factor values changed during package encoding/reconstruction.")
 }

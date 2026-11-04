@@ -24,6 +24,7 @@ second_wrapped <- function(...) inspect_grouping(dat, .grouping = grouping_sets(
 top_plain <- function(...) inspect_grouping(dat, .grouping = ..1, .format = "list")
 top_wrapped <- function(...) inspect_grouping(dat, .grouping = (..1), .format = "list")
 
+# jarl-ignore missing_argument: Empty dots payloads are intentional boundary inputs.
 cases <- list(
   named_default_plain = capture(named_plain()),
   named_default_wrapped = capture(named_wrapped()),

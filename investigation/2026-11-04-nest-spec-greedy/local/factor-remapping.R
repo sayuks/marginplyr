@@ -54,6 +54,6 @@ result <- do.call(rbind, rows)
 print(result)
 write.csv(result, file.path(output_dir, "factor-remapping.csv"), row.names = FALSE)
 cat("Native local nesting/union controls passed; all calls completed.\n")
-if ("--assert" %in% commandArgs(trailingOnly = TRUE) && any(!result$matched)) {
+if ("--assert" %in% commandArgs(trailingOnly = TRUE) && !all(result$matched)) {
   stop("Desired behavior failed: factor displays silently remapped source keys.")
 }

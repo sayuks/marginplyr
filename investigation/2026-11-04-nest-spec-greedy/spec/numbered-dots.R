@@ -115,6 +115,6 @@ cat("Parenthesized erroneous refusals:",
     sum(results$parens > 0L & !results$ok & !results$matches), "\n")
 stopifnot(nrow(results) == 450L,
           all(results$matches[results$parens == 0L]),
-          all(!results$matches[results$parens > 0L]))
+          !any(results$matches[results$parens > 0L]))
 print(sessionInfo())
 if (assert_desired) stopifnot(all(results$matches))
