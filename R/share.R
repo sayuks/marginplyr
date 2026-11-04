@@ -4422,6 +4422,7 @@ definition_data_symbols <- function(expr, bound, lookup = NULL) {
   defaults <- formals_list[
     !vapply(formals_list, rlang::is_missing, logical(1))
   ]
+  lookup$defaults <- defaults
   unique(unlist(
     lapply(
       c(defaults, list(expr[[3L]])),
@@ -4478,12 +4479,13 @@ block_reads_and_bound <- function(expr, bound, lookup = NULL) {
     step <- statement_reads_and_bound(statements[[index]], bound, lookup)
     reads <- c(reads, step$reads)
     bound <- step$bound
+    lookup$defaults <- step$defaults
   }
-  list(reads = unique(reads), bound = bound)
+  list(reads = unique(reads), bound = bound, defaults = lookup$defaults)
 }
 
-# One statement's reads together with the bound set the statement after it
-# sees. Nested evaluated removals can shrink it without binding a new name.
+# One statement's reads, following bound set, and formal defaults not replaced
+# by definite bindings. Nested removals can shrink the set without binding.
 statement_reads_and_bound <- function(expr, bound, lookup = NULL) {
   # A nested block and a redundant parenthesis are transparent here for the
   # reason the enclosing block is: neither opens a scope, and both always run,
@@ -4505,30 +4507,38 @@ statement_reads_and_bound <- function(expr, bound, lookup = NULL) {
   if (!is_binding_statement(call_name, expr)) {
     return(list(
       reads = expression_data_symbols(expr, bound, lookup),
-      bound = nested_removal_retained_bound(expr, bound, lookup)
+      bound = nested_removal_retained_bound(expr, bound, lookup),
+      defaults = lookup$defaults
     ))
   }
   if (identical(call_name, "for")) {
     # R binds the index even for an empty sequence. The sequence runs before
     # that binding; the body runs after it and may remove it.
     inner <- nested_removal_retained_bound(expr[[3L]], bound, lookup)
+    body_lookup <- lookup
     if (is_name_part(expr[[2L]])) {
       inner <- unique(c(inner, rlang::as_name(expr[[2L]])))
+      body_lookup$defaults[rlang::as_name(expr[[2L]])] <- NULL
     }
     return(list(
       reads = unique(c(
         expression_data_symbols(expr[[3L]], bound, lookup),
-        expression_data_symbols(expr[[4L]], inner, lookup)
+        expression_data_symbols(expr[[4L]], inner, body_lookup)
       )),
-      bound = nested_removal_retained_bound(expr[[4L]], inner, lookup)
+      bound = nested_removal_retained_bound(expr[[4L]], inner, body_lookup),
+      defaults = body_lookup$defaults
     ))
   }
   value <- expression_data_symbols(expr[[3L]], bound, lookup)
   retained <- nested_removal_retained_bound(expr[[3L]], bound, lookup)
   if (is_name_part(expr[[2L]])) {
+    # Assignment replaces a formal's promise; later reads cannot force its
+    # abandoned default, even when the name was already in the bound set.
+    lookup$defaults[rlang::as_name(expr[[2L]])] <- NULL
     return(list(
       reads = value,
-      bound = unique(c(retained, rlang::as_name(expr[[2L]])))
+      bound = unique(c(retained, rlang::as_name(expr[[2L]]))),
+      defaults = lookup$defaults
     ))
   }
   # A replacement form -- `names(x) <- v` -- reads its target before it rebuilds
@@ -4540,7 +4550,8 @@ statement_reads_and_bound <- function(expr, bound, lookup = NULL) {
     reads = unique(c(
       expression_data_symbols(expr[[2L]], bound, lookup), value
     )),
-    bound = nested_removal_retained_bound(expr[[2L]], retained, lookup)
+    bound = nested_removal_retained_bound(expr[[2L]], retained, lookup),
+    defaults = lookup$defaults
   )
 }
 
@@ -4717,6 +4728,16 @@ scope_callee_is_shadowed <- function(callee, name, bound, lookup) {
 nested_removal_retained_bound <- function(expr, bound, lookup = NULL) {
   if (rlang::is_quosure(expr)) {
     lookup$env <- rlang::quo_get_env(expr)
+  }
+  if (is_name_part(expr) && rlang::as_name(expr) %in% bound) {
+    name <- rlang::as_name(expr)
+    if (name %in% names(lookup$defaults)) {
+      default <- lookup$defaults[[name]]
+      # Reading a formal may force its default in this frame. Removing it from
+      # the pending defaults bounds recursive promises without evaluating them.
+      lookup$defaults[name] <- NULL
+      return(nested_removal_retained_bound(default, bound, lookup))
+    }
   }
   if (!rlang::is_call(expr) || length(bound) == 0L) {
     return(bound)

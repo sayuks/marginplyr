@@ -813,7 +813,7 @@ test_that("every shared reader answers a pair holding an empty call part", {
   expect_identical(expression_data_symbols(pair), character())
   expect_identical(
     statement_reads_and_bound(pair, character()),
-    list(reads = character(), bound = character())
+    list(reads = character(), bound = character(), defaults = NULL)
   )
 })
 
