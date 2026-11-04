@@ -1,0 +1,11 @@
+Tracing function "dbSendQuery" in package "namespace:DBI"
+Tracing function "dbSendStatement" in package "namespace:DBI"
+Error in inspect_grouping(q, .grouping = rollup(where(is.character)),  : 
+  Can't select with a predicate in `where(is.character)`.
+ℹ This input's backend doesn't report column types without a query, and marginplyr sends none you didn't ask for.
+ℹ Select the columns by name, or collect the input first.
+ℹ A Margin operation on collected data defaults `.check_margin_label` from `FALSE` to `TRUE`; set it explicitly.
+Caused by error in `resolve_column_selection()` at source/R/grouping-plan.R:1495:3:
+! This tidyselect interface doesn't support predicates.
+Calls: inspect_grouping ... tryCatch -> tryCatchList -> tryCatchOne -> <Anonymous>
+Execution halted

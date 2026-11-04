@@ -1,0 +1,26 @@
+Completed calls: 6912 
+
+           correct wrong_outer_values 
+              6336                576 
+, , verdict = correct
+
+        role
+mode     dimension fixed payload
+  label        576   768     768
+  suffix       576   768     768
+  swap         576   768     768
+
+, , verdict = wrong_outer_values
+
+        role
+mode     dimension fixed payload
+  label        192     0       0
+  suffix       192     0       0
+  swap         192     0       0
+
+Every source-group membership, cell projection, fixed factor value and serialized source matched.
+R: R version 4.6.1 (2026-06-24) ; platform: aarch64-apple-darwin23 
+marginplyr 0.1.0 
+dplyr 1.2.1 
+vctrs 0.7.3 
+tibble 3.3.1 

@@ -1,0 +1,8 @@
+inspect_grouping variable condition: marginplyr_error ; identical to caller condition: FALSE 
+nest_with_margins variable condition: marginplyr_error ; identical to caller condition: FALSE 
+nest_by_with_margins variable condition: marginplyr_error ; identical to caller condition: FALSE 
+Native selection, local Grouping specification and derived fixed-key controls preserved the caller condition.
+Error in run() : 
+  Grouping specification must preserve the caller-promoted error before metadata refusal.
+Calls: run -> stopifnot
+Execution halted
