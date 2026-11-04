@@ -684,18 +684,14 @@ is_data_pronoun <- function(expr) {
   length(parts) == 2L && identical(parts[[1L]], quote(.data))
 }
 
-# Run a discarded pass quietly unless warnings become errors (ADR 0005).
+# Let caller warning handlers run before typed metadata acquisition (ADR 0005).
 # Return identities of warnings delivered before a caller muffled them.
 with_discarded_selections <- function(expr) {
   warnings <- list()
   rlang::with_options(
-    if (getOption("warn") >= 2L) {
-      withCallingHandlers(expr, warning = function(cnd) {
-        warnings[[length(warnings) + 1L]] <<- selection_warning_key(cnd)
-      })
-    } else {
-      suppressWarnings(expr)
-    },
+    withCallingHandlers(expr, warning = function(cnd) {
+      warnings[[length(warnings) + 1L]] <<- selection_warning_key(cnd)
+    }),
     lifecycle_verbosity = discarded_pass_verbosity()
   )
   warnings
