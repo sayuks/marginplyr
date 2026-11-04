@@ -783,6 +783,12 @@ test_that("failed SQLite shadowing compute restores the temp schema", {
   }
   before <- temp_schema()
 
+  expect_error(
+    dplyr::compute(query, name = "facts", indexes = list("missing")),
+    "All columns specified through", class = "rlang_error"
+  )
+  expect_identical(temp_schema(), before)
+
   expect_error(dplyr::compute(query, name = "FACTS", overwrite = TRUE),
                "explicit schema or another name", class = "marginplyr_error")
   expect_identical(temp_schema(), before)
@@ -795,4 +801,107 @@ test_that("failed SQLite shadowing compute restores the temp schema", {
   expect_identical(DBI::dbReadTable(con, main), input)
   expect_identical(dplyr::collect(dplyr::compute(query, name = "facts"))$g,
                    c("a", "b", "Total", "Total"))
+})
+
+test_that("SQLite shadowing compute ignores unrelated invalid temp views", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  main <- DBI::Id(schema = "main", table = "facts")
+  DBI::dbWriteTable(con, main, data.frame(g = c("b", "a")))
+  DBI::dbExecute(con, "CREATE TEMP VIEW broken AS SELECT * FROM missing")
+  rename_mode <- DBI::dbGetQuery(con, "PRAGMA legacy_alter_table")
+
+  for (source in list("facts", main)) {
+    query <- expand_with_margins(
+      dplyr::tbl(con, source), .grouping = rollup(g), .sort = "last"
+    )
+    out <- dplyr::compute(query, name = "facts")
+    expect_identical(dplyr::collect(out)$g, c("a", "b", "Total", "Total"))
+    DBI::dbRemoveTable(con, DBI::Id(schema = "temp", table = "facts"))
+  }
+  expect_identical(DBI::dbGetQuery(con, "PRAGMA legacy_alter_table"),
+                   rename_mode)
+  expect_true(DBI::dbExistsTable(
+    con, DBI::Id(schema = "temp", table = "broken")
+  ))
+})
+
+test_that("SQLite compute preserves a source using a table-valued function", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  DBI::dbExecute(con, "CREATE TABLE payload (b INTEGER, a INTEGER)")
+  source <- dplyr::tbl(
+    con, dbplyr::sql("SELECT name AS g FROM pragma_table_info('payload')"),
+    vars = "g"
+  )
+  query <- expand_with_margins(source, .grouping = rollup(g), .sort = "last")
+  out <- dplyr::compute(query, name = "pragma_table_info")
+  expect_identical(dplyr::collect(out)$g, c("a", "b", "Total", "Total"))
+})
+
+test_that("SQLite generated compute names avoid the input relation", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  seed_name <- ".Random.seed"
+  seed <- get0(seed_name, envir = .GlobalEnv, inherits = FALSE)
+  on.exit({
+    if (is.null(seed)) {
+      rm(seed_name, envir = .GlobalEnv)
+    } else {
+      assign(seed_name, seed, envir = .GlobalEnv)
+    }
+  }, add = TRUE)
+  seed_table <- dplyr::copy_to(con, data.frame(g = "seed"), "seed")
+  set.seed(1282)
+  destination <- dplyr::compute(seed_table)
+  name <- dbplyr::remote_name(destination)
+  DBI::dbRemoveTable(con, name)
+  DBI::dbWriteTable(con, name, data.frame(g = c("b", "a")))
+  query <- expand_with_margins(
+    dplyr::tbl(con, name), .grouping = rollup(g), .sort = "last"
+  )
+  set.seed(1282)
+  expect_identical(dplyr::collect(dplyr::compute(query))$g,
+                   c("a", "b", "Total", "Total"))
+  expect_identical(DBI::dbReadTable(con, name)$g, c("b", "a"))
+})
+
+test_that("SQLite refuses a shadowing name before an unavailable rename", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  DBI::dbWriteTable(con, "facts", data.frame(g = c("b", "a")))
+  query <- expand_with_margins(
+    dplyr::tbl(con, "facts"), .grouping = rollup(g), .sort = "last"
+  )
+  get_query <- DBI::dbGetQuery
+  local_mocked_bindings(
+    dbGetQuery = function(conn, statement, ...) {
+      if (identical(statement, "PRAGMA legacy_alter_table")) {
+        return(data.frame())
+      }
+      get_query(conn, statement, ...)
+    },
+    .package = "DBI"
+  )
+  execute <- DBI::dbExecute
+  local_mocked_bindings(
+    dbExecute = function(conn, statement, ...) {
+      expect_false(grepl("^(CREATE|ALTER|INSERT)", statement))
+      execute(conn, statement, ...)
+    },
+    .package = "DBI"
+  )
+
+  expect_error(
+    dplyr::compute(query, name = "facts"),
+    "Choose a different destination name", class = "marginplyr_error"
+  )
+  expect_false(DBI::dbExistsTable(
+    con, DBI::Id(schema = "temp", table = "facts")
+  ))
+  expect_identical(DBI::dbReadTable(con, "facts")$g, c("b", "a"))
 })

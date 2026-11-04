@@ -159,10 +159,12 @@ these checks. Explicit temp with temporary materialization is distinct from a
 non-temp qualified schema. Rowid shadowing is therefore no longer the only
 materialization refusal.
 
-When a new temp name could shadow a relation in another schema (#1282),
-fill the destination under a private temp name. Rename that same table
-after the insert and use the requested name for indexes, analysis, and the
-returned table. The rename shares the materialization savepoint.
+When a new temp name could shadow a relation (#1282), fill the destination
+under a private temp name. Rename that same table after the insert and use
+the requested name for indexes, analysis, and the returned table. The
+rename shares the materialization savepoint and leaves unrelated views alone.
+An omitted name is allocated without shadowing a resolvable relation.
+If safe renaming is unavailable, refuse a shadowing name before table creation.
 
 Explicit compute may inspect destination metadata only as needed for safe
 admission and resolution. This replaces the original blanket prohibition on
@@ -294,7 +296,9 @@ collection appends its limit without introducing another public-name subquery.
 SQLite also loses these names under `CREATE TABLE AS`. Materialize the type
 anchor with private names, then rename the destination columns before inserting
 the public result. Index requests follow those aliases until the columns are
-renamed. All these writes remain inside the existing owned savepoint; they
+renamed. When publication is delayed, insert into those aliases and restore
+the public column names after the table rename and index creation. All these
+writes remain inside the existing owned savepoint and
 introduce no construction-time query or source-data read under ADR 0020.
 
 ## Public composition and direct CTE execution (#1179, #1180)
