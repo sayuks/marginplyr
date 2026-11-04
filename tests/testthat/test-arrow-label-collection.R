@@ -1,27 +1,3 @@
-# Observe both entry and completion: an error after collection must not hide
-# the rows Arrow already read. Tracing the generic also sees automatic collect.
-observe_arrow_label_collection <- function(expr) {
-  counter <- new.env(parent = emptyenv())
-  counter$entries <- 0L
-  counter$rows <- integer()
-  on.exit(suppressMessages(untrace(
-    "collect", where = asNamespace("dplyr")
-  )), add = TRUE)
-  suppressMessages(trace(
-    "collect", where = asNamespace("dplyr"),
-    tracer = function() {
-      counter$entries <- counter$entries + 1L
-    },
-    exit = function() {
-      frame <- parent.frame()
-      counter$rows <- c(counter$rows, nrow(evalq(returnValue(), frame)))
-    },
-    print = FALSE
-  ))
-  result <- tryCatch(suppressWarnings(force(expr)), error = identity)
-  list(result = result, entries = counter$entries, rows = counter$rows)
-}
-
 # Both public verbs reach the generated label conversion with the same keys.
 arrow_label_result <- function(source, dimensions, summary) {
   grouping <- grouping_set(dplyr::all_of(dimensions))
@@ -36,7 +12,7 @@ arrow_label_result <- function(source, dimensions, summary) {
 test_that("generated Arrow labels refuse automatic collection before entry", {
   skip_if_suggest_absent("arrow")
   inputs <- absorbing_arrow_inputs(data.frame(.data = "x", b = "y"))
-  control <- observe_arrow_label_collection(dplyr::collect(inputs$table))
+  control <- observe_arrow_collection(dplyr::collect(inputs$table))
   expect_identical(control$entries, 1L)
   expect_identical(control$rows, 1L)
   expect_equal(control$result, tibble::tibble(.data = "x", b = "y"))
@@ -44,7 +20,7 @@ test_that("generated Arrow labels refuse automatic collection before entry", {
   for (shape in names(inputs)) {
     for (summary in c(FALSE, TRUE)) {
       info <- paste(shape, summary)
-      observed <- observe_arrow_label_collection(arrow_label_result(
+      observed <- observe_arrow_collection(arrow_label_result(
         inputs[[shape]], c(".data", "b"), summary
       ))
       expect_identical(observed$entries, 0L, info = info)
@@ -71,13 +47,13 @@ test_that("supported Arrow labels stay lazy and collect only on request", {
   for (shape in names(inputs)) {
     for (summary in c(FALSE, TRUE)) {
       info <- paste(shape, summary)
-      observed <- observe_arrow_label_collection(arrow_label_result(
+      observed <- observe_arrow_collection(arrow_label_result(
         inputs[[shape]], c("b", ".data"), summary
       ))
       expect_identical(observed$entries, 0L, info = info)
       expect_identical(observed$rows, integer(), info = info)
       expect_true(inherits(observed$result, "arrow_dplyr_query"), info = info)
-      collected <- observe_arrow_label_collection(dplyr::collect(
+      collected <- observe_arrow_collection(dplyr::collect(
         observed$result
       ))
       expect_identical(collected$entries, 1L, info = info)
@@ -99,7 +75,7 @@ test_that("Arrow labels preserve included and omitted dimensions", {
         dimensions <- c("b", ".data")
         grouping <- rollup(dplyr::all_of(dimensions))
         label <- if (missing) NULL else "Total"
-        observed <- observe_arrow_label_collection(if (summary) {
+        observed <- observe_arrow_collection(if (summary) {
           summarize_with_margins(
             inputs[[shape]], n = dplyr::n(), .grouping = grouping,
             .margin_label = label, .id = "sid"
@@ -131,7 +107,7 @@ test_that("Dataset labels retain Arrow's refusal without collection", {
   for (shape in names(inputs)) {
     for (summary in c(FALSE, TRUE)) {
       info <- paste(shape, summary)
-      observed <- observe_arrow_label_collection(arrow_label_result(
+      observed <- observe_arrow_collection(arrow_label_result(
         inputs[[shape]], c(".data", "b"), summary
       ))
       expect_identical(observed$entries, 0L, info = info)
@@ -154,7 +130,7 @@ test_that("reader label construction refuses before consuming any batch", {
       } else {
         reader
       }
-      observed <- observe_arrow_label_collection(arrow_label_result(
+      observed <- observe_arrow_collection(arrow_label_result(
         source, c(".data", "b"), summary
       ))
       expect_identical(observed$entries, 0L)

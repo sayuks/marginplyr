@@ -741,6 +741,8 @@ plan_summary_expressions <- function(dots,
   caller_labels <- summary_argument_labels(dots)
   original_dots <- dots
   defer_local <- identical(backend_kind, "local")
+  # Arrow owns expression translation and does not run dplyr's pick expansion.
+  shield_independent_masks <- backend_kind != "arrow"
   has_shares <- any(vapply(
     dots,
     function(dot) contains_share_helper(rlang::quo_get_expr(dot)),
@@ -790,6 +792,7 @@ plan_summary_expressions <- function(dots,
       group_vars = group_vars,
       caller_labels = caller_labels,
       normalize_across_names = FALSE,
+      shield_independent_masks = shield_independent_masks,
       skip_shares = TRUE,
       defer_local = deferred,
       defer_nested_local = nested_deferred,
@@ -932,6 +935,7 @@ plan_summary_expressions <- function(dots,
     group_vars = group_vars,
     caller_labels = caller_labels,
     normalize_across_names = identical(backend_kind, "dtplyr"),
+    shield_independent_masks = shield_independent_masks,
     defer_local = deferred,
     defer_nested_local = nested_deferred,
     forbidden_names = if (defer_local) selection_state else character(),
@@ -1649,6 +1653,7 @@ resolve_summary_selections <- function(dots,
                                        caller_labels,
                                        selection_proxy,
                                        normalize_across_names = FALSE,
+                                       shield_independent_masks = TRUE,
                                        skip_shares = FALSE,
                                        defer_local = FALSE,
                                        defer_nested_local = FALSE,
@@ -1693,6 +1698,7 @@ resolve_summary_selections <- function(dots,
           env = rlang::quo_get_env(dot),
           data_proxy = selection_proxy,
           normalize_across_names = normalize_across_names,
+          shield_independent_masks = shield_independent_masks,
           defer_local = defer_local[[i]],
           defer_nested_local = defer_nested_local[[i]],
           skip_nested_deferred = skip_nested_deferred,
@@ -1717,6 +1723,7 @@ rewrite_summary_selections <- function(expr,
                                        env,
                                        data_proxy,
                                        normalize_across_names,
+                                       shield_independent_masks = TRUE,
                                        defer_local = FALSE,
                                        defer_nested_local = FALSE,
                                        skip_nested_deferred = FALSE,
@@ -1760,6 +1767,7 @@ rewrite_summary_selections <- function(expr,
         env = env,
         data_proxy = data_proxy,
         normalize_across_names = normalize_across_names,
+        shield_independent_masks = shield_independent_masks,
         defer_local = defer_local || defer_nested_local,
         group_vars = group_vars,
         forbidden_names = forbidden_names
@@ -1767,10 +1775,10 @@ rewrite_summary_selections <- function(expr,
     }
   )
 
-  if (any(independent_mask_call_parts(expr))) {
-    # dplyr expands pick() through nested calls, stopping at function literals.
-    # Keep its enclosing summary from expanding an inner mask's selection.
-    return(rlang::call2(rlang::call2("function", pairlist(), expr)))
+  if (shield_independent_masks && any(independent_mask_call_parts(expr))) {
+    # dplyr expands pick() in call arguments, so hide the nested call in the
+    # head. Force it as a promise so it still evaluates in the caller's scope.
+    return(rlang::expr((function(value) function() value)(!!expr)()))
   }
 
   call_name <- static_spelling_name(expr, "selection")

@@ -4192,7 +4192,9 @@ scoped_data_symbols <- function(expr, scope, lookup) {
   # line below and names nothing, which is the answer (#174).
   if (is_name_part(expr)) {
     name <- rlang::as_name(expr)
-    if (name %in% scope_bound_names(scope)) {
+    bound <- scope_bound_names(scope)
+    if (name %in% bound ||
+          ("..." %in% bound && is_numbered_dot_reference(expr))) {
       return(scope_promise_symbols(name, scope, lookup))
     }
     return(name)
@@ -4461,7 +4463,7 @@ inline_function_definition <- function(expr) {
 function_scope_frame <- function(definition, invocation) {
   formals <- as.list(definition[[2L]])
   defaults <- formals[!vapply(formals, rlang::is_missing, logical(1))]
-  supplied <- unmatched <- list()
+  supplied <- dots <- unmatched <- list()
   if (!is.null(invocation) && length(invocation) > 1L) {
     actual <- static_call_args(invocation)
     matched <- static_matched_arguments(
@@ -4469,14 +4471,21 @@ function_scope_frame <- function(definition, invocation) {
       rlang::new_function(definition[[2L]], NULL, emptyenv()),
       expand_dots = FALSE
     )
-    unmatched <- if (is.null(matched)) actual else as.list(matched[["..."]])
+    if (is.null(matched)) {
+      unmatched <- actual
+    } else {
+      dots <- as.list(matched[["..."]])
+    }
     supplied <- matched[setdiff(names(matched), "...")]
     supplied <- supplied[!vapply(supplied, rlang::is_missing, logical(1))]
     defaults[names(supplied)] <- NULL
   }
   list(
     bound = names(formals), defaults = defaults, arguments = supplied,
-    unmatched = unmatched,
+    dots = dots, unmatched = unmatched,
+    kinds = Filter(Negate(is.null), lapply(
+      c(defaults, supplied), scope_literal_kind
+    )),
     invoked = !is.null(invocation)
   )
 }
@@ -4487,7 +4496,7 @@ definition_data_symbols <- function(expr, scope, lookup, invocation = NULL) {
   if (is.null(invocation)) {
     # A definition can capture names without visibly demanding their promises.
     scope <- lapply(scope, function(frame) {
-      frame$defaults <- frame$arguments <- NULL
+      frame$defaults <- frame$arguments <- frame$dots <- NULL
       frame
     })
   }
@@ -4510,6 +4519,25 @@ scope_bound_names <- function(scope) {
 # Find the first binding and the frame in which its pending syntax runs.
 # Clear the promise in the returned scope before following recursive reads.
 scope_promise <- function(name, scope, function_lookup) {
+  if (!function_lookup && startsWith(name, "..") &&
+        is_numbered_dot_reference(rlang::sym(name))) {
+    owners <- vapply(scope, function(frame) "..." %in% frame$bound, logical(1))
+    index <- match(TRUE, owners)
+    if (!is.na(index)) {
+      slot <- as.double(substring(name, 3L))
+      dots <- scope[[index]]$dots
+      if (slot > length(dots) || rlang::is_missing(dots[[slot]])) {
+        return(NULL)
+      }
+      # Keep positions fixed when consuming a dot. A later ..i still looks
+      # in the same ... binding even after its promise has been consumed.
+      scope[[index]]$dots[slot] <- list(rlang::missing_arg())
+      return(list(
+        expression = dots[[slot]], scope = scope,
+        evaluation = seq.int(index + 1L, length(scope))
+      ))
+    }
+  }
   for (index in seq_along(scope)) {
     frame <- scope[[index]]
     if (!name %in% frame$bound ||
@@ -4569,16 +4597,19 @@ scope_bind_local <- function(scope, name, value = NULL) {
   scope[[1L]]$bound <- union(scope[[1L]]$bound, name)
   scope[[1L]]$defaults[name] <- NULL
   scope[[1L]]$arguments[name] <- NULL
-  scope[[1L]]$kinds[name] <- NULL
-  if (!missing(value)) {
-    value <- unparenthesized_value(value)
-    if (is.function(value) || rlang::is_call(value, "function")) {
-      scope[[1L]]$kinds[[name]] <- "function"
-    } else if (!is.language(value)) {
-      scope[[1L]]$kinds[[name]] <- "value"
-    }
-  }
+  scope[[1L]]$kinds[[name]] <- if (!missing(value)) scope_literal_kind(value)
   scope
+}
+
+# Identify literal function or value syntax without evaluating it.
+# NULL leaves the kind unknown.
+scope_literal_kind <- function(value) {
+  value <- unparenthesized_value(value)
+  if (is.function(value) || rlang::is_call(value, "function")) {
+    "function"
+  } else if (!is.language(value)) {
+    "value"
+  }
 }
 
 # Whether the nearest local binding proves that a bare call head is a
@@ -4917,7 +4948,7 @@ scope_after_removals <- function(expr, scope, lookup) {
   if (!is.null(definition)) {
     after <- scope_after_inline_call(expr, definition, scope, lookup)
     scope <- after[-1L]
-    parts <- c(after[[1L]]$arguments, after[[1L]]$unmatched)
+    parts <- c(after[[1L]]$arguments, after[[1L]]$dots, after[[1L]]$unmatched)
   } else if (is_name_part(head)) {
     scope <- scope_after_promise(
       rlang::as_name(head), scope, lookup, function_lookup = TRUE
@@ -4981,19 +5012,24 @@ scope_possible_losses <- function(scope, after) {
   }, scope, after)
 }
 
-# Apply a visible removal to its own frame or the direct inline caller's
-# frame. Unresolved targets retain the conservative current-frame treatment.
+# Apply a visible removal to its own frame or a statically visible caller.
+# Unresolved targets retain the conservative current-frame treatment.
 scope_after_removal_call <- function(expr, scope, lookup) {
   target <- base_call_argument(expr, c("envir", "pos"))
   index <- 1L
   if (length(target) > 0L) {
     envir <- unparenthesized_value(target[[1L]])
     bound <- scope_bound_names(scope)
-    if (is_immediate_parent_frame(envir, bound, lookup)) {
-      if (!isTRUE(scope[[1L]]$invoked)) {
+    depth <- static_parent_frame_depth(envir, scope, lookup)
+    if (!is.null(depth)) {
+      invoked <- vapply(
+        scope[seq_len(depth)], function(frame) isTRUE(frame$invoked),
+        logical(1)
+      )
+      if (depth >= length(scope) || !all(invoked)) {
         return(scope)
       }
-      index <- 2L
+      index <- depth + 1L
     } else if (!is.null(lookup_environment_value(envir, bound, lookup))) {
       return(scope)
     }
@@ -5003,8 +5039,10 @@ scope_after_removal_call <- function(expr, scope, lookup) {
     args[!argument_names(args) %in% c("envir", "pos", "inherits")]
   )
   inheritance <- base_call_argument(expr, "inherits")
-  targets <- if (length(inheritance) > 0L &&
-                   identical(unparenthesized_value(inheritance[[1L]]), TRUE)) {
+  inherits <- if (length(inheritance) > 0L) {
+    unparenthesized_value(inheritance[[1L]])
+  }
+  targets <- if (identical(inherits, TRUE) || identical(inherits, 1L)) {
     seq.int(index, length(scope))
   } else {
     index
@@ -5020,18 +5058,56 @@ scope_after_removal_call <- function(expr, scope, lookup) {
   scope
 }
 
-# Whether the written call selects the immediate caller's frame.
-is_immediate_parent_frame <- function(expr, bound, lookup) {
-  if (!identical(static_call_name(expr), "parent.frame") ||
-        !is_known_base_call(expr, "parent.frame", bound, lookup)) {
-    return(FALSE)
+# Literal depth of a recognized base caller-frame expression, or NULL
+# when the target is unknown. No frame expression is evaluated.
+static_parent_frame_depth <- function(expr, scope, lookup) {
+  name <- static_call_name(expr)
+  if (identical(name, "parent.frame") &&
+        is_known_base_frame_call(expr, name, scope, lookup)) {
+    args <- static_call_args(expr)
+    if (length(args) == 0L) {
+      return(1L)
+    }
+    if (length(args) == 1L && argument_names(args)[[1L]] %in% c("", "n")) {
+      if (rlang::is_missing(args[[1L]])) {
+        return(1L)
+      }
+      depth <- unparenthesized_value(args[[1L]])
+      if (identical(depth, 1) || identical(depth, 1L)) {
+        return(1L)
+      }
+      if (identical(depth, 2L)) {
+        return(2L)
+      }
+    }
   }
-  args <- static_call_args(expr)
-  length(args) == 0L ||
-    (length(args) == 1L && argument_names(args)[[1L]] %in% c("", "n") &&
-       (rlang::is_missing(args[[1L]]) ||
-          identical(unparenthesized_value(args[[1L]]), 1) ||
-          identical(unparenthesized_value(args[[1L]]), 1L)))
+  if (identical(name, "sys.frame") && length(expr) == 2L &&
+        is_known_base_frame_call(expr, name, scope, lookup)) {
+    args <- static_call_args(expr)
+    # An empty `which` uses the global frame, as does `sys.frame()`.
+    if (rlang::is_missing(args[[1L]])) {
+      return(NULL)
+    }
+    parent <- unparenthesized_value(args[[1L]])
+    if (argument_names(args)[[1L]] %in% c("", "which") &&
+          identical(static_call_name(parent), "sys.parent") &&
+          length(parent) == 1L &&
+          is_known_base_frame_call(parent, "sys.parent", scope, lookup)) {
+      return(1L)
+    }
+  }
+  NULL
+}
+
+# Check a frame callee against lexical frames before ordinary caller lookup.
+# Bare call heads skip known non-functions in those frames.
+is_known_base_frame_call <- function(expr, name, scope, lookup) {
+  function_lookup <- is_name_part(static_call_head(expr))
+  shadowed <- any(vapply(scope, function(frame) {
+    name %in% frame$bound &&
+      (!function_lookup || !identical(frame$kinds[[name]], "value"))
+  }, logical(1)))
+  is_known_base_call(expr, name, name[shadowed], lookup)
 }
 
 # Discard pending defaults whose bindings have been removed.
@@ -5039,6 +5115,9 @@ retain_scope_bindings <- function(frame, bound) {
   frame$bound <- bound
   frame$defaults <- frame$defaults[names(frame$defaults) %in% bound]
   frame$arguments <- frame$arguments[names(frame$arguments) %in% bound]
+  if (!"..." %in% bound) {
+    frame$dots <- NULL
+  }
   frame$kinds <- frame$kinds[names(frame$kinds) %in% bound]
   frame
 }

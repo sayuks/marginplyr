@@ -683,9 +683,11 @@ argument-ownership reader. Inner column and summary names belong to their
 operation, including names identical to an outer share. The outer dependency
 check still covers the nested input expression.
 
-The selection rewrite places an independent call inside an immediately invoked
-function. dplyr's own `pick()` expansion stops at that function boundary, so it
-cannot expand the nested operation's selection in the enclosing summary mask.
+dplyr expands `pick()` in call arguments and skips computed call heads. The
+selection rewrite shields the nested operation in such a head, as a promise
+evaluated in the caller's scope. A return or assignment in the input then
+affects the caller's frame. Arrow evaluates its own expressions and receives
+the nested call directly, so its translation and refusal follow ADR 0025.
 
 ## Amendment: preserve parenthesized across evaluation
 
