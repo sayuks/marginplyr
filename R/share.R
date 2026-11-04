@@ -4483,6 +4483,9 @@ function_scope_frame <- function(definition, invocation) {
   list(
     bound = names(formals), defaults = defaults, arguments = supplied,
     dots = dots, unmatched = unmatched,
+    kinds = Filter(Negate(is.null), lapply(
+      c(defaults, supplied), scope_literal_kind
+    )),
     invoked = !is.null(invocation)
   )
 }
@@ -4594,16 +4597,19 @@ scope_bind_local <- function(scope, name, value = NULL) {
   scope[[1L]]$bound <- union(scope[[1L]]$bound, name)
   scope[[1L]]$defaults[name] <- NULL
   scope[[1L]]$arguments[name] <- NULL
-  scope[[1L]]$kinds[name] <- NULL
-  if (!missing(value)) {
-    value <- unparenthesized_value(value)
-    if (is.function(value) || rlang::is_call(value, "function")) {
-      scope[[1L]]$kinds[[name]] <- "function"
-    } else if (!is.language(value)) {
-      scope[[1L]]$kinds[[name]] <- "value"
-    }
-  }
+  scope[[1L]]$kinds[[name]] <- if (!missing(value)) scope_literal_kind(value)
   scope
+}
+
+# Identify literal function or value syntax without evaluating it.
+# NULL leaves the kind unknown.
+scope_literal_kind <- function(value) {
+  value <- unparenthesized_value(value)
+  if (is.function(value) || rlang::is_call(value, "function")) {
+    "function"
+  } else if (!is.language(value)) {
+    "value"
+  }
 }
 
 # Whether the nearest local binding proves that a bare call head is a
@@ -5016,10 +5022,11 @@ scope_after_removal_call <- function(expr, scope, lookup) {
     bound <- scope_bound_names(scope)
     depth <- static_parent_frame_depth(envir, bound, lookup)
     if (!is.null(depth)) {
-      if (depth >= length(scope) ||
-            !all(vapply(scope[seq_len(depth)], function(frame) {
-              isTRUE(frame$invoked)
-            }, logical(1)))) {
+      invoked <- vapply(
+        scope[seq_len(depth)], function(frame) isTRUE(frame$invoked),
+        logical(1)
+      )
+      if (depth >= length(scope) || !all(invoked)) {
         return(scope)
       }
       index <- depth + 1L
@@ -5032,9 +5039,10 @@ scope_after_removal_call <- function(expr, scope, lookup) {
     args[!argument_names(args) %in% c("envir", "pos", "inherits")]
   )
   inheritance <- base_call_argument(expr, "inherits")
-  targets <- if (length(inheritance) > 0L &&
-                   (identical(unparenthesized_value(inheritance[[1L]]), TRUE) ||
-                      identical(unparenthesized_value(inheritance[[1L]]), 1L))) {
+  inherits <- if (length(inheritance) > 0L) {
+    unparenthesized_value(inheritance[[1L]])
+  }
+  targets <- if (identical(inherits, TRUE) || identical(inherits, 1L)) {
     seq.int(index, length(scope))
   } else {
     index

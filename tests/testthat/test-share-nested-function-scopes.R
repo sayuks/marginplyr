@@ -30,6 +30,41 @@ test_that("visible inline scope changes expose both forbidden dependencies", {
     parent.frame()
   }
   expressions <- alist(
+    (function(prior, f = {
+      counters$default <- counters$default + 1L
+      base::rm("prior")
+      identity
+    }) {
+      (function(f) f(0))(1)
+      sum(prior)
+    })(1),
+    (function(prior, f = {
+      base::rm("prior")
+      identity
+    }) {
+      (function(f = 1) f(0))()
+      sum(prior)
+    })(1),
+    (function(prior, f = {
+      base::rm("prior")
+      identity
+    }) {
+      (function(f) {
+        f
+        f(0)
+      })(1)
+      sum(prior)
+    })(1),
+    (function(prior, f = {
+      base::rm("prior")
+      identity
+    }) {
+      (function() {
+        f <- 1
+        f(0)
+      })()
+      sum(prior)
+    })(1),
     (function(prior) {
       (function(...) {
         ..1
@@ -263,6 +298,19 @@ test_that("inline scope changes preserve independent and shadowed bindings", {
   outside$prior <- 2
   rm <- function(...) NULL
   expressions <- alist(
+    (function(prior, rm) {
+      rm("prior")
+      sum(prior)
+    })(touch(), function(...) NULL),
+    (function(prior, rm = function(...) NULL) {
+      rm("prior")
+      sum(prior)
+    })(touch()),
+    (function(prior) {
+      rm <- function(...) NULL
+      rm("prior")
+      sum(prior)
+    })(touch()),
     (function(prior = touch()) {
       (function(...) sum(prior))({
         base::rm("prior")
@@ -450,6 +498,7 @@ test_that("inline scope changes preserve independent and shadowed bindings", {
         .grouping = rollup(group)
       )
       expect_equal(result$derived, control$value)
+      expect_equal(result$prior, c(0.25, 0.75, 1))
       expect_identical(counts$calls, control_calls)
     }
   }
@@ -476,6 +525,14 @@ test_that("inline scope changes keep ordinary evaluation without shares", {
   expect_equal(control$derived, c(1, 3, 4))
   expect_identical(control_calls, 3L)
   expressions <- alist(
+    (function(prior, f = {
+      touch()
+      base::rm("prior")
+      identity
+    }) {
+      (function(f) f(0))(1)
+      sum(prior)
+    })(1),
     (function(prior) {
       (function(...) {
         ..1
@@ -519,6 +576,13 @@ test_that("inline scope changes keep ordinary evaluation without shares", {
     expect_identical(result, control)
     expect_identical(counts$calls, control_calls)
   }
+  result <- summarize_with_margins(
+    data, prior = sum(x), derived = (function(prior, rm) {
+      rm("prior")
+      sum(prior)
+    })(1, function(...) NULL), .grouping = rollup(group)
+  )
+  expect_equal(result$derived, c(1, 1, 1))
   expect_identical(serialize(data, NULL), original)
 })
 
