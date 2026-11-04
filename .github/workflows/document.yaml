@@ -63,6 +63,9 @@ jobs:
       # instruction edited into one half alone is invisible until a reader
       # follows it.
       #
+      # `devtools::build_readme()` installs the working tree before rendering,
+      # as the site build does, so its chunks read that package revision.
+      #
       # Both regenerations run before either check, because this one writes
       # into `man/` as well: `README.qmd` sets `fig.path` to
       # `man/figures/README-`, so a figure chunk added later produces a file

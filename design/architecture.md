@@ -605,6 +605,16 @@ gate free of a `skip_if()` that `verify-backend.R` would read as a job skipping
 for a reason other than a withheld backend. A gate whose subject is the test
 sources rather than the package reads those instead, and needs neither.
 
+Comment rules in `AGENTS.md` are outside these gates. Whether a paragraph
+re-derives an argument another file owns is a semantic property: a scan over
+`R/` either fires on comments that are correct or finds almost nothing, and a
+bound on a block's length is answered by one blank `#` line. A comment is not
+in a loaded namespace the way a name and a body are. A `srcref` opens at
+`function(`, so no header is inside any of them, and an installed package
+carries no `srcref` at all, `keep.source.pkgs` being `FALSE`. Such a gate would
+have to skip where every existing one runs, and `verify-backend.R` fails a job
+for a skip naming no withheld backend.
+
 Reading a namespace that way is two operations — enumerating the functions it
 binds, and recursing over one parsed body — and both live in
 `tests/testthat/helper-namespace-walk.R`, which every gate takes them from. The

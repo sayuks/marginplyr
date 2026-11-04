@@ -161,7 +161,8 @@ jobs:
 
       # `object_usage_linter()` resolves symbols through the package namespace,
       # so linting a package that is not loaded reports every internal function
-      # as an undefined global. Load first, and run the same two lines locally.
+      # as an undefined global. Installing the package is not enough: load it
+      # first, and run the same two lines locally.
       - name: Lint
         run: |
           pkgload::load_all(".", quiet = TRUE)
