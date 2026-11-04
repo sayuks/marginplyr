@@ -296,6 +296,51 @@ sqlite_compute_destination <- function(con, name, temporary, overwrite) {
   destination
 }
 
+# Whether a new temp name could change SQLite's source lookup (ADR 0031).
+# The caller owns a savepoint and supplies a resolved destination.
+sqlite_compute_shadows_source <- function(con, destination, temporary) {
+  if (is.null(destination)) return(FALSE)
+  parts <- dbplyr::table_path_components(destination, con)[[1L]]
+  if (length(parts) == 1L) {
+    if (!temporary) return(FALSE)
+  } else if (!identical(tolower(parts[[1L]]), "temp")) {
+    return(FALSE)
+  }
+  table <- parts[[length(parts)]]
+  relation_exists <- function(schema) {
+    catalog <- DBI::dbQuoteIdentifier(
+      con, DBI::Id(schema = schema, table = "sqlite_master")
+    )
+    nrow(DBI::dbGetQuery(con, paste(
+      "SELECT 1 FROM", catalog,
+      "WHERE name = ? COLLATE NOCASE AND type IN ('table', 'view')"
+    ), params = list(table))) > 0L
+  }
+  if (relation_exists("temp")) return(FALSE)
+  schemas <- DBI::dbGetQuery(con, "PRAGMA database_list")$name
+  any(vapply(setdiff(schemas, "temp"), relation_exists, logical(1)))
+}
+
+# Publish the filled destination and create indexes on its requested name.
+# Boolean columns still have their private aliases when indexes are created.
+sqlite_publish_compute_destination <- function(con, private, destination,
+                                               unique_indexes, indexes) {
+  parts <- dbplyr::table_path_components(destination, con)[[1L]]
+  table <- parts[[length(parts)]]
+  DBI::dbExecute(con, paste(
+    "ALTER TABLE", as.character(private), "RENAME TO",
+    DBI::dbQuoteIdentifier(con, table)
+  ))
+  for (index in unique_indexes) {
+    DBI::dbExecute(con, dbplyr::sql_table_index(
+      con, destination, index, unique = TRUE
+    ))
+  }
+  for (index in indexes) {
+    DBI::dbExecute(con, dbplyr::sql_table_index(con, destination, index))
+  }
+}
+
 # Apply materialization within one owned SQLite savepoint (ADR 0031).
 # The caller supplies a live connection and prepares the complete result in
 # code; only the caller commits or rolls back an enclosing transaction.
@@ -441,8 +486,20 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
   insert_from <- sqlite_boolean_execution_sql(
     public_query, sql_options = sql_options
   )
-  columns <- paste(DBI::dbQuoteIdentifier(con, public), collapse = ", ")
   sqlite_with_compute_savepoint(con, destination, function(destination) {
+    # Delay the public name until the last source read has finished. The
+    # populated table itself is renamed, so rows are inserted only once.
+    publish <- direct && sqlite_compute_shadows_source(
+      con, destination, temporary
+    )
+    requested <- destination
+    if (publish) {
+      destination <- dbplyr::as_table_path(DBI::Id(
+        schema = "temp", table = basename(tempfile("marginplyr_result_"))
+      ), con)
+    }
+    create_unique_indexes <- if (publish) list() else unique_indexes
+    create_indexes <- if (publish) list() else indexes
     if (pronoun_output) {
       # dbplyr's compute() selects every column by symbol before creating the
       # table; tidyselect reads generated `.data` and `.env` as pronouns.
@@ -467,8 +524,9 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
       created <- rlang::exec(
         dbplyr::db_compute,
         con, destination, anchor_sql, temporary = temporary,
-        overwrite = overwrite, unique_indexes = unique_indexes,
-        indexes = indexes, analyze = FALSE, !!!dots, in_transaction = FALSE
+        overwrite = overwrite && !publish,
+        unique_indexes = create_unique_indexes,
+        indexes = create_indexes, analyze = FALSE, !!!dots, in_transaction = FALSE
       )
       result <- dplyr::tbl(con, created, vars = public)
     } else if (is.null(sql_options)) {
@@ -476,27 +534,21 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
       # option in ... is exclusive with a supplied sql_options, even NULL.
       result <- dplyr::compute(
         anchor, name = destination, temporary = temporary,
-        overwrite = overwrite, unique_indexes = unique_indexes,
-        indexes = indexes, analyze = FALSE, ..., in_transaction = FALSE
+        overwrite = overwrite && !publish,
+        unique_indexes = create_unique_indexes,
+        indexes = create_indexes, analyze = FALSE, ..., in_transaction = FALSE
       )
     } else {
       result <- dplyr::compute(
         anchor, name = destination, temporary = temporary,
-        overwrite = overwrite, unique_indexes = unique_indexes,
-        indexes = indexes, analyze = FALSE, ..., sql_options = sql_options,
+        overwrite = overwrite && !publish,
+        unique_indexes = create_unique_indexes,
+        indexes = create_indexes, analyze = FALSE, ..., sql_options = sql_options,
         in_transaction = FALSE
       )
     }
     if (is.null(destination)) {
       destination <- dbplyr::as_table_path(dbplyr::remote_name(result), con)
-    }
-    for (column in names(boolean_aliases)) {
-      alias <- boolean_aliases[[column]]
-      DBI::dbExecute(con, paste(
-        "ALTER TABLE", as.character(destination), "RENAME COLUMN",
-        DBI::dbQuoteIdentifier(con, alias), "TO",
-        DBI::dbQuoteIdentifier(con, column)
-      ))
     }
     parts <- dbplyr::table_path_components(destination, con)[[1L]]
     if (length(parts) == 1L) {
@@ -507,10 +559,32 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
         con
       )
     }
+    physical <- public
+    physical[match(names(boolean_aliases), public)] <- unname(boolean_aliases)
+    columns <- paste(DBI::dbQuoteIdentifier(con, physical), collapse = ", ")
     table_sql <- as.character(destination)
     DBI::dbExecute(con, paste0(
       "INSERT INTO ", table_sql, " (", columns, ") ", as.character(insert_from)
     ))
+    if (publish) {
+      sqlite_publish_compute_destination(
+        con, destination, requested, unique_indexes, indexes
+      )
+      parts <- dbplyr::table_path_components(requested, con)[[1L]]
+      table <- parts[[length(parts)]]
+      destination <- dbplyr::as_table_path(DBI::Id(
+        schema = "temp", table = table
+      ), con)
+      table_sql <- as.character(destination)
+    }
+    for (column in names(boolean_aliases)) {
+      alias <- boolean_aliases[[column]]
+      DBI::dbExecute(con, paste(
+        "ALTER TABLE", as.character(destination), "RENAME COLUMN",
+        DBI::dbQuoteIdentifier(con, alias), "TO",
+        DBI::dbQuoteIdentifier(con, column)
+      ))
+    }
     if (analyze) {
       DBI::dbExecute(con, paste("ANALYZE", table_sql))
     }

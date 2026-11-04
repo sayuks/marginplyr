@@ -703,3 +703,94 @@ test_that("SQLite direct compute does not change a newer audit record", {
   dplyr::compute(first, name = "audit_report")
   expect_identical(last_sent_queries(), expected)
 })
+
+test_that("SQLite direct compute keeps the source of a shadowing expansion", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  main <- DBI::Id(schema = "main", table = "facts")
+  input <- data.frame(g = c("b", "a"))
+  DBI::dbWriteTable(con, main, input)
+
+  for (variant in c("sorted", "sorted_id", "id")) {
+    id <- if (variant == "sorted") NULL else "sid"
+    sort <- if (variant == "id") "none" else "last"
+    expected <- data.frame(g = c("a", "b", "Total", "Total"))
+    if (!is.null(id)) expected$sid <- c(1L, 1L, 2L, 2L)
+    for (name in list("facts", "FACTS", DBI::Id(schema = "temp",
+                                               table = "facts"))) {
+      query <- expand_with_margins(
+        dplyr::tbl(con, "facts"), .grouping = rollup(g),
+        .sort = sort, .id = id
+      )
+      out <- dplyr::compute(query, name = name)
+      if (variant == "id") out <- dplyr::arrange(out, sid, g)
+      expect_identical(as.data.frame(dplyr::collect(out)), expected)
+      temp <- DBI::Id(schema = "temp", table = "facts")
+      expect_identical(DBI::dbListFields(con, temp), names(expected))
+      expect_identical(DBI::dbReadTable(con, main), input)
+      DBI::dbRemoveTable(con, temp)
+    }
+  }
+})
+
+test_that("SQLite shadowing compute preserves opaque and qualified sources", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  DBI::dbExecute(con, "ATTACH DATABASE ':memory:' AS aux")
+  source_id <- DBI::Id(schema = "aux", table = "facts")
+  input <- data.frame(g = c("b", "a"))
+  DBI::dbWriteTable(con, source_id, input)
+
+  expected <- data.frame(g = c("a", "b", "Total", "Total"),
+                         sid = c(1L, 1L, 2L, 2L))
+  opaque <- dplyr::tbl(con, dbplyr::sql("SELECT g FROM facts"), vars = "g")
+  query <- expand_with_margins(
+    opaque, .grouping = rollup(g), .sort = "last", .id = "sid"
+  )
+  for (name in c("expanded", "facts")) {
+    out <- dplyr::compute(query, name = name, indexes = list("sid"))
+    expect_identical(as.data.frame(dplyr::collect(out)), expected)
+    expect_true(name %in% DBI::dbGetQuery(con, paste(
+      "SELECT tbl_name FROM temp.sqlite_master WHERE type = 'index'",
+      "AND name = ?"
+    ), params = list(paste0(name, "_sid")))$tbl_name)
+    DBI::dbRemoveTable(con, DBI::Id(schema = "temp", table = name))
+  }
+
+  qualified <- expand_with_margins(
+    dplyr::tbl(con, source_id), .grouping = rollup(g),
+    .sort = "last", .id = "sid"
+  )
+  out <- dplyr::compute(qualified, name = "facts")
+  expect_identical(as.data.frame(dplyr::collect(out)), expected)
+  expect_identical(DBI::dbReadTable(con, source_id), input)
+})
+
+test_that("failed SQLite shadowing compute preserves the source and temp schema", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  main <- DBI::Id(schema = "main", table = "facts")
+  input <- data.frame(g = c("b", "a"))
+  DBI::dbWriteTable(con, main, input)
+  query <- expand_with_margins(
+    dplyr::tbl(con, "facts"), .grouping = rollup(g), .sort = "last"
+  )
+  temp_schema <- function() {
+    DBI::dbGetQuery(con, "SELECT * FROM temp.sqlite_master ORDER BY name")
+  }
+  before <- temp_schema()
+
+  expect_error(dplyr::compute(query, name = "FACTS", overwrite = TRUE),
+               "explicit schema or another name", class = "marginplyr_error")
+  expect_identical(temp_schema(), before)
+
+  expect_error(dplyr::compute(query, name = "facts", unique_indexes = list("g")),
+               "UNIQUE constraint failed")
+  expect_identical(temp_schema(), before)
+  expect_identical(DBI::dbReadTable(con, main), input)
+  expect_identical(dplyr::collect(dplyr::compute(query, name = "facts"))$g,
+                   c("a", "b", "Total", "Total"))
+})

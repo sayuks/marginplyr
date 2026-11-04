@@ -159,6 +159,11 @@ these checks. Explicit temp with temporary materialization is distinct from a
 non-temp qualified schema. Rowid shadowing is therefore no longer the only
 materialization refusal.
 
+When a new temp name could shadow a relation in another schema (#1282),
+fill the destination under a private temp name. Rename that same table
+after the insert and use the requested name for indexes, analysis, and the
+returned table. The rename shares the materialization savepoint.
+
 Explicit compute may inspect destination metadata only as needed for safe
 admission and resolution. This replaces the original blanket prohibition on
 extra schema queries; it permits no new source-schema probe or data read during
