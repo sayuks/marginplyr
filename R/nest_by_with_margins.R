@@ -141,39 +141,7 @@ nest_by_with_margins <- function(.data,
     rowwise = TRUE
   )
 
-  .id <- as.vector(.id)
   .key <- unname(.key)
-  # dtplyr's collect() does not forward name repair to its tibble conversion.
-  result <- if (inherits(result, "dtplyr_step")) {
-    dplyr::as_tibble(result, .name_repair = "minimal")
-  } else {
-    dplyr::collect(result)
-  }
-  empty_outer_names <- c(.id, .key)
-  if (
-    nrow(result) == 0L &&
-      identical(colnames(result), empty_outer_names)
-  ) {
-    empty_data <- dplyr::collect(
-      utils::head(dplyr::ungroup(.data), n = 0L)
-    )
-    result <- dplyr::summarize(
-      margin_column_source(empty_data),
-      "{.key}" := list(
-        !!nest_cell_expr(
-          rlang::set_names(colnames(empty_data)),
-          # The kind of the input, not of `empty_data`: this rebuilds what the
-          # pipeline returned for it, so its cell is the one every other cell
-          # from this input is.
-          grouping_backend(.data)$kind
-        )
-      )
-    )
-    if (!is.null(.id)) {
-      result <- dplyr::mutate(result, "{.id}" := 1L)
-      result <- reorder_margin_columns(result, .id)
-    }
-  }
   group_cols <- setdiff(colnames(result), .key)
   with_margin_column_aliases(result, names(result), function(data, safe_name) {
     columns <- vapply(group_cols, safe_name, character(1), USE.NAMES = FALSE)
