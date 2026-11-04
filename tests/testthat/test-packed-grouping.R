@@ -323,3 +323,71 @@ test_that("AsIs POSIXlt keys retain included-only and packed label rules", {
     "packed grouping dimensions", class = "marginplyr_error"
   )
 })
+
+test_that("nesting a packed AsIs POSIXlt field retains original keys", {
+  input <- tibble::tibble(
+    key = tibble::tibble(
+      ts = I(as.POSIXlt(
+        c("2020-01-01", "2020-01-02", "2020-01-01"), tz = "UTC"
+      )),
+      code = c(1L, 2L, 1L)
+    ),
+    row = 1:3
+  )
+  sliced <- vctrs::vec_slice(input, seq_len(nrow(input)))
+  combined <- union_native_posixlt_branches(
+    dplyr::mutate(sliced, source_key = key), grand_first = FALSE
+  )
+  expected <- dplyr::nest_by(combined, set, key)
+  expected_cells <- lapply(expected$data, function(cell) {
+    dplyr::relocate(dplyr::rename(cell, key = source_key), key)
+  })
+  detail <- dplyr::nest_by(input, key, .keep = TRUE)
+
+  for (nest in list(nest_with_margins, nest_by_with_margins)) {
+    included <- nest(
+      input, .grouping = grouping_set(key), .margin_label = NULL,
+      .keep = TRUE, .sort = "none"
+    )
+    expect_identical(as.list(included$key$ts), as.list(detail$key$ts))
+    expect_identical(included$key$code, detail$key$code)
+    expect_identical(as.list(included$data), as.list(detail$data))
+
+    for (label in list(NULL, NA_character_)) {
+      result <- nest(
+        input, .grouping = rollup(key), .margin_label = label,
+        .keep = TRUE, .id = "set", .sort = "none"
+      )
+      expect_identical(result$set, expected$set)
+      # Grouped slices can repeat AsIs; compare the class and fields separately.
+      expect_identical(unique(class(result$key$ts)),
+                       unique(class(expected$key$ts)))
+      expect_identical(as.list(result$key$ts), as.list(expected$key$ts))
+      expect_identical(result$key$code, expected$key$code)
+      expect_identical(as.list(result$data), expected_cells)
+    }
+  }
+})
+
+test_that("packed AsIs POSIXlt fields expand with native typed missing rows", {
+  input <- tibble::tibble(
+    key = tibble::tibble(inner = tibble::tibble(
+      ts = I(as.POSIXlt(c("2020-01-01", NA_character_), tz = "UTC"))
+    )),
+    row = 1:2
+  )
+  sliced <- vctrs::vec_slice(input, seq_len(nrow(input)))
+  expected <- union_native_posixlt_branches(sliced, grand_first = FALSE)
+
+  for (label in list(NULL, NA_character_)) {
+    result <- expand_with_margins(
+      input, .grouping = rollup(key), .margin_label = label,
+      .id = "set", .sort = "none"
+    )
+    expect_identical(result, dplyr::relocate(expected, key, set))
+  }
+  expect_error(
+    expand_with_margins(input, .grouping = rollup(key), .margin_label = "All"),
+    "packed grouping dimensions", class = "marginplyr_error"
+  )
+})
