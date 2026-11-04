@@ -1795,8 +1795,8 @@ rewrite_summary_selections <- function(expr,
 
   if (shield_independent_masks && any(independent_mask_call_parts(expr))) {
     # dplyr expands pick() in call arguments, so hide the nested call in the
-    # head. Force it as a promise so it still evaluates in the caller's scope.
-    return(rlang::expr((function(value) function() value)(!!expr)()))
+    # head. Embed the closure so its construction uses package scope.
+    return(rlang::call2(rlang::call2(nested_mask_thunk, expr)))
   }
 
   call_name <- static_spelling_name(expr, "selection")
@@ -1847,6 +1847,11 @@ rewrite_summary_selections <- function(expr,
     "()`.",
     call. = FALSE
   )
+}
+
+# Keeps the nested verb as a promise evaluated in the caller's scope.
+nested_mask_thunk <- function(value) {
+  function() value
 }
 
 # Builds a selection in dplyr's active selection scope, retaining an explicitly
