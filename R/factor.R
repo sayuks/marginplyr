@@ -35,10 +35,13 @@ margin_factor_sentinels <- function(factor_info, margin_labels) {
   )
 }
 
+# Encode stored level values for reconstruction, preserving missing codes
+# separately from observations on an NA level when requested.
 encode_factor_for_margin <- function(x,
                                      missing_sentinel,
                                      preserve_missing_value) {
-  result <- as.character(x)
+  # Reconstruction matches declared levels, not a subclass's display strings.
+  result <- as.character.factor(x)
   if (!isTRUE(preserve_missing_value)) {
     return(result)
   }
