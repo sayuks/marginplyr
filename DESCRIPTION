@@ -149,6 +149,7 @@ Config/testthat/start-first:
     dtplyr-share-ratios,
     classed-array-expansion,
     grouping-plan,
+    share-nested-function-scopes,
     sql-env-share-source,
     margin-label,
     numbered-dot-specifications,
