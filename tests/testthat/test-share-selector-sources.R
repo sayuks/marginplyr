@@ -408,10 +408,26 @@ test_that("selectors cannot inspect earlier alias values through peek_data", {
   choose_default <- function(prior_value = tidyselect::peek_data()$prior) {
     if (prior_value[[1L]] < 18) "other" else "value"
   }
+  choose_chained <- function(a = b, b = tidyselect::peek_data()$prior) {
+    if (a[[1L]] < 18) "other" else "value"
+  }
+  choose_with <- function(peek) {
+    if (peek()$prior[[1L]] < 18) "other" else "value"
+  }
+  choose_dots <- function(...) {
+    prior_value <- list(...)[[1L]]
+    if (prior_value[[1L]] < 18) "other" else "value"
+  }
+  forward <- function(...) choose_dots(...)
   key <- "prior"
   for (column in rlang::exprs(
     choose(),
     choose_default(),
+    choose_chained(),
+    choose_with(tidyselect::peek_data),
+    choose_with(!!tidyselect::peek_data),
+    choose_dots(tidyselect::peek_data()$prior),
+    forward(tidyselect::peek_data()$prior),
     if (tidyselect::peek_data()[["prior"]][[1L]] < 18) "other" else "value",
     if (tidyselect::peek_data()[[key]][[1L]] < 18) "other" else "value"
   )) {
@@ -434,6 +450,12 @@ test_that("selectors can use other columns and names from peek_data", {
   ignore_default <- function(column = tidyselect::peek_data()$prior) {
     "value"
   }
+  ignore_argument <- function(column) {
+    "value"
+  }
+  choose_chained <- function(a = b, b = tidyselect::peek_data()$prior) {
+    if (a[[1L]] < 18) "other" else "value"
+  }
   choose <- rlang::new_function(
     pairlist(column = quote(tidyselect::peek_data()$prior)),
     rlang::expr({
@@ -445,7 +467,10 @@ test_that("selectors can use other columns and names from peek_data", {
     if (sum(tidyselect::peek_data()$other) > 0) "value" else "other",
     intersect("value", names(tidyselect::peek_data())),
     choose("value"),
-    ignore_default()
+    ignore_default(),
+    ignore_argument(tidyselect::peek_data()$prior),
+    choose_chained(a = 20),
+    choose_chained(b = 20)
   )) {
     result <- summarize_with_margins(
       data, prior = sum(other),
@@ -461,16 +486,50 @@ test_that("selectors can use other columns and names from peek_data", {
 
 test_that("checked share sources preserve ordinary selector errors", {
   data <- data.frame(g = c("a", "b"), value = c(1, 3))
-  ordinary <- rlang::quos(
-    prior = sum(value),
-    source = sum(dplyr::pick(dplyr::all_of("absent")))
+  selections <- list(
+    quote(dplyr::all_of("absent")),
+    quote(`$`(.data, tidyselect::peek_data()$prior)),
+    quote(~tidyselect::peek_data()$prior),
+    quote(value && tidyselect::peek_data()$prior)
   )
-  control <- expect_error(
-    summarize_with_margins(data, !!!ordinary, .grouping = rollup(g)),
-    "Element `absent` doesn't exist"
+  diagnostics <- c(
+    "Element `absent` doesn't exist", "must be a symbol",
+    "Formula shorthand", "Can't use scalar `&&`"
   )
-  shared <- expect_error(summarize_with_margins(
-    data, !!!ordinary, share = share_of_total(source), .grouping = rollup(g)
-  ), "Element `absent` doesn't exist")
-  expect_identical(class(shared), class(control))
+  for (i in seq_along(selections)) {
+    ordinary <- rlang::quos(
+      prior = sum(value),
+      source = sum(dplyr::pick(!!selections[[i]]))
+    )
+    control <- expect_error(
+      summarize_with_margins(data, !!!ordinary, .grouping = rollup(g)),
+      diagnostics[[i]]
+    )
+    shared <- expect_error(summarize_with_margins(
+      data, !!!ordinary, share = share_of_total(source), .grouping = rollup(g)
+    ), diagnostics[[i]])
+    expect_identical(class(shared), class(control))
+  }
+})
+
+test_that("selector operators bypass lexical bindings in selection syntax", {
+  data <- data.frame(g = c("a", "b"), value = c(1, 3), other = c(7, 9))
+  c <- function(...) {
+    if (tidyselect::peek_data()$prior[[1L]] < 18) "other" else "value"
+  }
+  result <- summarize_with_margins(
+    data, prior = 10 + sum(other),
+    source = sum(dplyr::pick(c(value, -prior))),
+    total = share_of_total(source), parent = share_of_parent(source),
+    .grouping = rollup(g)
+  )
+  expect_identical(result$source, base::c(1, 3, 4))
+  expect_identical(result$total, base::c(0.25, 0.75, 1))
+  expect_identical(result$parent, base::c(0.25, 0.75, 1))
+
+  expect_error(summarize_with_margins(
+    data, prior = 10 + sum(other),
+    source = sum(dplyr::pick(c(dplyr::all_of(c()), -prior))),
+    total = share_of_total(source), .grouping = rollup(g)
+  ), "depends on earlier summary alias `prior`", class = "marginplyr_error")
 })

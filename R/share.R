@@ -4509,17 +4509,17 @@ inline_function_definition <- function(expr) {
   if (rlang::is_call(head, "function") && length(head) >= 3L) head else NULL
 }
 
-# Match an inline function's formals to pending defaults in its own frame
+# Match function formals to pending defaults in their own frame
 # and pending arguments in the caller. Unmatched syntax stays conservative.
-function_scope_frame <- function(definition, invocation) {
-  formals <- as.list(definition[[2L]])
+function_scope_frame <- function(parameters, invocation) {
+  formals <- as.list(parameters)
   defaults <- formals[!vapply(formals, rlang::is_missing, logical(1))]
   supplied <- dots <- unmatched <- list()
   if (!is.null(invocation) && length(invocation) > 1L) {
     actual <- static_call_args(invocation)
     matched <- static_matched_arguments(
       rlang::call2(".inline", !!!actual),
-      rlang::new_function(definition[[2L]], NULL, emptyenv()),
+      rlang::new_function(parameters, NULL, emptyenv()),
       expand_dots = FALSE
     )
     if (is.null(matched)) {
@@ -4551,7 +4551,7 @@ definition_data_symbols <- function(expr, scope, lookup, invocation = NULL) {
       frame
     })
   }
-  frame <- function_scope_frame(expr, invocation)
+  frame <- function_scope_frame(expr[[2L]], invocation)
   inner <- c(list(frame), scope)
   unique(unlist(
     lapply(
@@ -4678,7 +4678,7 @@ scope_has_local_function <- function(scope, name) {
 # Return the inline frame and its surviving enclosing frames. The inline
 # frame still holds any arguments whose demand the body did not establish.
 scope_after_inline_call <- function(expr, definition, scope, lookup) {
-  inner <- c(list(function_scope_frame(definition, expr)), scope)
+  inner <- c(list(function_scope_frame(definition[[2L]], expr)), scope)
   statement_reads_and_scope(
     definition[[3L]], inner, lookup, read_symbols = no_scope_reads
   )$scope
