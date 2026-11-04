@@ -100,18 +100,24 @@ The independent oracle enumerated the selected sets and grouped original
 source keys with `vctrs::vec_group_loc()`. It compared the resulting ordered
 source-row sequences inside cells while treating unspecified outer group
 order as irrelevant. It checked cell column order and every retained source
-column's values. For the target factor, it compared stored codes rather than
-calling the custom display method again. Original native union codes and
+column's values. Cell and fixed-key factor comparisons used stored codes.
+Outer dimension comparisons used ordinary-factor character values, after
+removing the custom display class. Original native union codes and
 serialized source objects were checked separately.
 
-There were 6,336 calls with correct outer factor values and 576 calls with
-wrong outer values. Every failure had a populated factor-dimension input and
+There were 6,336 calls matching those checks and 576 calls with detected wrong
+outer values. Every failure had a populated factor-dimension input and
 a non-missing label; there were 192 failures for each renderer. All source
 group memberships, cell projections, fixed-key values and source-immutability
 checks matched. There were no skips, unclassified errors or incomplete cases
 in the final matrix. This was value-content verification, not a promise to
 restore arbitrary column attributes or classes, nor an independent complete
 Margin-order oracle.
+
+The outer character comparison did not distinguish a declared NA level from
+a missing factor code. Preservation of that distinction in outer dimensions
+was not independently established by this matrix; its matches did not prove
+complete outer factor-value correctness.
 
 ## Duplicate search and repair boundary
 
