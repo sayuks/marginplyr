@@ -30,6 +30,52 @@ test_that("visible inline scope changes expose both forbidden dependencies", {
     parent.frame()
   }
   expressions <- alist(
+    (function(prior) {
+      (function(...) {
+        ..1
+        sum(prior)
+      })({
+        counters$body <- counters$body + 1L
+        base::rm("prior")
+        1
+      })
+    })(1),
+    (function(prior) {
+      (function(ignored, ...) {
+        ..2
+        sum(prior)
+      })(first = 0, ignored = stop("The formal is unused."), second = {
+        base::rm("prior")
+        1
+      })
+    })(1),
+    (function(prior) {
+      (function(...) {
+        ..01
+        sum(prior)
+      })({
+        base::rm("prior")
+        1
+      })
+    })(1),
+    (function(prior) {
+      (function(...) {
+        base::force(..1)
+        sum(prior)
+      })({
+        base::rm("prior")
+        1
+      })
+    })(1),
+    (function(prior) {
+      (function(arg) {
+        arg
+        sum(prior)
+      })({
+        base::rm("prior")
+        1
+      })
+    })(1),
     (function() {
       base::rm("prior", envir = make_target())
       sum(.data$prior)
@@ -217,6 +263,12 @@ test_that("inline scope changes preserve independent and shadowed bindings", {
   outside$prior <- 2
   rm <- function(...) NULL
   expressions <- alist(
+    (function(prior = touch()) {
+      (function(...) sum(prior))({
+        base::rm("prior")
+        stop("An undemanded dot must not run.")
+      })
+    })(),
     (function(prior = touch()) {
       (function(prior) {
         (function() base::rm("prior", envir = sys.frame(sys.parent())))()
@@ -424,6 +476,16 @@ test_that("inline scope changes keep ordinary evaluation without shares", {
   expect_equal(control$derived, c(1, 3, 4))
   expect_identical(control_calls, 3L)
   expressions <- alist(
+    (function(prior) {
+      (function(...) {
+        ..1
+        sum(prior)
+      })({
+        touch()
+        base::rm("prior")
+        1
+      })
+    })(1),
     (function(prior = 0) {
       (function() {
         touch()

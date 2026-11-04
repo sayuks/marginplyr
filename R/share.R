@@ -4192,7 +4192,9 @@ scoped_data_symbols <- function(expr, scope, lookup) {
   # line below and names nothing, which is the answer (#174).
   if (is_name_part(expr)) {
     name <- rlang::as_name(expr)
-    if (name %in% scope_bound_names(scope)) {
+    bound <- scope_bound_names(scope)
+    if (name %in% bound ||
+          ("..." %in% bound && is_numbered_dot_reference(expr))) {
       return(scope_promise_symbols(name, scope, lookup))
     }
     return(name)
@@ -4461,7 +4463,7 @@ inline_function_definition <- function(expr) {
 function_scope_frame <- function(definition, invocation) {
   formals <- as.list(definition[[2L]])
   defaults <- formals[!vapply(formals, rlang::is_missing, logical(1))]
-  supplied <- unmatched <- list()
+  supplied <- dots <- unmatched <- list()
   if (!is.null(invocation) && length(invocation) > 1L) {
     actual <- static_call_args(invocation)
     matched <- static_matched_arguments(
@@ -4469,14 +4471,18 @@ function_scope_frame <- function(definition, invocation) {
       rlang::new_function(definition[[2L]], NULL, emptyenv()),
       expand_dots = FALSE
     )
-    unmatched <- if (is.null(matched)) actual else as.list(matched[["..."]])
+    if (is.null(matched)) {
+      unmatched <- actual
+    } else {
+      dots <- as.list(matched[["..."]])
+    }
     supplied <- matched[setdiff(names(matched), "...")]
     supplied <- supplied[!vapply(supplied, rlang::is_missing, logical(1))]
     defaults[names(supplied)] <- NULL
   }
   list(
     bound = names(formals), defaults = defaults, arguments = supplied,
-    unmatched = unmatched,
+    dots = dots, unmatched = unmatched,
     invoked = !is.null(invocation)
   )
 }
@@ -4487,7 +4493,7 @@ definition_data_symbols <- function(expr, scope, lookup, invocation = NULL) {
   if (is.null(invocation)) {
     # A definition can capture names without visibly demanding their promises.
     scope <- lapply(scope, function(frame) {
-      frame$defaults <- frame$arguments <- NULL
+      frame$defaults <- frame$arguments <- frame$dots <- NULL
       frame
     })
   }
@@ -4510,6 +4516,25 @@ scope_bound_names <- function(scope) {
 # Find the first binding and the frame in which its pending syntax runs.
 # Clear the promise in the returned scope before following recursive reads.
 scope_promise <- function(name, scope, function_lookup) {
+  if (!function_lookup && startsWith(name, "..") &&
+        is_numbered_dot_reference(rlang::sym(name))) {
+    owners <- vapply(scope, function(frame) "..." %in% frame$bound, logical(1))
+    index <- match(TRUE, owners)
+    if (!is.na(index)) {
+      slot <- as.double(substring(name, 3L))
+      dots <- scope[[index]]$dots
+      if (slot > length(dots) || rlang::is_missing(dots[[slot]])) {
+        return(NULL)
+      }
+      # Keep positions fixed when consuming a dot. A later ..i still looks
+      # in the same ... binding even after its promise has been consumed.
+      scope[[index]]$dots[slot] <- list(rlang::missing_arg())
+      return(list(
+        expression = dots[[slot]], scope = scope,
+        evaluation = seq.int(index + 1L, length(scope))
+      ))
+    }
+  }
   for (index in seq_along(scope)) {
     frame <- scope[[index]]
     if (!name %in% frame$bound ||
@@ -4917,7 +4942,7 @@ scope_after_removals <- function(expr, scope, lookup) {
   if (!is.null(definition)) {
     after <- scope_after_inline_call(expr, definition, scope, lookup)
     scope <- after[-1L]
-    parts <- c(after[[1L]]$arguments, after[[1L]]$unmatched)
+    parts <- c(after[[1L]]$arguments, after[[1L]]$dots, after[[1L]]$unmatched)
   } else if (is_name_part(head)) {
     scope <- scope_after_promise(
       rlang::as_name(head), scope, lookup, function_lookup = TRUE
@@ -5067,6 +5092,9 @@ retain_scope_bindings <- function(frame, bound) {
   frame$bound <- bound
   frame$defaults <- frame$defaults[names(frame$defaults) %in% bound]
   frame$arguments <- frame$arguments[names(frame$arguments) %in% bound]
+  if (!"..." %in% bound) {
+    frame$dots <- NULL
+  }
   frame$kinds <- frame$kinds[names(frame$kinds) %in% bound]
   frame
 }
