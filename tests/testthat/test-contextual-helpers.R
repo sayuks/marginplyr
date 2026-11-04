@@ -477,8 +477,7 @@ test_that("an unregistered selection helper is refused rather than rewritten", {
     rewrite_summary_selections(
       quote(slice_head(units)),
       env = rlang::current_env(),
-      data_proxy = data.frame(units = double()),
-      normalize_across_names = FALSE
+      data_proxy = data.frame(units = double())
     ),
     "No rewrite is registered for the selection helper"
   )

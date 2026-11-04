@@ -899,8 +899,7 @@ test_that("every analysis that names a call reads a formula as a `~` call", {
     rewrite_summary_selections(
       quote(~ dplyr::across(c(value), mean)),
       env = env,
-      data_proxy = proxy,
-      normalize_across_names = FALSE
+      data_proxy = proxy
     ),
     quote(~ dplyr::across(dplyr::all_of("value"), mean))
   )
@@ -908,8 +907,7 @@ test_that("every analysis that names a call reads a formula as a `~` call", {
     rewrite_summary_selections(
       quote(~.x),
       env = env,
-      data_proxy = proxy,
-      normalize_across_names = FALSE
+      data_proxy = proxy
     ),
     quote(~.x)
   )
@@ -3908,8 +3906,7 @@ test_that("a quoted expression is data at every analysis that walks one", {
     rewrite_summary_selections(
       quoted_selection,
       env = env,
-      data_proxy = proxy,
-      normalize_across_names = FALSE
+      data_proxy = proxy
     ),
     quoted_selection
   )
@@ -3922,8 +3919,7 @@ test_that("a quoted expression is data at every analysis that walks one", {
     rewrite_summary_selections(
       captured,
       env = env,
-      data_proxy = proxy,
-      normalize_across_names = FALSE
+      data_proxy = proxy
     ),
     captured
   )
@@ -3936,8 +3932,7 @@ test_that("a quoted expression is data at every analysis that walks one", {
         dplyr::across(value, mean)
       )),
       env = env,
-      data_proxy = proxy,
-      normalize_across_names = FALSE
+      data_proxy = proxy
     ),
     quote(list(
       quote(dplyr::across(value, mean)),
@@ -4317,8 +4312,7 @@ test_that("a capture an `eval()` runs is analyzed as the code it becomes", {
     rewrite_summary_selections(
       quote(eval(quote(dplyr::across(value, mean)))),
       env = env,
-      data_proxy = proxy,
-      normalize_across_names = FALSE
+      data_proxy = proxy
     ),
     quote(eval(quote(dplyr::across(dplyr::all_of("value"), mean))))
   )
@@ -4503,8 +4497,7 @@ test_that("only the walk that tracks bindings reads a shadowed capture", {
         dplyr::across(value, mean)
       }),
       env = env,
-      data_proxy = proxy,
-      normalize_across_names = FALSE
+      data_proxy = proxy
     ),
     quote({
       across <- function(...) 1
@@ -4542,8 +4535,7 @@ test_that("a rewrite opens only the language a search can read", {
     rewrite_summary_selections(
       unreadable,
       env = env,
-      data_proxy = proxy,
-      normalize_across_names = FALSE
+      data_proxy = proxy
     ),
     unreadable
   )
@@ -4558,8 +4550,7 @@ test_that("a rewrite opens only the language a search can read", {
     rewrite_summary_selections(
       quote(eval(substitute(dplyr::across(value, mean)))),
       env = env,
-      data_proxy = proxy,
-      normalize_across_names = FALSE
+      data_proxy = proxy
     ),
     quote(eval(substitute(dplyr::across(dplyr::all_of("value"), mean))))
   )
@@ -4632,7 +4623,7 @@ test_that("rewritten across inserts an omitted selection", {
   expect_identical(
     rewrite_across_selection(
       quote(dplyr::across(.fns = sum)), environment(), data.frame(x = 1L),
-      normalize_across_names = FALSE, call_name = "across"
+      call_name = "across"
     ),
     quote(dplyr::across(.cols = dplyr::all_of("x"), .fns = sum))
   )
