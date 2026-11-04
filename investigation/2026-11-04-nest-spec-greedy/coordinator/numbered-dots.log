@@ -1,0 +1,52 @@
+SHA: 78ebbc36200bdc5cef70838dd4e772c5c4a1401c
+# A tibble: 1 × 6
+  set_id fixed included omitted grouping_bits grouping_id
+   <int> <chr> <chr>    <chr>   <chr>               <int>
+1      1 ()    (a)      ()      a=0                     0
+<error/vctrs_error_subscript_oob>
+Error in `resolve_column_selection()` at source/R/grouping-plan.R:1495:3:
+! Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.
+---
+Backtrace:
+     ▆
+  1. ├─base::tryCatch(parenthesized(grouping_set(a)), error = identity)
+  2. │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+  3. │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+  4. │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+  5. └─global parenthesized(grouping_set(a))
+  6.   └─marginplyr::inspect_grouping(x, .grouping = grouping_sets((..1)))
+  7.     ├─marginplyr:::with_margin_error_call(...) at source/R/inspect-grouping.R:170:3
+  8.     │ └─base::tryCatch(...) at source/R/margin-operation.R:97:3
+  9.     │   └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 10.     │     └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 11.     │       └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 12.     └─marginplyr:::prepare_grouping_plan(...) at source/R/inspect-grouping.R:189:7
+ 13.       ├─marginplyr:::with_margin_error_call(...) at source/R/grouping-plan.R:189:3
+ 14.       │ └─base::tryCatch(...) at source/R/margin-operation.R:97:3
+ 15.       │   └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 16.       │     └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 17.       │       └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 18.       ├─marginplyr:::with_discarded_selections(...) at source/R/grouping-plan.R:238:9
+ 19.       │ ├─rlang::with_options(...) at source/R/grouping-plan.R:691:3
+ 20.       │ └─base::suppressWarnings(expr) at source/R/grouping-plan.R:697:7
+ 21.       │   └─base::withCallingHandlers(...)
+ 22.       └─marginplyr:::compile_grouping_spec(...) at source/R/grouping-plan.R:238:9
+ 23.         └─marginplyr:::compile_grouping_spec_impl(...) at source/R/grouping-plan.R:1049:3
+ 24.           ├─base::unname(...) at source/R/grouping-plan.R:1105:3
+ 25.           └─marginplyr:::expand_grouping_family(...) at source/R/grouping-plan.R:1105:3
+ 26.             └─rule$expand(preflight, resolve_selection) at source/R/grouping-plan.R:1198:3
+ 27.               ├─base::unlist(...) at source/R/grouping-plan.R:1226:3
+ 28.               └─base::lapply(...)
+ 29.                 └─marginplyr (local) FUN(X[[i]], ...)
+ 30.                   └─marginplyr (local) resolve_selection(arg$quo) at source/R/grouping-plan.R:1231:11
+ 31.                     └─marginplyr:::resolve_grouping_selection(arg, data_proxy) at source/R/grouping-plan.R:1105:3
+ 32.                       ├─base::tryCatch(...) at source/R/grouping-plan.R:1495:3
+ 33.                       │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 34.                       │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 35.                       │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 36.                       ├─base::withCallingHandlers(...) at source/R/grouping-plan.R:1495:3
+ 37.                       └─marginplyr:::resolve_column_selection(arg, data_proxy, on_rename = abort_grouping_rename) at source/R/grouping-plan.R:1495:3
+Direct value: TRUE 
+Error: !inherits(observed, "error") is not TRUE
+Execution halted

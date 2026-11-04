@@ -1,0 +1,21 @@
+ backend                   verb native_code actual_code typed_missing_code
+   local      nest_with_margins           1          NA                  1
+   local   nest_by_with_margins           1          NA                  1
+   local    expand_with_margins           1          NA                  1
+   local summarize_with_margins           1          NA                  1
+  dtplyr      nest_with_margins           1          NA                  1
+  dtplyr   nest_by_with_margins           1          NA                  1
+  dtplyr    expand_with_margins           1          NA                  1
+  dtplyr summarize_with_margins           1          NA                  1
+ actual_levels
+       a,Total
+       a,Total
+       a,Total
+       a,Total
+       a,Total
+       a,Total
+       a,Total
+       a,Total
+Source values and native grouped/nesting controls passed on both backends.
+Error: all(result$actual_code == result$native_code) is not TRUE
+Execution halted

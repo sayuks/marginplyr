@@ -1,0 +1,22 @@
+Tracing function "dbSendQuery" in package "namespace:DBI"
+Untracing function "dbSendQuery" in package "namespace:DBI"
+root 2 nesting refusals,2 inspection plans,2 LIMIT0; reader all 4 rows retained
+Tracing function "dbSendQuery" in package "namespace:DBI"
+Untracing function "dbSendQuery" in package "namespace:DBI"
+join 2 nesting refusals,2 inspection plans,2 LIMIT0; reader all 4 rows retained
+Tracing function "dbSendQuery" in package "namespace:DBI"
+Untracing function "dbSendQuery" in package "namespace:DBI"
+union 2 nesting refusals,2 inspection plans,2 LIMIT0; reader all 4 rows retained
+Tracing function "dbSendQuery" in package "namespace:DBI"
+Untracing function "dbSendQuery" in package "namespace:DBI"
+grouped 2 nesting refusals,2 inspection plans,2 LIMIT0; reader all 4 rows retained
+Tracing function "dbSendQuery" in package "namespace:DBI"
+Untracing function "dbSendQuery" in package "namespace:DBI"
+window 2 nesting refusals,2 inspection plans,2 LIMIT0; reader all 4 rows retained
+Tracing function "dbSendQuery" in package "namespace:DBI"
+Untracing function "dbSendQuery" in package "namespace:DBI"
+collapsed 2 nesting refusals,2 inspection plans,2 LIMIT0; reader all 4 rows retained
+24 boundary calls completed
+DBI 1.3.0 
+duckdb 1.5.5 
+arrow 25.0.1 

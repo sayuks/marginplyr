@@ -1,0 +1,27 @@
+duration: as.character()=character
+OK  0 character 
+OK  0 character 
+period: as.character()=character
+OK  0 character 
+OK  0 character 
+interval: as.character()=character
+OK  0 character 
+OK  0 character 
+yearmon: as.character()=character
+OK  0 character 
+OK  0 character 
+yearqtr: as.character()=character
+OK  0 character 
+OK  0 character 
+dist: as.character()=character
+OK  0 character 
+OK  0 character 
+integer64: as.character()=character
+OK  0 character 
+OK  0 character 
+difftime: as.character()=character
+OK  0 character 
+OK  0 character 
+hms: as.character()=logical
+OK  0 character 
+OK  0 character 
