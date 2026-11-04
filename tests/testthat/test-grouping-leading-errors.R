@@ -435,6 +435,46 @@ test_that("DuckDB leading selection failures invoke no metadata query", {
   }
   expect_identical(predicates, 0L)
 
+  typed <- rlang::quo(where(numeric_column) & value)
+  duplicate_specs <- list(
+    grouping_sets(x, x, !!typed),
+    grouping_sets(grouping_sets(x, x, !!typed), value),
+    grouping_sets(x, grouping_sets(x, !!typed)),
+    grouping_spec(grouping_set(), grouping_sets(x, x, !!typed))
+  )
+  for (verb in verbs) {
+    original <- expect_error(verb(data, NULL, grouping_sets(x, x, value)),
+                             class = "marginplyr_error")
+    for (spec in duplicate_specs) {
+      mixed <- expect_error(
+        verb(remote, NULL, spec), class = "marginplyr_error"
+      )
+      expect_identical(conditionMessage(mixed), conditionMessage(original))
+    }
+  }
+  expect_identical(counter$queries, 0L)
+  expect_identical(predicates, 0L)
+
+  expect_error(
+    inspect_grouping(remote, .grouping = grouping_sets(!!typed, x, x)),
+    "2, 3", class = "marginplyr_error"
+  )
+  expect_identical(counter$queries, 1L)
+  expect_identical(predicates, 2L)
+  for (policy in c("keep", "drop")) {
+    before <- counter$queries
+    before_predicates <- predicates
+    plan <- inspect_grouping(remote, .grouping = duplicate_specs[[1L]],
+                             .duplicates = policy, .format = "list")
+    expected <- switch(policy, keep = list("x", "x", "value"),
+                       drop = list("x", "value"))
+    expect_identical(plan$included, expected)
+    expect_identical(counter$queries - before, 1L)
+    expect_identical(predicates - before_predicates, 2L)
+  }
+  counter$queries <- 0L
+  predicates <- 0L
+
   for (warn in c(0L, 1L)) {
     rlang::local_options(warn = warn, lifecycle_verbosity = "warning")
     promoted <- structure(
@@ -540,4 +580,43 @@ test_that("DuckDB leading selection failures invoke no metadata query", {
       expect_identical(counter$queries - before, 1L)
     }
   }
+})
+
+test_that("completed duplicate occurrences precede unsafe dtplyr metadata", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.frame(x = 1L, value = 2L)
+  step <- dtplyr::lazy_dt(data) |> dplyr::mutate(x = as.character(x))
+  predicates <- 0L
+  numeric_column <- function(x) {
+    predicates <<- predicates + 1L
+    is.numeric(x)
+  }
+  specs <- list(
+    grouping_sets(x, x, where(numeric_column)),
+    grouping_sets(x, grouping_sets(x, where(numeric_column))),
+    grouping_spec(
+      grouping_set(value), grouping_sets(x, x, where(numeric_column))
+    )
+  )
+  for (verb in forwarded_verbs) {
+    original <- expect_error(verb(data, NULL, grouping_sets(x, x, value)),
+                             class = "marginplyr_error")
+    for (spec in specs) {
+      mixed <- expect_error(verb(step, NULL, spec), class = "marginplyr_error")
+      expect_identical(conditionMessage(mixed), conditionMessage(original))
+    }
+  }
+  expect_error(
+    inspect_grouping(step, .grouping = grouping_spec(
+      grouping_sets(x, x), where(numeric_column)
+    )),
+    "Can.t safely determine column metadata", class = "marginplyr_error"
+  )
+  expect_error(
+    inspect_grouping(step, .grouping = grouping_spec(
+      grouping_sets(x, x), grouping_sets(x, where(numeric_column))
+    )),
+    "Can.t safely determine column metadata", class = "marginplyr_error"
+  )
+  expect_identical(predicates, 0L)
 })

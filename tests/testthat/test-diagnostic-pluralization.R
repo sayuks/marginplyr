@@ -76,21 +76,8 @@
 # The coverage gate parses each named file and requires each block name to
 # resolve exactly once, so a moved or renamed pin makes this table fail.
 #
-# A binding holding more than one is why the value is a vector. The plan
-# compiler's implementation, named as a key below, raises the
-# duplicate-grouping-set refusal and the unknown-`.by` invariant, which are
-# pinned in different places; the two label-collision constructors hold two
-# arms each, all four pinned in the one block below.
-#
-# That name is written without its parentheses, here and in the key, because
-# `test-grouping-plan.R` fails any test file whose source spells it as a call
-# -- the scan behind "the only caller of the plan compiler" is deliberately
-# blunt, and a key in a table is not a call.
-pluralizing_test_location <- function(
-  file,
-  ...,
-  .local_locations = character()
-) {
+# A binding holding more than one site has one entry for each site.
+pluralizing_test_location <- function(file, ...) {
   blocks <- c(...)
   label <- paste0(
     file,
@@ -98,7 +85,7 @@ pluralizing_test_location <- function(
     paste0("`", blocks, "`", collapse = " then ")
   )
   structure(
-    c(label, .local_locations),
+    label,
     class = c("pluralizing_test_location", "character"),
     file = file,
     blocks = blocks
@@ -136,12 +123,7 @@ pluralizing_coverage <- function() {
       "the refusal names the helper and keeps its opening"
     ),
     check_summary_group_overwrite = "this file, the summary-overwrite block",
-    compile_grouping_spec_impl = pluralizing_test_location(
-      "test-grouping-plan.R",
-      "compile_grouping_spec() reads a narrowed duplicates vocabulary",
-      "duplicated grouping sets in more than one group name their groups",
-      .local_locations = "this file, the unknown `.by` invariant block"
-    ),
+    compile_grouping_spec_impl = "this file, the unknown `.by` invariant block",
     grouping_helper_vars = "this file, the grouping-helper block",
     proxy_columns = "this file, the selection proxy invariant block",
     # The one sentence that pluralizes outside a Package condition, and the one
@@ -160,6 +142,11 @@ pluralizing_coverage <- function() {
     validate_margin_label_names = c(
       "this file, the fixed `.by` label block",
       "this file, the unknown label dimension block"
+    ),
+    validate_unique_grouping_sets = pluralizing_test_location(
+      "test-grouping-plan.R",
+      "compile_grouping_spec() reads a narrowed duplicates vocabulary",
+      "duplicated grouping sets in more than one group name their groups"
     )
   )
 }

@@ -32,8 +32,8 @@ test_that("ordinary c calls force wrapper promises against typed data", {
   )
 })
 
-# Each ordinary head evaluates cols lexically; the bare forms use selection
-# syntax. Include both parentheses around a head and around its whole call.
+# Ordinary calls evaluate cols lexically, including bare binary subtraction.
+# Include parentheses around a head and around its whole call.
 ordinary_operator_selections <- function() {
   operands <- list(
     c = list(quote(cols)),
@@ -45,7 +45,10 @@ ordinary_operator_selections <- function() {
     `&` = list(quote(cols), 1L),
     `|` = list(quote(cols), 1L)
   )
-  selections <- list()
+  subtraction <- quote(cols - 0L)
+  selections <- list(
+    subtraction, rlang::call2("(", subtraction), quote(c(cols - 0L))
+  )
   for (operator in names(operands)) {
     name <- if (operator == "unary_minus") "-" else operator
     qualified <- rlang::call2("::", quote(base), rlang::sym(name))
@@ -181,4 +184,83 @@ test_that("ordinary operator bindings do not cause a premature duplicate set", {
     expect_identical(result$included, list("key", "cols"))
     expect_identical(reads, 2L)
   }
+})
+
+# Compare source-row membership to literal selection for both entry points.
+expect_binary_minus_cells <- function(as_source) {
+  data <- tibble::tibble(a = c("same", "same"), b = 1:2, row = 11:12)
+  source <- as_source(data)
+  run <- function(verb, selection, position,
+                  a = if (is.character(tidyselect::peek_data()$a)) 3L else 2L,
+                  b = 1L) {
+    call <- rlang::call2(verb, source, .margin_label = NULL)
+    if (position == "fixed") {
+      call$.by <- selection
+    } else {
+      call$.grouping <- rlang::call2("grouping_set", selection)
+    }
+    dplyr::collect(eval(call))
+  }
+  for (verb in c("nest_with_margins", "nest_by_with_margins")) {
+    for (position in c("fixed", "dimension")) {
+      expected <- run(verb, quote(b), position)
+      result <- run(verb, quote(a - b), position)
+      expect_identical(result, expected)
+      expect_identical(names(result), c("b", "data"))
+      expect_identical(result$b, 1:2)
+      expect_identical(lapply(result$data, function(cell) cell$row),
+                       list(11L, 12L))
+    }
+  }
+}
+
+test_that("binary subtraction preserves both nesting verbs' local cells", {
+  expect_binary_minus_cells(identity)
+})
+
+test_that("binary subtraction preserves both nesting verbs' dtplyr cells", {
+  skip_if_suggest_absent("dtplyr")
+  expect_binary_minus_cells(function(data) {
+    dtplyr::lazy_dt(data, immutable = TRUE)
+  })
+})
+
+test_that("mixed selections read subtraction operands only with typed data", {
+  data <- tibble::tibble(a = c("same", "same"), b = 1:2)
+  env <- rlang::env(rlang::current_env(), b = 1L)
+  reads <- character()
+  makeActiveBinding("a", function() {
+    type <- typeof(tidyselect::peek_data()$a)
+    reads <<- c(reads, type)
+    if (identical(type, "character")) 3L else 2L
+  }, env)
+  selection <- rlang::new_quosure(quote(a - b), env)
+  plan <- inspect_grouping(
+    data, .grouping = grouping_sets(!!selection, where(is.character)),
+    .format = "list"
+  )
+  expect_identical(plan$included, list("b", "a"))
+  expect_identical(reads, "character")
+})
+
+test_that("unary minus remains a names-only complement", {
+  skip_if_suggest_absent("dtplyr")
+  data <- tibble::tibble(a = "same", b = 1L)
+  source <- dtplyr::lazy_dt(data) |> dplyr::mutate(b = as.character(b))
+  expect_identical(inspect_grouping(source, .by = -a, .format = "list")$fixed,
+                   list("b"))
+  plan <- inspect_grouping(
+    source, .grouping = grouping_set(-a), .format = "list"
+  )
+  expect_identical(plan$included, list("b"))
+  expect_error(
+    inspect_grouping(source, .by = -absent), "absent",
+    class = "vctrs_error_subscript_oob"
+  )
+  expect_error(
+    inspect_grouping(
+      source, .grouping = grouping_set(-absent, where(is.numeric))
+    ),
+    "absent", class = "vctrs_error_subscript_oob"
+  )
 })

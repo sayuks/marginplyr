@@ -212,6 +212,108 @@ test_that("inspection applies duplicate policy before numbering occurrences", {
   )
 })
 
+test_that("duplicate-drop cubes retain descending size and combination order", {
+  data <- data.frame(a = 1L, b = 2L, `a,b` = 3L, check.names = FALSE)
+  specification <- cube(grouping_set(b, a), a, `a,b`, `a,b`)
+
+  plan <- inspect_grouping(
+    data, .grouping = specification, .duplicates = "drop", .format = "list"
+  )
+
+  expect_identical(plan$included, list(
+    c("b", "a", "a,b"), c("a", "a,b"), c("b", "a"),
+    "a,b", "a", character()
+  ))
+  expect_identical(plan$grouping_id, c(0L, 4L, 1L, 6L, 5L, 7L))
+  expect_identical(plan$set_id, 1:6)
+})
+
+test_that("duplicate-drop nested products retain the first occurrence order", {
+  data <- data.frame(a = 1L, b = 2L, c = 3L)
+  specification <- grouping_spec(
+    grouping_sets(grouping_set(b, a), grouping_set(a, b), grouping_set()),
+    grouping_spec(
+      grouping_sets(grouping_set(c), grouping_set()),
+      grouping_sets(grouping_set(a), grouping_set())
+    )
+  )
+
+  plan <- inspect_grouping(
+    data, .grouping = specification, .duplicates = "drop", .format = "list"
+  )
+
+  expect_identical(plan$included, list(
+    c("b", "a", "c"), c("b", "a"), c("a", "c"), "c", "a", character()
+  ))
+  expect_identical(plan$grouping_id, c(0L, 1L, 4L, 6L, 5L, 7L))
+  expect_identical(plan$set_id, 1:6)
+})
+
+test_that("a fixed product factor preserves first occurrence dimensions", {
+  data <- data.frame(a = 1L, b = 2L)
+  specification <- grouping_spec(
+    grouping_spec(grouping_sets(b, grouping_set()),
+                  grouping_sets(a, grouping_set())),
+    grouping_set(a, b)
+  )
+  plan <- inspect_grouping(
+    data, .grouping = specification, .duplicates = "drop", .format = "list"
+  )
+
+  expect_identical(plan$included, list(c("b", "a")))
+  expect_identical(plan$grouping_bits, list(c(b = 0L, a = 0L)))
+  expect_identical(plan$set_id, 1L)
+})
+
+test_that("duplicate-drop products support wide grouping sets", {
+  dimensions <- paste0("dimension_", seq_len(10001L))
+  data <- tibble::as_tibble(stats::setNames(rep(list(1L), 10001L), dimensions))
+  part <- grouping_sets(grouping_set(everything()), grouping_set())
+  plan <- inspect_grouping(
+    data, .grouping = grouping_spec(part, part),
+    .duplicates = "drop", .format = "list"
+  )
+
+  expect_identical(plan$included, list(dimensions, character()))
+  expect_identical(plan$set_id, 1:2)
+})
+
+test_that("duplicate keep and error retain cube and product occurrences", {
+  data <- data.frame(key = 1L)
+  family <- grouping_sets(grouping_set(key), grouping_set())
+  for (specification in list(cube(key, key), grouping_spec(family, family))) {
+    kept <- inspect_grouping(
+      data, .grouping = specification, .duplicates = "keep", .format = "list"
+    )
+    expect_identical(kept$included, list("key", "key", "key", character()))
+    expect_identical(kept$set_id, 1:4)
+    expect_error(
+      inspect_grouping(data, .grouping = specification),
+      "1, 2, 3.", fixed = TRUE, class = "marginplyr_error"
+    )
+  }
+})
+
+test_that("dropping repeated sets preserves caller selection order", {
+  data <- data.frame(key = 1L)
+  selected <- character()
+  pick <- function(label) {
+    selected <<- c(selected, label)
+    "key"
+  }
+  specification <- grouping_spec(
+    cube(pick("first"), pick("second")),
+    grouping_sets(pick("third"), grouping_set())
+  )
+
+  plan <- inspect_grouping(
+    data, .grouping = specification, .duplicates = "drop", .format = "list"
+  )
+
+  expect_identical(selected, c("first", "second", "third"))
+  expect_identical(plan$included, list("key", character()))
+})
+
 test_that("inspection shares grouped and row-wise input validation", {
   data <- data.frame(
     fixed = factor("x", levels = c("x", "unused")),

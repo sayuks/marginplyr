@@ -249,7 +249,7 @@ prepare_grouping_plan <- function(.data,
       } else {
         preflight_warnings <- with_discarded_selections(
           validate_leading_selections(
-            preflight, data_vars, .by = by
+            preflight, data_vars, .by = by, .duplicates, duplicates_choices
           )
         )
       }
@@ -505,6 +505,11 @@ is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE) {
   }
 
   args <- static_call_args(expr)
+  # Tidyselect walks unary minus as a complement. Other minus calls
+  # evaluate their operands in the caller's context.
+  if (call_name == "-" && length(args) != 1L) {
+    return(FALSE)
+  }
   all(vapply(
     args,
     is_name_only_expr,
@@ -601,9 +606,10 @@ is_name_only_helper_arg <- function(expr,
   ))
 }
 
-# Whether looking up a name would force an active binding or caller promise.
-# Namespace promises load definitions rather than evaluating caller arguments.
-selection_binding_deferred <- function(env, name) {
+# Whether the first lexical binding is active or an unforced promise.
+# Selection lookup permits namespace promises to load definitions.
+selection_binding_deferred <- function(env, name,
+                                       allow_namespace_promises = TRUE) {
   while (!identical(env, emptyenv()) && !rlang::env_has(env, name)) {
     env <- rlang::env_parent(env)
   }
@@ -611,7 +617,8 @@ selection_binding_deferred <- function(env, name) {
     return(FALSE)
   }
   rlang::env_binding_are_active(env, name)[[1L]] ||
-    (!isNamespace(env) && !identical(env, baseenv()) &&
+    ((!allow_namespace_promises ||
+        (!isNamespace(env) && !identical(env, baseenv()))) &&
        rlang::env_binding_are_lazy(env, name)[[1L]])
 }
 
@@ -742,22 +749,42 @@ grouping_name_proxy <- function(data_vars) {
 # Validate a mixed specification's leading selections without running caller
 # code. Expansion supplies the canonical order and nested-family validation;
 # the first unresolved selection stops the discarded pass, not just its family.
+# Completed plan occurrences in that prefix can settle the duplicate error.
 # `.by` holds the fixed keys already resolved from names, or NULL if unresolved.
-validate_leading_selections <- function(preflight, data_vars, .by) {
+validate_leading_selections <- function(preflight, data_vars, .by,
+                                        .duplicates, duplicates_choices) {
   proxy <- grouping_name_proxy(data_vars)
-  dimensions <- character()
+  resolved <- new.env(parent = emptyenv())
+  resolved$dimensions <- character()
+  resolved$completed <- list()
+  resolve_selection <- function(arg) {
+    if (!is_name_only_selection(arg, data_vars, allow_caller_code = FALSE)) {
+      invokeRestart("needs_typed_selection")
+    }
+    selected <- resolve_grouping_selection(arg, proxy)
+    resolved$dimensions <- union(resolved$dimensions, selected)
+    selected
+  }
+  emit <- if (identical(.duplicates, "error")) {
+    function(family) {
+      resolved$completed[[length(resolved$completed) + 1L]] <- family
+    }
+  }
   withRestarts(
-    expand_grouping_family(preflight, function(arg) {
-      if (!is_name_only_selection(arg, data_vars, allow_caller_code = FALSE)) {
-        invokeRestart("needs_typed_selection")
-      }
-      selected <- resolve_grouping_selection(arg, proxy)
-      dimensions <<- union(dimensions, selected)
-      selected
-    }),
+    expand_grouping_family(
+      preflight, resolve_selection, emit,
+      drop_duplicates = identical(.duplicates, "drop")
+    ),
     needs_typed_selection = function() NULL
   )
-  validate_grouping_overlap(.by, dimensions)
+  validate_grouping_overlap(.by, resolved$dimensions)
+  if (length(resolved$completed) > 0L) {
+    prefix <- unlist(resolved$completed, recursive = FALSE)
+    prefix_dimensions <- unique(unlist(prefix, use.names = FALSE))
+    validate_unique_grouping_sets(
+      grouping_set_keys(prefix, prefix_dimensions), duplicates_choices
+    )
+  }
   invisible(NULL)
 }
 
@@ -838,20 +865,25 @@ preflight_grouping_spec <- function(grouping_spec,
   list(spec = grouping_spec, args = args, name_only = name_only)
 }
 
-# Every name the caller bound to one constructor call's own arguments, less the
-# ones `abort_empty_grouping_arg()` speaks for. An empty argument has no
-# spelling for a pair to quote (#261), so it is left to the loop below, which
-# refuses it by position.
+# Reject tagged arguments that carry a value, leaving empty arguments for the
+# positional refusal in `preflight_grouping_spec()`.
 check_named_grouping_args <- function(grouping_spec, rule) {
   arg_names <- rlang::names2(grouping_spec$args)
-  empty <- vapply(
-    grouping_spec$args,
-    is_empty_argument,
-    logical(1),
-    USE.NAMES = FALSE
-  )
-  named <- nzchar(arg_names) & !empty
-  if (!any(named)) {
+  named <- which(nzchar(arg_names))
+  if (length(named) == 0L) {
+    return(invisible(NULL))
+  }
+  empty <- vapply(grouping_spec$args[named], function(arg) {
+    # Read the forwarded expression without processing injections. If capture
+    # fails, the tag is still refused before interpreting its contents.
+    captured <- tryCatch(
+      nested_arg_quosure(arg, capture = rlang::enquo0),
+      error = function(cnd) arg
+    )
+    is_empty_argument(captured)
+  }, logical(1))
+  named <- named[!empty]
+  if (length(named) == 0L) {
     return(invisible(NULL))
   }
   abort_named_grouping_arg(
@@ -865,9 +897,10 @@ check_named_grouping_args <- function(grouping_spec, rule) {
 }
 
 # The argument carried through parentheses, injected quosures and numbered
-# dots. Forwarding captures the promise's expression and environment without
-# forcing it; the spelling gate still decides whether that expression runs.
-nested_arg_quosure <- function(arg) {
+# dots. `capture` controls whether to process injections in a forwarded promise.
+# Only the promise's expression and environment are captured, so the spelling
+# gate still decides whether that expression runs.
+nested_arg_quosure <- function(arg, capture = rlang::enquo) {
   repeat {
     if (is_empty_argument(arg)) {
       return(arg)
@@ -877,14 +910,27 @@ nested_arg_quosure <- function(arg) {
       arg <- expr
       next
     }
-    if (is_numbered_dot_reference(expr)) {
-      arg <- rlang::eval_bare(
-        rlang::call2(rlang::enquo, expr), rlang::quo_get_env(arg)
-      )
+    env <- rlang::quo_get_env(arg)
+    # Without lexical dots the spelling can name an input column. With dots,
+    # capture still owns the diagnostic for an absent position.
+    if (is_numbered_dot_reference(expr) && has_lexical_dots(env)) {
+      arg <- rlang::eval_bare(rlang::call2(capture, expr), env)
       next
     }
     return(arg)
   }
+}
+
+# A call frame stores supplied dots as a dots object and empty dots as the
+# missing marker. An unrelated active binding or promise must remain unforced.
+has_lexical_dots <- function(env) {
+  if (selection_binding_deferred(
+    env, "...", allow_namespace_promises = FALSE
+  )) {
+    return(FALSE)
+  }
+  dots <- rlang::env_get(env, "...", default = NULL, inherit = TRUE)
+  rlang::is_missing(dots) || typeof(dots) == "..."
 }
 
 # The spelling a nested position reads an argument by: the caller's expression
@@ -906,12 +952,6 @@ nested_arg_expr <- function(arg) {
 # "selection" for a symbol, asked again here because the gate reports which
 # reading it took and not why. A name nothing binds has no second reading, and
 # a name the data does not hold is resolved by the gate itself.
-#
-# The name is read through the gate's own parenthesis reading, so a refusal
-# `s` gets is a refusal `(s)` gets. Reading the caller's expression here
-# instead would withhold it from the parenthesized spelling, which is the
-# reading ADR 0026 refuses reached by a pair the gate has already dropped
-# (#259).
 #
 # The kinds this position admits are asked before the binding is read: where a
 # position admits none, the answer is already known, and reading a caller's
@@ -939,11 +979,10 @@ check_ambiguous_nested_name <- function(arg, parent, rule, data_vars) {
   if (!is_name_part(nested_arg_expr(arg))) {
     return(invisible(NULL))
   }
-  name <- rlang::as_string(nested_arg_expr(arg))
-  if (
-    !name %in% data_vars ||
-      !rlang::env_has(rlang::quo_get_env(arg), name, inherit = TRUE)
-  ) {
+  expr <- nested_arg_expr(arg)
+  name <- rlang::as_string(expr)
+  env <- rlang::quo_get_env(arg)
+  if (!name %in% data_vars || !rlang::env_has(env, name, inherit = TRUE)) {
     return(invisible(NULL))
   }
   admitted <- admitted_nested_kinds(parent, rule)
@@ -951,7 +990,11 @@ check_ambiguous_nested_name <- function(arg, parent, rule, data_vars) {
     return(invisible(NULL))
   }
 
-  value <- tryCatch(rlang::eval_tidy(arg), error = function(cnd) NULL)
+  # Read the binding of the unwrapped name even when the caller masks `(`.
+  value <- tryCatch(
+    rlang::eval_tidy(expr, env = env),
+    error = function(cnd) NULL
+  )
   if (!inherits(value, "margin_grouping_spec")) {
     return(invisible(NULL))
   }
@@ -1107,7 +1150,8 @@ compile_grouping_spec_impl <- function(preflight,
   }
 
   expanded <- unname(expand_grouping_family(
-    preflight, function(arg) resolve_grouping_selection(arg, data_proxy)
+    preflight, function(arg) resolve_grouping_selection(arg, data_proxy),
+    drop_duplicates = identical(.duplicates, "drop")
   ))
   dimensions <- unique(unlist(expanded, use.names = FALSE))
 
@@ -1117,47 +1161,14 @@ compile_grouping_spec_impl <- function(preflight,
     expanded,
     function(set) c(.by, dimensions[dimensions %in% set])
   )
-  keys <- vapply(
-    normalized,
-    function(set) paste(as.integer(dimensions %in% set), collapse = ""),
-    character(1)
-  )
-  duplicate_keys <- duplicated(keys) | duplicated(keys, fromLast = TRUE)
-
-  if (any(duplicate_keys) && identical(.duplicates, "error")) {
-    groups <- split(which(duplicate_keys), keys[duplicate_keys])
-    # The policies this caller could have asked for instead, which is every
-    # value of its own vocabulary but the one that raised this. Reading them
-    # from the vocabulary is what keeps the nesting verbs, whose `.duplicates`
-    # excludes `"keep"`, from being offered it here (#110).
-    alternatives <- setdiff(duplicates_choices, .duplicates)
-    # Joined here rather than interpolated as a vector, because a group is
-    # itself a comma-joined list of positions, so cli's defaults would
-    # serialise the groups with an `and` inside one -- the reason `R/share.R`
-    # joins a class vector on its own slash. Read only from the cli template
-    # below, which codetools cannot see.
-    # nolint start: object_usage_linter.
-    positions <- paste(
-      vapply(groups, paste, collapse = ", ", character(1)),
-      collapse = "; "
-    )
-    # nolint end
-    offered <- paste0("\"", alternatives, "\"")
-    offered[[1L]] <- paste0(".duplicates = ", offered[[1L]])
-    abort_marginplyr(c(
-      paste0(
-        "Duplicate grouping sets were produced at ",
-        "{cli::qty(length(groups))}{?positions/position groups}:"
-      ),
-      i = "{positions}.",
-      i = "Use {.or {.code {offered}}}."
-    ))
+  keys <- grouping_set_keys(normalized, dimensions)
+  if (identical(.duplicates, "error")) {
+    validate_unique_grouping_sets(keys, duplicates_choices)
   }
 
   if (identical(.duplicates, "drop")) {
     keep <- !duplicated(keys)
     normalized <- normalized[keep]
-    keys <- keys[keep]
   }
 
   masks <- matrix(
@@ -1189,21 +1200,74 @@ compile_grouping_spec_impl <- function(preflight,
   )
 }
 
+# One membership key per occurrence in the caller's ordered dimensions.
+grouping_set_keys <- function(sets, dimensions) {
+  vapply(sets, grouping_set_key, character(1), dimensions = dimensions)
+}
+
+# Encode set membership as bits in the order of `dimensions`.
+grouping_set_key <- function(set, dimensions) {
+  paste(as.integer(dimensions %in% set), collapse = "")
+}
+
+# Reject repeated membership keys under the caller's duplicate-error policy.
+validate_unique_grouping_sets <- function(keys, duplicates_choices) {
+  duplicate_keys <- duplicated(keys) | duplicated(keys, fromLast = TRUE)
+  if (!any(duplicate_keys)) {
+    return(invisible(NULL))
+  }
+  groups <- split(which(duplicate_keys), keys[duplicate_keys])
+  # The nesting verbs' vocabulary excludes `"keep"` (#110).
+  alternatives <- setdiff(duplicates_choices, "error")
+  # Each group is already comma-joined. Join groups here to preserve that
+  # formatting through cli; codetools cannot see the use in its template.
+  # nolint start: object_usage_linter.
+  positions <- paste(
+    vapply(groups, paste, collapse = ", ", character(1)),
+    collapse = "; "
+  )
+  # nolint end
+  offered <- paste0("\"", alternatives, "\"")
+  offered[[1L]] <- paste0(".duplicates = ", offered[[1L]])
+  abort_marginplyr(c(
+    paste0(
+      "Duplicate grouping sets were produced at ",
+      "{cli::qty(length(groups))}{?positions/position groups}:"
+    ),
+    i = "{positions}.",
+    i = "Use {.or {.code {offered}}}."
+  ))
+}
+
 # The families a specification expands to. Every function below it takes the
 # preflight the caller holds, and reads each argument's reading off the record
 # beside that argument's quosure rather than taking one (ADR 0008). A column
 # selection is resolved here and not there, so it is resolved once per pass,
-# through the resolver that pass supplies.
-expand_grouping_family <- function(preflight, resolve_selection) {
+# through the resolver that pass supplies. Optional `emit` observes completed
+# occurrences in plan order for prefix validation. Expansion ignores its
+# return value and returns the family of occurrences.
+expand_grouping_family <- function(preflight, resolve_selection,
+                                   emit = NULL, drop_duplicates = FALSE) {
   rule <- find_grouping_kind_rule(preflight$spec$type)
   if (is.null(rule)) {
     stop("Unknown Grouping specification kind.", call. = FALSE)
   }
-  rule$expand(preflight, resolve_selection)
+  rule$expand(preflight, resolve_selection, emit, drop_duplicates)
 }
 
-expand_single_grouping_set <- function(preflight, resolve_selection) {
-  list(resolve_grouping_set(preflight, resolve_selection))
+# Notify a prefix observer of completed occurrences and return them unchanged.
+emit_grouping_family <- function(family, emit) {
+  if (!is.null(emit) && length(family) > 0L) {
+    emit(family)
+  }
+  family
+}
+
+# Emit one occurrence after resolving the entire set.
+expand_single_grouping_set <- function(preflight, resolve_selection, emit,
+                                       drop_duplicates) {
+  emit_grouping_family(list(resolve_grouping_set(preflight, resolve_selection)),
+                       emit)
 }
 
 resolve_grouping_set <- function(preflight, resolve_selection) {
@@ -1226,15 +1290,19 @@ resolve_grouping_set <- function(preflight, resolve_selection) {
   unique(cols)
 }
 
-expand_grouping_sets <- function(preflight, resolve_selection) {
+# Each branch of a union contributes its occurrences directly to the plan.
+expand_grouping_sets <- function(preflight, resolve_selection, emit,
+                                 drop_duplicates) {
   unlist(
     lapply(
       preflight$args,
       function(arg) {
         if (is.null(arg$nested)) {
-          return(list(resolve_selection(arg$quo)))
+          return(emit_grouping_family(list(resolve_selection(arg$quo)), emit))
         }
-        expand_grouping_family(arg$nested, resolve_selection)
+        expand_grouping_family(
+          arg$nested, resolve_selection, emit, drop_duplicates
+        )
       }
     ),
     recursive = FALSE
@@ -1270,18 +1338,24 @@ resolve_grouping_units <- function(preflight, resolve_selection) {
   units
 }
 
-expand_rollup <- function(preflight, resolve_selection) {
+# Emit the rollup after resolving every unit.
+expand_rollup <- function(preflight, resolve_selection, emit, drop_duplicates) {
   units <- resolve_grouping_units(preflight, resolve_selection)
-  lapply(
+  family <- lapply(
     rev(seq.int(0L, length(units))),
     function(n) {
       if (n == 0L) character() else unique(unlist(units[seq_len(n)]))
     }
   )
+  emit_grouping_family(family, emit)
 }
 
-expand_cube <- function(preflight, resolve_selection) {
+# Emit the cube after resolving every unit.
+expand_cube <- function(preflight, resolve_selection, emit, drop_duplicates) {
   units <- resolve_grouping_units(preflight, resolve_selection)
+  if (drop_duplicates) {
+    return(emit_grouping_family(distinct_cube_sets(units), emit))
+  }
   n <- length(units)
   indices <- unlist(
     lapply(
@@ -1291,36 +1365,141 @@ expand_cube <- function(preflight, resolve_selection) {
     recursive = FALSE
   )
 
-  lapply(
+  family <- lapply(
     indices,
     function(index) {
       if (length(index) == 0L) character() else unique(unlist(units[index]))
     }
   )
+  emit_grouping_family(family, emit)
 }
 
-expand_grouping_product <- function(preflight, resolve_selection) {
-  product <- list(character())
-  if (length(preflight$args) == 0L) {
-    return(product)
+# Retain the earliest occurrence of each cube set in descending subset size
+# and then combination order. Prepending the same choices preserves that rank.
+distinct_cube_sets <- function(units) {
+  dimensions <- unique(unlist(units, use.names = FALSE))
+  sets <- list(character())
+  sizes <- 0L
+  for (unit in rev(units)) {
+    included <- lapply(sets, function(set) union(unit, set))
+    candidates <- c(included, sets)
+    candidate_sizes <- c(sizes + 1L, sizes)
+    # At equal sizes, including this earlier unit precedes skipping it. Stable
+    # ordering keeps the inherited combination order within each branch.
+    ordered <- order(candidate_sizes, decreasing = TRUE, method = "radix")
+    keys <- grouping_set_keys(candidates[ordered], dimensions)
+    retained <- ordered[!duplicated(keys)]
+    sets <- candidates[retained]
+    sizes <- candidate_sizes[retained]
   }
+  sets
+}
 
-  for (arg in preflight$args) {
-    family <- if (is.null(arg$nested)) {
-      list(resolve_selection(arg$quo))
-    } else {
-      expand_grouping_family(arg$nested, resolve_selection)
+# Resolve product factors from left to right. Only the last factor can emit
+# final occurrences while its family is incomplete.
+expand_grouping_product <- function(preflight, resolve_selection, emit,
+                                    drop_duplicates) {
+  if (drop_duplicates) {
+    family <- distinct_grouping_product(preflight, resolve_selection)
+    return(emit_grouping_family(family, emit))
+  }
+  product <- list(character())
+
+  for (i in seq_along(preflight$args)) {
+    arg <- preflight$args[[i]]
+    if (!is.null(emit) && i == length(preflight$args)) {
+      return(expand_observed_product_tail(
+        product, arg, resolve_selection, emit
+      ))
     }
+    family <- expand_grouping_factor(arg, resolve_selection, drop_duplicates)
+    product <- combine_grouping_factors(product, family)
+  }
+  emit_grouping_family(product, emit)
+}
 
-    product <- unlist(
-      lapply(
-        product,
-        function(left) lapply(family, function(right) unique(c(left, right)))
-      ),
-      recursive = FALSE
-    )
+# Resolve one factor, optionally observing its completed occurrences.
+expand_grouping_factor <- function(arg, resolve_selection, drop_duplicates,
+                                   emit = NULL) {
+  if (is.null(arg$nested)) {
+    return(emit_grouping_family(list(resolve_selection(arg$quo)), emit))
+  }
+  expand_grouping_family(arg$nested, resolve_selection, emit, drop_duplicates)
+}
+
+# The first left occurrence crosses the right family before any other left
+# occurrence. Only those combinations are a completed prefix until the last
+# factor resolves. The duplicate-error pass is the only observer.
+expand_observed_product_tail <- function(product, arg, resolve_selection,
+                                         emit) {
+  first <- product[1L]
+  emit_first <- function(family) {
+    emit(combine_grouping_factors(first, family))
+  }
+  family <- expand_grouping_factor(arg, resolve_selection, FALSE, emit_first)
+  rest <- combine_grouping_factors(product[-1L], family)
+  c(combine_grouping_factors(first, family), emit_grouping_family(rest, emit))
+}
+
+# Cross fully resolved factors in left-major order, preserving occurrences.
+combine_grouping_factors <- function(product, family) {
+  unlist(
+    lapply(product, function(left) {
+      lapply(family, function(right) union(left, right))
+    }),
+    recursive = FALSE
+  )
+}
+
+# Resolve factors in caller order. A nested Cartesian product can contribute
+# its factors directly because its occurrences have the same left-major order.
+resolve_product_families <- function(preflight, resolve_selection) {
+  families <- lapply(preflight$args, function(arg) {
+    if (!is.null(arg$nested) &&
+          identical(grouping_kind_name(arg$nested$spec$type), "product")) {
+      return(resolve_product_families(arg$nested, resolve_selection))
+    }
+    list(expand_grouping_factor(arg, resolve_selection, TRUE))
+  })
+  unlist(families, recursive = FALSE)
+}
+
+# Retain the first occurrence of each product set. Columns required by every
+# choice of a later factor cannot distinguish two prefixes in the final plan.
+distinct_grouping_product <- function(preflight, resolve_selection) {
+  families <- resolve_product_families(preflight, resolve_selection)
+  required <- lapply(families, function(family) Reduce(intersect, family))
+  remaining <- rev(Reduce(union, rev(required), init = character(),
+                          accumulate = TRUE))[-1L]
+  product <- list(character())
+  for (i in seq_along(families)) {
+    product <- distinct_product_step(product, families[[i]], remaining[[i]])
   }
   product
+}
+
+# Keep the first union of each membership in Cartesian order. Omit required
+# suffix columns from the keys and retain the selected columns as written.
+distinct_product_step <- function(product, family, required) {
+  dimensions <- setdiff(unique(unlist(c(product, family), use.names = FALSE)),
+                        required)
+  seen <- new.env(parent = emptyenv())
+  sets <- list()
+  for (left in product) {
+    for (right in family) {
+      set <- union(left, right)
+      key <- grouping_set_key(set, dimensions)
+      # Environment names have a byte limit. Compare exact keys within each
+      # short bucket so a hash collision cannot discard a distinct set.
+      bucket <- rlang::hash(key)
+      previous <- seen[[bucket]]
+      if (!key %in% previous) {
+        seen[[bucket]] <- c(previous, key)
+        sets[[length(sets) + 1L]] <- set
+      }
+    }
+  }
+  sets
 }
 
 grouping_kind_rules <- local({
