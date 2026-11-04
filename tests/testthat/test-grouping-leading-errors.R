@@ -435,7 +435,13 @@ test_that("DuckDB leading selection failures invoke no metadata query", {
       grouping_sets(grouping_set(!!typed)),
       grouping_sets(grouping_spec(value, grouping_set()))
     ),
-    grouping_spec(grouping_spec(grouping_sets(x, x), !!typed), value)
+    grouping_spec(grouping_spec(grouping_sets(x, x), !!typed), value),
+    grouping_spec(
+      grouping_sets(grouping_spec(grouping_sets(x, x), !!typed)), value
+    ),
+    grouping_spec(
+      grouping_sets(x, grouping_set()), grouping_set(x, !!typed)
+    )
   )
   for (verb in verbs) {
     original <- expect_error(verb(data, NULL, grouping_sets(x, x, value)),
@@ -646,4 +652,30 @@ test_that("known duplicate occurrences precede unsafe dtplyr metadata", {
     "Can.t safely determine column metadata", class = "marginplyr_error"
   )
   expect_identical(predicates, 0L)
+})
+
+test_that("known columns in a pending singleton settle product duplicates", {
+  data <- data.frame(x = 1L, value = 2L)
+  predicate <- function(x) stop("typed selection evaluated")
+  spec <- grouping_spec(
+    grouping_sets(x, grouping_set()), grouping_set(x, where(predicate))
+  )
+
+  for (verb in forwarded_verbs) {
+    expect_error(
+      verb(data, NULL, spec),
+      "1, 2.", fixed = TRUE, class = "marginplyr_error"
+    )
+  }
+})
+
+test_that("completed duplicate groups precede incomplete product groups", {
+  data <- data.frame(x = 1L, y = 2L, z = "value")
+  spec <- grouping_sets(
+    x, y, y, grouping_spec(grouping_sets(x, x), where(is.character))
+  )
+  expect_error(
+    inspect_grouping(data, .grouping = spec),
+    "2, 3; 4, 5.", fixed = TRUE, class = "marginplyr_error"
+  )
 })

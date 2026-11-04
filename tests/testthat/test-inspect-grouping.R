@@ -284,13 +284,19 @@ test_that("cube products retain first occurrence order and Grouping bits", {
   memberships <- lapply(subsets, function(subset) {
     unique(c(character(), unlist(units[subset], use.names = FALSE)))
   })
+  wrapped <- grouping_sets(e, cube_spec, grouping_sets(d))
+  wrapped_memberships <- c(list("e"), memberships, list("d"))
   specs <- list(
     grouping_spec(cube_spec, grouping_spec(choices, required)),
-    grouping_spec(grouping_spec(required, choices), cube_spec)
+    grouping_spec(grouping_spec(required, choices), cube_spec),
+    grouping_spec(wrapped, choices, required),
+    grouping_spec(required, choices, wrapped)
   )
   families <- list(
     list(memberships, alternatives, fixed),
-    list(fixed, alternatives, memberships)
+    list(fixed, alternatives, memberships),
+    list(wrapped_memberships, alternatives, fixed),
+    list(fixed, alternatives, wrapped_memberships)
   )
 
   for (i in seq_along(specs)) {
