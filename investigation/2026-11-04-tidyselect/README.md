@@ -137,9 +137,12 @@ agreed. Tidyselect documents stringr patterns for `matches()`.
 On live DuckDB, a DBI trace recorded one zero-row query per malformed
 `matches(stringr::regex("["))` placement across `inspect_grouping()`,
 `expand_with_margins()`, and `summarize_with_margins()` with either `.by`
-or `grouping_set()`. The six `matches("[")` controls raised without a
-query. The stringr path deferred to typed metadata before delivering a
-diagnostic that the name-only path could determine.
+or `grouping_set()`.
+The public SQL audit identified every traced call as `selection_proxy` and
+recorded a `LIMIT 0` statement.
+The six `matches("[")` controls raised without a query. The stringr path
+deferred to typed metadata before delivering a diagnostic that the name-only
+path could determine.
 [Name-only helper classification](../../R/grouping-plan.R) and
 [early-refusal policy](../../design/adr/0005-reject-local-errors-before-backend-reads.md).
 
@@ -190,6 +193,7 @@ complement. The rewritten call therefore asked a different selection question.
 | Separate constructor arguments against explicit name vectors | 1,210 | All matched |
 | Ordinary local across, pick, if_any, if_all | 5,144 | 5,134 successful matches and 10 shared refusals |
 | Later local across and named packed across | 2,572 | 2,050 successful matches and 522 shared refusals |
+| Four ordinary summary consumers with fixed keys and a rollup | 756 | 734 successful matches and 22 shared refusals |
 | Summary .by with a rollup and British spelling | 186 | 184 successful matches and two shared renaming refusals |
 | Seeded nested summary selectors | 568 | 564 matches and four F6 divergences |
 | Column-wise share name selections | 3,366 | All matched |
@@ -209,7 +213,11 @@ rendered SQL and an inspected local plan. SQL nesting was outside that
 comparison under its public backend boundary.
 
 The [summary matrix](summary-matrix.R) checked names and values against
-dplyr and recorded success/refusal for invalid cases. A stratified lazy
+dplyr and recorded success or refusal for invalid cases. The four-consumer
+rollup matrix compared both detail and total values. The detail reference
+grouped by the fixed key and the Margin dimension. The total reference
+removed the omitted dimension from the ordinary summary selection before
+grouping by the fixed key. A stratified lazy
 matrix added 744 comparisons per backend. dtplyr had 626 matching successes,
 12 shared refusals, 104 cases where Margin metadata supported a predicate
 that ordinary dtplyr refused, and two literal `NULL` defaults that differed.
@@ -293,8 +301,13 @@ Rscript /path/to/summary-matrix.R local
 Rscript /path/to/summary-matrix.R scope
 Rscript /path/to/summary-matrix.R backend
 Rscript /path/to/summary-matrix.R by
+Rscript /path/to/summary-matrix.R grouping
 Rscript /path/to/summary-matrix.R deep
 Rscript /path/to/share-matrix.R local simple both
+Rscript /path/to/share-matrix.R local across both
+Rscript /path/to/share-matrix.R data.table simple both
+Rscript /path/to/share-matrix.R DuckDB simple both
+Rscript /path/to/share-matrix.R SQLite simple both
 Rscript /path/to/share-matrix.R dtplyr across both
 Rscript /path/to/share-findings.R
 Rscript /path/to/matches-patterns.R

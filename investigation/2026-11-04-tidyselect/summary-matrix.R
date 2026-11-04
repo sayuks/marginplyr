@@ -63,7 +63,7 @@ report <- function(cases, inp, name, kinds) {
   print(aggregate(rep(1L,nrow(tab)),tab[c("kind","oracle_ok","margin_ok","equal")],sum))
 }
 args <- commandArgs(trailingOnly = TRUE)
-job <- match.arg(args[[1L]], c("local", "scope", "backend", "deep", "by"))
+job <- match.arg(args[[1L]], c("local", "scope", "backend", "deep", "by", "grouping"))
 out_dir <- if (length(args) > 1L) args[[2L]] else tempdir()
 stopifnot(dir.exists(out_dir))
 if (job=="local") report(c(solo,pair_case),d,"local",c("across","pick","if_any","if_all"))
@@ -130,4 +130,66 @@ if (job == "by") {
     c(oracle=a$ok,margin=b$ok,equal=ok)
   },logical(3L))
   cat("cases =", length(cases), "\n"); print(rowSums(compared))
+}
+
+if (job == "grouping") {
+  data <- mutate(d, margin_key = c("m", "n", "m", "n"))
+  cases <- unique(c(solo, unlist(Map(combine, helpers, rev(helpers))),
+                    "margin_key", "everything() & !margin_key",
+                    "c(-all_of('margin_key'), starts_with('amt'))"))
+  expressions <- list(
+    across = "across(%s, sum)",
+    pick = "out = sum(rowSums(pick(%s)))",
+    if_any = "out = sum(if_any(%s, ~ .x > 2))",
+    if_all = "out = sum(if_all(%s, ~ .x > 2))"
+  )
+  direct <- function(expr) {
+    detail <- eval(parse_one(sprintf(
+      "summarise(group_by(data, g, margin_key), n = n(), %s, .groups = 'drop')",
+      expr
+    )))
+    total <- eval(parse_one(sprintf(
+      "summarise(group_by(select(data, -margin_key), g), n = n(), %s, .groups = 'drop')",
+      expr
+    )))
+    bind_rows(
+      mutate(detail, sid = 1L, .before = n),
+      mutate(total, margin_key = NA_character_, sid = 2L, .before = n)
+    )
+  }
+  margin <- function(expr) {
+    code <- sprintf(paste0(
+      "summarize_with_margins(data, n = n(), %s, .by = g, ",
+      ".grouping = rollup(margin_key), .id = 'sid', .margin_label = NULL)"
+    ), expr)
+    eval(parse_one(code))
+  }
+  counts <- c(equal = 0L, both_rejected = 0L, mismatch = 0L)
+  for (selector in cases) {
+    for (consumer in names(expressions)) {
+      expr <- sprintf(expressions[[consumer]], selector)
+      expected <- capture(direct(expr))
+      observed <- capture(margin(expr))
+      equal <- if (expected$ok && observed$ok) {
+        a <- arrange(expected$result, g, sid, margin_key)
+        b <- arrange(observed$result, g, sid, margin_key)
+        identical(names(a), names(b)) &&
+          isTRUE(all.equal(a, b, check.attributes = FALSE))
+      } else {
+        FALSE
+      }
+      status <- if (equal) "equal" else if (!expected$ok && !observed$ok) {
+        "both_rejected"
+      } else {
+        "mismatch"
+      }
+      counts[[status]] <- counts[[status]] + 1L
+      if (status == "mismatch") {
+        print(list(consumer = consumer, selector = selector,
+                   expected = expected$result, observed = observed$result))
+      }
+    }
+  }
+  print(counts)
+  stopifnot(counts[["mismatch"]] == 0L)
 }

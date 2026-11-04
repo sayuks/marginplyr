@@ -59,8 +59,10 @@ inspect_pattern_selectors <- function() {
 }
 
 count_pattern_error_queries <- function() {
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
   connection <- DBI::dbConnect(duckdb::duckdb(shared_home = FALSE))
-  on.exit(DBI::dbDisconnect(connection, shutdown = TRUE))
+  on.exit(DBI::dbDisconnect(connection, shutdown = TRUE), add = TRUE)
   data <- tibble::tibble(a = "x", b = 1L)
   step <- dplyr::copy_to(connection, data, "pattern_test")
   count <- 0L
@@ -79,21 +81,33 @@ count_pattern_error_queries <- function() {
                      stringr = quote(matches(stringr::regex("["))))
   for (key in names(selections)) {
     expr <- selections[[key]]
-    for (verb in list(
-      function(expr) inspect_grouping(step, .by = !!expr),
-      function(expr) inspect_grouping(step, .grouping = grouping_set(!!expr)),
-      function(expr) expand_with_margins(step, .by = !!expr),
-      function(expr) expand_with_margins(step, .grouping = grouping_set(!!expr)),
-      function(expr) summarize_with_margins(step, n = dplyr::n(), .by = !!expr),
-      function(expr) summarize_with_margins(step, n = dplyr::n(),
-                                            .grouping = grouping_set(!!expr))
-    )) {
+    verbs <- list(
+      inspect_by = function(expr) inspect_grouping(step, .by = !!expr),
+      inspect_grouping = function(expr) inspect_grouping(
+        step, .grouping = grouping_set(!!expr)
+      ),
+      expand_by = function(expr) expand_with_margins(step, .by = !!expr),
+      expand_grouping = function(expr) expand_with_margins(
+        step, .grouping = grouping_set(!!expr)
+      ),
+      summarize_by = function(expr) summarize_with_margins(
+        step, n = dplyr::n(), .by = !!expr
+      ),
+      summarize_grouping = function(expr) summarize_with_margins(
+        step, n = dplyr::n(), .grouping = grouping_set(!!expr)
+      )
+    )
+    for (placement in names(verbs)) {
+      direct <- tryCatch(tidyselect::eval_select(expr, data), error = identity)
       count <- 0L
-      direct <- tryCatch(suppressWarnings(tidyselect::eval_select(expr, data)), error = identity)
-      count <- 0L
-      error <- tryCatch(suppressWarnings(verb(expr)), error = identity)
+      error <- tryCatch(suppressWarnings(verbs[[placement]](expr)), error = identity)
       stopifnot(inherits(direct, "error"), inherits(error, "error"),
                 identical(class(error), class(direct)))
+      audit <- last_sent_queries(include_result = FALSE, details = TRUE)
+      stopifnot(nrow(audit) == count, count <= 1L,
+                all(audit$purpose == "selection_proxy"),
+                all(grepl("LIMIT 0", audit$sql, fixed = TRUE)))
+      cat(key, placement, count, paste(audit$sql, collapse = " "), "\n")
       queries[[key]] <- queries[[key]] + count
     }
   }
