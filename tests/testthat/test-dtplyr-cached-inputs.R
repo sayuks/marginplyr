@@ -188,3 +188,81 @@ test_that("cached rename isolation does not admit explicit Mutable steps", {
   )
   expect_identical(source, before)
 })
+
+test_that("a copy-named immutable cache expands a single grouping set", {
+  skip_if_suggest_absent("dtplyr")
+  source <- dtplyr::lazy_dt(
+    data.frame(g = c("a", "b"), amount = 1:2), immutable = TRUE
+  ) |>
+    dplyr::filter(amount == 1L)
+  cached <- dplyr::compute(source, name = "copy")
+  ordinary <- dplyr::compute(source, name = "ordinary_cache")
+  expected <- tibble::tibble(g = "a", amount = 1L)
+
+  expect_identical(dplyr::collect(cached), expected)
+  result <- expand_with_margins(cached, .margin_label = NULL)
+  expect_s3_class(result, "dtplyr_step")
+  expect_identical(dplyr::collect(cached), expected)
+  collected <- dplyr::collect(result)
+  expect_identical(collected, expected)
+  expect_identical(collected, dplyr::collect(
+    expand_with_margins(ordinary, .margin_label = NULL)
+  ))
+  reused <- expand_with_margins(
+    result, .grouping = grouping_set(where(is.character)),
+    .margin_label = NULL
+  )
+  expect_identical(dplyr::collect(reused), expected)
+  expect_identical(dplyr::collect(cached), expected)
+})
+
+test_that("reused immutable caches expand multiple sets without caller copy", {
+  skip_if_suggest_absent("dtplyr")
+  source <- data.table::data.table(g = c("a", "b"), amount = 1:2)
+  before <- data.table::copy(source)
+  caller <- new.env(parent = environment())
+  copy_calls <- 0L
+  row_reads <- 0L
+  caller$copy <- function(x) {
+    copy_calls <<- copy_calls + 1L
+    data.table::copy(x)
+  }
+  caller$visit <- function(x) {
+    row_reads <<- row_reads + length(x)
+    rep(TRUE, length(x))
+  }
+  input <- evalq(
+    dtplyr::lazy_dt(source, immutable = TRUE) |> dplyr::filter(visit(amount)),
+    caller
+  )
+
+  expand_reused_cache <- function(cached) {
+    reused <- dplyr::rename(cached, value = amount) |>
+      dplyr::compute(name = "reused_cache")
+    expand_with_margins(reused, .grouping = rollup(g), .margin_label = NULL,
+                        .id = "set")
+  }
+  cached <- dplyr::compute(input, name = "copy")
+  ordinary <- dplyr::compute(input, name = "ordinary_cache")
+  expected_input <- tibble::tibble(g = c("a", "b"), amount = 1:2)
+
+  result <- expand_reused_cache(cached)
+  expect_s3_class(result, "dtplyr_step")
+  # The filter counter detects source reads during query construction.
+  expect_identical(row_reads, 0L)
+  expect_identical(source, before)
+  expect_identical(dplyr::collect(cached), expected_input)
+
+  collected <- dplyr::collect(result)
+  expect_identical(collected, tibble::tibble(
+    g = c("a", "b", NA_character_, NA_character_),
+    set = rep(1:2, each = 2), value = rep(1:2, 2)
+  ))
+  expect_identical(collected, dplyr::collect(expand_reused_cache(ordinary)))
+  expect_identical(dplyr::collect(result), collected)
+  expect_identical(dplyr::collect(cached), expected_input)
+  expect_identical(source, before)
+  # The caller binding returns an equivalent copy, so only the counter
+  # detects that it was invoked.
+  expect_identical(copy_calls, 0L)
+})

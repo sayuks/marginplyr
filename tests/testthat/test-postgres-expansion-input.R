@@ -32,3 +32,17 @@ test_that("PostgreSQL selection clauses stay inside expansion operands", {
     }
   }
 })
+
+test_that("PostgreSQL expansion renders one evaluation of its input", {
+  source <- dplyr::tbl(
+    dbplyr::simulate_postgres(),
+    dbplyr::sql("SELECT 'detail' AS g, nextval('payload_counter') AS v"),
+    vars = c("g", "v")
+  )
+  query <- expand_with_margins(source, .grouping = rollup("g"), .id = "set")
+  sql <- as.character(dbplyr::sql_render(query))
+
+  # Rendering detects duplicated volatile expressions without a live server.
+  expect_length(expansion_clause_depths(sql, "nextval\\("), 1L)
+  expect_match(sql, "UNION ALL", fixed = TRUE)
+})

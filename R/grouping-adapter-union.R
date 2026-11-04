@@ -39,8 +39,17 @@ dtplyr_margin_input <- function(.data, backend) {
   if (!identical(backend$kind, "dtplyr")) {
     return(.data)
   }
+  dtplyr_deferred_copy(isolate_dtplyr_cached_inputs(.data))
+}
+
+# Build a lazy copy of an admitted immutable dtplyr step. step_call() requires
+# a string, but dt_call() accepts a namespaced call head in the stored field.
+dtplyr_deferred_copy <- function(step) {
   step_call <- utils::getFromNamespace("step_call", "dtplyr")
-  step_call(isolate_dtplyr_cached_inputs(.data), "copy")
+  step <- step_call(step, "copy")
+  # The qualified name avoids lookup in a cache or caller binding.
+  step[["fun"]] <- quote(data.table::copy)
+  step
 }
 
 # Isolate each cached-table reference in an admitted immutable dtplyr graph.
@@ -56,9 +65,8 @@ isolate_dtplyr_cached_inputs <- function(step) {
   if (inherits(step, "dtplyr_step_assign")) {
     dt_call <- utils::getFromNamespace("dt_call", "dtplyr")
     step[["locals"]][[step[["name"]]]] <- dt_call(step[["parent"]])
-    step_call <- utils::getFromNamespace("step_call", "dtplyr")
     # Copy before a downstream setnames()/setorder() can write to the alias.
-    return(step_call(step, "copy"))
+    return(dtplyr_deferred_copy(step))
   }
   step
 }
@@ -971,6 +979,90 @@ restore_input_window_order <- function(result, input_window_order) {
   result
 }
 
+# Decide whether the SQL backend can reuse one evaluation of a shared CTE.
+# RSQLite's dbGetInfo() returns the linked engine version without sending SQL.
+sql_expand_shares_source <- function(con, backend) {
+  identical(backend$kind, "postgres") ||
+    inherits(con, "duckdb_connection") ||
+    (inherits(con, "SQLiteConnection") && !inherits(con, "TestConnection") &&
+       numeric_version(DBI::dbGetInfo(con)$db.version) >= "3.35.0")
+}
+
+# Substitute a statement-local table for an eligible multi-set SQL input.
+# The caller has enclosed the input and recorded any private Boolean aliases.
+sql_expand_shared_source <- function(data, backend) {
+  con <- dbplyr::remote_con(data)
+  columns <- margin_col_names(data)
+  boolean_source <- attr(data, "marginplyr_boolean_input_query")
+  input <- boolean_source %||% data$lazy_query
+  input_columns <- dbplyr::op_vars(input)
+  input_sql <- dbplyr::sql_render(input, con = con)
+  # The CTE name must not shadow any name in the rendered input.
+  input_key <- margin_identifier_key(as.character(input_sql), backend)
+  suffix <- 1L
+  name <- "marginplyr_expand_source_1"
+  while (grepl(name, input_key, fixed = TRUE)) {
+    suffix <- suffix + 1L
+    name <- paste0("marginplyr_expand_source_", suffix)
+  }
+  # DuckDB's connection method looks up bare table names. The CTE exists
+  # only in the result statement, and dbplyr already has its columns.
+  src <- dbplyr::src_dbi(con, auto_disconnect = FALSE)
+  source <- dplyr::tbl(src, name, vars = input_columns)
+  if (!is.null(boolean_source)) {
+    names(input_columns) <- columns
+    source <- dplyr::rename(source, dplyr::all_of(input_columns))
+  }
+  list(
+    source = source,
+    name = dbplyr::escape(dbplyr::ident(name), con = con),
+    sql = input_sql,
+    order = dbplyr::op_sort(data)
+  )
+}
+
+# Bind the statement-local table inside the union's relation. The caller
+# supplies a union whose branches use this exact shared source.
+sql_expand_shared_result <- function(result, shared, backend) {
+  con <- dbplyr::remote_con(result)
+  columns <- margin_col_names(result)
+  boolean <- if (inherits(con, "SQLiteConnection")) {
+    sqlite_boolean_columns(columns)
+  } else {
+    character()
+  }
+  aliases <- stats::setNames(new_margin_internal_names(
+    length(boolean), columns, prefix = "..marginplyr_expand_", backend = backend
+  ), boolean)
+  if (length(aliases) > 0L) {
+    result <- sqlite_boolean_query(result, source = NULL, aliases,
+                                   public = FALSE)
+  }
+  if (any(sql_name_needs_quoting(columns))) {
+    result <- sql_quote_generated_columns(result)
+  }
+  # PostgreSQL materializes multiply referenced CTEs with plain AS, including
+  # versions before the MATERIALIZED keyword was introduced.
+  binding <- if (identical(backend$kind, "postgres")) {
+    " AS "
+  } else {
+    " AS MATERIALIZED "
+  }
+  sql <- dbplyr::sql(paste0(
+    "WITH ", shared$name, binding, "(\n", shared$sql, "\n)\n",
+    dbplyr::sql_render(result)
+  ))
+  # SQLite cannot start a later compound operand with WITH.
+  sql <- dbplyr::sql_query_select(
+    con, dbplyr::sql("*"), dbplyr::sql_query_wrap(con, sql)
+  )
+  relation <- dplyr::tbl(con, sql, vars = margin_col_names(result))
+  if (length(aliases) > 0L) {
+    relation <- dplyr::rename(relation, dplyr::all_of(aliases))
+  }
+  restore_input_window_order(relation, shared$order)
+}
+
 # A reusable Arrow input whose filesystem partition guarantees cannot overwrite
 # later expansion projections. Ordering a private constant retains duplicates
 # and nested payload types without reading rows during construction (ADR 0020).
@@ -1035,10 +1127,16 @@ expand_margin_union <- function(.data,
                                 identity_cols = character(),
                                 identity_missing = list()) {
   public_id <- set_id_name
+  shared <- NULL
   if (backend$is_sql) {
     .data <- sql_margin_input_relation(
       .data, backend, margin_col_names(.data)
     )
+    if (length(plan$sets) > 1L &&
+          sql_expand_shares_source(dbplyr::remote_con(.data), backend)) {
+      shared <- sql_expand_shared_source(.data, backend)
+      .data <- shared$source
+    }
   }
   if (identical(backend$kind, "arrow")) {
     source_names <- arrow_source_names(.data)
@@ -1124,6 +1222,8 @@ expand_margin_union <- function(.data,
       length(branches) > 1L &&
       length(plan$dimensions) > 0L
   ) {
+    # The first compound arm supplies the source column's collation even
+    # when the first grouping set omits that dimension.
     anchor <- sql_margin_type_anchor(
       .data,
       branches[[1L]],
@@ -1151,6 +1251,9 @@ expand_margin_union <- function(.data,
     result <- dplyr::rename(result, dplyr::all_of(public))
   } else {
     result <- combine_margin_branches(branches)
+  }
+  if (!is.null(shared)) {
+    result <- sql_expand_shared_result(result, shared, backend)
   }
 
   if (!identical(set_id_name, public_id)) {
