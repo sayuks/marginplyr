@@ -1,0 +1,28 @@
+       mode backend checked    verb    observed expected matched
+1      swap   local   FALSE    nest         b/a      a/b   FALSE
+2      swap   local   FALSE nest_by         b/a      a/b   FALSE
+3      swap   local    TRUE    nest         b/a      a/b   FALSE
+4      swap   local    TRUE nest_by         b/a      a/b   FALSE
+5      swap  dtplyr   FALSE    nest         b/a      a/b   FALSE
+6      swap  dtplyr   FALSE nest_by         b/a      a/b   FALSE
+7      swap  dtplyr    TRUE    nest         b/a      a/b   FALSE
+8      swap  dtplyr    TRUE nest_by         b/a      a/b   FALSE
+9  collapse   local   FALSE    nest         a/a      a/b   FALSE
+10 collapse   local   FALSE nest_by         a/a      a/b   FALSE
+11 collapse   local    TRUE    nest         a/a      a/b   FALSE
+12 collapse   local    TRUE nest_by         a/a      a/b   FALSE
+13 collapse  dtplyr   FALSE    nest         a/a      a/b   FALSE
+14 collapse  dtplyr   FALSE nest_by         a/a      a/b   FALSE
+15 collapse  dtplyr    TRUE    nest         a/a      a/b   FALSE
+16 collapse  dtplyr    TRUE nest_by         a/a      a/b   FALSE
+17   margin   local   FALSE    nest Total/Total      a/b   FALSE
+18   margin   local   FALSE nest_by Total/Total      a/b   FALSE
+19   margin   local    TRUE    nest Total/Total      a/b   FALSE
+20   margin   local    TRUE nest_by Total/Total      a/b   FALSE
+21   margin  dtplyr   FALSE    nest Total/Total      a/b   FALSE
+22   margin  dtplyr   FALSE nest_by Total/Total      a/b   FALSE
+23   margin  dtplyr    TRUE    nest Total/Total      a/b   FALSE
+24   margin  dtplyr    TRUE nest_by Total/Total      a/b   FALSE
+Native local nesting/union controls passed; all calls completed.
+Error: Desired behavior failed: factor displays silently remapped source keys.
+Execution halted

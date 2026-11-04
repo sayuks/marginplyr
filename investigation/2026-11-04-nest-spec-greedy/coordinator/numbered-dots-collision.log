@@ -1,0 +1,7 @@
+SHA: 78ebbc36200bdc5cef70838dd4e772c5c4a1401c
+Plain included: a 
+Wrapped included: ..01 
+Plain cell sizes: 1 1 
+Wrapped cell sizes: 2 
+Error: identical(control, observed) is not TRUE
+Execution halted

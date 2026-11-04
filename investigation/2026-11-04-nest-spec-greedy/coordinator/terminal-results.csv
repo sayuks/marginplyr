@@ -1,0 +1,6 @@
+"script","expected_exit","observed_exit"
+"output-names.R",0,0
+"plan-algebra.R",0,0
+"numbered-dots.R",1,1
+"numbered-dots-collision.R",1,1
+"factor-display.R",1,1

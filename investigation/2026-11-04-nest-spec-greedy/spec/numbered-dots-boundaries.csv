@@ -1,0 +1,62 @@
+"case","ok","observation"
+"named_default_plain",TRUE,"a"
+"named_default_wrapped",TRUE,"a"
+"forwarded_default_plain",TRUE,"a"
+"forwarded_default_wrapped",FALSE,"vctrs_error_subscript_oob: Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"missing_first_plain",FALSE,"marginplyr_error: `grouping_sets()` requires at least one set.
+ℹ Use `grouping_set()` for the empty grouping set."
+"missing_first_wrapped",FALSE,"vctrs_error_subscript_oob: Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"absent_first_plain",FALSE,"rlang_error: the ... list contains fewer than 1 elements"
+"absent_first_wrapped",FALSE,"vctrs_error_subscript_oob: Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"second_named_reordered_plain",TRUE,"a"
+"second_named_reordered_wrapped",FALSE,"vctrs_error_subscript_oob: Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"second_missing_plain",FALSE,"marginplyr_error: `grouping_sets()` requires at least one set.
+ℹ Use `grouping_set()` for the empty grouping set."
+"second_missing_wrapped",FALSE,"vctrs_error_subscript_oob: Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"top_plain",TRUE,"a"
+"top_wrapped",TRUE,"a"
+"alias=..1;parens=0",TRUE,"a"
+"alias=..1;parens=1",FALSE,"vctrs_error_subscript_oob: Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"alias=..1;parens=2",FALSE,"vctrs_error_subscript_oob: Can't select columns that don't exist.
+✖ Column `..1` doesn't exist."
+"alias=..01;parens=0",TRUE,"a"
+"alias=..01;parens=1",TRUE,"..01"
+"alias=..01;parens=2",TRUE,"..01"
+"alias=..001;parens=0",TRUE,"a"
+"alias=..001;parens=1",TRUE,"..001"
+"alias=..001;parens=2",TRUE,"..001"
+"alias=..+1;parens=0",TRUE,"a"
+"alias=..+1;parens=1",TRUE,"..+1"
+"alias=..+1;parens=2",TRUE,"..+1"
+"alias=.. 1;parens=0",TRUE,"a"
+"alias=.. 1;parens=1",TRUE,".. 1"
+"alias=.. 1;parens=2",TRUE,".. 1"
+"alias=.. +1;parens=0",TRUE,"a"
+"alias=.. +1;parens=1",TRUE,".. +1"
+"alias=.. +1;parens=2",TRUE,".. +1"
+"alias=..2;parens=0",TRUE,"a"
+"alias=..2;parens=1",FALSE,"vctrs_error_subscript_oob: Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"alias=..2;parens=2",FALSE,"vctrs_error_subscript_oob: Can't select columns that don't exist.
+✖ Column `..2` doesn't exist."
+"alias=..02;parens=0",TRUE,"a"
+"alias=..02;parens=1",TRUE,"..02"
+"alias=..02;parens=2",TRUE,"..02"
+"alias=..002;parens=0",TRUE,"a"
+"alias=..002;parens=1",TRUE,"..002"
+"alias=..002;parens=2",TRUE,"..002"
+"alias=..+2;parens=0",TRUE,"a"
+"alias=..+2;parens=1",TRUE,"..+2"
+"alias=..+2;parens=2",TRUE,"..+2"
+"alias=.. 2;parens=0",TRUE,"a"
+"alias=.. 2;parens=1",TRUE,".. 2"
+"alias=.. 2;parens=2",TRUE,".. 2"
+"alias=.. +2;parens=0",TRUE,"a"
+"alias=.. +2;parens=1",TRUE,".. +2"
+"alias=.. +2;parens=2",TRUE,".. +2"

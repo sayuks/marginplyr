@@ -1,0 +1,9 @@
+"kind","query","returned","limit"
+"issue","dots in:title",3,100
+"issue","parentheses in:title",4,100
+"issue","parenthesized in:title",4,100
+"issue","nested specification in:title",7,100
+"pr","dots in:title",2,100
+"pr","parentheses in:title",3,100
+"pr","parenthesized in:title",4,100
+"pr","nested specification in:title",6,100

@@ -1,0 +1,5 @@
+"script","sha","environment","source","session","terminal","observation"
+"numbered-dots.R","78ebbc36200bdc5cef70838dd4e772c5c4a1401c","R 4.6.1; macOS Tahoe 26.6.2 aarch64; TESTTHAT_PARALLEL=false","disposable git archive of the pinned SHA","20902",0,"450 cases: 150 correct bare controls; 200 false refusals; 100 wrong successful results"
+"numbered-dots.R --assert","78ebbc36200bdc5cef70838dd4e772c5c4a1401c","R 4.6.1; macOS Tahoe 26.6.2 aarch64; TESTTHAT_PARALLEL=false","disposable git archive of the pinned SHA","62055",1,"desired equality assertion failed on unrepaired source"
+"numbered-dots-boundaries.R","78ebbc36200bdc5cef70838dd4e772c5c4a1401c","R 4.6.1; macOS Tahoe 26.6.2 aarch64; TESTTHAT_PARALLEL=false","disposable git archive of the pinned SHA","terminal in initial call",0,"14 boundary cases and 36 alias controls completed"
+"family-algebra.R","78ebbc36200bdc5cef70838dd4e772c5c4a1401c","R 4.6.1; macOS Tahoe 26.6.2 aarch64; TESTTHAT_PARALLEL=false","disposable git archive of the pinned SHA","24496",0,"180 deterministic trees; 1080 expected plan/refusal matches"

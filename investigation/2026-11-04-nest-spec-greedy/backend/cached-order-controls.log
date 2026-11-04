@@ -1,0 +1,176 @@
+# A tibble: 12 × 4
+   g     h       row  row2
+   <chr> <chr> <int> <int>
+ 1 a     v         2     4
+ 2 a     v         4     4
+ 3 <NA>  u         3     3
+ 4 a     v         2     2
+ 5 a     v         4     2
+ 6 b     u         1     1
+ 7 a     v         2     4
+ 8 a     v         4     4
+ 9 <NA>  u         3     3
+10 a     v         2     2
+11 a     v         4     2
+12 b     u         1     1
+funion(`_DT2`, setorder(`_DT2`, -row2, na.last = TRUE), all = TRUE)
+setcolorder(funion(funion(copy(funion(copy(`_DT2`), setorder(copy(`_DT2`), 
+    -row2, na.last = TRUE), all = TRUE))[, `:=`(..marginplyr_nest_1 = g, 
+    ..marginplyr_nest_2 = h)][, `:=`(..marginplyr_nest_3 = g, 
+    ..marginplyr_nest_4 = h)][, `:=`(g = marginplyr:::margin_display_character(g), 
+    h = marginplyr:::margin_display_character(h))][, `:=`(set = 1L)], 
+    copy(funion(copy(`_DT2`), setorder(copy(`_DT2`), -row2, na.last = TRUE), 
+        all = TRUE))[, `:=`(..marginplyr_nest_1 = g, ..marginplyr_nest_2 = h)][, 
+        `:=`(..marginplyr_nest_3 = g, ..marginplyr_nest_4 = h)][, 
+        `:=`(g = marginplyr:::margin_display_character(g))][, 
+        `:=`(h = base::rep("Total", base::length(h)))][, `:=`(..marginplyr_nest_4 = vctrs::vec_rep(NA_character_, 
+        base::length(g)))][, `:=`(set = 2L)], all = TRUE), copy(funion(copy(`_DT2`), 
+    setorder(copy(`_DT2`), -row2, na.last = TRUE), all = TRUE))[, 
+    `:=`(..marginplyr_nest_1 = g, ..marginplyr_nest_2 = h)][, 
+    `:=`(..marginplyr_nest_3 = g, ..marginplyr_nest_4 = h)][, 
+    `:=`(g = base::rep("Total", base::length(g)), h = base::rep("Total", 
+        base::length(h)))][, `:=`(..marginplyr_nest_3 = vctrs::vec_rep(NA_character_, 
+    base::length(g)), ..marginplyr_nest_4 = vctrs::vec_rep(NA_character_, 
+    base::length(g)))][, `:=`(set = 3L)], all = TRUE)[, .(data = list(data.table::as.data.table(list(g = ..marginplyr_nest_1, 
+    h = ..marginplyr_nest_2, row = row, row2 = row2))), g = vctrs::vec_slice(g, 
+    base::seq_len(base::min(vctrs::vec_size(g), 1L))), h = vctrs::vec_slice(h, 
+    base::seq_len(base::min(vctrs::vec_size(h), 1L)))), keyby = .(set, 
+    ..marginplyr_nest_3, ..marginplyr_nest_4)][, `:=`(..marginplyr_nest_3 = NULL, 
+    ..marginplyr_nest_4 = NULL)], c("g", "h", "set", "data"))[order(fifelse(base::`%in%`(set, 
+    3L), 1L, 0L), fifelse(base::is.na(g), 1L, 0L), g, fifelse(base::`%in%`(set, 
+    2:3), 1L, 0L), fifelse(base::is.na(h), 1L, 0L), h, set)]
+# A tibble: 7 × 4
+  g     h       set data         
+  <chr> <chr> <int> <list>       
+1 a     v         1 <dt [8 × 4]> 
+2 a     Total     2 <dt [8 × 4]> 
+3 b     u         1 <dt [2 × 4]> 
+4 b     Total     2 <dt [2 × 4]> 
+5 <NA>  u         1 <dt [2 × 4]> 
+6 <NA>  Total     2 <dt [2 × 4]> 
+7 Total Total     3 <dt [12 × 4]>
+# A tibble: 7 × 4
+  g     h       set data             
+  <chr> <chr> <int> <list>           
+1 a     v         1 <tibble [8 × 4]> 
+2 a     Total     2 <tibble [8 × 4]> 
+3 b     u         1 <tibble [2 × 4]> 
+4 b     Total     2 <tibble [2 × 4]> 
+5 <NA>  u         1 <tibble [2 × 4]> 
+6 <NA>  Total     2 <tibble [2 × 4]> 
+7 Total Total     3 <tibble [12 × 4]>
+cell 1 
+# A tibble: 8 × 4
+  g     h       row  row2
+  <chr> <chr> <int> <int>
+1 a     v         2     4
+2 a     v         4     4
+3 a     v         2     2
+4 a     v         4     2
+5 a     v         2     4
+6 a     v         4     4
+7 a     v         2     2
+8 a     v         4     2
+        g      h   row  row2
+   <char> <char> <int> <int>
+1:      a      v     2     2
+2:      a      v     4     2
+3:      a      v     2     4
+4:      a      v     4     4
+5:      a      v     2     4
+6:      a      v     4     4
+7:      a      v     2     2
+8:      a      v     4     2
+cell 2 
+# A tibble: 8 × 4
+  g     h       row  row2
+  <chr> <chr> <int> <int>
+1 a     v         2     4
+2 a     v         4     4
+3 a     v         2     2
+4 a     v         4     2
+5 a     v         2     4
+6 a     v         4     4
+7 a     v         2     2
+8 a     v         4     2
+        g      h   row  row2
+   <char> <char> <int> <int>
+1:      a      v     2     2
+2:      a      v     4     2
+3:      a      v     2     4
+4:      a      v     4     4
+5:      a      v     2     4
+6:      a      v     4     4
+7:      a      v     2     2
+8:      a      v     4     2
+cell 3 
+# A tibble: 2 × 4
+  g     h       row  row2
+  <chr> <chr> <int> <int>
+1 b     u         1     1
+2 b     u         1     1
+        g      h   row  row2
+   <char> <char> <int> <int>
+1:      b      u     1     1
+2:      b      u     1     1
+cell 4 
+# A tibble: 2 × 4
+  g     h       row  row2
+  <chr> <chr> <int> <int>
+1 b     u         1     1
+2 b     u         1     1
+        g      h   row  row2
+   <char> <char> <int> <int>
+1:      b      u     1     1
+2:      b      u     1     1
+cell 5 
+# A tibble: 2 × 4
+  g     h       row  row2
+  <chr> <chr> <int> <int>
+1 <NA>  u         3     3
+2 <NA>  u         3     3
+        g      h   row  row2
+   <char> <char> <int> <int>
+1:   <NA>      u     3     3
+2:   <NA>      u     3     3
+cell 6 
+# A tibble: 2 × 4
+  g     h       row  row2
+  <chr> <chr> <int> <int>
+1 <NA>  u         3     3
+2 <NA>  u         3     3
+        g      h   row  row2
+   <char> <char> <int> <int>
+1:   <NA>      u     3     3
+2:   <NA>      u     3     3
+cell 7 
+# A tibble: 12 × 4
+   g     h       row  row2
+   <chr> <chr> <int> <int>
+ 1 a     v         2     4
+ 2 a     v         4     4
+ 3 <NA>  u         3     3
+ 4 a     v         2     2
+ 5 a     v         4     2
+ 6 b     u         1     1
+ 7 a     v         2     4
+ 8 a     v         4     4
+ 9 <NA>  u         3     3
+10 a     v         2     2
+11 a     v         4     2
+12 b     u         1     1
+         g      h   row  row2
+    <char> <char> <int> <int>
+ 1:      b      u     1     1
+ 2:      a      v     2     2
+ 3:      a      v     4     2
+ 4:   <NA>      u     3     3
+ 5:      a      v     2     4
+ 6:      a      v     4     4
+ 7:      a      v     2     4
+ 8:      a      v     4     4
+ 9:   <NA>      u     3     3
+10:      a      v     2     2
+11:      a      v     4     2
+12:      b      u     1     1
+All cell multisets and native q before/after matched.

@@ -1,0 +1,651 @@
+"shape","collision","parent","consumer","spelling","dot","parens","matches","ok","observation","condition_class"
+"ordinary",FALSE,"grouping_set","inspect_grouping","..1",1,0,TRUE,FALSE,"A `grouping_set()` can contain columns, not another grouping family.","marginplyr_error/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_set","inspect_grouping","..1",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_set","inspect_grouping","..1",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_set","inspect_grouping","..2",2,0,TRUE,FALSE,"A `grouping_set()` can contain columns, not another grouping family.","marginplyr_error/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_set","inspect_grouping","..2",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_set","inspect_grouping","..2",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_set","summarize_with_margins","..1",1,0,TRUE,FALSE,"A `grouping_set()` can contain columns, not another grouping family.","marginplyr_error/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_set","summarize_with_margins","..1",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_set","summarize_with_margins","..1",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_set","summarize_with_margins","..2",2,0,TRUE,FALSE,"A `grouping_set()` can contain columns, not another grouping family.","marginplyr_error/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_set","summarize_with_margins","..2",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_set","summarize_with_margins","..2",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_set","expand_with_margins","..1",1,0,TRUE,FALSE,"A `grouping_set()` can contain columns, not another grouping family.","marginplyr_error/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_set","expand_with_margins","..1",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_set","expand_with_margins","..1",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_set","expand_with_margins","..2",2,0,TRUE,FALSE,"A `grouping_set()` can contain columns, not another grouping family.","marginplyr_error/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_set","expand_with_margins","..2",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_set","expand_with_margins","..2",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_set","nest_with_margins","..1",1,0,TRUE,FALSE,"A `grouping_set()` can contain columns, not another grouping family.","marginplyr_error/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_set","nest_with_margins","..1",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_set","nest_with_margins","..1",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_set","nest_with_margins","..2",2,0,TRUE,FALSE,"A `grouping_set()` can contain columns, not another grouping family.","marginplyr_error/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_set","nest_with_margins","..2",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_set","nest_with_margins","..2",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_set","nest_by_with_margins","..1",1,0,TRUE,FALSE,"A `grouping_set()` can contain columns, not another grouping family.","marginplyr_error/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_set","nest_by_with_margins","..1",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_set","nest_by_with_margins","..1",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_set","nest_by_with_margins","..2",2,0,TRUE,FALSE,"A `grouping_set()` can contain columns, not another grouping family.","marginplyr_error/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_set","nest_by_with_margins","..2",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_set","nest_by_with_margins","..2",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_sets","inspect_grouping","..1",1,0,TRUE,TRUE,"a",""
+"ordinary",FALSE,"grouping_sets","inspect_grouping","..1",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_sets","inspect_grouping","..1",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_sets","inspect_grouping","..2",2,0,TRUE,TRUE,"a",""
+"ordinary",FALSE,"grouping_sets","inspect_grouping","..2",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_sets","inspect_grouping","..2",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_sets","summarize_with_margins","..1",1,0,TRUE,TRUE,"a,set,n",""
+"ordinary",FALSE,"grouping_sets","summarize_with_margins","..1",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_sets","summarize_with_margins","..1",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_sets","summarize_with_margins","..2",2,0,TRUE,TRUE,"a,set,n",""
+"ordinary",FALSE,"grouping_sets","summarize_with_margins","..2",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_sets","summarize_with_margins","..2",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_sets","expand_with_margins","..1",1,0,TRUE,TRUE,"a,set,value",""
+"ordinary",FALSE,"grouping_sets","expand_with_margins","..1",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_sets","expand_with_margins","..1",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_sets","expand_with_margins","..2",2,0,TRUE,TRUE,"a,set,value",""
+"ordinary",FALSE,"grouping_sets","expand_with_margins","..2",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_sets","expand_with_margins","..2",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_sets","nest_with_margins","..1",1,0,TRUE,TRUE,"a,set,data",""
+"ordinary",FALSE,"grouping_sets","nest_with_margins","..1",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_sets","nest_with_margins","..1",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_sets","nest_with_margins","..2",2,0,TRUE,TRUE,"a,set,data",""
+"ordinary",FALSE,"grouping_sets","nest_with_margins","..2",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_sets","nest_with_margins","..2",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_sets","nest_by_with_margins","..1",1,0,TRUE,TRUE,"a,set,data",""
+"ordinary",FALSE,"grouping_sets","nest_by_with_margins","..1",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_sets","nest_by_with_margins","..1",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_sets","nest_by_with_margins","..2",2,0,TRUE,TRUE,"a,set,data",""
+"ordinary",FALSE,"grouping_sets","nest_by_with_margins","..2",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_sets","nest_by_with_margins","..2",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"rollup","inspect_grouping","..1",1,0,TRUE,TRUE,"a;",""
+"ordinary",FALSE,"rollup","inspect_grouping","..1",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"rollup","inspect_grouping","..1",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"rollup","inspect_grouping","..2",2,0,TRUE,TRUE,"a;",""
+"ordinary",FALSE,"rollup","inspect_grouping","..2",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"rollup","inspect_grouping","..2",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"rollup","summarize_with_margins","..1",1,0,TRUE,TRUE,"a,set,n",""
+"ordinary",FALSE,"rollup","summarize_with_margins","..1",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"rollup","summarize_with_margins","..1",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"rollup","summarize_with_margins","..2",2,0,TRUE,TRUE,"a,set,n",""
+"ordinary",FALSE,"rollup","summarize_with_margins","..2",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"rollup","summarize_with_margins","..2",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"rollup","expand_with_margins","..1",1,0,TRUE,TRUE,"a,set,value",""
+"ordinary",FALSE,"rollup","expand_with_margins","..1",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"rollup","expand_with_margins","..1",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"rollup","expand_with_margins","..2",2,0,TRUE,TRUE,"a,set,value",""
+"ordinary",FALSE,"rollup","expand_with_margins","..2",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"rollup","expand_with_margins","..2",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"rollup","nest_with_margins","..1",1,0,TRUE,TRUE,"a,set,data",""
+"ordinary",FALSE,"rollup","nest_with_margins","..1",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"rollup","nest_with_margins","..1",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"rollup","nest_with_margins","..2",2,0,TRUE,TRUE,"a,set,data",""
+"ordinary",FALSE,"rollup","nest_with_margins","..2",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"rollup","nest_with_margins","..2",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"rollup","nest_by_with_margins","..1",1,0,TRUE,TRUE,"a,set,data",""
+"ordinary",FALSE,"rollup","nest_by_with_margins","..1",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"rollup","nest_by_with_margins","..1",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"rollup","nest_by_with_margins","..2",2,0,TRUE,TRUE,"a,set,data",""
+"ordinary",FALSE,"rollup","nest_by_with_margins","..2",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"rollup","nest_by_with_margins","..2",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"cube","inspect_grouping","..1",1,0,TRUE,TRUE,"a;",""
+"ordinary",FALSE,"cube","inspect_grouping","..1",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"cube","inspect_grouping","..1",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"cube","inspect_grouping","..2",2,0,TRUE,TRUE,"a;",""
+"ordinary",FALSE,"cube","inspect_grouping","..2",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"cube","inspect_grouping","..2",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"cube","summarize_with_margins","..1",1,0,TRUE,TRUE,"a,set,n",""
+"ordinary",FALSE,"cube","summarize_with_margins","..1",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"cube","summarize_with_margins","..1",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"cube","summarize_with_margins","..2",2,0,TRUE,TRUE,"a,set,n",""
+"ordinary",FALSE,"cube","summarize_with_margins","..2",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"cube","summarize_with_margins","..2",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"cube","expand_with_margins","..1",1,0,TRUE,TRUE,"a,set,value",""
+"ordinary",FALSE,"cube","expand_with_margins","..1",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"cube","expand_with_margins","..1",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"cube","expand_with_margins","..2",2,0,TRUE,TRUE,"a,set,value",""
+"ordinary",FALSE,"cube","expand_with_margins","..2",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"cube","expand_with_margins","..2",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"cube","nest_with_margins","..1",1,0,TRUE,TRUE,"a,set,data",""
+"ordinary",FALSE,"cube","nest_with_margins","..1",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"cube","nest_with_margins","..1",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"cube","nest_with_margins","..2",2,0,TRUE,TRUE,"a,set,data",""
+"ordinary",FALSE,"cube","nest_with_margins","..2",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"cube","nest_with_margins","..2",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"cube","nest_by_with_margins","..1",1,0,TRUE,TRUE,"a,set,data",""
+"ordinary",FALSE,"cube","nest_by_with_margins","..1",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"cube","nest_by_with_margins","..1",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"cube","nest_by_with_margins","..2",2,0,TRUE,TRUE,"a,set,data",""
+"ordinary",FALSE,"cube","nest_by_with_margins","..2",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"cube","nest_by_with_margins","..2",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_spec","inspect_grouping","..1",1,0,TRUE,TRUE,"a",""
+"ordinary",FALSE,"grouping_spec","inspect_grouping","..1",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_spec","inspect_grouping","..1",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_spec","inspect_grouping","..2",2,0,TRUE,TRUE,"a",""
+"ordinary",FALSE,"grouping_spec","inspect_grouping","..2",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_spec","inspect_grouping","..2",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_spec","summarize_with_margins","..1",1,0,TRUE,TRUE,"a,set,n",""
+"ordinary",FALSE,"grouping_spec","summarize_with_margins","..1",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_spec","summarize_with_margins","..1",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_spec","summarize_with_margins","..2",2,0,TRUE,TRUE,"a,set,n",""
+"ordinary",FALSE,"grouping_spec","summarize_with_margins","..2",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_spec","summarize_with_margins","..2",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_spec","expand_with_margins","..1",1,0,TRUE,TRUE,"a,set,value",""
+"ordinary",FALSE,"grouping_spec","expand_with_margins","..1",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_spec","expand_with_margins","..1",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_spec","expand_with_margins","..2",2,0,TRUE,TRUE,"a,set,value",""
+"ordinary",FALSE,"grouping_spec","expand_with_margins","..2",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_spec","expand_with_margins","..2",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_spec","nest_with_margins","..1",1,0,TRUE,TRUE,"a,set,data",""
+"ordinary",FALSE,"grouping_spec","nest_with_margins","..1",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_spec","nest_with_margins","..1",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_spec","nest_with_margins","..2",2,0,TRUE,TRUE,"a,set,data",""
+"ordinary",FALSE,"grouping_spec","nest_with_margins","..2",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_spec","nest_with_margins","..2",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_spec","nest_by_with_margins","..1",1,0,TRUE,TRUE,"a,set,data",""
+"ordinary",FALSE,"grouping_spec","nest_by_with_margins","..1",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_spec","nest_by_with_margins","..1",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..1` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_spec","nest_by_with_margins","..2",2,0,TRUE,TRUE,"a,set,data",""
+"ordinary",FALSE,"grouping_spec","nest_by_with_margins","..2",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"ordinary",FALSE,"grouping_spec","nest_by_with_margins","..2",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..2` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_set","inspect_grouping","..01",1,0,TRUE,FALSE,"A `grouping_set()` can contain columns, not another grouping family.","marginplyr_error/rlang_error/error/condition"
+"padded",FALSE,"grouping_set","inspect_grouping","..01",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_set","inspect_grouping","..01",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_set","inspect_grouping","..02",2,0,TRUE,FALSE,"A `grouping_set()` can contain columns, not another grouping family.","marginplyr_error/rlang_error/error/condition"
+"padded",FALSE,"grouping_set","inspect_grouping","..02",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_set","inspect_grouping","..02",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_set","summarize_with_margins","..01",1,0,TRUE,FALSE,"A `grouping_set()` can contain columns, not another grouping family.","marginplyr_error/rlang_error/error/condition"
+"padded",FALSE,"grouping_set","summarize_with_margins","..01",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_set","summarize_with_margins","..01",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_set","summarize_with_margins","..02",2,0,TRUE,FALSE,"A `grouping_set()` can contain columns, not another grouping family.","marginplyr_error/rlang_error/error/condition"
+"padded",FALSE,"grouping_set","summarize_with_margins","..02",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_set","summarize_with_margins","..02",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_set","expand_with_margins","..01",1,0,TRUE,FALSE,"A `grouping_set()` can contain columns, not another grouping family.","marginplyr_error/rlang_error/error/condition"
+"padded",FALSE,"grouping_set","expand_with_margins","..01",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_set","expand_with_margins","..01",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_set","expand_with_margins","..02",2,0,TRUE,FALSE,"A `grouping_set()` can contain columns, not another grouping family.","marginplyr_error/rlang_error/error/condition"
+"padded",FALSE,"grouping_set","expand_with_margins","..02",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_set","expand_with_margins","..02",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_set","nest_with_margins","..01",1,0,TRUE,FALSE,"A `grouping_set()` can contain columns, not another grouping family.","marginplyr_error/rlang_error/error/condition"
+"padded",FALSE,"grouping_set","nest_with_margins","..01",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_set","nest_with_margins","..01",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_set","nest_with_margins","..02",2,0,TRUE,FALSE,"A `grouping_set()` can contain columns, not another grouping family.","marginplyr_error/rlang_error/error/condition"
+"padded",FALSE,"grouping_set","nest_with_margins","..02",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_set","nest_with_margins","..02",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_set","nest_by_with_margins","..01",1,0,TRUE,FALSE,"A `grouping_set()` can contain columns, not another grouping family.","marginplyr_error/rlang_error/error/condition"
+"padded",FALSE,"grouping_set","nest_by_with_margins","..01",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_set","nest_by_with_margins","..01",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_set","nest_by_with_margins","..02",2,0,TRUE,FALSE,"A `grouping_set()` can contain columns, not another grouping family.","marginplyr_error/rlang_error/error/condition"
+"padded",FALSE,"grouping_set","nest_by_with_margins","..02",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_set","nest_by_with_margins","..02",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_sets","inspect_grouping","..01",1,0,TRUE,TRUE,"a",""
+"padded",FALSE,"grouping_sets","inspect_grouping","..01",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_sets","inspect_grouping","..01",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_sets","inspect_grouping","..02",2,0,TRUE,TRUE,"a",""
+"padded",FALSE,"grouping_sets","inspect_grouping","..02",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_sets","inspect_grouping","..02",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_sets","summarize_with_margins","..01",1,0,TRUE,TRUE,"a,set,n",""
+"padded",FALSE,"grouping_sets","summarize_with_margins","..01",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_sets","summarize_with_margins","..01",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_sets","summarize_with_margins","..02",2,0,TRUE,TRUE,"a,set,n",""
+"padded",FALSE,"grouping_sets","summarize_with_margins","..02",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_sets","summarize_with_margins","..02",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_sets","expand_with_margins","..01",1,0,TRUE,TRUE,"a,set,value",""
+"padded",FALSE,"grouping_sets","expand_with_margins","..01",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_sets","expand_with_margins","..01",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_sets","expand_with_margins","..02",2,0,TRUE,TRUE,"a,set,value",""
+"padded",FALSE,"grouping_sets","expand_with_margins","..02",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_sets","expand_with_margins","..02",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_sets","nest_with_margins","..01",1,0,TRUE,TRUE,"a,set,data",""
+"padded",FALSE,"grouping_sets","nest_with_margins","..01",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_sets","nest_with_margins","..01",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_sets","nest_with_margins","..02",2,0,TRUE,TRUE,"a,set,data",""
+"padded",FALSE,"grouping_sets","nest_with_margins","..02",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_sets","nest_with_margins","..02",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_sets","nest_by_with_margins","..01",1,0,TRUE,TRUE,"a,set,data",""
+"padded",FALSE,"grouping_sets","nest_by_with_margins","..01",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_sets","nest_by_with_margins","..01",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_sets","nest_by_with_margins","..02",2,0,TRUE,TRUE,"a,set,data",""
+"padded",FALSE,"grouping_sets","nest_by_with_margins","..02",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_sets","nest_by_with_margins","..02",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"rollup","inspect_grouping","..01",1,0,TRUE,TRUE,"a;",""
+"padded",FALSE,"rollup","inspect_grouping","..01",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"rollup","inspect_grouping","..01",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"rollup","inspect_grouping","..02",2,0,TRUE,TRUE,"a;",""
+"padded",FALSE,"rollup","inspect_grouping","..02",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"rollup","inspect_grouping","..02",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"rollup","summarize_with_margins","..01",1,0,TRUE,TRUE,"a,set,n",""
+"padded",FALSE,"rollup","summarize_with_margins","..01",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"rollup","summarize_with_margins","..01",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"rollup","summarize_with_margins","..02",2,0,TRUE,TRUE,"a,set,n",""
+"padded",FALSE,"rollup","summarize_with_margins","..02",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"rollup","summarize_with_margins","..02",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"rollup","expand_with_margins","..01",1,0,TRUE,TRUE,"a,set,value",""
+"padded",FALSE,"rollup","expand_with_margins","..01",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"rollup","expand_with_margins","..01",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"rollup","expand_with_margins","..02",2,0,TRUE,TRUE,"a,set,value",""
+"padded",FALSE,"rollup","expand_with_margins","..02",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"rollup","expand_with_margins","..02",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"rollup","nest_with_margins","..01",1,0,TRUE,TRUE,"a,set,data",""
+"padded",FALSE,"rollup","nest_with_margins","..01",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"rollup","nest_with_margins","..01",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"rollup","nest_with_margins","..02",2,0,TRUE,TRUE,"a,set,data",""
+"padded",FALSE,"rollup","nest_with_margins","..02",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"rollup","nest_with_margins","..02",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"rollup","nest_by_with_margins","..01",1,0,TRUE,TRUE,"a,set,data",""
+"padded",FALSE,"rollup","nest_by_with_margins","..01",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"rollup","nest_by_with_margins","..01",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"rollup","nest_by_with_margins","..02",2,0,TRUE,TRUE,"a,set,data",""
+"padded",FALSE,"rollup","nest_by_with_margins","..02",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"rollup","nest_by_with_margins","..02",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"cube","inspect_grouping","..01",1,0,TRUE,TRUE,"a;",""
+"padded",FALSE,"cube","inspect_grouping","..01",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"cube","inspect_grouping","..01",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"cube","inspect_grouping","..02",2,0,TRUE,TRUE,"a;",""
+"padded",FALSE,"cube","inspect_grouping","..02",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"cube","inspect_grouping","..02",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"cube","summarize_with_margins","..01",1,0,TRUE,TRUE,"a,set,n",""
+"padded",FALSE,"cube","summarize_with_margins","..01",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"cube","summarize_with_margins","..01",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"cube","summarize_with_margins","..02",2,0,TRUE,TRUE,"a,set,n",""
+"padded",FALSE,"cube","summarize_with_margins","..02",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"cube","summarize_with_margins","..02",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"cube","expand_with_margins","..01",1,0,TRUE,TRUE,"a,set,value",""
+"padded",FALSE,"cube","expand_with_margins","..01",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"cube","expand_with_margins","..01",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"cube","expand_with_margins","..02",2,0,TRUE,TRUE,"a,set,value",""
+"padded",FALSE,"cube","expand_with_margins","..02",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"cube","expand_with_margins","..02",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"cube","nest_with_margins","..01",1,0,TRUE,TRUE,"a,set,data",""
+"padded",FALSE,"cube","nest_with_margins","..01",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"cube","nest_with_margins","..01",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"cube","nest_with_margins","..02",2,0,TRUE,TRUE,"a,set,data",""
+"padded",FALSE,"cube","nest_with_margins","..02",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"cube","nest_with_margins","..02",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"cube","nest_by_with_margins","..01",1,0,TRUE,TRUE,"a,set,data",""
+"padded",FALSE,"cube","nest_by_with_margins","..01",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"cube","nest_by_with_margins","..01",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"cube","nest_by_with_margins","..02",2,0,TRUE,TRUE,"a,set,data",""
+"padded",FALSE,"cube","nest_by_with_margins","..02",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"cube","nest_by_with_margins","..02",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_spec","inspect_grouping","..01",1,0,TRUE,TRUE,"a",""
+"padded",FALSE,"grouping_spec","inspect_grouping","..01",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_spec","inspect_grouping","..01",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_spec","inspect_grouping","..02",2,0,TRUE,TRUE,"a",""
+"padded",FALSE,"grouping_spec","inspect_grouping","..02",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_spec","inspect_grouping","..02",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_spec","summarize_with_margins","..01",1,0,TRUE,TRUE,"a,set,n",""
+"padded",FALSE,"grouping_spec","summarize_with_margins","..01",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_spec","summarize_with_margins","..01",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_spec","summarize_with_margins","..02",2,0,TRUE,TRUE,"a,set,n",""
+"padded",FALSE,"grouping_spec","summarize_with_margins","..02",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_spec","summarize_with_margins","..02",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_spec","expand_with_margins","..01",1,0,TRUE,TRUE,"a,set,value",""
+"padded",FALSE,"grouping_spec","expand_with_margins","..01",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_spec","expand_with_margins","..01",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_spec","expand_with_margins","..02",2,0,TRUE,TRUE,"a,set,value",""
+"padded",FALSE,"grouping_spec","expand_with_margins","..02",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_spec","expand_with_margins","..02",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_spec","nest_with_margins","..01",1,0,TRUE,TRUE,"a,set,data",""
+"padded",FALSE,"grouping_spec","nest_with_margins","..01",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_spec","nest_with_margins","..01",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_spec","nest_with_margins","..02",2,0,TRUE,TRUE,"a,set,data",""
+"padded",FALSE,"grouping_spec","nest_with_margins","..02",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_spec","nest_with_margins","..02",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_spec","nest_by_with_margins","..01",1,0,TRUE,TRUE,"a,set,data",""
+"padded",FALSE,"grouping_spec","nest_by_with_margins","..01",1,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_spec","nest_by_with_margins","..01",1,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..01` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_spec","nest_by_with_margins","..02",2,0,TRUE,TRUE,"a,set,data",""
+"padded",FALSE,"grouping_spec","nest_by_with_margins","..02",2,1,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded",FALSE,"grouping_spec","nest_by_with_margins","..02",2,2,FALSE,FALSE,"Can't select columns that don't exist.
+✖ Column `..02` doesn't exist.","vctrs_error_subscript_oob/vctrs_error_subscript/rlang_error/error/condition"
+"padded-collision",TRUE,"grouping_set","inspect_grouping","..01",1,0,TRUE,FALSE,"A `grouping_set()` can contain columns, not another grouping family.","marginplyr_error/rlang_error/error/condition"
+"padded-collision",TRUE,"grouping_set","inspect_grouping","..01",1,1,FALSE,TRUE,"..01",""
+"padded-collision",TRUE,"grouping_set","inspect_grouping","..01",1,2,FALSE,TRUE,"..01",""
+"padded-collision",TRUE,"grouping_set","inspect_grouping","..02",2,0,TRUE,FALSE,"A `grouping_set()` can contain columns, not another grouping family.","marginplyr_error/rlang_error/error/condition"
+"padded-collision",TRUE,"grouping_set","inspect_grouping","..02",2,1,FALSE,TRUE,"..02",""
+"padded-collision",TRUE,"grouping_set","inspect_grouping","..02",2,2,FALSE,TRUE,"..02",""
+"padded-collision",TRUE,"grouping_set","summarize_with_margins","..01",1,0,TRUE,FALSE,"A `grouping_set()` can contain columns, not another grouping family.","marginplyr_error/rlang_error/error/condition"
+"padded-collision",TRUE,"grouping_set","summarize_with_margins","..01",1,1,FALSE,TRUE,"..01,set,n",""
+"padded-collision",TRUE,"grouping_set","summarize_with_margins","..01",1,2,FALSE,TRUE,"..01,set,n",""
+"padded-collision",TRUE,"grouping_set","summarize_with_margins","..02",2,0,TRUE,FALSE,"A `grouping_set()` can contain columns, not another grouping family.","marginplyr_error/rlang_error/error/condition"
+"padded-collision",TRUE,"grouping_set","summarize_with_margins","..02",2,1,FALSE,TRUE,"..02,set,n",""
+"padded-collision",TRUE,"grouping_set","summarize_with_margins","..02",2,2,FALSE,TRUE,"..02,set,n",""
+"padded-collision",TRUE,"grouping_set","expand_with_margins","..01",1,0,TRUE,FALSE,"A `grouping_set()` can contain columns, not another grouping family.","marginplyr_error/rlang_error/error/condition"
+"padded-collision",TRUE,"grouping_set","expand_with_margins","..01",1,1,FALSE,TRUE,"..01,set,a,value,..02",""
+"padded-collision",TRUE,"grouping_set","expand_with_margins","..01",1,2,FALSE,TRUE,"..01,set,a,value,..02",""
+"padded-collision",TRUE,"grouping_set","expand_with_margins","..02",2,0,TRUE,FALSE,"A `grouping_set()` can contain columns, not another grouping family.","marginplyr_error/rlang_error/error/condition"
+"padded-collision",TRUE,"grouping_set","expand_with_margins","..02",2,1,FALSE,TRUE,"..02,set,a,value,..01",""
+"padded-collision",TRUE,"grouping_set","expand_with_margins","..02",2,2,FALSE,TRUE,"..02,set,a,value,..01",""
+"padded-collision",TRUE,"grouping_set","nest_with_margins","..01",1,0,TRUE,FALSE,"A `grouping_set()` can contain columns, not another grouping family.","marginplyr_error/rlang_error/error/condition"
+"padded-collision",TRUE,"grouping_set","nest_with_margins","..01",1,1,FALSE,TRUE,"..01,set,data",""
+"padded-collision",TRUE,"grouping_set","nest_with_margins","..01",1,2,FALSE,TRUE,"..01,set,data",""
+"padded-collision",TRUE,"grouping_set","nest_with_margins","..02",2,0,TRUE,FALSE,"A `grouping_set()` can contain columns, not another grouping family.","marginplyr_error/rlang_error/error/condition"
+"padded-collision",TRUE,"grouping_set","nest_with_margins","..02",2,1,FALSE,TRUE,"..02,set,data",""
+"padded-collision",TRUE,"grouping_set","nest_with_margins","..02",2,2,FALSE,TRUE,"..02,set,data",""
+"padded-collision",TRUE,"grouping_set","nest_by_with_margins","..01",1,0,TRUE,FALSE,"A `grouping_set()` can contain columns, not another grouping family.","marginplyr_error/rlang_error/error/condition"
+"padded-collision",TRUE,"grouping_set","nest_by_with_margins","..01",1,1,FALSE,TRUE,"..01,set,data",""
+"padded-collision",TRUE,"grouping_set","nest_by_with_margins","..01",1,2,FALSE,TRUE,"..01,set,data",""
+"padded-collision",TRUE,"grouping_set","nest_by_with_margins","..02",2,0,TRUE,FALSE,"A `grouping_set()` can contain columns, not another grouping family.","marginplyr_error/rlang_error/error/condition"
+"padded-collision",TRUE,"grouping_set","nest_by_with_margins","..02",2,1,FALSE,TRUE,"..02,set,data",""
+"padded-collision",TRUE,"grouping_set","nest_by_with_margins","..02",2,2,FALSE,TRUE,"..02,set,data",""
+"padded-collision",TRUE,"grouping_sets","inspect_grouping","..01",1,0,TRUE,TRUE,"a",""
+"padded-collision",TRUE,"grouping_sets","inspect_grouping","..01",1,1,FALSE,TRUE,"..01",""
+"padded-collision",TRUE,"grouping_sets","inspect_grouping","..01",1,2,FALSE,TRUE,"..01",""
+"padded-collision",TRUE,"grouping_sets","inspect_grouping","..02",2,0,TRUE,TRUE,"a",""
+"padded-collision",TRUE,"grouping_sets","inspect_grouping","..02",2,1,FALSE,TRUE,"..02",""
+"padded-collision",TRUE,"grouping_sets","inspect_grouping","..02",2,2,FALSE,TRUE,"..02",""
+"padded-collision",TRUE,"grouping_sets","summarize_with_margins","..01",1,0,TRUE,TRUE,"a,set,n",""
+"padded-collision",TRUE,"grouping_sets","summarize_with_margins","..01",1,1,FALSE,TRUE,"..01,set,n",""
+"padded-collision",TRUE,"grouping_sets","summarize_with_margins","..01",1,2,FALSE,TRUE,"..01,set,n",""
+"padded-collision",TRUE,"grouping_sets","summarize_with_margins","..02",2,0,TRUE,TRUE,"a,set,n",""
+"padded-collision",TRUE,"grouping_sets","summarize_with_margins","..02",2,1,FALSE,TRUE,"..02,set,n",""
+"padded-collision",TRUE,"grouping_sets","summarize_with_margins","..02",2,2,FALSE,TRUE,"..02,set,n",""
+"padded-collision",TRUE,"grouping_sets","expand_with_margins","..01",1,0,TRUE,TRUE,"a,set,value,..01,..02",""
+"padded-collision",TRUE,"grouping_sets","expand_with_margins","..01",1,1,FALSE,TRUE,"..01,set,a,value,..02",""
+"padded-collision",TRUE,"grouping_sets","expand_with_margins","..01",1,2,FALSE,TRUE,"..01,set,a,value,..02",""
+"padded-collision",TRUE,"grouping_sets","expand_with_margins","..02",2,0,TRUE,TRUE,"a,set,value,..01,..02",""
+"padded-collision",TRUE,"grouping_sets","expand_with_margins","..02",2,1,FALSE,TRUE,"..02,set,a,value,..01",""
+"padded-collision",TRUE,"grouping_sets","expand_with_margins","..02",2,2,FALSE,TRUE,"..02,set,a,value,..01",""
+"padded-collision",TRUE,"grouping_sets","nest_with_margins","..01",1,0,TRUE,TRUE,"a,set,data",""
+"padded-collision",TRUE,"grouping_sets","nest_with_margins","..01",1,1,FALSE,TRUE,"..01,set,data",""
+"padded-collision",TRUE,"grouping_sets","nest_with_margins","..01",1,2,FALSE,TRUE,"..01,set,data",""
+"padded-collision",TRUE,"grouping_sets","nest_with_margins","..02",2,0,TRUE,TRUE,"a,set,data",""
+"padded-collision",TRUE,"grouping_sets","nest_with_margins","..02",2,1,FALSE,TRUE,"..02,set,data",""
+"padded-collision",TRUE,"grouping_sets","nest_with_margins","..02",2,2,FALSE,TRUE,"..02,set,data",""
+"padded-collision",TRUE,"grouping_sets","nest_by_with_margins","..01",1,0,TRUE,TRUE,"a,set,data",""
+"padded-collision",TRUE,"grouping_sets","nest_by_with_margins","..01",1,1,FALSE,TRUE,"..01,set,data",""
+"padded-collision",TRUE,"grouping_sets","nest_by_with_margins","..01",1,2,FALSE,TRUE,"..01,set,data",""
+"padded-collision",TRUE,"grouping_sets","nest_by_with_margins","..02",2,0,TRUE,TRUE,"a,set,data",""
+"padded-collision",TRUE,"grouping_sets","nest_by_with_margins","..02",2,1,FALSE,TRUE,"..02,set,data",""
+"padded-collision",TRUE,"grouping_sets","nest_by_with_margins","..02",2,2,FALSE,TRUE,"..02,set,data",""
+"padded-collision",TRUE,"rollup","inspect_grouping","..01",1,0,TRUE,TRUE,"a;",""
+"padded-collision",TRUE,"rollup","inspect_grouping","..01",1,1,FALSE,TRUE,"..01;",""
+"padded-collision",TRUE,"rollup","inspect_grouping","..01",1,2,FALSE,TRUE,"..01;",""
+"padded-collision",TRUE,"rollup","inspect_grouping","..02",2,0,TRUE,TRUE,"a;",""
+"padded-collision",TRUE,"rollup","inspect_grouping","..02",2,1,FALSE,TRUE,"..02;",""
+"padded-collision",TRUE,"rollup","inspect_grouping","..02",2,2,FALSE,TRUE,"..02;",""
+"padded-collision",TRUE,"rollup","summarize_with_margins","..01",1,0,TRUE,TRUE,"a,set,n",""
+"padded-collision",TRUE,"rollup","summarize_with_margins","..01",1,1,FALSE,TRUE,"..01,set,n",""
+"padded-collision",TRUE,"rollup","summarize_with_margins","..01",1,2,FALSE,TRUE,"..01,set,n",""
+"padded-collision",TRUE,"rollup","summarize_with_margins","..02",2,0,TRUE,TRUE,"a,set,n",""
+"padded-collision",TRUE,"rollup","summarize_with_margins","..02",2,1,FALSE,TRUE,"..02,set,n",""
+"padded-collision",TRUE,"rollup","summarize_with_margins","..02",2,2,FALSE,TRUE,"..02,set,n",""
+"padded-collision",TRUE,"rollup","expand_with_margins","..01",1,0,TRUE,TRUE,"a,set,value,..01,..02",""
+"padded-collision",TRUE,"rollup","expand_with_margins","..01",1,1,FALSE,TRUE,"..01,set,a,value,..02",""
+"padded-collision",TRUE,"rollup","expand_with_margins","..01",1,2,FALSE,TRUE,"..01,set,a,value,..02",""
+"padded-collision",TRUE,"rollup","expand_with_margins","..02",2,0,TRUE,TRUE,"a,set,value,..01,..02",""
+"padded-collision",TRUE,"rollup","expand_with_margins","..02",2,1,FALSE,TRUE,"..02,set,a,value,..01",""
+"padded-collision",TRUE,"rollup","expand_with_margins","..02",2,2,FALSE,TRUE,"..02,set,a,value,..01",""
+"padded-collision",TRUE,"rollup","nest_with_margins","..01",1,0,TRUE,TRUE,"a,set,data",""
+"padded-collision",TRUE,"rollup","nest_with_margins","..01",1,1,FALSE,TRUE,"..01,set,data",""
+"padded-collision",TRUE,"rollup","nest_with_margins","..01",1,2,FALSE,TRUE,"..01,set,data",""
+"padded-collision",TRUE,"rollup","nest_with_margins","..02",2,0,TRUE,TRUE,"a,set,data",""
+"padded-collision",TRUE,"rollup","nest_with_margins","..02",2,1,FALSE,TRUE,"..02,set,data",""
+"padded-collision",TRUE,"rollup","nest_with_margins","..02",2,2,FALSE,TRUE,"..02,set,data",""
+"padded-collision",TRUE,"rollup","nest_by_with_margins","..01",1,0,TRUE,TRUE,"a,set,data",""
+"padded-collision",TRUE,"rollup","nest_by_with_margins","..01",1,1,FALSE,TRUE,"..01,set,data",""
+"padded-collision",TRUE,"rollup","nest_by_with_margins","..01",1,2,FALSE,TRUE,"..01,set,data",""
+"padded-collision",TRUE,"rollup","nest_by_with_margins","..02",2,0,TRUE,TRUE,"a,set,data",""
+"padded-collision",TRUE,"rollup","nest_by_with_margins","..02",2,1,FALSE,TRUE,"..02,set,data",""
+"padded-collision",TRUE,"rollup","nest_by_with_margins","..02",2,2,FALSE,TRUE,"..02,set,data",""
+"padded-collision",TRUE,"cube","inspect_grouping","..01",1,0,TRUE,TRUE,"a;",""
+"padded-collision",TRUE,"cube","inspect_grouping","..01",1,1,FALSE,TRUE,"..01;",""
+"padded-collision",TRUE,"cube","inspect_grouping","..01",1,2,FALSE,TRUE,"..01;",""
+"padded-collision",TRUE,"cube","inspect_grouping","..02",2,0,TRUE,TRUE,"a;",""
+"padded-collision",TRUE,"cube","inspect_grouping","..02",2,1,FALSE,TRUE,"..02;",""
+"padded-collision",TRUE,"cube","inspect_grouping","..02",2,2,FALSE,TRUE,"..02;",""
+"padded-collision",TRUE,"cube","summarize_with_margins","..01",1,0,TRUE,TRUE,"a,set,n",""
+"padded-collision",TRUE,"cube","summarize_with_margins","..01",1,1,FALSE,TRUE,"..01,set,n",""
+"padded-collision",TRUE,"cube","summarize_with_margins","..01",1,2,FALSE,TRUE,"..01,set,n",""
+"padded-collision",TRUE,"cube","summarize_with_margins","..02",2,0,TRUE,TRUE,"a,set,n",""
+"padded-collision",TRUE,"cube","summarize_with_margins","..02",2,1,FALSE,TRUE,"..02,set,n",""
+"padded-collision",TRUE,"cube","summarize_with_margins","..02",2,2,FALSE,TRUE,"..02,set,n",""
+"padded-collision",TRUE,"cube","expand_with_margins","..01",1,0,TRUE,TRUE,"a,set,value,..01,..02",""
+"padded-collision",TRUE,"cube","expand_with_margins","..01",1,1,FALSE,TRUE,"..01,set,a,value,..02",""
+"padded-collision",TRUE,"cube","expand_with_margins","..01",1,2,FALSE,TRUE,"..01,set,a,value,..02",""
+"padded-collision",TRUE,"cube","expand_with_margins","..02",2,0,TRUE,TRUE,"a,set,value,..01,..02",""
+"padded-collision",TRUE,"cube","expand_with_margins","..02",2,1,FALSE,TRUE,"..02,set,a,value,..01",""
+"padded-collision",TRUE,"cube","expand_with_margins","..02",2,2,FALSE,TRUE,"..02,set,a,value,..01",""
+"padded-collision",TRUE,"cube","nest_with_margins","..01",1,0,TRUE,TRUE,"a,set,data",""
+"padded-collision",TRUE,"cube","nest_with_margins","..01",1,1,FALSE,TRUE,"..01,set,data",""
+"padded-collision",TRUE,"cube","nest_with_margins","..01",1,2,FALSE,TRUE,"..01,set,data",""
+"padded-collision",TRUE,"cube","nest_with_margins","..02",2,0,TRUE,TRUE,"a,set,data",""
+"padded-collision",TRUE,"cube","nest_with_margins","..02",2,1,FALSE,TRUE,"..02,set,data",""
+"padded-collision",TRUE,"cube","nest_with_margins","..02",2,2,FALSE,TRUE,"..02,set,data",""
+"padded-collision",TRUE,"cube","nest_by_with_margins","..01",1,0,TRUE,TRUE,"a,set,data",""
+"padded-collision",TRUE,"cube","nest_by_with_margins","..01",1,1,FALSE,TRUE,"..01,set,data",""
+"padded-collision",TRUE,"cube","nest_by_with_margins","..01",1,2,FALSE,TRUE,"..01,set,data",""
+"padded-collision",TRUE,"cube","nest_by_with_margins","..02",2,0,TRUE,TRUE,"a,set,data",""
+"padded-collision",TRUE,"cube","nest_by_with_margins","..02",2,1,FALSE,TRUE,"..02,set,data",""
+"padded-collision",TRUE,"cube","nest_by_with_margins","..02",2,2,FALSE,TRUE,"..02,set,data",""
+"padded-collision",TRUE,"grouping_spec","inspect_grouping","..01",1,0,TRUE,TRUE,"a",""
+"padded-collision",TRUE,"grouping_spec","inspect_grouping","..01",1,1,FALSE,TRUE,"..01",""
+"padded-collision",TRUE,"grouping_spec","inspect_grouping","..01",1,2,FALSE,TRUE,"..01",""
+"padded-collision",TRUE,"grouping_spec","inspect_grouping","..02",2,0,TRUE,TRUE,"a",""
+"padded-collision",TRUE,"grouping_spec","inspect_grouping","..02",2,1,FALSE,TRUE,"..02",""
+"padded-collision",TRUE,"grouping_spec","inspect_grouping","..02",2,2,FALSE,TRUE,"..02",""
+"padded-collision",TRUE,"grouping_spec","summarize_with_margins","..01",1,0,TRUE,TRUE,"a,set,n",""
+"padded-collision",TRUE,"grouping_spec","summarize_with_margins","..01",1,1,FALSE,TRUE,"..01,set,n",""
+"padded-collision",TRUE,"grouping_spec","summarize_with_margins","..01",1,2,FALSE,TRUE,"..01,set,n",""
+"padded-collision",TRUE,"grouping_spec","summarize_with_margins","..02",2,0,TRUE,TRUE,"a,set,n",""
+"padded-collision",TRUE,"grouping_spec","summarize_with_margins","..02",2,1,FALSE,TRUE,"..02,set,n",""
+"padded-collision",TRUE,"grouping_spec","summarize_with_margins","..02",2,2,FALSE,TRUE,"..02,set,n",""
+"padded-collision",TRUE,"grouping_spec","expand_with_margins","..01",1,0,TRUE,TRUE,"a,set,value,..01,..02",""
+"padded-collision",TRUE,"grouping_spec","expand_with_margins","..01",1,1,FALSE,TRUE,"..01,set,a,value,..02",""
+"padded-collision",TRUE,"grouping_spec","expand_with_margins","..01",1,2,FALSE,TRUE,"..01,set,a,value,..02",""
+"padded-collision",TRUE,"grouping_spec","expand_with_margins","..02",2,0,TRUE,TRUE,"a,set,value,..01,..02",""
+"padded-collision",TRUE,"grouping_spec","expand_with_margins","..02",2,1,FALSE,TRUE,"..02,set,a,value,..01",""
+"padded-collision",TRUE,"grouping_spec","expand_with_margins","..02",2,2,FALSE,TRUE,"..02,set,a,value,..01",""
+"padded-collision",TRUE,"grouping_spec","nest_with_margins","..01",1,0,TRUE,TRUE,"a,set,data",""
+"padded-collision",TRUE,"grouping_spec","nest_with_margins","..01",1,1,FALSE,TRUE,"..01,set,data",""
+"padded-collision",TRUE,"grouping_spec","nest_with_margins","..01",1,2,FALSE,TRUE,"..01,set,data",""
+"padded-collision",TRUE,"grouping_spec","nest_with_margins","..02",2,0,TRUE,TRUE,"a,set,data",""
+"padded-collision",TRUE,"grouping_spec","nest_with_margins","..02",2,1,FALSE,TRUE,"..02,set,data",""
+"padded-collision",TRUE,"grouping_spec","nest_with_margins","..02",2,2,FALSE,TRUE,"..02,set,data",""
+"padded-collision",TRUE,"grouping_spec","nest_by_with_margins","..01",1,0,TRUE,TRUE,"a,set,data",""
+"padded-collision",TRUE,"grouping_spec","nest_by_with_margins","..01",1,1,FALSE,TRUE,"..01,set,data",""
+"padded-collision",TRUE,"grouping_spec","nest_by_with_margins","..01",1,2,FALSE,TRUE,"..01,set,data",""
+"padded-collision",TRUE,"grouping_spec","nest_by_with_margins","..02",2,0,TRUE,TRUE,"a,set,data",""
+"padded-collision",TRUE,"grouping_spec","nest_by_with_margins","..02",2,1,FALSE,TRUE,"..02,set,data",""
+"padded-collision",TRUE,"grouping_spec","nest_by_with_margins","..02",2,2,FALSE,TRUE,"..02,set,data",""

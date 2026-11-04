@@ -1,0 +1,9 @@
+"backend","verb","matched"
+"tibble","nest",FALSE
+"tibble","nest_by",FALSE
+"tibble","expand",FALSE
+"tibble","summary",FALSE
+"dtplyr","nest",FALSE
+"dtplyr","nest_by",FALSE
+"dtplyr","expand",FALSE
+"dtplyr","summary",FALSE

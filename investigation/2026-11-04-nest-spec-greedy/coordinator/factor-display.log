@@ -1,0 +1,8 @@
+SHA: 78ebbc36200bdc5cef70838dd4e772c5c4a1401c
+Native outer code: 1 
+Margin outer code: NA inner code: 1 
+Typed-missing-label code: 1 class: hunt_factor factor 
+Margin outer code: NA inner code: 1 
+Typed-missing-label code: 1 class: hunt_factor factor 
+Error: all(vapply(results, function(ans) identical(as.integer(ans$g),  .... is not TRUE
+Execution halted
