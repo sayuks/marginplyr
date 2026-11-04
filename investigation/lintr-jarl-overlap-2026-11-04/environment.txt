@@ -1,0 +1,5 @@
+R version 4.6.1 (2026-06-24)
+lintr 3.4.0
+pkgload 1.5.3
+jarl 0.6.0
+SHA fc7f17b16789864a1efa460123e3ad0c7e7b9120

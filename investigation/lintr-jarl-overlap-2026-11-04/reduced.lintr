@@ -1,0 +1,6 @@
+linters: linters_with_defaults(
+    equals_na_linter = NULL,
+    seq_linter = NULL,
+    T_and_F_symbol_linter = NULL,
+    vector_logic_linter = NULL
+  )
