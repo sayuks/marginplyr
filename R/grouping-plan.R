@@ -419,6 +419,41 @@ selection_refused_operators <- function() {
   c("&&", "||", "*", "^")
 }
 
+# Arguments left to classify in a selection walk or a base c() call. The
+# caller holds the call's lexical environment. Empty dots and literal column
+# names need no further classification; opaque dots give NULL.
+selection_c_args <- function(args, env) {
+  dots <- vapply(args, identical, logical(1), quote(...))
+  if (!any(dots)) {
+    return(args)
+  }
+  # substitute() reads the promises only from the binding's own environment.
+  env <- selection_binding_env(env, "...")
+  if (identical(env, emptyenv())) {
+    return(args)
+  }
+  if (selection_binding_deferred(
+    env, "...", allow_namespace_promises = FALSE
+  )) {
+    return(NULL)
+  }
+  # Embed the primitive so substitution cannot read a caller's list binding.
+  # An ordinary binding named ... need not be an R dots binding.
+  probe <- as.call(list(base::list, quote(...)))
+  captured <- tryCatch(
+    do.call(base::substitute, list(probe, env)),
+    error = function(cnd) NULL
+  )
+  if (!is.null(captured) && all(vapply(
+    static_call_args(captured),
+    function(arg) is.character(arg) && !is.object(arg),
+    logical(1)
+  ))) {
+    return(args[!dots])
+  }
+  NULL
+}
+
 # Whether tidyselect settles this expression from the column names alone --
 # its selection where it has one, its failure where it has none. `TRUE` is what
 # lets a failure the names decide be raised before typed metadata is acquired
@@ -494,7 +529,8 @@ is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE) {
       logical(1),
       env = env,
       allow_caller_code = allow_caller_code,
-      allow_stringr_pattern = identical(call_name, "matches")
+      allow_stringr_pattern = identical(call_name, "matches"),
+      allow_env_pronoun = TRUE
     )))
   }
   # tidyselect refuses only a bare operator head. Qualified or parenthesized
@@ -506,10 +542,14 @@ is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE) {
     return(TRUE)
   }
   if (!is_selection_walk_call(expr)) {
-    return(FALSE)
+    return(is_selection_name_lookup(expr, env))
   }
-  all(vapply(
-    static_call_args(expr),
+  args <- static_call_args(expr)
+  if (identical(call_name, "c")) {
+    args <- selection_c_args(args, env)
+  }
+  !is.null(args) && all(vapply(
+    args,
     is_name_only_expr,
     logical(1),
     env = env,
@@ -518,15 +558,56 @@ is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE) {
   ))
 }
 
+# Whether a direct call returns selection-context names, possibly indexed.
+# The caller supplies the selection's lexical environment. Subscripts
+# must be independent of the typed proxy and of caller code.
+is_selection_name_lookup <- function(expr, env) {
+  if (!rlang::is_call(expr) || !selection_call_parens_safe(expr, env)) {
+    return(FALSE)
+  }
+  fn <- selection_argument_function(expr, env, character(), context = TRUE)
+  args <- static_call_args(expr)
+  if (identical(fn, tidyselect::peek_vars)) {
+    return(length(args) == 0L)
+  }
+  if (identical(fn, base::names)) {
+    return(
+      length(args) == 1L &&
+        is_selection_data_peek(args[[1L]], env, character(), context = TRUE)
+    )
+  }
+  (identical(fn, base::`[`) || identical(fn, base::`[[`)) &&
+    length(args) > 0L &&
+    is_selection_name_lookup(args[[1L]], env) &&
+    all(vapply(
+      args[-1L], is_name_only_helper_arg, logical(1),
+      env = env, allow_caller_code = FALSE, allow_env_pronoun = TRUE
+    ))
+}
+
+# Whether a call reads the current selection data without arguments. The
+# caller only takes names from that data. It supplies the lexical
+# environment, the enclosing closure's formals in `bound`, and whether
+# the call can see tidyselect's helper mask in `context`.
+is_selection_data_peek <- function(expr, env, bound, context) {
+  rlang::is_call(expr) &&
+    selection_call_parens_safe(expr, env, bound) &&
+    identical(
+      selection_argument_function(expr, env, bound, context),
+      tidyselect::peek_data
+    ) &&
+    length(static_call_args(expr)) == 0L
+}
+
 # Whether a helper argument is independent of column types. The caller holds
 # its lexical environment; `bound` names a closure's formals, whose actual
 # arguments were checked before its body. Unknown calls and bindings defer to
 # typed selection rather than running caller code to classify it.
 # A discarded mixed-selection pass sets `allow_caller_code = FALSE` to exclude
 # caller closures and assignments even when their result needs no column types.
-# Only direct matches() arguments can carry stringr pattern objects. Inside a
-# known modifier, `allow_env_pronoun` permits plain reads in the selection
-# context. Neither permission carries into a caller closure's body or defaults.
+# Only direct matches() arguments can carry stringr pattern objects.
+# `allow_env_pronoun` permits literal reads in the selection context. Neither
+# permission carries into a caller closure's body or defaults.
 is_name_only_helper_arg <- function(expr,
                                     env,
                                     bound = character(),
@@ -541,7 +622,8 @@ is_name_only_helper_arg <- function(expr,
     }
     # Dots hold promises rather than an ordinary value; an empty dots binding
     # reads as R's missing marker. Leave them to selection evaluation.
-    if (name == "..." || selection_binding_deferred(env, name)) {
+    if (name == "..." || is_numbered_dot_reference(expr) ||
+          selection_binding_deferred(env, name)) {
       return(FALSE)
     }
     value <- rlang::env_get(env, name, default = NULL, inherit = TRUE)
@@ -562,14 +644,15 @@ is_name_only_helper_arg <- function(expr,
       allow_env_pronoun
     ))
   }
-  fn <- selection_argument_function(expr, env, bound)
+  context <- length(seen) == 0L
+  fn <- selection_argument_function(expr, env, bound, context)
   pattern_call <-
     allow_stringr_pattern && is_stringr_pattern_call(expr, env, bound, fn)
   if ((!pattern_call && is.null(fn)) || identical(fn, tidyselect::peek_data)) {
     return(FALSE)
   }
   args <- static_call_args(expr)
-  if ((allow_stringr_pattern || allow_env_pronoun) && length(args) == 2L &&
+  if (allow_env_pronoun && length(args) == 2L &&
         identical(args[[1L]], quote(.env)) &&
         (identical(fn, base::`$`) || identical(fn, base::`[[`))) {
     # Tidyselect's context mask supplies .env from the caller's quosure.
@@ -580,31 +663,39 @@ is_name_only_helper_arg <- function(expr,
     } else if (rlang::is_string(args[[2L]])) {
       name <- rlang::as_string(args[[2L]])
     }
-    if (
-      is.null(name) || !nzchar(name) || name == "..." ||
-        selection_binding_deferred(
-          env, name, allow_namespace_promises = FALSE
-        )
-    ) {
+    # A numbered dot can force a promise without an ordinary binding.
+    if (is.null(name) || !nzchar(name) || name == "..." ||
+          is_numbered_dot_reference(rlang::sym(name))) {
       return(FALSE)
     }
-    value <- rlang::env_get(env, name, default = NULL, inherit = TRUE)
+    binding_env <- selection_binding_env(env, name)
+    if (identical(binding_env, emptyenv())) {
+      # Tidyselect raises the missing-binding error during selection.
+      return(TRUE)
+    }
+    if (selection_binding_deferred(
+      binding_env, name, allow_namespace_promises = FALSE
+    )) {
+      return(FALSE)
+    }
+    value <- rlang::env_get(binding_env, name)
     return(is_name_only_helper_value(value, allow_stringr_pattern))
   }
   if (
     identical(fn, base::names) && length(args) == 1L &&
-      rlang::is_call(args[[1L]]) &&
-      selection_call_parens_safe(args[[1L]], env, bound) &&
-      identical(selection_argument_function(args[[1L]], env, bound),
-                tidyselect::peek_data) &&
-      length(static_call_args(args[[1L]])) == 0L
+      is_selection_data_peek(args[[1L]], env, bound, context)
   ) {
     return(TRUE)
   }
-  if (!all(vapply(args, is_name_only_helper_arg, logical(1),
-                  env = env, bound = bound, seen = seen,
-                  allow_caller_code = allow_caller_code,
-                  allow_env_pronoun = pattern_call || allow_env_pronoun))) {
+  if (identical(fn, base::c) && !"..." %in% bound) {
+    args <- selection_c_args(args, env)
+  }
+  if (is.null(args) || !all(vapply(
+    args, is_name_only_helper_arg, logical(1),
+    env = env, bound = bound, seen = seen,
+    allow_caller_code = allow_caller_code,
+    allow_env_pronoun = allow_env_pronoun
+  ))) {
     return(FALSE)
   }
   if (pattern_call || identical(fn, tidyselect::peek_vars)) {
@@ -661,6 +752,9 @@ selection_call_parens_safe <- function(expr, env, bound = character()) {
 # A helper value with no caller-defined dispatch. Only matches() consumes
 # stringr patterns, and a subclass can introduce its own methods.
 is_name_only_helper_value <- function(value, allow_stringr_pattern) {
+  if (rlang::is_missing(value)) {
+    return(FALSE)
+  }
   if (allow_stringr_pattern && is.character(value)) {
     classes <- class(value)
     if (classes[[1L]] %in% c(
@@ -692,20 +786,33 @@ is_stringr_pattern_call <- function(expr, env, bound, fn) {
   }, logical(1)))
 }
 
-# Whether the first lexical binding is active or an unforced promise.
-# Selection lookup permits namespace promises to load definitions.
-selection_binding_deferred <- function(env, name,
-                                       allow_namespace_promises = TRUE) {
+# The environment holding the first lexical binding, or emptyenv() when
+# absent. Callers supply the lexical start and a single binding name.
+selection_binding_env <- function(env, name) {
   while (!identical(env, emptyenv()) && !rlang::env_has(env, name)) {
     env <- rlang::env_parent(env)
   }
+  env
+}
+
+# Whether the first lexical binding is active or an unforced promise.
+# The caller can permit the stock lazy definitions needed for base
+# operations and tidyselect context lookups.
+selection_binding_deferred <- function(env, name,
+                                       allow_namespace_promises = TRUE) {
+  env <- selection_binding_env(env, name)
   if (identical(env, emptyenv())) {
     return(FALSE)
   }
-  rlang::env_binding_are_active(env, name)[[1L]] ||
-    ((!allow_namespace_promises ||
-        (!isNamespace(env) && !identical(env, baseenv()))) &&
-       rlang::env_binding_are_lazy(env, name)[[1L]])
+  if (rlang::env_binding_are_active(env, name)[[1L]]) {
+    return(TRUE)
+  }
+  rlang::env_binding_are_lazy(env, name)[[1L]] && (
+    !allow_namespace_promises ||
+      !(identical(env, baseenv()) || identical(env, asNamespace("base")) ||
+          (identical(env, asNamespace("tidyselect")) &&
+             name %in% c("peek_vars", "peek_data")))
+  )
 }
 
 # The namespace operator a qualified call head uses, through transparent
@@ -726,7 +833,9 @@ is_name_only_namespace <- function(expr, env, bound = character()) {
   if (is.null(operator)) {
     return(TRUE)
   }
-  if (operator %in% bound || selection_binding_deferred(env, operator)) {
+  if (operator %in% bound || selection_binding_deferred(
+    env, operator, allow_namespace_promises = FALSE
+  )) {
     return(FALSE)
   }
   if (!rlang::env_has(env, operator, inherit = TRUE)) {
@@ -740,24 +849,59 @@ is_name_only_namespace <- function(expr, env, bound = character()) {
 
 # A statically named function available without forcing caller bindings, or
 # `NULL` for an unresolved callee. `bound` excludes formals from lexical lookup.
-selection_argument_function <- function(expr, env, bound) {
+# Direct selection expressions see tidyselect's helper mask before `env`.
+selection_argument_function <- function(expr, env, bound, context = FALSE) {
   name <- static_call_name(expr)
   namespace <- static_call_ns(expr)
   if (is.null(name) || (is.null(namespace) && name %in% bound)) {
     return(NULL)
   }
-  if (!is.null(namespace)) {
+  if (is.null(namespace) && context) {
+    helper <- tidyselect::vars_select_helpers[[name]]
+    if (!is.null(helper)) {
+      return(helper)
+    }
+  }
+  function_position <- is.null(namespace) &&
+    rlang::is_symbol(static_call_head(expr))
+  if (is.null(namespace)) {
+    env <- selection_binding_env(env, name)
+  } else {
     if (!is_name_only_namespace(expr, env, bound) ||
           !namespace %in% loadedNamespaces()) {
       return(NULL)
     }
     env <- asNamespace(namespace)
+    if (identical(selection_namespace_operator(expr), "::") &&
+          namespace != "base") {
+      # An export can name an imported binding, which lives outside the
+      # namespace frame. Read the export map before touching the binding.
+      exports <- getNamespaceInfo(env, "exports")
+      name <- rlang::env_get(exports, name, default = NULL)
+      if (is.null(name)) {
+        return(NULL)
+      }
+      env <- selection_binding_env(env, name)
+    }
   }
-  if (selection_binding_deferred(env, name)) {
-    return(NULL)
+  repeat {
+    if (!rlang::env_has(env, name) || selection_binding_deferred(env, name)) {
+      return(NULL)
+    }
+    value <- rlang::env_get(env, name)
+    if (rlang::is_missing(value)) {
+      return(NULL)
+    }
+    if (is.function(value)) {
+      return(value)
+    }
+    # Only a bare callee skips a nonfunction. A parenthesized or qualified
+    # head first evaluates to the value held by its exact binding.
+    if (!function_position) {
+      return(NULL)
+    }
+    env <- selection_binding_env(rlang::env_parent(env), name)
   }
-  value <- rlang::env_get(env, name, default = NULL, inherit = TRUE)
-  if (is.function(value)) value else NULL
 }
 
 # Whether this call reads tidyselect's `.data` pronoun. Only bare `$` and
