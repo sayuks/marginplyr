@@ -606,9 +606,10 @@ is_name_only_helper_arg <- function(expr,
   ))
 }
 
-# Whether looking up a name would force an active binding or caller promise.
-# Namespace promises load definitions rather than evaluating caller arguments.
-selection_binding_deferred <- function(env, name) {
+# Whether the first lexical binding is active or an unforced promise.
+# Selection lookup permits namespace promises to load definitions.
+selection_binding_deferred <- function(env, name,
+                                       allow_namespace_promises = TRUE) {
   while (!identical(env, emptyenv()) && !rlang::env_has(env, name)) {
     env <- rlang::env_parent(env)
   }
@@ -616,7 +617,8 @@ selection_binding_deferred <- function(env, name) {
     return(FALSE)
   }
   rlang::env_binding_are_active(env, name)[[1L]] ||
-    (!isNamespace(env) && !identical(env, baseenv()) &&
+    ((!allow_namespace_promises ||
+        (!isNamespace(env) && !identical(env, baseenv()))) &&
        rlang::env_binding_are_lazy(env, name)[[1L]])
 }
 
@@ -922,7 +924,9 @@ nested_arg_quosure <- function(arg, capture = rlang::enquo) {
 # A call frame stores supplied dots as a dots object and empty dots as the
 # missing marker. An unrelated active binding or promise must remain unforced.
 has_lexical_dots <- function(env) {
-  if (selection_binding_deferred(env, "...")) {
+  if (selection_binding_deferred(
+    env, "...", allow_namespace_promises = FALSE
+  )) {
     return(FALSE)
   }
   dots <- rlang::env_get(env, "...", default = NULL, inherit = TRUE)

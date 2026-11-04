@@ -75,6 +75,24 @@ test_that("unrelated dots bindings are not forced for column selection", {
   expect_identical(inspect()$included, list("..01"))
 })
 
+test_that("a namespace dots promise stays unforced for column selection", {
+  data <- data.frame(check.names = FALSE, "..01" = c("a", "b"))
+  # Mirror the namespace metadata without mutating a loaded package.
+  namespace <- rlang::env(
+    .__NAMESPACE__. = rlang::env(spec = c(name = "fixture", version = "1.0"))
+  )
+  expect_true(isNamespace(namespace))
+  delayedAssign(
+    "...", stop("unrelated namespace dots forced"), assign.env = namespace
+  )
+  alias <- rlang::new_quosure(quote((..01)), rlang::env(namespace))
+
+  plan <- inspect_grouping(
+    data, .grouping = grouping_sets(!!alias), .format = "list"
+  )
+  expect_identical(plan$included, list("..01"))
+})
+
 test_that("parenthesized numbered dots retain admitted kinds and refusals", {
   data <- data.frame(a = c("x", "y"), value = 1:2)
   constructors <- c("grouping_set", "grouping_sets", "rollup", "cube",
