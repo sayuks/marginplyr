@@ -3156,7 +3156,11 @@ apply_windowed_shares <- function(result, requests, plan, set_id_name, kind,
                                   parent_key_names, sql_window) {
   # dtplyr evaluates generated calls in the root's environment; SQL needs the
   # unqualified operator for dbplyr translation.
-  membership <- if (sql_window) rlang::sym("%in%") else rlang::expr(base::`%in%`)
+  membership <- if (sql_window) {
+    rlang::sym("%in%")
+  } else {
+    rlang::expr(base::`%in%`)
+  }
   target_ids <- share_kind_rule(kind)$target_ids(plan)
   joined_ids <- plan$set_ids[!is.na(target_ids)]
   sources <- share_source_names(requests)

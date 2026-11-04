@@ -78,7 +78,7 @@ test_that("dtplyr Parent denominator selection ignores caller membership", {
   }
 })
 
-test_that("dtplyr shares preserve caller membership lookup and lazy execution", {
+test_that("dtplyr shares preserve caller membership lookup and laziness", {
   skip_if_suggest_absent("dtplyr")
   root <- new.env(parent = globalenv())
   root$source <- tibble::tibble(g = c("b", "a", NA_character_), x = 1:3)
