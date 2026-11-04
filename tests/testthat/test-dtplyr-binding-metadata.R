@@ -276,3 +276,33 @@ test_that("typed join metadata refuses unavailable arithmetic at execution", {
   }
   expect_false(forced)
 })
+
+test_that("join metadata prepares zero rows without calling a lexical head", {
+  skip_if_suggest_absent("dtplyr")
+  left_source <- data.table::data.table(id = 1L, g = "a", v = 10L)
+  left <- dplyr::mutate(dtplyr::lazy_dt(left_source), w = v + 1L)
+  reads <- integer()
+  right <- local({
+    head <- function(x, n) {
+      if ("w" %in% names(x) && !"r" %in% names(x)) {
+        reads <<- left_source$v
+      }
+      utils::head(x, n = n)
+    }
+    dtplyr::lazy_dt(data.frame(id = 1L, r = 9L))
+  })
+  joined <- dplyr::left_join(left, right, by = "id")
+  explicit <- dplyr::collect(joined)
+  expect_identical(explicit$w, 11L)
+  expect_identical(reads, integer())
+
+  plan <- inspect_grouping(
+    joined, .grouping = grouping_set(where(is.character))
+  )
+  expect_identical(plan$included, "(g)")
+  expanded <- expand_with_margins(
+    joined, .grouping = rollup(where(is.character))
+  )
+  expect_s3_class(expanded, "dtplyr_step")
+  expect_identical(reads, integer())
+})

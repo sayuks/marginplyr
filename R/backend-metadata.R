@@ -80,16 +80,17 @@ zero_row_dtplyr_proxy_input <- function(.data) {
 # The typed selection proxy for a derived dtplyr step. The registered dtplyr
 # method evaluates only isolated zero-row roots; calling it directly avoids
 # routing the step through `collect()` or `as_tibble()`.
+# The caller has checked metadata safety for `.data` in the same `env`.
 isolated_dtplyr_proxy <- function(.data, env = .data[["env"]]) {
   proxy <- zero_row_dtplyr_proxy_input(.data)
   proxy[["env"]] <- env
-  proxy <- utils::head(proxy, n = 0L)
   as_data_table <- utils::getS3method(
     "as.data.table",
     "dtplyr_step",
     envir = asNamespace("data.table")
   )
-  as_data_table(proxy)
+  # Truncate outside dtplyr's query so a lexical head binding cannot run.
+  utils::head(as_data_table(proxy), n = 0L)
 }
 
 # Whether lexical lookup finds an ordinary base arithmetic binding without
