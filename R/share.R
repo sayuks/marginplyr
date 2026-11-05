@@ -4628,8 +4628,9 @@ function_scope_frame <- function(parameters, invocation) {
   )
 }
 
-# Read defaults and the body under the definition's formals. The srcref is
-# metadata. A definition alone does not carry effects back to its enclosure.
+# Read defaults and the body under the definition's formals. A closure can
+# be called through syntax the walk does not enter, so inspect its definition
+# as well as visible calls. Only a call can affect its enclosure.
 definition_data_symbols <- function(expr, scope, lookup, invocation = NULL,
                                     enclosing = 1L) {
   if (is.null(invocation)) {
@@ -4643,15 +4644,9 @@ definition_data_symbols <- function(expr, scope, lookup, invocation = NULL,
   frame$enclosing <- enclosing
   frame$definition <- expr
   inner <- c(list(frame), scope)
-  defaults <- frame$defaults
-  if (!is.null(invocation)) {
-    defaults <- Filter(function(expr) {
-      is.null(literal_function_definition(expr))
-    }, defaults)
-  }
   unique(unlist(
     lapply(
-      c(defaults, list(expr[[3L]])),
+      c(frame$defaults, list(expr[[3L]])),
       scoped_data_symbols, scope = inner, lookup = lookup
     ),
     use.names = FALSE
@@ -4859,15 +4854,13 @@ is_binding_statement <- function(call_name, expr) {
 # A block walks statements in order. Definite bindings carry into the
 # next statement, and a removal can expose a name in an enclosing frame.
 block_reads_and_scope <- function(expr, scope, lookup, read_symbols,
-                                  read_result_symbols, discard_result) {
+                                  read_result_symbols) {
   reads <- character()
   statements <- static_call_args(expr)
   for (index in seq_along(statements)) {
-    last <- index == length(statements)
     step <- statement_reads_and_scope(
       statements[[index]], scope, lookup, read_symbols,
-      if (last) read_result_symbols else read_symbols,
-      discard_result = discard_result || !last
+      if (index == length(statements)) read_result_symbols else read_symbols
     )
     reads <- c(reads, step$reads)
     scope <- step$scope
@@ -4879,31 +4872,23 @@ block_reads_and_scope <- function(expr, scope, lookup, read_symbols,
 # A separate result reader can restrict the read of a returned value.
 statement_reads_and_scope <- function(expr, scope, lookup = NULL,
                                       read_symbols = scoped_data_symbols,
-                                      read_result_symbols = read_symbols,
-                                      discard_result = FALSE) {
+                                      read_result_symbols = read_symbols) {
   expr <- unparenthesized_value(expr)
   call_name <- static_call_name(expr)
   arm <- literal_if_parts(expr, call_name, scope_bound_names(scope), lookup)
   if (length(arm) > 0L) {
     return(statement_reads_and_scope(
-      arm[[1L]], scope, lookup, read_symbols, read_result_symbols,
-      discard_result
+      arm[[1L]], scope, lookup, read_symbols, read_result_symbols
     ))
   }
   if (identical(call_name, "{")) {
     return(block_reads_and_scope(
-      expr, scope, lookup, read_symbols, read_result_symbols, discard_result
+      expr, scope, lookup, read_symbols, read_result_symbols
     ))
   }
-  discard_closure <- discard_result &&
-    identical(read_symbols, scoped_data_symbols)
   if (!is_binding_statement(call_name, expr)) {
-    reads <- if (!discard_closure ||
-                   !scope_only_reads_closure(expr, scope, lookup)) {
-      read_result_symbols(expr, scope, lookup)
-    }
     return(list(
-      reads = reads,
+      reads = read_result_symbols(expr, scope, lookup),
       scope = scope_after_removals(expr, scope, lookup)
     ))
   }
@@ -4921,10 +4906,7 @@ statement_reads_and_scope <- function(expr, scope, lookup = NULL,
       scope = scope_after_removals(expr[[4L]], inner, lookup)
     ))
   }
-  value <- if (!(discard_closure && is_name_part(expr[[2L]]) &&
-                   !is.null(literal_function_definition(expr[[3L]])))) {
-    read_symbols(expr[[3L]], scope, lookup)
-  }
+  value <- read_symbols(expr[[3L]], scope, lookup)
   retained <- scope_after_removals(expr[[3L]], scope, lookup)
   if (is_name_part(expr[[2L]])) {
     return(list(
@@ -4938,19 +4920,6 @@ statement_reads_and_scope <- function(expr, scope, lookup = NULL,
     reads = unique(c(read_symbols(expr[[2L]], scope, lookup), value)),
     scope = scope_after_removals(expr[[2L]], retained, lookup)
   )
-}
-
-# A discarded literal closure or a forced literal binding does not escape.
-scope_only_reads_closure <- function(expr, scope, lookup) {
-  if (!is.null(literal_function_definition(expr))) {
-    return(TRUE)
-  }
-  if (identical(static_call_name(expr), "force") && length(expr) == 2L &&
-        is_known_base_frame_call(expr, "force", scope, lookup)) {
-    expr <- unparenthesized_value(expr[[2L]])
-  }
-  is_name_part(expr) &&
-    !is.null(scope_closure_binding(rlang::as_name(expr), scope, FALSE))
 }
 
 # Whether a recognized base function is the actual callee, without invoking it.
