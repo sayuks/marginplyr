@@ -430,6 +430,7 @@ test_that("DuckDB leading selection failures invoke no metadata query", {
     grouping_sets(x, grouping_sets(x, !!typed)),
     grouping_spec(grouping_set(), grouping_sets(x, x, !!typed)),
     grouping_spec(grouping_sets(x, x), !!typed),
+    grouping_spec(grouping_sets(x, x, !!typed), value),
     grouping_spec(
       grouping_sets(x, x),
       grouping_sets(grouping_set(!!typed)),
@@ -438,6 +439,9 @@ test_that("DuckDB leading selection failures invoke no metadata query", {
     grouping_spec(grouping_spec(grouping_sets(x, x), !!typed), value),
     grouping_spec(
       grouping_sets(grouping_spec(grouping_sets(x, x), !!typed)), value
+    ),
+    grouping_spec(
+      grouping_sets(grouping_spec(grouping_sets(x, x, !!typed), value)), value
     ),
     grouping_spec(
       grouping_sets(x, grouping_set()), grouping_set(x, !!typed)
@@ -452,6 +456,14 @@ test_that("DuckDB leading selection failures invoke no metadata query", {
       )
       expect_identical(conditionMessage(mixed), conditionMessage(original))
     }
+  }
+  expect_identical(counter$queries, 0L)
+  expect_identical(predicates, 0L)
+
+  for (verb in verbs) {
+    expect_error(verb(remote, NULL, grouping_spec(
+      grouping_sets(value, grouping_spec(grouping_sets(x, x), !!typed)), value
+    )), "2, 3.", fixed = TRUE, class = "marginplyr_error")
   }
   expect_identical(counter$queries, 0L)
   expect_identical(predicates, 0L)
@@ -635,7 +647,8 @@ test_that("known duplicate occurrences precede unsafe dtplyr metadata", {
     grouping_spec(
       grouping_set(value), grouping_sets(x, x, where(numeric_column))
     ),
-    grouping_spec(grouping_sets(x, x), where(numeric_column))
+    grouping_spec(grouping_sets(x, x), where(numeric_column)),
+    grouping_spec(grouping_sets(x, x, where(numeric_column)), value)
   )
   for (verb in forwarded_verbs) {
     original <- expect_error(verb(data, NULL, grouping_sets(x, x, value)),
@@ -678,4 +691,163 @@ test_that("completed duplicate groups precede incomplete product groups", {
     inspect_grouping(data, .grouping = spec),
     "2, 3; 4, 5.", fixed = TRUE, class = "marginplyr_error"
   )
+})
+
+test_that("partial product factors refuse known duplicates before predicates", {
+  data <- data.frame(x = 1L, value = 2L)
+  predicates <- 0L
+  predicate <- function(x) {
+    predicates <<- predicates + 1L
+    stop("typed selection evaluated")
+  }
+  specs <- list(
+    grouping_spec(grouping_sets(x, x, where(predicate)), value),
+    grouping_spec(
+      grouping_sets(x, x, where(predicate)),
+      grouping_sets(grouping_spec(value, grouping_set()))
+    ),
+    grouping_spec(
+      grouping_sets(x, value),
+      grouping_sets(x, grouping_set(), where(predicate)), value
+    )
+  )
+  for (verb in forwarded_verbs[c(
+    "inspect_grouping", "nest_with_margins", "nest_by_with_margins"
+  )]) {
+    for (spec in specs) {
+      expect_error(verb(data, NULL, spec), "1, 2.", fixed = TRUE,
+                   class = "marginplyr_error")
+    }
+    expect_error(verb(data, NULL, grouping_sets(value, !!specs[[1L]])),
+                 "2, 3.", fixed = TRUE, class = "marginplyr_error")
+    expect_error(verb(data, NULL, grouping_spec(
+      grouping_sets(x, x, absent, where(predicate)), value
+    )), "absent", class = "vctrs_error_subscript_oob")
+  }
+  expect_identical(predicates, 0L)
+})
+
+test_that("singleton wrappers retain leading partial product duplicates", {
+  data <- data.frame(a = 1L, b = 2L, c = 3L)
+  predicates <- 0L
+  predicate <- function(x) {
+    predicates <<- predicates + 1L
+    stop("typed selection evaluated")
+  }
+  spec <- grouping_spec(
+    grouping_sets(grouping_spec(grouping_sets(a, a, where(predicate)), b)), c
+  )
+  for (verb in forwarded_verbs[c(
+    "inspect_grouping", "nest_with_margins", "nest_by_with_margins"
+  )]) {
+    expect_error(verb(data, NULL, spec), "1, 2.", fixed = TRUE,
+                 class = "marginplyr_error")
+    expect_error(verb(data, NULL, grouping_sets(b, !!spec)), "2, 3.",
+                 fixed = TRUE, class = "marginplyr_error")
+    expect_error(verb(data, NULL, grouping_spec(
+      grouping_sets(grouping_spec(
+        grouping_sets(a, a, absent, where(predicate)), b
+      )), c
+    )), "absent", class = "vctrs_error_subscript_oob")
+    expect_error(verb(data, NULL, grouping_spec(
+      grouping_sets(b, grouping_spec(grouping_sets(a, a), where(predicate))), b
+    )), "2, 3.", fixed = TRUE, class = "marginplyr_error")
+  }
+  expect_identical(predicates, 0L)
+})
+
+test_that("partial product positions include preceding branches", {
+  data <- data.frame(a = 1L, b = 2L, c = 3L)
+  predicates <- 0L
+  predicate <- function(x) {
+    predicates <<- predicates + 1L
+    stop("typed selection evaluated")
+  }
+  partial <- grouping_sets(
+    b, c, grouping_spec(grouping_sets(a, a), where(predicate))
+  )
+  spec <- grouping_spec(!!partial, b)
+  nested <- grouping_spec(grouping_sets(b, grouping_spec(!!partial, b)), c)
+  for (verb in forwarded_verbs[c(
+    "inspect_grouping", "nest_with_margins", "nest_by_with_margins"
+  )]) {
+    expect_error(verb(data, NULL, spec), "3, 4.", fixed = TRUE,
+                 class = "marginplyr_error")
+    expect_error(verb(data, NULL, grouping_sets(c, !!spec)), "4, 5.",
+                 fixed = TRUE, class = "marginplyr_error")
+    expect_error(verb(data, NULL, grouping_spec(
+      grouping_sets(grouping_set(), c), !!partial, b, c
+    )), "3, 4.", fixed = TRUE, class = "marginplyr_error")
+    expect_error(verb(data, NULL, grouping_sets(c, grouping_spec(
+      grouping_sets(grouping_set(), c), !!partial, b, c
+    ))), "4, 5.", fixed = TRUE, class = "marginplyr_error")
+    expect_error(verb(data, NULL, nested), "4, 5.", fixed = TRUE,
+                 class = "marginplyr_error")
+    expect_error(verb(data, NULL, grouping_sets(c, !!nested)), "5, 6.",
+                 fixed = TRUE, class = "marginplyr_error")
+  }
+  expect_identical(predicates, 0L)
+})
+
+test_that("partial product offsets do not settle typed membership", {
+  data <- data.frame(a = 1L, b = 2L, c = 3L)
+  predicates <- 0L
+  predicate <- function(x) {
+    predicates <<- predicates + 1L
+    stop("typed selection evaluated")
+  }
+  spec <- grouping_spec(
+    grouping_sets(b, grouping_spec(grouping_sets(a, c), where(predicate))), b
+  )
+  for (verb in forwarded_verbs[c(
+    "inspect_grouping", "nest_with_margins", "nest_by_with_margins"
+  )]) {
+    expect_error(verb(data, NULL, spec), "typed selection evaluated")
+  }
+  expect_identical(predicates, 3L)
+})
+
+test_that("partial products preserve typed decisions and duplicate policies", {
+  data <- data.frame(x = 1L, value = 2L)
+  for (policy in c("error", "keep", "drop")) {
+    events <- character()
+    fixed <- function(x) {
+      events <<- c(events, "by")
+      FALSE
+    }
+    predicate <- function(x) {
+      events <<- c(events, "dimension")
+      is.numeric(x)
+    }
+    spec <- grouping_spec(
+      grouping_sets(x, value, where(predicate) & value), grouping_set()
+    )
+    if (identical(policy, "error")) {
+      expect_error(inspect_grouping(
+        data, .by = where(fixed), .grouping = spec, .duplicates = policy
+      ), "2, 3.", fixed = TRUE, class = "marginplyr_error")
+    } else {
+      plan <- inspect_grouping(
+        data, .by = where(fixed), .grouping = spec, .duplicates = policy,
+        .format = "list"
+      )
+      expected <- if (identical(policy, "keep")) {
+        list("x", "value", "value")
+      } else {
+        list("x", "value")
+      }
+      expect_identical(plan$included, expected)
+      expect_identical(plan$set_id, seq_along(expected))
+    }
+    expect_identical(events, c("by", "by", "dimension", "dimension"))
+  }
+  for (verb in list(nest_with_margins, nest_by_with_margins)) {
+    expected <- verb(data, .grouping = grouping_sets(
+      grouping_set(x, value), value
+    ))
+    actual <- verb(data, .grouping = grouping_spec(
+      grouping_sets(x, x, where(is.numeric) & value), value
+    ), .duplicates = "drop")
+    expect_identical(actual, expected)
+  }
 })

@@ -293,6 +293,7 @@ Config/testthat/start-first:
     dtplyr-zero-column-ids,
     data-pronoun,
     nest-name-preflight,
+    grouping-product-coverage,
     diagnostic-authoring,
     optional-backends,
     cyclic-grouping,
