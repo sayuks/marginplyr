@@ -38,6 +38,39 @@ sqlite_order_value <- function(term) {
   term
 }
 
+# Render a direct companion with its source anchor and final aliases outside
+# CTE lifting (ADR 0031). The caller supplies a prepared live SQLite query;
+# keeping each outer projection also retains its source collation.
+sqlite_direct_execution_sql <- function(result,
+                                        con = dbplyr::remote_con(result),
+                                        ..., sql_options = NULL) {
+  if (!isTRUE(sql_options$cte)) {
+    return(dbplyr::sql_render(
+      result, con = con, ..., sql_options = sql_options
+    ))
+  }
+  render <- function(op) {
+    if (inherits(op, "lazy_union_query")) {
+      return(dbplyr::sql_query_union(
+        con, render(op$x),
+        list(table = lapply(op$unions$table, function(table) {
+          render(table$lazy_query)
+        }), all = op$unions$all)
+      ))
+    }
+    # The anchor must keep its source projection direct for RSQLite types.
+    # Other arms keep their final projection over a separately rendered input.
+    if (!inherits(op$x, "lazy_base_query") &&
+          length(sqlite_boolean_columns(dbplyr::op_vars(op$x))) == 0L) {
+      input <- dbplyr::sql_render(op$x, con = con, sql_options = sql_options)
+      op$x <- dplyr::tbl(con, input, vars = dbplyr::op_vars(op$x))$lazy_query
+    }
+    built <- dbplyr::sql_build(op, con = con, sql_options = sql_options)
+    dbplyr::sql_render(built, con = con, ..., sql_options = sql_options)
+  }
+  render(result$lazy_query)
+}
+
 # Builds a public lazy result with a typed companion query (ADR 0031).
 # The caller passes one prepared operation, its query before and after applying
 # Margin order, the matching execution, and source columns in both queries.
@@ -187,11 +220,11 @@ sql_render.marginplyr_sqlite_typed_result <- function(query, ...,
   union <- attr(query, "marginplyr_typed_union")
   keys <- attr(query, "marginplyr_order_keys")
   if (length(keys) == 0L) {
-    return(sqlite_boolean_execution_sql(
+    return(sqlite_direct_execution_sql(
       attr(query, "marginplyr_public_query"), ..., sql_options = sql_options
     ))
   }
-  sql <- as.character(sqlite_boolean_execution_sql(
+  sql <- as.character(sqlite_direct_execution_sql(
     union, ..., sql_options = sql_options
   ))
   quoted <- as.character(DBI::dbQuoteIdentifier(query$con, keys))
@@ -671,7 +704,7 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
     )
   }
   destination <- sqlite_compute_destination(con, name, temporary, overwrite)
-  insert_from <- sqlite_boolean_execution_sql(
+  insert_from <- sqlite_direct_execution_sql(
     public_query, sql_options = sql_options
   )
   call <- rlang::caller_call()

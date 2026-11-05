@@ -183,6 +183,7 @@ Config/testthat/start-first:
     injected-nested-grouping,
     verb-argument-admission,
     sql-env-share-output,
+    sqlite-cte-collation,
     dtplyr-order-helpers,
     nest-factor-equality,
     sql-env-expansion,
