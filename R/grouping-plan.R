@@ -738,15 +738,29 @@ is_name_only_helper_arg <- function(expr,
   ))
 }
 
-# Parentheses around a helper argument or callee use lexical `(`, unlike the
-# outer selection parentheses tidyselect walks itself. Check the written
-# parentheses before using readers that treat them as transparent.
+# Whether the parentheses around a call or its callee use base `(`. The
+# caller supplies the lexical environment and any enclosing closure formals.
 selection_call_parens_safe <- function(expr, env, bound = character()) {
-  if (!is_redundant_parens(expr) &&
-        !is_redundant_parens(static_call_head(expr))) {
-    return(TRUE)
+  selection_parens_use_base(expr, env, bound) &&
+    selection_parens_use_base(static_call_head(expr), env, bound)
+}
+
+# Check each written pair before the static readers strip it.
+selection_parens_use_base <- function(expr, env, bound) {
+  while (is_redundant_parens(expr)) {
+    # Resolve the written head without the argument that makes it redundant.
+    fn <- selection_argument_function(
+      rlang::call2(expr[[1L]]), env, bound
+    )
+    if (!identical(fn, base::`(`)) {
+      return(FALSE)
+    }
+    if (rlang::is_missing(expr[[2L]])) {
+      break
+    }
+    expr <- expr[[2L]]
   }
-  identical(selection_argument_function(quote((NULL)), env, bound), base::`(`)
+  TRUE
 }
 
 # A helper value with no caller-defined dispatch. Only matches() consumes
