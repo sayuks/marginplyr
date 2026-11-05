@@ -14,7 +14,7 @@ use grow with waiting time rather than with useful check work.
 [ADR 0039](../adr/0039-run-review-ready-from-the-target-worktree.md) and the
 [runner specification](review-ready-repository-runner.md) already require one
 stable OS-backed advisory lock across the user's clones and worktrees,
-automatic admission after the five mandatory checks, the same execution
+automatic admission after the mandatory checks, the same execution
 identity, and cancellation that prevents a waiter from starting later. This
 repair adds an explicit resource bound to that wait.
 
@@ -52,7 +52,7 @@ repair adds an explicit resource bound to that wait.
    among development review tools. A dependency update is a separate choice,
    not the mechanism of this repair.
 
-These decisions preserve the five-check ordering, pinned SHA, source-only
+These decisions preserve the mandatory baseline ordering, pinned SHA, source-only
 behavior, eight test workers, progress, artifacts and retention. Runtime changes
 are confined to heavy-lock acquisition and its failure handling.
 

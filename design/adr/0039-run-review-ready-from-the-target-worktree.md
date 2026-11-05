@@ -14,7 +14,7 @@ accepted requirements; [local checks](../agents/local-checks.md) and the
 
 Invoke `Rscript tools/review-ready.R --scope source|full --reason TEXT` from the
 target root. Git supplies that worktree's implementation. Both forms run the
-same five checks against a pinned committed source copy before requesting any
+same six checks against a pinned committed source copy before requesting any
 heavy capacity. The AI decides whether package build/check is required and
 records its reason. A source-only result explicitly records the heavy omission.
 
@@ -57,9 +57,9 @@ CI; change-specific development checks remain appropriate.
 ## Amendment and history
 
 [ADR 0041](0041-check-generated-documentation-before-omitting-heavy-checks.md)
-accepts a sixth mandatory check and a scope exception for equivalent source
-edits. Its implementation and operational adoption are pending; local checks
-continues to own the active workflow.
+adds roxygen regeneration/committed-source consistency as the sixth mandatory
+check and an evidence-backed scope exception for equivalent source edits.
+The runner and local checks adopt both together under #1292.
 
 The earlier accepted direction added main-based workload registration,
 authenticated stage reuse under [ADR 0038](0038-reuse-unaffected-review-ready-stage-evidence.md),

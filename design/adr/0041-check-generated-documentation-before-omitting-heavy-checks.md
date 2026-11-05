@@ -21,7 +21,7 @@ expression evidence, rather than repeatedly running the complete suite for
 qualifying explanatory edits or relying on AI judgment alone.
 
 The [specification](../specs/review-ready-equivalent-source-edits.md) fixes the
-evidence and comparison boundary. Acceptance is a design decision; runner
-implementation and operational adoption are pending. Until they land together,
-[local checks](../agents/local-checks.md) retains its existing five-check baseline
-and scope rules.
+evidence and comparison boundary. The runner and
+[local checks](../agents/local-checks.md) adopt the six-check baseline and
+evidence-backed scope exception together under #1292. Adoption does not
+establish a package-check result for any later SHA.

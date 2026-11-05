@@ -228,7 +228,7 @@ explicit Git application workflow above.
 
 ## FIFO heavy admission
 
-After the five checks succeed, atomically register a full request and allocate
+After the mandatory checks succeed, atomically register a full request and allocate
 its sequence under a short-lived shared metadata lock. Concurrent registrations
 are ordered by successful registration, not command launch, timestamps, PID,
 branch name or expected duration. Report the accepted sequence and number of

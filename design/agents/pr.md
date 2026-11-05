@@ -74,6 +74,7 @@ Scope: <source or full>
 Reason: <concrete reason for this scope from the diff and its effects>
 Test dependency-declaration scan: <outcome>
 Required optional test Suggests presence/version: <outcome>
+Roxygen regeneration and committed-source consistency: <outcome>
 Package spelling: <outcome>
 jarl check .: <outcome>
 Package-aware lintr after pkgload::load_all(): <outcome>

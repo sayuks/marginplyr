@@ -34,7 +34,15 @@ Rscript tools/review-ready.R --scope source --reason 'Explain the heavy-check om
 Rscript tools/review-ready.R --scope full --reason 'Explain why package build/check is needed.'
 ```
 
-Both forms run the five mandatory checks before any shared-slot request.
+Both forms run the six mandatory checks in
+[local checks](../design/agents/local-checks.md#boundary-and-scope) before any shared-slot request.
+The documentation check runs `roxygen2::roxygenise()` in the pinned source
+copy and refuses any filename/content difference from the preserved
+`documentation-before/` copy, including changes outside `man/` and `NAMESPACE`.
+Generation errors or differences stop before spelling, linters and admission;
+the submitting worktree stays unchanged. Inspect the reported diff, regenerate
+and commit corrections explicitly before a fresh invocation. `roxygen2` is a
+required review tool for both scopes; README/site rendering remains separate.
 First, submitted priority metadata must contain unique literal filename stems.
 Invalid metadata fails before those checks and admission, reporting the
 submitted SHA, duplicate stems and positions. The runner preserves committed

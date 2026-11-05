@@ -58,6 +58,7 @@ main <- function() {
     c("Rscript tools/test-review-ready-progress.R", "echo skipped"),
     c("Rscript tools/test-review-ready-priority.R", "echo skipped"),
     c("Rscript tools/test-review-ready-runner.R", "echo skipped"),
+    c("any::roxygen2, ", ""),
     c("Rscript tools/verify-ci-artifacts.R", "echo skipped"),
     c("Rscript tools/test-ci-artifacts.R", "echo skipped"),
     c("Rscript tools/test-interruption-supervisors.R", "echo skipped"),

@@ -42,12 +42,13 @@ Rscript tools/review-ready.R --scope source --reason 'Explain why package build/
 Rscript tools/review-ready.R --scope full --reason 'Explain the package-check obligation.'
 ```
 
-`source` runs the mandatory five checks and omits heavy verification. `full`
+`source` runs the mandatory six checks and omits heavy verification. `full`
 runs those same checks, then waits for the shared heavy slot and automatically
 builds and checks the source tarball. The AI makes this judgment; the runner
 does not infer scope from paths or reuse a previous result.
 
-Package-affecting changes require `full`: changes to package code, tests,
+Except for the evidence-backed cases below, package-affecting changes require
+`full`: changes to package code, tests,
 examples, vignettes, data, installed files, dependencies, generated
 package documentation, generation sources, build exclusions, or tooling that
 can change a package-check result. A tests-only change is package-affecting.
@@ -56,6 +57,34 @@ justify omitting package build/check. A filename, directory, extension or
 exclusion from the source package alone is insufficient. Use `full` when the
 effects are uncertain. Change-specific checks still establish the changed
 tooling's contract; a package-check pass alone cannot do that.
+
+### Equivalent explanatory edits
+
+Under [ADR 0041](../adr/0041-check-generated-documentation-before-omitting-heavy-checks.md),
+ordinary explanatory comments, whitespace/line-break formatting and prose-only
+roxygen edits within existing files may use `source` when execution and
+verification effects are established as unchanged. Assess the whole diff from
+the latest verifiable successful full-checked ancestor, or the merge-base with
+`main` when none is available, through the submitted SHA. An earlier full result
+certifies only its own SHA; prior full success is not a prerequisite.
+
+For every changed R file, retrieve both immutable revisions and compare
+`parse(file = ..., keep.source = FALSE)` results with `identical()`. Unparseable
+or unequal expressions require `full`. Inspect the committed generated diff:
+no change, or explanatory prose/formatting alone, may qualify; NAMESPACE,
+usage, executable examples and other behavioral/structural metadata require
+`full`. Also inspect consumers of the changed text, including source scans,
+generation, snapshots and source-location-sensitive diagnostics. Use a focused
+check when needed to settle their effects; parse equality alone is insufficient.
+
+Record both SHAs, baseline basis, changed files, parse outcomes, generated-diff
+assessment and text-consumer findings with the scope reason. Expression-rewriting
+refactors, lint/coverage directives, additions/deletions/renames, other package
+effects and uncertainty require `full`. Mixed submissions need justification
+for every other edit too. Byte-different tests remain subject to the independent
+timing-proposal eligibility rules; this exception does not relax those rules.
+
+### Priority metadata
 
 Measured priority adoption may use `source` when its only check-affecting change
 is `Config/testthat/start-first`, and package code, tests/helpers, installed
@@ -78,7 +107,9 @@ comparison and reason. Accompanying measured adoption still follows its rule
 above. Reader, runner and fixture changes are outside this exception; uncertain
 effects require `full`.
 
-Both scopes validate submitted priority metadata before the five checks and
+### Mandatory baseline and heavy verification
+
+Both scopes validate submitted priority metadata before the six checks and
 heavy admission. On a duplicate, follow the runner guide's
 [Duplicate priority recovery](../../tools/review-ready-runner.md#duplicate-priority-recovery)
 within the active task before reporting review readiness.
@@ -87,18 +118,27 @@ Both forms pin the submitted SHA at invocation and use its disposable committed
 source for every check. Waiting never switches to a later HEAD. A later fix
 must be committed and receive a fresh invocation; a result identifies only its
 submitted revision. After metadata validation, both scopes run the mandatory
-five-check baseline in order:
+six-check baseline in order:
 
 1. a mechanical test-source dependency-declaration scan against `DESCRIPTION`;
 2. the registered optional test Suggests presence and version check;
-3. package spelling;
-4. `jarl check .`;
-5. package-aware lintr after `pkgload::load_all()`.
+3. roxygen regeneration and committed-source consistency;
+4. package spelling;
+5. `jarl check .`;
+6. package-aware lintr after `pkgload::load_all()`.
+
+Documentation consistency runs `roxygen2::roxygenise()` in the pinned disposable
+copy and compares all filenames and file contents against its pre-generation
+copy. Generation failure, stale/missing/extra output, NAMESPACE changes and any
+other source mutation (including DESCRIPTION) stop before later checks or heavy
+admission. Differences are reported; regeneration never repairs the submitting
+worktree. Commit corrections before a fresh invocation. This check does not
+replace Rd validation, example execution or CI's documentation/README checks.
 
 A failed baseline ends that invocation before admission waiting or package
 build/check. Correct and commit the fix explicitly before invoking again.
 `source` ends after this baseline and reports its SHA, omission and supplied
-reason. It is a five-check-only result, never a full package-check pass.
+reason. It is a six-check-only result, never a full package-check pass.
 
 After the baseline succeeds, `full` atomically registers in acceptance order
 across this user's marginplyr clones and worktrees on the Mac. Only the oldest
@@ -345,7 +385,7 @@ NOTE is printed; a NOTE outside the shared CRAN policy needs a written
 disposition before review readiness. A failed check ends once. Make and commit
 any fix before starting another invocation.
 
-Record the submitted SHA, chosen scope and reason, all five baseline outcomes,
+Record the submitted SHA, chosen scope and reason, all six baseline outcomes,
 heavy-check execution or omission, terminal outcome, artifact directory and
 NOTE dispositions in the pull request. A full result includes the source-tarball
 check's errors, warnings and notes and the timing-proposal disposition required
