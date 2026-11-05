@@ -82,7 +82,7 @@ test_that("metadata and handled dialect failures have separate outcomes", {
   expect_identical(probe$phase, "invocation")
   expect_identical(probe$handling, "handled")
   expect_identical(nrow(rows$conditions[[3L]]), 0L)
-  inspect_grouping(remote, .grouping = rollup(g))
+  inspect_grouping(remote, .grouping = rollup(where(is.character)))
   expect_identical(last_sent_queries(FALSE, TRUE), rows[1L, ])
 })
 

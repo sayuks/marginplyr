@@ -255,10 +255,10 @@ prepare_grouping_plan <- function(.data,
       }
       # Inspection needs no typed snapshot when names settle both selections.
       # Its canonical pass uses the name proxy too, preserving the two-pass
-      # validation and warning behavior without evaluating a dtplyr step.
+      # validation and warning behavior without requesting backend metadata.
       if (
         !builds_margin_branches &&
-          identical(backend$kind, "dtplyr") &&
+          backend$kind %in% c("dtplyr", "duckdb") &&
           preflight$name_only &&
           !is.null(by)
       ) {

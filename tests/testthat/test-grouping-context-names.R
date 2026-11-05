@@ -307,7 +307,7 @@ test_that("embraced names select fixed keys and Grouping dimensions", {
   expect_identical(dimensions(.env$pick), list(c("a", "b")))
 })
 
-test_that("an absent embraced column fails before DuckDB reads metadata", {
+test_that("embraced names settle DuckDB inspection without metadata", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE))
@@ -319,11 +319,20 @@ test_that("an absent embraced column fails before DuckDB reads metadata", {
   expect_identical(counter$queries, 1L)
   counter$queries <- 0L
 
-  fixed <- function(col) inspect_grouping(remote, .by = c({{ col }}, b))
-  dimensions <- function(col) {
-    inspect_grouping(remote, .grouping = grouping_set(c({{ col }}, b)))
+  fixed <- function(col) {
+    inspect_grouping(remote, .by = c({{ col }}, b), .format = "list")$fixed
   }
+  dimensions <- function(col) {
+    inspect_grouping(
+      remote, .grouping = grouping_set(c({{ col }}, b)), .format = "list"
+    )$included
+  }
+  pick <- "a"
   for (inspect in list(fixed, dimensions)) {
+    expect_identical(
+      inspect(base::`(`(base::c(.env[["pick"]], NULL))), list(c("a", "b"))
+    )
+    expect_identical(counter$queries, 0L)
     expect_error(
       inspect(absent), "`absent` doesn't exist", fixed = TRUE,
       class = "vctrs_error_subscript_oob"
