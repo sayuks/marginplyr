@@ -42,7 +42,10 @@ run_case <- function() {
     })
   }
   value <- observe(if (case == "inspection") {
-    inspect_grouping(remote, .grouping = rollup(dplyr::all_of("g2")))
+    inspect_grouping(
+      remote,
+      .grouping = rollup(dplyr::all_of("g2") & tidyselect::where(is.character))
+    )
   } else {
     summarize_with_margins(
       remote, total = sum(.data$v, na.rm = TRUE),
