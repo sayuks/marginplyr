@@ -1609,7 +1609,8 @@ preflight_local_selection <- function(dot, selection_proxy) {
     length(selection) == 2L &&
     rlang::is_missing(selection[[2L]])
   env <- rlang::quo_get_env(dot)
-  static_name <- rlang::is_symbol(selection) && (
+  static_name <- rlang::is_symbol(selection) &&
+    !is_numbered_dot_reference(selection) && (
     rlang::as_string(selection) %in% names(selection_proxy) ||
       !rlang::env_has(env, rlang::as_string(selection), inherit = TRUE)
   )
@@ -1948,9 +1949,11 @@ local_forwarded_selection <- function(helper, group_vars, forbidden_names) {
     # missing(..i) follows forwarded promises without forcing them and treats
     # an omitted formal's default as supplied to this nested call.
     args <- lapply(seq_along(args), function(i) {
-      if (i != cols_index && eval(
+      # Runtime across gives a captured empty selector its default selection.
+      missing_cols <- i == cols_index && rlang::quo_is_missing(args[[i]])
+      if (missing_cols || (i != cols_index && eval(
         call("missing", as.name(paste0("..", i))), envir = frame
-      )) {
+      ))) {
         rlang::missing_arg()
       } else {
         args[[i]]
