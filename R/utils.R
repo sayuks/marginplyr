@@ -1059,7 +1059,8 @@ evaluated_call_args <- function(expr,
 
 # The call a rewrite gives back after visiting its computed head, evaluated
 # arguments, and function defaults. Captured and independently owned arguments
-# stay as written.
+# stay as written. `rewrite_head` lets a caller preserve the different
+# expansion boundary dplyr gives a computed head.
 #
 # The arguments are read by index rather than mapped over, because a rewrite
 # has to put its replacements back in the positions they came from, and the
@@ -1067,13 +1068,13 @@ evaluated_call_args <- function(expr,
 # tags, which `rebuild_static_call()` takes from this list, so an index map that
 # dropped them would turn `across(value, .names = "{.col}")` into a call whose
 # template is a positional argument.
-rewrite_evaluated_call_parts <- function(expr, rewrite) {
+rewrite_evaluated_call_parts <- function(expr, rewrite, rewrite_head = rewrite) {
   captured <- captured_call_parts(expr) | independent_mask_call_parts(expr)
   language_index <- readable_language_index(expr)
   head <- static_call_head(expr)
   evaluated_head <- evaluated_call_head(expr)
   if (length(evaluated_head)) {
-    head <- rewrite(evaluated_head[[1L]])
+    head <- rewrite_head(evaluated_head[[1L]])
   }
   map_call_parts(
     expr,
