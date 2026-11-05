@@ -384,8 +384,10 @@ test_that("SQLite temporary overwrite isolates virtual tables by schema", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
-  fts5 <- DBI::dbGetQuery(con, "SELECT sqlite_compileoption_used('ENABLE_FTS5')")
-  skip_if(fts5[[1L]] == 0L, "SQLite was built without FTS5")
+  fts5 <- DBI::dbGetQuery(
+    con, "SELECT sqlite_compileoption_used('ENABLE_FTS5') AS enabled"
+  )
+  skip_if(fts5$enabled == 0L, "SQLite was built without FTS5")
   DBI::dbExecute(con, "CREATE VIRTUAL TABLE main.facts USING fts5(g)")
   DBI::dbExecute(con, "INSERT INTO main.facts VALUES ('keep')")
   DBI::dbExecute(con, "CREATE TEMP TABLE facts AS SELECT 'old' AS g")
