@@ -342,8 +342,8 @@ sqlite_check_temp_overwrite <- function(con, catalog, insert_from) {
 
 # Admit a temporary destination and decide if its name must be published last.
 # The caller owns a savepoint and supplies a resolved destination and SELECT.
-sqlite_compute_delay_publication <- function(con, destination, temporary,
-                                             overwrite, insert_from) {
+sqlite_compute_publish_later <- function(con, destination, temporary,
+                                         overwrite, insert_from) {
   if (is.null(destination)) return(FALSE)
   parts <- dbplyr::table_path_components(destination, con)[[1L]]
   if (length(parts) == 1L) {
@@ -581,7 +581,7 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
   sqlite_with_compute_savepoint(con, destination, function(destination) {
     # Delay the public name until the last source read has finished. The
     # populated table itself is renamed, so rows are inserted only once.
-    publish <- direct && sqlite_compute_delay_publication(
+    publish <- direct && sqlite_compute_publish_later(
       con, destination, temporary, overwrite, insert_from
     )
     requested <- destination
