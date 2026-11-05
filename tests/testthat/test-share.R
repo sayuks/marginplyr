@@ -2011,37 +2011,15 @@ test_that("Parent planning evaluates the Grouping specification once", {
   expect_identical(evaluations, 1L)
 })
 
-parent_preflight_capture <- new.env(parent = emptyenv())
-
-parent_preflight_head <- function(x, ...) {
-  result <- NextMethod()
-  class(result) <- unique(c("parent_preflight_counter", class(result)))
-  result
-}
-
-parent_preflight_collect <- function(x, ...) {
-  parent_preflight_capture$n <- parent_preflight_capture$n + 1L
-  NextMethod()
-}
-
 test_that("Parent syntax and local execution errors precede typed metadata", {
   skip_if_suggest_absent("dtplyr")
-  registerS3method(
-    "head",
-    "parent_preflight_counter",
-    parent_preflight_head,
-    envir = asNamespace("utils")
-  )
-  registerS3method(
-    "collect",
-    "parent_preflight_counter",
-    parent_preflight_collect,
-    envir = asNamespace("dplyr")
-  )
+  # Count backend acquisitions: shares cannot expose premature or repeated
+  # typed snapshot reads in their result (ADR 0002).
+  parent_preflight_capture <- local_dtplyr_proxy_counter()
   source <- dtplyr::lazy_dt(data.frame(group = "x", value = 1))
-  class(source) <- c("parent_preflight_counter", class(source))
 
   parent_preflight_capture$n <- 0L
+  parent_preflight_capture$source_evaluations <- 0L
   expect_error(
     summarize_with_margins(
       source,
@@ -2052,6 +2030,7 @@ test_that("Parent syntax and local execution errors precede typed metadata", {
     "complete right-hand side"
   )
   expect_identical(parent_preflight_capture$n, 0L)
+  expect_identical(parent_preflight_capture$source_evaluations, 0L)
 
   expect_error(
     summarize_with_margins(
@@ -2063,6 +2042,7 @@ test_that("Parent syntax and local execution errors precede typed metadata", {
     "requires `.grouping` to be one pure `rollup\\(\\)`"
   )
   expect_identical(parent_preflight_capture$n, 0L)
+  expect_identical(parent_preflight_capture$source_evaluations, 0L)
 
   query <- summarize_with_margins(
     source,
@@ -2073,10 +2053,12 @@ test_that("Parent syntax and local execution errors precede typed metadata", {
   )
   expect_s3_class(query, "dtplyr_step")
   expect_identical(parent_preflight_capture$n, 1L)
+  expect_identical(parent_preflight_capture$source_evaluations, 0L)
   result <- dplyr::collect(query)
   expect_setequal(result$share, c(1, 1))
 
   parent_preflight_capture$n <- 0L
+  parent_preflight_capture$source_evaluations <- 0L
   invalid <- summarize_with_margins(
     source,
     total = range(value),
@@ -2086,12 +2068,14 @@ test_that("Parent syntax and local execution errors precede typed metadata", {
   )
   expect_s3_class(invalid, "dtplyr_step")
   expect_identical(parent_preflight_capture$n, 1L)
+  expect_identical(parent_preflight_capture$source_evaluations, 0L)
   error <- expect_error(
     dplyr::collect(invalid),
     "exactly one value per grouping row"
   )
   expect_s3_class(error, "marginplyr_share_cardinality_error")
   expect_identical(parent_preflight_capture$n, 1L)
+  expect_identical(parent_preflight_capture$source_evaluations, 1L)
 })
 
 # US42 is structural, not a timing budget: the local Parent-share stage reads

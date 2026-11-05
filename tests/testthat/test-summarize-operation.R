@@ -7,34 +7,6 @@ summary_label_check_collect <- function(con, sql, ...) {
   result
 }
 
-summary_proxy_capture <- new.env(parent = emptyenv())
-
-summary_proxy_counter_head <- function(x, ...) {
-  result <- NextMethod()
-  class(result) <- unique(c("margin_summary_proxy_counter", class(result)))
-  result
-}
-
-summary_proxy_counter_collect <- function(x, ...) {
-  summary_proxy_capture$n <- summary_proxy_capture$n + 1L
-  NextMethod()
-}
-
-register_summary_proxy_methods <- function() {
-  registerS3method(
-    "head",
-    "margin_summary_proxy_counter",
-    summary_proxy_counter_head,
-    envir = asNamespace("utils")
-  )
-  registerS3method(
-    "collect",
-    "margin_summary_proxy_counter",
-    summary_proxy_counter_collect,
-    envir = asNamespace("dplyr")
-  )
-}
-
 test_that("invalid summary selections precede lazy label collision queries", {
   registerS3method(
     "db_collect",
@@ -157,10 +129,12 @@ test_that("shared lifecycle options preserve user-expression conditions", {
 
 test_that("summary rejects grouping before typed metadata acquisition", {
   skip_if_suggest_absent("dtplyr")
-  register_summary_proxy_methods()
+  # Count backend acquisitions: public results hide early or repeated reads
+  # of the typed snapshot (ADR 0002).
+  summary_proxy_capture <- local_dtplyr_proxy_counter()
   source <- dtplyr::lazy_dt(data.frame(group = c("x", "y"), value = 1:2))
-  class(source) <- c("margin_summary_proxy_counter", class(source))
   summary_proxy_capture$n <- 0L
+  summary_proxy_capture$source_evaluations <- 0L
 
   error <- expect_error(
     summarize_with_margins(
@@ -172,16 +146,17 @@ test_that("summary rejects grouping before typed metadata acquisition", {
   )
 
   expect_identical(summary_proxy_capture$n, 0L)
+  expect_identical(summary_proxy_capture$source_evaluations, 0L)
   expect_s3_class(error, "vctrs_error_subscript_oob")
   expect_false(inherits(error, "marginplyr_error"))
 })
 
 test_that("removed .groups is rejected before typed metadata acquisition", {
   skip_if_suggest_absent("dtplyr")
-  register_summary_proxy_methods()
+  summary_proxy_capture <- local_dtplyr_proxy_counter()
   source <- dtplyr::lazy_dt(data.frame(group = c("x", "y"), value = 1:2))
-  class(source) <- c("margin_summary_proxy_counter", class(source))
   summary_proxy_capture$n <- 0L
+  summary_proxy_capture$source_evaluations <- 0L
   summary_options <- list(.groups = "drop")
 
   expect_error(
@@ -195,18 +170,19 @@ test_that("removed .groups is rejected before typed metadata acquisition", {
   )
 
   expect_identical(summary_proxy_capture$n, 0L)
+  expect_identical(summary_proxy_capture$source_evaluations, 0L)
 })
 
 test_that("dtplyr summary reuses one typed snapshot across selections", {
   skip_if_suggest_absent("dtplyr")
-  register_summary_proxy_methods()
+  summary_proxy_capture <- local_dtplyr_proxy_counter()
   source <- dtplyr::lazy_dt(data.frame(
     group = c("x", "y"),
     code = c(1L, 2L),
     value = c(10, 20)
   ))
-  class(source) <- c("margin_summary_proxy_counter", class(source))
   summary_proxy_capture$n <- 0L
+  summary_proxy_capture$source_evaluations <- 0L
 
   query <- summarize_with_margins(
     source,
@@ -221,6 +197,7 @@ test_that("dtplyr summary reuses one typed snapshot across selections", {
 
   expect_s3_class(query, "dtplyr_step")
   expect_identical(summary_proxy_capture$n, 1L)
+  expect_identical(summary_proxy_capture$source_evaluations, 0L)
   result <- dplyr::collect(query)
   expect_identical(
     names(result),

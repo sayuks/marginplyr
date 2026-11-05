@@ -650,43 +650,17 @@ test_that("fixed .by keys still resolve without renaming", {
   )
 })
 
-inspect_proxy_capture <- new.env(parent = emptyenv())
-
-inspect_proxy_counter_head <- function(x, ...) {
-  result <- NextMethod()
-  class(result) <- unique(c("margin_inspect_proxy_counter", class(result)))
-  result
-}
-
-inspect_proxy_counter_collect <- function(x, ...) {
-  inspect_proxy_capture$n <- inspect_proxy_capture$n + 1L
-  NextMethod()
-}
-
-register_inspect_proxy_methods <- function() {
-  registerS3method(
-    "head",
-    "margin_inspect_proxy_counter",
-    inspect_proxy_counter_head,
-    envir = asNamespace("utils")
-  )
-  registerS3method(
-    "collect",
-    "margin_inspect_proxy_counter",
-    inspect_proxy_counter_collect,
-    envir = asNamespace("dplyr")
-  )
-}
-
 test_that("lazy inspection reads typed metadata once, executing no margins", {
   skip_if_suggest_absent("dtplyr")
-  register_inspect_proxy_methods()
+  # Count backend acquisitions: public results hide early or repeated reads
+  # of the typed snapshot (ADR 0002).
+  inspect_proxy_capture <- local_dtplyr_proxy_counter()
   source <- dtplyr::lazy_dt(data.frame(
     group = c("Total", "x"),
     value = 1:2
   ))
-  class(source) <- c("margin_inspect_proxy_counter", class(source))
   inspect_proxy_capture$n <- 0L
+  inspect_proxy_capture$source_evaluations <- 0L
 
   result <- inspect_grouping(
     source,
@@ -694,6 +668,7 @@ test_that("lazy inspection reads typed metadata once, executing no margins", {
   )
 
   expect_identical(inspect_proxy_capture$n, 1L)
+  expect_identical(inspect_proxy_capture$source_evaluations, 0L)
   expect_identical(class(result), c("tbl_df", "tbl", "data.frame"))
   expect_identical(result$included, c("(group)", "()"))
   expect_identical(result$grouping_id, c(0L, 1L))
@@ -765,13 +740,13 @@ test_that("a name-only grouping error precedes a .by predicate's read", {
   # none for that pass, so the read a predicate needs cannot be pulled ahead of
   # an error the names already decide.
   skip_if_suggest_absent("dtplyr")
-  register_inspect_proxy_methods()
+  inspect_proxy_capture <- local_dtplyr_proxy_counter()
   source <- dtplyr::lazy_dt(data.frame(
     group = c("x", "y"),
     value = 1:2
   ))
-  class(source) <- c("margin_inspect_proxy_counter", class(source))
   inspect_proxy_capture$n <- 0L
+  inspect_proxy_capture$source_evaluations <- 0L
 
   error <- expect_error(
     inspect_grouping(
@@ -782,6 +757,7 @@ test_that("a name-only grouping error precedes a .by predicate's read", {
   )
 
   expect_identical(inspect_proxy_capture$n, 0L)
+  expect_identical(inspect_proxy_capture$source_evaluations, 0L)
   expect_match(conditionMessage(error), "absent")
 })
 
@@ -858,9 +834,8 @@ test_that("a list-format Grouping plan cannot be joined as inline SQL", {
 
 test_that("lazy helper arguments use one typed snapshot", {
   skip_if_suggest_absent("dtplyr")
-  register_inspect_proxy_methods()
+  inspect_proxy_capture <- local_dtplyr_proxy_counter()
   source <- dtplyr::lazy_dt(tibble::tibble(a = c("x", "y"), b = c(1, 1)))
-  class(source) <- c("margin_inspect_proxy_counter", class(source))
   selection <- rlang::expr(tidyselect::all_of(
     names(tidyselect::peek_data())[
       vapply(tidyselect::peek_data(), is.numeric, logical(1))
@@ -868,11 +843,14 @@ test_that("lazy helper arguments use one typed snapshot", {
   ))
 
   inspect_proxy_capture$n <- 0L
+  inspect_proxy_capture$source_evaluations <- 0L
   fixed <- inspect_grouping(source, .by = !!selection)
   expect_identical(fixed$fixed, "(b)")
   expect_identical(inspect_proxy_capture$n, 1L)
+  expect_identical(inspect_proxy_capture$source_evaluations, 0L)
 
   inspect_proxy_capture$n <- 0L
+  inspect_proxy_capture$source_evaluations <- 0L
   dimension <- inspect_grouping(
     source,
     .by = a,
@@ -880,8 +858,10 @@ test_that("lazy helper arguments use one typed snapshot", {
   )
   expect_identical(dimension$included, "(b)")
   expect_identical(inspect_proxy_capture$n, 1L)
+  expect_identical(inspect_proxy_capture$source_evaluations, 0L)
 
   inspect_proxy_capture$n <- 0L
+  inspect_proxy_capture$source_evaluations <- 0L
   expect_error(
     inspect_grouping(
       source,
@@ -892,13 +872,13 @@ test_that("lazy helper arguments use one typed snapshot", {
     class = "vctrs_error_subscript_oob"
   )
   expect_identical(inspect_proxy_capture$n, 0L)
+  expect_identical(inspect_proxy_capture$source_evaluations, 0L)
 })
 
 test_that("names obtained from selection data keep early-error guarantees", {
   skip_if_suggest_absent("dtplyr")
-  register_inspect_proxy_methods()
+  inspect_proxy_capture <- local_dtplyr_proxy_counter()
   source <- dtplyr::lazy_dt(tibble::tibble(a = c("x", "y"), b = c(1, 1)))
-  class(source) <- c("margin_inspect_proxy_counter", class(source))
   data_alias <- tidyselect::peek_data
   names_alias <- base::names
   selections <- list(
@@ -913,27 +893,30 @@ test_that("names obtained from selection data keep early-error guarantees", {
   )
   for (selection in selections) {
     inspect_proxy_capture$n <- 0L
+    inspect_proxy_capture$source_evaluations <- 0L
     expect_error(
       inspect_grouping(source, .by = !!selection),
       "absent", class = "vctrs_error_subscript_oob"
     )
     expect_identical(inspect_proxy_capture$n, 0L)
+    expect_identical(inspect_proxy_capture$source_evaluations, 0L)
 
     inspect_proxy_capture$n <- 0L
+    inspect_proxy_capture$source_evaluations <- 0L
     expect_error(
       inspect_grouping(source, .grouping = grouping_set(!!selection)),
       "absent", class = "vctrs_error_subscript_oob"
     )
     expect_identical(inspect_proxy_capture$n, 0L)
+    expect_identical(inspect_proxy_capture$source_evaluations, 0L)
   }
 })
 
 
 test_that("dispatched helper arguments use one zero-row snapshot", {
   skip_if_suggest_absent("dtplyr")
-  register_inspect_proxy_methods()
+  inspect_proxy_capture <- local_dtplyr_proxy_counter()
   source <- dtplyr::lazy_dt(tibble::tibble(a = c("x", "y"), b = 1:2))
-  class(source) <- c("margin_inspect_proxy_counter", class(source))
   selector <- matrix(1L)
   rows <- NULL
   format.matrix <- function(x, ...) {
@@ -944,15 +927,19 @@ test_that("dispatched helper arguments use one zero-row snapshot", {
   selection <- rlang::quo(tidyselect::all_of(format(selector)))
 
   inspect_proxy_capture$n <- 0L
+  inspect_proxy_capture$source_evaluations <- 0L
   expect_identical(inspect_grouping(source, .by = !!selection)$fixed, "(a)")
   expect_identical(inspect_proxy_capture$n, 1L)
+  expect_identical(inspect_proxy_capture$source_evaluations, 0L)
   expect_identical(rows, 0L)
 
   inspect_proxy_capture$n <- 0L
+  inspect_proxy_capture$source_evaluations <- 0L
   expect_identical(
     inspect_grouping(source, .grouping = rollup(!!selection))$included,
     c("(a)", "()")
   )
   expect_identical(inspect_proxy_capture$n, 1L)
+  expect_identical(inspect_proxy_capture$source_evaluations, 0L)
   expect_identical(rows, 0L)
 })
