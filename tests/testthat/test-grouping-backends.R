@@ -699,26 +699,17 @@ test_that("Arrow metadata preserves ordered dictionaries without collecting", {
 
 test_that("dtplyr constructs one typed selection proxy for predicates", {
   skip_if_suggest_absent("dtplyr")
-  registerS3method(
-    "head",
-    "margin_selection_proxy_counter",
-    proxy_counter_head,
-    envir = asNamespace("utils")
-  )
-  registerS3method(
-    "collect",
-    "margin_selection_proxy_counter",
-    proxy_counter_collect,
-    envir = asNamespace("dplyr")
-  )
+  # Count the backend read: a correct result cannot reveal a second schema
+  # acquisition hidden behind a selection (ADR 0002).
+  selection_proxy_capture <- local_dtplyr_proxy_counter()
 
   source <- dtplyr::lazy_dt(data.frame(
     group = c("x", "y"),
     code = c(1L, 2L),
     value = c(10, 20)
   ))
-  class(source) <- c("margin_selection_proxy_counter", class(source))
   selection_proxy_capture$n <- 0L
+  selection_proxy_capture$source_evaluations <- 0L
 
   numeric_query <- summarize_with_margins(
     source,
@@ -728,12 +719,14 @@ test_that("dtplyr constructs one typed selection proxy for predicates", {
   )
 
   expect_identical(selection_proxy_capture$n, 1L)
+  expect_identical(selection_proxy_capture$source_evaluations, 0L)
   expect_identical(
     names(dplyr::collect(numeric_query)),
     c("code", "value", "n")
   )
 
   selection_proxy_capture$n <- 0L
+  selection_proxy_capture$source_evaluations <- 0L
   character_query <- summarize_with_margins(
     source,
     n = dplyr::n(),
@@ -741,6 +734,7 @@ test_that("dtplyr constructs one typed selection proxy for predicates", {
     .margin_label = NULL
   )
   expect_identical(selection_proxy_capture$n, 1L)
+  expect_identical(selection_proxy_capture$source_evaluations, 0L)
   expect_identical(
     names(dplyr::collect(character_query)),
     c("group", "n")

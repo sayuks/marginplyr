@@ -77,7 +77,7 @@ zero_row_dtplyr_proxy_input <- function(.data) {
   step
 }
 
-# The typed selection proxy for a derived dtplyr step. The registered dtplyr
+# The typed selection proxy for a dtplyr step. The registered dtplyr
 # method evaluates only isolated zero-row roots; calling it directly avoids
 # routing the step through `collect()` or `as_tibble()`.
 # The caller has checked metadata safety for `.data` in the same `env`.
@@ -93,19 +93,23 @@ isolated_dtplyr_proxy <- function(.data, env = .data[["env"]]) {
   utils::head(as_data_table(proxy), n = 0L)
 }
 
-# Whether lexical lookup finds an ordinary base arithmetic binding without
+# Whether function lookup reaches the requested base function without
 # evaluating an active binding or forcing a promise.
-dtplyr_base_arithmetic_binding <- function(name, env) {
+dtplyr_base_binding <- function(name, env) {
   while (!identical(env, emptyenv())) {
     if (exists(name, envir = env, inherits = FALSE)) {
       if (bindingIsActive(name, env) ||
             rlang::env_binding_are_lazy(env, name)) {
         return(FALSE)
       }
+      value <- rlang::env_get(env, name)
       # An omitted formal is a missing value here rather than a lookup error.
-      return(identical(
-        rlang::env_get(env, name), get(name, envir = baseenv())
-      ))
+      if (rlang::is_missing(value)) {
+        return(FALSE)
+      }
+      if (is.function(value)) {
+        return(identical(value, get(name, envir = baseenv())))
+      }
     }
     env <- parent.env(env)
   }
@@ -125,7 +129,7 @@ dtplyr_value_stable_arithmetic <- function(expr, columns, env) {
   if (is.call(expr) && is.symbol(expr[[1L]])) {
     head <- as.character(expr[[1L]])
     if (head %in% c("+", "-", "*", "/") &&
-          dtplyr_base_arithmetic_binding(head, env)) {
+          dtplyr_base_binding(head, env)) {
       args <- as.list(expr)[-1L]
       return(length(args) %in% c(1L, 2L) && all(vapply(args, function(arg) {
         dtplyr_value_stable_arithmetic(arg, columns, env)
@@ -155,9 +159,9 @@ dtplyr_plain_roots <- function(step) {
 # match. Require matching input types before using an empty-input result.
 dtplyr_join_set_types_match <- function(step, env = step[["env"]]) {
   tryCatch({
-    left <- dtplyr_selection_proxy(step[["parent"]], isolate = TRUE, env = env)
+    left <- dtplyr_selection_proxy(step[["parent"]], env = env)
     right <- dtplyr_selection_proxy(
-      step[["parent2"]], isolate = TRUE, env = env
+      step[["parent2"]], env = env
     )
     if (inherits(step, "dtplyr_step_join")) {
       on <- step[["on"]]
@@ -242,6 +246,16 @@ dtplyr_metadata_safe_step <- function(step, env = step[["env"]]) {
   }
   if (inherits(step, "dtplyr_step_first")) {
     return(TRUE)
+  }
+  # Generated brackets use the outer query's lexical environment, including
+  # for subsets whose proxy can otherwise be read directly from parent schema.
+  brackets <- inherits(step, "dtplyr_step_mutate") ||
+    (inherits(step, "dtplyr_step_subset") &&
+       (!is.null(step[["i"]]) || !is.null(step[["j"]]))) ||
+    (inherits(step, "dtplyr_step_join") &&
+       !identical(step[["style"]], "full"))
+  if (brackets && !dtplyr_base_binding("[", env)) {
+    return(FALSE)
   }
   if (inherits(step, "dtplyr_step_mutate")) {
     parent <- step[["parent"]]
@@ -339,22 +353,20 @@ abort_unsafe_dtplyr_metadata <- function() {
 }
 
 # A faithful typed proxy for a dtplyr step, or a refusal before its source rows
-# run. `isolate` avoids collecting even a root, for Mutable inspection and for
-# parent schemas whose unsupported names a downstream projection discards.
-dtplyr_selection_proxy <- function(.data,
-                                   isolate = FALSE,
-                                   env = .data[["env"]]) {
+# run. Every root is isolated before evaluation so a lexical `head` binding
+# cannot receive source rows (ADRs 0020 and 0029).
+dtplyr_selection_proxy <- function(.data, env = .data[["env"]]) {
   if (!dtplyr_metadata_safe_step(.data, env)) {
     abort_unsafe_dtplyr_metadata()
   }
   if (inherits(.data, c("dtplyr_step_group", "dtplyr_step_assign"))) {
     return(dtplyr_selection_proxy(
-      .data[["parent"]], isolate = isolate, env = env
+      .data[["parent"]], env = env
     ))
   }
   if (inherits(.data, "dtplyr_step_subset")) {
     parent <- dtplyr_selection_proxy(
-      .data[["parent"]], isolate = TRUE, env = env
+      .data[["parent"]], env = env
     )
     columns <- dtplyr_metadata_subset_columns(.data)
     # The list converter refuses `.SD`; assign names only on the fresh proxy.
@@ -364,13 +376,10 @@ dtplyr_selection_proxy <- function(.data,
     data.table::setnames(proxy, .data[["vars"]])
     return(proxy)
   }
-  if (isolate || !inherits(.data, "dtplyr_step_first")) {
-    return(tryCatch(
-      isolated_dtplyr_proxy(.data, env),
-      error = function(...) abort_unsafe_dtplyr_metadata()
-    ))
-  }
-  grouping_selection_proxy(.data)
+  tryCatch(
+    isolated_dtplyr_proxy(.data, env),
+    error = function(...) abort_unsafe_dtplyr_metadata()
+  )
 }
 
 grouping_selection_proxy <- function(.data,

@@ -50,12 +50,14 @@ register_expand_proxy_methods <- function() {
   )
 }
 
+# Count backend acquisitions: expansion results hide early or repeated reads
+# of the typed snapshot (ADR 0002).
 test_that("expand rejects invalid grouping before typed metadata acquisition", {
   skip_if_suggest_absent("dtplyr")
-  register_expand_proxy_methods()
+  expand_proxy_capture <- local_dtplyr_proxy_counter()
   source <- dtplyr::lazy_dt(data.frame(group = c("x", "y"), value = 1:2))
-  class(source) <- c("margin_expand_proxy_counter", class(source))
   expand_proxy_capture$n <- 0L
+  expand_proxy_capture$source_evaluations <- 0L
 
   error <- expect_error(
     expand_with_margins(source, .grouping = 1),
@@ -63,6 +65,7 @@ test_that("expand rejects invalid grouping before typed metadata acquisition", {
   )
 
   expect_identical(expand_proxy_capture$n, 0L)
+  expect_identical(expand_proxy_capture$source_evaluations, 0L)
   expect_match(
     deparse1(conditionCall(error)),
     "expand_with_margins",
@@ -70,6 +73,7 @@ test_that("expand rejects invalid grouping before typed metadata acquisition", {
   )
 
   expand_proxy_capture$n <- 0L
+  expand_proxy_capture$source_evaluations <- 0L
   expect_error(
     expand_with_margins(
       source,
@@ -78,15 +82,19 @@ test_that("expand rejects invalid grouping before typed metadata acquisition", {
     "only accepts columns or `grouping_set\\(\\)`"
   )
   expect_identical(expand_proxy_capture$n, 0L)
+  expect_identical(expand_proxy_capture$source_evaluations, 0L)
 
   expand_proxy_capture$n <- 0L
+  expand_proxy_capture$source_evaluations <- 0L
   expect_error(
     expand_with_margins(source, .grouping = rollup(unknown)),
     "Column `unknown` doesn't exist"
   )
   expect_identical(expand_proxy_capture$n, 0L)
+  expect_identical(expand_proxy_capture$source_evaluations, 0L)
 
   expand_proxy_capture$n <- 0L
+  expand_proxy_capture$source_evaluations <- 0L
   expect_error(
     expand_with_margins(
       source,
@@ -95,8 +103,10 @@ test_that("expand rejects invalid grouping before typed metadata acquisition", {
     "Element `unknown` doesn't exist"
   )
   expect_identical(expand_proxy_capture$n, 0L)
+  expect_identical(expand_proxy_capture$source_evaluations, 0L)
 
   expand_proxy_capture$n <- 0L
+  expand_proxy_capture$source_evaluations <- 0L
   expect_error(
     expand_with_margins(
       source,
@@ -105,8 +115,10 @@ test_that("expand rejects invalid grouping before typed metadata acquisition", {
     "requires at least one dimension"
   )
   expect_identical(expand_proxy_capture$n, 0L)
+  expect_identical(expand_proxy_capture$source_evaluations, 0L)
 
   expand_proxy_capture$n <- 0L
+  expand_proxy_capture$source_evaluations <- 0L
   expect_error(
     expand_with_margins(
       source,
@@ -116,8 +128,10 @@ test_that("expand rejects invalid grouping before typed metadata acquisition", {
     "both `.by` and `.grouping`"
   )
   expect_identical(expand_proxy_capture$n, 0L)
+  expect_identical(expand_proxy_capture$source_evaluations, 0L)
 
   expand_proxy_capture$n <- 0L
+  expand_proxy_capture$source_evaluations <- 0L
   expect_error(
     expand_with_margins(
       source,
@@ -129,18 +143,19 @@ test_that("expand rejects invalid grouping before typed metadata acquisition", {
     "Duplicate grouping sets"
   )
   expect_identical(expand_proxy_capture$n, 0L)
+  expect_identical(expand_proxy_capture$source_evaluations, 0L)
 })
 
 test_that("dtplyr expansion acquires typed metadata once and stays lazy", {
   skip_if_suggest_absent("dtplyr")
-  register_expand_proxy_methods()
+  expand_proxy_capture <- local_dtplyr_proxy_counter()
   source <- dtplyr::lazy_dt(data.frame(
     group = c("x", "y"),
     code = c(1L, 2L),
     value = c(10, 20)
   ))
-  class(source) <- c("margin_expand_proxy_counter", class(source))
   expand_proxy_capture$n <- 0L
+  expand_proxy_capture$source_evaluations <- 0L
 
   query <- expand_with_margins(
     source,
@@ -150,6 +165,7 @@ test_that("dtplyr expansion acquires typed metadata once and stays lazy", {
 
   expect_s3_class(query, "dtplyr_step")
   expect_identical(expand_proxy_capture$n, 1L)
+  expect_identical(expand_proxy_capture$source_evaluations, 0L)
   result <- dplyr::collect(query)
   expect_identical(names(result), c("code", "value", "group"))
   expect_identical(nrow(result), 6L)
