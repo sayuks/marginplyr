@@ -110,6 +110,7 @@ Config/testthat/start-first:
     sqlite-typed-order,
     arrow-dictionary-dimensions,
     share-list2env-rebinding,
+    sqlite-derived-destination,
     nest-display-helpers,
     share-indirect-scope,
     grouping-selection-budget,
