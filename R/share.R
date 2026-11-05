@@ -3209,7 +3209,10 @@ apply_windowed_shares <- function(result, requests, plan, set_id_name, kind,
             ), na.rm = TRUE))
           } else {
             rlang::call2(
-              marginplyr_private_call("dtplyr_share_denominator"),
+              rlang::call2(
+                base::`:::`, rlang::sym("marginplyr"),
+                rlang::sym("dtplyr_share_denominator")
+              ),
               value, identifier, target
             )
           }
