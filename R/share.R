@@ -4111,6 +4111,9 @@ expression_alias_dependencies <- function(expr, aliases, env = emptyenv(),
   symbols <- unique(expression_data_symbols(
     expr, lookup = list(
       env = env, mask = mask, rebound = lookup_rebound_names(expr, env, mask),
+      function_rebound = lookup_rebound_names(
+        expr, env, mask, function_lookup = TRUE
+      ),
       reparented = reparented, deferred_selection = deferred_selection
     )
   ))
@@ -4126,16 +4129,24 @@ expression_alias_dependencies <- function(expr, aliases, env = emptyenv(),
 # assignment reports the lookup marker, excluding every lexical binding.
 # Literal list2env setter keys invalidate only the bindings they name;
 # unresolved setter keys invalidate every external binding proof.
-lookup_rebound_names <- function(expr, env = emptyenv(), mask = character()) {
+lookup_rebound_names <- function(expr, env = emptyenv(), mask = character(),
+                                 function_lookup = FALSE) {
   rebound <- expression_rebound_names(expr)
-  unique(c(rebound, expression_rebound_names(expr, list(
+  written <- if (function_lookup) {
+    expression_rebound_names(expr, function_lookup = TRUE)
+  } else {
+    rebound
+  }
+  unique(c(written, expression_rebound_names(expr, list(
     env = env, mask = mask, rebound = rebound
-  ))))
+  ), function_lookup = function_lookup)))
 }
 
 # Rebindings visible in evaluated syntax. The first pass supplies ordinary
 # assignments before the second pass resolves mutation callees against them.
-expression_rebound_names <- function(expr, lookup = NULL) {
+# Function lookup skips plain assignments of literal non-function values.
+expression_rebound_names <- function(expr, lookup = NULL,
+                                     function_lookup = FALSE) {
   if (rlang::is_quosure(expr) && !is.null(lookup)) {
     lookup$env <- rlang::quo_get_env(expr)
   }
@@ -4143,9 +4154,16 @@ expression_rebound_names <- function(expr, lookup = NULL) {
     return(character())
   }
   if (is_parenthesized(expr)) {
-    return(expression_rebound_names(unparenthesized_value(expr), lookup))
+    return(expression_rebound_names(
+      unparenthesized_value(expr), lookup, function_lookup
+    ))
   }
   assigned <- lookup_assignment_names(expr)
+  if (function_lookup && rlang::is_call(expr, c("<-", "=")) &&
+        length(expr) >= 3L && is_name_part(expr[[2L]]) &&
+        identical(scope_literal_kind(expr[[3L]]), "value")) {
+    assigned <- character()
+  }
   if (!is.null(lookup)) {
     mutation <- scope_mutation_call(expr, character(), lookup)
     if (!is.null(mutation) &&
@@ -4159,7 +4177,8 @@ expression_rebound_names <- function(expr, lookup = NULL) {
     parts <- c(list(head), parts)
   }
   unique(c(assigned, unlist(lapply(
-    parts, expression_rebound_names, lookup = lookup
+    parts, expression_rebound_names, lookup = lookup,
+    function_lookup = function_lookup
   ), use.names = FALSE)))
 }
 
@@ -4327,7 +4346,7 @@ scoped_data_symbols <- function(expr, scope, lookup) {
     )))
   }
   if (identical(call_name, "env_get") &&
-        identical(static_call_ns(expr), "rlang")) {
+        is_known_namespace_frame_call(expr, "rlang", scope, lookup)) {
     return(unique(c(
       call_part_symbols(expr, scope, lookup),
       inheriting_env_get_symbols(expr, scope, lookup)
@@ -5376,12 +5395,26 @@ static_frame_depth_argument <- function(expr) {
 # Check a base callee against lexical frames before ordinary caller lookup.
 # Bare call heads skip known non-functions in those frames.
 is_known_base_frame_call <- function(expr, name, scope, lookup) {
+  if (!is.null(static_call_ns(expr))) {
+    return(is_known_namespace_frame_call(expr, "base", scope, lookup))
+  }
   function_lookup <- is_name_part(static_call_head(expr))
   shadowed <- any(vapply(scope[scope_visible_frames(scope)], function(frame) {
     name %in% frame$bound &&
       (!function_lookup || !identical(frame$kinds[[name]], "value"))
   }, logical(1)))
   is_known_base_call(expr, name, name[shadowed], lookup)
+}
+
+# A qualified callee is known only when its operator resolves to base.
+# Namespace operators use function lookup, including lexical non-function skips.
+is_known_namespace_frame_call <- function(expr, namespace, scope, lookup) {
+  if (!identical(static_call_ns(expr), namespace)) {
+    return(FALSE)
+  }
+  operator <- selection_namespace_operator(expr)
+  lookup$rebound <- lookup$function_rebound %||% lookup$rebound
+  is_known_base_frame_call(rlang::call2(operator), operator, scope, lookup)
 }
 
 # Discard pending defaults whose bindings have been removed.
@@ -5631,7 +5664,7 @@ inheriting_env_get_symbols <- function(expr, scope, lookup) {
     return(character())
   }
   rlang_frame <- identical(static_call_name(frame), "current_env") &&
-    identical(static_call_ns(frame), "rlang")
+    is_known_namespace_frame_call(frame, "rlang", scope, lookup)
   base_frame <- identical(static_call_name(frame), "environment") &&
     is_known_base_frame_call(frame, "environment", scope, lookup)
   if (!rlang_frame && !base_frame) {
