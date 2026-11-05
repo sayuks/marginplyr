@@ -4717,12 +4717,14 @@ is_binding_statement <- function(call_name, expr) {
 
 # A block walks statements in order. Definite bindings carry into the
 # next statement, and a removal can expose a name in an enclosing frame.
-block_reads_and_scope <- function(expr, scope, lookup, read_symbols) {
+block_reads_and_scope <- function(expr, scope, lookup, read_symbols,
+                                  read_result_symbols) {
   reads <- character()
   statements <- static_call_args(expr)
   for (index in seq_along(statements)) {
     step <- statement_reads_and_scope(
-      statements[[index]], scope, lookup, read_symbols
+      statements[[index]], scope, lookup, read_symbols,
+      if (index == length(statements)) read_result_symbols else read_symbols
     )
     reads <- c(reads, step$reads)
     scope <- step$scope
@@ -4731,20 +4733,26 @@ block_reads_and_scope <- function(expr, scope, lookup, read_symbols) {
 }
 
 # Read a statement and carry forward its removals and definite local bindings.
+# A separate result reader can restrict the read of a returned value.
 statement_reads_and_scope <- function(expr, scope, lookup = NULL,
-                                      read_symbols = scoped_data_symbols) {
+                                      read_symbols = scoped_data_symbols,
+                                      read_result_symbols = read_symbols) {
   expr <- unparenthesized_value(expr)
   call_name <- static_call_name(expr)
   arm <- literal_if_parts(expr, call_name, scope_bound_names(scope), lookup)
   if (length(arm) > 0L) {
-    return(statement_reads_and_scope(arm[[1L]], scope, lookup, read_symbols))
+    return(statement_reads_and_scope(
+      arm[[1L]], scope, lookup, read_symbols, read_result_symbols
+    ))
   }
   if (identical(call_name, "{")) {
-    return(block_reads_and_scope(expr, scope, lookup, read_symbols))
+    return(block_reads_and_scope(
+      expr, scope, lookup, read_symbols, read_result_symbols
+    ))
   }
   if (!is_binding_statement(call_name, expr)) {
     return(list(
-      reads = read_symbols(expr, scope, lookup),
+      reads = read_result_symbols(expr, scope, lookup),
       scope = scope_after_removals(expr, scope, lookup)
     ))
   }
