@@ -1323,6 +1323,10 @@ dtplyr_share_binds_measure <- function(expr, measure = ".BY") {
   if (!rlang::is_call(expr)) {
     return(FALSE)
   }
+  if (is_generated_dtplyr_share_call(expr)) {
+    return(any(vapply(static_call_args(expr), dtplyr_share_binds_measure,
+                       logical(1), measure = measure)))
+  }
   name <- static_call_name(expr)
   if (identical(name, "function")) {
     return(FALSE)
@@ -1363,6 +1367,16 @@ rewrite_dtplyr_share_measure <- function(expr, alias, measure = ".BY") {
   }
   if (!rlang::is_call(expr)) {
     return(expr)
+  }
+  if (is_generated_dtplyr_share_call(expr)) {
+    if (identical(expr[[1L]], dtplyr_share_private_call(
+      "dtplyr_share_input_name"
+    ))) {
+      return(deparse(expr[[2L]]))
+    }
+    return(rebuild_static_call(expr, lapply(static_call_args(expr), function(part) {
+      rewrite_dtplyr_share_measure(part, alias, measure)
+    })))
   }
   name <- static_call_name(expr)
   callee <- resolved_callee_name(expr, name)
@@ -1407,11 +1421,6 @@ rewrite_dtplyr_share_measure <- function(expr, alias, measure = ".BY") {
       ))
     }
     return(expr)
-  }
-  if (identical(expr[[1L]], dtplyr_share_private_call(
-    "dtplyr_share_input_name"
-  ))) {
-    return(deparse(expr[[2L]]))
   }
   if (!is.null(name) && name %in% c("$", "@")) {
     args <- static_call_args(expr)
@@ -3257,6 +3266,15 @@ dtplyr_share_denominator <- function(value, identifier, target) {
 # preserves this computed head while translating its data-column arguments.
 dtplyr_share_private_call <- function(name) {
   rlang::call2(base::`:::`, rlang::sym("marginplyr"), rlang::sym(name))
+}
+
+# Whether a translated call carries the package-selected namespace operator.
+# Caller-authored qualified heads retain their ordinary symbolic operator.
+is_generated_dtplyr_share_call <- function(expr) {
+  head <- expr[[1L]]
+  is.call(head) && length(head) == 3L &&
+    identical(head[[1L]], base::`:::`) &&
+    identical(head[[2L]], rlang::sym("marginplyr"))
 }
 
 # Apply the shared value rules after denominator columns have been attached.
