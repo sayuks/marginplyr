@@ -169,6 +169,19 @@ test_that("authored across naming namespaces retain caller lookup", {
   }
 })
 
+test_that("across naming preserves bindings inherited by the caller", {
+  data <- data.frame(x = c(1L, 3L))
+  parent <- rlang::env(..marginplyr_glue_name_1 = 13L)
+  caller <- rlang::env(parent)
+  summary <- rlang::new_quosure(quote(dplyr::across(
+    "x", sum, .names = "{.col}_{..marginplyr_glue_name_1}",
+    .unpack = identity(FALSE)
+  )), caller)
+  expected <- dplyr::summarise(data, !!summary)
+  expect_identical(names(expected), "x_13")
+  expect_identical(summarize_with_margins(data, !!summary), expected)
+})
+
 test_that("generated across checks refuse actual output-name collisions", {
   data <- data.frame(g = c("a", "b"), x = c(1L, 3L))
   `:::` <- function(pkg, name) {
