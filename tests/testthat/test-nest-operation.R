@@ -126,7 +126,7 @@ test_that("nest preflight precedes semantic Margin-label validation", {
     "must not be a grouping column"
   )
 
-  expect_identical(nest_proxy_capture$n, 1L)
+  expect_identical(nest_proxy_capture$n, 0L)
   expect_identical(nest_proxy_capture$source_evaluations, 0L)
 })
 

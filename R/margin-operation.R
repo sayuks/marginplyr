@@ -258,6 +258,7 @@ prepare_margin_operation <- function(.data,
                                      carried_columns,
                                      .id = NULL,
                                      validate_grouping = NULL,
+                                     validate_plan_names = NULL,
                                      call = rlang::caller_call()) {
   stopifnot(rlang::is_quosure(by_quo), rlang::is_quosure(grouping_quo))
   stopifnot(is.null(validate_grouping) || is.function(validate_grouping))
@@ -289,6 +290,7 @@ prepare_margin_operation <- function(.data,
         duplicates_choices = duplicates_choices,
         builds_margin_branches = TRUE,
         validate_grouping = validate_grouping,
+        validate_plan_names = validate_plan_names,
         validate_names = function(data_vars) {
           check_margin_id_collision(
             set_id_name,
