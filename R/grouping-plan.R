@@ -1052,6 +1052,7 @@ validate_leading_selections <- function(preflight, data_vars, .by,
   resolved$dimensions <- character()
   resolved$completed <- list()
   resolved$incomplete <- list()
+  resolved$offset <- 0L
   resolve_selection <- function(arg) {
     if (!is_name_only_selection(arg, data_vars, allow_caller_code = FALSE)) {
       invokeRestart("needs_typed_selection")
@@ -1061,9 +1062,10 @@ validate_leading_selections <- function(preflight, data_vars, .by,
     selected
   }
   emit <- if (identical(.duplicates, "error")) {
-    function(family = NULL, incomplete = NULL, whole = FALSE) {
+    function(family = NULL, incomplete = NULL, whole = FALSE, offset = 0L) {
       if (!is.null(incomplete)) {
         resolved$incomplete <- incomplete
+        resolved$offset <- offset
       } else {
         resolved$completed[[length(resolved$completed) + 1L]] <- family
       }
@@ -1089,7 +1091,9 @@ validate_leading_selections <- function(preflight, data_vars, .by,
       paste0("1", grouping_set_keys(incomplete, dimensions),
              recycle0 = TRUE)
     )
-    validate_unique_grouping_sets(keys, duplicates_choices)
+    set_ids <- c(seq_along(completed),
+                 length(completed) + resolved$offset + seq_along(incomplete))
+    validate_unique_grouping_sets(keys, duplicates_choices, set_ids)
   }
   invisible(NULL)
 }
@@ -1536,13 +1540,14 @@ grouping_set_key <- function(set, dimensions) {
   paste(as.integer(dimensions %in% set), collapse = "")
 }
 
-# Reject repeated membership keys under the caller's duplicate-error policy.
-validate_unique_grouping_sets <- function(keys, duplicates_choices) {
+# Reject repeated membership keys at the supplied occurrence positions.
+validate_unique_grouping_sets <- function(keys, duplicates_choices,
+                                         set_ids = seq_along(keys)) {
   duplicate_keys <- duplicated(keys) | duplicated(keys, fromLast = TRUE)
   if (!any(duplicate_keys)) {
     return(invisible(NULL))
   }
-  groups <- split(which(duplicate_keys), keys[duplicate_keys])
+  groups <- split(set_ids[duplicate_keys], keys[duplicate_keys])
   # The nesting verbs' vocabulary excludes `"keep"` (#110).
   alternatives <- setdiff(duplicates_choices, "error")
   # Each group is already comma-joined. Join groups here to preserve that
@@ -1573,7 +1578,8 @@ validate_unique_grouping_sets <- function(keys, duplicates_choices) {
 # occurrences in order for prefix validation. Before deferring to typed
 # selection, the observer can receive incomplete occurrences as a list of
 # product factors. `whole` means that evidence covers every position of
-# the emitting node if its selections succeed. Expansion ignores
+# the emitting node if its selections succeed. `offset` counts preceding
+# occurrences not already emitted as completed families. Expansion ignores
 # the observer's return value and returns the family of occurrences.
 expand_grouping_family <- function(preflight, resolve_selection,
                                    emit = NULL, drop_duplicates = FALSE) {
@@ -1630,8 +1636,9 @@ expand_grouping_sets <- function(preflight, resolve_selection, emit,
   if (!is.null(emit) && length(preflight$args) > 1L) {
     # An incomplete branch accounts for only part of this union.
     emit_union <- emit
-    emit <- function(family = NULL, incomplete = NULL, whole = FALSE) {
-      emit_union(family, incomplete)
+    emit <- function(family = NULL, incomplete = NULL, whole = FALSE,
+                     offset = 0L) {
+      emit_union(family, incomplete, offset = offset)
     }
   }
   unlist(
@@ -1779,17 +1786,22 @@ observe_product_factor <- function(arg, prefix, suffix,
   }
   first <- lapply(prefix, `[`, 1L)
   completed <- list()
-  observe <- function(family = NULL, incomplete = NULL, whole = FALSE) {
+  observe <- function(family = NULL, incomplete = NULL, whole = FALSE,
+                      offset = 0L) {
     if (is.null(incomplete)) {
       completed <<- c(completed, family)
       if (tail) {
         emit(cross_grouping_families(c(first, list(family))))
       }
     } else if (whole && single_suffix()) {
-      emit(incomplete = c(prefix, incomplete), whole = TRUE)
-    } else if (tail || (length(completed) == 0L && single_suffix())) {
-      # A leading partial family keeps its positions through singleton tails.
-      emit(incomplete = c(first, incomplete))
+      emit(incomplete = c(prefix, incomplete), whole = TRUE, offset = offset)
+    } else if (single_suffix()) {
+      # Tail occurrences have already been emitted; other completed choices
+      # still precede this evidence without reaching the outer observer.
+      if (!tail) {
+        offset <- offset + length(completed)
+      }
+      emit(incomplete = c(first, incomplete), offset = offset)
     }
   }
   withRestarts(
