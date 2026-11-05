@@ -53,10 +53,21 @@ for (nm in names(sample_types)) for (size in c(0L, 1L, 3L)) {
     ordinary_lazy <- capture(ordinary(dt))
     eager <- capture(margin(d))
     lazy <- capture(margin(dt))
-    verdict <- if (identical(canon(eager), canon(lazy))) "eager-lazy match"
-        else if (identical(canon(lazy), canon(ordinary_lazy))) "lazy ordinary match"
-        else if (inherits(ordinary_lazy, "error")) "no lazy oracle"
-        else "mismatch vs lazy ordinary"
+    comparison <- if (identical(canon(eager), canon(lazy))) {
+      "eager"
+    } else if (identical(canon(lazy), canon(ordinary_lazy))) {
+      "ordinary lazy"
+    } else if (inherits(ordinary_lazy, "error")) {
+      "no lazy oracle"
+    } else {
+      "mismatch vs lazy ordinary"
+    }
+    verdict <- if (comparison %in% c("eager", "ordinary lazy")) {
+      match_type <- if (inherits(lazy, "error")) "error-class" else "value"
+      paste(comparison, match_type, "match")
+    } else {
+      comparison
+    }
     res[[length(res)+1L]] <- data.frame(nm, size, role, omitted_first, verdict,
       eager = flag(eager), lazy = flag(lazy), ordinary_lazy = flag(ordinary_lazy))
   }

@@ -17,15 +17,17 @@ witnesses and exclusions. Earlier observations did not count as new runs.
 | Ticket | Observed behavior |
 | --- | --- |
 | [#1320](https://github.com/sayuks/marginplyr/issues/1320) | A named constructor argument ran its value while the constructor was capturing arguments for rejection. |
-| [#1321](https://github.com/sayuks/marginplyr/issues/1321) | A duplicate-drop Cartesian product needed exponential intermediate space for one retained set when a grouping-set union enclosed a nested product. |
-| [#1322](https://github.com/sayuks/marginplyr/issues/1322) | Explicitly qualified parentheses around a complete selection caused inspection and expansion to use the wrong column. |
+| [#1306](https://github.com/sayuks/marginplyr/issues/1306) | A duplicate-drop Cartesian product needed exponential intermediate space for one retained set when a grouping-set union enclosed a nested product. |
+| [#1315](https://github.com/sayuks/marginplyr/issues/1315) | Explicitly qualified parentheses around a complete selection caused inspection and expansion to use the wrong column. |
 | [#1323](https://github.com/sayuks/marginplyr/issues/1323) | An embraced column inside a name-only selection caused a metadata refusal or an avoidable query. |
-| [#1324](https://github.com/sayuks/marginplyr/issues/1324) | Standalone environment-pronoun selections had the same metadata symptoms, through a different classification boundary. |
+| [#1313](https://github.com/sayuks/marginplyr/issues/1313) | Standalone environment-pronoun selections had the same metadata symptoms, through a different classification boundary. |
 | [#1325](https://github.com/sayuks/marginplyr/issues/1325) | SQLite direct CTE collection lost source collation and changed the first row of a sorted expansion. |
 
-The issue split follows observable behavior. Each slice has an independent
-public witness and can land without a blocker or a prefactoring issue. Each
-received `bug` and `ready-for-agent`. No parent issue supplied the work.
+Each slice had an independent public witness and could land without a blocker
+or a prefactoring issue. The three new tickets received `bug` and
+`ready-for-agent`. A post-publication refresh found overlapping tickets from
+parallel investigations. This investigation closed its own #1321, #1322
+and #1324 as duplicates of #1306, #1315 and #1313, respectively.
 
 ### Named constructor tags ran capture controls
 
@@ -130,7 +132,7 @@ ADR 0031 applies to direct collection.
 | --- | --- |
 | [Mixed Grouping families](mixed-family-oracle.R) | Seed 41248 generated 400 shapes. The independent set-family oracle checked 326 specifications under all three duplicate policies, including 109 required duplicate refusals whose reported positions referred to equal memberships. It excluded 73 top-level selectors and one fixture exceeding 300 occurrences. |
 | [dtplyr public names](dt-names.R) | 600 comparisons crossed 25 spellings, four column roles, two labels and three sort options. 552 matched the eager comparison. The other 48 hit dot-dot name validation, 36 in ordinary source collection and 12 in tibble collection of the generated identifier. The dtplyr package tests use data.table materialization to observe those identifiers. |
-| [dtplyr typed values](dt-types.R) | Of 270 admitted comparisons, 240 matched eager expansion and 30 matched the ordinary lazy union control. The comparisons covered empty, single and three-row inputs, fixed, dimension and payload roles, and both branch orders. Unsupported source construction was outside that count. |
+| [dtplyr typed values](dt-types.R) | Of 270 comparisons, 234 matched eager values, six matched the eager error class, and 30 matched the ordinary lazy union error class. The comparisons covered empty, single and three-row inputs, fixed, dimension and payload roles, and both branch orders. Unsupported source construction was outside that count. |
 | [Observed label checks](collision.R) | On eager and dtplyr inputs, the only differences were the source names `...` and `..1`. Ordinary tidyselect input selection refused those names before label checking, matching the earlier October 26 exclusion. |
 | [Duplicate refusal resource lead](duplicate-refusal-memory.R) | A cube repeating one dimension twenty times reached the vector heap cap under the default error policy. Drop returned two sets and the small error case diagnosed repeated positions. The expected diagnostic budget for a large error-policy family was left open. |
 
@@ -163,13 +165,16 @@ and NOCASE order. Some overlapping search requests were rate-limited. The
 recent all-state lists and specific prior reports supplied coverage for those
 queries.
 
-From the repository root on the investigated SHA, these desired-contract
-assertions intentionally exited one. Without the assertion arguments, the
-scripts printed observations after checking their controls.
+From the evidence checkout root, these desired-contract assertions
+intentionally exited one. The package source is identical to the investigated
+SHA. To replay against an archive of that SHA, set `EVIDENCE_DIR` to the absolute
+path of this evidence directory and run the commands from the archived
+package root. Without assertion arguments, the scripts printed observations
+after checking their controls.
 
 ```sh
 export TESTTHAT_PARALLEL=false
-evidence=investigation/2026-11-05-expand-grouping-adversarial
+evidence="${EVIDENCE_DIR:-investigation/2026-11-05-expand-grouping-adversarial}"
 Rscript "$evidence/named-capture-options.R" --assert
 R_MAX_VSIZE=96M Rscript "$evidence/product-scope-repro.R" 18 nested inspect first --assert
 for case in qualified embraced pronoun; do
