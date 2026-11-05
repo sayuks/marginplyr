@@ -273,7 +273,7 @@ nest_margin_pipeline <- function(.data,
     # it, which is the half of the route that lets this name them all.
     carried_columns = function(data_vars, plan) data_vars,
     .id = set_id_name,
-    validate_plan_names = function(by, dimensions, data_vars) {
+    validate_plan_names = function(by, dimensions, data_vars, complete) {
       check_nest_output_names(c(by, dimensions), set_id_name, .key, rowwise)
     },
     call = call
