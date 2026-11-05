@@ -57,9 +57,13 @@ test_that("immutable root nesting preserves partitions despite a caller head", {
     expect_identical(calls, integer())
     for (verb in list(nest_with_margins, nest_by_with_margins)) {
       fixed <- normalize(verb(root, .by = where(is.character), .sort = "last"))
-      expect_identical(fixed, normalize(verb(explicit, .by = g, .sort = "last")))
+      expect_identical(
+        fixed, normalize(verb(explicit, .by = g, .sort = "last"))
+      )
       expect_identical(fixed$g, c("a", "b"))
-      expect_identical(lapply(fixed$data, function(cell) cell$value), list(1L, 2L))
+      expect_identical(
+        lapply(fixed$data, function(cell) cell$value), list(1L, 2L)
+      )
       expect_identical(calls, integer())
       expect_identical(source, before)
 
@@ -78,7 +82,7 @@ test_that("immutable root nesting preserves partitions despite a caller head", {
   }
 })
 
-test_that("immutable root inspection cannot mutate the caller table through head", {
+test_that("immutable root inspection cannot mutate the source through head", {
   skip_if_suggest_absent("dtplyr")
   source <- data.table::data.table(g = c("a", "b"), value = 1:2)
   before <- data.table::copy(source)
