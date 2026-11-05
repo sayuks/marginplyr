@@ -175,35 +175,79 @@ test_that("empty ungrouped nest_by retains its sole occurrence identifier", {
   expect_identical(nrow(result$data[[1L]]), 0L)
 })
 
-test_that(".id rejects output-name collisions", {
-  data <- data.frame(group = c("x", "y"), value = 1:2)
+test_that(".id rejects output-name collisions using its stored value", {
+  displayed <- local_displayed_margin_arg()
+  data <- data.frame(v = 5L)
   operations <- list(
-    summary = function() {
-      summarize_with_margins(data, n = dplyr::n(), .id = "group")
+    summary = function(id) {
+      summarize_with_margins(data, n = dplyr::n(), .id = id)
     },
-    expand = function() expand_with_margins(data, .id = "group"),
-    nest = function() nest_with_margins(data, .id = "group"),
-    nest_by = function() nest_by_with_margins(data, .id = "group")
+    expand = function(id) expand_with_margins(data, .id = id),
+    nest = function(id) nest_with_margins(data, .id = id),
+    nest_by = function(id) nest_by_with_margins(data, .id = id)
   )
 
-  for (operation in operations) {
-    expect_error(operation(), "`\\.id` \\(`group`\\) conflicts")
+  for (as_id in list(identity, displayed)) {
+    for (operation in operations) {
+      expect_error(
+        operation(as_id("v")),
+        "`\\.id` \\(`v`\\) conflicts with a source column",
+        class = "marginplyr_error"
+      )
+    }
+    expect_error(
+      summarize_with_margins(data, set = dplyr::n(), .id = as_id("set")),
+      "`\\.id` \\(`set`\\) conflicts with a summary output",
+      class = "marginplyr_error"
+    )
+    for (verb in list(nest_with_margins, nest_by_with_margins)) {
+      expect_error(
+        verb(data, .id = as_id("data")),
+        "`\\.id` \\(`data`\\) conflicts with nesting `.key`",
+        class = "marginplyr_error"
+      )
+    }
   }
-  expect_error(
-    summarize_with_margins(data, set = dplyr::n(), .id = "set"),
-    "`\\.id` \\(`set`\\) conflicts with a summary output"
-  )
-  expect_error(
-    nest_with_margins(data, .id = "data"),
-    "`\\.id` \\(`data`\\) conflicts with nesting `.key`"
-  )
-  expect_error(
-    nest_by_with_margins(data, .id = "data"),
-    "`\\.id` \\(`data`\\) conflicts with nesting `.key`"
-  )
 })
 
-# The checks above run before execution, against the names the static
+test_that(".id preserves the stored name and the original payload", {
+  displayed <- local_displayed_margin_arg()
+  data <- data.frame(g = "x", v = 5L)
+  cell <- tibble::tibble(v = 5L)
+
+  for (id in list("set", c(v = "set"), displayed("set", "v"))) {
+    expanded <- expand_with_margins(
+      data, .grouping = rollup(g), .id = id, .sort = "last"
+    )
+    expect_identical(names(expanded), c("g", "set", "v"))
+    expect_identical(expanded$set, 1:2)
+    expect_identical(expanded$v, c(5L, 5L))
+
+    summary <- summarize_with_margins(
+      data, total = sum(v), .grouping = rollup(g), .id = id, .sort = "last"
+    )
+    expect_identical(names(summary), c("g", "set", "total"))
+    expect_identical(summary$set, 1:2)
+    expect_identical(summary$total, c(5L, 5L))
+
+    for (verb in list(nest_with_margins, nest_by_with_margins)) {
+      result <- verb(data, .grouping = rollup(g), .id = id, .sort = "last")
+      expect_identical(names(result), c("g", "set", "data"))
+      expect_identical(result$set, 1:2)
+      expect_identical(result$data, list(cell, cell))
+      if (identical(verb, nest_by_with_margins)) {
+        expect_identical(dplyr::group_vars(result), c("g", "set"))
+      }
+    }
+  }
+
+  expect_identical(names(expand_with_margins(data)), names(data))
+  expect_identical(names(summarize_with_margins(data, total = sum(v))), "total")
+  expect_identical(names(nest_with_margins(data)), "data")
+  expect_identical(names(nest_by_with_margins(data)), "data")
+})
+
+# The collision checks above run before execution, against the names the static
 # predictor could guess. The two below run inside the adapters, against the
 # names a summary really produced, and are reachable only for a summary the
 # predictor could not name -- which is what `unpredictable_summary_dots()`

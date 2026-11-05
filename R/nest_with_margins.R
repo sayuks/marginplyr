@@ -268,7 +268,7 @@ nest_margin_pipeline <- function(.data,
     # (#421). `execute_margin_nest()` rebuilds the second kind before folding
     # it, which is the half of the route that lets this name them all.
     carried_columns = function(data_vars, plan) data_vars,
-    .id = .id,
+    .id = set_id_name,
     call = call
   )
   execution <- execute_margin_nest(

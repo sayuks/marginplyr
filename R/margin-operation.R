@@ -199,22 +199,22 @@ normalize_margin_options <- function(.margin_label,
   )
 }
 
+# Return the optional identifier as a plain string for collision checks and
+# output naming, both of which use the stored name.
 normalize_margin_id <- function(.id) {
   if (is.null(.id)) {
     return(NULL)
   }
-  if (
-    !is.character(.id) ||
-      length(.id) != 1L ||
-      is.na(.id) ||
-      !nzchar(.id)
-  ) {
-    abort_marginplyr(paste0(
-      "{.arg .id} must be {.code NULL} or one non-missing, non-empty ",
-      "character string."
-    ))
+  if (is.character(.id)) {
+    attributes(.id) <- NULL
+    if (length(.id) == 1L && !is.na(.id) && nzchar(.id)) {
+      return(.id)
+    }
   }
-  unname(.id)
+  abort_marginplyr(paste0(
+    "{.arg .id} must be {.code NULL} or one non-missing, non-empty ",
+    "character string."
+  ))
 }
 
 # `where` names what the identifier collided with, and it arrives interpolated
