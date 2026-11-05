@@ -1,8 +1,10 @@
-# Pull-request bodies: `pr`
+# Pull-request preparation: `pr`
 
 Use `pr` to write the body and `mattpocock-skills:code-review` to conduct the
 separate review. Keep the skill's `Summary`, `Evidence`, and `Merge Danger`
 sections. This guide maps their contents to repository-owned decisions.
+
+Apply the NEWS policy below when preparing or reviewing a change.
 
 ## Sources to apply
 
@@ -13,6 +15,30 @@ sections. This guide maps their contents to repository-owned decisions.
 | Runner operation | [Setup and invocation](../../tools/review-ready-runner.md#setup-and-invocation) owns the `--scope`/`--reason` interface, checkout updates and retired-CLI policy. |
 | Review | [Code review](code-review.md) owns the Standards/Spec axes, comparison against the merge-base with `main`, and pushing the branch and opening the PR before publishing its review record. Apply [Answering a review](../architecture.md#answering-a-review) when evaluating findings. |
 | Published history | [What is reviewed, and where the record goes](code-review.md#what-is-reviewed-and-where-the-record-goes) owns ordinary follow-up commits and, for an unavoidable exceptional rewrite, invalidation and fresh review records. |
+
+## NEWS and contributor credit
+
+Add a bullet to the current version section of `NEWS.md` for every user-visible
+change: new features, bug fixes and substantial documentation improvements.
+This applies to maintainer changes and external contributions alike. Internal
+refactoring and minor documentation edits may omit a bullet.
+
+Describe the resulting behavior from the user's perspective. For a PR whose
+author is not listed in `DESCRIPTION`'s `Authors@R`, end the bullet with
+`(@handle, #PR)` before the final period. Use the author's GitHub handle and
+the actual PR number. Authors already listed in `Authors@R` may omit their
+handle; keep the related issue or PR number. Additional credit for reporters
+or reviewers is optional and may be included for a clear contribution.
+
+For example, with illustrative placeholders:
+
+```markdown
+* `example()` now preserves missing values (@contributor, #1234).
+```
+
+This follows the [Tidyverse NEWS guide](https://style.tidyverse.org/news.html#in-development).
+Before merging, check whether the diff needs a NEWS bullet and whether the
+bullet records the applicable contributor credit.
 
 ## Body and comments
 
