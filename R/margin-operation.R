@@ -127,29 +127,29 @@ margin_sort_choices <- c("none", "last", "first")
 # default arrives as the whole vocabulary and stands for its first entry.
 #
 # `match.arg(NULL, choices)` returned that first entry too, so a `NULL` written
-# by a caller used to select the default silently. The `identical()` guard below
-# is the whole of what refuses one now, and refusing it is a documented contract
-# rather than a leftover of the rewrite (#144): `CONTEXT.md`'s *Option argument*
+# by a caller used to select the default silently. Refusing it is a documented
+# contract (#144): `CONTEXT.md`'s *Option argument*
 # entry holds the refusal and why an Option argument is the one kind with no
 # absent case for a `NULL` to name, and the *Option arguments* section on
 # `?summarize_with_margins` states the contract to the caller.
 #
-# `rlang::arg_match()` and `rlang::arg_match0()` were measured against this
-# helper rather than adopted. They agree with it on every input but one -- both
-# accept a permutation of the vocabulary and return its first entry, where the
-# `identical()` guard requires the order too, so they are looser on exactly the
-# input #210 asks about. What they would add is a "Did you mean" suggestion,
-# and what they would cost is the `NULL` diagnostic naming the vocabulary,
-# which the help page promises, and ownership of a sentence the tests compare
-# whole. The measurements, the diagnostics, and what a migration would have to
-# carry are in investigation/rlang-arg-match-for-option-arguments.md.
+# `rlang::arg_match()` and `rlang::arg_match0()` both accept a permutation of
+# the vocabulary and return the first supplied entry. The `identical()` guard
+# requires the original order (#210). The measurements, the diagnostics, and
+# what a migration would have to carry are in
+# investigation/rlang-arg-match-for-option-arguments.md.
 match_margin_choice <- function(value, choices, arg_name) {
   call <- rlang::caller_call()
   if (identical(value, choices)) {
     return(choices[[1L]])
   }
-  if (rlang::is_string(value) && value %in% choices) {
-    return(choices[[match(value, choices)]])
+  if (rlang::is_string(value)) {
+    # match() can coerce a character subclass through its display method.
+    attributes(value) <- NULL
+    index <- match(value, choices)
+    if (!is.na(index)) {
+      return(choices[[index]])
+    }
   }
   # The vocabulary is a list of alternatives, which is the case ADR 0023 gives
   # `{.or}`: the bare comma this used to join with was one of the three
@@ -199,22 +199,22 @@ normalize_margin_options <- function(.margin_label,
   )
 }
 
+# Return the optional identifier as a plain string for collision checks and
+# output naming, both of which use the stored name.
 normalize_margin_id <- function(.id) {
   if (is.null(.id)) {
     return(NULL)
   }
-  if (
-    !is.character(.id) ||
-      length(.id) != 1L ||
-      is.na(.id) ||
-      !nzchar(.id)
-  ) {
-    abort_marginplyr(paste0(
-      "{.arg .id} must be {.code NULL} or one non-missing, non-empty ",
-      "character string."
-    ))
+  if (is.character(.id)) {
+    attributes(.id) <- NULL
+    if (length(.id) == 1L && !is.na(.id) && nzchar(.id)) {
+      return(.id)
+    }
   }
-  unname(.id)
+  abort_marginplyr(paste0(
+    "{.arg .id} must be {.code NULL} or one non-missing, non-empty ",
+    "character string."
+  ))
 }
 
 # `where` names what the identifier collided with, and it arrives interpolated

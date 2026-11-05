@@ -1202,3 +1202,94 @@ test_that("named nesting output names validate collisions by value", {
     }
   }
 })
+
+test_that("populated nesting uses the stored list-column name", {
+  displayed <- local_displayed_margin_arg()
+  input <- data.frame(value = 5L)
+
+  for (verb in list(nest_with_margins, nest_by_with_margins)) {
+    result <- verb(input, .key = displayed("payload"))
+    expect_identical(names(result), "payload")
+    expect_type(result$payload, "list")
+    expect_length(result$payload, 1L)
+    cell <- result$payload[[1L]]
+    expect_s3_class(cell, "data.frame")
+    expect_identical(names(cell), "value")
+    expect_identical(cell[["value"]], 5L)
+    expect_identical(dplyr::group_vars(result), character())
+  }
+})
+
+expect_classed_nest_keys <- function(as_source) {
+  displayed <- local_displayed_margin_arg()
+  source <- data.frame(fixed = "north", group = "x", value = 5L)
+  input <- as_source(source)
+  empty <- as_source(source[0L, "value", drop = FALSE])
+  grouping <- grouping_set(dplyr::all_of("group"))
+
+  for (verb in list(nest_with_margins, nest_by_with_margins)) {
+    rowwise <- identical(verb, nest_by_with_margins)
+    for (id in list(NULL, "set")) {
+      keys <- c("fixed", "group", id)
+      display <- if (is.null(id)) "group" else "set"
+      result <- dplyr::collect(verb(
+        input, .by = dplyr::all_of("fixed"), .grouping = grouping, .id = id,
+        .key = displayed("payload", display)
+      ))
+      expect_identical(names(result), c(keys, "payload"))
+      expect_identical(tibble::as_tibble(result[["payload"]][[1L]]),
+                       tibble::tibble(value = 5L))
+      expect_identical(dplyr::group_vars(result),
+                       if (rowwise) keys else character())
+      expect_identical(result, dplyr::collect(verb(
+        input, .by = dplyr::all_of("fixed"), .grouping = grouping, .id = id,
+        .key = "payload"
+      )))
+    }
+
+    result <- dplyr::collect(verb(
+      empty, .id = "set", .key = displayed("payload")
+    ))
+    expect_identical(names(result), c("set", "payload"))
+    expect_identical(nrow(result), if (rowwise) 1L else 0L)
+    expect_identical(dplyr::group_vars(result),
+                     if (rowwise) "set" else character())
+    if (rowwise) {
+      expect_identical(result$set, 1L)
+      expect_identical(tibble::as_tibble(result[["payload"]][[1L]]),
+                       tibble::tibble(value = integer()))
+    } else {
+      expect_length(result[["payload"]], 0L)
+    }
+
+    expect_error(
+      verb(input, .grouping = grouping, .key = displayed("group")),
+      "`group`.*must not be a grouping column", class = "marginplyr_error"
+    )
+    expect_error(
+      verb(input, .id = "set", .key = displayed("set")),
+      "conflicts with nesting `.key`", class = "marginplyr_error"
+    )
+  }
+}
+
+test_that("classed nesting keys preserve payloads and detect collisions", {
+  expect_classed_nest_keys(identity)
+})
+
+test_that("dtplyr nesting uses the stored list-column name", {
+  skip_if_suggest_absent("dtplyr")
+  expect_classed_nest_keys(function(data) {
+    dtplyr::lazy_dt(data, immutable = TRUE)
+  })
+})
+
+test_that("NULL uses the default list-column name only for ordinary nesting", {
+  input <- data.frame(value = 5L)
+  expect_identical(nest_with_margins(input, .key = NULL),
+                   nest_with_margins(input))
+  expect_error(
+    nest_by_with_margins(input, .key = NULL),
+    "must be a character vector of length 1", class = "marginplyr_error"
+  )
+})

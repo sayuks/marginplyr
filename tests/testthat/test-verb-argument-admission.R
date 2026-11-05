@@ -477,7 +477,26 @@ test_that("named Margin order and factor-label position select their values", {
   }
 })
 
+test_that("the nesting verbs sort by the stored Margin order", {
+  displayed <- local_displayed_margin_arg()
+  for (verb in c("nest_with_margins", "nest_by_with_margins")) {
+    first <- call_with_option(verb, ".sort", displayed("first", "last"))
+    last <- call_with_option(verb, ".sort", displayed("last", "first"))
+    expect_identical(first$g, c("Total", "a", "b"), info = verb)
+    expect_identical(last$g, c("a", "b", "Total"), info = verb)
+  }
+})
+
+test_that("Grouping inspection uses the stored format", {
+  displayed <- local_displayed_margin_arg()
+  plan <- call_with_option(
+    "inspect_grouping", ".format", displayed("list", "text")
+  )
+  expect_identical(plan$included, list("g", character()))
+})
+
 test_that("an abbreviation of an option value is rejected", {
+  displayed <- local_displayed_margin_arg()
   # `match.arg()` resolved any unambiguous prefix to the value it abbreviates,
   # so `.sort = "f"` and `.duplicates = "k"` were accepted (#110). Every
   # vocabulary here is distinct in its first character, so the one-character
@@ -485,11 +504,13 @@ test_that("an abbreviation of an option value is rejected", {
   for (case in option_vocabulary_cases()) {
     for (value in case$values) {
       abbreviation <- substr(value, 1L, 1L)
-      expect_identical(
-        option_rejection_message(case$verb, case$option, abbreviation),
-        expected_vocabulary_message(case),
-        info = option_case_label(case, abbreviation)
-      )
+      for (input in list(abbreviation, displayed(abbreviation, value))) {
+        expect_identical(
+          option_rejection_message(case$verb, case$option, input),
+          expected_vocabulary_message(case),
+          info = option_case_label(case, abbreviation)
+        )
+      }
     }
   }
 })
@@ -566,6 +587,18 @@ test_that("every verb accepts the vocabulary its own signature spells out", {
   }
 })
 
+test_that("a classed vocabulary does not select the default", {
+  displayed <- local_displayed_margin_arg()
+  for (case in option_vocabulary_cases()) {
+    value <- displayed(case$values, case$values[[1L]])
+    expect_identical(
+      option_rejection_message(case$verb, case$option, value),
+      expected_vocabulary_message(case),
+      info = option_case_label(case, case$values)
+    )
+  }
+})
+
 test_that("a reordering of the vocabulary is refused", {
   # The vocabulary is read as the default because it is the spelling the
   # signature gives, not because its members are the permitted values in some
@@ -600,12 +633,15 @@ test_that("`NULL` is rejected by every option rather than taken as a default", {
 })
 
 test_that("a wholly invalid option value names only what the verb accepts", {
+  displayed <- local_displayed_margin_arg()
   for (case in option_vocabulary_cases()) {
-    expect_identical(
-      option_rejection_message(case$verb, case$option, "zzz"),
-      expected_vocabulary_message(case),
-      info = option_case_label(case, "zzz")
-    )
+    for (input in list("zzz", displayed("zzz", case$values[[1L]]))) {
+      expect_identical(
+        option_rejection_message(case$verb, case$option, input),
+        expected_vocabulary_message(case),
+        info = option_case_label(case, "zzz")
+      )
+    }
   }
 })
 
@@ -651,16 +687,19 @@ test_that("a diagnostic offering a `.duplicates` policy offers a real one", {
 })
 
 test_that("the nesting verbs answer `.duplicates = \"keep\"` in their terms", {
+  displayed <- local_displayed_margin_arg()
   # The narrower formal used to be widened before validation and taken away
   # again by a second guard, so the rejection message named `"keep"` and the
   # verb then refused it (#110). One vocabulary owns the answer now, and the
   # message the caller sees is the one every other invalid value gets.
   for (verb in c("nest_with_margins", "nest_by_with_margins")) {
-    expect_identical(
-      option_rejection_message(verb, ".duplicates", "keep"),
-      "`.duplicates` must be one of \"error\" or \"drop\".",
-      info = verb
-    )
+    for (input in list("keep", displayed("keep", "drop"))) {
+      expect_identical(
+        option_rejection_message(verb, ".duplicates", input),
+        "`.duplicates` must be one of \"error\" or \"drop\".",
+        info = verb
+      )
+    }
   }
 })
 

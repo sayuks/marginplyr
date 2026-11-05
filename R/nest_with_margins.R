@@ -201,8 +201,8 @@ nest_duplicates_choices <- c("error", "drop")
 
 # Prepare and fold either nesting verb. The ordinary result stays lazy for a
 # lazy input. A row-wise request requires representable outer keys and returns
-# a collected table, with one schema-shaped empty cell for a keyless empty
-# input, ready for the caller to mark row-wise.
+# a row-wise local table, with one schema-shaped empty cell for a keyless
+# empty input.
 nest_margin_pipeline <- function(.data,
                                  by_quo,
                                  grouping_quo,
@@ -226,6 +226,10 @@ nest_margin_pipeline <- function(.data,
       assert_margin_input(.data)
       assert_nest_possible(.data)
       assert_logical_scalar(.keep)
+      # Use the stored string before name interpolation can dispatch methods.
+      if (is.character(.key)) {
+        attributes(.key) <- NULL
+      }
       assert_string_scalar(.key)
       if (is.na(.key)) {
         abort_marginplyr("{.arg .key} must not be missing.")
@@ -268,7 +272,7 @@ nest_margin_pipeline <- function(.data,
     # (#421). `execute_margin_nest()` rebuilds the second kind before folding
     # it, which is the half of the route that lets this name them all.
     carried_columns = function(data_vars, plan) data_vars,
-    .id = .id,
+    .id = set_id_name,
     call = call
   )
   execution <- execute_margin_nest(
@@ -306,11 +310,15 @@ nest_margin_pipeline <- function(.data,
     id <- operation$set_id_name
     result <- tibble::new_tibble(
       stats::setNames(c(if (!is.null(id)) list(1L), list(list(cell))),
-                      c(id, unname(.key))),
+                      c(id, .key)),
       nrow = 1L
     )
   }
-  result
+  group_cols <- setdiff(colnames(result), .key)
+  with_margin_column_aliases(result, names(result), function(data, safe_name) {
+    columns <- vapply(group_cols, safe_name, character(1), USE.NAMES = FALSE)
+    dplyr::rowwise(data, dplyr::all_of(columns))
+  })
 }
 
 # Fold a prepared Margin operation into cells after nesting-specific admission;
