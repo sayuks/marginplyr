@@ -4187,8 +4187,8 @@ lookup_assignment_names <- function(expr) {
 # constructs. `<-` and `=` bind their target and `for` binds its index, each
 # into the bottom of the data mask, so the name is a new binding rather than a
 # column read; `{` binds nothing of its own but carries what its statements
-# bind to the statements after them. `local()` needs no case at all: it binds
-# nothing either, and whichever of these its argument is answers it (#162).
+# bind to the statements after them. An implicit base `local()` evaluates
+# its body in a child frame.
 # `lookup` carries the captured environment, mask names, and rebindings.
 # A quosure supplies its own environment without changing the latter two.
 expression_data_symbols <- function(expr, bound = character(), lookup = NULL) {
@@ -4409,9 +4409,8 @@ pronoun_index_symbols <- function(expr, scope, lookup) {
 # rather than testing for a capture of its own (#179).
 call_part_symbols <- function(expr, scope, lookup) {
   call_head <- static_call_head(expr)
-  parts <- scope_call_args(
-    expr, static_call_name(expr), scope_bound_names(scope), lookup
-  )
+  call_name <- static_call_name(expr)
+  parts <- scope_call_args(expr, call_name, scope_bound_names(scope), lookup)
   selection <- if (isTRUE(lookup$deferred_selection)) {
     static_spelling_name(expr, "selection")
   }
@@ -4433,6 +4432,11 @@ call_part_symbols <- function(expr, scope, lookup) {
   } else if (!rlang::is_symbol(call_head)) {
     reads <- scoped_data_symbols(call_head, scope, lookup)
     scope <- scope_after_removals(call_head, scope, lookup)
+  }
+  body <- implicit_local_body(expr, call_name, scope, lookup)
+  if (length(body) > 0L) {
+    inner <- c(list(list(bound = character())), scope)
+    return(unique(c(reads, scoped_data_symbols(body[[1L]], inner, lookup))))
   }
   for (index in seq_along(parts)) {
     read_symbols <- if (index %in% selection_positions) {
@@ -4795,6 +4799,17 @@ is_known_base_call <- function(expr, name, bound, lookup) {
   )
 }
 
+# The body of a known base local() with its default child environment.
+# Explicit environments continue through the ordinary call walk.
+implicit_local_body <- function(expr, name, scope, lookup) {
+  if (identical(name, "local") &&
+        is_known_base_frame_call(expr, name, scope, lookup) &&
+        length(base_call_argument(expr, "envir")) == 0L) {
+    return(base_call_argument(expr, "expr"))
+  }
+  list()
+}
+
 # A recognized scope mutation in direct-call form, without evaluating its head
 # or arguments. An unreadable do.call() argument list retains unknown targets.
 scope_mutation_call <- function(expr, bound, lookup) {
@@ -4948,9 +4963,9 @@ scope_callee_is_shadowed <- function(callee, name, bound, lookup) {
   is.function(binding) && !identical(binding, get(name, envir = baseenv()))
 }
 
-# Carry visible removals through expressions. Only direct inline calls
-# carry effects out of a function body. Conditional removals may run;
-# literal FALSE arms cannot.
+# Carry visible removals through expressions. Direct inline calls and implicit
+# base local() can carry effects out of a child frame. Conditional removals may
+# run; literal FALSE arms cannot.
 scope_after_removals <- function(expr, scope, lookup) {
   if (rlang::is_quosure(expr)) {
     lookup$env <- rlang::quo_get_env(expr)
@@ -4981,11 +4996,16 @@ scope_after_removals <- function(expr, scope, lookup) {
     )$scope
     return(scope_possible_losses(scope, after))
   }
-  if (identical(name, "function") ||
-        (identical(name, "local") &&
-           is_known_base_call(expr, name, bound, lookup) &&
-           length(base_call_argument(expr, "envir")) == 0L)) {
+  if (identical(name, "function")) {
     return(scope)
+  }
+  body <- implicit_local_body(expr, name, scope, lookup)
+  if (length(body) > 0L) {
+    inner <- c(list(list(bound = character())), scope)
+    after <- statement_reads_and_scope(
+      body[[1L]], inner, lookup, read_symbols = no_scope_reads
+    )$scope
+    return(after[-1L])
   }
   mutation_lookup <- lookup
   if (!is.null(name) && name %in% c("rm", "remove") &&
@@ -5152,7 +5172,7 @@ static_parent_frame_depth <- function(expr, scope, lookup) {
   NULL
 }
 
-# Check a frame callee against lexical frames before ordinary caller lookup.
+# Check a base callee against lexical frames before ordinary caller lookup.
 # Bare call heads skip known non-functions in those frames.
 is_known_base_frame_call <- function(expr, name, scope, lookup) {
   function_lookup <- is_name_part(static_call_head(expr))
