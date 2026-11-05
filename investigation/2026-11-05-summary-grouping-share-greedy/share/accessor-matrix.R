@@ -38,7 +38,7 @@ for (input_name in names(inputs)) for (helper in c('share_of_parent', 'share_of_
     status <- 'independent_success'
    } else {
     stopifnot(!inherits(result, 'error'), identical(result$observed, if (direction == 'after_share') c(100, 300, 400) else c(1, 3, 4)))
-    stopifnot(identical(if (direction == 'after_share') result$prior else result$ratio, c(.25, .75, 1)))
+    stopifnot(identical(if (direction == 'after_share') result$prior else result$ratio, c(0.25, 0.75, 1)))
     status <- 'missing_refusal'
    }
    if (assert_contract && !independent) stopifnot(inherits(result, 'marginplyr_error'))

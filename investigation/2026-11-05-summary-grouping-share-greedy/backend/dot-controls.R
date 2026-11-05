@@ -8,7 +8,7 @@ for (backend in c('sqlite','duckdb')) {
   margin <- tryCatch(collect(summarize_with_margins(src,!!nm:=sum(v), .grouping=rollup(g),.id='set',.sort='last')),error=identity)
   shares <- tryCatch(collect(summarize_with_margins(src,n=sum(v), !!nm:=share_of_total(n),.grouping=rollup(g),.id='set',.sort='last',.check_share_source=FALSE)),error=identity)
   cat(backend, nm, 'ordinary=',if(inherits(ordinary,'error')) 'upstream-refusal' else 'ok', 'margin=', if(inherits(margin,'error')) 'refusal' else 'ok', 'share=',if(inherits(shares,'error')) 'refusal' else 'ok','\n')
-  if(nm %in% c('...','..1')) stopifnot(inherits(ordinary,'error'),inherits(margin,'error'),inherits(shares,'error')) else stopifnot(!inherits(ordinary,'error'),!inherits(margin,'error'),!inherits(shares,'error'),isTRUE(all.equal(shares[[nm]],c(.25,.75,1))))
+  if(nm %in% c('...','..1')) stopifnot(inherits(ordinary,'error'),inherits(margin,'error'),inherits(shares,'error')) else stopifnot(!inherits(ordinary,'error'),!inherits(margin,'error'),!inherits(shares,'error'),isTRUE(all.equal(shares[[nm]],c(0.25, 0.75, 1))))
  }
  DBI::dbDisconnect(con)
 }
