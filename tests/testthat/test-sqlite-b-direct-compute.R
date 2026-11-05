@@ -394,6 +394,10 @@ test_that("SQLite temporary overwrite isolates virtual tables by schema", {
   DBI::dbExecute(con, paste(
     "CREATE VIRTUAL TABLE temp.lookup USING fts5(g, content = 'facts')"
   ))
+  # The catalog can mark this name as a shadow even with external content.
+  DBI::dbExecute(con, paste(
+    "CREATE TEMP TABLE lookup_content (id INTEGER PRIMARY KEY, c0 TEXT)"
+  ))
   temp <- DBI::Id(schema = "temp", table = "facts")
   expand <- function(source) {
     expand_with_margins(
@@ -421,9 +425,12 @@ test_that("SQLite temporary overwrite isolates virtual tables by schema", {
   expect_identical(DBI::dbGetQuery(con, "SELECT g FROM main.facts")$g, "keep")
 
   DBI::dbExecute(con, "DROP TABLE temp.lookup")
-  DBI::dbExecute(con, "CREATE VIRTUAL TABLE temp.lookup USING fts5(g)")
+  DBI::dbExecute(con, "DROP TABLE IF EXISTS temp.lookup_content")
+  DBI::dbExecute(con, paste(
+    "CREATE VIRTUAL TABLE temp.lookup USING fts5(content, detail = none)"
+  ))
   DBI::dbExecute(con, "INSERT INTO temp.lookup VALUES ('private')")
-  internal <- expand(DBI::Id(schema = "temp", table = "lookup"))
+  internal <- expand(dbplyr::sql("SELECT content AS g FROM temp.lookup"))
   out <- dplyr::compute(internal, name = temp, overwrite = TRUE)
   expect_identical(dplyr::collect(out)$g, c("private", "Total"))
 
@@ -441,6 +448,35 @@ test_that("SQLite temporary overwrite isolates virtual tables by schema", {
   independent <- expand(DBI::Id(schema = "temp", table = "keys"))
   out <- dplyr::compute(independent, name = temp, overwrite = TRUE)
   expect_identical(dplyr::collect(out)$g, c("keep", "Total"))
+})
+
+test_that("SQLite preserves a temporary input read through a PRAGMA", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  DBI::dbExecute(con, "CREATE TEMP TABLE facts AS SELECT 'old' AS payload")
+  DBI::dbExecute(con, "CREATE TEMP TABLE keys AS SELECT 1 AS k")
+  temp <- DBI::Id(schema = "temp", table = "facts")
+  info <- "SELECT p.name AS g FROM pragma_table_info('facts', 'temp') AS p"
+  for (sql in c(info, paste(info, "CROSS JOIN temp.keys"))) {
+    input <- dplyr::tbl(con, dbplyr::sql(sql), vars = "g")
+    query <- expand_with_margins(
+      input, .grouping = rollup(g), .sort = "last"
+    )
+    expect_error(
+      dplyr::compute(query, name = temp, overwrite = TRUE),
+      "different destination name", class = "marginplyr_error"
+    )
+    expect_identical(dplyr::collect(query)$g, c("payload", "Total"))
+    expect_identical(DBI::dbGetQuery(con, "SELECT * FROM temp.facts"),
+                     data.frame(payload = "old"))
+  }
+  input <- dplyr::tbl(con, dbplyr::sql(
+    "SELECT name AS g FROM pragma_database_list() WHERE name = 'main'"
+  ), vars = "g")
+  query <- expand_with_margins(input, .grouping = rollup(g), .sort = "last")
+  out <- dplyr::compute(query, name = temp, overwrite = TRUE)
+  expect_identical(dplyr::collect(out)$g, c("main", "Total"))
 })
 
 test_that("analysis failure rolls back the owned SQLite savepoint", {

@@ -315,53 +315,12 @@ sqlite_compute_name_resolves <- function(con, table, conservative = FALSE) {
   })
 }
 
-# Whether virtual-table access can be separated from the overwrite target.
-# The caller holds the temporary b-tree roots and VOpen operands of the SELECT.
-sqlite_temp_virtual_safe <- function(con, table, roots, virtual_reads) {
-  tables <- DBI::dbGetQuery(con, "PRAGMA temp.table_list")
-  if (!all(c("name", "type") %in% names(tables))) return(FALSE)
-  catalog <- DBI::dbGetQuery(con, paste(
-    "SELECT name, tbl_name, rootpage, sql FROM temp.sqlite_master",
-    "WHERE type IN ('table', 'index')"
-  ))
-  key <- function(name) {
-    chartr("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz", name)
-  }
-  table_key <- key(table)
-  shadow <- key(tables$name[tables$type == "shadow"])
-  # SQLite associates a shadow table with the name before its last underscore.
-  owner <- sub("_[^_]*$", "", shadow)
-  owned <- shadow[owner == table_key]
-  if (any(roots %in% catalog$rootpage[key(catalog$tbl_name) %in% owned])) {
-    return(FALSE)
-  }
-  if (length(virtual_reads) == 0L) return(TRUE)
-  if (!all(grepl("^vtab:", virtual_reads))) return(FALSE)
-
-  virtual <- tables$name[tables$type == "virtual"]
-  virtual_keys <- key(virtual)
-  definition <- catalog$sql[match(virtual, catalog$name)]
-  identifier <- paste0(
-    "(?:\"(?:[^\"]|\"\")*\"|`(?:[^`]|``)*`|\\[[^]]*\\]|'(?:[^']|'')*'|[\\w$]+)"
-  )
-  declaration <- paste0(
-    "^CREATE VIRTUAL TABLE\\s+", identifier, "\\s+USING\\s+"
-  )
-  fts <- paste0(declaration, "fts[345]\\s*\\(")
-  rtree <- paste0(declaration, "rtree(?:_i32)?\\s*\\(")
-  # An FTS table with its own content shadow and no content option is private.
-  fts_args <- sub(fts, "", definition, ignore.case = TRUE, perl = TRUE)
-  private_fts <- grepl(fts, definition, ignore.case = TRUE, perl = TRUE) &
-    paste0(virtual_keys, "_content") %in% shadow &
-    !grepl("content", fts_args, ignore.case = TRUE)
-  private <- private_fts |
-    grepl(rtree, definition, ignore.case = TRUE, perl = TRUE)
-  candidates <- virtual[!private | virtual_keys == table_key |
-                          virtual_keys %in% owner[shadow == table_key]]
-  for (name in candidates) {
-    path <- DBI::dbQuoteIdentifier(con, DBI::Id(schema = "temp", table = name))
+# Whether the SELECT's virtual reads can be ruled out for these sources.
+# The caller supplies FROM operands and VOpen identities on this connection.
+sqlite_virtual_sources_clear <- function(con, sources, virtual_reads) {
+  for (source in sources) {
     probe <- tryCatch(
-      DBI::dbGetQuery(con, paste("EXPLAIN SELECT * FROM", path)),
+      DBI::dbGetQuery(con, paste("EXPLAIN SELECT * FROM", source)),
       error = function(cnd) NULL
     )
     # VOpen carries the virtual table object, shared by prepared statements.
@@ -371,6 +330,68 @@ sqlite_temp_virtual_safe <- function(con, table, roots, virtual_reads) {
     }
   }
   TRUE
+}
+
+# Whether virtual-table access can be separated from the overwrite target.
+# The caller holds the temporary b-tree roots and VOpen operands of the SELECT.
+sqlite_temp_virtual_safe <- function(con, table, roots, virtual_reads) {
+  tables <- DBI::dbGetQuery(con, "PRAGMA temp.table_list")
+  if (!all(c("name", "type") %in% names(tables))) return(FALSE)
+  catalog <- DBI::dbGetQuery(con, paste(
+    "SELECT name, tbl_name, rootpage, sql FROM temp.sqlite_master",
+    "WHERE type IN ('table', 'index')"
+  ))
+  table_key <- sql_ascii_lower(table)
+  shadow <- sql_ascii_lower(tables$name[tables$type == "shadow"])
+  # SQLite associates a shadow table with the name before its last underscore.
+  owner <- sub("_[^_]*$", "", shadow)
+  owned <- shadow[owner == table_key]
+  shadow_roots <- catalog$rootpage[sql_ascii_lower(catalog$tbl_name) %in% owned]
+  if (any(roots %in% shadow_roots)) {
+    return(FALSE)
+  }
+  if (length(virtual_reads) == 0L) return(TRUE)
+  virtual <- tables$name[tables$type == "virtual"]
+  virtual_keys <- sql_ascii_lower(virtual)
+  definition <- sql_ascii_lower(catalog$sql[match(virtual, catalog$name)])
+  identifier <- paste0(
+    "(?:\"(?:[^\"]|\"\")*\"|`(?:[^`]|``)*`|\\[[^]]*\\]|'(?:[^']|'')*'|[\\w$]+)"
+  )
+  declaration <- paste0(
+    "^create virtual table\\s+", identifier, "\\s+using\\s+"
+  )
+  fts <- paste0(declaration, "fts[345]\\s*\\(")
+  rtree <- paste0(declaration, "rtree(?:_i32)?\\s*\\(")
+  # FTS5 also accepts prefixes of the content option. A column called
+  # content has no assignment, and does not change where FTS reads its data.
+  content_option <- "\\bc(?:o|on|ont|onte|onten|ontent)?\\s*="
+  fts_args <- sub(fts, "", definition, perl = TRUE)
+  private_fts <- grepl(fts, definition, perl = TRUE) &
+    paste0(virtual_keys, "_content") %in% shadow &
+    !grepl(content_option, fts_args, perl = TRUE)
+  private <- private_fts | grepl(rtree, definition, perl = TRUE)
+  candidates <- virtual[!private | virtual_keys == table_key |
+                          virtual_keys %in% owner[shadow == table_key]]
+  paths <- paste0("temp.", DBI::dbQuoteIdentifier(con, candidates),
+                  recycle0 = TRUE)
+  sqlite_virtual_sources_clear(con, paths, virtual_reads)
+}
+
+# Whether the SELECT avoids table and index PRAGMAs. Their arguments can
+# resolve a temporary relation at execution without a temp Transaction opcode.
+# The caller has already prepared the SELECT and holds its VOpen identities.
+sqlite_pragma_sources_clear <- function(con, virtual_reads) {
+  if (length(virtual_reads) == 0L) return(TRUE)
+  modules <- DBI::dbGetQuery(con, "PRAGMA module_list")
+  if (!"name" %in% names(modules)) return(FALSE)
+  relation_pragma <- paste0(
+    "^pragma_(table_(info|xinfo|list)|index_(info|xinfo|list)|",
+    "foreign_key_(list|check)|(integrity|quick)_check)$"
+  )
+  pragmas <- modules$name[grepl(relation_pragma, sql_ascii_lower(modules$name))]
+  paths <- paste0("main.", DBI::dbQuoteIdentifier(con, pragmas), "()",
+                  recycle0 = TRUE)
+  sqlite_virtual_sources_clear(con, paths, virtual_reads)
 }
 
 # Whether the rendered SELECT can be shown independent of the temporary target.
@@ -388,6 +409,10 @@ sqlite_temp_overwrite_safe <- function(con, catalog, insert_from) {
   if (any(roots %in% catalog$rootpage)) return(FALSE)
   uses_temp <- any(plan$opcode == "Transaction" & plan$p1 == 1L)
   virtual_reads <- unique(plan$p4[plan$opcode == "VOpen"])
+  if (!all(grepl("^vtab:", virtual_reads)) ||
+        !sqlite_pragma_sources_clear(con, virtual_reads)) {
+    return(FALSE)
+  }
   if (!uses_temp || (length(virtual_reads) == 0L &&
                        !any(catalog$rootpage == 0L))) {
     return(TRUE)

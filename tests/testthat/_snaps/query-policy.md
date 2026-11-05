@@ -55,10 +55,12 @@
       sqlite_compute_name_resolves
       sqlite_new_compute_name
       sqlite_plan_temp_destination
+      sqlite_pragma_sources_clear
       sqlite_publish_destination
       sqlite_restore_compute_names
       sqlite_temp_overwrite_safe
       sqlite_temp_virtual_safe
+      sqlite_virtual_sources_clear
       sqlite_with_compute_savepoint
       summarise_with_margins
       summarize_with_margins
