@@ -533,3 +533,90 @@ test_that("selector operators bypass lexical bindings in selection syntax", {
     total = share_of_total(source), .grouping = rollup(g)
   ), "depends on earlier summary alias `prior`", class = "marginplyr_error")
 })
+
+test_that("literal proxy dispatch cannot read earlier share source aliases", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), z = c(7, 9))
+  peek <- tidyselect::peek_data
+  dispatch <- rlang::exprs(
+    base::do.call(tidyselect::peek_data, list()),
+    base::do.call("peek_data", list(), envir = asNamespace("tidyselect")),
+    base::do.call("peek_data", !!list(), envir = !!asNamespace("tidyselect")),
+    base::do.call(peek, list()),
+    base::do.call(tidyselect::peek_data, list(fn = "pick")),
+    rlang::exec(tidyselect::peek_data),
+    rlang::exec(tidyselect::peek_data, fn = "pick"),
+    base::getExportedValue("tidyselect", "peek_data")(),
+    (function(fn) fn())(tidyselect::peek_data),
+    (function(fn) {
+      if (FALSE) fn()$prior
+      if (TRUE) fn()
+    })(tidyselect::peek_data),
+    (function(fn) (function() fn())())(tidyselect::peek_data),
+    (function(fn, args) {
+      (function(args) do.call(fn, args))(args)
+    })(tidyselect::peek_data, list()),
+    (function(fn) {
+      (function(callback, fn, args) callback(args))(
+        function(args) do.call(fn, args),
+        function() stop("The callback uses its enclosing fn."),
+        list()
+      )
+    })(tidyselect::peek_data),
+    (function(fn, args) {
+      do.call(fn, args)
+    })(tidyselect::peek_data, list()),
+    (function(fn) {
+      fn()
+    })(tidyselect::peek_data)
+  )
+  sources <- function(column) {
+    rlang::exprs(
+      sum(dplyr::pick(c(dplyr::all_of(!!column), -prior))),
+      sum(dplyr::across(c(dplyr::all_of(!!column), -prior), identity))
+    )
+  }
+  observed <- new.env(parent = emptyenv())
+  threshold <- function() {
+    observed$calls <- observed$calls + 1L
+    5
+  }
+
+  for (proxy in dispatch) {
+    dependent <- sources(rlang::expr(
+      if ((!!proxy)$prior[[1L]] < 2) "z" else "x"
+    ))
+    independent <- sources(rlang::expr(
+      if ((!!proxy)$z[[1L]] > threshold()) "x" else "z"
+    ))
+    for (i in seq_along(dependent)) {
+      control <- summarize_with_margins(
+        data, prior = sum(x), value = !!dependent[[i]], .grouping = rollup(g)
+      )
+      expect_identical(control$value, c(7, 9, 4))
+      for (helper in rlang::syms(c("share_of_parent", "share_of_total"))) {
+        expect_error(summarize_with_margins(
+          data, prior = sum(x), value = !!dependent[[i]],
+          ratio = (!!helper)(value), .grouping = rollup(g)
+        ), "depends on earlier summary alias `prior`",
+        class = "marginplyr_error")
+      }
+
+      observed$calls <- 0L
+      control <- summarize_with_margins(
+        data, prior = sum(x), value = !!independent[[i]], .grouping = rollup(g)
+      )
+      ordinary_calls <- observed$calls
+      expect_gt(ordinary_calls, 0L)
+      observed$calls <- 0L
+      result <- summarize_with_margins(
+        data, prior = sum(x), value = !!independent[[i]],
+        parent = share_of_parent(value), total = share_of_total(value),
+        .grouping = rollup(g)
+      )
+      expect_identical(result$value, control$value)
+      expect_identical(result$parent, c(0.25, 0.75, 1))
+      expect_identical(result$total, c(0.25, 0.75, 1))
+      expect_identical(observed$calls, ordinary_calls)
+    }
+  }
+})

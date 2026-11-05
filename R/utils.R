@@ -1470,11 +1470,23 @@ parsed_language_values <- function(argument) {
   as.list(parsed)
 }
 
+# Match a call's syntax in an empty environment. An invalid call retains
+# no matches and can still report its ordinary error at execution.
+static_matched_arguments <- function(expr, definition, expand_dots = TRUE) {
+  tryCatch(
+    as.list(match.call(
+      definition, expr, expand.dots = expand_dots, envir = emptyenv()
+    ))[-1L],
+    error = function(cnd) NULL
+  )
+}
+
 # The character vector an expression is statically known to be, and `NULL`
 # where it is not. A literal is one, and so is a `c()` of literals, which is
 # how a caller writes the vector `mget()` takes; anything else names a value
-# this walk cannot see without running it.
-static_character_value <- function(expr) {
+# this walk cannot see without running it. Supplying a concatenation check
+# requires unclassed literals and verifies each call instead of its spelling.
+static_character_value <- function(expr, is_concat = NULL) {
   # A literal is a value, so the parentheses a caller may have written around
   # one are read through as they are everywhere else: `get(("share"))` names
   # what `get("share")` names. Read by recursion rather than by rebinding
@@ -1486,18 +1498,24 @@ static_character_value <- function(expr) {
   # this reader on the node it was called with, and `get(())` exhausted the
   # evaluation stack before dplyr saw the call (#349).
   if (is_parenthesized(expr)) {
-    return(static_character_value(unparenthesized_value(expr)))
+    return(static_character_value(unparenthesized_value(expr), is_concat))
   }
   if (is.character(expr)) {
-    if (anyNA(expr)) {
+    if ((!is.null(is_concat) && is.object(expr)) || anyNA(expr)) {
       return(NULL)
     }
     return(expr)
   }
-  if (!rlang::is_call(expr, "c")) {
+  concat <- if (is.null(is_concat)) {
+    rlang::is_call(expr, "c")
+  } else {
+    is_concat(expr)
+  }
+  if (!concat) {
     return(NULL)
   }
-  values <- lapply(static_call_args(expr), static_character_value)
+  values <- lapply(static_call_args(expr), static_character_value,
+                   is_concat = is_concat)
   if (any(vapply(values, is.null, logical(1)))) {
     return(NULL)
   }
