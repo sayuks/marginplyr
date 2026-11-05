@@ -51,9 +51,10 @@
       probe_share_dialect
       probe_share_dialect_answer
       share_dialect_verdict
+      sqlite_check_temp_overwrite
+      sqlite_compute_delay_publication
       sqlite_compute_destination
       sqlite_compute_name_resolves
-      sqlite_compute_shadows_source
       sqlite_new_compute_name
       sqlite_publish_destination
       sqlite_restore_compute_names

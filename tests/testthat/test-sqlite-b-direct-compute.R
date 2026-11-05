@@ -328,6 +328,58 @@ test_that("rejected self-overwrite preserves the SQLite input", {
                    c("g", "v"))
 })
 
+test_that("SQLite refuses an existing temporary input as an overwrite target", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  main <- DBI::Id(schema = "main", table = "facts")
+  temp <- DBI::Id(schema = "temp", table = "facts")
+  DBI::dbExecute(con, "CREATE TABLE main.facts AS SELECT 'keep' AS g")
+  DBI::dbExecute(
+    con, "CREATE TEMP TABLE facts AS SELECT 'b' AS g UNION ALL SELECT 'a'"
+  )
+  DBI::dbExecute(con, "CREATE INDEX temp.facts_g ON facts(g)")
+  DBI::dbExecute(con, paste(
+    "CREATE TEMP VIEW facts_view AS SELECT g FROM facts INDEXED BY facts_g"
+  ))
+  DBI::dbExecute(con, "CREATE TEMP TABLE report AS SELECT 'old' AS g")
+  query <- expand_with_margins(
+    dplyr::tbl(con, "facts"), .grouping = rollup(g), .sort = "last"
+  )
+  expected <- c("a", "b", "Total", "Total")
+  DBI::dbBegin(con)
+  for (name in list("facts", "FACTS", temp)) {
+    expect_error(
+      dplyr::compute(query, name = name, overwrite = TRUE),
+      "different destination name", class = "marginplyr_error"
+    )
+    expect_identical(DBI::dbGetQuery(
+      con, "SELECT g FROM temp.facts ORDER BY rowid"
+    )$g, c("b", "a"))
+    expect_identical(DBI::dbGetQuery(con, "SELECT g FROM main.facts")$g, "keep")
+    expect_identical(dplyr::collect(query)$g, expected)
+  }
+  through_view <- expand_with_margins(
+    dplyr::tbl(con, "facts_view"), .grouping = rollup(g), .sort = "last"
+  )
+  expect_error(
+    dplyr::compute(through_view, name = temp, overwrite = TRUE),
+    "different destination name", class = "marginplyr_error"
+  )
+  expect_identical(dplyr::collect(through_view)$g, expected)
+  out <- dplyr::compute(query, name = "report", overwrite = TRUE)
+  expect_identical(dplyr::collect(out)$g, expected)
+  DBI::dbRollback(con)
+  expect_identical(DBI::dbGetQuery(con, "SELECT g FROM temp.report")$g, "old")
+
+  qualified <- expand_with_margins(
+    dplyr::tbl(con, main), .grouping = rollup(g), .sort = "last"
+  )
+  out <- dplyr::compute(qualified, name = temp, overwrite = TRUE)
+  expect_identical(dplyr::collect(out)$g, c("keep", "Total"))
+  expect_identical(DBI::dbGetQuery(con, "SELECT g FROM main.facts")$g, "keep")
+})
+
 test_that("analysis failure rolls back the owned SQLite savepoint", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")

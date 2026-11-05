@@ -244,8 +244,10 @@ materialization; later lazy verbs follow ordinary backend type rules.
 
 SQLite refuses a bare persistent destination shadowed by a temporary table,
 or a bare temporary overwrite that would find a table in `main`. Supply an
-explicit schema or another name. Sorted compute also refuses when public
-columns shadow all three implicit rowid aliases. Direct collection still works.
+explicit schema or another name. If an existing temporary destination cannot
+be separated safely from the input, choose a different destination name.
+Sorted compute also refuses when public columns shadow all three implicit
+rowid aliases. Direct collection still works.
 Compute uses a private savepoint, so an existing caller transaction remains
 under the caller's commit or rollback control. Ordinary dbplyr may reject
 indexes on qualified destinations; such a failed compute restores the target.
