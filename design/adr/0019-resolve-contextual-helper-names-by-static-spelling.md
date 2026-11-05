@@ -717,3 +717,19 @@ summary values. Resolving the head from the caller's environment is rejected
 by the existing Contextual helper rule; preserving the boundary does not
 require giving up qualification. Applying a wrapper to every `across()` is
 also rejected because it would change the unparenthesized control's evaluation.
+
+## Amendment: isolate generated namespace operations
+
+#1311 closes the lookup of namespace operators introduced by the local summary
+rewrite. Generated selection captures and nested-mask thunks carry the selected
+function value. A local Contextual selection that dplyr evaluates at runtime
+binds the base namespace operator in its generated head; a selection dplyr
+expands syntactically retains the recognized qualified spelling. The expression
+walker carries that distinction into function bodies, defaults and computed
+heads, where dplyr does not expand `pick()`.
+
+This narrows the rejected function-value alternative above to generated
+operations that need no backend name recognition. Lazy Contextual selection
+heads keep their qualified form. Caller-authored namespace expressions remain
+ordinary code in their captured environment, including expressions in a
+selection or a nested data mask.
