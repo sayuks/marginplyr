@@ -46,3 +46,27 @@ for (wrapper in names(wrappers)) {
     gc(verbose = FALSE)
   }
 }
+
+# A duplicate prefix needs only bounded suffix witnesses, not 2^30 choices.
+typed <- grouping_set(where(function(x) stop("typed selection evaluated")))
+choices <- grouping_sets(grouping_set(), grouping_set())
+suffix <- grouping_spec(!!!rep(list(choices), 30L))
+spec <- grouping_spec(grouping_sets(value, value), !!typed, !!suffix)
+for (verb in list(inspect_grouping, nest_with_margins, nest_by_with_margins)) {
+  cnd <- tryCatch(verb(input, .grouping = spec), error = identity)
+  stopifnot(inherits(cnd, "marginplyr_error"),
+            grepl("Duplicate grouping sets", conditionMessage(cnd), fixed = TRUE),
+            grepl("1, 1073741825", conditionMessage(cnd), fixed = TRUE),
+            grepl("1073741824, 2147483648", conditionMessage(cnd), fixed = TRUE))
+}
+cat("Large unresolved suffix: bounded duplicate witnesses across all three APIs\n")
+
+# Counts outside exact double positions cannot supply occurrence evidence.
+for (width in c(60L, 1100L)) {
+  suffix <- grouping_spec(!!!rep(list(choices), width))
+  spec <- grouping_spec(grouping_sets(value, value), !!typed, !!suffix)
+  cnd <- tryCatch(inspect_grouping(input, .grouping = spec), error = identity)
+  stopifnot(inherits(cnd, "error"),
+            grepl("typed selection evaluated", conditionMessage(cnd), fixed = TRUE))
+}
+cat("Unrepresentable and overflowing suffix counts: typed deferral retained\n")

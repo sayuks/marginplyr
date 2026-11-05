@@ -93,9 +93,10 @@ isolated_dtplyr_proxy <- function(.data, env = .data[["env"]]) {
   utils::head(as_data_table(proxy), n = 0L)
 }
 
-# Whether function lookup reaches the requested base function without
-# evaluating an active binding or forcing a promise.
-dtplyr_base_binding <- function(name, env) {
+# Whether function lookup reaches the expected function without evaluating an
+# active binding or forcing a promise. `fallback` answers for registered methods
+# when lexical lookup finds no function.
+dtplyr_function_binding <- function(name, env, expected, fallback = FALSE) {
   while (!identical(env, emptyenv())) {
     if (exists(name, envir = env, inherits = FALSE)) {
       if (bindingIsActive(name, env) ||
@@ -108,12 +109,30 @@ dtplyr_base_binding <- function(name, env) {
         return(FALSE)
       }
       if (is.function(value)) {
-        return(identical(value, get(name, envir = baseenv())))
+        return(identical(value, expected))
       }
     }
     env <- parent.env(env)
   }
-  FALSE
+  fallback
+}
+
+# A full join must reach the ordinary generic and data.table method, including
+# S3 lookup in the effective query environment before registered-method lookup.
+dtplyr_merge_binding <- function(env) {
+  method <- get("merge.data.table", envir = asNamespace("data.table"))
+  registry <- get(".__S3MethodsTable__.", envir = baseenv())
+  dtplyr_function_binding("merge", env, base::merge) &&
+    dtplyr_function_binding(
+      "merge.data.table", env, method,
+      # The fallback promise leaves an inapplicable registration unread.
+      fallback = exists(
+        "merge.data.table", envir = registry, inherits = FALSE
+      ) &&
+        !bindingIsActive("merge.data.table", registry) &&
+        !rlang::env_binding_are_lazy(registry, "merge.data.table") &&
+        identical(rlang::env_get(registry, "merge.data.table"), method)
+    )
 }
 
 # Only base arithmetic over known plain numeric bindings has an output type
@@ -129,7 +148,7 @@ dtplyr_value_stable_arithmetic <- function(expr, columns, env) {
   if (is.call(expr) && is.symbol(expr[[1L]])) {
     head <- as.character(expr[[1L]])
     if (head %in% c("+", "-", "*", "/") &&
-          dtplyr_base_binding(head, env)) {
+          dtplyr_function_binding(head, env, get(head, envir = baseenv()))) {
       args <- as.list(expr)[-1L]
       return(length(args) %in% c(1L, 2L) && all(vapply(args, function(arg) {
         dtplyr_value_stable_arithmetic(arg, columns, env)
@@ -254,7 +273,13 @@ dtplyr_metadata_safe_step <- function(step, env = step[["env"]]) {
        (!is.null(step[["i"]]) || !is.null(step[["j"]]))) ||
     (inherits(step, "dtplyr_step_join") &&
        !identical(step[["style"]], "full"))
-  if (brackets && !dtplyr_base_binding("[", env)) {
+  if (brackets && !dtplyr_function_binding("[", env, base::`[`)) {
+    return(FALSE)
+  }
+  # Full joins generate a bare merge instead of a bracket operation.
+  if (inherits(step, "dtplyr_step_join") &&
+        identical(step[["style"]], "full") &&
+        !dtplyr_merge_binding(env)) {
     return(FALSE)
   }
   if (inherits(step, "dtplyr_step_mutate")) {
