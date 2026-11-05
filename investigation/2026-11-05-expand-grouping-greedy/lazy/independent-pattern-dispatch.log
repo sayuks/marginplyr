@@ -1,0 +1,63 @@
+  kind  level    surface error typed_reads read_count desired
+ regex  exact    inspect  TRUE       FALSE          1   FALSE
+ regex  exact     expand  TRUE       FALSE          1   FALSE
+ regex  exact      fixed  TRUE       FALSE          1   FALSE
+ regex  exact    dt_root  TRUE       FALSE          1   FALSE
+ regex  exact dt_derived  TRUE       FALSE          1   FALSE
+ regex parent    inspect  TRUE       FALSE          1   FALSE
+ regex parent     expand  TRUE       FALSE          1   FALSE
+ regex parent      fixed  TRUE       FALSE          1   FALSE
+ regex parent    dt_root  TRUE       FALSE          1   FALSE
+ regex parent dt_derived  TRUE       FALSE          1   FALSE
+ fixed  exact    inspect  TRUE       FALSE          1   FALSE
+ fixed  exact     expand  TRUE       FALSE          1   FALSE
+ fixed  exact      fixed  TRUE       FALSE          1   FALSE
+ fixed  exact    dt_root  TRUE       FALSE          1   FALSE
+ fixed  exact dt_derived  TRUE       FALSE          1   FALSE
+ fixed parent    inspect  TRUE       FALSE          1   FALSE
+ fixed parent     expand  TRUE       FALSE          1   FALSE
+ fixed parent      fixed  TRUE       FALSE          1   FALSE
+ fixed parent    dt_root  TRUE       FALSE          1   FALSE
+ fixed parent dt_derived  TRUE       FALSE          1   FALSE
+  coll  exact    inspect  TRUE       FALSE          1   FALSE
+  coll  exact     expand  TRUE       FALSE          1   FALSE
+  coll  exact      fixed  TRUE       FALSE          1   FALSE
+  coll  exact    dt_root  TRUE       FALSE          1   FALSE
+  coll  exact dt_derived  TRUE       FALSE          1   FALSE
+  coll parent    inspect  TRUE       FALSE          1   FALSE
+  coll parent     expand  TRUE       FALSE          1   FALSE
+  coll parent      fixed  TRUE       FALSE          1   FALSE
+  coll parent    dt_root  TRUE       FALSE          1   FALSE
+  coll parent dt_derived  TRUE       FALSE          1   FALSE
+                                                                                                   message
+ ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1.
+ ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1.
+ ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1.
+ ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1.
+ ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1.
+ ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1.
+ ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1.
+ ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1.
+ ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1.
+ ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1.
+ ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1.
+ ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1.
+ ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1.
+ ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1.
+ ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1.
+ ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1.
+ ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1.
+ ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1.
+ ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1.
+ ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1.
+ ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1.
+ ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1.
+ ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1.
+ ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1.
+ ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1.
+ ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1.
+ ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1.
+ ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1.
+ ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1.
+ ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1.
+Independent dispatch comparisons: 30 misclassified; ordinary/wrapped controls: 12 passed; unrelated method calls: 0

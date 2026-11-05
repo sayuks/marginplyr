@@ -1,0 +1,58 @@
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l1dcachesize'. Detail: [errno 1] Operation not permitted
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l2cachesize'. Detail: [errno 1] Operation not permitted
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l3cachesize'. Detail: [errno 1] Operation not permitted
+int8 dimension TRUE
+int8 payload TRUE
+uint8 dimension TRUE
+uint8 payload TRUE
+uint32 dimension TRUE
+uint32 payload TRUE
+uint64 dimension TRUE
+uint64 payload TRUE
+binary dimension TRUE
+binary payload TRUE
+large_binary dimension TRUE
+large_binary payload TRUE
+fixed_binary dimension TRUE
+fixed_binary payload TRUE
+map dimension TRUE
+map payload TRUE
+fixed_list dimension TRUE
+fixed_list payload TRUE
+duration_s dimension TRUE
+duration_s payload TRUE
+duration_ms dimension TRUE
+duration_ms payload TRUE
+duration_ns dimension TRUE
+duration_ns payload TRUE
+decimal32 dimension TRUE
+decimal32 payload TRUE
+decimal64 dimension TRUE
+decimal64 payload TRUE
+decimal128 dimension TRUE
+decimal128 payload TRUE
+decimal256 dimension TRUE
+decimal256 payload TRUE
+time32 dimension TRUE
+time32 payload TRUE
+time64 dimension TRUE
+time64 payload TRUE
+ts_us dimension TRUE
+ts_us payload TRUE
+f32 dimension TRUE
+f32 payload TRUE
+f16 dimension TRUE
+f16 payload TRUE
+str dimension TRUE
+str payload TRUE
+date64 dimension TRUE
+date64 payload TRUE
+null dimension TRUE
+null payload TRUE
+Exact Arrow array matches: 48 of 48
+  consumer   ok   n
+1  collect TRUE 168
+2  compute TRUE 168
+3   reader TRUE 168
+[1] type     shape    consumer ok
+<0 rows> (or 0-length row.names)

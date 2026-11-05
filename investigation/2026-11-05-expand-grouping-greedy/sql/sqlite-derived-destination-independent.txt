@@ -1,0 +1,163 @@
+direct
+$expected
+[1] 6
+
+$actual
+[1] 6
+
+$persistent
+[1] 3
+
+$temporary
+[1] 6
+
+$expected
+[1] 6
+
+$actual
+[1] "Can't safely overwrite this SQLite temporary table while computing the Margin result. Choose a different destination name."
+
+$persistent
+[1] 3
+
+$temporary
+[1] 3
+
+mutate
+$expected
+[1] 6
+
+$actual
+[1] 0
+
+$persistent
+[1] 3
+
+$temporary
+[1] 0
+
+$expected
+[1] 6
+
+$actual
+[1] 0
+
+$persistent
+[1] 3
+
+$temporary
+[1] 0
+
+select
+$expected
+[1] 6
+
+$actual
+[1] 0
+
+$persistent
+[1] 3
+
+$temporary
+[1] 0
+
+$expected
+[1] 6
+
+$actual
+[1] 0
+
+$persistent
+[1] 3
+
+$temporary
+[1] 0
+
+arrange
+$expected
+[1] 6
+
+$actual
+[1] 0
+
+$persistent
+[1] 3
+
+$temporary
+[1] 0
+
+$expected
+[1] 6
+
+$actual
+[1] 0
+
+$persistent
+[1] 3
+
+$temporary
+[1] 0
+
+head
+$expected
+[1] 4
+
+$actual
+[1] 0
+
+$persistent
+[1] 3
+
+$temporary
+[1] 0
+
+$expected
+[1] 4
+
+$actual
+[1] 0
+
+$persistent
+[1] 3
+
+$temporary
+[1] 0
+
+qualified source
+$expected
+[1] 6
+
+$actual
+[1] 6
+
+$persistent
+[1] 3
+
+$temporary
+[1] 6
+
+different destination
+$expected
+[1] 6
+
+$actual
+[1] 6
+
+$persistent
+[1] 3
+
+$temporary
+NULL
+
+ordinary identifier
+$expected
+[1] 6
+
+$actual
+[1] 6
+
+$persistent
+[1] 3
+
+$temporary
+[1] 6

@@ -1,0 +1,55 @@
+48 / 288 fixtures completed
+96 / 288 fixtures completed
+144 / 288 fixtures completed
+192 / 288 fixtures completed
+240 / 288 fixtures completed
+288 / 288 fixtures completed
+, , existing_temp = FALSE, actual_rows = 0
+
+         destination
+transform case different qualified same
+   direct    0         0         0    0
+   filter   12         0        12   12
+   head     12         0        12   12
+
+, , existing_temp = TRUE, actual_rows = 0
+
+         destination
+transform case different qualified same
+   direct    0         0         0    0
+   filter    6         0         6    6
+   head      6         0         6    6
+
+, , existing_temp = FALSE, actual_rows = 4
+
+         destination
+transform case different qualified same
+   direct   12        12        12   12
+   filter    0        12         0    0
+   head      0        12         0    0
+
+, , existing_temp = TRUE, actual_rows = 4
+
+         destination
+transform case different qualified same
+   direct    2        12         2    2
+   filter    6        12         6    6
+   head      6        12         6    6
+
+, , existing_temp = FALSE, actual_rows = NA
+
+         destination
+transform case different qualified same
+   direct    0         0         0    0
+   filter    0         0         0    0
+   head      0         0         0    0
+
+, , existing_temp = TRUE, actual_rows = NA
+
+         destination
+transform case different qualified same
+   direct   10         0        10   10
+   filter    0         0         0    0
+   head      0         0         0    0
+
+CSV: /private/tmp/sqlite-destination-matrix.csv
