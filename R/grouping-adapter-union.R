@@ -247,9 +247,13 @@ bind_margin_branches <- function(branches) {
 }
 
 # Rename a branch's known columns through dplyr so subclass metadata follows.
-# Dot-dot names need a column frame because tidyselect refuses those names.
+# Dot-dot names and sf branches with multiple geometries use a column frame.
 rename_margin_branch_columns <- function(data, from, to) {
-  if (any(margin_dot_dot_names(c(from, to)))) {
+  # rename.sf() can index past the attribute-geometry relation when the frame
+  # has more than one geometry column.
+  if (any(margin_dot_dot_names(c(from, to))) ||
+        (inherits(data, "sf") &&
+           sum(vapply(data, inherits, logical(1), "sfc")) > 1L)) {
     return(rlang::set_names(
       margin_column_source(data), to[match(names(data), from)]
     ))
@@ -1097,6 +1101,14 @@ isolate_arrow_partitions <- function(.data) {
   dplyr::collapse(dplyr::select(source, dplyr::all_of(columns)))
 }
 
+# Whether a key or one of its packed fields holds an AsIs POSIXlt vector.
+contains_asis_posixlt <- function(x) {
+  if (is.data.frame(x)) {
+    return(any(vapply(x, contains_asis_posixlt, logical(1))))
+  }
+  inherits(x, "AsIs") && inherits(x, "POSIXlt")
+}
+
 # Return the operation's input with local dimensions packed where an omitted
 # branch uses a packed typed-missing row. The operation already holds the plan
 # and column metadata.
@@ -1108,16 +1120,17 @@ prepare_packed_union_input <- function(operation) {
   }
   masks <- operation$plan$grouping_masks[, packed, drop = FALSE]
   columns <- Filter(function(col) {
-    !is.data.frame(data[[col]]) &&
-      is_missing_margin_label(operation$margin_labels[[col]])
+    x <- data[[col]]
+    is_missing_margin_label(operation$margin_labels[[col]]) &&
+      (!is.data.frame(x) || contains_asis_posixlt(x))
   }, packed[colSums(masks) > 0L])
   if (length(columns) == 0L) {
     return(data)
   }
 
-  # A row slice of an AsIs POSIXlt is packed, as is its typed-missing
-  # prototype. Slice before nesting copies the key for grouping and .keep
-  # so all three columns can cross the branch union (ADR 0016).
+  # A row slice represents AsIs POSIXlt as a data frame even inside a packed
+  # key, matching the typed-missing prototype. Slice before nesting copies
+  # the key for grouping and .keep so they can cross the branch union.
   margin_safe_column_reads(data, columns, function(source, safe_name) {
     aliases <- vapply(columns, safe_name, character(1), USE.NAMES = FALSE)
     rows <- seq_len(nrow(source))

@@ -57,6 +57,32 @@ test_that("sf rollup cells retain original keys and geometry in Margin order", {
   }
 })
 
+test_that("sf rollup cells retain both geometries and their CRS", {
+  skip_if_suggest_absent("sf")
+  source <- sf::st_sf(
+    g = "a",
+    geometry = sf::st_sfc(sf::st_point(c(0, 0)), crs = 4326),
+    other = sf::st_sfc(sf::st_point(c(1, 1)), crs = 3857)
+  )
+  before <- serialize(source, NULL)
+
+  for (verb in list(nest_with_margins, nest_by_with_margins)) {
+    for (id in c("..1", "set")) {
+      result <- verb(source, .grouping = rollup(g), .id = id, .sort = "last")
+
+      expect_named(result, c("g", id, "data"))
+      expect_identical(result$g, c("a", "Total"))
+      expect_identical(result[[id]], c(1L, 2L))
+      for (cell in result$data) {
+        expect_identical(nrow(cell), 1L)
+        expect_identical(cell$geometry, source$geometry)
+        expect_identical(cell$other, source$other)
+      }
+      expect_identical(serialize(source, NULL), before)
+    }
+  }
+})
+
 test_that("Margin-column placement keeps retained sf metadata valid", {
   skip_if_suggest_absent("sf")
   source <- sf::st_as_sf(
