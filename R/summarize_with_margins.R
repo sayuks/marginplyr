@@ -1103,7 +1103,7 @@ summarize_with_margins <- function(.data,
         !is.null(by) && !is.null(dimensions) && length(dots) > 0L &&
           !contains_share_helper(rlang::quo_get_expr(dots[[1L]]))
       ) {
-        preflight_static_summary_selection(
+        preflight_static_selection(
           dots[[1L]],
           grouping_name_proxy(setdiff(data_vars, c(by, dimensions)))
         )
