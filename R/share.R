@@ -1057,12 +1057,13 @@ wrap_share_sources <- function(dots,
     } else {
       check <- checks[[1L]]
       is_dtplyr <- identical(backend_kind, "dtplyr")
+      validator <- if (is_dtplyr) {
+        dtplyr_share_private_call("check_dtplyr_share_source")
+      } else {
+        marginplyr_private_call("check_share_scalar")
+      }
       wrapped <- rlang::call2(
-        marginplyr_private_call(if (is_dtplyr) {
-          "check_dtplyr_share_source"
-        } else {
-          "check_share_scalar"
-        }),
+        validator,
         expr,
         share_output = check$share_output,
         source_summary = check$source_summary,
@@ -1086,7 +1087,7 @@ wrap_dtplyr_share_ordinary <- function(dots, checks, call) {
     quo <- dots[[position]]
     expr <- rlang::quo_get_expr(quo)
     wrapped <- rlang::call2(
-      marginplyr_private_call("check_dtplyr_share_ordinary"),
+      dtplyr_share_private_call("check_dtplyr_share_ordinary"),
       expr,
       summary = check$summary,
       share_output = check$share_output,
@@ -1260,18 +1261,18 @@ wrap_dtplyr_share_function <- function(fn, mapping, forwarded_args, call) {
     )
   }
   input <- rlang::call2(
-    marginplyr_private_call("dtplyr_share_input_name"),
+    dtplyr_share_private_call("dtplyr_share_input_name"),
     dtplyr_lambda_pronoun()
   )
   mapping_expr <- rlang::call2(
-    marginplyr_private_call("new_share_validation_mapping"),
+    dtplyr_share_private_call("new_share_validation_mapping"),
     inputs = mapping$inputs,
     share_outputs = mapping$share_outputs,
     source_summaries = mapping$source_summaries,
     share_kinds = mapping$share_kinds
   )
   validator <- rlang::call2(
-    marginplyr_private_call("check_dtplyr_share_scalar"),
+    dtplyr_share_private_call("check_dtplyr_share_scalar"),
     value,
     input = input,
     mapping = mapping_expr,
@@ -1322,6 +1323,10 @@ dtplyr_share_binds_measure <- function(expr, measure = ".BY") {
   if (!rlang::is_call(expr)) {
     return(FALSE)
   }
+  if (is_generated_dtplyr_share_call(expr)) {
+    return(any(vapply(static_call_args(expr), dtplyr_share_binds_measure,
+                      logical(1), measure = measure)))
+  }
   name <- static_call_name(expr)
   if (identical(name, "function")) {
     return(FALSE)
@@ -1362,6 +1367,17 @@ rewrite_dtplyr_share_measure <- function(expr, alias, measure = ".BY") {
   }
   if (!rlang::is_call(expr)) {
     return(expr)
+  }
+  if (is_generated_dtplyr_share_call(expr)) {
+    if (identical(expr[[1L]], dtplyr_share_private_call(
+      "dtplyr_share_input_name"
+    ))) {
+      return(deparse(expr[[2L]]))
+    }
+    args <- lapply(static_call_args(expr), function(part) {
+      rewrite_dtplyr_share_measure(part, alias, measure)
+    })
+    return(rebuild_static_call(expr, args))
   }
   name <- static_call_name(expr)
   callee <- resolved_callee_name(expr, name)
@@ -1406,10 +1422,6 @@ rewrite_dtplyr_share_measure <- function(expr, alias, measure = ".BY") {
       ))
     }
     return(expr)
-  }
-  if (identical(name, "dtplyr_share_input_name") &&
-        identical(static_call_ns(expr), "marginplyr")) {
-    return(deparse(expr[[2L]]))
   }
   if (!is.null(name) && name %in% c("$", "@")) {
     args <- static_call_args(expr)
@@ -2493,7 +2505,7 @@ guard_dtplyr_grouped_result <- function(result, plan, set_id_name,
         margin_column_pronoun(safe_name(name))
       })
       check <- rlang::call2(
-        marginplyr_private_call("assert_dtplyr_grouped_keys"),
+        dtplyr_share_private_call("assert_dtplyr_grouped_keys"),
         !!!key_exprs,
         share_output = pair$output,
         share_kind = pair$kind,
@@ -3165,7 +3177,7 @@ apply_windowed_shares <- function(result, requests, plan, set_id_name, kind,
   membership <- if (sql_window) {
     rlang::sym("%in%")
   } else {
-    rlang::expr(base::`%in%`)
+    rlang::call2(base::`::`, rlang::sym("base"), rlang::sym("%in%"))
   }
   target_ids <- share_kind_rule(kind)$target_ids(plan)
   joined_ids <- plan$set_ids[!is.na(target_ids)]
@@ -3209,7 +3221,7 @@ apply_windowed_shares <- function(result, requests, plan, set_id_name, kind,
             ), na.rm = TRUE))
           } else {
             rlang::call2(
-              marginplyr_private_call("dtplyr_share_denominator"),
+              dtplyr_share_private_call("dtplyr_share_denominator"),
               value, identifier, target
             )
           }
@@ -3249,6 +3261,21 @@ apply_windowed_shares <- function(result, requests, plan, set_id_name, kind,
 # Grouped-result validation has already established one row per occurrence.
 dtplyr_share_denominator <- function(value, identifier, target) {
   value[match(target, identifier)]
+}
+
+# Bind the namespace operator of a generated deferred share call. dtplyr
+# preserves this computed head while translating its data-column arguments.
+dtplyr_share_private_call <- function(name) {
+  rlang::call2(base::`:::`, rlang::sym("marginplyr"), rlang::sym(name))
+}
+
+# Whether a translated call carries the package-selected namespace operator.
+# Caller-authored qualified heads retain their ordinary symbolic operator.
+is_generated_dtplyr_share_call <- function(expr) {
+  head <- expr[[1L]]
+  is.call(head) && length(head) == 3L &&
+    identical(head[[1L]], base::`:::`) &&
+    identical(head[[2L]], rlang::sym("marginplyr"))
 }
 
 # Apply the shared value rules after denominator columns have been attached.
@@ -3317,7 +3344,7 @@ apply_share_ratios <- function(result, pairs, sources, denominator_names,
   )
 }
 
-# Qualify base calls in a package-generated ratio expression for dtplyr's
+# Bind base calls in a package-generated ratio expression for dtplyr's
 # root-environment evaluation. The expression contains no caller summaries.
 qualify_dtplyr_share_ratio <- function(expr) {
   if (!is.call(expr)) {
@@ -3327,7 +3354,7 @@ qualify_dtplyr_share_ratio <- function(expr) {
   name <- expr[[1L]]
   if (is.symbol(name) && as.character(name) %in%
         c("is.na", "as.double", "*", "/", "==", "|", "%in%")) {
-    parts[[1L]] <- rlang::call2("::", rlang::sym("base"), expr[[1L]])
+    parts[[1L]] <- rlang::call2(base::`::`, rlang::sym("base"), expr[[1L]])
   }
   as.call(parts)
 }
@@ -4084,6 +4111,9 @@ expression_alias_dependencies <- function(expr, aliases, env = emptyenv(),
   symbols <- unique(expression_data_symbols(
     expr, lookup = list(
       env = env, mask = mask, rebound = lookup_rebound_names(expr, env, mask),
+      function_rebound = lookup_rebound_names(
+        expr, env, mask, function_lookup = TRUE
+      ),
       reparented = reparented, deferred_selection = deferred_selection
     )
   ))
@@ -4099,16 +4129,24 @@ expression_alias_dependencies <- function(expr, aliases, env = emptyenv(),
 # assignment reports the lookup marker, excluding every lexical binding.
 # Literal list2env setter keys invalidate only the bindings they name;
 # unresolved setter keys invalidate every external binding proof.
-lookup_rebound_names <- function(expr, env = emptyenv(), mask = character()) {
+lookup_rebound_names <- function(expr, env = emptyenv(), mask = character(),
+                                 function_lookup = FALSE) {
   rebound <- expression_rebound_names(expr)
-  unique(c(rebound, expression_rebound_names(expr, list(
+  written <- if (function_lookup) {
+    expression_rebound_names(expr, function_lookup = TRUE)
+  } else {
+    rebound
+  }
+  unique(c(written, expression_rebound_names(expr, list(
     env = env, mask = mask, rebound = rebound
-  ))))
+  ), function_lookup = function_lookup)))
 }
 
 # Rebindings visible in evaluated syntax. The first pass supplies ordinary
 # assignments before the second pass resolves mutation callees against them.
-expression_rebound_names <- function(expr, lookup = NULL) {
+# Function lookup skips plain assignments of literal non-function values.
+expression_rebound_names <- function(expr, lookup = NULL,
+                                     function_lookup = FALSE) {
   if (rlang::is_quosure(expr) && !is.null(lookup)) {
     lookup$env <- rlang::quo_get_env(expr)
   }
@@ -4116,9 +4154,16 @@ expression_rebound_names <- function(expr, lookup = NULL) {
     return(character())
   }
   if (is_parenthesized(expr)) {
-    return(expression_rebound_names(unparenthesized_value(expr), lookup))
+    return(expression_rebound_names(
+      unparenthesized_value(expr), lookup, function_lookup
+    ))
   }
   assigned <- lookup_assignment_names(expr)
+  if (function_lookup && rlang::is_call(expr, c("<-", "=")) &&
+        length(expr) >= 3L && is_name_part(expr[[2L]]) &&
+        identical(scope_literal_kind(expr[[3L]]), "value")) {
+    assigned <- character()
+  }
   if (!is.null(lookup)) {
     mutation <- scope_mutation_call(expr, character(), lookup)
     if (!is.null(mutation) &&
@@ -4132,7 +4177,8 @@ expression_rebound_names <- function(expr, lookup = NULL) {
     parts <- c(list(head), parts)
   }
   unique(c(assigned, unlist(lapply(
-    parts, expression_rebound_names, lookup = lookup
+    parts, expression_rebound_names, lookup = lookup,
+    function_lookup = function_lookup
   ), use.names = FALSE)))
 }
 
@@ -4300,7 +4346,7 @@ scoped_data_symbols <- function(expr, scope, lookup) {
     )))
   }
   if (identical(call_name, "env_get") &&
-        identical(static_call_ns(expr), "rlang")) {
+        is_known_namespace_frame_call(expr, "rlang", scope, lookup)) {
     return(unique(c(
       call_part_symbols(expr, scope, lookup),
       inheriting_env_get_symbols(expr, scope, lookup)
@@ -4356,8 +4402,13 @@ scoped_data_symbols <- function(expr, scope, lookup) {
       return(unique(c(target, pronoun_index_symbols(expr, scope, lookup))))
     }
   }
-  if (!is.null(call_name) && call_name %in% c("$", "[[") &&
-        length(expr) == 3L &&
+  if (!is.null(call_name) &&
+        call_name %in% c("$", "[[", "getElement", ".subset2") &&
+        (length(expr) == 3L ||
+           (identical(call_name, "[[") && length(expr) == 4L &&
+              identical(names(expr)[4L], "exact") &&
+              (isTRUE(unparenthesized_value(expr[[4L]])) ||
+                 isFALSE(unparenthesized_value(expr[[4L]]))))) &&
         is_static_mask_parent(expr[[2L]], scope, lookup) &&
         is_known_base_frame_call(expr, call_name, scope, lookup)) {
     if (identical(call_name, "$") && is_name_part(expr[[3L]])) {
@@ -5344,12 +5395,26 @@ static_frame_depth_argument <- function(expr) {
 # Check a base callee against lexical frames before ordinary caller lookup.
 # Bare call heads skip known non-functions in those frames.
 is_known_base_frame_call <- function(expr, name, scope, lookup) {
+  if (!is.null(static_call_ns(expr))) {
+    return(is_known_namespace_frame_call(expr, "base", scope, lookup))
+  }
   function_lookup <- is_name_part(static_call_head(expr))
   shadowed <- any(vapply(scope[scope_visible_frames(scope)], function(frame) {
     name %in% frame$bound &&
       (!function_lookup || !identical(frame$kinds[[name]], "value"))
   }, logical(1)))
   is_known_base_call(expr, name, name[shadowed], lookup)
+}
+
+# A qualified callee is known only when its operator resolves to base.
+# Namespace operators use function lookup, including lexical non-function skips.
+is_known_namespace_frame_call <- function(expr, namespace, scope, lookup) {
+  if (!identical(static_call_ns(expr), namespace)) {
+    return(FALSE)
+  }
+  operator <- selection_namespace_operator(expr)
+  lookup$rebound <- lookup$function_rebound %||% lookup$rebound
+  is_known_base_frame_call(rlang::call2(operator), operator, scope, lookup)
 }
 
 # Discard pending defaults whose bindings have been removed.
@@ -5577,18 +5642,32 @@ is_static_mask_parent <- function(expr, scope, lookup) {
 }
 
 # An inheriting lookup from the current evaluation frame follows the same
-# lexical bindings as a bare name. A supplied stop frame may cut that path.
+# lexical bindings as a bare name. Only known stop frames beyond the mask
+# preserve that path when `last` is supplied.
 inheriting_env_get_symbols <- function(expr, scope, lookup) {
   args <- static_matched_arguments(expr, rlang::env_get)
-  if ("last" %in% names(args) ||
-        !identical(unparenthesized_value(args$inherit), TRUE) ||
+  if (!identical(unparenthesized_value(args$inherit), TRUE) ||
         !rlang::is_string(unparenthesized_value(args$nm))) {
     return(character())
   }
+  if ("last" %in% names(args)) {
+    last_name <- static_call_name(args$last)
+    if (is.null(last_name) ||
+          !last_name %in% c("emptyenv", "baseenv", "globalenv") ||
+          length(static_call_args(args$last)) != 0L ||
+          !is_known_base_frame_call(args$last, last_name, scope, lookup)) {
+      return(character())
+    }
+  }
   frame <- args$env
-  if (missing(frame) || !identical(static_call_name(frame), "current_env") ||
-        !identical(static_call_ns(frame), "rlang") ||
-        length(static_call_args(frame)) != 0L) {
+  if (missing(frame) || length(static_call_args(frame)) != 0L) {
+    return(character())
+  }
+  rlang_frame <- identical(static_call_name(frame), "current_env") &&
+    is_known_namespace_frame_call(frame, "rlang", scope, lookup)
+  base_frame <- identical(static_call_name(frame), "environment") &&
+    is_known_base_frame_call(frame, "environment", scope, lookup)
+  if (!rlang_frame && !base_frame) {
     return(character())
   }
   name <- unparenthesized_value(args$nm)

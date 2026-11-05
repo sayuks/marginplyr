@@ -24,6 +24,196 @@ test_that("generated local selections ignore caller namespace operators", {
   }
 })
 
+test_that("generated local across names ignore caller namespace operators", {
+  data <- data.frame(x = c(1L, 3L))
+  hits <- 0L
+  `:::` <- function(pkg, name) {
+    pkg <- as.character(substitute(pkg))
+    name <- as.character(substitute(name))
+    if (identical(pkg, "marginplyr") &&
+          identical(name, "local_checked_glue_name")) {
+      hits <<- hits + 1L
+      return(function(...) "intercepted")
+    }
+    get(name, envir = asNamespace(pkg))
+  }
+  expected <- dplyr::summarise(
+    data, dplyr::across(x, sum, .unpack = identity(FALSE))
+  )
+  actual <- summarize_with_margins(
+    data, dplyr::across(x, sum, .unpack = identity(FALSE))
+  )
+  expect_identical(actual, expected)
+  expect_identical(hits, 0L)
+})
+
+# Compare every branch with an ordinary dplyr summary of the same input.
+expect_across_namespace_names <- function(convert) {
+  for (role in c("none", "fixed", "rollup")) {
+    data <- convert(if (role == "none") {
+      data.frame(x = c(1L, 3L))
+    } else {
+      data.frame(g = c("a", "b"), x = c(1L, 3L))
+    })
+    for (unpack in list(FALSE, TRUE, "{outer}.{inner}")) {
+      for (dynamic in c(FALSE, TRUE)) {
+        for (template in list(NULL, "{.col}_s")) {
+          hits <- 0L
+          caller <- rlang::env()
+          caller[[":::"]] <- function(pkg, name) {
+            pkg <- as.character(substitute(pkg))
+            name <- as.character(substitute(name))
+            if (identical(pkg, "marginplyr") &&
+                  identical(name, "local_checked_glue_name")) {
+              hits <<- hits + 1L
+              return(function(...) "intercepted")
+            }
+            get(name, envir = asNamespace(pkg))
+          }
+          fns <- if (isFALSE(unpack)) {
+            quote(sum)
+          } else {
+            quote(~ data.frame(z = sum(.x)))
+          }
+          unpack_arg <- if (dynamic) {
+            rlang::call2("identity", unpack)
+          } else {
+            unpack
+          }
+          summary <- rlang::new_quosure(rlang::expr(dplyr::across(
+            "x", !!fns, .names = !!template, .unpack = !!unpack_arg
+          )), caller)
+          expected <- if (role == "none") {
+            dplyr::summarise(data, !!summary)
+          } else {
+            dplyr::summarise(data, !!summary, .by = "g")
+          }
+          if (role == "rollup") {
+            total <- dplyr::summarise(data, !!summary)
+            total$g <- NA_character_
+            total <- dplyr::select(total, dplyr::all_of(names(expected)))
+            expected <- dplyr::bind_rows(expected, total)
+          }
+          expect_identical(hits, 0L)
+          actual <- switch(role,
+            none = summarize_with_margins(data, !!summary),
+            fixed = summarize_with_margins(data, !!summary, .by = "g"),
+            rollup = summarize_with_margins(
+              data, !!summary, .grouping = rollup("g"), .margin_label = NULL
+            )
+          )
+          info <- paste(
+            role, unpack, dynamic,
+            if (is.null(template)) "default" else template
+          )
+          expect_identical(actual, expected, info = info)
+          expect_identical(hits, 0L, info = info)
+        }
+      }
+    }
+  }
+}
+
+test_that("local across naming controls match dplyr on frames and tibbles", {
+  expect_across_namespace_names(identity)
+  expect_across_namespace_names(tibble::as_tibble)
+})
+
+test_that("local across naming controls match dplyr on eager tables", {
+  skip_if_suggest_absent("data.table")
+  expect_across_namespace_names(data.table::as.data.table)
+})
+
+test_that("authored across naming namespaces retain caller lookup", {
+  data <- data.frame(x = c(1L, 3L))
+  for (operator in c("::", ":::")) {
+    hits <- 0L
+    caller <- rlang::env(..marginplyr_glue_name_1 = 13L)
+    caller[[operator]] <- function(pkg, name) {
+      pkg <- as.character(substitute(pkg))
+      name <- as.character(substitute(name))
+      if (identical(pkg, "base") && identical(name, "sum")) {
+        hits <<- hits + 1L
+        return(function(...) 17L)
+      }
+      get(name, envir = asNamespace(pkg))
+    }
+    template <- paste0("{.col}_{base", operator, "sum(1L, 2L)}")
+    unpack_template <- paste0(
+      "{outer}_{inner}_{base", operator, "sum(1L, 2L)}"
+    )
+    expressions <- rlang::exprs(
+      dplyr::across(x, sum, .names = !!template, .unpack = identity(FALSE)),
+      dplyr::across(
+        x, ~ data.frame(z = sum(.x)), .names = !!template,
+        .unpack = identity(!!unpack_template)
+      ),
+      dplyr::across(
+        x, sum, .names = "{.col}_{..marginplyr_glue_name_1}",
+        .unpack = identity(FALSE)
+      )
+    )
+    expected_names <- c("x_17", "x_17_z_17", "x_13")
+    expected_hits <- c(1L, 2L, 0L)
+    for (i in seq_along(expressions)) {
+      summary <- rlang::new_quosure(expressions[[i]], caller)
+      before <- hits
+      expected <- dplyr::summarise(data, !!summary)
+      ordinary_hits <- hits - before
+      expect_identical(names(expected), expected_names[[i]])
+      expect_identical(ordinary_hits, expected_hits[[i]])
+      actual <- summarize_with_margins(data, !!summary)
+      expect_identical(actual, expected)
+      expect_identical(hits - before, ordinary_hits * 2L)
+    }
+  }
+})
+
+test_that("across naming preserves bindings inherited by the caller", {
+  data <- data.frame(x = c(1L, 3L))
+  parent <- rlang::env(..marginplyr_glue_name_1 = 13L)
+  caller <- rlang::env(parent)
+  summary <- rlang::new_quosure(quote(dplyr::across(
+    "x", sum, .names = "{.col}_{..marginplyr_glue_name_1}",
+    .unpack = identity(FALSE)
+  )), caller)
+  expected <- dplyr::summarise(data, !!summary)
+  expect_identical(names(expected), "x_13")
+  expect_identical(summarize_with_margins(data, !!summary), expected)
+})
+
+test_that("generated across checks refuse actual output-name collisions", {
+  data <- data.frame(g = c("a", "b"), x = c(1L, 3L))
+  `:::` <- function(pkg, name) {
+    pkg <- as.character(substitute(pkg))
+    name <- as.character(substitute(name))
+    if (identical(pkg, "marginplyr") &&
+          identical(name, "local_checked_glue_name")) {
+      return(function(...) "safe")
+    }
+    get(name, envir = asNamespace(pkg))
+  }
+  expressions <- rlang::exprs(
+    dplyr::across(x, sum, .names = identity("g"), .unpack = identity(FALSE)),
+    dplyr::across(x, ~ data.frame(g = sum(.x)), .unpack = identity("{inner}"))
+  )
+  for (expr in expressions) {
+    summary <- rlang::new_quosure(expr, environment())
+    expect_error(
+      summarize_with_margins(data, !!summary, .by = "g"),
+      "cannot overwrite grouping column", class = "marginplyr_error"
+    )
+    expect_error(
+      summarize_with_margins(data, !!summary, .grouping = rollup("g")),
+      "cannot overwrite grouping column", class = "marginplyr_error"
+    )
+    expect_error(
+      summarize_with_margins(data["x"], !!summary, .id = "g"),
+      "conflicts with a summary output", class = "marginplyr_error"
+    )
+  }
+})
+
 test_that("caller-authored namespace calls keep ordinary R lookup", {
   data <- data.frame(x = 1:3)
   for (operator in c("::", ":::")) {
