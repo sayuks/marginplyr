@@ -93,9 +93,9 @@ isolated_dtplyr_proxy <- function(.data, env = .data[["env"]]) {
   utils::head(as_data_table(proxy), n = 0L)
 }
 
-# Whether lexical lookup finds an ordinary base arithmetic binding without
+# Whether lexical lookup finds an ordinary base binding without
 # evaluating an active binding or forcing a promise.
-dtplyr_base_arithmetic_binding <- function(name, env) {
+dtplyr_base_binding <- function(name, env) {
   while (!identical(env, emptyenv())) {
     if (exists(name, envir = env, inherits = FALSE)) {
       if (bindingIsActive(name, env) ||
@@ -125,7 +125,7 @@ dtplyr_value_stable_arithmetic <- function(expr, columns, env) {
   if (is.call(expr) && is.symbol(expr[[1L]])) {
     head <- as.character(expr[[1L]])
     if (head %in% c("+", "-", "*", "/") &&
-          dtplyr_base_arithmetic_binding(head, env)) {
+          dtplyr_base_binding(head, env)) {
       args <- as.list(expr)[-1L]
       return(length(args) %in% c(1L, 2L) && all(vapply(args, function(arg) {
         dtplyr_value_stable_arithmetic(arg, columns, env)
@@ -242,6 +242,16 @@ dtplyr_metadata_safe_step <- function(step, env = step[["env"]]) {
   }
   if (inherits(step, "dtplyr_step_first")) {
     return(TRUE)
+  }
+  # Generated brackets use the outer query's lexical environment, including
+  # for subsets whose proxy can otherwise be read directly from parent schema.
+  brackets <- inherits(step, "dtplyr_step_mutate") ||
+    (inherits(step, "dtplyr_step_subset") &&
+       (!is.null(step[["i"]]) || !is.null(step[["j"]]))) ||
+    (inherits(step, "dtplyr_step_join") &&
+       !identical(step[["style"]], "full"))
+  if (brackets && !dtplyr_base_binding("[", env)) {
+    return(FALSE)
   }
   if (inherits(step, "dtplyr_step_mutate")) {
     parent <- step[["parent"]]
