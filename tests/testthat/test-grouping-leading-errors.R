@@ -756,7 +756,7 @@ test_that("singleton wrappers retain leading partial product duplicates", {
   expect_identical(predicates, 0L)
 })
 
-test_that("partial product positions include every preceding completed branch", {
+test_that("partial product positions include preceding branches", {
   data <- data.frame(a = 1L, b = 2L, c = 3L)
   predicates <- 0L
   predicate <- function(x) {

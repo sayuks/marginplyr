@@ -1542,7 +1542,7 @@ grouping_set_key <- function(set, dimensions) {
 
 # Reject repeated membership keys at the supplied occurrence positions.
 validate_unique_grouping_sets <- function(keys, duplicates_choices,
-                                         set_ids = seq_along(keys)) {
+                                          set_ids = seq_along(keys)) {
   duplicate_keys <- duplicated(keys) | duplicated(keys, fromLast = TRUE)
   if (!any(duplicate_keys)) {
     return(invisible(NULL))
