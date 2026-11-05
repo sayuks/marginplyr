@@ -662,7 +662,7 @@ test_that("known duplicate occurrences precede unsafe dtplyr metadata", {
     inspect_grouping(step, .grouping = grouping_spec(
       grouping_sets(x, x), grouping_sets(x, where(numeric_column))
     )),
-    "Can.t safely determine column metadata", class = "marginplyr_error"
+    "1, 3; 2, 4.", fixed = TRUE, class = "marginplyr_error"
   )
   expect_identical(predicates, 0L)
 })
@@ -679,6 +679,148 @@ test_that("known columns in a pending singleton settle product duplicates", {
       verb(data, NULL, spec),
       "1, 2.", fixed = TRUE, class = "marginplyr_error"
     )
+  }
+})
+
+test_that("duplicate product prefixes precede multi-set typed suffixes", {
+  data <- data.frame(a = "x", b = 1L)
+  predicates <- 0L
+  predicate <- function(x) {
+    predicates <<- predicates + 1L
+    is.integer(x)
+  }
+  spec <- grouping_spec(
+    grouping_sets(a, a),
+    grouping_sets(grouping_set(where(predicate)), grouping_set())
+  )
+  for (verb in forwarded_verbs[c(
+    "inspect_grouping", "nest_with_margins", "nest_by_with_margins"
+  )]) {
+    cnd <- expect_error(verb(data, NULL, spec), "Duplicate grouping sets",
+                        class = "marginplyr_error")
+    expect_match(conditionMessage(cnd), "1, 3", fixed = TRUE)
+    expect_match(conditionMessage(cnd), "2, 4", fixed = TRUE)
+  }
+  expect_identical(predicates, 0L)
+})
+
+test_that("multi-set product duplicate positions survive outer families", {
+  data <- data.frame(a = "x", b = 1L, c = "y", d = "z")
+  predicate <- function(x) stop("typed selection evaluated")
+  partial <- grouping_spec(
+    grouping_sets(a, a), grouping_sets(b, where(predicate))
+  )
+  spec <- grouping_spec(!!partial, grouping_sets(c, grouping_set()))
+  cnd <- expect_error(inspect_grouping(data, .grouping = spec),
+                      "Duplicate grouping sets", class = "marginplyr_error")
+  for (positions in c("1, 5", "4, 8")) {
+    expect_match(conditionMessage(cnd), positions, fixed = TRUE)
+  }
+  cnd <- expect_error(inspect_grouping(
+    data, .grouping = grouping_sets(c, !!spec)
+  ), "Duplicate grouping sets", class = "marginplyr_error")
+  for (positions in c("2, 6", "5, 9")) {
+    expect_match(conditionMessage(cnd), positions, fixed = TRUE)
+  }
+  cnd <- expect_error(inspect_grouping(
+    data, .grouping = grouping_spec(
+      grouping_sets(c, !!partial), grouping_sets(d, grouping_set())
+    )
+  ), "Duplicate grouping sets", class = "marginplyr_error")
+  for (positions in c("3, 7", "6, 10")) {
+    expect_match(conditionMessage(cnd), positions, fixed = TRUE)
+  }
+})
+
+test_that("duplicate product prefixes avoid unsafe dtplyr suffix metadata", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.frame(a = "x", b = 1L)
+  callbacks <- 0L
+  derive <- function(x) {
+    callbacks <<- callbacks + 1L
+    paste0(x, "!")
+  }
+  step <- dtplyr::lazy_dt(data) |> dplyr::mutate(added = derive(a))
+  counter <- local_dtplyr_proxy_counter()
+  predicate <- function(x) stop("typed selection evaluated")
+  spec <- grouping_spec(
+    grouping_sets(a, a),
+    grouping_sets(grouping_set(where(predicate)), grouping_set())
+  )
+  for (verb in forwarded_verbs[c(
+    "inspect_grouping", "nest_with_margins", "nest_by_with_margins"
+  )]) {
+    cnd <- expect_error(verb(step, NULL, spec), "Duplicate grouping sets",
+                        class = "marginplyr_error")
+    expect_match(conditionMessage(cnd), "1, 3", fixed = TRUE)
+    expect_match(conditionMessage(cnd), "2, 4", fixed = TRUE)
+  }
+  expect_identical(callbacks, 0L)
+  expect_identical(counter$n, 0L)
+  expect_identical(counter$source_evaluations, 0L)
+})
+
+test_that("duplicate product prefixes avoid DuckDB multi-set suffix queries", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  data <- data.frame(a = "x", b = 1L)
+  remote <- dplyr::copy_to(con, data, "duplicate_product_suffix")
+  counter <- duckdb_query_counter()
+  on.exit(counter$untrace(), add = TRUE, after = FALSE)
+  predicates <- 0L
+  predicate <- function(x) {
+    predicates <<- predicates + 1L
+    is.integer(x)
+  }
+  typed <- grouping_set(where(predicate))
+  specs <- list(
+    grouping_spec(grouping_sets(a, a), !!typed),
+    grouping_spec(grouping_sets(a, a), grouping_sets(b, grouping_set())),
+    grouping_spec(grouping_sets(a, a), grouping_sets(!!typed, grouping_set()))
+  )
+  for (spec in specs) {
+    expect_error(inspect_grouping(remote, .grouping = spec),
+                 "Duplicate grouping sets", class = "marginplyr_error")
+  }
+  expect_identical(counter$queries, 0L)
+  expect_identical(predicates, 0L)
+  plan <- inspect_grouping(remote, .grouping = typed)
+  expect_identical(plan$included, "(b)")
+  expect_identical(counter$queries, 1L)
+  expect_identical(predicates, 2L)
+})
+
+test_that("multi-set typed suffixes retain valid and allowed duplicate plans", {
+  data <- data.frame(a = c("x", "y"), b = 1:2)
+  suffix <- grouping_sets(grouping_set(where(is.integer)), grouping_set())
+  valid <- grouping_spec(grouping_sets(a, grouping_set()), !!suffix)
+  duplicate <- grouping_spec(grouping_sets(a, a), !!suffix)
+  plan <- inspect_grouping(data, .grouping = valid)
+  expect_identical(plan$included, c("(a, b)", "(a)", "(b)", "()"))
+  expect_identical(plan$set_id, 1:4)
+  expect_identical(plan$grouping_id, 0:3)
+
+  plan <- inspect_grouping(data, .grouping = duplicate, .duplicates = "keep")
+  expect_identical(plan$included, c("(a, b)", "(a)", "(a, b)", "(a)"))
+  expect_identical(plan$set_id, 1:4)
+  expect_identical(plan$grouping_id, c(0L, 1L, 0L, 1L))
+  plan <- inspect_grouping(data, .grouping = duplicate, .duplicates = "drop")
+  expect_identical(plan$included, c("(a, b)", "(a)"))
+  expect_identical(plan$set_id, 1:2)
+  expect_identical(plan$grouping_id, 0:1)
+
+  for (verb in list(nest_with_margins, nest_by_with_margins)) {
+    expect_identical(
+      verb(data, .grouping = valid),
+      verb(data, .grouping = grouping_sets(grouping_set(a, b), a, b, grouping_set()))
+    )
+    expect_identical(
+      verb(data, .grouping = duplicate, .duplicates = "drop"),
+      verb(data, .grouping = grouping_sets(grouping_set(a, b), a))
+    )
+    expect_error(verb(data, .grouping = duplicate, .duplicates = "keep"),
+                 "must be one of", class = "marginplyr_error")
   }
 })
 

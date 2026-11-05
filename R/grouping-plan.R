@@ -1073,6 +1073,7 @@ validate_leading_selections <- function(preflight, data_vars, .by,
   resolved$completed <- list()
   resolved$incomplete <- list()
   resolved$offset <- 0L
+  resolved$width <- 1L
   resolve_selection <- function(arg) {
     if (!is_name_only_selection(arg, data_vars, allow_caller_code = FALSE)) {
       invokeRestart("needs_typed_selection")
@@ -1082,10 +1083,12 @@ validate_leading_selections <- function(preflight, data_vars, .by,
     selected
   }
   emit <- if (identical(.duplicates, "error")) {
-    function(family = NULL, incomplete = NULL, whole = FALSE, offset = 0L) {
+    function(family = NULL, incomplete = NULL, whole = FALSE, offset = 0L,
+             width = 1L) {
       if (!is.null(incomplete)) {
         resolved$incomplete <- incomplete
         resolved$offset <- offset
+        resolved$width <- width
       } else {
         resolved$completed[[length(resolved$completed) + 1L]] <- family
       }
@@ -1105,14 +1108,25 @@ validate_leading_selections <- function(preflight, data_vars, .by,
     dimensions <- unique(unlist(c(completed, incomplete), use.names = FALSE))
     # The unknown suffix can change whether a completed set equals an
     # incomplete one. Keep their keys separate while numbering them together.
+    pending_keys <- grouping_set_keys(incomplete, dimensions)
+    # Unknown suffix choices share no membership evidence with each other.
+    # First and last choices prove the boundary positions without expanding
+    # the unknown suffix. Equal prefixes repeat at each chosen position.
+    choices <- unique(c(1, resolved$width))
+    pending_ids <- rep(seq_along(pending_keys) - 1L, each = length(choices)) *
+      resolved$width + rep(choices, times = length(pending_keys))
+    pending_keys <- paste0(
+      rep(pending_keys, each = length(choices)), ":",
+      rep(choices, times = length(pending_keys)),
+      recycle0 = TRUE
+    )
     keys <- c(
       paste0("0", grouping_set_keys(completed, dimensions),
              recycle0 = TRUE),
-      paste0("1", grouping_set_keys(incomplete, dimensions),
-             recycle0 = TRUE)
+      paste0("1", pending_keys, recycle0 = TRUE)
     )
     set_ids <- c(seq_along(completed),
-                 length(completed) + resolved$offset + seq_along(incomplete))
+                 length(completed) + resolved$offset + pending_ids)
     validate_unique_grouping_sets(keys, duplicates_choices, set_ids)
   }
   invisible(resolved$dimensions)
@@ -1599,7 +1613,8 @@ validate_unique_grouping_sets <- function(keys, duplicates_choices,
 # selection, the observer can receive incomplete occurrences as a list of
 # product factors. `whole` means that evidence covers every position of
 # the emitting node if its selections succeed. `offset` counts preceding
-# occurrences not already emitted as completed families. Expansion ignores
+# occurrences not already emitted as completed families. `width` is the number
+# of unresolved suffix choices following each incomplete prefix. Expansion ignores
 # the observer's return value and returns the family of occurrences.
 expand_grouping_family <- function(preflight, resolve_selection,
                                    emit = NULL, drop_duplicates = FALSE) {
@@ -1657,8 +1672,8 @@ expand_grouping_sets <- function(preflight, resolve_selection, emit,
     # An incomplete branch accounts for only part of this union.
     emit_union <- emit
     emit <- function(family = NULL, incomplete = NULL, whole = FALSE,
-                     offset = 0L) {
-      emit_union(family, incomplete, offset = offset)
+                     offset = 0L, width = 1L) {
+      emit_union(family, incomplete, offset = offset, width = width)
     }
   }
   unlist(
@@ -1796,8 +1811,8 @@ expand_grouping_product <- function(preflight, resolve_selection, emit,
     emit_grouping_family(combine_grouping_factors(left[-1L], right), emit))
 }
 
-# Observe the first left choice crossing the tail. On deferral, a singleton
-# suffix fixes the positions and adds the same unknown columns throughout.
+# Observe the first left choice crossing the tail. A fixed-size unresolved
+# suffix fixes the positions of equal prefixes without settling its membership.
 observe_product_factor <- function(arg, prefix, suffix,
                                    resolve_selection, emit) {
   tail <- length(suffix) == 0L
@@ -1807,26 +1822,47 @@ observe_product_factor <- function(arg, prefix, suffix,
   first <- lapply(prefix, `[`, 1L)
   completed <- list()
   observe <- function(family = NULL, incomplete = NULL, whole = FALSE,
-                      offset = 0L) {
+                      offset = 0L, width = 1L) {
     if (is.null(incomplete)) {
       completed <<- c(completed, family)
       if (tail) {
         emit(cross_grouping_families(c(first, list(family))))
       }
-    } else if (whole && single_suffix()) {
-      emit(incomplete = c(prefix, incomplete), whole = TRUE, offset = offset)
-    } else if (single_suffix()) {
+    } else if (whole && !is.na(grouping_factors_size(suffix)) &&
+               width * grouping_factors_size(suffix) <= 2^53) {
+      size <- grouping_factors_size(suffix)
+      if (!tail) {
+        offset <- offset + length(completed)
+      }
+      emit(incomplete = c(prefix, incomplete), whole = TRUE,
+           offset = offset * size, width = width * size)
+    } else if (!is.na(grouping_factors_size(suffix)) &&
+               width * grouping_factors_size(suffix) <= 2^53) {
+      size <- grouping_factors_size(suffix)
       # Tail occurrences have already been emitted; other completed choices
       # still precede this evidence without reaching the outer observer.
       if (!tail) {
         offset <- offset + length(completed)
       }
-      emit(incomplete = c(first, incomplete), offset = offset)
+      emit(incomplete = c(first, incomplete), offset = offset * size,
+           width = width * size)
     }
   }
   withRestarts(
     expand_grouping_factor(arg, resolve_selection, FALSE, observe),
     needs_typed_selection = function(selected = character()) {
+      width <- grouping_factors_size(c(list(arg), suffix))
+      if (!is.na(width) && width > 1L) {
+        known <- duplicate_prefix_candidates(prefix)
+        dimensions <- unique(unlist(known, use.names = FALSE))
+        if (width * length(known) <= 2^53 &&
+            anyDuplicated(grouping_set_keys(known, dimensions))) {
+          # Whole-product evidence includes the first left choice's emitted
+          # branches, so count those positions only once.
+          offset <- if (tail) -length(completed) else 0L
+          emit(incomplete = prefix, whole = TRUE, offset = offset, width = width)
+        }
+      }
       if (!tail && length(completed) > 0L && single_suffix()) {
         # Only the first left choice has fixed positions while this factor
         # remains partial. Every completed branch has the same singleton tail.
@@ -1856,11 +1892,25 @@ cross_grouping_families <- function(families) {
 
 # Whether this preflighted factor yields one set if its selections succeed.
 single_grouping_factor <- function(arg) {
+  size <- grouping_factor_size(arg)
+  !is.na(size) && size == 1L
+}
+
+# Count occurrences without resolving selections, or return NA when their
+# answers decide the count. Every caller holds a preflighted factor.
+grouping_factor_size <- function(arg) {
   if (is.null(arg$nested)) {
-    return(TRUE)
+    return(1L)
   }
   rule <- arg$nested$rule
-  !is.null(rule$single_set) && rule$single_set(arg$nested)
+  if (is.null(rule$size)) NA_real_ else rule$size(arg$nested)
+}
+
+# A product's count is fixed only when every factor's count is fixed and the
+# occurrence positions remain exactly representable as doubles.
+grouping_factors_size <- function(args) {
+  size <- prod(vapply(args, grouping_factor_size, numeric(1)))
+  if (!is.na(size) && is.finite(size) && size <= 2^53) size else NA_real_
 }
 
 # Resolve one factor, optionally observing its completed occurrences.
@@ -2020,16 +2070,15 @@ grouping_kind_rules <- local({
           constructor = "grouping_set",
           validate_empty = allow_empty_grouping,
           validate_nested = reject_nested_in_set,
-          single_set = function(preflight) TRUE,
+          size = function(preflight) 1L,
           expand = expand_single_grouping_set
         ),
         sets = list(
           constructor = "grouping_sets",
           validate_empty = validate_empty_grouping_sets,
           validate_nested = allow_nested_grouping,
-          single_set = function(preflight) {
-            length(preflight$args) == 1L &&
-              single_grouping_factor(preflight$args[[1L]])
+          size = function(preflight) {
+            sum(vapply(preflight$args, grouping_factor_size, numeric(1)))
           },
           resolve_factor = resolve_product_union,
           expand = expand_grouping_sets
@@ -2051,8 +2100,8 @@ grouping_kind_rules <- local({
           constructor = "grouping_spec",
           validate_empty = allow_empty_grouping,
           validate_nested = allow_nested_grouping,
-          single_set = function(preflight) {
-            all(vapply(preflight$args, single_grouping_factor, logical(1)))
+          size = function(preflight) {
+            grouping_factors_size(preflight$args)
           },
           flatten_product = flatten_product_factors,
           resolve_factor = resolve_product_product,
