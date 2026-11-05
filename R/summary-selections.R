@@ -1121,7 +1121,7 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
     args <- first_args$call_args
     args[[first_args$cols_index]] <- rlang::call2(
       "c", rlang::call2(
-        marginplyr_private_call("replay_local_selector_warnings"), state
+        replay_local_selector_warnings, state
       ), first_args$cols
     )
     result$summaries$dots[[1L]] <- rlang::new_quosure(
@@ -1149,7 +1149,7 @@ cache_first_across_fns <- function(expr, state) {
   parsed <- parse_across_arguments(expr)
   args <- parsed$call_args
   args[[parsed$fns_index]] <- rlang::call2(
-    marginplyr_private_call("first_local_across_fns"), state
+    first_local_across_fns, state
   )
   rebuild_static_call(expr, args)
 }
@@ -1609,7 +1609,8 @@ preflight_local_selection <- function(dot, selection_proxy) {
     length(selection) == 2L &&
     rlang::is_missing(selection[[2L]])
   env <- rlang::quo_get_env(dot)
-  static_name <- rlang::is_symbol(selection) && (
+  static_name <- rlang::is_symbol(selection) &&
+    !is_numbered_dot_reference(selection) && (
     rlang::as_string(selection) %in% names(selection_proxy) ||
       !rlang::env_has(env, rlang::as_string(selection), inherit = TRUE)
   )
@@ -1747,7 +1748,8 @@ rewrite_summary_selections <- function(expr,
                                        skip_nested_deferred = FALSE,
                                        group_vars = character(),
                                        forbidden_names = character(),
-                                       top_level_unnamed = FALSE) {
+                                       top_level_unnamed = FALSE,
+                                       expand_local_pick = TRUE) {
   if (!rlang::is_call(expr)) {
     return(expr)
   }
@@ -1774,30 +1776,35 @@ rewrite_summary_selections <- function(expr,
   # `quote(dplyr::across(value, mean))` into
   # `quote(dplyr::across(dplyr::all_of("value"), mean))`, which is a different
   # expression to whatever the caller meant to carry (#179).
-  expr <- rewrite_evaluated_call_parts(
-    expr,
-    function(part) {
-      if (defer_nested_local && skip_nested_deferred) {
-        return(part)
-      }
-      rewrite_summary_selections(
-        part,
-        env = env,
-        data_proxy = data_proxy,
-        across_backend = across_backend,
-        shield_independent_masks = shield_independent_masks,
-        defer_local = defer_local || defer_nested_local,
-        group_vars = group_vars,
-        forbidden_names = forbidden_names
-      )
+  # dplyr's pick expansion skips function bodies, defaults and computed heads.
+  expand_nested_pick <- expand_local_pick &&
+    !any(static_call_name(expr) %in% c("function", "~"))
+  rewrite_part <- function(part, expand_pick = expand_nested_pick) {
+    if (defer_nested_local && skip_nested_deferred) {
+      return(part)
     }
+    rewrite_summary_selections(
+      part,
+      env = env,
+      data_proxy = data_proxy,
+      across_backend = across_backend,
+      shield_independent_masks = shield_independent_masks,
+      defer_local = defer_local || defer_nested_local,
+      group_vars = group_vars,
+      forbidden_names = forbidden_names,
+      expand_local_pick = expand_pick
+    )
+  }
+  expr <- rewrite_evaluated_call_parts(
+    expr, rewrite_part,
+    rewrite_head = function(part) rewrite_part(part, expand_pick = FALSE)
   )
 
   if (shield_independent_masks && any(independent_mask_call_parts(expr))) {
     # dplyr expands pick() in call arguments, so hide the nested call in the
     # head. Construct the closure in the package namespace.
     return(rlang::call2(rlang::call2(
-      marginplyr_private_call("nested_mask_thunk"), expr
+      nested_mask_thunk, expr
     )))
   }
 
@@ -1815,11 +1822,16 @@ rewrite_summary_selections <- function(expr,
   if (call_name %in% c("across", "if_any", "if_all")) {
     if (defer_local) {
       # An unnamed top-level across uses dplyr's expansion path (ADR 0019).
-      return(rewrite_local_across_selection(
+      rewritten <- rewrite_local_across_selection(
         expr, group_vars, forbidden_names,
         capture_forwarded = !(top_level_unnamed &&
                                 identical(call_name, "across"))
-      ))
+      )
+      if (top_level_unnamed && identical(call_name, "across") &&
+            !is_parenthesized(rewritten)) {
+        return(rewritten)
+      }
+      return(isolate_local_selection_call(rewritten, call_name))
     }
     return(rewrite_across_selection(
       expr,
@@ -1831,9 +1843,11 @@ rewrite_summary_selections <- function(expr,
   }
   if (identical(call_name, "pick")) {
     if (defer_local) {
-      return(rewrite_local_pick_selection(
+      rewritten <- rewrite_local_pick_selection(
         expr, group_vars, forbidden_names
-      ))
+      )
+      if (expand_local_pick) return(rewritten)
+      return(isolate_local_selection_call(rewritten, call_name))
     }
     return(rewrite_pick_selection(expr, env, data_proxy))
   }
@@ -1848,6 +1862,16 @@ rewrite_summary_selections <- function(expr,
     call_name,
     "()`.",
     call. = FALSE
+  )
+}
+
+# Bind the namespace operator for a rewritten local selection that dplyr
+# evaluates instead of expanding syntactically.
+isolate_local_selection_call <- function(expr, name) {
+  if (!identical(static_spelling_name(expr, "selection"), name)) return(expr)
+  rebuild_static_call(
+    expr, static_call_args(expr),
+    head = rlang::call2(base::`::`, rlang::sym("dplyr"), rlang::sym(name))
   )
 }
 
@@ -1871,16 +1895,15 @@ local_summary_selection_expr <- function(selection, group_vars,
     selection <- rlang::expr(c())
   }
   rlang::call2(
-    "all_of",
+    tidyselect::all_of,
     rlang::call2(
-      marginplyr_private_call("local_summary_selection"),
-      # Keep this capture independent of the caller's `quote` binding.
-      rlang::call2(rlang::expr(base::quote), selection),
+      local_summary_selection,
+      # The generated capture must not resolve names in the caller's scope.
+      rlang::call2(base::quote, selection),
       env,
       group_vars,
       forbidden_names
-    ),
-    .ns = "tidyselect"
+    )
   )
 }
 
@@ -1897,7 +1920,7 @@ rewrite_local_across_selection <- function(expr, group_vars,
   ) {
     return(rlang::call2(
       rlang::call2(
-        marginplyr_private_call("local_forwarded_selection"),
+        local_forwarded_selection,
         static_call_name(expr), group_vars, forbidden_names
       ),
       !!!call_args
@@ -1926,9 +1949,11 @@ local_forwarded_selection <- function(helper, group_vars, forbidden_names) {
     # missing(..i) follows forwarded promises without forcing them and treats
     # an omitted formal's default as supplied to this nested call.
     args <- lapply(seq_along(args), function(i) {
-      if (i != cols_index && eval(
+      # Runtime across gives a captured empty selector its default selection.
+      missing_cols <- i == cols_index && rlang::quo_is_missing(args[[i]])
+      if (missing_cols || (i != cols_index && eval(
         call("missing", as.name(paste0("..", i))), envir = frame
-      )) {
+      ))) {
         rlang::missing_arg()
       } else {
         args[[i]]
@@ -1949,7 +1974,7 @@ rewrite_local_pick_selection <- function(expr, group_vars,
   if (any(forwarded)) {
     return(rlang::call2(
       rlang::call2(
-        marginplyr_private_call("local_forwarded_pick_selection"),
+        local_forwarded_pick_selection,
         group_vars, forbidden_names
       ),
       !!!call_args
