@@ -4356,8 +4356,13 @@ scoped_data_symbols <- function(expr, scope, lookup) {
       return(unique(c(target, pronoun_index_symbols(expr, scope, lookup))))
     }
   }
-  if (!is.null(call_name) && call_name %in% c("$", "[[") &&
-        length(expr) == 3L &&
+  if (!is.null(call_name) &&
+        call_name %in% c("$", "[[", "getElement", ".subset2") &&
+        (length(expr) == 3L ||
+           (identical(call_name, "[[") && length(expr) == 4L &&
+              identical(names(expr)[4L], "exact") &&
+              (isTRUE(unparenthesized_value(expr[[4L]])) ||
+                 isFALSE(unparenthesized_value(expr[[4L]]))))) &&
         is_static_mask_parent(expr[[2L]], scope, lookup) &&
         is_known_base_frame_call(expr, call_name, scope, lookup)) {
     if (identical(call_name, "$") && is_name_part(expr[[3L]])) {
@@ -5577,18 +5582,32 @@ is_static_mask_parent <- function(expr, scope, lookup) {
 }
 
 # An inheriting lookup from the current evaluation frame follows the same
-# lexical bindings as a bare name. A supplied stop frame may cut that path.
+# lexical bindings as a bare name. Only known stop frames beyond the mask
+# preserve that path when `last` is supplied.
 inheriting_env_get_symbols <- function(expr, scope, lookup) {
   args <- static_matched_arguments(expr, rlang::env_get)
-  if ("last" %in% names(args) ||
-        !identical(unparenthesized_value(args$inherit), TRUE) ||
+  if (!identical(unparenthesized_value(args$inherit), TRUE) ||
         !rlang::is_string(unparenthesized_value(args$nm))) {
     return(character())
   }
+  if ("last" %in% names(args)) {
+    last_name <- static_call_name(args$last)
+    if (is.null(last_name) ||
+          !last_name %in% c("emptyenv", "baseenv", "globalenv") ||
+          length(static_call_args(args$last)) != 0L ||
+          !is_known_base_frame_call(args$last, last_name, scope, lookup)) {
+      return(character())
+    }
+  }
   frame <- args$env
-  if (missing(frame) || !identical(static_call_name(frame), "current_env") ||
-        !identical(static_call_ns(frame), "rlang") ||
-        length(static_call_args(frame)) != 0L) {
+  if (missing(frame) || length(static_call_args(frame)) != 0L) {
+    return(character())
+  }
+  rlang_frame <- identical(static_call_name(frame), "current_env") &&
+    identical(static_call_ns(frame), "rlang")
+  base_frame <- identical(static_call_name(frame), "environment") &&
+    is_known_base_frame_call(frame, "environment", scope, lookup)
+  if (!rlang_frame && !base_frame) {
     return(character())
   }
   name <- unparenthesized_value(args$nm)

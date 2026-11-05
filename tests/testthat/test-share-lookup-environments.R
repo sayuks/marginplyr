@@ -271,7 +271,24 @@ test_that("literal mask reads follow both share dependency rules", {
   reads <- alist(
     parent.env(environment())$prior,
     parent.env(environment())[["prior"]],
-    rlang::env_get(rlang::current_env(), "prior", inherit = TRUE)
+    parent.env(environment())[["prior", exact = TRUE]],
+    parent.env(environment())[["prior", exact = FALSE]],
+    getElement(parent.env(environment()), "prior"),
+    base::getElement(parent.env(base::environment()), "prior"),
+    .subset2(parent.env(environment()), "prior"),
+    base::.subset2(parent.env(base::environment()), "prior"),
+    rlang::env_get(rlang::current_env(), "prior", inherit = TRUE),
+    rlang::env_get(environment(), "prior", inherit = TRUE),
+    rlang::env_get(base::environment(), "prior", inherit = TRUE),
+    rlang::env_get(
+      rlang::current_env(), "prior", inherit = TRUE, last = emptyenv()
+    ),
+    rlang::env_get(
+      rlang::current_env(), "prior", inherit = TRUE, last = baseenv()
+    ),
+    rlang::env_get(
+      rlang::current_env(), "prior", inherit = TRUE, last = globalenv()
+    )
   )
 
   for (kind in c("parent", "total")) {
@@ -306,8 +323,19 @@ test_that("literal reads from independent environments remain independent", {
   reads <- alist(
     external$prior,
     external[["prior"]],
+    external[["prior", exact = TRUE]],
+    external[["prior", exact = FALSE]],
+    getElement(external, "prior"),
+    base::getElement(external, "prior"),
+    .subset2(external, "prior"),
+    base::.subset2(external, "prior"),
     parent.env(environment())$prior,
+    parent.env(environment())[["prior", exact = TRUE]],
     rlang::env_get(external, "prior", inherit = TRUE),
+    rlang::env_get(external, "prior", inherit = TRUE, last = emptyenv()),
+    rlang::env_get(external, "prior", inherit = TRUE, last = baseenv()),
+    rlang::env_get(external, "prior", inherit = TRUE, last = globalenv()),
+    rlang::env_get(environment(), "prior", inherit = TRUE),
     (function(prior) {
       rlang::env_get(rlang::current_env(), "prior", inherit = TRUE)
     })(7),
@@ -328,6 +356,41 @@ test_that("literal reads from independent environments remain independent", {
       )
       expect_equal(forward$prior, c(0.25, 0.75, 1))
       expect_equal(forward$observed, c(7, 7, 7))
+
+      reverse <- summarize_with_margins(
+        data, prior = sum(x), source = !!read, ratio = !!share,
+        .grouping = rollup(g)
+      )
+      expect_equal(reverse$source, c(7, 7, 7))
+      expect_equal(reverse$ratio, c(1, 1, 1))
+    }
+  }
+})
+
+test_that("literal accessors preserve ordinary caller function lookup", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(100, 300))
+  # Base fixes the accessor name whose caller binding is under test.
+  getElement <- function(...) 7 # nolint: object_name_linter.
+  .subset2 <- function(...) 7
+  emptyenv <- function() parent.frame()
+  reads <- alist(
+    getElement(parent.env(environment()), "prior"),
+    .subset2(parent.env(environment()), "prior"),
+    rlang::env_get(
+      rlang::current_env(), "prior", default = 7,
+      inherit = TRUE, last = emptyenv()
+    )
+  )
+
+  for (kind in c("parent", "total")) {
+    share <- rlang::call2(paste0("share_of_", kind), quote(source))
+    for (read in reads) {
+      forward <- summarize_with_margins(
+        data, source = sum(x), prior = !!share, observed = !!read,
+        .grouping = rollup(g)
+      )
+      expect_equal(forward$observed, c(7, 7, 7))
+      expect_equal(forward$prior, c(0.25, 0.75, 1))
 
       reverse <- summarize_with_margins(
         data, prior = sum(x), source = !!read, ratio = !!share,
