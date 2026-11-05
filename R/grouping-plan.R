@@ -472,6 +472,10 @@ selection_c_args <- function(args, env) {
 # `allow_caller_code = FALSE` also withholds caller functions and assignments,
 # so a discarded mixed-selection pass cannot change their evaluation order.
 is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE) {
+  # An injected selector is walked in the environment it carries.
+  if (rlang::is_quosure(expr)) {
+    return(is_name_only_selection(expr, data_vars, allow_caller_code))
+  }
   # `is_name_part()` rather than `rlang::is_symbol()`, for the reason its
   # header gives: a part read by subscript may be R's empty argument.
   if (is_name_part(expr)) {
@@ -515,11 +519,7 @@ is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE) {
   # from the shape rather than joined to `selection_refused_operators()`
   # because `is_nameable_call()` declines a call to `~`, so the name that set
   # is consulted by is never read (ADR 0019, #163).
-  #
-  # A quosure is a call to `~` too, and is excluded: tidyselect evaluates one
-  # rather than refusing it, so what settles a quosure is the expression it
-  # carries, which this reader does not open.
-  if (rlang::is_call(expr, "~") && !rlang::is_quosure(expr)) {
+  if (rlang::is_call(expr, "~")) {
     return(TRUE)
   }
 

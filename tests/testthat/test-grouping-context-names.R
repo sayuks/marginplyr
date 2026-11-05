@@ -278,3 +278,79 @@ test_that("opaque namespace promises stay unforced without typed metadata", {
   )
   expect_identical(reads, 1L)
 })
+
+test_that("embraced names select fixed keys and Grouping dimensions", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.frame(a = "x", b = 1L)
+  step <- dplyr::mutate(dtplyr::lazy_dt(data), added = paste0(a, "!"))
+
+  fixed <- function(col, pick = "b") {
+    inspect_grouping(step, .by = c({{ col }}, b), .format = "list")$fixed
+  }
+  dimensions <- function(col, pick = "b") {
+    inspect_grouping(
+      step, .grouping = grouping_set(c({{ col }}, b)), .format = "list"
+    )$included
+  }
+
+  expect_identical(
+    fixed(a), inspect_grouping(step, .by = c(a, b), .format = "list")$fixed
+  )
+  expect_identical(
+    dimensions(a),
+    inspect_grouping(
+      step, .grouping = grouping_set(c(a, b)), .format = "list"
+    )$included
+  )
+  pick <- "a"
+  expect_identical(fixed(.env$pick), list(c("a", "b")))
+  expect_identical(dimensions(.env$pick), list(c("a", "b")))
+})
+
+test_that("an absent embraced column fails before DuckDB reads metadata", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE))
+  data <- data.frame(a = "x", b = 1L)
+  remote <- dplyr::copy_to(con, data, "embraced_grouping_names")
+  counter <- duckdb_query_counter()
+  on.exit(counter$untrace(), add = TRUE, after = FALSE)
+  expect_identical(DBI::dbGetQuery(con, "SELECT 1 AS n")$n, 1L)
+  expect_identical(counter$queries, 1L)
+  counter$queries <- 0L
+
+  fixed <- function(col) inspect_grouping(remote, .by = c({{ col }}, b))
+  dimensions <- function(col) {
+    inspect_grouping(remote, .grouping = grouping_set(c({{ col }}, b)))
+  }
+  for (inspect in list(fixed, dimensions)) {
+    expect_error(
+      inspect(absent), "`absent` doesn't exist", fixed = TRUE,
+      class = "vctrs_error_subscript_oob"
+    )
+    expect_identical(counter$queries, 0L)
+  }
+})
+
+test_that("embraced predicates still require typed metadata", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.frame(a = "x", b = 1L)
+  step <- dplyr::mutate(dtplyr::lazy_dt(data), added = paste0(a, "!"))
+  fixed <- function(input, col) {
+    inspect_grouping(input, .by = c({{ col }}, b), .format = "list")$fixed
+  }
+  dimensions <- function(input, col) {
+    inspect_grouping(
+      input, .grouping = grouping_set(c({{ col }}, b)), .format = "list"
+    )$included
+  }
+  for (inspect in list(fixed, dimensions)) {
+    expect_identical(
+      inspect(data, tidyselect::where(is.character)), list(c("a", "b"))
+    )
+    expect_error(
+      inspect(step, tidyselect::where(is.character)),
+      "Can't safely determine column metadata", class = "marginplyr_error"
+    )
+  }
+})
