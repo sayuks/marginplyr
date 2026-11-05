@@ -631,10 +631,9 @@ captured_call_heads <- function(expr) {
 # deferred expression.
 #
 # `rlang::expr()` and `quote()` capture their whole argument, so every head
-# inside one is deferred; `rlang::call2()` is handed its head as its first
-# argument alone, its remaining arguments being values the builder evaluates.
-# `call2()` also accepts a string there, which is the same hazard spelled
-# differently, so both spellings are read.
+# inside one is deferred. `rlang::call2()` evaluates its head argument: a
+# literal string or captured symbol leaves a name for backend lookup, while
+# a direct reference to an internal function supplies its selected value.
 bare_internal_deferred_heads <- function(expr, internal) {
   found <- character()
   named <- function(head) {
@@ -649,7 +648,15 @@ bare_internal_deferred_heads <- function(expr, internal) {
     heads <- if (builder %in% c("expr", "quo", "quote")) {
       captured_call_heads(node[[2L]])
     } else if (identical(builder, "call2")) {
-      list(node[[2L]])
+      if (is.character(node[[2L]])) {
+        list(node[[2L]])
+      } else if (is.call(node[[2L]]) &&
+                   expression_builder_name(node[[2L]][[1L]]) %in%
+                     c("expr", "quote") && length(node[[2L]]) == 2L) {
+        list(node[[2L]][[2L]])
+      } else {
+        list()
+      }
     } else {
       list()
     }
@@ -699,6 +706,12 @@ test_that("the deferred-head scan detects the shape it is written to forbid", {
   by_string <- function(col) {
     rlang::call2("encode_factor_for_margin", margin_column_pronoun(col))
   }
+  by_quoted_symbol <- function(col) {
+    rlang::call2(quote(encode_factor_for_margin), margin_column_pronoun(col))
+  }
+  by_function <- function(col) {
+    rlang::call2(encode_factor_for_margin, margin_column_pronoun(col))
+  }
   under_mutate <- function(data, col) {
     dplyr::mutate(data, "{col}" := !!rlang::expr(
       encode_factor_for_margin(!!margin_column_pronoun(col))
@@ -720,6 +733,14 @@ test_that("the deferred-head scan detects the shape it is written to forbid", {
     "encode_factor_for_margin"
   )
   expect_identical(
+    bare_internal_deferred_heads(body(by_quoted_symbol), internal),
+    "encode_factor_for_margin"
+  )
+  expect_identical(
+    bare_internal_deferred_heads(body(by_function), internal),
+    character()
+  )
+  expect_identical(
     bare_internal_deferred_heads(body(under_mutate), internal),
     "encode_factor_for_margin"
   )
@@ -727,10 +748,8 @@ test_that("the deferred-head scan detects the shape it is written to forbid", {
     bare_internal_deferred_heads(body(compliant), internal),
     character()
   )
-  # A builder's own arguments are values it evaluates, so an internal name
-  # standing in one is not the shape: the unquoted pronoun above appears in
-  # every case and is named by none of them, and `call2()` defers its head
-  # alone.
+  # The builder evaluates ordinary arguments, so the unquoted pronoun above
+  # appears in every case and is named by none of them.
   expect_identical(
     bare_internal_deferred_heads(
       quote(rlang::call2("c", margin_column_pronoun(col))),

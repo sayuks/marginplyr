@@ -1098,6 +1098,17 @@ summarize_with_margins <- function(.data,
     carried_columns = function(data_vars, plan) plan$by,
     .id = .id,
     validate_grouping = share_grouping_spec_validator(share_kinds),
+    validate_plan_names = function(by, dimensions, data_vars, complete) {
+      if (
+        complete && length(dots) > 0L &&
+          !contains_share_helper(rlang::quo_get_expr(dots[[1L]]))
+      ) {
+        preflight_static_selection(
+          dots[[1L]],
+          grouping_name_proxy(setdiff(data_vars, c(by, dimensions)))
+        )
+      }
+    },
     call = call
   )
   execution <- execute_margin_summary(
@@ -1178,8 +1189,14 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
         data_vars = operation$data_vars,
         group_vars = group_vars
       )
+      public_dot_names <- names(dots)
+      if (identical(operation$backend$kind, "local")) {
+        # A local frame discards its Assigned summary name (ADR 0028).
+        # The branch checks the names its value actually retains.
+        public_dot_names[!is.na(summaries$assigned_names)] <- ""
+      }
       summary_output_names <- unique(c(
-        names(dots)[nzchar(names(dots))],
+        public_dot_names[nzchar(public_dot_names)],
         summary_plan$predictable_names,
         known_summary_output_names(
           dots, selection_proxy,
@@ -1201,6 +1218,7 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
         "a summary output"
       )
       reserved_names <- unique(c(
+        names(dots),
         operation$data_vars,
         summary_output_names,
         summary_frame_candidates(dots),
