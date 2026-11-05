@@ -5109,11 +5109,14 @@ scope_after_removal_call <- function(expr, scope, lookup) {
     bound <- scope_bound_names(scope)
     depth <- static_parent_frame_depth(envir, scope, lookup)
     if (!is.null(depth)) {
+      if (depth >= length(scope)) {
+        return(scope)
+      }
       invoked <- vapply(
         scope[seq_len(depth)], function(frame) isTRUE(frame$invoked),
         logical(1)
       )
-      if (depth >= length(scope) || !all(invoked)) {
+      if (!all(invoked)) {
         return(scope)
       }
       index <- depth + 1L
@@ -5158,22 +5161,7 @@ static_parent_frame_depth <- function(expr, scope, lookup) {
   name <- static_call_name(expr)
   if (identical(name, "parent.frame") &&
         is_known_base_frame_call(expr, name, scope, lookup)) {
-    args <- static_call_args(expr)
-    if (length(args) == 0L) {
-      return(1L)
-    }
-    if (length(args) == 1L && argument_names(args)[[1L]] %in% c("", "n")) {
-      if (rlang::is_missing(args[[1L]])) {
-        return(1L)
-      }
-      depth <- unparenthesized_value(args[[1L]])
-      if (identical(depth, 1) || identical(depth, 1L)) {
-        return(1L)
-      }
-      if (identical(depth, 2L)) {
-        return(2L)
-      }
-    }
+    return(static_frame_depth_argument(expr))
   }
   if (identical(name, "sys.frame") && length(expr) == 2L &&
         is_known_base_frame_call(expr, name, scope, lookup)) {
@@ -5185,12 +5173,31 @@ static_parent_frame_depth <- function(expr, scope, lookup) {
     parent <- unparenthesized_value(args[[1L]])
     if (argument_names(args)[[1L]] %in% c("", "which") &&
           identical(static_call_name(parent), "sys.parent") &&
-          length(parent) == 1L &&
           is_known_base_frame_call(parent, "sys.parent", scope, lookup)) {
-      return(1L)
+      return(static_frame_depth_argument(parent))
     }
   }
   NULL
+}
+
+# Positive literal depth for a recognized base `parent.frame()` or
+# `sys.parent()` call, including the default when `n` is omitted.
+static_frame_depth_argument <- function(expr) {
+  args <- static_call_args(expr)
+  if (length(args) == 0L) {
+    return(1L)
+  }
+  if (length(args) == 1L && argument_names(args)[[1L]] %in% c("", "n")) {
+    if (rlang::is_missing(args[[1L]])) {
+      return(1L)
+    }
+    depth <- unparenthesized_value(args[[1L]])
+    # Base uses the integer part of a numeric depth.
+    if (!is.object(depth) && is.numeric(depth) && length(depth) == 1L &&
+          is.finite(depth) && depth >= 1 && depth < .Machine$integer.max + 1) {
+      as.integer(depth)
+    }
+  }
 }
 
 # Check a base callee against lexical frames before ordinary caller lookup.
