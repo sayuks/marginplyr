@@ -125,7 +125,7 @@ nest_by_with_margins <- function(.data,
   grouping_quo <- rlang::enquo(.grouping)
   by_quo <- rlang::enquo(.by)
 
-  result <- nest_margin_pipeline(
+  nest_margin_pipeline(
     .data = .data,
     by_quo = by_quo,
     grouping_quo = grouping_quo,
@@ -140,11 +140,4 @@ nest_by_with_margins <- function(.data,
     call = call,
     rowwise = TRUE
   )
-
-  .key <- unname(.key)
-  group_cols <- setdiff(colnames(result), .key)
-  with_margin_column_aliases(result, names(result), function(data, safe_name) {
-    columns <- vapply(group_cols, safe_name, character(1), USE.NAMES = FALSE)
-    dplyr::rowwise(data, dplyr::all_of(columns))
-  })
 }
