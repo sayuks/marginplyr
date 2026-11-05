@@ -1121,7 +1121,7 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
     args <- first_args$call_args
     args[[first_args$cols_index]] <- rlang::call2(
       "c", rlang::call2(
-        marginplyr_private_call("replay_local_selector_warnings"), state
+        replay_local_selector_warnings, state
       ), first_args$cols
     )
     result$summaries$dots[[1L]] <- rlang::new_quosure(
@@ -1149,7 +1149,7 @@ cache_first_across_fns <- function(expr, state) {
   parsed <- parse_across_arguments(expr)
   args <- parsed$call_args
   args[[parsed$fns_index]] <- rlang::call2(
-    marginplyr_private_call("first_local_across_fns"), state
+    first_local_across_fns, state
   )
   rebuild_static_call(expr, args)
 }
@@ -1920,7 +1920,7 @@ rewrite_local_across_selection <- function(expr, group_vars,
   ) {
     return(rlang::call2(
       rlang::call2(
-        marginplyr_private_call("local_forwarded_selection"),
+        local_forwarded_selection,
         static_call_name(expr), group_vars, forbidden_names
       ),
       !!!call_args
@@ -1974,7 +1974,7 @@ rewrite_local_pick_selection <- function(expr, group_vars,
   if (any(forwarded)) {
     return(rlang::call2(
       rlang::call2(
-        marginplyr_private_call("local_forwarded_pick_selection"),
+        local_forwarded_pick_selection,
         group_vars, forbidden_names
       ),
       !!!call_args
