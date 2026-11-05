@@ -17,6 +17,25 @@ forward_constructor_args <- function(constructor, ..., .nested = FALSE) {
   eval(expr)
 }
 
+# Assert the original constructor and tag through each consumer and call form.
+expect_constructor_tag_refused <- function(constructor, args, tag, data) {
+  direct <- as.call(c(list(as.name(constructor)), args))
+  forwarded <- as.call(c(list(quote(forward_constructor_args), constructor),
+                         args))
+  forwarded_nested <- as.call(c(as.list(forwarded), list(.nested = TRUE)))
+  for (expr in list(direct, rlang::call2("grouping_sets", direct),
+                    forwarded, forwarded_nested)) {
+    for (consume in constructor_arg_consumers(data)) {
+      error <- expect_error(consume(expr), class = "marginplyr_error")
+      expect_match(conditionMessage(error),
+                   paste0("`", constructor, "()` takes no named arguments"),
+                   fixed = TRUE)
+      expect_match(conditionMessage(error), paste0(tag, " = "),
+                   fixed = TRUE)
+    }
+  }
+}
+
 test_that("capture controls are refused without evaluating their values", {
   data <- data.frame(region = c("E", "W"), value = 1:2)
   constructors <- c("grouping_set", "grouping_sets", "rollup", "cube",
@@ -26,21 +45,7 @@ test_that("capture controls are refused without evaluating their values", {
   for (constructor in constructors) {
     for (tag in controls) {
       args <- setNames(list(quote(stop("must not run"))), tag)
-      direct <- as.call(c(list(as.name(constructor)), args))
-      forwarded <- as.call(c(list(quote(forward_constructor_args), constructor),
-                             args))
-      forwarded_nested <- as.call(c(as.list(forwarded), list(.nested = TRUE)))
-      for (expr in list(direct, rlang::call2("grouping_sets", direct),
-                        forwarded, forwarded_nested)) {
-        for (consume in constructor_arg_consumers(data)) {
-          error <- expect_error(consume(expr), class = "marginplyr_error")
-          expect_match(conditionMessage(error),
-                       paste0("`", constructor, "()` takes no named arguments"),
-                       fixed = TRUE)
-          expect_match(conditionMessage(error), paste0(tag, " = "),
-                       fixed = TRUE)
-        }
-      }
+      expect_constructor_tag_refused(constructor, args, tag, data)
     }
   }
 })
@@ -55,21 +60,7 @@ test_that("named values cannot configure capture directly or through dots", {
                         "grouping_spec")) {
     for (tag in names(controls)) {
       args <- c(list(quote(region)), setNames(controls[tag], tag))
-      direct <- as.call(c(list(as.name(constructor)), args))
-      forwarded <- as.call(c(list(quote(forward_constructor_args), constructor),
-                             args))
-      forwarded_nested <- as.call(c(as.list(forwarded), list(.nested = TRUE)))
-      for (expr in list(direct, rlang::call2("grouping_sets", direct),
-                        forwarded, forwarded_nested)) {
-        for (consume in constructor_arg_consumers(data)) {
-          error <- expect_error(consume(expr), class = "marginplyr_error")
-          expect_match(conditionMessage(error),
-                       paste0("`", constructor, "()` takes no named arguments"),
-                       fixed = TRUE)
-          expect_match(conditionMessage(error), paste0(tag, " = "),
-                       fixed = TRUE)
-        }
-      }
+      expect_constructor_tag_refused(constructor, args, tag, data)
     }
   }
 })
