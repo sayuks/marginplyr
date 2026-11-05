@@ -77,7 +77,7 @@ zero_row_dtplyr_proxy_input <- function(.data) {
   step
 }
 
-# The typed selection proxy for a derived dtplyr step. The registered dtplyr
+# The typed selection proxy for a dtplyr step. The registered dtplyr
 # method evaluates only isolated zero-row roots; calling it directly avoids
 # routing the step through `collect()` or `as_tibble()`.
 # The caller has checked metadata safety for `.data` in the same `env`.
@@ -155,9 +155,9 @@ dtplyr_plain_roots <- function(step) {
 # match. Require matching input types before using an empty-input result.
 dtplyr_join_set_types_match <- function(step, env = step[["env"]]) {
   tryCatch({
-    left <- dtplyr_selection_proxy(step[["parent"]], isolate = TRUE, env = env)
+    left <- dtplyr_selection_proxy(step[["parent"]], env = env)
     right <- dtplyr_selection_proxy(
-      step[["parent2"]], isolate = TRUE, env = env
+      step[["parent2"]], env = env
     )
     if (inherits(step, "dtplyr_step_join")) {
       on <- step[["on"]]
@@ -339,22 +339,20 @@ abort_unsafe_dtplyr_metadata <- function() {
 }
 
 # A faithful typed proxy for a dtplyr step, or a refusal before its source rows
-# run. `isolate` avoids collecting even a root, for Mutable inspection and for
-# parent schemas whose unsupported names a downstream projection discards.
-dtplyr_selection_proxy <- function(.data,
-                                   isolate = FALSE,
-                                   env = .data[["env"]]) {
+# run. Every root is isolated before evaluation so a lexical `head` binding
+# cannot receive source rows (ADRs 0020 and 0029).
+dtplyr_selection_proxy <- function(.data, env = .data[["env"]]) {
   if (!dtplyr_metadata_safe_step(.data, env)) {
     abort_unsafe_dtplyr_metadata()
   }
   if (inherits(.data, c("dtplyr_step_group", "dtplyr_step_assign"))) {
     return(dtplyr_selection_proxy(
-      .data[["parent"]], isolate = isolate, env = env
+      .data[["parent"]], env = env
     ))
   }
   if (inherits(.data, "dtplyr_step_subset")) {
     parent <- dtplyr_selection_proxy(
-      .data[["parent"]], isolate = TRUE, env = env
+      .data[["parent"]], env = env
     )
     columns <- dtplyr_metadata_subset_columns(.data)
     # The list converter refuses `.SD`; assign names only on the fresh proxy.
@@ -364,13 +362,10 @@ dtplyr_selection_proxy <- function(.data,
     data.table::setnames(proxy, .data[["vars"]])
     return(proxy)
   }
-  if (isolate || !inherits(.data, "dtplyr_step_first")) {
-    return(tryCatch(
-      isolated_dtplyr_proxy(.data, env),
-      error = function(...) abort_unsafe_dtplyr_metadata()
-    ))
-  }
-  grouping_selection_proxy(.data)
+  tryCatch(
+    isolated_dtplyr_proxy(.data, env),
+    error = function(...) abort_unsafe_dtplyr_metadata()
+  )
 }
 
 grouping_selection_proxy <- function(.data,
