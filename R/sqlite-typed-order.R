@@ -315,23 +315,84 @@ sqlite_compute_name_resolves <- function(con, table, conservative = FALSE) {
   })
 }
 
+# Whether virtual-table access can be separated from the overwrite target.
+# The caller holds the temporary b-tree roots and VOpen operands of the SELECT.
+sqlite_temp_virtual_safe <- function(con, table, roots, virtual_reads) {
+  tables <- DBI::dbGetQuery(con, "PRAGMA temp.table_list")
+  if (!all(c("name", "type") %in% names(tables))) return(FALSE)
+  catalog <- DBI::dbGetQuery(con, paste(
+    "SELECT name, tbl_name, rootpage, sql FROM temp.sqlite_master",
+    "WHERE type IN ('table', 'index')"
+  ))
+  key <- function(name) {
+    chartr("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz", name)
+  }
+  table_key <- key(table)
+  shadow <- key(tables$name[tables$type == "shadow"])
+  # SQLite associates a shadow table with the name before its last underscore.
+  owner <- sub("_[^_]*$", "", shadow)
+  owned <- shadow[owner == table_key]
+  if (any(roots %in% catalog$rootpage[key(catalog$tbl_name) %in% owned])) {
+    return(FALSE)
+  }
+  if (length(virtual_reads) == 0L) return(TRUE)
+  if (!all(grepl("^vtab:", virtual_reads))) return(FALSE)
+
+  virtual <- tables$name[tables$type == "virtual"]
+  virtual_keys <- key(virtual)
+  definition <- catalog$sql[match(virtual, catalog$name)]
+  identifier <- paste0(
+    "(?:\"(?:[^\"]|\"\")*\"|`(?:[^`]|``)*`|\\[[^]]*\\]|'(?:[^']|'')*'|[\\w$]+)"
+  )
+  declaration <- paste0(
+    "^CREATE VIRTUAL TABLE\\s+", identifier, "\\s+USING\\s+"
+  )
+  fts <- paste0(declaration, "fts[345]\\s*\\(")
+  rtree <- paste0(declaration, "rtree(?:_i32)?\\s*\\(")
+  # An FTS table with its own content shadow and no content option is private.
+  fts_args <- sub(fts, "", definition, ignore.case = TRUE, perl = TRUE)
+  private_fts <- grepl(fts, definition, ignore.case = TRUE, perl = TRUE) &
+    paste0(virtual_keys, "_content") %in% shadow &
+    !grepl("content", fts_args, ignore.case = TRUE)
+  private <- private_fts |
+    grepl(rtree, definition, ignore.case = TRUE, perl = TRUE)
+  candidates <- virtual[!private | virtual_keys == table_key |
+                          virtual_keys %in% owner[shadow == table_key]]
+  for (name in candidates) {
+    path <- DBI::dbQuoteIdentifier(con, DBI::Id(schema = "temp", table = name))
+    probe <- tryCatch(
+      DBI::dbGetQuery(con, paste("EXPLAIN SELECT * FROM", path)),
+      error = function(cnd) NULL
+    )
+    # VOpen carries the virtual table object, shared by prepared statements.
+    id <- probe$p4[probe$opcode == "VOpen"]
+    if (length(id) != 1L || !grepl("^vtab:", id) || id %in% virtual_reads) {
+      return(FALSE)
+    }
+  }
+  TRUE
+}
+
 # Whether the rendered SELECT can be shown independent of the temporary target.
 # The caller holds the existing table's catalog rows, including its indexes.
 sqlite_temp_overwrite_safe <- function(con, catalog, insert_from) {
   plan <- DBI::dbGetQuery(con, paste("EXPLAIN", insert_from))
-  if (!all(c("opcode", "p1", "p2", "p3") %in% names(plan)) ||
+  if (!all(c("opcode", "p1", "p2", "p3", "p4") %in% names(plan)) ||
         nrow(plan) == 0L) {
     return(FALSE)
   }
   # SQLite opens b-trees by root page in database 1 (temp). A covering index
   # can be opened in place of its table.
   opens <- plan$opcode %in% c("OpenRead", "ReopenIdx")
-  reads_target <- any(opens & plan$p3 == 1L & plan$p2 %in% catalog$rootpage)
-  # Virtual tables can read content or own shadow tables in their schema.
-  # Transaction names the schema even when the plan omits those b-tree opens.
+  roots <- plan$p2[opens & plan$p3 == 1L]
+  if (any(roots %in% catalog$rootpage)) return(FALSE)
   uses_temp <- any(plan$opcode == "Transaction" & plan$p1 == 1L)
-  virtual <- any(catalog$rootpage == 0L) || "VOpen" %in% plan$opcode
-  !reads_target && !(uses_temp && virtual)
+  virtual_reads <- unique(plan$p4[plan$opcode == "VOpen"])
+  if (!uses_temp || (length(virtual_reads) == 0L &&
+                       !any(catalog$rootpage == 0L))) {
+    return(TRUE)
+  }
+  sqlite_temp_virtual_safe(con, catalog$tbl_name[[1L]], roots, virtual_reads)
 }
 
 # Admit a temporary destination and decide if its name must be published last.
@@ -347,7 +408,7 @@ sqlite_plan_temp_destination <- function(con, destination, temporary,
   }
   table <- dbplyr::table_path_name(destination, con)
   catalog <- DBI::dbGetQuery(con, paste(
-    "SELECT type, rootpage FROM temp.sqlite_master",
+    "SELECT type, tbl_name, rootpage FROM temp.sqlite_master",
     "WHERE tbl_name = ? COLLATE NOCASE AND type IN ('table', 'index', 'view')"
   ), params = list(table))
   if (overwrite && "table" %in% catalog$type &&

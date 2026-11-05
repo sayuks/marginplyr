@@ -408,18 +408,39 @@ test_that("SQLite temporary overwrite isolates virtual tables by schema", {
   )
   expect_identical(DBI::dbGetQuery(con, "SELECT g FROM temp.facts")$g, "old")
 
-  qualified <- expand(DBI::Id(schema = "main", table = "facts"))
-  out <- dplyr::compute(qualified, name = temp, overwrite = TRUE)
-  expect_identical(dplyr::collect(out)$g, c("keep", "Total"))
+  DBI::dbExecute(con, "CREATE TEMP TABLE keys AS SELECT 'keep' AS g")
+  keys <- dplyr::tbl(con, DBI::Id(schema = "temp", table = "keys"))
+  main <- dplyr::tbl(con, DBI::Id(schema = "main", table = "facts"))
+  for (source in list(main, dplyr::inner_join(main, keys, by = "g"))) {
+    qualified <- expand_with_margins(
+      source, .grouping = rollup(g), .sort = "last"
+    )
+    out <- dplyr::compute(qualified, name = temp, overwrite = TRUE)
+    expect_identical(dplyr::collect(out)$g, c("keep", "Total"))
+  }
   expect_identical(DBI::dbGetQuery(con, "SELECT g FROM main.facts")$g, "keep")
 
   DBI::dbExecute(con, "DROP TABLE temp.lookup")
+  DBI::dbExecute(con, "CREATE VIRTUAL TABLE temp.lookup USING fts5(g)")
+  DBI::dbExecute(con, "INSERT INTO temp.lookup VALUES ('private')")
+  internal <- expand(DBI::Id(schema = "temp", table = "lookup"))
+  out <- dplyr::compute(internal, name = temp, overwrite = TRUE)
+  expect_identical(dplyr::collect(out)$g, c("private", "Total"))
+
   DBI::dbExecute(con, "DROP TABLE temp.facts")
   DBI::dbExecute(con, "CREATE VIRTUAL TABLE temp.facts USING fts5(g)")
-  DBI::dbExecute(con, "CREATE TABLE main.plain AS SELECT 'plain' AS g")
-  plain <- expand(DBI::Id(schema = "main", table = "plain"))
-  out <- dplyr::compute(plain, name = temp, overwrite = TRUE)
-  expect_identical(dplyr::collect(out)$g, c("plain", "Total"))
+  DBI::dbExecute(con, "INSERT INTO temp.facts VALUES ('old')")
+  shadow <- dbplyr::sql("SELECT c0 AS g FROM temp.facts_content")
+  for (source in list(expand(temp), expand(shadow))) {
+    expect_error(
+      dplyr::compute(source, name = temp, overwrite = TRUE),
+      "different destination name", class = "marginplyr_error"
+    )
+    expect_identical(dplyr::collect(source)$g, c("old", "Total"))
+  }
+  independent <- expand(DBI::Id(schema = "temp", table = "keys"))
+  out <- dplyr::compute(independent, name = temp, overwrite = TRUE)
+  expect_identical(dplyr::collect(out)$g, c("keep", "Total"))
 })
 
 test_that("analysis failure rolls back the owned SQLite savepoint", {

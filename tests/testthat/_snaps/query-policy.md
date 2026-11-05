@@ -58,6 +58,7 @@
       sqlite_publish_destination
       sqlite_restore_compute_names
       sqlite_temp_overwrite_safe
+      sqlite_temp_virtual_safe
       sqlite_with_compute_savepoint
       summarise_with_margins
       summarize_with_margins
