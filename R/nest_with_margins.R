@@ -273,13 +273,15 @@ nest_margin_pipeline <- function(.data,
     # it, which is the half of the route that lets this name them all.
     carried_columns = function(data_vars, plan) data_vars,
     .id = set_id_name,
+    validate_plan_names = function(by, dimensions, data_vars, complete) {
+      check_nest_output_names(c(by, dimensions), set_id_name, .key, rowwise)
+    },
     call = call
   )
   execution <- execute_margin_nest(
     operation,
     .key = .key,
-    .keep = .keep,
-    rowwise = rowwise
+    .keep = .keep
   )
   result <- finalize_margin_operation(operation, execution)
   if (!rowwise) {
@@ -321,31 +323,32 @@ nest_margin_pipeline <- function(.data,
   })
 }
 
-# Fold a prepared Margin operation into cells after nesting-specific admission;
-# `rowwise` requires outer keys dplyr can represent as row-wise identifiers.
-execute_margin_nest <- function(operation, .key, .keep, rowwise) {
+# Check known outer names before typed metadata, then again after selections
+# resolve. A row-wise result requires identifiers dplyr can represent.
+check_nest_output_names <- function(group_cols, set_id_name, .key, rowwise) {
+  if (rowwise && ".rows" %in% c(group_cols, set_id_name)) {
+    abort_marginplyr(c(
+      "{.var .rows} cannot be a row-wise identifier.",
+      i = "Rename that outer key or use {.fun nest_with_margins}."
+    ))
+  }
+  if (.key %in% group_cols) {
+    # cli reads an expression opening with a dot as one of its own styles.
+    abort_marginplyr(paste0(
+      "{.arg .key} ({.var {(.key)}}) must not be a ",
+      "grouping column."
+    ))
+  }
+  invisible(NULL)
+}
+
+# Fold a prepared Margin operation into cells after nesting-specific admission.
+execute_margin_nest <- function(operation, .key, .keep) {
   check_margin_operation(operation)
   with_margin_error_call(
     {
       plan <- operation$plan
       group_cols <- c(plan$by, plan$dimensions)
-      if (rowwise && ".rows" %in% c(group_cols, operation$set_id_name)) {
-        abort_marginplyr(c(
-          "{.var .rows} cannot be a row-wise identifier.",
-          i = "Rename that outer key or use {.fun nest_with_margins}."
-        ))
-      }
-      if (.key %in% group_cols) {
-        # `{(.key)}` rather than `{.key}`: cli reads a `{}` expression opening
-        # with a dot as one of its own styles, and refuses the literal outright
-        # from 3.4.0 -- the floor DESCRIPTION states. The parentheses are the
-        # spelling cli's own diagnostic names, and every argument this package
-        # refuses is spelled with a leading dot.
-        abort_marginplyr(paste0(
-          "{.arg .key} ({.var {(.key)}}) must not be a ",
-          "grouping column."
-        ))
-      }
 
       internal_names <- new_margin_internal_names(
         as.integer(is.null(operation$set_id_name)) +
