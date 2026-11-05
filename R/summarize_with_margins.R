@@ -1098,6 +1098,17 @@ summarize_with_margins <- function(.data,
     carried_columns = function(data_vars, plan) plan$by,
     .id = .id,
     validate_grouping = share_grouping_spec_validator(share_kinds),
+    validate_plan_names = function(by, dimensions, data_vars) {
+      if (
+        !is.null(by) && !is.null(dimensions) && length(dots) > 0L &&
+          !contains_share_helper(rlang::quo_get_expr(dots[[1L]]))
+      ) {
+        preflight_static_summary_selection(
+          dots[[1L]],
+          grouping_name_proxy(setdiff(data_vars, c(by, dimensions)))
+        )
+      }
+    },
     call = call
   )
   execution <- execute_margin_summary(

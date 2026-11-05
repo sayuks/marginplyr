@@ -784,7 +784,7 @@ plan_summary_expressions <- function(dots,
     defer_local && length(dots) > 0L &&
       !contains_share_helper(rlang::quo_get_expr(dots[[1L]]))
   ) {
-    preflight_local_selection(dots[[1L]], selection_proxy)
+    preflight_static_summary_selection(dots[[1L]], selection_proxy)
   }
   if (!defer_local || has_shares) {
     dots <- resolve_summary_selections(
@@ -1594,9 +1594,9 @@ predictable_local_across_names <- function(dots, input_names) {
   predicted
 }
 
-# Checks the first local selection's statically decidable names and empty pair
-# before operation validation. External bindings stay with runtime tidyselect.
-preflight_local_selection <- function(dot, selection_proxy) {
+# Checks the first summary selection's bare names and empty pair before label
+# validation. External bindings stay with their normal selection resolver.
+preflight_static_summary_selection <- function(dot, selection_proxy) {
   expr <- rlang::quo_get_expr(dot)
   selection <- if (is_static_spelling_call(expr, "selection", "across")) {
     parse_across_arguments(expr)$cols
