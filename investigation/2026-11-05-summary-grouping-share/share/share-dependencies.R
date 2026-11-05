@@ -123,17 +123,15 @@ for (input_name in names(inputs)) {
         error = identity
       )
       expected_ratio <- c(0.25, 0.75, 1)
-      if (row$bypassed) {
+      if (row$bypassed && !assert_contract) {
         outcomes <- c(outcomes, paste(input_name, helper_name, row$name, "bypassed 2"))
-        if (!assert_contract) {
-          stopifnot(
-            identical(forward$prior, expected_ratio),
-            identical(forward$observed, c(100, 300, 400)),
-            identical(reverse$observed, c(1, 3, 4)),
-            identical(reverse$ratio, expected_ratio)
-          )
-          next
-        }
+        stopifnot(
+          identical(forward$prior, expected_ratio),
+          identical(forward$observed, c(100, 300, 400)),
+          identical(reverse$observed, c(1, 3, 4)),
+          identical(reverse$ratio, expected_ratio)
+        )
+        next
       }
       if (row$independent) {
         stopifnot(

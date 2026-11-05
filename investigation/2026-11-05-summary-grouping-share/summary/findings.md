@@ -37,7 +37,7 @@ top-level expansion, #1211 and #1223 covered noncanonical spellings,
 The reproduced refusal occurred without a share and with a canonical
 reference, before runtime forwarding.
 
-Replay from the source root with `Rscript first-numbered-selector.R`.
+Replay with [first-numbered-selector.R](first-numbered-selector.R).
 
 ## Namespace operators intercepted package-owned calls
 
@@ -67,7 +67,7 @@ operator-lookup sites exercised here. #1288 and PR #1297 addressed explicit
 parentheses written in the selection, and PR #1299 addressed share
 dependency analysis.
 
-Replay from the source root with `Rscript namespace-operator.R`.
+Replay with [namespace-operator.R](namespace-operator.R).
 
 ## An Assigned summary name was checked before the output existed
 
@@ -96,11 +96,11 @@ worked. All-state Issue and PR searches included
 established expansion and checking for real inner collisions. The
 existing report did not concern a collision with the temporary name.
 
-Replay from the source root with `Rscript assigned-name-collision.R`.
+Replay with [assigned-name-collision.R](assigned-name-collision.R).
 
 ## Replay and limits
 
-Run each script from the source root, passing the script's path to Rscript.
+Follow the [replay setup](../../summary-grouping-share-bughunt-2026-11-05.md#replay-and-verification-boundary) for these scripts.
 All three report modes exited zero and the three `--assert` modes exited
 one on the intended assertions through terminal handle 66120. No package
 implementation or regression tests were changed.

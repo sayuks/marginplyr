@@ -112,8 +112,8 @@ queries. The listing and targeted report comparison remained available.
 
 ## Replay
 
-Run `name-only-selection.R` and `qualified-wrapper.R` from the pinned
-source root with Rscript. Run `nested-cube.R` with `R_MAX_VSIZE=96M`;
+Follow the [replay setup](../../summary-grouping-share-bughunt-2026-11-05.md#replay-and-verification-boundary) for these scripts.
+Run `nested-cube.R` with `R_MAX_VSIZE=96M`.
 `--small` selects the six-key controls. Observation mode asserted the
 dated failures and controls. The `--assert` modes asserted the desired
 behavior and were deliberately red. The finite fixtures did not cover
@@ -126,3 +126,7 @@ a caller replacing the namespace operator inside a helper's argument. The
 ordinary lexical c binding under a genuine qualified wrapper remained the
 separate witness recorded in #1315. The NULL and direct lexical selection
 forms were recorded in #1313.
+
+The independent replays reported in #1324 and #1322 confirmed the direct
+lexical selectors and qualified wrapper boundary. Those reports were
+marked as duplicates of #1313 and #1315, respectively.

@@ -72,9 +72,19 @@ execution paths.
 
 The scripts in [the evidence directory](2026-11-05-summary-grouping-share)
 load the investigated source root through pkgload. Run from an archive of
-the tested SHA, passing the absolute script path to Rscript. Observation mode
-asserts the dated failures and their controls. The contract modes
-intentionally return nonzero at the documented failure. Run
+the tested SHA, passing the absolute script path to Rscript. From the
+checkout holding this note, for example:
+
+```sh
+evidence="$PWD/investigation/2026-11-05-summary-grouping-share"
+source_dir=$(mktemp -d)
+git archive f158df41168bbf0b64bce01518fcff1bd88cb11f | tar -xf - -C "$source_dir"
+cd "$source_dir"
+Rscript "$evidence/summary/first-numbered-selector.R"
+```
+
+Observation mode asserts the dated failures and their controls.
+Contract modes intentionally return nonzero at the documented failure. Run
 `nested-cube.R` with `R_MAX_VSIZE=96M`. Run the dependency script with
 `frames --assert`, `closures --assert` and `mask --assert` to isolate
 its three findings. The PostgreSQL replays used a disposable PostgreSQL

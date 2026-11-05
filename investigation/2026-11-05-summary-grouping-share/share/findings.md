@@ -113,8 +113,9 @@ formal with its own rule.
 
 ## Replay and duplicate search
 
-Run from the investigated checkout. Each script loads that checkout using
-pkgload. All four contract modes exited one at the missing refusal.
+Follow the [replay setup](../../summary-grouping-share-bughunt-2026-11-05.md#replay-and-verification-boundary) and
+set `evidence` to the absolute path of this share lane.
+All four contract modes exited one at the missing refusal.
 Observation mode completed with expected findings and controls. The
 dependency matrix tested 216 direction comparisons over three eager input
 classes and two helpers. There were 48 misses for A, 36 for B and 36 for C,
@@ -123,13 +124,13 @@ matrix compared 56 calls across those eager classes and dtplyr, with 16
 missing refusals, 24 correct refusals and 16 legitimate successes.
 
 ```sh
-Rscript share-dependencies.R
-Rscript share-dependencies.R frames --assert
-Rscript share-dependencies.R closures --assert
-Rscript share-dependencies.R mask --assert
-Rscript share-unpack-null.R
-Rscript share-unpack-null.R --assert
-Rscript share-volatile-sql.R
+Rscript "$evidence/share-dependencies.R"
+Rscript "$evidence/share-dependencies.R" frames --assert
+Rscript "$evidence/share-dependencies.R" closures --assert
+Rscript "$evidence/share-dependencies.R" mask --assert
+Rscript "$evidence/share-unpack-null.R"
+Rscript "$evidence/share-unpack-null.R" --assert
+Rscript "$evidence/share-volatile-sql.R"
 ```
 
 The SQL loop compared each displayed volatile source against its matching
