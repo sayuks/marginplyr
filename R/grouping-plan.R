@@ -1787,7 +1787,8 @@ observe_product_factor <- function(arg, prefix, suffix,
       }
     } else if (whole && single_suffix()) {
       emit(incomplete = c(prefix, incomplete), whole = TRUE)
-    } else if (tail) {
+    } else if (tail || (length(completed) == 0L && single_suffix())) {
+      # A leading partial family keeps its positions through singleton tails.
       emit(incomplete = c(first, incomplete))
     }
   }
@@ -1889,13 +1890,18 @@ resolve_product_cube <- function(preflight, resolve_selection) {
   list(branches = list(list(units = units)), required = character())
 }
 
-# Resolve nested product factors without enumerating their choices. Their
-# common columns are supplied by every occurrence of the product branch.
-resolve_product_product <- function(preflight, resolve_selection) {
-  factors <- lapply(
+# Resolve a preflighted product's flattened factors in caller order.
+resolve_product_factors <- function(preflight, resolve_selection) {
+  lapply(
     flatten_product_factors(preflight), resolve_product_factor,
     resolve_selection = resolve_selection
   )
+}
+
+# Resolve nested product factors without enumerating their choices. Their
+# common columns are supplied by every occurrence of the product branch.
+resolve_product_product <- function(preflight, resolve_selection) {
+  factors <- resolve_product_factors(preflight, resolve_selection)
   list(
     branches = list(list(factors = factors)),
     required = Reduce(union, lapply(factors, `[[`, "required"),
@@ -1920,10 +1926,7 @@ expand_product_branches <- function(branches, covered) {
 # Retain the first occurrence of each product set. Columns required by every
 # choice of a later factor cannot distinguish two prefixes in the final plan.
 distinct_grouping_product <- function(preflight, resolve_selection) {
-  factors <- lapply(
-    flatten_product_factors(preflight), resolve_product_factor,
-    resolve_selection = resolve_selection
-  )
+  factors <- resolve_product_factors(preflight, resolve_selection)
   distinct_resolved_product(factors)
 }
 
