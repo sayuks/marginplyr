@@ -1889,9 +1889,26 @@ resolve_product_cube <- function(preflight, resolve_selection) {
   list(branches = list(list(units = units)), required = character())
 }
 
+# Resolve nested product factors without enumerating their choices. Their
+# common columns are supplied by every occurrence of the product branch.
+resolve_product_product <- function(preflight, resolve_selection) {
+  factors <- lapply(
+    flatten_product_factors(preflight), resolve_product_factor,
+    resolve_selection = resolve_selection
+  )
+  list(
+    branches = list(list(factors = factors)),
+    required = Reduce(union, lapply(factors, `[[`, "required"),
+                      init = character())
+  )
+}
+
 # Enumerate each branch against the columns already supplied by other factors.
 expand_product_branches <- function(branches, covered) {
   unlist(lapply(branches, function(branch) {
+    if (!is.null(branch$factors)) {
+      return(distinct_resolved_product(branch$factors, covered))
+    }
     if (is.null(branch$units)) {
       return(branch$sets)
     }
@@ -1907,9 +1924,15 @@ distinct_grouping_product <- function(preflight, resolve_selection) {
     flatten_product_factors(preflight), resolve_product_factor,
     resolve_selection = resolve_selection
   )
+  distinct_resolved_product(factors)
+}
+
+# Cross resolved factors with columns guaranteed by an enclosing product.
+distinct_resolved_product <- function(factors, covered = character()) {
   required <- lapply(factors, function(factor) factor$required)
   remaining <- rev(Reduce(union, rev(required), init = character(),
                           accumulate = TRUE))[-1L]
+  remaining <- lapply(remaining, union, y = covered)
   product <- list(character())
   for (i in seq_along(factors)) {
     product <- distinct_product_step(product, factors[[i]], remaining[[i]])
@@ -1925,15 +1948,13 @@ distinct_product_step <- function(product, factor, required) {
   dimensions <- setdiff(
     union(unique(unlist(product, use.names = FALSE)), factor_columns), required
   )
-  cube_columns <- unique(unlist(lapply(branches, `[[`, "units"),
-                                use.names = FALSE))
-  cube_dimensions <- setdiff(as.character(cube_columns), required)
+  varying <- setdiff(factor_columns, required)
   previous_covered <- NULL
   seen <- new.env(parent = emptyenv())
   sets <- list()
   for (left in product) {
-    # Columns supplied by the prefix or suffix cannot distinguish cube sets.
-    covered <- intersect(cube_dimensions, left)
+    # Prefix and suffix columns cannot distinguish choices inside this factor.
+    covered <- intersect(varying, left)
     if (!identical(covered, previous_covered)) {
       family <- expand_product_branches(branches, union(covered, required))
       previous_covered <- covered
@@ -1999,6 +2020,7 @@ grouping_kind_rules <- local({
             all(vapply(preflight$args, single_grouping_factor, logical(1)))
           },
           flatten_product = flatten_product_factors,
+          resolve_factor = resolve_product_product,
           expand = expand_grouping_product
         )
       )
