@@ -328,6 +328,162 @@ test_that("rejected self-overwrite preserves the SQLite input", {
                    c("g", "v"))
 })
 
+test_that("SQLite refuses an existing temporary input as an overwrite target", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  main <- DBI::Id(schema = "main", table = "facts")
+  temp <- DBI::Id(schema = "temp", table = "facts")
+  DBI::dbExecute(con, "CREATE TABLE main.facts AS SELECT 'keep' AS g")
+  DBI::dbExecute(
+    con, "CREATE TEMP TABLE facts AS SELECT 'b' AS g UNION ALL SELECT 'a'"
+  )
+  DBI::dbExecute(con, "CREATE INDEX temp.facts_g ON facts(g)")
+  DBI::dbExecute(con, paste(
+    "CREATE TEMP VIEW facts_view AS SELECT g FROM facts INDEXED BY facts_g"
+  ))
+  DBI::dbExecute(con, "CREATE TEMP TABLE report AS SELECT 'old' AS g")
+  query <- expand_with_margins(
+    dplyr::tbl(con, "facts"), .grouping = rollup(g), .sort = "last"
+  )
+  expected <- c("a", "b", "Total", "Total")
+  DBI::dbBegin(con)
+  for (name in list("facts", "FACTS", temp)) {
+    expect_error(
+      dplyr::compute(query, name = name, overwrite = TRUE),
+      "different destination name", class = "marginplyr_error"
+    )
+    expect_identical(DBI::dbGetQuery(
+      con, "SELECT g FROM temp.facts ORDER BY rowid"
+    )$g, c("b", "a"))
+    expect_identical(DBI::dbGetQuery(con, "SELECT g FROM main.facts")$g, "keep")
+    expect_identical(dplyr::collect(query)$g, expected)
+  }
+  through_view <- expand_with_margins(
+    dplyr::tbl(con, "facts_view"), .grouping = rollup(g), .sort = "last"
+  )
+  expect_error(
+    dplyr::compute(through_view, name = temp, overwrite = TRUE),
+    "different destination name", class = "marginplyr_error"
+  )
+  expect_identical(dplyr::collect(through_view)$g, expected)
+  out <- dplyr::compute(query, name = "report", overwrite = TRUE)
+  expect_identical(dplyr::collect(out)$g, expected)
+  DBI::dbRollback(con)
+  expect_identical(DBI::dbGetQuery(con, "SELECT g FROM temp.report")$g, "old")
+
+  qualified <- expand_with_margins(
+    dplyr::tbl(con, main), .grouping = rollup(g), .sort = "last"
+  )
+  out <- dplyr::compute(qualified, name = temp, overwrite = TRUE)
+  expect_identical(dplyr::collect(out)$g, c("keep", "Total"))
+  expect_identical(DBI::dbGetQuery(con, "SELECT g FROM main.facts")$g, "keep")
+})
+
+test_that("SQLite temporary overwrite isolates virtual tables by schema", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  fts5 <- DBI::dbGetQuery(
+    con, "SELECT sqlite_compileoption_used('ENABLE_FTS5') AS enabled"
+  )
+  skip_if(fts5$enabled == 0L, "SQLite was built without FTS5")
+  DBI::dbExecute(con, "CREATE VIRTUAL TABLE main.facts USING fts5(g)")
+  DBI::dbExecute(con, "INSERT INTO main.facts VALUES ('keep')")
+  DBI::dbExecute(con, "CREATE TEMP TABLE facts AS SELECT 'old' AS g")
+  DBI::dbExecute(con, paste(
+    "CREATE VIRTUAL TABLE temp.lookup USING fts5(g, content = 'facts')"
+  ))
+  # The catalog can mark this name as a shadow even with external content.
+  DBI::dbExecute(con, paste(
+    "CREATE TEMP TABLE lookup_content (id INTEGER PRIMARY KEY, c0 TEXT)"
+  ))
+  temp <- DBI::Id(schema = "temp", table = "facts")
+  expand <- function(source) {
+    expand_with_margins(
+      dplyr::tbl(con, source), .grouping = rollup(g), .sort = "last"
+    )
+  }
+  indirect <- expand(DBI::Id(schema = "temp", table = "lookup"))
+  expect_identical(dplyr::collect(indirect)$g, c("old", "Total"))
+  expect_error(
+    dplyr::compute(indirect, name = temp, overwrite = TRUE),
+    "different destination name", class = "marginplyr_error"
+  )
+  expect_identical(DBI::dbGetQuery(con, "SELECT g FROM temp.facts")$g, "old")
+
+  DBI::dbExecute(con, "CREATE TEMP TABLE keys AS SELECT 'keep' AS g")
+  keys <- dplyr::tbl(con, DBI::Id(schema = "temp", table = "keys"))
+  main <- dplyr::tbl(con, DBI::Id(schema = "main", table = "facts"))
+  for (source in list(main, dplyr::inner_join(main, keys, by = "g"))) {
+    qualified <- expand_with_margins(
+      source, .grouping = rollup(g), .sort = "last"
+    )
+    out <- dplyr::compute(qualified, name = temp, overwrite = TRUE)
+    expect_identical(dplyr::collect(out)$g, c("keep", "Total"))
+  }
+  expect_identical(DBI::dbGetQuery(con, "SELECT g FROM main.facts")$g, "keep")
+
+  DBI::dbExecute(con, "DROP TABLE temp.lookup")
+  DBI::dbExecute(con, "DROP TABLE IF EXISTS temp.lookup_content")
+  DBI::dbExecute(con, paste(
+    "CREATE VIRTUAL TABLE temp.lookup USING fts5(content, detail = none)"
+  ))
+  DBI::dbExecute(con, "INSERT INTO temp.lookup VALUES ('private')")
+  internal <- expand(dbplyr::sql("SELECT content AS g FROM temp.lookup"))
+  out <- dplyr::compute(internal, name = temp, overwrite = TRUE)
+  expect_identical(dplyr::collect(out)$g, c("private", "Total"))
+
+  DBI::dbExecute(con, "DROP TABLE temp.facts")
+  DBI::dbExecute(con, "CREATE VIRTUAL TABLE temp.facts USING fts5(g)")
+  DBI::dbExecute(con, "INSERT INTO temp.facts VALUES ('old')")
+  shadow <- dbplyr::sql("SELECT c0 AS g FROM temp.facts_content")
+  for (source in list(expand(temp), expand(shadow))) {
+    expect_error(
+      dplyr::compute(source, name = temp, overwrite = TRUE),
+      "different destination name", class = "marginplyr_error"
+    )
+    expect_identical(dplyr::collect(source)$g, c("old", "Total"))
+  }
+  independent <- expand(DBI::Id(schema = "temp", table = "keys"))
+  out <- dplyr::compute(independent, name = temp, overwrite = TRUE)
+  expect_identical(dplyr::collect(out)$g, c("keep", "Total"))
+})
+
+test_that("SQLite preserves a temporary input read through a PRAGMA", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  DBI::dbExecute(con, "CREATE TEMP TABLE facts AS SELECT 'old' AS payload")
+  DBI::dbExecute(con, "CREATE TEMP TABLE keys AS SELECT 1 AS k")
+  temp <- DBI::Id(schema = "temp", table = "facts")
+  DBI::dbGetQuery(con, "SELECT * FROM pragma_table_info('facts', 'temp')")
+  DBI::dbExecute(con, "CREATE TABLE main.pragma_table_info (value TEXT)")
+  DBI::dbExecute(con, "CREATE TABLE temp.pragma_table_info (value TEXT)")
+  info <- paste(
+    "SELECT p.name AS g FROM unused.pragma_table_info('facts', 'temp') AS p"
+  )
+  for (sql in c(info, paste(info, "CROSS JOIN temp.keys"))) {
+    input <- dplyr::tbl(con, dbplyr::sql(sql), vars = "g")
+    query <- expand_with_margins(
+      input, .grouping = rollup(g), .sort = "last"
+    )
+    expect_error(
+      dplyr::compute(query, name = temp, overwrite = TRUE),
+      "different destination name", class = "marginplyr_error"
+    )
+    expect_identical(dplyr::collect(query)$g, c("payload", "Total"))
+    expect_identical(DBI::dbGetQuery(con, "SELECT * FROM temp.facts"),
+                     data.frame(payload = "old"))
+  }
+  input <- dplyr::tbl(con, dbplyr::sql(
+    "SELECT name AS g FROM pragma_database_list() WHERE name = 'main'"
+  ), vars = "g")
+  query <- expand_with_margins(input, .grouping = rollup(g), .sort = "last")
+  out <- dplyr::compute(query, name = temp, overwrite = TRUE)
+  expect_identical(dplyr::collect(out)$g, c("main", "Total"))
+})
+
 test_that("analysis failure rolls back the owned SQLite savepoint", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")

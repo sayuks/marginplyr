@@ -315,9 +315,124 @@ sqlite_compute_name_resolves <- function(con, table, conservative = FALSE) {
   })
 }
 
-# Whether a new temp name could change SQLite's source lookup (ADR 0031).
-# The caller owns a savepoint and supplies a resolved destination.
-sqlite_compute_shadows_source <- function(con, destination, temporary) {
+# Whether the SELECT's virtual reads can be ruled out for these sources.
+# The caller supplies FROM operands and VOpen identities on this connection.
+sqlite_virtual_sources_clear <- function(con, sources, virtual_reads) {
+  for (source in sources) {
+    probe <- tryCatch(
+      DBI::dbGetQuery(con, paste("EXPLAIN SELECT * FROM", source)),
+      error = function(cnd) NULL
+    )
+    # VOpen carries the virtual table object, shared by prepared statements.
+    id <- probe$p4[probe$opcode == "VOpen"]
+    if (length(id) != 1L || !grepl("^vtab:", id) || id %in% virtual_reads) {
+      return(FALSE)
+    }
+  }
+  TRUE
+}
+
+# Whether virtual-table access can be separated from the overwrite target.
+# The caller holds the temporary b-tree roots and VOpen operands of the SELECT.
+sqlite_temp_virtual_safe <- function(con, table, roots, virtual_reads) {
+  tables <- DBI::dbGetQuery(con, "PRAGMA temp.table_list")
+  if (!all(c("name", "type") %in% names(tables))) return(FALSE)
+  catalog <- DBI::dbGetQuery(con, paste(
+    "SELECT name, tbl_name, rootpage, sql FROM temp.sqlite_master",
+    "WHERE type IN ('table', 'index')"
+  ))
+  table_key <- sql_ascii_lower(table)
+  shadow <- sql_ascii_lower(tables$name[tables$type == "shadow"])
+  # SQLite associates a shadow table with the name before its last underscore.
+  owner <- sub("_[^_]*$", "", shadow)
+  owned <- shadow[owner == table_key]
+  shadow_roots <- catalog$rootpage[sql_ascii_lower(catalog$tbl_name) %in% owned]
+  if (any(roots %in% shadow_roots)) {
+    return(FALSE)
+  }
+  if (length(virtual_reads) == 0L) return(TRUE)
+  virtual <- tables$name[tables$type == "virtual"]
+  virtual_keys <- sql_ascii_lower(virtual)
+  definition <- sql_ascii_lower(catalog$sql[match(virtual, catalog$name)])
+  identifier <- paste0(
+    "(?:\"(?:[^\"]|\"\")*\"|`(?:[^`]|``)*`|\\[[^]]*\\]|'(?:[^']|'')*'|[\\w$]+)"
+  )
+  declaration <- paste0(
+    "^create virtual table\\s+", identifier, "\\s+using\\s+"
+  )
+  fts <- paste0(declaration, "fts[345]\\s*\\(")
+  rtree <- paste0(declaration, "rtree(?:_i32)?\\s*\\(")
+  # FTS5 also accepts prefixes of the content option. A column called
+  # content has no assignment, and does not change where FTS reads its data.
+  content_option <- "\\bc(?:o|on|ont|onte|onten|ontent)?\\s*="
+  fts_args <- sub(fts, "", definition, perl = TRUE)
+  private_fts <- grepl(fts, definition, perl = TRUE) &
+    paste0(virtual_keys, "_content") %in% shadow &
+    !grepl(content_option, fts_args, perl = TRUE)
+  private <- private_fts | grepl(rtree, definition, perl = TRUE)
+  candidates <- virtual[!private | virtual_keys == table_key |
+                          virtual_keys %in% owner[shadow == table_key]]
+  paths <- paste0("temp.", DBI::dbQuoteIdentifier(con, candidates),
+                  recycle0 = TRUE)
+  sqlite_virtual_sources_clear(con, paths, virtual_reads)
+}
+
+# Whether the SELECT avoids table and index PRAGMAs. Their arguments can
+# resolve a temporary relation at execution without a temp Transaction opcode.
+# The caller has already prepared the SELECT and holds its VOpen identities.
+sqlite_pragma_sources_clear <- function(con, virtual_reads) {
+  if (length(virtual_reads) == 0L) return(TRUE)
+  modules <- DBI::dbGetQuery(con, "PRAGMA module_list")
+  if (!"name" %in% names(modules)) return(FALSE)
+  relation_pragma <- paste0(
+    "^pragma_(table_(info|xinfo|list)|index_(info|xinfo|list)|",
+    "foreign_key_(list|check)|(integrity|quick)_check)$"
+  )
+  pragmas <- modules$name[grepl(relation_pragma, sql_ascii_lower(modules$name))]
+  if (length(pragmas) == 0L) return(TRUE)
+  schemas <- DBI::dbGetQuery(con, "PRAGMA database_list")
+  attached <- sql_ascii_lower(schemas$name)
+  # SQLite falls back to eponymous modules after a table lookup in a missing
+  # schema. Using that qualifier bypasses named tables without changing state.
+  repeat {
+    schema <- basename(tempfile("marginplyr_pragma_"))
+    if (!schema %in% attached) break
+  }
+  paths <- paste0(DBI::dbQuoteIdentifier(con, schema), ".",
+                  DBI::dbQuoteIdentifier(con, pragmas), "()")
+  sqlite_virtual_sources_clear(con, paths, virtual_reads)
+}
+
+# Whether the rendered SELECT can be shown independent of the temporary target.
+# The caller holds the existing table's catalog rows, including its indexes.
+sqlite_temp_overwrite_safe <- function(con, catalog, insert_from) {
+  plan <- DBI::dbGetQuery(con, paste("EXPLAIN", insert_from))
+  if (!all(c("opcode", "p1", "p2", "p3", "p4") %in% names(plan)) ||
+        nrow(plan) == 0L) {
+    return(FALSE)
+  }
+  # SQLite opens b-trees by root page in database 1 (temp). A covering index
+  # can be opened in place of its table.
+  opens <- plan$opcode %in% c("OpenRead", "ReopenIdx")
+  roots <- plan$p2[opens & plan$p3 == 1L]
+  if (any(roots %in% catalog$rootpage)) return(FALSE)
+  uses_temp <- any(plan$opcode == "Transaction" & plan$p1 == 1L)
+  virtual_reads <- unique(plan$p4[plan$opcode == "VOpen"])
+  if (!all(grepl("^vtab:", virtual_reads)) ||
+        !sqlite_pragma_sources_clear(con, virtual_reads)) {
+    return(FALSE)
+  }
+  if (!uses_temp || (length(virtual_reads) == 0L &&
+                       !any(catalog$rootpage == 0L))) {
+    return(TRUE)
+  }
+  sqlite_temp_virtual_safe(con, catalog$tbl_name[[1L]], roots, virtual_reads)
+}
+
+# Admit a temporary destination and decide if its name must be published last.
+# The caller owns a savepoint and supplies a resolved destination and SELECT.
+sqlite_plan_temp_destination <- function(con, destination, temporary,
+                                         overwrite, insert_from, call) {
   if (is.null(destination)) return(FALSE)
   parts <- dbplyr::table_path_components(destination, con)[[1L]]
   if (length(parts) == 1L) {
@@ -326,12 +441,23 @@ sqlite_compute_shadows_source <- function(con, destination, temporary) {
     return(FALSE)
   }
   table <- dbplyr::table_path_name(destination, con)
-  existing <- DBI::dbGetQuery(con, paste(
-    "SELECT 1 FROM temp.sqlite_master",
-    "WHERE name = ? COLLATE NOCASE AND type IN ('table', 'view')"
+  catalog <- DBI::dbGetQuery(con, paste(
+    "SELECT type, tbl_name, rootpage FROM temp.sqlite_master",
+    "WHERE tbl_name = ? COLLATE NOCASE AND type IN ('table', 'index', 'view')"
   ), params = list(table))
-  nrow(existing) == 0L &&
-    sqlite_compute_name_resolves(con, table, conservative = TRUE)
+  if (overwrite && "table" %in% catalog$type &&
+        !sqlite_temp_overwrite_safe(con, catalog, insert_from)) {
+    abort_marginplyr(
+      paste0(
+        "Can't safely overwrite this SQLite temporary table while computing ",
+        "the Margin result. Choose a different destination name."
+      ),
+      call = call
+    )
+  }
+  nrow(catalog) == 0L && sqlite_compute_name_resolves(
+    con, table, conservative = TRUE
+  )
 }
 
 # Allocate a temp name that cannot replace an existing source binding.
@@ -548,11 +674,12 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
   insert_from <- sqlite_boolean_execution_sql(
     public_query, sql_options = sql_options
   )
+  call <- rlang::caller_call()
   sqlite_with_compute_savepoint(con, destination, function(destination) {
     # Delay the public name until the last source read has finished. The
     # populated table itself is renamed, so rows are inserted only once.
-    publish <- direct && sqlite_compute_shadows_source(
-      con, destination, temporary
+    publish <- direct && sqlite_plan_temp_destination(
+      con, destination, temporary, overwrite, insert_from, call
     )
     requested <- destination
     if (publish) {

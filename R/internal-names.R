@@ -1,3 +1,8 @@
+# Fold only the ASCII letters that SQLite and DuckDB equate in identifiers.
+sql_ascii_lower <- function(names) {
+  chartr("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz", names)
+}
+
 # SQLite and DuckDB resolve ASCII identifier case equivalently. Keep the
 # caller's spelling everywhere else, including in diagnostics and output.
 margin_identifier_key <- function(names, backend = NULL) {
@@ -6,7 +11,7 @@ margin_identifier_key <- function(names, backend = NULL) {
             inherits(backend$dialect, "sql_dialect_sqlite"))) {
     return(names)
   }
-  chartr("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz", names)
+  sql_ascii_lower(names)
 }
 
 # Compare coexisting public result names under ADR 0032's SQL identifier rule.
