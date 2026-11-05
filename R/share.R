@@ -3317,7 +3317,7 @@ apply_share_ratios <- function(result, pairs, sources, denominator_names,
   )
 }
 
-# Qualify base calls in a package-generated ratio expression for dtplyr's
+# Bind base calls in a package-generated ratio expression for dtplyr's
 # root-environment evaluation. The expression contains no caller summaries.
 qualify_dtplyr_share_ratio <- function(expr) {
   if (!is.call(expr)) {
@@ -3327,7 +3327,7 @@ qualify_dtplyr_share_ratio <- function(expr) {
   name <- expr[[1L]]
   if (is.symbol(name) && as.character(name) %in%
         c("is.na", "as.double", "*", "/", "==", "|", "%in%")) {
-    parts[[1L]] <- rlang::call2("::", rlang::sym("base"), expr[[1L]])
+    parts[[1L]] <- rlang::call2(base::`::`, rlang::sym("base"), expr[[1L]])
   }
   as.call(parts)
 }
