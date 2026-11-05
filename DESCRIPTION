@@ -201,6 +201,7 @@ Config/testthat/start-first:
     data-subscript-selections,
     sqlite-empty-declared-types,
     nest-rows,
+    share-local-closures,
     share-pronouns,
     special-share-refusals,
     sf-summary,
