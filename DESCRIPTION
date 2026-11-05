@@ -63,6 +63,7 @@ Config/Needs/review:
     ps,
     R6,
     rcmdcheck,
+    roxygen2,
     spelling,
     testthat,
     yaml

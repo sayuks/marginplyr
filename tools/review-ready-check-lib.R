@@ -493,11 +493,48 @@ review_ready_child_runner <- function(environment) {
   }
 }
 
-# Runs the five mandatory source/environment checks without requesting capacity.
+# Regenerates only the disposable source and refuses any changed source bytes.
+run_review_ready_documentation <- function(source_root, prerequisites, runner) {
+  before <- file.path(dirname(source_root), "documentation-before")
+  if (!dir.create(before)) stop("Cannot preserve source before documentation generation.")
+  files <- list.files(source_root, all.files = TRUE, no.. = TRUE, full.names = TRUE)
+  if (!all(file.copy(files, before, recursive = TRUE))) {
+    stop("Cannot preserve source before documentation generation.")
+  }
+  run_review_ready_step("Documentation consistency", list(
+    command = prerequisites$rscript,
+    args = c("-e", "roxygen2::roxygenise()"),
+    env = character()
+  ), source_root, runner = runner)
+  # Records every filename and content hash in a preserved or regenerated tree.
+  manifest <- function(directory) {
+    paths <- list.files(directory, all.files = TRUE, recursive = TRUE, no.. = TRUE)
+    stats::setNames(tools::md5sum(file.path(directory, paths)), paths)
+  }
+  original <- manifest(before)
+  generated <- manifest(source_root)
+  if (anyNA(original) || anyNA(generated)) stop("Cannot compare regenerated source files.")
+  if (!identical(original, generated)) {
+    cat("Roxygen regeneration differs from the committed submission:\n")
+    difference <- runner("git", c("diff", "--no-index", "--no-ext-diff",
+      "--no-textconv", "--no-renames", "--", before, source_root),
+      directory = dirname(source_root))
+    if (!difference$status %in% c(0L, 1L)) {
+      cat("Cannot display documentation differences; compare documentation-before/ and source/.\n")
+    }
+    stop("Documentation consistency failed. Regenerate, inspect all source changes, and commit before resubmitting.",
+      call. = FALSE)
+  }
+  cat("Documentation consistency passed.\n")
+  invisible(TRUE)
+}
+
+# Runs the six mandatory source/environment checks without requesting capacity.
 run_review_ready_source <- function(source_root, prerequisites, runner = review_ready_run_system) {
   verify_review_ready_test_packages(source_root)
   cat("\n==> Required test Suggests\n")
   required <- required_test_suggests(source_root)
+  run_review_ready_documentation(source_root, prerequisites, runner)
   steps <- review_ready_source_steps(prerequisites)
   for (label in names(steps)) {
     run_review_ready_step(label, steps[[label]], source_root, runner = runner)
@@ -600,7 +637,7 @@ review_ready_check_cli <- function(args, expected_root) {
     prerequisites <- review_ready_prerequisites(read.dcf(file.path(source_root, "DESCRIPTION")))
     required <- run_review_ready_source(source_root, prerequisites, runner = runner)
     if (selection$scope == "source") {
-      cat("\nFive mandatory checks passed for ", identity$sha, ".\n",
+      cat("\nSix mandatory checks passed for ", identity$sha, ".\n",
         "Package build/check, the complete suite and snapshots omitted: ",
         selection$reason, "\n", sep = "")
     } else {

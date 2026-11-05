@@ -13,7 +13,7 @@ The maintainer accepted stage reuse for
 The original contract compared cumulative changes with a pinned merge-base and
 used authenticated ancestor execution evidence with complete input/environment
 identities and later-failure invalidation. The simplified runner executes its
-five-check baseline every time, uses AI scope judgment, and does not reuse
+mandatory baseline every time, uses AI scope judgment, and does not reuse
 stages or maintain authenticated evidence.
 
 The [original specification](https://github.com/sayuks/marginplyr/blob/1a9dd00a/design/specs/review-ready-verification-followups.md)

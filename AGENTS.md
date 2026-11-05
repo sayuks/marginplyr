@@ -5,7 +5,7 @@ including development tools and CI verification. Another language requires a
 concrete technical justification for why R is unsuitable.
 
 Before review or reporting completion, follow `design/agents/local-checks.md`
-for the active entry, required five-check baseline, AI scope judgment, result
+for the active entry, required six-check baseline, AI scope judgment, result
 freshness and timing-proposal disposition. While an invocation waits or runs,
 follow its *Bounded work while waiting or checking*
 with the same agent and retain the original execution handle through completion.

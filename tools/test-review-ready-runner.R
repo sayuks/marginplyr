@@ -55,6 +55,22 @@ local({
     '  stopifnot(isTRUE(getOption("fixture.loaded")), Sys.getenv("LINTR_ERROR_ON_LINT") == "true")',
     '  cat("fixture package-aware lintr executed\\n")', '}'
   ), "lint_package")
+  install_tool("roxygen2", c(
+    '.onLoad <- function(...) {',
+    '  if (Sys.getenv("FIXTURE_MISSING_ROXYGEN") == "true") stop("fixture roxygen unavailable")',
+    '}',
+    'roxygenise <- function(...) {',
+    '  cat("fixture roxygen executed\\n")',
+    '  mode <- Sys.getenv("FIXTURE_ROXYGEN")',
+    '  if (mode == "failure") { writeLines("partial help", "man/fixture.Rd"); stop("fixture generation failed") }',
+    '  if (mode == "changed") writeLines("regenerated help", "man/fixture.Rd")',
+    '  if (mode == "added") writeLines("added help", "man/added.Rd")',
+    '  if (mode == "deleted") unlink("man/fixture.Rd")',
+    '  if (mode == "namespace") writeLines("export(new_export)", "NAMESPACE")',
+    '  if (mode == "description") cat("RoxygenNote: 99.0.0\\n", file = "DESCRIPTION", append = TRUE)',
+    '  if (mode == "source") writeLines("changed <- TRUE", "R/fixture.R")',
+    '}'
+  ), "roxygenise")
   bin <- file.path(workspace, "bin")
   dir.create(bin)
   writeLines(c("#!/bin/sh", "echo 'fixture jarl executed'", "test ! -f jarl-failure"),
@@ -89,7 +105,7 @@ local({
       'Authors@R: person("A", "B", email="a@example.com", role=c("aut", "cre"))',
       "License: GPL-3", "Suggests: testthat, stats, processx", "Config/testthat/edition: 3",
       "Config/marginplyr/cran-status: unpublished",
-      "Config/Needs/review: spelling, pkgload, lintr, processx, ps, filelock, rcmdcheck"),
+      "Config/Needs/review: spelling, pkgload, lintr, processx, ps, filelock, rcmdcheck, roxygen2"),
       file.path(repo, "DESCRIPTION"))
     writeLines(character(), file.path(repo, "NAMESPACE"))
     writeLines(c("/.review-ready/"), file.path(repo, ".gitignore"))
@@ -199,13 +215,53 @@ local({
   repo <- make_repo("first")
   output <- finish(start(repo))
   expect(all(vapply(c("Test dependency syntax", "Required test Suggests",
+    "fixture roxygen executed",
     "fixture spelling executed", "fixture jarl executed", "fixture package loaded",
     "fixture package-aware lintr executed",
     "fixture explicit judgment", git(repo, "rev-parse", "HEAD")),
-    grepl, logical(1), x = output, fixed = TRUE)), "source executes five checks and records its scope/reason/SHA")
+    grepl, logical(1), x = output, fixed = TRUE)), "source executes six checks and records its scope/reason/SHA")
   expect(grepl("Package build/check, the complete suite and snapshots omitted: fixture explicit judgment",
     output, fixed = TRUE), "source explicitly records package build/check, complete suite and snapshots omission")
   expect(!grepl("Waiting for heavy", output, fixed = TRUE), "source never requests admission")
+  labels <- c("==> Test dependency syntax", "==> Required test Suggests",
+    "==> Documentation consistency", "==> Package spelling", "==> jarl", "==> package-aware lintr")
+  positions <- vapply(labels, function(label) regexpr(label, output, fixed = TRUE)[[1L]], integer(1))
+  expect(all(positions > 0L) && all(diff(positions) > 0L), "six checks run in the required order")
+  expect(identical(git(repo, "status", "--porcelain=v1", "--untracked-files=all"), ""),
+    "successful generation preserves the submitting worktree")
+  documentation <- make_repo("documentation")
+  dir.create(file.path(documentation, "man"))
+  dir.create(file.path(documentation, "R"))
+  writeLines("committed help", file.path(documentation, "man", "fixture.Rd"))
+  writeLines("fixture <- TRUE", file.path(documentation, "R", "fixture.R"))
+  git(documentation, "add", ".")
+  git(documentation, "commit", "-qm", "documentation input")
+  documentation_sha <- git(documentation, "rev-parse", "HEAD")
+  for (scope in c("source", "full")) {
+    missing <- finish(start(documentation, scope, c(FIXTURE_MISSING_ROXYGEN = "true")), 1L)
+    expect(grepl("Missing review-ready prerequisites: roxygen2", missing, fixed = TRUE) &&
+      !grepl("fixture roxygen executed|Waiting for heavy", missing),
+      "both scopes require the declared generator before checks or admission")
+    for (mode in c("failure", "changed", "added", "deleted", "namespace", "description", "source")) {
+      rejected <- finish(start(documentation, scope, c(FIXTURE_ROXYGEN = mode)), 1L)
+      diagnostic <- switch(mode, failure = "fixture generation failed",
+        changed = "man/fixture.Rd", added = "man/added.Rd", deleted = "man/fixture.Rd",
+        namespace = "NAMESPACE", description = "DESCRIPTION", source = "R/fixture.R")
+      expect(grepl(diagnostic, rejected, fixed = TRUE) &&
+        grepl("Documentation consistency", rejected, fixed = TRUE) &&
+        !grepl("fixture spelling executed|fixture jarl executed|fixture package loaded|Waiting for heavy|Source-tarball R CMD check", rejected) &&
+        identical(result_record(rejected)$sha, documentation_sha) &&
+        identical(result_record(rejected)$status, "failed"),
+        paste(scope, mode, "stops before later checks or admission with a pinned failure and useful differences"))
+      expect(identical(git(documentation, "status", "--porcelain=v1", "--untracked-files=all"), "") &&
+        identical(git(documentation, "rev-parse", "HEAD"), documentation_sha) &&
+        identical(readLines(file.path(documentation, "man", "fixture.Rd")), "committed help") &&
+        !file.exists(file.path(documentation, "man", "added.Rd")),
+        "generation failure never repairs or mutates the submitting worktree")
+      if (mode == "changed") expect(grepl("-committed help", rejected, fixed = TRUE) &&
+        grepl("+regenerated help", rejected, fixed = TRUE), "changed output includes an actionable content diff")
+    }
+  }
   # Only the dependency's infinite-wait return is replaced; guards use real locks.
   null_lock_profile <- file.path(workspace, "null-lock.R")
   writeLines(c(
@@ -236,7 +292,7 @@ local({
     identical(result_record(unusable)$status, "failed"),
     "an unusable heavy-lock target fails without starting package work")
   flooded <- finish(start(repo, extra = c(FIXTURE_LARGE_OUTPUT = "true")))
-  expect(grepl("Five mandatory checks passed", flooded, fixed = TRUE) &&
+  expect(grepl("Six mandatory checks passed", flooded, fixed = TRUE) &&
     length(gregexpr("fixture stdout payload", flooded, fixed = TRUE)[[1L]]) == 65536L,
     "source completes and retains child output larger than a pipe buffer")
   profile <- file.path(root, "tools", "fixtures", "review-ready-ps-errors.R")
@@ -247,7 +303,7 @@ local({
   Sys.chmod(file.path(bin, "git"), "0755")
   exited <- finish(start(repo, extra = c(R_PROFILE_USER = profile,
     FIXTURE_INSPECTION_MODE = "exited", FIXTURE_RACE_INJECTED = race_marker)))
-  expect(file.exists(race_marker) && grepl("Five mandatory checks passed", exited, fixed = TRUE),
+  expect(file.exists(race_marker) && grepl("Six mandatory checks passed", exited, fixed = TRUE),
     "an exited leader's generic process-inspection error does not fail the command")
   transient_marker <- file.path(workspace, "transient-race")
   refreshed <- finish(start(repo, extra = c(R_PROFILE_USER = profile,
@@ -255,7 +311,7 @@ local({
   unlink(file.path(bin, "git"))
   expect(file.exists(transient_marker) && file.exists(paste0(transient_marker, "-refreshed")) &&
     identical(readLines(transient_marker)[[2L]], "live leader") &&
-    grepl("Five mandatory checks passed", refreshed, fixed = TRUE),
+    grepl("Six mandatory checks passed", refreshed, fixed = TRUE),
     "a transient child-handle ENOENT accepts a fresh valid snapshot while its leader lives")
   shared <- file.path(account, ".local", "state", "marginplyr", "review-ready-heavy.lock")
   dir.create(dirname(shared), recursive = TRUE, showWarnings = FALSE)
@@ -295,7 +351,8 @@ local({
     ps::ps_num_fds(waiter_handle)
   }, integer(1))
   cat("Waiting runner descriptors at 1/2/4 seconds: ", paste(descriptors, collapse = "/"), "\n", sep = "")
-  expect(diff(range(descriptors)) <= 2L, "heavy admission waiting keeps descriptor use bounded")
+  # Baseline process finalizers may close pipes after registration; only growth matters.
+  expect(max(descriptors) - descriptors[[1L]] <= 2L, "heavy admission waiting keeps descriptor use bounded")
   # Change HEAD only after the submission has reached the occupied slot.
   writeLines("later", file.path(repo, "inst", "revision.txt"))
   git(repo, "add", ".")
@@ -304,6 +361,7 @@ local({
   lock <- NULL
   checked <- finish(waiter)
   expect(grepl(submitted, checked, fixed=TRUE) &&
+    grepl("fixture roxygen executed", checked, fixed = TRUE) &&
     grepl("Starting 8 test processes.", checked, fixed=TRUE) &&
     length(gregexpr("Source-tarball R CMD check --as-cran", checked, fixed = TRUE)[[1L]]) == 1L &&
     grepl("Full package check passed", checked, fixed=TRUE),
@@ -362,7 +420,7 @@ local({
   buffered <- start(repo, extra = c(FIXTURE_LARGE_OUTPUT = "true", FIXTURE_OUTPUT_READY = marker))
   wait_for(buffered, function() file.exists(marker), "marker follows large child output")
   buffered_output <- finish(buffered)
-  expect(grepl("Five mandatory checks passed", buffered_output, fixed = TRUE) &&
+  expect(grepl("Six mandatory checks passed", buffered_output, fixed = TRUE) &&
     length(gregexpr("fixture stdout payload", buffered_output, fixed = TRUE)[[1L]]) == 65536L,
     "marker wait retains every child output record until terminal completion")
   # A cancelled waiter remains cancelled after the occupied slot is released.
@@ -424,7 +482,8 @@ local({
     ps::ps_num_fds(ps::ps_handle(second$get_pid()))
   }, integer(1))
   cat("FIFO follower descriptors at 1/2/4 seconds: ", paste(descriptors, collapse = "/"), "\n", sep = "")
-  expect(diff(range(descriptors)) <= 2L, "FIFO metadata/liveness polling keeps descriptors bounded")
+  # Baseline process finalizers may close pipes after registration; only growth matters.
+  expect(max(descriptors) - descriptors[[1L]] <= 2L, "FIFO metadata/liveness polling keeps descriptors bounded")
   first$signal(tools::SIGCONT)
   wait_for(first, function() file.exists(first_env[["FIXTURE_READY"]]), "B admitted automatically", 60)
   expect(!any(file.exists(c(second_env[["FIXTURE_READY"]], third_env[["FIXTURE_READY"]]))),
@@ -482,7 +541,7 @@ local({
   filelock::unlock(lock)
   lock <- NULL
 
-  # Launch order cannot outrank successful five-check acceptance.
+  # Launch order cannot outrank successful six-check acceptance.
   lock <- filelock::lock(shared, timeout = 0)
   baseline_ready <- file.path(workspace, "baseline-ready")
   baseline_release <- file.path(workspace, "baseline-release")
@@ -493,7 +552,7 @@ local({
   earlier_sequence <- registered(accepted_first, 0)
   file.create(baseline_release)
   later_sequence <- registered(launched_first, 1)
-  expect(earlier_sequence < later_sequence, "registration after all five checks decides acceptance order")
+  expect(earlier_sequence < later_sequence, "registration after all six checks decides acceptance order")
   launched_first$signal(2L)
   finish(launched_first, 130L)
   accepted_first$signal(2L)

@@ -25,7 +25,7 @@ preserve that history. They do not impose current runtime requirements.
 
 ## Superseding decision
 
-Each invocation now runs all five mandatory source/environment checks at its
+Each invocation runs the mandatory source/environment baseline at its
 pinned committed SHA. The AI supplies `source` or `full` and a reviewable
 reason. The new runner does not classify paths, reuse stages or authenticate
 evidence. Its per-worktree artifacts use one seven-day lifetime from UTC start.

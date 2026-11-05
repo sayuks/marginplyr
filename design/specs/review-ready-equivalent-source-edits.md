@@ -1,12 +1,11 @@
 # Review-ready scope for equivalent source edits
 
 Status: accepted on 2026-11-05 for
-[#1292](https://github.com/sayuks/marginplyr/issues/1292); implementation pending.
+[#1292](https://github.com/sayuks/marginplyr/issues/1292); implemented in the
+repository runner with operational guidance adopted together.
 [ADR 0041](../adr/0041-check-generated-documentation-before-omitting-heavy-checks.md)
 records the decision. [Local checks](../agents/local-checks.md) remains the
-operational authority until the runner and operational instructions adopt this
-design together. This document does not establish an implemented sixth check
-or authorize the new scope exception before adoption.
+operational authority. Per-SHA verification remains separate from adoption.
 
 ## Rule
 
