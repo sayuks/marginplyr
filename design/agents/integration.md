@@ -28,6 +28,9 @@ evidence, and integration decision in the work record. Keep the preparation
 outside the submitting worktree; publish it on the PR when available. Fetch
 again and reassess if the base advances before integration. A later branch HEAD
 also needs a new assessment; an earlier pair of SHAs does not cover it.
+Before PR publication or merge, fetch and compare the base/HEAD pair with the
+recorded assessment. Reuse its conflict and semantic judgment when both SHAs
+are unchanged; reassess when either changes.
 Complete required integration and commit its result before submitting that
 revision to Review-ready. If only main advances and the branch remains
 compatible without modification, reassess the new pair; the unchanged branch

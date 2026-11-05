@@ -1,6 +1,6 @@
 # Register tests before Review-ready measurement
 
-Status: accepted, 2026-11-05; runner implementation pending. The maintainer
+Status: accepted, 2026-11-05; implemented in the repository runner and CI. The maintainer
 accepted registration before full measurement, the existing reordering
 thresholds for every registered file, and an agent-owned main compatibility
 assessment before either Review-ready scope.
@@ -8,10 +8,8 @@ assessment before either Review-ready scope.
 This amends the registration and reordering decisions in
 [ADR 0040](../adr/0040-learn-local-test-order-and-admit-heavy-checks-fifo.md)
 and the [earlier specification](review-ready-adaptive-order-fifo.md).
-The active runner still permits unregistered files and generates measured
-registration proposals. Until implementation adopts this amendment, follow
-the existing [runner guide](../../tools/review-ready-runner.md) for those
-proposals. Design acceptance does not establish implementation or a check result.
+The [runner guide](../../tools/review-ready-runner.md) owns operation.
+Implementation does not establish a check result for a later SHA.
 
 ## Registration before invocation
 

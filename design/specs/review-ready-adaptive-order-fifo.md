@@ -1,15 +1,14 @@
 # Measured test order and FIFO Review-ready admission
 
 The accepted [2026-11-05 amendment](review-ready-preregistration.md) replaces
-the registration and reordering target below; its runner implementation is
-pending. The existing runner still follows the measured-registration workflow
-described here. FIFO and timing instrumentation are unchanged by the amendment.
+registration and reordering rules and is implemented in the repository runner
+and CI. Consult that amendment for current behavior. FIFO and timing instrumentation are unchanged by the amendment.
 
 Status: accepted, 2026-11-03. The maintainer selected the narrow private timing
 hook after comparing public-only alternatives and confirmed the specification
 after checking its R CMD check implications. Ordinary testthat dispatch and the
 other agreed decisions below remain, with no first-run priority guarantee for
-unregistered files. This records specification agreement. FIFO implementation
+new files before their first measurement. This records specification agreement. FIFO implementation
 and Mac adoption are recorded
 under *FIFO policy boundary and adoption* below; timing/order work remains
 independent.
@@ -26,7 +25,7 @@ The task has two independent goals:
    clones and worktrees.
 
 The existing tracked `Config/testthat/start-first` setting remains the priority
-source. Preserve the repository command, source/full judgment, five baseline
+source. Preserve the repository command, source/full judgment, six baseline
 checks, pinned committed source, one shared heavy slot, eight workers, complete
 suite/snapshots, terminal-result authority and retained execution ownership.
 
@@ -88,16 +87,9 @@ argument. A public discovery function accepting an order is not an execution
 override. See the [parallel-testing guide](https://testthat.r-lib.org/articles/parallel.html)
 and [versioned implementation](https://github.com/r-lib/testthat/blob/v3.3.2/R/test-files.R).
 
-Use ordinary `test_check()` dispatch with the committed priority. A file absent
-from that list follows registered priorities alphabetically until a priority
-update is committed. After successful measurement, propose its tracked priority
-using the registration and adoption rules below. A later check can use the
-updated committed order without local timing history.
-
-Accepting initial append-last behavior avoids a private execution adapter and
-pre-measurement provisional registration. The original goal is learning from
-one check for later checks; first-run priority is not a requirement. Do not
-introduce a pre-commit missing-file prefix or rewrite the runtime order.
+Use ordinary `test_check()` dispatch with complete committed registration.
+The [registration amendment](review-ready-preregistration.md) owns preparation
+and validation before measurement. First-run measured priority is not required.
 
 Adopt a narrow private worker-timing hook as an explicit maintenance dependency.
 Keep it in one common instrumentation helper rather than add timing statements
@@ -113,67 +105,16 @@ interval. Unsupported versions disable recording and proposals as specified
 below. Controller reporter replay is not a replacement clock. Ordinary package
 tests and CI continue using the committed setting without this local recorder.
 
-Here, "unregistered" is an observable Git-state property, not proof that a file
-has never run. A newly added or renamed file is unregistered; changing the body
-under an already registered filename does not make it unregistered. Such a
-change is measured in the next full check and can inform a later priority
-proposal. Successful measurement alone does not change registration: only a
-committed priority update does.
-
-The calibration measured native testthat dispatch, which placed unregistered
-files after the registered list. It therefore matches the agreed first-run
-ordering, but its modeled proposals still do not establish an observed speedup
-after adoption. Dispatch priority never guarantees worker start timestamps or
-completion order. The design worktree changes no production priority or
-execution path.
-
 ## Agreed registration of newly measured files
 
-Include every successfully and validly measured unregistered file in the next
-priority-update proposal, including lightweight files. All-skipped files and
-files without eligible measurements stay unregistered. This records all
-eligible observations as priority membership, not only expensive promotions.
-The commit records membership and order, not historical duration samples.
-Generating the proposal does not itself register a file.
-
-Remove entries for deleted test files as priority-list maintenance. A renamed
-file therefore loses its old entry and follows the unregistered-file rules at
-its new name. These membership updates do not depend on the optional
-existing-file reordering threshold.
+The [registration amendment](review-ready-preregistration.md#registration-before-invocation)
+owns complete registration before measurement, including new and renamed files.
 
 ## Agreed reordering and adoption criteria
 
-Keep new-file registration separate from optional changes to the relative order
-of already registered files. Construct a registration-only baseline by placing
-eligible new files using their measured duration while preserving the relative
-order of existing entries. Process new files by descending measured duration,
-breaking new-file ties by filename. Insert each before the first existing entry
-with a strictly shorter eligible measured duration, or append it if none exists.
-Equal duration is not a shorter-duration match. Ineligible observations do not
-supply comparison evidence.
-
-For an optional existing-file reordering candidate, use stable insertion: move
-a file left past its predecessor only when both observations are eligible and
-it is both more than 50% and more than 10 seconds slower. Comparisons within
-those margins preserve order.
-
-Adopt that optional reordering only when a greedy eight-worker replay estimates
-at least ten seconds of whole-suite improvement over the registration-only
-baseline. Both schedules use the same invocation's measured file durations;
-this calculation requires no additional test execution. If the estimate is
-smaller, retain the existing relative order and keep eligible registrations in
-the proposal. Report the adopted proposal's estimated effect against the actual
-native registered-first dispatch of the measured invocation as well. An
-estimate is not a measured speedup or a statistical guarantee; ten seconds is
-the initial operating threshold.
-
-Inspect and adopt the first eligible changed proposal in the current task,
-even when implementation is otherwise complete. Use eligible, available evidence
-and current integration checks. An adopted new SHA still needs its usual
-verification. Inspect and record that validation's proposal, then stop adoption
-for this task unless a new implementation change or explicit user request
-requires it. The runner guide's *Priority proposals and explicit adoption*
-defines the required inspection and disposition record.
+The [registration amendment](review-ready-preregistration.md#measurement-and-adoption)
+owns the shared thresholds and adoption boundary. The runner guide's
+*Priority proposals and explicit adoption* owns inspection and reporting.
 
 ## Agreed instrumentation overhead acceptance bound
 

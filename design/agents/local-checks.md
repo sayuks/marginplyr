@@ -88,10 +88,10 @@ timing-proposal eligibility rules; this exception does not relax those rules.
 
 ### Priority metadata
 
-The accepted [registration amendment](../specs/review-ready-preregistration.md)
-requires complete registration before measurement once implemented. The active
-runner still uses the measured-registration workflow below; its membership
-completeness gate is pending implementation.
+Register new tests at the end in native discovery order before submission,
+remove deleted names, and treat renames as deletion plus addition. Both scopes
+and CI require complete registration under the
+[registration specification](../specs/review-ready-preregistration.md).
 
 Measured priority adoption may use `source` when its only check-affecting change
 is `Config/testthat/start-first`, and package code, tests/helpers, installed
@@ -159,13 +159,13 @@ enforcement without coverage measurement. The existing local/offline check
 environment uses empty local CRAN/Bioconductor indexes, disables remote incoming
 and external-clock checks, and retains local future-file-timestamp checking.
 `DESCRIPTION`'s testthat start-first order prioritizes measured slow files;
-new files still run. There is no admission acknowledgment or AI stop/resume
+new files must be registered before submission. There is no admission acknowledgment or AI stop/resume
 coordination.
 
 After a successful full result, complete the runner guide's
 [timing-proposal disposition](../../tools/review-ready-runner.md#priority-proposals-and-explicit-adoption)
 before review or reporting completion. Inspect the measured durations,
-registrations/removals and modeled scheduling gains, apply an eligible change
+current order and modeled scheduling gains, apply an eligible change
 in this task, and verify the adopted SHA. An otherwise finished implementation
 is still eligible for that follow-up commit. The guide defines stale-evidence
 handling and where adoption stops after validation.

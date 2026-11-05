@@ -1,5 +1,6 @@
 # Public-command contracts use disposable Git repositories and real OS locks.
 # External tools, process inspection and the account-home adapter use replacements.
+source("tools/review-ready-priority.R")
 local({
   root <- normalizePath(".", winslash = "/")
   workspace <- tempfile("review-ready-process-")
@@ -132,6 +133,9 @@ local({
       '  })',
       '  expect_true(TRUE)', '})'
     ), file.path(repo, "tests", "testthat", "test-owned-child.R"))
+    priority <- c(paste0("additional-", 1:6), "owned-child", "revision")
+    writeLines(review_ready_priority_description(readLines(file.path(repo, "DESCRIPTION")), priority),
+      file.path(repo, "DESCRIPTION"))
     writeLines("submitted", file.path(repo, "inst", "revision.txt"))
     git(repo, "init", "--quiet")
     git(repo, "config", "user.email", "fixture@example.com")
@@ -194,9 +198,22 @@ local({
     expect(length(directory) == 1L, "command names exactly one artifact directory")
     readRDS(file.path(directory, "result.rds"))
   }
+  missing_repo <- make_repo("missing-priority")
+  writeLines('test_that("new file", expect_true(TRUE))',
+    file.path(missing_repo, "tests", "testthat", "test-new.R"))
+  git(missing_repo, "add", ".")
+  git(missing_repo, "commit", "-qm", "unregistered test")
+  for (scope in c("source", "full")) {
+    rejected <- finish(start(missing_repo, scope), 1L)
+    expect(grepl("missing registrations: new", rejected, fixed = TRUE) &&
+      !grepl("==> Test dependency syntax|Waiting for heavy|Source-tarball R CMD check", rejected),
+      "both scopes reject missing registration before baseline or admission")
+    expect(identical(git(missing_repo, "status", "--porcelain"), ""),
+      "registration validation never repairs submitted source")
+  }
   duplicate_repo <- make_repo("duplicate-priority")
-  cat("Config/testthat/start-first: revision, additional-1, revision\n",
-    file = file.path(duplicate_repo, "DESCRIPTION"), append = TRUE)
+  writeLines(review_ready_priority_description(readLines(file.path(duplicate_repo, "DESCRIPTION")),
+    c("revision", "additional-1", "revision")), file.path(duplicate_repo, "DESCRIPTION"))
   git(duplicate_repo, "add", "DESCRIPTION")
   git(duplicate_repo, "commit", "-qm", "concurrent duplicate registrations")
   duplicate_sha <- git(duplicate_repo, "rev-parse", "HEAD")
@@ -211,6 +228,8 @@ local({
       identical(git(duplicate_repo, "rev-parse", "HEAD"), duplicate_sha),
       "duplicate preflight preserves the committed source and SHA")
   }
+
+  if ("--priority-only" %in% commandArgs(trailingOnly = TRUE)) return(invisible(NULL))
 
   repo <- make_repo("first")
   output <- finish(start(repo))
@@ -742,6 +761,8 @@ local({
   # A native worker exit fails once; no retry can turn it into passing evidence.
   writeLines('test_that("native worker exit", quit(status=17L,save="no"))',
     file.path(repo,"tests","testthat","test-native-exit.R"))
+  writeLines(review_ready_priority_description(readLines(file.path(repo, "DESCRIPTION")),
+    c(paste0("additional-", 1:6), "owned-child", "revision", "native-exit")), file.path(repo, "DESCRIPTION"))
   git(repo,"add",".")
   git(repo,"commit","--quiet","-m","native exit fixture")
   failure <- finish(start(repo,"full"),1L)
@@ -754,6 +775,8 @@ local({
   lock <- filelock::lock(shared,timeout=0)
   writeLines('test_that("undeclared", neverdeclaredfixture::missing())',
     file.path(repo,"tests","testthat","test-undeclared.R"))
+  writeLines(review_ready_priority_description(readLines(file.path(repo, "DESCRIPTION")),
+    c(paste0("additional-", 1:6), "owned-child", "revision", "undeclared")), file.path(repo, "DESCRIPTION"))
   git(repo,"add",".")
   git(repo,"commit","--quiet","-m","undeclared dependency fixture")
   rejected <- finish(start(repo,"full"),1L,30000L)

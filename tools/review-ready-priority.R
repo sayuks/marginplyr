@@ -1,4 +1,4 @@
-# Proposes tracked membership/order from one local full invocation (ADR 0040).
+# Proposes tracked order from one local full invocation (ADR 0040).
 # Generation writes only invocation artifacts; native testthat owns dispatch.
 
 # Parses literal stems and identifies repeated registrations without changing source.
@@ -28,6 +28,25 @@ review_ready_priority_read <- function(description, context = "current DESCRIPTI
       paste(parsed$duplicates, collapse = "; "), call. = FALSE)
   }
   parsed$priority
+}
+
+# Requires complete literal membership and exact native dispatch for one checkout.
+review_ready_priority_validate <- function(root, context = "current DESCRIPTION") {
+  priority <- review_ready_priority_read(readLines(file.path(root, "DESCRIPTION")), context)
+  directory <- file.path(root, "tests", "testthat")
+  files <- testthat::find_test_scripts(directory, full.names = FALSE)
+  stems <- sub("[.][rR]$", "", sub("^test[-_.]?", "", files))
+  if (anyDuplicated(stems)) stop(context, ": test filenames do not have unique priority stems", call. = FALSE)
+  missing <- setdiff(stems, priority)
+  obsolete <- setdiff(priority, stems)
+  problems <- c(if (length(missing)) paste0("missing registrations: ", paste(missing, collapse = ", ")),
+    if (length(obsolete)) paste0("obsolete registrations: ", paste(obsolete, collapse = ", ")))
+  if (length(problems)) stop(context, ": ", paste(problems, collapse = "; "), call. = FALSE)
+  dispatched <- testthat::find_test_scripts(directory, full.names = FALSE, start_first = priority)
+  if (!identical(dispatched, files[match(priority, stems)])) {
+    stop(context, ": native dispatch must select every registered file exactly once in priority order", call. = FALSE)
+  }
+  priority
 }
 
 # Archived literal duplicates follow native first-occurrence dispatch semantics.
@@ -66,22 +85,14 @@ review_ready_priority_model <- function(order, durations) {
   max(workers)
 }
 
-# Separates mandatory registration from conservative optional stable insertion.
+# Builds conservative stable insertion from complete, validated registration.
 review_ready_priority_calculate <- function(priority, files, measured_priority) {
   stems <- sub("[.][rR]$", "", sub("^test[-_.]?", "", files$file))
   if (anyDuplicated(stems)) stop("test filenames do not have unique priority stems")
   duration <- stats::setNames(files$duration, stems)
   eligible <- stats::setNames(files$eligible, stems)
   native <- c(intersect(measured_priority, stems), setdiff(stems, measured_priority))
-  registration <- intersect(priority, stems)
-  new <- setdiff(stems[eligible], registration)
-  new <- new[order(-duration[new], new, method = "radix")]
-  for (file in new) {
-    shorter <- which(eligible[registration] & duration[registration] < duration[[file]])
-    position <- if (length(shorter)) shorter[[1L]] - 1L else length(registration)
-    registration <- append(registration, file, after = position)
-  }
-  candidate <- registration
+  candidate <- priority
   for (i in seq_along(candidate)) {
     position <- i
     while (position > 1L) {
@@ -95,12 +106,12 @@ review_ready_priority_calculate <- function(priority, files, measured_priority) 
     }
   }
   schedule <- function(order) review_ready_priority_model(c(order, setdiff(stems, order)), duration)
-  models <- c(native = schedule(native), registration = schedule(registration), candidate = schedule(candidate))
-  adopt <- models[["registration"]] - models[["candidate"]] >= 10
-  selected <- if (adopt) candidate else registration
+  models <- c(native = schedule(native), current = schedule(priority), candidate = schedule(candidate))
+  adopt <- models[["current"]] - models[["candidate"]] >= 10
+  selected <- if (adopt) candidate else priority
   models <- c(models, selected = schedule(selected))
-  list(eligible = TRUE, before = priority, registered = new, removed = setdiff(priority, stems),
-    native = native, registration = registration, candidate = candidate, selected = selected,
+  list(eligible = TRUE, before = priority, current = priority,
+    native = native, candidate = candidate, selected = selected,
     adopt_reordering = adopt, models = models, files = files)
 }
 
@@ -179,7 +190,7 @@ review_ready_priority_propose <- function(root, run) {
   output <- NULL
   tryCatch(withCallingHandlers({
     input <- review_ready_priority_evidence(root, run)
-    proposal <- review_ready_priority_calculate(review_ready_priority_read(input$description),
+    proposal <- review_ready_priority_calculate(review_ready_priority_validate(root),
       input$evidence$files, input$measured_priority)
     proposal$sha <- input$manifest$sha
     proposal$historical_duplicates <- input$historical_duplicates
@@ -200,22 +211,20 @@ review_ready_priority_propose <- function(root, run) {
     report <- c("# Local test priority proposal", paste("Measured SHA:", proposal$sha),
       paste("Archived duplicate normalization:", paste(proposal$historical_duplicates, collapse = "; ")),
       "Eligibility: one successful complete local full result; eight native workers.",
-      paste("Registrations:", paste(proposal$registered, collapse = ", ")),
-      paste("Removals:", paste(proposal$removed, collapse = ", ")),
-      paste("Optional existing-file reordering adopted:", proposal$adopt_reordering),
+      "Registration: complete; this proposal changes order only.",
+      paste("Optional reordering adopted:", proposal$adopt_reordering),
       "Greedy eight-worker schedule models (seconds; not observed speedups or statistical guarantees):",
       paste(names(proposal$models), sprintf("%.6f", proposal$models), sep = ": "),
-      paste("Modeled gain over registration:", sprintf("%.6f", proposal$models[["registration"]] - proposal$models[["selected"]])),
+      paste("Modeled gain over current order:", sprintf("%.6f", proposal$models[["current"]] - proposal$models[["selected"]])),
       paste("Modeled gain over native registered-first/append-last dispatch:",
         sprintf("%.6f", proposal$models[["native"]] - proposal$models[["selected"]])),
       "", "Selected priority:", proposal$selected, "", "File eligibility and measured durations:",
       utils::capture.output(print(proposal$files, row.names = FALSE)),
       "", "Archived input identities (MD5):", paste(names(proposal$identities), proposal$identities),
-      "", "Before / registration / optional candidate orders:",
-      paste("Before:", paste(proposal$before, collapse = ", ")),
-      paste("Registration:", paste(proposal$registration, collapse = ", ")),
+      "", "Current / optional candidate orders:",
+      paste("Current:", paste(proposal$current, collapse = ", ")),
       paste("Candidate:", paste(proposal$candidate, collapse = ", ")),
-      "", "Proposed positions (NA denotes new registration):",
+      "", "Proposed positions:",
       utils::capture.output(print(proposal$movements, row.names = FALSE)),
       "", "Recalculate against current priority immediately before explicit Git application.",
       "Changed tests/helpers, DESCRIPTION beyond priority, dependency environment or expired/unavailable evidence defer adoption.",

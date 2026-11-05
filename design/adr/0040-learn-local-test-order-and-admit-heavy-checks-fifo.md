@@ -14,9 +14,9 @@ pre-measurement registration and the separate measured new-file insertion
 rule below. The trade-off is that smaller new-file ordering improvements may
 be left unapplied. Registration does not claim successful execution.
 
-Runner implementation is pending. The following records the implemented
-measurement and FIFO design; the linked amendment owns the replacement
-registration target until implementation and operational guidance adopt it.
+The runner and CI share complete-registration validation. The linked amendment
+owns registration and reordering; the following retains measurement and FIFO
+boundaries.
 
 ## Implemented measurement and FIFO design
 
@@ -42,10 +42,8 @@ The agreed replacement boundaries use measurements from one already-requested,
 successful complete full Review-ready check, without a shared timing database
 or rolling local history. Adopt an eligible proposal in the current task,
 including a follow-up commit in the same pull request; the new revision still
-needs its applicable verification. Keep ordinary `test_check()`, accept native append-last ordering
-for unregistered files until a measured priority update is committed, and use
-that tracked priority for later checks. First-run unregistered priority does
-not justify a private execution adapter or provisional registration. The
+needs its applicable verification. Keep ordinary `test_check()` and register
+new files at the end before measurement. The
 separate private worker-timing hook is an accepted maintenance dependency,
 isolated in one common helper from test dispatch. Declare supported testthat
 versions and guard the function shape before recording. Supporting a new
@@ -59,11 +57,10 @@ The experimental zero-NOTE results do not certify the implementation or make
 the private hook a stable public interface.
 
 Changing an already registered file under the same name does not make it
-unregistered. Every eligible newly measured file, including lightweight files,
-belongs in the next registration proposal.
-Optional existing-file reorderings cross only differences greater than both
+unregistered. All files are registered before measurement.
+Optional reorderings cross only differences greater than both
 50% and ten seconds, and are adopted only for at least ten seconds of modeled
-whole-suite improvement over registration alone. Adopt the first eligible change
+whole-suite improvement over the current committed order. Adopt the first eligible change
 even when implementation is otherwise complete; validation of that adoption
 does not itself authorize a second priority edit/check cycle. The runner guide's
 *Priority proposals and explicit adoption* owns inspection and reporting steps.

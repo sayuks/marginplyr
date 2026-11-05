@@ -62,6 +62,9 @@ local({
       recorder = 'test_that("second", expect_true(TRUE))'
     )
     writeLines(expression, file.path(package, "tests", "testthat", "test-second.R"))
+    writeLines(review_ready_priority_description(readLines(file.path(package, "DESCRIPTION")),
+      c(paste0("additional-", 1:4), "cleanup", "first", "second", "skipped")),
+      file.path(package, "DESCRIPTION"))
     check_dir <- file.path(workspace, mode)
     timing <- file.path(check_dir, "timing")
     metadata <- list(version = 1L, scope = "full", sha = strrep("a", 40L),
@@ -145,9 +148,9 @@ local({
     }
     if (mode == "pass") {
       proposal <- review_ready_priority_propose(package, check_dir)
-      stopifnot(proposal$eligible, length(proposal$registered) == 7L,
-        !"skipped" %in% proposal$registered,
-        file.exists(file.path(proposal$directory, "priority.patch")))
+      stopifnot(proposal$eligible, length(proposal$selected) == 8L,
+        "skipped" %in% proposal$selected,
+        !file.exists(file.path(proposal$directory, "priority.patch")))
       reject <- function(name, edit = function(path) NULL, verdict = terminal,
                          transcript = review_ready_test_transcript(check_dir)) {
         copy <- file.path(check_dir, name)

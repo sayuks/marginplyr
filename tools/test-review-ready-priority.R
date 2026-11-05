@@ -10,6 +10,59 @@ tracked_dispatch <- testthat::find_test_scripts("tests/testthat", full.names = F
 stopifnot(!anyDuplicated(tracked_dispatch), setequal(tracked_files, tracked_dispatch))
 
 local({
+  workspace <- tempfile("priority-validation-")
+  dir.create(file.path(workspace, "tests", "testthat"), recursive = TRUE)
+  on.exit(unlink(workspace, recursive = TRUE), add = TRUE)
+  entry <- normalizePath("tools/verify-test-priority.R", mustWork = FALSE)
+  check <- function() processx::run(file.path(R.home("bin"), "Rscript"), entry,
+    wd = workspace, error_on_status = FALSE)
+  description <- c("Package: fixture", "Version: 0.0.1")
+  write_priority <- function(priority) writeLines(review_ready_priority_description(description, priority),
+    file.path(workspace, "DESCRIPTION"))
+  writeLines('stop("metadata validation must not execute tests")',
+    file.path(workspace, "tests", "testthat", "test-a.R"))
+  writeLines('testthat::test_that("skipped", testthat::skip("all skipped"))',
+    file.path(workspace, "tests", "testthat", "test-skip.R"))
+  writeLines('stop("metadata validation must not execute helpers")',
+    file.path(workspace, "tests", "testthat", "helper-fixture.R"))
+  write_priority(c("skip", "a"))
+  valid <- check()
+  stopifnot(valid$status == 0L, grepl("Test priority registration passed", valid$stdout, fixed = TRUE))
+  before_append <- testthat::find_test_scripts(file.path(workspace, "tests", "testthat"),
+    full.names = FALSE, start_first = "skip")
+  after_append <- testthat::find_test_scripts(file.path(workspace, "tests", "testthat"),
+    full.names = FALSE, start_first = c("skip", "a"))
+  stopifnot(identical(before_append, c("test-skip.R", "test-a.R")), identical(before_append, after_append))
+  for (case in list(
+    list(priority = "skip", diagnostic = "missing registrations: a"),
+    list(priority = c("skip", "a", "deleted"), diagnostic = "obsolete registrations: deleted"),
+    list(priority = c("skip", "a", "a"), diagnostic = "a (positions 2, 3)"),
+    list(priority = c("skip", "*"), diagnostic = "invalid or empty entry"),
+    list(priority = c("skip", ""), diagnostic = "invalid or empty entry"),
+    list(priority = character(), diagnostic = "missing registrations: a, skip")
+  )) {
+    write_priority(case$priority)
+    before <- tools::md5sum(file.path(workspace, "DESCRIPTION"))
+    rejected <- check()
+    stopifnot(rejected$status == 1L, grepl(case$diagnostic, rejected$stderr, fixed = TRUE),
+      identical(tools::md5sum(file.path(workspace, "DESCRIPTION")), before))
+  }
+  write_priority(c("skip", "a"))
+  file.rename(file.path(workspace, "tests", "testthat", "test-a.R"),
+    file.path(workspace, "tests", "testthat", "test-renamed.R"))
+  renamed <- check()
+  stopifnot(renamed$status == 1L, grepl("missing registrations: renamed", renamed$stderr, fixed = TRUE),
+    grepl("obsolete registrations: a", renamed$stderr, fixed = TRUE))
+  write_priority(c("skip", "renamed"))
+  stopifnot(check()$status == 0L)
+  unlink(file.path(workspace, "tests", "testthat", "test-renamed.R"))
+  deleted <- check()
+  stopifnot(deleted$status == 1L, grepl("obsolete registrations: renamed", deleted$stderr, fixed = TRUE))
+  write_priority("skip")
+  stopifnot(check()$status == 0L)
+})
+
+local({
   workspace <- tempfile("review-ready-priority-")
   dir.create(workspace)
   on.exit(unlink(workspace, recursive = TRUE), add = TRUE)
@@ -72,8 +125,21 @@ local({
     path <- file.path(fixture$root, "DESCRIPTION")
     writeLines(review_ready_priority_description(readLines(path), priority), path)
   }
+  proposal_cli <- function(fixture) {
+    dir.create(file.path(fixture$root, "tools"), showWarnings = FALSE)
+    for (name in c("propose-test-priority.R", "review-ready-priority.R", "review-ready-timing.R")) {
+      expect(file.copy(file.path("tools", name), file.path(fixture$root, "tools", name), overwrite = TRUE),
+        "copy proposal command")
+    }
+    processx::run(file.path(R.home("bin"), "Rscript"),
+      c("tools/propose-test-priority.R", "--run", fixture$run), wd = fixture$root, error_on_status = FALSE)
+  }
+  incomplete <- fixture("old", c(old = 5, new = 30))
+  rejected <- proposal_cli(incomplete)
+  expect(rejected$status == 1L && grepl("missing registrations: new", rejected$stdout, fixed = TRUE),
+    "proposal command requires registration before measurement and never inserts missing files")
   reject <- function(edit, pattern) {
-    f <- fixture(c("old", "deleted"), c(old = 5, new = 30, tiny = 0.1, skip = 100), "skip")
+    f <- fixture(c("old", "new", "tiny", "skip"), c(old = 5, new = 30, tiny = 0.1, skip = 100), "skip")
     edit(f)
     result <- propose(f)
     expect(!result$eligible && grepl(pattern, result$reason, fixed = TRUE), pattern)
@@ -82,7 +148,7 @@ local({
   historical <- fixture(c("old", "new", "old"), c(old = 5, new = 30, tiny = 0.1))
   retained_paths <- list.files(historical$run, recursive = TRUE, full.names = TRUE)
   retained_hashes <- tools::md5sum(retained_paths)
-  set_priority(historical, c("old", "new"))
+  set_priority(historical, c("old", "new", "tiny"))
   historical_output <- capture.output({
     recovered <- propose(historical)
   })
@@ -133,25 +199,28 @@ local({
   expect(identical(before_dispatch, paste0("test-", first_registration, ".R")) &&
     identical(before_dispatch, after_dispatch), "explicit later-duplicate removal preserves exact native dispatch")
 
-  f <- fixture(c("old", "deleted"), c(old = 5, new = 30, tiny = 0.1, skip = 100), "skip")
+  complete <- c("old", letters[1:7], "tiny", "new", "skip")
+  f <- fixture(complete, c(old = 20, stats::setNames(rep(20, 7), letters[1:7]),
+    tiny = 0.1, new = 100, skip = 0), "skip")
   original <- readLines(file.path(f$root, "DESCRIPTION"))
   proposal <- propose(f)
-  expect(proposal$eligible && identical(proposal$selected, c("new", "old", "tiny")), "registration includes lightweight files")
-  expect(identical(proposal$removed, "deleted"), "deleted/renamed old names removed")
+  expect(proposal$eligible && identical(proposal$selected, c("new", "old", letters[1:7], "tiny", "skip")),
+    "reordering preserves complete registration including lightweight and skipped files")
   expect(identical(readLines(file.path(f$root, "DESCRIPTION")), original), "generation never edits source")
   again <- propose(f)
   for (name in c("priority.patch", "explanation.md", "proposal.rds")) {
     expect(identical(readBin(file.path(proposal$directory, name), "raw", n = 1e6),
       readBin(file.path(again$directory, name), "raw", n = 1e6)), "identical-input determinism")
   }
-  set_priority(f, c("tiny", "old"))
+  set_priority(f, c(letters[1:7], "old", "tiny", "new", "skip"))
   updated <- propose(f)
-  expect(identical(updated$registration, c("new", "tiny", "old")), "priority-only changes recalculate preserving relative order")
+  expect(identical(updated$current, c(letters[1:7], "old", "tiny", "new", "skip")),
+    "priority-only changes recalculate against the current complete order")
   expect(identical(updated$native, proposal$native), "recalculation preserves measured native dispatch comparison")
   set_priority(f, proposal$selected)
   unchanged <- propose(f)
   expect(unchanged$eligible && !file.exists(file.path(unchanged$directory, "priority.patch")), "unchanged configuration has no patch")
-  set_priority(f, c("old", "deleted"))
+  set_priority(f, complete)
 
   dir.create(file.path(f$root, "tools"))
   for (name in c("propose-test-priority.R", "review-ready-priority.R", "review-ready-timing.R")) {
@@ -184,8 +253,9 @@ local({
   p <- propose(big)
   expect(p$adopt_reordering && identical(p$selected, c(letters[9:16], letters[1:8])) &&
     p$models[["native"]] == 120 && p$models[["selected"]] == 110, "ten-second adoption boundary uses whole-suite model")
-  ties <- fixture(c("old", "skip"), c(old = 5, skip = 0, z = 5, a = 5, tiny = 0.1), "skip")
-  expect(identical(propose(ties)$selected, c("old", "skip", "a", "z", "tiny")), "equal-duration new files use filename ties and ineligible entries give no comparison")
+  ties <- fixture(c("old", "skip", "z", "a", "tiny"), c(old = 5, skip = 0, z = 5, a = 5, tiny = 0.1), "skip")
+  expect(identical(propose(ties)$selected, c("old", "skip", "z", "a", "tiny")),
+    "equal-duration files retain their committed order")
   barrier <- fixture(c("a", "skip", "b", "c"), c(a = 1, skip = 1, b = 100, c = 2), "skip")
   expect(identical(propose(barrier)$candidate, c("a", "skip", "b", "c")), "ineligible adjacent comparison blocks crossing")
 
@@ -247,8 +317,9 @@ local({
     c(R_LIBS = paste(c(library, .libPaths()), collapse = .Platform$path.sep),
       TESTTHAT_PARALLEL = "true", TESTTHAT_CPUS = "8", FIXTURE_DISPATCH = dispatch,
       FIXTURE_COMPLETIONS = completions, MARGINPLYR_REVIEW_TIMING = "", MARGINPLYR_REVIEW_TIMING_HELPER = ""))
-  expect(identical(readLines(dispatch), c("test-new.R", "test-old.R", "test-tiny.R", "test-skip.R")), "native controller dispatch follows committed priorities")
+  expect(identical(readLines(dispatch), paste0("test-", c("new", "old", letters[1:7], "tiny", "skip"), ".R")),
+    "native controller dispatch follows committed priorities")
   done <- list.files(completions, full.names = TRUE)
-  expect(length(done) == 4L && all(vapply(done, function(p) identical(readLines(p), "done"), logical(1))), "native execution runs every file exactly once")
+  expect(length(done) == 11L && all(vapply(done, function(p) identical(readLines(p), "done"), logical(1))), "native execution runs every file exactly once")
   cat("Priority proposal contracts passed.\n")
 })
