@@ -111,6 +111,9 @@ jobs:
           extra-packages: any::lintr, any::pkgload, any::spelling, local::., any::testthat, any::yaml, any::jsonlite, any::processx, any::ps, any::filelock, any::R6, any::rcmdcheck, any::roxygen2, any::digest
           needs: lint
 
+      - name: Verify committed test priority registration
+        run: Rscript tools/verify-test-priority.R
+
       - uses: r-lib/actions/setup-tinytex@v2
         env:
           TINYTEX_INSTALLER: TinyTeX

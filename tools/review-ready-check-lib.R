@@ -632,7 +632,7 @@ review_ready_check_cli <- function(args, expected_root) {
     source_root <- archive_review_ready_source(identity, run$directory, runner = runner)
     source(file.path(source_root, "tools", "review-ready-priority.R"), local = TRUE)
     cat("\n==> Test priority metadata\n")
-    review_ready_priority_read(readLines(file.path(source_root, "DESCRIPTION")),
+    review_ready_priority_validate(source_root,
       context = paste0("submitted DESCRIPTION (SHA ", identity$sha, ")"))
     prerequisites <- review_ready_prerequisites(read.dcf(file.path(source_root, "DESCRIPTION")))
     required <- run_review_ready_source(source_root, prerequisites, runner = runner)

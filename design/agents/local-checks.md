@@ -34,8 +34,10 @@ pull request, marking a draft ready or requesting review, or pushing to a
 pull request already ready for review. Alternatively return the pull request
 to draft before pushing, and check before making it ready again.
 
-Inspect the submitted diff and its effects, choose a scope, and supply a
-concrete reason. Run from the worktree root:
+Before either scope, complete the agent-owned
+[current-main assessment](integration.md#check-the-current-base), including any
+required integration. Inspect the submitted diff and its effects, choose a
+scope, and supply a concrete reason. Run from the worktree root:
 
 ```sh
 Rscript tools/review-ready.R --scope source --reason 'Explain why package build/check can be omitted.'
@@ -85,6 +87,11 @@ for every other edit too. Byte-different tests remain subject to the independent
 timing-proposal eligibility rules; this exception does not relax those rules.
 
 ### Priority metadata
+
+Register new tests at the end in native discovery order before submission,
+remove deleted names, and treat renames as deletion plus addition. Both scopes
+and CI require complete registration under the
+[registration specification](../specs/review-ready-preregistration.md).
 
 Measured priority adoption may use `source` when its only check-affecting change
 is `Config/testthat/start-first`, and package code, tests/helpers, installed
@@ -152,13 +159,13 @@ enforcement without coverage measurement. The existing local/offline check
 environment uses empty local CRAN/Bioconductor indexes, disables remote incoming
 and external-clock checks, and retains local future-file-timestamp checking.
 `DESCRIPTION`'s testthat start-first order prioritizes measured slow files;
-new files still run. There is no admission acknowledgment or AI stop/resume
+new files must be registered before submission. There is no admission acknowledgment or AI stop/resume
 coordination.
 
 After a successful full result, complete the runner guide's
 [timing-proposal disposition](../../tools/review-ready-runner.md#priority-proposals-and-explicit-adoption)
 before review or reporting completion. Inspect the measured durations,
-registrations/removals and modeled scheduling gains, apply an eligible change
+current order and modeled scheduling gains, apply an eligible change
 in this task, and verify the adopted SHA. An otherwise finished implementation
 is still eligible for that follow-up commit. The guide defines stale-evidence
 handling and where adoption stops after validation.

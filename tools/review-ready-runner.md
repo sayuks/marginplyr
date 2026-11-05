@@ -43,7 +43,9 @@ Generation errors or differences stop before spelling, linters and admission;
 the submitting worktree stays unchanged. Inspect the reported diff, regenerate
 and commit corrections explicitly before a fresh invocation. `roxygen2` is a
 required review tool for both scopes; README/site rendering remains separate.
-First, submitted priority metadata must contain unique literal filename stems.
+First, submitted priority metadata must contain unique literal filename stems
+matching every discovered test exactly once. Missing or obsolete entries fail
+this same preflight; helpers are outside native test discovery.
 Invalid metadata fails before those checks and admission, reporting the
 submitted SHA, duplicate stems and positions. The runner preserves committed
 source; repairs use the recovery procedure below.
@@ -145,12 +147,17 @@ carry no recording statements; ordinary `test_check()` owns execution.
 
 ## Priority proposals and explicit adoption
 
+Complete registration before invoking either scope: append new files in native
+discovery order and remove deleted names. A rename removes the old name and
+appends the new one. `Rscript tools/verify-test-priority.R` runs the shared
+validation used by Review-ready and CI, without executing package tests.
+
 After timing finalization, a successful eligible full invocation writes one
 `priority-*/` proposal directory under that run. It contains `explanation.md`,
 `proposal.rds` and, only when membership/order changes, `priority.patch` for
 `DESCRIPTION`. Generation never edits the pinned source, tarball or installed
 metadata. The explanation identifies the measured SHA, archived input hashes,
-file eligibility, registrations/removals, positions and eight-worker greedy
+file eligibility, current and proposed positions and eight-worker greedy
 schedule estimates. These models are not observed speedups or guarantees.
 Source scope and failed/incomplete/unsupported timing supply no proposal.
 Earlier four-worker evidence is ineligible for the eight-worker model.
@@ -164,25 +171,23 @@ every ordinary evidence eligibility check still applies. Current and proposed
 metadata remain strict, and empty entries or glob registrations are refused
 even in historical metadata.
 
-Every eligible unregistered filename, including a lightweight file, is proposed
-for registration. Deleted names are removed; a rename is a new name. Editing
-an already registered file does not unregister it. Registration preserves the
-existing relative order. Optional stable insertion crosses adjacent eligible
+Every discovered file, including an all-skipped file, must already be registered.
+Proposals change order only. Stable insertion crosses adjacent eligible
 observations only when the later file is both more than 50% and more than ten
 seconds slower, and is selected only for at least ten seconds of modeled
-whole-suite improvement over registration alone. The report also compares the
-selected order with the sample's native registered-first/append-last dispatch.
+whole-suite improvement over the current committed order. These thresholds
+apply equally to newly registered files. The report also compares the selected
+order with the measured invocation's native dispatch.
 
 After the task's first successful full result, inspect `explanation.md` and
 `proposal.rds` before review or reporting completion. Account for the measured
-durations, registrations/removals, optional existing-file reordering and all
-four schedule estimates (`native`, `registration`, `candidate`, `selected`).
+durations, current order, optional reordering and all
+four schedule estimates (`native`, `current`, `candidate`, `selected`).
 Proposal generation alone does not complete this step.
 
 Apply an eligible changed proposal in the current task, including a follow-up
-commit in the same PR when implementation is otherwise complete. Registration
-and deletion maintenance do not require the optional reordering gain threshold.
-An unchanged priority completes adoption without an edit. Immediately before
+commit in the same PR when implementation is otherwise complete.
+An unchanged priority completes adoption without an edit or another source check. Immediately before
 application, recalculate against the target worktree's current priority:
 
 ```sh
@@ -208,7 +213,7 @@ certifies only the measured SHA. Inspect and record any
 proposal from that validation, then complete this task without another priority
 edit or check solely for that proposal. A new implementation change or explicit
 user request can start a later adoption; a validation proposal alone cannot.
-Record the measured SHA, proposal directory, registration/removal counts,
+Record the measured SHA, proposal directory, current order,
 optional-reordering decision, schedule estimates and modeled gains in the PR's
 verification record, with the adopted commit or a concrete reason for deferral
 or no change. Summarize the disposition in the completion response. Distinguish
