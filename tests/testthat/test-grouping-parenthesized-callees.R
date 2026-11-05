@@ -100,20 +100,115 @@ test_that("direct selections and parenthesized nested calls keep their paths", {
   expect_identical(nested$included, list("a", character()))
 })
 
-test_that("an explicit qualified parenthesis operator retains its selection", {
-  input <- tibble::tibble(a = "x", b = 1L)
-  observed <- rlang::env(reads = 0L)
-  rollup <- function() {
-    observed$reads <- observed$reads + 1L
-    if (observed$reads == 1L) "a" else "b"
+test_that("explicit qualified parentheses retain the caller's selection", {
+  input <- data.frame(a = c("x", "y"), b = c(1L, 1L))
+  no_reads <- c(outer = 0L, inner = 0L, selector = 0L)
+  observed <- rlang::env(reads = no_reads)
+  outer_limit <- 1L
+  first_selection <- function() {
+    if (observed$reads[["selector"]] %% 2L == 1L) "a" else "b"
   }
-
-  plan <- inspect_grouping(
-    input,
-    .grouping = grouping_sets(base::`(`(rollup)()),
-    .format = "list"
+  choose <- first_selection
+  selector <- function() {
+    observed$reads[["selector"]] <- observed$reads[["selector"]] + 1L
+    choose()
+  }
+  lookup <- function(package, name) {
+    package <- as.character(substitute(package))
+    name <- as.character(substitute(name))
+    if (package == "base" && name == "(") {
+      observed$reads[["outer"]] <- observed$reads[["outer"]] + 1L
+      if (observed$reads[["outer"]] > outer_limit) stop("second outer lookup")
+      return(get("(", baseenv()))
+    }
+    stopifnot(package == "marginplyr", name == "rollup")
+    observed$reads[["inner"]] <- observed$reads[["inner"]] + 1L
+    selector
+  }
+  caller <- rlang::env(`::` = lookup, `:::` = lookup, rollup = selector)
+  inspect <- function(spec) {
+    inspect_grouping(input, .grouping = spec, .format = "list")$included
+  }
+  expand <- function(spec) expand_with_margins(input, .grouping = spec)
+  qualified <- quote(base::`(`(marginplyr::rollup)())
+  spellings <- list(
+    qualified = qualified,
+    # The dependency scanner reads a quoted package name including its quotes.
+    quoted_package = str2lang('"base"::`(`(marginplyr::rollup)()'),
+    internal = quote(base::`(`(marginplyr:::rollup)()),
+    bare = quote(base::`(`(rollup)()),
+    wrapped = quote((base::`(`(marginplyr::rollup))()),
+    whole = quote(base::`(`(base::`(`(marginplyr::rollup)())),
+    whole_wrapped = quote((base::`(`(base::`(`(marginplyr::rollup)()))),
+    whole_wrapped_callee = quote(base::`(`((base::`(`(marginplyr::rollup))()))
   )
+  one_read <- c(outer = 1L, inner = 1L, selector = 1L)
+  for (spelling in names(spellings)) {
+    expr <- spellings[[spelling]]
+    spec <- eval(rlang::expr(grouping_sets(!!expr)), caller)
+    original <- rlang::duplicate(spec)
+    expected_reads <- one_read
+    expected_reads[["inner"]] <- as.integer(spelling != "bare")
+    for (consume in list(inspect, expand)) {
+      observed$reads <- no_reads
+      expect_identical(consume(spec), consume(grouping_sets(a)))
+      expect_identical(observed$reads, expected_reads)
+      expect_identical(spec, original)
+    }
+  }
+  expect_identical(caller[["::"]], lookup)
+  expect_identical(caller[[":::"]], lookup)
+  expect_identical(caller$rollup, selector)
 
-  expect_identical(observed$reads, 1L)
-  expect_identical(plan$included, list("a"))
+  selection <- rlang::new_quosure(qualified, caller)
+  spec <- grouping_sets(!!selection)
+  observed$reads <- no_reads
+  outer_limit <- 2L
+  expect_identical(inspect(spec), list("a"))
+  expect_identical(inspect(spec), list("b"))
+  expect_identical(observed$reads, 2L * one_read)
+
+  observed$reads <- no_reads
+  expect_identical(inspect(grouping_sets(!!selection, !!selection)),
+                   list("a", "b"))
+  expect_identical(observed$reads, 2L * one_read)
+
+  outer_limit <- 1L
+  observed$reads <- no_reads
+  first_warning <- simpleWarning("first selector evaluation")
+  choose <- function() {
+    warning(first_warning)
+    "a"
+  }
+  observed$warnings <- list()
+  result <- withCallingHandlers(inspect(spec), warning = function(cnd) {
+    observed$warnings <- c(observed$warnings, list(cnd))
+    invokeRestart("muffleWarning")
+  })
+  expect_identical(result, list("a"))
+  expect_identical(observed$warnings, list(first_warning))
+  expect_identical(observed$reads, one_read)
+
+  observed$reads <- no_reads
+  failure <- rlang::error_cnd("selection_error", message = "first failure")
+  choose <- function() stop(failure)
+  expect_identical(tryCatch(inspect(spec), error = identity), failure)
+  expect_identical(observed$reads, one_read)
+
+  choose <- function() list("a")
+  for (spelling in c("qualified", "whole")) {
+    selection <- rlang::new_quosure(spellings[[spelling]], caller)
+    observed$reads <- no_reads
+    outer_limit <- 1L
+    actual <- expect_error(inspect(grouping_sets(!!selection)),
+                           class = "vctrs_error_subscript_type")
+    expect_identical(observed$reads, one_read)
+
+    observed$reads <- no_reads
+    outer_limit <- 2L
+    direct <- expect_error(tidyselect::eval_select(selection, input),
+                           class = "vctrs_error_subscript_type")
+    expect_identical(actual$subscript_arg, direct$subscript_arg)
+    expect_identical(conditionMessage(actual), conditionMessage(direct))
+  }
 })
