@@ -1,0 +1,11 @@
+               status
+family          match
+  blob             72
+  labelled         72
+  labelled_spss    72
+  list_of          72
+  record           72
+  tagged_na        72
+  units            72
+[1] family  empty   role    status  message
+<0 rows> (or 0-length row.names)

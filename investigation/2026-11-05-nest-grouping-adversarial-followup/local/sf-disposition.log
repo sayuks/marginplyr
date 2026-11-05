@@ -1,0 +1,8 @@
+<simpleError in st_geometry.sf(native): attr(obj, "sf_column") does not point to a geometry column.
+Did you rename it, without setting st_geometry(obj) <- "newname"?>
+           status
+role        error match
+  dimension     8     0
+  fixed         0     8
+  payload       0     8
+sf 1.1.2 ; source unchanged

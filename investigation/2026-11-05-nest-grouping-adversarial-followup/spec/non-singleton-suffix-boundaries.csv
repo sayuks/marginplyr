@@ -1,0 +1,69 @@
+"verb","data_kind","shape","predicate_reads","class","observation","contract_failure"
+"inspect_grouping","local","singleton",0,"marginplyr_error","Duplicate grouping sets were produced at positions:
+ℹ 1, 2.
+ℹ Use `.duplicates = ""drop""` or `""keep""`.",FALSE
+"inspect_grouping","local","literal",0,"marginplyr_error","Duplicate grouping sets were produced at position groups:
+ℹ 2, 4; 1, 3.
+ℹ Use `.duplicates = ""drop""` or `""keep""`.",FALSE
+"inspect_grouping","local","two_set_suffix",2,"marginplyr_error","Duplicate grouping sets were produced at position groups:
+ℹ 2, 4; 1, 3.
+ℹ Use `.duplicates = ""drop""` or `""keep""`.",TRUE
+"inspect_grouping","unsafe_dtplyr","singleton",0,"marginplyr_error","Duplicate grouping sets were produced at positions:
+ℹ 1, 2.
+ℹ Use `.duplicates = ""drop""` or `""keep""`.",FALSE
+"inspect_grouping","unsafe_dtplyr","literal",0,"marginplyr_error","Duplicate grouping sets were produced at position groups:
+ℹ 2, 4; 1, 3.
+ℹ Use `.duplicates = ""drop""` or `""keep""`.",FALSE
+"inspect_grouping","unsafe_dtplyr","two_set_suffix",0,"marginplyr_error","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",TRUE
+"nest_with_margins","local","singleton",0,"marginplyr_error","Duplicate grouping sets were produced at positions:
+ℹ 1, 2.
+ℹ Use `.duplicates = ""drop""`.",FALSE
+"nest_with_margins","local","literal",0,"marginplyr_error","Duplicate grouping sets were produced at position groups:
+ℹ 2, 4; 1, 3.
+ℹ Use `.duplicates = ""drop""`.",FALSE
+"nest_with_margins","local","two_set_suffix",2,"marginplyr_error","Duplicate grouping sets were produced at position groups:
+ℹ 2, 4; 1, 3.
+ℹ Use `.duplicates = ""drop""`.",TRUE
+"nest_with_margins","unsafe_dtplyr","singleton",0,"marginplyr_error","Duplicate grouping sets were produced at positions:
+ℹ 1, 2.
+ℹ Use `.duplicates = ""drop""`.",FALSE
+"nest_with_margins","unsafe_dtplyr","literal",0,"marginplyr_error","Duplicate grouping sets were produced at position groups:
+ℹ 2, 4; 1, 3.
+ℹ Use `.duplicates = ""drop""`.",FALSE
+"nest_with_margins","unsafe_dtplyr","two_set_suffix",0,"marginplyr_error","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",TRUE
+"nest_by_with_margins","local","singleton",0,"marginplyr_error","Duplicate grouping sets were produced at positions:
+ℹ 1, 2.
+ℹ Use `.duplicates = ""drop""`.",FALSE
+"nest_by_with_margins","local","literal",0,"marginplyr_error","Duplicate grouping sets were produced at position groups:
+ℹ 2, 4; 1, 3.
+ℹ Use `.duplicates = ""drop""`.",FALSE
+"nest_by_with_margins","local","two_set_suffix",2,"marginplyr_error","Duplicate grouping sets were produced at position groups:
+ℹ 2, 4; 1, 3.
+ℹ Use `.duplicates = ""drop""`.",TRUE
+"nest_by_with_margins","unsafe_dtplyr","singleton",0,"marginplyr_error","Duplicate grouping sets were produced at positions:
+ℹ 1, 2.
+ℹ Use `.duplicates = ""drop""`.",FALSE
+"nest_by_with_margins","unsafe_dtplyr","literal",0,"marginplyr_error","Duplicate grouping sets were produced at position groups:
+ℹ 2, 4; 1, 3.
+ℹ Use `.duplicates = ""drop""`.",FALSE
+"nest_by_with_margins","unsafe_dtplyr","two_set_suffix",0,"marginplyr_error","Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.",TRUE
+"inspect_grouping","duckdb","singleton",0,"marginplyr_error","Duplicate grouping sets were produced at positions:
+ℹ 1, 2.
+ℹ Use `.duplicates = ""drop""` or `""keep""`.
+",FALSE
+"inspect_grouping","duckdb","literal",0,"marginplyr_error","Duplicate grouping sets were produced at position groups:
+ℹ 2, 4; 1, 3.
+ℹ Use `.duplicates = ""drop""` or `""keep""`.
+",FALSE
+"inspect_grouping","duckdb","two_set_suffix",2,"marginplyr_error","Duplicate grouping sets were produced at position groups:
+ℹ 2, 4; 1, 3.
+ℹ Use `.duplicates = ""drop""` or `""keep""`.
+SELECT *
+FROM non_singleton_suffix
+LIMIT 0",TRUE
