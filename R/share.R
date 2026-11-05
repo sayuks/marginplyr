@@ -1325,7 +1325,7 @@ dtplyr_share_binds_measure <- function(expr, measure = ".BY") {
   }
   if (is_generated_dtplyr_share_call(expr)) {
     return(any(vapply(static_call_args(expr), dtplyr_share_binds_measure,
-                       logical(1), measure = measure)))
+                      logical(1), measure = measure)))
   }
   name <- static_call_name(expr)
   if (identical(name, "function")) {
@@ -1374,9 +1374,10 @@ rewrite_dtplyr_share_measure <- function(expr, alias, measure = ".BY") {
     ))) {
       return(deparse(expr[[2L]]))
     }
-    return(rebuild_static_call(expr, lapply(static_call_args(expr), function(part) {
+    args <- lapply(static_call_args(expr), function(part) {
       rewrite_dtplyr_share_measure(part, alias, measure)
-    })))
+    })
+    return(rebuild_static_call(expr, args))
   }
   name <- static_call_name(expr)
   callee <- resolved_callee_name(expr, name)
@@ -3176,7 +3177,7 @@ apply_windowed_shares <- function(result, requests, plan, set_id_name, kind,
   membership <- if (sql_window) {
     rlang::sym("%in%")
   } else {
-    rlang::expr(base::`%in%`)
+    rlang::call2(base::`::`, rlang::sym("base"), rlang::sym("%in%"))
   }
   target_ids <- share_kind_rule(kind)$target_ids(plan)
   joined_ids <- plan$set_ids[!is.na(target_ids)]

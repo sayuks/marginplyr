@@ -59,7 +59,8 @@ test_that("caller-authored namespace expressions keep root lookup", {
         # Construct the caller's private qualification without an R CMD check
         # NOTE about the package referring to its own private function.
         rlang::call2(
-          rlang::call2(":::", quote(marginplyr), quote(dtplyr_share_denominator)),
+          rlang::call2(":::", quote(marginplyr),
+                       quote(dtplyr_share_denominator)),
           quote(x), quote(g), "a"
         )
       }
@@ -84,7 +85,10 @@ test_that("multi-level Parent shares bind generated membership dispatch", {
   input <- evalq(dtplyr::lazy_dt(source), root)
   query <- summarize_with_margins(
     input, value = sum(x), ratio = share_of_parent(value),
-    .grouping = rollup(g, h), .sort = "last"
+    .grouping = rollup(g, h), .sort = "none"
+  )
+  no_share <- summarize_with_margins(
+    input, value = sum(x), .grouping = rollup(g, h), .sort = "none"
   )
   root$`::` <- function(pkg, name) {
     package <- as.character(substitute(pkg))
@@ -94,6 +98,7 @@ test_that("multi-level Parent shares bind generated membership dispatch", {
     }
     getExportedValue(package, member)
   }
+  expect_identical(dplyr::collect(no_share)$value, c(1, 3, 4, 4))
   result <- dplyr::collect(query)
   expect_identical(result$value, c(1, 3, 4, 4))
   expect_identical(result$ratio, c(0.25, 0.75, 1, 1))
@@ -181,9 +186,10 @@ test_that("deferred shares isolate early and late namespace dispatchers", {
       c(3, 9, 12)
     }, info = info)
     expect_identical(result$ratio, rep(c(0.25, 0.75, 1),
-                                      if (case$fixed) 2 else 1), info = info)
-    expect_identical(names(result), c(if (case$fixed) "p", "g", "value", "ratio"),
-                     info = info)
+                                       if (case$fixed) 2 else 1), info = info)
+    expect_identical(
+      names(result), c(if (case$fixed) "p", "g", "value", "ratio"), info = info
+    )
     rm(list = case$operator, envir = root)
     expect_identical(dplyr::collect(query), result, info = info)
     expect_identical(serialize(root$source, NULL), before, info = info)
@@ -255,7 +261,7 @@ test_that("dtplyr validates share sources without caller namespace callbacks", {
       rlang::quos(value = sum(x))
     }
     query <- summarize_with_margins(
-      input, !!!ordinary, ratio = share_of_total(value),
+      input, !!!ordinary, extra = sum(x) + 1, ratio = share_of_total(value),
       .grouping = rollup(g), .sort = "last"
     )
     root$`:::` <- function(pkg, name) {
@@ -263,7 +269,8 @@ test_that("dtplyr validates share sources without caller namespace callbacks", {
       member <- as.character(substitute(name))
       if (identical(package, "marginplyr") && member %in% c(
         "check_dtplyr_share_source", "check_dtplyr_share_scalar",
-        "dtplyr_share_input_name", "new_share_validation_mapping"
+        "dtplyr_share_input_name", "new_share_validation_mapping",
+        "check_dtplyr_share_ordinary", "assert_dtplyr_grouped_keys"
       )) {
         stop("SOURCE_NAMESPACE_INTERCEPT")
       }
