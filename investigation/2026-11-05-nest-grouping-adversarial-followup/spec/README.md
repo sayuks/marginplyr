@@ -63,7 +63,7 @@ and preserve occurrence numbering, drop/keep semantics and evaluation budgets.
 ## Refuted and negative findings
 
 `deep-family-algebra.R` extended the November 4 independent family oracle to
-1,500 deterministic generated trees, at most six constructor levels deep,
+1,500 deterministic generated trees
 with no more than 64 pre-deduplication occurrences each. There were 300 roots
 of each of the five constructor kinds. Names, `all_of()`, positions, `c()`,
 empty sets, identity products, overlaps, repeated units and nested union/product
