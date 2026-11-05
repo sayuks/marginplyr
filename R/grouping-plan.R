@@ -162,9 +162,10 @@ resolve_by_selection <- function(by_quo, data_proxy) {
   )
 }
 
-# `validate_plan_names` receives keys, dimensions, and source names before
-# metadata, then the canonical names after compilation. NULL means unresolved;
-# character() means a selection settled on no columns.
+# `validate_plan_names` receives known keys, a settled dimension prefix, and
+# source names before metadata, then canonical names after compilation.
+# `complete` means both keys and dimensions are fully resolved; NULL keys are
+# unresolved, while character() means a selection settled on no columns.
 prepare_grouping_plan <- function(.data,
                                   by_quo,
                                   grouping_quo,
@@ -231,7 +232,7 @@ prepare_grouping_plan <- function(.data,
       # This is the call's only reading of a nested argument, so a recognized
       # one is evaluated once whichever passes run (ADR-0008).
       preflight <- preflight_grouping_spec(grouping_spec, data_vars)
-      local_plan <- NULL
+      local_dimensions <- character()
       if (preflight$name_only) {
         # Reject name-only plan errors before acquiring typed metadata. The
         # canonical plan is compiled from the typed snapshot below. Unresolved
@@ -251,16 +252,20 @@ prepare_grouping_plan <- function(.data,
             duplicates_choices = duplicates_choices,
             preflight = preflight
           )
+          local_dimensions <- local_plan$dimensions
         })
       } else {
-        preflight_warnings <- with_discarded_selections(
-          validate_leading_selections(
+        preflight_warnings <- with_discarded_selections({
+          local_dimensions <- validate_leading_selections(
             preflight, data_vars, .by = by, .duplicates, duplicates_choices
           )
-        )
+        })
       }
       if (!is.null(validate_plan_names)) {
-        validate_plan_names(by, local_plan$dimensions, data_vars)
+        validate_plan_names(
+          by, local_dimensions, data_vars,
+          complete = preflight$name_only && !is.null(by)
+        )
       }
       # Inspection needs no typed snapshot when names settle both selections.
       # Its canonical pass uses the name proxy too, preserving the two-pass
@@ -301,7 +306,9 @@ prepare_grouping_plan <- function(.data,
         ), preflight_warnings)
       }
       if (!is.null(validate_plan_names)) {
-        validate_plan_names(plan$by, plan$dimensions, data_vars)
+        validate_plan_names(
+          plan$by, plan$dimensions, data_vars, complete = TRUE
+        )
       }
 
       list(
@@ -1056,6 +1063,7 @@ grouping_name_proxy <- function(data_vars) {
 # the first unresolved selection stops the discarded pass, not just its family.
 # Completed occurrences and a product prefix with a shared unresolved suffix
 # can settle the duplicate error.
+# Returns the dimension prefix resolved before that stop.
 # `.by` holds the fixed keys already resolved from names, or NULL if unresolved.
 validate_leading_selections <- function(preflight, data_vars, .by,
                                         .duplicates, duplicates_choices) {
@@ -1103,7 +1111,7 @@ validate_leading_selections <- function(preflight, data_vars, .by,
     )
     validate_unique_grouping_sets(keys, duplicates_choices)
   }
-  invisible(NULL)
+  invisible(resolved$dimensions)
 }
 
 # A product prefix is distinct if each factor can be identified using its

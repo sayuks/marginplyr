@@ -39,6 +39,9 @@ test_that("row-wise outer .rows names precede unsafe dtplyr metadata", {
   calls <- list(
     quote(nest_by_with_margins(step, .by = .rows)),
     quote(nest_by_with_margins(step, .grouping = rollup(.rows))),
+    quote(nest_by_with_margins(
+      step, .grouping = rollup(.rows, where(is.integer))
+    )),
     quote(nest_by_with_margins(dplyr::group_by(step, .rows))),
     quote(nest_by_with_margins(
       dplyr::rename(step, g = .rows), .id = ".rows"
@@ -74,6 +77,20 @@ test_that("known Nest names do not wait for unrelated typed selections", {
   }
 })
 
+test_that("leading Nest dimensions settle collisions in mixed selections", {
+  skip_if_suggest_absent("dtplyr")
+  probe <- function(x) stop("payload evaluated")
+  predicate <- function(x) stop("typed selection evaluated")
+  step <- dtplyr::lazy_dt(data.frame(g = c("a", "b"), value = 1:2)) |>
+    dplyr::mutate(value = probe(value))
+  for (verb in list(nest_with_margins, nest_by_with_margins)) {
+    expect_error(
+      verb(step, .grouping = rollup(g, where(predicate)), .key = "g"),
+      "must not be a grouping column", class = "marginplyr_error"
+    )
+  }
+})
+
 test_that("valid Nest names still require safe typed metadata", {
   skip_if_suggest_absent("dtplyr")
   probe <- function(x) stop("payload evaluated")
@@ -86,6 +103,10 @@ test_that("valid Nest names still require safe typed metadata", {
     )
     expect_error(
       verb(step, .grouping = rollup(where(is.character)), .key = "g"),
+      "Can't safely determine column metadata", class = "marginplyr_error"
+    )
+    expect_error(
+      verb(step, .grouping = rollup(g, where(is.integer)), .key = "payload"),
       "Can't safely determine column metadata", class = "marginplyr_error"
     )
   }

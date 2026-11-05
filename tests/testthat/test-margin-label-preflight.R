@@ -147,7 +147,8 @@ test_that("valid named labels retain their mapping across plan selections", {
   source <- data.frame(fixed = 1L, g = "a", h = "b", value = 1L)
   for (verb in list(summarize_with_margins, expand_with_margins,
                     nest_with_margins, nest_by_with_margins)) {
-    for (spec in list(rollup(g, h), rollup(where(is.character)))) {
+    for (spec in list(rollup(g, h), rollup(where(is.character)),
+                      rollup(g, where(is.character) & h))) {
       result <- verb(
         source, .by = fixed, .grouping = spec,
         .margin_label = list(h = NULL, g = "All"), .sort = "last"
@@ -156,4 +157,29 @@ test_that("valid named labels retain their mapping across plan selections", {
       expect_identical(result$h, c("b", NA_character_, NA_character_))
     }
   }
+})
+
+test_that("partial dimensions defer label names and summary selections", {
+  skip_if_suggest_absent("dtplyr")
+  probe <- function(x) stop("payload evaluated")
+  step <- dtplyr::lazy_dt(data.frame(g = "a", h = "b", value = 1L)) |>
+    dplyr::mutate(value = probe(value))
+  for (verb in list(summarize_with_margins, expand_with_margins,
+                    nest_with_margins, nest_by_with_margins)) {
+    for (labels in list(c(g = "All", h = "All"), c(g = "All"),
+                        c(ghost = "All"))) {
+      expect_error(
+        verb(step, .grouping = rollup(g, where(is.character) & h),
+             .margin_label = labels),
+        "Can't safely determine column metadata", class = "marginplyr_error"
+      )
+    }
+  }
+  expect_error(
+    summarize_with_margins(
+      step, dplyr::across(unknown, sum),
+      .grouping = rollup(g, where(is.character) & h)
+    ),
+    "Can't safely determine column metadata", class = "marginplyr_error"
+  )
 })

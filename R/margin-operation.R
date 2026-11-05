@@ -230,9 +230,6 @@ normalize_margin_id <- function(.id) {
 # `{.arg}` differently would style the three subjects in this sentence's own
 # template and not that one. Recorded rather than fixed: what a caller passes
 # has to stay a value.
-#
-# `{(.id)}` for the reason `execute_margin_nest()` records: cli reads a `{}`
-# expression opening with a dot as one of its own styles.
 check_margin_id_collision <- function(.id, names, where) {
   if (!is.null(.id) && .id %in% names) {
     abort_marginplyr("{.arg .id} ({.var {(.id)}}) conflicts with {where}.")
@@ -291,11 +288,11 @@ prepare_margin_operation <- function(.data,
         duplicates_choices = duplicates_choices,
         builds_margin_branches = TRUE,
         validate_grouping = validate_grouping,
-        validate_plan_names = function(by, dimensions, data_vars) {
+        validate_plan_names = function(by, dimensions, data_vars, complete) {
           if (!is.null(validate_plan_names)) {
-            validate_plan_names(by, dimensions, data_vars)
+            validate_plan_names(by, dimensions, data_vars, complete)
           }
-          if (!is.null(by) && !is.null(dimensions)) {
+          if (complete) {
             validate_margin_label_names(.margin_label, dimensions, by)
           }
         },

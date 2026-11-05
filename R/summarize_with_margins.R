@@ -1098,9 +1098,9 @@ summarize_with_margins <- function(.data,
     carried_columns = function(data_vars, plan) plan$by,
     .id = .id,
     validate_grouping = share_grouping_spec_validator(share_kinds),
-    validate_plan_names = function(by, dimensions, data_vars) {
+    validate_plan_names = function(by, dimensions, data_vars, complete) {
       if (
-        !is.null(by) && !is.null(dimensions) && length(dots) > 0L &&
+        complete && length(dots) > 0L &&
           !contains_share_helper(rlang::quo_get_expr(dots[[1L]]))
       ) {
         preflight_static_selection(
