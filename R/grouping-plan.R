@@ -1778,8 +1778,10 @@ observe_product_factor <- function(arg, prefix, suffix,
     all(vapply(suffix, single_grouping_factor, logical(1)))
   }
   first <- lapply(prefix, `[`, 1L)
+  completed <- list()
   observe <- function(family = NULL, incomplete = NULL, whole = FALSE) {
     if (is.null(incomplete)) {
+      completed <<- c(completed, family)
       if (tail) {
         emit(cross_grouping_families(c(first, list(family))))
       }
@@ -1792,6 +1794,15 @@ observe_product_factor <- function(arg, prefix, suffix,
   withRestarts(
     expand_grouping_factor(arg, resolve_selection, FALSE, observe),
     needs_typed_selection = function(selected = character()) {
+      if (!tail && length(completed) > 0L && single_suffix()) {
+        # Only the first left choice has fixed positions while this factor
+        # remains partial. Every completed branch has the same singleton tail.
+        known <- cross_grouping_families(c(first, list(completed)))
+        dimensions <- unique(unlist(known, use.names = FALSE))
+        if (anyDuplicated(grouping_set_keys(known, dimensions))) {
+          emit(incomplete = list(known))
+        }
+      }
       if (single_grouping_factor(arg) && single_suffix()) {
         if (any(lengths(prefix) > 1L)) {
           emit(incomplete = c(prefix, list(list(selected))), whole = TRUE)
