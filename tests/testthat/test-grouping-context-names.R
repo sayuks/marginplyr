@@ -45,6 +45,55 @@ test_that("direct context lookups need only the derived column names", {
   expect_identical(evaluations, 0L)
 })
 
+test_that("NULL and direct lexical selectors need only the derived names", {
+  skip_if_suggest_absent("dtplyr")
+  data <- tibble::tibble(a = c("x", "y"), b = 1:2)
+  evaluations <- 0L
+  derive <- function(x) {
+    evaluations <<- evaluations + 1L
+    paste0(x, "!")
+  }
+  step <- dtplyr::lazy_dt(data) |>
+    dplyr::mutate(added = derive(a))
+  pick <- "a"
+  empty <- NULL
+  selectors <- rlang::exprs(
+    c(a, NULL), c(a, all_of(NULL)), .env$pick, .env[["pick"]],
+    c(a, .env$empty), c(a, all_of(.env[["empty"]]))
+  )
+
+  for (selector in selectors) {
+    expect_identical(
+      inspect_grouping(step, .by = !!selector, .format = "list")$fixed,
+      list("a")
+    )
+    expect_identical(
+      inspect_grouping(
+        step, .grouping = grouping_set(!!selector), .format = "list"
+      )$included,
+      list("a")
+    )
+  }
+  for (selector in rlang::exprs(NULL, all_of(NULL), .env$empty)) {
+    expect_identical(
+      inspect_grouping(step, .by = !!selector, .format = "list")$fixed,
+      list(character())
+    )
+    expect_identical(
+      inspect_grouping(
+        step, .grouping = grouping_set(!!selector), .format = "list"
+      )$included,
+      list(character())
+    )
+  }
+  # jarl-ignore missing_argument: The empty constructor argument is under test.
+  expect_error(
+    inspect_grouping(step, .grouping = grouping_set(, a)),
+    "Argument 1", class = "marginplyr_error"
+  )
+  expect_identical(evaluations, 0L)
+})
+
 test_that("missing selection-context names fail before a DuckDB query", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
@@ -59,6 +108,7 @@ test_that("missing selection-context names fail before a DuckDB query", {
 
   names <- "nonfunction shadow"
   idx <- 99L
+  pick <- "absent"
 
   selectors <- rlang::exprs(
     tidyselect::peek_vars()[99L],
@@ -67,12 +117,18 @@ test_that("missing selection-context names fail before a DuckDB query", {
     tidyselect::all_of(tidyselect::peek_vars()[.env[["idx"]]]),
     names(tidyselect::peek_data())[99L],
     tidyselect::peek_vars()[.env$absent_idx],
-    tidyselect::all_of(tidyselect::peek_vars()[.env[["absent_idx"]]])
+    tidyselect::all_of(tidyselect::peek_vars()[.env[["absent_idx"]]]),
+    c(NULL, a, absent),
+    c(all_of(NULL), a, absent),
+    .env$pick,
+    .env[["pick"]],
+    .env$absent_idx
   )
   for (selector in selectors) {
     counter$queries <- 0L
     expected <- expect_error(tidyselect::eval_select(selector, data))
     fixed <- expect_error(inspect_grouping(remote, .by = !!selector))
+    expect_identical(counter$queries, 0L)
     dimension <- expect_error(
       inspect_grouping(remote, .grouping = grouping_set(!!selector))
     )
@@ -104,6 +160,9 @@ test_that("typed and opaque selections retain the dtplyr metadata boundary", {
   makeActiveBinding("active_idx", read_index, rlang::current_env())
   delayedAssign("delayed_idx", read_index())
   classed_idx <- factor(1L)
+  predicate <- is.character
+  pick <- "a"
+  key <- "pick"
   names <- function(x) {
     calls$selector <- calls$selector + 1L
     x
@@ -123,6 +182,11 @@ test_that("typed and opaque selections retain the dtplyr metadata boundary", {
     tidyselect::peek_vars()[.env[["delayed_idx"]]],
     tidyselect::all_of(tidyselect::peek_vars()[.env[["delayed_idx"]]]),
     tidyselect::peek_vars()[.env$classed_idx],
+    .env$active_idx,
+    .env[["delayed_idx"]],
+    .env$classed_idx,
+    .env[[key]],
+    .env$predicate,
     names(tidyselect::peek_data())
   )
   check <- function(selector) {
@@ -144,6 +208,15 @@ test_that("typed and opaque selections retain the dtplyr metadata boundary", {
     names <- "nonfunction shadow"
     rlang::quo((names)(tidyselect::peek_data()))
   }))
+  check(local({
+    `[[` <- function(x, i) {
+      calls$selector <- calls$selector + 1L
+      pick
+    }
+    rlang::quo(.env[["pick"]])
+  }))
+  # `everything` is supplied by tidyselect's mask, not the lexical chain.
+  check(rlang::new_quosure(quote(all_of(everything)), baseenv()))
   check_dots <- function(...) {
     check(rlang::quo(tidyselect::peek_vars()[..1]))
     check(rlang::quo(tidyselect::peek_vars()[.env$..1]))
@@ -153,6 +226,7 @@ test_that("typed and opaque selections retain the dtplyr metadata boundary", {
   }
   check_missing <- function(idx) {
     check(rlang::quo(tidyselect::peek_vars()[.env$idx]))
+    check(rlang::quo(.env$idx))
   }
   check_dots(read_index())
   check_missing()
