@@ -96,6 +96,7 @@ test_that("ordinary qualified parentheses keep DuckDB leading validation", {
   empty <- rlang::call2("(", rlang::missing_arg())
   ordinary <- list(
     quote(all_of(base::`(`("absent"))),
+    quote(base::`(`(all_of("absent"))),
     rlang::call2("all_of", empty)
   )
   for (selector in ordinary) {
@@ -118,4 +119,86 @@ test_that("ordinary qualified parentheses keep DuckDB leading validation", {
   )
   expect_identical(calls, 1L)
   expect_identical(counter$queries, 1L)
+})
+
+test_that("qualified parentheses use lexical c and typed fixed keys", {
+  data <- data.frame(region = c("east", "west"), amount = 1:2)
+  seen <- character()
+  predicate <- function(x) {
+    seen <<- base::c(seen, typeof(x))
+    is.character(x)
+  }
+  c <- function(...) predicate
+  selector <- rlang::quo(base::`(`(c("region")))
+  selected <- names(tidyselect::eval_select(selector, data))
+  expect_identical(selected, "region")
+  expect_identical(seen, base::c("character", "integer"))
+
+  seen <- character()
+  expect_identical(
+    inspect_grouping(data, .by = !!selector, .format = "list")$fixed,
+    list(selected)
+  )
+  expect_identical(seen, base::c("character", "integer"))
+})
+
+test_that("qualified grouping selectors resolve before duplicate checks", {
+  data <- data.frame(region = c("east", "west"), amount = 1:2)
+  predicate <- is.character
+  c <- function(...) predicate
+  selector <- rlang::quo(base::`(`(c("region")))
+  grouping <- grouping_sets(!!selector, grouping_set())
+  expect_identical(
+    inspect_grouping(data, .grouping = grouping, .format = "list")$included,
+    list("region", character())
+  )
+  expect_identical(
+    expand_with_margins(data, .grouping = grouping),
+    expand_with_margins(
+      data, .grouping = grouping_sets(grouping_set(region), grouping_set())
+    )
+  )
+  expect_error(
+    inspect_grouping(
+      data, .grouping = grouping_sets(!!selector, grouping_set(region))
+    ),
+    "Duplicate grouping sets"
+  )
+})
+
+test_that("qualified selections request dtplyr types only when needed", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.frame(region = c("east", "west"), amount = 1:2)
+  input <- dtplyr::lazy_dt(data)
+  derived <- dplyr::mutate(input, label = paste0(region, "!"))
+  expect_identical(
+    inspect_grouping(
+      derived, .by = base::`(`(c("label")), .format = "list"
+    )$fixed,
+    list("label")
+  )
+  expect_identical(
+    inspect_grouping(
+      derived, .grouping = grouping_set(base::`(`(all_of("label"))),
+      .format = "list"
+    )$included,
+    list("label")
+  )
+  expect_identical(
+    inspect_grouping(
+      derived, .grouping = grouping_sets(base::`(`(rollup(label))),
+      .format = "list"
+    )$included,
+    list("label", character())
+  )
+
+  predicate <- is.character
+  c <- function(...) predicate
+  selector <- rlang::quo((base::`(`(c("region"))))
+  expect_identical(
+    inspect_grouping(
+      input, .grouping = grouping_set(!!selector), .format = "list"
+    )$included,
+    list("region")
+  )
 })

@@ -419,6 +419,14 @@ selection_refused_operators <- function() {
   c("&&", "||", "*", "^")
 }
 
+# Helpers whose results depend only on their arguments and column names.
+selection_leaf_helpers <- function() {
+  c(
+    "all_of", "any_of", "starts_with", "ends_with", "contains",
+    "matches", "num_range", "everything", "last_col", "one_of"
+  )
+}
+
 # Arguments left to classify in a selection walk or a base c() call. The
 # caller holds the call's lexical environment. Empty dots and literal column
 # names need no further classification; opaque dots give NULL.
@@ -491,6 +499,17 @@ is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE) {
     return(is.atomic(expr) && !is.object(expr))
   }
 
+  # A bare pair is walked by tidyselect. A qualified pair evaluates its
+  # argument in the context mask, where even c() is a lexical function call.
+  ordinary <- unparenthesized_value(expr, ns = "")
+  if (is_redundant_parens(ordinary) &&
+        !is_redundant_parens(ordinary, ns = "")) {
+    return(is_name_only_helper_arg(
+      ordinary, env, allow_caller_code = allow_caller_code,
+      allow_env_pronoun = TRUE
+    ))
+  }
+
   # tidyselect refuses a formula in a selection on sight, in `stop_formula()`,
   # whatever it wraps, so the refusal depends on no column type. It is read
   # from the shape rather than joined to `selection_refused_operators()`
@@ -512,14 +531,10 @@ is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE) {
     return(FALSE)
   }
   # A helper argument can read column data even when the helper selects names.
-  leaf_helpers <- c(
-    "all_of", "any_of", "starts_with", "ends_with", "contains",
-    "matches", "num_range", "everything", "last_col", "one_of"
-  )
   # Bare helpers resolve in tidyselect's context mask; qualified helpers
   # need base namespace lookup into a package that supplies them.
   call_ns <- static_call_ns(expr)
-  if (call_name %in% leaf_helpers &&
+  if (call_name %in% selection_leaf_helpers() &&
         (is.null(call_ns) || call_ns %in% c("tidyselect", "dplyr")) &&
         selection_call_parens_safe(unparenthesized_call(expr), env) &&
         is_name_only_namespace(expr, env)) {
@@ -690,15 +705,19 @@ is_name_only_helper_arg <- function(expr,
   if (identical(fn, base::c) && !"..." %in% bound) {
     args <- selection_c_args(args, env)
   }
+  name <- static_call_name(expr)
+  leaf_helper <- context && name %in% selection_leaf_helpers() &&
+    identical(fn, tidyselect::vars_select_helpers[[name]])
   if (is.null(args) || !all(vapply(
     args, is_name_only_helper_arg, logical(1),
     env = env, bound = bound, seen = seen,
     allow_caller_code = allow_caller_code,
+    allow_stringr_pattern = leaf_helper && identical(name, "matches"),
     allow_env_pronoun = allow_env_pronoun
   ))) {
     return(FALSE)
   }
-  if (pattern_call || identical(fn, tidyselect::peek_vars)) {
+  if (leaf_helper || pattern_call || identical(fn, tidyselect::peek_vars)) {
     return(TRUE)
   }
   # Ordinary S3 generics can dispatch on implicit classes even when every
