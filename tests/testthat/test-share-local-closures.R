@@ -36,6 +36,16 @@ test_that("share dependencies follow a literal closure's invocation", {
       remove_prior <- function() rm("prior", inherits = TRUE)
       (function(prior) remove_prior())(2)
       sum(prior)
+    })(1),
+    (function(prior) {
+      rm(prior)
+      read_prior <- function() sum(prior)
+      do.call("read_prior", list())
+    })(1),
+    (function(prior) {
+      rm(prior)
+      read_prior <- function() sum(prior)
+      dplyr::summarise(data.frame(x = 1), z = read_prior())$z
     })(1)
   )
   for (kind in c("parent", "total")) {
@@ -71,16 +81,16 @@ test_that("retained bindings and uncalled local closures are valid", {
       observed
     })(1),
     (function(prior) {
-      rm(prior)
       read_prior <- function() {
         stop("This closure is never called.")
         sum(prior)
       }
+      rm(prior)
       1
     })(1),
     (function(prior, read_prior = function() sum(prior)) {
-      rm(prior)
       force(read_prior)
+      rm(prior)
       1
     })(1),
     (function(prior) {
