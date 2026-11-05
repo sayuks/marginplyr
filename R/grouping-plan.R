@@ -672,13 +672,13 @@ is_name_only_helper_arg <- function(expr,
     }
     value <- rlang::env_get(env, name, default = NULL, inherit = TRUE)
     # An absent lexical binding can resolve to a selection-context helper.
-    return(is_name_only_helper_value(value, allow_stringr_pattern))
+    return(is_name_only_helper_value(value, allow_stringr_pattern, env))
   }
   if (!rlang::is_call(expr)) {
     return(
       rlang::is_missing(expr) ||
         is_name_only_helper_value(
-          expr, allow_stringr_pattern, allow_null = TRUE
+          expr, allow_stringr_pattern, env, allow_null = TRUE
         )
     )
   }
@@ -723,7 +723,19 @@ is_name_only_helper_arg <- function(expr,
   ))) {
     return(FALSE)
   }
-  if (leaf_helper || pattern_call || identical(fn, tidyselect::peek_vars)) {
+  if (pattern_call) {
+    modifier <- static_call_name(expr)
+    if (is.null(static_call_ns(expr))) {
+      modifiers <- c("regex", "fixed", "coll", "boundary")
+      modifier <- modifiers[vapply(modifiers, function(name) {
+        identical(fn, getExportedValue("stringr", name))
+      }, logical(1))]
+    }
+    return(pattern_consumption_name_only(
+      c(paste0("stringr_", modifier), "stringr_pattern", "character"), env
+    ))
+  }
+  if (leaf_helper || identical(fn, tidyselect::peek_vars)) {
     return(TRUE)
   }
   # Ordinary S3 generics can dispatch on implicit classes even when every
@@ -796,7 +808,9 @@ is_name_only_env_value <- function(fn, subscript, env,
     return(FALSE)
   }
   value <- rlang::env_get(binding_env, name)
-  is_name_only_helper_value(value, allow_stringr_pattern, allow_null = TRUE)
+  is_name_only_helper_value(
+    value, allow_stringr_pattern, env, allow_null = TRUE
+  )
 }
 
 # Whether the parentheses around a call or its callee use base `(`. The
@@ -826,7 +840,7 @@ selection_parens_use_base <- function(expr, env, bound) {
 
 # A helper value with no caller-defined dispatch. Only matches() consumes
 # stringr patterns. NULL counts for a literal or an explicit .env binding.
-is_name_only_helper_value <- function(value, allow_stringr_pattern,
+is_name_only_helper_value <- function(value, allow_stringr_pattern, env,
                                       allow_null = FALSE) {
   if (rlang::is_missing(value)) {
     return(FALSE)
@@ -839,10 +853,22 @@ is_name_only_helper_value <- function(value, allow_stringr_pattern,
     if (classes[[1L]] %in% c(
       "stringr_regex", "stringr_fixed", "stringr_coll", "stringr_boundary"
     ) && identical(classes[-1L], c("stringr_pattern", "character"))) {
-      return(TRUE)
+      return(pattern_consumption_name_only(classes, env))
     }
   }
   is.atomic(value) && !is.object(value)
+}
+
+# Whether consuming a standard pattern can use the names-only proxy. Both
+# matches() and stringr ask length(), whose methods may read selection types.
+# Inspect method bindings without forcing them or invoking caller methods.
+pattern_consumption_name_only <- function(classes, env) {
+  table <- asNamespace("base")$.__S3MethodsTable__.
+  all(vapply(paste0("length.", c(classes, "default")), function(name) {
+    !rlang::env_has(env, name, inherit = TRUE) &&
+      !rlang::env_has(globalenv(), name, inherit = TRUE) &&
+      !rlang::env_has(table, name)
+  }, logical(1)))
 }
 
 # A stringr modifier named by an ordinary namespace lookup or an unmasked
