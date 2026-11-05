@@ -4433,10 +4433,11 @@ call_part_symbols <- function(expr, scope, lookup) {
     reads <- scoped_data_symbols(call_head, scope, lookup)
     scope <- scope_after_removals(call_head, scope, lookup)
   }
-  body <- implicit_local_body(expr, call_name, scope, lookup)
-  if (length(body) > 0L) {
-    inner <- c(list(list(bound = character())), scope)
-    return(unique(c(reads, scoped_data_symbols(body[[1L]], inner, lookup))))
+  local <- implicit_local_parts(expr, call_name, scope, lookup)
+  if (!is.null(local)) {
+    return(unique(c(
+      reads, scoped_data_symbols(local$body, local$scope, lookup)
+    )))
   }
   for (index in seq_along(parts)) {
     read_symbols <- if (index %in% selection_positions) {
@@ -4573,13 +4574,16 @@ scope_bound_names <- function(scope) {
   unlist(lapply(scope, "[[", "bound"), use.names = FALSE)
 }
 
-# Find the first binding and the frame in which its pending syntax runs.
-# Clear the promise in the returned scope before following recursive reads.
-scope_promise <- function(name, scope, function_lookup) {
+# Find the first visible binding and the frame in which its pending syntax
+# runs. Clear the promise before following recursive reads.
+scope_promise <- function(name, scope, function_lookup,
+                          visible = seq_along(scope)) {
   if (!function_lookup && startsWith(name, "..") &&
         is_numbered_dot_reference(rlang::sym(name))) {
-    owners <- vapply(scope, function(frame) "..." %in% frame$bound, logical(1))
-    index <- match(TRUE, owners)
+    owners <- vapply(scope[visible], function(frame) {
+      "..." %in% frame$bound
+    }, logical(1))
+    index <- visible[match(TRUE, owners)]
     if (!is.na(index)) {
       slot <- as.double(substring(name, 3L))
       dots <- scope[[index]]$dots
@@ -4595,7 +4599,7 @@ scope_promise <- function(name, scope, function_lookup) {
       ))
     }
   }
-  for (index in seq_along(scope)) {
+  for (index in visible) {
     frame <- scope[[index]]
     if (!name %in% frame$bound ||
           (function_lookup && identical(frame$kinds[[name]], "value"))) {
@@ -4807,15 +4811,18 @@ is_known_base_call <- function(expr, name, bound, lookup) {
   )
 }
 
-# The body of a known base local() with its default child environment.
+# The body and child scope of a known base local() with its default environment.
 # Explicit environments continue through the ordinary call walk.
-implicit_local_body <- function(expr, name, scope, lookup) {
+implicit_local_parts <- function(expr, name, scope, lookup) {
   if (identical(name, "local") &&
         is_known_base_frame_call(expr, name, scope, lookup) &&
         length(base_call_argument(expr, "envir")) == 0L) {
-    return(base_call_argument(expr, "expr"))
+    body <- base_call_argument(expr, "expr")
+    if (length(body) > 0L) {
+      child <- list(bound = character())
+      list(body = body[[1L]], scope = c(list(child), scope))
+    }
   }
-  list()
 }
 
 # A recognized scope mutation in direct-call form, without evaluating its head
@@ -5007,11 +5014,10 @@ scope_after_removals <- function(expr, scope, lookup) {
   if (identical(name, "function")) {
     return(scope)
   }
-  body <- implicit_local_body(expr, name, scope, lookup)
-  if (length(body) > 0L) {
-    inner <- c(list(list(bound = character())), scope)
+  local <- implicit_local_parts(expr, name, scope, lookup)
+  if (!is.null(local)) {
     after <- statement_reads_and_scope(
-      body[[1L]], inner, lookup, read_symbols = no_scope_reads
+      local$body, local$scope, lookup, read_symbols = no_scope_reads
     )$scope
     return(after[-1L])
   }
@@ -5117,13 +5123,20 @@ scope_after_removal_call <- function(expr, scope, lookup) {
   }
   args <- static_call_args(expr)
   removed <- literal_removal_names(
-    args[!argument_names(args) %in% c("envir", "pos", "inherits")]
+    args[!argument_names(args) %in% c("envir", "pos", "inherits")],
+    is_concat = function(part) {
+      identical(static_call_name(part), "c") &&
+        is_known_base_frame_call(part, "c", scope, lookup)
+    }
   )
   inheritance <- base_call_argument(expr, "inherits")
   inherits <- if (length(inheritance) > 0L) {
     unparenthesized_value(inheritance[[1L]])
   }
-  targets <- if (identical(inherits, TRUE) || identical(inherits, 1L)) {
+  # Base removal coerces the first element of a literal inheritance flag.
+  targets <- if (is.atomic(inherits) && !is.object(inherits) &&
+                   length(inherits) > 0L &&
+                   isTRUE(as.logical(inherits[[1L]]))) {
     seq.int(index, length(scope))
   } else {
     index
@@ -5214,7 +5227,8 @@ removal_retained_bound <- function(expr, bound) {
 }
 
 # Names requested by a removal call. NULL denotes an unreadable name.
-literal_removal_names <- function(args) {
+# A caller with lexical scope can verify concatenation in a `list` argument.
+literal_removal_names <- function(args, is_concat = function(expr) FALSE) {
   arg_names <- argument_names(args)
   removed <- character()
   for (i in seq_along(args)) {
@@ -5223,15 +5237,12 @@ literal_removal_names <- function(args) {
     if (rlang::is_missing(args[[i]])) {
       return(NULL)
     }
-    arg <- if (identical(name, "list")) {
-      unparenthesized_value(args[[i]])
-    } else {
-      args[[i]]
-    }
-    literal <- if (!nzchar(name) && is_name_part(arg)) {
+    arg <- args[[i]]
+    literal <- if (identical(name, "list")) {
+      static_character_value(arg, is_concat)
+    } else if (!nzchar(name) && is_name_part(arg)) {
       rlang::as_name(arg)
-    } else if ((!nzchar(name) || identical(name, "list")) &&
-                 is.character(arg) && !anyNA(arg)) {
+    } else if (!nzchar(name) && is.character(arg) && !anyNA(arg)) {
       arg
     }
     if (is.null(literal)) {
@@ -5261,17 +5272,6 @@ base_call_argument <- function(expr, formals, definition = NULL) {
     }
   }
   list()
-}
-
-# Match a call's syntax in an empty environment. An invalid call retains
-# no matches and can still report its ordinary error at execution.
-static_matched_arguments <- function(expr, definition, expand_dots = TRUE) {
-  tryCatch(
-    as.list(match.call(
-      definition, expr, expand.dots = expand_dots, envir = emptyenv()
-    ))[-1L],
-    error = function(cnd) NULL
-  )
 }
 
 # Existing environment values without forcing caller bindings, or NULL.

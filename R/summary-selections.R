@@ -2112,7 +2112,18 @@ selection_proxy_value_symbols <- function(expr, columns, scope,
     ))
   }
   if (!rlang::is_call(expr)) return(character())
-  if (is_binding_statement(static_call_name(expr), expr)) {
+  name <- static_call_name(expr)
+  frame <- scope[[1L]]
+  visible <- selection_proxy_visible_frames(scope)
+  lookup <- list(env = frame$env, rebound = frame$rebound)
+  arm <- literal_if_parts(expr, name, scope_bound_names(scope[visible]), lookup)
+  if (!is.null(arm)) {
+    if (length(arm) == 0L) return(character())
+    return(selection_proxy_value_symbols(
+      arm[[1L]], columns, scope, seen, result_columns = result_columns
+    ))
+  }
+  if (is_binding_statement(name, expr)) {
     # The effects walk sees a lexical frame and a slot for argument
     # evaluation. Only the read walk opens the original caller scopes.
     read_part <- function(part, lexical, lookup, subset = columns) {
@@ -2121,7 +2132,7 @@ selection_proxy_value_symbols <- function(expr, columns, scope,
       )
     }
     return(statement_reads_and_scope(
-      expr, list(scope[[1L]], list()), lookup = list(env = scope[[1L]]$env),
+      expr, list(frame, list()), lookup = lookup,
       read_symbols = read_part,
       read_result_symbols = function(part, lexical, lookup) {
         read_part(part, lexical, lookup, result_columns)
@@ -2146,6 +2157,9 @@ selection_proxy_value_symbols <- function(expr, columns, scope,
     frame <- function_scope_frame(formals(fn), expr)
     frame$env <- environment(fn)
     frame$rebound <- lookup_rebound_names(body(fn))
+    if (!is.null(inline_function_definition(expr))) {
+      frame$lexical_parents <- length(visible)
+    }
     reads <- selection_proxy_value_symbols(
       body(fn), columns, c(list(frame), scope), c(seen, list(fn)),
       result_columns = result_columns
@@ -2155,8 +2169,6 @@ selection_proxy_value_symbols <- function(expr, columns, scope,
       scope = scope, seen = seen
     ), use.names = FALSE)))
   }
-  frame <- scope[[1L]]
-  name <- static_call_name(expr)
   parts <- c(list(static_call_head(expr)),
              scope_call_args(expr, name, c(frame$bound, frame$rebound),
                              list(env = frame$env)),
@@ -2183,27 +2195,32 @@ selection_proxy_read_columns <- function(fn, args, columns) {
   NULL
 }
 
-# Whether a known dispatcher calls peek_data with no arguments. The dispatch
-# itself must be statically resolved without evaluating caller expressions.
+# Whether a known dispatcher calls peek_data with no arguments or only its
+# literal diagnostic label. Neither the dispatch nor its arguments run here.
 selection_proxy_dispatch_peek <- function(expr, fn, scope) {
   if (identical(fn, base::do.call)) {
     args <- static_matched_arguments(expr, fn)
     if (!"args" %in% names(args) ||
-          !selection_proxy_empty_args(args[["args"]], scope) ||
           ("quote" %in% names(args) && !rlang::is_bool(args[["quote"]]))) {
       return(FALSE)
     }
+    forwarded <- selection_proxy_dispatch_args(args[["args"]], scope)
     target <- "what"
     env_arg <- "envir"
   } else if (identical(fn, rlang::exec)) {
     args <- static_matched_arguments(expr, fn, expand_dots = FALSE)
-    if (length(args[["..."]]) > 0L) return(FALSE)
+    forwarded <- as.list(args[["..."]])
     target <- ".fn"
     env_arg <- ".env"
   } else {
     return(FALSE)
   }
-  if (!target %in% names(args)) return(FALSE)
+  if (!target %in% names(args) || is.null(forwarded)) return(FALSE)
+  if (length(forwarded) > 0L &&
+        (!identical(names(forwarded), "fn") ||
+           !rlang::is_string(unparenthesized_value(forwarded[["fn"]])))) {
+    return(FALSE)
+  }
   env <- if (env_arg %in% names(args)) {
     selection_proxy_dispatch_env(args[[env_arg]], scope)
   }
@@ -2221,14 +2238,22 @@ selection_proxy_dispatch_peek <- function(expr, fn, scope) {
   identical(fn, tidyselect::peek_data)
 }
 
-# Recognize an empty list value or a literal call to base list().
-selection_proxy_empty_args <- function(expr, scope) {
+# The supplied argument list from a literal list value, base list() syntax,
+# or a promise forwarding either of them. NULL means no statically known list.
+selection_proxy_dispatch_args <- function(expr, scope) {
   expr <- unparenthesized_value(expr)
-  if (identical(expr, list())) return(TRUE)
-  rlang::is_call(expr, n = 0L) &&
-    identical(
-      selection_proxy_function(static_call_head(expr), scope), base::list
-    )
+  if (is.list(expr) && !is.object(expr)) return(expr)
+  promise <- selection_proxy_promise(expr, scope)
+  if (!is.null(promise)) {
+    return(selection_proxy_dispatch_args(
+      promise$expression, promise$scope[promise$evaluation]
+    ))
+  }
+  if (rlang::is_call(expr) &&
+        identical(selection_proxy_function(static_call_head(expr), scope),
+                  base::list)) {
+    static_call_args(expr)
+  }
 }
 
 # Read a literal, existing environment supplied to a dispatcher.
@@ -2247,23 +2272,29 @@ selection_proxy_dispatch_env <- function(expr, scope) {
   NULL
 }
 
-# Follow a pending promise in this frame. Caller frames are visible only
-# when evaluating a supplied argument, not from a callback's lexical body.
-selection_proxy_promise <- function(expr, scope) {
+# The current frame and the enclosing frames captured by inline definitions.
+# Other caller frames are accessible through supplied promises only.
+selection_proxy_visible_frames <- function(scope) {
+  seq_len(1L + (scope[[1L]]$lexical_parents %||% 0L))
+}
+
+# Follow a promise in the lexical scope. The full stack retains the calling
+# frames needed to read its argument expression.
+selection_proxy_promise <- function(expr, scope, function_position = FALSE) {
   if (!is_name_part(expr)) return(NULL)
-  name <- rlang::as_name(expr)
-  bound <- scope[[1L]]$bound
-  if (name %in% bound ||
-        ("..." %in% bound && is_numbered_dot_reference(expr))) {
-    scope_promise(name, scope, function_lookup = FALSE)
-  }
+  scope_promise(
+    rlang::as_name(expr), scope, function_lookup = function_position,
+    visible = selection_proxy_visible_frames(scope)
+  )
 }
 
 # Resolve callable syntax without running caller code or forcing promises.
+# A bare call head uses function lookup. A value position or parenthesized
+# head reads its exact binding even if it is a nonfunction.
 selection_proxy_function <- function(head, scope, function_position = TRUE) {
   function_position <- function_position && !is_parenthesized(head)
   head <- unparenthesized_value(head)
-  promise <- selection_proxy_promise(head, scope)
+  promise <- selection_proxy_promise(head, scope, function_position)
   if (!is.null(promise)) {
     return(selection_proxy_function(
       promise$expression, promise$scope[promise$evaluation],
@@ -2290,8 +2321,16 @@ selection_proxy_function <- function(head, scope, function_position = TRUE) {
   }
   if (!is_name_part(head) && !rlang::is_call(head, c("::", ":::"))) return(NULL)
   if (is_name_part(head) && !function_position) head <- call("(", head)
+  visible <- scope[selection_proxy_visible_frames(scope)]
+  if (function_position) {
+    visible <- lapply(visible, function(frame) {
+      values <- names(frame$kinds)[frame$kinds == "value"]
+      frame$bound <- setdiff(frame$bound, values)
+      frame
+    })
+  }
   selection_argument_function(
-    rlang::call2(head), frame$env, c(frame$bound, frame$rebound)
+    rlang::call2(head), frame$env, c(scope_bound_names(visible), frame$rebound)
   )
 }
 

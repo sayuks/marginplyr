@@ -542,9 +542,19 @@ test_that("literal proxy dispatch cannot read earlier share source aliases", {
     base::do.call("peek_data", list(), envir = asNamespace("tidyselect")),
     base::do.call("peek_data", !!list(), envir = !!asNamespace("tidyselect")),
     base::do.call(peek, list()),
+    base::do.call(tidyselect::peek_data, list(fn = "pick")),
     rlang::exec(tidyselect::peek_data),
+    rlang::exec(tidyselect::peek_data, fn = "pick"),
     base::getExportedValue("tidyselect", "peek_data")(),
     (function(fn) fn())(tidyselect::peek_data),
+    (function(fn) {
+      if (FALSE) fn()$prior
+      if (TRUE) fn()
+    })(tidyselect::peek_data),
+    (function(fn) (function() fn())())(tidyselect::peek_data),
+    (function(fn, args) {
+      do.call(fn, args)
+    })(tidyselect::peek_data, list()),
     (function(fn) {
       fn()
     })(tidyselect::peek_data)
