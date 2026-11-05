@@ -33,9 +33,6 @@
       collect.marginplyr_sqlite_typed_result
       compute.marginplyr_duckdb_env
       compute.marginplyr_sqlite_typed_result
-      dtplyr_join_set_types_match
-      dtplyr_metadata_safe_step
-      dtplyr_selection_proxy
       execute_margin_expand
       execute_margin_nest
       execute_margin_summary

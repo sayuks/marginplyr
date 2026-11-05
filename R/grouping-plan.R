@@ -274,10 +274,7 @@ prepare_grouping_plan <- function(.data,
         ), preflight_warnings)
       } else {
         data_proxy <- if (identical(backend$kind, "dtplyr")) {
-          dtplyr_selection_proxy(
-            data,
-            isolate = !builds_margin_branches && mutable_step
-          )
+          dtplyr_selection_proxy(data)
         } else {
           grouping_selection_proxy(data, backend = backend)
         }
