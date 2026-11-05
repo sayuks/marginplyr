@@ -42,6 +42,13 @@ probe <- function(operation, graph, mutate_source = FALSE) {
   cat(operation, graph, mutate_source, "source sizes",
       toString(construction_reads), "columns", toString(observed),
       "rows", nrow(result), "source after", toString(source$g), "\n")
+  if (!assert && graph == "root" && operation != "named") {
+    observed_columns <- if (nesting) "data" else "()"
+    observed_source <- if (mutate_source) rep("changed", 2L) else c("a", "b")
+    return(identical(observed, observed_columns) &&
+             identical(construction_reads, 2L) &&
+             identical(source$g, observed_source) && nrow(result) == 1L)
+  }
   expected <- if (nesting) c("g", "data") else "(g)"
   identical(observed, expected) && !length(construction_reads) &&
     identical(source$g, c("a", "b")) &&
@@ -64,6 +71,4 @@ observations <- c(
   probe("rowwise", "root"),
   probe("typed", "root", mutate_source = TRUE)
 )
-if (assert && !all(observations)) {
-  stop("Immutable-root preparation did not preserve the schema and source.")
-}
+stopifnot(all(observations))

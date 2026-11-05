@@ -49,6 +49,9 @@ for (variant in variants[1:3]) {
   stopifnot(identical(probe(18L, inspect_grouping, variant), "one complete set"))
 }
 stopifnot(identical(probe(18L, inspect_grouping, "union", TRUE), "one complete set"))
+for (consumer in list(nest_with_margins, nest_by_with_margins)) {
+  stopifnot(identical(probe(18L, consumer, "direct"), "one complete set"))
+}
 consumers <- list(inspect_grouping, nest_with_margins, nest_by_with_margins)
 observed <- c(
   probe(18L, inspect_grouping, "union_product_set"),

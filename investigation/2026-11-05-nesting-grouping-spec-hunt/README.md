@@ -19,7 +19,7 @@ and verified independently. The user delegated the breakdown and publication.
 
 | Issue | Observed failure | Replay |
 | --- | --- | --- |
-| [#1301] | A classed `.id` bypassed a collision and replaced a source value with an occurrence identifier. | [Classed scalars](classed-scalars.R), `id` |
+| [#1301] | A classed `.id` bypassed a collision and replaced a source value with a Grouping set identifier. | [Classed scalars](classed-scalars.R), `id` |
 | [#1302] | A classed `.key` renamed the cell column and made it a row-wise identifier. | [Classed scalars](classed-scalars.R), `key` |
 | [#1309] | A classed Option argument changed ordering, admitted unsupported choices, or changed the inspection format. | [Classed scalars](classed-scalars.R), `choice` |
 | [#1303] | Typed inspection and nesting passed both rows of an immutable dtplyr root to a caller's `head()`. A separate probe changed the source by reference. | [Root head](dtplyr-root-head.R) |
@@ -121,7 +121,7 @@ set. At width 18 the direct cube, direct union wrapper and direct product
 wrapper passed under the same cap. The union of an inner product failed
 through inspection and both Nest verbs. Inspection also failed with the
 covering factor first and with an explicit empty set in the inner product.
-Controls checked the included columns, occurrence identifier, Grouping
+Controls checked the included columns, Grouping set identifier, Grouping
 identifier and cell payload. The inner product enumerated its cube before
 the outer product could apply its guaranteed columns. The result extends
 the direct-cube and direct-union coverage in #1274 and #1286. Parallel
@@ -161,12 +161,15 @@ these calls. ADR 0005 governs both admission findings.
 - The [local membership oracle](local-membership-controls.R) compared
   both Nest verbs, both keep choices and all three sort options across ten
   structured key families. All 120 comparisons matched native detail
-  membership, Grand total source rows and cell column projections, with
+  membership, Grand total set source rows and cell column projections, with
   unchanged serialized inputs. It compared membership independently of
   outer order.
 - The previous [remote frontier] reran with 36 SQLite, 36 DuckDB and 24
-  Arrow cases. SQLite sent zero DBI statements. DuckDB sent twelve, all
-  `LIMIT 0`. The 18 original Arrow readers still supplied all 36 rows.
+  Arrow cases. SQLite sent zero DBI statements. DuckDB sent one `LIMIT 0`
+  for each of the six shapes in both its name-only and typed inspections,
+  for twelve total. The 18 original Arrow readers still supplied all 36
+  rows. The rerun removed only the prior script's hard-coded baseline
+  print and recorded the tested SHA shown above.
   These observations establish the tested inspection and refusal boundary.
   SQL and Arrow Nest calls were refusal controls.
 

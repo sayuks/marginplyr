@@ -23,21 +23,25 @@ checked <- function(label, expected, expr) {
   cat(label, first_line, "\n")
   grepl(expected, first_line, fixed = TRUE)
 }
-cases <- function(source, label) {
+cases <- function(source, label, metadata_refusal = FALSE) {
+  diagnose <- function(label, expected, expr) {
+    if (metadata_refusal) expected <- "Can't safely determine column metadata"
+    checked(label, expected, expr)
+  }
   c(
-    checked(paste(label, "list name overlaps fixed key"),
+    diagnose(paste(label, "list name overlaps fixed key"),
             "must not be a grouping column",
             nest_with_margins(source, .by = g, .key = "g")),
-    checked(paste(label, "list name overlaps dimension"),
+    diagnose(paste(label, "list name overlaps dimension"),
             "must not be a grouping column",
             nest_with_margins(source, .grouping = rollup(g), .key = "g")),
-    checked(paste(label, "rowwise fixed key"),
+    diagnose(paste(label, "rowwise fixed key"),
             "cannot be a row-wise identifier",
             nest_by_with_margins(source, .by = .rows)),
-    checked(paste(label, "rowwise dimension"),
+    diagnose(paste(label, "rowwise dimension"),
             "cannot be a row-wise identifier",
             nest_by_with_margins(source, .grouping = grouping_set(.rows))),
-    checked(paste(label, "rowwise set identifier"),
+    diagnose(paste(label, "rowwise set identifier"),
             "cannot be a row-wise identifier",
             nest_by_with_margins(dplyr::rename(source, outer = .rows),
                                  .id = ".rows"))
@@ -45,11 +49,11 @@ cases <- function(source, label) {
 }
 
 stopifnot(all(cases(local_source, "local")), all(cases(safe, "safe")))
-observations <- cases(unsafe, "unsafe")
+observations <- cases(unsafe, "unsafe", metadata_refusal = !assert)
 stopifnot(length(reads) == 0L)
 stopifnot(checked("unsafe with valid list name",
                   "Can't safely determine column metadata",
                   nest_with_margins(unsafe, .by = g, .key = "nested")))
-if (assert && !all(observations)) {
+if (!all(observations)) {
   stop("Nesting admission did not give the locally resolvable diagnostic.")
 }

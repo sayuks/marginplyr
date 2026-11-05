@@ -1,4 +1,4 @@
-# Run from the checkout root: Rscript investigation/<note>/qualified-parens.R
+# Run from the package root using the command in the accompanying README.
 pkgload::load_all(quiet = TRUE)
 
 data <- tibble::tibble(a = c("x", "y"), b = 1:2)

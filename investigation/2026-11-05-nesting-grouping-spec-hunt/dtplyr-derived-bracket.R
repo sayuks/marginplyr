@@ -16,7 +16,12 @@ query <- local({
 })
 native <- dplyr::collect(query)
 stopifnot(identical(native$g, c("a", "b")), identical(seen, 2L))
-selection <- grouping_set(dplyr::where(is.character))
+reads_before_predicate <- integer()
+select_character <- function(x) {
+  reads_before_predicate <<- seen
+  is.character(x)
+}
+selection <- grouping_set(dplyr::where(select_character))
 stopifnot(identical(inspect_grouping(native, .grouping = selection)$included, "(g)"))
 seen <- integer()
 stopifnot(identical(inspect_grouping(query, .grouping = grouping_set(g))$included,
@@ -24,9 +29,11 @@ stopifnot(identical(inspect_grouping(query, .grouping = grouping_set(g))$include
 
 observe <- function(label, call) {
   seen <<- integer()
+  reads_before_predicate <<- integer()
   answer <- tryCatch(force(call), error = identity)
   if (inherits(answer, "marginplyr_error")) {
-    return(!length(seen) && grepl("safely determine column metadata",
+    return(assert && length(seen) == 0L &&
+             grepl("safely determine column metadata",
                                  conditionMessage(answer), fixed = TRUE))
   }
   sizes <- seen
@@ -35,9 +42,15 @@ observe <- function(label, call) {
   }
   actual <- if (label == "inspect") answer$included else names(answer)
   expected <- if (label == "inspect") "(g)" else c("g", "data")
-  cat(label, "construction/read sizes", toString(sizes),
-      "columns", toString(actual), "\n")
-  identical(actual, expected) && !any(sizes == 0L)
+  cat(label, "metadata/read sizes", toString(reads_before_predicate),
+      "public call sizes", toString(sizes), "columns", toString(actual), "\n")
+  if (!assert) {
+    observed <- if (label == "inspect") "()" else "data"
+    return(identical(actual, observed) && identical(reads_before_predicate, 0L))
+  }
+  # The row-wise call also collects after the typed predicate has run.
+  identical(actual, expected) && length(reads_before_predicate) == 0L &&
+    (label == "rowwise" || length(sizes) == 0L)
 }
 
 observations <- c(
@@ -46,6 +59,4 @@ observations <- c(
   observe("rowwise", nest_by_with_margins(query, .grouping = selection))
 )
 stopifnot(identical(source$g, c("a", "b")))
-if (assert && !all(observations)) {
-  stop("Derived metadata accepted a caller-dispatched zero-row bracket.")
-}
+stopifnot(all(observations))

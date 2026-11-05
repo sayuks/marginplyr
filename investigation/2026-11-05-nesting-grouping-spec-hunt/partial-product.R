@@ -1,4 +1,4 @@
-# Run from the checkout root: Rscript investigation/<note>/duplicate-prefix.R
+# Run from the package root using the command in the accompanying README.
 pkgload::load_all(quiet = TRUE)
 
 local({
