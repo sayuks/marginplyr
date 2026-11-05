@@ -2080,7 +2080,10 @@ plan_across_share <- function(expr,
 validate_share_across_syntax <- function(expr, env, output_name) {
   kind <- share_across_kind(expr)
   args <- preflight_share_across_syntax(expr, output_name)
-  if (!is.null(args$unpack)) {
+  # The parsed value also represents an omitted or empty argument as NULL.
+  unpack_is_literal_null <- args$unpack_index > 0L &&
+    is.null(args$call_args[[args$unpack_index]])
+  if (!is.null(args$unpack) || unpack_is_literal_null) {
     unpack <- rlang::eval_tidy(args$unpack, env = env)
     if (!isFALSE(unpack)) {
       abort_share_across_unpack(kind)
