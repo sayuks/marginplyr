@@ -1068,7 +1068,8 @@ evaluated_call_args <- function(expr,
 # tags, which `rebuild_static_call()` takes from this list, so an index map that
 # dropped them would turn `across(value, .names = "{.col}")` into a call whose
 # template is a positional argument.
-rewrite_evaluated_call_parts <- function(expr, rewrite, rewrite_head = rewrite) {
+rewrite_evaluated_call_parts <- function(expr, rewrite,
+                                         rewrite_head = rewrite) {
   captured <- captured_call_parts(expr) | independent_mask_call_parts(expr)
   language_index <- readable_language_index(expr)
   head <- static_call_head(expr)
