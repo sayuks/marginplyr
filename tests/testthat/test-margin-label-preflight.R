@@ -43,6 +43,31 @@ test_that("known invalid Margin label names precede DuckDB metadata", {
   expect_identical(last_sent_queries()$purpose, character())
 })
 
+test_that("static summary selections precede label names without metadata", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  source <- dplyr::copy_to(
+    con, data.frame(g = "a", h = "b", value = 1L),
+    "summary_label_preflight"
+  )
+  counter <- duckdb_query_counter()
+  on.exit(counter$untrace(), add = TRUE)
+
+  expect_error(
+    summarize_with_margins(
+      source, dplyr::across(unknown, sum), .grouping = rollup(g, h),
+      .margin_label = c(g = "All")
+    ),
+    "Column `unknown` doesn't exist",
+    class = "vctrs_error_subscript_oob"
+  )
+  expect_identical(counter$queries, 0L)
+  expect_identical(last_sent_queries()$purpose, character())
+})
+
 test_that("both Nest verbs diagnose known label names before unsafe dtplyr", {
   skip_if_suggest_absent("dtplyr")
   source <- dtplyr::lazy_dt(

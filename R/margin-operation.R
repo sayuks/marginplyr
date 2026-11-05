@@ -291,9 +291,9 @@ prepare_margin_operation <- function(.data,
         duplicates_choices = duplicates_choices,
         builds_margin_branches = TRUE,
         validate_grouping = validate_grouping,
-        validate_plan_names = function(by, dimensions) {
+        validate_plan_names = function(by, dimensions, data_vars) {
           if (!is.null(validate_plan_names)) {
-            validate_plan_names(by, dimensions)
+            validate_plan_names(by, dimensions, data_vars)
           }
           if (!is.null(by) && !is.null(dimensions)) {
             validate_margin_label_names(.margin_label, dimensions, by)

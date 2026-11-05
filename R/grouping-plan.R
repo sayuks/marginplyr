@@ -162,7 +162,7 @@ resolve_by_selection <- function(by_quo, data_proxy) {
   )
 }
 
-# `validate_plan_names` receives locally settled keys and dimensions before
+# `validate_plan_names` receives keys, dimensions, and source names before
 # metadata, then the canonical names after compilation. NULL means unresolved;
 # character() means a selection settled on no columns.
 prepare_grouping_plan <- function(.data,
@@ -260,7 +260,7 @@ prepare_grouping_plan <- function(.data,
         )
       }
       if (!is.null(validate_plan_names)) {
-        validate_plan_names(by, local_plan$dimensions)
+        validate_plan_names(by, local_plan$dimensions, data_vars)
       }
       # Inspection needs no typed snapshot when names settle both selections.
       # Its canonical pass uses the name proxy too, preserving the two-pass
@@ -301,7 +301,7 @@ prepare_grouping_plan <- function(.data,
         ), preflight_warnings)
       }
       if (!is.null(validate_plan_names)) {
-        validate_plan_names(plan$by, plan$dimensions)
+        validate_plan_names(plan$by, plan$dimensions, data_vars)
       }
 
       list(
