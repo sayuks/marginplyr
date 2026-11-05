@@ -2026,10 +2026,8 @@ read_grouping_arg <- function(arg, data_vars) {
     selection_env <- rlang::env(env)
     constructor_head <- if (is_constructor_call) static_call_head(expr)
     # tidyselect strips bare pairs around the selection before evaluation.
-    selection_call <- if (is_constructor_call) {
-      unparenthesized_value(rlang::quo_get_expr(arg), ns = "")
-    }
-    if (is_redundant_parens(selection_call)) {
+    selection_call <- unparenthesized_value(rlang::quo_get_expr(arg), ns = "")
+    if (is_constructor_call && is_redundant_parens(selection_call)) {
       rlang::env_bind(selection_env, `::` = function(...) retained)
     } else if (is_redundant_parens(constructor_head, ns = "")) {
       # Answer at the outermost pair without forcing any inner callee lookup.
