@@ -203,31 +203,42 @@
 #'   ) |>
 #'   dplyr::show_query()
 grouping_set <- function(...) {
-  new_grouping_spec("set", rlang::enquos(...))
+  new_grouping_spec("set", capture_grouping_args(...))
 }
 
 #' @rdname grouping_set
 #' @export
 grouping_sets <- function(...) {
-  new_grouping_spec("sets", rlang::enquos(...))
+  new_grouping_spec("sets", capture_grouping_args(...))
 }
 
 #' @rdname grouping_set
 #' @export
 rollup <- function(...) {
-  new_grouping_spec("rollup", rlang::enquos(...))
+  new_grouping_spec("rollup", capture_grouping_args(...))
 }
 
 #' @rdname grouping_set
 #' @export
 cube <- function(...) {
-  new_grouping_spec("cube", rlang::enquos(...))
+  new_grouping_spec("cube", capture_grouping_args(...))
 }
 
 #' @rdname grouping_set
 #' @export
 grouping_spec <- function(...) {
-  new_grouping_spec("product", rlang::enquos(...))
+  new_grouping_spec("product", capture_grouping_args(...))
+}
+
+# Capture tagged arguments without interpreting their values, so preflight can
+# report their original names. Untagged arguments retain tidy-eval capture,
+# including injections and the omission of a trailing empty argument.
+capture_grouping_args <- function(...) {
+  args <- rlang::enquos0(...)
+  if (any(nzchar(rlang::names2(args)))) {
+    return(args)
+  }
+  rlang::enquos(...)
 }
 
 new_grouping_spec <- function(type, args) {
