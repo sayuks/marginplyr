@@ -553,6 +553,16 @@ test_that("literal proxy dispatch cannot read earlier share source aliases", {
     })(tidyselect::peek_data),
     (function(fn) (function() fn())())(tidyselect::peek_data),
     (function(fn, args) {
+      (function(args) do.call(fn, args))(args)
+    })(tidyselect::peek_data, list()),
+    (function(fn) {
+      (function(callback, fn, args) callback(args))(
+        function(args) do.call(fn, args),
+        function() stop("The callback uses its enclosing fn."),
+        list()
+      )
+    })(tidyselect::peek_data),
+    (function(fn, args) {
       do.call(fn, args)
     })(tidyselect::peek_data, list()),
     (function(fn) {

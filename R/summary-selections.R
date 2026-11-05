@@ -2139,7 +2139,8 @@ selection_proxy_value_symbols <- function(expr, columns, scope,
       }
     )$reads)
   }
-  fn <- selection_proxy_function(static_call_head(expr), scope)
+  callable <- selection_proxy_callable(static_call_head(expr), scope)
+  fn <- callable$fn
   if (identical(fn, tidyselect::peek_data) ||
         selection_proxy_dispatch_peek(expr, fn, scope)) {
     return(result_columns)
@@ -2157,9 +2158,7 @@ selection_proxy_value_symbols <- function(expr, columns, scope,
     frame <- function_scope_frame(formals(fn), expr)
     frame$env <- environment(fn)
     frame$rebound <- lookup_rebound_names(body(fn))
-    if (!is.null(inline_function_definition(expr))) {
-      frame$lexical_parents <- length(visible)
-    }
+    frame$lexical_parent <- callable$lexical_parent
     reads <- selection_proxy_value_symbols(
       body(fn), columns, c(list(frame), scope), c(seen, list(fn)),
       result_columns = result_columns
@@ -2272,10 +2271,18 @@ selection_proxy_dispatch_env <- function(expr, scope) {
   NULL
 }
 
-# The current frame and the enclosing frames captured by inline definitions.
-# Other caller frames are accessible through supplied promises only.
+# The current frame and its lexical parents. A forwarded closure can skip
+# its caller when finding captured bindings, while its supplied promises
+# still evaluate in that caller.
 selection_proxy_visible_frames <- function(scope) {
-  seq_len(1L + (scope[[1L]]$lexical_parents %||% 0L))
+  visible <- integer()
+  index <- 1L
+  repeat {
+    visible <- c(visible, index)
+    parent <- scope[[index]]$lexical_parent
+    if (is.null(parent)) return(visible)
+    index <- index + parent
+  }
 }
 
 # Follow a promise in the lexical scope. The full stack retains the calling
@@ -2288,26 +2295,36 @@ selection_proxy_promise <- function(expr, scope, function_position = FALSE) {
   )
 }
 
-# Resolve callable syntax without running caller code or forcing promises.
+# Resolve a function without running caller code or forcing promises.
+selection_proxy_function <- function(head, scope, function_position = TRUE) {
+  selection_proxy_callable(head, scope, function_position)$fn
+}
+
+# Resolve callable syntax and the relative offset to a literal closure's
+# defining frame. The offset accounts for slices taken when following promises.
 # A bare call head uses function lookup. A value position or parenthesized
 # head reads its exact binding even if it is a nonfunction.
-selection_proxy_function <- function(head, scope, function_position = TRUE) {
+selection_proxy_callable <- function(head, scope, function_position = TRUE,
+                                     offset = 0L) {
   function_position <- function_position && !is_parenthesized(head)
   head <- unparenthesized_value(head)
   promise <- selection_proxy_promise(head, scope, function_position)
   if (!is.null(promise)) {
-    return(selection_proxy_function(
+    return(selection_proxy_callable(
       promise$expression, promise$scope[promise$evaluation],
-      function_position = FALSE
+      function_position = FALSE, offset = offset + promise$evaluation[[1L]] - 1L
     ))
   }
-  if (is.function(head)) return(head)
+  if (is.function(head)) return(list(fn = head))
   frame <- scope[[1L]]
   if (rlang::is_call(head, "function", n = 3L) &&
         is.pairlist(head[[2L]]) &&
         identical(selection_proxy_function(static_call_head(head), scope),
                   base::`function`)) {
-    return(rlang::new_function(head[[2L]], head[[3L]], frame$env))
+    return(list(
+      fn = rlang::new_function(head[[2L]], head[[3L]], frame$env),
+      lexical_parent = offset + 1L
+    ))
   }
   if (rlang::is_call(head) &&
         !rlang::is_call(head, c("::", ":::")) &&
@@ -2316,7 +2333,7 @@ selection_proxy_function <- function(head, scope, function_position = TRUE) {
     args <- static_matched_arguments(head, base::getExportedValue)
     if (identical(args[["ns"]], "tidyselect") &&
           identical(args[["name"]], "peek_data")) {
-      return(tidyselect::peek_data)
+      return(list(fn = tidyselect::peek_data))
     }
   }
   if (!is_name_part(head) && !rlang::is_call(head, c("::", ":::"))) return(NULL)
@@ -2329,9 +2346,10 @@ selection_proxy_function <- function(head, scope, function_position = TRUE) {
       frame
     })
   }
-  selection_argument_function(
+  fn <- selection_argument_function(
     rlang::call2(head), frame$env, c(scope_bound_names(visible), frame$rebound)
   )
+  list(fn = fn)
 }
 
 # Answers whether `.unpack` is known to be FALSE without evaluating an
