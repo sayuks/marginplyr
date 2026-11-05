@@ -494,6 +494,8 @@ unparenthesized_call <- function(expr) {
 # A pair of parentheses R evaluates as itself: the call `(` really is, holding
 # the one argument the parser gives it. A constructed call to `(` holding any
 # other number is not a pair a reader may drop.
+# The optional filter uses the namespace matching rules of `rlang::is_call()`.
+# An empty string matches only an unqualified pair.
 is_redundant_parens <- function(expr, ns = NULL) {
   rlang::is_call(expr, "(", ns = ns) && length(expr) == 2L
 }
