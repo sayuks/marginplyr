@@ -1944,7 +1944,7 @@ distinct_resolved_product <- function(factors, covered = character()) {
 # suffix columns from the keys and retain the selected columns as written.
 distinct_product_step <- function(product, factor, required) {
   branches <- factor$branches
-  factor_columns <- unique(unlist(branches, use.names = FALSE))
+  factor_columns <- as.character(unique(unlist(branches, use.names = FALSE)))
   dimensions <- setdiff(
     union(unique(unlist(product, use.names = FALSE)), factor_columns), required
   )
