@@ -139,7 +139,8 @@ test_that("explicit qualified parentheses retain the caller's selection", {
     bare = quote(base::`(`(rollup)()),
     wrapped = quote((base::`(`(marginplyr::rollup))()),
     whole = quote(base::`(`(base::`(`(marginplyr::rollup)())),
-    whole_wrapped = quote((base::`(`(base::`(`(marginplyr::rollup)())))
+    whole_wrapped = quote((base::`(`(base::`(`(marginplyr::rollup)()))),
+    whole_wrapped_callee = quote(base::`(`((base::`(`(marginplyr::rollup))()))
   )
   one_read <- c(outer = 1L, inner = 1L, selector = 1L)
   for (spelling in names(spellings)) {

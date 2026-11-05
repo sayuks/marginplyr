@@ -2025,17 +2025,17 @@ read_grouping_arg <- function(arg, data_vars) {
     retained <- if (is_constructor_call) function(...) value else value
     selection_env <- rlang::env(env)
     constructor_head <- if (is_constructor_call) static_call_head(expr)
-    if (rlang::is_call(constructor_head, "(", n = 1L, ns = "")) {
+    # tidyselect strips bare pairs around the selection before evaluation.
+    selection_call <- if (is_constructor_call) {
+      unparenthesized_value(rlang::quo_get_expr(arg), ns = "")
+    }
+    if (is_redundant_parens(selection_call)) {
+      rlang::env_bind(selection_env, `::` = function(...) retained)
+    } else if (is_redundant_parens(constructor_head, ns = "")) {
       # Answer at the outermost pair without forcing any inner callee lookup.
       rlang::env_bind(selection_env, `(` = function(...) retained)
     } else if (is_redundant_parens(constructor_head)) {
-      # A qualified pair around the whole selection needs the value directly.
-      # The pair in the callee needs the function that returns that value.
-      constructor_operand <- constructor_head[[2L]]
-      parenthesis <- function(...) {
-        operand <- substitute(list(...))[[2L]]
-        if (identical(operand, constructor_operand)) retained else value
-      }
+      parenthesis <- function(...) retained
       rlang::env_bind(selection_env, `::` = function(...) parenthesis)
     } else if (is_constructor_call && !is.null(static_call_ns(expr))) {
       operator <- selection_namespace_operator(expr)

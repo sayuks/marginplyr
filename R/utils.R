@@ -442,8 +442,9 @@ nameable_call <- function(expr) {
 # raises base R's untyped `missingArgError`, naming this frame's variable rather
 # than anything the caller wrote (#168, #174). A constructed `(` call holding
 # one wraps no value to read, which is the answer stopping gives.
-unparenthesized_value <- function(expr) {
-  while (is_redundant_parens(expr) && !rlang::is_missing(expr[[2L]])) {
+# A namespace filter limits which pairs this reader peels.
+unparenthesized_value <- function(expr, ns = NULL) {
+  while (is_redundant_parens(expr, ns) && !rlang::is_missing(expr[[2L]])) {
     expr <- expr[[2L]]
   }
   expr
@@ -493,8 +494,8 @@ unparenthesized_call <- function(expr) {
 # A pair of parentheses R evaluates as itself: the call `(` really is, holding
 # the one argument the parser gives it. A constructed call to `(` holding any
 # other number is not a pair a reader may drop.
-is_redundant_parens <- function(expr) {
-  rlang::is_call(expr, "(") && length(expr) == 2L
+is_redundant_parens <- function(expr, ns = NULL) {
+  rlang::is_call(expr, "(", ns = ns) && length(expr) == 2L
 }
 
 # Whether unwrapping answers a different node, which is what a reader that
