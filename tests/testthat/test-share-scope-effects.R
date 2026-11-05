@@ -194,3 +194,74 @@ test_that("nested removal analysis never evaluates caller expressions", {
     expect_identical(calls, 0L)
   }
 })
+
+test_that("inherited removals in implicit local expose earlier aliases", {
+  data <- data.frame(group = c("a", "b"), x = c(1, 3), prior = c(100, 300))
+  expressions <- alist(
+    (function(prior = 1) {
+      local(rm("prior", inherits = TRUE))
+      sum(prior)
+    })(),
+    (function(prior = 1) {
+      base::local(expr = base::remove(prior, inherits = 1L))
+      sum(prior)
+    })(),
+    (function(prior = 1) {
+      base::local(expr = {
+        base::remove(prior, inherits = 1L)
+        sum(prior)
+      })
+    })()
+  )
+  for (expression in expressions) {
+    ordinary <- summarize_with_margins(
+      data, prior = sum(x), value = !!expression, .grouping = rollup(group)
+    )
+    expect_equal(ordinary$value, c(1, 3, 4))
+    for (kind in c("parent", "total")) {
+      helper <- rlang::call2(paste0("share_of_", kind), quote(value))
+      expect_error(
+        summarize_with_margins(
+          data, prior = sum(x), value = !!expression,
+          fraction = !!helper, .grouping = rollup(group)
+        ),
+        "depends on earlier summary alias `prior`",
+        class = "marginplyr_error"
+      )
+      expect_error(
+        summarize_with_margins(
+          data, value = sum(x), prior = !!helper,
+          derived = !!expression, .grouping = rollup(group)
+        ),
+        "Ordinary summaries cannot use an earlier .* share",
+        class = "marginplyr_error"
+      )
+    }
+  }
+})
+
+test_that("inherited removal stops at an implicit local binding", {
+  data <- data.frame(group = c("a", "b"), x = c(1, 3), prior = c(100, 300))
+  expression <- quote((function(prior = 1) {
+    inner <- local({
+      prior <- 2
+      remove(prior, inherits = TRUE)
+      sum(prior)
+    })
+    inner + sum(prior)
+  })())
+  for (kind in c("parent", "total")) {
+    helper <- rlang::call2(paste0("share_of_", kind), quote(value))
+    source <- summarize_with_margins(
+      data, prior = sum(x), value = !!expression,
+      fraction = !!helper, .grouping = rollup(group)
+    )
+    expect_equal(source$value, c(2, 2, 2))
+    expect_equal(source$fraction, c(1, 1, 1))
+    derived <- summarize_with_margins(
+      data, value = sum(x), prior = !!helper,
+      result = !!expression, .grouping = rollup(group)
+    )
+    expect_equal(derived$result, c(2, 2, 2))
+  }
+})
