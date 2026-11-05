@@ -1,0 +1,17 @@
+Investigated: 2026-11-05
+Baseline: 0403c915 (full SHA in environment.txt)
+
+Command (from investigated package root):
+Rscript investigation/2026-11-05-expand-grouping-adversarial/mixed-family-oracle.R 2000
+Exit: 0
+Seed: 41248
+results
+     bare duplicate     large    unique
+      358       542         8      1092
+
+Command (from investigated package root):
+Rscript investigation/2026-11-05-expand-grouping-greedy/spec/composite-oracle.R 2000
+Exit: 0
+Seed: 51796
+compared    large     leaf
+    1772       38      190

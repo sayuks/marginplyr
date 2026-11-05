@@ -1,0 +1,59 @@
+a
+1
+$inspect
+$inspect$result
+# A tibble: 1 × 6
+  set_id fixed included omitted grouping_bits grouping_id
+   <int> <chr> <chr>    <chr>   <chr>               <int>
+1      1 ()    (a)      ()      a=0                     0
+
+$inspect$reads
+[1] TRUE TRUE
+
+$inspect$error
+[1] FALSE
+
+
+$expand
+$expand$result
+  a b
+1 a 1
+
+$expand$reads
+[1] TRUE TRUE
+
+$expand$error
+[1] FALSE
+
+
+$inspect
+$inspect$result
+[1] "ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1."
+
+$inspect$reads
+[1] FALSE
+
+$inspect$error
+[1] TRUE
+
+
+$expand
+$expand$result
+[1] "ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1."
+
+$expand$reads
+[1] FALSE
+
+$expand$error
+[1] TRUE
+
+
+$fixed
+$fixed$result
+[1] "ℹ In argument: `matches(pattern)`.\nCaused by error in `matches()`:\n! stringr patterns must be length 1."
+
+$fixed$reads
+[1] FALSE
+
+$fixed$error
+[1] TRUE

@@ -1,0 +1,117 @@
+$direct_new
+$direct_new$derived
+[1] FALSE
+
+$direct_new$existing_temp
+[1] FALSE
+
+$direct_new$expected_rows
+[1] 4
+
+$direct_new$actual_rows
+[1] 4
+
+$direct_new$error
+NULL
+
+$direct_new$persistent_source_unchanged
+[1] TRUE
+
+$direct_new$temporary_rows_after
+[1] 4
+
+
+$derived_new
+$derived_new$derived
+[1] TRUE
+
+$derived_new$existing_temp
+[1] FALSE
+
+$derived_new$expected_rows
+[1] 4
+
+$derived_new$actual_rows
+[1] 0
+
+$derived_new$error
+NULL
+
+$derived_new$persistent_source_unchanged
+[1] TRUE
+
+$derived_new$temporary_rows_after
+[1] 0
+
+
+$derived_different_name
+$derived_different_name$derived
+[1] TRUE
+
+$derived_different_name$existing_temp
+[1] FALSE
+
+$derived_different_name$expected_rows
+[1] 4
+
+$derived_different_name$actual_rows
+[1] 4
+
+$derived_different_name$error
+NULL
+
+$derived_different_name$persistent_source_unchanged
+[1] TRUE
+
+$derived_different_name$temporary_rows_after
+[1] NA
+
+
+$direct_existing
+$direct_existing$derived
+[1] FALSE
+
+$direct_existing$existing_temp
+[1] TRUE
+
+$direct_existing$expected_rows
+[1] 4
+
+$direct_existing$actual_rows
+[1] NA
+
+$direct_existing$error
+[1] "Can't safely overwrite this SQLite temporary table while computing the Margin result. Choose a different destination name."
+
+$direct_existing$persistent_source_unchanged
+[1] TRUE
+
+$direct_existing$temporary_rows_after
+[1] 2
+
+
+$derived_existing
+$derived_existing$derived
+[1] TRUE
+
+$derived_existing$existing_temp
+[1] TRUE
+
+$derived_existing$expected_rows
+[1] 4
+
+$derived_existing$actual_rows
+[1] 0
+
+$derived_existing$error
+NULL
+
+$derived_existing$persistent_source_unchanged
+[1] TRUE
+
+$derived_existing$temporary_rows_after
+[1] 0
+
+
+Error: observations$derived_new$actual_rows == observations$derived_new$expected_rows is not TRUE
+Execution halted
