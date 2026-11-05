@@ -705,7 +705,7 @@ test_that("partial product factors refuse known duplicates before predicates", {
   )]) {
     for (spec in specs) {
       expect_error(verb(data, NULL, spec), "1, 2.", fixed = TRUE,
-                 class = "marginplyr_error")
+                   class = "marginplyr_error")
     }
     expect_error(verb(data, NULL, grouping_sets(value, !!specs[[1L]])),
                  "2, 3.", fixed = TRUE, class = "marginplyr_error")
@@ -716,7 +716,7 @@ test_that("partial product factors refuse known duplicates before predicates", {
   expect_identical(predicates, 0L)
 })
 
-test_that("partial product factors preserve typed decisions and duplicate policies", {
+test_that("partial products preserve typed decisions and duplicate policies", {
   data <- data.frame(x = 1L, value = 2L)
   for (policy in c("error", "keep", "drop")) {
     events <- character()
