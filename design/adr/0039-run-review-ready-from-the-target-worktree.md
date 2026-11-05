@@ -56,6 +56,11 @@ CI; change-specific development checks remain appropriate.
 
 ## Amendment and history
 
+[ADR 0041](0041-check-generated-documentation-before-omitting-heavy-checks.md)
+accepts a sixth mandatory check and a scope exception for equivalent source
+edits. Its implementation and operational adoption are pending; local checks
+continues to own the active workflow.
+
 The earlier accepted direction added main-based workload registration,
 authenticated stage reuse under [ADR 0038](0038-reuse-unaffected-review-ready-stage-evidence.md),
 strict recovery, private renderer capability validation, key rotation and
