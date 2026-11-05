@@ -121,10 +121,17 @@ dtplyr_function_binding <- function(name, env, expected, fallback = FALSE) {
 # S3 lookup in the effective query environment before registered-method lookup.
 dtplyr_merge_binding <- function(env) {
   method <- get("merge.data.table", envir = asNamespace("data.table"))
-  registered <- utils::getS3method("merge", "data.table", envir = baseenv())
+  registry <- get(".__S3MethodsTable__.", envir = baseenv())
   dtplyr_function_binding("merge", env, base::merge) &&
     dtplyr_function_binding(
-      "merge.data.table", env, method, fallback = identical(registered, method)
+      "merge.data.table", env, method,
+      # The fallback promise leaves an inapplicable registration unread.
+      fallback = exists(
+        "merge.data.table", envir = registry, inherits = FALSE
+      ) &&
+        !bindingIsActive("merge.data.table", registry) &&
+        !rlang::env_binding_are_lazy(registry, "merge.data.table") &&
+        identical(rlang::env_get(registry, "merge.data.table"), method)
     )
 }
 

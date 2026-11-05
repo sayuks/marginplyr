@@ -122,6 +122,85 @@ test_that("full-join metadata leaves active and lazy merge bindings unread", {
   }
 })
 
+test_that("typed grouping leaves deferred registered merge methods unread", {
+  skip_if_suggest_absent("dtplyr")
+  for (lazy in c(FALSE, TRUE)) local({
+    source <- data.table::data.table(g = c("a", "b"), value = 1:2)
+    before <- data.table::copy(source)
+    root <- dtplyr::lazy_dt(source)
+    step <- dplyr::full_join(root, root, by = "g")
+    registry <- get(".__S3MethodsTable__.", envir = baseenv())
+    ordinary <- get("merge.data.table", envir = registry, inherits = FALSE)
+    on.exit({
+      rm("merge.data.table", envir = registry)
+      assign("merge.data.table", ordinary, envir = registry)
+    }, add = TRUE)
+    lookups <- 0L
+    source_sums <- numeric()
+    read_method <- function() {
+      lookups <<- lookups + 1L
+      source_sums <<- c(source_sums, sum(source$value))
+      ordinary
+    }
+    rm("merge.data.table", envir = registry)
+    if (lazy) {
+      delayedAssign("merge.data.table", read_method(), assign.env = registry)
+    } else {
+      makeActiveBinding("merge.data.table", read_method, registry)
+    }
+    expect_identical(inspect_grouping(
+      step, .grouping = grouping_set(g)
+    )$included, "(g)")
+    for (verb in list(inspect_grouping, nest_with_margins,
+                      nest_by_with_margins)) {
+      expect_error(verb(step, .by = where(is.character)),
+                   "Can't safely determine column metadata", fixed = TRUE,
+                   class = "marginplyr_error")
+      expect_error(verb(
+        step, .grouping = grouping_set(where(is.character))
+      ), "Can't safely determine column metadata", fixed = TRUE,
+      class = "marginplyr_error")
+    }
+    expect_identical(lookups, 0L)
+    expect_identical(source_sums, numeric())
+    expect_identical(source, before)
+
+    caller <- new.env(parent = environment())
+    caller$merge.data.table <- ordinary
+    lexical_root <- eval(quote(dtplyr::lazy_dt(source)), caller)
+    lexical <- dplyr::full_join(lexical_root, lexical_root, by = "g")
+    explicit <- tibble::tibble(g = c("a", "b"), value.x = 1:2, value.y = 1:2)
+    expect_identical(
+      inspect_grouping(lexical, .by = where(is.character)),
+      inspect_grouping(explicit, .by = g)
+    )
+    expect_identical(
+      inspect_grouping(lexical, .grouping = grouping_set(where(is.character))),
+      inspect_grouping(explicit, .grouping = grouping_set(g))
+    )
+    for (verb in list(nest_with_margins, nest_by_with_margins)) {
+      expect_identical(
+        dtplyr_metadata_nest_result(verb(lexical, .by = where(is.character))),
+        dtplyr_metadata_nest_result(verb(explicit, .by = g))
+      )
+      expect_identical(
+        dtplyr_metadata_nest_result(verb(
+          lexical, .grouping = grouping_set(where(is.character))
+        )),
+        dtplyr_metadata_nest_result(verb(explicit, .grouping = grouping_set(g)))
+      )
+    }
+    expect_identical(lookups, 0L)
+    expect_identical(source_sums, numeric())
+    expect_identical(source, before)
+
+    expect_identical(dplyr::collect(step), explicit)
+    expect_gt(lookups, 0L)
+    expect_identical(source_sums, rep(3, lookups))
+    expect_identical(source, before)
+  })
+})
+
 test_that("ordinary full-join dispatch preserves typed plans and nested rows", {
   skip_if_suggest_absent("dtplyr")
   source <- data.table::data.table(g = c("a", "b"), value = 1:2)
