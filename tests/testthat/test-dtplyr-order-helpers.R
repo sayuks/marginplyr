@@ -185,6 +185,9 @@ test_that("generated Margin order avoids the caller namespace operator", {
   for (install_before in c(TRUE, FALSE)) {
     root <- new.env(parent = globalenv())
     root$source <- source
+    root$getExportedValue <- function(...) {
+      stop("CALLER_EXPORT_LOOKUP_INTERCEPT")
+    }
     helper_calls <- character()
     caller_calls <- character()
     dispatcher <- function(pkg, name) {

@@ -748,14 +748,14 @@ margin_grouping_bit_expr <- function(sort_id, margin_ids, helper_namespace) {
 }
 
 # A namespace-qualified call is still dispatched through `::` when dtplyr
-# evaluates it in the lazy root environment. Use a computed function position
-# to retrieve the helper by namespace at collection time; translators that
-# need to recognize bare helper names continue to receive those unqualified
-# names.
+# evaluates it in the lazy root environment. Embed the base namespace accessor
+# in the inner function position so neither it nor the selected helper is
+# looked up through caller bindings. The lookup remains deferred until
+# collection; other translators retain the unqualified calls they recognize.
 margin_order_helper_call <- function(name, ..., helper_namespace = NULL) {
   if (is.null(helper_namespace)) {
     return(rlang::call2(name, ...))
   }
-  helper <- rlang::call2("getExportedValue", helper_namespace, name)
+  helper <- rlang::call2(base::getExportedValue, helper_namespace, name)
   rlang::call2(helper, ...)
 }
