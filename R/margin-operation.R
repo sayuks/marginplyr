@@ -127,9 +127,8 @@ margin_sort_choices <- c("none", "last", "first")
 # default arrives as the whole vocabulary and stands for its first entry.
 #
 # `match.arg(NULL, choices)` returned that first entry too, so a `NULL` written
-# by a caller used to select the default silently. The `identical()` guard below
-# is the whole of what refuses one now, and refusing it is a documented contract
-# rather than a leftover of the rewrite (#144): `CONTEXT.md`'s *Option argument*
+# by a caller used to select the default silently. Refusing it is a documented
+# contract (#144): `CONTEXT.md`'s *Option argument*
 # entry holds the refusal and why an Option argument is the one kind with no
 # absent case for a `NULL` to name, and the *Option arguments* section on
 # `?summarize_with_margins` states the contract to the caller.
@@ -148,8 +147,13 @@ match_margin_choice <- function(value, choices, arg_name) {
   if (identical(value, choices)) {
     return(choices[[1L]])
   }
-  if (rlang::is_string(value) && value %in% choices) {
-    return(choices[[match(value, choices)]])
+  if (rlang::is_string(value)) {
+    # match() can coerce a character subclass through its display method.
+    attributes(value) <- NULL
+    index <- match(value, choices)
+    if (!is.na(index)) {
+      return(choices[[index]])
+    }
   }
   # The vocabulary is a list of alternatives, which is the case ADR 0023 gives
   # `{.or}`: the bare comma this used to join with was one of the three
