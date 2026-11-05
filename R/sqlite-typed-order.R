@@ -389,8 +389,17 @@ sqlite_pragma_sources_clear <- function(con, virtual_reads) {
     "foreign_key_(list|check)|(integrity|quick)_check)$"
   )
   pragmas <- modules$name[grepl(relation_pragma, sql_ascii_lower(modules$name))]
-  paths <- paste0("main.", DBI::dbQuoteIdentifier(con, pragmas), "()",
-                  recycle0 = TRUE)
+  if (length(pragmas) == 0L) return(TRUE)
+  schemas <- DBI::dbGetQuery(con, "PRAGMA database_list")
+  attached <- sql_ascii_lower(schemas$name)
+  # SQLite falls back to eponymous modules after a table lookup in a missing
+  # schema. Using that qualifier bypasses named tables without changing state.
+  repeat {
+    schema <- basename(tempfile("marginplyr_pragma_"))
+    if (!schema %in% attached) break
+  }
+  paths <- paste0(DBI::dbQuoteIdentifier(con, schema), ".",
+                  DBI::dbQuoteIdentifier(con, pragmas), "()")
   sqlite_virtual_sources_clear(con, paths, virtual_reads)
 }
 

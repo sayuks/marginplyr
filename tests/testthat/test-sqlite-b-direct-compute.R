@@ -457,7 +457,12 @@ test_that("SQLite preserves a temporary input read through a PRAGMA", {
   DBI::dbExecute(con, "CREATE TEMP TABLE facts AS SELECT 'old' AS payload")
   DBI::dbExecute(con, "CREATE TEMP TABLE keys AS SELECT 1 AS k")
   temp <- DBI::Id(schema = "temp", table = "facts")
-  info <- "SELECT p.name AS g FROM pragma_table_info('facts', 'temp') AS p"
+  DBI::dbGetQuery(con, "SELECT * FROM pragma_table_info('facts', 'temp')")
+  DBI::dbExecute(con, "CREATE TABLE main.pragma_table_info (value TEXT)")
+  DBI::dbExecute(con, "CREATE TABLE temp.pragma_table_info (value TEXT)")
+  info <- paste(
+    "SELECT p.name AS g FROM unused.pragma_table_info('facts', 'temp') AS p"
+  )
   for (sql in c(info, paste(info, "CROSS JOIN temp.keys"))) {
     input <- dplyr::tbl(con, dbplyr::sql(sql), vars = "g")
     query <- expand_with_margins(
