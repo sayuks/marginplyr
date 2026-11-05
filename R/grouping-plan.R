@@ -1614,8 +1614,8 @@ validate_unique_grouping_sets <- function(keys, duplicates_choices,
 # product factors. `whole` means that evidence covers every position of
 # the emitting node if its selections succeed. `offset` counts preceding
 # occurrences not already emitted as completed families. `width` is the number
-# of unresolved suffix choices following each incomplete prefix. Expansion ignores
-# the observer's return value and returns the family of occurrences.
+# of unresolved suffix choices following each incomplete prefix. Expansion
+# ignores the observer's return value and returns the family of occurrences.
 expand_grouping_family <- function(preflight, resolve_selection,
                                    emit = NULL, drop_duplicates = FALSE) {
   rule <- find_grouping_kind_rule(preflight$spec$type)
@@ -1829,7 +1829,7 @@ observe_product_factor <- function(arg, prefix, suffix,
         emit(cross_grouping_families(c(first, list(family))))
       }
     } else if (whole && !is.na(grouping_factors_size(suffix)) &&
-               width * grouping_factors_size(suffix) <= 2^53) {
+                 width * grouping_factors_size(suffix) <= 2^53) {
       size <- grouping_factors_size(suffix)
       if (!tail) {
         offset <- offset + length(completed)
@@ -1837,7 +1837,7 @@ observe_product_factor <- function(arg, prefix, suffix,
       emit(incomplete = c(prefix, incomplete), whole = TRUE,
            offset = offset * size, width = width * size)
     } else if (!is.na(grouping_factors_size(suffix)) &&
-               width * grouping_factors_size(suffix) <= 2^53) {
+                 width * grouping_factors_size(suffix) <= 2^53) {
       size <- grouping_factors_size(suffix)
       # Tail occurrences have already been emitted; other completed choices
       # still precede this evidence without reaching the outer observer.
@@ -1856,11 +1856,12 @@ observe_product_factor <- function(arg, prefix, suffix,
         known <- duplicate_prefix_candidates(prefix)
         dimensions <- unique(unlist(known, use.names = FALSE))
         if (width * length(known) <= 2^53 &&
-            anyDuplicated(grouping_set_keys(known, dimensions))) {
+              anyDuplicated(grouping_set_keys(known, dimensions))) {
           # Whole-product evidence includes the first left choice's emitted
           # branches, so count those positions only once.
           offset <- if (tail) -length(completed) else 0L
-          emit(incomplete = prefix, whole = TRUE, offset = offset, width = width)
+          emit(incomplete = prefix, whole = TRUE, offset = offset,
+               width = width)
         }
       }
       if (!tail && length(completed) > 0L && single_suffix()) {

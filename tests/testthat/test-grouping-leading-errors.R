@@ -813,7 +813,9 @@ test_that("multi-set typed suffixes retain valid and allowed duplicate plans", {
   for (verb in list(nest_with_margins, nest_by_with_margins)) {
     expect_identical(
       verb(data, .grouping = valid),
-      verb(data, .grouping = grouping_sets(grouping_set(a, b), a, b, grouping_set()))
+      verb(data, .grouping = grouping_sets(
+        grouping_set(a, b), a, b, grouping_set()
+      ))
     )
     expect_identical(
       verb(data, .grouping = duplicate, .duplicates = "drop"),
