@@ -1778,7 +1778,7 @@ rewrite_summary_selections <- function(expr,
   # expression to whatever the caller meant to carry (#179).
   # dplyr's pick expansion skips function bodies, defaults and computed heads.
   expand_nested_pick <- expand_local_pick &&
-    !static_call_name(expr) %in% c("function", "~")
+    !any(static_call_name(expr) %in% c("function", "~"))
   rewrite_part <- function(part, expand_pick = expand_nested_pick) {
     if (defer_nested_local && skip_nested_deferred) {
       return(part)
