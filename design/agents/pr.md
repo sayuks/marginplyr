@@ -18,50 +18,21 @@ Apply the NEWS policy below when preparing or reviewing a change.
 
 ## NEWS and contributor credit
 
-Add a bullet to the current version section of `NEWS.md` for every user-visible
-change: new features, bug fixes and substantial documentation improvements.
-This applies to maintainer changes and external contributions alike. Internal
-refactoring and minor documentation edits may omit a bullet.
+Record changes that affect how people use or understand marginplyr in the
+current version section of `NEWS.md`. Purely internal changes and minor edits
+may omit a bullet.
 
-Assess the effect on someone using the documented public interface, rather
-than the files touched. A change needs a bullet when it changes results,
-types, names or Margin order; accepted inputs or options; actionable
-diagnostics; backend support; execution timing or queries; or meaningful
-performance characteristics. A new vignette or a substantial new usage guide
-also merits a bullet. Pure refactoring, tests, CI maintenance and typo fixes
-may omit one when they change none of those user-facing effects. For a
-borderline change, identify the public behavior or guidance that differs.
+Credit PR authors absent from `DESCRIPTION`'s `Authors@R` with `(@handle, #PR)`
+before the final period. Listed authors may omit their handle; keep the
+related issue or PR number. Additional reporter or reviewer credit is optional.
 
-These examples make the [Tidyverse NEWS criterion][news-guide] concrete for
-this repository; they are not an exhaustive checklist from that guide. The
-guide recommends highlighting sweeping documentation changes and new
-vignettes; this repository requires substantial documentation improvements
-to be recorded.
+Complete and commit required NEWS entries before Review-ready. If a PR number
+is needed, open a draft PR first. Later edits follow
+[revision freshness and scope][local-scope].
 
-Complete and commit the required NEWS entry before invoking Review-ready.
-If contributor credit needs a PR number that is not yet available, open a
-draft PR first, then add the number, commit, run Review-ready and mark the PR
-ready. Later NEWS edits follow [revision freshness and scope][local-scope];
-a prior result certifies only its submitted SHA.
-
-NEWS necessity, accuracy and contributor credit are checked during preparation
-and review. No additional NEWS CI gate is required: whether the change affects
-users needs semantic judgment, and a NEWS file diff alone cannot establish it.
-
-Describe the resulting behavior from the user's perspective. For a PR whose
-author is not listed in `DESCRIPTION`'s `Authors@R`, end the bullet with
-`(@handle, #PR)` before the final period. Use the author's GitHub handle and
-the actual PR number. Authors already listed in `Authors@R` may omit their
-handle; keep the related issue or PR number. Additional credit for reporters
-or reviewers is optional and may be included for a clear contribution.
-
-For example, with illustrative placeholders:
-
-```markdown
-* `example()` now preserves missing values (@contributor, #1234).
-```
-
-This follows the [Tidyverse NEWS guide][news-guide].
+Check NEWS necessity and contributor credit during preparation and review;
+no additional NEWS CI gate is required. Follow the
+[Tidyverse NEWS guide][news-guide].
 
 ## Body and comments
 
