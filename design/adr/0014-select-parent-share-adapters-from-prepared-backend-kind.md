@@ -20,6 +20,12 @@ below. Adapter selection and source checking remain separate lookups on the
 prepared backend kind. Ratio rules and output order remain shared. SQL shares
 require window-function support.
 
+Generated dtplyr ratio, denominator and validation calls carry the selected
+base namespace operator as a function value (#1346). dtplyr retains that
+computed head while translating its data-column arguments, so namespace
+operators in the lazy root cannot replace the generated operations at explicit
+execution. Caller-authored namespace expressions retain ordinary lookup.
+
 A dialect whose dbplyr translation rejects windowed `MAX()`, such as Access,
 reports that unsupported operation when SQL is rendered or executed. Callers
 can explicitly collect their input and request local shares instead. Keeping

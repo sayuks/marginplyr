@@ -1057,12 +1057,13 @@ wrap_share_sources <- function(dots,
     } else {
       check <- checks[[1L]]
       is_dtplyr <- identical(backend_kind, "dtplyr")
+      validator <- if (is_dtplyr) {
+        dtplyr_share_private_call("check_dtplyr_share_source")
+      } else {
+        marginplyr_private_call("check_share_scalar")
+      }
       wrapped <- rlang::call2(
-        marginplyr_private_call(if (is_dtplyr) {
-          "check_dtplyr_share_source"
-        } else {
-          "check_share_scalar"
-        }),
+        validator,
         expr,
         share_output = check$share_output,
         source_summary = check$source_summary,
@@ -1086,7 +1087,7 @@ wrap_dtplyr_share_ordinary <- function(dots, checks, call) {
     quo <- dots[[position]]
     expr <- rlang::quo_get_expr(quo)
     wrapped <- rlang::call2(
-      marginplyr_private_call("check_dtplyr_share_ordinary"),
+      dtplyr_share_private_call("check_dtplyr_share_ordinary"),
       expr,
       summary = check$summary,
       share_output = check$share_output,
@@ -1260,18 +1261,18 @@ wrap_dtplyr_share_function <- function(fn, mapping, forwarded_args, call) {
     )
   }
   input <- rlang::call2(
-    marginplyr_private_call("dtplyr_share_input_name"),
+    dtplyr_share_private_call("dtplyr_share_input_name"),
     dtplyr_lambda_pronoun()
   )
   mapping_expr <- rlang::call2(
-    marginplyr_private_call("new_share_validation_mapping"),
+    dtplyr_share_private_call("new_share_validation_mapping"),
     inputs = mapping$inputs,
     share_outputs = mapping$share_outputs,
     source_summaries = mapping$source_summaries,
     share_kinds = mapping$share_kinds
   )
   validator <- rlang::call2(
-    marginplyr_private_call("check_dtplyr_share_scalar"),
+    dtplyr_share_private_call("check_dtplyr_share_scalar"),
     value,
     input = input,
     mapping = mapping_expr,
@@ -1322,6 +1323,10 @@ dtplyr_share_binds_measure <- function(expr, measure = ".BY") {
   if (!rlang::is_call(expr)) {
     return(FALSE)
   }
+  if (is_generated_dtplyr_share_call(expr)) {
+    return(any(vapply(static_call_args(expr), dtplyr_share_binds_measure,
+                      logical(1), measure = measure)))
+  }
   name <- static_call_name(expr)
   if (identical(name, "function")) {
     return(FALSE)
@@ -1362,6 +1367,17 @@ rewrite_dtplyr_share_measure <- function(expr, alias, measure = ".BY") {
   }
   if (!rlang::is_call(expr)) {
     return(expr)
+  }
+  if (is_generated_dtplyr_share_call(expr)) {
+    if (identical(expr[[1L]], dtplyr_share_private_call(
+      "dtplyr_share_input_name"
+    ))) {
+      return(deparse(expr[[2L]]))
+    }
+    args <- lapply(static_call_args(expr), function(part) {
+      rewrite_dtplyr_share_measure(part, alias, measure)
+    })
+    return(rebuild_static_call(expr, args))
   }
   name <- static_call_name(expr)
   callee <- resolved_callee_name(expr, name)
@@ -1406,10 +1422,6 @@ rewrite_dtplyr_share_measure <- function(expr, alias, measure = ".BY") {
       ))
     }
     return(expr)
-  }
-  if (identical(name, "dtplyr_share_input_name") &&
-        identical(static_call_ns(expr), "marginplyr")) {
-    return(deparse(expr[[2L]]))
   }
   if (!is.null(name) && name %in% c("$", "@")) {
     args <- static_call_args(expr)
@@ -2493,7 +2505,7 @@ guard_dtplyr_grouped_result <- function(result, plan, set_id_name,
         margin_column_pronoun(safe_name(name))
       })
       check <- rlang::call2(
-        marginplyr_private_call("assert_dtplyr_grouped_keys"),
+        dtplyr_share_private_call("assert_dtplyr_grouped_keys"),
         !!!key_exprs,
         share_output = pair$output,
         share_kind = pair$kind,
@@ -3165,7 +3177,7 @@ apply_windowed_shares <- function(result, requests, plan, set_id_name, kind,
   membership <- if (sql_window) {
     rlang::sym("%in%")
   } else {
-    rlang::expr(base::`%in%`)
+    rlang::call2(base::`::`, rlang::sym("base"), rlang::sym("%in%"))
   }
   target_ids <- share_kind_rule(kind)$target_ids(plan)
   joined_ids <- plan$set_ids[!is.na(target_ids)]
@@ -3209,7 +3221,7 @@ apply_windowed_shares <- function(result, requests, plan, set_id_name, kind,
             ), na.rm = TRUE))
           } else {
             rlang::call2(
-              marginplyr_private_call("dtplyr_share_denominator"),
+              dtplyr_share_private_call("dtplyr_share_denominator"),
               value, identifier, target
             )
           }
@@ -3249,6 +3261,21 @@ apply_windowed_shares <- function(result, requests, plan, set_id_name, kind,
 # Grouped-result validation has already established one row per occurrence.
 dtplyr_share_denominator <- function(value, identifier, target) {
   value[match(target, identifier)]
+}
+
+# Bind the namespace operator of a generated deferred share call. dtplyr
+# preserves this computed head while translating its data-column arguments.
+dtplyr_share_private_call <- function(name) {
+  rlang::call2(base::`:::`, rlang::sym("marginplyr"), rlang::sym(name))
+}
+
+# Whether a translated call carries the package-selected namespace operator.
+# Caller-authored qualified heads retain their ordinary symbolic operator.
+is_generated_dtplyr_share_call <- function(expr) {
+  head <- expr[[1L]]
+  is.call(head) && length(head) == 3L &&
+    identical(head[[1L]], base::`:::`) &&
+    identical(head[[2L]], rlang::sym("marginplyr"))
 }
 
 # Apply the shared value rules after denominator columns have been attached.
@@ -3317,7 +3344,7 @@ apply_share_ratios <- function(result, pairs, sources, denominator_names,
   )
 }
 
-# Qualify base calls in a package-generated ratio expression for dtplyr's
+# Bind base calls in a package-generated ratio expression for dtplyr's
 # root-environment evaluation. The expression contains no caller summaries.
 qualify_dtplyr_share_ratio <- function(expr) {
   if (!is.call(expr)) {
@@ -3327,7 +3354,7 @@ qualify_dtplyr_share_ratio <- function(expr) {
   name <- expr[[1L]]
   if (is.symbol(name) && as.character(name) %in%
         c("is.na", "as.double", "*", "/", "==", "|", "%in%")) {
-    parts[[1L]] <- rlang::call2("::", rlang::sym("base"), expr[[1L]])
+    parts[[1L]] <- rlang::call2(base::`::`, rlang::sym("base"), expr[[1L]])
   }
   as.call(parts)
 }

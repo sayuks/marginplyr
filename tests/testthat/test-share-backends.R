@@ -1191,7 +1191,7 @@ test_that("dtplyr batches validated summaries without reevaluating a join", {
 
   # A dtplyr share stages `check_dtplyr_share_source()`. `check_share_scalar()`
   # is the local backend's wrapper and appears in no dtplyr rendering.
-  staged_check <- "check_dtplyr_share_source(sum(revenue)"
+  staged_check <- "check_dtplyr_share_source))(sum(revenue)"
   staged_checks <- share_query_count(many_call, staged_check)
   expect_gt(staged_checks, 0L)
   expect_identical(staged_checks, share_query_count(one_call, staged_check))
