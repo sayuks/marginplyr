@@ -2951,6 +2951,46 @@ test_that("across arguments are validated after evaluation, not as literals", {
   )
 })
 
+test_that("column-wise shares refuse explicitly supplied NULL unpacking", {
+  data <- data.frame(group = c("x", "y"), value = c(1, 3))
+  unpack <- NULL
+
+  for (helper in rlang::syms(c("share_of_parent", "share_of_total"))) {
+    for (argument in rlang::exprs(NULL, unpack)) {
+      expect_error(
+        summarize_with_margins(
+          data, total = sum(value),
+          dplyr::across(
+            total, !!helper, .names = "{.col}_share", .unpack = !!argument
+          ),
+          .grouping = rollup(group)
+        ),
+        "requires `.unpack = FALSE`", class = "marginplyr_error"
+      )
+    }
+  }
+})
+
+test_that("column-wise shares accept omitted and FALSE unpacking", {
+  data <- data.frame(group = c("x", "y"), value = c(1, 3))
+
+  for (helper in rlang::syms(c("share_of_parent", "share_of_total"))) {
+    requests <- rlang::exprs(
+      dplyr::across(total, !!helper, .names = "{.col}_share"),
+      dplyr::across(total, !!helper, .names = "{.col}_share", .unpack = ),
+      dplyr::across(total, !!helper, .names = "{.col}_share", .unpack = FALSE)
+    )
+    for (request in requests) {
+      result <- summarize_with_margins(
+        data, total = sum(value), !!request, .grouping = rollup(group),
+        .sort = "last"
+      )
+      expect_identical(names(result), c("group", "total", "total_share"))
+      expect_identical(result$total_share, c(0.25, 0.75, 1))
+    }
+  }
+})
+
 test_that("a failed share selection keeps the original condition", {
   data <- data.frame(group = c("x", "y"), value = 1:2)
   boom <- function() rlang::abort("boom", class = "my_user_error")

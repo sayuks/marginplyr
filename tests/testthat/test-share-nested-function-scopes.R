@@ -137,6 +137,35 @@ test_that("visible inline scope changes expose both forbidden dependencies", {
       sum(prior)
     })(1),
     (function(prior) {
+      (function() {
+        (function() {
+          counters$body <- counters$body + 1L
+          base::rm("prior", envir = parent.frame(2))
+        })()
+      })()
+      sum(prior)
+    })(1),
+    (function(prior) {
+      (function() {
+        (function() {
+          (function() base::rm("prior", envir = parent.frame(3L)))()
+        })()
+      })()
+      sum(prior)
+    })(1),
+    (function(prior) {
+      (function() base::rm("prior", envir = sys.frame(sys.parent(1L))))()
+      sum(prior)
+    })(1),
+    (function(prior) {
+      (function() {
+        (function() {
+          base::rm("prior", envir = base::sys.frame(base::sys.parent(n = 2L)))
+        })()
+      })()
+      sum(prior)
+    })(1),
+    (function(prior) {
       (function(prior) {
         # The formal shares the name of the base callee.
         (function(parent.frame) { # nolint: object_name_linter.
@@ -351,6 +380,28 @@ test_that("inline scope changes preserve independent and shadowed bindings", {
         (function() base::rm("prior", envir = parent.frame(2L)))()
         sum(prior)
       })(touch())
+    })(),
+    (function(prior = touch()) {
+      (function(prior) {
+        (function() {
+          (function() {
+            (function() base::rm("prior", envir = parent.frame(3L)))()
+          })()
+        })()
+      })(0)
+      sum(prior)
+    })(),
+    (function(prior = touch()) {
+      (function(prior) {
+        (function() {
+          (function() base::rm("prior", envir = sys.frame(sys.parent(2))))()
+        })()
+      })(0)
+      sum(prior)
+    })(),
+    (function(prior = touch()) {
+      base::rm(list = character(), envir = parent.frame(2147483647L))
+      sum(prior)
     })(),
     (function(prior = touch()) {
       (function() {
