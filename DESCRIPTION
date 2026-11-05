@@ -281,6 +281,7 @@ Config/testthat/start-first:
     grouping-patterns,
     packed-grouping,
     grouping-env-pronoun,
+    qualified-selection-parentheses,
     dtplyr-root-metadata,
     dtplyr-zero-column-ids,
     data-pronoun,

@@ -599,7 +599,7 @@ test_that("DuckDB leading selection failures invoke no metadata query", {
   before <- counter$queries
   plan <- inspect_grouping(remote, .grouping = grouping_set(.data$x))
   expect_identical(plan$included, "(x)")
-  expect_identical(counter$queries - before, 1L)
+  expect_identical(counter$queries - before, 0L)
 
   for (warn in c(0L, 1L)) {
     rlang::local_options(warn = warn, lifecycle_verbosity = "warning")
@@ -615,7 +615,7 @@ test_that("DuckDB leading selection failures invoke no metadata query", {
       )
       expect_identical(plan$included, "(x)")
       expect_length(warnings, 1L)
-      expect_identical(counter$queries - before, 1L)
+      expect_identical(counter$queries - before, 0L)
     }
   }
 })

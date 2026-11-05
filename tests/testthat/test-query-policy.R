@@ -1415,7 +1415,7 @@ test_that("caller-qualified Grouping selections add no lazy-input reads", {
   }
   for (verb in list(inspect_grouping, expand_with_margins)) {
     baseline <- count_entry_point_invocations(verb(
-      source, .by = region,
+      source, .by = where(is.character),
       .grouping = grouping_sets(amount, grouping_set())
     ))
     expect_gt(baseline, 0L)

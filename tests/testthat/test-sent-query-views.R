@@ -164,7 +164,7 @@ test_that("DuckDB metadata is an internal view with no result execution", {
   expect_identical(nrow(DBI::dbGetQuery(con, internal$sql)), 0L)
   expect_identical(recorded$purpose, c("selection_proxy", "result"))
   expect_identical(last_sent_queries(), recorded)
-  inspect_grouping(remote, .grouping = rollup(g))
+  inspect_grouping(remote, .grouping = rollup(where(is.character)))
   expect_identical(last_sent_queries(FALSE), internal)
   expect_identical(last_sent_queries(), internal)
 })
