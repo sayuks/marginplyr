@@ -87,8 +87,9 @@ depend on values. See
 type-based and value-dependent examples.
 A derived dtplyr step whose typed metadata cannot be
 established without processing source rows is refused when inspection needs
-those types. Name-only inspection does not need that read. To inspect such a
-step with typed selections, call \code{\link[dplyr:collect]{dplyr::collect()}} on it explicitly and
+those types. Name-only inspection on dtplyr and DuckDB uses the input's
+captured column names. To inspect a derived dtplyr step with typed
+selections, call \code{\link[dplyr:collect]{dplyr::collect()}} on it explicitly and
 pass the resulting data frame. The Grouping plan is deliberately separate
 from a SQL execution plan. Use \code{\link[dplyr:show_query]{dplyr::show_query()}} for generated SQL and
 backend-native tools for an optimizer plan. With recording enabled before

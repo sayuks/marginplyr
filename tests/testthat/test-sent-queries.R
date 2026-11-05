@@ -642,7 +642,7 @@ test_that("an audited DuckDB call records its selection proxy", {
   expect_match(record$sql[[1L]], "sent_queries", fixed = TRUE)
 })
 
-test_that("an audited DuckDB inspection keeps its selection proxy", {
+test_that("an audited typed DuckDB inspection records its selection proxy", {
   skip_if_suggest_absent("duckdb", "DBI")
 
   con <- duckdb_test_connection()
@@ -650,7 +650,7 @@ test_that("an audited DuckDB inspection keeps its selection proxy", {
   remote <- sent_queries_table(con)
 
   with_audit_option(TRUE, {
-    inspect_grouping(remote, .grouping = rollup(g, h))
+    inspect_grouping(remote, .grouping = rollup(where(is.character)))
     record <- last_sent_queries()
   })
 

@@ -255,10 +255,10 @@ prepare_grouping_plan <- function(.data,
       }
       # Inspection needs no typed snapshot when names settle both selections.
       # Its canonical pass uses the name proxy too, preserving the two-pass
-      # validation and warning behavior without evaluating a dtplyr step.
+      # validation and warning behavior without requesting backend metadata.
       if (
         !builds_margin_branches &&
-          identical(backend$kind, "dtplyr") &&
+          backend$kind %in% c("dtplyr", "duckdb") &&
           preflight$name_only &&
           !is.null(by)
       ) {
@@ -419,6 +419,14 @@ selection_refused_operators <- function() {
   c("&&", "||", "*", "^")
 }
 
+# Helpers whose results depend only on their arguments and column names.
+selection_leaf_helpers <- function() {
+  c(
+    "all_of", "any_of", "starts_with", "ends_with", "contains",
+    "matches", "num_range", "everything", "last_col", "one_of"
+  )
+}
+
 # Arguments left to classify in a selection walk or a base c() call. The
 # caller holds the call's lexical environment. Empty dots and literal column
 # names need no further classification; opaque dots give NULL.
@@ -464,6 +472,10 @@ selection_c_args <- function(args, env) {
 # `allow_caller_code = FALSE` also withholds caller functions and assignments,
 # so a discarded mixed-selection pass cannot change their evaluation order.
 is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE) {
+  # An injected selector is walked in the environment it carries.
+  if (rlang::is_quosure(expr)) {
+    return(is_name_only_selection(expr, data_vars, allow_caller_code))
+  }
   # `is_name_part()` rather than `rlang::is_symbol()`, for the reason its
   # header gives: a part read by subscript may be R's empty argument.
   if (is_name_part(expr)) {
@@ -488,7 +500,18 @@ is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE) {
     return(TRUE)
   }
   if (!is.language(expr)) {
-    return(is.atomic(expr) && !is.object(expr))
+    return(is.null(expr) || (is.atomic(expr) && !is.object(expr)))
+  }
+
+  # A bare pair is walked by tidyselect. A qualified pair evaluates its
+  # argument in the context mask, where even c() is a lexical function call.
+  ordinary <- unparenthesized_value(expr, ns = "")
+  if (is_redundant_parens(ordinary) &&
+        !is_redundant_parens(ordinary, ns = "")) {
+    return(is_name_only_helper_arg(
+      ordinary, env, allow_caller_code = allow_caller_code,
+      allow_env_pronoun = TRUE
+    ))
   }
 
   # tidyselect refuses a formula in a selection on sight, in `stop_formula()`,
@@ -496,11 +519,7 @@ is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE) {
   # from the shape rather than joined to `selection_refused_operators()`
   # because `is_nameable_call()` declines a call to `~`, so the name that set
   # is consulted by is never read (ADR 0019, #163).
-  #
-  # A quosure is a call to `~` too, and is excluded: tidyselect evaluates one
-  # rather than refusing it, so what settles a quosure is the expression it
-  # carries, which this reader does not open.
-  if (rlang::is_call(expr, "~") && !rlang::is_quosure(expr)) {
+  if (rlang::is_call(expr, "~")) {
     return(TRUE)
   }
 
@@ -512,14 +531,10 @@ is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE) {
     return(FALSE)
   }
   # A helper argument can read column data even when the helper selects names.
-  leaf_helpers <- c(
-    "all_of", "any_of", "starts_with", "ends_with", "contains",
-    "matches", "num_range", "everything", "last_col", "one_of"
-  )
   # Bare helpers resolve in tidyselect's context mask; qualified helpers
   # need base namespace lookup into a package that supplies them.
   call_ns <- static_call_ns(expr)
-  if (call_name %in% leaf_helpers &&
+  if (call_name %in% selection_leaf_helpers() &&
         (is.null(call_ns) || call_ns %in% c("tidyselect", "dplyr")) &&
         selection_call_parens_safe(unparenthesized_call(expr), env) &&
         is_name_only_namespace(expr, env)) {
@@ -558,15 +573,18 @@ is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE) {
   ))
 }
 
-# Whether a direct call returns selection-context names, possibly indexed.
-# The caller supplies the selection's lexical environment. Subscripts
-# must be independent of the typed proxy and of caller code.
-is_selection_name_lookup <- function(expr, env) {
+# Whether a call reads selection-context names or uses a literal .env subscript.
+# The caller supplies the selection's lexical environment. Indexing a name
+# lookup requires subscripts independent of the typed proxy and caller code.
+is_selection_name_lookup <- function(expr, env, allow_env_pronoun = TRUE) {
   if (!rlang::is_call(expr) || !selection_call_parens_safe(expr, env)) {
     return(FALSE)
   }
   fn <- selection_argument_function(expr, env, character(), context = TRUE)
   args <- static_call_args(expr)
+  if (allow_env_pronoun && is_selection_env_pronoun(fn, args)) {
+    return(is_name_only_env_value(fn, args[[2L]], env))
+  }
   if (identical(fn, tidyselect::peek_vars)) {
     return(length(args) == 0L)
   }
@@ -578,7 +596,7 @@ is_selection_name_lookup <- function(expr, env) {
   }
   (identical(fn, base::`[`) || identical(fn, base::`[[`)) &&
     length(args) > 0L &&
-    is_selection_name_lookup(args[[1L]], env) &&
+    is_selection_name_lookup(args[[1L]], env, allow_env_pronoun = FALSE) &&
     all(vapply(
       args[-1L], is_name_only_helper_arg, logical(1),
       env = env, allow_caller_code = FALSE, allow_env_pronoun = TRUE
@@ -615,6 +633,16 @@ is_name_only_helper_arg <- function(expr,
                                     allow_caller_code = TRUE,
                                     allow_stringr_pattern = FALSE,
                                     allow_env_pronoun = FALSE) {
+  if (rlang::is_quosure(expr)) {
+    # Captured syntax keeps ordinary argument evaluation in its own scope.
+    # Enclosing closure formals do not bind names inside that scope.
+    return(is_name_only_helper_arg(
+      rlang::quo_get_expr(expr), rlang::quo_get_env(expr), seen = seen,
+      allow_caller_code = allow_caller_code,
+      allow_stringr_pattern = allow_stringr_pattern,
+      allow_env_pronoun = allow_env_pronoun
+    ))
+  }
   if (is_name_part(expr)) {
     name <- as.character(expr)
     if (name %in% bound) {
@@ -627,12 +655,15 @@ is_name_only_helper_arg <- function(expr,
       return(FALSE)
     }
     value <- rlang::env_get(env, name, default = NULL, inherit = TRUE)
+    # An absent lexical binding can resolve to a selection-context helper.
     return(is_name_only_helper_value(value, allow_stringr_pattern))
   }
   if (!rlang::is_call(expr)) {
     return(
       rlang::is_missing(expr) ||
-        is_name_only_helper_value(expr, allow_stringr_pattern)
+        is_name_only_helper_value(
+          expr, allow_stringr_pattern, allow_null = TRUE
+        )
     )
   }
   if (!selection_call_parens_safe(expr, env, bound)) {
@@ -652,34 +683,8 @@ is_name_only_helper_arg <- function(expr,
     return(FALSE)
   }
   args <- static_call_args(expr)
-  if (allow_env_pronoun && length(args) == 2L &&
-        identical(args[[1L]], quote(.env)) &&
-        (identical(fn, base::`$`) || identical(fn, base::`[[`))) {
-    # Tidyselect's context mask supplies .env from the caller's quosure.
-    # Only a literal subscript identifies a binding without evaluation.
-    name <- NULL
-    if (identical(fn, base::`$`) && is_name_part(args[[2L]])) {
-      name <- as.character(args[[2L]])
-    } else if (rlang::is_string(args[[2L]])) {
-      name <- rlang::as_string(args[[2L]])
-    }
-    # A numbered dot can force a promise without an ordinary binding.
-    if (is.null(name) || !nzchar(name) || name == "..." ||
-          is_numbered_dot_reference(rlang::sym(name))) {
-      return(FALSE)
-    }
-    binding_env <- selection_binding_env(env, name)
-    if (identical(binding_env, emptyenv())) {
-      # Tidyselect raises the missing-binding error during selection.
-      return(TRUE)
-    }
-    if (selection_binding_deferred(
-      binding_env, name, allow_namespace_promises = FALSE
-    )) {
-      return(FALSE)
-    }
-    value <- rlang::env_get(binding_env, name)
-    return(is_name_only_helper_value(value, allow_stringr_pattern))
+  if (allow_env_pronoun && is_selection_env_pronoun(fn, args)) {
+    return(is_name_only_env_value(fn, args[[2L]], env, allow_stringr_pattern))
   }
   if (
     identical(fn, base::names) && length(args) == 1L &&
@@ -690,15 +695,19 @@ is_name_only_helper_arg <- function(expr,
   if (identical(fn, base::c) && !"..." %in% bound) {
     args <- selection_c_args(args, env)
   }
+  name <- static_call_name(expr)
+  leaf_helper <- context && name %in% selection_leaf_helpers() &&
+    identical(fn, tidyselect::vars_select_helpers[[name]])
   if (is.null(args) || !all(vapply(
     args, is_name_only_helper_arg, logical(1),
     env = env, bound = bound, seen = seen,
     allow_caller_code = allow_caller_code,
+    allow_stringr_pattern = leaf_helper && identical(name, "matches"),
     allow_env_pronoun = allow_env_pronoun
   ))) {
     return(FALSE)
   }
-  if (pattern_call || identical(fn, tidyselect::peek_vars)) {
+  if (leaf_helper || pattern_call || identical(fn, tidyselect::peek_vars)) {
     return(TRUE)
   }
   # Ordinary S3 generics can dispatch on implicit classes even when every
@@ -738,22 +747,76 @@ is_name_only_helper_arg <- function(expr,
   ))
 }
 
-# Parentheses around a helper argument or callee use lexical `(`, unlike the
-# outer selection parentheses tidyselect walks itself. Check the written
-# parentheses before using readers that treat them as transparent.
-selection_call_parens_safe <- function(expr, env, bound = character()) {
-  if (!is_redundant_parens(expr) &&
-        !is_redundant_parens(static_call_head(expr))) {
+# Whether a call with a resolved callee indexes tidyselect's lexical pronoun.
+is_selection_env_pronoun <- function(fn, args) {
+  (identical(fn, base::`$`) || identical(fn, base::`[[`)) &&
+    length(args) == 2L && identical(args[[1L]], quote(.env))
+}
+
+# Whether a literal subscript of .env can be settled without column types
+# or forcing a caller binding. The caller has resolved the subscript operator
+# and supplies the selection's lexical environment.
+is_name_only_env_value <- function(fn, subscript, env,
+                                   allow_stringr_pattern = FALSE) {
+  name <- NULL
+  if (identical(fn, base::`$`) && is_name_part(subscript)) {
+    name <- as.character(subscript)
+  } else if (rlang::is_string(subscript)) {
+    name <- rlang::as_string(subscript)
+  }
+  # A numbered dot can force a promise without an ordinary binding.
+  if (is.null(name) || !nzchar(name) || name == "..." ||
+        is_numbered_dot_reference(rlang::sym(name))) {
+    return(FALSE)
+  }
+  binding_env <- selection_binding_env(env, name)
+  if (identical(binding_env, emptyenv())) {
+    # Tidyselect raises the missing-binding error during selection.
     return(TRUE)
   }
-  identical(selection_argument_function(quote((NULL)), env, bound), base::`(`)
+  if (selection_binding_deferred(
+    binding_env, name, allow_namespace_promises = FALSE
+  )) {
+    return(FALSE)
+  }
+  value <- rlang::env_get(binding_env, name)
+  is_name_only_helper_value(value, allow_stringr_pattern, allow_null = TRUE)
+}
+
+# Whether the parentheses around a call or its callee use base `(`. The
+# caller supplies the lexical environment and any enclosing closure formals.
+selection_call_parens_safe <- function(expr, env, bound = character()) {
+  selection_parens_use_base(expr, env, bound) &&
+    selection_parens_use_base(static_call_head(expr), env, bound)
+}
+
+# Check each written pair before the static readers strip it.
+selection_parens_use_base <- function(expr, env, bound) {
+  while (is_redundant_parens(expr)) {
+    # Resolve the written head without the argument that makes it redundant.
+    fn <- selection_argument_function(
+      rlang::call2(expr[[1L]]), env, bound
+    )
+    if (!identical(fn, base::`(`)) {
+      return(FALSE)
+    }
+    if (rlang::is_missing(expr[[2L]])) {
+      break
+    }
+    expr <- expr[[2L]]
+  }
+  TRUE
 }
 
 # A helper value with no caller-defined dispatch. Only matches() consumes
-# stringr patterns, and a subclass can introduce its own methods.
-is_name_only_helper_value <- function(value, allow_stringr_pattern) {
+# stringr patterns. NULL counts for a literal or an explicit .env binding.
+is_name_only_helper_value <- function(value, allow_stringr_pattern,
+                                      allow_null = FALSE) {
   if (rlang::is_missing(value)) {
     return(FALSE)
+  }
+  if (is.null(value)) {
+    return(allow_null)
   }
   if (allow_stringr_pattern && is.character(value)) {
     classes <- class(value)

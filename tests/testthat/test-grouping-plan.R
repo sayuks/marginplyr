@@ -2242,10 +2242,9 @@ test_that("the name-only reader answers what the names settle", {
   expect_true(name_only(quote(~ where(is.numeric))))
   expect_true(name_only(quote((~c(region)))))
   expect_true(name_only(quote(c(region, ~absent))))
-  # A quosure is a `~` call as well, and is not refused: tidyselect evaluates
-  # one, so what settles it is the expression it carries and this reader does
-  # not open one.
-  expect_false(name_only(rlang::quo(region)))
+  # Tidyselect walks a quosure in its captured environment.
+  expect_true(name_only(rlang::quo(region)))
+  expect_false(name_only(rlang::quo(where(is.numeric))))
 
   # Both halves of the `.data` pronoun: `$` looks up the symbol beside it,
   # `[[` a constant subscript, and tidyselect refuses on sight every other

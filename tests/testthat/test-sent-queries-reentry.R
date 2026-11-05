@@ -106,9 +106,9 @@ test_that("nested SQL inspection preserves both calls' partial records", {
   outer <- dplyr::copy_to(con, data.frame(g = c("a", "b"), v = c(1, 3)),
                           "outer_source")
   inner <- dplyr::copy_to(con, data.frame(k = "x", v = 101), "inner_source")
-  inspect_grouping(inner, .grouping = rollup(k))
+  inspect_grouping(inner, .grouping = rollup(where(is.character)))
   inner_record <- last_sent_queries()
-  inspect_grouping(outer, .grouping = rollup(g))
+  inspect_grouping(outer, .grouping = rollup(where(is.character)))
   outer_record <- last_sent_queries()
   expect_identical(nrow(outer_record), 1L)
   expect_false(identical(inner_record, outer_record))
@@ -167,9 +167,9 @@ test_that("failure restores the outer partial record and releases ownership", {
   outer <- dplyr::copy_to(con, data.frame(g = c("a", "b"), v = c(1, 3)),
                           "outer_source")
   inner <- dplyr::copy_to(con, data.frame(k = "x", v = 101), "inner_source")
-  inspect_grouping(inner, .grouping = rollup(k))
+  inspect_grouping(inner, .grouping = rollup(where(is.character)))
   inner_record <- last_sent_queries()
-  inspect_grouping(outer, .grouping = rollup(g))
+  inspect_grouping(outer, .grouping = rollup(where(is.character)))
   outer_record <- last_sent_queries()
   leaf <- errorCondition("inner failure", class = "reentry_cause")
   outer_leaf <- errorCondition("outer failure", class = "reentry_outer_cause")
