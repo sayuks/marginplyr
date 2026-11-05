@@ -133,15 +133,11 @@ margin_sort_choices <- c("none", "last", "first")
 # absent case for a `NULL` to name, and the *Option arguments* section on
 # `?summarize_with_margins` states the contract to the caller.
 #
-# `rlang::arg_match()` and `rlang::arg_match0()` were measured against this
-# helper rather than adopted. They agree with it on every input but one -- both
-# accept a permutation of the vocabulary and return its first entry, where the
-# `identical()` guard requires the order too, so they are looser on exactly the
-# input #210 asks about. What they would add is a "Did you mean" suggestion,
-# and what they would cost is the `NULL` diagnostic naming the vocabulary,
-# which the help page promises, and ownership of a sentence the tests compare
-# whole. The measurements, the diagnostics, and what a migration would have to
-# carry are in investigation/rlang-arg-match-for-option-arguments.md.
+# `rlang::arg_match()` and `rlang::arg_match0()` both accept a permutation of
+# the vocabulary and return the first supplied entry. The `identical()` guard
+# requires the original order (#210). The measurements, the diagnostics, and
+# what a migration would have to carry are in
+# investigation/rlang-arg-match-for-option-arguments.md.
 match_margin_choice <- function(value, choices, arg_name) {
   call <- rlang::caller_call()
   if (identical(value, choices)) {

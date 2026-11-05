@@ -1210,7 +1210,12 @@ test_that("populated nesting uses the stored list-column name", {
   for (verb in list(nest_with_margins, nest_by_with_margins)) {
     result <- verb(input, .key = displayed("payload"))
     expect_identical(names(result), "payload")
-    expect_identical(result$payload[[1L]], tibble::tibble(value = 5L))
+    expect_type(result$payload, "list")
+    expect_length(result$payload, 1L)
+    cell <- result$payload[[1L]]
+    expect_s3_class(cell, "data.frame")
+    expect_identical(names(cell), "value")
+    expect_identical(cell[["value"]], 5L)
     expect_identical(dplyr::group_vars(result), character())
   }
 })

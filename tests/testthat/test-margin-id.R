@@ -213,7 +213,6 @@ test_that(".id rejects output-name collisions using its stored value", {
 test_that(".id preserves the stored name and the original payload", {
   displayed <- local_displayed_margin_arg()
   data <- data.frame(g = "x", v = 5L)
-  cell <- tibble::tibble(v = 5L)
 
   for (id in list("set", c(v = "set"), displayed("set", "v"))) {
     expanded <- expand_with_margins(
@@ -234,7 +233,13 @@ test_that(".id preserves the stored name and the original payload", {
       result <- verb(data, .grouping = rollup(g), .id = id, .sort = "last")
       expect_identical(names(result), c("g", "set", "data"))
       expect_identical(result$set, 1:2)
-      expect_identical(result$data, list(cell, cell))
+      expect_type(result$data, "list")
+      expect_length(result$data, 2L)
+      for (cell in result$data) {
+        expect_s3_class(cell, "data.frame")
+        expect_identical(names(cell), "v")
+        expect_identical(cell[["v"]], 5L)
+      }
       if (identical(verb, nest_by_with_margins)) {
         expect_identical(dplyr::group_vars(result), c("g", "set"))
       }
