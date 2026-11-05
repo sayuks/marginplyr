@@ -1,0 +1,7 @@
+SHA: 0403c9150394cbae21b59f34c75791d0873b8451
+Command: Rscript spec/pattern-dispatch.R --assert
+Exit: 1
+
+Error in run() : !inherits(actual, "error") is not TRUE
+Calls: run -> stopifnot
+Execution halted

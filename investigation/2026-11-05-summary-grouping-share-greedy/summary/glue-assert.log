@@ -1,0 +1,16 @@
+$expected
+  x
+1 4
+
+$actual
+  intercepted
+1           4
+
+$ordinary_hits
+[1] 0
+
+$margin_hits
+[1] 1
+
+Error: identical(minimal$actual, minimal$expected) is not TRUE
+Execution halted

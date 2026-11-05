@@ -1,0 +1,20 @@
+SHA: 0403c9150394cbae21b59f34c75791d0873b8451
+Command: Rscript summary/glue-namespace.R --assert
+Exit: 1
+$expected
+  x
+1 4
+
+$actual
+  intercepted
+1           4
+
+$ordinary_hits
+[1] 0
+
+$margin_hits
+[1] 1
+
+
+Error: identical(minimal$actual, minimal$expected) is not TRUE
+Execution halted

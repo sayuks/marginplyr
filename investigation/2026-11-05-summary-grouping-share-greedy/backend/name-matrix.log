@@ -1,0 +1,71 @@
+sqlite 1 ... none local-error Column 1 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+sqlite 1 ... last local-error Column 1 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+sqlite 1 ..1 none local-error Column 1 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+sqlite 1 ..1 last local-error Column 1 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+sqlite 2 ... none local-error Column 2 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+sqlite 2 ... last local-error Column 2 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+sqlite 2 ..1 none local-error Column 2 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+sqlite 2 ..1 last local-error Column 2 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+sqlite 3 ... none local-error Column 3 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+sqlite 3 ... last local-error Column 3 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+sqlite 3 ..1 none local-error Column 3 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+sqlite 3 ..1 last local-error Column 3 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+sqlite 4 ... none local-error Column 4 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+sqlite 4 ... last local-error Column 4 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+sqlite 4 ..1 none local-error Column 4 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+sqlite 4 ..1 last local-error Column 4 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+sqlite 5 ... none backend-error Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+sqlite 5 ... last backend-error Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+sqlite 5 ..1 none backend-error Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+sqlite 5 ..1 last backend-error Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+sqlite 6 ... none backend-error Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+sqlite 6 ... last backend-error Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+sqlite 6 ..1 none backend-error Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+sqlite 6 ..1 last backend-error Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+sqlite 7 ... none backend-error Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+sqlite 7 ... last backend-error Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+sqlite 7 ..1 none backend-error Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+sqlite 7 ..1 last backend-error Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+sqlite 8 ... none backend-error Column 8 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+sqlite 8 ... last backend-error Column 8 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+sqlite 8 ..1 none backend-error Column 8 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+sqlite 8 ..1 last backend-error Column 8 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+duckdb 1 ... none local-error Column 1 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+duckdb 1 ... last local-error Column 1 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+duckdb 1 ..1 none local-error Column 1 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+duckdb 1 ..1 last local-error Column 1 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+duckdb 2 ... none local-error Column 2 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+duckdb 2 ... last local-error Column 2 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+duckdb 2 ..1 none local-error Column 2 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+duckdb 2 ..1 last local-error Column 2 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+duckdb 3 ... none local-error Column 3 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+duckdb 3 ... last local-error Column 3 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+duckdb 3 ..1 none local-error Column 3 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+duckdb 3 ..1 last local-error Column 3 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+duckdb 4 ... none local-error Column 4 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+duckdb 4 ... last local-error Column 4 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+duckdb 4 ..1 none local-error Column 4 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+duckdb 4 ..1 last local-error Column 4 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+duckdb 5 ... none backend-error Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+duckdb 5 ... last backend-error Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+duckdb 5 ..1 none backend-error Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+duckdb 5 ..1 last backend-error Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+duckdb 6 ... none backend-error Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+duckdb 6 ... last backend-error Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+duckdb 6 ..1 none backend-error Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+duckdb 6 ..1 last backend-error Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+duckdb 7 ... none backend-error Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+duckdb 7 ... last backend-error Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+duckdb 7 ..1 none backend-error Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+duckdb 7 ..1 last backend-error Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+duckdb 8 ... none backend-error Column 8 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+duckdb 8 ... last backend-error Column 8 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..." at location 1.
+duckdb 8 ..1 none backend-error Column 8 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+duckdb 8 ..1 last backend-error Column 8 must not have names of the form ... or ..j. Use `.name_repair` to specify repair. Caused by error in `repaired_names()`: ! Names can't be of the form `...` or `..j`. ✖ These names are invalid:   * "..1" at location 1.
+  backend       verdict   n
+1  duckdb backend-error  16
+2  duckdb   local-error  16
+3  duckdb         match 336
+4  sqlite backend-error  16
+5  sqlite   local-error  16
+6  sqlite         match 336
