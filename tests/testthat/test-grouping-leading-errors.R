@@ -441,6 +441,9 @@ test_that("DuckDB leading selection failures invoke no metadata query", {
       grouping_sets(grouping_spec(grouping_sets(x, x), !!typed)), value
     ),
     grouping_spec(
+      grouping_sets(grouping_spec(grouping_sets(x, x, !!typed), value)), value
+    ),
+    grouping_spec(
       grouping_sets(x, grouping_set()), grouping_set(x, !!typed)
     )
   )
@@ -714,6 +717,30 @@ test_that("partial product factors refuse known duplicates before predicates", {
     )), "absent", class = "vctrs_error_subscript_oob")
   }
   expect_identical(predicates, 0L)
+})
+
+test_that("singleton wrappers retain leading partial product duplicates", {
+  data <- data.frame(a = 1L, b = 2L, c = 3L)
+  predicate <- function(x) stop("typed selection evaluated")
+  spec <- grouping_spec(
+    grouping_sets(grouping_spec(grouping_sets(a, a, where(predicate)), b)), c
+  )
+  for (verb in forwarded_verbs[c(
+    "inspect_grouping", "nest_with_margins", "nest_by_with_margins"
+  )]) {
+    expect_error(verb(data, NULL, spec), "1, 2.", fixed = TRUE,
+                 class = "marginplyr_error")
+    expect_error(verb(data, NULL, grouping_sets(b, !!spec)), "2, 3.",
+                 fixed = TRUE, class = "marginplyr_error")
+    expect_error(verb(data, NULL, grouping_spec(
+      grouping_sets(grouping_spec(
+        grouping_sets(a, a, absent, where(predicate)), b
+      )), c
+    )), "absent", class = "vctrs_error_subscript_oob")
+    expect_error(verb(data, NULL, grouping_spec(
+      grouping_sets(b, grouping_spec(grouping_sets(a, a), where(predicate))), b
+    )), "typed selection evaluated")
+  }
 })
 
 test_that("partial products preserve typed decisions and duplicate policies", {
