@@ -660,6 +660,10 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
     anchor <- sqlite_boolean_query(
       dplyr::filter(public_query, FALSE), NULL, aliases, public = FALSE
     )
+    # This projection returns no rows. Public ORDER BY aliases are no longer
+    # available after its columns become private; only the INSERT needs order.
+    anchor$lazy_query$order_by <- NULL
+    anchor$lazy_query$order_vars <- list()
     sorted <- FALSE
   }
   if (!rlang::is_bool(temporary)) {
@@ -711,7 +715,7 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
   sqlite_with_compute_savepoint(con, destination, function(destination) {
     # Delay the public name until the last source read has finished. The
     # populated table itself is renamed, so rows are inserted only once.
-    publish <- direct && sqlite_plan_temp_destination(
+    publish <- sqlite_plan_temp_destination(
       con, destination, temporary, overwrite, insert_from, call
     )
     requested <- destination
@@ -732,7 +736,7 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
         sqlite_check_compute_indexes(anchor, unique_indexes, "unique_indexes")
       }
       destination <- sqlite_new_compute_name(con)
-    } else if (direct && temporary && is.null(destination)) {
+    } else if (temporary && is.null(destination)) {
       destination <- sqlite_new_compute_name(con)
     }
     create_temporary <- temporary || publish
