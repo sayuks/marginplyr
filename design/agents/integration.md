@@ -2,8 +2,10 @@
 
 ## Check the current base
 
-Before opening a pull request and again before merging it, fetch remote `main`
-and pin the revision assessed together with the branch HEAD:
+Before invoking either Review-ready scope, before opening a pull request and
+again before merging it, fetch remote `main` and pin the revision assessed
+together with the branch HEAD. This is agent preparation; the runner's six
+checks do not perform it:
 
 ```sh
 git fetch origin main
@@ -26,6 +28,10 @@ evidence, and integration decision in the work record. Keep the preparation
 outside the submitting worktree; publish it on the PR when available. Fetch
 again and reassess if the base advances before integration. A later branch HEAD
 also needs a new assessment; an earlier pair of SHAs does not cover it.
+Complete required integration and commit its result before submitting that
+revision to Review-ready. If only main advances and the branch remains
+compatible without modification, reassess the new pair; the unchanged branch
+SHA retains its own applicable check evidence.
 
 ## Decide whether to integrate
 

@@ -145,6 +145,10 @@ carry no recording statements; ordinary `test_check()` owns execution.
 
 ## Priority proposals and explicit adoption
 
+The accepted [registration-before-measurement design](../design/specs/review-ready-preregistration.md)
+is pending implementation. This section describes the active runner's measured
+registration workflow until that implementation updates this guide.
+
 After timing finalization, a successful eligible full invocation writes one
 `priority-*/` proposal directory under that run. It contains `explanation.md`,
 `proposal.rds` and, only when membership/order changes, `priority.patch` for

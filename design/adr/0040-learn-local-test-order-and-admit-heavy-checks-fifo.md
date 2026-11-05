@@ -4,6 +4,22 @@ status: accepted
 
 # Keep test priorities versioned and admit heavy checks FIFO
 
+## Registration amendment, 2026-11-05
+
+Accept [registration before measurement](../specs/review-ready-preregistration.md)
+to avoid a metadata-only commit and source check when measurement finds no
+useful reordering. Append new files before full and apply the existing
+reordering thresholds to all registered files. This replaces the rejection of
+pre-measurement registration and the separate measured new-file insertion
+rule below. The trade-off is that smaller new-file ordering improvements may
+be left unapplied. Registration does not claim successful execution.
+
+Runner implementation is pending. The following records the implemented
+measurement and FIFO design; the linked amendment owns the replacement
+registration target until implementation and operational guidance adopt it.
+
+## Implemented measurement and FIFO design
+
 The original task requested measured heavy-first test dispatch and FIFO local
 heavy admission. Keep the tracked start-first setting as the persistent order
 source and retain the existing heavy lock, pinned source and terminal-result

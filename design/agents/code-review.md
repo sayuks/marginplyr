@@ -14,7 +14,12 @@ A record names the snapshot it read, which is why `AGENTS.md` has the branch pus
 
 Once a review snapshot or review record is published, the branch history it names is immutable. Do not use `git commit --amend`, rebase, or a force-push after that point; put every follow-up change in a new commit and push it normally. If an exceptional rewrite is unavoidable, first invalidate every review record for the superseded history in the pull request. After the rewritten branch is pushed, capture its new pushed SHA, rerun every required review round against that snapshot, and only then publish a replacement record that names it. A record for the superseded history never carries over to the rewritten branch.
 
-`git diff <base>...HEAD` is the three-dot form that computes the merge-base `AGENTS.md` names as the fixed point. Reviewing against a `main` the branch has fallen behind reports that gap as though it were the branch's.
+Use the fetched main SHA pinned by the
+[integration assessment](integration.md#check-the-current-base) as the skill's
+fixed point for both review axes. `git diff <base-sha>...HEAD` compares HEAD
+with its merge-base with that revision. A fetch need not advance the local
+`main` branch: using that stale name after importing newer main commits can
+include their changes in the review. Record the base SHA and reviewed HEAD.
 
 What the record carries is small, because most of a review is recorded by what it produced. A finding answered in code is recorded by the code and by the test that fails without it; one answered in prose is recorded by the diff that changed the prose. Restating either is a second copy nothing compares against the first, which is what *Code comments* in `AGENTS.md` refuses for a comment, on an argument that does not stop at comments.
 

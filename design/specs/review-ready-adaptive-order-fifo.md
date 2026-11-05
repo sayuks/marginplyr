@@ -1,5 +1,10 @@
 # Measured test order and FIFO Review-ready admission
 
+The accepted [2026-11-05 amendment](review-ready-preregistration.md) replaces
+the registration and reordering target below; its runner implementation is
+pending. The existing runner still follows the measured-registration workflow
+described here. FIFO and timing instrumentation are unchanged by the amendment.
+
 Status: accepted, 2026-11-03. The maintainer selected the narrow private timing
 hook after comparing public-only alternatives and confirmed the specification
 after checking its R CMD check implications. Ordinary testthat dispatch and the

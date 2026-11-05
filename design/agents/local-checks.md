@@ -34,8 +34,10 @@ pull request, marking a draft ready or requesting review, or pushing to a
 pull request already ready for review. Alternatively return the pull request
 to draft before pushing, and check before making it ready again.
 
-Inspect the submitted diff and its effects, choose a scope, and supply a
-concrete reason. Run from the worktree root:
+Before either scope, complete the agent-owned
+[current-main assessment](integration.md#check-the-current-base), including any
+required integration. Inspect the submitted diff and its effects, choose a
+scope, and supply a concrete reason. Run from the worktree root:
 
 ```sh
 Rscript tools/review-ready.R --scope source --reason 'Explain why package build/check can be omitted.'
@@ -85,6 +87,11 @@ for every other edit too. Byte-different tests remain subject to the independent
 timing-proposal eligibility rules; this exception does not relax those rules.
 
 ### Priority metadata
+
+The accepted [registration amendment](../specs/review-ready-preregistration.md)
+requires complete registration before measurement once implemented. The active
+runner still uses the measured-registration workflow below; its membership
+completeness gate is pending implementation.
 
 Measured priority adoption may use `source` when its only check-affecting change
 is `Config/testthat/start-first`, and package code, tests/helpers, installed
