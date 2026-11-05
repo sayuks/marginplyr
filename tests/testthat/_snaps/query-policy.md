@@ -51,13 +51,13 @@
       probe_share_dialect
       probe_share_dialect_answer
       share_dialect_verdict
-      sqlite_check_temp_overwrite
       sqlite_compute_destination
       sqlite_compute_name_resolves
-      sqlite_compute_publish_later
       sqlite_new_compute_name
+      sqlite_plan_temp_destination
       sqlite_publish_destination
       sqlite_restore_compute_names
+      sqlite_temp_overwrite_safe
       sqlite_with_compute_savepoint
       summarise_with_margins
       summarize_with_margins

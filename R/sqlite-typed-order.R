@@ -315,35 +315,29 @@ sqlite_compute_name_resolves <- function(con, table, conservative = FALSE) {
   })
 }
 
-# Refuse an overwrite if the insert can read the existing temporary table.
-# The caller holds its catalog rows, including indexes, and the rendered SELECT.
-sqlite_check_temp_overwrite <- function(con, catalog, insert_from) {
+# Whether the rendered SELECT can be shown independent of the temporary target.
+# The caller holds the existing table's catalog rows, including its indexes.
+sqlite_temp_overwrite_safe <- function(con, catalog, insert_from) {
   plan <- DBI::dbGetQuery(con, paste("EXPLAIN", insert_from))
-  known <- all(c("opcode", "p2", "p3") %in% names(plan)) && nrow(plan) > 0L
-  if (known) {
-    # SQLite's bytecode addresses b-trees by root page in database 1 (temp).
-    # A covering index can be opened in place of its table.
-    opens <- plan$opcode %in% c("OpenRead", "ReopenIdx")
-    reads_target <- any(opens & plan$p3 == 1L & plan$p2 %in% catalog$rootpage)
-    # Virtual table implementations can read relations outside the bytecode.
-    if (!reads_target && !any(catalog$rootpage == 0L) &&
-          !"VOpen" %in% plan$opcode) {
-      return(invisible(NULL))
-    }
+  if (!all(c("opcode", "p1", "p2", "p3") %in% names(plan)) ||
+        nrow(plan) == 0L) {
+    return(FALSE)
   }
-  abort_marginplyr(
-    paste0(
-      "Can't safely overwrite this SQLite temporary table while computing ",
-      "the Margin result. Choose a different destination name."
-    ),
-    call = rlang::caller_call()
-  )
+  # SQLite opens b-trees by root page in database 1 (temp). A covering index
+  # can be opened in place of its table.
+  opens <- plan$opcode %in% c("OpenRead", "ReopenIdx")
+  reads_target <- any(opens & plan$p3 == 1L & plan$p2 %in% catalog$rootpage)
+  # Virtual tables can read content or own shadow tables in their schema.
+  # Transaction names the schema even when the plan omits those b-tree opens.
+  uses_temp <- any(plan$opcode == "Transaction" & plan$p1 == 1L)
+  virtual <- any(catalog$rootpage == 0L) || "VOpen" %in% plan$opcode
+  !reads_target && !(uses_temp && virtual)
 }
 
 # Admit a temporary destination and decide if its name must be published last.
 # The caller owns a savepoint and supplies a resolved destination and SELECT.
-sqlite_compute_publish_later <- function(con, destination, temporary,
-                                         overwrite, insert_from) {
+sqlite_plan_temp_destination <- function(con, destination, temporary,
+                                         overwrite, insert_from, call) {
   if (is.null(destination)) return(FALSE)
   parts <- dbplyr::table_path_components(destination, con)[[1L]]
   if (length(parts) == 1L) {
@@ -356,8 +350,15 @@ sqlite_compute_publish_later <- function(con, destination, temporary,
     "SELECT type, rootpage FROM temp.sqlite_master",
     "WHERE tbl_name = ? COLLATE NOCASE AND type IN ('table', 'index', 'view')"
   ), params = list(table))
-  if (overwrite && "table" %in% catalog$type) {
-    sqlite_check_temp_overwrite(con, catalog, insert_from)
+  if (overwrite && "table" %in% catalog$type &&
+        !sqlite_temp_overwrite_safe(con, catalog, insert_from)) {
+    abort_marginplyr(
+      paste0(
+        "Can't safely overwrite this SQLite temporary table while computing ",
+        "the Margin result. Choose a different destination name."
+      ),
+      call = call
+    )
   }
   nrow(catalog) == 0L && sqlite_compute_name_resolves(
     con, table, conservative = TRUE
@@ -578,11 +579,12 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
   insert_from <- sqlite_boolean_execution_sql(
     public_query, sql_options = sql_options
   )
+  call <- rlang::caller_call()
   sqlite_with_compute_savepoint(con, destination, function(destination) {
     # Delay the public name until the last source read has finished. The
     # populated table itself is renamed, so rows are inserted only once.
-    publish <- direct && sqlite_compute_publish_later(
-      con, destination, temporary, overwrite, insert_from
+    publish <- direct && sqlite_plan_temp_destination(
+      con, destination, temporary, overwrite, insert_from, call
     )
     requested <- destination
     if (publish) {
