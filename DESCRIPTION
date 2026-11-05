@@ -169,6 +169,7 @@ Config/testthat/start-first:
     sql-env-summary-output,
     local-selection-scope,
     share-scope-effects,
+    grouping-constructor-arguments,
     nest-source-equality,
     branch-union,
     dtplyr-metadata,
