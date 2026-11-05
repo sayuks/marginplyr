@@ -1,0 +1,6 @@
+SHA: 0403c9150394cbae21b59f34c75791d0873b8451
+Command: Rscript share/accessor-matrix.R --assert
+Exit: 1
+
+Error: inherits(result, "marginplyr_error") is not TRUE
+Execution halted

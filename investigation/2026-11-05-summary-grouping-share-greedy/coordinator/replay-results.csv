@@ -1,0 +1,5 @@
+"script","status","signal","sha"
+"summary/glue-namespace.R",1,"desired-behaviour-assertion-failed","0403c9150394cbae21b59f34c75791d0873b8451"
+"spec/pattern-dispatch.R",1,"desired-behaviour-assertion-failed","0403c9150394cbae21b59f34c75791d0873b8451"
+"share/accessor-matrix.R",1,"desired-behaviour-assertion-failed","0403c9150394cbae21b59f34c75791d0873b8451"
+"share/namespace-matrix.R",1,"desired-behaviour-assertion-failed","0403c9150394cbae21b59f34c75791d0873b8451"

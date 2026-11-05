@@ -1,0 +1,15 @@
+$expected
+  x
+1 4
+
+$actual
+  intercepted
+1           4
+
+$ordinary_hits
+[1] 0
+
+$margin_hits
+[1] 1
+
+matrix: 108 interception cases; 54 wrong-name cases; 54 literal controls; 108 unshadowed controls

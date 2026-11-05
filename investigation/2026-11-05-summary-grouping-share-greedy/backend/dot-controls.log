@@ -1,0 +1,16 @@
+sqlite ... ordinary= upstream-refusal margin= refusal share= refusal
+sqlite ..1 ordinary= upstream-refusal margin= refusal share= refusal
+sqlite ..0 ordinary= ok margin= ok share= ok
+sqlite ..00 ordinary= ok margin= ok share= ok
+sqlite ..01 ordinary= ok margin= ok share= ok
+sqlite ..-1 ordinary= ok margin= ok share= ok
+duckdb ... ordinary= upstream-refusal margin= refusal share= refusal
+duckdb ..1 ordinary= upstream-refusal margin= refusal share= refusal
+duckdb ..0 ordinary= ok margin= ok share= ok
+duckdb ..00 ordinary= ok margin= ok share= ok
+duckdb ..01 ordinary= ok margin= ok share= ok
+duckdb ..-1 ordinary= ok margin= ok share= ok
+Warning message:
+Missing values are always removed in SQL aggregation functions.
+Use `na.rm = TRUE` to silence this warning
+This warning is displayed once every 8 hours.

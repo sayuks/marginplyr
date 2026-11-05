@@ -1,0 +1,8 @@
+varchar rlang_error
+logical rlang_error
+interval rlang_error
+list rlang_error
+bit rlang_error
+uuid rlang_error
+integer INTEGER INTEGER
+decimal DECIMAL(38,0) DECIMAL(38,0)
