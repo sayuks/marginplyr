@@ -34,6 +34,14 @@ and duplicates, then fail before the six checks or heavy admission. The runner
 does not repair the submitted source. The agent corrects and commits metadata
 before submitting a fresh invocation.
 
+Run this registration-completeness check in pull-request CI as a mandatory
+failing check, including when local Review-ready was not invoked. Review-ready
+and CI must call the same validation function with the same native discovery
+rules and diagnostics. Extend the existing priority verification in
+`.github/workflows/lint.yaml` to check the submitted checkout itself; fixture
+coverage alone does not validate that checkout's registration. Discovery and
+metadata comparison need no execution of package tests or timing measurement.
+
 An all-skipped or empty test file still needs registration. It supplies no
 promotion evidence. Native dispatch must continue selecting every discovered
 file exactly once; list completeness alone does not establish that property.
@@ -76,6 +84,9 @@ changes to the review diff.
 - Prove both scopes reject missing, obsolete, duplicate and invalid entries
   before baseline execution or heavy admission, while accepting complete lists
   containing all-skipped files.
+- Prove CI invokes the shared validator on its actual checkout and fails for
+  missing, obsolete, duplicate or invalid entries even without a local
+  Review-ready result. Retain regression fixtures for each failure case.
 - Prove native ordered discovery is identical before and after appending all
   missing names in discovery order, and every file is selected exactly once.
 - Exercise additions, deletion and rename; helper files must not become entries.
