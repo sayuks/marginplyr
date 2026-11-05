@@ -14,6 +14,10 @@ including its upgraded committed revision and real full result.
 The entry spelling is fixed as
 `Rscript tools/review-ready.R --scope source|full --reason TEXT`.
 
+The accepted [#1292 amendment](review-ready-equivalent-source-edits.md) extends
+this target's mandatory checks and scope rule. Its implementation and
+operational adoption are pending.
+
 ## Problem Statement
 
 Running several marginplyr worktrees concurrently can start several test suites on the same Mac and make it unresponsive. Review-ready has also accumulated routing, evidence reuse, infrastructure self-tests, recovery, and delivery machinery whose complexity is disproportionate to the original coordination problem. Infrastructure self-tests can take longer than the package tests they precede.
