@@ -230,6 +230,23 @@ local({
   }
 
   if ("--priority-only" %in% commandArgs(trailingOnly = TRUE)) return(invisible(NULL))
+  check_test_timeout <- function(repo) {
+    writeLines('test_that("timeout", { Sys.sleep(30); expect_true(TRUE) })',
+      file.path(repo,"tests","testthat","test-timeout.R"))
+    writeLines(review_ready_priority_description(readLines(file.path(repo, "DESCRIPTION")),
+      c(paste0("additional-", 1:6), "owned-child", "revision", "timeout")), file.path(repo, "DESCRIPTION"))
+    git(repo,"add",".")
+    git(repo,"commit","--quiet","-m","timeout fixture")
+    timed <- finish(start(repo,"full",c(`_R_CHECK_TESTS_ELAPSED_TIMEOUT_`="2")),1L)
+    expect(grepl("elapsed time limit|timed out|TIMEOUT",timed,ignore.case=TRUE) &&
+    grepl("Source-tarball R CMD check", timed, fixed = TRUE) &&
+    !grepl("missing registrations", timed, fixed = TRUE),
+      "native R timeout is visible and fails terminal verdict")
+  }
+  if ("--timeout-only" %in% commandArgs(trailingOnly = TRUE)) {
+    check_test_timeout(make_repo("timeout-only"))
+    return(invisible(NULL))
+  }
 
   repo <- make_repo("first")
   output <- finish(start(repo))
@@ -738,13 +755,7 @@ local({
   if(any(survived)) { ps::ps_kill(descendants[survived]); expect(all(ps::ps_wait(descendants[survived],timeout=10000L)),"abrupt fixture survivors collected") }
 
   # Native R test timeouts and check warnings fail; every ordinary NOTE is shown.
-  writeLines('test_that("timeout", { Sys.sleep(30); expect_true(TRUE) })',
-    file.path(repo,"tests","testthat","test-timeout.R"))
-  git(repo,"add",".")
-  git(repo,"commit","--quiet","-m","timeout fixture")
-  timed <- finish(start(repo,"full",c(`_R_CHECK_TESTS_ELAPSED_TIMEOUT_`="2")),1L)
-  expect(grepl("elapsed time limit|timed out|TIMEOUT",timed,ignore.case=TRUE),
-    "native R timeout is visible and fails terminal verdict")
+  check_test_timeout(repo)
   git(repo,"reset","--hard",submitted)
   dir.create(file.path(repo,"R"))
   writeLines("fixture_export <- function() TRUE",file.path(repo,"R","export.R"))
