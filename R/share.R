@@ -4424,10 +4424,14 @@ call_part_symbols <- function(expr, scope, lookup) {
   } else {
     integer()
   }
-  definition <- inline_function_definition(expr)
+  closure <- scope_call_closure(expr, scope)
   reads <- character()
-  if (!is.null(definition)) {
-    reads <- definition_data_symbols(definition, scope, lookup, expr)
+  if (!is.null(closure)) {
+    if (!scope_closure_is_active(closure, scope)) {
+      reads <- definition_data_symbols(
+        closure$definition, scope, lookup, expr, closure$enclosing
+      )
+    }
   } else if (is_name_part(call_head)) {
     name <- rlang::as_name(call_head)
     reads <- scope_promise_symbols(name, scope, lookup, function_lookup = TRUE)
@@ -4513,10 +4517,64 @@ is_scope_control_primitive <- function(expr, name, bound, lookup) {
   is_known_base_call(expr, name, bound, lookup)
 }
 
-# A literal function in call position is visible through redundant parentheses.
-inline_function_definition <- function(expr) {
-  head <- unparenthesized_value(static_call_head(expr))
-  if (rlang::is_call(head, "function") && length(head) >= 3L) head else NULL
+# Recognize literal function syntax without constructing an R closure.
+literal_function_definition <- function(expr) {
+  expr <- unparenthesized_value(expr)
+  if (rlang::is_call(expr, "function") && length(expr) >= 3L) expr else NULL
+}
+
+# Resolve a visible literal function in call position. Its enclosing index
+# refers to the full stack, which also holds the dynamic caller.
+scope_call_closure <- function(expr, scope) {
+  head <- static_call_head(expr)
+  definition <- literal_function_definition(head)
+  if (!is.null(definition)) {
+    return(list(definition = definition, enclosing = 1L))
+  }
+  name <- unparenthesized_value(head)
+  if (!is_name_part(name)) {
+    return(NULL)
+  }
+  scope_closure_binding(rlang::as_name(name), scope, is_name_part(head))
+}
+
+# Find a local literal closure using function or value lookup as written.
+scope_closure_binding <- function(name, scope, function_lookup) {
+  for (index in scope_visible_frames(scope)) {
+    frame <- scope[[index]]
+    if (!name %in% frame$bound ||
+          (function_lookup && identical(frame$kinds[[name]], "value"))) {
+      next
+    }
+    if (!identical(frame$kinds[[name]], "function")) {
+      break
+    }
+    closure <- frame$closures[[name]]
+    if (!is.null(closure)) {
+      closure$enclosing <- index + closure$enclosing
+      return(closure)
+    }
+    promise <- scope_promise(name, scope, function_lookup, visible = index)
+    if (!is.null(promise)) {
+      definition <- literal_function_definition(promise$expression)
+      if (!is.null(definition)) {
+        return(list(
+          definition = definition, enclosing = promise$evaluation[[1L]]
+        ))
+      }
+    }
+    break
+  }
+  NULL
+}
+
+# Stop following recursive calls to the same literal and enclosing frame.
+scope_closure_is_active <- function(closure, scope) {
+  any(vapply(seq_along(scope), function(index) {
+    frame <- scope[[index]]
+    identical(frame$definition, closure$definition) &&
+      identical(index + frame$enclosing, closure$enclosing)
+  }, logical(1)))
 }
 
 # Match function formals to pending defaults in their own frame
@@ -4553,7 +4611,8 @@ function_scope_frame <- function(parameters, invocation) {
 
 # Read defaults and the body under the definition's formals. The srcref is
 # metadata. A definition alone does not carry effects back to its enclosure.
-definition_data_symbols <- function(expr, scope, lookup, invocation = NULL) {
+definition_data_symbols <- function(expr, scope, lookup, invocation = NULL,
+                                    enclosing = 1L) {
   if (is.null(invocation)) {
     # A definition can capture names without visibly demanding their promises.
     scope <- lapply(scope, function(frame) {
@@ -4562,19 +4621,38 @@ definition_data_symbols <- function(expr, scope, lookup, invocation = NULL) {
     })
   }
   frame <- function_scope_frame(expr[[2L]], invocation)
+  frame$enclosing <- enclosing
+  frame$definition <- expr
   inner <- c(list(frame), scope)
+  defaults <- frame$defaults
+  if (!is.null(invocation)) {
+    defaults <- Filter(function(expr) {
+      is.null(literal_function_definition(expr))
+    }, defaults)
+  }
   unique(unlist(
     lapply(
-      c(frame$defaults, list(expr[[3L]])),
+      c(defaults, list(expr[[3L]])),
       scoped_data_symbols, scope = inner, lookup = lookup
     ),
     use.names = FALSE
   ))
 }
 
+# The current frame and its lexical parents, skipping dynamic callers.
+scope_visible_frames <- function(scope, index = 1L) {
+  visible <- integer()
+  while (index <= length(scope)) {
+    visible <- c(visible, index)
+    index <- index + (scope[[index]]$enclosing %||% 1L)
+  }
+  visible
+}
+
 # Names visible from the current frame, regardless of which one owns them.
 scope_bound_names <- function(scope) {
-  unlist(lapply(scope, "[[", "bound"), use.names = FALSE)
+  unlist(lapply(scope[scope_visible_frames(scope)], "[[", "bound"),
+         use.names = FALSE)
 }
 
 # Find the first visible binding and the frame in which its pending syntax
@@ -4613,7 +4691,7 @@ scope_promise <- function(name, scope, function_lookup,
       scope[[index]]$defaults[name] <- NULL
       return(list(
         expression = expression, scope = scope,
-        evaluation = seq.int(index, length(scope))
+        evaluation = seq.int(index, length(scope)), binding = index
       ))
     }
     if (name %in% names(frame$arguments)) {
@@ -4621,7 +4699,7 @@ scope_promise <- function(name, scope, function_lookup,
       scope[[index]]$arguments[name] <- NULL
       return(list(
         expression = expression, scope = scope,
-        evaluation = seq.int(index + 1L, length(scope))
+        evaluation = seq.int(index + 1L, length(scope)), binding = index
       ))
     }
     break
@@ -4632,7 +4710,20 @@ scope_promise <- function(name, scope, function_lookup,
 # The dependencies of syntax that a lexical read may force.
 scope_promise_symbols <- function(name, scope, lookup,
                                   function_lookup = FALSE) {
-  promise <- scope_promise(name, scope, function_lookup)
+  if (!function_lookup) {
+    closure <- scope_closure_binding(name, scope, function_lookup = FALSE)
+    if (!is.null(closure)) {
+      if (scope_closure_is_active(closure, scope)) {
+        return(character())
+      }
+      enclosure <- seq.int(closure$enclosing, length(scope))
+      return(definition_data_symbols(
+        closure$definition, scope[enclosure], lookup
+      ))
+    }
+  }
+  promise <- scope_promise(name, scope, function_lookup,
+                           visible = scope_visible_frames(scope))
   if (is.null(promise)) {
     return(character())
   }
@@ -4643,12 +4734,21 @@ scope_promise_symbols <- function(name, scope, lookup,
 
 # Effects of demanding a pending promise in its evaluation frame.
 scope_after_promise <- function(name, scope, lookup, function_lookup = FALSE) {
-  promise <- scope_promise(name, scope, function_lookup)
+  promise <- scope_promise(name, scope, function_lookup,
+                           visible = scope_visible_frames(scope))
   if (is.null(promise)) {
     return(scope)
   }
   scope <- promise$scope
   frames <- promise$evaluation
+  definition <- literal_function_definition(promise$expression)
+  if (!is.null(definition) && !is.null(promise$binding)) {
+    binding <- promise$binding
+    scope[[binding]]$closures[[name]] <- list(
+      definition = definition, enclosing = frames[[1L]] - binding
+    )
+    return(scope)
+  }
   scope[frames] <- statement_reads_and_scope(
     promise$expression, scope[frames], lookup, read_symbols = no_scope_reads
   )$scope
@@ -4662,6 +4762,10 @@ scope_bind_local <- function(scope, name, value = NULL) {
   scope[[1L]]$defaults[name] <- NULL
   scope[[1L]]$arguments[name] <- NULL
   scope[[1L]]$kinds[[name]] <- if (!missing(value)) scope_literal_kind(value)
+  definition <- literal_function_definition(value)
+  scope[[1L]]$closures[[name]] <- if (!is.null(definition)) {
+    list(definition = definition, enclosing = 0L)
+  }
   scope
 }
 
@@ -4679,7 +4783,7 @@ scope_literal_kind <- function(value) {
 # Whether the nearest local binding proves that a bare call head is a
 # caller-defined function.
 scope_has_local_function <- function(scope, name) {
-  for (frame in scope) {
+  for (frame in scope[scope_visible_frames(scope)]) {
     kind <- frame$kinds[[name]]
     if (name %in% frame$bound && !identical(kind, "value")) {
       return(identical(kind, "function"))
@@ -4688,10 +4792,17 @@ scope_has_local_function <- function(scope, name) {
   FALSE
 }
 
-# Return the inline frame and its surviving enclosing frames. The inline
-# frame still holds any arguments whose demand the body did not establish.
-scope_after_inline_call <- function(expr, definition, scope, lookup) {
-  inner <- c(list(function_scope_frame(definition[[2L]], expr)), scope)
+# Return the invoked frame and the surviving outer bindings. Its pending
+# arguments still hold syntax whose demand the body did not establish.
+scope_after_closure_call <- function(expr, closure, scope, lookup) {
+  definition <- closure$definition
+  frame <- function_scope_frame(definition[[2L]], expr)
+  frame$enclosing <- closure$enclosing
+  frame$definition <- definition
+  inner <- c(list(frame), scope)
+  if (scope_closure_is_active(closure, scope)) {
+    return(inner)
+  }
   statement_reads_and_scope(
     definition[[3L]], inner, lookup, read_symbols = no_scope_reads
   )$scope
@@ -4729,13 +4840,15 @@ is_binding_statement <- function(call_name, expr) {
 # A block walks statements in order. Definite bindings carry into the
 # next statement, and a removal can expose a name in an enclosing frame.
 block_reads_and_scope <- function(expr, scope, lookup, read_symbols,
-                                  read_result_symbols) {
+                                  read_result_symbols, discard_result) {
   reads <- character()
   statements <- static_call_args(expr)
   for (index in seq_along(statements)) {
+    last <- index == length(statements)
     step <- statement_reads_and_scope(
       statements[[index]], scope, lookup, read_symbols,
-      if (index == length(statements)) read_result_symbols else read_symbols
+      if (last) read_result_symbols else read_symbols,
+      discard_result = discard_result || !last
     )
     reads <- c(reads, step$reads)
     scope <- step$scope
@@ -4747,23 +4860,31 @@ block_reads_and_scope <- function(expr, scope, lookup, read_symbols,
 # A separate result reader can restrict the read of a returned value.
 statement_reads_and_scope <- function(expr, scope, lookup = NULL,
                                       read_symbols = scoped_data_symbols,
-                                      read_result_symbols = read_symbols) {
+                                      read_result_symbols = read_symbols,
+                                      discard_result = FALSE) {
   expr <- unparenthesized_value(expr)
   call_name <- static_call_name(expr)
   arm <- literal_if_parts(expr, call_name, scope_bound_names(scope), lookup)
   if (length(arm) > 0L) {
     return(statement_reads_and_scope(
-      arm[[1L]], scope, lookup, read_symbols, read_result_symbols
+      arm[[1L]], scope, lookup, read_symbols, read_result_symbols,
+      discard_result
     ))
   }
   if (identical(call_name, "{")) {
     return(block_reads_and_scope(
-      expr, scope, lookup, read_symbols, read_result_symbols
+      expr, scope, lookup, read_symbols, read_result_symbols, discard_result
     ))
   }
+  discard_closure <- discard_result &&
+    identical(read_symbols, scoped_data_symbols)
   if (!is_binding_statement(call_name, expr)) {
+    reads <- if (!discard_closure ||
+                   !scope_only_reads_closure(expr, scope, lookup)) {
+      read_result_symbols(expr, scope, lookup)
+    }
     return(list(
-      reads = read_result_symbols(expr, scope, lookup),
+      reads = reads,
       scope = scope_after_removals(expr, scope, lookup)
     ))
   }
@@ -4781,7 +4902,10 @@ statement_reads_and_scope <- function(expr, scope, lookup = NULL,
       scope = scope_after_removals(expr[[4L]], inner, lookup)
     ))
   }
-  value <- read_symbols(expr[[3L]], scope, lookup)
+  value <- if (!(discard_closure && is_name_part(expr[[2L]]) &&
+                   !is.null(literal_function_definition(expr[[3L]])))) {
+    read_symbols(expr[[3L]], scope, lookup)
+  }
   retained <- scope_after_removals(expr[[3L]], scope, lookup)
   if (is_name_part(expr[[2L]])) {
     return(list(
@@ -4795,6 +4919,19 @@ statement_reads_and_scope <- function(expr, scope, lookup = NULL,
     reads = unique(c(read_symbols(expr[[2L]], scope, lookup), value)),
     scope = scope_after_removals(expr[[2L]], retained, lookup)
   )
+}
+
+# A discarded literal closure or a forced literal binding does not escape.
+scope_only_reads_closure <- function(expr, scope, lookup) {
+  if (!is.null(literal_function_definition(expr))) {
+    return(TRUE)
+  }
+  if (identical(static_call_name(expr), "force") && length(expr) == 2L &&
+        is_known_base_frame_call(expr, "force", scope, lookup)) {
+    expr <- unparenthesized_value(expr[[2L]])
+  }
+  is_name_part(expr) &&
+    !is.null(scope_closure_binding(rlang::as_name(expr), scope, FALSE))
 }
 
 # Whether a recognized base function is the actual callee, without invoking it.
@@ -4981,7 +5118,7 @@ scope_callee_is_shadowed <- function(callee, name, bound, lookup) {
   is.function(binding) && !identical(binding, get(name, envir = baseenv()))
 }
 
-# Carry visible removals through expressions. Direct inline calls and implicit
+# Carry visible removals through expressions. Literal closures and implicit
 # base local() can carry effects out of a child frame. Conditional removals may
 # run; literal FALSE arms cannot.
 scope_after_removals <- function(expr, scope, lookup) {
@@ -5005,7 +5142,7 @@ scope_after_removals <- function(expr, scope, lookup) {
       expr[[2L]], scope, lookup, read_symbols = no_scope_reads
     )$scope)
   }
-  if (length(bound) == 0L) {
+  if (length(bound) == 0L && !any(lengths(lapply(scope, "[[", "bound")) > 0L)) {
     return(scope)
   }
   if (is_binding_statement(name, expr)) {
@@ -5031,12 +5168,18 @@ scope_after_removals <- function(expr, scope, lookup) {
   }
   mutation <- scope_mutation_call(expr, bound, mutation_lookup)
   head <- static_call_head(expr)
-  definition <- inline_function_definition(expr)
+  closure <- scope_call_closure(expr, scope)
   parts <- c(
     scope_call_args(expr, name, bound, lookup), evaluated_language_parts(expr)
   )
-  if (!is.null(definition)) {
-    after <- scope_after_inline_call(expr, definition, scope, lookup)
+  if (!is.null(closure)) {
+    if (is_name_part(unparenthesized_value(head))) {
+      scope <- scope_after_promise(
+        rlang::as_name(unparenthesized_value(head)), scope, lookup,
+        function_lookup = is_name_part(head)
+      )
+    }
+    after <- scope_after_closure_call(expr, closure, scope, lookup)
     scope <- after[-1L]
     parts <- c(after[[1L]]$arguments, after[[1L]]$dots, after[[1L]]$unmatched)
   } else if (is_name_part(head)) {
@@ -5075,6 +5218,9 @@ scope_forget_kinds <- function(scope, assigned) {
     } else {
       frame$kinds[!names(frame$kinds) %in% assigned]
     }
+    frame$closures <- frame$closures[
+      names(frame$closures) %in% names(frame$kinds)
+    ]
     frame
   })
 }
@@ -5098,6 +5244,10 @@ scope_possible_losses <- function(scope, after) {
       identical(frame$kinds[[name]], reached$kinds[[name]])
     }, logical(1))
     frame$kinds <- frame$kinds[stable]
+    stable_closures <- vapply(names(frame$closures), function(name) {
+      identical(frame$closures[[name]], reached$closures[[name]])
+    }, logical(1))
+    frame$closures <- frame$closures[stable_closures]
     frame
   }, scope, after)
 }
@@ -5143,7 +5293,7 @@ scope_after_removal_call <- function(expr, scope, lookup) {
   targets <- if (is.atomic(inherits) && !is.object(inherits) &&
                    length(inherits) > 0L &&
                    isTRUE(as.logical(inherits[[1L]]))) {
-    seq.int(index, length(scope))
+    scope_visible_frames(scope, index)
   } else {
     index
   }
@@ -5207,7 +5357,7 @@ static_frame_depth_argument <- function(expr) {
 # Bare call heads skip known non-functions in those frames.
 is_known_base_frame_call <- function(expr, name, scope, lookup) {
   function_lookup <- is_name_part(static_call_head(expr))
-  shadowed <- any(vapply(scope, function(frame) {
+  shadowed <- any(vapply(scope[scope_visible_frames(scope)], function(frame) {
     name %in% frame$bound &&
       (!function_lookup || !identical(frame$kinds[[name]], "value"))
   }, logical(1)))
@@ -5223,6 +5373,7 @@ retain_scope_bindings <- function(frame, bound) {
     frame$dots <- NULL
   }
   frame$kinds <- frame$kinds[names(frame$kinds) %in% bound]
+  frame$closures <- frame$closures[names(frame$closures) %in% bound]
   frame
 }
 
