@@ -1178,8 +1178,14 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
         data_vars = operation$data_vars,
         group_vars = group_vars
       )
+      public_dot_names <- names(dots)
+      if (identical(operation$backend$kind, "local")) {
+        # A local frame discards its Assigned summary name (ADR 0028).
+        # The branch checks the names its value actually retains.
+        public_dot_names[!is.na(summaries$assigned_names)] <- ""
+      }
       summary_output_names <- unique(c(
-        names(dots)[nzchar(names(dots))],
+        public_dot_names[nzchar(public_dot_names)],
         summary_plan$predictable_names,
         known_summary_output_names(
           dots, selection_proxy,
@@ -1201,6 +1207,7 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
         "a summary output"
       )
       reserved_names <- unique(c(
+        names(dots),
         operation$data_vars,
         summary_output_names,
         summary_frame_candidates(dots),
