@@ -202,3 +202,109 @@ test_that("qualified selections request dtplyr types only when needed", {
     list("region")
   )
 })
+
+test_that("qualified parentheses retain forwarded lexical selections", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.frame(a = c("east", "west"), b = 1:2)
+  derived <- dplyr::mutate(dtplyr::lazy_dt(data), label = paste0(a, "!"))
+  make_selection <- function(col, pick = "b") {
+    rlang::quo(c(base::`(`({{ col }}), b))
+  }
+  pick <- "a"
+  selections <- list(
+    make_selection("a"), make_selection(.env$pick), make_selection(all_of("a"))
+  )
+  for (selection in selections) {
+    selected <- names(tidyselect::eval_select(selection, data))
+    expect_identical(selected, c("a", "b"))
+    expect_identical(
+      inspect_grouping(derived, .by = !!selection, .format = "list")$fixed,
+      list(selected)
+    )
+    expect_identical(
+      inspect_grouping(
+        derived, .grouping = grouping_set(!!selection), .format = "list"
+      )$included,
+      list(selected)
+    )
+  }
+})
+
+test_that("forwarded ordinary caller code keeps mixed-selection evaluation", {
+  data <- data.frame(a = c("east", "west"), b = 1:2)
+  calls <- 0L
+  choose <- function() {
+    calls <<- calls + 1L
+    "a"
+  }
+  make_selection <- function(col) rlang::quo(c(base::`(`({{ col }}), b))
+  selection <- make_selection(choose())
+  selected <- names(tidyselect::eval_select(selection, data))
+  expect_identical(selected, c("a", "b"))
+  expect_identical(calls, 1L)
+
+  calls <- 0L
+  grouping <- grouping_sets(grouping_set(!!selection), where(is.logical))
+  expect_identical(
+    inspect_grouping(data, .grouping = grouping, .format = "list")$included,
+    list(selected, character())
+  )
+  expect_identical(calls, 1L)
+})
+
+test_that("forwarded ordinary predicates retain typed dtplyr refusal", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.frame(a = c("east", "west"), b = 1:2)
+  derived <- dplyr::mutate(dtplyr::lazy_dt(data), label = paste0(a, "!"))
+  make_selection <- function(col) rlang::quo(c(base::`(`({{ col }}), b))
+  through_closure <- function(col) {
+    rlang::quo(c(base::`(`((function(pick) {{ col }})("b")), b))
+  }
+  pick <- is.character
+  selections <- list(
+    make_selection(is.character), make_selection(where(is.character)),
+    through_closure(pick)
+  )
+  for (selection in selections) {
+    selected <- names(tidyselect::eval_select(selection, data))
+    expect_identical(selected, c("a", "b"))
+    expect_error(
+      inspect_grouping(derived, .by = !!selection),
+      "Can't safely determine column metadata", class = "marginplyr_error"
+    )
+    expect_error(
+      inspect_grouping(derived, .grouping = grouping_set(!!selection)),
+      "Can't safely determine column metadata", class = "marginplyr_error"
+    )
+  }
+})
+
+test_that("missing forwarded ordinary names fail before DuckDB sends", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  data <- data.frame(a = c("east", "west"), b = 1:2)
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE))
+  remote <- dplyr::copy_to(con, data, "forwarded_qualified_parentheses")
+  counter <- duckdb_query_counter()
+  on.exit(counter$untrace(), add = TRUE, after = FALSE)
+  expect_identical(DBI::dbGetQuery(con, "SELECT 1 AS n")$n, 1L)
+  expect_identical(counter$queries, 1L)
+  counter$queries <- 0L
+
+  make_selection <- function(col, pick = "b") {
+    rlang::quo(c(base::`(`({{ col }}), b))
+  }
+  pick <- "absent"
+  for (selection in list(make_selection("absent"), make_selection(.env$pick))) {
+    original <- expect_error(tidyselect::eval_select(selection, data), "absent")
+    fixed <- expect_error(inspect_grouping(remote, .by = !!selection), "absent")
+    dimensions <- expect_error(inspect_grouping(
+      remote, .grouping = grouping_set(!!selection)
+    ), "absent")
+    for (actual in list(fixed, dimensions)) {
+      expect_identical(class(actual), class(original))
+      expect_identical(conditionMessage(actual), conditionMessage(original))
+    }
+    expect_identical(counter$queries, 0L)
+  }
+})

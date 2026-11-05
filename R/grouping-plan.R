@@ -633,6 +633,16 @@ is_name_only_helper_arg <- function(expr,
                                     allow_caller_code = TRUE,
                                     allow_stringr_pattern = FALSE,
                                     allow_env_pronoun = FALSE) {
+  if (rlang::is_quosure(expr)) {
+    # Captured syntax keeps ordinary argument evaluation in its own scope;
+    # enclosing closure formals do not bind names inside that scope.
+    return(is_name_only_helper_arg(
+      rlang::quo_get_expr(expr), rlang::quo_get_env(expr), seen = seen,
+      allow_caller_code = allow_caller_code,
+      allow_stringr_pattern = allow_stringr_pattern,
+      allow_env_pronoun = allow_env_pronoun
+    ))
+  }
   if (is_name_part(expr)) {
     name <- as.character(expr)
     if (name %in% bound) {
