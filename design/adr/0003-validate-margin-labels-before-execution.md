@@ -26,3 +26,11 @@ above. See ADR 0020.
 The "every backend" clause in the amendment above is superseded by #492.
 ADR 0020's amendment *declared factor levels are not metadata on Arrow* owns
 the Arrow exception and the rule that it adds no read.
+
+## Amendment: settled label names are local preflight (#1308)
+
+When fixed keys and Margin dimensions are settled from local names, named
+Margin label coverage is checked with the other Grouping-plan name rules
+before typed metadata acquisition, as ADR 0005 requires. Unresolved typed
+selections defer that check until the canonical plan is available. Type,
+factor, and collision validation remain at the execution boundary above.
