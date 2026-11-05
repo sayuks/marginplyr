@@ -171,3 +171,70 @@ test_that("caller-written ordering helpers keep ordinary lexical lookup", {
   expect_identical(counted$n, c(1L, 1L, 1L))
   expect_identical(reads, 0L)
 })
+
+test_that("generated Margin order avoids the caller namespace operator", {
+  skip_if_suggest_absent("dtplyr")
+  source <- data.table::data.table(
+    g = c("a", "a"), h = c("x", "y"), x = c(1, 3)
+  )
+  source_bytes <- serialize(source, NULL)
+  expected <- summarize_with_margins(
+    source, value = sum(x), .grouping = rollup(g, h), .sort = "last"
+  )
+
+  for (install_before in c(TRUE, FALSE)) {
+    root <- new.env(parent = globalenv())
+    root$source <- source
+    helper_calls <- character()
+    caller_calls <- character()
+    dispatcher <- function(pkg, name) {
+      package <- as.character(substitute(pkg))
+      member <- as.character(substitute(name))
+      if (identical(package, "base")) {
+        if (member %in% c("is.na", "%in%")) {
+          helper_calls <<- c(helper_calls, member)
+          stop("GENERATED_ORDER_NAMESPACE_INTERCEPT")
+        }
+        if (identical(member, "sum")) {
+          caller_calls <<- c(caller_calls, member)
+        }
+      }
+      getExportedValue(package, member)
+    }
+    if (install_before) root$`::` <- dispatcher
+    input <- evalq(dtplyr::lazy_dt(source), root)
+    root$input <- input
+    query <- evalq(summarize_with_margins(
+      input, value = sum(x), .grouping = rollup(g, h), .sort = "last"
+    ), root)
+    expect_s3_class(query, "dtplyr_step")
+    expect_identical(helper_calls, character())
+    expect_identical(caller_calls, character())
+    if (!install_before) root$`::` <- dispatcher
+
+    actual <- dplyr::collect(query)
+    expect_equal(as.data.frame(actual), as.data.frame(expected))
+    expect_identical(helper_calls, character())
+    expect_identical(serialize(root$source, NULL), source_bytes)
+
+    helper_calls <- character()
+    unsorted <- evalq(summarize_with_margins(
+      input, value = sum(x), .grouping = rollup(g, h), .sort = "none"
+    ), root)
+    expected_unsorted <- summarize_with_margins(
+      source, value = sum(x), .grouping = rollup(g, h), .sort = "none"
+    )
+    expect_equal(as.data.frame(dplyr::collect(unsorted)),
+                 as.data.frame(expected_unsorted))
+    expect_identical(helper_calls, character())
+
+    # A namespace expression written by the caller retains its normal lookup.
+    namespaced <- evalq(summarize_with_margins(
+      input, value = base::sum(x), .grouping = rollup(g, h), .sort = "last"
+    ), root)
+    expect_identical(caller_calls, character())
+    expect_identical(dplyr::collect(namespaced)$value, expected$value)
+    expect_true("sum" %in% caller_calls)
+    expect_identical(helper_calls, character())
+  }
+})
