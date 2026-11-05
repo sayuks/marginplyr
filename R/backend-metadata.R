@@ -93,7 +93,7 @@ isolated_dtplyr_proxy <- function(.data, env = .data[["env"]]) {
   utils::head(as_data_table(proxy), n = 0L)
 }
 
-# Whether lexical lookup finds an ordinary base binding without
+# Whether function lookup reaches the requested base function without
 # evaluating an active binding or forcing a promise.
 dtplyr_base_binding <- function(name, env) {
   while (!identical(env, emptyenv())) {
@@ -102,10 +102,14 @@ dtplyr_base_binding <- function(name, env) {
             rlang::env_binding_are_lazy(env, name)) {
         return(FALSE)
       }
+      value <- rlang::env_get(env, name)
       # An omitted formal is a missing value here rather than a lookup error.
-      return(identical(
-        rlang::env_get(env, name), get(name, envir = baseenv())
-      ))
+      if (rlang::is_missing(value)) {
+        return(FALSE)
+      }
+      if (is.function(value)) {
+        return(identical(value, get(name, envir = baseenv())))
+      }
     }
     env <- parent.env(env)
   }

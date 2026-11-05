@@ -1,56 +1,36 @@
 test_that("typed derived plans refuse caller brackets without running them", {
   skip_if_suggest_absent("dtplyr")
   # dtplyr imports data.table; only dtplyr is an optional backend here.
-  source <- data.table::data.table(g = c("a", "b"), value = 1:2)
-  before <- data.table::copy(source)
-  calls <- integer()
-  step <- local({
-    `[` <- function(x, ...) {
-      calls <<- c(calls, nrow(x))
-      result <- base::`[`(x, ...)
-      if (nrow(result) == 0L) {
-        data.table::set(result, j = "g", value = integer())
-      }
-      result
-    }
-    dplyr::mutate(dtplyr::lazy_dt(source), derived = value + 1L)
-  })
+  fixture <- dtplyr_caller_bracket_fixture()
+  source <- fixture$source
+  before <- fixture$before
+  step <- fixture$step
   explicit <- dplyr::collect(step)
   expect_identical(explicit, tibble::tibble(
     g = c("a", "b"), value = 1:2, derived = 2:3
   ))
-  expect_identical(calls, 2L)
-  calls <- integer()
+  expect_identical(fixture$calls, 2L)
+  fixture$calls <- integer()
   expect_identical(
     inspect_grouping(step, .grouping = rollup(g)),
     inspect_grouping(explicit, .grouping = rollup(g))
   )
-  expect_identical(calls, integer())
+  expect_identical(fixture$calls, integer())
   expect_error(
     inspect_grouping(step, .grouping = rollup(where(is.character))),
     "Can't safely determine column metadata", fixed = TRUE,
     class = "marginplyr_error"
   )
-  expect_identical(calls, integer())
+  expect_identical(fixture$calls, integer())
   expect_identical(source, before)
 })
 
 test_that("fixed keys and both Nest verbs refuse a caller bracket before use", {
   skip_if_suggest_absent("dtplyr")
-  source <- data.table::data.table(g = c("a", "b"), value = 1:2)
-  before <- data.table::copy(source)
-  calls <- integer()
-  step <- local({
-    `[` <- function(x, ...) {
-      calls <<- c(calls, nrow(x))
-      result <- base::`[`(x, ...)
-      if (nrow(result) == 0L) {
-        data.table::set(result, j = "g", value = integer())
-      }
-      result
-    }
-    dplyr::mutate(dtplyr::lazy_dt(source), derived = value + 1L)
-  })
+  fixture <- dtplyr_caller_bracket_fixture()
+  source <- fixture$source
+  before <- fixture$before
+  step <- fixture$step
   expect_error(inspect_grouping(step, .by = where(is.character)),
                "dplyr::collect()", fixed = TRUE, class = "marginplyr_error")
   for (verb in list(nest_with_margins, nest_by_with_margins)) {
@@ -59,7 +39,7 @@ test_that("fixed keys and both Nest verbs refuse a caller bracket before use", {
     expect_error(verb(step, .grouping = rollup(where(is.character))),
                  "dplyr::collect()", fixed = TRUE, class = "marginplyr_error")
   }
-  expect_identical(calls, integer())
+  expect_identical(fixture$calls, integer())
   expect_identical(source, before)
 })
 
@@ -83,6 +63,9 @@ test_that("typed derived metadata does not look up active or lazy brackets", {
         }, binding_env)
       }
       caller <- if (inherited) new.env(parent = binding_env) else binding_env
+      if (inherited) {
+        caller$`[` <- NULL
+      }
       step <- eval(quote(dplyr::mutate(
         dtplyr::lazy_dt(source), derived = value + 1L
       )), caller)
@@ -163,11 +146,6 @@ test_that("join metadata checks the effective outer bracket environment", {
 
 test_that("base brackets preserve typed derived plans and nesting cells", {
   skip_if_suggest_absent("dtplyr")
-  normalize <- function(x) {
-    x <- dplyr::ungroup(dplyr::collect(x))
-    x$data <- lapply(x$data, tibble::as_tibble)
-    x
-  }
   source <- data.table::data.table(g = c("a", "b"), value = 1:2)
   before <- data.table::copy(source)
   step <- local({
@@ -186,11 +164,15 @@ test_that("base brackets preserve typed derived plans and nesting cells", {
   )
   for (verb in list(nest_with_margins, nest_by_with_margins)) {
     expect_identical(
-      normalize(verb(step, .grouping = rollup(where(is.character)))),
-      normalize(verb(explicit, .grouping = rollup(g)))
+      dtplyr_metadata_nest_result(verb(
+        step, .grouping = rollup(where(is.character))
+      )),
+      dtplyr_metadata_nest_result(verb(explicit, .grouping = rollup(g)))
     )
-    expect_identical(normalize(verb(step, .by = where(is.character))),
-                     normalize(verb(explicit, .by = g)))
+    expect_identical(
+      dtplyr_metadata_nest_result(verb(step, .by = where(is.character))),
+      dtplyr_metadata_nest_result(verb(explicit, .by = g))
+    )
   }
   expect_identical(source, before)
 })
@@ -215,5 +197,75 @@ test_that("root metadata needs no caller bracket binding", {
   expect_identical(inspect_grouping(root, .by = where(is.character)),
                    inspect_grouping(explicit, .by = g))
   expect_identical(lookups, 0L)
+  expect_identical(source, before)
+})
+
+test_that("non-functions retain base-dispatch typed plans and Nest cells", {
+  skip_if_suggest_absent("dtplyr")
+  for (binding in c("[", "+")) {
+    for (value in list(NULL, 42L)) {
+      for (inherited in c(FALSE, TRUE)) {
+        source <- data.table::data.table(g = c("a", "b"), value = 1:2)
+        before <- data.table::copy(source)
+        binding_env <- new.env(parent = environment())
+        assign(binding, value, envir = binding_env)
+        caller <- binding_env
+        if (inherited) {
+          caller <- new.env(parent = binding_env)
+          assign(binding, numeric(), envir = caller)
+        }
+        step <- eval(quote(dplyr::mutate(
+          dtplyr::lazy_dt(source), derived = value + 1L
+        )), caller)
+        explicit <- dplyr::collect(step)
+        expect_identical(explicit, tibble::tibble(
+          g = c("a", "b"), value = 1:2, derived = 2:3
+        ))
+        expect_identical(
+          inspect_grouping(step, .grouping = rollup(g)),
+          inspect_grouping(explicit, .grouping = rollup(g))
+        )
+        expect_identical(
+          inspect_grouping(step, .grouping = rollup(where(is.character))),
+          inspect_grouping(explicit, .grouping = rollup(g))
+        )
+        expect_identical(
+          inspect_grouping(step, .by = where(is.character)),
+          inspect_grouping(explicit, .by = g)
+        )
+        for (verb in list(nest_with_margins, nest_by_with_margins)) {
+          expect_identical(
+            dtplyr_metadata_nest_result(verb(
+              step, .grouping = rollup(where(is.character))
+            )),
+            dtplyr_metadata_nest_result(verb(explicit, .grouping = rollup(g)))
+          )
+          expect_identical(
+            dtplyr_metadata_nest_result(verb(step, .by = where(is.character))),
+            dtplyr_metadata_nest_result(verb(explicit, .by = g))
+          )
+        }
+        expect_identical(source, before)
+      }
+    }
+  }
+})
+
+test_that("typed derived metadata refuses missing caller brackets safely", {
+  skip_if_suggest_absent("dtplyr")
+  source <- data.table::data.table(g = c("a", "b"), value = 1:2)
+  before <- data.table::copy(source)
+  make_step <- function(`[`) {
+    dplyr::mutate(dtplyr::lazy_dt(source), derived = value + 1L)
+  }
+  step <- make_step()
+  expect_identical(inspect_grouping(step, .grouping = rollup(g))$included,
+                   c("(g)", "()"))
+  expect_error(inspect_grouping(step, .by = where(is.character)),
+               "dplyr::collect()", fixed = TRUE, class = "marginplyr_error")
+  for (verb in list(nest_with_margins, nest_by_with_margins)) {
+    expect_error(verb(step, .by = where(is.character)),
+                 "dplyr::collect()", fixed = TRUE, class = "marginplyr_error")
+  }
   expect_identical(source, before)
 })

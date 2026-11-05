@@ -33,11 +33,6 @@ test_that("immutable root typed plans ignore a caller head binding", {
 
 test_that("immutable root nesting preserves partitions despite a caller head", {
   skip_if_suggest_absent("dtplyr")
-  normalize <- function(x) {
-    x <- dplyr::ungroup(dplyr::collect(x))
-    x$data <- lapply(x$data, tibble::as_tibble)
-    x
-  }
   for (mutating in c(FALSE, TRUE)) {
     source <- data.table::data.table(g = c("a", "b"), value = 1:2)
     before <- data.table::copy(source)
@@ -56,9 +51,13 @@ test_that("immutable root nesting preserves partitions despite a caller head", {
     explicit <- dplyr::collect(root)
     expect_identical(calls, integer())
     for (verb in list(nest_with_margins, nest_by_with_margins)) {
-      fixed <- normalize(verb(root, .by = where(is.character), .sort = "last"))
+      fixed <- dtplyr_metadata_nest_result(verb(
+        root, .by = where(is.character), .sort = "last"
+      ))
       expect_identical(
-        fixed, normalize(verb(explicit, .by = g, .sort = "last"))
+        fixed, dtplyr_metadata_nest_result(verb(
+          explicit, .by = g, .sort = "last"
+        ))
       )
       expect_identical(fixed$g, c("a", "b"))
       expect_identical(
@@ -67,10 +66,10 @@ test_that("immutable root nesting preserves partitions despite a caller head", {
       expect_identical(calls, integer())
       expect_identical(source, before)
 
-      margins <- normalize(verb(
+      margins <- dtplyr_metadata_nest_result(verb(
         root, .grouping = rollup(where(is.character)), .sort = "last"
       ))
-      expect_identical(margins, normalize(verb(
+      expect_identical(margins, dtplyr_metadata_nest_result(verb(
         explicit, .grouping = rollup(g), .sort = "last"
       )))
       expect_identical(margins$g, c("a", "b", "Total"))
