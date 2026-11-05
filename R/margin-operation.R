@@ -262,6 +262,7 @@ prepare_margin_operation <- function(.data,
                                      call = rlang::caller_call()) {
   stopifnot(rlang::is_quosure(by_quo), rlang::is_quosure(grouping_quo))
   stopifnot(is.null(validate_grouping) || is.function(validate_grouping))
+  stopifnot(is.null(validate_plan_names) || is.function(validate_plan_names))
   stopifnot(is.function(carried_columns))
 
   with_margin_error_call(
@@ -290,7 +291,14 @@ prepare_margin_operation <- function(.data,
         duplicates_choices = duplicates_choices,
         builds_margin_branches = TRUE,
         validate_grouping = validate_grouping,
-        validate_plan_names = validate_plan_names,
+        validate_plan_names = function(by, dimensions) {
+          if (!is.null(validate_plan_names)) {
+            validate_plan_names(by, dimensions)
+          }
+          if (!is.null(by) && !is.null(dimensions)) {
+            validate_margin_label_names(.margin_label, dimensions, by)
+          }
+        },
         validate_names = function(data_vars) {
           check_margin_id_collision(
             set_id_name,
