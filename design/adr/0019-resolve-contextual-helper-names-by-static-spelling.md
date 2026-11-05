@@ -720,11 +720,11 @@ also rejected because it would change the unparenthesized control's evaluation.
 
 ## Amendment: isolate generated namespace operations
 
-#1311 closes the lookup of namespace operators introduced by the local summary
-rewrite. Generated selection captures and nested-mask thunks carry the selected
-function value. A local Contextual selection that dplyr evaluates at runtime
-binds the base namespace operator in its generated head; a selection dplyr
-expands syntactically retains the recognized qualified spelling. The expression
+#1311 isolates generated selection captures and nested-mask thunks from caller
+namespace-operator bindings: those calls carry the selected function value.
+Local Contextual selections rewritten for runtime evaluation bind the base
+namespace operator in their generated head; calls left for dplyr's syntactic
+expansion retain the recognized qualified spelling. The expression
 walker carries that distinction into function bodies, defaults and computed
 heads, where dplyr does not expand `pick()`.
 
