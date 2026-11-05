@@ -404,6 +404,18 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
         )
         state$name_rules_expr <- deparse1(state$name_rules)
         dot_env <- rlang::quo_get_env(dot)
+        binding <- new_margin_internal_names(
+          1L, c(all.names(expr), ls(dot_env, all.names = TRUE)),
+          "..marginplyr_glue_name_"
+        )
+        while (exists(binding, envir = dot_env, inherits = TRUE)) {
+          binding <- paste0(binding, "_")
+        }
+        dot_env <- rlang::env(dot_env)
+        # Only the generated interpolation calls this selected function;
+        # namespace expressions in the caller's template retain their lookup.
+        rlang::env_poke(dot_env, binding, local_checked_glue_name)
+        state$glue_name_expr <- binding
         if (!is.null(alias_state)) {
           binding <- new_margin_internal_names(
             1L, c(all.names(expr), ls(dot_env, all.names = TRUE)),
@@ -483,7 +495,7 @@ local_checked_unpack_arg <- function(value, state) {
   }
   spec <- if (isTRUE(value)) "{outer}_{inner}" else value
   paste0(
-    "{marginplyr:::local_checked_glue_name(",
+    "{", state$glue_name_expr, "(",
     deparse1(spec), ", ",
     state$name_rules_expr, ")}"
   )
@@ -524,7 +536,7 @@ local_checked_across_names_arg <- function(value, state) {
     return(value)
   }
   paste0(
-    "{marginplyr:::local_checked_glue_name(",
+    "{", state$glue_name_expr, "(",
     deparse1(value), ", ",
     state$name_rules_expr, ")}"
   )
