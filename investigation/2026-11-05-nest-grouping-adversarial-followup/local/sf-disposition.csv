@@ -1,0 +1,33 @@
+"empty","verb","keep","role","status","message"
+FALSE,"nest_with_margins",FALSE,"dimension","error","attr(obj, ""sf_column"") does not point to a geometry column.
+Did you rename it, without setting st_geometry(obj) <- ""newname""?"
+FALSE,"nest_with_margins",FALSE,"fixed","match",""
+FALSE,"nest_with_margins",FALSE,"payload","match",""
+FALSE,"nest_with_margins",TRUE,"dimension","error","attr(obj, ""sf_column"") does not point to a geometry column.
+Did you rename it, without setting st_geometry(obj) <- ""newname""?"
+FALSE,"nest_with_margins",TRUE,"fixed","match",""
+FALSE,"nest_with_margins",TRUE,"payload","match",""
+FALSE,"nest_by_with_margins",FALSE,"dimension","error","attr(obj, ""sf_column"") does not point to a geometry column.
+Did you rename it, without setting st_geometry(obj) <- ""newname""?"
+FALSE,"nest_by_with_margins",FALSE,"fixed","match",""
+FALSE,"nest_by_with_margins",FALSE,"payload","match",""
+FALSE,"nest_by_with_margins",TRUE,"dimension","error","attr(obj, ""sf_column"") does not point to a geometry column.
+Did you rename it, without setting st_geometry(obj) <- ""newname""?"
+FALSE,"nest_by_with_margins",TRUE,"fixed","match",""
+FALSE,"nest_by_with_margins",TRUE,"payload","match",""
+TRUE,"nest_with_margins",FALSE,"dimension","error","attr(obj, ""sf_column"") does not point to a geometry column.
+Did you rename it, without setting st_geometry(obj) <- ""newname""?"
+TRUE,"nest_with_margins",FALSE,"fixed","match",""
+TRUE,"nest_with_margins",FALSE,"payload","match",""
+TRUE,"nest_with_margins",TRUE,"dimension","error","attr(obj, ""sf_column"") does not point to a geometry column.
+Did you rename it, without setting st_geometry(obj) <- ""newname""?"
+TRUE,"nest_with_margins",TRUE,"fixed","match",""
+TRUE,"nest_with_margins",TRUE,"payload","match",""
+TRUE,"nest_by_with_margins",FALSE,"dimension","error","attr(obj, ""sf_column"") does not point to a geometry column.
+Did you rename it, without setting st_geometry(obj) <- ""newname""?"
+TRUE,"nest_by_with_margins",FALSE,"fixed","match",""
+TRUE,"nest_by_with_margins",FALSE,"payload","match",""
+TRUE,"nest_by_with_margins",TRUE,"dimension","error","attr(obj, ""sf_column"") does not point to a geometry column.
+Did you rename it, without setting st_geometry(obj) <- ""newname""?"
+TRUE,"nest_by_with_margins",TRUE,"fixed","match",""
+TRUE,"nest_by_with_margins",TRUE,"payload","match",""

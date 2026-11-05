@@ -1,0 +1,29 @@
+                   status
+family              error match
+  array_1               0    48
+  array_3               0    48
+  complex               0    48
+  double_nan            0    48
+  double_zero           0    48
+  factor_missing_na     0    48
+  factor_na             0    48
+  list_exprs            0    48
+  list_frames           0    48
+  list_matrix           0    48
+  list_names            0    48
+  list_nested           0    48
+  list_vectors          0    48
+  matrix                0    48
+  packed_nested         0    48
+  packed_zero           0    48
+  raw                  48     0
+ family empty    by status
+    raw FALSE FALSE  error
+    raw FALSE  TRUE  error
+    raw  TRUE FALSE  error
+    raw  TRUE  TRUE  error
+                                                                                                                            message
+ A typed-missing `.margin_label` cannot be represented for:\nℹ `g`.\nℹ Choose a supported non-missing label or change the grouping.
+ A typed-missing `.margin_label` cannot be represented for:\nℹ `g`.\nℹ Choose a supported non-missing label or change the grouping.
+ A typed-missing `.margin_label` cannot be represented for:\nℹ `g`.\nℹ Choose a supported non-missing label or change the grouping.
+ A typed-missing `.margin_label` cannot be represented for:\nℹ `g`.\nℹ Choose a supported non-missing label or change the grouping.

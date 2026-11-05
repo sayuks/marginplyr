@@ -1,0 +1,8 @@
+ style masked position                 verb correct construction_events
+  full   TRUE grouping     inspect_grouping   FALSE                 0,0
+  full   TRUE grouping    nest_with_margins   FALSE                 0,0
+  full   TRUE grouping nest_by_with_margins   FALSE             0,0,2,2
+  full   TRUE    fixed     inspect_grouping   FALSE                 0,0
+  full   TRUE    fixed    nest_with_margins   FALSE                 0,0
+  full   TRUE    fixed nest_by_with_margins   FALSE             0,0,2,2
+observations: 72 ; expected output: 66 ; wrong output: 6
