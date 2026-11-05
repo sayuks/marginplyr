@@ -260,3 +260,81 @@ test_that("mask and local bindings cannot claim an external environment", {
     class = "marginplyr_error"
   )
 })
+
+test_that("literal mask reads follow both share dependency rules", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(100, 300))
+  calls <- 0L
+  observe <- function(value) {
+    calls <<- calls + 1L
+    sum(value)
+  }
+  reads <- alist(
+    parent.env(environment())$prior,
+    parent.env(environment())[["prior"]],
+    rlang::env_get(rlang::current_env(), "prior", inherit = TRUE)
+  )
+
+  for (kind in c("parent", "total")) {
+    share <- rlang::call2(paste0("share_of_", kind), quote(source))
+    for (read in reads) {
+      expect_error(
+        summarize_with_margins(
+          data, prior = sum(x), source = observe(!!read), ratio = !!share,
+          .grouping = rollup(g)
+        ),
+        "depends on earlier summary alias `prior`",
+        class = "marginplyr_error"
+      )
+      expect_error(
+        summarize_with_margins(
+          data, source = sum(x), prior = !!share, observed = observe(!!read),
+          .grouping = rollup(g)
+        ),
+        paste0("Ordinary summaries cannot use an earlier ",
+               if (kind == "parent") "Parent" else "Total", " share"),
+        class = "marginplyr_error"
+      )
+    }
+  }
+  expect_identical(calls, 0L)
+})
+
+test_that("literal reads from independent environments remain independent", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(100, 300))
+  external <- rlang::new_environment(list(prior = 7), parent = emptyenv())
+  environment <- function() new.env(parent = external)
+  reads <- alist(
+    external$prior,
+    external[["prior"]],
+    parent.env(environment())$prior,
+    rlang::env_get(external, "prior", inherit = TRUE),
+    (function(prior) {
+      rlang::env_get(rlang::current_env(), "prior", inherit = TRUE)
+    })(7),
+    (function(prior) (function() parent.env(base::environment())$prior)())(7),
+    rlang::env_get(rlang::current_env(), "prior", default = 7),
+    rlang::env_get(
+      rlang::current_env(), "prior", default = 7, inherit = TRUE,
+      last = rlang::current_env()
+    )
+  )
+
+  for (kind in c("parent", "total")) {
+    share <- rlang::call2(paste0("share_of_", kind), quote(source))
+    for (read in reads) {
+      forward <- summarize_with_margins(
+        data, source = sum(x), prior = !!share, observed = !!read,
+        .grouping = rollup(g)
+      )
+      expect_equal(forward$prior, c(0.25, 0.75, 1))
+      expect_equal(forward$observed, c(7, 7, 7))
+
+      reverse <- summarize_with_margins(
+        data, prior = sum(x), source = !!read, ratio = !!share,
+        .grouping = rollup(g)
+      )
+      expect_equal(reverse$source, c(7, 7, 7))
+      expect_equal(reverse$ratio, c(1, 1, 1))
+    }
+  }
+})

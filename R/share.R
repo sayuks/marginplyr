@@ -4299,6 +4299,13 @@ scoped_data_symbols <- function(expr, scope, lookup) {
       reflective_lookup_symbols(expr, scope_bound_names(scope), lookup)
     )))
   }
+  if (identical(call_name, "env_get") &&
+        identical(static_call_ns(expr), "rlang")) {
+    return(unique(c(
+      call_part_symbols(expr, scope, lookup),
+      inheriting_env_get_symbols(expr, scope, lookup)
+    )))
+  }
   if (is_reflective_evaluation(callee_name)) {
     return(unique(c(
       call_part_symbols(expr, scope, lookup),
@@ -4349,6 +4356,18 @@ scoped_data_symbols <- function(expr, scope, lookup) {
       return(unique(c(target, pronoun_index_symbols(expr, scope, lookup))))
     }
   }
+  if (!is.null(call_name) && call_name %in% c("$", "[[") &&
+        length(expr) == 3L &&
+        is_static_mask_parent(expr[[2L]], scope, lookup) &&
+        is_known_base_frame_call(expr, call_name, scope, lookup)) {
+    if (identical(call_name, "$") && is_name_part(expr[[3L]])) {
+      return(rlang::as_name(expr[[3L]]))
+    }
+    if (rlang::is_string(unparenthesized_value(expr[[3L]]))) {
+      return(unparenthesized_value(expr[[3L]]))
+    }
+  }
+
   # Any other `a$b` or `a@b` names `b` literally: the field or slot name is
   # fixed text rather than a lookup, so only the object is walked. Collecting
   # the name made `cfg$share` claim a dependency on a column named `share`,
@@ -5566,6 +5585,45 @@ lookup_reparented_environments <- function(
     searched_call_parts(expr),
     lookup_reparented_environments, env = env, mask = mask, rebound = rebound
   ), recursive = FALSE))
+}
+
+# Whether a literal parent lookup reaches the mask's column bindings. At
+# summary level dplyr places them in the parent of the evaluation frame.
+# Inside a lexical child, a single parent lookup instead reaches its enclosure.
+is_static_mask_parent <- function(expr, scope, lookup) {
+  if (length(scope) != 1L || !rlang::is_call(expr)) {
+    return(FALSE)
+  }
+  parent <- unparenthesized_call(expr)
+  if (!identical(static_call_name(parent), "parent.env") ||
+        length(parent) != 2L ||
+        !is_known_base_frame_call(parent, "parent.env", scope, lookup)) {
+    return(FALSE)
+  }
+  frame <- parent[[2L]]
+  !missing(frame) &&
+    identical(static_call_name(frame), "environment") &&
+    length(static_call_args(frame)) == 0L &&
+    is_known_base_frame_call(frame, "environment", scope, lookup)
+}
+
+# An inheriting lookup from the current evaluation frame follows the same
+# lexical bindings as a bare name. A supplied stop frame may cut that path.
+inheriting_env_get_symbols <- function(expr, scope, lookup) {
+  args <- static_matched_arguments(expr, rlang::env_get)
+  if ("last" %in% names(args) ||
+        !identical(unparenthesized_value(args$inherit), TRUE) ||
+        !rlang::is_string(unparenthesized_value(args$nm))) {
+    return(character())
+  }
+  frame <- args$env
+  if (missing(frame) || !identical(static_call_name(frame), "current_env") ||
+        !identical(static_call_ns(frame), "rlang") ||
+        length(static_call_args(frame)) != 0L) {
+    return(character())
+  }
+  name <- unparenthesized_value(args$nm)
+  scoped_data_symbols(rlang::sym(name), scope, lookup)
 }
 
 # The names a reflective lookup resolves in the mask.
