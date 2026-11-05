@@ -23,6 +23,31 @@ change: new features, bug fixes and substantial documentation improvements.
 This applies to maintainer changes and external contributions alike. Internal
 refactoring and minor documentation edits may omit a bullet.
 
+Assess the effect on someone using the documented public interface, rather
+than the files touched. A change needs a bullet when it changes results,
+types, names or Margin order; accepted inputs or options; actionable
+diagnostics; backend support; execution timing or queries; or meaningful
+performance characteristics. A new vignette or a substantial new usage guide
+also merits a bullet. Pure refactoring, tests, CI maintenance and typo fixes
+may omit one when they change none of those user-facing effects. For a
+borderline change, identify the public behavior or guidance that differs.
+
+These examples make the [Tidyverse NEWS criterion][news-guide] concrete for
+this repository; they are not an exhaustive checklist from that guide. The
+guide recommends highlighting sweeping documentation changes and new
+vignettes; this repository requires substantial documentation improvements
+to be recorded.
+
+Complete and commit the required NEWS entry before invoking Review-ready.
+If contributor credit needs a PR number that is not yet available, open a
+draft PR first, then add the number, commit, run Review-ready and mark the PR
+ready. Later NEWS edits follow [revision freshness and scope][local-scope];
+a prior result certifies only its submitted SHA.
+
+NEWS necessity, accuracy and contributor credit are checked during preparation
+and review. No additional NEWS CI gate is required: whether the change affects
+users needs semantic judgment, and a NEWS file diff alone cannot establish it.
+
 Describe the resulting behavior from the user's perspective. For a PR whose
 author is not listed in `DESCRIPTION`'s `Authors@R`, end the bullet with
 `(@handle, #PR)` before the final period. Use the author's GitHub handle and
@@ -36,9 +61,7 @@ For example, with illustrative placeholders:
 * `example()` now preserves missing values (@contributor, #1234).
 ```
 
-This follows the [Tidyverse NEWS guide](https://style.tidyverse.org/news.html#in-development).
-Before merging, check whether the diff needs a NEWS bullet and whether the
-bullet records the applicable contributor credit.
+This follows the [Tidyverse NEWS guide][news-guide].
 
 ## Body and comments
 
@@ -130,3 +153,6 @@ Spec: <originating issue/spec; findings and dispositions, or zero findings>
 
 If no review ran, replace that example with an explicit statement:
 `No code review ran for <SHA>.` A verification pass is not a review record.
+
+[news-guide]: https://style.tidyverse.org/news.html#in-development
+[local-scope]: local-checks.md#boundary-and-scope
