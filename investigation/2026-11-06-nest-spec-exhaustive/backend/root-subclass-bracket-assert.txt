@@ -1,0 +1,6 @@
+Dispatch: [; source row counts received: 2,0,0
+Native g: a,b; inspected included: ()
+Plain data.table control: (g), no custom callback
+Error in main() : identical(result$included, "(g)") is not TRUE
+Calls: main -> stopifno
+Execution halted

@@ -1,0 +1,51 @@
+Suffix observations: 24 Matched recorded boundary: 24 Upstream callbacks: 0
+             consumer         input           shape predicate_reads duplicate
+     inspect_grouping         local    fixed_single               0      TRUE
+     inspect_grouping         local       fixed_two               0      TRUE
+     inspect_grouping         local variable_rollup               3      TRUE
+     inspect_grouping         local   variable_cube               3      TRUE
+     inspect_grouping unsafe_dtplyr    fixed_single               0      TRUE
+     inspect_grouping unsafe_dtplyr       fixed_two               0      TRUE
+     inspect_grouping unsafe_dtplyr variable_rollup               0     FALSE
+     inspect_grouping unsafe_dtplyr   variable_cube               0     FALSE
+    nest_with_margins         local    fixed_single               0      TRUE
+    nest_with_margins         local       fixed_two               0      TRUE
+    nest_with_margins         local variable_rollup               3      TRUE
+    nest_with_margins         local   variable_cube               3      TRUE
+    nest_with_margins unsafe_dtplyr    fixed_single               0      TRUE
+    nest_with_margins unsafe_dtplyr       fixed_two               0      TRUE
+    nest_with_margins unsafe_dtplyr variable_rollup               0     FALSE
+    nest_with_margins unsafe_dtplyr   variable_cube               0     FALSE
+ nest_by_with_margins         local    fixed_single               0      TRUE
+ nest_by_with_margins         local       fixed_two               0      TRUE
+ nest_by_with_margins         local variable_rollup               3      TRUE
+ nest_by_with_margins         local   variable_cube               3      TRUE
+ nest_by_with_margins unsafe_dtplyr    fixed_single               0      TRUE
+ nest_by_with_margins unsafe_dtplyr       fixed_two               0      TRUE
+ nest_by_with_margins unsafe_dtplyr variable_rollup               0     FALSE
+ nest_by_with_margins unsafe_dtplyr   variable_cube               0     FALSE
+ matches
+    TRUE
+    TRUE
+    TRUE
+    TRUE
+    TRUE
+    TRUE
+    TRUE
+    TRUE
+    TRUE
+    TRUE
+    TRUE
+    TRUE
+    TRUE
+    TRUE
+    TRUE
+    TRUE
+    TRUE
+    TRUE
+    TRUE
+    TRUE
+    TRUE
+    TRUE
+    TRUE
+    TRUE
