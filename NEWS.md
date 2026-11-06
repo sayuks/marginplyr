@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Local list-backed matrix and array dimensions accept representable
+  typed-missing Margin labels, including packed dimensions (#1364).
+
 * Margin label collision checks retain accepted logical choices independently
   of class-specific negation methods across all Margin verbs (#1360).
 
