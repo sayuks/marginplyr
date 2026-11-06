@@ -4304,6 +4304,9 @@ scoped_data_symbols <- function(expr, scope, lookup) {
   # Answering `character()` for it instead would be a silent miss, which is
   # the one direction this walk is not allowed to be wrong in.
   if (identical(call_name, "function") && length(expr) >= 3L) {
+    if (isTRUE(lookup$defer_definitions)) {
+      return(character())
+    }
     return(definition_data_symbols(expr, scope, lookup))
   }
   # `statement_reads_and_scope()` is the one place that knows which nodes bind
@@ -4496,22 +4499,27 @@ call_part_symbols <- function(expr, scope, lookup) {
   }
   closure <- scope_call_closure(expr, scope, lookup)
   reads <- character()
+  # A computed head evaluates before invocation, but creating a function value
+  # does not demand its body or defaults.
+  if (!is_name_part(call_head) && !rlang::is_symbol(call_head)) {
+    head_lookup <- lookup
+    head_lookup$defer_definitions <- !is.null(closure)
+    reads <- scoped_data_symbols(call_head, scope, head_lookup)
+    scope <- scope_after_removals(call_head, scope, lookup)
+  }
   if (!is.null(closure)) {
     if (!scope_closure_is_active(closure, scope)) {
-      reads <- definition_data_symbols(
+      reads <- c(reads, definition_data_symbols(
         closure$definition, scope_closure_scope(closure, scope), lookup, expr,
         if (length(closure$frames) > 0L) 1L else closure$enclosing,
         closure_origin = closure$enclosing + length(closure$frames),
         caller = 1L + length(closure$frames)
-      )
+      ))
     }
   } else if (is_name_part(call_head)) {
     name <- rlang::as_name(call_head)
     reads <- scope_promise_symbols(name, scope, lookup, function_lookup = TRUE)
     scope <- scope_after_promise(name, scope, lookup, function_lookup = TRUE)
-  } else if (!rlang::is_symbol(call_head)) {
-    reads <- scoped_data_symbols(call_head, scope, lookup)
-    scope <- scope_after_removals(call_head, scope, lookup)
   }
   local <- implicit_local_parts(expr, call_name, scope, lookup)
   if (!is.null(local)) {
@@ -4519,13 +4527,19 @@ call_part_symbols <- function(expr, scope, lookup) {
       reads, scoped_data_symbols(local$body, local$scope, lookup)
     )))
   }
+  # Unknown callees may execute callback arguments. Only literal carriers keep
+  # the function values in their arguments deferred.
+  parts_lookup <- lookup
+  parts_lookup$defer_definitions <- isTRUE(lookup$defer_definitions) &&
+    !is.null(call_name) && call_name %in% c("list", "[[") &&
+    is_known_base_frame_call(expr, call_name, scope, lookup)
   for (index in seq_along(parts)) {
     read_symbols <- if (index %in% selection_positions) {
       selection_dependency_symbols
     } else {
       scoped_data_symbols
     }
-    reads <- c(reads, read_symbols(parts[[index]], scope, lookup))
+    reads <- c(reads, read_symbols(parts[[index]], scope, parts_lookup))
     scope <- scope_after_possible_removals(parts[[index]], scope, lookup)
   }
   unique(reads)
@@ -5335,22 +5349,17 @@ scope_after_removals <- function(expr, scope, lookup) {
   parts <- c(
     scope_call_args(expr, name, bound, lookup), evaluated_language_parts(expr)
   )
-  if (!is.null(closure)) {
-    if (is_name_part(unparenthesized_value(head))) {
-      scope <- scope_after_promise(
-        rlang::as_name(unparenthesized_value(head)), scope, lookup,
-        function_lookup = is_name_part(head)
-      )
-    }
-    after <- scope_after_closure_call(expr, closure, scope, lookup)
-    scope <- after[-1L]
-    parts <- c(after[[1L]]$arguments, after[[1L]]$dots, after[[1L]]$unmatched)
-  } else if (is_name_part(head)) {
+  if (is_name_part(head)) {
     scope <- scope_after_promise(
       rlang::as_name(head), scope, lookup, function_lookup = TRUE
     )
   } else if (rlang::is_call(head)) {
     scope <- scope_after_removals(head, scope, lookup)
+  }
+  if (!is.null(closure)) {
+    after <- scope_after_closure_call(expr, closure, scope, lookup)
+    scope <- after[-1L]
+    parts <- c(after[[1L]]$arguments, after[[1L]]$dots, after[[1L]]$unmatched)
   }
   apply_effects <- scope_after_possible_removals
   if (length(literal_if_parts(expr, name, bound, lookup)) > 0L) {

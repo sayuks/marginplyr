@@ -22,9 +22,8 @@ expect_carrier_dependencies <- function(data, expressions) {
   }
 }
 
-test_that("copied closures use bindings present at invocation", {
-  data <- data.frame(group = c("a", "b"), x = c(1, 3), prior = c(100, 300))
-  expressions <- alist(
+closure_carrier_dependencies <- function() {
+  alist(
     (function(prior) {
       read_prior <- function() sum(prior)
       copied <- read_prior
@@ -37,37 +36,64 @@ test_that("copied closures use bindings present at invocation", {
       again <- copied
       rm(prior)
       again()
-    })(1)
-  )
-  expect_carrier_dependencies(data, expressions)
-  expect_carrier_dependencies(tibble::as_tibble(data), expressions)
-})
-
-test_that("literal list closures use bindings present at invocation", {
-  data <- data.frame(group = c("a", "b"), x = c(1, 3), prior = c(100, 300))
-  expressions <- alist(
+    })(1),
     (function(prior) {
       read_prior <- function() sum(prior)
       functions <- list(read_prior)
       rm(prior)
       functions[[1L]]()
-    })(1)
-  )
-  expect_carrier_dependencies(data, expressions)
-  expect_carrier_dependencies(tibble::as_tibble(data), expressions)
-})
-
-test_that("returned literal closures use bindings present at invocation", {
-  data <- data.frame(group = c("a", "b"), x = c(1, 3), prior = c(100, 300))
-  expressions <- alist(
+    })(1),
     (function(prior) {
       read_prior <- (function() function() sum(prior))()
       rm(prior)
       read_prior()
     })(1)
   )
-  expect_carrier_dependencies(data, expressions)
-  expect_carrier_dependencies(tibble::as_tibble(data), expressions)
+}
+
+test_that("closure carriers use bindings present at invocation", {
+  data <- data.frame(group = c("a", "b"), x = c(1, 3), prior = c(100, 300))
+  expect_carrier_dependencies(data, closure_carrier_dependencies())
+  expect_carrier_dependencies(tibble::as_tibble(data),
+                              closure_carrier_dependencies())
+})
+
+computed_head_dependencies <- function() {
+  alist(
+    list(prior, function() 7)[[2L]](),
+    (identity(function() sum(prior)))(),
+    list(lapply(1, function(i) sum(prior)), function() 7)[[2L]](),
+    list(function(arg = prior) sum(arg))[[1L]](),
+    (function() function(arg = prior) sum(arg))()(),
+    (function(prior) {
+      list(rm(prior), function() sum(prior))[[2L]]()
+    })(1),
+    (function(prior) {
+      list(rm(prior), function() 7)[[2L]]()
+      sum(prior)
+    })(1),
+    (function(prior) {
+      (function() {
+        list(rm("prior", envir = parent.frame()), function() 7)[[2L]]()
+      })()
+      sum(prior)
+    })(1)
+  )
+}
+
+test_that("computed closure heads retain their evaluated dependencies", {
+  data <- data.frame(group = c("a", "b"), x = c(1, 3), prior = c(100, 300))
+  expect_carrier_dependencies(data, computed_head_dependencies())
+  expect_carrier_dependencies(tibble::as_tibble(data),
+                              computed_head_dependencies())
+})
+
+test_that("data.table computed closure heads retain evaluated dependencies", {
+  skip_if_suggest_absent("data.table")
+  data <- data.table::data.table(
+    group = c("a", "b"), x = c(1, 3), prior = c(100, 300)
+  )
+  expect_carrier_dependencies(data, computed_head_dependencies())
 })
 
 closure_carrier_controls <- function() {
@@ -87,7 +113,15 @@ closure_carrier_controls <- function() {
 }
 
 expect_retained_carriers <- function(data) {
+  external <- rlang::env(prior = 1)
   expressions <- alist(
+    (function(arg = prior) 1)(2),
+    list(function(arg = prior) 1)[[1L]](2),
+    (function() function(arg = prior) 1)()(2),
+    list(external$prior, function() sum(external$prior))[[2L]](),
+    (function(prior) {
+      list(prior, function() sum(prior))[[2L]]()
+    })(1),
     (function(prior) {
       read_prior <- function() sum(prior)
       copied <- read_prior
@@ -146,35 +180,25 @@ test_that("data.table closure carriers retain their invocation dependencies", {
   data <- data.table::data.table(
     group = c("a", "b"), x = c(1, 3), prior = c(100, 300)
   )
-  expressions <- alist(
-    (function(prior) {
-      read_prior <- function() sum(prior)
-      copied <- read_prior
-      rm(prior)
-      copied()
-    })(1),
-    (function(prior) {
-      read_prior <- function() sum(prior)
-      copied <- read_prior
-      again <- copied
-      rm(prior)
-      again()
-    })(1),
-    (function(prior) {
-      read_prior <- function() sum(prior)
-      functions <- list(read_prior)
-      rm(prior)
-      functions[[1L]]()
-    })(1),
-    (function(prior) {
-      read_prior <- (function() function() sum(prior))()
-      rm(prior)
-      read_prior()
-    })(1)
-  )
-  expect_carrier_dependencies(data, expressions)
+  expect_carrier_dependencies(data, closure_carrier_dependencies())
   expect_carrier_dependencies(data, closure_carrier_controls())
   expect_retained_carriers(data)
+})
+
+test_that("computed closure dependency refusal leaves lazy input unread", {
+  skip_if_suggest_absent("dtplyr")
+  probe <- new.env(parent = emptyenv())
+  probe$calls <- 0L
+  observe <- function(x) {
+    probe$calls <- probe$calls + 1L
+    x
+  }
+  data <- dtplyr::lazy_dt(data.frame(group = c("a", "b"), x = c(1, 3)))
+  data <- dplyr::filter(data, observe(x) > 0)
+  expect_carrier_dependencies(data, computed_head_dependencies())
+  expect_identical(probe$calls, 0L)
+  expect_equal(dplyr::collect(data)$x, c(1, 3))
+  expect_identical(probe$calls, 1L)
 })
 
 test_that("unsupported literal list indices retain their R diagnostic", {
