@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Parent and Total share dependency checks retain known summary-mask
+  environments saved in local variables through recognized field reads,
+  environment accessors and list conversion (#1404).
+
 * Parent and Total share dependency checks follow closures installed by
   literal list element additions, replacements and dollar-field writes
   (#1403).

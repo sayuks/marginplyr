@@ -5098,12 +5098,16 @@ scope_bind_local <- function(scope, name, value = NULL, lookup = NULL,
                              value_scope = scope) {
   closure <- scope_value_closure(value, value_scope, lookup)
   elements <- scope_closure_list(value, value_scope, lookup)
+  environment_frames <- static_environment_frames(value, value_scope, lookup)
+  environment_definite <- !is.null(
+    static_environment_frame(value, value_scope, lookup)
+  )
   scope[[1L]]$bound <- union(scope[[1L]]$bound, name)
   scope[[1L]]$defaults[name] <- NULL
   scope[[1L]]$arguments[name] <- NULL
   scope[[1L]]$kinds[[name]] <- if (!is.null(closure)) {
     "function"
-  } else if (!is.null(elements)) {
+  } else if (!is.null(elements) || environment_definite) {
     "value"
   } else if (!missing(value)) {
     scope_literal_kind(value)
@@ -5117,6 +5121,13 @@ scope_bind_local <- function(scope, name, value = NULL, lookup = NULL,
       if (!is.null(closure)) closure$enclosing <- closure$enclosing - 1L
       closure
     })
+  }
+  # Offsets stay relative to the binding's frame when a child scope is added.
+  scope[[1L]]$environments[[name]] <- if (length(environment_frames) > 0L) {
+    list(
+      offsets = environment_frames - 1L,
+      definite = environment_definite
+    )
   }
   scope
 }
@@ -5628,6 +5639,12 @@ scope_forget_kinds <- function(scope, assigned) {
     frame$closure_lists <- frame$closure_lists[
       names(frame$closure_lists) %in% names(frame$kinds)
     ]
+    # A possible environment target can survive a loss of its binding kind.
+    frame$environments <- if (unresolved_lookup_name() %in% assigned) {
+      NULL
+    } else {
+      frame$environments[!names(frame$environments) %in% assigned]
+    }
     frame
   })
 }
@@ -5659,6 +5676,18 @@ scope_possible_losses <- function(scope, after) {
       identical(frame$closure_lists[[name]], reached$closure_lists[[name]])
     }, logical(1))
     frame$closure_lists <- frame$closure_lists[stable_lists]
+    environment_names <- intersect(
+      union(names(before$environments), names(reached$environments)), bound
+    )
+    possible_environments <- lapply(environment_names, function(name) {
+      first <- before$environments[[name]]
+      second <- reached$environments[[name]]
+      if (identical(first, second)) return(first)
+      list(offsets = union(first$offsets, second$offsets), definite = FALSE)
+    })
+    frame$environments <- stats::setNames(
+      possible_environments, environment_names
+    )
     frame
   }, scope, after)
 }
@@ -5810,6 +5839,7 @@ retain_scope_bindings <- function(frame, bound) {
   frame$closure_lists <- frame$closure_lists[
     names(frame$closure_lists) %in% bound
   ]
+  frame$environments <- frame$environments[names(frame$environments) %in% bound]
   frame
 }
 
@@ -6006,13 +6036,36 @@ lookup_reparented_environments <- function(
 
 # Whether an explicit environment path reaches the mask's own bindings.
 is_static_mask_parent <- function(expr, scope, lookup) {
-  identical(static_environment_frame(expr, scope, lookup), length(scope) + 1L)
+  (length(scope) + 1L) %in% static_environment_frames(expr, scope, lookup)
 }
 
-# Resolve a literal environment path to a lexical frame index. The index after
-# the summary frame denotes dplyr's column mask; no caller expression is run.
+# A definite target is required for writes that change a single known frame.
 static_environment_frame <- function(expr, scope, lookup) {
+  frames <- static_environment_frames(expr, scope, lookup, definite = TRUE)
+  if (length(frames) == 1L) frames else NULL
+}
+
+# Resolve visible environment paths and aliases to lexical frame indices.
+# The index after the summary frame denotes dplyr's column mask. Possible
+# targets survive conditional writes; no caller expression is run.
+static_environment_frames <- function(expr, scope, lookup, definite = FALSE) {
   expr <- unparenthesized_value(expr)
+  if (is_name_part(expr)) {
+    name <- rlang::as_name(expr)
+    for (index in scope_visible_frames(scope)) {
+      frame <- scope[[index]]
+      if (name %in% frame$bound) {
+        environment <- frame$environments[[name]]
+        return(if (!is.null(environment) &&
+                     (!definite || isTRUE(environment$definite))) {
+          index + environment$offsets
+        } else {
+          integer()
+        })
+      }
+    }
+    return(integer())
+  }
   name <- static_call_name(expr)
   if (length(static_call_args(expr)) == 0L &&
         ((identical(name, "environment") &&
@@ -6027,32 +6080,35 @@ static_environment_frame <- function(expr, scope, lookup) {
   }
   if (identical(name, "as.environment") && length(expr) == 2L &&
         is_known_base_frame_call(expr, name, scope, lookup)) {
-    return(static_environment_frame(expr[[2L]], scope, lookup))
+    return(static_environment_frames(expr[[2L]], scope, lookup, definite))
   }
   base_parent <- identical(name, "parent.env") && length(expr) == 2L &&
     is_known_base_frame_call(expr, name, scope, lookup)
   rlang_parent <- identical(name, "env_parent") &&
     is_known_namespace_frame_call(expr, "rlang", scope, lookup)
   if (!base_parent && !rlang_parent) {
-    return(NULL)
+    return(integer())
   }
   args <- if (base_parent) {
     static_matched_arguments(expr, base::parent.env)
   } else {
     static_matched_arguments(expr, rlang::env_parent)
   }
-  frame <- static_environment_frame(args$env, scope, lookup)
+  frames <- static_environment_frames(args$env, scope, lookup, definite)
   steps <- if ("n" %in% names(args)) unparenthesized_value(args$n) else 1L
-  if (is.null(frame) || is.object(steps) || !is.numeric(steps) ||
+  if (length(frames) == 0L || is.object(steps) || !is.numeric(steps) ||
         length(steps) != 1L || !is.finite(steps) || steps < 0 ||
         steps > length(scope) || steps != as.integer(steps)) {
-    return(NULL)
+    return(integer())
   }
-  while (steps > 0L && frame <= length(scope)) {
-    frame <- frame + (scope[[frame]]$enclosing %||% 1L)
-    steps <- steps - 1L
-  }
-  if (steps == 0L) frame else NULL
+  unique(unlist(lapply(frames, function(frame) {
+    remaining <- steps
+    while (remaining > 0L && frame <= length(scope)) {
+      frame <- frame + (scope[[frame]]$enclosing %||% 1L)
+      remaining <- remaining - 1L
+    }
+    if (remaining == 0L) frame else integer()
+  }), use.names = FALSE))
 }
 
 # Resolve an existing zero-argument caller closure whose entire body is a
@@ -6106,8 +6162,8 @@ materialized_env_symbols <- function(expr, scope, lookup) {
 inheriting_env_get_symbols <- function(expr, scope, lookup, bulk = FALSE) {
   definition <- if (bulk) rlang::env_get_list else rlang::env_get
   args <- static_matched_arguments(expr, definition)
-  frame <- static_environment_frame(args$env, scope, lookup)
-  if (is.null(frame)) {
+  frames <- static_environment_frames(args$env, scope, lookup)
+  if (length(frames) == 0L) {
     return(character())
   }
   name <- if (bulk) {
@@ -6121,25 +6177,28 @@ inheriting_env_get_symbols <- function(expr, scope, lookup, bulk = FALSE) {
   if (is.null(name) || (!bulk && !rlang::is_string(name))) {
     name <- unresolved_lookup_name()
   }
-  if (frame > length(scope)) {
-    return(name)
-  }
-  if (!"inherit" %in% names(args) ||
-        identical(unparenthesized_value(args$inherit), FALSE)) {
-    return(character())
-  }
-  if ("last" %in% names(args)) {
-    last <- static_environment_frame(args$last, scope, lookup)
-    if (is.null(last)) {
-      last <- static_returned_caller_frame(args$last, scope, lookup)
+  unique(unlist(lapply(frames, function(frame) {
+    if (frame > length(scope)) {
+      return(name)
     }
-    if (!is.null(last) && last %in% scope_visible_frames(scope, frame)) {
+    if (!"inherit" %in% names(args) ||
+          identical(unparenthesized_value(args$inherit), FALSE)) {
       return(character())
     }
-  }
-  unique(unlist(lapply(name, function(name) {
-    scoped_data_symbols(rlang::sym(name), scope[seq.int(frame, length(scope))],
-                        lookup)
+    if ("last" %in% names(args)) {
+      last <- static_environment_frame(args$last, scope, lookup)
+      if (is.null(last)) {
+        last <- static_returned_caller_frame(args$last, scope, lookup)
+      }
+      if (!is.null(last) && last %in% scope_visible_frames(scope, frame)) {
+        return(character())
+      }
+    }
+    unique(unlist(lapply(name, function(name) {
+      scoped_data_symbols(
+        rlang::sym(name), scope[seq.int(frame, length(scope))], lookup
+      )
+    }), use.names = FALSE))
   }), use.names = FALSE))
 }
 
