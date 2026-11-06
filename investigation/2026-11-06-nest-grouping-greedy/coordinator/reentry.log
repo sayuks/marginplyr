@@ -1,0 +1,5 @@
+Tested SHA: 952a0d9b18fd3ff4631f153432f6024ad62fcac2
+R version 4.6.1 (2026-06-24)
+Entry-argument ownership matches: 60
+Post-SQL predicate ownership matches: 5 cases, 10 callbacks
+No defect confirmed in this finite matrix.

@@ -1,0 +1,2 @@
+Error: inherits(stored, "marginplyr_error") is not TRUE
+Execution halted

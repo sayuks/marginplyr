@@ -1,0 +1,6 @@
+                   verb plain_error classed_error classed_rows
+      nest_with_margins        TRUE         FALSE            2
+   nest_by_with_margins        TRUE         FALSE            2
+    expand_with_margins        TRUE         FALSE            2
+ summarize_with_margins        TRUE         FALSE            2
+FALSE dispatch rejection, .keep, and ordinary attribute controls passed.
