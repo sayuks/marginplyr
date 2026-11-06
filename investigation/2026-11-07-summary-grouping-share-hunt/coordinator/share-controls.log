@@ -1,0 +1,8 @@
+Completed data.frame 
+Completed tibble 
+Completed data.table 
+           input
+disposition data.frame data.table tibble
+    legal           56         56     56
+    refusal         28         28     28
+Comparisons: 252 

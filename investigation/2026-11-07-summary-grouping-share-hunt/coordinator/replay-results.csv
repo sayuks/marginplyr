@@ -1,0 +1,18 @@
+"name","script","args","md5","expected","observed"
+"share-observation","share/value-boundaries.R","","2fecae16a107746a4c75d69f4a56fd0e",0,0
+"share-controls","share/value-boundaries.R","all --assert --controls-only","2fecae16a107746a4c75d69f4a56fd0e",0,0
+"share-listflow-contract","share/value-boundaries.R","listflow --assert","2fecae16a107746a4c75d69f4a56fd0e",1,1
+"share-listwrite-contract","share/value-boundaries.R","listwrite --assert","2fecae16a107746a4c75d69f4a56fd0e",1,1
+"share-partial-contract","share/value-boundaries.R","partial --assert","2fecae16a107746a4c75d69f4a56fd0e",1,1
+"share-environment-contract","share/value-boundaries.R","environment --assert","2fecae16a107746a4c75d69f4a56fd0e",1,1
+"share-deferred-contract","share/value-boundaries.R","deferred --assert","2fecae16a107746a4c75d69f4a56fd0e",1,1
+"summary-observation","summary/across-namespace-shape.R","","c5287f420142661d3f7be03597278eae",0,0
+"summary-controls","summary/across-namespace-shape.R","--controls-only","c5287f420142661d3f7be03597278eae",0,0
+"summary-contract","summary/across-namespace-shape.R","--assert","c5287f420142661d3f7be03597278eae",1,1
+"grouping-observation","grouping/dynamic-dispatch.R","","9949586a31ba302fe2619296d7e44f4d",0,0
+"grouping-contract","grouping/dynamic-dispatch.R","--assert","9949586a31ba302fe2619296d7e44f4d",1,1
+"grouping-matrix","grouping/dynamic-dispatch-matrix.R","","1b611b0f10ad1836bb4c7dd2b3e75b3d",0,0
+"grouping-controls","grouping/dynamic-dispatch-matrix.R","--controls-only","1b611b0f10ad1836bb4c7dd2b3e75b3d",0,0
+"sql-numeric","sql/sql-boundaries.R","/private/tmp/marginplyr-hunt-20261107-replay/source","b16dcafef8c05c3db53088231e733a5f",0,0
+"sql-names","sql/sql-names.R","/private/tmp/marginplyr-hunt-20261107-replay/source","19cd2ac93a7d2a7da47d611af7a2cc7a",0,0
+"sql-upstream-controls","sql/sql-upstream-controls.R","","b388094e226e6ed55ac13358e8a1a389",0,0

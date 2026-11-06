@@ -1,0 +1,16 @@
+Direct typed selection: a 
+Unwrapped outcome: ℹ In argument: `matches(...)`.
+Caused by error in `matches()`:
+! stringr patterns must be length 1. 
+Unwrapped metadata: integer 
+Typed-wrapper selection: a 
+Typed-wrapper metadata: character, character, character 
+dplyr 1.2.1 
+tidyselect 1.2.1 
+stringr 1.6.0 
+vctrs 0.7.3 
+rlang 1.3.0 
+dtplyr 1.3.3 
+pkgload 1.5.3 
+R version 4.6.1 (2026-06-24) 
+ aarch64-apple-darwin23 

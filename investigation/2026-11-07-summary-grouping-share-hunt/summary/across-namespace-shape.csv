@@ -1,0 +1,121 @@
+"input_kind","operator","role","shape","functions","expected_names","expected_values","observed","namespace_hits","ordinary_hits","literal_control"
+"data.frame","::","id","namespace_value",1,"answer_1;answer_s","1;4","`.id` (`answer_1`) conflicts with a summary output.",0,1,TRUE
+"data.frame","::","id","namespace_list_call",1,"answer_fake;answer_s","1;4","`.id` (`answer_fake`) conflicts with a summary output.",0,1,TRUE
+"data.frame","::","id","namespace_value",2,"answer_1;answer_s;answer_m","1;4;3","`.id` (`answer_1`) conflicts with a summary output.",0,1,TRUE
+"data.frame","::","id","namespace_list_call",2,"answer_fake;answer_s;answer_m","1;4;3","`.id` (`answer_fake`) conflicts with a summary output.",0,1,TRUE
+"data.frame","::","fixed","namespace_value",1,"answer_1;answer_s","a,b;1,3","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",0,1,TRUE
+"data.frame","::","fixed","namespace_list_call",1,"answer_fake;answer_s","a,b;1,3","Summary results cannot overwrite grouping column:
+ℹ `answer_fake`.",0,1,TRUE
+"data.frame","::","fixed","namespace_value",2,"answer_1;answer_s;answer_m","a,b;1,3;1,3","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",0,1,TRUE
+"data.frame","::","fixed","namespace_list_call",2,"answer_fake;answer_s;answer_m","a,b;1,3;1,3","Summary results cannot overwrite grouping column:
+ℹ `answer_fake`.",0,1,TRUE
+"data.frame","::","rollup","namespace_value",1,"answer_1;answer_s","a,b,NA;1,3,4","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",0,2,TRUE
+"data.frame","::","rollup","namespace_list_call",1,"answer_fake;answer_s","a,b,NA;1,3,4","Summary results cannot overwrite grouping column:
+ℹ `answer_fake`.",0,2,TRUE
+"data.frame","::","rollup","namespace_value",2,"answer_1;answer_s;answer_m","a,b,NA;1,3,4;1,3,3","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",0,2,TRUE
+"data.frame","::","rollup","namespace_list_call",2,"answer_fake;answer_s;answer_m","a,b,NA;1,3,4;1,3,3","Summary results cannot overwrite grouping column:
+ℹ `answer_fake`.",0,2,TRUE
+"data.frame",":::","id","namespace_value",1,"answer_1;answer_s","1;4","`.id` (`answer_1`) conflicts with a summary output.",0,1,TRUE
+"data.frame",":::","id","namespace_list_call",1,"answer_fake;answer_s","1;4","`.id` (`answer_fake`) conflicts with a summary output.",0,1,TRUE
+"data.frame",":::","id","namespace_value",2,"answer_1;answer_s;answer_m","1;4;3","`.id` (`answer_1`) conflicts with a summary output.",0,1,TRUE
+"data.frame",":::","id","namespace_list_call",2,"answer_fake;answer_s;answer_m","1;4;3","`.id` (`answer_fake`) conflicts with a summary output.",0,1,TRUE
+"data.frame",":::","fixed","namespace_value",1,"answer_1;answer_s","a,b;1,3","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",0,1,TRUE
+"data.frame",":::","fixed","namespace_list_call",1,"answer_fake;answer_s","a,b;1,3","Summary results cannot overwrite grouping column:
+ℹ `answer_fake`.",0,1,TRUE
+"data.frame",":::","fixed","namespace_value",2,"answer_1;answer_s;answer_m","a,b;1,3;1,3","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",0,1,TRUE
+"data.frame",":::","fixed","namespace_list_call",2,"answer_fake;answer_s;answer_m","a,b;1,3;1,3","Summary results cannot overwrite grouping column:
+ℹ `answer_fake`.",0,1,TRUE
+"data.frame",":::","rollup","namespace_value",1,"answer_1;answer_s","a,b,NA;1,3,4","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",0,2,TRUE
+"data.frame",":::","rollup","namespace_list_call",1,"answer_fake;answer_s","a,b,NA;1,3,4","Summary results cannot overwrite grouping column:
+ℹ `answer_fake`.",0,2,TRUE
+"data.frame",":::","rollup","namespace_value",2,"answer_1;answer_s;answer_m","a,b,NA;1,3,4;1,3,3","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",0,2,TRUE
+"data.frame",":::","rollup","namespace_list_call",2,"answer_fake;answer_s;answer_m","a,b,NA;1,3,4;1,3,3","Summary results cannot overwrite grouping column:
+ℹ `answer_fake`.",0,2,TRUE
+"tibble","::","id","namespace_value",1,"answer_1;answer_s","1;4","`.id` (`answer_1`) conflicts with a summary output.",0,1,TRUE
+"tibble","::","id","namespace_list_call",1,"answer_fake;answer_s","1;4","`.id` (`answer_fake`) conflicts with a summary output.",0,1,TRUE
+"tibble","::","id","namespace_value",2,"answer_1;answer_s;answer_m","1;4;3","`.id` (`answer_1`) conflicts with a summary output.",0,1,TRUE
+"tibble","::","id","namespace_list_call",2,"answer_fake;answer_s;answer_m","1;4;3","`.id` (`answer_fake`) conflicts with a summary output.",0,1,TRUE
+"tibble","::","fixed","namespace_value",1,"answer_1;answer_s","a,b;1,3","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",0,1,TRUE
+"tibble","::","fixed","namespace_list_call",1,"answer_fake;answer_s","a,b;1,3","Summary results cannot overwrite grouping column:
+ℹ `answer_fake`.",0,1,TRUE
+"tibble","::","fixed","namespace_value",2,"answer_1;answer_s;answer_m","a,b;1,3;1,3","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",0,1,TRUE
+"tibble","::","fixed","namespace_list_call",2,"answer_fake;answer_s;answer_m","a,b;1,3;1,3","Summary results cannot overwrite grouping column:
+ℹ `answer_fake`.",0,1,TRUE
+"tibble","::","rollup","namespace_value",1,"answer_1;answer_s","a,b,NA;1,3,4","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",0,2,TRUE
+"tibble","::","rollup","namespace_list_call",1,"answer_fake;answer_s","a,b,NA;1,3,4","Summary results cannot overwrite grouping column:
+ℹ `answer_fake`.",0,2,TRUE
+"tibble","::","rollup","namespace_value",2,"answer_1;answer_s;answer_m","a,b,NA;1,3,4;1,3,3","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",0,2,TRUE
+"tibble","::","rollup","namespace_list_call",2,"answer_fake;answer_s;answer_m","a,b,NA;1,3,4;1,3,3","Summary results cannot overwrite grouping column:
+ℹ `answer_fake`.",0,2,TRUE
+"tibble",":::","id","namespace_value",1,"answer_1;answer_s","1;4","`.id` (`answer_1`) conflicts with a summary output.",0,1,TRUE
+"tibble",":::","id","namespace_list_call",1,"answer_fake;answer_s","1;4","`.id` (`answer_fake`) conflicts with a summary output.",0,1,TRUE
+"tibble",":::","id","namespace_value",2,"answer_1;answer_s;answer_m","1;4;3","`.id` (`answer_1`) conflicts with a summary output.",0,1,TRUE
+"tibble",":::","id","namespace_list_call",2,"answer_fake;answer_s;answer_m","1;4;3","`.id` (`answer_fake`) conflicts with a summary output.",0,1,TRUE
+"tibble",":::","fixed","namespace_value",1,"answer_1;answer_s","a,b;1,3","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",0,1,TRUE
+"tibble",":::","fixed","namespace_list_call",1,"answer_fake;answer_s","a,b;1,3","Summary results cannot overwrite grouping column:
+ℹ `answer_fake`.",0,1,TRUE
+"tibble",":::","fixed","namespace_value",2,"answer_1;answer_s;answer_m","a,b;1,3;1,3","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",0,1,TRUE
+"tibble",":::","fixed","namespace_list_call",2,"answer_fake;answer_s;answer_m","a,b;1,3;1,3","Summary results cannot overwrite grouping column:
+ℹ `answer_fake`.",0,1,TRUE
+"tibble",":::","rollup","namespace_value",1,"answer_1;answer_s","a,b,NA;1,3,4","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",0,2,TRUE
+"tibble",":::","rollup","namespace_list_call",1,"answer_fake;answer_s","a,b,NA;1,3,4","Summary results cannot overwrite grouping column:
+ℹ `answer_fake`.",0,2,TRUE
+"tibble",":::","rollup","namespace_value",2,"answer_1;answer_s;answer_m","a,b,NA;1,3,4;1,3,3","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",0,2,TRUE
+"tibble",":::","rollup","namespace_list_call",2,"answer_fake;answer_s;answer_m","a,b,NA;1,3,4;1,3,3","Summary results cannot overwrite grouping column:
+ℹ `answer_fake`.",0,2,TRUE
+"data.table","::","id","namespace_value",1,"answer_1;answer_s","1;4","`.id` (`answer_1`) conflicts with a summary output.",0,1,TRUE
+"data.table","::","id","namespace_list_call",1,"answer_fake;answer_s","1;4","`.id` (`answer_fake`) conflicts with a summary output.",0,1,TRUE
+"data.table","::","id","namespace_value",2,"answer_1;answer_s;answer_m","1;4;3","`.id` (`answer_1`) conflicts with a summary output.",0,1,TRUE
+"data.table","::","id","namespace_list_call",2,"answer_fake;answer_s;answer_m","1;4;3","`.id` (`answer_fake`) conflicts with a summary output.",0,1,TRUE
+"data.table","::","fixed","namespace_value",1,"answer_1;answer_s","a,b;1,3","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",0,1,TRUE
+"data.table","::","fixed","namespace_list_call",1,"answer_fake;answer_s","a,b;1,3","Summary results cannot overwrite grouping column:
+ℹ `answer_fake`.",0,1,TRUE
+"data.table","::","fixed","namespace_value",2,"answer_1;answer_s;answer_m","a,b;1,3;1,3","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",0,1,TRUE
+"data.table","::","fixed","namespace_list_call",2,"answer_fake;answer_s;answer_m","a,b;1,3;1,3","Summary results cannot overwrite grouping column:
+ℹ `answer_fake`.",0,1,TRUE
+"data.table","::","rollup","namespace_value",1,"answer_1;answer_s","a,b,NA;1,3,4","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",0,2,TRUE
+"data.table","::","rollup","namespace_list_call",1,"answer_fake;answer_s","a,b,NA;1,3,4","Summary results cannot overwrite grouping column:
+ℹ `answer_fake`.",0,2,TRUE
+"data.table","::","rollup","namespace_value",2,"answer_1;answer_s;answer_m","a,b,NA;1,3,4;1,3,3","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",0,2,TRUE
+"data.table","::","rollup","namespace_list_call",2,"answer_fake;answer_s;answer_m","a,b,NA;1,3,4;1,3,3","Summary results cannot overwrite grouping column:
+ℹ `answer_fake`.",0,2,TRUE
+"data.table",":::","id","namespace_value",1,"answer_1;answer_s","1;4","`.id` (`answer_1`) conflicts with a summary output.",0,1,TRUE
+"data.table",":::","id","namespace_list_call",1,"answer_fake;answer_s","1;4","`.id` (`answer_fake`) conflicts with a summary output.",0,1,TRUE
+"data.table",":::","id","namespace_value",2,"answer_1;answer_s;answer_m","1;4;3","`.id` (`answer_1`) conflicts with a summary output.",0,1,TRUE
+"data.table",":::","id","namespace_list_call",2,"answer_fake;answer_s;answer_m","1;4;3","`.id` (`answer_fake`) conflicts with a summary output.",0,1,TRUE
+"data.table",":::","fixed","namespace_value",1,"answer_1;answer_s","a,b;1,3","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",0,1,TRUE
+"data.table",":::","fixed","namespace_list_call",1,"answer_fake;answer_s","a,b;1,3","Summary results cannot overwrite grouping column:
+ℹ `answer_fake`.",0,1,TRUE
+"data.table",":::","fixed","namespace_value",2,"answer_1;answer_s;answer_m","a,b;1,3;1,3","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",0,1,TRUE
+"data.table",":::","fixed","namespace_list_call",2,"answer_fake;answer_s;answer_m","a,b;1,3;1,3","Summary results cannot overwrite grouping column:
+ℹ `answer_fake`.",0,1,TRUE
+"data.table",":::","rollup","namespace_value",1,"answer_1;answer_s","a,b,NA;1,3,4","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",0,2,TRUE
+"data.table",":::","rollup","namespace_list_call",1,"answer_fake;answer_s","a,b,NA;1,3,4","Summary results cannot overwrite grouping column:
+ℹ `answer_fake`.",0,2,TRUE
+"data.table",":::","rollup","namespace_value",2,"answer_1;answer_s;answer_m","a,b,NA;1,3,4;1,3,3","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",0,2,TRUE
+"data.table",":::","rollup","namespace_list_call",2,"answer_fake;answer_s;answer_m","a,b,NA;1,3,4;1,3,3","Summary results cannot overwrite grouping column:
+ℹ `answer_fake`.",0,2,TRUE
