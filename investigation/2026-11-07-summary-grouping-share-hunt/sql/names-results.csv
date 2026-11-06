@@ -1,0 +1,377 @@
+"kind","name","role","sort","verdict","detail"
+"sqlite","TRUE","fixed","none","match",""
+"sqlite","TRUE","fixed","last","match",""
+"sqlite","TRUE","dimension","none","match",""
+"sqlite","TRUE","dimension","last","match",""
+"sqlite","TRUE","source","none","match",""
+"sqlite","TRUE","source","last","match",""
+"sqlite","TRUE","share","none","match",""
+"sqlite","TRUE","share","last","match",""
+"sqlite","TRUE","id","none","match",""
+"sqlite","TRUE","id","last","match",""
+"sqlite","false","fixed","none","match",""
+"sqlite","false","fixed","last","match",""
+"sqlite","false","dimension","none","match",""
+"sqlite","false","dimension","last","match",""
+"sqlite","false","source","none","match",""
+"sqlite","false","source","last","match",""
+"sqlite","false","share","none","match",""
+"sqlite","false","share","last","match",""
+"sqlite","false","id","none","match",""
+"sqlite","false","id","last","match",""
+"sqlite",".env","fixed","none","match",""
+"sqlite",".env","fixed","last","match",""
+"sqlite",".env","dimension","none","match",""
+"sqlite",".env","dimension","last","match",""
+"sqlite",".env","source","none","match",""
+"sqlite",".env","source","last","match",""
+"sqlite",".env","share","none","match",""
+"sqlite",".env","share","last","match",""
+"sqlite",".env","id","none","match",""
+"sqlite",".env","id","last","match",""
+"sqlite",".data","fixed","none","match",""
+"sqlite",".data","fixed","last","match",""
+"sqlite",".data","dimension","none","match",""
+"sqlite",".data","dimension","last","match",""
+"sqlite",".data","source","none","match",""
+"sqlite",".data","source","last","match",""
+"sqlite",".data","share","none","match",""
+"sqlite",".data","share","last","match",""
+"sqlite",".data","id","none","match",""
+"sqlite",".data","id","last","match",""
+"sqlite","..1","fixed","none","error","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"sqlite","..1","fixed","last","error","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"sqlite","..1","dimension","none","error","Column 2 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"sqlite","..1","dimension","last","error","Column 2 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"sqlite","..1","source","none","error","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"sqlite","..1","source","last","error","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"sqlite","..1","share","none","error","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"sqlite","..1","share","last","error","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"sqlite","..1","id","none","error","Column 6 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"sqlite","..1","id","last","error","Column 6 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"sqlite",".BY","fixed","none","match",""
+"sqlite",".BY","fixed","last","match",""
+"sqlite",".BY","dimension","none","match",""
+"sqlite",".BY","dimension","last","match",""
+"sqlite",".BY","source","none","match",""
+"sqlite",".BY","source","last","match",""
+"sqlite",".BY","share","none","match",""
+"sqlite",".BY","share","last","match",""
+"sqlite",".BY","id","none","match",""
+"sqlite",".BY","id","last","match",""
+"sqlite",".SD","fixed","none","match",""
+"sqlite",".SD","fixed","last","match",""
+"sqlite",".SD","dimension","none","match",""
+"sqlite",".SD","dimension","last","match",""
+"sqlite",".SD","source","none","match",""
+"sqlite",".SD","source","last","match",""
+"sqlite",".SD","share","none","match",""
+"sqlite",".SD","share","last","match",""
+"sqlite",".SD","id","none","match",""
+"sqlite",".SD","id","last","match",""
+"sqlite","x y","fixed","none","match",""
+"sqlite","x y","fixed","last","match",""
+"sqlite","x y","dimension","none","match",""
+"sqlite","x y","dimension","last","match",""
+"sqlite","x y","source","none","match",""
+"sqlite","x y","source","last","match",""
+"sqlite","x y","share","none","match",""
+"sqlite","x y","share","last","match",""
+"sqlite","x y","id","none","match",""
+"sqlite","x y","id","last","match",""
+"sqlite","x`y","fixed","none","match",""
+"sqlite","x`y","fixed","last","match",""
+"sqlite","x`y","dimension","none","match",""
+"sqlite","x`y","dimension","last","match",""
+"sqlite","x`y","source","none","match",""
+"sqlite","x`y","source","last","match",""
+"sqlite","x`y","share","none","match",""
+"sqlite","x`y","share","last","match",""
+"sqlite","x`y","id","none","match",""
+"sqlite","x`y","id","last","match",""
+"sqlite","x
+y","fixed","none","match",""
+"sqlite","x
+y","fixed","last","match",""
+"sqlite","x
+y","dimension","none","match",""
+"sqlite","x
+y","dimension","last","match",""
+"sqlite","x
+y","source","none","match",""
+"sqlite","x
+y","source","last","match",""
+"sqlite","x
+y","share","none","match",""
+"sqlite","x
+y","share","last","match",""
+"sqlite","x
+y","id","none","match",""
+"sqlite","x
+y","id","last","match",""
+"sqlite","a""b","fixed","none","match",""
+"sqlite","a""b","fixed","last","match",""
+"sqlite","a""b","dimension","none","match",""
+"sqlite","a""b","dimension","last","match",""
+"sqlite","a""b","source","none","match",""
+"sqlite","a""b","source","last","match",""
+"sqlite","a""b","share","none","match",""
+"sqlite","a""b","share","last","match",""
+"sqlite","a""b","id","none","match",""
+"sqlite","a""b","id","last","match",""
+"sqlite","rowid","fixed","none","match",""
+"sqlite","rowid","fixed","last","match",""
+"sqlite","rowid","dimension","none","match",""
+"sqlite","rowid","dimension","last","match",""
+"sqlite","rowid","source","none","match",""
+"sqlite","rowid","source","last","match",""
+"sqlite","rowid","share","none","match",""
+"sqlite","rowid","share","last","match",""
+"sqlite","rowid","id","none","match",""
+"sqlite","rowid","id","last","match",""
+"sqlite","CURRENT_DATE","fixed","none","match",""
+"sqlite","CURRENT_DATE","fixed","last","match",""
+"sqlite","CURRENT_DATE","dimension","none","match",""
+"sqlite","CURRENT_DATE","dimension","last","match",""
+"sqlite","CURRENT_DATE","source","none","match",""
+"sqlite","CURRENT_DATE","source","last","match",""
+"sqlite","CURRENT_DATE","share","none","match",""
+"sqlite","CURRENT_DATE","share","last","match",""
+"sqlite","CURRENT_DATE","id","none","match",""
+"sqlite","CURRENT_DATE","id","last","match",""
+"sqlite","..marginplyr_set_id","fixed","none","match",""
+"sqlite","..marginplyr_set_id","fixed","last","match",""
+"sqlite","..marginplyr_set_id","dimension","none","match",""
+"sqlite","..marginplyr_set_id","dimension","last","match",""
+"sqlite","..marginplyr_set_id","source","none","match",""
+"sqlite","..marginplyr_set_id","source","last","match",""
+"sqlite","..marginplyr_set_id","share","none","match",""
+"sqlite","..marginplyr_set_id","share","last","match",""
+"sqlite","..marginplyr_set_id","id","none","match",""
+"sqlite","..marginplyr_set_id","id","last","match",""
+"duckdb","TRUE","fixed","none","match",""
+"duckdb","TRUE","fixed","last","match",""
+"duckdb","TRUE","dimension","none","match",""
+"duckdb","TRUE","dimension","last","match",""
+"duckdb","TRUE","source","none","match",""
+"duckdb","TRUE","source","last","match",""
+"duckdb","TRUE","share","none","match",""
+"duckdb","TRUE","share","last","match",""
+"duckdb","TRUE","id","none","match",""
+"duckdb","TRUE","id","last","match",""
+"duckdb","false","fixed","none","match",""
+"duckdb","false","fixed","last","match",""
+"duckdb","false","dimension","none","match",""
+"duckdb","false","dimension","last","match",""
+"duckdb","false","source","none","match",""
+"duckdb","false","source","last","match",""
+"duckdb","false","share","none","match",""
+"duckdb","false","share","last","match",""
+"duckdb","false","id","none","match",""
+"duckdb","false","id","last","match",""
+"duckdb",".env","fixed","none","match",""
+"duckdb",".env","fixed","last","match",""
+"duckdb",".env","dimension","none","match",""
+"duckdb",".env","dimension","last","match",""
+"duckdb",".env","source","none","match",""
+"duckdb",".env","source","last","match",""
+"duckdb",".env","share","none","match",""
+"duckdb",".env","share","last","match",""
+"duckdb",".env","id","none","match",""
+"duckdb",".env","id","last","match",""
+"duckdb",".data","fixed","none","match",""
+"duckdb",".data","fixed","last","match",""
+"duckdb",".data","dimension","none","match",""
+"duckdb",".data","dimension","last","match",""
+"duckdb",".data","source","none","match",""
+"duckdb",".data","source","last","match",""
+"duckdb",".data","share","none","match",""
+"duckdb",".data","share","last","match",""
+"duckdb",".data","id","none","match",""
+"duckdb",".data","id","last","match",""
+"duckdb","..1","fixed","none","error","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"duckdb","..1","fixed","last","error","Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"duckdb","..1","dimension","none","error","Column 2 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"duckdb","..1","dimension","last","error","Column 2 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"duckdb","..1","source","none","error","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"duckdb","..1","source","last","error","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"duckdb","..1","share","none","error","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"duckdb","..1","share","last","error","Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"duckdb","..1","id","none","error","Column 6 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"duckdb","..1","id","last","error","Column 6 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"duckdb",".BY","fixed","none","match",""
+"duckdb",".BY","fixed","last","match",""
+"duckdb",".BY","dimension","none","match",""
+"duckdb",".BY","dimension","last","match",""
+"duckdb",".BY","source","none","match",""
+"duckdb",".BY","source","last","match",""
+"duckdb",".BY","share","none","match",""
+"duckdb",".BY","share","last","match",""
+"duckdb",".BY","id","none","match",""
+"duckdb",".BY","id","last","match",""
+"duckdb",".SD","fixed","none","match",""
+"duckdb",".SD","fixed","last","match",""
+"duckdb",".SD","dimension","none","match",""
+"duckdb",".SD","dimension","last","match",""
+"duckdb",".SD","source","none","match",""
+"duckdb",".SD","source","last","match",""
+"duckdb",".SD","share","none","match",""
+"duckdb",".SD","share","last","match",""
+"duckdb",".SD","id","none","match",""
+"duckdb",".SD","id","last","match",""
+"duckdb","x y","fixed","none","match",""
+"duckdb","x y","fixed","last","match",""
+"duckdb","x y","dimension","none","match",""
+"duckdb","x y","dimension","last","match",""
+"duckdb","x y","source","none","match",""
+"duckdb","x y","source","last","match",""
+"duckdb","x y","share","none","match",""
+"duckdb","x y","share","last","match",""
+"duckdb","x y","id","none","match",""
+"duckdb","x y","id","last","match",""
+"duckdb","x`y","fixed","none","match",""
+"duckdb","x`y","fixed","last","match",""
+"duckdb","x`y","dimension","none","match",""
+"duckdb","x`y","dimension","last","match",""
+"duckdb","x`y","source","none","match",""
+"duckdb","x`y","source","last","match",""
+"duckdb","x`y","share","none","match",""
+"duckdb","x`y","share","last","match",""
+"duckdb","x`y","id","none","match",""
+"duckdb","x`y","id","last","match",""
+"duckdb","x
+y","fixed","none","match",""
+"duckdb","x
+y","fixed","last","match",""
+"duckdb","x
+y","dimension","none","match",""
+"duckdb","x
+y","dimension","last","match",""
+"duckdb","x
+y","source","none","match",""
+"duckdb","x
+y","source","last","match",""
+"duckdb","x
+y","share","none","match",""
+"duckdb","x
+y","share","last","match",""
+"duckdb","x
+y","id","none","match",""
+"duckdb","x
+y","id","last","match",""
+"duckdb","a""b","fixed","none","match",""
+"duckdb","a""b","fixed","last","match",""
+"duckdb","a""b","dimension","none","match",""
+"duckdb","a""b","dimension","last","match",""
+"duckdb","a""b","source","none","match",""
+"duckdb","a""b","source","last","match",""
+"duckdb","a""b","share","none","match",""
+"duckdb","a""b","share","last","match",""
+"duckdb","a""b","id","none","match",""
+"duckdb","a""b","id","last","match",""
+"duckdb","rowid","fixed","none","match",""
+"duckdb","rowid","fixed","last","match",""
+"duckdb","rowid","dimension","none","match",""
+"duckdb","rowid","dimension","last","match",""
+"duckdb","rowid","source","none","match",""
+"duckdb","rowid","source","last","match",""
+"duckdb","rowid","share","none","match",""
+"duckdb","rowid","share","last","match",""
+"duckdb","rowid","id","none","match",""
+"duckdb","rowid","id","last","match",""
+"duckdb","CURRENT_DATE","fixed","none","match",""
+"duckdb","CURRENT_DATE","fixed","last","match",""
+"duckdb","CURRENT_DATE","dimension","none","match",""
+"duckdb","CURRENT_DATE","dimension","last","match",""
+"duckdb","CURRENT_DATE","source","none","match",""
+"duckdb","CURRENT_DATE","source","last","match",""
+"duckdb","CURRENT_DATE","share","none","match",""
+"duckdb","CURRENT_DATE","share","last","match",""
+"duckdb","CURRENT_DATE","id","none","match",""
+"duckdb","CURRENT_DATE","id","last","match",""
+"duckdb","..marginplyr_set_id","fixed","none","match",""
+"duckdb","..marginplyr_set_id","fixed","last","match",""
+"duckdb","..marginplyr_set_id","dimension","none","match",""
+"duckdb","..marginplyr_set_id","dimension","last","match",""
+"duckdb","..marginplyr_set_id","source","none","match",""
+"duckdb","..marginplyr_set_id","source","last","match",""
+"duckdb","..marginplyr_set_id","share","none","match",""
+"duckdb","..marginplyr_set_id","share","last","match",""
+"duckdb","..marginplyr_set_id","id","none","match",""
+"duckdb","..marginplyr_set_id","id","last","match",""

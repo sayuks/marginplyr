@@ -1,0 +1,11 @@
+:: dimensionless 
+Can't transform a data frame with `NA` or `""` names. 
+:: rollup 
+Names can't be empty.
+✖ Empty name found at location 3. 
+::: dimensionless 
+Can't transform a data frame with `NA` or `""` names. 
+::: rollup 
+Names can't be empty.
+✖ Empty name found at location 3. 
+Four related shape-mismatch errors observed; literal-list controls accepted.

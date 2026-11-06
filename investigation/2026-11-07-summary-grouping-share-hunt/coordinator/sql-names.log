@@ -1,0 +1,41 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+Warning message:
+Missing values are always removed in SQL aggregation functions.
+Use `na.rm = TRUE` to silence this warning
+This warning is displayed once every 8 hours. 
+        verdict
+kind     error match
+  duckdb    10   130
+  sqlite    10   130
+      kind name      role
+41  sqlite  ..1     fixed
+43  sqlite  ..1 dimension
+45  sqlite  ..1    source
+47  sqlite  ..1     share
+49  sqlite  ..1        id
+181 duckdb  ..1     fixed
+183 duckdb  ..1 dimension
+185 duckdb  ..1    source
+187 duckdb  ..1     share
+189 duckdb  ..1        id
+                                                                                                                                                                                                                                     detail
+41  Column 1 must not have names of the form ... or ..j.\nUse `.name_repair` to specify repair.\nCaused by error in `repaired_names()`:\n! Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..1" at location 1.
+43  Column 2 must not have names of the form ... or ..j.\nUse `.name_repair` to specify repair.\nCaused by error in `repaired_names()`:\n! Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..1" at location 1.
+45                                                                                                                                         Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..1" at location 1.
+47                                                                                                                                         Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..1" at location 1.
+49  Column 6 must not have names of the form ... or ..j.\nUse `.name_repair` to specify repair.\nCaused by error in `repaired_names()`:\n! Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..1" at location 1.
+181 Column 1 must not have names of the form ... or ..j.\nUse `.name_repair` to specify repair.\nCaused by error in `repaired_names()`:\n! Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..1" at location 1.
+183 Column 2 must not have names of the form ... or ..j.\nUse `.name_repair` to specify repair.\nCaused by error in `repaired_names()`:\n! Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..1" at location 1.
+185                                                                                                                                        Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..1" at location 1.
+187                                                                                                                                        Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..1" at location 1.
+189 Column 6 must not have names of the form ... or ..j.\nUse `.name_repair` to specify repair.\nCaused by error in `repaired_names()`:\n! Names can't be of the form `...` or `..j`.\n✖ These names are invalid:\n  * "..1" at location 1.

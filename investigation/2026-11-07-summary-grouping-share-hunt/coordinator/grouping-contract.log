@@ -1,0 +1,10 @@
+Direct typed selection: a 
+Unwrapped outcome: ℹ In argument: `matches(...)`.
+Caused by error in `matches()`:
+! stringr patterns must be length 1. 
+Unwrapped metadata: integer 
+Typed-wrapper selection: a 
+Typed-wrapper metadata: character, character, character 
+Error in main() : !inherits(actual, "error") is not TRUE
+Calls: main -> stopifnot
+Execution halted

@@ -1,0 +1,7 @@
+  answer_1 answer_s answer_m
+1        1        4        3
+marginplyr_error rlang_error error condition 
+ `.id` (`answer_1`) conflicts with a summary output. 
+Namespace calls during Margin request: 0 
+Error: identical(actual, expected) is not TRUE
+Execution halted

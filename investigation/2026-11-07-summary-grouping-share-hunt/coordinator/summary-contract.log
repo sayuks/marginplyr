@@ -1,0 +1,10 @@
+Source SHA: archive: see the coordinator's execution record 
+R version 4.6.1 (2026-06-24) 
+dplyr 1.2.1 
+rlang 1.3.0 
+tidyselect 1.2.1 
+vctrs 0.7.3 
+tibble 3.3.1 
+data.table 1.18.6.1 
+Error: identical(checked, expected) is not TRUE
+Execution halted
