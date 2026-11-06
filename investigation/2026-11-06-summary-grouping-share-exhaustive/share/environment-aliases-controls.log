@@ -1,0 +1,8 @@
+Completed data.frame 
+Completed tibble 
+Completed data.table 
+         input
+expected  data.frame data.table tibble
+  legal           24         24     24
+  refusal         20         20     20
+Comparisons: 132 

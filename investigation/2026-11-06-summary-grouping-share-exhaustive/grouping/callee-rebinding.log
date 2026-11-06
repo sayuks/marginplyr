@@ -1,0 +1,14 @@
+Direct typed selection: a 
+Summary outcome: Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`. 
+Summary callback metadata: integer 
+Typed-wrapper control: east, west 
+Control callback metadata: character 
+Versions:
+dplyr 1.2.1 
+tidyselect 1.2.1 
+rlang 1.3.0 
+vctrs 0.7.3 
+pkgload 1.5.3 
+R version 4.6.1 (2026-06-24) 
+ aarch64-apple-darwin23 

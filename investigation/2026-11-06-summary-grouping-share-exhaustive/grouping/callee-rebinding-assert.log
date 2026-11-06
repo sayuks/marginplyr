@@ -1,0 +1,8 @@
+Direct typed selection: a 
+Summary outcome: Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`. 
+Summary callback metadata: integer 
+Typed-wrapper control: east, west 
+Control callback metadata: character 
+Error: !inherits(actual, "error") is not TRUE
+Execution halted

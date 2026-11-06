@@ -1,0 +1,42 @@
+DIRECT vec_c canonical values
+  distance
+1        1
+2        1
+UNNAMED ordinary dplyr
+# A tibble: 2 × 2
+      g distance
+  <int>    <dbl>
+1     1        1
+2     2        1
+UNNAMED Margin
+# A tibble: 2 × 2
+      g distance
+  <int>    <dbl>
+1     1        1
+2     2      100
+NAMED ordinary dplyr
+# A tibble: 2 × 2
+      g result$distance
+  <int>           <dbl>
+1     1               1
+2     2               1
+NAMED Margin
+# A tibble: 2 × 2
+      g result$distance
+  <int>           <dbl>
+1     1               1
+2     2               1
+SINGLE TYPE control agreed
+PICK ordinary dplyr
+# A tibble: 2 × 2
+      g distance
+  <int>    <dbl>
+1     1        1
+2     2        1
+PICK Margin
+# A tibble: 2 × 2
+      g distance
+  <int>    <dbl>
+1     1        1
+2     2      100
+DATED WITNESS CONFIRMED ; named and homogeneous-type controls passed

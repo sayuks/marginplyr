@@ -1,0 +1,16 @@
+"script","args","digest","expected_status","observed_status"
+"summary/frame-casts.R","","a2c426c45cd6a19727c17a5fafbf7b338bb91bc912bdb57d056a7c292aa1ddeb",0,0
+"summary/frame-casts.R","--assert","a2c426c45cd6a19727c17a5fafbf7b338bb91bc912bdb57d056a7c292aa1ddeb",1,1
+"summary/frame-casts.R","--assert --named-control","a2c426c45cd6a19727c17a5fafbf7b338bb91bc912bdb57d056a7c292aa1ddeb",0,0
+"summary/frame-cast-matrix.R","","dbaff17dfab0c15e25caac07a75e0715702d33e245522a0c5d411fd29cc1f94e",0,0
+"grouping/callee-rebinding.R","","0438029f3f683011625c9a45a37d09a410689a0c8d35d87176dabcd6db75c01d",0,0
+"grouping/callee-rebinding.R","--assert","0438029f3f683011625c9a45a37d09a410689a0c8d35d87176dabcd6db75c01d",1,1
+"grouping/callee-rebinding-controls.R","","706469264d17d77046e5f563191dad7a3dcbb84eb52f132fe2d11497273da6a4",0,0
+"share/closure-values.R","","1e2bcfbec03d30970551312e51ce71c371452d9e0499ff61eee361a8cf8318f8",0,0
+"share/closure-values.R","syntax --assert","1e2bcfbec03d30970551312e51ce71c371452d9e0499ff61eee361a8cf8318f8",1,1
+"share/closure-values.R","transfer --assert","1e2bcfbec03d30970551312e51ce71c371452d9e0499ff61eee361a8cf8318f8",1,1
+"share/closure-values.R","mutation --assert","1e2bcfbec03d30970551312e51ce71c371452d9e0499ff61eee361a8cf8318f8",1,1
+"share/closure-values.R","--assert --controls-only","1e2bcfbec03d30970551312e51ce71c371452d9e0499ff61eee361a8cf8318f8",0,0
+"share/environment-aliases.R","","8d621b20fac842de9cbd32fed9aab765deb9acc9fb4541df7005472350aecb00",0,0
+"share/environment-aliases.R","--assert","8d621b20fac842de9cbd32fed9aab765deb9acc9fb4541df7005472350aecb00",1,1
+"share/environment-aliases.R","--assert --controls-only","8d621b20fac842de9cbd32fed9aab765deb9acc9fb4541df7005472350aecb00",0,0

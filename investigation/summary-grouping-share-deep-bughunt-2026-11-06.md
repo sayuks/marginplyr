@@ -1,6 +1,7 @@
 # Deep bug hunt for Margin summaries, Grouping specifications and shares
 
 Investigated: 2026-11-06
+Revised: 2026-11-06 — investigation/summary-grouping-share-exhaustive-bughunt-2026-11-06.md
 Repository snapshot: `547d77095c2923573216d002f50bef21778247f9`
 
 The investigation started from fetched main in the new worktree
@@ -66,6 +67,16 @@ oracles from package findings. The completed work established no guarantee for
 arbitrary R reflection, arbitrary extension classes, unbounded Grouping plans,
 all backend dialects/collations, hosted services, concurrent execution,
 interruption, other dependency versions or other platforms.
+
+## Revisions (2026-11-06)
+
+The native/portable coverage claim in the typed-key row above is withdrawn.
+The [later adapter audit](2026-11-06-summary-grouping-share-exhaustive/sql/findings.md#prior-adapter-label-audit)
+loaded this note's exact snapshot and established that `.aggregate` was an
+ordinary summary name, not an adapter option. Both loop labels selected the
+native adapter. The 480 observed collections and their numeric matches were
+unchanged; they did not establish portable-adapter coverage. The later
+investigation independently asserted physical paths for its own finite matrix.
 
 ## Replay and publication boundary
 

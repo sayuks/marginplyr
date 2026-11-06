@@ -1,6 +1,7 @@
 # DuckDB typed keys and numeric share controls
 
 Investigated: 2026-11-06
+Revised: 2026-11-06 — investigation/summary-grouping-share-exhaustive-bughunt-2026-11-06.md
 Repository snapshot: `547d77095c2923573216d002f50bef21778247f9`
 
 The coordinator loaded a disposable archive of that SHA at
@@ -36,6 +37,16 @@ assertion before the coordinator replay. [The lane transcript](typed-keys-and-sh
 records the second run; the coordinator transcript records the final script.
 The ordinary SQL missing-value warning was emitted once by dbplyr and was not
 a package condition or a failed comparison.
+
+## Revisions (2026-11-06)
+
+The statement above that the loop selected auto/portable aggregation is
+withdrawn. The [later adapter audit](../../2026-11-06-summary-grouping-share-exhaustive/sql/findings.md#prior-adapter-label-audit)
+loaded this note's exact snapshot and established that `.aggregate` was an
+ordinary summary name, not an adapter option. Both labels produced a native
+GROUPING SETS query. The observed numeric matches remained evidence for those
+480 native collections, not for portable aggregation. The original script
+and observations were retained unchanged.
 
 ## Semantic source types
 

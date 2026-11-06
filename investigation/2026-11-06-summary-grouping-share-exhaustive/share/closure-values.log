@@ -1,0 +1,10 @@
+Completed data.frame 
+Completed tibble 
+Completed data.table 
+Completed dtplyr 
+                 input
+expected          data.frame data.table dtplyr tibble
+  legal                   48         48     48     48
+  missing-refusal         48         48     48     48
+  refusal                 24         24     24     24
+Comparisons: 480 
