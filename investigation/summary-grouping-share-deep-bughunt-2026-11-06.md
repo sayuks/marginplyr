@@ -27,10 +27,10 @@ could depend on an earlier ordinary summary alias.
 
 | Boundary | Observed effect on the tested snapshot | Ticket disposition |
 | --- | --- | --- |
-| A computed member target on an explicit mask environment | Concatenated, lexical and locally assigned indices returned input payloads beside the displayed share; literal-member and computed-name lookup controls refused. | Evidence confirmed; issue publication pending in this snapshot. |
-| Unproven inheritance or stop-frame options | A scalar rlang lookup with a literal binding name bypassed the refusal when its search options were expressions; equivalent proven literal options refused. | Evidence confirmed; issue publication pending in this snapshot. |
-| Bulk environment reads | rlang multi-binding lookup and base environment-to-list conversion hid dependencies; scalar and base multi-binding lookup controls refused. | Evidence confirmed; issue publication pending in this snapshot. |
-| Known-call closure transfers | identity/invisible return and literal reflective assignment lost a closure's invocation-time dependency after a local binding removal; repaired bare-copy, literal-list and literal-factory controls refused. | Independent follow-up to closed #1361; publication pending in this snapshot. |
+| A computed member target on an explicit mask environment | Concatenated, lexical and locally assigned indices returned input payloads beside the displayed share; literal-member and computed-name lookup controls refused. | [#1385](https://github.com/sayuks/marginplyr/issues/1385) |
+| Unproven inheritance or stop-frame options | A scalar rlang lookup with a literal binding name bypassed the refusal when its search options were expressions; equivalent proven literal options refused. | [#1386](https://github.com/sayuks/marginplyr/issues/1386) |
+| Bulk environment reads | rlang multi-binding lookup and base environment-to-list conversion hid dependencies; scalar and base multi-binding lookup controls refused. | [#1388](https://github.com/sayuks/marginplyr/issues/1388) |
+| Known-call closure transfers | identity/invisible return and literal reflective assignment lost a closure's invocation-time dependency after a local binding removal; repaired bare-copy, literal-list and literal-factory controls refused. | [#1389](https://github.com/sayuks/marginplyr/issues/1389), independent follow-up to closed #1361 |
 
 The 360-comparison matrix covered both helpers, both directions and three eager
 input classes. It established 168 missing refusals, 96 correct refusals and
