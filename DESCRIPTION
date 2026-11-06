@@ -336,7 +336,10 @@ Config/testthat/start-first:
     share-known-closure-transfers,
     share-member-dependencies,
     margin-label-check-flags,
+    share-visible-closure-values,
+    share-list-writes,
     dtplyr-head-metadata,
+    share-environment-aliases,
     sqlite-derived-expansion
 VignetteBuilder:
     quarto

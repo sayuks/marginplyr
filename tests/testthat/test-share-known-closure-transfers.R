@@ -3,31 +3,61 @@ known_closure_transfer_data <- function() {
 }
 
 expect_transfer_dependencies <- function(data, expressions) {
+  before <- serialize(data, NULL)
+  materialize <- if (is.data.frame(data)) identity else dplyr::collect
   for (kind in c("parent", "total")) {
     share <- rlang::call2(paste0("share_of_", kind), quote(value))
     for (expr in expressions) {
       expect_error(
-        summarize_with_margins(
+        materialize(summarize_with_margins(
           data, value = sum(.data$x), prior = !!share, observed = !!expr,
           .grouping = rollup("group")
-        ),
+        )),
         "Ordinary summaries cannot use an earlier .* share",
         class = "marginplyr_error"
       )
       expect_error(
-        summarize_with_margins(
+        materialize(summarize_with_margins(
           data, prior = sum(.data$x), value = !!expr, ratio = !!share,
           .grouping = rollup("group")
-        ),
+        )),
         "depends on earlier summary alias `prior`",
         class = "marginplyr_error"
       )
     }
   }
+  expect_identical(serialize(data, NULL), before)
 }
 
 known_return_transfers <- function() {
   alist(
+    (function(prior) {
+      # get() reads this binding by a literal string.
+      read <- function() sum(prior) # nolint: object_usage_linter.
+      copied <- base::get(x = "read", envir = environment(),
+                          mode = "function", inherits = FALSE)
+      rm(prior)
+      copied()
+    })(1),
+    (function(prior) {
+      read <- function() sum(prior)
+      copied <- match.fun(read)
+      rm(prior)
+      copied()
+    })(1),
+    (function(prior) {
+      # get() reads this binding by a literal string.
+      read <- function() sum(prior) # nolint: object_usage_linter.
+      copied <- get("read")
+      rm(prior)
+      copied()
+    })(1),
+    (function(prior) {
+      read <- function() sum(prior)
+      copied <- force(read)
+      rm(prior)
+      copied()
+    })(1),
     (function(prior) {
       read <- function() sum(prior)
       copied <- identity(read)
@@ -56,6 +86,54 @@ test_that("data.table known return calls retain closure dependencies", {
     data.table::as.data.table(known_closure_transfer_data()),
     known_return_transfers()
   )
+})
+
+test_that("dtplyr known transfers refuse dependencies before reading input", {
+  skip_if_suggest_absent("dtplyr")
+  probe <- rlang::env(calls = 0L)
+  observe <- function(x) {
+    probe$calls <- probe$calls + 1L
+    x
+  }
+  data <- dtplyr::lazy_dt(known_closure_transfer_data())
+  data <- dplyr::filter(data, observe(x) > 0)
+  expect_transfer_dependencies(data, known_return_transfers())
+  expect_identical(probe$calls, 0L)
+  expect_equal(dplyr::collect(data)$x, c(1, 3))
+  expect_identical(probe$calls, 1L)
+})
+
+expect_retained_lazy_transfers <- function(data) {
+  before <- serialize(data, NULL)
+  for (transfer in alist(force(read), get("read"), match.fun(read))) {
+    read <- rlang::expr((function(prior) {
+      # The injected transfer reads this local binding.
+      read <- function() sum(prior) # nolint: object_usage_linter.
+      copied <- !!transfer
+      copied()
+    })(1))
+    for (kind in c("parent", "total")) {
+      share <- rlang::call2(paste0("share_of_", kind), quote(value))
+      forward <- dplyr::collect(summarize_with_margins(
+        data, value = sum(.data$x), prior = !!share, observed = !!read,
+        .grouping = rollup("group")
+      ))
+      reverse <- dplyr::collect(summarize_with_margins(
+        data, prior = sum(.data$x), value = !!read, ratio = !!share,
+        .grouping = rollup("group")
+      ))
+      expect_equal(forward$observed, c(1, 1, 1))
+      expect_equal(forward$prior, c(0.25, 0.75, 1))
+      expect_equal(reverse$value, c(1, 1, 1))
+      expect_equal(reverse$ratio, c(1, 1, 1))
+    }
+  }
+  expect_identical(serialize(data, NULL), before)
+}
+
+test_that("dtplyr known transfers keep retained bindings legal at collection", {
+  skip_if_suggest_absent("dtplyr")
+  expect_retained_lazy_transfers(dtplyr::lazy_dt(known_closure_transfer_data()))
 })
 
 literal_assignment_transfers <- function() {
@@ -98,6 +176,21 @@ test_that("known closure transfers respect retained lexical bindings", {
     inputs[[3L]] <- data.table::as.data.table(known_closure_transfer_data())
   }
   expressions <- alist(
+    (function(prior) {
+      read <- function() sum(prior)
+      copied <- match.fun(read)
+      copied()
+    })(1),
+    (function(prior) {
+      read <- function() sum(prior)
+      copied <- get("read")
+      copied()
+    })(1),
+    (function(prior) {
+      read <- function() sum(prior)
+      copied <- force(read)
+      copied()
+    })(1),
     (function(prior) {
       read <- function() sum(prior)
       copied <- identity(read)
@@ -162,7 +255,8 @@ test_that("known closure return calls follow function lookup", {
 })
 
 test_that("planning does not execute caller closure transfer functions", {
-  for (callee in c("identity", "invisible", "assign")) {
+  for (callee in c("identity", "invisible", "force", "get", "match.fun",
+                   "assign")) {
     probe <- new.env(parent = emptyenv())
     probe$calls <- 0L
     transfer <- function(x) {
@@ -188,7 +282,8 @@ test_that("planning does not execute caller closure transfer functions", {
     } else {
       rlang::expr((function(prior) {
         read <- function() sum(prior)
-        copied <- !!rlang::call2(callee, quote(read))
+        copied <- !!rlang::call2(callee,
+                                 if (callee == "get") "read" else quote(read))
         rm(prior)
         copied()
       })(1))
@@ -201,5 +296,69 @@ test_that("planning does not execute caller closure transfer functions", {
     )
     expect_equal(result$observed, c(7, 7, 7))
     expect_identical(probe$calls, 3L)
+  }
+})
+
+test_that("known transfers never invoke a closure during planning", {
+  probe <- rlang::env(calls = 0L)
+  for (transfer in alist(force(read), get("read"), match.fun(read))) {
+    read <- rlang::quo((function(prior) {
+      read <- function() {
+        probe$calls <- probe$calls + 1L
+        sum(prior)
+      }
+      copied <- !!transfer
+      rm(prior)
+      copied()
+    })(1))
+    expect_transfer_dependencies(known_closure_transfer_data(), list(read))
+  }
+  expect_identical(probe$calls, 0L)
+})
+
+test_that("external get targets and independent closures stay legal", {
+  external <- rlang::env(read = function() 7)
+  expressions <- alist(
+    (function(prior) {
+      read <- function() sum(prior)
+      copied <- get("read", envir = external, inherits = FALSE)
+      rm(prior)
+      copied()
+    })(1),
+    (function(prior) {
+      read <- function() 7
+      copied <- force(read)
+      rm(prior)
+      copied()
+    })(1),
+    (function(prior) {
+      read <- function() 7
+      copied <- get("read")
+      rm(prior)
+      copied()
+    })(1),
+    (function(prior) {
+      read <- function() 7
+      copied <- match.fun(read)
+      rm(prior)
+      copied()
+    })(1)
+  )
+  for (kind in c("parent", "total")) {
+    share <- rlang::call2(paste0("share_of_", kind), quote(value))
+    for (expr in expressions) {
+      forward <- summarize_with_margins(
+        known_closure_transfer_data(), value = sum(.data$x), prior = !!share,
+        observed = !!expr, .grouping = rollup("group")
+      )
+      reverse <- summarize_with_margins(
+        known_closure_transfer_data(), prior = sum(.data$x), value = !!expr,
+        ratio = !!share, .grouping = rollup("group")
+      )
+      expect_equal(forward$observed, c(7, 7, 7))
+      expect_equal(reverse$value, c(7, 7, 7))
+      expect_equal(forward$prior, c(0.25, 0.75, 1))
+      expect_equal(reverse$ratio, c(1, 1, 1))
+    }
   }
 })
