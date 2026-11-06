@@ -523,6 +523,51 @@ in selection diagnostics. Rebinding the caller's function would mutate an
 object the operation does not own. The per-argument child environment avoids
 those changes.
 
+## Amendment: authored namespace arguments retain selection context (#1396)
+
+An authored namespace call admitted by the nested spelling gate runs as the
+caller wrote it, including its namespace operation. That operation, its returned
+callee, or a deferred payload can read selection metadata. Preflight suspends
+before such a call and leaves later arguments unread. The leading-selection pass
+validates the completed prefix and stops at the pending argument. After the
+operation acquires its one faithful typed snapshot, preflight resumes from its
+retained argument records, before typed `.by` resolution. The caller's expression
+then runs once in the typed selection context; it is not tried outside that
+context first. Its returned specification or ordinary selection is retained per
+argument occurrence as above. Literal selections that the spelling gate declines
+continue to run in ordinary selection resolution.
+Caller errors leave the generated selection capture with their original class,
+diagnostic and cause, without an error context naming the capture expression.
+
+This narrows the earlier amendments' promise that every recognized argument is
+read before typed metadata acquisition. Genuine identity wrappers around
+materialized bindings, literal values or actual stock constructors keep their
+preflight reading without metadata. A deferred binding, caller constructor or
+namespace operation that cannot establish that path requires typed metadata.
+The namespace operator itself is included: resolving it ahead of the selection
+context would still run caller code too early. No speculative evaluation or
+retry is permitted.
+
+The resumed preflight and canonical compilation share that typed proxy. Pending
+arguments have unknown family sizes during prefix validation, so they cannot
+establish duplicate occurrence positions. The existing at-most-one acquisition
+and ADR 0020's source-read policy remain in force; no new query exemption is added.
+A structural error, leading selection error or ambiguous syntactic name reached
+before the authored call still refuses before metadata.
+An invalid specification returned by an unproven authored call is refused after
+that call's metadata acquisition, even when that particular callback happens
+not to use the context. Its answer cannot establish the context the call needed
+before it ran. Standard identity wrappers keep their locally decidable grammar
+refusals before metadata.
+
+**Considered options.** Reading unknown caller code against the names-only proxy
+can silently select different columns. Evaluating first without a context and
+retrying after a selection-context error repeats caller effects and misses calls
+that return a plausible wrong answer. Resolving only the namespace operator
+before deferral fails when that operator itself reads metadata. A second general
+R interpreter to prove arbitrary caller functions independent of types is not
+required; unproven calls conservatively use the faithful typed context.
+
 ## Amendment: refuse a cyclic nested reference (#828)
 
 Structural preflight refuses a specification that is the same object as an

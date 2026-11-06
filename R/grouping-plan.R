@@ -292,6 +292,9 @@ prepare_grouping_plan <- function(.data,
         } else {
           grouping_selection_proxy(data, backend = backend)
         }
+        preflight <- complete_grouping_preflight(
+          preflight, data_vars, data_proxy
+        )
         if (is.null(by)) {
           by <- resolve_by_selection(by_quo, data_proxy)
         }
@@ -1278,17 +1281,25 @@ validate_grouping_overlap <- function(.by, dimensions) {
 # argument: `quo` is the selection quosure and `nested` is this function's
 # answer for it, a preflight of the same shape for a nested specification and
 # `NULL` for a column selection. Expansion below reads that answer instead of
-# taking one, which is what holds a recognized argument to one evaluation
-# (ADR 0008).
+# taking one. Pending arguments suspend this traversal until its caller supplies
+# the typed snapshot; `previous` retains the completed readings (ADR 0008).
 #
 # `spec` is `NULL` only for the absent `.grouping`, which
 # `compile_grouping_spec_impl()` fills in. An empty `args` beside any other
 # `spec` is a specification a caller wrote no arguments for.
 # `ancestors` holds the specifications on this branch only, so independent
 # uses of one specification remain independent readings.
+# `pending` carries a suspension across nested nodes, leaving later arguments
+# unread until the typed continuation.
 preflight_grouping_spec <- function(grouping_spec,
                                     data_vars,
-                                    ancestors = list()) {
+                                    ancestors = list(),
+                                    data_proxy = NULL,
+                                    previous = NULL,
+                                    pending = new.env(parent = emptyenv())) {
+  if (!is.null(previous) && !isTRUE(previous$deferred)) {
+    return(previous)
+  }
   stopifnot(is.character(data_vars), !anyNA(data_vars))
   validate_grouping_spec_early(grouping_spec)
   if (is.null(grouping_spec)) {
@@ -1308,9 +1319,25 @@ preflight_grouping_spec <- function(grouping_spec,
   # (ADR 0005).
   check_named_grouping_args(grouping_spec, rule)
   name_only <- TRUE
+  deferred <- FALSE
   args <- vector("list", length(grouping_spec$args))
   for (i in seq_along(grouping_spec$args)) {
-    captured <- capture_nested_arg(grouping_spec$args[[i]])
+    if (isTRUE(pending$blocked)) {
+      args[[i]] <- list(
+        quo = grouping_spec$args[[i]], nested = NULL, deferred = TRUE
+      )
+      deferred <- TRUE
+      name_only <- FALSE
+      next
+    }
+    prior <- previous$args[[i]]
+    captured <- if (!is.null(prior$arg)) {
+      list(quo = prior$arg, wrappers = prior$wrappers)
+    } else if (!is.null(prior) && !isTRUE(prior$deferred)) {
+      list(quo = prior$quo, wrappers = list())
+    } else {
+      capture_nested_arg(grouping_spec$args[[i]])
+    }
     arg <- captured$quo
     # The refusal is here rather than in the reader below because this is the
     # frame holding what the diagnostic names: the constructor and the
@@ -1319,9 +1346,21 @@ preflight_grouping_spec <- function(grouping_spec,
     if (is_empty_argument(arg)) {
       abort_empty_grouping_arg(rule$constructor, i)
     }
-    reading <- read_grouping_arg(arg, data_vars, captured$wrappers)
+    reused <- !is.null(prior) && !isTRUE(prior$deferred)
+    reading <- if (reused) {
+      if (is.null(prior$nested)) prior else list(nested = prior$nested$spec)
+    } else {
+      read_grouping_arg(arg, data_vars, captured$wrappers, data_proxy)
+    }
+    if (isTRUE(reading$deferred)) {
+      pending$blocked <- TRUE
+      args[[i]] <- reading
+      deferred <- TRUE
+      name_only <- FALSE
+      next
+    }
     if (is.null(reading$nested)) {
-      if (!reading$evaluated) {
+      if (!reused && !reading$evaluated) {
         check_ambiguous_nested_name(arg, grouping_spec, rule, data_vars)
       }
       name_only <- name_only && is_name_only_selection(reading$quo, data_vars)
@@ -1330,13 +1369,29 @@ preflight_grouping_spec <- function(grouping_spec,
     }
 
     nested_preflight <- preflight_grouping_spec(
-      reading$nested, data_vars, ancestors
+      reading$nested, data_vars, ancestors, data_proxy,
+      previous = prior$nested, pending = pending
     )
-    rule$validate_nested(grouping_spec, nested_preflight$spec)
+    if (!isTRUE(nested_preflight$deferred)) {
+      rule$validate_nested(grouping_spec, nested_preflight$spec)
+    }
     name_only <- name_only && nested_preflight$name_only
+    deferred <- deferred || isTRUE(nested_preflight$deferred)
     args[[i]] <- list(quo = arg, nested = nested_preflight)
   }
-  list(spec = grouping_spec, args = args, name_only = name_only, rule = rule)
+  list(spec = grouping_spec, args = args, name_only = name_only, rule = rule,
+       deferred = deferred)
+}
+
+# Complete a suspended preflight against the operation's one typed snapshot.
+# The earlier argument records keep every completed caller reading intact.
+complete_grouping_preflight <- function(preflight, data_vars, data_proxy) {
+  if (!isTRUE(preflight$deferred)) {
+    return(preflight)
+  }
+  preflight_grouping_spec(
+    preflight$spec, data_vars, data_proxy = data_proxy, previous = preflight
+  )
 }
 
 # Reject tagged arguments that carry a value, leaving empty arguments for the
@@ -1593,6 +1648,10 @@ compile_grouping_spec <- function(
     arg_name = ".duplicates"
   )
   stopifnot(identical(preflight$spec, .grouping))
+  preflight <- complete_grouping_preflight(
+    preflight, data_vars,
+    if (is.null(data_proxy)) grouping_name_proxy(data_vars) else data_proxy
+  )
   compile_grouping_spec_impl(
     preflight,
     data_vars = data_vars,
@@ -1776,6 +1835,14 @@ expand_single_grouping_set <- function(preflight, resolve_selection, emit,
   emit_grouping_family(list(set), emit)
 }
 
+# Read a selection, stopping prefix validation at a pending argument.
+grouping_selection_quo <- function(arg) {
+  if (isTRUE(arg$deferred)) {
+    invokeRestart("needs_typed_selection")
+  }
+  arg$quo
+}
+
 # Resolve one set, carrying its known columns if the observed pass defers.
 resolve_grouping_set <- function(preflight, resolve_selection,
                                  observe = FALSE) {
@@ -1794,9 +1861,12 @@ resolve_grouping_set <- function(preflight, resolve_selection,
   }
   for (i in seq_along(args)) {
     arg <- args[[i]]
+    if (isTRUE(arg$nested$deferred)) {
+      invokeRestart("needs_typed_selection")
+    }
     # Preflight refuses nested specifications in a set (ADR 0015, #159).
     stopifnot(is.null(arg$nested))
-    selected[[i]] <- resolve(arg$quo)
+    selected[[i]] <- resolve(grouping_selection_quo(arg))
   }
   columns()
 }
@@ -1817,7 +1887,9 @@ expand_grouping_sets <- function(preflight, resolve_selection, emit,
       preflight$args,
       function(arg) {
         if (is.null(arg$nested)) {
-          return(emit_grouping_family(list(resolve_selection(arg$quo)), emit))
+          return(emit_grouping_family(
+            list(resolve_selection(grouping_selection_quo(arg))), emit
+          ))
         }
         expand_grouping_family(
           arg$nested, resolve_selection, emit, drop_duplicates
@@ -1834,12 +1906,16 @@ resolve_grouping_units <- function(preflight, resolve_selection) {
       preflight$args,
       function(arg) {
         if (is.null(arg$nested)) {
-          cols <- resolve_selection(arg$quo)
+          cols <- resolve_selection(grouping_selection_quo(arg))
           return(lapply(cols, function(col) col))
         }
         # Classified as the guard that admitted this argument classifies
         # (#324): a comparison on the field as read fires here, untyped, for
         # exactly the population that guard now admits.
+        if (isTRUE(arg$nested$deferred) &&
+              !identical(grouping_kind_name(arg$nested$spec$type), "set")) {
+          invokeRestart("needs_typed_selection")
+        }
         stopifnot(identical(grouping_kind_name(arg$nested$spec$type), "set"))
         cols <- resolve_grouping_set(arg$nested, resolve_selection)
         if (length(cols) == 0L) {
@@ -2036,6 +2112,9 @@ single_grouping_factor <- function(arg) {
 # Count occurrences without resolving selections, or return NA when their
 # answers decide the count. Every caller holds a preflighted factor.
 grouping_factor_size <- function(arg) {
+  if (isTRUE(arg$deferred)) {
+    return(NA_real_)
+  }
   if (is.null(arg$nested)) {
     return(1L)
   }
@@ -2054,7 +2133,9 @@ grouping_factors_size <- function(args) {
 expand_grouping_factor <- function(arg, resolve_selection, drop_duplicates,
                                    emit = NULL) {
   if (is.null(arg$nested)) {
-    return(emit_grouping_family(list(resolve_selection(arg$quo)), emit))
+    return(emit_grouping_family(
+      list(resolve_selection(grouping_selection_quo(arg))), emit
+    ))
   }
   expand_grouping_family(arg$nested, resolve_selection, emit, drop_duplicates)
 }
@@ -2301,7 +2382,7 @@ grouping_constructor_names <- function() {
 # selection; its preflight value stays in that argument's environment for the
 # typed pass (ADR 0008). `wrappers` holds captured qualified call boundaries;
 # `evaluated` distinguishes a retained answer from an unread column name.
-read_grouping_arg <- function(arg, data_vars, wrappers = list()) {
+read_grouping_arg <- function(arg, data_vars, wrappers, data_proxy) {
   expr <- nested_arg_expr(arg)
   authored <- restore_nested_arg(arg, wrappers)
   env <- rlang::quo_get_env(authored)
@@ -2331,7 +2412,30 @@ read_grouping_arg <- function(arg, data_vars, wrappers = list()) {
 
   # Syntactic pairs affect admission only. An authored qualified pair runs
   # its namespace operation in its captured environment (ADR 0019).
-  value <- rlang::eval_tidy(rlang::new_quosure(evaluation, env))
+  evaluate <- function() rlang::eval_tidy(rlang::new_quosure(evaluation, env))
+  authored_namespace <- qualified || !is.null(static_call_ns(expr))
+  value <- if (authored_namespace && !grouping_arg_context_free(authored)) {
+    if (is.null(data_proxy)) {
+      return(c(selection, list(
+        deferred = TRUE, arg = arg, wrappers = wrappers
+      )))
+    }
+    # Caller conditions leave the generated capture unchanged (ADR 0008).
+    outcome <- NULL
+    capture <- function() {
+      outcome <<- tryCatch(
+        list(value = evaluate()), error = function(cnd) list(error = cnd)
+      )
+      integer()
+    }
+    tidyselect::eval_select(rlang::call2(capture), data_proxy)
+    if (!is.null(outcome$error)) {
+      stop(outcome$error)
+    }
+    outcome$value
+  } else {
+    evaluate()
+  }
   selection$evaluated <- TRUE
   if (inherits(value, "margin_grouping_spec")) {
     return(list(quo = arg, nested = value))
@@ -2369,6 +2473,39 @@ read_grouping_arg <- function(arg, data_vars, wrappers = list()) {
     selection$quo <- rlang::quo_set_env(authored, selection_env)
   }
   selection
+}
+
+# Whether an authored namespace expression can be read without a selection
+# context. Settled bindings, literals and stock constructors through genuine
+# identity wrappers establish this; unknown caller code needs types.
+grouping_arg_context_free <- function(arg) {
+  expr <- unparenthesized_value(rlang::quo_get_expr(arg), ns = "")
+  env <- rlang::quo_get_env(arg)
+  if (rlang::is_quosure(expr)) {
+    return(grouping_arg_context_free(expr))
+  }
+  if (is_redundant_parens(expr)) {
+    fn <- selection_argument_function(
+      rlang::call2(expr[[1L]]), env, character()
+    )
+    return(identical(fn, base::`(`) && grouping_arg_context_free(
+      rlang::new_quosure(expr[[2L]], env)
+    ))
+  }
+  if (is_name_part(expr)) {
+    return(!selection_binding_deferred(
+      env, rlang::as_string(expr), allow_namespace_promises = FALSE
+    ))
+  }
+  if (!is.language(expr)) {
+    return(TRUE)
+  }
+  name <- static_spelling_name(expr, "grouping_constructor")
+  if (is.null(name)) {
+    return(FALSE)
+  }
+  stock <- get(name, envir = asNamespace("marginplyr"), inherits = FALSE)
+  identical(selection_argument_function(expr, env, character()), stock)
 }
 
 # The gate above reads spellings, so a specification a caller's own function
