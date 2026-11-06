@@ -3,6 +3,8 @@ check_forwarded_grouping <- function(input, data) {
   constructors <- c(
     "grouping_set", "grouping_sets", "rollup", "cube", "grouping_spec"
   )
+  # Compare the private registry so a constructor added without a matrix case
+  # fails this coverage assertion.
   expect_setequal(constructors, grouping_constructor_names())
   templates <- list(
     quote(function(column) {
