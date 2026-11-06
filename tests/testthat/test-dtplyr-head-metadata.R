@@ -1,13 +1,12 @@
-# Replace the external S3 dispatch boundary and restore it even on failure.
-# The caller has made dtplyr (which imports data.table) available.
-local_dtplyr_head <- function(mutating = FALSE, .env = parent.frame()) {
+# Replace the external S3 dispatch boundary. The caller has made dtplyr
+# available and must register `restore()` with on.exit() before assertions.
+dtplyr_head_fixture <- function(mutating = FALSE) {
   fixture <- new.env(parent = emptyenv())
   original <- utils::getS3method("head", "data.table")
   fixture$restore <- function() {
     registerS3method("head", "data.table", original,
                      envir = asNamespace("utils"))
   }
-  withr::defer(fixture$restore(), envir = .env)
   fixture$rows <- integer()
   replacement <- function(x, n = 6L, ...) {
     fixture$rows <- c(fixture$rows, nrow(x))
@@ -31,7 +30,8 @@ test_that("typed inspection refuses registered head replacement", {
   source <- data.table::data.table(g = c("a", "b"), value = 1:2)
   before <- serialize(source, NULL)
   root <- dtplyr::lazy_dt(source)
-  fixture <- local_dtplyr_head()
+  fixture <- dtplyr_head_fixture()
+  on.exit(fixture$restore(), add = TRUE)
   expect_error(inspect_grouping(
     root, .grouping = grouping_set(where(is.character))
   ), "dplyr::collect()", fixed = TRUE, class = "marginplyr_error")
@@ -50,7 +50,8 @@ test_that("registered head cannot alter derived dimensions or fixed keys", {
   root <- dtplyr::lazy_dt(source)
   for (step in list(root, dplyr::mutate(root, derived = value + 1L),
                     dplyr::filter(root, value > 0L))) local({
-    fixture <- local_dtplyr_head()
+    fixture <- dtplyr_head_fixture()
+    on.exit(fixture$restore(), add = TRUE)
     expect_identical(dplyr::collect(step)$g, c("a", "b"))
     expect_identical(inspect_grouping(
       step, .grouping = grouping_set(g)
@@ -92,7 +93,8 @@ test_that("registered head cannot alter derived dimensions or fixed keys", {
 
 test_that("head refusal protects immutable and Mutable inspection sources", {
   skip_if_suggest_absent("dtplyr")
-  fixture <- local_dtplyr_head(mutating = TRUE)
+  fixture <- dtplyr_head_fixture(mutating = TRUE)
+  on.exit(fixture$restore(), add = TRUE)
   for (immutable in c(TRUE, FALSE)) {
     source <- data.table::data.table(g = c("a", "b"), value = 1:2)
     before <- serialize(source, NULL)
@@ -140,7 +142,8 @@ test_that("head refusal protects every contributing graph root", {
       for (step in list(dplyr::left_join(inputs[[1L]], inputs[[2L]], by = "g"),
                         dplyr::union_all(inputs[[1L]], inputs[[2L]]))) local({
         native <- dplyr::collect(step)
-        fixture <- local_dtplyr_head(mutating = TRUE)
+        fixture <- dtplyr_head_fixture(mutating = TRUE)
+        on.exit(fixture$restore(), add = TRUE)
         expect_identical(dplyr::collect(step), native)
         expect_identical(inspect_grouping(
           step, .grouping = grouping_set(g)
@@ -234,11 +237,11 @@ test_that("standard deferred head registration preserves typed metadata", {
   original <- utils::getS3method("head", "data.table")
   ns <- asNamespace("data.table")
   methods <- getNamespaceInfo(ns, "S3methods")
-  withr::defer({
+  on.exit({
     registerS3method("head", "data.table", original,
                      envir = asNamespace("utils"))
     setNamespaceInfo(ns, "S3methods", methods)
-  })
+  }, add = TRUE)
   registerS3method("head", "data.table", "head.data.table", envir = ns)
   expect_true(rlang::env_binding_are_lazy(registry, "head.data.table")[[1L]])
   root <- dtplyr::lazy_dt(source)
@@ -258,7 +261,8 @@ test_that("head fixture restores registration when its scope fails", {
   skip_if_suggest_absent("dtplyr")
   original <- utils::getS3method("head", "data.table")
   expect_error(local({
-    local_dtplyr_head()
+    fixture <- dtplyr_head_fixture()
+    on.exit(fixture$restore(), add = TRUE)
     stop("fixture failure")
   }), "fixture failure", fixed = TRUE)
   expect_identical(utils::getS3method("head", "data.table"), original)
