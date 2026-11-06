@@ -129,42 +129,46 @@ closure_carrier_controls <- function() {
 
 expect_retained_carriers <- function(data) {
   external <- rlang::env(prior = 1)
-  expressions <- as.list(quote(alist(
-    (function(prior) {
-      read <- function() 1
-      list(read, {
-        rm(prior)
-        read <- function() sum(prior)
-      })[[1L]]()
-    })(1),
-    (function(arg = prior) 1)(2),
-    list(function(arg = prior) 1)[[1L]](2),
-    (function() function(arg = prior) 1)()(2),
-    list(external$prior, function() sum(external$prior))[[2L]](),
-    (function(prior) {
-      list(prior, function() sum(prior))[[2L]]()
-    })(1),
-    (function(prior) {
-      read_prior <- function() sum(prior)
-      copied <- read_prior
-      copied()
-    })(1),
-    (function(prior) {
-      read_prior <- function() sum(prior)
-      copied <- read_prior
-      again <- copied
-      again()
-    })(1),
-    (function(prior) {
-      read_prior <- function() sum(prior)
-      functions <- list(read_prior)
-      functions[[1L]]()
-    })(1),
-    (function(prior) {
-      read_prior <- (function() function() sum(prior))()
-      read_prior()
-    })(1)
-  )))[-1L]
+  expressions <- c(
+    as.list(quote(alist(
+      (function(prior) {
+        read <- function() 1
+        list(read, {
+          rm(prior)
+          read <- function() sum(prior)
+        })[[1L]]()
+      })(1),
+      (function(arg = prior) 1)(2),
+      list(function(arg = prior) 1)[[1L]](2),
+      (function() function(arg = prior) 1)()(2)
+    )))[-1L],
+    alist(
+      list(external$prior, function() sum(external$prior))[[2L]](),
+      (function(prior) {
+        list(prior, function() sum(prior))[[2L]]()
+      })(1),
+      (function(prior) {
+        read_prior <- function() sum(prior)
+        copied <- read_prior
+        copied()
+      })(1),
+      (function(prior) {
+        read_prior <- function() sum(prior)
+        copied <- read_prior
+        again <- copied
+        again()
+      })(1),
+      (function(prior) {
+        read_prior <- function() sum(prior)
+        functions <- list(read_prior)
+        functions[[1L]]()
+      })(1),
+      (function(prior) {
+        read_prior <- (function() function() sum(prior))()
+        read_prior()
+      })(1)
+    )
+  )
   for (kind in c("parent", "total")) {
     share <- rlang::call2(paste0("share_of_", kind), quote(value))
     for (expr in expressions) {
