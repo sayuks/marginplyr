@@ -5678,16 +5678,17 @@ static_environment_frame <- function(expr, scope, lookup) {
 # A lookup on the mask reads its own bindings regardless of inheritance.
 # An inheriting lookup from a lexical frame follows its visible bindings.
 # Only known stop frames beyond the mask preserve that path with `last`.
+# A nonliteral key retains an unresolved dependency on a mask-reaching path.
 inheriting_env_get_symbols <- function(expr, scope, lookup) {
   args <- static_matched_arguments(expr, rlang::env_get)
-  if (!rlang::is_string(unparenthesized_value(args$nm))) {
-    return(character())
-  }
   frame <- static_environment_frame(args$env, scope, lookup)
   if (is.null(frame)) {
     return(character())
   }
   name <- unparenthesized_value(args$nm)
+  if (!rlang::is_string(name)) {
+    name <- unresolved_lookup_name()
+  }
   if (frame > length(scope)) {
     return(name)
   }

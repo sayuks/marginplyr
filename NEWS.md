@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Parent and Total share dependency checks reject unresolved dynamic binding
+  names in mask-reaching `rlang::env_get()` calls, while retaining independent
+  external and local non-inheriting reads (#1362).
+
 * Parent and Total share dependency checks recognize equivalent explicit
   environment paths to the summary mask, including nested literal functions
   and local evaluation (#1368).
