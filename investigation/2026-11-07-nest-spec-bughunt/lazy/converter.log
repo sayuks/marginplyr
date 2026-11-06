@@ -1,0 +1,6 @@
+# A tibble: 1 × 6
+  set_id fixed included omitted grouping_bits grouping_id
+   <int> <chr> <chr>    <chr>   <chr>               <int>
+1      1 ()    ()       ()      ()                      0
+Status: false metadata or partitions
+Converter callback rows: 0

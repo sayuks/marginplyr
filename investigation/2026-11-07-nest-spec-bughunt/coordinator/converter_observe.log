@@ -1,0 +1,7 @@
+dimension inspect wrong grain callback rows: 0
+dimension nest wrong grain callback rows: 0
+dimension nest_by wrong grain callback rows: 0
+fixed inspect wrong grain callback rows: 0
+fixed nest wrong grain callback rows: 0
+fixed nest_by wrong grain callback rows: 0
+Native, name-only, restored-registration and source-immutability controls passed.

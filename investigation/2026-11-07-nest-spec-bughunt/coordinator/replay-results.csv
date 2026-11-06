@@ -1,0 +1,5 @@
+"case","expected","observed","script_md5"
+"bracket_observe",0,0,"e506275a68d8c7c229b1558911a5b51d"
+"bracket_contract",1,1,"e506275a68d8c7c229b1558911a5b51d"
+"converter_observe",0,0,"e506275a68d8c7c229b1558911a5b51d"
+"converter_contract",1,1,"e506275a68d8c7c229b1558911a5b51d"

@@ -1,0 +1,13 @@
+, , status = correct
+
+       shape
+mask    arithmetic cached filtered root
+  FALSE          6      6        6    6
+  TRUE           0      0        0    0
+
+, , status = false metadata or partitions
+
+       shape
+mask    arithmetic cached filtered root
+  FALSE          0      0        0    0
+  TRUE           6      6        6    6

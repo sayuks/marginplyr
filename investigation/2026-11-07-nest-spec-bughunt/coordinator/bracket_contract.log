@@ -1,0 +1,10 @@
+dimension inspect wrong grain callback rows: 0
+dimension nest wrong grain callback rows: 0,2,2,1
+dimension nest_by wrong grain callback rows: 0,2,2,1
+fixed inspect wrong grain callback rows: 0
+fixed nest wrong grain callback rows: 0,2,2,1
+fixed nest_by wrong grain callback rows: 0,2,2,1
+Error in probe() :
+  all(statuses %in% c("correct", "safe refusal")) is not TRUE
+Calls: probe -> stopifnot
+Execution halted

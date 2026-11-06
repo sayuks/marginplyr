@@ -1,0 +1,8 @@
+# A tibble: 1 × 6
+  set_id fixed included omitted grouping_bits grouping_id
+   <int> <chr> <chr>    <chr>   <chr>               <int>
+1      1 ()    ()       ()      ()                      0
+Status: false metadata
+Bracket callback row counts: 0
+Error: bad$status %in% c("correct", "safe metadata refusal") is not TRUE
+Execution halted
