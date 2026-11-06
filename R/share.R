@@ -4652,6 +4652,15 @@ scope_value_closure <- function(expr, scope, lookup) {
                                  function_lookup = FALSE))
   }
   operator <- static_call_name(head)
+  transfer_lookup <- lookup
+  transfer_lookup$rebound <- lookup$function_rebound %||% lookup$rebound
+  if (!is.null(operator) && operator %in% c("identity", "invisible") &&
+        is_known_base_frame_call(head, operator, scope, transfer_lookup)) {
+    value <- base_call_argument(head, "x")
+    if (length(value) == 1L) {
+      return(scope_value_closure(value[[1L]], scope, lookup))
+    }
+  }
   if (is.null(operator) || !operator %in% c("[[", "$") || length(head) != 3L ||
         !is_known_base_frame_call(head, operator, scope, lookup)) {
     return(NULL)
@@ -5326,6 +5335,13 @@ scope_after_removals <- function(expr, scope, lookup) {
   }
   bound <- scope_bound_names(scope)
   name <- static_call_name(expr)
+  assignment <- scope_local_closure_assignment(expr, scope, lookup)
+  if (!is.null(assignment)) {
+    retained <- scope_after_removals(assignment$value, scope, lookup)
+    return(scope_bind_local(
+      retained, assignment$name, assignment$value, lookup, value_scope = scope
+    ))
+  }
   if (identical(name, "force") && length(expr) == 2L &&
         is_known_base_call(expr, name, bound, lookup)) {
     return(statement_reads_and_scope(
@@ -5393,6 +5409,32 @@ scope_after_removals <- function(expr, scope, lookup) {
     scope <- scope_forget_kinds(scope, list2env_setter_names(mutation, lookup))
   }
   scope
+}
+
+# A literal base assign() installs a visible closure in the current frame when
+# neither its target environment nor inheritance can redirect the write.
+scope_local_closure_assignment <- function(expr, scope, lookup) {
+  transfer_lookup <- lookup
+  transfer_lookup$rebound <- lookup$function_rebound %||% lookup$rebound
+  if (length(scope) == 0L || !identical(static_call_name(expr), "assign") ||
+        !is_known_base_frame_call(expr, "assign", scope, transfer_lookup)) {
+    return(NULL)
+  }
+  name <- base_call_argument(expr, "x")
+  value <- base_call_argument(expr, "value")
+  target <- base_call_argument(expr, c("envir", "pos"))
+  inherited <- base_call_argument(expr, "inherits")
+  local_target <- length(target) == 0L ||
+    identical(static_environment_frame(target[[1L]], scope, lookup), 1L)
+  if (length(name) != 1L || !rlang::is_string(name[[1L]]) ||
+        length(value) != 1L || !local_target ||
+        (length(inherited) > 0L && !identical(inherited[[1L]], FALSE))) {
+    return(NULL)
+  }
+  if (is.null(scope_value_closure(value[[1L]], scope, lookup))) {
+    return(NULL)
+  }
+  list(name = name[[1L]], value = value[[1L]])
 }
 
 # Reflective or nonlocal writes can invalidate a known literal binding kind.
