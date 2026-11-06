@@ -67,8 +67,9 @@ local({
       file.path(package, "DESCRIPTION"))
     check_dir <- file.path(workspace, mode)
     timing <- file.path(check_dir, "timing")
-    metadata <- list(version = 1L, scope = "full", sha = strrep("a", 40L),
-      started_utc = format(Sys.time(), "%Y-%m-%dT%H:%M:%OS6Z", tz = "UTC"))
+    metadata <- list(version = 1L, sha = strrep("a", 40L),
+      started_utc = format(Sys.time(), "%Y-%m-%dT%H:%M:%OS6Z", tz = "UTC"),
+      scope = "full", reason = "Progress reporter fixture")
     stopifnot(review_ready_timing_prepare(package, timing, metadata))
     saveRDS(metadata, file.path(check_dir, "invocation.rds"))
     recorder <- file.path(root, "tools", "review-ready-timing.R")
@@ -121,7 +122,7 @@ local({
       identical(result$status == 0L, !fail),
       identical(length(result$errors) == 0L, !fail)
     )
-    terminal <- c(metadata, list(status = if (fail) "failed" else "passed",
+    terminal <- c(metadata, list(repository_contracts = "passed", status = if (fail) "failed" else "passed",
       heavy_check = if (fail) "failed" else "passed"))
     saveRDS(terminal, file.path(check_dir, "result.rds"))
     final_output <- capture.output(review_ready_timing_finish(timing, terminal,

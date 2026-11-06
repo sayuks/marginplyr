@@ -1,6 +1,8 @@
 # Exercises the proposal entry against one invocation and native Git adoption.
 source("tools/review-ready-timing.R")
 source("tools/review-ready-priority.R")
+source("tools/review-ready-check-lib.R")
+source("tools/review-ready-progress.R")
 
 # CI checks the tracked list as well as the disposable proposal fixtures.
 tracked_priority <- review_ready_priority_read(readLines("DESCRIPTION"))
@@ -96,11 +98,12 @@ local({
     git(root, "commit", "-qm", "Measured fixture")
     run <- tempfile("run-", tmpdir = workspace)
     timing <- file.path(run, "timing")
-    metadata <- list(version = 1L, sha = git(root, "rev-parse", "HEAD"), scope = "full",
-      started_utc = format(Sys.time(), "%Y-%m-%dT%H:%M:%OS6Z", tz = "UTC"))
+    metadata <- list(version = 1L, sha = git(root, "rev-parse", "HEAD"),
+      started_utc = format(Sys.time(), "%Y-%m-%dT%H:%M:%OS6Z", tz = "UTC"),
+      scope = "full", reason = "Priority proposal fixture")
     expect(review_ready_timing_prepare(root, timing, metadata), "prepare timing")
     saveRDS(metadata, file.path(run, "invocation.rds"))
-    terminal <- c(metadata, list(status = "passed", heavy_check = "passed"))
+    terminal <- c(metadata, list(repository_contracts = "passed", status = "passed", heavy_check = "passed"))
     saveRDS(terminal, file.path(run, "result.rds"))
     files <- testthat::find_test_scripts(file.path(root, "tests", "testthat"), full.names = FALSE)
     for (i in seq_along(files)) {
@@ -134,6 +137,18 @@ local({
     processx::run(file.path(R.home("bin"), "Rscript"),
       c("tools/propose-test-priority.R", "--run", fixture$run), wd = fixture$root, error_on_status = FALSE)
   }
+  successful <- fixture(c("old", "new"), c(old = 5, new = 30))
+  proposal <- propose(successful)
+  expect(proposal$eligible && identical(names(proposal$models), c("native", "current", "candidate", "selected")) &&
+    file.exists(file.path(proposal$directory, "proposal.rds")),
+    "successful runner results with passed repository contracts generate priority proposals")
+  expect(proposal_cli(successful)$status == 0L, "explicit recalculation accepts successful runner results")
+  dir.create(file.path(successful$run, "check"))
+  writeLines("Starting 8 test processes.", file.path(successful$run, "check", "testthat.Rout"))
+  automatic <- capture.output(finish_review_ready_timing(successful$root,
+    list(directory = successful$run, metadata = readRDS(file.path(successful$run, "invocation.rds")))))
+  expect(any(startsWith(automatic, "Review-ready priority proposal: ")),
+    "automatic full-run finalization generates a proposal from successful runner results")
   incomplete <- fixture("old", c(old = 5, new = 30))
   rejected <- proposal_cli(incomplete)
   expect(rejected$status == 1L && grepl("missing registrations: new", rejected$stdout, fixed = TRUE),
@@ -275,6 +290,29 @@ local({
   reject(function(f) {
     path <- file.path(f$run, "result.rds")
     x <- readRDS(path); x$status <- "failed"; saveRDS(x, path)
+  }, "successful eligible local full")
+  for (fields in list(
+    list(repository_contracts = "failed"), list(repository_contracts = "not-run"),
+    list(repository_contracts = NULL), list(repository_contracts = TRUE),
+    list(status = "cancelled"), list(status = NULL),
+    list(heavy_check = "failed"), list(heavy_check = NULL),
+    list(sha = strrep("b", 40L)), list(started_utc = "2000-01-01T00:00:00.000000Z"),
+    list(reason = "different invocation")
+  )) {
+    reject(function(f) {
+      path <- file.path(f$run, "result.rds")
+      saveRDS(utils::modifyList(readRDS(path), fields), path)
+    }, "successful eligible local full")
+  }
+  reject(function(f) {
+    for (name in c("invocation.rds", "result.rds")) {
+      path <- file.path(f$run, name)
+      x <- readRDS(path); x$scope <- "source"; saveRDS(x, path)
+    }
+  }, "successful eligible local full")
+  reject(function(f) {
+    path <- file.path(f$timing, "evidence.rds")
+    x <- readRDS(path); x$eligible <- FALSE; saveRDS(x, path)
   }, "successful eligible local full")
   reject(function(f) {
     path <- file.path(f$timing, "evidence.rds")
