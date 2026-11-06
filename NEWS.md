@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Typed dtplyr Grouping-plan inspection and nesting safely refuse caller
+  bracket methods that cannot establish faithful column metadata (#1359).
+
 * dtplyr Margin order now works when the caller binds `::` in the lazy root
   environment (@LeonidasZhak, #1357).
 

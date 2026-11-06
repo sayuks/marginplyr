@@ -117,22 +117,38 @@ dtplyr_function_binding <- function(name, env, expected, fallback = FALSE) {
   fallback
 }
 
+# Whether the S3 registry holds the expected method without evaluating an
+# active binding or forcing a promise.
+dtplyr_registered_method <- function(name, expected) {
+  registry <- get(".__S3MethodsTable__.", envir = baseenv())
+  exists(name, envir = registry, inherits = FALSE) &&
+    !bindingIsActive(name, registry) &&
+    !rlang::env_binding_are_lazy(registry, name) &&
+    identical(rlang::env_get(registry, name), expected)
+}
+
 # A full join must reach the ordinary generic and data.table method, including
 # S3 lookup in the effective query environment before registered-method lookup.
 dtplyr_merge_binding <- function(env) {
   method <- get("merge.data.table", envir = asNamespace("data.table"))
-  registry <- get(".__S3MethodsTable__.", envir = baseenv())
   dtplyr_function_binding("merge", env, base::merge) &&
     dtplyr_function_binding(
       "merge.data.table", env, method,
       # The fallback promise leaves an inapplicable registration unread.
-      fallback = exists(
-        "merge.data.table", envir = registry, inherits = FALSE
-      ) &&
-        !bindingIsActive("merge.data.table", registry) &&
-        !rlang::env_binding_are_lazy(registry, "merge.data.table") &&
-        identical(rlang::env_get(registry, "merge.data.table"), method)
+      fallback = dtplyr_registered_method("merge.data.table", method)
     )
+}
+
+# Generated brackets must reach the ordinary generic and data.table method.
+# Proxy truncation also dispatches outside the query's lexical environment, so
+# the registration must be safe even when a lexical method applies.
+dtplyr_bracket_binding <- function(env) {
+  method <- get("[.data.table", envir = asNamespace("data.table"))
+  dtplyr_function_binding("[", env, base::`[`) &&
+    dtplyr_function_binding(
+      "[.data.table", env, method, fallback = TRUE
+    ) &&
+    dtplyr_registered_method("[.data.table", method)
 }
 
 # Only base arithmetic over known plain numeric bindings has an output type
@@ -273,7 +289,7 @@ dtplyr_metadata_safe_step <- function(step, env = step[["env"]]) {
        (!is.null(step[["i"]]) || !is.null(step[["j"]]))) ||
     (inherits(step, "dtplyr_step_join") &&
        !identical(step[["style"]], "full"))
-  if (brackets && !dtplyr_function_binding("[", env, base::`[`)) {
+  if (brackets && !dtplyr_bracket_binding(env)) {
     return(FALSE)
   }
   # Full joins generate a bare merge instead of a bracket operation.
