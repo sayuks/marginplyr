@@ -1,5 +1,11 @@
 # marginplyr 0.1.0
 
+* Deterministic empty dtplyr projections support expansion and typed
+  Grouping-plan inspection without running source operations (#1366).
+
+* Typed dtplyr Grouping-plan inspection and nesting safely refuse caller
+  bracket methods that cannot establish faithful column metadata (#1359).
+
 * dtplyr Margin order now works when the caller binds `::` in the lazy root
   environment (@LeonidasZhak, #1357).
 
