@@ -10,7 +10,7 @@ sqlite_boolean_columns <- function(names) {
 sqlite_boolean_input_relation <- function(data, aliases) {
   con <- dbplyr::remote_con(data)
   columns <- sqlite_boolean_names(margin_col_names(data), aliases)
-  input <- dbplyr::sql_render(data)
+  input <- dbplyr::sql_render(sql_quote_generated_columns(data))
   key <- tolower(as.character(input))
   suffix <- 1L
   name <- "marginplyr_boolean_source_1"

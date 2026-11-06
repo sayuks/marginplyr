@@ -92,26 +92,53 @@ test_that("SQLite derived expansion keeps copies, labels and direct types", {
             original, .grouping = plan, .duplicates = "keep", .id = "set",
             .margin_label = label, .sort = sort
           ))
+          canonical <- function(rows) {
+            rows <- as.data.frame(rows)
+            rows <- rows[vctrs::vec_order(rows), , drop = FALSE]
+            rownames(rows) <- NULL
+            rows
+          }
           options <- dbplyr::sql_options(cte = TRUE)
           for (cte in c(FALSE, TRUE)) {
             actual <- dplyr::collect(
               query, sql_options = dbplyr::sql_options(cte = cte)
             )
-            expect_identical(as.data.frame(actual), expected, info = info)
+            expect_identical(canonical(actual), canonical(expected),
+                             info = info)
+            if (sort != "none") {
+              # Payload order within a tied Margin key is unspecified.
+              keys <- c(name, "set")
+              expect_identical(as.data.frame(actual)[keys], expected[keys],
+                               info = info)
+            }
           }
           computed <- dplyr::compute(query, name = "derived_result",
                                      overwrite = TRUE, analyze = FALSE,
                                      sql_options = options)
           expect_identical(DBI::dbListFields(con, "derived_result"),
                            names(expected), info = info)
-          expect_identical(as.data.frame(dplyr::collect(computed)), expected,
-                           info = info)
+          saved <- as.data.frame(dplyr::collect(computed))
+          expect_identical(canonical(saved), canonical(expected), info = info)
+          if (sort != "none") {
+            expect_identical(saved[c(name, "set")], expected[c(name, "set")],
+                             info = info)
+          }
           for (n in c(0L, 1L)) {
             actual <- dplyr::collect(query, n = n, sql_options = options)
             prefix <- utils::head(expected, n)
             # No source type is inferred for an empty computed window column.
             if (n == 0L) prefix$z <- logical()
-            expect_identical(as.data.frame(actual), prefix, info = info)
+            expect_identical(as.data.frame(actual)[0L, ], prefix[0L, ],
+                             info = info)
+            expect_identical(nrow(actual), nrow(prefix), info = info)
+            if (nrow(actual) > 0L) {
+              expect_true(all(vctrs::vec_in(as.data.frame(actual), expected)),
+                          info = info)
+              if (sort != "none") {
+                expect_identical(as.data.frame(actual)[c(name, "set")],
+                                 prefix[c(name, "set")], info = info)
+              }
+            }
           }
           expect_identical(dplyr::collect(source), original, info = info)
         }
