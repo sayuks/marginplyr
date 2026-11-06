@@ -59,7 +59,7 @@ test_that("closure carriers use bindings present at invocation", {
 })
 
 computed_head_dependencies <- function() {
-  alist(
+  as.list(quote(alist(
     (function(prior) {
       read <- function() sum(prior)
       functions <- list(read, {
@@ -93,7 +93,7 @@ computed_head_dependencies <- function() {
       })()
       sum(prior)
     })(1)
-  )
+  )))[-1L]
 }
 
 test_that("computed closure heads retain their evaluated dependencies", {
@@ -129,7 +129,7 @@ closure_carrier_controls <- function() {
 
 expect_retained_carriers <- function(data) {
   external <- rlang::env(prior = 1)
-  expressions <- alist(
+  expressions <- as.list(quote(alist(
     (function(prior) {
       read <- function() 1
       list(read, {
@@ -164,7 +164,7 @@ expect_retained_carriers <- function(data) {
       read_prior <- (function() function() sum(prior))()
       read_prior()
     })(1)
-  )
+  )))[-1L]
   for (kind in c("parent", "total")) {
     share <- rlang::call2(paste0("share_of_", kind), quote(value))
     for (expr in expressions) {

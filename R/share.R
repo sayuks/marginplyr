@@ -4705,7 +4705,9 @@ scope_closure_list <- function(expr, scope, lookup) {
     elements <- vector("list", length(parts))
     names(elements) <- names(parts)
     for (index in seq_along(parts)) {
-      elements[index] <- list(scope_value_closure(parts[[index]], scope, lookup))
+      elements[index] <- list(
+        scope_value_closure(parts[[index]], scope, lookup)
+      )
       scope <- statement_reads_and_scope(
         parts[[index]], scope, lookup, read_symbols = no_scope_reads
       )$scope
