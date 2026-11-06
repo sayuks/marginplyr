@@ -1,5 +1,10 @@
 # marginplyr 0.1.0
 
+* Parent and Total share dependency checks retain computed mask-member reads,
+  unproven environment search bounds, bulk environment reads, and known local
+  closure transfers while preserving proven independent reads (#1385, #1386,
+  #1388, #1389).
+
 * Local list-backed matrix and array dimensions accept representable
   typed-missing Margin labels, including packed dimensions (#1364).
 
