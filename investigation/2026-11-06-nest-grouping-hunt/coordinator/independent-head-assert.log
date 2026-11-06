@@ -1,0 +1,4 @@
+Faithful schema or safe refusal: FALSE protected source: FALSE
+Error in main() : (faithful || safe_refusal) && protected is not TRUE
+Calls: main -> stopifnot
+Execution halted

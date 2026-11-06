@@ -1,0 +1,5 @@
+direct typed selection: b
+Grouping dimension: a
+caller namespace lookups: 0
+Error: identical(actual, list(expected)) is not TRUE
+Execution halted

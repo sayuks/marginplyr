@@ -1,0 +1,48 @@
+   mode      graph      role consumer immutable correct refusal
+ retype       root dimension  inspect      TRUE   FALSE   FALSE
+ retype       root dimension     nest      TRUE   FALSE   FALSE
+ retype       root dimension  nest_by      TRUE   FALSE   FALSE
+ retype       root     fixed  inspect      TRUE   FALSE   FALSE
+ retype       root     fixed     nest      TRUE   FALSE   FALSE
+ retype       root     fixed  nest_by      TRUE   FALSE   FALSE
+ retype arithmetic dimension  inspect      TRUE   FALSE   FALSE
+ retype arithmetic dimension     nest      TRUE   FALSE   FALSE
+ retype arithmetic dimension  nest_by      TRUE   FALSE   FALSE
+ retype arithmetic     fixed  inspect      TRUE   FALSE   FALSE
+ retype arithmetic     fixed     nest      TRUE   FALSE   FALSE
+ retype arithmetic     fixed  nest_by      TRUE   FALSE   FALSE
+ retype     filter dimension  inspect      TRUE   FALSE   FALSE
+ retype     filter dimension     nest      TRUE   FALSE   FALSE
+ retype     filter dimension  nest_by      TRUE   FALSE   FALSE
+ retype     filter     fixed  inspect      TRUE   FALSE   FALSE
+ retype     filter     fixed     nest      TRUE   FALSE   FALSE
+ retype     filter     fixed  nest_by      TRUE   FALSE   FALSE
+ mutate       root dimension  inspect      TRUE    TRUE   FALSE
+ mutate       root dimension  inspect     FALSE    TRUE   FALSE
+ mutate       root dimension     nest     FALSE   FALSE    TRUE
+ mutate       root dimension  nest_by     FALSE   FALSE    TRUE
+ source_unchanged preparation_row_counts  safe
+             TRUE                    2,0 FALSE
+             TRUE                    2,0 FALSE
+             TRUE                    2,0 FALSE
+             TRUE                    2,0 FALSE
+             TRUE                    2,0 FALSE
+             TRUE                    2,0 FALSE
+             TRUE                    2,0 FALSE
+             TRUE                    2,0 FALSE
+             TRUE                    2,0 FALSE
+             TRUE                    2,0 FALSE
+             TRUE                    2,0 FALSE
+             TRUE                    2,0 FALSE
+             TRUE                    2,0 FALSE
+             TRUE                    2,0 FALSE
+             TRUE                    2,0 FALSE
+             TRUE                    2,0 FALSE
+             TRUE                    2,0 FALSE
+             TRUE                    2,0 FALSE
+            FALSE                    2,0 FALSE
+            FALSE                    2,0 FALSE
+             TRUE                         TRUE
+             TRUE                         TRUE
+Error: all(out$safe) is not TRUE
+Execution halted
