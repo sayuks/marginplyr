@@ -1,0 +1,6 @@
+direct typed tidyselect: b
+qualified selection without embracing: b
+syntactic parentheses with embracing: a
+identity wrapper with embracing: b
+fixed-key qualified selection with embracing: b
+Grouping qualified selection with embracing: a

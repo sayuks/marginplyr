@@ -1,0 +1,17 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+ordinary arranged source: 2 rows x 1999 columns
+unsorted included-only expansion: exact match
+public columns: 1999 ; private order columns: 2
+sorted included-only expansion: too many columns in result set
+Error: !inherits(actual, "error") is not TRUE
+Execution halted
