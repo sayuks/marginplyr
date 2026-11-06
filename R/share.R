@@ -4420,6 +4420,11 @@ scoped_data_symbols <- function(expr, scope, lookup) {
     if (rlang::is_string(unparenthesized_value(expr[[3L]]))) {
       return(unparenthesized_value(expr[[3L]]))
     }
+    # An unknown member still reads the proven mask; its key is not evaluated
+    # during planning, and the key expression can carry its own dependencies.
+    return(unique(c(
+      unresolved_lookup_name(), call_part_symbols(expr, scope, lookup)
+    )))
   }
 
   # Any other `a$b` or `a@b` names `b` literally: the field or slot name is
