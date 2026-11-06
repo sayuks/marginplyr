@@ -5121,6 +5121,47 @@ scope_bind_local <- function(scope, name, value = NULL, lookup = NULL,
   scope
 }
 
+# Carry a literal element write to a tracked list without evaluating its value.
+# Stored closures use offsets relative to the current frame.
+scope_after_list_write <- function(scope, target, value, lookup, value_scope) {
+  target <- unparenthesized_value(target)
+  operator <- static_call_name(target)
+  if (is.null(operator) || !operator %in% c("[[", "$") ||
+        length(target) != 3L || !is_name_part(target[[2L]]) ||
+        !is_known_base_frame_call(target, operator, value_scope, lookup)) {
+    return(scope)
+  }
+  elements <- scope_closure_list(target[[2L]], value_scope, lookup)
+  key <- unparenthesized_value(target[[3L]])
+  if (identical(operator, "$") && is_name_part(key)) {
+    key <- rlang::as_name(key)
+  }
+  if (is.null(elements) || is.object(key)) {
+    return(scope)
+  }
+  index <- if (rlang::is_string(key)) {
+    matched <- match(key, names(elements))
+    if (is.na(matched)) length(elements) + 1L else matched
+  } else if (typeof(key) %in% c("integer", "double") && length(key) == 1L &&
+               is.finite(key) && key >= 1L && key <= length(elements) + 1L &&
+               key == trunc(key)) {
+    key
+  }
+  if (is.null(index)) {
+    return(scope)
+  }
+  elements[index] <- list(scope_value_closure(value, value_scope, lookup))
+  if (rlang::is_string(key)) names(elements)[index] <- key
+  name <- rlang::as_name(target[[2L]])
+  scope <- scope_bind_local(scope, name)
+  scope[[1L]]$kinds[[name]] <- "value"
+  scope[[1L]]$closure_lists[[name]] <- lapply(elements, function(closure) {
+    if (!is.null(closure)) closure$enclosing <- closure$enclosing - 1L
+    closure
+  })
+  scope
+}
+
 # Identify literal function or value syntax without evaluating it.
 # NULL leaves the kind unknown.
 scope_literal_kind <- function(value) {
@@ -5261,7 +5302,10 @@ statement_reads_and_scope <- function(expr, scope, lookup = NULL,
   # binding depends on the shape of the target.
   list(
     reads = unique(c(read_symbols(expr[[2L]], scope, lookup), value)),
-    scope = scope_after_removals(expr[[2L]], retained, lookup)
+    scope = scope_after_list_write(
+      scope_after_removals(expr[[2L]], retained, lookup),
+      expr[[2L]], expr[[3L]], lookup, value_scope = scope
+    )
   )
 }
 

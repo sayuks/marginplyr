@@ -336,7 +336,8 @@ Config/testthat/start-first:
     share-known-closure-transfers,
     share-member-dependencies,
     margin-label-check-flags,
-    share-visible-closure-values
+    share-visible-closure-values,
+    share-list-writes
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool

@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Parent and Total share dependency checks follow closures installed by
+  literal list element additions, replacements and dollar-field writes
+  (#1403).
+
 * Parent and Total share dependency checks retain local closures transferred
   through `force()`, literal `get()` and `match.fun()` (#1402).
 
