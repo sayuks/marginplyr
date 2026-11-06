@@ -1,6 +1,7 @@
 test_that("SQLite included-only Margin order fits a wide public result", {
   skip_if_suggest_absent("RSQLite", "DBI")
-  testthat::local_options(marginplyr.audit_sql = TRUE)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
   for (width in c(1998L, 1999L)) {
