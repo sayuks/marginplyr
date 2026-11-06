@@ -38,8 +38,8 @@ gen <- function(depth=0) {
  args <- lapply(seq_len(n),function(i) {
   if(kind %in% c('set','rollup','cube')) {
    vs <- sample(letters[1:4],sample(1:3,1))
-   if(kind %in% c('rollup','cube') && length(vs)>1 && sample(c(T,F),1)) node('set',list(leaf(vs))) else leaf(vs)
-  } else if(sample(c(T,F),1)) gen(depth+1) else leaf(sample(letters[1:4],sample(0:3,1)))
+   if(kind %in% c('rollup','cube') && length(vs)>1 && sample(c(TRUE,FALSE),1)) node('set',list(leaf(vs))) else leaf(vs)
+  } else if(sample(c(TRUE,FALSE),1)) gen(depth+1) else leaf(sample(letters[1:4],sample(0:3,1)))
  })
  node(kind,args)
 }
