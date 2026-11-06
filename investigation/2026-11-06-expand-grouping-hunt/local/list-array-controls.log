@@ -1,0 +1,14 @@
+rank=1 verb=expand_with_margins: false representability refusal; ordinary/included/payload controls PASS
+rank=1 verb=summarize_with_margins: false representability refusal; ordinary/included/payload controls PASS
+rank=1 verb=nest_with_margins: false representability refusal; ordinary/included/payload controls PASS
+rank=1 verb=nest_by_with_margins: false representability refusal; ordinary/included/payload controls PASS
+rank=2 verb=expand_with_margins: false representability refusal; ordinary/included/payload controls PASS
+rank=2 verb=summarize_with_margins: false representability refusal; ordinary/included/payload controls PASS
+rank=2 verb=nest_with_margins: false representability refusal; ordinary/included/payload controls PASS
+rank=2 verb=nest_by_with_margins: false representability refusal; ordinary/included/payload controls PASS
+rank=3 verb=expand_with_margins: false representability refusal; ordinary/included/payload controls PASS
+rank=3 verb=summarize_with_margins: false representability refusal; ordinary/included/payload controls PASS
+rank=3 verb=nest_with_margins: false representability refusal; ordinary/included/payload controls PASS
+rank=3 verb=nest_by_with_margins: false representability refusal; ordinary/included/payload controls PASS
+Raw-array negative control: required refusal PASS
+String-label negative control: required refusal PASS

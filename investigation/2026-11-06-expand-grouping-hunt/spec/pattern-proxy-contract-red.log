@@ -1,0 +1,10 @@
+a
+1
+[1] "ℹ In argument: `matches(pattern)`.\nCaused by error in `vec_proxy()`:\n! needs character selection metadata"
+[1] "integer"
+# A tibble: 1 × 6
+  set_id fixed     included  omitted   grouping_bits grouping_id
+   <int> <list>    <list>    <list>    <list>              <int>
+1      1 <chr [0]> <chr [1]> <chr [0]> <int [1]>               0
+Error: !inherits(actual, "error") is not TRUE
+Execution halted

@@ -1,0 +1,13 @@
+$eager_control
+# A tibble: 0 × 1
+# ℹ 1 variable: occurrence <int>
+
+$direct_control
+# A tibble: 0 × 1
+# ℹ 1 variable: occurrence <int>
+
+$observed
+[1] "Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+
+Error: !inherits(actual, "error") is not TRUE
+Execution halted

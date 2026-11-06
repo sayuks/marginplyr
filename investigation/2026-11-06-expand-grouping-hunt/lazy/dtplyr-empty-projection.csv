@@ -1,0 +1,361 @@
+"rows","shape","selector","family","id","desired","actual"
+0,"direct","empty","single","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+0,"direct","empty","single","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+0,"direct","empty","repeat","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+0,"direct","empty","repeat","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+0,"direct","empty","typed-inspect","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+0,"direct","negative","single","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+0,"direct","negative","single","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+0,"direct","negative","repeat","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+0,"direct","negative","repeat","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+0,"direct","negative","typed-inspect","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+0,"direct","helper","single","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+0,"direct","helper","single","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+0,"direct","helper","repeat","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+0,"direct","helper","repeat","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+0,"direct","helper","typed-inspect","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+0,"filtered","empty","single","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+0,"filtered","empty","single","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+0,"filtered","empty","repeat","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+0,"filtered","empty","repeat","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+0,"filtered","empty","typed-inspect","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+0,"filtered","negative","single","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+0,"filtered","negative","single","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+0,"filtered","negative","repeat","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+0,"filtered","negative","repeat","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+0,"filtered","negative","typed-inspect","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+0,"filtered","helper","single","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+0,"filtered","helper","single","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+0,"filtered","helper","repeat","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+0,"filtered","helper","repeat","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+0,"filtered","helper","typed-inspect","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+0,"arranged","empty","single","<NULL>",TRUE,"accepted"
+0,"arranged","empty","single","sid",TRUE,"accepted"
+0,"arranged","empty","repeat","<NULL>",TRUE,"accepted"
+0,"arranged","empty","repeat","sid",TRUE,"accepted"
+0,"arranged","empty","typed-inspect","<NULL>",TRUE,"accepted"
+0,"arranged","negative","single","<NULL>",TRUE,"accepted"
+0,"arranged","negative","single","sid",TRUE,"accepted"
+0,"arranged","negative","repeat","<NULL>",TRUE,"accepted"
+0,"arranged","negative","repeat","sid",TRUE,"accepted"
+0,"arranged","negative","typed-inspect","<NULL>",TRUE,"accepted"
+0,"arranged","helper","single","<NULL>",TRUE,"accepted"
+0,"arranged","helper","single","sid",TRUE,"accepted"
+0,"arranged","helper","repeat","<NULL>",TRUE,"accepted"
+0,"arranged","helper","repeat","sid",TRUE,"accepted"
+0,"arranged","helper","typed-inspect","<NULL>",TRUE,"accepted"
+0,"cached","empty","single","<NULL>",TRUE,"accepted"
+0,"cached","empty","single","sid",TRUE,"accepted"
+0,"cached","empty","repeat","<NULL>",TRUE,"accepted"
+0,"cached","empty","repeat","sid",TRUE,"accepted"
+0,"cached","empty","typed-inspect","<NULL>",TRUE,"accepted"
+0,"cached","negative","single","<NULL>",TRUE,"accepted"
+0,"cached","negative","single","sid",TRUE,"accepted"
+0,"cached","negative","repeat","<NULL>",TRUE,"accepted"
+0,"cached","negative","repeat","sid",TRUE,"accepted"
+0,"cached","negative","typed-inspect","<NULL>",TRUE,"accepted"
+0,"cached","helper","single","<NULL>",TRUE,"accepted"
+0,"cached","helper","single","sid",TRUE,"accepted"
+0,"cached","helper","repeat","<NULL>",TRUE,"accepted"
+0,"cached","helper","repeat","sid",TRUE,"accepted"
+0,"cached","helper","typed-inspect","<NULL>",TRUE,"accepted"
+1,"direct","empty","single","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+1,"direct","empty","single","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+1,"direct","empty","repeat","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+1,"direct","empty","repeat","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+1,"direct","empty","typed-inspect","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+1,"direct","negative","single","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+1,"direct","negative","single","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+1,"direct","negative","repeat","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+1,"direct","negative","repeat","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+1,"direct","negative","typed-inspect","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+1,"direct","helper","single","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+1,"direct","helper","single","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+1,"direct","helper","repeat","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+1,"direct","helper","repeat","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+1,"direct","helper","typed-inspect","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+1,"filtered","empty","single","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+1,"filtered","empty","single","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+1,"filtered","empty","repeat","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+1,"filtered","empty","repeat","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+1,"filtered","empty","typed-inspect","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+1,"filtered","negative","single","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+1,"filtered","negative","single","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+1,"filtered","negative","repeat","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+1,"filtered","negative","repeat","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+1,"filtered","negative","typed-inspect","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+1,"filtered","helper","single","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+1,"filtered","helper","single","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+1,"filtered","helper","repeat","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+1,"filtered","helper","repeat","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+1,"filtered","helper","typed-inspect","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+1,"arranged","empty","single","<NULL>",TRUE,"accepted"
+1,"arranged","empty","single","sid",TRUE,"accepted"
+1,"arranged","empty","repeat","<NULL>",TRUE,"accepted"
+1,"arranged","empty","repeat","sid",TRUE,"accepted"
+1,"arranged","empty","typed-inspect","<NULL>",TRUE,"accepted"
+1,"arranged","negative","single","<NULL>",TRUE,"accepted"
+1,"arranged","negative","single","sid",TRUE,"accepted"
+1,"arranged","negative","repeat","<NULL>",TRUE,"accepted"
+1,"arranged","negative","repeat","sid",TRUE,"accepted"
+1,"arranged","negative","typed-inspect","<NULL>",TRUE,"accepted"
+1,"arranged","helper","single","<NULL>",TRUE,"accepted"
+1,"arranged","helper","single","sid",TRUE,"accepted"
+1,"arranged","helper","repeat","<NULL>",TRUE,"accepted"
+1,"arranged","helper","repeat","sid",TRUE,"accepted"
+1,"arranged","helper","typed-inspect","<NULL>",TRUE,"accepted"
+1,"cached","empty","single","<NULL>",TRUE,"accepted"
+1,"cached","empty","single","sid",TRUE,"accepted"
+1,"cached","empty","repeat","<NULL>",TRUE,"accepted"
+1,"cached","empty","repeat","sid",TRUE,"accepted"
+1,"cached","empty","typed-inspect","<NULL>",TRUE,"accepted"
+1,"cached","negative","single","<NULL>",TRUE,"accepted"
+1,"cached","negative","single","sid",TRUE,"accepted"
+1,"cached","negative","repeat","<NULL>",TRUE,"accepted"
+1,"cached","negative","repeat","sid",TRUE,"accepted"
+1,"cached","negative","typed-inspect","<NULL>",TRUE,"accepted"
+1,"cached","helper","single","<NULL>",TRUE,"accepted"
+1,"cached","helper","single","sid",TRUE,"accepted"
+1,"cached","helper","repeat","<NULL>",TRUE,"accepted"
+1,"cached","helper","repeat","sid",TRUE,"accepted"
+1,"cached","helper","typed-inspect","<NULL>",TRUE,"accepted"
+3,"direct","empty","single","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+3,"direct","empty","single","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+3,"direct","empty","repeat","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+3,"direct","empty","repeat","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+3,"direct","empty","typed-inspect","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+3,"direct","negative","single","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+3,"direct","negative","single","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+3,"direct","negative","repeat","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+3,"direct","negative","repeat","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+3,"direct","negative","typed-inspect","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+3,"direct","helper","single","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+3,"direct","helper","single","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+3,"direct","helper","repeat","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+3,"direct","helper","repeat","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+3,"direct","helper","typed-inspect","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+3,"filtered","empty","single","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+3,"filtered","empty","single","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+3,"filtered","empty","repeat","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+3,"filtered","empty","repeat","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+3,"filtered","empty","typed-inspect","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+3,"filtered","negative","single","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+3,"filtered","negative","single","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+3,"filtered","negative","repeat","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+3,"filtered","negative","repeat","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+3,"filtered","negative","typed-inspect","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+3,"filtered","helper","single","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+3,"filtered","helper","single","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+3,"filtered","helper","repeat","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+3,"filtered","helper","repeat","sid",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+3,"filtered","helper","typed-inspect","<NULL>",FALSE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+3,"arranged","empty","single","<NULL>",TRUE,"accepted"
+3,"arranged","empty","single","sid",TRUE,"accepted"
+3,"arranged","empty","repeat","<NULL>",TRUE,"accepted"
+3,"arranged","empty","repeat","sid",TRUE,"accepted"
+3,"arranged","empty","typed-inspect","<NULL>",TRUE,"accepted"
+3,"arranged","negative","single","<NULL>",TRUE,"accepted"
+3,"arranged","negative","single","sid",TRUE,"accepted"
+3,"arranged","negative","repeat","<NULL>",TRUE,"accepted"
+3,"arranged","negative","repeat","sid",TRUE,"accepted"
+3,"arranged","negative","typed-inspect","<NULL>",TRUE,"accepted"
+3,"arranged","helper","single","<NULL>",TRUE,"accepted"
+3,"arranged","helper","single","sid",TRUE,"accepted"
+3,"arranged","helper","repeat","<NULL>",TRUE,"accepted"
+3,"arranged","helper","repeat","sid",TRUE,"accepted"
+3,"arranged","helper","typed-inspect","<NULL>",TRUE,"accepted"
+3,"cached","empty","single","<NULL>",TRUE,"accepted"
+3,"cached","empty","single","sid",TRUE,"accepted"
+3,"cached","empty","repeat","<NULL>",TRUE,"accepted"
+3,"cached","empty","repeat","sid",TRUE,"accepted"
+3,"cached","empty","typed-inspect","<NULL>",TRUE,"accepted"
+3,"cached","negative","single","<NULL>",TRUE,"accepted"
+3,"cached","negative","single","sid",TRUE,"accepted"
+3,"cached","negative","repeat","<NULL>",TRUE,"accepted"
+3,"cached","negative","repeat","sid",TRUE,"accepted"
+3,"cached","negative","typed-inspect","<NULL>",TRUE,"accepted"
+3,"cached","helper","single","<NULL>",TRUE,"accepted"
+3,"cached","helper","single","sid",TRUE,"accepted"
+3,"cached","helper","repeat","<NULL>",TRUE,"accepted"
+3,"cached","helper","repeat","sid",TRUE,"accepted"
+3,"cached","helper","typed-inspect","<NULL>",TRUE,"accepted"

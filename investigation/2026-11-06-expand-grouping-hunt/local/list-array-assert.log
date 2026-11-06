@@ -1,0 +1,6 @@
+Minimal ordinary control: PASS; rows=2, list-matrix shape=2x1, cells=7L/NULL
+Minimal expansion: marginplyr_error A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping.
+Error: Expected list-matrix expansion to equal the successful ordinary control; got marginplyr_error
+Execution halted
