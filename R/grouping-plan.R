@@ -1240,7 +1240,8 @@ preflight_grouping_spec <- function(grouping_spec,
   name_only <- TRUE
   args <- vector("list", length(grouping_spec$args))
   for (i in seq_along(grouping_spec$args)) {
-    arg <- nested_arg_quosure(grouping_spec$args[[i]])
+    captured <- capture_nested_arg(grouping_spec$args[[i]])
+    arg <- captured$quo
     # The refusal is here rather than in the reader below because this is the
     # frame holding what the diagnostic names: the constructor and the
     # argument's position (#261). Which spellings count as empty, and why the
@@ -1251,7 +1252,8 @@ preflight_grouping_spec <- function(grouping_spec,
     reading <- read_grouping_arg(arg, data_vars)
     if (is.null(reading$nested)) {
       check_ambiguous_nested_name(arg, grouping_spec, rule, data_vars)
-      name_only <- name_only && is_name_only_selection(arg, data_vars)
+      reading$quo <- restore_nested_arg(reading$quo, captured$wrappers)
+      name_only <- name_only && is_name_only_selection(reading$quo, data_vars)
       args[[i]] <- reading
       next
     }
@@ -1278,7 +1280,7 @@ check_named_grouping_args <- function(grouping_spec, rule) {
     # Read the forwarded expression without processing injections. If capture
     # fails, the tag is still refused before interpreting its contents.
     captured <- tryCatch(
-      nested_arg_quosure(arg, capture = rlang::enquo0),
+      capture_nested_arg(arg, capture = rlang::enquo0)$quo,
       error = function(cnd) arg
     )
     is_empty_argument(captured)
@@ -1297,29 +1299,55 @@ check_named_grouping_args <- function(grouping_spec, rule) {
   )
 }
 
-# The argument carried through parentheses, injected quosures and numbered
-# dots. `capture` controls whether to process injections in a forwarded promise.
-# Only the promise's expression and environment are captured, so the spelling
-# gate still decides whether that expression runs.
-nested_arg_quosure <- function(arg, capture = rlang::enquo) {
+# Captures the spelling-gate quosure through forwarded arguments, recording
+# qualified parentheses separately for selection evaluation. `capture` decides
+# whether a forwarded promise processes injections; no promise value is forced.
+capture_nested_arg <- function(arg, capture = rlang::enquo) {
+  wrappers <- list()
   repeat {
     if (is_empty_argument(arg)) {
-      return(arg)
+      return(list(quo = arg, wrappers = wrappers))
     }
     expr <- unparenthesized_value(rlang::quo_get_expr(arg))
-    if (rlang::is_quosure(expr)) {
-      arg <- expr
-      next
-    }
     env <- rlang::quo_get_env(arg)
-    # Without lexical dots the spelling can name an input column. With dots,
-    # capture still owns the diagnostic for an absent position.
-    if (is_numbered_dot_reference(expr) && has_lexical_dots(env)) {
-      arg <- rlang::eval_bare(rlang::call2(capture, expr), env)
-      next
+    if (rlang::is_quosure(expr)) {
+      forwarded <- expr
+    } else if (is_numbered_dot_reference(expr) && has_lexical_dots(env)) {
+      # Lexical dots own the diagnostic for an absent position; without them
+      # the spelling may name an input column.
+      forwarded <- rlang::eval_bare(rlang::call2(capture, expr), env)
+    } else {
+      return(list(quo = arg, wrappers = wrappers))
     }
-    return(arg)
+    if (!identical(
+      unparenthesized_value(rlang::quo_get_expr(arg), ns = ""), expr
+    )) {
+      wrappers <- c(wrappers, list(arg))
+    }
+    arg <- forwarded
   }
+}
+
+# Restores the ordinary-call boundaries around a resolved selection quosure,
+# including its retained preflight value, in each wrapper's captured
+# environment.
+restore_nested_arg <- function(arg, wrappers) {
+  for (wrapper in rev(wrappers)) {
+    arg <- rlang::quo_set_expr(
+      wrapper, replace_nested_arg_value(rlang::quo_get_expr(wrapper), arg)
+    )
+  }
+  arg
+}
+
+# Replaces the forwarded leaf of a nonempty parenthesis chain without changing
+# the calls that establish its evaluation boundary.
+replace_nested_arg_value <- function(expr, value) {
+  if (!is_redundant_parens(expr)) {
+    return(value)
+  }
+  expr[[2L]] <- replace_nested_arg_value(expr[[2L]], value)
+  expr
 }
 
 # A call frame stores supplied dots as a dots object and empty dots as the
