@@ -328,7 +328,8 @@ Config/testthat/start-first:
     share-closure-carriers,
     share-dynamic-environment-names,
     share-environment-paths,
-    margin-label-check-flags
+    margin-label-check-flags,
+    list-array-missing
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
