@@ -628,8 +628,9 @@ forget_margin_window_order <- function(result, backend) {
 # `value_types` maps dictionary columns to the types their value terms use.
 # Only the value term takes it. The cast reaches the key alone, so the result's
 # own column keeps whatever the executor left in it.
-# `helper_namespace` isolates generated dtplyr calls from root bindings;
-# other translators retain the unqualified calls they recognize.
+# `helper_namespace` supplies generated dtplyr helpers without resolving the
+# namespace operator in the caller's lazy root; other translators retain the
+# unqualified calls they recognize.
 margin_order_terms <- function(plan,
                                sort,
                                sort_id,
@@ -704,7 +705,9 @@ margin_missing_last_expr <- function(column, rowwise, helper_namespace) {
   missing <- if (column %in% rowwise) {
     rlang::expr(vctrs::vec_detect_missing(!!value))
   } else {
-    rlang::call2("is.na", value, .ns = helper_namespace)
+    margin_order_helper_call(
+      "is.na", value, helper_namespace = helper_namespace
+    )
   }
   rlang::expr(dplyr::if_else(
     !!missing,
@@ -733,12 +736,26 @@ margin_grouping_bit_ids <- function(plan, dimension) {
 # repeated term is redundant by ADR 0018 and Arrow cannot materialize two
 # expressions under the same internal field name.
 margin_grouping_bit_expr <- function(sort_id, margin_ids, helper_namespace) {
-  membership <- rlang::call2(
-    "%in%", margin_column_pronoun(sort_id), margin_ids, .ns = helper_namespace
+  membership <- margin_order_helper_call(
+    "%in%", margin_column_pronoun(sort_id), margin_ids,
+    helper_namespace = helper_namespace
   )
   rlang::expr(dplyr::if_else(
     !!membership,
     1L,
     0L
   ))
+}
+
+# A namespace-qualified call is still dispatched through `::` when dtplyr
+# evaluates it in the lazy root environment. Embed the base namespace accessor
+# in the inner function position so neither it nor the selected helper is
+# looked up through caller bindings. The lookup remains deferred until
+# collection; other translators retain the unqualified calls they recognize.
+margin_order_helper_call <- function(name, ..., helper_namespace = NULL) {
+  if (is.null(helper_namespace)) {
+    return(rlang::call2(name, ...))
+  }
+  helper <- rlang::call2(base::getExportedValue, helper_namespace, name)
+  rlang::call2(helper, ...)
 }
