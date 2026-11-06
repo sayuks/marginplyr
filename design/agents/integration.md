@@ -4,8 +4,8 @@
 
 Before invoking either Review-ready scope, before opening a pull request and
 again before merging it, fetch remote `main` and pin the revision assessed
-together with the branch HEAD. This is agent preparation; the runner's six
-checks do not perform it:
+together with the branch HEAD. This is agent preparation; the runner's
+baseline does not perform it:
 
 ```sh
 git fetch origin main

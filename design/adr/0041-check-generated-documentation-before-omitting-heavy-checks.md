@@ -25,3 +25,6 @@ evidence and comparison boundary. The runner and
 [local checks](../agents/local-checks.md) adopt the six-check baseline and
 evidence-backed scope exception together under #1292. Adoption does not
 establish a package-check result for any later SHA.
+
+The #1373 amendment in ADR 0039 adds repository contract consistency before
+these six checks in both scopes; it leaves this generation check in place.

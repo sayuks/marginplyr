@@ -7,6 +7,8 @@ source(".github/scripts/cran-note-policy.R")
 source(".github/scripts/checktor-baseline.R")
 source("tools/dependency-requirements.R")
 source("tools/cran-preflight-lib.R")
+source("tools/repository-contracts.R")
+review_requirements <- validate_review_dependency_contract()
 
 # Stops with a fixture label when a contract returns a different value.
 # Callers supply values whose attributes and types are part of the assertion.
@@ -127,18 +129,6 @@ expect_identical(
   preflight_requirements$package,
   c("checktor", "lintr", "pkgload", "rcmdcheck", "spelling", "urlchecker"),
   "the preflight dependency set"
-)
-review_requirements <- dependency_requirements(description_value(
-  description,
-  "Config/Needs/review"
-))
-expect_identical(
-  review_requirements$package,
-  c(
-    "digest", "filelock", "jsonlite", "lintr", "pkgload", "processx", "ps", "R6",
-    "rcmdcheck", "roxygen2", "spelling", "testthat", "yaml"
-  ),
-  "the review dependency set"
 )
 expect_identical(
   intersect(preflight_requirements$package, review_requirements$package),

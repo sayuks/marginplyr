@@ -14,8 +14,9 @@ accepted requirements; [local checks](../agents/local-checks.md) and the
 
 Invoke `Rscript tools/review-ready.R --scope source|full --reason TEXT` from the
 target root. Git supplies that worktree's implementation. Both forms run the
-same six checks against a pinned committed source copy before requesting any
-heavy capacity. The AI decides whether package build/check is required and
+same repository contract consistency stage and six checks against a pinned
+committed source copy before requesting any heavy capacity.
+The AI decides whether package build/check is required and
 records its reason. A source-only result explicitly records the heavy omission.
 
 The supported operational target is the maintainer's Mac, where one user's
@@ -52,7 +53,24 @@ expired runs in that worktree. Keep stable lock targets and unrelated user data.
 
 Routine invocation excludes infrastructure self-tests and real README/site
 regeneration. Retained runner/progress regression suites execute in every-PR
-CI; change-specific development checks remain appropriate.
+CI; relevant command/process fixtures are required when their infrastructure
+behavior changes. Under #1373, routine static comparison of independently
+maintained repository contracts is mandatory in both scopes before heavy
+admission. The shared R entry also serves existing CI verifiers; syntax and
+verifier wiring stay in CI. Comparison reads the pinned source only, fails
+closed without repairs, and runs no infrastructure suites or package work.
+It compares workflow inventory/executable YAML and the independent review-tool
+package sequence, preserving its order and duplicates. Dependency constraint
+syntax is validated without adding version pins. Its dependency-only CI route
+uses base R; workflow parsing reuses the existing yaml/jsonlite prerequisites.
+
+Scope follows actual cumulative package build/check effects. Package-unaffected
+CI, tooling and standalone command-fixture changes may use source with relevant
+behavior evidence. Executable machinery alone does not require full. Assess
+from the latest verifiable successful full-checked ancestor, or the merge-base
+with freshly fetched main if none is available; record both SHAs and consumers.
+Package effects or uncertainty require full. Source explicitly records its heavy
+omissions for its exact SHA and never inherits an earlier SHA's full result.
 
 ## Amendment and history
 
