@@ -4733,10 +4733,10 @@ test_that("new frame kinds require a matching name reader", {
   )
 })
 
-# Injected syntax can carry an empty list index or return argument.
+# Injected syntax can carry empty list indices, return arguments or selectors.
 # Their diagnostics belong to evaluation, so compare the deepest condition
 # with dplyr rather than accepting a missing-marker error from static reading.
-test_that("empty list indices and return arguments retain evaluation errors", {
+test_that("empty list indices and call arguments retain evaluation errors", {
   data <- data.frame(g = c("a", "b"), x = c(1, 3))
   factory <- quote(function() NULL)
   factory[[3L]] <- call("return", rlang::missing_arg())
@@ -4747,7 +4747,9 @@ test_that("empty list indices and return arguments retain evaluation errors", {
            quote(sum(x))),
       2
     ),
-    as.call(list(as.call(list(factory))))
+    as.call(list(as.call(list(factory)))),
+    as.call(list(call("switch", rlang::missing_arg(),
+                      read = quote(function() 7))))
   )
   for (expr in expressions) {
     expected <- expect_error(dplyr::summarise(data, output = !!expr))

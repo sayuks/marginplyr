@@ -5,6 +5,41 @@ visible_closure_data <- function() {
 visible_closure_reads <- function() {
   alist(
     (function(prior) {
+      copied <- switch("read", read = function() sum(prior))
+      rm(prior)
+      copied()
+    })(1),
+    (function(prior) {
+      copied <- (function() {
+        switch("read", safe = function() 7,
+               read = return(function() sum(prior)))
+        function() 7
+      })()
+      rm(prior)
+      copied()
+    })(1),
+    (function(prior) {
+      copied <- (function() {
+        if (TRUE) return(function() sum(prior))
+        function() 7
+      })()
+      rm(prior)
+      copied()
+    })(1),
+    (function(prior) {
+      copied <- (function() {
+        if (FALSE) {
+          function() 7
+        } else {
+          returned <- function() sum(prior)
+          if (TRUE) return(returned)
+        }
+        function() 7
+      })()
+      rm(prior)
+      copied()
+    })(1),
+    (function(prior) {
       copied <- {
         function() sum(prior)
       }
@@ -52,10 +87,10 @@ visible_closure_retained <- function(expr) {
   as.call(lapply(as.list(expr), visible_closure_retained))
 }
 
-expect_retained_visible <- function(data) {
+expect_visible_closure_values <- function(data, reads, expected = c(1, 1, 1)) {
   for (kind in c("parent", "total")) {
     helper <- rlang::call2(paste0("share_of_", kind), quote(value))
-    for (read in lapply(visible_closure_reads(), visible_closure_retained)) {
+    for (read in reads) {
       forward <- summarize_with_margins(
         data, value = sum(.data$x), prior = !!helper, observed = !!read,
         .grouping = rollup("g")
@@ -68,9 +103,9 @@ expect_retained_visible <- function(data) {
         forward <- dplyr::collect(forward)
         reverse <- dplyr::collect(reverse)
       }
-      expect_equal(forward$observed, c(1, 1, 1))
+      expect_equal(forward$observed, expected)
       expect_equal(forward$prior, c(0.25, 0.75, 1))
-      expect_equal(reverse$value, c(1, 1, 1))
+      expect_equal(reverse$value, expected)
       expect_equal(reverse$ratio, c(1, 1, 1))
     }
   }
@@ -79,7 +114,45 @@ expect_retained_visible <- function(data) {
 expect_visible_closures <- function(data) {
   before <- serialize(data, NULL)
   expect_share_dependencies(data, visible_closure_reads())
-  expect_retained_visible(data)
+  expect_visible_closure_values(
+    data, lapply(visible_closure_reads(), visible_closure_retained)
+  )
+  expect_visible_closure_values(data, alist(
+    (function(prior) {
+      copied <- switch("safe", read = function() sum(prior), function() 7)
+      rm(prior)
+      copied()
+    })(1),
+    (function(prior) {
+      copied <- switch("safe", read = function() sum(prior),
+                       safe = function() 7)
+      rm(prior)
+      copied()
+    })(1),
+    (function(prior) {
+      copied <- (function(prior) {
+        switch("read", read = function() sum(prior))
+      })(7)
+      rm(prior)
+      copied()
+    })(1),
+    (function(prior) {
+      copied <- (function() {
+        if (TRUE) return(function() 7)
+        function() sum(prior)
+      })()
+      rm(prior)
+      copied()
+    })(1),
+    (function(prior) {
+      copied <- (function(prior) {
+        if (TRUE) return(function() sum(prior))
+        function() 100
+      })(7)
+      rm(prior)
+      copied()
+    })(1)
+  ), expected = c(7, 7, 7))
   expect_identical(serialize(data, NULL), before)
 }
 
@@ -103,7 +176,8 @@ test_that("visible factory analysis never invokes caller functions", {
   read <- quote((function(prior) {
     factory <- function() {
       probe$calls <- probe$calls + 1L
-      function() sum(prior)
+      if (TRUE) return(function() sum(prior))
+      function() 7
     }
     copied <- factory()
     rm(prior)

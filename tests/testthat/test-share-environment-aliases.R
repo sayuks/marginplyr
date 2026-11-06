@@ -56,33 +56,10 @@ environment_alias_reads <- function() {
   )
 }
 
-expect_env_alias_refusals <- function(data, reads) {
-  for (kind in c("parent", "total")) {
-    helper <- rlang::call2(paste0("share_of_", kind), quote(value))
-    for (read in reads) {
-      read <- rlang::new_quosure(read, rlang::caller_env())
-      expect_error(
-        summarize_with_margins(
-          data, value = sum(.data$x), prior = !!helper, observed = !!read,
-          .grouping = rollup("g")
-        ),
-        "Ordinary summaries cannot use an earlier", class = "marginplyr_error"
-      )
-      expect_error(
-        summarize_with_margins(
-          data, prior = sum(.data$x), value = !!read, ratio = !!helper,
-          .grouping = rollup("g")
-        ),
-        "depends on earlier summary alias", class = "marginplyr_error"
-      )
-    }
-  }
-}
-
 expect_environment_aliases <- function(data) {
   before <- serialize(data, NULL)
-  expect_env_alias_refusals(data, environment_alias_reads())
-  expect_env_alias_refusals(data, alist(
+  expect_share_dependencies(data, environment_alias_reads())
+  expect_share_dependencies(data, alist(
     sum(parent.env(environment())$prior),
     sum(parent.env(environment())[["prior"]]),
     sum(rlang::env_get(parent.env(environment()), "prior")),
@@ -187,14 +164,14 @@ test_that("saved environment analysis never invokes caller code", {
   reads <- lapply(environment_alias_reads(), function(read) {
     rlang::call2("observe", read)
   })
-  expect_env_alias_refusals(environment_alias_data(), reads)
+  expect_share_dependencies(environment_alias_data(), reads)
   expect_identical(probe$calls, 0L)
 })
 
 test_that("conditional alias writes retain possible mask dependencies", {
   external <- rlang::new_environment(list(prior = 7), parent = emptyenv())
   replace <- FALSE
-  expect_env_alias_refusals(environment_alias_data(), alist(
+  expect_share_dependencies(environment_alias_data(), alist(
     {
       mask <- parent.env(environment())
       if (replace) mask <- external

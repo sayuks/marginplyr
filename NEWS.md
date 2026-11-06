@@ -15,8 +15,8 @@
   through `force()`, literal `get()` and `match.fun()` (#1402).
 
 * Parent and Total share dependency checks retain invocation-time dependencies
-  through blocks, literal branches and visible local function factories
-  (#1401).
+  through blocks, literal branches and visible local function factories,
+  including selected early returns and named `switch()` arms (#1401).
 
 * SQLite expansion preserves Boolean-word public column names and applicable
   source types on executable derived inputs, including default one-set
