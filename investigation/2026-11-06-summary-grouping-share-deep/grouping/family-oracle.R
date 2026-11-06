@@ -11,9 +11,9 @@ generate <- function(depth = 0L) {
   kind <- sample(c("set", "sets", "rollup", "cube", "product"), 1)
   n <- sample(if (kind %in% c("set", "product")) 0:3 else 1:3, 1)
   children <- lapply(seq_len(n), function(i) {
-    if (depth < 2L && kind %in% c("sets", "product") && runif(1) < .4) {
+    if (depth < 2L && kind %in% c("sets", "product") && runif(1) < 0.4) {
       generate(depth + 1L)
-    } else if (kind %in% c("rollup", "cube") && runif(1) < .3) {
+    } else if (kind %in% c("rollup", "cube") && runif(1) < 0.3) {
       node("set", list(sample(columns, sample(1:3, 1))))
     } else {
       leaf()
