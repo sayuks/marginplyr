@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Parent and Total share dependency checks retain invocation-time dependencies
+  through blocks, literal branches and visible local function factories
+  (#1401).
+
 * SQLite Margin order reuses public value columns instead of projecting
   duplicate ordering columns, so a single-dimension included-only expansion
   with 1,999 public columns fits the supported result-column limit (#1384).

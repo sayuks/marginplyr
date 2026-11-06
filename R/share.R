@@ -4655,23 +4655,58 @@ scope_value_closure <- function(expr, scope, lookup) {
   if (!is.null(definition)) {
     return(list(definition = definition, enclosing = 1L))
   }
-  factory <- if (rlang::is_call(head)) {
-    literal_function_definition(static_call_head(head))
+  arm <- literal_if_parts(head, static_call_name(head),
+                          scope_bound_names(scope), lookup)
+  if (length(arm) == 1L) {
+    return(scope_value_closure(arm[[1L]], scope, lookup))
   }
-  if (!is.null(factory)) {
-    frame <- function_scope_frame(factory[[2L]], head)
-    body <- unparenthesized_value(factory[[3L]])
-    if (rlang::is_call(body, "{") && length(body) == 2L &&
-          is_known_base_frame_call(body, "{", c(list(frame), scope), lookup)) {
-      body <- body[[2L]]
+  if (identical(static_call_name(head), "switch") && length(head) >= 3L &&
+        is_known_base_frame_call(head, "switch", scope, lookup)) {
+    key <- unparenthesized_value(head[[2L]])
+    if (!is.object(key) && typeof(key) %in% c("integer", "double") &&
+          length(key) == 1L && is.finite(key) && key >= 1 &&
+          key < length(head) - 1L) {
+      return(scope_value_closure(head[[as.integer(key) + 2L]], scope, lookup))
     }
-    returned <- literal_function_definition(body)
+  }
+  if (identical(static_call_name(head), "{") &&
+        is_known_base_frame_call(head, "{", scope, lookup)) {
+    statements <- static_call_args(head)
+    if (length(statements) == 0L) {
+      return(NULL)
+    }
+    for (index in seq_len(length(statements) - 1L)) {
+      scope <- statement_reads_and_scope(
+        statements[[index]], scope, lookup, read_symbols = no_scope_reads
+      )$scope
+    }
+    return(scope_value_closure(statements[[length(statements)]], scope, lookup))
+  }
+  factory <- if (rlang::is_call(head)) scope_call_closure(head, scope, lookup)
+  if (!is.null(factory) && !scope_closure_is_active(factory, scope)) {
+    definition <- factory$definition
+    captured <- length(factory$frames)
+    frame <- function_scope_frame(definition[[2L]], head)
+    frame$enclosing <- if (captured > 0L) 1L else factory$enclosing
+    frame$caller <- 1L + captured
+    frame$closure_origin <- factory$enclosing + captured
+    frame$definition <- definition
+    inner <- c(list(frame), scope_closure_scope(factory, scope))
+    result <- scope_returned_closure(definition[[3L]], inner, lookup)
+    returned <- result$value
     if (!is.null(returned)) {
-      frame$invoked <- FALSE
-      return(list(
-        definition = returned, enclosing = 1L,
-        frames = list(frame)
-      ))
+      if (returned$enclosing <= 1L + captured) {
+        frames <- result$scope[seq.int(returned$enclosing, 1L + captured)]
+        frames <- lapply(frames, function(frame) {
+          frame$invoked <- FALSE
+          frame
+        })
+        returned$frames <- c(returned$frames, frames)
+        returned$enclosing <- factory$enclosing
+      } else {
+        returned$enclosing <- returned$enclosing - 1L - captured
+      }
+      return(returned)
     }
   }
   name <- unparenthesized_value(head)
@@ -4713,6 +4748,39 @@ scope_value_closure <- function(expr, scope, lookup) {
     return(NULL)
   }
   elements[[index]]
+}
+
+# Read a visible factory's result and the bindings retained by its frame.
+# Only syntax is inspected; caller code is never invoked to discover a value.
+scope_returned_closure <- function(expr, scope, lookup) {
+  expr <- unparenthesized_value(expr)
+  name <- static_call_name(expr)
+  arm <- literal_if_parts(expr, name, scope_bound_names(scope), lookup)
+  if (length(arm) == 1L) {
+    return(scope_returned_closure(arm[[1L]], scope, lookup))
+  }
+  if (identical(name, "return") && length(expr) == 2L &&
+        is_known_base_frame_call(expr, name, scope, lookup)) {
+    return(list(value = scope_value_closure(expr[[2L]], scope, lookup),
+                scope = scope))
+  }
+  if (identical(name, "{") &&
+        is_known_base_frame_call(expr, name, scope, lookup)) {
+    statements <- static_call_args(expr)
+    for (index in seq_along(statements)) {
+      statement <- statements[[index]]
+      if (index == length(statements) ||
+            (identical(static_call_name(statement), "return") &&
+               is_known_base_frame_call(statement, "return", scope, lookup))) {
+        return(scope_returned_closure(statement, scope, lookup))
+      }
+      scope <- statement_reads_and_scope(
+        statement, scope, lookup, read_symbols = no_scope_reads
+      )$scope
+    }
+    return(list(value = NULL, scope = scope))
+  }
+  list(value = scope_value_closure(expr, scope, lookup), scope = scope)
 }
 
 # Closure elements of a literal list, indexed relative to the current stack.
