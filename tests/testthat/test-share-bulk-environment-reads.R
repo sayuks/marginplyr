@@ -1,26 +1,3 @@
-expect_bulk_share_refusals <- function(data, reads) {
-  for (kind in c("parent", "total")) {
-    for (read in reads) {
-      share <- rlang::call2(paste0("share_of_", kind), quote(source))
-      expect_error(
-        summarize_with_margins(
-          data, source = sum(.data$x), prior = !!share, observed = !!read,
-          .grouping = rollup("g")
-        ),
-        "Ordinary summaries cannot use an earlier", class = "marginplyr_error"
-      )
-      share <- rlang::call2(paste0("share_of_", kind), quote(observed))
-      expect_error(
-        summarize_with_margins(
-          data, prior = sum(.data$x), observed = !!read, ratio = !!share,
-          .grouping = rollup("g")
-        ),
-        "depends on earlier summary alias", class = "marginplyr_error"
-      )
-    }
-  }
-}
-
 bulk_mask_reads <- function() {
   alist(
     sum(rlang::env_get_list(environment(), "prior", inherit = TRUE)$prior),
@@ -39,8 +16,8 @@ bulk_mask_reads <- function() {
 test_that("bulk environment reads retain eager share dependencies", {
   data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(100, 300))
   reads <- bulk_mask_reads()
-  expect_bulk_share_refusals(data, reads)
-  expect_bulk_share_refusals(tibble::as_tibble(data), reads)
+  expect_share_dependencies(data, reads)
+  expect_share_dependencies(tibble::as_tibble(data), reads)
 })
 
 test_that("environment materialization retains eager share dependencies", {
@@ -49,8 +26,8 @@ test_that("environment materialization retains eager share dependencies", {
     sum(as.list(parent.env(environment()))$prior),
     sum(base::as.list(parent.env(environment()))[["prior"]])
   )
-  expect_bulk_share_refusals(data, reads)
-  expect_bulk_share_refusals(tibble::as_tibble(data), reads)
+  expect_share_dependencies(data, reads)
+  expect_share_dependencies(tibble::as_tibble(data), reads)
 })
 
 test_that("bulk and materialized mask reads retain data.table dependencies", {
@@ -61,7 +38,7 @@ test_that("bulk and materialized mask reads retain data.table dependencies", {
     sum(as.list(parent.env(environment()))$prior),
     sum(as.list(parent.env(environment()))[["prior"]])
   ))
-  expect_bulk_share_refusals(data, reads)
+  expect_share_dependencies(data, reads)
 })
 
 expect_independent_bulk_reads <- function(data) {
@@ -116,7 +93,7 @@ test_that("bulk refusal does not evaluate the caller's binding names", {
   }
   read <- quote(sum(rlang::env_get_list(environment(), binding_names(),
                                         inherit = TRUE)$prior))
-  expect_bulk_share_refusals(data, list(read))
+  expect_share_dependencies(data, list(read))
   expect_identical(calls, 0L)
   expect_identical(binding_names(), "prior")
   expect_identical(calls, 1L)

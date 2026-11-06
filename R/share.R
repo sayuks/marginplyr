@@ -4199,15 +4199,24 @@ list2env_setter_names <- function(expr, lookup = NULL) {
   unresolved_lookup_name()
 }
 
+# The root binding written by an assignment target, including replacement calls.
+assignment_target_names <- function(expr) {
+  if (is_name_part(expr) || rlang::is_string(expr)) {
+    return(rlang::as_name(expr))
+  }
+  if (rlang::is_call(expr) && length(expr) >= 2L) {
+    return(assignment_target_names(expr[[2L]]))
+  }
+  character()
+}
+
 # Names assigned by this call itself, or the unresolved marker when a reflective
 # assignment's target is not statically known. The caller supplies a call.
 lookup_assignment_names <- function(expr) {
   name <- resolved_callee_name(expr)
   assigned <- if (!is.null(name) && name %in% c("<-", "=", "<<-", "for") &&
-                    length(expr) >= 3L &&
-                    (is_name_part(expr[[2L]]) ||
-                       rlang::is_string(expr[[2L]]))) {
-    rlang::as_name(expr[[2L]])
+                    length(expr) >= 3L) {
+    assignment_target_names(expr[[2L]])
   } else {
     character()
   }
