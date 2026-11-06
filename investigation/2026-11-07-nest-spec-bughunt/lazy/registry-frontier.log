@@ -1,0 +1,14 @@
+     entry binding looked_up source_sums
+   bracket  absent         0
+ converter  absent         0
+   bracket  active         1           3
+ converter  active         1           3
+   bracket    lazy         1           3
+ converter    lazy         1           3
+                                                                                                                                                                                                                                                                                                          result
+                                                                                                                                                                                                                                                                                                             (g)
+ marginplyr_error Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.
+                                                                                                                                                                                                                                                                                                             (g)
+                                                                                                                                                                                                                                                                                                             (g)
+                                                                                                                                                                                                                                                                                                             (g)
+                                                                                                                                                                                                                                                                                                             (g)

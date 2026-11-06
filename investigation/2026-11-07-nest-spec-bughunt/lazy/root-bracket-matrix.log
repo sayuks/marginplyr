@@ -1,0 +1,34 @@
+, , status = correct
+
+       shape
+mask    arithmetic cached filtered grouped root
+  FALSE          6      6        6       3    6
+  TRUE           0      0        0       0    0
+
+, , status = false metadata
+
+       shape
+mask    arithmetic cached filtered grouped root
+  FALSE          0      0        0       0    0
+  TRUE           0      2        0       1    2
+
+, , status = false partitions
+
+       shape
+mask    arithmetic cached filtered grouped root
+  FALSE          0      0        0       0    0
+  TRUE           0      4        0       2    4
+
+, , status = safe metadata refusal
+
+       shape
+mask    arithmetic cached filtered grouped root
+  FALSE          0      0        0       0    0
+  TRUE           6      0        6       0    0
+
+, , status = structural refusal
+
+       shape
+mask    arithmetic cached filtered grouped root
+  FALSE          0      0        0       3    0
+  TRUE           0      0        0       3    0

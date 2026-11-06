@@ -1,0 +1,9 @@
+"entry","binding","looked_up","source_sums","result"
+"bracket","absent",0,"","(g)"
+"converter","absent",0,"","marginplyr_error Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+"bracket","active",1,"3","(g)"
+"converter","active",1,"3","(g)"
+"bracket","lazy",1,"3","(g)"
+"converter","lazy",1,"3","(g)"
