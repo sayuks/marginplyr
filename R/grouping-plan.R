@@ -642,8 +642,9 @@ is_selection_data_peek <- function(expr, env, bound, context) {
 # Only direct matches() arguments can carry stringr pattern objects.
 # `allow_env_pronoun` permits literal reads in the selection context. Neither
 # permission carries into a caller closure's body or defaults.
-# `rebound` names assignments in the expressions being proved; their callees
-# cannot be resolved from an older lexical binding.
+# `rebound` names assignments in the current expression scope; their callees
+# cannot be resolved from an older lexical binding. Only `outer_rebound`, the
+# superassignment targets, carries across another caller closure.
 is_name_only_helper_arg <- function(expr,
                                     env,
                                     bound = character(),
@@ -653,6 +654,10 @@ is_name_only_helper_arg <- function(expr,
                                     allow_env_pronoun = FALSE,
                                     rebound = selection_rebound_names(
                                       list(expr)
+                                    ),
+                                    outer_rebound = selection_rebound_names(
+                                      list(expr), assignments = "<<-",
+                                      env = env, bound = bound, seen = seen
                                     )) {
   if (rlang::is_quosure(expr)) {
     # Captured syntax keeps ordinary argument evaluation in its own scope.
@@ -661,7 +666,11 @@ is_name_only_helper_arg <- function(expr,
       rlang::quo_get_expr(expr), rlang::quo_get_env(expr), seen = seen,
       allow_caller_code = allow_caller_code,
       allow_stringr_pattern = allow_stringr_pattern,
-      allow_env_pronoun = allow_env_pronoun
+      allow_env_pronoun = allow_env_pronoun,
+      outer_rebound = union(outer_rebound, selection_rebound_names(
+        list(rlang::quo_get_expr(expr)), assignments = "<<-",
+        env = rlang::quo_get_env(expr), seen = seen
+      ))
     ))
   }
   if (is_name_part(expr)) {
@@ -687,14 +696,14 @@ is_name_only_helper_arg <- function(expr,
         )
     )
   }
-  callee_bound <- union(bound, rebound)
+  callee_bound <- union(bound, union(rebound, outer_rebound))
   if (!selection_call_parens_safe(expr, env, callee_bound)) {
     return(FALSE)
   }
   if (is_redundant_parens(expr)) {
     return(is_name_only_helper_arg(
       expr[[2L]], env, bound, seen, allow_caller_code, allow_stringr_pattern,
-      allow_env_pronoun, rebound
+      allow_env_pronoun, rebound, outer_rebound
     ))
   }
   context <- length(seen) == 0L
@@ -727,7 +736,7 @@ is_name_only_helper_arg <- function(expr,
     allow_caller_code = allow_caller_code,
     allow_stringr_pattern = leaf_helper && identical(name, "matches"),
     allow_env_pronoun = allow_env_pronoun,
-    rebound = rebound
+    rebound = rebound, outer_rebound = outer_rebound
   ))) {
     return(FALSE)
   }
@@ -773,29 +782,38 @@ is_name_only_helper_arg <- function(expr,
   ) {
     return(FALSE)
   }
+  parts <- c(as.list(formals(fn)), list(body(fn)))
   all(vapply(
-    c(as.list(formals(fn)), list(body(fn))),
+    parts,
     is_name_only_helper_arg,
     logical(1),
     env = environment(fn),
     bound = names(formals(fn)),
     seen = c(seen, list(fn)),
-    rebound = union(rebound, selection_rebound_names(
-      c(as.list(formals(fn)), list(body(fn)))
+    rebound = selection_rebound_names(parts),
+    outer_rebound = union(outer_rebound, selection_rebound_names(
+      parts, assignments = "<<-", env = environment(fn),
+      bound = names(formals(fn)), seen = c(seen, list(fn))
     ))
   ))
 }
 
 # Names expressions may assign before a later callee lookup. The proof does not
-# execute assignments or establish their resulting callable values.
-selection_rebound_names <- function(parts) {
+# execute assignments or establish their resulting callable values. When
+# supplied, `env` also follows resolved caller closures for nonlocal effects.
+selection_rebound_names <- function(parts, assignments = c("<-", "<<-", "="),
+                                    env = NULL, bound = character(),
+                                    seen = list()) {
+  if (!is.null(env)) {
+    bound <- union(bound, selection_rebound_names(parts))
+  }
   unique(unlist(lapply(parts, function(expr) {
     if (!rlang::is_call(expr)) {
       return(character())
     }
     args <- static_call_args(expr)
     name <- static_call_name(expr)
-    assigned <- if (!is.null(name) && name %in% c("<-", "<<-", "=") &&
+    assigned <- if (!is.null(name) && name %in% assignments &&
                       length(args) > 0L &&
                       (is_name_part(args[[1L]]) ||
                          rlang::is_string(args[[1L]]))) {
@@ -803,7 +821,27 @@ selection_rebound_names <- function(parts) {
     } else {
       character()
     }
-    c(assigned, selection_rebound_names(c(list(static_call_head(expr)), args)))
+    fn <- if (!is.null(env)) {
+      selection_argument_function(expr, env, bound)
+    } else {
+      NULL
+    }
+    called <- if (is.function(fn) && !is.primitive(fn) &&
+                    !isNamespace(environment(fn)) &&
+                    !identical(environment(fn), baseenv()) &&
+                    !any(vapply(seen, identical, logical(1), fn))) {
+      selection_rebound_names(
+        c(as.list(formals(fn)), list(body(fn))), assignments = assignments,
+        env = environment(fn), bound = names(formals(fn)),
+        seen = c(seen, list(fn))
+      )
+    } else {
+      character()
+    }
+    c(assigned, called, selection_rebound_names(
+      c(list(static_call_head(expr)), args), assignments = assignments,
+      env = env, bound = bound, seen = seen
+    ))
   }), use.names = FALSE))
 }
 

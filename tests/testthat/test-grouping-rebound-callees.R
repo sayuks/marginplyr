@@ -1,5 +1,4 @@
-rebound_pattern <- function(target = quote(paste0),
-                            .local_envir = parent.frame()) {
+rebound_pattern <- function(target = quote(paste0)) {
   state <- new.env(parent = emptyenv())
   state$seen <- character()
   bindings <- rlang::env(paste0 = "nonfunction shadow")
@@ -9,7 +8,9 @@ rebound_pattern <- function(target = quote(paste0),
     state$seen <- c(state$seen, kind)
     if (kind == "character") "^a$" else "^b$"
   }, globalenv())
-  withr::defer(rm(list = source, envir = globalenv()), envir = .local_envir)
+  state$cleanup <- function() rm(list = source, envir = globalenv())
+  ready <- FALSE
+  on.exit(if (!ready) state$cleanup(), add = TRUE)
   assignment <- rlang::call2("<-", target, rlang::expr(
     as.vector(as.vector(!!source, "symbol"), "function")
   ))
@@ -22,12 +23,14 @@ rebound_pattern <- function(target = quote(paste0),
     paste0 <- as.vector(as.vector(!!source, "symbol"), "function")
     paste0()
   })), bindings)
+  ready <- TRUE
   state
 }
 
 test_that("locally rebound Grouping callees use typed selection metadata", {
   data <- tibble::tibble(a = c("east", "west"), b = c(1L, 1L))
   fixture <- rebound_pattern()
+  on.exit(fixture$cleanup(), add = TRUE)
   selection <- fixture$selection
   expect_identical(names(tidyselect::eval_select(selection, data)), "a")
   fixture$seen <- character()
@@ -44,6 +47,8 @@ test_that("locally rebound Grouping callees use typed selection metadata", {
 
 expect_rebound_grouping <- function(data) {
   original <- serialize(data, NULL)
+  cleanups <- list()
+  on.exit(for (cleanup in cleanups) cleanup(), add = TRUE)
   a <- rlang::sym("a")
   b <- rlang::sym("b")
   constructors <- c("grouping_set", "grouping_sets", "rollup", "cube",
@@ -53,6 +58,7 @@ expect_rebound_grouping <- function(data) {
     for (position in c("dimension", "fixed", "unfixed")) {
       for (consumer in c("inspect", "summary")) {
         fixture <- rebound_pattern()
+        cleanups[[length(cleanups) + 1L]] <- fixture$cleanup
         selection <- fixture$selection
         direct <- names(tidyselect::eval_select(
           selection, tibble::tibble(a = c("east", "west"), b = c(1L, 1L))
@@ -144,6 +150,7 @@ test_that("unproven rebound callbacks do not evaluate dtplyr source rows", {
   }
   step <- dplyr::mutate(dtplyr::lazy_dt(data), a = touch(a))
   fixture <- rebound_pattern()
+  on.exit(fixture$cleanup(), add = TRUE)
   selection <- fixture$selection
   expect_error(
     inspect_grouping(step, .grouping = grouping_set(!!selection)),
@@ -168,6 +175,7 @@ test_that("computed heads and unused formals keep ordinary evaluation", {
 test_that("inline helper blocks retain rebound callee evaluation", {
   data <- tibble::tibble(a = "east", b = 1L)
   fixture <- rebound_pattern()
+  on.exit(fixture$cleanup(), add = TRUE)
   selection <- fixture$inline
   expect_identical(names(tidyselect::eval_select(selection, data)), "a")
   fixture$seen <- character()
@@ -181,8 +189,89 @@ test_that("inline helper blocks retain rebound callee evaluation", {
 test_that("string assignment targets cannot retain an older callee proof", {
   data <- tibble::tibble(a = "east", b = 1L)
   fixture <- rebound_pattern("paste0")
+  on.exit(fixture$cleanup(), add = TRUE)
   selection <- fixture$selection
   expect_identical(names(tidyselect::eval_select(selection, data)), "a")
+  fixture$seen <- character()
+  actual <- inspect_grouping(
+    data, .by = b, .grouping = grouping_set(!!selection), .format = "list"
+  )
+  expect_identical(actual$included, list("a"))
+  expect_identical(fixture$seen, "character")
+})
+
+test_that("callback-local bindings do not change another lexical scope", {
+  skip_if_suggest_absent("dtplyr")
+  data <- tibble::tibble(a = c("east", "west"), b = c(1L, 1L))
+  step <- dplyr::mutate(dtplyr::lazy_dt(data), added = paste0(a, "x"))
+  caller <- rlang::env(paste0 = "lexical nonfunction", calls = 0L)
+  caller$stable <- rlang::new_function(pairlist(), quote(
+    paste0("^", tidyselect::peek_vars()[[1L]], "$")
+  ), caller)
+  caller$pattern <- rlang::new_function(pairlist(), quote({
+    calls <<- calls + 1L
+    paste0 <- "local nonfunction"
+    stable()
+  }), caller)
+  selection <- rlang::new_quosure(quote(matches(pattern())), caller)
+  expect_identical(names(tidyselect::eval_select(selection, data)), "a")
+  caller$calls <- 0L
+  actual <- inspect_grouping(
+    step, .grouping = grouping_set(!!selection), .format = "list"
+  )
+  expect_identical(actual$included, list("a"))
+  expect_identical(caller$calls, 2L)
+  expect_identical(caller$paste0, "lexical nonfunction")
+})
+
+test_that("superassignment invalidates another callback lexical callee", {
+  skip_if_suggest_absent("dtplyr")
+  data <- tibble::tibble(a = c("east", "west"), b = c(1L, 1L))
+  rows <- 0L
+  touch <- function(x) {
+    rows <<- rows + length(x)
+    x
+  }
+  step <- dplyr::mutate(dtplyr::lazy_dt(data), a = touch(a))
+  fixture <- rebound_pattern()
+  on.exit(fixture$cleanup(), add = TRUE)
+  caller <- rlang::quo_get_env(fixture$selection)
+  assignment <- body(caller$pattern)[[2L]]
+  assignment[[1L]] <- quote(`<<-`)
+  caller$stable <- rlang::new_function(pairlist(), quote(paste0()), caller)
+  caller$pattern <- rlang::new_function(pairlist(), rlang::expr({
+    !!assignment
+    stable()
+  }), caller)
+  selection <- fixture$selection
+  expect_identical(names(tidyselect::eval_select(selection, data)), "a")
+  caller$paste0 <- "nonfunction shadow"
+  fixture$seen <- character()
+  expect_error(
+    inspect_grouping(step, .grouping = grouping_set(!!selection)),
+    "Can't safely determine column metadata", class = "marginplyr_error"
+  )
+  expect_identical(rows, 0L)
+  expect_identical(fixture$seen, character())
+  expect_identical(caller$paste0, "nonfunction shadow")
+})
+
+test_that("callback superassignment affects later sibling callees", {
+  data <- tibble::tibble(a = c("east", "west"), b = c(1L, 1L))
+  fixture <- rebound_pattern()
+  on.exit(fixture$cleanup(), add = TRUE)
+  caller <- rlang::quo_get_env(fixture$selection)
+  assignment <- body(caller$pattern)[[2L]]
+  assignment[[1L]] <- quote(`<<-`)
+  caller$mutate_binding <- rlang::new_function(pairlist(), assignment, caller)
+  caller$stable <- rlang::new_function(pairlist(), quote(paste0()), caller)
+  caller$pattern <- rlang::new_function(pairlist(), quote({
+    mutate_binding()
+    stable()
+  }), caller)
+  selection <- fixture$selection
+  expect_identical(names(tidyselect::eval_select(selection, data)), "a")
+  caller$paste0 <- "nonfunction shadow"
   fixture$seen <- character()
   actual <- inspect_grouping(
     data, .by = b, .grouping = grouping_set(!!selection), .format = "list"
