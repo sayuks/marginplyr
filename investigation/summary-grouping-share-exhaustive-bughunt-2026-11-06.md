@@ -90,6 +90,9 @@ returned zero. The
 separately records the first matrix path failure and its corrected replay.
 No package failure was inferred from that harness setup error. All owned
 executions and database connections were collected before final verification.
+Two auxiliary controls were also replayed after making their CSV output
+script-relative; their 180/120 comparison rows matched the original CSVs
+exactly. The execution record identifies their separate submitted-source SHA.
 
 The initial all-state exports contained 702 issue bodies and 691 PR bodies;
 the PR export used REST pagination. The publication-time CLI refresh returned

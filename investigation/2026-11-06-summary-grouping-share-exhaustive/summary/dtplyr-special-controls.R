@@ -1,4 +1,6 @@
 Sys.setenv(TESTTHAT_PARALLEL='false')
+script <- normalizePath(sub('^--file=', '', grep('^--file=', commandArgs(), value = TRUE)))
+evidence_dir <- dirname(script)
 pkgload::load_all(quiet=TRUE)
 suppressPackageStartupMessages(library(dplyr))
 columns <- c('.N','.I','.SD','.BY','.GRP','.NGRP','.EACHI','..1','..2','...','key','check.names','keep.rownames','stringsAsFactors','with','by','j','i','on','nomatch','mult','roll','which','.env','.data','n','mean','sum','pick','across')
@@ -18,6 +20,6 @@ for (col in columns) {
   }
 }
 results <- do.call(rbind,results)
-write.csv(results,'investigation/2026-11-06-summary-grouping-share-exhaustive/summary/dtplyr-special-controls.csv',row.names=FALSE)
+write.csv(results,file.path(evidence_dir,'dtplyr-special-controls.csv'),row.names=FALSE)
 cat('SPECIAL',nrow(results),'DIFFS',sum(!results$matched),'\n')
 stopifnot(all(results$matched))

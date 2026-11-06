@@ -1,4 +1,6 @@
 Sys.setenv(TESTTHAT_PARALLEL = 'false')
+script <- normalizePath(sub('^--file=', '', grep('^--file=', commandArgs(), value = TRUE)))
+evidence_dir <- dirname(script)
 pkgload::load_all(quiet = TRUE)
 suppressPackageStartupMessages(library(dplyr))
 d <- tibble(g = c(1L, 1L, 2L), x = c(1, 2, 3))
@@ -29,6 +31,6 @@ for (input in c('data.frame', 'tibble', 'data.table')) {
   }
 }
 results <- do.call(rbind,results)
-write.csv(results,'investigation/2026-11-06-summary-grouping-share-exhaustive/summary/control-flow-controls.csv',row.names=FALSE)
+write.csv(results,file.path(evidence_dir,'control-flow-controls.csv'),row.names=FALSE)
 cat('CONTROL FLOW',nrow(results),'DIFFS',sum(!results$matched),'BOTH REFUSED',sum(results$ordinary_error & results$margin_error),'\n')
 stopifnot(all(results$matched))

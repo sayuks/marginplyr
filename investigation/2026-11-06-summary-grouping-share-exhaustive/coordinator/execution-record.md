@@ -39,3 +39,21 @@ driver and corrected matrix both reached terminal completion. No package
 suite, build, snapshot run, rendering or implementation repair supplied this
 replay evidence. The later Review-ready invocation was separate and its result
 was recorded on the PR.
+
+## Auxiliary archive replay
+
+The two auxiliary summary controls also wrote CSVs to working-directory-relative
+research paths. Their archive execution failed at output, as observed through
+reviewer terminal handles `60659` and `87938`, both exit one. Their output
+paths were changed to their own script directory without changing fixture or
+comparison expressions. The coordinator then copied both scripts to
+`/private/tmp/marginplyr-exhaustive-auxiliary-replay` and invoked them from the
+submitted `12f3bc3f89fc62283e34206862fae998b8e1b8f1` source archive, whose
+package code matched the investigated main.
+
+Retained execution `29688` reached terminal exit zero. Both individual statuses
+were zero, and the resulting 180/120-row comparison CSVs were byte-identical
+to the retained originals. The [result table](auxiliary-replay-results.csv)
+records that package SHA, the two script digests and statuses; adjacent
+`control-flow-controls.R.log` and `dtplyr-special-controls.R.log` retain the
+outputs. The earlier 15-mode replay and its evidence were left unchanged.
