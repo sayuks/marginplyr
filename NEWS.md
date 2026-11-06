@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Parent and Total share dependency checks retain local closures transferred
+  through `force()`, literal `get()` and `match.fun()` (#1402).
+
 * Parent and Total share dependency checks retain invocation-time dependencies
   through blocks, literal branches and visible local function factories
   (#1401).

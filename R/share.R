@@ -4717,11 +4717,46 @@ scope_value_closure <- function(expr, scope, lookup) {
   operator <- static_call_name(head)
   transfer_lookup <- lookup
   transfer_lookup$rebound <- lookup$function_rebound %||% lookup$rebound
-  if (!is.null(operator) && operator %in% c("identity", "invisible") &&
+  if (!is.null(operator) &&
+        operator %in% c("identity", "invisible", "force", "match.fun") &&
         is_known_base_frame_call(head, operator, scope, transfer_lookup)) {
-    value <- base_call_argument(head, "x")
+    value <- base_call_argument(
+      head, if (operator == "match.fun") "FUN" else "x"
+    )
     if (length(value) == 1L) {
       return(scope_value_closure(value[[1L]], scope, lookup))
+    }
+  }
+  if (identical(operator, "get") &&
+        is_known_base_frame_call(head, operator, scope, transfer_lookup)) {
+    value <- base_call_argument(head, "x")
+    target <- base_call_argument(head, c("envir", "pos"))
+    mode <- base_call_argument(head, "mode")
+    inherited <- base_call_argument(head, "inherits")
+    key <- if (length(value) == 1L) static_character_value(value[[1L]])
+    frame <- if (length(target) == 0L) {
+      1L
+    } else {
+      static_environment_frame(target[[1L]], scope, lookup)
+    }
+    mode <- if (length(mode) == 0L) {
+      "any"
+    } else {
+      static_character_value(mode[[1L]])
+    }
+    inherited <- if (length(inherited) == 0L) {
+      TRUE
+    } else {
+      unparenthesized_value(inherited[[1L]])
+    }
+    if (length(key) == 1L && !is.null(frame) && frame <= length(scope) &&
+          length(mode) == 1L && mode %in% c("any", "function") &&
+          (identical(inherited, TRUE) || identical(inherited, FALSE))) {
+      visible <- if (inherited) scope_visible_frames(scope, frame) else frame
+      return(scope_closure_binding(
+        key, scope, function_lookup = identical(mode, "function"),
+        visible = visible
+      ))
     }
   }
   if (is.null(operator) || !operator %in% c("[[", "$") || length(head) != 3L ||
@@ -4823,8 +4858,9 @@ scope_closure_list <- function(expr, scope, lookup) {
 }
 
 # Find a local literal closure using function or value lookup as written.
-scope_closure_binding <- function(name, scope, function_lookup) {
-  for (index in scope_visible_frames(scope)) {
+scope_closure_binding <- function(name, scope, function_lookup,
+                                  visible = scope_visible_frames(scope)) {
+  for (index in visible) {
     frame <- scope[[index]]
     if (!name %in% frame$bound ||
           (function_lookup && identical(frame$kinds[[name]], "value"))) {
