@@ -1,0 +1,156 @@
+  mask      graph  position consumer  good native_rows construction_rows
+ FALSE arithmetic dimension  inspect  TRUE                              
+ FALSE arithmetic dimension     nest  TRUE                              
+ FALSE arithmetic dimension  rowwise  TRUE                              
+ FALSE arithmetic     fixed  inspect  TRUE                              
+ FALSE arithmetic     fixed     nest  TRUE                              
+ FALSE arithmetic     fixed  rowwise  TRUE                              
+  TRUE arithmetic dimension  inspect FALSE           2                 0
+  TRUE arithmetic dimension     nest FALSE           2                 0
+  TRUE arithmetic dimension  rowwise FALSE           2         0,2,2,2,1
+  TRUE arithmetic     fixed  inspect FALSE           2                 0
+  TRUE arithmetic     fixed     nest FALSE           2                 0
+  TRUE arithmetic     fixed  rowwise FALSE           2         0,2,2,2,1
+ all_margin_rows
+                
+                
+                
+                
+                
+                
+               0
+       0,2,2,2,1
+       0,2,2,2,1
+               0
+       0,2,2,2,1
+       0,2,2,2,1
+  mask      graph  position consumer  good native_rows construction_rows
+ FALSE       root dimension  inspect  TRUE                              
+  TRUE       root dimension  inspect  TRUE                              
+ FALSE arithmetic dimension  inspect  TRUE                              
+  TRUE arithmetic dimension  inspect FALSE           2                 0
+ FALSE     filter dimension  inspect  TRUE                              
+  TRUE     filter dimension  inspect  TRUE           2                  
+ FALSE       root     fixed  inspect  TRUE                              
+  TRUE       root     fixed  inspect  TRUE                              
+ FALSE arithmetic     fixed  inspect  TRUE                              
+  TRUE arithmetic     fixed  inspect FALSE           2                 0
+ FALSE     filter     fixed  inspect  TRUE                              
+  TRUE     filter     fixed  inspect  TRUE           2                  
+ FALSE       root      name  inspect  TRUE                              
+  TRUE       root      name  inspect  TRUE                              
+ FALSE arithmetic      name  inspect  TRUE                              
+  TRUE arithmetic      name  inspect  TRUE           2                  
+ FALSE     filter      name  inspect  TRUE                              
+  TRUE     filter      name  inspect  TRUE           2                  
+ FALSE       root dimension     nest  TRUE                              
+  TRUE       root dimension     nest  TRUE                              
+ FALSE arithmetic dimension     nest  TRUE                              
+  TRUE arithmetic dimension     nest FALSE           2                 0
+ FALSE     filter dimension     nest  TRUE                              
+  TRUE     filter dimension     nest  TRUE           2                  
+ FALSE       root     fixed     nest  TRUE                              
+  TRUE       root     fixed     nest  TRUE                              
+ FALSE arithmetic     fixed     nest  TRUE                              
+  TRUE arithmetic     fixed     nest FALSE           2                 0
+ FALSE     filter     fixed     nest  TRUE                              
+  TRUE     filter     fixed     nest  TRUE           2                  
+ FALSE       root      name     nest  TRUE                              
+  TRUE       root      name     nest  TRUE                              
+ FALSE arithmetic      name     nest  TRUE                              
+  TRUE arithmetic      name     nest  TRUE           2                 0
+ FALSE     filter      name     nest  TRUE                              
+  TRUE     filter      name     nest  TRUE           2                  
+ FALSE       root dimension  rowwise  TRUE                              
+  TRUE       root dimension  rowwise  TRUE                   2,2,2,2,2,2
+ FALSE arithmetic dimension  rowwise  TRUE                              
+  TRUE arithmetic dimension  rowwise FALSE           2         0,2,2,2,1
+ FALSE     filter dimension  rowwise  TRUE                              
+  TRUE     filter dimension  rowwise  TRUE           2     2,2,2,2,2,2,2
+ FALSE       root     fixed  rowwise  TRUE                              
+  TRUE       root     fixed  rowwise  TRUE                         2,2,2
+ FALSE arithmetic     fixed  rowwise  TRUE                              
+  TRUE arithmetic     fixed  rowwise FALSE           2         0,2,2,2,1
+ FALSE     filter     fixed  rowwise  TRUE                              
+  TRUE     filter     fixed  rowwise  TRUE           2           2,2,2,2
+ FALSE       root      name  rowwise  TRUE                              
+  TRUE       root      name  rowwise  TRUE                   2,2,2,2,2,2
+ FALSE arithmetic      name  rowwise  TRUE                              
+  TRUE arithmetic      name  rowwise  TRUE           2   0,2,2,2,2,2,2,2
+ FALSE     filter      name  rowwise  TRUE                              
+  TRUE     filter      name  rowwise  TRUE           2     2,2,2,2,2,2,2
+ all_margin_rows
+                
+                
+                
+               0
+                
+                
+                
+                
+                
+               0
+                
+                
+                
+                
+                
+                
+                
+                
+                
+     2,2,2,2,2,2
+                
+       0,2,2,2,1
+                
+   2,2,2,2,2,2,2
+                
+           2,2,2
+                
+       0,2,2,2,1
+                
+         2,2,2,2
+                
+     2,2,2,2,2,2
+                
+ 0,2,2,2,2,2,2,2
+                
+   2,2,2,2,2,2,2
+                
+     2,2,2,2,2,2
+                
+       0,2,2,2,1
+                
+   2,2,2,2,2,2,2
+                
+           2,2,2
+                
+       0,2,2,2,1
+                
+         2,2,2,2
+                
+     2,2,2,2,2,2
+                
+ 0,2,2,2,2,2,2,2
+                
+   2,2,2,2,2,2,2
+, , good = FALSE
+
+       graph
+mask    arithmetic filter root
+  FALSE          0      0    0
+  TRUE           6      0    0
+
+, , good = TRUE
+
+       graph
+mask    arithmetic filter root
+  FALSE          9      9    9
+  TRUE           3      9    9
+
+R: 4.6.1 
+dplyr 1.2.1 
+dtplyr 1.3.3 
+data.table 1.18.6.1 
+tidyselect 1.2.1 
+vctrs 0.7.3 

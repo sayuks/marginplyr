@@ -1,0 +1,32 @@
+  mask      graph  position consumer  good native_rows construction_rows
+ FALSE arithmetic dimension  inspect  TRUE                              
+ FALSE arithmetic dimension     nest  TRUE                              
+ FALSE arithmetic dimension  rowwise  TRUE                              
+ FALSE arithmetic     fixed  inspect  TRUE                              
+ FALSE arithmetic     fixed     nest  TRUE                              
+ FALSE arithmetic     fixed  rowwise  TRUE                              
+  TRUE arithmetic dimension  inspect FALSE           2                 0
+  TRUE arithmetic dimension     nest FALSE           2                 0
+  TRUE arithmetic dimension  rowwise FALSE           2         0,2,2,2,1
+  TRUE arithmetic     fixed  inspect FALSE           2                 0
+  TRUE arithmetic     fixed     nest FALSE           2                 0
+  TRUE arithmetic     fixed  rowwise FALSE           2         0,2,2,2,1
+ all_margin_rows
+                
+                
+                
+                
+                
+                
+               0
+       0,2,2,2,1
+       0,2,2,2,1
+               0
+       0,2,2,2,1
+       0,2,2,2,1
+R: 4.6.1 
+dplyr 1.2.1 
+dtplyr 1.3.3 
+data.table 1.18.6.1 
+tidyselect 1.2.1 
+vctrs 0.7.3 
