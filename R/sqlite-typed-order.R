@@ -108,20 +108,30 @@ sqlite_typed_result <- function(operation, unsorted, ordered,
     list()
   }
   public_columns <- as.character(dplyr::tbl_vars(ordered))
-  key_names <- new_margin_internal_names(
-    length(terms),
+  # Reuse public value columns; the remaining order terms need their own
+  # projections in SQLite's compound SELECT.
+  public_terms <- lapply(public_columns, margin_column_pronoun)
+  key_names <- vapply(terms, function(term) {
+    columns <- public_columns[vapply(public_terms, identical, logical(1), term)]
+    if (length(columns) > 0L) columns[[1L]] else ""
+  }, character(1))
+  projected <- !nzchar(key_names)
+  key_names[projected] <- new_margin_internal_names(
+    sum(projected),
     used_names = c(operation$data_vars, dplyr::tbl_vars(unsorted)),
     prefix = "..marginplyr_order_",
     backend = operation$backend
   )
-  keys <- stats::setNames(lapply(terms, sqlite_order_value), key_names)
+  keys <- stats::setNames(
+    lapply(terms[projected], sqlite_order_value), key_names[projected]
+  )
   staged <- if (length(keys) > 0L) {
     dplyr::mutate(unsorted, !!!keys)
   } else {
     unsorted
   }
   staged <- dplyr::select(
-    staged, dplyr::all_of(public_columns), dplyr::all_of(key_names)
+    staged, dplyr::all_of(public_columns), dplyr::all_of(key_names[projected])
   )
   anchor <- sql_margin_type_anchor(
     operation$data, staged, source_columns = source_columns,
@@ -133,7 +143,7 @@ sqlite_typed_result <- function(operation, unsorted, ordered,
     declared_types = declared_types
   )
 
-  public_query <- if (length(keys) == 0L && !is.null(input_anchor)) {
+  public_query <- if (length(key_names) == 0L && !is.null(input_anchor)) {
     typed_union
   } else {
     ordered
