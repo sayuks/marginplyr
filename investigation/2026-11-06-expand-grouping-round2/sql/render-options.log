@@ -1,0 +1,16 @@
+DEFAULT EXCLUSION sqlite TRUE window none null no such column: TRUE
+DEFAULT EXCLUSION sqlite TRUE window none text no such column: TRUE
+DEFAULT EXCLUSION sqlite TRUE window last null no such column: TRUE
+DEFAULT EXCLUSION sqlite TRUE window last text no such column: TRUE
+DEFAULT EXCLUSION sqlite TRUE binary none null no such column: TRUE
+DEFAULT EXCLUSION sqlite TRUE binary none text no such column: TRUE
+DEFAULT EXCLUSION sqlite TRUE binary last null no such column: TRUE
+DEFAULT EXCLUSION sqlite TRUE binary last text no such column: TRUE
+DEFAULT EXCLUSION sqlite TRUE collapse none null no such column: TRUE
+DEFAULT EXCLUSION sqlite TRUE collapse none text no such column: TRUE
+DEFAULT EXCLUSION sqlite TRUE collapse last null no such column: TRUE
+DEFAULT EXCLUSION sqlite TRUE collapse last text no such column: TRUE
+
+         match
+  duckdb   512
+  sqlite   416

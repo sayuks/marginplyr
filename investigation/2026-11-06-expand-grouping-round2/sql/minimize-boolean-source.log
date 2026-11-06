@@ -1,0 +1,105 @@
+root source # A tibble: 1 × 2   g     `TRUE`   <chr>  <int> 1 a          7
+root single FALSE none build built
+root single FALSE none collect # A tibble: 1 × 2   g     `TRUE`   <chr>  <int> 1 a          7
+root single FALSE last build built
+root single FALSE last collect   g TRUE 1 a    7
+root single TRUE none build built
+root single TRUE none collect # A tibble: 1 × 3   g       sid `TRUE`   <chr> <int>  <int> 1 a         1      7
+root single TRUE last build built
+root single TRUE last collect   g sid TRUE 1 a   1    7
+root rollup FALSE none build built
+root rollup FALSE none collect # A tibble: 2 × 2   g     `TRUE`   <chr>  <int> 1 a          7 2 <NA>       7
+root rollup FALSE last build built
+root rollup FALSE last collect      g TRUE 1    a    7 2 <NA>    7
+root rollup TRUE none build built
+root rollup TRUE none collect # A tibble: 2 × 3   g       sid `TRUE`   <chr> <int>  <int> 1 a         1      7 2 <NA>      2      7
+root rollup TRUE last build built
+root rollup TRUE last collect      g sid TRUE 1    a   1    7 2 <NA>   2    7
+mutate source # A tibble: 1 × 3   g     `TRUE`     z   <chr>  <int> <int> 1 a          7     1
+mutate single FALSE none build built
+mutate single FALSE none collect # A tibble: 1 × 3   g     `TRUE`     z   <chr>  <int> <int> 1 a          7     1
+mutate single FALSE last build built
+mutate single FALSE last collect   g TRUE z 1 a    7 1
+mutate single TRUE none build built
+mutate single TRUE none collect # A tibble: 1 × 4   g       sid `TRUE`     z   <chr> <int>  <int> <int> 1 a         1      7     1
+SELECT `g`, NULL AS `sid`, `..marginplyr_boolean_1` AS `TRUE`, `z`
+FROM (
+  SELECT `g`, `TRUE` AS `..marginplyr_boolean_1`, 1 AS `z`
+  FROM `input`
+  WHERE (0)
+) AS `q01`
+
+UNION ALL
+
+SELECT `g`, 1 AS `sid`, `..marginplyr_boolean_1` AS `TRUE`, `z`
+FROM (
+  SELECT `g`, `..marginplyr_input_1` AS `..marginplyr_boolean_1`, `z`
+  FROM (
+SELECT `g`, `..marginplyr_input_1`, `z`
+FROM (
+SELECT `g`, `TRUE` AS `..marginplyr_input_1`, 1 AS `z`
+FROM `input`
+) AS `q01`
+  ) AS `q01`
+) AS `q01`
+mutate single TRUE last build built
+mutate single TRUE last collect   g sid TRUE z 1 a   1    7 1
+mutate rollup FALSE none build built
+mutate rollup FALSE none collect # A tibble: 2 × 3   g     `TRUE`     z   <chr>  <int> <int> 1 a          7     1 2 <NA>       7     1
+mutate rollup FALSE last build built
+mutate rollup FALSE last collect      g TRUE z 1    a    7 1 2 <NA>    7 1
+mutate rollup TRUE none build built
+mutate rollup TRUE none collect # A tibble: 2 × 4   g       sid `TRUE`     z   <chr> <int>  <int> <int> 1 a         1      7     1 2 <NA>      2      7     1
+mutate rollup TRUE last build built
+mutate rollup TRUE last collect      g sid TRUE z 1    a   1    7 1 2 <NA>   2    7 1
+window source # A tibble: 1 × 3   g     `TRUE`     z   <chr>  <int> <int> 1 a          7     1
+window single FALSE none build built
+window single FALSE none collect undefined columns selected
+window single FALSE last build built
+window single FALSE last collect undefined columns selected
+window single TRUE none build built
+window single TRUE none collect no such column: TRUE
+window single TRUE last build built
+window single TRUE last collect no such column: TRUE
+window rollup FALSE none build built
+window rollup FALSE none collect undefined columns selected
+window rollup FALSE last build built
+window rollup FALSE last collect undefined columns selected
+window rollup TRUE none build built
+window rollup TRUE none collect no such column: TRUE
+window rollup TRUE last build built
+window rollup TRUE last collect no such column: TRUE
+collapse source # A tibble: 1 × 2   g     `TRUE`   <chr>  <int> 1 a          7
+collapse single FALSE none build built
+collapse single FALSE none collect no such column: TRUE
+collapse single FALSE last build built
+collapse single FALSE last collect no such column: TRUE
+collapse single TRUE none build built
+collapse single TRUE none collect no such column: TRUE
+collapse single TRUE last build built
+collapse single TRUE last collect no such column: TRUE
+collapse rollup FALSE none build built
+collapse rollup FALSE none collect no such column: TRUE
+collapse rollup FALSE last build built
+collapse rollup FALSE last collect no such column: TRUE
+collapse rollup TRUE none build built
+collapse rollup TRUE none collect no such column: TRUE
+collapse rollup TRUE last build built
+collapse rollup TRUE last collect no such column: TRUE
+union source # A tibble: 2 × 2   g     `TRUE`   <chr>  <int> 1 a          7 2 a          7
+union single FALSE none build built
+union single FALSE none collect no such column: TRUE
+union single FALSE last build built
+union single FALSE last collect no such column: TRUE
+union single TRUE none build built
+union single TRUE none collect no such column: TRUE
+union single TRUE last build built
+union single TRUE last collect no such column: TRUE
+union rollup FALSE none build built
+union rollup FALSE none collect no such column: TRUE
+union rollup FALSE last build built
+union rollup FALSE last collect no such column: TRUE
+union rollup TRUE none build built
+union rollup TRUE none collect no such column: TRUE
+union rollup TRUE last build built
+union rollup TRUE last collect no such column: TRUE

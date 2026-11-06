@@ -1,0 +1,33 @@
+Ordinary source, all-column selection, no-op mutation and explicit rename passed.
+Expansion result: undefined columns selected
+Rendered SQL:
+SELECT *
+FROM (
+  SELECT
+    *,
+    CASE
+WHEN (NOT((`g` IS NULL))) THEN ROW_NUMBER() OVER (PARTITION BY (CASE WHEN ((`g` IS NULL)) THEN 1 ELSE 0 END) ORDER BY `g`)
+END AS `z`
+  FROM `input`
+) AS `q01`
+WHERE (0)
+
+UNION ALL
+
+SELECT `g`, `..marginplyr_input_1` AS `TRUE`, `z`
+FROM (
+SELECT `g`, `..marginplyr_input_1`, `z`
+FROM (
+SELECT
+  `g`,
+  `TRUE` AS `..marginplyr_input_1`,
+  CASE
+WHEN (NOT((`g` IS NULL))) THEN ROW_NUMBER() OVER (PARTITION BY (CASE WHEN ((`g` IS NULL)) THEN 1 ELSE 0 END) ORDER BY `g`)
+END AS `z`
+FROM `input`
+) AS `q01`
+) AS `q01`
+Raw result: g, column2, z
+Unwrapped source and pre-aliased window controls passed.
+Error: Included-only expansion must preserve the executable source's public columns and values.
+Execution halted

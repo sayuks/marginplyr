@@ -1,0 +1,115 @@
+"nm","n","graph","status","message"
+"v",0,"root","match",""
+"v",0,"constant","match",""
+"v",0,"window","match",""
+"v",0,"collapse","match",""
+"v",0,"union","match",""
+"v",0,"join","match",""
+"v",1,"root","match",""
+"v",1,"constant","match",""
+"v",1,"window","match",""
+"v",1,"collapse","match",""
+"v",1,"union","match",""
+"v",1,"join","match",""
+"v",3,"root","match",""
+"v",3,"constant","match",""
+"v",3,"window","match",""
+"v",3,"collapse","match",""
+"v",3,"union","match",""
+"v",3,"join","match",""
+"TRUE",0,"root","match",""
+"TRUE",0,"constant","match",""
+"TRUE",0,"window","expansion-error","undefined columns selected"
+"TRUE",0,"collapse","expansion-error","no such column: TRUE"
+"TRUE",0,"union","expansion-error","no such column: TRUE"
+"TRUE",0,"join","expansion-error","Names must be unique.
+✖ These names are duplicated:
+  * ""TRUE"" at locations 2 and 5."
+"TRUE",1,"root","match",""
+"TRUE",1,"constant","match",""
+"TRUE",1,"window","expansion-error","undefined columns selected"
+"TRUE",1,"collapse","expansion-error","no such column: TRUE"
+"TRUE",1,"union","expansion-error","no such column: TRUE"
+"TRUE",1,"join","expansion-error","Names must be unique.
+✖ These names are duplicated:
+  * ""TRUE"" at locations 2 and 5."
+"TRUE",3,"root","match",""
+"TRUE",3,"constant","match",""
+"TRUE",3,"window","expansion-error","undefined columns selected"
+"TRUE",3,"collapse","expansion-error","no such column: TRUE"
+"TRUE",3,"union","expansion-error","no such column: TRUE"
+"TRUE",3,"join","expansion-error","Names must be unique.
+✖ These names are duplicated:
+  * ""TRUE"" at locations 2 and 5."
+"FALSE",0,"root","match",""
+"FALSE",0,"constant","match",""
+"FALSE",0,"window","expansion-error","undefined columns selected"
+"FALSE",0,"collapse","expansion-error","no such column: FALSE"
+"FALSE",0,"union","expansion-error","no such column: FALSE"
+"FALSE",0,"join","expansion-error","Names must be unique.
+✖ These names are duplicated:
+  * ""FALSE"" at locations 2 and 5."
+"FALSE",1,"root","match",""
+"FALSE",1,"constant","match",""
+"FALSE",1,"window","expansion-error","undefined columns selected"
+"FALSE",1,"collapse","expansion-error","no such column: FALSE"
+"FALSE",1,"union","expansion-error","no such column: FALSE"
+"FALSE",1,"join","expansion-error","Names must be unique.
+✖ These names are duplicated:
+  * ""FALSE"" at locations 2 and 5."
+"FALSE",3,"root","match",""
+"FALSE",3,"constant","match",""
+"FALSE",3,"window","expansion-error","undefined columns selected"
+"FALSE",3,"collapse","expansion-error","no such column: FALSE"
+"FALSE",3,"union","expansion-error","no such column: FALSE"
+"FALSE",3,"join","expansion-error","Names must be unique.
+✖ These names are duplicated:
+  * ""FALSE"" at locations 2 and 5."
+"TrUe",0,"root","match",""
+"TrUe",0,"constant","match",""
+"TrUe",0,"window","expansion-error","undefined columns selected"
+"TrUe",0,"collapse","expansion-error","no such column: TrUe"
+"TrUe",0,"union","expansion-error","no such column: TrUe"
+"TrUe",0,"join","expansion-error","Names must be unique.
+✖ These names are duplicated:
+  * ""TrUe"" at locations 2 and 5."
+"TrUe",1,"root","match",""
+"TrUe",1,"constant","match",""
+"TrUe",1,"window","expansion-error","undefined columns selected"
+"TrUe",1,"collapse","expansion-error","no such column: TrUe"
+"TrUe",1,"union","expansion-error","no such column: TrUe"
+"TrUe",1,"join","expansion-error","Names must be unique.
+✖ These names are duplicated:
+  * ""TrUe"" at locations 2 and 5."
+"TrUe",3,"root","match",""
+"TrUe",3,"constant","match",""
+"TrUe",3,"window","expansion-error","undefined columns selected"
+"TrUe",3,"collapse","expansion-error","no such column: TrUe"
+"TrUe",3,"union","expansion-error","no such column: TrUe"
+"TrUe",3,"join","expansion-error","Names must be unique.
+✖ These names are duplicated:
+  * ""TrUe"" at locations 2 and 5."
+"FaLsE",0,"root","match",""
+"FaLsE",0,"constant","match",""
+"FaLsE",0,"window","expansion-error","undefined columns selected"
+"FaLsE",0,"collapse","expansion-error","no such column: FaLsE"
+"FaLsE",0,"union","expansion-error","no such column: FaLsE"
+"FaLsE",0,"join","expansion-error","Names must be unique.
+✖ These names are duplicated:
+  * ""FaLsE"" at locations 2 and 5."
+"FaLsE",1,"root","match",""
+"FaLsE",1,"constant","match",""
+"FaLsE",1,"window","expansion-error","undefined columns selected"
+"FaLsE",1,"collapse","expansion-error","no such column: FaLsE"
+"FaLsE",1,"union","expansion-error","no such column: FaLsE"
+"FaLsE",1,"join","expansion-error","Names must be unique.
+✖ These names are duplicated:
+  * ""FaLsE"" at locations 2 and 5."
+"FaLsE",3,"root","match",""
+"FaLsE",3,"constant","match",""
+"FaLsE",3,"window","expansion-error","undefined columns selected"
+"FaLsE",3,"collapse","expansion-error","no such column: FaLsE"
+"FaLsE",3,"union","expansion-error","no such column: FaLsE"
+"FaLsE",3,"join","expansion-error","Names must be unique.
+✖ These names are duplicated:
+  * ""FaLsE"" at locations 2 and 5."

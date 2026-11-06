@@ -1,0 +1,7 @@
+                 status   n
+1                 match 270
+2 safe-metadata-refusal  27
+ form                status
+ head safe-metadata-refusal
+                                                                                                                                                                                                                                                                                          error
+ Can't safely determine column metadata for `.data` from this dtplyr step.\nℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.\nℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame.

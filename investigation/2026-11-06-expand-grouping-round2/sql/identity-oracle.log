@@ -1,0 +1,11 @@
+
+expansion-error           match
+             48              42
+          status
+graph      expansion-error match
+  collapse              12     3
+  constant               0    15
+  join                  12     3
+  root                   0    15
+  union                 12     3
+  window                12     3
