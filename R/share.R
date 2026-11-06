@@ -5286,6 +5286,7 @@ is_binding_statement <- function(call_name, expr) {
 
 # A block walks statements in order. Definite bindings carry into the
 # next statement, and a removal can expose a name in an enclosing frame.
+# A selected explicit return leaves later statements unreachable.
 block_reads_and_scope <- function(expr, scope, lookup, read_symbols,
                                   read_result_symbols) {
   reads <- character()
@@ -5297,6 +5298,9 @@ block_reads_and_scope <- function(expr, scope, lookup, read_symbols,
     )
     reads <- c(reads, step$reads)
     scope <- step$scope
+    if (isTRUE(step$returned)) {
+      return(list(reads = unique(reads), scope = scope, returned = TRUE))
+    }
   }
   list(reads = unique(reads), scope = scope)
 }
@@ -5308,8 +5312,8 @@ statement_reads_and_scope <- function(expr, scope, lookup = NULL,
                                       read_result_symbols = read_symbols) {
   expr <- unparenthesized_value(expr)
   call_name <- static_call_name(expr)
-  arm <- literal_if_parts(expr, call_name, scope_bound_names(scope), lookup)
-  if (length(arm) > 0L) {
+  arm <- scope_literal_branch(expr, scope, lookup)
+  if (length(arm) > 0L && !rlang::is_missing(arm[[1L]])) {
     return(statement_reads_and_scope(
       arm[[1L]], scope, lookup, read_symbols, read_result_symbols
     ))
@@ -5320,10 +5324,15 @@ statement_reads_and_scope <- function(expr, scope, lookup = NULL,
     ))
   }
   if (!is_binding_statement(call_name, expr)) {
-    return(list(
+    step <- list(
       reads = read_result_symbols(expr, scope, lookup),
       scope = scope_after_removals(expr, scope, lookup)
-    ))
+    )
+    if (identical(call_name, "return") && length(expr) <= 2L &&
+          is_known_base_frame_call(expr, call_name, scope, lookup)) {
+      step$returned <- TRUE
+    }
+    return(step)
   }
   if (identical(call_name, "for")) {
     # R binds the index even for an empty sequence. The sequence runs first.

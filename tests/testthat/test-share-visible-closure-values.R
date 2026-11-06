@@ -153,6 +153,16 @@ expect_visible_closures <- function(data) {
       copied()
     })(1)
   ), expected = c(7, 7, 7))
+  expect_visible_closure_values(data, alist(
+    (function(prior) {
+      copied <- (function() {
+        if (TRUE) return(function() sum(prior))
+        rm(prior, envir = parent.frame())
+        function() 7
+      })()
+      copied()
+    })(1)
+  ))
   expect_identical(serialize(data, NULL), before)
 }
 
