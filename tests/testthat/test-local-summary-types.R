@@ -245,3 +245,101 @@ test_that("homogeneous unspecified summaries retain their assigned names", {
   )
   expect_identical(actual, expected)
 })
+
+check_subclass_frame_summaries <- function(convert) {
+  behavior <- "change"
+  rlang::local_bindings(
+    as.list.margin_summary_frame = function(x, ...) {
+      if (nrow(x) > 0L && behavior == "refuse") {
+        stop("Positive-row list conversion is unsupported")
+      }
+      list(out = rep(99L, nrow(x)))
+    },
+    .env = asNamespace("base")$.__S3MethodsTable__.
+  )
+  frame <- function(x) {
+    if (length(x) == 1L && behavior == "unspecified") {
+      return(NA)
+    }
+    if (length(x) == 1L && behavior == "incompatible") {
+      return(sum(x))
+    }
+    structure(data.frame(out = sum(x)),
+              class = c("margin_summary_frame", "data.frame"))
+  }
+  summary_env <- rlang::env(frame = frame)
+  for (behavior in c("change", "refuse", "unspecified", "incompatible")) {
+    rows <- if (behavior %in% c("unspecified", "incompatible")) {
+      list(1:3, 3:1)
+    } else {
+      list(1:3)
+    }
+    for (order in rows) {
+      data <- convert(data.frame(g = c("a", "a", "b"), x = 1:3)[order, ])
+      for (expr in list(quote(frame(x)), quote(frame(dplyr::pick(x)$x)))) {
+        summary <- rlang::new_quosure(expr, env = summary_env)
+        for (role in c("grand", "fixed", "included", "rollup")) {
+          keys <- if (role == "grand") character() else "g"
+          grouping <- switch(role,
+            included = grouping_set("g"), rollup = rollup("g"), grouping_set()
+          )
+          fixed <- if (role == "fixed") "g" else character()
+          if (behavior == "incompatible" && role != "grand") {
+            expect_error(
+              dplyr::summarise(data, !!summary, .by = dplyr::all_of(keys)),
+              "compatible vectors across groups"
+            )
+            error <- expect_error(
+              summarize_with_margins(
+                data, !!summary,
+                .by = dplyr::all_of(fixed), .grouping = grouping
+              ),
+              "Can.t combine"
+            )
+            expect_s3_class(error$parent, "vctrs_error_incompatible_type")
+            next
+          }
+          expected <- dplyr::summarise(
+            data, !!summary, later = .data$out * 2L, .by = dplyr::all_of(keys)
+          )
+          packed <- dplyr::summarise(
+            data, packed = !!summary, .by = dplyr::all_of(keys)
+          )
+          if (role == "rollup") {
+            total <- dplyr::summarise(data, !!summary, later = .data$out * 2L)
+            total$g <- "Total"
+            expected <- dplyr::bind_rows(expected, total)
+            total <- dplyr::summarise(data, packed = !!summary)
+            total$g <- "Total"
+            packed <- dplyr::bind_rows(packed, total)
+          }
+          actual <- summarize_with_margins(
+            data, !!summary, later = .data$out * 2L,
+            .by = dplyr::all_of(fixed), .grouping = grouping
+          )
+          expect_identical(actual, expected, info = paste(behavior, role))
+          actual <- summarize_with_margins(
+            data, packed = !!summary,
+            .by = dplyr::all_of(fixed), .grouping = grouping
+          )
+          expect_identical(
+            actual, packed, info = paste(behavior, role, "packed")
+          )
+        }
+      }
+    }
+  }
+}
+
+test_that("plain frames expand subclass summary columns as dplyr does", {
+  check_subclass_frame_summaries(identity)
+})
+
+test_that("tibbles expand subclass summary columns as dplyr does", {
+  check_subclass_frame_summaries(tibble::as_tibble)
+})
+
+test_that("eager tables expand subclass summary columns as dplyr does", {
+  skip_if_suggest_absent("data.table")
+  check_subclass_frame_summaries(data.table::as.data.table)
+})
