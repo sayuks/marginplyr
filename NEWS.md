@@ -1,5 +1,10 @@
 # marginplyr 0.1.0
 
+* Parent and Total share dependency checks retain computed mask-member reads,
+  unproven environment search bounds, bulk environment reads, and known local
+  closure transfers while preserving proven independent reads (#1385, #1386,
+  #1388, #1389).
+
 * Typed dtplyr Grouping-plan inspection and nesting safely refuse root table
   subclasses before truncation methods can change metadata or source rows
   (#1382).

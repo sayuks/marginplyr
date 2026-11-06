@@ -4138,13 +4138,16 @@ lookup_rebound_names <- function(expr, env = emptyenv(), mask = character(),
     rebound
   }
   unique(c(written, expression_rebound_names(expr, list(
-    env = env, mask = mask, rebound = rebound
+    env = env, mask = mask, rebound = rebound,
+    function_rebound = expression_rebound_names(expr, function_lookup = TRUE)
   ), function_lookup = function_lookup)))
 }
 
 # Rebindings visible in evaluated syntax. The first pass supplies ordinary
 # assignments before the second pass resolves mutation callees against them.
-# Function lookup skips plain assignments of literal non-function values.
+# Function lookup includes replacement roots and skips plain assignments of
+# literal non-function values. Parent mutations are tracked separately by
+# lookup_reparented_environments().
 expression_rebound_names <- function(expr, lookup = NULL,
                                      function_lookup = FALSE) {
   if (rlang::is_quosure(expr) && !is.null(lookup)) {
@@ -4158,7 +4161,7 @@ expression_rebound_names <- function(expr, lookup = NULL,
       unparenthesized_value(expr), lookup, function_lookup
     ))
   }
-  assigned <- lookup_assignment_names(expr)
+  assigned <- lookup_assignment_names(expr, replacement = function_lookup)
   if (function_lookup && rlang::is_call(expr, c("<-", "=")) &&
         length(expr) >= 3L && is_name_part(expr[[2L]]) &&
         identical(scope_literal_kind(expr[[3L]]), "value")) {
@@ -4199,15 +4202,26 @@ list2env_setter_names <- function(expr, lookup = NULL) {
   unresolved_lookup_name()
 }
 
+# The root binding written by an assignment target, including replacement calls.
+assignment_target_names <- function(expr) {
+  if (is_name_part(expr) || rlang::is_string(expr)) {
+    return(rlang::as_name(expr))
+  }
+  if (rlang::is_call(expr) && length(expr) >= 2L) {
+    return(assignment_target_names(expr[[2L]]))
+  }
+  character()
+}
+
 # Names assigned by this call itself, or the unresolved marker when a reflective
 # assignment's target is not statically known. The caller supplies a call.
-lookup_assignment_names <- function(expr) {
+lookup_assignment_names <- function(expr, replacement = TRUE) {
   name <- resolved_callee_name(expr)
   assigned <- if (!is.null(name) && name %in% c("<-", "=", "<<-", "for") &&
                     length(expr) >= 3L &&
-                    (is_name_part(expr[[2L]]) ||
+                    (replacement || is_name_part(expr[[2L]]) ||
                        rlang::is_string(expr[[2L]]))) {
-    rlang::as_name(expr[[2L]])
+    assignment_target_names(expr[[2L]])
   } else {
     character()
   }
@@ -4348,11 +4362,20 @@ scoped_data_symbols <- function(expr, scope, lookup) {
       reflective_lookup_symbols(expr, scope_bound_names(scope), lookup)
     )))
   }
-  if (identical(call_name, "env_get") &&
+  if (!is.null(call_name) && call_name %in% c("env_get", "env_get_list") &&
         is_known_namespace_frame_call(expr, "rlang", scope, lookup)) {
     return(unique(c(
       call_part_symbols(expr, scope, lookup),
-      inheriting_env_get_symbols(expr, scope, lookup)
+      inheriting_env_get_symbols(
+        expr, scope, lookup, bulk = identical(call_name, "env_get_list")
+      )
+    )))
+  }
+  if (identical(call_name, "as.list") &&
+        is_known_base_frame_call(expr, call_name, scope, lookup)) {
+    return(unique(c(
+      call_part_symbols(expr, scope, lookup),
+      materialized_env_symbols(expr, scope, lookup)
     )))
   }
   if (is_reflective_evaluation(callee_name)) {
@@ -4420,6 +4443,11 @@ scoped_data_symbols <- function(expr, scope, lookup) {
     if (rlang::is_string(unparenthesized_value(expr[[3L]]))) {
       return(unparenthesized_value(expr[[3L]]))
     }
+    # An unknown member still reads the proven mask; its key is not evaluated
+    # during planning, and the key expression can carry its own dependencies.
+    return(unique(c(
+      unresolved_lookup_name(), call_part_symbols(expr, scope, lookup)
+    )))
   }
 
   # Any other `a$b` or `a@b` names `b` literally: the field or slot name is
@@ -4652,6 +4680,15 @@ scope_value_closure <- function(expr, scope, lookup) {
                                  function_lookup = FALSE))
   }
   operator <- static_call_name(head)
+  transfer_lookup <- lookup
+  transfer_lookup$rebound <- lookup$function_rebound %||% lookup$rebound
+  if (!is.null(operator) && operator %in% c("identity", "invisible") &&
+        is_known_base_frame_call(head, operator, scope, transfer_lookup)) {
+    value <- base_call_argument(head, "x")
+    if (length(value) == 1L) {
+      return(scope_value_closure(value[[1L]], scope, lookup))
+    }
+  }
   if (is.null(operator) || !operator %in% c("[[", "$") || length(head) != 3L ||
         !is_known_base_frame_call(head, operator, scope, lookup)) {
     return(NULL)
@@ -5131,8 +5168,9 @@ is_known_base_call <- function(expr, name, bound, lookup) {
   if (!is.null(namespace)) {
     return(identical(namespace, "base"))
   }
-  if (is.null(lookup$env) || name %in% c(bound, lookup$rebound) ||
-        unresolved_lookup_name() %in% lookup$rebound) {
+  rebound <- lookup$function_rebound %||% lookup$rebound
+  if (is.null(lookup$env) || name %in% c(bound, rebound) ||
+        unresolved_lookup_name() %in% rebound) {
     return(FALSE)
   }
   identical(
@@ -5326,6 +5364,13 @@ scope_after_removals <- function(expr, scope, lookup) {
   }
   bound <- scope_bound_names(scope)
   name <- static_call_name(expr)
+  assignment <- scope_local_closure_assignment(expr, scope, lookup)
+  if (!is.null(assignment)) {
+    retained <- scope_after_removals(assignment$value, scope, lookup)
+    return(scope_bind_local(
+      retained, assignment$name, assignment$value, lookup, value_scope = scope
+    ))
+  }
   if (identical(name, "force") && length(expr) == 2L &&
         is_known_base_call(expr, name, bound, lookup)) {
     return(statement_reads_and_scope(
@@ -5393,6 +5438,32 @@ scope_after_removals <- function(expr, scope, lookup) {
     scope <- scope_forget_kinds(scope, list2env_setter_names(mutation, lookup))
   }
   scope
+}
+
+# A literal base assign() installs a visible closure in the current frame when
+# neither its target environment nor inheritance can redirect the write.
+scope_local_closure_assignment <- function(expr, scope, lookup) {
+  transfer_lookup <- lookup
+  transfer_lookup$rebound <- lookup$function_rebound %||% lookup$rebound
+  if (length(scope) == 0L || !identical(static_call_name(expr), "assign") ||
+        !is_known_base_frame_call(expr, "assign", scope, transfer_lookup)) {
+    return(NULL)
+  }
+  name <- base_call_argument(expr, "x")
+  value <- base_call_argument(expr, "value")
+  target <- base_call_argument(expr, c("envir", "pos"))
+  inherited <- base_call_argument(expr, "inherits")
+  local_target <- length(target) == 0L ||
+    identical(static_environment_frame(target[[1L]], scope, lookup), 1L)
+  if (length(name) != 1L || !rlang::is_string(name[[1L]]) ||
+        length(value) != 1L || !local_target ||
+        (length(inherited) > 0L && !identical(inherited[[1L]], FALSE))) {
+    return(NULL)
+  }
+  if (is.null(scope_value_closure(value[[1L]], scope, lookup))) {
+    return(NULL)
+  }
+  list(name = name[[1L]], value = value[[1L]])
 }
 
 # Reflective or nonlocal writes can invalidate a known literal binding kind.
@@ -5836,37 +5907,92 @@ static_environment_frame <- function(expr, scope, lookup) {
   if (steps == 0L) frame else NULL
 }
 
+# Resolve an existing zero-argument caller closure whose entire body is a
+# known base caller-frame read. Inspecting that body never invokes the closure.
+static_returned_caller_frame <- function(expr, scope, lookup) {
+  if (!rlang::is_call(expr)) {
+    return(NULL)
+  }
+  head <- static_call_head(expr)
+  if (!is_name_part(head) || length(static_call_args(expr)) != 0L ||
+        is.null(lookup$env)) {
+    return(NULL)
+  }
+  name <- rlang::as_name(head)
+  rebound <- lookup$function_rebound %||% lookup$rebound
+  if (name %in% c(scope_bound_names(scope), lookup$mask, rebound) ||
+        unresolved_lookup_name() %in% rebound ||
+        !lookup_environment_is_external(lookup$env, character(), lookup,
+                                        safe_parents = FALSE)) {
+    return(NULL)
+  }
+  callee <- ordinary_function_binding(name, lookup$env)
+  if (!is.function(callee) || is.primitive(callee) ||
+        length(formals(callee)) != 0L) {
+    return(NULL)
+  }
+  if (!lookup_environment_is_external(
+    environment(callee), character(), lookup, safe_parents = FALSE
+  )) {
+    return(NULL)
+  }
+  lookup$env <- environment(callee)
+  depth <- static_parent_frame_depth(body(callee), list(), lookup)
+  if (!is.null(depth)) scope_caller_frame(depth - 1L, scope) else NULL
+}
+
+# Converting a known mask to a list retains an unresolved dependency.
+# The conversion does not inherit bindings from a lexical frame.
+materialized_env_symbols <- function(expr, scope, lookup) {
+  args <- static_matched_arguments(expr, base::as.list)
+  if (is_static_mask_parent(args$x, scope, lookup)) {
+    return(unresolved_lookup_name())
+  }
+  character()
+}
+
 # A lookup on the mask reads its own bindings regardless of inheritance.
-# An inheriting lookup from a lexical frame follows its visible bindings.
-# Only known stop frames beyond the mask preserve that path with `last`.
+# A possibly inheriting lookup follows visible lexical bindings unless a known
+# stop frame ends the search before the mask.
 # A nonliteral key retains an unresolved dependency on a mask-reaching path.
-inheriting_env_get_symbols <- function(expr, scope, lookup) {
-  args <- static_matched_arguments(expr, rlang::env_get)
+inheriting_env_get_symbols <- function(expr, scope, lookup, bulk = FALSE) {
+  definition <- if (bulk) rlang::env_get_list else rlang::env_get
+  args <- static_matched_arguments(expr, definition)
   frame <- static_environment_frame(args$env, scope, lookup)
   if (is.null(frame)) {
     return(character())
   }
-  name <- unparenthesized_value(args$nm)
-  if (!rlang::is_string(name)) {
+  name <- if (bulk) {
+    static_character_value(args$nms, function(expr) {
+      identical(static_call_name(expr), "c") &&
+        is_known_base_frame_call(expr, "c", scope, lookup)
+    })
+  } else {
+    unparenthesized_value(args$nm)
+  }
+  if (is.null(name) || (!bulk && !rlang::is_string(name))) {
     name <- unresolved_lookup_name()
   }
   if (frame > length(scope)) {
     return(name)
   }
-  if (!identical(unparenthesized_value(args$inherit), TRUE)) {
+  if (!"inherit" %in% names(args) ||
+        identical(unparenthesized_value(args$inherit), FALSE)) {
     return(character())
   }
   if ("last" %in% names(args)) {
-    last_name <- static_call_name(args$last)
-    if (is.null(last_name) ||
-          !last_name %in% c("emptyenv", "baseenv", "globalenv") ||
-          length(static_call_args(args$last)) != 0L ||
-          !is_known_base_frame_call(args$last, last_name, scope, lookup)) {
+    last <- static_environment_frame(args$last, scope, lookup)
+    if (is.null(last)) {
+      last <- static_returned_caller_frame(args$last, scope, lookup)
+    }
+    if (!is.null(last) && last %in% scope_visible_frames(scope, frame)) {
       return(character())
     }
   }
-  scoped_data_symbols(rlang::sym(name), scope[seq.int(frame, length(scope))],
-                      lookup)
+  unique(unlist(lapply(name, function(name) {
+    scoped_data_symbols(rlang::sym(name), scope[seq.int(frame, length(scope))],
+                        lookup)
+  }), use.names = FALSE))
 }
 
 # The names a reflective lookup resolves in the mask.
