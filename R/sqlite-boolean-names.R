@@ -4,6 +4,29 @@ sqlite_boolean_columns <- function(names) {
   names[tolower(names) %in% c("true", "false")]
 }
 
+# Bind an executable input's known outputs by position before SQLite can
+# normalize Boolean-word names in a subquery. The caller supplies fresh aliases;
+# the CTE column list preserves source declarations without a schema read.
+sqlite_boolean_input_relation <- function(data, aliases) {
+  con <- dbplyr::remote_con(data)
+  columns <- sqlite_boolean_names(margin_col_names(data), aliases)
+  input <- dbplyr::sql_render(sql_quote_generated_columns(data))
+  key <- tolower(as.character(input))
+  suffix <- 1L
+  name <- "marginplyr_boolean_source_1"
+  while (grepl(name, key, fixed = TRUE)) {
+    suffix <- suffix + 1L
+    name <- paste0("marginplyr_boolean_source_", suffix)
+  }
+  quoted <- dbplyr::escape(dbplyr::ident(columns), con = con)
+  relation <- dbplyr::escape(dbplyr::ident(name), con = con)
+  sql <- dbplyr::sql(paste0(
+    "WITH ", relation, " (", paste(quoted, collapse = ", "), ") AS (\n",
+    input, "\n)\nSELECT ", paste(quoted, collapse = ", "), " FROM ", relation
+  ))
+  dplyr::tbl(con, sql, vars = columns)
+}
+
 # Expose public names through one inlinable projection over private outputs.
 # Binary dbplyr verbs can consume either input without the result's S3 class.
 # The caller holds a completed live SQLite Margin query with Boolean names.
