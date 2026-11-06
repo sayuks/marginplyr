@@ -70,7 +70,7 @@ main <- function() {
     cases$source_unchanged[[i]] <- identical(serialize(f$source, NULL), before)
   }
   stopifnot(all(cases$source_unchanged), all(cases$expected[!cases$masked]),
-            all(!cases$expected[cases$masked]),
+            !any(cases$expected[cases$masked]),
             all(cases$source_rows_seen[cases$masked] == 2L))
   print(cases, row.names = FALSE)
   cat("retype matrix: ", nrow(cases), " calls; ", sum(!cases$expected),
