@@ -130,8 +130,8 @@ sql_margin_input_relation <- function(.data, backend, data_vars) {
         public = FALSE
       )
     } else {
-      .data <- dplyr::rename(
-        .data, dplyr::all_of(stats::setNames(boolean_columns, private_names))
+      .data <- sqlite_boolean_input_relation(
+        .data, stats::setNames(private_names, boolean_columns)
       )
     }
     data_vars[match(boolean_columns, data_vars)] <- private_names
@@ -207,11 +207,19 @@ sql_margin_type_anchor <- function(.data, branch, source_columns,
   source_columns <- intersect(
     setdiff(source_columns, names(declared_types)), branch_columns
   )
+  aliases <- character()
+  if (inherits(dbplyr::remote_con(.data), "SQLiteConnection")) {
+    aliases <- sqlite_boolean_query_aliases(.data)
+    aliases <- aliases[intersect(names(aliases), margin_col_names(.data))]
+    if (length(aliases) > 0L) {
+      .data <- sqlite_boolean_input_relation(.data, aliases)
+    }
+  }
   sql_types <- c(integer = "INTEGER", double = "REAL",
                  character = "TEXT")
   projections <- stats::setNames(lapply(branch_columns, function(name) {
     if (name %in% source_columns) {
-      return(rlang::sym(name))
+      return(rlang::sym(sqlite_boolean_names(name, aliases)))
     }
     if (name %in% names(declared_types)) {
       return(dbplyr::sql(paste0(
