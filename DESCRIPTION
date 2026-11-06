@@ -339,7 +339,8 @@ Config/testthat/start-first:
     share-visible-closure-values,
     share-list-writes,
     dtplyr-head-metadata,
-    share-environment-aliases
+    share-environment-aliases,
+    sqlite-derived-expansion
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool

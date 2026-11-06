@@ -18,6 +18,10 @@
   through blocks, literal branches and visible local function factories
   (#1401).
 
+* SQLite expansion preserves Boolean-word public column names and applicable
+  source types on executable derived inputs, including default one-set
+  expansions (#1398).
+
 * Typed dtplyr Grouping-plan inspection and nesting safely refuse replaced
   registered `head.data.table` methods before they can receive source rows
   (#1397).
