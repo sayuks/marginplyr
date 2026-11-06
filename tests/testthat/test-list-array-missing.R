@@ -104,6 +104,9 @@ test_that("all Margin verbs accept list-array missing rows", {
           input, data = list(tibble::tibble(key = key, payload = payload)),
           .by = key
         )
+        # A keyed empty input has no outer nesting rows, including margins.
+        nested_expected <- if (size == 0L) expected[0L, ] else expected
+        nested_cells <- if (size == 0L) list() else c(cells$data, list(input))
         for (label in list(NULL, NA_character_)) {
           summarized <- summarize_with_margins(
             input, n = dplyr::n(), .grouping = rollup(key),
@@ -122,11 +125,11 @@ test_that("all Margin verbs accept list-array missing rows", {
               input, .grouping = rollup(key), .margin_label = label,
               .id = "set", .sort = "none", .keep = TRUE
             )
-            expect_identical(nested$key, expected$key)
-            expect_identical(nested$set, expected$set)
-            expect_identical(lengths(lapply(nested$data, row.names)),
-                             expected$n)
-            expect_identical(nested$data, c(cells$data, list(input)))
+            expect_identical(nested$key, nested_expected$key)
+            expect_identical(nested$set, nested_expected$set)
+            expect_identical(vapply(nested$data, nrow, integer(1)),
+                             nested_expected$n)
+            expect_identical(nested$data, nested_cells)
           }
           expect_identical(serialize(input, NULL), before)
         }
