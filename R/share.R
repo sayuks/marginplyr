@@ -4796,21 +4796,29 @@ scope_returned_closure <- function(expr, scope, lookup) {
   }
   if (identical(name, "return") && length(expr) == 2L &&
         is_known_base_frame_call(expr, name, scope, lookup)) {
-    return(list(value = scope_value_closure(expr[[2L]], scope, lookup),
-                scope = scope))
+    return(list(
+      value = if (!rlang::is_missing(expr[[2L]])) {
+        scope_value_closure(expr[[2L]], scope, lookup)
+      },
+      scope = scope
+    ))
   }
   if (identical(name, "{") &&
         is_known_base_frame_call(expr, name, scope, lookup)) {
     statements <- static_call_args(expr)
     for (index in seq_along(statements)) {
-      statement <- statements[[index]]
+      if (rlang::is_missing(statements[[index]])) {
+        next
+      }
       if (index == length(statements) ||
-            (identical(static_call_name(statement), "return") &&
-               is_known_base_frame_call(statement, "return", scope, lookup))) {
-        return(scope_returned_closure(statement, scope, lookup))
+        (identical(static_call_name(statements[[index]]), "return") &&
+          is_known_base_frame_call(
+            statements[[index]], "return", scope, lookup
+          ))) {
+        return(scope_returned_closure(statements[[index]], scope, lookup))
       }
       scope <- statement_reads_and_scope(
-        statement, scope, lookup, read_symbols = no_scope_reads
+        statements[[index]], scope, lookup, read_symbols = no_scope_reads
       )$scope
     }
     return(list(value = NULL, scope = scope))
@@ -5135,6 +5143,9 @@ scope_bind_local <- function(scope, name, value = NULL, lookup = NULL,
 # Carry a literal element write to a tracked list without evaluating its value.
 # Stored closures use offsets relative to the current frame.
 scope_after_list_write <- function(scope, target, value, lookup, value_scope) {
+  if (!rlang::is_call(target)) {
+    return(scope)
+  }
   target <- unparenthesized_value(target)
   operator <- static_call_name(target)
   if (is.null(operator) || !operator %in% c("[[", "$") ||
@@ -5143,6 +5154,9 @@ scope_after_list_write <- function(scope, target, value, lookup, value_scope) {
     return(scope)
   }
   elements <- scope_closure_list(target[[2L]], value_scope, lookup)
+  if (rlang::is_missing(target[[3L]])) {
+    return(scope)
+  }
   key <- unparenthesized_value(target[[3L]])
   if (identical(operator, "$") && is_name_part(key)) {
     key <- rlang::as_name(key)

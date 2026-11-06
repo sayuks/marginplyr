@@ -4732,3 +4732,51 @@ test_that("new frame kinds require a matching name reader", {
     "Unhandled data-frame-valued summary kind", fixed = TRUE
   )
 })
+
+# Injected syntax can carry an empty list index or return argument.
+# Their diagnostics belong to evaluation, so compare the deepest condition
+# with dplyr rather than accepting a missing-marker error from static reading.
+test_that("empty list indices and return arguments retain evaluation errors", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3))
+  factory <- quote(function() NULL)
+  factory[[3L]] <- call("return", rlang::missing_arg())
+  expressions <- list(
+    call(
+      "{", quote(functions <- list(function() 7)),
+      call("<-", call("[[", quote(functions), rlang::missing_arg()),
+           quote(sum(x))),
+      2
+    ),
+    as.call(list(as.call(list(factory))))
+  )
+  for (expr in expressions) {
+    expected <- expect_error(dplyr::summarise(data, output = !!expr))
+    actual <- expect_error(summarize_with_margins(
+      data, total = sum(x), ratio = share_of_total(total),
+      output = !!expr, .grouping = rollup(g)
+    ))
+    while (!is.null(expected$parent)) expected <- expected$parent
+    while (!is.null(actual$parent)) actual <- actual$parent
+    expect_identical(class(actual), class(expected))
+    expect_identical(conditionMessage(actual), conditionMessage(expected))
+    expect_false(inherits(actual, "marginplyr_error"))
+  }
+})
+
+test_that("the factory result reader skips a leading empty statement", {
+  # R refuses the empty statement before a returned closure can be observed.
+  result <- scope_returned_closure(
+    call("{", rlang::missing_arg(), quote(function() 7)),
+    list(list(bound = character())), list(env = baseenv())
+  )
+  expect_false(is.null(result$value))
+})
+
+test_that("the factory result reader gives an empty last statement no value", {
+  # R refuses the empty statement before a returned closure can be observed.
+  result <- scope_returned_closure(
+    call("{", quote(1), rlang::missing_arg()),
+    list(list(bound = character())), list(env = baseenv())
+  )
+  expect_null(result$value)
+})
