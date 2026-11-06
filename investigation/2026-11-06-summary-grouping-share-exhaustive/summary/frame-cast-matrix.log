@@ -1,0 +1,62 @@
+DIRECT vec_c canonical values
+  distance
+1        1
+2        1
+UNNAMED ordinary dplyr
+# A tibble: 2 × 2
+      g distance
+  <int>    <dbl>
+1     1        1
+2     2        1
+UNNAMED Margin
+# A tibble: 2 × 2
+      g distance
+  <int>    <dbl>
+1     1        1
+2     2      100
+NAMED ordinary dplyr
+# A tibble: 2 × 2
+      g result$distance
+  <int>           <dbl>
+1     1               1
+2     2               1
+NAMED Margin
+# A tibble: 2 × 2
+      g result$distance
+  <int>           <dbl>
+1     1               1
+2     2               1
+SINGLE TYPE control agreed
+PICK ordinary dplyr
+# A tibble: 2 × 2
+      g distance
+  <int>    <dbl>
+1     1        1
+2     2        1
+PICK Margin
+# A tibble: 2 × 2
+      g distance
+  <int>    <dbl>
+1     1        1
+2     2      100
+DATED WITNESS CONFIRMED ; named and homogeneous-type controls passed
+        input     plan selected wrong expected  actual
+1  data.frame    fixed    FALSE  TRUE      1,1   1,100
+2  data.frame    fixed     TRUE  TRUE      1,1   1,100
+3  data.frame included    FALSE  TRUE      1,1   1,100
+4  data.frame included     TRUE  TRUE      1,1   1,100
+5  data.frame   rollup    FALSE  TRUE    1,1,1 1,100,1
+6  data.frame   rollup     TRUE  TRUE    1,1,1 1,100,1
+7      tibble    fixed    FALSE  TRUE      1,1   1,100
+8      tibble    fixed     TRUE  TRUE      1,1   1,100
+9      tibble included    FALSE  TRUE      1,1   1,100
+10     tibble included     TRUE  TRUE      1,1   1,100
+11     tibble   rollup    FALSE  TRUE    1,1,1 1,100,1
+12     tibble   rollup     TRUE  TRUE    1,1,1 1,100,1
+13 data.table    fixed    FALSE  TRUE      1,1   1,100
+14 data.table    fixed     TRUE  TRUE      1,1   1,100
+15 data.table included    FALSE  TRUE      1,1   1,100
+16 data.table included     TRUE  TRUE      1,1   1,100
+17 data.table   rollup    FALSE  TRUE    1,1,1 1,100,1
+18 data.table   rollup     TRUE  TRUE    1,1,1 1,100,1
+MATRIX 18 wrong-value cases and named controls confirmed

@@ -1,0 +1,7 @@
+"number","title","state","labels"
+1399,"[P2] Preserve original frame casts when expanding unnamed local summaries","OPEN","bug,ready-for-agent"
+1400,"[P2] Preserve typed Grouping selection after local callee rebinding","OPEN","bug,ready-for-agent"
+1401,"[P2] Preserve share dependencies through visible closure-valued syntax","OPEN","bug,ready-for-agent"
+1402,"[P2] Retain share dependencies when known base operations return local closures","OPEN","bug,ready-for-agent"
+1403,"[P2] Update share dependency provenance after literal list element writes","OPEN","bug,ready-for-agent"
+1404,"[P2] Preserve mask environment identity through local aliases in share planning","OPEN","bug,ready-for-agent"

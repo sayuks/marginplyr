@@ -1,0 +1,117 @@
+"backend","position","constructor","consumer","outcome","control_match","plain_metadata","control_metadata","message"
+"tibble","dimension","grouping_set","inspect","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"tibble","dimension","grouping_set","summary","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"tibble","dimension","grouping_sets","inspect","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"tibble","dimension","grouping_sets","summary","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"tibble","dimension","rollup","inspect","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"tibble","dimension","rollup","summary","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"tibble","dimension","cube","inspect","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"tibble","dimension","cube","summary","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"tibble","dimension","grouping_spec","inspect","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"tibble","dimension","grouping_spec","summary","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"tibble","fixed","grouping_set","inspect","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"tibble","fixed","grouping_set","summary","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"tibble","unfixed","grouping_set","inspect","final-plan-matches",TRUE,"integer,character","character",""
+"tibble","unfixed","grouping_sets","inspect","final-plan-matches",TRUE,"integer,character","character",""
+"tibble","unfixed","rollup","inspect","final-plan-matches",TRUE,"integer,character","character",""
+"tibble","unfixed","cube","inspect","final-plan-matches",TRUE,"integer,character","character",""
+"tibble","unfixed","grouping_spec","inspect","final-plan-matches",TRUE,"integer,character","character",""
+"data_frame","dimension","grouping_set","inspect","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"data_frame","dimension","grouping_set","summary","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"data_frame","dimension","grouping_sets","inspect","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"data_frame","dimension","grouping_sets","summary","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"data_frame","dimension","rollup","inspect","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"data_frame","dimension","rollup","summary","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"data_frame","dimension","cube","inspect","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"data_frame","dimension","cube","summary","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"data_frame","dimension","grouping_spec","inspect","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"data_frame","dimension","grouping_spec","summary","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"data_frame","fixed","grouping_set","inspect","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"data_frame","fixed","grouping_set","summary","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"data_frame","unfixed","grouping_set","inspect","final-plan-matches",TRUE,"integer,character","character",""
+"data_frame","unfixed","grouping_sets","inspect","final-plan-matches",TRUE,"integer,character","character",""
+"data_frame","unfixed","rollup","inspect","final-plan-matches",TRUE,"integer,character","character",""
+"data_frame","unfixed","cube","inspect","final-plan-matches",TRUE,"integer,character","character",""
+"data_frame","unfixed","grouping_spec","inspect","final-plan-matches",TRUE,"integer,character","character",""
+"data_table","dimension","grouping_set","inspect","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"data_table","dimension","grouping_set","summary","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"data_table","dimension","grouping_sets","inspect","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"data_table","dimension","grouping_sets","summary","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"data_table","dimension","rollup","inspect","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"data_table","dimension","rollup","summary","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"data_table","dimension","cube","inspect","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"data_table","dimension","cube","summary","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"data_table","dimension","grouping_spec","inspect","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"data_table","dimension","grouping_spec","summary","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"data_table","fixed","grouping_set","inspect","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"data_table","fixed","grouping_set","summary","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"data_table","unfixed","grouping_set","inspect","final-plan-matches",TRUE,"integer,character","character",""
+"data_table","unfixed","grouping_sets","inspect","final-plan-matches",TRUE,"integer,character","character",""
+"data_table","unfixed","rollup","inspect","final-plan-matches",TRUE,"integer,character","character",""
+"data_table","unfixed","cube","inspect","final-plan-matches",TRUE,"integer,character","character",""
+"data_table","unfixed","grouping_spec","inspect","final-plan-matches",TRUE,"integer,character","character",""
+"dtplyr","dimension","grouping_set","inspect","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"dtplyr","dimension","grouping_set","summary","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"dtplyr","dimension","grouping_sets","inspect","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"dtplyr","dimension","grouping_sets","summary","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"dtplyr","dimension","rollup","inspect","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"dtplyr","dimension","rollup","summary","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"dtplyr","dimension","cube","inspect","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"dtplyr","dimension","cube","summary","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"dtplyr","dimension","grouping_spec","inspect","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"dtplyr","dimension","grouping_spec","summary","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"dtplyr","fixed","grouping_set","inspect","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"dtplyr","fixed","grouping_set","summary","false-refusal",TRUE,"integer","character","Columns cannot appear in both `.by` and `.grouping`:
+ℹ `b`."
+"dtplyr","unfixed","grouping_set","inspect","wrong-plan",TRUE,"integer,integer","character",""
+"dtplyr","unfixed","grouping_sets","inspect","wrong-plan",TRUE,"integer,integer","character",""
+"dtplyr","unfixed","rollup","inspect","wrong-plan",TRUE,"integer,integer","character",""
+"dtplyr","unfixed","cube","inspect","wrong-plan",TRUE,"integer,integer","character",""
+"dtplyr","unfixed","grouping_spec","inspect","wrong-plan",TRUE,"integer,integer","character",""
