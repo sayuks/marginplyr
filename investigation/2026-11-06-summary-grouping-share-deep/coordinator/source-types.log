@@ -1,0 +1,462 @@
+json_number SETUP ERROR Can't query fields.
+ℹ Using SQL: SELECT * FROM (SELECT 'a' AS g, '2'::JSON AS v) AS q01 WHERE (0 =
+  1)
+Caused by error in `dbSendQuery()`:
+! Extension Autoloading Error: An error occurred while trying to automatically install the required extension 'json':
+Extension "/var/folders/jv/m3wxfdhx765fl9k6nym08g0r0000gn/T//RtmpjQES5T/duckdb/extensions/v1.5.5/osx_arm64/json.duckdb_extension" not found.
+Extension "json" is an existing extension.
+
+Install it first using "INSTALL json".
+ℹ Context: rapi_prepare
+ℹ Error type: AUTOLOAD 
+json_string SETUP ERROR Can't query fields.
+ℹ Using SQL: SELECT * FROM (SELECT 'a' AS g, '"2"'::JSON AS v) AS q02 WHERE (0
+  = 1)
+Caused by error in `dbSendQuery()`:
+! Extension Autoloading Error: An error occurred while trying to automatically install the required extension 'json':
+Extension "/var/folders/jv/m3wxfdhx765fl9k6nym08g0r0000gn/T//RtmpjQES5T/duckdb/extensions/v1.5.5/osx_arm64/json.duckdb_extension" not found.
+Extension "json" is an existing extension.
+
+Install it first using "INSTALL json".
+ℹ Context: rapi_prepare
+ℹ Error type: AUTOLOAD 
+uuid ORDINARY SUCCESS character 
+uuid FALSE ERROR Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Binder Error: No function matches the given name and argument types '*(UUID, INTEGER_LITERAL)'. You might need to add explicit type casts.
+	Candidate functions:
+	*(TINYINT, TINYINT) -> TINYINT
+	*(SMALLINT, SMALLINT) -> SMALLINT
+	*(INTEGER, INTEGER) -> INTEGER
+	*(BIGINT, BIGINT) -> BIGINT
+	*(HUGEINT, HUGEINT) -> HUGEINT
+	*(FLOAT, FLOAT) -> FLOAT
+	*(DOUBLE, DOUBLE) -> DOUBLE
+	*(DECIMAL, DECIMAL) -> DECIMAL
+	*(UTINYINT, UTINYINT) -> UTINYINT
+	*(USMALLINT, USMALLINT) -> USMALLINT
+	*(UINTEGER, UINTEGER) -> UINTEGER
+	*(UBIGINT, UBIGINT) -> UBIGINT
+	*(UHUGEINT, UHUGEINT) -> UHUGEINT
+	*(INTERVAL, DOUBLE) -> INTERVAL
+	*(DOUBLE, INTERVAL) -> INTERVAL
+	*(BIGINT, INTERVAL) -> INTERVAL
+	*(INTERVAL, BIGINT) -> INTERVAL
+
+
+LINE 3:   CASE WHEN (((("value" * 1) - 0) IS NULL)) THEN 1.0 WHEN NOT (((("value" * 1) ...
+                                ^
+ℹ Context: rapi_prepare
+ℹ Error type: BINDER 
+uuid TRUE ERROR Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Binder Error: No function matches the given name and argument types '*(UUID, INTEGER_LITERAL)'. You might need to add explicit type casts.
+	Candidate functions:
+	*(TINYINT, TINYINT) -> TINYINT
+	*(SMALLINT, SMALLINT) -> SMALLINT
+	*(INTEGER, INTEGER) -> INTEGER
+	*(BIGINT, BIGINT) -> BIGINT
+	*(HUGEINT, HUGEINT) -> HUGEINT
+	*(FLOAT, FLOAT) -> FLOAT
+	*(DOUBLE, DOUBLE) -> DOUBLE
+	*(DECIMAL, DECIMAL) -> DECIMAL
+	*(UTINYINT, UTINYINT) -> UTINYINT
+	*(USMALLINT, USMALLINT) -> USMALLINT
+	*(UINTEGER, UINTEGER) -> UINTEGER
+	*(UBIGINT, UBIGINT) -> UBIGINT
+	*(UHUGEINT, UHUGEINT) -> UHUGEINT
+	*(INTERVAL, DOUBLE) -> INTERVAL
+	*(DOUBLE, INTERVAL) -> INTERVAL
+	*(BIGINT, INTERVAL) -> INTERVAL
+	*(INTERVAL, BIGINT) -> INTERVAL
+
+
+LINE 4: ...nplyr_denominator_of_value_1" = 0) THEN (TRY_CAST(("value" * 1) - 0 AS DOUBLE) / TRY_CAST("..marginplyr_denominator_of...
+                                                                      ^
+ℹ Context: rapi_prepare
+ℹ Error type: BINDER 
+enum ORDINARY SUCCESS factor 
+enum FALSE ERROR Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Binder Error: No function matches the given name and argument types '*(ENUM('1', '2'), INTEGER_LITERAL)'. You might need to add explicit type casts.
+	Candidate functions:
+	*(TINYINT, TINYINT) -> TINYINT
+	*(SMALLINT, SMALLINT) -> SMALLINT
+	*(INTEGER, INTEGER) -> INTEGER
+	*(BIGINT, BIGINT) -> BIGINT
+	*(HUGEINT, HUGEINT) -> HUGEINT
+	*(FLOAT, FLOAT) -> FLOAT
+	*(DOUBLE, DOUBLE) -> DOUBLE
+	*(DECIMAL, DECIMAL) -> DECIMAL
+	*(UTINYINT, UTINYINT) -> UTINYINT
+	*(USMALLINT, USMALLINT) -> USMALLINT
+	*(UINTEGER, UINTEGER) -> UINTEGER
+	*(UBIGINT, UBIGINT) -> UBIGINT
+	*(UHUGEINT, UHUGEINT) -> UHUGEINT
+	*(INTERVAL, DOUBLE) -> INTERVAL
+	*(DOUBLE, INTERVAL) -> INTERVAL
+	*(BIGINT, INTERVAL) -> INTERVAL
+	*(INTERVAL, BIGINT) -> INTERVAL
+
+
+LINE 3:   CASE WHEN (((("value" * 1) - 0) IS NULL)) THEN 1.0 WHEN NOT (((("value" * 1) ...
+                                ^
+ℹ Context: rapi_prepare
+ℹ Error type: BINDER 
+enum TRUE ERROR Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Binder Error: No function matches the given name and argument types '*(ENUM('1', '2'), INTEGER_LITERAL)'. You might need to add explicit type casts.
+	Candidate functions:
+	*(TINYINT, TINYINT) -> TINYINT
+	*(SMALLINT, SMALLINT) -> SMALLINT
+	*(INTEGER, INTEGER) -> INTEGER
+	*(BIGINT, BIGINT) -> BIGINT
+	*(HUGEINT, HUGEINT) -> HUGEINT
+	*(FLOAT, FLOAT) -> FLOAT
+	*(DOUBLE, DOUBLE) -> DOUBLE
+	*(DECIMAL, DECIMAL) -> DECIMAL
+	*(UTINYINT, UTINYINT) -> UTINYINT
+	*(USMALLINT, USMALLINT) -> USMALLINT
+	*(UINTEGER, UINTEGER) -> UINTEGER
+	*(UBIGINT, UBIGINT) -> UBIGINT
+	*(UHUGEINT, UHUGEINT) -> UHUGEINT
+	*(INTERVAL, DOUBLE) -> INTERVAL
+	*(DOUBLE, INTERVAL) -> INTERVAL
+	*(BIGINT, INTERVAL) -> INTERVAL
+	*(INTERVAL, BIGINT) -> INTERVAL
+
+
+LINE 4: ...nplyr_denominator_of_value_1" = 0) THEN (TRY_CAST(("value" * 1) - 0 AS DOUBLE) / TRY_CAST("..marginplyr_denominator_of...
+                                                                      ^
+ℹ Context: rapi_prepare
+ℹ Error type: BINDER 
+bit SETUP ERROR Can't query fields.
+ℹ Using SQL: SELECT * FROM (SELECT 'a' AS g, '10'::BIT AS v) AS q01 WHERE (0 =
+  1)
+Caused by error in `dbSendQuery()`:
+! Unknown column type for prepare: BIT
+ℹ Context: rapi_prepare 
+boolean ORDINARY SUCCESS logical 
+boolean FALSE ERROR Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Binder Error: No function matches the given name and argument types '*(BOOLEAN, INTEGER_LITERAL)'. You might need to add explicit type casts.
+	Candidate functions:
+	*(TINYINT, TINYINT) -> TINYINT
+	*(SMALLINT, SMALLINT) -> SMALLINT
+	*(INTEGER, INTEGER) -> INTEGER
+	*(BIGINT, BIGINT) -> BIGINT
+	*(HUGEINT, HUGEINT) -> HUGEINT
+	*(FLOAT, FLOAT) -> FLOAT
+	*(DOUBLE, DOUBLE) -> DOUBLE
+	*(DECIMAL, DECIMAL) -> DECIMAL
+	*(UTINYINT, UTINYINT) -> UTINYINT
+	*(USMALLINT, USMALLINT) -> USMALLINT
+	*(UINTEGER, UINTEGER) -> UINTEGER
+	*(UBIGINT, UBIGINT) -> UBIGINT
+	*(UHUGEINT, UHUGEINT) -> UHUGEINT
+	*(INTERVAL, DOUBLE) -> INTERVAL
+	*(DOUBLE, INTERVAL) -> INTERVAL
+	*(BIGINT, INTERVAL) -> INTERVAL
+	*(INTERVAL, BIGINT) -> INTERVAL
+
+
+LINE 3:   CASE WHEN (((("value" * 1) - 0) IS NULL)) THEN 1.0 WHEN NOT (((("value" * 1) ...
+                                ^
+ℹ Context: rapi_prepare
+ℹ Error type: BINDER 
+boolean TRUE ERROR Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Binder Error: No function matches the given name and argument types '*(BOOLEAN, INTEGER_LITERAL)'. You might need to add explicit type casts.
+	Candidate functions:
+	*(TINYINT, TINYINT) -> TINYINT
+	*(SMALLINT, SMALLINT) -> SMALLINT
+	*(INTEGER, INTEGER) -> INTEGER
+	*(BIGINT, BIGINT) -> BIGINT
+	*(HUGEINT, HUGEINT) -> HUGEINT
+	*(FLOAT, FLOAT) -> FLOAT
+	*(DOUBLE, DOUBLE) -> DOUBLE
+	*(DECIMAL, DECIMAL) -> DECIMAL
+	*(UTINYINT, UTINYINT) -> UTINYINT
+	*(USMALLINT, USMALLINT) -> USMALLINT
+	*(UINTEGER, UINTEGER) -> UINTEGER
+	*(UBIGINT, UBIGINT) -> UBIGINT
+	*(UHUGEINT, UHUGEINT) -> UHUGEINT
+	*(INTERVAL, DOUBLE) -> INTERVAL
+	*(DOUBLE, INTERVAL) -> INTERVAL
+	*(BIGINT, INTERVAL) -> INTERVAL
+	*(INTERVAL, BIGINT) -> INTERVAL
+
+
+LINE 4: ...nplyr_denominator_of_value_1" = 0) THEN (TRY_CAST(("value" * 1) - 0 AS DOUBLE) / TRY_CAST("..marginplyr_denominator_of...
+                                                                      ^
+ℹ Context: rapi_prepare
+ℹ Error type: BINDER 
+date ORDINARY SUCCESS Date 
+date FALSE ERROR Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Binder Error: No function matches the given name and argument types '*(DATE, INTEGER_LITERAL)'. You might need to add explicit type casts.
+	Candidate functions:
+	*(TINYINT, TINYINT) -> TINYINT
+	*(SMALLINT, SMALLINT) -> SMALLINT
+	*(INTEGER, INTEGER) -> INTEGER
+	*(BIGINT, BIGINT) -> BIGINT
+	*(HUGEINT, HUGEINT) -> HUGEINT
+	*(FLOAT, FLOAT) -> FLOAT
+	*(DOUBLE, DOUBLE) -> DOUBLE
+	*(DECIMAL, DECIMAL) -> DECIMAL
+	*(UTINYINT, UTINYINT) -> UTINYINT
+	*(USMALLINT, USMALLINT) -> USMALLINT
+	*(UINTEGER, UINTEGER) -> UINTEGER
+	*(UBIGINT, UBIGINT) -> UBIGINT
+	*(UHUGEINT, UHUGEINT) -> UHUGEINT
+	*(INTERVAL, DOUBLE) -> INTERVAL
+	*(DOUBLE, INTERVAL) -> INTERVAL
+	*(BIGINT, INTERVAL) -> INTERVAL
+	*(INTERVAL, BIGINT) -> INTERVAL
+
+
+LINE 3:   CASE WHEN (((("value" * 1) - 0) IS NULL)) THEN 1.0 WHEN NOT (((("value" * 1) ...
+                                ^
+ℹ Context: rapi_prepare
+ℹ Error type: BINDER 
+date TRUE ERROR Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Binder Error: No function matches the given name and argument types '*(DATE, INTEGER_LITERAL)'. You might need to add explicit type casts.
+	Candidate functions:
+	*(TINYINT, TINYINT) -> TINYINT
+	*(SMALLINT, SMALLINT) -> SMALLINT
+	*(INTEGER, INTEGER) -> INTEGER
+	*(BIGINT, BIGINT) -> BIGINT
+	*(HUGEINT, HUGEINT) -> HUGEINT
+	*(FLOAT, FLOAT) -> FLOAT
+	*(DOUBLE, DOUBLE) -> DOUBLE
+	*(DECIMAL, DECIMAL) -> DECIMAL
+	*(UTINYINT, UTINYINT) -> UTINYINT
+	*(USMALLINT, USMALLINT) -> USMALLINT
+	*(UINTEGER, UINTEGER) -> UINTEGER
+	*(UBIGINT, UBIGINT) -> UBIGINT
+	*(UHUGEINT, UHUGEINT) -> UHUGEINT
+	*(INTERVAL, DOUBLE) -> INTERVAL
+	*(DOUBLE, INTERVAL) -> INTERVAL
+	*(BIGINT, INTERVAL) -> INTERVAL
+	*(INTERVAL, BIGINT) -> INTERVAL
+
+
+LINE 4: ...nplyr_denominator_of_value_1" = 0) THEN (TRY_CAST(("value" * 1) - 0 AS DOUBLE) / TRY_CAST("..marginplyr_denominator_of...
+                                                                      ^
+ℹ Context: rapi_prepare
+ℹ Error type: BINDER 
+timestamp ORDINARY SUCCESS POSIXct/POSIXt 
+timestamp FALSE ERROR Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Binder Error: No function matches the given name and argument types '*(TIMESTAMP, INTEGER_LITERAL)'. You might need to add explicit type casts.
+	Candidate functions:
+	*(TINYINT, TINYINT) -> TINYINT
+	*(SMALLINT, SMALLINT) -> SMALLINT
+	*(INTEGER, INTEGER) -> INTEGER
+	*(BIGINT, BIGINT) -> BIGINT
+	*(HUGEINT, HUGEINT) -> HUGEINT
+	*(FLOAT, FLOAT) -> FLOAT
+	*(DOUBLE, DOUBLE) -> DOUBLE
+	*(DECIMAL, DECIMAL) -> DECIMAL
+	*(UTINYINT, UTINYINT) -> UTINYINT
+	*(USMALLINT, USMALLINT) -> USMALLINT
+	*(UINTEGER, UINTEGER) -> UINTEGER
+	*(UBIGINT, UBIGINT) -> UBIGINT
+	*(UHUGEINT, UHUGEINT) -> UHUGEINT
+	*(INTERVAL, DOUBLE) -> INTERVAL
+	*(DOUBLE, INTERVAL) -> INTERVAL
+	*(BIGINT, INTERVAL) -> INTERVAL
+	*(INTERVAL, BIGINT) -> INTERVAL
+
+
+LINE 3:   CASE WHEN (((("value" * 1) - 0) IS NULL)) THEN 1.0 WHEN NOT (((("value" * 1) ...
+                                ^
+ℹ Context: rapi_prepare
+ℹ Error type: BINDER 
+timestamp TRUE ERROR Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Binder Error: No function matches the given name and argument types '*(TIMESTAMP, INTEGER_LITERAL)'. You might need to add explicit type casts.
+	Candidate functions:
+	*(TINYINT, TINYINT) -> TINYINT
+	*(SMALLINT, SMALLINT) -> SMALLINT
+	*(INTEGER, INTEGER) -> INTEGER
+	*(BIGINT, BIGINT) -> BIGINT
+	*(HUGEINT, HUGEINT) -> HUGEINT
+	*(FLOAT, FLOAT) -> FLOAT
+	*(DOUBLE, DOUBLE) -> DOUBLE
+	*(DECIMAL, DECIMAL) -> DECIMAL
+	*(UTINYINT, UTINYINT) -> UTINYINT
+	*(USMALLINT, USMALLINT) -> USMALLINT
+	*(UINTEGER, UINTEGER) -> UINTEGER
+	*(UBIGINT, UBIGINT) -> UBIGINT
+	*(UHUGEINT, UHUGEINT) -> UHUGEINT
+	*(INTERVAL, DOUBLE) -> INTERVAL
+	*(DOUBLE, INTERVAL) -> INTERVAL
+	*(BIGINT, INTERVAL) -> INTERVAL
+	*(INTERVAL, BIGINT) -> INTERVAL
+
+
+LINE 4: ...nplyr_denominator_of_value_1" = 0) THEN (TRY_CAST(("value" * 1) - 0 AS DOUBLE) / TRY_CAST("..marginplyr_denominator_of...
+                                                                      ^
+ℹ Context: rapi_prepare
+ℹ Error type: BINDER 
+interval ORDINARY SUCCESS difftime 
+interval FALSE ERROR Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Binder Error: No function matches the given name and argument types '-(INTERVAL, INTEGER_LITERAL)'. You might need to add explicit type casts.
+	Candidate functions:
+	-(TINYINT) -> TINYINT
+	-(TINYINT, TINYINT) -> TINYINT
+	-(SMALLINT) -> SMALLINT
+	-(SMALLINT, SMALLINT) -> SMALLINT
+	-(INTEGER) -> INTEGER
+	-(INTEGER, INTEGER) -> INTEGER
+	-(BIGINT) -> BIGINT
+	-(BIGINT, BIGINT) -> BIGINT
+	-(HUGEINT) -> HUGEINT
+	-(HUGEINT, HUGEINT) -> HUGEINT
+	-(FLOAT) -> FLOAT
+	-(FLOAT, FLOAT) -> FLOAT
+	-(DOUBLE) -> DOUBLE
+	-(DOUBLE, DOUBLE) -> DOUBLE
+	-(DECIMAL) -> DECIMAL
+	-(DECIMAL, DECIMAL) -> DECIMAL
+	-(UTINYINT) -> UTINYINT
+	-(UTINYINT, UTINYINT) -> UTINYINT
+	-(USMALLINT) -> USMALLINT
+	-(USMALLINT, USMALLINT) -> USMALLINT
+	-(UINTEGER) -> UINTEGER
+	-(UINTEGER, UINTEGER) -> UINTEGER
+	-(UBIGINT) -> UBIGINT
+	-(UBIGINT, UBIGINT) -> UBIGINT
+	-(UHUGEINT) -> UHUGEINT
+	-(UHUGEINT, UHUGEINT) -> UHUGEINT
+	-(BIGNUM) -> BIGNUM
+	-(BIGNUM, BIGNUM) -> BIGNUM
+	-(DATE, DATE) -> BIGINT
+	-(DATE, INTEGER) -> DATE
+	-(TIMESTAMP, TIMESTAMP) -> INTERVAL
+	-(INTERVAL, INTERVAL) -> INTERVAL
+	-(DATE, INTERVAL) -> TIMESTAMP
+	-(TIME, INTERVAL) -> TIME
+	-(TIMESTAMP, INTERVAL) -> TIMESTAMP
+	-(TIME WITH TIME ZONE, INTERVAL) -> TIME WITH TIME ZONE
+	-(INTERVAL) -> INTERVAL
+
+
+LINE 3:   CASE WHEN (((("value" * 1) - 0) IS NULL)) THEN 1.0 WHEN NOT (((("value" * 1) - 0) IS...
+                                     ^
+ℹ Context: rapi_prepare
+ℹ Error type: BINDER 
+interval TRUE ERROR Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Binder Error: No function matches the given name and argument types '-(INTERVAL, INTEGER_LITERAL)'. You might need to add explicit type casts.
+	Candidate functions:
+	-(TINYINT) -> TINYINT
+	-(TINYINT, TINYINT) -> TINYINT
+	-(SMALLINT) -> SMALLINT
+	-(SMALLINT, SMALLINT) -> SMALLINT
+	-(INTEGER) -> INTEGER
+	-(INTEGER, INTEGER) -> INTEGER
+	-(BIGINT) -> BIGINT
+	-(BIGINT, BIGINT) -> BIGINT
+	-(HUGEINT) -> HUGEINT
+	-(HUGEINT, HUGEINT) -> HUGEINT
+	-(FLOAT) -> FLOAT
+	-(FLOAT, FLOAT) -> FLOAT
+	-(DOUBLE) -> DOUBLE
+	-(DOUBLE, DOUBLE) -> DOUBLE
+	-(DECIMAL) -> DECIMAL
+	-(DECIMAL, DECIMAL) -> DECIMAL
+	-(UTINYINT) -> UTINYINT
+	-(UTINYINT, UTINYINT) -> UTINYINT
+	-(USMALLINT) -> USMALLINT
+	-(USMALLINT, USMALLINT) -> USMALLINT
+	-(UINTEGER) -> UINTEGER
+	-(UINTEGER, UINTEGER) -> UINTEGER
+	-(UBIGINT) -> UBIGINT
+	-(UBIGINT, UBIGINT) -> UBIGINT
+	-(UHUGEINT) -> UHUGEINT
+	-(UHUGEINT, UHUGEINT) -> UHUGEINT
+	-(BIGNUM) -> BIGNUM
+	-(BIGNUM, BIGNUM) -> BIGNUM
+	-(DATE, DATE) -> BIGINT
+	-(DATE, INTEGER) -> DATE
+	-(TIMESTAMP, TIMESTAMP) -> INTERVAL
+	-(INTERVAL, INTERVAL) -> INTERVAL
+	-(DATE, INTERVAL) -> TIMESTAMP
+	-(TIME, INTERVAL) -> TIME
+	-(TIMESTAMP, INTERVAL) -> TIMESTAMP
+	-(TIME WITH TIME ZONE, INTERVAL) -> TIME WITH TIME ZONE
+	-(INTERVAL) -> INTERVAL
+
+
+LINE 4: ..._denominator_of_value_1" = 0) THEN (TRY_CAST(("value" * 1) - 0 AS DOUBLE) / TRY_CAST("..marginplyr_denominator_of_value_1...
+                                                                      ^
+ℹ Context: rapi_prepare
+ℹ Error type: BINDER 
+blob ORDINARY SUCCESS list 
+blob FALSE ERROR Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Binder Error: No function matches the given name and argument types '*(BLOB, INTEGER_LITERAL)'. You might need to add explicit type casts.
+	Candidate functions:
+	*(TINYINT, TINYINT) -> TINYINT
+	*(SMALLINT, SMALLINT) -> SMALLINT
+	*(INTEGER, INTEGER) -> INTEGER
+	*(BIGINT, BIGINT) -> BIGINT
+	*(HUGEINT, HUGEINT) -> HUGEINT
+	*(FLOAT, FLOAT) -> FLOAT
+	*(DOUBLE, DOUBLE) -> DOUBLE
+	*(DECIMAL, DECIMAL) -> DECIMAL
+	*(UTINYINT, UTINYINT) -> UTINYINT
+	*(USMALLINT, USMALLINT) -> USMALLINT
+	*(UINTEGER, UINTEGER) -> UINTEGER
+	*(UBIGINT, UBIGINT) -> UBIGINT
+	*(UHUGEINT, UHUGEINT) -> UHUGEINT
+	*(INTERVAL, DOUBLE) -> INTERVAL
+	*(DOUBLE, INTERVAL) -> INTERVAL
+	*(BIGINT, INTERVAL) -> INTERVAL
+	*(INTERVAL, BIGINT) -> INTERVAL
+
+
+LINE 3:   CASE WHEN (((("value" * 1) - 0) IS NULL)) THEN 1.0 WHEN NOT (((("value" * 1) ...
+                                ^
+ℹ Context: rapi_prepare
+ℹ Error type: BINDER 
+blob TRUE ERROR Failed to collect lazy table.
+Caused by error in `DBI::dbSendQuery()`:
+! Binder Error: No function matches the given name and argument types '*(BLOB, INTEGER_LITERAL)'. You might need to add explicit type casts.
+	Candidate functions:
+	*(TINYINT, TINYINT) -> TINYINT
+	*(SMALLINT, SMALLINT) -> SMALLINT
+	*(INTEGER, INTEGER) -> INTEGER
+	*(BIGINT, BIGINT) -> BIGINT
+	*(HUGEINT, HUGEINT) -> HUGEINT
+	*(FLOAT, FLOAT) -> FLOAT
+	*(DOUBLE, DOUBLE) -> DOUBLE
+	*(DECIMAL, DECIMAL) -> DECIMAL
+	*(UTINYINT, UTINYINT) -> UTINYINT
+	*(USMALLINT, USMALLINT) -> USMALLINT
+	*(UINTEGER, UINTEGER) -> UINTEGER
+	*(UBIGINT, UBIGINT) -> UBIGINT
+	*(UHUGEINT, UHUGEINT) -> UHUGEINT
+	*(INTERVAL, DOUBLE) -> INTERVAL
+	*(DOUBLE, INTERVAL) -> INTERVAL
+	*(BIGINT, INTERVAL) -> INTERVAL
+	*(INTERVAL, BIGINT) -> INTERVAL
+
+
+LINE 4: ...nplyr_denominator_of_value_1" = 0) THEN (TRY_CAST(("value" * 1) - 0 AS DOUBLE) / TRY_CAST("..marginplyr_denominator_of...
+                                                                      ^
+ℹ Context: rapi_prepare
+ℹ Error type: BINDER 
+numeric ORDINARY SUCCESS numeric 
+numeric FALSE SUCCESS numeric 1 
+numeric TRUE SUCCESS numeric 1,1 
+
+Warning message:
+Missing values are always removed in SQL aggregation functions.
+Use `na.rm = TRUE` to silence this warning
+This warning is displayed once every 8 hours. 
+

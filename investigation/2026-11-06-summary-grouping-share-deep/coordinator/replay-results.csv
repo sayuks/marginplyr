@@ -1,0 +1,18 @@
+"name","script","arguments","script_md5","expected","observed"
+"share-observation","share/reflective-mask-reads.R","","d1e8e4a72e00efbd1abb49fc3d907022",0,0
+"share-index-contract","share/reflective-mask-reads.R","index --assert","d1e8e4a72e00efbd1abb49fc3d907022",1,1
+"share-index-controls","share/reflective-mask-reads.R","index --assert --controls-only","d1e8e4a72e00efbd1abb49fc3d907022",0,0
+"share-options-contract","share/reflective-mask-reads.R","options --assert","d1e8e4a72e00efbd1abb49fc3d907022",1,1
+"share-options-controls","share/reflective-mask-reads.R","options --assert --controls-only","d1e8e4a72e00efbd1abb49fc3d907022",0,0
+"share-bulk-contract","share/reflective-mask-reads.R","bulk --assert","d1e8e4a72e00efbd1abb49fc3d907022",1,1
+"share-bulk-controls","share/reflective-mask-reads.R","bulk --assert --controls-only","d1e8e4a72e00efbd1abb49fc3d907022",0,0
+"value-type-controls","summary/value-type-controls.R","","6c583980cc5cd4739fe8dc3c0b4d7a64",0,0
+"sequential-selection-controls","summary/sequential-selection-controls.R","","f9271f8231ef61b8af834c8cb94395cc",0,0
+"across-corner-controls","summary/across-corner-controls.R","","14255b1a9f1c8b64e80f110b69f53f82",0,0
+"share-interference-controls","summary/share-interference-controls.R","","e081d6d12daab131751368fd0620328e",0,0
+"family-oracle","grouping/family-oracle.R","","fe30dbc3be99f43fd0c62fd09622bdd9",0,0
+"typed-keys-and-shares","sql/typed-keys-and-shares.R","","6348f485dd330c3c7f9a16a4445ceb72",0,0
+"source-types","sql/source-types.R","","04851a77daec27b4792ab99a030650e7",0,0
+"closure-observation","share/closure-transfer-residual.R","","a2986fe5619f9df27246b24766f259b7",0,0
+"closure-contract","share/closure-transfer-residual.R","--assert","a2986fe5619f9df27246b24766f259b7",1,1
+"closure-controls","share/closure-transfer-residual.R","--assert --controls-only","a2986fe5619f9df27246b24766f259b7",0,0

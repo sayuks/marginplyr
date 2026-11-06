@@ -1,0 +1,46 @@
+, , observed = refusal
+
+         expected
+mode      refusal valid
+  bulk         24     0
+  index        36     0
+  options      36     0
+
+, , observed = success
+
+         expected
+mode      refusal valid
+  bulk         60    48
+  index        72    12
+  options      36    36
+
+Total comparisons: 360 
+
+Minimal index forward witness:
+      g source prior observed
+1     a      1  0.25      100
+2     b      3  0.75      300
+3 Total      4  1.00      400
+
+Minimal options forward witness:
+      g source prior observed
+1     a      1  0.25      100
+2     b      3  0.75      300
+3 Total      4  1.00      400
+
+Minimal bulk forward witness:
+      g source prior observed
+1     a      1  0.25      100
+2     b      3  0.75      300
+3 Total      4  1.00      400
+
+Environment:
+ R version 4.6.1 (2026-06-24) 
+ aarch64-apple-darwin23 
+dplyr 1.2.1 
+rlang 1.3.0 
+pkgload 1.5.3 
+tibble 3.3.1 
+data.table 1.18.6.1 
+
+
