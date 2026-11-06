@@ -4817,12 +4817,12 @@ scope_returned_closure <- function(expr, scope, lookup, final = TRUE) {
   }
   if (identical(name, "return") && length(expr) <= 2L &&
         is_known_base_frame_call(expr, name, scope, lookup)) {
-    return(list(
-      value = if (length(expr) == 2L && !rlang::is_missing(expr[[2L]])) {
-        scope_value_closure(expr[[2L]], scope, lookup)
-      },
-      scope = scope, returned = TRUE
-    ))
+    result <- list(value = NULL, scope = scope)
+    if (length(expr) == 2L && !rlang::is_missing(expr[[2L]])) {
+      result <- scope_returned_closure(expr[[2L]], scope, lookup)
+    }
+    result$returned <- TRUE
+    return(result)
   }
   if (identical(name, "{") &&
         is_known_base_frame_call(expr, name, scope, lookup)) {

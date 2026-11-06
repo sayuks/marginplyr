@@ -119,6 +119,17 @@ expect_visible_closures <- function(data) {
   )
   expect_visible_closure_values(data, alist(
     (function(prior) {
+      copied <- (function() {
+        # The explicit return retains a binding made inside its argument.
+        return({ # nolint: return_linter.
+          prior <- 7
+          function() sum(prior)
+        })
+      })()
+      rm(prior)
+      copied()
+    })(1),
+    (function(prior) {
       copied <- switch("safe", read = function() sum(prior), function() 7)
       rm(prior)
       copied()
