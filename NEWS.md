@@ -10,6 +10,9 @@
 * Parent and Total share dependency checks retain invocation-time dependencies
   through blocks, literal branches and visible local function factories
   (#1401).
+* Typed dtplyr Grouping-plan inspection and nesting safely refuse replaced
+  registered `head.data.table` methods before they can receive source rows
+  (#1397).
 
 * SQLite Margin order reuses public value columns instead of projecting
   duplicate ordering columns, so a single-dimension included-only expansion

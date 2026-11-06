@@ -337,7 +337,8 @@ Config/testthat/start-first:
     share-member-dependencies,
     margin-label-check-flags,
     share-visible-closure-values,
-    share-list-writes
+    share-list-writes,
+    dtplyr-head-metadata
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool

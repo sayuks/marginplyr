@@ -153,8 +153,9 @@ dtplyr_standard_method_promise <- function(name, registry, expected) {
 
 # Whether the S3 registry holds the expected method, directly or through its
 # verified standard registration, without evaluating active or unknown bindings.
-dtplyr_registered_method <- function(name, expected) {
-  registry <- get(".__S3MethodsTable__.", envir = baseenv())
+# `envir` is the namespace owning the generic's registration table.
+dtplyr_registered_method <- function(name, expected, envir = baseenv()) {
+  registry <- get(".__S3MethodsTable__.", envir = envir)
   if (!exists(name, envir = registry, inherits = FALSE) ||
         bindingIsActive(name, registry)) {
     return(FALSE)
@@ -321,9 +322,16 @@ dtplyr_metadata_safe_step <- function(step, env = step[["env"]]) {
     return(FALSE)
   }
   if (inherits(step, "dtplyr_step_first")) {
-    # Subclass truncation may recast empty metadata or write to source rows.
+    # Subclasses and replaced head methods can recast metadata or write rows.
     # Refuse before isolation can dispatch either head() or `[` (ADR 0020).
-    return(identical(class(step[["parent"]]), c("data.table", "data.frame")))
+    return(
+      identical(class(step[["parent"]]), c("data.table", "data.frame")) &&
+        dtplyr_registered_method(
+          "head.data.table",
+          get("head.data.table", envir = asNamespace("data.table")),
+          envir = asNamespace("utils")
+        )
+    )
   }
   # Generated brackets use the outer query's lexical environment, including
   # for subsets whose proxy can otherwise be read directly from parent schema.
