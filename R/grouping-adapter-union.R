@@ -136,7 +136,6 @@ sql_margin_input_relation <- function(.data, backend, data_vars) {
     }
     data_vars[match(boolean_columns, data_vars)] <- private_names
     if (".env" %in% data_vars) {
-      # The generated rename projection renders before result-level quoting.
       .data <- sql_quote_generated_columns(.data)
     }
   }
