@@ -353,12 +353,18 @@ local_distance_frames <- function(.local_envir = parent.frame()) {
     )
   }
   rlang::local_bindings(
-    vec_ptype2.margin_distance_m.margin_distance_m = function(x, y, ...) frame(),
+    vec_ptype2.margin_distance_m.margin_distance_m = function(x, y, ...) {
+      frame()
+    },
     vec_ptype2.margin_distance_cm.margin_distance_cm = function(x, y, ...) {
       frame(unit = "cm")
     },
-    vec_ptype2.margin_distance_m.margin_distance_cm = function(x, y, ...) frame(),
-    vec_ptype2.margin_distance_cm.margin_distance_m = function(x, y, ...) frame(),
+    vec_ptype2.margin_distance_m.margin_distance_cm = function(x, y, ...) {
+      frame()
+    },
+    vec_ptype2.margin_distance_cm.margin_distance_m = function(x, y, ...) {
+      frame()
+    },
     vec_cast.margin_distance_m.margin_distance_m = function(x, to, ...) x,
     vec_cast.margin_distance_cm.margin_distance_cm = function(x, to, ...) x,
     vec_cast.margin_distance_m.margin_distance_cm = function(x, to, ...) {
@@ -387,9 +393,10 @@ test_that("unnamed local frames retain value-changing frame casts", {
 
 check_local_frame_casts <- function(convert) {
   frame <- local_distance_frames()
-  calls <- 0L
+  counter <- new.env(parent = emptyenv())
+  counter$calls <- 0L
   distance <- function(x) {
-    calls <<- calls + 1L
+    counter$calls <- counter$calls + 1L
     if (mode == "unspecified" && length(x) == 1L && x[[1L]] == 1L) {
       return(NA)
     }
@@ -403,7 +410,8 @@ check_local_frame_casts <- function(convert) {
   for (mode in c("mixed", "metres", "centimetres", "unspecified")) {
     for (rows in list(1:2, 2:1)) {
       data <- convert(data.frame(fixed = "f", g = 1:2, x = 1:2)[rows, ])
-      for (expr in list(quote(distance(x)), quote(distance(dplyr::pick(x)$x)))) {
+      expressions <- list(quote(distance(x)), quote(distance(dplyr::pick(x)$x)))
+      for (expr in expressions) {
         summary <- rlang::new_quosure(expr, env = summary_env)
         for (role in c("fixed", "included", "rollup")) {
           fixed <- if (role == "fixed") c("fixed", "g") else "fixed"
@@ -428,22 +436,22 @@ check_local_frame_casts <- function(convert) {
             total$g <- NA_integer_
             packed <- dplyr::bind_rows(packed, total)
           }
-          calls <- 0L
+          counter$calls <- 0L
           actual <- summarize_with_margins(
             data, !!summary, later = .data$distance * 2,
             .by = dplyr::all_of(fixed), .grouping = grouping,
             .margin_label = NULL
           )
           expect_identical(actual, expected, info = paste(mode, role))
-          expect_identical(calls, if (role == "rollup") 3L else 2L)
-          calls <- 0L
+          expect_identical(counter$calls, if (role == "rollup") 3L else 2L)
+          counter$calls <- 0L
           actual <- summarize_with_margins(
             data, packed = !!summary,
             .by = dplyr::all_of(fixed), .grouping = grouping,
             .margin_label = NULL
           )
           expect_identical(actual, packed, info = paste(mode, role, "packed"))
-          expect_identical(calls, if (role == "rollup") 3L else 2L)
+          expect_identical(counter$calls, if (role == "rollup") 3L else 2L)
         }
       }
     }
