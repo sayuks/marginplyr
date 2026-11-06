@@ -1,0 +1,13 @@
+"script","mode","status","expected"
+"closure-copies.R","observation",0,0
+"closure-copies.R","contract",1,1
+"closure-copies.R","green-branch",0,0
+"closure-carriers.R","observation",0,0
+"closure-carriers.R","contract",1,1
+"closure-carriers.R","green-branch",0,0
+"env-get-dynamic.R","observation",0,0
+"env-get-dynamic.R","contract",1,1
+"env-get-dynamic.R","green-branch",0,0
+"mask-environment-paths.R","observation",0,0
+"mask-environment-paths.R","contract",1,1
+"mask-environment-paths.R","green-branch",0,0

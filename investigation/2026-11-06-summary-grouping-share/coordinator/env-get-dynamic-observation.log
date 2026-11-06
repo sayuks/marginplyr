@@ -1,0 +1,116 @@
+      input          helper direction             case expected observed
+ data.frame  share_of_total   forward    computed_name  refusal  success
+ data.frame  share_of_total   forward     lexical_name  refusal  success
+ data.frame  share_of_total   forward     pronoun_name  refusal  success
+ data.frame  share_of_total   forward       local_name  refusal  success
+ data.frame  share_of_total   forward     literal_name  refusal  refusal
+ data.frame  share_of_total   forward     base_dynamic  refusal  refusal
+ data.frame  share_of_total   forward external_dynamic    valid  success
+ data.frame  share_of_total   forward    local_binding    valid  success
+ data.frame  share_of_total   reverse    computed_name  refusal  success
+ data.frame  share_of_total   reverse     lexical_name  refusal  success
+ data.frame  share_of_total   reverse     pronoun_name  refusal  success
+ data.frame  share_of_total   reverse       local_name  refusal  success
+ data.frame  share_of_total   reverse     literal_name  refusal  refusal
+ data.frame  share_of_total   reverse     base_dynamic  refusal  refusal
+ data.frame  share_of_total   reverse external_dynamic    valid  success
+ data.frame  share_of_total   reverse    local_binding    valid  success
+ data.frame share_of_parent   forward    computed_name  refusal  success
+ data.frame share_of_parent   forward     lexical_name  refusal  success
+ data.frame share_of_parent   forward     pronoun_name  refusal  success
+ data.frame share_of_parent   forward       local_name  refusal  success
+ data.frame share_of_parent   forward     literal_name  refusal  refusal
+ data.frame share_of_parent   forward     base_dynamic  refusal  refusal
+ data.frame share_of_parent   forward external_dynamic    valid  success
+ data.frame share_of_parent   forward    local_binding    valid  success
+ data.frame share_of_parent   reverse    computed_name  refusal  success
+ data.frame share_of_parent   reverse     lexical_name  refusal  success
+ data.frame share_of_parent   reverse     pronoun_name  refusal  success
+ data.frame share_of_parent   reverse       local_name  refusal  success
+ data.frame share_of_parent   reverse     literal_name  refusal  refusal
+ data.frame share_of_parent   reverse     base_dynamic  refusal  refusal
+ data.frame share_of_parent   reverse external_dynamic    valid  success
+ data.frame share_of_parent   reverse    local_binding    valid  success
+     tibble  share_of_total   forward    computed_name  refusal  success
+     tibble  share_of_total   forward     lexical_name  refusal  success
+     tibble  share_of_total   forward     pronoun_name  refusal  success
+     tibble  share_of_total   forward       local_name  refusal  success
+     tibble  share_of_total   forward     literal_name  refusal  refusal
+     tibble  share_of_total   forward     base_dynamic  refusal  refusal
+     tibble  share_of_total   forward external_dynamic    valid  success
+     tibble  share_of_total   forward    local_binding    valid  success
+     tibble  share_of_total   reverse    computed_name  refusal  success
+     tibble  share_of_total   reverse     lexical_name  refusal  success
+     tibble  share_of_total   reverse     pronoun_name  refusal  success
+     tibble  share_of_total   reverse       local_name  refusal  success
+     tibble  share_of_total   reverse     literal_name  refusal  refusal
+     tibble  share_of_total   reverse     base_dynamic  refusal  refusal
+     tibble  share_of_total   reverse external_dynamic    valid  success
+     tibble  share_of_total   reverse    local_binding    valid  success
+     tibble share_of_parent   forward    computed_name  refusal  success
+     tibble share_of_parent   forward     lexical_name  refusal  success
+     tibble share_of_parent   forward     pronoun_name  refusal  success
+     tibble share_of_parent   forward       local_name  refusal  success
+     tibble share_of_parent   forward     literal_name  refusal  refusal
+     tibble share_of_parent   forward     base_dynamic  refusal  refusal
+     tibble share_of_parent   forward external_dynamic    valid  success
+     tibble share_of_parent   forward    local_binding    valid  success
+     tibble share_of_parent   reverse    computed_name  refusal  success
+     tibble share_of_parent   reverse     lexical_name  refusal  success
+     tibble share_of_parent   reverse     pronoun_name  refusal  success
+     tibble share_of_parent   reverse       local_name  refusal  success
+     tibble share_of_parent   reverse     literal_name  refusal  refusal
+     tibble share_of_parent   reverse     base_dynamic  refusal  refusal
+     tibble share_of_parent   reverse external_dynamic    valid  success
+     tibble share_of_parent   reverse    local_binding    valid  success
+ data.table  share_of_total   forward    computed_name  refusal  success
+ data.table  share_of_total   forward     lexical_name  refusal  success
+ data.table  share_of_total   forward     pronoun_name  refusal  success
+ data.table  share_of_total   forward       local_name  refusal  success
+ data.table  share_of_total   forward     literal_name  refusal  refusal
+ data.table  share_of_total   forward     base_dynamic  refusal  refusal
+ data.table  share_of_total   forward external_dynamic    valid  success
+ data.table  share_of_total   forward    local_binding    valid  success
+ data.table  share_of_total   reverse    computed_name  refusal  success
+ data.table  share_of_total   reverse     lexical_name  refusal  success
+ data.table  share_of_total   reverse     pronoun_name  refusal  success
+ data.table  share_of_total   reverse       local_name  refusal  success
+ data.table  share_of_total   reverse     literal_name  refusal  refusal
+ data.table  share_of_total   reverse     base_dynamic  refusal  refusal
+ data.table  share_of_total   reverse external_dynamic    valid  success
+ data.table  share_of_total   reverse    local_binding    valid  success
+ data.table share_of_parent   forward    computed_name  refusal  success
+ data.table share_of_parent   forward     lexical_name  refusal  success
+ data.table share_of_parent   forward     pronoun_name  refusal  success
+ data.table share_of_parent   forward       local_name  refusal  success
+ data.table share_of_parent   forward     literal_name  refusal  refusal
+ data.table share_of_parent   forward     base_dynamic  refusal  refusal
+ data.table share_of_parent   forward external_dynamic    valid  success
+ data.table share_of_parent   forward    local_binding    valid  success
+ data.table share_of_parent   reverse    computed_name  refusal  success
+ data.table share_of_parent   reverse     lexical_name  refusal  success
+ data.table share_of_parent   reverse     pronoun_name  refusal  success
+ data.table share_of_parent   reverse       local_name  refusal  success
+ data.table share_of_parent   reverse     literal_name  refusal  refusal
+ data.table share_of_parent   reverse     base_dynamic  refusal  refusal
+ data.table share_of_parent   reverse external_dynamic    valid  success
+ data.table share_of_parent   reverse    local_binding    valid  success
+         observed
+expected  refusal success
+  refusal      24      48
+  valid         0      24
+
+Minimal forward witness:
+      g source prior observed
+1     a      1  0.25      100
+2     b      3  0.75      300
+3 Total      4  1.00      400
+
+Environment:
+R version 4.6.1 (2026-06-24)
+ aarch64-apple-darwin23
+dplyr 1.2.1
+rlang 1.3.0
+pkgload 1.5.3
+tibble 3.3.1
+data.table 1.18.6.1

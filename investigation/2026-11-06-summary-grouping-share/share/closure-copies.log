@@ -1,0 +1,80 @@
+      input          helper direction               case expected observed
+ data.frame  share_of_total   forward           one_copy  refusal  success
+ data.frame  share_of_total   forward         two_copies  refusal  success
+ data.frame  share_of_total   forward             direct  refusal  refusal
+ data.frame  share_of_total   forward copy_after_removal  refusal  refusal
+ data.frame  share_of_total   forward   retained_binding    valid  success
+ data.frame  share_of_total   reverse           one_copy  refusal  success
+ data.frame  share_of_total   reverse         two_copies  refusal  success
+ data.frame  share_of_total   reverse             direct  refusal  refusal
+ data.frame  share_of_total   reverse copy_after_removal  refusal  refusal
+ data.frame  share_of_total   reverse   retained_binding    valid  success
+ data.frame share_of_parent   forward           one_copy  refusal  success
+ data.frame share_of_parent   forward         two_copies  refusal  success
+ data.frame share_of_parent   forward             direct  refusal  refusal
+ data.frame share_of_parent   forward copy_after_removal  refusal  refusal
+ data.frame share_of_parent   forward   retained_binding    valid  success
+ data.frame share_of_parent   reverse           one_copy  refusal  success
+ data.frame share_of_parent   reverse         two_copies  refusal  success
+ data.frame share_of_parent   reverse             direct  refusal  refusal
+ data.frame share_of_parent   reverse copy_after_removal  refusal  refusal
+ data.frame share_of_parent   reverse   retained_binding    valid  success
+     tibble  share_of_total   forward           one_copy  refusal  success
+     tibble  share_of_total   forward         two_copies  refusal  success
+     tibble  share_of_total   forward             direct  refusal  refusal
+     tibble  share_of_total   forward copy_after_removal  refusal  refusal
+     tibble  share_of_total   forward   retained_binding    valid  success
+     tibble  share_of_total   reverse           one_copy  refusal  success
+     tibble  share_of_total   reverse         two_copies  refusal  success
+     tibble  share_of_total   reverse             direct  refusal  refusal
+     tibble  share_of_total   reverse copy_after_removal  refusal  refusal
+     tibble  share_of_total   reverse   retained_binding    valid  success
+     tibble share_of_parent   forward           one_copy  refusal  success
+     tibble share_of_parent   forward         two_copies  refusal  success
+     tibble share_of_parent   forward             direct  refusal  refusal
+     tibble share_of_parent   forward copy_after_removal  refusal  refusal
+     tibble share_of_parent   forward   retained_binding    valid  success
+     tibble share_of_parent   reverse           one_copy  refusal  success
+     tibble share_of_parent   reverse         two_copies  refusal  success
+     tibble share_of_parent   reverse             direct  refusal  refusal
+     tibble share_of_parent   reverse copy_after_removal  refusal  refusal
+     tibble share_of_parent   reverse   retained_binding    valid  success
+ data.table  share_of_total   forward           one_copy  refusal  success
+ data.table  share_of_total   forward         two_copies  refusal  success
+ data.table  share_of_total   forward             direct  refusal  refusal
+ data.table  share_of_total   forward copy_after_removal  refusal  refusal
+ data.table  share_of_total   forward   retained_binding    valid  success
+ data.table  share_of_total   reverse           one_copy  refusal  success
+ data.table  share_of_total   reverse         two_copies  refusal  success
+ data.table  share_of_total   reverse             direct  refusal  refusal
+ data.table  share_of_total   reverse copy_after_removal  refusal  refusal
+ data.table  share_of_total   reverse   retained_binding    valid  success
+ data.table share_of_parent   forward           one_copy  refusal  success
+ data.table share_of_parent   forward         two_copies  refusal  success
+ data.table share_of_parent   forward             direct  refusal  refusal
+ data.table share_of_parent   forward copy_after_removal  refusal  refusal
+ data.table share_of_parent   forward   retained_binding    valid  success
+ data.table share_of_parent   reverse           one_copy  refusal  success
+ data.table share_of_parent   reverse         two_copies  refusal  success
+ data.table share_of_parent   reverse             direct  refusal  refusal
+ data.table share_of_parent   reverse copy_after_removal  refusal  refusal
+ data.table share_of_parent   reverse   retained_binding    valid  success
+         observed
+expected  refusal success
+  refusal      24      24
+  valid         0      12
+
+Minimal forward witness:
+      g source prior observed
+1     a      1  0.25      100
+2     b      3  0.75      300
+3 Total      4  1.00      400
+
+Environment:
+R version 4.6.1 (2026-06-24)
+ aarch64-apple-darwin23
+dplyr 1.2.1
+rlang 1.3.0
+pkgload 1.5.3
+tibble 3.3.1
+data.table 1.18.6.1

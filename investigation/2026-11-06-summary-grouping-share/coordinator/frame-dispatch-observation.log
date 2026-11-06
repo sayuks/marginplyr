@@ -1,0 +1,32 @@
+wrong-value data.frame grand FALSE expected 6 actual 99 positive-row as.list calls 1
+wrong-value data.frame grand TRUE expected 6 actual 99 positive-row as.list calls 1
+wrong-value data.frame fixed FALSE expected 3,3 actual 99,99 positive-row as.list calls 2
+wrong-value data.frame fixed TRUE expected 3,3 actual 99,99 positive-row as.list calls 2
+wrong-value data.frame included FALSE expected 3,3 actual 99,99 positive-row as.list calls 2
+wrong-value data.frame included TRUE expected 3,3 actual 99,99 positive-row as.list calls 2
+wrong-value data.frame rollup FALSE expected 3,3,6 actual 99,99,99 positive-row as.list calls 3
+wrong-value data.frame rollup TRUE expected 3,3,6 actual 99,99,99 positive-row as.list calls 3
+wrong-value tibble grand FALSE expected 6 actual 99 positive-row as.list calls 1
+wrong-value tibble grand TRUE expected 6 actual 99 positive-row as.list calls 1
+wrong-value tibble fixed FALSE expected 3,3 actual 99,99 positive-row as.list calls 2
+wrong-value tibble fixed TRUE expected 3,3 actual 99,99 positive-row as.list calls 2
+wrong-value tibble included FALSE expected 3,3 actual 99,99 positive-row as.list calls 2
+wrong-value tibble included TRUE expected 3,3 actual 99,99 positive-row as.list calls 2
+wrong-value tibble rollup FALSE expected 3,3,6 actual 99,99,99 positive-row as.list calls 3
+wrong-value tibble rollup TRUE expected 3,3,6 actual 99,99,99 positive-row as.list calls 3
+wrong-value data.table grand FALSE expected 6 actual 99 positive-row as.list calls 1
+wrong-value data.table grand TRUE expected 6 actual 99 positive-row as.list calls 1
+wrong-value data.table fixed FALSE expected 3,3 actual 99,99 positive-row as.list calls 2
+wrong-value data.table fixed TRUE expected 3,3 actual 99,99 positive-row as.list calls 2
+wrong-value data.table included FALSE expected 3,3 actual 99,99 positive-row as.list calls 2
+wrong-value data.table included TRUE expected 3,3 actual 99,99 positive-row as.list calls 2
+wrong-value data.table rollup FALSE expected 3,3,6 actual 99,99,99 positive-row as.list calls 3
+wrong-value data.table rollup TRUE expected 3,3,6 actual 99,99,99 positive-row as.list calls 3
+wrong-values 24 false-refusals 24 named-packed controls 24
+R 4.6.1
+pkgload 1.5.3
+dplyr 1.2.1
+rlang 1.3.0
+vctrs 0.7.3
+tibble 3.3.1
+data.table 1.18.6.1

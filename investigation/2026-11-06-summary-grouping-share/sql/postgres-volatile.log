@@ -1,0 +1,8 @@
+PostgreSQL 17.11 (Homebrew)
+NOTICE:  sequence "stamp" does not exist, skipping
+
+36 PostgreSQL stateful-share result comparisons matched
+Warning message:
+Missing values are always removed in SQL aggregation functions.
+Use `na.rm = TRUE` to silence this warning
+This warning is displayed once every 8 hours.

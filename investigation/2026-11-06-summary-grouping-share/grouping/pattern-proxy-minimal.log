@@ -1,0 +1,7 @@
+direct selected: a
+actual proxy metadata: integer
+ℹ In argument: `matches(pattern)`.
+Caused by error in `vec_proxy()`:
+! pattern proxy requires character column metadata
+typed wrapper selected: (a)
+Ran 1/1 deferred expressions

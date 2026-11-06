@@ -1,0 +1,13 @@
+"script","mode","expected","actual"
+"share/closure-copies.R","observation",0,0
+"share/closure-copies.R","contract",1,1
+"share/closure-carriers.R","observation",0,0
+"share/closure-carriers.R","contract",1,1
+"share/env-get-dynamic.R","observation",0,0
+"share/env-get-dynamic.R","contract",1,1
+"share/mask-environment-paths.R","observation",0,0
+"share/mask-environment-paths.R","contract",1,1
+"grouping/pattern-proxy-dispatch.R","observation",0,0
+"grouping/pattern-proxy-dispatch.R","contract",1,1
+"summary/frame-dispatch.R","observation",0,0
+"summary/frame-dispatch.R","contract",1,1

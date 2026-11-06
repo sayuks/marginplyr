@@ -1,0 +1,217 @@
+"modifier","form","backend","position","actual","method_types","control"
+"fixed","bound","local",".by","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"fixed","bound","local","grouping_set","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"fixed","bound","local","grouping_sets","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"fixed","bound","local","rollup","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"fixed","bound","local","cube","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"fixed","bound","local","grouping_spec","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"fixed","bound","dtplyr",".by","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"fixed","bound","dtplyr","grouping_set","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"fixed","bound","dtplyr","grouping_sets","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"fixed","bound","dtplyr","rollup","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"fixed","bound","dtplyr","cube","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"fixed","bound","dtplyr","grouping_spec","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"fixed","inline","local",".by","ℹ In argument: `matches(stringr::fixed(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"fixed","inline","local","grouping_set","ℹ In argument: `matches(stringr::fixed(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"fixed","inline","local","grouping_sets","ℹ In argument: `matches(stringr::fixed(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"fixed","inline","local","rollup","ℹ In argument: `matches(stringr::fixed(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"fixed","inline","local","cube","ℹ In argument: `matches(stringr::fixed(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"fixed","inline","local","grouping_spec","ℹ In argument: `matches(stringr::fixed(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"fixed","inline","dtplyr",".by","ℹ In argument: `matches(stringr::fixed(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"fixed","inline","dtplyr","grouping_set","ℹ In argument: `matches(stringr::fixed(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"fixed","inline","dtplyr","grouping_sets","ℹ In argument: `matches(stringr::fixed(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"fixed","inline","dtplyr","rollup","ℹ In argument: `matches(stringr::fixed(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"fixed","inline","dtplyr","cube","ℹ In argument: `matches(stringr::fixed(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"fixed","inline","dtplyr","grouping_spec","ℹ In argument: `matches(stringr::fixed(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"regex","bound","local",".by","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"regex","bound","local","grouping_set","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"regex","bound","local","grouping_sets","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"regex","bound","local","rollup","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"regex","bound","local","cube","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"regex","bound","local","grouping_spec","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"regex","bound","dtplyr",".by","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"regex","bound","dtplyr","grouping_set","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"regex","bound","dtplyr","grouping_sets","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"regex","bound","dtplyr","rollup","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"regex","bound","dtplyr","cube","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"regex","bound","dtplyr","grouping_spec","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"regex","inline","local",".by","ℹ In argument: `matches(stringr::regex(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"regex","inline","local","grouping_set","ℹ In argument: `matches(stringr::regex(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"regex","inline","local","grouping_sets","ℹ In argument: `matches(stringr::regex(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"regex","inline","local","rollup","ℹ In argument: `matches(stringr::regex(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"regex","inline","local","cube","ℹ In argument: `matches(stringr::regex(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"regex","inline","local","grouping_spec","ℹ In argument: `matches(stringr::regex(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"regex","inline","dtplyr",".by","ℹ In argument: `matches(stringr::regex(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"regex","inline","dtplyr","grouping_set","ℹ In argument: `matches(stringr::regex(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"regex","inline","dtplyr","grouping_sets","ℹ In argument: `matches(stringr::regex(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"regex","inline","dtplyr","rollup","ℹ In argument: `matches(stringr::regex(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"regex","inline","dtplyr","cube","ℹ In argument: `matches(stringr::regex(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"regex","inline","dtplyr","grouping_spec","ℹ In argument: `matches(stringr::regex(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"coll","bound","local",".by","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"coll","bound","local","grouping_set","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"coll","bound","local","grouping_sets","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"coll","bound","local","rollup","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"coll","bound","local","cube","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"coll","bound","local","grouping_spec","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"coll","bound","dtplyr",".by","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"coll","bound","dtplyr","grouping_set","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"coll","bound","dtplyr","grouping_sets","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"coll","bound","dtplyr","rollup","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"coll","bound","dtplyr","cube","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"coll","bound","dtplyr","grouping_spec","ℹ In argument: `matches(pattern)`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"coll","inline","local",".by","ℹ In argument: `matches(stringr::coll(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"coll","inline","local","grouping_set","ℹ In argument: `matches(stringr::coll(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"coll","inline","local","grouping_sets","ℹ In argument: `matches(stringr::coll(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"coll","inline","local","rollup","ℹ In argument: `matches(stringr::coll(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"coll","inline","local","cube","ℹ In argument: `matches(stringr::coll(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"coll","inline","local","grouping_spec","ℹ In argument: `matches(stringr::coll(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"coll","inline","dtplyr",".by","ℹ In argument: `matches(stringr::coll(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"coll","inline","dtplyr","grouping_set","ℹ In argument: `matches(stringr::coll(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"coll","inline","dtplyr","grouping_sets","ℹ In argument: `matches(stringr::coll(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"coll","inline","dtplyr","rollup","ℹ In argument: `matches(stringr::coll(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"coll","inline","dtplyr","cube","ℹ In argument: `matches(stringr::coll(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
+"coll","inline","dtplyr","grouping_spec","ℹ In argument: `matches(stringr::coll(""a""))`.
+Caused by error:
+! pattern proxy requires character column metadata","integer","selected a"
