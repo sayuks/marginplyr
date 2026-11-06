@@ -249,7 +249,12 @@ capture_grouping_args <- function(...) {
     return(rlang::enquos(...))
   }
   capture <- function(...) rlang::enquos(..., .ignore_empty = "none")
-  args <- lapply(seq_along(args), function(i) {
+  positions <- seq_along(args)
+  # Omit the last raw empty argument before splicing can remove a successor.
+  if (rlang::is_missing(expressions[[length(args)]])) {
+    positions <- positions[-length(positions)]
+  }
+  args <- lapply(positions, function(i) {
     arg <- args[[i]]
     if (captured[[i]]) {
       return(list(arg))

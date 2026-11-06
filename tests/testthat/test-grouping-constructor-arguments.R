@@ -112,3 +112,68 @@ test_that("untagged empty positions still name the constructor and position", {
     }
   }
 })
+
+test_that("captured selections omit trailing commas through injection", {
+  data <- data.frame(region = c("E", "W"), value = 1:2)
+  selection <- rlang::quo(region)
+  for (constructor in c("grouping_set", "grouping_sets", "rollup", "cube",
+                        "grouping_spec")) {
+    expected <- if (constructor %in% c("rollup", "cube")) {
+      c("(region)", "()")
+    } else {
+      "(region)"
+    }
+    expressions <- c(
+      paste0("rlang::inject(", constructor, "(!!selection, ))"),
+      paste0("rlang::inject(forward_constructor_args('", constructor,
+             "', !!selection, ))")
+    )
+    for (expr in expressions) {
+      expect_identical(
+        inspect_grouping(
+          data, .grouping = eval(rlang::parse_expr(expr))
+        )$included,
+        expected
+      )
+    }
+  }
+})
+
+test_that("captured selections retain empty positions around splices", {
+  data <- data.frame(region = c("E", "W"), value = 1:2)
+  selection <- rlang::quo(region)
+  for (constructor in c("grouping_set", "grouping_sets", "rollup", "cube",
+                        "grouping_spec")) {
+    expected <- if (constructor %in% c("rollup", "cube")) {
+      c("(region)", "()")
+    } else {
+      "(region)"
+    }
+    selections <- list(
+      list(selection, quote(!!!list())),
+      list(selection, quote(!!!list()), rlang::missing_arg())
+    )
+    for (args in selections) {
+      expr <- as.call(c(list(as.name(constructor)), args))
+      expect_identical(inspect_grouping(data, .grouping = eval(expr))$included,
+                       expected)
+    }
+    shapes <- list(
+      list(position = 1L,
+           args = list(rlang::missing_arg(), selection, quote(!!!list()))),
+      list(position = 2L,
+           args = list(selection, rlang::missing_arg(), quote(!!!list()))),
+      list(position = 2L,
+           args = list(selection, rlang::missing_arg(), rlang::missing_arg()))
+    )
+    for (shape in shapes) {
+      expr <- as.call(c(list(as.name(constructor)), shape$args))
+      for (consume in constructor_arg_consumers(data)) {
+        error <- expect_error(consume(expr), class = "marginplyr_error")
+        expect_match(conditionMessage(error),
+                     paste0("Argument ", shape$position, " of `", constructor,
+                            "()` is empty."), fixed = TRUE)
+      }
+    }
+  }
+})
