@@ -5892,6 +5892,39 @@ static_environment_frame <- function(expr, scope, lookup) {
   if (steps == 0L) frame else NULL
 }
 
+# Resolve an existing zero-argument caller closure whose entire body is a
+# known base caller-frame read. Inspecting that body never invokes the closure.
+static_returned_caller_frame <- function(expr, scope, lookup) {
+  if (!rlang::is_call(expr)) {
+    return(NULL)
+  }
+  head <- static_call_head(expr)
+  if (!is_name_part(head) || length(static_call_args(expr)) != 0L ||
+        is.null(lookup$env)) {
+    return(NULL)
+  }
+  name <- rlang::as_name(head)
+  if (name %in% c(scope_bound_names(scope), lookup$mask, lookup$rebound) ||
+        unresolved_lookup_name() %in% lookup$rebound ||
+        !lookup_environment_is_external(lookup$env, character(), lookup,
+                                        safe_parents = FALSE)) {
+    return(NULL)
+  }
+  callee <- ordinary_function_binding(name, lookup$env)
+  if (!is.function(callee) || is.primitive(callee) ||
+        length(formals(callee)) != 0L) {
+    return(NULL)
+  }
+  if (!lookup_environment_is_external(
+    environment(callee), character(), lookup, safe_parents = FALSE
+  )) {
+    return(NULL)
+  }
+  lookup$env <- environment(callee)
+  depth <- static_parent_frame_depth(body(callee), list(), lookup)
+  if (!is.null(depth)) scope_caller_frame(depth - 1L, scope) else NULL
+}
+
 # Converting a known mask to a list retains an unresolved dependency.
 # The conversion does not inherit bindings from a lexical frame.
 materialized_env_symbols <- function(expr, scope, lookup) {
@@ -5933,6 +5966,9 @@ inheriting_env_get_symbols <- function(expr, scope, lookup, bulk = FALSE) {
   }
   if ("last" %in% names(args)) {
     last <- static_environment_frame(args$last, scope, lookup)
+    if (is.null(last)) {
+      last <- static_returned_caller_frame(args$last, scope, lookup)
+    }
     if (!is.null(last) && last %in% scope_visible_frames(scope, frame)) {
       return(character())
     }
