@@ -2414,21 +2414,29 @@ read_grouping_arg <- function(arg, data_vars, wrappers, data_proxy) {
   # its namespace operation in its captured environment (ADR 0019).
   evaluate <- function() rlang::eval_tidy(rlang::new_quosure(evaluation, env))
   authored_namespace <- qualified || !is.null(static_call_ns(expr))
-  value <- if (authored_namespace && !grouping_arg_context_free(authored)) {
-    if (is.null(data_proxy)) {
+  value <- if (authored_namespace) {
+    if (is.null(data_proxy) &&
+          !is_name_only_grouping_arg(authored, data_vars)) {
       return(c(selection, list(
         deferred = TRUE, arg = arg, wrappers = wrappers
       )))
     }
     # Caller conditions leave the generated capture unchanged (ADR 0008).
     outcome <- NULL
-    capture <- function() {
+    capture <- function(value) {
       outcome <<- tryCatch(
-        list(value = evaluate()), error = function(cnd) list(error = cnd)
+        list(value = value), error = function(cnd) list(error = cnd)
       )
       integer()
     }
-    tidyselect::eval_select(rlang::call2(capture), data_proxy)
+    proxy <- if (is.null(data_proxy)) {
+      grouping_name_proxy(data_vars)
+    } else {
+      data_proxy
+    }
+    tidyselect::eval_select(
+      rlang::new_quosure(rlang::call2(capture, evaluation), env), proxy
+    )
     if (!is.null(outcome$error)) {
       stop(outcome$error)
     }
@@ -2475,21 +2483,20 @@ read_grouping_arg <- function(arg, data_vars, wrappers, data_proxy) {
   selection
 }
 
-# Whether an authored namespace expression can be read without a selection
-# context. Settled bindings, literals and stock constructors through genuine
-# identity wrappers establish this; unknown caller code needs types.
-grouping_arg_context_free <- function(arg) {
+# Whether an authored namespace expression needs only the names selection
+# context. The caller supplies the input names and the expression's own scope.
+is_name_only_grouping_arg <- function(arg, data_vars) {
   expr <- unparenthesized_value(rlang::quo_get_expr(arg), ns = "")
   env <- rlang::quo_get_env(arg)
   if (rlang::is_quosure(expr)) {
-    return(grouping_arg_context_free(expr))
+    return(is_name_only_grouping_arg(expr, data_vars))
   }
   if (is_redundant_parens(expr)) {
     fn <- selection_argument_function(
       rlang::call2(expr[[1L]]), env, character()
     )
-    return(identical(fn, base::`(`) && grouping_arg_context_free(
-      rlang::new_quosure(expr[[2L]], env)
+    return(identical(fn, base::`(`) && is_name_only_grouping_arg(
+      rlang::new_quosure(expr[[2L]], env), data_vars
     ))
   }
   if (is_name_part(expr)) {
@@ -2505,29 +2512,126 @@ grouping_arg_context_free <- function(arg) {
     return(FALSE)
   }
   stock <- get(name, envir = asNamespace("marginplyr"), inherits = FALSE)
-  identical(selection_argument_function(expr, env, character()), stock) &&
-    !any(vapply(static_call_args(expr), grouping_arg_injection, logical(1)))
+  selection_call_parens_safe(expr, env) &&
+    identical(selection_argument_function(expr, env, character()), stock) &&
+    all(vapply(static_call_args(expr), grouping_capture_name_only, logical(1),
+               env = env, data_vars = data_vars))
 }
 
-# Whether syntax contains an unquote, splice or embrace that capture may run.
-# This reads syntax only; an unproven operand is left for typed evaluation.
-grouping_arg_injection <- function(expr) {
+# Whether constructor capture can run against names alone. Quosures already
+# present are opaque values; only injection operands execute during capture.
+grouping_capture_name_only <- function(expr, env, data_vars) {
   if (rlang::is_missing(expr)) {
-    return(FALSE)
+    return(TRUE)
   }
   if (rlang::is_quosure(expr)) {
-    return(grouping_arg_injection(rlang::quo_get_expr(expr)))
+    return(TRUE)
   }
   if (rlang::is_call(expr, "!", n = 1L) &&
         rlang::is_call(expr[[2L]], "!", n = 1L)) {
-    return(TRUE)
+    operand <- expr[[2L]][[2L]]
+    splice <- rlang::is_call(operand, "!", n = 1L)
+    return(grouping_injection_name_only(
+      if (splice) operand[[2L]] else operand, env, splice = splice
+    ))
   }
   if (rlang::is_call(expr, "{", n = 1L) &&
         rlang::is_call(expr[[2L]], "{", n = 1L)) {
+    operand <- expr[[2L]][[2L]]
+    if (!is_name_part(operand)) {
+      return(FALSE)
+    }
+    name <- rlang::as_string(operand)
+    binding <- selection_binding_env(env, name)
+    if (identical(binding, emptyenv()) ||
+          rlang::env_binding_are_active(binding, name)[[1L]]) {
+      return(FALSE)
+    }
+    captured <- capture_grouping_binding(operand, env)
+    if (is.null(captured)) {
+      return(FALSE)
+    }
+    if (is_captured_grouping_quosure(captured$written[[1L]], captured$quo)) {
+      return(grouping_capture_name_only(
+        rlang::quo_get_expr(captured$quo), rlang::quo_get_env(captured$quo),
+        data_vars
+      ))
+    }
+    return(is_name_only_selection(
+      captured$quo, data_vars, allow_caller_code = FALSE
+    ))
+  }
+  !(is.call(expr) || is.pairlist(expr)) ||
+    all(vapply(as.list(expr), grouping_capture_name_only, logical(1),
+               env = env, data_vars = data_vars))
+}
+
+# Whether an injection operand reads known values without running caller code.
+# Deferred promises are defused, not forced; `seen` bounds forwarded cycles.
+grouping_injection_name_only <- function(expr, env, splice = FALSE,
+                                         seen = list()) {
+  if (rlang::is_missing(expr)) {
     return(TRUE)
   }
-  (is.call(expr) || is.pairlist(expr)) &&
-    any(vapply(as.list(expr), grouping_arg_injection, logical(1)))
+  if (rlang::is_quosure(expr)) {
+    return(TRUE)
+  }
+  if (is_name_part(expr)) {
+    name <- rlang::as_string(expr)
+    binding <- selection_binding_env(env, name)
+    if (identical(binding, emptyenv())) {
+      return(TRUE)
+    }
+    key <- list(env = binding, name = name)
+    if (any(vapply(seen, identical, logical(1), y = key)) ||
+          rlang::env_binding_are_active(binding, name)[[1L]]) {
+      return(FALSE)
+    }
+    if (selection_binding_deferred(
+      env, name, allow_namespace_promises = FALSE
+    )) {
+      captured <- capture_grouping_binding(expr, env)
+      if (is.null(captured)) {
+        return(FALSE)
+      }
+      if (is_captured_grouping_quosure(captured$written[[1L]], captured$quo)) {
+        return(TRUE)
+      }
+      return(grouping_injection_name_only(
+        rlang::quo_get_expr(captured$quo), rlang::quo_get_env(captured$quo),
+        splice, c(seen, list(key))
+      ))
+    }
+    value <- rlang::env_get(binding, name)
+    return(!splice || is_name_only_splice_value(value))
+  }
+  if (!is.language(expr)) {
+    return(!splice || is_name_only_splice_value(expr))
+  }
+  if (!selection_call_parens_safe(expr, env)) {
+    return(FALSE)
+  }
+  fn <- selection_argument_function(expr, env, character(), context = TRUE)
+  if (identical(fn, base::quote)) {
+    return(TRUE)
+  }
+  if (identical(fn, base::list)) {
+    return(all(vapply(static_call_args(expr), grouping_injection_name_only,
+                      logical(1), env = env, seen = seen)))
+  }
+  is_name_only_helper_arg(expr, env, allow_caller_code = FALSE)
+}
+
+# Whether splicing a materialized value needs no caller-defined coercion.
+is_name_only_splice_value <- function(value) {
+  if (rlang::is_missing(value)) {
+    return(TRUE)
+  }
+  if (identical(class(value), c("quosures", "list"))) {
+    return(all(vapply(unclass(value), rlang::is_quosure, logical(1))))
+  }
+  !is.object(value) &&
+    (is.null(value) || is.atomic(value) || is.list(value) || is.pairlist(value))
 }
 
 # The gate above reads spellings, so a specification a caller's own function

@@ -306,6 +306,176 @@ test_that("stock constructor embracing retains a deferred caller promise", {
   }
 })
 
+test_that("proving forwarded injection does not force an active binding", {
+  data <- data.frame(a = c("east", "west"), b = c(1L, 1L))
+  observed <- rlang::env(calls = 0L)
+  caller <- new.env(parent = baseenv())
+  makeActiveBinding("selected", function() {
+    observed$calls <- observed$calls + 1L
+    if (is.character(tidyselect::peek_data()$a)) "b" else "a"
+  }, caller)
+  forward <- function(x) {
+    rlang::new_quosure(
+      quote(base::`(`(marginplyr::grouping_set(!!x))), environment()
+    )
+  }
+  verbs <- list(inspect_grouping, nest_with_margins, nest_by_with_margins)
+  for (verb in verbs) {
+    observed$calls <- 0L
+    selection <- rlang::eval_bare(
+      rlang::call2(forward, quote(selected)), caller
+    )
+    expect_identical(observed$calls, 0L)
+    actual <- verb(data, .grouping = grouping_sets(!!selection))
+    expect_identical(
+      actual, verb(data, .grouping = grouping_sets(grouping_set(b)))
+    )
+    expect_identical(observed$calls, 1L)
+  }
+})
+
+test_that("known injections retain name-only derived dtplyr inspection", {
+  skip_if_suggest_absent("dtplyr")
+  observed <- rlang::env(rows = 0L)
+  touch <- function(x) {
+    observed$rows <- observed$rows + length(x)
+    x
+  }
+  data <- data.frame(a = c("east", "west"), b = c(1L, 1L))
+  input <- dplyr::mutate(dtplyr::lazy_dt(data), a = touch(a))
+  counter <- local_dtplyr_proxy_counter()
+  caller <- rlang::env(
+    columns = "a", pieces = list(rlang::new_quosure(quote(a), emptyenv()))
+  )
+  caller$quosures <- rlang::new_quosures(caller$pieces)
+  caller$column <- caller$pieces[[1L]]
+  expressions <- list(
+    quote(marginplyr::grouping_set(!!"a")),
+    quote(marginplyr::grouping_set(!!quote(a))),
+    quote(marginplyr::grouping_set(!!columns)),
+    quote(marginplyr::grouping_set(!!!list("a"))),
+    quote(marginplyr::grouping_set(!!!pieces)),
+    quote(marginplyr::grouping_set(!!!quosures)),
+    quote(marginplyr::grouping_set(!!column))
+  )
+  selections <- lapply(expressions, function(expr) {
+    rlang::new_quosure(rlang::call2(quote(base::`(`), expr), caller)
+  })
+  embrace <- function(x) {
+    rlang::new_quosure(
+      quote(base::`(`(marginplyr::grouping_set({{ x }}))), environment()
+    )
+  }
+  forward <- function(x) {
+    rlang::new_quosure(
+      quote(base::`(`(marginplyr::grouping_set(!!x))), environment()
+    )
+  }
+  column <- caller$column
+  selections <- c(selections, list(embrace(a), forward(column)))
+  reference_error <- tryCatch(
+    inspect_grouping(input, .grouping = grouping_set(grouping_set(a))),
+    error = identity
+  )
+  for (selection in selections) {
+    for (constructor in c("grouping_sets", "rollup", "cube", "grouping_spec")) {
+      specification <- eval(rlang::call2(constructor, selection))
+      expected <- eval(rlang::call2(constructor, grouping_set(a)))
+      reference <- inspect_grouping(
+        input, .grouping = expected, .format = "list"
+      )
+      actual <- inspect_grouping(
+        input, .grouping = specification, .format = "list"
+      )
+      expect_identical(actual, reference)
+    }
+    error <- tryCatch(
+      inspect_grouping(input, .grouping = grouping_set(!!selection)),
+      error = identity
+    )
+    expect_s3_class(error, "marginplyr_error")
+    expect_identical(conditionMessage(error), conditionMessage(reference_error))
+  }
+  expect_identical(counter$n, 0L)
+  expect_identical(counter$source_evaluations, 0L)
+  expect_identical(observed$rows, 0L)
+})
+
+test_that("forwarded quosure bodies do not change early grammar refusal", {
+  skip_if_suggest_absent("dtplyr")
+  observed <- rlang::env(rows = 0L)
+  touch <- function(x) {
+    observed$rows <- observed$rows + length(x)
+    x
+  }
+  data <- data.frame(a = c("east", "west"), b = c(1L, 1L))
+  input <- dplyr::mutate(dtplyr::lazy_dt(data), a = touch(a))
+  counter <- local_dtplyr_proxy_counter()
+  typed <- rlang::new_quosure(quote(where(is.character)), baseenv())
+  forward <- function(x) {
+    rlang::new_quosure(
+      quote(base::`(`(marginplyr::grouping_set(!!x))), environment()
+    )
+  }
+  selection <- rlang::eval_bare(rlang::call2(forward, typed))
+  error <- tryCatch(
+    inspect_grouping(input, .grouping = grouping_set(!!selection)),
+    error = identity
+  )
+  expect_s3_class(error, "marginplyr_error")
+  expect_match(conditionMessage(error), "can contain columns")
+  expect_identical(counter$n, 0L)
+  expect_identical(counter$source_evaluations, 0L)
+  expect_identical(observed$rows, 0L)
+})
+
+test_that("injection helpers retain the complete names selection context", {
+  data <- data.frame(a = c("east", "west"), b = c(1L, 1L))
+  caller <- new.env(parent = baseenv())
+  operands <- list(
+    quote(everything()), quote(tidyselect::peek_vars()),
+    quote(names(tidyselect::peek_data()))
+  )
+  for (operand in operands) {
+    constructor <- rlang::call2(
+      quote(marginplyr::grouping_set),
+      rlang::call2("!", rlang::call2("!", operand))
+    )
+    selection <- rlang::new_quosure(
+      rlang::call2(quote(base::`(`), constructor), caller
+    )
+    verbs <- list(inspect_grouping, nest_with_margins, nest_by_with_margins)
+    for (verb in verbs) {
+      actual <- verb(data, .grouping = grouping_sets(!!selection))
+      expect_identical(
+        actual, verb(data, .grouping = grouping_sets(grouping_set(a, b)))
+      )
+    }
+  }
+})
+
+test_that("unproven injection callee parentheses retain typed selection", {
+  data <- data.frame(a = c("east", "west"), b = c(1L, 1L))
+  observed <- rlang::env(calls = 0L)
+  caller <- rlang::env(baseenv(), `(` = function(x) {
+    observed$calls <- observed$calls + 1L
+    selected <- if (is.character(tidyselect::peek_data()$a)) "b" else "a"
+    function(...) selected
+  })
+  selection <- rlang::new_quosure(
+    quote(base::`(`(marginplyr::grouping_set(!!(list)()))), caller
+  )
+  verbs <- list(inspect_grouping, nest_with_margins, nest_by_with_margins)
+  for (verb in verbs) {
+    observed$calls <- 0L
+    actual <- verb(data, .grouping = grouping_sets(!!selection))
+    expect_identical(
+      actual, verb(data, .grouping = grouping_sets(grouping_set(b)))
+    )
+    expect_identical(observed$calls, 1L)
+  }
+})
+
 test_that("typed authored failures retain the caller's condition once", {
   data <- data.frame(a = c("east", "west"), b = c(1L, 1L))
   observed <- rlang::env(calls = 0L)

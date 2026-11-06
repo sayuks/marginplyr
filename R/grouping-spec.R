@@ -241,11 +241,8 @@ capture_grouping_args <- function(...) {
     return(args)
   }
   expressions <- lapply(args, rlang::quo_get_expr)
-  # substitute() drops quosure attributes; enquos0() exposes a passed body's
-  # expression, while an ordinary formula keeps its leading tilde.
   captured <- vapply(seq_along(args), function(i) {
-    rlang::is_call(written[[i]], "~", n = 1L) &&
-      !identical(written[[i]], expressions[[i]])
+    is_captured_grouping_quosure(written[[i]], args[[i]])
   }, logical(1))
   protected <- lapply(expressions, preserve_grouping_quosures)
   if (!any(captured) && identical(expressions, protected)) {
@@ -262,6 +259,21 @@ capture_grouping_args <- function(...) {
     ), rlang::quo_get_env(arg))
   })
   rlang::new_quosures(as.list(unlist(args, recursive = FALSE)))
+}
+
+# Whether defusal exposed a passed quosure's body. substitute() drops its
+# attributes; an ordinary formula keeps its tilde in the captured expression.
+is_captured_grouping_quosure <- function(written, captured) {
+  !rlang::is_missing(written) && rlang::is_call(written, "~", n = 1L) &&
+    !identical(written, rlang::quo_get_expr(captured))
+}
+
+# Defuse a non-active binding, retaining its raw syntax and captured scope.
+capture_grouping_binding <- function(expr, env) {
+  tryCatch(list(
+    written = list(rlang::eval_bare(rlang::call2(base::substitute, expr), env)),
+    quo = rlang::eval_bare(rlang::call2(rlang::enquo0, expr), env)
+  ), error = function(cnd) NULL)
 }
 
 # Keep already captured quosures opaque to a constructor's next injection pass.

@@ -528,26 +528,32 @@ those changes.
 An authored namespace call admitted by the nested spelling gate runs as the
 caller wrote it, including its namespace operation. That operation, its returned
 callee, or a deferred payload can read selection metadata. Preflight suspends
-before such a call and leaves later arguments unread. The leading-selection pass
+before a call whose capture-time work cannot be settled from names, and leaves
+later arguments unread. The leading-selection pass
 validates the completed prefix and stops at the pending argument. After the
 operation acquires its one faithful typed snapshot, preflight resumes from its
 retained argument records, before typed `.by` resolution. The caller's expression
-then runs once in the typed selection context; it is not tried outside that
-context first. Its returned specification or ordinary selection is retained per
-argument occurrence as above. Literal selections that the spelling gate declines
+then runs once in the typed selection context. Proven name-only calls run once
+in the names selection context instead. Both carry tidyselect's helper mask to
+the original expression, including injection operands. No call is tried outside
+its selection context first. Its returned specification or ordinary selection is
+retained per argument occurrence as above. Literal selections that the spelling gate declines
 continue to run in ordinary selection resolution.
 Caller errors leave the generated selection capture with their original class,
 diagnostic and cause, without an error context naming the capture expression.
 
 This narrows the earlier amendments' promise that every recognized argument is
 read before typed metadata acquisition. Genuine identity wrappers around
-materialized bindings, literal values or actual stock constructors with no
-unresolved injection keep their preflight reading without metadata. Constructor
-capture can execute injection code, so stock identity alone does not establish
-that boundary. An already captured quosure remains opaque to
-a subsequent constructor's injection pass and keeps its own environment.
-A deferred binding, caller constructor or
-namespace operation that cannot establish that path requires typed metadata.
+materialized bindings, literal values or stock constructors whose capture-time
+operands are known retain their preflight reading without typed metadata.
+Literal and materialized injection values execute no caller code. Ordinary
+materialized splices, forwarded quosures, and defused names-only embrace
+arguments retain that path. Deferred promises are read with their expression
+and environment intact, without forcing unknown code; a previously captured
+quosure remains opaque even when its body needs types later. Known names-only
+helper operands use the names proxy, not an absent selection context.
+Constructor identity alone establishes none of those operands. An unproven
+binding, constructor or namespace operation requires typed metadata.
 The namespace operator itself is included: resolving it ahead of the selection
 context would still run caller code too early. No speculative evaluation or
 retry is permitted.
