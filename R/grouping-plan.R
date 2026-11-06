@@ -642,13 +642,18 @@ is_selection_data_peek <- function(expr, env, bound, context) {
 # Only direct matches() arguments can carry stringr pattern objects.
 # `allow_env_pronoun` permits literal reads in the selection context. Neither
 # permission carries into a caller closure's body or defaults.
+# `rebound` names assignments in the expressions being proved; their callees
+# cannot be resolved from an older lexical binding.
 is_name_only_helper_arg <- function(expr,
                                     env,
                                     bound = character(),
                                     seen = list(),
                                     allow_caller_code = TRUE,
                                     allow_stringr_pattern = FALSE,
-                                    allow_env_pronoun = FALSE) {
+                                    allow_env_pronoun = FALSE,
+                                    rebound = selection_rebound_names(
+                                      list(expr)
+                                    )) {
   if (rlang::is_quosure(expr)) {
     # Captured syntax keeps ordinary argument evaluation in its own scope.
     # Enclosing closure formals do not bind names inside that scope.
@@ -682,19 +687,21 @@ is_name_only_helper_arg <- function(expr,
         )
     )
   }
-  if (!selection_call_parens_safe(expr, env, bound)) {
+  callee_bound <- union(bound, rebound)
+  if (!selection_call_parens_safe(expr, env, callee_bound)) {
     return(FALSE)
   }
   if (is_redundant_parens(expr)) {
     return(is_name_only_helper_arg(
       expr[[2L]], env, bound, seen, allow_caller_code, allow_stringr_pattern,
-      allow_env_pronoun
+      allow_env_pronoun, rebound
     ))
   }
   context <- length(seen) == 0L
-  fn <- selection_argument_function(expr, env, bound, context)
-  pattern_call <-
-    allow_stringr_pattern && is_stringr_pattern_call(expr, env, bound, fn)
+  fn <- selection_argument_function(expr, env, callee_bound, context)
+  pattern_call <- allow_stringr_pattern && is_stringr_pattern_call(
+    expr, env, callee_bound, fn
+  )
   if ((!pattern_call && is.null(fn)) || identical(fn, tidyselect::peek_data)) {
     return(FALSE)
   }
@@ -704,7 +711,7 @@ is_name_only_helper_arg <- function(expr,
   }
   if (
     identical(fn, base::names) && length(args) == 1L &&
-      is_selection_data_peek(args[[1L]], env, bound, context)
+      is_selection_data_peek(args[[1L]], env, callee_bound, context)
   ) {
     return(TRUE)
   }
@@ -719,7 +726,8 @@ is_name_only_helper_arg <- function(expr,
     env = env, bound = bound, seen = seen,
     allow_caller_code = allow_caller_code,
     allow_stringr_pattern = leaf_helper && identical(name, "matches"),
-    allow_env_pronoun = allow_env_pronoun
+    allow_env_pronoun = allow_env_pronoun,
+    rebound = rebound
   ))) {
     return(FALSE)
   }
@@ -771,8 +779,32 @@ is_name_only_helper_arg <- function(expr,
     logical(1),
     env = environment(fn),
     bound = names(formals(fn)),
-    seen = c(seen, list(fn))
+    seen = c(seen, list(fn)),
+    rebound = union(rebound, selection_rebound_names(
+      c(as.list(formals(fn)), list(body(fn)))
+    ))
   ))
+}
+
+# Names expressions may assign before a later callee lookup. The proof does not
+# execute assignments or establish their resulting callable values.
+selection_rebound_names <- function(parts) {
+  unique(unlist(lapply(parts, function(expr) {
+    if (!rlang::is_call(expr)) {
+      return(character())
+    }
+    args <- static_call_args(expr)
+    name <- static_call_name(expr)
+    assigned <- if (!is.null(name) && name %in% c("<-", "<<-", "=") &&
+                      length(args) > 0L &&
+                      (is_name_part(args[[1L]]) ||
+                         rlang::is_string(args[[1L]]))) {
+      rlang::as_name(args[[1L]])
+    } else {
+      character()
+    }
+    c(assigned, selection_rebound_names(c(list(static_call_head(expr)), args)))
+  }), use.names = FALSE))
 }
 
 # Whether a call with a resolved callee indexes tidyselect's lexical pronoun.

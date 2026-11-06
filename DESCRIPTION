@@ -337,7 +337,8 @@ Config/testthat/start-first:
     share-member-dependencies,
     margin-label-check-flags,
     dtplyr-head-metadata,
-    authored-grouping-namespaces
+    authored-grouping-namespaces,
+    grouping-rebound-callees
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
