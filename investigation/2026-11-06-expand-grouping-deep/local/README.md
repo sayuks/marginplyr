@@ -70,7 +70,7 @@ source sizes, three packing depths, three roles and three orders. The final
 486 exact matches and 81 ordinary-composition errors, with no package-only
 error or difference.
 
-All 81 excluded cases held an AsIs factor, directly or in a packed key.
+All 81 excluded cases held an AsIs factor.
 Ordinary `union_all()` refused the factor/integer combination; expansion
 reached the same combination boundary. Its vctrs diagnostic named privately
 renamed branch columns. That diagnostic path was recorded rather than promoted
