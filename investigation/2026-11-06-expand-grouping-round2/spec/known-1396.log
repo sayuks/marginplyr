@@ -1,0 +1,32 @@
+Exit code: 0
+$public
+$public$direct
+[1] "b"
+
+$public$direct_calls
+[1] 1
+
+$public$included
+[1] "a"
+
+$public$nested_calls
+[1] 0
+
+
+$private
+$private$direct
+[1] "b"
+
+$private$direct_calls
+[1] 1
+
+$private$included
+[1] "b"
+
+$private$nested_calls
+[1] 1
+
+
+$base_control
+$base_control[[1]]
+[1] "a"

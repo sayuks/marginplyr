@@ -1,0 +1,14 @@
+Ordinary source collected.
+Projection/no-op/root controls passed.
+Safe-name control passed.
+Source/projection/no-op mutation/root/safe-name/materialized controls passed.
+# A tibble: 3 × 3
+  k     FaLsE  rank
+  <chr> <int> <int>
+1 a        21     1
+2 z        17     2
+3 <NA>     35    NA
+Identity expansion contract: FAIL
+simpleError undefined columns selected
+Error: ok is not TRUE
+Execution halted

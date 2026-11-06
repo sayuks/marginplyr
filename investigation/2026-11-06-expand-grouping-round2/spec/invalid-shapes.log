@@ -1,0 +1,9 @@
+character rlang_error/error/condition `quo` must be a quosure
+symbol rlang_error/error/condition `quo` must be a quosure
+call rlang_error/error/condition `quo` must be a quosure
+NULL rlang_error/error/condition `quo` must be a quosure
+number rlang_error/error/condition `quo` must be a quosure
+environment rlang_error/error/condition `quo` must be a quosure
+list rlang_error/error/condition `quo` must be a quosure
+formula rlang_error/error/condition `quo` must be a quosure
+missing getvarError/missingArgError/error/condition argument "captured" is missing, with no default

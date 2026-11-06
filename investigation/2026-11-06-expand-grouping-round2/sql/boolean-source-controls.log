@@ -1,0 +1,75 @@
+window source
+# A tibble: 1 × 3
+  g     `TRUE`     z
+  <chr>  <int> <int>
+1 a          7     1
+window projection
+# A tibble: 1 × 3
+  g     `TRUE`     z
+  <chr>  <int> <int>
+1 a          7     1
+window rename
+# A tibble: 1 × 3
+  g     payload     z
+  <chr>   <int> <int>
+1 a           7     1
+window mutate
+Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE
+window union
+Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE
+window expand-noargs
+undefined columns selected
+collapse source
+# A tibble: 1 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+collapse projection
+# A tibble: 1 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+collapse rename
+Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE
+collapse mutate
+Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE
+collapse union
+Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE
+collapse expand-noargs
+no such column: TRUE
+union source
+# A tibble: 2 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+2 a          7
+union projection
+# A tibble: 2 × 2
+  g     `TRUE`
+  <chr>  <int>
+1 a          7
+2 a          7
+union rename
+Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE
+union mutate
+Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE
+union union
+Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE
+union expand-noargs
+no such column: TRUE

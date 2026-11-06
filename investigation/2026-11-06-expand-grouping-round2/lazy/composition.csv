@@ -1,0 +1,442 @@
+"form","route","sort","status","error","native_error"
+"identity","collect","none","match","",""
+"identity","collect","first","match","",""
+"identity","collect","last","match","",""
+"identity","compute","none","match","",""
+"identity","compute","first","match","",""
+"identity","compute","last","match","",""
+"identity","reader","none","match","",""
+"identity","reader","first","match","",""
+"identity","reader","last","match","",""
+"filter","collect","none","match","",""
+"filter","collect","first","match","",""
+"filter","collect","last","match","",""
+"filter","compute","none","match","",""
+"filter","compute","first","match","",""
+"filter","compute","last","match","",""
+"filter","reader","none","match","",""
+"filter","reader","first","match","",""
+"filter","reader","last","match","",""
+"select","collect","none","match","",""
+"select","collect","first","match","",""
+"select","collect","last","match","",""
+"select","compute","none","match","",""
+"select","compute","first","match","",""
+"select","compute","last","match","",""
+"select","reader","none","match","",""
+"select","reader","first","match","",""
+"select","reader","last","match","",""
+"rename","collect","none","match","",""
+"rename","collect","first","match","",""
+"rename","collect","last","match","",""
+"rename","compute","none","match","",""
+"rename","compute","first","match","",""
+"rename","compute","last","match","",""
+"rename","reader","none","match","",""
+"rename","reader","first","match","",""
+"rename","reader","last","match","",""
+"distinct","collect","none","match","",""
+"distinct","collect","first","ordinary-error","Invalid: Invalid sort key column: No match for FieldRef.Name(dplyr::if_else(.data[[""sid""]] %in% 2L, 1L, 0L)) in k: string
+sid: int32","Invalid: Invalid sort key column: No match for FieldRef.Name(if_else(sid == 2L, 1L, 0L)) in k: string
+sid: int32"
+"distinct","collect","last","ordinary-error","Invalid: Invalid sort key column: No match for FieldRef.Name(dplyr::if_else(.data[[""sid""]] %in% 2L, 1L, 0L)) in k: string
+sid: int32","Invalid: Invalid sort key column: No match for FieldRef.Name(if_else(sid == 2L, 1L, 0L)) in k: string
+sid: int32"
+"distinct","compute","none","match","",""
+"distinct","compute","first","ordinary-error","Invalid: Invalid sort key column: No match for FieldRef.Name(dplyr::if_else(.data[[""sid""]] %in% 2L, 1L, 0L)) in k: string
+sid: int32","Invalid: Invalid sort key column: No match for FieldRef.Name(if_else(sid == 2L, 1L, 0L)) in k: string
+sid: int32"
+"distinct","compute","last","ordinary-error","Invalid: Invalid sort key column: No match for FieldRef.Name(dplyr::if_else(.data[[""sid""]] %in% 2L, 1L, 0L)) in k: string
+sid: int32","Invalid: Invalid sort key column: No match for FieldRef.Name(if_else(sid == 2L, 1L, 0L)) in k: string
+sid: int32"
+"distinct","reader","none","match","",""
+"distinct","reader","first","ordinary-error","Invalid: Invalid sort key column: No match for FieldRef.Name(dplyr::if_else(.data[[""sid""]] %in% 2L, 1L, 0L)) in k: string
+sid: int32","Invalid: Invalid sort key column: No match for FieldRef.Name(if_else(sid == 2L, 1L, 0L)) in k: string
+sid: int32"
+"distinct","reader","last","ordinary-error","Invalid: Invalid sort key column: No match for FieldRef.Name(dplyr::if_else(.data[[""sid""]] %in% 2L, 1L, 0L)) in k: string
+sid: int32","Invalid: Invalid sort key column: No match for FieldRef.Name(if_else(sid == 2L, 1L, 0L)) in k: string
+sid: int32"
+"group","collect","none","match","",""
+"group","collect","first","ordinary-error","Invalid: Invalid sort key column: No match for FieldRef.Name(dplyr::if_else(.data[[""sid""]] %in% 2L, 1L, 0L)) in sid: int32
+z: double","Invalid: Invalid sort key column: No match for FieldRef.Name(if_else(sid == 2L, 1L, 0L)) in sid: int32
+z: double"
+"group","collect","last","ordinary-error","Invalid: Invalid sort key column: No match for FieldRef.Name(dplyr::if_else(.data[[""sid""]] %in% 2L, 1L, 0L)) in sid: int32
+z: double","Invalid: Invalid sort key column: No match for FieldRef.Name(if_else(sid == 2L, 1L, 0L)) in sid: int32
+z: double"
+"group","compute","none","match","",""
+"group","compute","first","ordinary-error","Invalid: Invalid sort key column: No match for FieldRef.Name(dplyr::if_else(.data[[""sid""]] %in% 2L, 1L, 0L)) in sid: int32
+z: double","Invalid: Invalid sort key column: No match for FieldRef.Name(if_else(sid == 2L, 1L, 0L)) in sid: int32
+z: double"
+"group","compute","last","ordinary-error","Invalid: Invalid sort key column: No match for FieldRef.Name(dplyr::if_else(.data[[""sid""]] %in% 2L, 1L, 0L)) in sid: int32
+z: double","Invalid: Invalid sort key column: No match for FieldRef.Name(if_else(sid == 2L, 1L, 0L)) in sid: int32
+z: double"
+"group","reader","none","match","",""
+"group","reader","first","ordinary-error","Invalid: Invalid sort key column: No match for FieldRef.Name(dplyr::if_else(.data[[""sid""]] %in% 2L, 1L, 0L)) in sid: int32
+z: double","Invalid: Invalid sort key column: No match for FieldRef.Name(if_else(sid == 2L, 1L, 0L)) in sid: int32
+z: double"
+"group","reader","last","ordinary-error","Invalid: Invalid sort key column: No match for FieldRef.Name(dplyr::if_else(.data[[""sid""]] %in% 2L, 1L, 0L)) in sid: int32
+z: double","Invalid: Invalid sort key column: No match for FieldRef.Name(if_else(sid == 2L, 1L, 0L)) in sid: int32
+z: double"
+"window","collect","none","match","",""
+"window","collect","first","match","",""
+"window","collect","last","match","",""
+"window","compute","none","match","",""
+"window","compute","first","match","",""
+"window","compute","last","match","",""
+"window","reader","none","match","",""
+"window","reader","first","match","",""
+"window","reader","last","match","",""
+"join_self","collect","none","match","",""
+"join_self","collect","first","ordinary-error","Invalid: Invalid sort key column: No match for FieldRef.Name(dplyr::if_else(.data[[""sid""]] %in% 2L, 1L, 0L)) in k.x: string
+sid: int32
+j.x: int32
+rid: int32
+z.x: double
+k.y: string
+j.y: int32
+z.y: double","Invalid: Invalid sort key column: No match for FieldRef.Name(if_else(sid == 2L, 1L, 0L)) in k.x: string
+j.x: int32
+rid: int32
+z.x: double
+sid: int32
+k.y: string
+j.y: int32
+z.y: double"
+"join_self","collect","last","ordinary-error","Invalid: Invalid sort key column: No match for FieldRef.Name(dplyr::if_else(.data[[""sid""]] %in% 2L, 1L, 0L)) in k.x: string
+sid: int32
+j.x: int32
+rid: int32
+z.x: double
+k.y: string
+j.y: int32
+z.y: double","Invalid: Invalid sort key column: No match for FieldRef.Name(if_else(sid == 2L, 1L, 0L)) in k.x: string
+j.x: int32
+rid: int32
+z.x: double
+sid: int32
+k.y: string
+j.y: int32
+z.y: double"
+"join_self","compute","none","match","",""
+"join_self","compute","first","ordinary-error","Invalid: Invalid sort key column: No match for FieldRef.Name(dplyr::if_else(.data[[""sid""]] %in% 2L, 1L, 0L)) in k.x: string
+sid: int32
+j.x: int32
+rid: int32
+z.x: double
+k.y: string
+j.y: int32
+z.y: double","Invalid: Invalid sort key column: No match for FieldRef.Name(if_else(sid == 2L, 1L, 0L)) in k.x: string
+j.x: int32
+rid: int32
+z.x: double
+sid: int32
+k.y: string
+j.y: int32
+z.y: double"
+"join_self","compute","last","ordinary-error","Invalid: Invalid sort key column: No match for FieldRef.Name(dplyr::if_else(.data[[""sid""]] %in% 2L, 1L, 0L)) in k.x: string
+sid: int32
+j.x: int32
+rid: int32
+z.x: double
+k.y: string
+j.y: int32
+z.y: double","Invalid: Invalid sort key column: No match for FieldRef.Name(if_else(sid == 2L, 1L, 0L)) in k.x: string
+j.x: int32
+rid: int32
+z.x: double
+sid: int32
+k.y: string
+j.y: int32
+z.y: double"
+"join_self","reader","none","match","",""
+"join_self","reader","first","ordinary-error","Invalid: Invalid sort key column: No match for FieldRef.Name(dplyr::if_else(.data[[""sid""]] %in% 2L, 1L, 0L)) in k.x: string
+sid: int32
+j.x: int32
+rid: int32
+z.x: double
+k.y: string
+j.y: int32
+z.y: double","Invalid: Invalid sort key column: No match for FieldRef.Name(if_else(sid == 2L, 1L, 0L)) in k.x: string
+j.x: int32
+rid: int32
+z.x: double
+sid: int32
+k.y: string
+j.y: int32
+z.y: double"
+"join_self","reader","last","ordinary-error","Invalid: Invalid sort key column: No match for FieldRef.Name(dplyr::if_else(.data[[""sid""]] %in% 2L, 1L, 0L)) in k.x: string
+sid: int32
+j.x: int32
+rid: int32
+z.x: double
+k.y: string
+j.y: int32
+z.y: double","Invalid: Invalid sort key column: No match for FieldRef.Name(if_else(sid == 2L, 1L, 0L)) in k.x: string
+j.x: int32
+rid: int32
+z.x: double
+sid: int32
+k.y: string
+j.y: int32
+z.y: double"
+"join_left","collect","none","match","",""
+"join_left","collect","first","ordinary-error","Invalid: Invalid sort key column: No match for FieldRef.Name(dplyr::if_else(.data[[""sid""]] %in% 2L, 1L, 0L)) in k.x: string
+sid: int32
+j.x: int32
+rid: int32
+z.x: double
+k.y: string
+j.y: int32
+z.y: double","Invalid: Invalid sort key column: No match for FieldRef.Name(if_else(sid == 2L, 1L, 0L)) in k.x: string
+j.x: int32
+rid: int32
+z.x: double
+sid: int32
+k.y: string
+j.y: int32
+z.y: double"
+"join_left","collect","last","ordinary-error","Invalid: Invalid sort key column: No match for FieldRef.Name(dplyr::if_else(.data[[""sid""]] %in% 2L, 1L, 0L)) in k.x: string
+sid: int32
+j.x: int32
+rid: int32
+z.x: double
+k.y: string
+j.y: int32
+z.y: double","Invalid: Invalid sort key column: No match for FieldRef.Name(if_else(sid == 2L, 1L, 0L)) in k.x: string
+j.x: int32
+rid: int32
+z.x: double
+sid: int32
+k.y: string
+j.y: int32
+z.y: double"
+"join_left","compute","none","match","",""
+"join_left","compute","first","ordinary-error","Invalid: Invalid sort key column: No match for FieldRef.Name(dplyr::if_else(.data[[""sid""]] %in% 2L, 1L, 0L)) in k.x: string
+sid: int32
+j.x: int32
+rid: int32
+z.x: double
+k.y: string
+j.y: int32
+z.y: double","Invalid: Invalid sort key column: No match for FieldRef.Name(if_else(sid == 2L, 1L, 0L)) in k.x: string
+j.x: int32
+rid: int32
+z.x: double
+sid: int32
+k.y: string
+j.y: int32
+z.y: double"
+"join_left","compute","last","ordinary-error","Invalid: Invalid sort key column: No match for FieldRef.Name(dplyr::if_else(.data[[""sid""]] %in% 2L, 1L, 0L)) in k.x: string
+sid: int32
+j.x: int32
+rid: int32
+z.x: double
+k.y: string
+j.y: int32
+z.y: double","Invalid: Invalid sort key column: No match for FieldRef.Name(if_else(sid == 2L, 1L, 0L)) in k.x: string
+j.x: int32
+rid: int32
+z.x: double
+sid: int32
+k.y: string
+j.y: int32
+z.y: double"
+"join_left","reader","none","match","",""
+"join_left","reader","first","ordinary-error","Invalid: Invalid sort key column: No match for FieldRef.Name(dplyr::if_else(.data[[""sid""]] %in% 2L, 1L, 0L)) in k.x: string
+sid: int32
+j.x: int32
+rid: int32
+z.x: double
+k.y: string
+j.y: int32
+z.y: double","Invalid: Invalid sort key column: No match for FieldRef.Name(if_else(sid == 2L, 1L, 0L)) in k.x: string
+j.x: int32
+rid: int32
+z.x: double
+sid: int32
+k.y: string
+j.y: int32
+z.y: double"
+"join_left","reader","last","ordinary-error","Invalid: Invalid sort key column: No match for FieldRef.Name(dplyr::if_else(.data[[""sid""]] %in% 2L, 1L, 0L)) in k.x: string
+sid: int32
+j.x: int32
+rid: int32
+z.x: double
+k.y: string
+j.y: int32
+z.y: double","Invalid: Invalid sort key column: No match for FieldRef.Name(if_else(sid == 2L, 1L, 0L)) in k.x: string
+j.x: int32
+rid: int32
+z.x: double
+sid: int32
+k.y: string
+j.y: int32
+z.y: double"
+"join_right","collect","none","match","",""
+"join_right","collect","first","match","",""
+"join_right","collect","last","match","",""
+"join_right","compute","none","match","",""
+"join_right","compute","first","match","",""
+"join_right","compute","last","match","",""
+"join_right","reader","none","match","",""
+"join_right","reader","first","match","",""
+"join_right","reader","last","match","",""
+"union_self","collect","none","match","",""
+"union_self","collect","first","ordinary-error","Invalid: UnionNode input schemas must all match, first schema was: k: string
+sid: int32
+j: int32
+rid: int32
+z: double
+dplyr::if_else(.data[[""sid""]] %in% 2L, 1L, 0L): int32
+dplyr::if_else(is.na(.data[[""k""]]), 1L, 0L): int32
+.data[[""k""]]: string
+.data[[""sid""]]: int32 got schema: k: string
+sid: int32
+j: int32
+rid: int32
+z: double","Invalid: UnionNode input schemas must all match, first schema was: k: string
+j: int32
+rid: int32
+z: double
+sid: int32
+if_else(sid == 2L, 1L, 0L): int32
+if_else(is.na(k), 1L, 0L): int32 got schema: k: string
+j: int32
+rid: int32
+z: double
+sid: int32"
+"union_self","collect","last","ordinary-error","Invalid: UnionNode input schemas must all match, first schema was: k: string
+sid: int32
+j: int32
+rid: int32
+z: double
+dplyr::if_else(.data[[""sid""]] %in% 2L, 1L, 0L): int32
+dplyr::if_else(is.na(.data[[""k""]]), 1L, 0L): int32
+.data[[""k""]]: string
+.data[[""sid""]]: int32 got schema: k: string
+sid: int32
+j: int32
+rid: int32
+z: double","Invalid: UnionNode input schemas must all match, first schema was: k: string
+j: int32
+rid: int32
+z: double
+sid: int32
+if_else(sid == 2L, 1L, 0L): int32
+if_else(is.na(k), 1L, 0L): int32 got schema: k: string
+j: int32
+rid: int32
+z: double
+sid: int32"
+"union_self","compute","none","match","",""
+"union_self","compute","first","ordinary-error","Invalid: UnionNode input schemas must all match, first schema was: k: string
+sid: int32
+j: int32
+rid: int32
+z: double
+dplyr::if_else(.data[[""sid""]] %in% 2L, 1L, 0L): int32
+dplyr::if_else(is.na(.data[[""k""]]), 1L, 0L): int32
+.data[[""k""]]: string
+.data[[""sid""]]: int32 got schema: k: string
+sid: int32
+j: int32
+rid: int32
+z: double","Invalid: UnionNode input schemas must all match, first schema was: k: string
+j: int32
+rid: int32
+z: double
+sid: int32
+if_else(sid == 2L, 1L, 0L): int32
+if_else(is.na(k), 1L, 0L): int32 got schema: k: string
+j: int32
+rid: int32
+z: double
+sid: int32"
+"union_self","compute","last","ordinary-error","Invalid: UnionNode input schemas must all match, first schema was: k: string
+sid: int32
+j: int32
+rid: int32
+z: double
+dplyr::if_else(.data[[""sid""]] %in% 2L, 1L, 0L): int32
+dplyr::if_else(is.na(.data[[""k""]]), 1L, 0L): int32
+.data[[""k""]]: string
+.data[[""sid""]]: int32 got schema: k: string
+sid: int32
+j: int32
+rid: int32
+z: double","Invalid: UnionNode input schemas must all match, first schema was: k: string
+j: int32
+rid: int32
+z: double
+sid: int32
+if_else(sid == 2L, 1L, 0L): int32
+if_else(is.na(k), 1L, 0L): int32 got schema: k: string
+j: int32
+rid: int32
+z: double
+sid: int32"
+"union_self","reader","none","match","",""
+"union_self","reader","first","ordinary-error","Invalid: UnionNode input schemas must all match, first schema was: k: string
+sid: int32
+j: int32
+rid: int32
+z: double
+dplyr::if_else(.data[[""sid""]] %in% 2L, 1L, 0L): int32
+dplyr::if_else(is.na(.data[[""k""]]), 1L, 0L): int32
+.data[[""k""]]: string
+.data[[""sid""]]: int32 got schema: k: string
+sid: int32
+j: int32
+rid: int32
+z: double","Invalid: UnionNode input schemas must all match, first schema was: k: string
+j: int32
+rid: int32
+z: double
+sid: int32
+if_else(sid == 2L, 1L, 0L): int32
+if_else(is.na(k), 1L, 0L): int32 got schema: k: string
+j: int32
+rid: int32
+z: double
+sid: int32"
+"union_self","reader","last","ordinary-error","Invalid: UnionNode input schemas must all match, first schema was: k: string
+sid: int32
+j: int32
+rid: int32
+z: double
+dplyr::if_else(.data[[""sid""]] %in% 2L, 1L, 0L): int32
+dplyr::if_else(is.na(.data[[""k""]]), 1L, 0L): int32
+.data[[""k""]]: string
+.data[[""sid""]]: int32 got schema: k: string
+sid: int32
+j: int32
+rid: int32
+z: double","Invalid: UnionNode input schemas must all match, first schema was: k: string
+j: int32
+rid: int32
+z: double
+sid: int32
+if_else(sid == 2L, 1L, 0L): int32
+if_else(is.na(k), 1L, 0L): int32 got schema: k: string
+j: int32
+rid: int32
+z: double
+sid: int32"
+"intersect_self","collect","none","ordinary-error","`x` must be a vector","`x` must be a vector"
+"intersect_self","collect","first","ordinary-error","`x` must be a vector","`x` must be a vector"
+"intersect_self","collect","last","ordinary-error","`x` must be a vector","`x` must be a vector"
+"intersect_self","compute","none","ordinary-error","`x` must be a vector","`x` must be a vector"
+"intersect_self","compute","first","ordinary-error","`x` must be a vector","`x` must be a vector"
+"intersect_self","compute","last","ordinary-error","`x` must be a vector","`x` must be a vector"
+"intersect_self","reader","none","ordinary-error","`x` must be a vector","`x` must be a vector"
+"intersect_self","reader","first","ordinary-error","`x` must be a vector","`x` must be a vector"
+"intersect_self","reader","last","ordinary-error","`x` must be a vector","`x` must be a vector"
+"except","collect","none","ordinary-error","`x` must be a vector","`x` must be a vector"
+"except","collect","first","ordinary-error","`x` must be a vector","`x` must be a vector"
+"except","collect","last","ordinary-error","`x` must be a vector","`x` must be a vector"
+"except","compute","none","ordinary-error","`x` must be a vector","`x` must be a vector"
+"except","compute","first","ordinary-error","`x` must be a vector","`x` must be a vector"
+"except","compute","last","ordinary-error","`x` must be a vector","`x` must be a vector"
+"except","reader","none","ordinary-error","`x` must be a vector","`x` must be a vector"
+"except","reader","first","ordinary-error","`x` must be a vector","`x` must be a vector"
+"except","reader","last","ordinary-error","`x` must be a vector","`x` must be a vector"

@@ -1,0 +1,6 @@
+Command: Rscript /private/tmp/marginplyr-spec-round2/composite-oracle.R 3000
+Archive SHA: 9ffb24614a71512170298a3827bc11c80354e742
+Seed: 906173
+Terminal session: 6811; exit_code: 0
+compared    large     leaf
+    2642       55      303

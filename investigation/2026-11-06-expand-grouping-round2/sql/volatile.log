@@ -1,0 +1,13 @@
+
+         FALSE TRUE
+  duckdb     0   48
+  sqlite     8   40
+   engine name  graph sort   cte    ok              message
+13 sqlite TRUE   root none FALSE FALSE no such column: TRUE
+14 sqlite TRUE   root none  TRUE FALSE no such column: TRUE
+15 sqlite TRUE   root last FALSE FALSE no such column: TRUE
+16 sqlite TRUE   root last  TRUE FALSE no such column: TRUE
+17 sqlite TRUE window none FALSE FALSE no such column: TRUE
+18 sqlite TRUE window none  TRUE FALSE no such column: TRUE
+19 sqlite TRUE window last FALSE FALSE no such column: TRUE
+20 sqlite TRUE window last  TRUE FALSE no such column: TRUE
