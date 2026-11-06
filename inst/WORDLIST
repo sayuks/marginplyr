@@ -38,6 +38,7 @@ rollups
 rowid
 savepoint
 stateful
+stringr
 subqueries
 subquery
 tabset

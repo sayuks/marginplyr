@@ -859,15 +859,26 @@ is_name_only_helper_value <- function(value, allow_stringr_pattern, env,
   is.atomic(value) && !is.object(value)
 }
 
-# Whether consuming a standard pattern can use the names-only proxy. Both
-# matches() and stringr ask length(), whose methods may read selection types.
+# Whether consuming a standard pattern can use the names-only proxy. Pattern
+# length and vctrs proxy methods can read selection types during matching.
 # Inspect method bindings without forcing them or invoking caller methods.
 pattern_consumption_name_only <- function(classes, env) {
-  table <- asNamespace("base")$.__S3MethodsTable__.
-  all(vapply(paste0("length.", c(classes, "default")), function(name) {
-    !rlang::env_has(env, name, inherit = TRUE) &&
-      !rlang::env_has(globalenv(), name, inherit = TRUE) &&
-      !rlang::env_has(table, name)
+  tables <- list(
+    length = asNamespace("base")$.__S3MethodsTable__.,
+    vec_proxy = asNamespace("vctrs")$.__S3MethodsTable__.
+  )
+  all(vapply(names(tables), function(generic) {
+    # vctrs uses a native fallback rather than dispatching vec_proxy.default.
+    method_classes <- if (generic == "length") {
+      c(classes, "default")
+    } else {
+      classes
+    }
+    all(vapply(paste0(generic, ".", method_classes), function(name) {
+      !rlang::env_has(env, name, inherit = TRUE) &&
+        !rlang::env_has(globalenv(), name, inherit = TRUE) &&
+        !rlang::env_has(tables[[generic]], name)
+    }, logical(1)))
   }, logical(1)))
 }
 

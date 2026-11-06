@@ -27,6 +27,9 @@
 * Typed dtplyr Grouping-plan inspection and nesting safely refuse caller
   bracket methods that cannot establish faithful column metadata (#1359).
 
+* Grouping selections using standard stringr patterns preserve typed column
+  metadata when matching dispatches through vctrs proxy methods (#1363).
+
 * dtplyr Margin order now works when the caller binds `::` in the lazy root
   environment (@LeonidasZhak, #1357).
 
