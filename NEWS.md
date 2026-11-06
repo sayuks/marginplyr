@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Unnamed local data-frame summaries apply compatible frame-subclass casts
+  before expanding their columns, preserving converted values (#1399).
+
 * SQLite expansion preserves Boolean-word public column names and applicable
   source types on executable derived inputs, including default one-set
   expansions (#1398).
