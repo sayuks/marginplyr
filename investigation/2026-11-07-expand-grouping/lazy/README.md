@@ -113,10 +113,19 @@ filtering was disabled explicitly so the dot-prefixed fixtures had real rows.
 NULL and string labels, all three Margin orders and direct collection,
 compute followed by collection, and a RecordBatchReader round trip all matched
 independently assembled row copies. Source collection had exactly three rows
-before each family. Comparison canonicalized by occurrence and source row
-identifier, so these were schema/value/multiplicity checks, not independent
-physical-order checks. The [CSV](arrow-hidden-partitions.csv) retained all
-288 matches, and the [log](arrow-hidden-partitions.log) retained exit zero.
+before each family. The final comparator checked all public column names and
+their order before canonicalizing by occurrence and source row identifier.
+These were schema/value/multiplicity checks, not independent physical-order
+checks. The [CSV](arrow-hidden-partitions.csv) retained all 288 final matches,
+and the [log](arrow-hidden-partitions.log) retained exit zero.
+
+Review found that the first comparator projected and reordered its selected
+columns, so its initial 288 comparisons did not establish the claimed public
+schema. A complete rerun with the explicit whole-name/order check supplied the
+final 288 observations, replacing rather than adding to the earlier count.
+The shared [oracle controls](../oracle-controls.R) exercised that actual parsed
+predicate and confirmed that reordered or extra public columns were rejected.
+The final Arrow execution handle `71178` reached terminal exit zero.
 
 An initial exploratory opening used Arrow's default hidden-directory filter
 and read zero rows from the dot-prefixed directory; it supplied none of the
@@ -144,7 +153,8 @@ Rscript investigation/2026-11-07-expand-grouping/lazy/arrow-hidden-partitions.R
 
 All observation scripts reached terminal exit zero. The matrix and minimal
 desired-contract `--assert` invocations reached the expected terminal exit one.
-The Arrow run's original session `49701` was polled to terminal exit zero.
+Both the initial Arrow session `49701` and final strengthened session `71178`
+were polled to terminal exit zero.
 All other final runs returned their terminal status directly; no owned
 execution remained. No package suite, build or render ran in this track.
 

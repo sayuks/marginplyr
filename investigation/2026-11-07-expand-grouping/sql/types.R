@@ -44,7 +44,7 @@ for (extended in c(FALSE, TRUE)) {
             })
             expected <- observe(Reduce(union_all, pieces))
             if (!inherits(expected, "error")) expected <- select(expected, g, sid, everything())
-            comparison <- if (inherits(expected, "error")) "ordinary-error" else if (inherits(actual, "error")) "package-error" else if (isTRUE(all.equal(canonical(actual), canonical(expected)))) "match" else "mismatch"
+            comparison <- if (inherits(expected, "error")) "ordinary-error" else if (inherits(actual, "error")) "package-error" else if (identical(canonical(actual), canonical(expected))) "match" else "mismatch"
             n <- n + 1L
             records[[n]] <- data.frame(extended, decl, shape, rows, family, sort, comparison, diagnostic = if (inherits(actual, "error")) conditionMessage(actual) else "")
             if (comparison %in% c("package-error", "mismatch")) failures[[as.character(n)]] <- list(case = records[[n]], base = b, expected = expected, actual = actual)

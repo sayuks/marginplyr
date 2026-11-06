@@ -49,7 +49,8 @@ for (hidden in c("..marginplyr_arrow_boundary_1", "..marginplyr_arrow_dimension_
             compute = dplyr::collect(dplyr::compute(query)),
             reader = as.data.frame(arrow::as_arrow_table(arrow::as_record_batch_reader(query)))
           )
-          equal <- identical(canonical(actual), expected)
+          equal <- identical(names(actual), c("g", "sid", "rid")) &&
+            identical(canonical(actual), expected)
           results[[length(results) + 1L]] <- data.frame(hidden, shape, label, sort, route, equal)
           if (!equal) {
             print(tail(results, 1L)); print(expected); print(canonical(actual))

@@ -17,7 +17,9 @@ nonempty/empty sources, four grouping families and three sort choices. Families
 included one included set, a rollup, an omitted-first union and repeated
 omitted occurrences. Each expected source was collected independently from
 the exact input query, and omitted values used that column's vctrs prototype.
-Values, public column order, column classes and row multiplicities matched.
+The final predicate used `identical()` on the canonicalized full frames:
+values, public column order, column classes/storage and row multiplicities
+matched.
 Canonicalization by occurrence and source-row identifiers meant that these
 comparisons did not independently establish physical Margin order.
 
@@ -30,9 +32,20 @@ as package findings. The final run collected the exact empty source and used
 binary storage consistently for the BLOB fixture. The original draft supplied
 no passing observations to the final count.
 
-The final original execution handle was `80038`, collected at exit zero;
-the initial execution `34456` also ended at zero. `types.log` and `types.csv`
-retained the final classifications, and `environment.txt` recorded R 4.6.1,
+Review then found that the first corrected predicate used `all.equal()`, which
+could accept integer/double storage differences. It did not establish the
+claimed exact column-type correspondence. The predicate was strengthened to
+`identical()` and all 2,400 comparisons were rerun; only that strengthened run
+supplied the final count. The shared [oracle controls](../oracle-controls.R)
+evaluated the actual parsed predicate against identical input and an
+integer-to-double mutation, confirming that it accepted the former and rejected
+the latter. An initial draft of that control visitor encountered a missing
+function-formal argument; it was corrected before the passing control run and
+supplied no comparison count.
+
+The strengthened final execution handle was `23745`, collected at exit zero;
+the earlier executions `34456` and `80038` also ended at zero. `types.log` and
+`types.csv` retained the final classifications, and `environment.txt` recorded R 4.6.1,
 RSQLite 3.53.3, dplyr 1.2.1 and dbplyr 2.6.0 on arm64 macOS.
 
 Replay from an archive or checkout of the investigated package:

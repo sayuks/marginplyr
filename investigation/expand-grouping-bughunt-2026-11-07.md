@@ -77,7 +77,7 @@ these same-cause observations did not become separate tickets.
 | [Authored namespace wrappers](2026-11-07-expand-grouping/spec/README.md) | 1,500 | 750 admissible fixtures matched direct typed selection under inspection and expansion, including lookup counts; 90 incompatible direct-selection fixtures were excluded. |
 | Constructor capture | 1,331 | 1,000 exact ordinary-capture comparisons and 331 opaque captured-injection checks passed. |
 | Nested typed continuations | 400 | 200 bounded random shapes under keep/drop matched complete inspection and occurrence order; 986 leaf callbacks followed authored depth-first order. |
-| [Hidden Arrow partitions](2026-11-07-expand-grouping/lazy/README.md) | 288 | URI/missing/hidden partition graphs matched exact schema, values and multiplicities under three consumption routes; canonicalization did not establish physical order. |
+| [Hidden Arrow partitions](2026-11-07-expand-grouping/lazy/README.md) | 288 | URI/missing/hidden partition graphs matched public names/order, collected values/types and multiplicities under three consumption routes; canonicalization did not establish physical order. |
 | [SQLite source types](2026-11-07-expand-grouping/sql/README.md) | 2,400 | All source-value/type/schema/multiplicity comparisons matched across ten declarations, both extended-type settings and five source graphs; physical order was not independently checked. |
 
 Lane notes recorded invalid initial oracles and fixture corrections before
@@ -89,6 +89,16 @@ was promoted to a package defect. A suspected `sum` column masking problem
 was refuted in the coordinator's separate archive. No arbitrary-class,
 unbounded-family, warning-identity or general performance claim followed from
 these finite comparisons.
+
+The first Standards/Spec review identified two unsupported measurement claims:
+Arrow projected selected columns before comparison, and SQLite used
+`all.equal()`, which could accept integer/double drift. The investigation
+predicates were strengthened to check Arrow's complete public names/order and
+use exact full-frame identity for SQLite. Both matrices were rerun against
+the same baseline; those strengthened runs replaced their earlier counts.
+[Negative controls](2026-11-07-expand-grouping/oracle-controls.R) evaluated
+the actual parsed predicates and rejected extra/reordered Arrow columns and
+integer-to-double SQLite drift. Package implementation remained unchanged.
 
 ## Main freshness, duplicate checks and replay
 
