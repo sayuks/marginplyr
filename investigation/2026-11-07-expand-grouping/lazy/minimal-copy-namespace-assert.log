@@ -1,0 +1,3 @@
+ordinary rows: 1 expanded rows: 0 restored rows: 1
+Error: nrow(actual) == 1L is not TRUE
+Execution halted

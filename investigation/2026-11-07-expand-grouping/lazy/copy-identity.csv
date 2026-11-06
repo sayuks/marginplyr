@@ -1,0 +1,9 @@
+"shape","id","callbacks","detail_keys_present","expected_detail_keys_present","source_unchanged","warnings"
+"root",FALSE,3,FALSE,TRUE,TRUE,0
+"root",TRUE,3,TRUE,TRUE,TRUE,2
+"filter",FALSE,3,FALSE,TRUE,TRUE,0
+"filter",TRUE,3,TRUE,TRUE,TRUE,0
+"cache",FALSE,4,FALSE,TRUE,TRUE,0
+"cache",TRUE,4,TRUE,TRUE,TRUE,0
+"renamed_cache",FALSE,3,FALSE,TRUE,TRUE,0
+"renamed_cache",TRUE,3,FALSE,TRUE,TRUE,0

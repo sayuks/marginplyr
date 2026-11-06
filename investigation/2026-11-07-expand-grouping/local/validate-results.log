@@ -1,0 +1,5 @@
+Validated 12,672 named-label cases and 1,296 packed-inner-name cases.
+All 288 refusals had the declared factor NA-level diagnostic and NULL remedy.
+`NA_character_` is already a factor level in grouping column:
+ℹ `a`.
+ℹ Use `NULL` in a named-list `.margin_label` for a typed-missing Margin label while preserving the NA level.

@@ -1,0 +1,17 @@
+Warning message:
+Using an external vector in selections was deprecated in tidyselect 1.1.0.
+ℹ Please use `all_of()` or `any_of()` instead.
+  # Was:
+  data %>% select(s)
+
+  # Now:
+  data %>% select(all_of(s))
+
+See <https://tidyselect.r-lib.org/reference/faq-external-vector.html>.
+Excluded syntactic grammar comparisons: 90
+
+TRUE
+ 750
+ [1] outer        inner        payload      constructor  expected
+ [6] actual       reference_n  inspection_n expansion_n  same
+<0 rows> (or 0-length row.names)
