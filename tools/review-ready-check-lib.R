@@ -615,6 +615,7 @@ finish_review_ready_timing <- function(source_root, run) {
 review_ready_check_cli <- function(args, expected_root) {
   run <- NULL
   console <- NULL
+  contracts <- "not-run"
   status <- tryCatch({
     selection <- parse_review_ready_args(args)
     identity <- review_ready_identity(expected_root)
@@ -634,6 +635,12 @@ review_ready_check_cli <- function(args, expected_root) {
     cat("\n==> Test priority metadata\n")
     review_ready_priority_validate(source_root,
       context = paste0("submitted DESCRIPTION (SHA ", identity$sha, ")"))
+    contracts <- "running"
+    run_review_ready_step("Repository contract consistency", list(
+      command = file.path(R.home("bin"), "Rscript"),
+      args = c("-e", "source('tools/repository-contracts.R'); validate_repository_contracts()"),
+      env = character()), source_root, runner = runner)
+    contracts <- "passed"
     prerequisites <- review_ready_prerequisites(read.dcf(file.path(source_root, "DESCRIPTION")))
     required <- run_review_ready_source(source_root, prerequisites, runner = runner)
     if (selection$scope == "source") {
@@ -644,7 +651,7 @@ review_ready_check_cli <- function(args, expected_root) {
       run_review_ready_full(source_root, run, required, prerequisites, runner = runner)
       cat("\nFull package check passed for ", identity$sha, ".\n", sep = "")
     }
-    saveRDS(c(run$metadata, list(status = "passed", heavy_check = if (selection$scope == "source") "omitted" else "passed")),
+    saveRDS(c(run$metadata, list(repository_contracts = contracts, status = "passed", heavy_check = if (selection$scope == "source") "omitted" else "passed")),
       file.path(run$directory, "result.rds"))
     finish_review_ready_timing(source_root, run)
     0L
@@ -656,7 +663,7 @@ review_ready_check_cli <- function(args, expected_root) {
     1L
   })
   if (!is.null(run) && status != 0L) {
-    saveRDS(c(run$metadata, list(status = if (status == 130L) "cancelled" else "failed")),
+    saveRDS(c(run$metadata, list(repository_contracts = if (contracts == "running") "failed" else contracts, status = if (status == 130L) "cancelled" else "failed")),
       file.path(run$directory, "result.rds"))
     if (dir.exists(file.path(run$directory, "timing"))) {
       finish_review_ready_timing(source_root, run)

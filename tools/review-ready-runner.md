@@ -34,7 +34,7 @@ Rscript tools/review-ready.R --scope source --reason 'Explain the heavy-check om
 Rscript tools/review-ready.R --scope full --reason 'Explain why package build/check is needed.'
 ```
 
-Both forms run the six mandatory checks in
+Both forms run repository contract consistency and the six mandatory checks in
 [local checks](../design/agents/local-checks.md#boundary-and-scope) before any shared-slot request.
 The documentation check runs `roxygen2::roxygenise()` in the pinned source
 copy and refuses any filename/content difference from the preserved
@@ -64,7 +64,13 @@ acquiring its invocation guard. This avoids repeated failed nonblocking lock
 acquisition and keeps descriptors bounded. Suspended live owners retain their
 place. Lock, state and ambiguous-ownership errors fail visibly.
 Keep the same execution handle through checking, cleanup and terminal output.
-The result always names the submitted SHA, scope and reason.
+The result always names the submitted SHA, scope and reason. `result.rds` also
+records `repository_contracts` as `not-run`, `failed` or `passed`, including
+normal failures before admission. The console names the stage and mismatch.
+The stage reads only the pinned archive and shares its static R comparison
+with `Rscript tools/verify-ci-artifacts.R`. It needs the already-declared
+`yaml` and `jsonlite` review tools; it invokes neither actionlint nor package
+work. CI retains actionlint syntax and verifier-wiring checks.
 
 The lock at `~/.local/state/marginplyr/review-ready-heavy.lock` is shared by
 this user's marginplyr clones/worktrees on the Mac. The account home is resolved
@@ -278,7 +284,12 @@ repositories/packages establish pinned inputs, scopes, admission, failure,
 cancellation and retention. Progress fixtures exercise real workers, passing
 and failing packages, and startup/exit/teardown diagnostics. Fixture results
 are separate from real package-check and rollout evidence. Workflow contracts,
-CI artifact checks and the release matrix retain their independent roles.
+CI artifact syntax/wiring checks and the release matrix retain their independent
+roles. Static workflow contract comparison is mandatory in both local scopes;
+it is distinct from the excluded infrastructure suites. Changes to these tools
+require their relevant command/process fixtures as development verification.
+Scope follows cumulative package effects under local checks, including its
+package-unaffected infrastructure case and exact-SHA heavy omissions.
 
 ## FIFO adoption
 

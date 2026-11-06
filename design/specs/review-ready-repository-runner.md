@@ -18,6 +18,19 @@ The accepted [#1292 amendment](review-ready-equivalent-source-edits.md) extends
 this target's mandatory checks and scope rule. The repository runner and
 operational instructions adopt both together under #1292.
 
+The accepted #1373 amendment adds repository contract consistency before those
+six checks and heavy admission in both scopes. Its workflow comparison is
+shared with CI, while syntax/wiring and infrastructure suites retain their
+separate routes. In the clauses below, six-check-only names source scope with
+this added static stage. Scope is judged over the cumulative immutable range
+from the latest verifiable full-checked ancestor, or the merge-base with freshly
+fetched main when unavailable. Package-unaffected CI/tool/standalone command
+fixtures may use source with consumer/effect evidence and their relevant
+command/process checks; package effects or uncertainty require full. Every
+source result states its own heavy omissions and inherits no ancestor's full
+result. [Local checks](../agents/local-checks.md#boundary-and-scope) owns the
+evidence and operating rules; the amendment adds no automatic classifier.
+
 ## Problem Statement
 
 Running several marginplyr worktrees concurrently can start several test suites on the same Mac and make it unresponsive. Review-ready has also accumulated routing, evidence reuse, infrastructure self-tests, recovery, and delivery machinery whose complexity is disproportionate to the original coordination problem. Infrastructure self-tests can take longer than the package tests they precede.

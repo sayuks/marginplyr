@@ -88,9 +88,15 @@ local({
     paths <- c("tools/review-ready.R", "tools/review-ready-check-lib.R", "tools/review-ready-fifo.R",
       "tools/review-ready-progress.R", "tools/review-ready-progress-reporter.R",
       "tools/review-ready-timing.R", "tools/review-ready-priority.R",
-      "tools/dependency-requirements.R", "tools/required-test-suggests.R",
+      "tools/dependency-requirements.R", "tools/required-test-suggests.R", "tools/repository-contracts.R",
       ".github/scripts/cran-note-policy.R", "inst/suggests/guard.R")
     for (relative in paths) {
+      dir.create(dirname(file.path(repo, relative)), recursive = TRUE, showWarnings = FALSE)
+      expect(file.copy(file.path(root, relative), file.path(repo, relative)), relative)
+    }
+    for (relative in c("tools/ci-workflow-contracts.json",
+      list.files(file.path(root, ".github/workflows"), full.names = FALSE))) {
+      if (!grepl("/", relative, fixed = TRUE)) relative <- file.path(".github/workflows", relative)
       dir.create(dirname(file.path(repo, relative)), recursive = TRUE, showWarnings = FALSE)
       expect(file.copy(file.path(root, relative), file.path(repo, relative)), relative)
     }
@@ -197,6 +203,37 @@ local({
     directory <- sub("^Artifacts: ", "", grep("^Artifacts: ", lines, value = TRUE))
     expect(length(directory) == 1L, "command names exactly one artifact directory")
     readRDS(file.path(directory, "result.rds"))
+  }
+  source("tools/fixtures/workflow-contract-cases.R", local = TRUE)
+  cases <- workflow_contract_cases()
+  for (name in names(cases)) {
+    contracts <- make_repo(paste0("workflow-", name))
+    cases[[name]]$edit(contracts)
+    git(contracts, "add", "-A")
+    git(contracts, "commit", "--allow-empty", "-qm", name)
+    sha <- git(contracts, "rev-parse", "HEAD")
+    for (scope in c("source", "full")) {
+      # Successful full behavior belongs to the retained real heavy fixtures below.
+      if (scope == "full" && is.null(cases[[name]]$diagnostic)) next
+      status <- if (is.null(cases[[name]]$diagnostic)) 0L else 1L
+      output <- finish(start(contracts, scope), status)
+      record <- result_record(output)
+      expect(identical(record$sha, sha) && identical(record$scope, scope) &&
+        identical(record$repository_contracts, if (status == 0L) "passed" else "failed") &&
+        grepl("==> Repository contract consistency", output, fixed = TRUE),
+        "repository contract outcome identifies its pinned SHA, scope and stage")
+      if (status != 0L) expect(grepl(cases[[name]]$diagnostic, output, fixed = TRUE) &&
+        !grepl("Waiting for heavy|Build source tarball|Source-tarball R CMD check|fixture roxygen executed|fixture spelling executed", output),
+        paste("workflow drift fails before package work or heavy admission:", name, scope))
+      expect(identical(git(contracts, "status", "--porcelain=v1", "--untracked-files=all"), "") &&
+        identical(git(contracts, "rev-parse", "HEAD"), sha), "contract checks never repair committed inputs")
+      state <- file.path(account, ".local/state/marginplyr/review-ready-fifo")
+      expect(!dir.exists(state), "contract failures and source controls never request shared admission")
+    }
+  }
+  if ("--workflow-contracts-only" %in% commandArgs(trailingOnly = TRUE)) {
+    cat("Workflow contract public-command fixtures passed.\n")
+    return(invisible(NULL))
   }
   missing_repo <- make_repo("missing-priority")
   writeLines('test_that("new file", expect_true(TRUE))',

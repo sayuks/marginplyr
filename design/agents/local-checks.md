@@ -44,21 +44,52 @@ Rscript tools/review-ready.R --scope source --reason 'Explain why package build/
 Rscript tools/review-ready.R --scope full --reason 'Explain the package-check obligation.'
 ```
 
-`source` runs the mandatory six checks and omits heavy verification. `full`
-runs those same checks, then waits for the shared heavy slot and automatically
+`source` runs repository contract consistency and the mandatory six checks,
+then omits heavy verification. `full` runs that same baseline, then waits for
+the shared heavy slot and automatically
 builds and checks the source tarball. The AI makes this judgment; the runner
 does not infer scope from paths or reuse a previous result.
 
 Except for the evidence-backed cases below, package-affecting changes require
 `full`: changes to package code, tests,
 examples, vignettes, data, installed files, dependencies, generated
-package documentation, generation sources, build exclusions, or tooling that
-can change a package-check result. A tests-only change is package-affecting.
+package documentation, generation sources, build exclusions, or tooling whose
+effects
+change a package-check result. A package-tests-only change is package-affecting.
 Light prose, documentation or research may use `source` when its effects
 justify omitting package build/check. A filename, directory, extension or
 exclusion from the source package alone is insufficient. Use `full` when the
 effects are uncertain. Change-specific checks still establish the changed
 tooling's contract; a package-check pass alone cannot do that.
+
+### Package-unaffected infrastructure changes
+
+Choose scope over the cumulative diff from the latest verifiable successful
+full-checked ancestor to the submitted SHA. When none is available, use the
+merge-base with freshly fetched `main`. Record the immutable baseline and
+target SHAs, why that baseline applies, changed content, its consumers and
+effects, and the relevant checks and results. A harmless final commit cannot
+hide an earlier package-affecting change. Each source result explicitly records
+`package build/check, complete suite and snapshots omitted`; an ancestor's
+full result certifies only its own SHA and is never inherited.
+
+CI, development-tool, verification and standalone command/process-fixture edits
+may use `source` when their content and consumers establish no package
+build/check effects and their relevant contract/behavior checks pass. A path,
+build exclusion, executable-code edit or infrastructure label alone decides
+neither scope. Standalone tooling fixtures differ from package tests/fixtures,
+which remain package-affecting. Run the affected infrastructure command/process
+fixtures as change-specific verification; routine static consistency does not
+establish their behavior and does not execute those suites automatically.
+
+For example, the isolated PR #1372 repair
+`42d68446423b98cc448a0baf0123c1822866aa61..7537e98d9c4a514d9996cff9cea1a266ab3f53d7`
+qualifies for source plus relevant command fixtures after confirming the two
+expectation repairs and standalone fixture have no package-check consumers,
+with mandatory consistency present. The earlier package implementation in that
+PR still requires full when included in the cumulative diff. A change to a
+package test, dependency, installed file, build behavior or an unresolved
+consumer also requires full. There is no automatic diff classifier.
 
 ### Equivalent explanatory edits
 
@@ -125,7 +156,17 @@ Both forms pin the submitted SHA at invocation and use its disposable committed
 source for every check. Waiting never switches to a later HEAD. A later fix
 must be committed and receive a fresh invocation; a result identifies only its
 submitted revision. After metadata validation, both scopes run the mandatory
-six-check baseline in order:
+repository contract consistency stage, then the six checks in order:
+
+The contract stage statically compares workflow inventory and full executable
+YAML against the independently maintained `tools/ci-workflow-contracts.json`,
+using `tools/repository-contracts.R` with the CI verifier. Missing, malformed
+or inconsistent inputs fail without changing them. Syntax checking with
+actionlint and verifier wiring remain in CI. Routine comparison runs no
+network access, installations, builds, rendering, package tests or infrastructure
+regression suites. A workflow expectation is reconciled manually after review;
+it is never refreshed automatically. This stage precedes review prerequisites
+and the six checks, so a mismatch cannot request shared capacity.
 
 1. a mechanical test-source dependency-declaration scan against `DESCRIPTION`;
 2. the registered optional test Suggests presence and version check;
@@ -145,7 +186,9 @@ replace Rd validation, example execution or CI's documentation/README checks.
 A failed baseline ends that invocation before admission waiting or package
 build/check. Correct and commit the fix explicitly before invoking again.
 `source` ends after this baseline and reports its SHA, omission and supplied
-reason. It is a six-check-only result, never a full package-check pass.
+reason. It establishes repository consistency and the six checks for that SHA,
+never
+a full package-check pass.
 
 After the baseline succeeds, `full` atomically registers in acceptance order
 across this user's marginplyr clones and worktrees on the Mac. Only the oldest
@@ -392,7 +435,9 @@ NOTE is printed; a NOTE outside the shared CRAN policy needs a written
 disposition before review readiness. A failed check ends once. Make and commit
 any fix before starting another invocation.
 
-Record the submitted SHA, chosen scope and reason, all six baseline outcomes,
+Record the submitted SHA, cumulative baseline SHA and basis, consumer/effect
+assessment, change-specific checks/results, chosen scope and reason, repository
+contract consistency and all six check outcomes,
 heavy-check execution or omission, terminal outcome, artifact directory and
 NOTE dispositions in the pull request. A full result includes the source-tarball
 check's errors, warnings and notes and the timing-proposal disposition required
