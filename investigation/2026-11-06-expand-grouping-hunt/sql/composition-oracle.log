@@ -1,0 +1,207 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+sqlite table 72 observations; failures 0
+sqlite filtered 144 observations; failures 0
+sqlite arranged 216 observations; failures 0
+sqlite collapsed 288 observations; failures 0
+sqlite selected 360 observations; failures 0
+sqlite renamed 432 observations; failures 0
+sqlite mutated 504 observations; failures 0
+sqlite window 576 observations; failures 0
+sqlite limited 648 observations; failures 0
+sqlite distinct 720 observations; failures 0
+sqlite unioned 792 observations; failures 0
+sqlite joined 864 observations; failures 0
+sqlite cte 936 observations; failures 0
+sqlite expression 1008 observations; failures 0
+duckdb table 1080 observations; failures 6
+duckdb filtered 1152 observations; failures 12
+duckdb arranged 1224 observations; failures 18
+duckdb collapsed 1296 observations; failures 24
+duckdb selected 1368 observations; failures 30
+duckdb renamed 1440 observations; failures 36
+duckdb mutated 1512 observations; failures 42
+duckdb window 1584 observations; failures 48
+duckdb limited 1656 observations; failures 54
+duckdb distinct 1728 observations; failures 60
+duckdb unioned 1800 observations; failures 66
+duckdb joined 1872 observations; failures 72
+duckdb cte 1944 observations; failures 78
+duckdb expression 2016 observations; failures 84
+[[1]]
+[[1]]$case
+  engine  form spec_name label sorting identifier  cte    ok
+1 duckdb table    rollup  NULL    none       NULL TRUE FALSE
+
+[[1]]$expected
+    f    g    h    v rid
+1   2    b    q  8.5   1
+2   1 <NA>    r   NA   2
+3  NA    a <NA> -2.5   3
+4   1    b    q  0.0   4
+5   2    b <NA>  8.5   1
+6   1 <NA> <NA>   NA   2
+7  NA    a <NA> -2.5   3
+8   1    b <NA>  0.0   4
+9   2 <NA> <NA>  8.5   1
+10  1 <NA> <NA>   NA   2
+11 NA <NA> <NA> -2.5   3
+12  1 <NA> <NA>  0.0   4
+
+[[1]]$actual
+[1] "Failed to interpolate {query_list[[n]]}.\nCaused by error in `query_list[[n]]`:\n! attempt to select less than one element in integerOneIndex"
+
+[[1]]$sql
+[1] "Failed to interpolate {query_list[[n]]}.\nCaused by error in `query_list[[n]]`:\n! attempt to select less than one element in integerOneIndex"
+
+
+[[2]]
+[[2]]$case
+  engine  form spec_name label sorting identifier  cte    ok
+1 duckdb table    rollup   All    none       NULL TRUE FALSE
+
+[[2]]$expected
+    f    g    h    v rid
+1   2    b    q  8.5   1
+2   1 <NA>    r   NA   2
+3  NA    a <NA> -2.5   3
+4   1    b    q  0.0   4
+5   2    b  All  8.5   1
+6   1 <NA>  All   NA   2
+7  NA    a  All -2.5   3
+8   1    b  All  0.0   4
+9   2  All  All  8.5   1
+10  1  All  All   NA   2
+11 NA  All  All -2.5   3
+12  1  All  All  0.0   4
+
+[[2]]$actual
+[1] "Failed to interpolate {query_list[[n]]}.\nCaused by error in `query_list[[n]]`:\n! attempt to select less than one element in integerOneIndex"
+
+[[2]]$sql
+[1] "Failed to interpolate {query_list[[n]]}.\nCaused by error in `query_list[[n]]`:\n! attempt to select less than one element in integerOneIndex"
+
+
+[[3]]
+[[3]]$case
+  engine  form spec_name label sorting identifier  cte    ok
+1 duckdb table      cube  NULL    none       NULL TRUE FALSE
+
+[[3]]$expected
+    f    g    h    v rid
+1   2    b    q  8.5   1
+2   1 <NA>    r   NA   2
+3  NA    a <NA> -2.5   3
+4   1    b    q  0.0   4
+5   2    b <NA>  8.5   1
+6   1 <NA> <NA>   NA   2
+7  NA    a <NA> -2.5   3
+8   1    b <NA>  0.0   4
+9   2 <NA>    q  8.5   1
+10  1 <NA>    r   NA   2
+11 NA <NA> <NA> -2.5   3
+12  1 <NA>    q  0.0   4
+13  2 <NA> <NA>  8.5   1
+14  1 <NA> <NA>   NA   2
+15 NA <NA> <NA> -2.5   3
+16  1 <NA> <NA>  0.0   4
+
+[[3]]$actual
+[1] "Failed to interpolate {query_list[[n]]}.\nCaused by error in `query_list[[n]]`:\n! attempt to select less than one element in integerOneIndex"
+
+[[3]]$sql
+[1] "Failed to interpolate {query_list[[n]]}.\nCaused by error in `query_list[[n]]`:\n! attempt to select less than one element in integerOneIndex"
+
+
+[[4]]
+[[4]]$case
+  engine  form spec_name label sorting identifier  cte    ok
+1 duckdb table      cube   All    none       NULL TRUE FALSE
+
+[[4]]$expected
+    f    g    h    v rid
+1   2    b    q  8.5   1
+2   1 <NA>    r   NA   2
+3  NA    a <NA> -2.5   3
+4   1    b    q  0.0   4
+5   2    b  All  8.5   1
+6   1 <NA>  All   NA   2
+7  NA    a  All -2.5   3
+8   1    b  All  0.0   4
+9   2  All    q  8.5   1
+10  1  All    r   NA   2
+11 NA  All <NA> -2.5   3
+12  1  All    q  0.0   4
+13  2  All  All  8.5   1
+14  1  All  All   NA   2
+15 NA  All  All -2.5   3
+16  1  All  All  0.0   4
+
+[[4]]$actual
+[1] "Failed to interpolate {query_list[[n]]}.\nCaused by error in `query_list[[n]]`:\n! attempt to select less than one element in integerOneIndex"
+
+[[4]]$sql
+[1] "Failed to interpolate {query_list[[n]]}.\nCaused by error in `query_list[[n]]`:\n! attempt to select less than one element in integerOneIndex"
+
+
+[[5]]
+[[5]]$case
+  engine  form spec_name label sorting identifier  cte    ok
+1 duckdb table   reverse  NULL    none       NULL TRUE FALSE
+
+[[5]]$expected
+    f    h    g    v rid
+1   2 <NA> <NA>  8.5   1
+2   1 <NA> <NA>   NA   2
+3  NA <NA> <NA> -2.5   3
+4   1 <NA> <NA>  0.0   4
+5   2    q <NA>  8.5   1
+6   1    r <NA>   NA   2
+7  NA <NA> <NA> -2.5   3
+8   1    q <NA>  0.0   4
+9   2    q    b  8.5   1
+10  1    r <NA>   NA   2
+11 NA <NA>    a -2.5   3
+12  1    q    b  0.0   4
+
+[[5]]$actual
+[1] "Failed to interpolate {query_list[[n]]}.\nCaused by error in `query_list[[n]]`:\n! attempt to select less than one element in integerOneIndex"
+
+[[5]]$sql
+[1] "Failed to interpolate {query_list[[n]]}.\nCaused by error in `query_list[[n]]`:\n! attempt to select less than one element in integerOneIndex"
+
+
+[[6]]
+[[6]]$case
+  engine  form spec_name label sorting identifier  cte    ok
+1 duckdb table   reverse   All    none       NULL TRUE FALSE
+
+[[6]]$expected
+    f    h    g    v rid
+1   2  All  All  8.5   1
+2   1  All  All   NA   2
+3  NA  All  All -2.5   3
+4   1  All  All  0.0   4
+5   2    q  All  8.5   1
+6   1    r  All   NA   2
+7  NA <NA>  All -2.5   3
+8   1    q  All  0.0   4
+9   2    q    b  8.5   1
+10  1    r <NA>   NA   2
+11 NA <NA>    a -2.5   3
+12  1    q    b  0.0   4
+
+[[6]]$actual
+[1] "Failed to interpolate {query_list[[n]]}.\nCaused by error in `query_list[[n]]`:\n! attempt to select less than one element in integerOneIndex"
+
+[[6]]$sql
+[1] "Failed to interpolate {query_list[[n]]}.\nCaused by error in `query_list[[n]]`:\n! attempt to select less than one element in integerOneIndex"

@@ -1,0 +1,10 @@
+Baseline: 952a0d9b18fd3ff4631f153432f6024ad62fcac2
+R version 4.6.1 (2026-06-24)
+dplyr 1.2.1
+dtplyr 1.3.3
+data.table 1.18.6.1
+Refused deterministic empty projections: 90 of 180
+Direct-empty-root and names-only-inspection controls: 180 passed
+Source predicates evaluated: 0 ; empty-selection predicates invoked: 0
+Error: all(r$desired) is not TRUE
+Execution halted

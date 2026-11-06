@@ -1,0 +1,27 @@
+$ordinary
+# A tibble: 4 × 2
+  g            payload
+  <list[,1,2]>   <int>
+1 <int [1]> …       31
+2 <NULL> …          47
+3 <NULL> …          31
+4 <NULL> …          47
+  <chr [1]> …  payload
+  <int [1]> …    <int>
+1 <NULL> …          31
+2 <NULL> …          47
+
+$included_control
+# A tibble: 2 × 2
+  g            payload
+  <list[,1,2]>   <int>
+1 <int [1]> …       31
+2 <NULL> …          47
+  <chr [1]> …  payload
+  <int [1]> …    <int>
+
+$observed
+[1] "A typed-missing `.margin_label` cannot be represented for:\nℹ `g`.\nℹ Choose a supported non-missing label or change the grouping."
+
+Error: !inherits(actual, "error") is not TRUE
+Execution halted

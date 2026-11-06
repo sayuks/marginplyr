@@ -1,0 +1,18 @@
+$typed_reference
+region
+     1
+
+$wrapped_control
+# A tibble: 4 × 3
+  region   sid value
+  <chr>  <int> <int>
+1 east       1    17
+2 west       1    23
+3 <NA>       2    17
+4 <NA>       2    23
+
+$observed
+[1] "ℹ In argument: `matches(pattern)`.\nCaused by error in `vec_proxy()`:\n! proxy requires typed region metadata"
+
+$proxy_contexts
+[1] "integer"
