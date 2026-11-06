@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* SQLite Margin order reuses public value columns instead of projecting
+  duplicate ordering columns, so a single-dimension included-only expansion
+  with 1,999 public columns fits the supported result-column limit (#1384).
+
 * Forwarded Grouping selections preserve qualified-call evaluation and captured
   environments across constructors, inspection, and Margin verbs (#1383).
 
