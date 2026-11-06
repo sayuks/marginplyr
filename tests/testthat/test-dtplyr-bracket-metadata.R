@@ -406,3 +406,124 @@ test_that("typed plans leave unsafe bracket registrations unread", {
     expect_identical(serialize(source, NULL), before)
   })
 })
+
+test_that("standard lazy bracket registrations admit typed derived plans", {
+  skip_if_suggest_absent("dtplyr")
+  source <- data.table::data.table(g = c("a", "b"), value = 1:2)
+  before <- serialize(source, NULL)
+  calls <- 0L
+  probe <- function(x) {
+    calls <<- calls + 1L
+    x > 0L
+  }
+  registry <- get(".__S3MethodsTable__.", envir = baseenv())
+  ordinary <- get("[.data.table", envir = registry, inherits = FALSE)
+  on.exit(assign("[.data.table", ordinary, envir = registry), add = TRUE)
+  base::registerS3method("[", "data.table", "[.data.table",
+                         envir = asNamespace("data.table"))
+  expect_true(rlang::env_binding_are_lazy(registry, "[.data.table")[[1L]])
+  step <- dplyr::filter(dtplyr::lazy_dt(source), probe(value))
+  expect_identical(inspect_grouping(
+    step, .grouping = grouping_set(where(is.character))
+  )$included, "(g)")
+  expect_s3_class(expand_with_margins(step), "dtplyr_step")
+  expect_identical(calls, 0L)
+  expect_identical(serialize(source, NULL), before)
+})
+
+test_that("lookalike lazy registrations cannot run caller bindings", {
+  skip_if_suggest_absent("dtplyr")
+  for (case in c("unknown", "wrong-method", "classed-method", "wrong-home",
+                 "active-method", "lazy-method", "active-home", "lazy-home",
+                 "hidden-get", "active-get", "lazy-get", "missing-method",
+                 "missing-home")) local({
+    source <- data.table::data.table(g = c("a", "b"), value = 1:2)
+    before <- serialize(source, NULL)
+    root <- dtplyr::lazy_dt(source)
+    step <- dplyr::filter(root, value > 0L)
+    registry <- get(".__S3MethodsTable__.", envir = baseenv())
+    ordinary <- get("[.data.table", envir = registry, inherits = FALSE)
+    on.exit({
+      rm("[.data.table", envir = registry)
+      assign("[.data.table", ordinary, envir = registry)
+    }, add = TRUE)
+    wrapper <- new.env(parent = baseenv())
+    wrapper$method <- "[.data.table"
+    wrapper$home <- asNamespace("data.table")
+    calls <- 0L
+    read <- function() {
+      calls <<- calls + 1L
+      stop("caller registration evaluated")
+    }
+    if (case == "wrong-method") wrapper$method <- "merge.data.table"
+    if (case == "classed-method") {
+      wrapper$method <- structure("[.data.table", class = "caller_method")
+    }
+    if (case == "wrong-home") {
+      wrapper$home <- new.env(parent = emptyenv())
+      makeActiveBinding("[.data.table", read, wrapper$home)
+    }
+    if (case == "hidden-get") wrapper$get <- read
+    if (case %in% c("active-method", "active-home", "active-get")) {
+      field <- sub("active-", "", case, fixed = TRUE)
+      if (exists(field, envir = wrapper, inherits = FALSE)) {
+        rm(list = field, envir = wrapper)
+      }
+      makeActiveBinding(field, read, wrapper)
+    }
+    if (case %in% c("lazy-method", "lazy-home", "lazy-get")) {
+      field <- sub("lazy-", "", case, fixed = TRUE)
+      delayedAssign(field, read(), assign.env = wrapper)
+    }
+    if (case %in% c("missing-method", "missing-home")) {
+      rm(list = sub("missing-", "", case, fixed = TRUE), envir = wrapper)
+    }
+    if (case == "unknown") {
+      delayedAssign("[.data.table", read(), assign.env = registry)
+    } else {
+      delayedAssign("[.data.table", get(method, envir = home),
+                    eval.env = wrapper, assign.env = registry)
+    }
+    expect_identical(
+      inspect_grouping(step, .grouping = grouping_set(g))$included, "(g)"
+    )
+    expect_error(inspect_grouping(step, .by = where(is.character)),
+                 "Can't safely determine column metadata", fixed = TRUE,
+                 class = "marginplyr_error")
+    expect_error(expand_with_margins(step), "dplyr::collect()", fixed = TRUE,
+                 class = "marginplyr_error")
+    expect_identical(calls, 0L)
+    expect_true(rlang::env_binding_are_lazy(registry, "[.data.table")[[1L]])
+    expect_identical(serialize(source, NULL), before)
+  })
+})
+
+test_that("unavailable promise inspectors safely refuse lazy registrations", {
+  skip_if_suggest_absent("dtplyr")
+  replacements <- list(NULL, function(...) stop("inspector unavailable"))
+  for (inspector in c("env_binding_delayed_env", "env_binding_delayed_expr")) {
+    for (replacement in replacements) {
+      local({
+        source <- data.table::data.table(g = c("a", "b"), value = 1:2)
+        before <- serialize(source, NULL)
+        step <- dplyr::filter(dtplyr::lazy_dt(source), value > 0L)
+        registry <- get(".__S3MethodsTable__.", envir = baseenv())
+        ordinary <- get("[.data.table", envir = registry, inherits = FALSE)
+        on.exit(assign("[.data.table", ordinary, envir = registry), add = TRUE)
+        base::registerS3method("[", "data.table", "[.data.table",
+                               envir = asNamespace("data.table"))
+        bindings <- stats::setNames(list(replacement), inspector)
+        testthat::local_mocked_bindings(!!!bindings, .package = "rlang")
+        expect_error(inspect_grouping(step, .by = where(is.character)),
+                     "Can't safely determine column metadata", fixed = TRUE,
+                     class = "marginplyr_error")
+        expect_error(
+          expand_with_margins(step), "dplyr::collect()", fixed = TRUE,
+          class = "marginplyr_error"
+        )
+        expect_true(rlang::env_binding_are_lazy(registry, "[.data.table")[[1L]])
+        expect_identical(serialize(source, NULL), before)
+      })
+    }
+  }
+})
