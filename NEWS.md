@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Unnamed local data-frame summaries apply compatible frame-subclass casts
+  before expanding their columns, preserving converted values (#1399).
+
 * Parent and Total share dependency checks retain known summary-mask
   environments saved in local variables through recognized field reads,
   environment accessors and list conversion (#1404).

@@ -12,7 +12,8 @@ new_local_summary_value <- function(value, name,
   vctrs::new_data_frame(
     columns, n = vctrs::vec_size(value),
     class = "margin_summary", ptype = ptype,
-    assigned_name = name
+    assigned_name = name,
+    original_frame = if (is.data.frame(value)) value else NULL
   )
 }
 
@@ -33,6 +34,9 @@ vec_cast.margin_summary.margin_summary <- function(x, to, ...) {
   ptype <- attr(to, "ptype")
   if (inherits(attr(x, "ptype"), "vctrs_unspecified") && is.data.frame(ptype)) {
     value <- vctrs::vec_init(ptype, vctrs::vec_size(x))
+  } else if (is.data.frame(ptype)) {
+    # Frame-level casts may convert values using the original subclass.
+    value <- vctrs::vec_cast(attr(x, "original_frame"), ptype, ...)
   } else {
     value <- vctrs::df_cast(x, to, ...)
   }
