@@ -430,6 +430,10 @@
             }
           },
           {
+            "name": "Verify committed test priority registration",
+            "run": "Rscript tools/verify-test-priority.R"
+          },
+          {
             "uses": "r-lib/actions/setup-tinytex@v2",
             "env": {
               "TINYTEX_INSTALLER": "TinyTeX"

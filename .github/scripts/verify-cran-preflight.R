@@ -136,7 +136,7 @@ expect_identical(
   review_requirements$package,
   c(
     "digest", "filelock", "jsonlite", "lintr", "pkgload", "processx", "ps", "R6",
-    "rcmdcheck", "spelling", "testthat", "yaml"
+    "rcmdcheck", "roxygen2", "spelling", "testthat", "yaml"
   ),
   "the review dependency set"
 )
