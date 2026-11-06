@@ -4,7 +4,8 @@
 new_local_summary_value <- function(value, name,
                                     ptype = vctrs::vec_ptype(value)) {
   columns <- if (is.data.frame(value)) {
-    as.list(value)
+    # new_data_frame() reads the stored columns without subclass conversion.
+    value
   } else {
     stats::setNames(list(value), name)
   }
