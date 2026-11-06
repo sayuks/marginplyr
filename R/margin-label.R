@@ -156,6 +156,10 @@ margin_prototype_is_missing <- function(x) {
   if (is.data.frame(x)) {
     return(all(vapply(x, margin_prototype_is_missing, logical(1))))
   }
+  if (is.array(x) && is.list(x)) {
+    # List cells use NULL missingness without an array class's equality proxy.
+    return(all(vapply(x, is.null, logical(1))))
+  }
   if (is.array(x) || is.factor(x)) {
     return(all(is.na(x)))
   }

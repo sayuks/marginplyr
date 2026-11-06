@@ -1,5 +1,11 @@
 # marginplyr 0.1.0
 
+* Local list-backed matrix and array dimensions accept representable
+  typed-missing Margin labels, including packed dimensions (#1364).
+
+* Margin label collision checks retain accepted logical choices independently
+  of class-specific negation methods across all Margin verbs (#1360).
+
 * Unnamed local data-frame summaries expand their actual columns without
   invoking subclass list conversion on evaluated rows (#1365).
 
