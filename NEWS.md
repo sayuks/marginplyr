@@ -1,5 +1,13 @@
 # marginplyr 0.1.0
 
+* Grouping callbacks that rebind an unproven local function resolve against typed
+  metadata, keeping fixed keys and dimensions consistent across inspection and
+  summaries, including immutable dtplyr inputs (#1400).
+
+* Authored namespace calls around nested Grouping specifications retain the
+  caller's result and captured environment, with one evaluation per argument
+  occurrence across inspection and both Nest verbs (#1396).
+
 * Unnamed local data-frame summaries apply compatible frame-subclass casts
   before expanding their columns, preserving converted values (#1399).
 

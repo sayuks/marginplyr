@@ -149,6 +149,14 @@ test_that("explicit qualified parentheses retain the caller's selection", {
     original <- rlang::duplicate(spec)
     expected_reads <- one_read
     expected_reads[["inner"]] <- as.integer(spelling != "bare")
+    expected_reads[["outer"]] <- if (startsWith(spelling, "whole")) 2L else 1L
+    outer_limit <- expected_reads[["outer"]]
+    observed$reads <- no_reads
+    direct <- names(tidyselect::eval_select(
+      rlang::new_quosure(expr, caller), input
+    ))
+    expect_identical(direct, "a")
+    expect_identical(observed$reads, expected_reads)
     for (consume in list(inspect, expand)) {
       observed$reads <- no_reads
       expect_identical(consume(spec), consume(grouping_sets(a)))
@@ -199,15 +207,18 @@ test_that("explicit qualified parentheses retain the caller's selection", {
   for (spelling in c("qualified", "whole")) {
     selection <- rlang::new_quosure(spellings[[spelling]], caller)
     observed$reads <- no_reads
-    outer_limit <- 1L
+    expected_reads <- one_read
+    expected_reads[["outer"]] <- if (spelling == "whole") 2L else 1L
+    outer_limit <- expected_reads[["outer"]]
     actual <- expect_error(inspect(grouping_sets(!!selection)),
                            class = "vctrs_error_subscript_type")
-    expect_identical(observed$reads, one_read)
+    expect_identical(observed$reads, expected_reads)
 
     observed$reads <- no_reads
     outer_limit <- 2L
     direct <- expect_error(tidyselect::eval_select(selection, input),
                            class = "vctrs_error_subscript_type")
+    expect_identical(observed$reads, expected_reads)
     expect_identical(actual$subscript_arg, direct$subscript_arg)
     expect_identical(conditionMessage(actual), conditionMessage(direct))
   }

@@ -292,6 +292,9 @@ prepare_grouping_plan <- function(.data,
         } else {
           grouping_selection_proxy(data, backend = backend)
         }
+        preflight <- complete_grouping_preflight(
+          preflight, data_vars, data_proxy
+        )
         if (is.null(by)) {
           by <- resolve_by_selection(by_quo, data_proxy)
         }
@@ -642,13 +645,23 @@ is_selection_data_peek <- function(expr, env, bound, context) {
 # Only direct matches() arguments can carry stringr pattern objects.
 # `allow_env_pronoun` permits literal reads in the selection context. Neither
 # permission carries into a caller closure's body or defaults.
+# `rebound` names assignments in the current expression scope; their callees
+# cannot be resolved from an older lexical binding. Only `outer_rebound`, the
+# superassignment targets, carries across another caller closure.
 is_name_only_helper_arg <- function(expr,
                                     env,
                                     bound = character(),
                                     seen = list(),
                                     allow_caller_code = TRUE,
                                     allow_stringr_pattern = FALSE,
-                                    allow_env_pronoun = FALSE) {
+                                    allow_env_pronoun = FALSE,
+                                    rebound = selection_rebound_names(
+                                      list(expr)
+                                    ),
+                                    outer_rebound = selection_rebound_names(
+                                      list(expr), assignments = "<<-",
+                                      env = env, bound = bound, seen = seen
+                                    )) {
   if (rlang::is_quosure(expr)) {
     # Captured syntax keeps ordinary argument evaluation in its own scope.
     # Enclosing closure formals do not bind names inside that scope.
@@ -656,7 +669,11 @@ is_name_only_helper_arg <- function(expr,
       rlang::quo_get_expr(expr), rlang::quo_get_env(expr), seen = seen,
       allow_caller_code = allow_caller_code,
       allow_stringr_pattern = allow_stringr_pattern,
-      allow_env_pronoun = allow_env_pronoun
+      allow_env_pronoun = allow_env_pronoun,
+      outer_rebound = union(outer_rebound, selection_rebound_names(
+        list(rlang::quo_get_expr(expr)), assignments = "<<-",
+        env = rlang::quo_get_env(expr), seen = seen
+      ))
     ))
   }
   if (is_name_part(expr)) {
@@ -682,19 +699,21 @@ is_name_only_helper_arg <- function(expr,
         )
     )
   }
-  if (!selection_call_parens_safe(expr, env, bound)) {
+  callee_bound <- union(bound, union(rebound, outer_rebound))
+  if (!selection_call_parens_safe(expr, env, callee_bound)) {
     return(FALSE)
   }
   if (is_redundant_parens(expr)) {
     return(is_name_only_helper_arg(
       expr[[2L]], env, bound, seen, allow_caller_code, allow_stringr_pattern,
-      allow_env_pronoun
+      allow_env_pronoun, rebound, outer_rebound
     ))
   }
   context <- length(seen) == 0L
-  fn <- selection_argument_function(expr, env, bound, context)
-  pattern_call <-
-    allow_stringr_pattern && is_stringr_pattern_call(expr, env, bound, fn)
+  fn <- selection_argument_function(expr, env, callee_bound, context)
+  pattern_call <- allow_stringr_pattern && is_stringr_pattern_call(
+    expr, env, callee_bound, fn
+  )
   if ((!pattern_call && is.null(fn)) || identical(fn, tidyselect::peek_data)) {
     return(FALSE)
   }
@@ -704,7 +723,7 @@ is_name_only_helper_arg <- function(expr,
   }
   if (
     identical(fn, base::names) && length(args) == 1L &&
-      is_selection_data_peek(args[[1L]], env, bound, context)
+      is_selection_data_peek(args[[1L]], env, callee_bound, context)
   ) {
     return(TRUE)
   }
@@ -719,7 +738,8 @@ is_name_only_helper_arg <- function(expr,
     env = env, bound = bound, seen = seen,
     allow_caller_code = allow_caller_code,
     allow_stringr_pattern = leaf_helper && identical(name, "matches"),
-    allow_env_pronoun = allow_env_pronoun
+    allow_env_pronoun = allow_env_pronoun,
+    rebound = rebound, outer_rebound = outer_rebound
   ))) {
     return(FALSE)
   }
@@ -765,14 +785,67 @@ is_name_only_helper_arg <- function(expr,
   ) {
     return(FALSE)
   }
+  parts <- c(as.list(formals(fn)), list(body(fn)))
   all(vapply(
-    c(as.list(formals(fn)), list(body(fn))),
+    parts,
     is_name_only_helper_arg,
     logical(1),
     env = environment(fn),
     bound = names(formals(fn)),
-    seen = c(seen, list(fn))
+    seen = c(seen, list(fn)),
+    rebound = selection_rebound_names(parts),
+    outer_rebound = union(outer_rebound, selection_rebound_names(
+      parts, assignments = "<<-", env = environment(fn),
+      bound = names(formals(fn)), seen = c(seen, list(fn))
+    ))
   ))
+}
+
+# Names expressions may assign before a later callee lookup. The proof does not
+# execute assignments or establish their resulting callable values. When
+# supplied, `env` also follows resolved caller closures for nonlocal effects.
+selection_rebound_names <- function(parts, assignments = c("<-", "<<-", "="),
+                                    env = NULL, bound = character(),
+                                    seen = list()) {
+  if (!is.null(env)) {
+    bound <- union(bound, selection_rebound_names(parts))
+  }
+  unique(unlist(lapply(parts, function(expr) {
+    if (!rlang::is_call(expr)) {
+      return(character())
+    }
+    args <- static_call_args(expr)
+    name <- static_call_name(expr)
+    assigned <- if (!is.null(name) && name %in% assignments &&
+                      length(args) > 0L &&
+                      (is_name_part(args[[1L]]) ||
+                         rlang::is_string(args[[1L]]))) {
+      rlang::as_name(args[[1L]])
+    } else {
+      character()
+    }
+    fn <- if (!is.null(env)) {
+      selection_argument_function(expr, env, bound)
+    } else {
+      NULL
+    }
+    called <- if (is.function(fn) && !is.primitive(fn) &&
+                    !isNamespace(environment(fn)) &&
+                    !identical(environment(fn), baseenv()) &&
+                    !any(vapply(seen, identical, logical(1), fn))) {
+      selection_rebound_names(
+        c(as.list(formals(fn)), list(body(fn))), assignments = assignments,
+        env = environment(fn), bound = names(formals(fn)),
+        seen = c(seen, list(fn))
+      )
+    } else {
+      character()
+    }
+    c(assigned, called, selection_rebound_names(
+      c(list(static_call_head(expr)), args), assignments = assignments,
+      env = env, bound = bound, seen = seen
+    ))
+  }), use.names = FALSE))
 }
 
 # Whether a call with a resolved callee indexes tidyselect's lexical pronoun.
@@ -1208,17 +1281,25 @@ validate_grouping_overlap <- function(.by, dimensions) {
 # argument: `quo` is the selection quosure and `nested` is this function's
 # answer for it, a preflight of the same shape for a nested specification and
 # `NULL` for a column selection. Expansion below reads that answer instead of
-# taking one, which is what holds a recognized argument to one evaluation
-# (ADR 0008).
+# taking one. Pending arguments suspend this traversal until its caller supplies
+# the typed snapshot; `previous` retains the completed readings (ADR 0008).
 #
 # `spec` is `NULL` only for the absent `.grouping`, which
 # `compile_grouping_spec_impl()` fills in. An empty `args` beside any other
 # `spec` is a specification a caller wrote no arguments for.
 # `ancestors` holds the specifications on this branch only, so independent
 # uses of one specification remain independent readings.
+# `pending` carries a suspension across nested nodes, leaving later arguments
+# unread until the typed continuation.
 preflight_grouping_spec <- function(grouping_spec,
                                     data_vars,
-                                    ancestors = list()) {
+                                    ancestors = list(),
+                                    data_proxy = NULL,
+                                    previous = NULL,
+                                    pending = new.env(parent = emptyenv())) {
+  if (!is.null(previous) && !isTRUE(previous$deferred)) {
+    return(previous)
+  }
   stopifnot(is.character(data_vars), !anyNA(data_vars))
   validate_grouping_spec_early(grouping_spec)
   if (is.null(grouping_spec)) {
@@ -1238,9 +1319,25 @@ preflight_grouping_spec <- function(grouping_spec,
   # (ADR 0005).
   check_named_grouping_args(grouping_spec, rule)
   name_only <- TRUE
+  deferred <- FALSE
   args <- vector("list", length(grouping_spec$args))
   for (i in seq_along(grouping_spec$args)) {
-    captured <- capture_nested_arg(grouping_spec$args[[i]])
+    if (isTRUE(pending$blocked)) {
+      args[[i]] <- list(
+        quo = grouping_spec$args[[i]], nested = NULL, deferred = TRUE
+      )
+      deferred <- TRUE
+      name_only <- FALSE
+      next
+    }
+    prior <- previous$args[[i]]
+    captured <- if (!is.null(prior$arg)) {
+      list(quo = prior$arg, wrappers = prior$wrappers)
+    } else if (!is.null(prior) && !isTRUE(prior$deferred)) {
+      list(quo = prior$quo, wrappers = list())
+    } else {
+      capture_nested_arg(grouping_spec$args[[i]])
+    }
     arg <- captured$quo
     # The refusal is here rather than in the reader below because this is the
     # frame holding what the diagnostic names: the constructor and the
@@ -1249,23 +1346,52 @@ preflight_grouping_spec <- function(grouping_spec,
     if (is_empty_argument(arg)) {
       abort_empty_grouping_arg(rule$constructor, i)
     }
-    reading <- read_grouping_arg(arg, data_vars)
+    reused <- !is.null(prior) && !isTRUE(prior$deferred)
+    reading <- if (reused) {
+      if (is.null(prior$nested)) prior else list(nested = prior$nested$spec)
+    } else {
+      read_grouping_arg(arg, data_vars, captured$wrappers, data_proxy)
+    }
+    if (isTRUE(reading$deferred)) {
+      pending$blocked <- TRUE
+      args[[i]] <- reading
+      deferred <- TRUE
+      name_only <- FALSE
+      next
+    }
     if (is.null(reading$nested)) {
-      check_ambiguous_nested_name(arg, grouping_spec, rule, data_vars)
-      reading$quo <- restore_nested_arg(reading$quo, captured$wrappers)
+      if (!reused && !reading$evaluated) {
+        check_ambiguous_nested_name(arg, grouping_spec, rule, data_vars)
+      }
       name_only <- name_only && is_name_only_selection(reading$quo, data_vars)
       args[[i]] <- reading
       next
     }
 
     nested_preflight <- preflight_grouping_spec(
-      reading$nested, data_vars, ancestors
+      reading$nested, data_vars, ancestors, data_proxy,
+      previous = prior$nested, pending = pending
     )
-    rule$validate_nested(grouping_spec, nested_preflight$spec)
+    if (!isTRUE(nested_preflight$deferred)) {
+      rule$validate_nested(grouping_spec, nested_preflight$spec)
+    }
     name_only <- name_only && nested_preflight$name_only
+    deferred <- deferred || isTRUE(nested_preflight$deferred)
     args[[i]] <- list(quo = arg, nested = nested_preflight)
   }
-  list(spec = grouping_spec, args = args, name_only = name_only, rule = rule)
+  list(spec = grouping_spec, args = args, name_only = name_only, rule = rule,
+       deferred = deferred)
+}
+
+# Complete a suspended preflight against the operation's one typed snapshot.
+# The earlier argument records keep every completed caller reading intact.
+complete_grouping_preflight <- function(preflight, data_vars, data_proxy) {
+  if (!isTRUE(preflight$deferred)) {
+    return(preflight)
+  }
+  preflight_grouping_spec(
+    preflight$spec, data_vars, data_proxy = data_proxy, previous = preflight
+  )
 }
 
 # Reject tagged arguments that carry a value, leaving empty arguments for the
@@ -1522,6 +1648,10 @@ compile_grouping_spec <- function(
     arg_name = ".duplicates"
   )
   stopifnot(identical(preflight$spec, .grouping))
+  preflight <- complete_grouping_preflight(
+    preflight, data_vars,
+    if (is.null(data_proxy)) grouping_name_proxy(data_vars) else data_proxy
+  )
   compile_grouping_spec_impl(
     preflight,
     data_vars = data_vars,
@@ -1705,6 +1835,14 @@ expand_single_grouping_set <- function(preflight, resolve_selection, emit,
   emit_grouping_family(list(set), emit)
 }
 
+# Read a selection, stopping prefix validation at a pending argument.
+grouping_selection_quo <- function(arg) {
+  if (isTRUE(arg$deferred)) {
+    invokeRestart("needs_typed_selection")
+  }
+  arg$quo
+}
+
 # Resolve one set, carrying its known columns if the observed pass defers.
 resolve_grouping_set <- function(preflight, resolve_selection,
                                  observe = FALSE) {
@@ -1723,9 +1861,12 @@ resolve_grouping_set <- function(preflight, resolve_selection,
   }
   for (i in seq_along(args)) {
     arg <- args[[i]]
+    if (isTRUE(arg$nested$deferred)) {
+      invokeRestart("needs_typed_selection")
+    }
     # Preflight refuses nested specifications in a set (ADR 0015, #159).
     stopifnot(is.null(arg$nested))
-    selected[[i]] <- resolve(arg$quo)
+    selected[[i]] <- resolve(grouping_selection_quo(arg))
   }
   columns()
 }
@@ -1746,7 +1887,9 @@ expand_grouping_sets <- function(preflight, resolve_selection, emit,
       preflight$args,
       function(arg) {
         if (is.null(arg$nested)) {
-          return(emit_grouping_family(list(resolve_selection(arg$quo)), emit))
+          return(emit_grouping_family(
+            list(resolve_selection(grouping_selection_quo(arg))), emit
+          ))
         }
         expand_grouping_family(
           arg$nested, resolve_selection, emit, drop_duplicates
@@ -1763,12 +1906,16 @@ resolve_grouping_units <- function(preflight, resolve_selection) {
       preflight$args,
       function(arg) {
         if (is.null(arg$nested)) {
-          cols <- resolve_selection(arg$quo)
+          cols <- resolve_selection(grouping_selection_quo(arg))
           return(lapply(cols, function(col) col))
         }
         # Classified as the guard that admitted this argument classifies
         # (#324): a comparison on the field as read fires here, untyped, for
         # exactly the population that guard now admits.
+        if (isTRUE(arg$nested$deferred) &&
+              !identical(grouping_kind_name(arg$nested$spec$type), "set")) {
+          invokeRestart("needs_typed_selection")
+        }
         stopifnot(identical(grouping_kind_name(arg$nested$spec$type), "set"))
         cols <- resolve_grouping_set(arg$nested, resolve_selection)
         if (length(cols) == 0L) {
@@ -1965,6 +2112,9 @@ single_grouping_factor <- function(arg) {
 # Count occurrences without resolving selections, or return NA when their
 # answers decide the count. Every caller holds a preflighted factor.
 grouping_factor_size <- function(arg) {
+  if (isTRUE(arg$deferred)) {
+    return(NA_real_)
+  }
   if (is.null(arg$nested)) {
     return(1L)
   }
@@ -1983,7 +2133,9 @@ grouping_factors_size <- function(args) {
 expand_grouping_factor <- function(arg, resolve_selection, drop_duplicates,
                                    emit = NULL) {
   if (is.null(arg$nested)) {
-    return(emit_grouping_family(list(resolve_selection(arg$quo)), emit))
+    return(emit_grouping_family(
+      list(resolve_selection(grouping_selection_quo(arg))), emit
+    ))
   }
   expand_grouping_family(arg$nested, resolve_selection, emit, drop_duplicates)
 }
@@ -2228,13 +2380,17 @@ grouping_constructor_names <- function() {
 # Reads a nonempty nested argument into a specification or a selection quosure.
 # A name outside the input or a constructor-shaped call can yield an ordinary
 # selection; its preflight value stays in that argument's environment for the
-# typed pass (ADR 0008).
-read_grouping_arg <- function(arg, data_vars) {
+# typed pass (ADR 0008). `wrappers` holds captured qualified call boundaries;
+# `evaluated` distinguishes a retained answer from an unread column name.
+read_grouping_arg <- function(arg, data_vars, wrappers, data_proxy) {
   expr <- nested_arg_expr(arg)
-  env <- rlang::quo_get_env(arg)
-  selection <- list(quo = arg, nested = NULL)
+  authored <- restore_nested_arg(arg, wrappers)
+  env <- rlang::quo_get_env(authored)
+  evaluation <- unparenthesized_value(rlang::quo_get_expr(authored), ns = "")
+  qualified <- is_redundant_parens(evaluation)
+  selection <- list(quo = authored, nested = NULL, evaluated = FALSE)
   if (
-    is.symbol(expr) &&
+    !qualified && is.symbol(expr) &&
       is_name_only_expr(expr, env = env, data_vars = data_vars)
   ) {
     return(selection)
@@ -2248,29 +2404,67 @@ read_grouping_arg <- function(arg, data_vars) {
   should_evaluate <-
     is_constructor_call ||
     is.symbol(expr) ||
-    !is.language(expr)
+    (!is.language(expr) &&
+     (!qualified || inherits(expr, "margin_grouping_spec")))
   if (!should_evaluate) {
     return(selection)
   }
 
-  value <- rlang::eval_tidy(rlang::new_quosure(expr, env))
+  # Syntactic pairs affect admission only. An authored qualified pair runs
+  # its namespace operation in its captured environment (ADR 0019).
+  evaluate <- function() rlang::eval_tidy(rlang::new_quosure(evaluation, env))
+  authored_namespace <- qualified || !is.null(static_call_ns(expr))
+  value <- if (authored_namespace) {
+    if (is.null(data_proxy) &&
+          !is_name_only_grouping_arg(authored, data_vars)) {
+      return(c(selection, list(
+        deferred = TRUE, arg = arg, wrappers = wrappers
+      )))
+    }
+    # Caller conditions leave the generated capture unchanged (ADR 0008).
+    outcome <- NULL
+    capture <- function(value) {
+      outcome <<- tryCatch(
+        list(value = value), error = function(cnd) list(error = cnd)
+      )
+      integer()
+    }
+    proxy <- if (is.null(data_proxy)) {
+      grouping_name_proxy(data_vars)
+    } else {
+      data_proxy
+    }
+    tidyselect::eval_select(
+      rlang::new_quosure(rlang::call2(capture, evaluation), env), proxy
+    )
+    if (!is.null(outcome$error)) {
+      stop(outcome$error)
+    }
+    outcome$value
+  } else {
+    evaluate()
+  }
+  selection$evaluated <- TRUE
   if (inherits(value, "margin_grouping_spec")) {
     return(list(quo = arg, nested = value))
   }
-  if (is.symbol(expr) || is_constructor_call) {
+  if (is.symbol(expr) || is_constructor_call || qualified) {
     name <- if (is_constructor_call) {
       static_call_name(expr)
-    } else {
+    } else if (is.symbol(expr)) {
       rlang::as_string(expr)
     }
     # Keep the call spelling for tidyselect diagnostics, but answer from the
     # preflight value without forcing the caller's arguments again.
-    retained <- if (is_constructor_call) function(...) value else value
+    retained <- if (is_constructor_call || qualified) {
+      function(...) value
+    } else {
+      value
+    }
     selection_env <- rlang::env(env)
     constructor_head <- if (is_constructor_call) static_call_head(expr)
     # tidyselect strips bare pairs around the selection before evaluation.
-    selection_call <- unparenthesized_value(rlang::quo_get_expr(arg), ns = "")
-    if (is_constructor_call && is_redundant_parens(selection_call)) {
+    if (qualified) {
       rlang::env_bind(selection_env, `::` = function(...) retained)
     } else if (is_redundant_parens(constructor_head, ns = "")) {
       # Answer at the outermost pair without forcing any inner callee lookup.
@@ -2284,9 +2478,160 @@ read_grouping_arg <- function(arg, data_vars) {
     } else {
       rlang::env_bind(selection_env, !!name := retained)
     }
-    selection$quo <- rlang::quo_set_env(arg, selection_env)
+    selection$quo <- rlang::quo_set_env(authored, selection_env)
   }
   selection
+}
+
+# Whether an authored namespace expression needs only the names selection
+# context. The caller supplies the input names and the expression's own scope.
+is_name_only_grouping_arg <- function(arg, data_vars) {
+  expr <- unparenthesized_value(rlang::quo_get_expr(arg), ns = "")
+  env <- rlang::quo_get_env(arg)
+  if (rlang::is_quosure(expr)) {
+    return(is_name_only_grouping_arg(expr, data_vars))
+  }
+  if (is_redundant_parens(expr)) {
+    fn <- selection_argument_function(
+      rlang::call2(expr[[1L]]), env, character()
+    )
+    return(identical(fn, base::`(`) && is_name_only_grouping_arg(
+      rlang::new_quosure(expr[[2L]], env), data_vars
+    ))
+  }
+  if (is_name_part(expr)) {
+    return(!selection_binding_deferred(
+      env, rlang::as_string(expr), allow_namespace_promises = FALSE
+    ))
+  }
+  if (!is.language(expr)) {
+    return(TRUE)
+  }
+  name <- static_spelling_name(expr, "grouping_constructor")
+  if (is.null(name)) {
+    return(FALSE)
+  }
+  stock <- get(name, envir = asNamespace("marginplyr"), inherits = FALSE)
+  selection_call_parens_safe(expr, env) &&
+    identical(selection_argument_function(expr, env, character()), stock) &&
+    all(vapply(static_call_args(expr), grouping_capture_name_only, logical(1),
+               env = env, data_vars = data_vars))
+}
+
+# Whether constructor capture can run against names alone. Quosures already
+# present are opaque values; only injection operands execute during capture.
+grouping_capture_name_only <- function(expr, env, data_vars) {
+  if (rlang::is_missing(expr)) {
+    return(TRUE)
+  }
+  if (rlang::is_quosure(expr)) {
+    return(TRUE)
+  }
+  if (rlang::is_call(expr, "!", n = 1L) &&
+        rlang::is_call(expr[[2L]], "!", n = 1L)) {
+    operand <- expr[[2L]][[2L]]
+    splice <- rlang::is_call(operand, "!", n = 1L)
+    return(grouping_injection_name_only(
+      if (splice) operand[[2L]] else operand, env, splice = splice
+    ))
+  }
+  if (rlang::is_call(expr, "{", n = 1L) &&
+        rlang::is_call(expr[[2L]], "{", n = 1L)) {
+    operand <- expr[[2L]][[2L]]
+    if (!is_name_part(operand)) {
+      return(FALSE)
+    }
+    name <- rlang::as_string(operand)
+    binding <- selection_binding_env(env, name)
+    if (identical(binding, emptyenv()) ||
+          rlang::env_binding_are_active(binding, name)[[1L]]) {
+      return(FALSE)
+    }
+    captured <- capture_grouping_binding(operand, env)
+    if (is.null(captured)) {
+      return(FALSE)
+    }
+    if (is_captured_grouping_quosure(captured$written[[1L]], captured$quo)) {
+      return(grouping_capture_name_only(
+        rlang::quo_get_expr(captured$quo), rlang::quo_get_env(captured$quo),
+        data_vars
+      ))
+    }
+    return(is_name_only_selection(
+      captured$quo, data_vars, allow_caller_code = FALSE
+    ))
+  }
+  !(is.call(expr) || is.pairlist(expr)) ||
+    all(vapply(as.list(expr), grouping_capture_name_only, logical(1),
+               env = env, data_vars = data_vars))
+}
+
+# Whether an injection operand reads known values without running caller code.
+# Deferred promises are defused, not forced; `seen` bounds forwarded cycles.
+grouping_injection_name_only <- function(expr, env, splice = FALSE,
+                                         seen = list()) {
+  if (rlang::is_missing(expr)) {
+    return(TRUE)
+  }
+  if (rlang::is_quosure(expr)) {
+    return(TRUE)
+  }
+  if (is_name_part(expr)) {
+    name <- rlang::as_string(expr)
+    binding <- selection_binding_env(env, name)
+    if (identical(binding, emptyenv())) {
+      return(TRUE)
+    }
+    key <- list(env = binding, name = name)
+    if (any(vapply(seen, identical, logical(1), y = key)) ||
+          rlang::env_binding_are_active(binding, name)[[1L]]) {
+      return(FALSE)
+    }
+    if (selection_binding_deferred(
+      env, name, allow_namespace_promises = FALSE
+    )) {
+      captured <- capture_grouping_binding(expr, env)
+      if (is.null(captured)) {
+        return(FALSE)
+      }
+      if (is_captured_grouping_quosure(captured$written[[1L]], captured$quo)) {
+        return(TRUE)
+      }
+      return(grouping_injection_name_only(
+        rlang::quo_get_expr(captured$quo), rlang::quo_get_env(captured$quo),
+        splice, c(seen, list(key))
+      ))
+    }
+    value <- rlang::env_get(binding, name)
+    return(!splice || is_name_only_splice_value(value))
+  }
+  if (!is.language(expr)) {
+    return(!splice || is_name_only_splice_value(expr))
+  }
+  if (!selection_call_parens_safe(expr, env)) {
+    return(FALSE)
+  }
+  fn <- selection_argument_function(expr, env, character(), context = TRUE)
+  if (identical(fn, base::quote)) {
+    return(TRUE)
+  }
+  if (identical(fn, base::list)) {
+    return(all(vapply(static_call_args(expr), grouping_injection_name_only,
+                      logical(1), env = env, seen = seen)))
+  }
+  is_name_only_helper_arg(expr, env, allow_caller_code = FALSE)
+}
+
+# Whether splicing a materialized value needs no caller-defined coercion.
+is_name_only_splice_value <- function(value) {
+  if (rlang::is_missing(value)) {
+    return(TRUE)
+  }
+  if (identical(class(value), c("quosures", "list"))) {
+    return(all(vapply(unclass(value), rlang::is_quosure, logical(1))))
+  }
+  !is.object(value) &&
+    (is.null(value) || is.atomic(value) || is.list(value) || is.pairlist(value))
 }
 
 # The gate above reads spellings, so a specification a caller's own function

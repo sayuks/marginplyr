@@ -340,6 +340,8 @@ Config/testthat/start-first:
     share-list-writes,
     dtplyr-head-metadata,
     share-environment-aliases,
+    authored-grouping-namespaces,
+    grouping-rebound-callees,
     sqlite-derived-expansion
 VignetteBuilder:
     quarto

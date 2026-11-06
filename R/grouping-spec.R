@@ -232,13 +232,72 @@ grouping_spec <- function(...) {
 
 # Capture tagged arguments without interpreting their values, so preflight can
 # report their original names. Untagged arguments retain tidy-eval capture,
-# including injections and the omission of a trailing empty argument.
+# including injections and the omission of a trailing empty argument. Already
+# captured quosures retain their own injection boundary.
 capture_grouping_args <- function(...) {
+  written <- as.list(substitute(list(...)))[-1L]
   args <- rlang::enquos0(...)
-  if (any(nzchar(rlang::names2(args)))) {
+  if (length(args) == 0L || any(nzchar(rlang::names2(args)))) {
     return(args)
   }
-  rlang::enquos(...)
+  expressions <- lapply(args, rlang::quo_get_expr)
+  captured <- vapply(seq_along(args), function(i) {
+    is_captured_grouping_quosure(written[[i]], args[[i]])
+  }, logical(1))
+  protected <- lapply(expressions, preserve_grouping_quosures)
+  if (!any(captured) && identical(expressions, protected)) {
+    return(rlang::enquos(...))
+  }
+  capture <- function(...) rlang::enquos(..., .ignore_empty = "none")
+  positions <- seq_along(args)
+  # Omit the last raw empty argument before splicing can remove a successor.
+  if (rlang::is_missing(expressions[[length(args)]])) {
+    positions <- positions[-length(positions)]
+  }
+  args <- lapply(positions, function(i) {
+    arg <- args[[i]]
+    if (captured[[i]]) {
+      return(list(arg))
+    }
+    rlang::eval_bare(rlang::call2(
+      capture, !!!list(protected[[i]])
+    ), rlang::quo_get_env(arg))
+  })
+  rlang::new_quosures(as.list(unlist(args, recursive = FALSE)))
+}
+
+# Whether defusal exposed a passed quosure's body. substitute() drops its
+# attributes; an ordinary formula keeps its tilde in the captured expression.
+is_captured_grouping_quosure <- function(written, captured) {
+  !rlang::is_missing(written) && rlang::is_call(written, "~", n = 1L) &&
+    !identical(written, rlang::quo_get_expr(captured))
+}
+
+# Defuse a non-active binding, retaining its raw syntax and captured scope.
+capture_grouping_binding <- function(expr, env) {
+  tryCatch(list(
+    written = list(rlang::eval_bare(rlang::call2(base::substitute, expr), env)),
+    quo = rlang::eval_bare(rlang::call2(rlang::enquo0, expr), env)
+  ), error = function(cnd) NULL)
+}
+
+# Keep already captured quosures opaque to a constructor's next injection pass.
+preserve_grouping_quosures <- function(expr) {
+  if (rlang::is_missing(expr)) {
+    return(rlang::missing_arg())
+  }
+  if (rlang::is_quosure(expr)) {
+    # Injection must receive the captured value rather than evaluate its body.
+    value <- function() expr
+    return(rlang::call2("!", rlang::call2("!", rlang::call2(value))))
+  }
+  if (is.call(expr) || is.pairlist(expr)) {
+    parts <- lapply(as.list(expr), preserve_grouping_quosures)
+    out <- if (is.call(expr)) as.call(parts) else as.pairlist(parts)
+    attributes(out) <- attributes(expr)
+    return(out)
+  }
+  expr
 }
 
 new_grouping_spec <- function(type, args) {
