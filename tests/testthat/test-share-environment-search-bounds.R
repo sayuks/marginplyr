@@ -88,8 +88,13 @@ test_that("known data.table search bounds preserve dependency refusals", {
 })
 
 expect_independent_bounds <- function(data) {
+  stop_frame <- function() parent.frame()
   external <- rlang::new_environment(list(prior = 7), parent = baseenv())
   reads <- alist(
+    rlang::env_get(
+      rlang::current_env(), "prior", inherit = TRUE,
+      last = stop_frame(), default = 7
+    ),
     sum(rlang::env_get(external, "prior", inherit = isTRUE(TRUE))),
     sum(rlang::env_get(external, "prior", inherit = isTRUE(TRUE),
                        last = identity(globalenv()))),
@@ -161,10 +166,23 @@ test_that("search-bound refusal does not evaluate caller option expressions", {
     probe$last_reads <- probe$last_reads + 1L
     globalenv()
   }
+  shadowed_stop_frame <- local({
+    # The base frame reader fixes the binding name under test.
+    parent.frame <- last_option # nolint: object_name_linter.
+    function() parent.frame()
+  })
+  rebound_stop_frame <- function() parent.frame()
   reads <- alist(
     sum(rlang::env_get(environment(), "prior", inherit = inherit_option())),
     sum(rlang::env_get(environment(), "prior", inherit = TRUE,
-                       last = last_option()))
+                       last = last_option())),
+    sum(rlang::env_get(environment(), "prior", inherit = TRUE,
+                       last = shadowed_stop_frame())),
+    {
+      rebound_stop_frame <- last_option
+      sum(rlang::env_get(environment(), "prior", inherit = TRUE,
+                         last = rebound_stop_frame()))
+    }
   )
   expect_bound_dependencies(data, reads)
   expect_identical(probe$inherit_reads, 0L)
