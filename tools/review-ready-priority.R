@@ -130,7 +130,7 @@ review_ready_priority_evidence <- function(root, run) {
   if (!identical(metadata$version, 1L) || !identical(metadata$scope, "full") ||
       !is.character(metadata$sha) || length(metadata$sha) != 1L ||
       is.na(metadata$sha) || !grepl("^[0-9a-f]{40}$", metadata$sha) ||
-      !identical(terminal, c(metadata, list(status = "passed", heavy_check = "passed"))) ||
+      !identical(terminal, c(metadata, list(repository_contracts = "passed", status = "passed", heavy_check = "passed"))) ||
       !identical(manifest$version, 1L) || !identical(manifest$sha, metadata$sha) ||
       !identical(manifest$started_utc, metadata$started_utc) ||
       !identical(evidence$version, 1L) || !isTRUE(evidence$eligible)) {
