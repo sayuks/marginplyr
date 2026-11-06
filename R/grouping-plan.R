@@ -869,7 +869,11 @@ pattern_consumption_name_only <- function(classes, env) {
   )
   all(vapply(names(tables), function(generic) {
     # vctrs uses a native fallback rather than dispatching vec_proxy.default.
-    method_classes <- if (generic == "length") c(classes, "default") else classes
+    method_classes <- if (generic == "length") {
+      c(classes, "default")
+    } else {
+      classes
+    }
     all(vapply(paste0(generic, ".", method_classes), function(name) {
       !rlang::env_has(env, name, inherit = TRUE) &&
         !rlang::env_has(globalenv(), name, inherit = TRUE) &&

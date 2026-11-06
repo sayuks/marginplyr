@@ -167,10 +167,9 @@ test_that("dtplyr pattern proxies agree with typed tidyselect", {
 
 # A typed pattern must stop at unsafe metadata before any caller method runs.
 check_pattern_metadata_refusal <- function(generic) {
-  calls <- 0L
-  method_calls <- 0L
+  counter <- rlang::env(calls = 0L, method_calls = 0L)
   method <- function(x) {
-    method_calls <<- method_calls + 1L
+    counter$method_calls <- counter$method_calls + 1L
     1L
   }
   rlang::local_bindings(
@@ -181,12 +180,14 @@ check_pattern_metadata_refusal <- function(generic) {
   )
   source <- data.frame(a = "x", b = 1L)
   transform <- function(x) {
-    calls <<- calls + 1L
+    counter$calls <- counter$calls + 1L
     paste0(x, "!")
   }
-  step <- dplyr::mutate(dtplyr::lazy_dt(source), added = transform(a))
+  step <- dplyr::mutate(dtplyr::lazy_dt(source), added = transform(.data$a))
   pattern <- stringr::regex("a")
-  selections <- rlang::quos(matches(pattern), matches(stringr::regex("a")))
+  selections <- rlang::quos(
+    tidyselect::matches(pattern), tidyselect::matches(stringr::regex("a"))
+  )
   for (selection in selections) {
     expect_error(
       inspect_grouping(step, .by = !!selection),
@@ -197,8 +198,8 @@ check_pattern_metadata_refusal <- function(generic) {
       "Can't safely determine column metadata", class = "marginplyr_error"
     )
   }
-  expect_identical(method_calls, 0L)
-  expect_identical(calls, 0L)
+  expect_identical(counter$method_calls, 0L)
+  expect_identical(counter$calls, 0L)
   expect_identical(source, data.frame(a = "x", b = 1L))
 }
 
@@ -210,23 +211,24 @@ test_that("pattern methods defer before unsafe dtplyr metadata without reads", {
 
 # Classifying method presence must not force active or promised bindings.
 check_deferred_pattern_methods <- function(generic) {
-  calls <- 0L
+  counter <- rlang::env(calls = 0L)
   env <- rlang::env(pattern = stringr::fixed("a"))
   makeActiveBinding(paste0(generic, ".stringr_fixed"), function() {
-    calls <<- calls + 1L
+    counter$calls <- counter$calls + 1L
     stop("method binding forced")
   }, env)
   delayedAssign(
-    paste0(generic, ".stringr_pattern"), stop("promise forced"), assign.env = env
+    paste0(generic, ".stringr_pattern"), stop("promise forced"),
+    assign.env = env
   )
   source <- data.frame(a = "x")
-  step <- dplyr::mutate(dtplyr::lazy_dt(source), b = paste0(a, "!"))
+  step <- dplyr::mutate(dtplyr::lazy_dt(source), b = paste0(.data$a, "!"))
   selection <- rlang::new_quosure(quote(matches(pattern)), env)
   expect_error(
     inspect_grouping(step, .by = !!selection),
     "Can't safely determine column metadata", class = "marginplyr_error"
   )
-  expect_identical(calls, 0L)
+  expect_identical(counter$calls, 0L)
   expect_true(rlang::env_binding_are_lazy(
     env, paste0(generic, ".stringr_pattern")
   )[[1L]])
@@ -240,10 +242,10 @@ test_that("pattern classification leaves deferred method bindings unforced", {
 
 # S3 dispatch still consults global methods when a selection's scope does not.
 check_global_pattern_method <- function(generic) {
-  reads <- logical()
+  counter <- rlang::env(reads = logical())
   method <- function(x) {
     typed <- is.character(tidyselect::peek_data()$a)
-    reads <<- c(reads, typed)
+    counter$reads <- c(counter$reads, typed)
     if (generic == "vec_proxy") {
       if (!typed) {
         stop("pattern proxy requires character column metadata")
@@ -260,10 +262,10 @@ check_global_pattern_method <- function(generic) {
   selection <- rlang::new_quosure(quote(tidyselect::matches(pattern)), env)
   data <- data.frame(a = "x", b = 1L)
   expect_identical(names(tidyselect::eval_select(selection, data)), "a")
-  reads <- logical()
+  counter$reads <- logical()
   expect_identical(inspect_grouping(data, .by = !!selection)$fixed, "(a)")
-  expect_true(length(reads) > 0L)
-  expect_true(all(reads))
+  expect_true(length(counter$reads) > 0L)
+  expect_true(all(counter$reads))
 }
 
 test_that("global pattern methods remain visible to isolated caller scopes", {
@@ -280,7 +282,9 @@ test_that("unrelated pattern methods preserve ordinary names-only matching", {
     stop("unrelated method ran")
   }
   rlang::local_bindings(length.unrelated_pattern = method, .env = globalenv())
-  rlang::local_bindings(vec_proxy.unrelated_pattern = method, .env = globalenv())
+  rlang::local_bindings(
+    vec_proxy.unrelated_pattern = method, .env = globalenv()
+  )
   source <- data.frame(a = "x", b = 1L)
   step <- dplyr::mutate(dtplyr::lazy_dt(source), added = paste0(a, "!"))
   for (modifier in c("regex", "fixed", "coll")) {
