@@ -117,22 +117,76 @@ dtplyr_function_binding <- function(name, env, expected, fallback = FALSE) {
   fallback
 }
 
+# Whether an unevaluated registration only reads the expected data.table
+# method through base's registerS3method() wrapper. Unknown promises stay
+# unread.
+dtplyr_standard_method_promise <- function(name, registry, expected) {
+  ns <- asNamespace("rlang")
+  delayed_env <- get0("env_binding_delayed_env", envir = ns, inherits = FALSE)
+  delayed_expr <- get0("env_binding_delayed_expr", envir = ns, inherits = FALSE)
+  if (!is.function(delayed_env) || !is.function(delayed_expr)) {
+    return(FALSE)
+  }
+  tryCatch({
+    wrapper <- delayed_env(registry, as.name(name))
+    expr <- delayed_expr(registry, as.name(name))
+    if (!identical(expr, quote(get(method, envir = home))) ||
+          !is.environment(wrapper) ||
+          !dtplyr_function_binding("get", wrapper, base::get)) {
+      return(FALSE)
+    }
+    if (!all(vapply(c("method", "home"), function(field) {
+      exists(field, envir = wrapper, inherits = FALSE) &&
+        !bindingIsActive(field, wrapper) &&
+        !rlang::env_binding_are_lazy(wrapper, field)
+    }, logical(1)))) {
+      return(FALSE)
+    }
+    method <- rlang::env_get(wrapper, "method")
+    home <- rlang::env_get(wrapper, "home")
+    is.character(method) && !is.object(method) &&
+      identical(unname(method), name) &&
+      identical(home, asNamespace("data.table")) &&
+      identical(get(method, envir = home, inherits = FALSE), expected)
+  }, error = function(...) FALSE)
+}
+
+# Whether the S3 registry holds the expected method, directly or through its
+# verified standard registration, without evaluating active or unknown bindings.
+dtplyr_registered_method <- function(name, expected) {
+  registry <- get(".__S3MethodsTable__.", envir = baseenv())
+  if (!exists(name, envir = registry, inherits = FALSE) ||
+        bindingIsActive(name, registry)) {
+    return(FALSE)
+  }
+  if (rlang::env_binding_are_lazy(registry, name)) {
+    return(dtplyr_standard_method_promise(name, registry, expected))
+  }
+  identical(rlang::env_get(registry, name), expected)
+}
+
 # A full join must reach the ordinary generic and data.table method, including
 # S3 lookup in the effective query environment before registered-method lookup.
 dtplyr_merge_binding <- function(env) {
   method <- get("merge.data.table", envir = asNamespace("data.table"))
-  registry <- get(".__S3MethodsTable__.", envir = baseenv())
   dtplyr_function_binding("merge", env, base::merge) &&
     dtplyr_function_binding(
       "merge.data.table", env, method,
       # The fallback promise leaves an inapplicable registration unread.
-      fallback = exists(
-        "merge.data.table", envir = registry, inherits = FALSE
-      ) &&
-        !bindingIsActive("merge.data.table", registry) &&
-        !rlang::env_binding_are_lazy(registry, "merge.data.table") &&
-        identical(rlang::env_get(registry, "merge.data.table"), method)
+      fallback = dtplyr_registered_method("merge.data.table", method)
     )
+}
+
+# Generated brackets must reach the ordinary generic and data.table method.
+# Proxy truncation also dispatches outside the query's lexical environment, so
+# the registration must be safe even when a lexical method applies.
+dtplyr_bracket_binding <- function(env) {
+  method <- get("[.data.table", envir = asNamespace("data.table"))
+  dtplyr_function_binding("[", env, base::`[`) &&
+    dtplyr_function_binding(
+      "[.data.table", env, method, fallback = TRUE
+    ) &&
+    dtplyr_registered_method("[.data.table", method)
 }
 
 # Only base arithmetic over known plain numeric bindings has an output type
@@ -204,8 +258,8 @@ dtplyr_join_set_types_match <- function(step, env = step[["env"]]) {
   }, error = function(...) FALSE)
 }
 
-# A subset is metadata preserving only when `j` names existing columns. Its
-# `i` may be any row predicate; the proxy below never evaluates it.
+# A subset preserves metadata when `j` names existing columns or is literal
+# zero with no output columns. Its `i` is never evaluated by the proxy below.
 dtplyr_metadata_subset_columns <- function(step) {
   parent_vars <- step[["parent"]][["vars"]]
   j <- step[["j"]]
@@ -214,6 +268,9 @@ dtplyr_metadata_subset_columns <- function(step) {
       return(parent_vars)
     }
     return(NULL)
+  }
+  if (identical(j, 0L) && identical(step[["vars"]], character())) {
+    return(character())
   }
   if (!is.call(j)) {
     return(NULL)
@@ -273,7 +330,7 @@ dtplyr_metadata_safe_step <- function(step, env = step[["env"]]) {
        (!is.null(step[["i"]]) || !is.null(step[["j"]]))) ||
     (inherits(step, "dtplyr_step_join") &&
        !identical(step[["style"]], "full"))
-  if (brackets && !dtplyr_function_binding("[", env, base::`[`)) {
+  if (brackets && !dtplyr_bracket_binding(env)) {
     return(FALSE)
   }
   # Full joins generate a bare merge instead of a bracket operation.
