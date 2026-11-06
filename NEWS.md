@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Forwarded Grouping selections preserve qualified-call evaluation and captured
+  environments across constructors, inspection, and Margin verbs (#1383).
+
 * Parent and Total share dependency checks retain computed mask-member reads,
   unproven environment search bounds, bulk environment reads, and known local
   closure transfers while preserving proven independent reads (#1385, #1386,
