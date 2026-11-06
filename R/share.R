@@ -5621,33 +5621,77 @@ lookup_reparented_environments <- function(
   ), recursive = FALSE))
 }
 
-# Whether a literal parent lookup reaches the mask's column bindings. At
-# summary level dplyr places them in the parent of the evaluation frame.
-# Inside a lexical child, a single parent lookup instead reaches its enclosure.
+# Whether an explicit environment path reaches the mask's own bindings.
 is_static_mask_parent <- function(expr, scope, lookup) {
-  if (length(scope) != 1L || !rlang::is_call(expr)) {
-    return(FALSE)
-  }
-  parent <- unparenthesized_call(expr)
-  if (!identical(static_call_name(parent), "parent.env") ||
-        length(parent) != 2L ||
-        !is_known_base_frame_call(parent, "parent.env", scope, lookup)) {
-    return(FALSE)
-  }
-  frame <- parent[[2L]]
-  !missing(frame) &&
-    identical(static_call_name(frame), "environment") &&
-    length(static_call_args(frame)) == 0L &&
-    is_known_base_frame_call(frame, "environment", scope, lookup)
+  identical(static_environment_frame(expr, scope, lookup), length(scope) + 1L)
 }
 
-# An inheriting lookup from the current evaluation frame follows the same
-# lexical bindings as a bare name. Only known stop frames beyond the mask
-# preserve that path when `last` is supplied.
+# Resolve a literal environment path to a lexical frame index. The index after
+# the summary frame denotes dplyr's column mask; no caller expression is run.
+static_environment_frame <- function(expr, scope, lookup) {
+  expr <- unparenthesized_value(expr)
+  name <- static_call_name(expr)
+  if (length(static_call_args(expr)) == 0L &&
+        ((identical(name, "environment") &&
+            is_known_base_frame_call(expr, name, scope, lookup)) ||
+           (identical(name, "current_env") &&
+              is_known_namespace_frame_call(expr, "rlang", scope, lookup)))) {
+    return(1L)
+  }
+  depth <- static_parent_frame_depth(expr, scope, lookup)
+  if (!is.null(depth) && depth < length(scope) &&
+    all(vapply(scope[seq_len(depth)], function(frame) {
+      isTRUE(frame$invoked)
+    }, logical(1)))) {
+    return(depth + 1L)
+  }
+  if (identical(name, "as.environment") && length(expr) == 2L &&
+        is_known_base_frame_call(expr, name, scope, lookup)) {
+    return(static_environment_frame(expr[[2L]], scope, lookup))
+  }
+  base_parent <- identical(name, "parent.env") && length(expr) == 2L &&
+    is_known_base_frame_call(expr, name, scope, lookup)
+  rlang_parent <- identical(name, "env_parent") &&
+    is_known_namespace_frame_call(expr, "rlang", scope, lookup)
+  if (!base_parent && !rlang_parent) {
+    return(NULL)
+  }
+  args <- if (base_parent) {
+    static_matched_arguments(expr, base::parent.env)
+  } else {
+    static_matched_arguments(expr, rlang::env_parent)
+  }
+  frame <- static_environment_frame(args$env, scope, lookup)
+  steps <- if ("n" %in% names(args)) unparenthesized_value(args$n) else 1L
+  if (is.null(frame) || is.object(steps) || !is.numeric(steps) ||
+        length(steps) != 1L || !is.finite(steps) || steps < 0 ||
+        steps > length(scope) || steps != as.integer(steps)) {
+    return(NULL)
+  }
+  while (steps > 0L && frame <= length(scope)) {
+    frame <- frame + (scope[[frame]]$enclosing %||% 1L)
+    steps <- steps - 1L
+  }
+  if (steps == 0L) frame else NULL
+}
+
+# A lookup on the mask reads its own bindings regardless of inheritance.
+# An inheriting lookup from a lexical frame follows its visible bindings.
+# Only known stop frames beyond the mask preserve that path with `last`.
 inheriting_env_get_symbols <- function(expr, scope, lookup) {
   args <- static_matched_arguments(expr, rlang::env_get)
-  if (!identical(unparenthesized_value(args$inherit), TRUE) ||
-        !rlang::is_string(unparenthesized_value(args$nm))) {
+  if (!rlang::is_string(unparenthesized_value(args$nm))) {
+    return(character())
+  }
+  frame <- static_environment_frame(args$env, scope, lookup)
+  if (is.null(frame)) {
+    return(character())
+  }
+  name <- unparenthesized_value(args$nm)
+  if (frame > length(scope)) {
+    return(name)
+  }
+  if (!identical(unparenthesized_value(args$inherit), TRUE)) {
     return(character())
   }
   if ("last" %in% names(args)) {
@@ -5659,19 +5703,8 @@ inheriting_env_get_symbols <- function(expr, scope, lookup) {
       return(character())
     }
   }
-  frame <- args$env
-  if (missing(frame) || length(static_call_args(frame)) != 0L) {
-    return(character())
-  }
-  rlang_frame <- identical(static_call_name(frame), "current_env") &&
-    is_known_namespace_frame_call(frame, "rlang", scope, lookup)
-  base_frame <- identical(static_call_name(frame), "environment") &&
-    is_known_base_frame_call(frame, "environment", scope, lookup)
-  if (!rlang_frame && !base_frame) {
-    return(character())
-  }
-  name <- unparenthesized_value(args$nm)
-  scoped_data_symbols(rlang::sym(name), scope, lookup)
+  scoped_data_symbols(rlang::sym(name), scope[seq.int(frame, length(scope))],
+                      lookup)
 }
 
 # The names a reflective lookup resolves in the mask.

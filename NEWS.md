@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Parent and Total share dependency checks recognize equivalent explicit
+  environment paths to the summary mask, including nested literal functions
+  and local evaluation (#1368).
+
 * dtplyr Margin order now works when the caller binds `::` in the lazy root
   environment (@LeonidasZhak, #1357).
 

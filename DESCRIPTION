@@ -323,7 +323,8 @@ Config/testthat/start-first:
     namespace-walk,
     retail-sales,
     package-metadata,
-    dependency-floor
+    dependency-floor,
+    share-environment-paths
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
