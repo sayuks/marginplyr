@@ -541,8 +541,12 @@ diagnostic and cause, without an error context naming the capture expression.
 
 This narrows the earlier amendments' promise that every recognized argument is
 read before typed metadata acquisition. Genuine identity wrappers around
-materialized bindings, literal values or actual stock constructors keep their
-preflight reading without metadata. A deferred binding, caller constructor or
+materialized bindings, literal values or actual stock constructors with no
+unresolved injection keep their preflight reading without metadata. Constructor
+capture can execute injection code, so stock identity alone does not establish
+that boundary. An already captured quosure remains opaque to
+a subsequent constructor's injection pass and keeps its own environment.
+A deferred binding, caller constructor or
 namespace operation that cannot establish that path requires typed metadata.
 The namespace operator itself is included: resolving it ahead of the selection
 context would still run caller code too early. No speculative evaluation or

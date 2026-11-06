@@ -2505,7 +2505,29 @@ grouping_arg_context_free <- function(arg) {
     return(FALSE)
   }
   stock <- get(name, envir = asNamespace("marginplyr"), inherits = FALSE)
-  identical(selection_argument_function(expr, env, character()), stock)
+  identical(selection_argument_function(expr, env, character()), stock) &&
+    !any(vapply(static_call_args(expr), grouping_arg_injection, logical(1)))
+}
+
+# Whether syntax contains an unquote, splice or embrace that capture may run.
+# This reads syntax only; an unproven operand is left for typed evaluation.
+grouping_arg_injection <- function(expr) {
+  if (rlang::is_missing(expr)) {
+    return(FALSE)
+  }
+  if (rlang::is_quosure(expr)) {
+    return(grouping_arg_injection(rlang::quo_get_expr(expr)))
+  }
+  if (rlang::is_call(expr, "!", n = 1L) &&
+        rlang::is_call(expr[[2L]], "!", n = 1L)) {
+    return(TRUE)
+  }
+  if (rlang::is_call(expr, "{", n = 1L) &&
+        rlang::is_call(expr[[2L]], "{", n = 1L)) {
+    return(TRUE)
+  }
+  (is.call(expr) || is.pairlist(expr)) &&
+    any(vapply(as.list(expr), grouping_arg_injection, logical(1)))
 }
 
 # The gate above reads spellings, so a specification a caller's own function

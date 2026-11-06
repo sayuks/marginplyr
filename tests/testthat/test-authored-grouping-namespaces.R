@@ -239,6 +239,73 @@ test_that("genuine identity wrappers retain deferred payload context", {
   }
 })
 
+test_that("stock constructor injection keeps its typed captured environment", {
+  data <- data.frame(a = c("east", "west"), b = c(1L, 1L), value = 11:12)
+  observed <- rlang::env(calls = 0L, spec = NULL)
+  caller <- rlang::env(choose = function() {
+    observed$calls <- observed$calls + 1L
+    if (is.character(tidyselect::peek_data()$a)) {
+      rlang::sym("b")
+    } else {
+      rlang::sym("a")
+    }
+  })
+  expression <- quote(base::`(`(marginplyr::grouping_set(!!choose())))
+  selection <- rlang::new_quosure(expression, caller)
+  capture <- function(value) {
+    observed$spec <- value
+    integer()
+  }
+  tidyselect::eval_select(
+    rlang::new_quosure(rlang::call2(capture, expression), caller), data
+  )
+  expect_identical(observed$calls, 1L)
+  expect_identical(
+    inspect_grouping(
+      data, .grouping = observed$spec, .format = "list"
+    )$included,
+    list("b")
+  )
+  verbs <- list(inspect_grouping, nest_with_margins, nest_by_with_margins)
+  for (verb in verbs) {
+    observed$calls <- 0L
+    actual <- verb(data, .grouping = grouping_sets(!!selection))
+    expect_identical(
+      actual,
+      verb(data, .grouping = grouping_sets(grouping_set(b)))
+    )
+    expect_identical(observed$calls, 1L)
+    observed$calls <- 0L
+    wrapped <- verb(data, .grouping = grouping_sets(base::`(`(!!selection)))
+    expect_identical(wrapped, actual)
+    expect_identical(observed$calls, 1L)
+  }
+})
+
+test_that("stock constructor embracing retains a deferred caller promise", {
+  data <- data.frame(a = c("east", "west"), b = c(1L, 1L), value = 11:12)
+  observed <- rlang::env(calls = 0L)
+  choose <- function() {
+    observed$calls <- observed$calls + 1L
+    if (is.character(tidyselect::peek_data()$a)) "b" else "a"
+  }
+  capture <- function(x) {
+    rlang::new_quosure(
+      quote(base::`(`(marginplyr::grouping_set({{ x }}))), environment()
+    )
+  }
+  selection <- capture(choose())
+  verbs <- list(inspect_grouping, nest_with_margins, nest_by_with_margins)
+  for (verb in verbs) {
+    observed$calls <- 0L
+    actual <- verb(data, .grouping = grouping_sets(!!selection))
+    expect_identical(
+      actual, verb(data, .grouping = grouping_sets(grouping_set(b)))
+    )
+    expect_identical(observed$calls, 1L)
+  }
+})
+
 test_that("typed authored failures retain the caller's condition once", {
   data <- data.frame(a = c("east", "west"), b = c(1L, 1L))
   observed <- rlang::env(calls = 0L)

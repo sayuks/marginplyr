@@ -232,13 +232,55 @@ grouping_spec <- function(...) {
 
 # Capture tagged arguments without interpreting their values, so preflight can
 # report their original names. Untagged arguments retain tidy-eval capture,
-# including injections and the omission of a trailing empty argument.
+# including injections and the omission of a trailing empty argument. Already
+# captured quosures retain their own injection boundary.
 capture_grouping_args <- function(...) {
+  written <- as.list(substitute(list(...)))[-1L]
   args <- rlang::enquos0(...)
-  if (any(nzchar(rlang::names2(args)))) {
+  if (length(args) == 0L || any(nzchar(rlang::names2(args)))) {
     return(args)
   }
-  rlang::enquos(...)
+  expressions <- lapply(args, rlang::quo_get_expr)
+  # substitute() drops quosure attributes; enquos0() exposes a passed body's
+  # expression, while an ordinary formula keeps its leading tilde.
+  captured <- vapply(seq_along(args), function(i) {
+    rlang::is_call(written[[i]], "~", n = 1L) &&
+      !identical(written[[i]], expressions[[i]])
+  }, logical(1))
+  protected <- lapply(expressions, preserve_grouping_quosures)
+  if (!any(captured) && identical(expressions, protected)) {
+    return(rlang::enquos(...))
+  }
+  capture <- function(...) rlang::enquos(..., .ignore_empty = "none")
+  args <- lapply(seq_along(args), function(i) {
+    arg <- args[[i]]
+    if (captured[[i]]) {
+      return(list(arg))
+    }
+    rlang::eval_bare(rlang::call2(
+      capture, !!!list(protected[[i]])
+    ), rlang::quo_get_env(arg))
+  })
+  rlang::new_quosures(as.list(unlist(args, recursive = FALSE)))
+}
+
+# Keep already captured quosures opaque to a constructor's next injection pass.
+preserve_grouping_quosures <- function(expr) {
+  if (rlang::is_missing(expr)) {
+    return(rlang::missing_arg())
+  }
+  if (rlang::is_quosure(expr)) {
+    # Injection must receive the captured value rather than evaluate its body.
+    value <- function() expr
+    return(rlang::call2("!", rlang::call2("!", rlang::call2(value))))
+  }
+  if (is.call(expr) || is.pairlist(expr)) {
+    parts <- lapply(as.list(expr), preserve_grouping_quosures)
+    out <- if (is.call(expr)) as.call(parts) else as.pairlist(parts)
+    attributes(out) <- attributes(expr)
+    return(out)
+  }
+  expr
 }
 
 new_grouping_spec <- function(type, args) {
