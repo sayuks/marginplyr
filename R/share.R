@@ -4138,13 +4138,16 @@ lookup_rebound_names <- function(expr, env = emptyenv(), mask = character(),
     rebound
   }
   unique(c(written, expression_rebound_names(expr, list(
-    env = env, mask = mask, rebound = rebound
+    env = env, mask = mask, rebound = rebound,
+    function_rebound = expression_rebound_names(expr, function_lookup = TRUE)
   ), function_lookup = function_lookup)))
 }
 
 # Rebindings visible in evaluated syntax. The first pass supplies ordinary
 # assignments before the second pass resolves mutation callees against them.
-# Function lookup skips plain assignments of literal non-function values.
+# Function lookup includes replacement roots and skips plain assignments of
+# literal non-function values. Parent mutations are tracked separately by
+# lookup_reparented_environments().
 expression_rebound_names <- function(expr, lookup = NULL,
                                      function_lookup = FALSE) {
   if (rlang::is_quosure(expr) && !is.null(lookup)) {
@@ -4158,7 +4161,7 @@ expression_rebound_names <- function(expr, lookup = NULL,
       unparenthesized_value(expr), lookup, function_lookup
     ))
   }
-  assigned <- lookup_assignment_names(expr)
+  assigned <- lookup_assignment_names(expr, replacement = function_lookup)
   if (function_lookup && rlang::is_call(expr, c("<-", "=")) &&
         length(expr) >= 3L && is_name_part(expr[[2L]]) &&
         identical(scope_literal_kind(expr[[3L]]), "value")) {
@@ -4212,10 +4215,12 @@ assignment_target_names <- function(expr) {
 
 # Names assigned by this call itself, or the unresolved marker when a reflective
 # assignment's target is not statically known. The caller supplies a call.
-lookup_assignment_names <- function(expr) {
+lookup_assignment_names <- function(expr, replacement = TRUE) {
   name <- resolved_callee_name(expr)
   assigned <- if (!is.null(name) && name %in% c("<-", "=", "<<-", "for") &&
-                    length(expr) >= 3L) {
+                    length(expr) >= 3L &&
+                    (replacement || is_name_part(expr[[2L]]) ||
+                       rlang::is_string(expr[[2L]]))) {
     assignment_target_names(expr[[2L]])
   } else {
     character()
@@ -5163,8 +5168,9 @@ is_known_base_call <- function(expr, name, bound, lookup) {
   if (!is.null(namespace)) {
     return(identical(namespace, "base"))
   }
-  if (is.null(lookup$env) || name %in% c(bound, lookup$rebound) ||
-        unresolved_lookup_name() %in% lookup$rebound) {
+  rebound <- lookup$function_rebound %||% lookup$rebound
+  if (is.null(lookup$env) || name %in% c(bound, rebound) ||
+        unresolved_lookup_name() %in% rebound) {
     return(FALSE)
   }
   identical(
@@ -5913,8 +5919,9 @@ static_returned_caller_frame <- function(expr, scope, lookup) {
     return(NULL)
   }
   name <- rlang::as_name(head)
-  if (name %in% c(scope_bound_names(scope), lookup$mask, lookup$rebound) ||
-        unresolved_lookup_name() %in% lookup$rebound ||
+  rebound <- lookup$function_rebound %||% lookup$rebound
+  if (name %in% c(scope_bound_names(scope), lookup$mask, rebound) ||
+        unresolved_lookup_name() %in% rebound ||
         !lookup_environment_is_external(lookup$env, character(), lookup,
                                         safe_parents = FALSE)) {
     return(NULL)
