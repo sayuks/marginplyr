@@ -3,6 +3,9 @@
 * Grouping selections using standard stringr patterns preserve typed column
   metadata when matching dispatches through vctrs proxy methods (#1363).
 
+* Unnamed local data-frame summaries expand their actual columns without
+  invoking subclass list conversion on evaluated rows (#1365).
+
 * Parent and Total share dependency checks follow locally copied closures,
   literal-list elements and closures returned by literal function factories
   using the bindings present when they are invoked (#1361).
