@@ -19,9 +19,12 @@ this target's mandatory checks and scope rule. The repository runner and
 operational instructions adopt both together under #1292.
 
 The accepted #1373 amendment adds repository contract consistency before those
-six checks and heavy admission in both scopes. Its workflow comparison is
-shared with CI, while syntax/wiring and infrastructure suites retain their
-separate routes. In the clauses below, six-check-only names source scope with
+six checks and heavy admission in both scopes. Its workflow executable and
+review dependency comparisons are shared with the existing CI verifiers,
+retaining independent expectations and strict comparison. The dependency-only
+route uses base R; workflow parsing reuses yaml/jsonlite. Syntax/wiring and
+infrastructure suites retain their separate routes. In the clauses below,
+six-check-only names source scope with
 this added static stage. Scope is judged over the cumulative immutable range
 from the latest verifiable full-checked ancestor, or the merge-base with freshly
 fetched main when unavailable. Package-unaffected CI/tool/standalone command

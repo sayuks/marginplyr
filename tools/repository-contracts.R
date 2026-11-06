@@ -2,7 +2,43 @@
 # This entry performs static reads only; syntax and verifier wiring belong to CI.
 validate_repository_contracts <- function(root = ".") {
   validate_workflow_contracts(root)
+  validate_review_dependency_contract(root)
   invisible(TRUE)
+}
+
+# Preserve the independently maintained review-tool package sequence. Version
+# constraints must parse, but their values are not part of this contract.
+validate_review_dependency_contract <- function(root = ".") {
+  requirements <- tryCatch({
+    path <- file.path(root, "DESCRIPTION")
+    if (!file.exists(path)) stop("DESCRIPTION is missing.", call. = FALSE)
+    description <- read.dcf(path)
+    field <- "Config/Needs/review"
+    if (nrow(description) != 1L) stop("DESCRIPTION must contain exactly one DCF record.", call. = FALSE)
+    if (!field %in% colnames(description)) stop(field, " is missing.", call. = FALSE)
+    value <- trimws(description[[1L, field]])
+    if (is.na(value) || !nzchar(value) || grepl("(^|,)[[:space:]]*(,|$)", value)) {
+      stop(field, " contains an empty dependency entry.", call. = FALSE)
+    }
+    source(file.path(root, "tools/dependency-requirements.R"), local = TRUE)
+    parsed <- dependency_requirements(value)
+    constrained <- nzchar(parsed$operator)
+    if (any(constrained)) package_version(parsed$version[constrained])
+    parsed
+  }, error = function(cnd) {
+    stop("Review dependency contract input invalid: ", conditionMessage(cnd), call. = FALSE)
+  })
+  expected <- c(
+    "digest", "filelock", "jsonlite", "lintr", "pkgload", "processx", "ps", "R6",
+    "rcmdcheck", "roxygen2", "spelling", "testthat", "yaml"
+  )
+  if (!identical(requirements$package, expected)) {
+    stop("Review dependency contract mismatch: Config/Needs/review expected [",
+      paste(expected, collapse = ", "), "]; actual [",
+      paste(requirements$package, collapse = ", "), "].", call. = FALSE)
+  }
+  cat("Repository contract consistency passed: review dependency contract\n")
+  invisible(requirements)
 }
 
 # Preserve workflow inventory, scalar and sequence identity; normalize mapping order.

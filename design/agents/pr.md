@@ -94,7 +94,7 @@ Scope: <source or full>
 Reason: <concrete reason for this scope from the diff and its effects>
 Comparison baseline/target SHAs and basis: <immutable cumulative range>
 Consumers/effects and change-specific checks: <evidence and results>
-Repository contract consistency: <outcome>
+Repository contract consistency (workflow and review dependencies): <outcome>
 Test dependency-declaration scan: <outcome>
 Required optional test Suggests presence/version: <outcome>
 Roxygen regeneration and committed-source consistency: <outcome>

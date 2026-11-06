@@ -6,8 +6,7 @@ status: accepted
 
 For [#1292](https://github.com/sayuks/marginplyr/issues/1292), add unconditional
 roxygen regeneration and committed-output consistency to both Review-ready
-scopes, making six mandatory checks alongside the repository contract
-consistency stage added under #1373 in ADR 0039. Permit source scope for existing-file
+scopes, making six mandatory checks. Permit source scope for existing-file
 explanatory text and formatting, including prose-only roxygen edits, only with
 parsed-expression equality and an AI assessment of generated output and
 source-text consumers. Other package effects or uncertainty require full.
@@ -23,6 +22,9 @@ qualifying explanatory edits or relying on AI judgment alone.
 
 The [specification](../specs/review-ready-equivalent-source-edits.md) fixes the
 evidence and comparison boundary. The runner and
-[local checks](../agents/local-checks.md) adopt the six-check baseline (plus ADR 0039's static consistency stage) and
+[local checks](../agents/local-checks.md) adopt the six-check baseline and
 evidence-backed scope exception together under #1292. Adoption does not
 establish a package-check result for any later SHA.
+
+The #1373 amendment in ADR 0039 adds repository contract consistency before
+these six checks in both scopes; it leaves this generation check in place.

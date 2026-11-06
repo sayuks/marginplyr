@@ -112,7 +112,7 @@ local({
       'Authors@R: person("A", "B", email="a@example.com", role=c("aut", "cre"))',
       "License: GPL-3", "Suggests: testthat, stats, processx", "Config/testthat/edition: 3",
       "Config/marginplyr/cran-status: unpublished",
-      "Config/Needs/review: spelling, pkgload, lintr, processx, ps, filelock, rcmdcheck, roxygen2"),
+      "Config/Needs/review: digest, filelock, jsonlite, lintr, pkgload, processx, ps, R6, rcmdcheck, roxygen2, spelling, testthat, yaml"),
       file.path(repo, "DESCRIPTION"))
     writeLines(character(), file.path(repo, "NAMESPACE"))
     writeLines(c("/.review-ready/"), file.path(repo, ".gitignore"))
@@ -205,9 +205,15 @@ local({
     readRDS(file.path(directory, "result.rds"))
   }
   source("tools/fixtures/workflow-contract-cases.R", local = TRUE)
-  cases <- workflow_contract_cases()
+  source("tools/fixtures/review-dependency-contract-cases.R", local = TRUE)
+  cases <- if ("--dependency-contracts-only" %in% commandArgs(trailingOnly = TRUE)) {
+    review_dependency_contract_cases()
+  } else if ("--workflow-contracts-only" %in% commandArgs(trailingOnly = TRUE)) {
+    workflow_contract_cases()
+  } else c(stats::setNames(workflow_contract_cases(), paste0("workflow-", names(workflow_contract_cases()))),
+    stats::setNames(review_dependency_contract_cases(), paste0("dependency-", names(review_dependency_contract_cases()))))
   for (name in names(cases)) {
-    contracts <- make_repo(paste0("workflow-", name))
+    contracts <- make_repo(paste0("contract-", name))
     cases[[name]]$edit(contracts)
     git(contracts, "add", "-A")
     git(contracts, "commit", "--allow-empty", "-qm", name)
@@ -218,21 +224,28 @@ local({
       status <- if (is.null(cases[[name]]$diagnostic)) 0L else 1L
       output <- finish(start(contracts, scope), status)
       record <- result_record(output)
+      stage <- if (!is.null(cases[[name]]$local_stage)) cases[[name]]$local_stage else {
+        if (status == 0L) "passed" else "failed"
+      }
       expect(identical(record$sha, sha) && identical(record$scope, scope) &&
-        identical(record$repository_contracts, if (status == 0L) "passed" else "failed") &&
-        grepl("==> Repository contract consistency", output, fixed = TRUE),
+        identical(record$repository_contracts, stage) &&
+        (stage == "not-run" || grepl("==> Repository contract consistency", output, fixed = TRUE)),
         "repository contract outcome identifies its pinned SHA, scope and stage")
-      if (status != 0L) expect(grepl(cases[[name]]$diagnostic, output, fixed = TRUE) &&
+      diagnostic <- if (is.null(cases[[name]]$local_diagnostic)) cases[[name]]$diagnostic else cases[[name]]$local_diagnostic
+      if (status != 0L) expect(grepl(diagnostic, output, fixed = TRUE) &&
         !grepl("Waiting for heavy|Build source tarball|Source-tarball R CMD check|fixture roxygen executed|fixture spelling executed", output),
-        paste("workflow drift fails before package work or heavy admission:", name, scope))
+        paste("contract drift fails before package work or heavy admission:", name, scope))
+      if (status == 0L) expect(identical(record$heavy_check, "omitted") &&
+        grepl("Package build/check, the complete suite and snapshots omitted", output, fixed = TRUE),
+        "legal source controls explicitly record heavy omissions")
       expect(identical(git(contracts, "status", "--porcelain=v1", "--untracked-files=all"), "") &&
         identical(git(contracts, "rev-parse", "HEAD"), sha), "contract checks never repair committed inputs")
       state <- file.path(account, ".local/state/marginplyr/review-ready-fifo")
       expect(!dir.exists(state), "contract failures and source controls never request shared admission")
     }
   }
-  if ("--workflow-contracts-only" %in% commandArgs(trailingOnly = TRUE)) {
-    cat("Workflow contract public-command fixtures passed.\n")
+  if (any(c("--workflow-contracts-only", "--dependency-contracts-only") %in% commandArgs(trailingOnly = TRUE))) {
+    cat("Repository contract public-command fixtures passed.\n")
     return(invisible(NULL))
   }
   missing_repo <- make_repo("missing-priority")

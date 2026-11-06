@@ -59,6 +59,10 @@ maintained repository contracts is mandatory in both scopes before heavy
 admission. The shared R entry also serves existing CI verifiers; syntax and
 verifier wiring stay in CI. Comparison reads the pinned source only, fails
 closed without repairs, and runs no infrastructure suites or package work.
+It compares workflow inventory/executable YAML and the independent review-tool
+package sequence, preserving its order and duplicates. Dependency constraint
+syntax is validated without adding version pins. Its dependency-only CI route
+uses base R; workflow parsing reuses the existing yaml/jsonlite prerequisites.
 
 Scope follows actual cumulative package build/check effects. Package-unaffected
 CI, tooling and standalone command-fixture changes may use source with relevant

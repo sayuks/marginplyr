@@ -19,7 +19,9 @@ main <- function() {
   git(c("clone", "--quiet", "--shared", source_root, repo), source_root)
   git(c("config", "user.name", "Artifact fixture"))
   git(c("config", "user.email", "artifact@example.com"))
-  files <- c("tools/verify-ci-artifacts.R", "tools/ci-workflow-contracts.json", "tools/repository-contracts.R", "tools/fixtures/workflow-contract-cases.R",
+  files <- c("tools/verify-ci-artifacts.R", "tools/ci-workflow-contracts.json", "tools/repository-contracts.R",
+             "tools/dependency-requirements.R", "tools/fixtures/workflow-contract-cases.R",
+             "tools/fixtures/review-dependency-contract-cases.R", ".github/scripts/verify-cran-preflight.R",
              ".github/scripts/verify-doc-references.R", ".github/scripts/summarize-check-log.R",
              list.files(file.path(source_root, ".github/workflows"),
                         pattern = "\\.ya?ml$", full.names = FALSE))
@@ -38,6 +40,28 @@ main <- function() {
   check()
   source("tools/fixtures/workflow-contract-cases.R", local = TRUE)
   initial <- trimws(git(c("rev-parse", "HEAD")))
+  source("tools/fixtures/review-dependency-contract-cases.R", local = TRUE)
+  for (name in names(review_dependency_contract_cases())) {
+    cat("Preflight dependency fixture: ", name, "\n", sep = "")
+    case <- review_dependency_contract_cases()[[name]]
+    case$edit(repo)
+    commit()
+    sha <- trimws(git(c("rev-parse", "HEAD")))
+    result <- run(rscript, ".github/scripts/verify-cran-preflight.R", repo)
+    output <- paste(result$stdout, result$stderr)
+    expect(result$status == if (is.null(case$diagnostic)) 0L else 1L, paste(name, output))
+    expect(grepl(if (is.null(case$diagnostic)) "review dependency contract" else case$diagnostic,
+      output, fixed = TRUE), paste(name, output))
+    expect(identical(trimws(git(c("rev-parse", "HEAD"))), sha) &&
+      !nzchar(trimws(git(c("status", "--porcelain=v1", "--untracked-files=all")))),
+      "CI dependency validation never repairs committed inputs")
+    git(c("reset", "--hard", initial))
+    git(c("clean", "-fd"))
+  }
+  if ("--dependency-contracts-only" %in% commandArgs(trailingOnly = TRUE)) {
+    cat("Preflight dependency public-command fixtures passed.\n")
+    return(invisible(NULL))
+  }
   for (name in names(workflow_contract_cases())) {
     case <- workflow_contract_cases()[[name]]
     case$edit(repo)

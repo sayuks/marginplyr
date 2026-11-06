@@ -54,8 +54,8 @@ Except for the evidence-backed cases below, package-affecting changes require
 `full`: changes to package code, tests,
 examples, vignettes, data, installed files, dependencies, generated
 package documentation, generation sources, build exclusions, or tooling whose
-effects
-change a package-check result. A package-tests-only change is package-affecting.
+effects change a package-check result. A package-tests-only change is
+package-affecting.
 Light prose, documentation or research may use `source` when its effects
 justify omitting package build/check. A filename, directory, extension or
 exclusion from the source package alone is insufficient. Use `full` when the
@@ -158,13 +158,19 @@ must be committed and receive a fresh invocation; a result identifies only its
 submitted revision. After metadata validation, both scopes run the mandatory
 repository contract consistency stage, then the six checks in order:
 
-The contract stage statically compares workflow inventory and full executable
-YAML against the independently maintained `tools/ci-workflow-contracts.json`,
-using `tools/repository-contracts.R` with the CI verifier. Missing, malformed
-or inconsistent inputs fail without changing them. Syntax checking with
-actionlint and verifier wiring remain in CI. Routine comparison runs no
+The contract stage uses `tools/repository-contracts.R` to compare workflow
+inventory/full executable YAML against `tools/ci-workflow-contracts.json` and
+`Config/Needs/review` against an independently maintained package sequence.
+The dependency comparison preserves sequence and duplicates, validates
+constraint syntax without pinning version values, and shares its base-R
+implementation with the CI preflight verifier. Workflow comparison shares the
+same entry with the CI artifact verifier and uses the already-declared yaml
+and jsonlite tools; no new R prerequisite is added. Missing, malformed or
+inconsistent inputs fail without changing them. Invalid DESCRIPTION may fail
+the earlier priority preflight, leaving the contract stage `not-run`.
+Syntax checking with actionlint and verifier wiring remain in CI. Routine comparison runs no
 network access, installations, builds, rendering, package tests or infrastructure
-regression suites. A workflow expectation is reconciled manually after review;
+regression suites. A contract expectation is reconciled manually after review;
 it is never refreshed automatically. This stage precedes review prerequisites
 and the six checks, so a mismatch cannot request shared capacity.
 
@@ -187,8 +193,7 @@ A failed baseline ends that invocation before admission waiting or package
 build/check. Correct and commit the fix explicitly before invoking again.
 `source` ends after this baseline and reports its SHA, omission and supplied
 reason. It establishes repository consistency and the six checks for that SHA,
-never
-a full package-check pass.
+never a full package-check pass.
 
 After the baseline succeeds, `full` atomically registers in acceptance order
 across this user's marginplyr clones and worktrees on the Mac. Only the oldest
