@@ -175,6 +175,8 @@ normalize_margin_options <- function(.margin_label,
                                      duplicates_choices,
                                      .id = NULL) {
   assert_logical_scalar(.check_margin_label)
+  # The admitted choice is its stored value, independent of logical methods.
+  attributes(.check_margin_label) <- NULL
   .id <- normalize_margin_id(.id)
 
   list(

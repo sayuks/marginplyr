@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Margin label collision checks retain accepted logical choices independently
+  of class-specific negation methods across all Margin verbs (#1360).
+
 * Parent and Total share dependency checks follow locally copied closures,
   literal-list elements and closures returned by literal function factories
   using the bindings present when they are invoked (#1361).

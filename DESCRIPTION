@@ -327,7 +327,8 @@ Config/testthat/start-first:
     dtplyr-empty-projection,
     share-closure-carriers,
     share-dynamic-environment-names,
-    share-environment-paths
+    share-environment-paths,
+    margin-label-check-flags
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
