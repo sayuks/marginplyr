@@ -83,7 +83,7 @@ print(as.data.frame(with(results, table(form, match, expected_error))))
 failing_forms <- startsWith(results$form, "::-")
 supported <- !results$expected_error
 stopifnot(
-  all(!results$match[failing_forms & supported]),
+  !any(results$match[failing_forms & supported]),
   all(results$match[!failing_forms & supported]),
   !any(results$actual_error[supported])
 )
