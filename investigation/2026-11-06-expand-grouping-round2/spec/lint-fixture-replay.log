@@ -1,0 +1,12 @@
+Generated expression forms matched the e600e060 originals exactly.
+Forward-grid replay: terminal session 94886, exit 0
+
+TRUE
+ 360
+[1] outer    inner    con      expected actual   same
+<0 rows> (or 0-length row.names)
+Retained-grid replay: terminal session 7548, exit 0
+      calls
+same     1
+  TRUE 400
+Both replay CSVs were byte-identical to the original final CSVs; counts were not added again.

@@ -6,10 +6,10 @@ q <- rlang::quo(a)
 forms <- list(
   qualified = function(x) rlang::call2(quote(base::`(`), x),
   syntactic = function(x) rlang::call2('(', x),
-  private = function(x) rlang::call2(quote(base:::`(`), x),
+  private = function(x) rlang::call2(rlang::parse_expr('base:::`(`'), x),
   parenthesized_head = function(x) rlang::call2(quote((base::`(`)), x),
-  nested_head = function(x) rlang::call2(quote(((base::`(`))), x),
-  private_head = function(x) rlang::call2(quote((base:::`(`)), x),
+  nested_head = function(x) rlang::call2(rlang::parse_expr('((base::`(`))'), x),
+  private_head = function(x) rlang::call2(rlang::parse_expr('(base:::`(`)'), x),
   identity = function(x) rlang::call2(quote(base::identity), x),
   syntactic_head = function(x) rlang::call2(quote((`(`)), x)
 )

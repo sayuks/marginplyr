@@ -6,7 +6,7 @@ forms <- list(
  bare=function(x)x,
  syntactic=function(x)rlang::call2('(',x),
  qualified=function(x)rlang::call2(quote(base::`(`),x),
- private=function(x)rlang::call2(quote(base:::`(`),x),
+ private=function(x)rlang::call2(rlang::parse_expr('base:::`(`'),x),
  identity=function(x)rlang::call2(quote(base::identity),x),
  syntactic_deep=function(x)rlang::call2('(',rlang::call2('(',x)),
  qualified_deep=function(x)rlang::call2(quote(base::`(`),rlang::call2(quote(base::`(`),x)),

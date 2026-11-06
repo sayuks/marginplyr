@@ -113,6 +113,16 @@ assertion. No implementation was changed.
 
 ## Replay and limits
 
+The first Review-ready invocation reaching lint flagged private-qualified and
+multiply parenthesized language objects inside quoted fixtures. Those fixture
+heads were subsequently constructed with `parse_expr()` from their literal
+spellings. Every generated form was identical to the original quoted object.
+The 360 forwarding and 400 retained-call comparisons were replayed against a
+disposable copy of `e600e060`, whose package code was unchanged from the tested
+main. Both passed and both CSVs were byte-identical to their original final
+results. The [replay record](lint-fixture-replay.log) retained terminal handles
+and output; these reruns were not added to the coverage counts.
+
 Run from an archive of the tested package SHA. The source can also be chosen
 with `MARGINPLYR_HUNT_SOURCE`; CSV output defaults to the R temporary
 directory and can be directed to an existing directory with
