@@ -4348,11 +4348,20 @@ scoped_data_symbols <- function(expr, scope, lookup) {
       reflective_lookup_symbols(expr, scope_bound_names(scope), lookup)
     )))
   }
-  if (identical(call_name, "env_get") &&
+  if (!is.null(call_name) && call_name %in% c("env_get", "env_get_list") &&
         is_known_namespace_frame_call(expr, "rlang", scope, lookup)) {
     return(unique(c(
       call_part_symbols(expr, scope, lookup),
-      inheriting_env_get_symbols(expr, scope, lookup)
+      inheriting_env_get_symbols(
+        expr, scope, lookup, bulk = identical(call_name, "env_get_list")
+      )
+    )))
+  }
+  if (identical(call_name, "as.list") &&
+        is_known_base_frame_call(expr, call_name, scope, lookup)) {
+    return(unique(c(
+      call_part_symbols(expr, scope, lookup),
+      materialized_env_symbols(expr, scope, lookup)
     )))
   }
   if (is_reflective_evaluation(callee_name)) {
@@ -5841,18 +5850,36 @@ static_environment_frame <- function(expr, scope, lookup) {
   if (steps == 0L) frame else NULL
 }
 
+# Converting a known mask to a list retains an unresolved dependency.
+# The conversion does not inherit bindings from a lexical frame.
+materialized_env_symbols <- function(expr, scope, lookup) {
+  args <- static_matched_arguments(expr, base::as.list)
+  if (is_static_mask_parent(args$x, scope, lookup)) {
+    return(unresolved_lookup_name())
+  }
+  character()
+}
+
 # A lookup on the mask reads its own bindings regardless of inheritance.
 # A possibly inheriting lookup follows visible lexical bindings unless a known
 # stop frame ends the search before the mask.
 # A nonliteral key retains an unresolved dependency on a mask-reaching path.
-inheriting_env_get_symbols <- function(expr, scope, lookup) {
-  args <- static_matched_arguments(expr, rlang::env_get)
+inheriting_env_get_symbols <- function(expr, scope, lookup, bulk = FALSE) {
+  definition <- if (bulk) rlang::env_get_list else rlang::env_get
+  args <- static_matched_arguments(expr, definition)
   frame <- static_environment_frame(args$env, scope, lookup)
   if (is.null(frame)) {
     return(character())
   }
-  name <- unparenthesized_value(args$nm)
-  if (!rlang::is_string(name)) {
+  name <- if (bulk) {
+    static_character_value(args$nms, function(expr) {
+      identical(static_call_name(expr), "c") &&
+        is_known_base_frame_call(expr, "c", scope, lookup)
+    })
+  } else {
+    unparenthesized_value(args$nm)
+  }
+  if (is.null(name) || (!bulk && !rlang::is_string(name))) {
     name <- unresolved_lookup_name()
   }
   if (frame > length(scope)) {
@@ -5868,8 +5895,10 @@ inheriting_env_get_symbols <- function(expr, scope, lookup) {
       return(character())
     }
   }
-  scoped_data_symbols(rlang::sym(name), scope[seq.int(frame, length(scope))],
-                      lookup)
+  unique(unlist(lapply(name, function(name) {
+    scoped_data_symbols(rlang::sym(name), scope[seq.int(frame, length(scope))],
+                        lookup)
+  }), use.names = FALSE))
 }
 
 # The names a reflective lookup resolves in the mask.
