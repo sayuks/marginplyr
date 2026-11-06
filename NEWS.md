@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Parent and Total share dependency checks follow locally copied closures,
+  literal-list elements and closures returned by literal function factories
+  using the bindings present when they are invoked (#1361).
+
 * Parent and Total share dependency checks reject unresolved dynamic binding
   names in mask-reaching `rlang::env_get()` calls, while retaining independent
   external and local non-inheriting reads (#1362).

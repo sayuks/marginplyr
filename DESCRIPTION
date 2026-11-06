@@ -325,7 +325,8 @@ Config/testthat/start-first:
     package-metadata,
     dependency-floor,
     share-environment-paths,
-    share-dynamic-environment-names
+    share-dynamic-environment-names,
+    share-closure-carriers
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
