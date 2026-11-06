@@ -60,6 +60,21 @@ test_that("closure carriers use bindings present at invocation", {
 
 computed_head_dependencies <- function() {
   alist(
+    (function(prior) {
+      read <- function() sum(prior)
+      functions <- list(read, {
+        rm(prior)
+        read <- function() 7
+      })
+      functions[[1L]]()
+    })(1),
+    (function(prior) {
+      read <- function() 7
+      list({
+        rm(prior)
+        read <- function() sum(prior)
+      }, read)[[2L]]()
+    })(1),
     list(prior, function() 7)[[2L]](),
     (identity(function() sum(prior)))(),
     list(lapply(1, function(i) sum(prior)), function() 7)[[2L]](),
@@ -115,6 +130,13 @@ closure_carrier_controls <- function() {
 expect_retained_carriers <- function(data) {
   external <- rlang::env(prior = 1)
   expressions <- alist(
+    (function(prior) {
+      read <- function() 1
+      list(read, {
+        rm(prior)
+        read <- function() sum(prior)
+      })[[1L]]()
+    })(1),
     (function(arg = prior) 1)(2),
     list(function(arg = prior) 1)[[1L]](2),
     (function() function(arg = prior) 1)()(2),

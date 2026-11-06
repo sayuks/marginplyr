@@ -4679,6 +4679,7 @@ scope_value_closure <- function(expr, scope, lookup) {
 }
 
 # Closure elements of a literal list, indexed relative to the current stack.
+# Each element captures its value before the next element changes bindings.
 scope_closure_list <- function(expr, scope, lookup) {
   expr <- unparenthesized_value(expr)
   if (is_name_part(expr)) {
@@ -4700,8 +4701,16 @@ scope_closure_list <- function(expr, scope, lookup) {
   }
   if (identical(static_call_name(expr), "list") &&
         is_known_base_frame_call(expr, "list", scope, lookup)) {
-    return(lapply(static_call_args(expr), scope_value_closure,
-                  scope = scope, lookup = lookup))
+    parts <- static_call_args(expr)
+    elements <- vector("list", length(parts))
+    names(elements) <- names(parts)
+    for (index in seq_along(parts)) {
+      elements[index] <- list(scope_value_closure(parts[[index]], scope, lookup))
+      scope <- statement_reads_and_scope(
+        parts[[index]], scope, lookup, read_symbols = no_scope_reads
+      )$scope
+    }
+    return(elements)
   }
   NULL
 }
@@ -4941,9 +4950,11 @@ scope_after_promise <- function(name, scope, lookup, function_lookup = FALSE) {
 
 # A definite local binding replaces any promise in this frame. Literal
 # values establish whether function lookup stops or skips the binding.
-scope_bind_local <- function(scope, name, value = NULL, lookup = NULL) {
-  closure <- scope_value_closure(value, scope, lookup)
-  elements <- scope_closure_list(value, scope, lookup)
+# value_scope holds bindings before the value expression evaluates.
+scope_bind_local <- function(scope, name, value = NULL, lookup = NULL,
+                             value_scope = scope) {
+  closure <- scope_value_closure(value, value_scope, lookup)
+  elements <- scope_closure_list(value, value_scope, lookup)
   scope[[1L]]$bound <- union(scope[[1L]]$bound, name)
   scope[[1L]]$defaults[name] <- NULL
   scope[[1L]]$arguments[name] <- NULL
@@ -5100,7 +5111,7 @@ statement_reads_and_scope <- function(expr, scope, lookup = NULL,
     return(list(
       reads = value,
       scope = scope_bind_local(retained, rlang::as_name(expr[[2L]]), expr[[3L]],
-                               lookup)
+                               lookup, value_scope = scope)
     ))
   }
   # Read a replacement target and the value in source order. Its eventual
