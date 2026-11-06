@@ -1,0 +1,10 @@
+       desired_values
+mode    FALSE TRUE
+  count     0   72
+  empty    72    0
+  error    72    0
+construction_callbacks     ordinary_callbacks       mutate_callbacks
+                     0                      0                      0
+       union_callbacks    expansion_callbacks
+                     0                    408
+216 namespace-copy observations; ordinary, restored and immutability controls passed

@@ -1,0 +1,8 @@
+Completed extended_types = FALSE with 1200 comparisons
+Completed extended_types = TRUE with 2400 comparisons
+
+        match
+  FALSE  1200
+  TRUE   1200
+[1] extended   decl       shape      comparison
+<0 rows> (or 0-length row.names)

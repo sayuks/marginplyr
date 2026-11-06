@@ -1,0 +1,5 @@
+ordinary input/mutate/union: expected payload 13, 29; callbacks 0
+expansion: payload -99, -99 ; callbacks 1
+source bytes unchanged; removing dispatcher restored expected expansion
+Error: identical(actual, expected) is not TRUE
+Execution halted

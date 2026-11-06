@@ -1,0 +1,6 @@
+       verb ordinary_rows actual_rows
+1    expand             1           0
+2 summarize             1           0
+3      nest             1           0
+4   nest_by             1           0
+Authored source calls: 1 construction calls: 0 expanded calls: 2

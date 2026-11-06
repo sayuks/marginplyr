@@ -1,0 +1,2 @@
+SQL predicate accepts identical input and rejects integer/double storage drift.
+Arrow predicate accepts identical input and rejects reordered/extra public columns.
