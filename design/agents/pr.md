@@ -1,8 +1,10 @@
-# Pull-request bodies: `pr`
+# Pull-request preparation: `pr`
 
 Use `pr` to write the body and `mattpocock-skills:code-review` to conduct the
 separate review. Keep the skill's `Summary`, `Evidence`, and `Merge Danger`
 sections. This guide maps their contents to repository-owned decisions.
+
+Apply the NEWS policy below when preparing or reviewing a change.
 
 ## Sources to apply
 
@@ -13,6 +15,24 @@ sections. This guide maps their contents to repository-owned decisions.
 | Runner operation | [Setup and invocation](../../tools/review-ready-runner.md#setup-and-invocation) owns the `--scope`/`--reason` interface, checkout updates and retired-CLI policy. |
 | Review | [Code review](code-review.md) owns the Standards/Spec axes, comparison against the merge-base with `main`, and pushing the branch and opening the PR before publishing its review record. Apply [Answering a review](../architecture.md#answering-a-review) when evaluating findings. |
 | Published history | [What is reviewed, and where the record goes](code-review.md#what-is-reviewed-and-where-the-record-goes) owns ordinary follow-up commits and, for an unavoidable exceptional rewrite, invalidation and fresh review records. |
+
+## NEWS and contributor credit
+
+Record changes that affect how people use or understand marginplyr in the
+current version section of `NEWS.md`. Purely internal changes and minor edits
+may omit a bullet.
+
+Credit PR authors absent from `DESCRIPTION`'s `Authors@R` with `(@handle, #PR)`
+before the final period. Listed authors may omit their handle; keep the
+related issue or PR number. Additional reporter or reviewer credit is optional.
+
+Complete and commit required NEWS entries before Review-ready. If a PR number
+is needed, open a draft PR first. Later edits follow
+[revision freshness and scope][local-scope].
+
+Check NEWS necessity and contributor credit during preparation and review;
+no additional NEWS CI gate is required. Follow the
+[Tidyverse NEWS guide][news-guide].
 
 ## Body and comments
 
@@ -104,3 +124,6 @@ Spec: <originating issue/spec; findings and dispositions, or zero findings>
 
 If no review ran, replace that example with an explicit statement:
 `No code review ran for <SHA>.` A verification pass is not a review record.
+
+[news-guide]: https://style.tidyverse.org/news.html#in-development
+[local-scope]: local-checks.md#boundary-and-scope
