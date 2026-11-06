@@ -343,3 +343,130 @@ test_that("eager tables expand subclass summary columns as dplyr does", {
   skip_if_suggest_absent("data.table")
   check_subclass_frame_summaries(data.table::as.data.table)
 })
+
+# The frame class carries the unit; the numeric column alone cannot cast it.
+local_distance_frames <- function(.local_envir = parent.frame()) {
+  frame <- function(x = double(), unit = "m") {
+    vctrs::new_data_frame(
+      list(distance = as.double(x)), n = length(x),
+      class = paste0("margin_distance_", unit)
+    )
+  }
+  rlang::local_bindings(
+    vec_ptype2.margin_distance_m.margin_distance_m = function(x, y, ...) {
+      frame()
+    },
+    vec_ptype2.margin_distance_cm.margin_distance_cm = function(x, y, ...) {
+      frame(unit = "cm")
+    },
+    vec_ptype2.margin_distance_m.margin_distance_cm = function(x, y, ...) {
+      frame()
+    },
+    vec_ptype2.margin_distance_cm.margin_distance_m = function(x, y, ...) {
+      frame()
+    },
+    vec_cast.margin_distance_m.margin_distance_m = function(x, to, ...) x,
+    vec_cast.margin_distance_cm.margin_distance_cm = function(x, to, ...) x,
+    vec_cast.margin_distance_m.margin_distance_cm = function(x, to, ...) {
+      frame(x$distance / 100)
+    },
+    vec_cast.margin_distance_cm.margin_distance_m = function(x, to, ...) {
+      frame(x$distance * 100, "cm")
+    },
+    .env = asNamespace("vctrs")$.__S3MethodsTable__.,
+    .frame = .local_envir
+  )
+  frame
+}
+
+test_that("unnamed local frames retain value-changing frame casts", {
+  frame <- local_distance_frames()
+  distance <- function(x) {
+    if (x[[1L]] == 1L) frame(1) else frame(100, "cm")
+  }
+  data <- data.frame(g = 1:2, x = 1:2)
+  expected <- dplyr::summarise(data, distance(x), .by = "g")
+  expect_identical(expected$distance, c(1, 1))
+  actual <- summarize_with_margins(data, distance(x), .by = "g")
+  expect_identical(actual, expected)
+})
+
+check_local_frame_casts <- function(convert) {
+  frame <- local_distance_frames()
+  counter <- new.env(parent = emptyenv())
+  counter$calls <- 0L
+  distance <- function(x) {
+    counter$calls <- counter$calls + 1L
+    if (mode == "unspecified" && length(x) == 1L && x[[1L]] == 1L) {
+      return(NA)
+    }
+    if (mode == "metres" || (mode == "mixed" && x[[1L]] == 1L)) {
+      frame(1)
+    } else {
+      frame(100, "cm")
+    }
+  }
+  summary_env <- rlang::env(distance = distance)
+  for (mode in c("mixed", "metres", "centimetres", "unspecified")) {
+    for (rows in list(1:2, 2:1)) {
+      data <- convert(data.frame(fixed = "f", g = 1:2, x = 1:2)[rows, ])
+      expressions <- list(quote(distance(x)), quote(distance(dplyr::pick(x)$x)))
+      for (expr in expressions) {
+        summary <- rlang::new_quosure(expr, env = summary_env)
+        for (role in c("fixed", "included", "rollup")) {
+          fixed <- if (role == "fixed") c("fixed", "g") else "fixed"
+          grouping <- switch(role,
+            fixed = grouping_set(), included = grouping_set("g"),
+            rollup = rollup("g")
+          )
+          expected <- dplyr::summarise(
+            data, !!summary, later = .data$distance * 2,
+            .by = c("fixed", "g")
+          )
+          packed <- dplyr::summarise(
+            data, packed = !!summary, .by = c("fixed", "g")
+          )
+          if (role == "rollup") {
+            total <- dplyr::summarise(
+              data, !!summary, later = .data$distance * 2, .by = "fixed"
+            )
+            total$g <- NA_integer_
+            expected <- dplyr::bind_rows(expected, total)
+            total <- dplyr::summarise(data, packed = !!summary, .by = "fixed")
+            total$g <- NA_integer_
+            packed <- dplyr::bind_rows(packed, total)
+          }
+          counter$calls <- 0L
+          actual <- summarize_with_margins(
+            data, !!summary, later = .data$distance * 2,
+            .by = dplyr::all_of(fixed), .grouping = grouping,
+            .margin_label = NULL
+          )
+          expect_identical(actual, expected, info = paste(mode, role))
+          expect_identical(counter$calls, if (role == "rollup") 3L else 2L)
+          counter$calls <- 0L
+          actual <- summarize_with_margins(
+            data, packed = !!summary,
+            .by = dplyr::all_of(fixed), .grouping = grouping,
+            .margin_label = NULL
+          )
+          expect_identical(actual, packed, info = paste(mode, role, "packed"))
+          expect_identical(counter$calls, if (role == "rollup") 3L else 2L)
+        }
+      }
+    }
+  }
+}
+
+test_that("plain frames retain original summary casts and evaluation", {
+  check_local_frame_casts(identity)
+})
+
+test_that("tibbles retain original summary casts and evaluation", {
+  check_local_frame_casts(tibble::as_tibble)
+})
+
+test_that("eager tables retain original summary casts and evaluation", {
+  skip_if_suggest_absent("data.table")
+  check_local_frame_casts(data.table::as.data.table)
+})

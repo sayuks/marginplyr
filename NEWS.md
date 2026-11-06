@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Unnamed local data-frame summaries apply compatible frame-subclass casts
+  before expanding their columns, preserving converted values (#1399).
+
 * Typed dtplyr Grouping-plan inspection and nesting safely refuse replaced
   registered `head.data.table` methods before they can receive source rows
   (#1397).
