@@ -1,0 +1,5 @@
+direct selected: a
+actual proxy metadata: integer
+Error: !inherits(actual, "error") is not TRUE
+Execution halted
+Ran 1/1 deferred expressions

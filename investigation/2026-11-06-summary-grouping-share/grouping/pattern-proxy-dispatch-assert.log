@@ -1,0 +1,3 @@
+Error in (function() { : !inherits(actual, "error") is not TRUE
+Calls: <Anonymous> -> stopifnot
+Execution halted

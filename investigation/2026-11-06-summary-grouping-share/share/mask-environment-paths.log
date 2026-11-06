@@ -1,0 +1,188 @@
+      input          helper direction                 case expected observed
+ data.frame  share_of_total   forward        lexical_child  refusal  success
+ data.frame  share_of_total   forward       implicit_local  refusal  success
+ data.frame  share_of_total   forward         rlang_parent  refusal  success
+ data.frame  share_of_total   forward explicit_mask_target  refusal  success
+ data.frame  share_of_total   forward environment_identity  refusal  success
+ data.frame  share_of_total   forward          caller_path  refusal  success
+ data.frame  share_of_total   forward      repaired_dollar  refusal  refusal
+ data.frame  share_of_total   forward repaired_exact_index  refusal  refusal
+ data.frame  share_of_total   forward repaired_get_element  refusal  refusal
+ data.frame  share_of_total   forward      nested_base_get  refusal  refusal
+ data.frame  share_of_total   forward external_child_field    valid  success
+ data.frame  share_of_total   forward      external_parent    valid  success
+ data.frame  share_of_total   forward     external_env_get    valid  success
+ data.frame  share_of_total   forward    external_identity    valid  success
+ data.frame  share_of_total   reverse        lexical_child  refusal  success
+ data.frame  share_of_total   reverse       implicit_local  refusal  success
+ data.frame  share_of_total   reverse         rlang_parent  refusal  success
+ data.frame  share_of_total   reverse explicit_mask_target  refusal  success
+ data.frame  share_of_total   reverse environment_identity  refusal  success
+ data.frame  share_of_total   reverse          caller_path  refusal  success
+ data.frame  share_of_total   reverse      repaired_dollar  refusal  refusal
+ data.frame  share_of_total   reverse repaired_exact_index  refusal  refusal
+ data.frame  share_of_total   reverse repaired_get_element  refusal  refusal
+ data.frame  share_of_total   reverse      nested_base_get  refusal  refusal
+ data.frame  share_of_total   reverse external_child_field    valid  success
+ data.frame  share_of_total   reverse      external_parent    valid  success
+ data.frame  share_of_total   reverse     external_env_get    valid  success
+ data.frame  share_of_total   reverse    external_identity    valid  success
+ data.frame share_of_parent   forward        lexical_child  refusal  success
+ data.frame share_of_parent   forward       implicit_local  refusal  success
+ data.frame share_of_parent   forward         rlang_parent  refusal  success
+ data.frame share_of_parent   forward explicit_mask_target  refusal  success
+ data.frame share_of_parent   forward environment_identity  refusal  success
+ data.frame share_of_parent   forward          caller_path  refusal  success
+ data.frame share_of_parent   forward      repaired_dollar  refusal  refusal
+ data.frame share_of_parent   forward repaired_exact_index  refusal  refusal
+ data.frame share_of_parent   forward repaired_get_element  refusal  refusal
+ data.frame share_of_parent   forward      nested_base_get  refusal  refusal
+ data.frame share_of_parent   forward external_child_field    valid  success
+ data.frame share_of_parent   forward      external_parent    valid  success
+ data.frame share_of_parent   forward     external_env_get    valid  success
+ data.frame share_of_parent   forward    external_identity    valid  success
+ data.frame share_of_parent   reverse        lexical_child  refusal  success
+ data.frame share_of_parent   reverse       implicit_local  refusal  success
+ data.frame share_of_parent   reverse         rlang_parent  refusal  success
+ data.frame share_of_parent   reverse explicit_mask_target  refusal  success
+ data.frame share_of_parent   reverse environment_identity  refusal  success
+ data.frame share_of_parent   reverse          caller_path  refusal  success
+ data.frame share_of_parent   reverse      repaired_dollar  refusal  refusal
+ data.frame share_of_parent   reverse repaired_exact_index  refusal  refusal
+ data.frame share_of_parent   reverse repaired_get_element  refusal  refusal
+ data.frame share_of_parent   reverse      nested_base_get  refusal  refusal
+ data.frame share_of_parent   reverse external_child_field    valid  success
+ data.frame share_of_parent   reverse      external_parent    valid  success
+ data.frame share_of_parent   reverse     external_env_get    valid  success
+ data.frame share_of_parent   reverse    external_identity    valid  success
+     tibble  share_of_total   forward        lexical_child  refusal  success
+     tibble  share_of_total   forward       implicit_local  refusal  success
+     tibble  share_of_total   forward         rlang_parent  refusal  success
+     tibble  share_of_total   forward explicit_mask_target  refusal  success
+     tibble  share_of_total   forward environment_identity  refusal  success
+     tibble  share_of_total   forward          caller_path  refusal  success
+     tibble  share_of_total   forward      repaired_dollar  refusal  refusal
+     tibble  share_of_total   forward repaired_exact_index  refusal  refusal
+     tibble  share_of_total   forward repaired_get_element  refusal  refusal
+     tibble  share_of_total   forward      nested_base_get  refusal  refusal
+     tibble  share_of_total   forward external_child_field    valid  success
+     tibble  share_of_total   forward      external_parent    valid  success
+     tibble  share_of_total   forward     external_env_get    valid  success
+     tibble  share_of_total   forward    external_identity    valid  success
+     tibble  share_of_total   reverse        lexical_child  refusal  success
+     tibble  share_of_total   reverse       implicit_local  refusal  success
+     tibble  share_of_total   reverse         rlang_parent  refusal  success
+     tibble  share_of_total   reverse explicit_mask_target  refusal  success
+     tibble  share_of_total   reverse environment_identity  refusal  success
+     tibble  share_of_total   reverse          caller_path  refusal  success
+     tibble  share_of_total   reverse      repaired_dollar  refusal  refusal
+     tibble  share_of_total   reverse repaired_exact_index  refusal  refusal
+     tibble  share_of_total   reverse repaired_get_element  refusal  refusal
+     tibble  share_of_total   reverse      nested_base_get  refusal  refusal
+     tibble  share_of_total   reverse external_child_field    valid  success
+     tibble  share_of_total   reverse      external_parent    valid  success
+     tibble  share_of_total   reverse     external_env_get    valid  success
+     tibble  share_of_total   reverse    external_identity    valid  success
+     tibble share_of_parent   forward        lexical_child  refusal  success
+     tibble share_of_parent   forward       implicit_local  refusal  success
+     tibble share_of_parent   forward         rlang_parent  refusal  success
+     tibble share_of_parent   forward explicit_mask_target  refusal  success
+     tibble share_of_parent   forward environment_identity  refusal  success
+     tibble share_of_parent   forward          caller_path  refusal  success
+     tibble share_of_parent   forward      repaired_dollar  refusal  refusal
+     tibble share_of_parent   forward repaired_exact_index  refusal  refusal
+     tibble share_of_parent   forward repaired_get_element  refusal  refusal
+     tibble share_of_parent   forward      nested_base_get  refusal  refusal
+     tibble share_of_parent   forward external_child_field    valid  success
+     tibble share_of_parent   forward      external_parent    valid  success
+     tibble share_of_parent   forward     external_env_get    valid  success
+     tibble share_of_parent   forward    external_identity    valid  success
+     tibble share_of_parent   reverse        lexical_child  refusal  success
+     tibble share_of_parent   reverse       implicit_local  refusal  success
+     tibble share_of_parent   reverse         rlang_parent  refusal  success
+     tibble share_of_parent   reverse explicit_mask_target  refusal  success
+     tibble share_of_parent   reverse environment_identity  refusal  success
+     tibble share_of_parent   reverse          caller_path  refusal  success
+     tibble share_of_parent   reverse      repaired_dollar  refusal  refusal
+     tibble share_of_parent   reverse repaired_exact_index  refusal  refusal
+     tibble share_of_parent   reverse repaired_get_element  refusal  refusal
+     tibble share_of_parent   reverse      nested_base_get  refusal  refusal
+     tibble share_of_parent   reverse external_child_field    valid  success
+     tibble share_of_parent   reverse      external_parent    valid  success
+     tibble share_of_parent   reverse     external_env_get    valid  success
+     tibble share_of_parent   reverse    external_identity    valid  success
+ data.table  share_of_total   forward        lexical_child  refusal  success
+ data.table  share_of_total   forward       implicit_local  refusal  success
+ data.table  share_of_total   forward         rlang_parent  refusal  success
+ data.table  share_of_total   forward explicit_mask_target  refusal  success
+ data.table  share_of_total   forward environment_identity  refusal  success
+ data.table  share_of_total   forward          caller_path  refusal  success
+ data.table  share_of_total   forward      repaired_dollar  refusal  refusal
+ data.table  share_of_total   forward repaired_exact_index  refusal  refusal
+ data.table  share_of_total   forward repaired_get_element  refusal  refusal
+ data.table  share_of_total   forward      nested_base_get  refusal  refusal
+ data.table  share_of_total   forward external_child_field    valid  success
+ data.table  share_of_total   forward      external_parent    valid  success
+ data.table  share_of_total   forward     external_env_get    valid  success
+ data.table  share_of_total   forward    external_identity    valid  success
+ data.table  share_of_total   reverse        lexical_child  refusal  success
+ data.table  share_of_total   reverse       implicit_local  refusal  success
+ data.table  share_of_total   reverse         rlang_parent  refusal  success
+ data.table  share_of_total   reverse explicit_mask_target  refusal  success
+ data.table  share_of_total   reverse environment_identity  refusal  success
+ data.table  share_of_total   reverse          caller_path  refusal  success
+ data.table  share_of_total   reverse      repaired_dollar  refusal  refusal
+ data.table  share_of_total   reverse repaired_exact_index  refusal  refusal
+ data.table  share_of_total   reverse repaired_get_element  refusal  refusal
+ data.table  share_of_total   reverse      nested_base_get  refusal  refusal
+ data.table  share_of_total   reverse external_child_field    valid  success
+ data.table  share_of_total   reverse      external_parent    valid  success
+ data.table  share_of_total   reverse     external_env_get    valid  success
+ data.table  share_of_total   reverse    external_identity    valid  success
+ data.table share_of_parent   forward        lexical_child  refusal  success
+ data.table share_of_parent   forward       implicit_local  refusal  success
+ data.table share_of_parent   forward         rlang_parent  refusal  success
+ data.table share_of_parent   forward explicit_mask_target  refusal  success
+ data.table share_of_parent   forward environment_identity  refusal  success
+ data.table share_of_parent   forward          caller_path  refusal  success
+ data.table share_of_parent   forward      repaired_dollar  refusal  refusal
+ data.table share_of_parent   forward repaired_exact_index  refusal  refusal
+ data.table share_of_parent   forward repaired_get_element  refusal  refusal
+ data.table share_of_parent   forward      nested_base_get  refusal  refusal
+ data.table share_of_parent   forward external_child_field    valid  success
+ data.table share_of_parent   forward      external_parent    valid  success
+ data.table share_of_parent   forward     external_env_get    valid  success
+ data.table share_of_parent   forward    external_identity    valid  success
+ data.table share_of_parent   reverse        lexical_child  refusal  success
+ data.table share_of_parent   reverse       implicit_local  refusal  success
+ data.table share_of_parent   reverse         rlang_parent  refusal  success
+ data.table share_of_parent   reverse explicit_mask_target  refusal  success
+ data.table share_of_parent   reverse environment_identity  refusal  success
+ data.table share_of_parent   reverse          caller_path  refusal  success
+ data.table share_of_parent   reverse      repaired_dollar  refusal  refusal
+ data.table share_of_parent   reverse repaired_exact_index  refusal  refusal
+ data.table share_of_parent   reverse repaired_get_element  refusal  refusal
+ data.table share_of_parent   reverse      nested_base_get  refusal  refusal
+ data.table share_of_parent   reverse external_child_field    valid  success
+ data.table share_of_parent   reverse      external_parent    valid  success
+ data.table share_of_parent   reverse     external_env_get    valid  success
+ data.table share_of_parent   reverse    external_identity    valid  success
+         observed
+expected  refusal success
+  refusal      48      72
+  valid         0      48
+
+Minimal forward witness:
+      g source prior observed
+1     a      1  0.25      100
+2     b      3  0.75      300
+3 Total      4  1.00      400
+
+Environment:
+R version 4.6.1 (2026-06-24)
+ aarch64-apple-darwin23
+dplyr 1.2.1
+rlang 1.3.0
+pkgload 1.5.3
+tibble 3.3.1
+data.table 1.18.6.1
