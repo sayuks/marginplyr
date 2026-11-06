@@ -267,6 +267,7 @@ check_subclass_frame_summaries <- function(convert) {
     structure(data.frame(out = sum(x)),
               class = c("margin_summary_frame", "data.frame"))
   }
+  summary_env <- rlang::env(frame = frame)
   for (behavior in c("change", "refuse", "unspecified", "incompatible")) {
     rows <- if (behavior %in% c("unspecified", "incompatible")) {
       list(1:3, 3:1)
@@ -275,8 +276,8 @@ check_subclass_frame_summaries <- function(convert) {
     }
     for (order in rows) {
       data <- convert(data.frame(g = c("a", "a", "b"), x = 1:3)[order, ])
-      for (summary in list(rlang::quo(frame(x)),
-                           rlang::quo(frame(dplyr::pick(x)$x)))) {
+      for (expr in list(quote(frame(x)), quote(frame(dplyr::pick(x)$x)))) {
+        summary <- rlang::new_quosure(expr, env = summary_env)
         for (role in c("grand", "fixed", "included", "rollup")) {
           keys <- if (role == "grand") character() else "g"
           grouping <- switch(role,
@@ -290,7 +291,8 @@ check_subclass_frame_summaries <- function(convert) {
             )
             error <- expect_error(
               summarize_with_margins(
-                data, !!summary, .by = dplyr::all_of(fixed), .grouping = grouping
+                data, !!summary,
+                .by = dplyr::all_of(fixed), .grouping = grouping
               ),
               "Can.t combine"
             )
@@ -298,13 +300,13 @@ check_subclass_frame_summaries <- function(convert) {
             next
           }
           expected <- dplyr::summarise(
-            data, !!summary, later = out * 2L, .by = dplyr::all_of(keys)
+            data, !!summary, later = .data$out * 2L, .by = dplyr::all_of(keys)
           )
           packed <- dplyr::summarise(
             data, packed = !!summary, .by = dplyr::all_of(keys)
           )
           if (role == "rollup") {
-            total <- dplyr::summarise(data, !!summary, later = out * 2L)
+            total <- dplyr::summarise(data, !!summary, later = .data$out * 2L)
             total$g <- "Total"
             expected <- dplyr::bind_rows(expected, total)
             total <- dplyr::summarise(data, packed = !!summary)
@@ -312,7 +314,7 @@ check_subclass_frame_summaries <- function(convert) {
             packed <- dplyr::bind_rows(packed, total)
           }
           actual <- summarize_with_margins(
-            data, !!summary, later = out * 2L,
+            data, !!summary, later = .data$out * 2L,
             .by = dplyr::all_of(fixed), .grouping = grouping
           )
           expect_identical(actual, expected, info = paste(behavior, role))
@@ -320,7 +322,9 @@ check_subclass_frame_summaries <- function(convert) {
             data, packed = !!summary,
             .by = dplyr::all_of(fixed), .grouping = grouping
           )
-          expect_identical(actual, packed, info = paste(behavior, role, "packed"))
+          expect_identical(
+            actual, packed, info = paste(behavior, role, "packed")
+          )
         }
       }
     }
