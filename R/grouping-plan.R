@@ -1249,10 +1249,11 @@ preflight_grouping_spec <- function(grouping_spec,
     if (is_empty_argument(arg)) {
       abort_empty_grouping_arg(rule$constructor, i)
     }
-    reading <- read_grouping_arg(arg, data_vars)
+    reading <- read_grouping_arg(arg, data_vars, captured$wrappers)
     if (is.null(reading$nested)) {
-      check_ambiguous_nested_name(arg, grouping_spec, rule, data_vars)
-      reading$quo <- restore_nested_arg(reading$quo, captured$wrappers)
+      if (!reading$evaluated) {
+        check_ambiguous_nested_name(arg, grouping_spec, rule, data_vars)
+      }
       name_only <- name_only && is_name_only_selection(reading$quo, data_vars)
       args[[i]] <- reading
       next
@@ -2228,13 +2229,17 @@ grouping_constructor_names <- function() {
 # Reads a nonempty nested argument into a specification or a selection quosure.
 # A name outside the input or a constructor-shaped call can yield an ordinary
 # selection; its preflight value stays in that argument's environment for the
-# typed pass (ADR 0008).
-read_grouping_arg <- function(arg, data_vars) {
+# typed pass (ADR 0008). `wrappers` holds captured qualified call boundaries;
+# `evaluated` distinguishes a retained answer from an unread column name.
+read_grouping_arg <- function(arg, data_vars, wrappers = list()) {
   expr <- nested_arg_expr(arg)
-  env <- rlang::quo_get_env(arg)
-  selection <- list(quo = arg, nested = NULL)
+  authored <- restore_nested_arg(arg, wrappers)
+  env <- rlang::quo_get_env(authored)
+  evaluation <- unparenthesized_value(rlang::quo_get_expr(authored), ns = "")
+  qualified <- is_redundant_parens(evaluation)
+  selection <- list(quo = authored, nested = NULL, evaluated = FALSE)
   if (
-    is.symbol(expr) &&
+    !qualified && is.symbol(expr) &&
       is_name_only_expr(expr, env = env, data_vars = data_vars)
   ) {
     return(selection)
@@ -2248,29 +2253,36 @@ read_grouping_arg <- function(arg, data_vars) {
   should_evaluate <-
     is_constructor_call ||
     is.symbol(expr) ||
-    !is.language(expr)
+    (!is.language(expr) &&
+     (!qualified || inherits(expr, "margin_grouping_spec")))
   if (!should_evaluate) {
     return(selection)
   }
 
-  value <- rlang::eval_tidy(rlang::new_quosure(expr, env))
+  # Syntactic pairs affect admission only. An authored qualified pair runs
+  # its namespace operation in its captured environment (ADR 0019).
+  value <- rlang::eval_tidy(rlang::new_quosure(evaluation, env))
+  selection$evaluated <- TRUE
   if (inherits(value, "margin_grouping_spec")) {
     return(list(quo = arg, nested = value))
   }
-  if (is.symbol(expr) || is_constructor_call) {
+  if (is.symbol(expr) || is_constructor_call || qualified) {
     name <- if (is_constructor_call) {
       static_call_name(expr)
-    } else {
+    } else if (is.symbol(expr)) {
       rlang::as_string(expr)
     }
     # Keep the call spelling for tidyselect diagnostics, but answer from the
     # preflight value without forcing the caller's arguments again.
-    retained <- if (is_constructor_call) function(...) value else value
+    retained <- if (is_constructor_call || qualified) {
+      function(...) value
+    } else {
+      value
+    }
     selection_env <- rlang::env(env)
     constructor_head <- if (is_constructor_call) static_call_head(expr)
     # tidyselect strips bare pairs around the selection before evaluation.
-    selection_call <- unparenthesized_value(rlang::quo_get_expr(arg), ns = "")
-    if (is_constructor_call && is_redundant_parens(selection_call)) {
+    if (qualified) {
       rlang::env_bind(selection_env, `::` = function(...) retained)
     } else if (is_redundant_parens(constructor_head, ns = "")) {
       # Answer at the outermost pair without forcing any inner callee lookup.
@@ -2284,7 +2296,7 @@ read_grouping_arg <- function(arg, data_vars) {
     } else {
       rlang::env_bind(selection_env, !!name := retained)
     }
-    selection$quo <- rlang::quo_set_env(arg, selection_env)
+    selection$quo <- rlang::quo_set_env(authored, selection_env)
   }
   selection
 }

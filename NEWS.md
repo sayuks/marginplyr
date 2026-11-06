@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Authored namespace calls around nested Grouping specifications retain the
+  caller's result and captured environment, with one evaluation per argument
+  occurrence across inspection and both Nest verbs (#1396).
+
 * Typed dtplyr Grouping-plan inspection and nesting safely refuse replaced
   registered `head.data.table` methods before they can receive source rows
   (#1397).
