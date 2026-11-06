@@ -1,0 +1,7 @@
+Native local dplyr typed grouping: a,b; no subclass head callback
+Native dtplyr grouping and collection: a,b; no subclass head callback
+Name-only Grouping inspection: (g); no subclass head callback
+Typed Grouping inspection: (); subclass head saw populated root with two rows
+Error in main() : identical(plan$included, "(g)") is not TRUE
+Calls: main -> stopifnot
+Execution halted

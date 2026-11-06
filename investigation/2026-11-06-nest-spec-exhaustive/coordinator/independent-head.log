@@ -1,0 +1,7 @@
+Native collection and name-only inspection: g retained, callback count 0.
+Typed inspection: g silently omitted, callback row counts 2,0.
+Typed inspection changed caller-owned immutable source to changed,changed.
+R: R version 4.6.1 (2026-06-24)
+Error in main() : identical(typed$included, list("g")) is not TRUE
+Calls: main -> stopifnot
+Execution halted

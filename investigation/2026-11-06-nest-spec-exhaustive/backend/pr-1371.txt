@@ -1,0 +1,74 @@
+Keep dtplyr metadata faithful and accept empty projections
+## Summary
+
+Keep dtplyr typed Grouping metadata faithful by checking bracket S3 dispatch, and accept deterministic empty projections without running source operations.
+
+```tex
+dtplyr metadata
+  -> validate bracket generic, local method and S3 registration
+  -> recognize standard lazy registrations without forcing unknown promises
+  -> admit literal 0L projection only with an empty output schema
+```
+
+Closes #1359.
+Closes #1366.
+
+## Evidence
+
+- **Before:** caller-local `[.data.table` could erase typed grouping keys during inspection and nesting; deterministic literal-zero projections raised the metadata-safety refusal.
+  **After:** unsafe dispatch refuses before callbacks or source rows run; ordinary empty projections preserve empty schema, zero rows and integer identifiers.
+- Regression coverage includes typed dimensions/fixed keys in inspection and both Nest verbs, 96 empty-projection scenarios with eager/direct-empty controls, zero construction-time source/predicate calls, source serialization, unknown/value-dependent parents and Mutable-step safeguards.
+- Independent combined probe on `4e09161f` started with the ordinary S3 registration still lazy, accepted the empty projection, observed six safe caller-method refusals and preserved Mutable-step protection.
+- Verification: [full Review-ready record](https://github.com/sayuks/marginplyr/pull/1371#issuecomment-6674490505), all six mandatory checks and the source-tarball check passed for `4e09161f8aa8e37b36415ef8248f69bc7725448c`; 0 errors, 0 warnings, 0 notes. Timing proposal retained the current order (modeled gain 0 s).
+- Review: [Standards/Spec record](https://github.com/sayuks/marginplyr/pull/1371#issuecomment-6674535659), zero findings on both axes; each reviewer used gpt-6.1-sol / xhigh.
+
+## Merge Danger
+
+**Door:** two-way
+
+The metadata admission changes and regression tests can be reverted together.
+
+**Blast Radius:** dtplyr
+
+Typed Grouping-plan inspection and Margin preparation share the classifier. Custom bracket dispatch is conservatively refused; known empty projections under ordinary dispatch are admitted. If private promise inspection is unavailable, unresolved registrations remain safely refused.
+
+Review-ready
+
+- Submitted SHA: `4e09161f8aa8e37b36415ef8248f69bc7725448c`.
+- Scope: `full`.
+- Reason: changes dtplyr typed-metadata safety and deterministic empty projection admission, with permanent regression tests and NEWS; package behavior requires the source-tarball check, complete suite and snapshots.
+- Test dependency-declaration scan: passed.
+- Required optional test Suggests presence/version: passed.
+- Roxygen regeneration and committed-source consistency: passed.
+- Package spelling: passed.
+- `jarl check .`: passed.
+- Package-aware lintr after `pkgload::load_all()`: passed, no lints.
+- Heavy verification: source tarball built; `R CMD check --as-cran` passed, including all 251 test files, snapshots, examples, vignette rebuilding and PDF/HTML manuals. Native testthat announcement: eight test processes. **0 ERROR, 0 WARNING, 0 NOTE**.
+- Terminal outcome: original retained PTY session `6297` returned **exit 0**; `result.rds` records `status = passed`, `heavy_check = passed`. Initial chunk `ca8f36`; terminal chunk `d1c3c6`. The same handle was retained through baseline, FIFO admission, checking and cleanup.
+- Artifact directory: `/private/tmp/marginplyr-meta-1359-1366-20261106-a/.review-ready/runs/20261106T012540Z-94134-16fb612f19232/` (runner retention policy applies).
+- NOTE dispositions: none.
+
+Timing-proposal disposition: inspected `priority-16fb66969037f/explanation.md` and `proposal.rds` for this SHA. All 251 file observations were eligible, with no all-skipped or empty file. Current, native and selected orders match the committed 251-file registration. Modeled eight-worker schedules: native/current/selected **512.164 s**, candidate **513.185 s**; selected modeled gain **0 s**. Optional reordering was not adopted; priority is unchanged and no patch or additional validation is required. These are scheduling models, not observed speedups. Relevant measured file durations: bracket metadata 7.421 s, empty projection 4.382 s, merge metadata 3.431 s.
+
+Current-main assessment: freshly fetched main and merge-base `4f4b779c0554c4142a2c1bf20526af315e4133b9`, submitted HEAD `4e09161f8aa8e37b36415ef8248f69bc7725448c`. `git merge-tree --write-tree` exited 0 with tree `f9112be383f9bac974a2de3851665210a5dc5482`. Main remained the starting ancestor with no main-side changes to combine. The shared bracket/S3 guard, known empty-subset admission, ADR 0020 metadata fidelity and ADR 0029 Mutable-step boundary were assessed together; no adaptation or main integration was required. The same pair was re-fetched and confirmed after full completion, immediately before the normal push.
+
+Bounded investigation: the submitting agent inspected an independent archive of the pinned SHA against all requirements, covering outer/local method lookup, registry safety, literal-zero narrowness, unknown parents, empty public schema/cardinality/identifier and Mutable-step ordering. A fresh-R combined probe started with the ordinary bracket registration still lazy, accepted the empty projection, observed six safe typed caller-method refusals with zero method callbacks, and preserved schema-only Mutable inspection/refusal and source serialization. It ended at exit 0; no additional owned execution remained. The disposable source copy was removed only after shutdown. No concrete submission concern remained.
+
+Development evidence: #1359 regression was red before its repair; after the standard-registry compatibility fix, #1366 remained independently red until literal-zero admission was added. Committed-SHA focused bracket, merge and empty-projection files all passed with testthat parallelism disabled. The expansion regression includes 96 scenarios plus eager/direct-empty controls. NEWS entries cite both issues. The original checkout remains clean.
+
+Reviewed SHA: `4e09161f8aa8e37b36415ef8248f69bc7725448c`.
+
+Fixed point: freshly fetched main `4f4b779c0554c4142a2c1bf20526af315e4133b9`.
+Comparison: `git diff 4f4b779c0554c4142a2c1bf20526af315e4133b9...4e09161f8aa8e37b36415ef8248f69bc7725448c` (merge-base with main).
+
+Both axes ran independently in fresh contexts through `code-review`, each with **gpt-6.1-sol / xhigh**, after the successful full Review-ready result for this exact SHA. The reviewed snapshot was pushed to this PR before this record was published. No follow-up edit was required.
+
+## Standards
+
+**Zero findings.** The six-file diff conforms to the metadata seam, optional-dependency guards, lazy-input and Mutable-step boundaries, test observation policy, comments and NEWS requirements. No documented-standard breach or actionable Fowler smell was found. Backend S3/lazy-binding instrumentation does not couple tests to the Margin operation representation. Tool-enforced checks were left to Review-ready.
+
+## Spec
+
+**Zero findings.** The reviewer fetched the bodies and all comments of #1359 and #1366 and followed research PRs #1367/#1369, then compared the acceptance union and ADR 0020/0029 with the implementation and regressions. Safe Package refusal, ordinary controls, empty projection schema/zero rows/integer identifier, zero construction-time source operations, source immutability and Mutable-step protection are covered. No missing requirement, scope creep or incorrect implementation was found.
+
+Total: Standards 0; Spec 0. Worst finding within each axis: none. Both reviewers made no edits, ran no additional suite/build and left no open dispositions.

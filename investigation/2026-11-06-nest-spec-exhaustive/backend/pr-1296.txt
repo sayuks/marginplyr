@@ -1,0 +1,70 @@
+Validate dtplyr join metadata in the execution environmen
+## Summary
+
+```tex
+dtplyr query
+  outer lexical environmen
+    -> arithmetic binding checks on both operands
+    -> isolated operand and query evaluation
+  package
+    -> zero-row result truncation
+```
+
+Closes #1281.
+
+## Evidence
+
+- **Before.** Typed inspection and expansion each invoked the masked operator with a zero-length input.
+- **After.** Both calls raise the existing Package condition before invoking the operator. With base dispatch, the Grouping plan selects `g`, expansion returns two rows with integer `w`, and the ignored promise stays unforced.
+- The row predicate runs only on explicit collection, both source tables match their original copies, and the metadata probes bypass a caller-supplied `head()`.
+- [Review-ready verification](https://github.com/sayuks/marginplyr/pull/1296#issuecomment-6644649008)
+- [Standards and Spec review](https://github.com/sayuks/marginplyr/pull/1296#issuecomment-6644673869)
+
+## Merge Danger
+
+**Door** two-way
+
+**Blast Radius** dtplyr
+
+The change affects typed metadata preparation for dtplyr input graphs.
+
+## Review-ready
+
+- Submitted SHA `dfc47ee543f536dd9445f7147c17ba216f3310b9`
+- Scope `full` because the review follow-up changes runtime dtplyr zero-row metadata evaluation and its regression tests.
+- Passed all five baseline checks — test dependency declarations, required optional test Suggests presence and versions, package spelling, `jarl check .`, and package-aware lintr after `pkgload::load_all()`.
+- Built the source tarball and ran `R CMD check --as-cran` with eight native test workers. All 233 test files and snapshots ran. The testthat summary reported 215284 passes, zero failures, warnings, and skips.
+- Terminal exit 0. R CMD check reported 0 ERROR, 0 WARNING, and 0 NOTE. No NOTE dispositions.
+- Retained terminal session `92115`. Artifacts `/private/tmp/marginplyr-1281/.review-ready/runs/20261104T224702Z-61848-f198a73385a/`.
+- Timing proposal `priority-f19870b952bd` measured the submitted SHA. The changed test file took 5.004 s. Registrations 0 and removals 0. The eight-worker schedule models were 524.769 s native, 524.769 s registration, 523.098 s candidate, and 524.769 s selected. The candidate's 1.671 s modeled gain was below the 10 s threshold. The proposal selected the current order.
+- The archived final SHA also passed the issue's exact replay with `--assert` and a separate control with a local `head.data.table` method.
+- Integration check compared fetched `main` at `f979a75da6e539f4e6abf03b6f7323d1e0bdd5dd` with the submitted SHA. `git merge-tree --write-tree` succeeded. Fetched main is the branch base.
+
+## Two-axis review
+
+The Standards and Spec reviewers each ran independently with `gpt-6.1-sol` at `xhigh` in both rounds.
+
+### First round
+
+Reviewed SHA `8c7ba437474745b63caae703c2207fa236238bd9` against the merge-base with `main` at `f979a75da6e539f4e6abf03b6f7323d1e0bdd5dd`.
+
+**Standards**
+
+- One required finding. The isolated proxy helper's header omitted the caller's obligation to use the same lexical environment for validation and evaluation. The header now records that precondition in `dfc47ee5`.
+- One advisory observation. Two regression tests repeat their small source-table fixtures. Each test keeps its own inputs so its repro can be read independently.
+
+**Spec**
+
+- One finding against #1281. The operand probe inserted a bare `head()` into the query, allowing a caller binding to read a source row during metadata preparation. `dfc47ee5` moves truncation outside dtplyr evaluation and adds a public regression test that detects the read on the reviewed revision.
+
+### Follow-up
+
+Reviewed SHA `dfc47ee543f536dd9445f7147c17ba216f3310b9` for the follow-up diff from `8c7ba437`.
+
+- **Standards.** The caller precondition is documented and the follow-up raised zero findings.
+- **Spec.** The regression is fixed and the follow-up raised zero findings. The reviewer independently reran the issue replay and a local `head.data.table` control against the final source.
+
+## [Codecov](https://app.codecov.io/gh/sayuks/marginplyr/pull/1296?dropdown=coverage&src=pr&el=h1&utm_medium=referral&utm_source=github&utm_content=comment&utm_campaign=pr+comments&utm_term=Yusuke+Sasaki) Repor
+:white_check_mark: All modified and coverable lines are covered by tests.
+
+:loudspeaker: Thoughts on this report? [Let us know!](https://github.com/codecov/feedback/issues/255)

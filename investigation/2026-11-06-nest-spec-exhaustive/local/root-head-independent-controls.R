@@ -1,0 +1,32 @@
+main <- function() {
+  args <- commandArgs(trailingOnly = TRUE)
+  pkgload::load_all(if (length(args)) args[[1L]] else ".", quiet = TRUE)
+  method_name <- "head.marginplyr_hunt_independent"
+  stopifnot(!exists(method_name, envir = .GlobalEnv, inherits = FALSE))
+  on.exit(rm(list = method_name, envir = .GlobalEnv), add = TRUE)
+  calls <- integer()
+  assign(method_name, function(x, n = 6L, ...) {
+    calls <<- c(calls, nrow(x))
+    out <- NextMethod("head")
+    if (nrow(out) == 0L) data.table::set(out, j = "g", value = integer())
+    out
+  }, envir = .GlobalEnv)
+  src <- data.table::data.table(g = c("a", "b"), value = 1:2)
+  class(src) <- c("marginplyr_hunt_independent", class(src))
+  before <- serialize(src, NULL)
+  native <- dplyr::summarise(src, n = dplyr::n(), .by = dplyr::where(is.character))
+  stopifnot(identical(native$g, c("a", "b")), identical(native$n, c(1L, 1L)), length(calls) == 0L)
+  cat("Native local dplyr typed grouping: a,b; no subclass head callback\n")
+  lazy <- dtplyr::lazy_dt(src, immutable = TRUE)
+  native_lazy <- dplyr::collect(dplyr::summarise(lazy, n = dplyr::n(), .by = g))
+  stopifnot(identical(native_lazy$g, c("a", "b")), identical(native_lazy$n, c(1L, 1L)), length(calls) == 0L)
+  cat("Native dtplyr grouping and collection: a,b; no subclass head callback\n")
+  plan <- inspect_grouping(lazy, .grouping = grouping_set(g))
+  stopifnot(identical(plan$included, "(g)"), length(calls) == 0L)
+  cat("Name-only Grouping inspection: (g); no subclass head callback\n")
+  plan <- inspect_grouping(lazy, .grouping = grouping_set(where(is.character)))
+  stopifnot(identical(plan$included, "()"), any(calls == 2L), identical(serialize(src, NULL), before))
+  cat("Typed Grouping inspection: (); subclass head saw populated root with two rows\n")
+  if ("--assert" %in% args) stopifnot(identical(plan$included, "(g)"), all(calls == 0L))
+}
+main()

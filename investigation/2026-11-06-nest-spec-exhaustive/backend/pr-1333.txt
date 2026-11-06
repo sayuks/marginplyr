@@ -1,0 +1,141 @@
+Protect dtplyr metadata from caller head and bracket bindings
+## Summary
+
+Protect dtplyr typed Grouping selections and Nest preparation from caller `head()` and generated `[` bindings.
+
+```tex
+immutable root -> isolated zero-row schema
+derived query  -> faithful base function dispatch
+               -> existing safe-metadata refusal before caller code otherwise
+```
+
+Closes #1303.
+Closes #1326.
+
+## Evidence
+
+- **Before:** an immutable root could send both source rows to caller `head()`, lose character Grouping dimensions, or mutate the caller table. A derived query could call caller `[` on empty input and infer different types from native collection.
+  **After:** public regressions cover typed dimensions/fixed keys, both Nest verbs and cell partitions, name-only inspection, native collection, and caller values. Ordinary non-functions in function lookup retain base dispatch; active/lazy/custom bindings remain refused before execution.
+- **Review-ready full:** `030834a868d7ab6f338e014746e256a02af30c7a`; 237 files, 216791 assertions, no failures/warnings/skips; source-tarball check 0 ERROR / 0 WARNING / 0 NOTE. [Verification and timing disposition](https://github.com/sayuks/marginplyr/pull/1333#issuecomment-6651357272).
+- **Review:** separate gpt-6.1-sol / xhigh Standards and Spec reviewers. Both initial findings fixed in 030834a8; follow-up reports zero new findings on either axis. [Review and dispositions](https://github.com/sayuks/marginplyr/pull/1333#issuecomment-6651384805).
+
+## Merge Danger
+
+**Door:** two-way
+
+Revertible code and test changes; no data migration.
+
+**Blast Radius:** dtplyr
+
+Typed Grouping inspection and shared Margin preparation. Caller-table preservation and ADR 0020's source-processing boundary remain enforced.
+
+Main compatibility assessment before draft creation
+
+- Fetched main: `73a074fb53b52a27065cbcc94cad4591ee514bb6`.
+- Branch HEAD: `5e9278227630bfa86c5acee5bbf44ee8d82a7769`.
+- `git merge-tree --write-tree origin/main HEAD`: exit 0, tree `7a2ecc028196a43a4e3bf6deb34e0b8f84382e5a`.
+- Since the branch base, main changes stored Margin scalar/key normalization and row-wise Nest placement. This branch isolates dtplyr metadata roots; its additional commit only wraps test lines. No conflicting behavior or required adaptation was identified, so no main merge is needed.
+- `jarl check .` and package-aware `lintr::lint_package()` after `pkgload::load_all()` pass for this HEAD (retained terminal session `56477`, exit 0).
+- #1326 implementation and integrated Review-ready full are pending; this is a draft.
+
+## Review-ready verification
+
+Submitted SHA: `c0728d3f3e3e7ce1fb3d75b1ba1da6bba0cf78a7`
+Scope: `full`
+Reason: The merge of main 390f9878 with the dtplyr metadata fixes changes package code and test inputs; verify the combined clean revision with source-tarball build/check, the complete suite, and snapshots.
+
+All five mandatory checks passed: test dependency-declaration scan; required optional test Suggests presence/version; package spelling; `jarl check .`; package-aware `lintr::lint_package()` after `pkgload::load_all()`.
+
+Source tarball built and `R CMD check --as-cran` passed, including examples, vignette rebuilding, the complete suite and snapshots. Native execution announced **8 test processes**, completed **237 files**, and reported **FAIL 0 / WARN 0 / SKIP 0 / PASS 216714**. Check result: **0 ERROR / 0 WARNING / 0 NOTE**. NOTE dispositions: none.
+
+Terminal outcome: exit **0**, timeout **FALSE**, collected through the original retained PTY session **43001** (initial chunk `3706f9`, terminal chunk `c9fad3`).
+Artifact directory: `/private/tmp/marginplyr-integration-1303-1326/.review-ready/runs/20261105T054315Z-54111-d35f89917fc/`.
+
+### Timing-proposal disposition
+
+Measured SHA is the submitted SHA above. Inspected `priority-d35fccd9153/explanation.md` and `proposal.rds`: all 237 files eligible, none all-skipped or empty; registrations 0, removals 0, optional reordering **not adopted**. Priority is unchanged, so there is no patch or further adoption commit. Eight-worker schedule models in seconds: native **487.874**, registration **487.874**, candidate **489.116**, selected **487.874**. Modeled gain over registration and native: **0.000 / 0.000** seconds; these are models, not observed speedups.
+
+### Current-main integration
+
+Fetched main: `390f987892323fb2ab2028a00b3b69ae603238ba`; branch HEAD and merge-base are respectively the submitted SHA and that main SHA. After normal merge commit `c0728d3f`, `git merge-tree --write-tree origin/main HEAD` returned exit 0 and tree `38f4a1e9fa54988d595b80515029ef2d07cbd96c`. The DESCRIPTION conflict retained all three independent registrations and both parents' relative orders. The auto-merged code retains main's selector/Nest changes and this branch's isolated dtplyr proxy call/counters. Strict native discovery selects every file once. Final full above validates this resulting revision.
+
+<details>
+<summary>Earlier pinned verification and measured registration history</summary>
+
+- `00eb2e34ca54ec8f18b1839652d980dac1af0996`, scope `full`: all five baseline checks passed; source tarball built; complete suite/snapshots ran with eight workers. Check failed with 1 ERROR, 0 WARNING, 0 NOTE: 14 legacy metadata-counter assertions observed 0 rather than 1 because the old caller `head()`/`collect()` hook was bypassed. Retained PTY **39468**, initial chunk `0f84d6`, terminal `4fab84`, exit **1**, timeout FALSE. Artifacts: `/private/tmp/marginplyr-integration-1303-1326/.review-ready/runs/20261105T050414Z-37500-927c2622697b/`. Timing was ineligible; no proposal adopted. Repair `e1c0ee8e` preserves the original expected acquisition counts and adds source-row evaluation assertions.
+- `e1c0ee8eef302431386b543b5ff8cfd2ebfe3c71`, scope `full`: all five baseline checks and source-tarball check passed; eight workers, 236 files, FAIL/WARN/SKIP 0, PASS 216271; 0 ERROR/WARNING/NOTE. Original PTY **57773**, initial `1e65eb`, terminal `85a330`, exit **0**, timeout FALSE. Artifacts: `/private/tmp/marginplyr-integration-1303-1326/.review-ready/runs/20261105T052609Z-48571-bdbb2819ea0a/`. Reason: package-affecting metadata fixes and acquisition-count repair require full.
+- That successful run's eligible recalculated proposal `priority-cf163a173d8f` was identical to inspected `priority-bdbb5c3f92c`. It registered `dtplyr-bracket-metadata` (0.709 s, position 199) and `dtplyr-root-metadata` (0.505 s, position 209), removed nothing, and preserved existing relative order. Native/registration/candidate/selected models: 474.629 / 474.629 / 475.424 / 474.629 s; modeled gains 0 / 0 s; optional reorder not adopted. Adopted in `abdea770ecc7b28fad70dc3a1c70d797f83de53d`.
+- `abdea770ecc7b28fad70dc3a1c70d797f83de53d`, scope `source`: the eligible evidence, identical package/test/helper/installed inputs/dependencies and priority-only DESCRIPTION delta were verified; native discovery selected all 236 files once. All five baseline checks passed; **package build/check, complete suite and snapshots omitted** under the measured-priority-only allowance. Original PTY **74447**, initial `2e1d2f`, terminal `0394f8`, exit **0**. Artifacts: `/private/tmp/marginplyr-integration-1303-1326/.review-ready/runs/20261105T053800Z-53072-cf502581a260/`; NOTE dispositions none.
+- Main subsequently advanced and caused a priority conflict. Its new package/test inputs required the fresh integrated full at `c0728d3f`; the earlier results were not treated as certification of that merge.
+
+</details>
+
+Reviewed SHA: c0728d3f3e3e7ce1fb3d75b1ba1da6bba0cf78a7
+Comparison: git diff 390f987892323fb2ab2028a00b3b69ae603238ba...c0728d3f3e3e7ce1fb3d75b1ba1da6bba0cf78a7 (merge-base with main).
+Both reviewers: gpt-6.1-sol, reasoning effort xhigh, fresh independent contexts, read-only review.
+
+## Standards
+
+Zero documented-standard violations; one baseline judgement call.
+Possible Duplicated Code: test-dtplyr-bracket-metadata repeats the identical caller-bracket fixture in the first two tests; the identical Nest normalizer also appears in bracket/root metadata files. A narrowly scoped shared fixture/helper can give these behaviors one home while keeping separate public-interface assertions.
+Disposition: accepted as test cleanup; follow-up implementation pending.
+
+## Spec
+
+One P2 finding: preserve base dispatch through ordinary non-function bracket bindings. The first-binding identity check in dtplyr_base_binding returns FALSE for a normal binding such as `[` <- NULL. R function lookup skips non-functions, so native derived collection uses base `[`, and faithful types are safely available. Typed inspection and both Nest verbs currently refuse.
+Requirement: #1326 acceptance, "Retain name-only inspection, base-dispatch typed metadata, and explicit native collection behavior."
+Disposition: accepted. Continue lookup past ordinary non-function values while preserving refusal before active binding lookup, promise forcing, or custom function execution. Add regression coverage for base dispatch through non-function bindings. Follow-up implementation pending.
+
+Summary: Standards 0 hard violations / 1 judgement call; Spec 1 finding (P2). No other missing requirements, scope creep or incorrect implementations found. This record certifies only the reviewed snapshot, not a future fix.
+
+## Final Review-ready verification
+
+Submitted SHA: `030834a868d7ab6f338e014746e256a02af30c7a`
+Scope: **full**
+Reason: The review follow-up changes runtime function lookup and metadata regression fixtures for issues 1303 and 1326; source-tarball build/check, the complete suite, and snapshots must validate the integrated fix.
+
+The submitted checkout's five mandatory checks passed: test dependency-declaration scan; required optional test Suggests presence/version; package spelling; `jarl check .`; package-aware lintr after `pkgload::load_all()`.
+
+Source tarball build and `R CMD check --as-cran` passed, including examples, vignette rebuilding, the complete suite and snapshots. Native execution: **8 workers**, **237 files**, **FAIL 0 / WARN 0 / SKIP 0 / PASS 216791**. Check: **0 ERROR / 0 WARNING / 0 NOTE**. NOTE dispositions: none.
+
+Original retained PTY: **75914** (initial chunk `035a3b`, terminal chunk `9eb501`); terminal exit **0**, timeout **FALSE**.
+Artifact directory: `/private/tmp/marginplyr-integration-1303-1326/.review-ready/runs/20261105T061036Z-80694-13b3613370f25/`.
+
+### Timing proposal
+
+Measured SHA: submitted SHA. Inspected `priority-13b366b7bb785/explanation.md` and `proposal.rds`; all 237 files eligible, none all-skipped/empty. Registrations **0**, removals **0**, optional existing-file reordering **not adopted**. Priority unchanged, no patch or adoption commit required. Native/registration/candidate/selected models: **484.426 / 484.426 / 483.947 / 484.426 s**. Candidate gain 0.479 s is below the 10 s adoption threshold; selected modeled gains over registration/native are **0 / 0 s**. Models are not observed speedups. Earlier measured registrations remain in `abdea770`; their adoption and prior pinned attempts are recorded in [the preceding verification record](https://github.com/sayuks/marginplyr/pull/1333#issuecomment-6650918424).
+
+### Current main compatibility
+
+Fetched main: `66a1447ae21cb89fef998742c6bd95a660c479e0`; branch HEAD: submitted SHA; merge-base: `390f987892323fb2ab2028a00b3b69ae603238ba`. `merge-tree --write-tree` passed (tree `1bf7c9ed9edd3ee3aa1cf98c3f7aeac502a57f22`). Main #1335 adds a roxygen consistency stage to review tooling and its development requirement/docs, with no package runtime or test-input change. No semantic conflict or adaptation was identified; no additional main integration is needed.
+
+As change-specific compatibility evidence, the prospective merged tree was archived separately and regenerated with `roxygen2::roxygenise()`: exit **0**, all source filenames and content hashes unchanged. Original supplemental PTY **7718**, terminal chunk `176d07`, exit0, child collected. The first sandboxed probe ended exit1 with `Operation not permitted`; its fresh-copy retry used approved escalation. This supplementary check establishes documentation-tool compatibility; it does not claim a full result for an uncommitted merged tree. The full result above certifies only the submitted SHA.
+
+The earlier review snapshot remains immutable. Both accepted findings are implemented in the ordinary follow-up commit `030834a8`; the follow-up review record will identify its own snapshot.
+
+## Follow-up review
+
+Reviewed SHA: `030834a868d7ab6f338e014746e256a02af30c7a` (pushed).
+Overall comparison: `git diff 66a1447ae21cb89fef998742c6bd95a660c479e0...030834a868d7ab6f338e014746e256a02af30c7a`, against the merge-base with main (`390f9878`).
+Following the repository's second-run boundary, this round reviews previously unseen executable/test behavior in `c0728d3f...030834a8` and verifies the accepted findings against their landed evidence. The [initial review](https://github.com/sayuks/marginplyr/pull/1333#issuecomment-6650959501) covers the unchanged behavior.
+
+Standards and Spec reviewers each ran in a fresh, independent context with **gpt-6.1-sol / xhigh**. Both rounds were read-only.
+
+## Standards
+
+**Zero new documented-standard violations; zero new baseline smell findings.**
+
+The initial Duplicated Code judgement is resolved in [030834a8](https://github.com/sayuks/marginplyr/commit/030834a868d7ab6f338e014746e256a02af30c7a): `helper-dtplyr-metadata-fixtures.R` owns the shared caller-bracket fixture and Nest-result normalizer, retaining the separate public-interface assertions.
+
+## Spec
+
+**Zero new findings:** no missing/partial requirement, scope creep or incorrect implementation identified in the new behavior.
+
+The initial P2 is fixed in the same commit. `dtplyr_base_binding()` skips ordinary non-functions and checks the first function, preserving refusal before active/lazy bindings, missing formals or custom functions. The public regressions in `test-dtplyr-bracket-metadata.R` cover direct/inherited NULL/numeric bindings for `[` and `+`, typed dimensions/fixed keys, name-only inspection, native collection, both Nest verbs and caller-table integrity; inherited unsafe bindings behind NULL remain refused. These acceptance assertions fail with the previous first-binding comparison.
+
+Summary: Standards **0 new** / Spec **0 new**; both accepted initial findings are resolved. The initial and follow-up records identify their separate snapshots; published history was preserved.
+
+## [Codecov](https://app.codecov.io/gh/sayuks/marginplyr/pull/1333?dropdown=coverage&src=pr&el=h1&utm_medium=referral&utm_source=github&utm_content=comment&utm_campaign=pr+comments&utm_term=Yusuke+Sasaki) Repor
+:white_check_mark: All modified and coverable lines are covered by tests.
+
+:loudspeaker: Thoughts on this report? [Let us know!](https://github.com/codecov/feedback/issues/255)

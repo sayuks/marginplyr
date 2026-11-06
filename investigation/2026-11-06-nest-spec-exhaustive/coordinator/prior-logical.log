@@ -1,0 +1,5 @@
+                   verb plain_error classed_error classed_rows
+      nest_with_margins        TRUE          TRUE           NA
+   nest_by_with_margins        TRUE          TRUE           NA
+    expand_with_margins        TRUE          TRUE           NA
+ summarize_with_margins        TRUE          TRUE           NA

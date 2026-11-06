@@ -1,0 +1,9 @@
+... native_nest rlang_error
+... native_nest_by tibble_error_column_names_cannot_be_dot_dot
+... margin_nest vctrs_error_names_cannot_be_dot_dot
+... margin_nest_by vctrs_error_names_cannot_be_dot_dot
+..1 native_nest rlang_error
+..1 native_nest_by tibble_error_column_names_cannot_be_dot_dot
+..1 margin_nest vctrs_error_names_cannot_be_dot_dot
+..1 margin_nest_by vctrs_error_names_cannot_be_dot_dot
+Eight matching upstream refusal boundaries and eight successful safe-name controls.

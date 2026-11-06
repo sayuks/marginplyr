@@ -1,0 +1,73 @@
+"consumer","input","shape","predicate_reads","duplicate","matches","observation"
+"inspect_grouping","local","fixed_single",0,TRUE,TRUE,"Duplicate grouping sets were produced at positions:
+ℹ 1, 2.
+ℹ Use `.duplicates = ""drop""` or `""keep""`."
+"inspect_grouping","local","fixed_two",0,TRUE,TRUE,"Duplicate grouping sets were produced at position groups:
+ℹ 1, 3; 2, 4.
+ℹ Use `.duplicates = ""drop""` or `""keep""`."
+"inspect_grouping","local","variable_rollup",3,TRUE,TRUE,"Duplicate grouping sets were produced at position groups:
+ℹ 3, 6; 2, 5; 1, 4.
+ℹ Use `.duplicates = ""drop""` or `""keep""`."
+"inspect_grouping","local","variable_cube",3,TRUE,TRUE,"Duplicate grouping sets were produced at position groups:
+ℹ 4, 8; 3, 7; 2, 6; 1, 5.
+ℹ Use `.duplicates = ""drop""` or `""keep""`."
+"inspect_grouping","unsafe_dtplyr","fixed_single",0,TRUE,TRUE,"Duplicate grouping sets were produced at positions:
+ℹ 1, 2.
+ℹ Use `.duplicates = ""drop""` or `""keep""`."
+"inspect_grouping","unsafe_dtplyr","fixed_two",0,TRUE,TRUE,"Duplicate grouping sets were produced at position groups:
+ℹ 1, 3; 2, 4.
+ℹ Use `.duplicates = ""drop""` or `""keep""`."
+"inspect_grouping","unsafe_dtplyr","variable_rollup",0,FALSE,TRUE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+"inspect_grouping","unsafe_dtplyr","variable_cube",0,FALSE,TRUE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+"nest_with_margins","local","fixed_single",0,TRUE,TRUE,"Duplicate grouping sets were produced at positions:
+ℹ 1, 2.
+ℹ Use `.duplicates = ""drop""`."
+"nest_with_margins","local","fixed_two",0,TRUE,TRUE,"Duplicate grouping sets were produced at position groups:
+ℹ 1, 3; 2, 4.
+ℹ Use `.duplicates = ""drop""`."
+"nest_with_margins","local","variable_rollup",3,TRUE,TRUE,"Duplicate grouping sets were produced at position groups:
+ℹ 3, 6; 2, 5; 1, 4.
+ℹ Use `.duplicates = ""drop""`."
+"nest_with_margins","local","variable_cube",3,TRUE,TRUE,"Duplicate grouping sets were produced at position groups:
+ℹ 4, 8; 3, 7; 2, 6; 1, 5.
+ℹ Use `.duplicates = ""drop""`."
+"nest_with_margins","unsafe_dtplyr","fixed_single",0,TRUE,TRUE,"Duplicate grouping sets were produced at positions:
+ℹ 1, 2.
+ℹ Use `.duplicates = ""drop""`."
+"nest_with_margins","unsafe_dtplyr","fixed_two",0,TRUE,TRUE,"Duplicate grouping sets were produced at position groups:
+ℹ 1, 3; 2, 4.
+ℹ Use `.duplicates = ""drop""`."
+"nest_with_margins","unsafe_dtplyr","variable_rollup",0,FALSE,TRUE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+"nest_with_margins","unsafe_dtplyr","variable_cube",0,FALSE,TRUE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+"nest_by_with_margins","local","fixed_single",0,TRUE,TRUE,"Duplicate grouping sets were produced at positions:
+ℹ 1, 2.
+ℹ Use `.duplicates = ""drop""`."
+"nest_by_with_margins","local","fixed_two",0,TRUE,TRUE,"Duplicate grouping sets were produced at position groups:
+ℹ 1, 3; 2, 4.
+ℹ Use `.duplicates = ""drop""`."
+"nest_by_with_margins","local","variable_rollup",3,TRUE,TRUE,"Duplicate grouping sets were produced at position groups:
+ℹ 3, 6; 2, 5; 1, 4.
+ℹ Use `.duplicates = ""drop""`."
+"nest_by_with_margins","local","variable_cube",3,TRUE,TRUE,"Duplicate grouping sets were produced at position groups:
+ℹ 4, 8; 3, 7; 2, 6; 1, 5.
+ℹ Use `.duplicates = ""drop""`."
+"nest_by_with_margins","unsafe_dtplyr","fixed_single",0,TRUE,TRUE,"Duplicate grouping sets were produced at positions:
+ℹ 1, 2.
+ℹ Use `.duplicates = ""drop""`."
+"nest_by_with_margins","unsafe_dtplyr","fixed_two",0,TRUE,TRUE,"Duplicate grouping sets were produced at position groups:
+ℹ 1, 3; 2, 4.
+ℹ Use `.duplicates = ""drop""`."
+"nest_by_with_margins","unsafe_dtplyr","variable_rollup",0,FALSE,TRUE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
+"nest_by_with_margins","unsafe_dtplyr","variable_cube",0,FALSE,TRUE,"Can't safely determine column metadata for `.data` from this dtplyr step.
+ℹ Obtaining its types or factor levels here could evaluate upstream operations on source rows.
+ℹ If you want that work to happen now, collect the input with `dplyr::collect()` and pass the resulting data frame."
