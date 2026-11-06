@@ -1,6 +1,6 @@
 # marginplyr 0.1.0
 
-* Grouping callbacks that rebind an unproven local callee resolve against typed
+* Grouping callbacks that rebind an unproven local function resolve against typed
   metadata, keeping fixed keys and dimensions consistent across inspection and
   summaries, including immutable dtplyr inputs (#1400).
 
