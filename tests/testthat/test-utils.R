@@ -118,7 +118,8 @@ test_that("shared argument assertions use the Package condition seam", {
 
 # Where a list of a call's arguments comes from: the shared reader, the rlang
 # function it wraps, the reader that unwraps each of them through an injected
-# quosure, or the `call_args` element of a parse this package builds out of one,
+# quosure, a statically selected literal branch, or the `call_args` element
+# of a parse this package builds out of one,
 # in either spelling of the element read.
 #
 # One matcher serves both scans below, because the hazard is one hazard: a list
@@ -143,7 +144,8 @@ reads_call_arguments <- function(expr) {
   named_reader <-
     identical(head, quote(static_call_args)) ||
     identical(head, quote(rlang::call_args)) ||
-    identical(head, quote(unwrap_injected_args))
+    identical(head, quote(unwrap_injected_args)) ||
+    identical(head, quote(scope_literal_branch))
   if (named_reader) {
     return(TRUE)
   }

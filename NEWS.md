@@ -11,6 +11,21 @@
 * Unnamed local data-frame summaries apply compatible frame-subclass casts
   before expanding their columns, preserving converted values (#1399).
 
+* Parent and Total share dependency checks retain known summary-mask
+  environments saved in local variables through recognized field reads,
+  environment accessors and list conversion (#1404).
+
+* Parent and Total share dependency checks follow closures installed by
+  literal list element additions, replacements and dollar-field writes
+  (#1403).
+
+* Parent and Total share dependency checks retain local closures transferred
+  through `force()`, literal `get()` and `match.fun()` (#1402).
+
+* Parent and Total share dependency checks retain invocation-time dependencies
+  through blocks, literal branches and visible local function factories,
+  including selected early returns and named `switch()` arms (#1401).
+
 * SQLite expansion preserves Boolean-word public column names and applicable
   source types on executable derived inputs, including default one-set
   expansions (#1398).
