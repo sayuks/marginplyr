@@ -108,7 +108,7 @@ if ("--assert" %in% args) {
   stopifnot(all(out$safe))
 } else {
   stopifnot(sum(!out$safe) == 20L, sum(out$safe) == 2L,
-            all(out$correct[seq_len(18L)] == FALSE),
+            !any(out$correct[seq_len(18L)]),
             all(out$source_unchanged[seq_len(18L)]),
             !any(out$source_unchanged[19:20]),
             all(out$refusal[21:22]))

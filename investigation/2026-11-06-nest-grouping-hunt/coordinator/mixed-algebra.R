@@ -72,7 +72,7 @@ for (i in seq_along(cases)) {
   keep <- expected(fam, "keep")
   for (policy in c("error", "drop", "keep")) {
     actual <- tryCatch(inspect_grouping(dat, .grouping = s, .duplicates = policy, .format = "list"), error = identity)
-    want_error <- policy == "error" && any(duplicated(keep$included))
+    want_error <- policy == "error" && anyDuplicated(keep$included) > 0L
     match <- if (want_error) inherits(actual, "marginplyr_error") && grepl("Duplicate grouping sets", conditionMessage(actual), fixed=TRUE) else identical(actual, expected(fam, policy))
     positions_valid <- TRUE
     if (want_error && inherits(actual, "condition") && match) {

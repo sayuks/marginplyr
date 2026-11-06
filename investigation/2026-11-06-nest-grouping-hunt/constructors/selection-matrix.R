@@ -5,7 +5,8 @@ d <- tibble::tibble(a=c("x","y"), b=1:2, z=c(TRUE,FALSE), dot1=c(3,4), `a b`=as.
 source <- list(local=d,dtplyr=dtplyr::lazy_dt(d))
 base_env <- rlang::env(sel=c("a","z"), ix=c(2L,1L), chosen="b", a="b", dot1="z")
 expressions <- list(quote(a),"a",1L,-1L,NULL,quote(c(a,b)),quote(c("a","z")),quote(all_of(sel)),quote(.env$sel),quote(all_of(.env$sel)),quote(.env$ix),quote(a:b),quote(!a),quote(where(is.character)),quote(tidyselect::peek_vars()[1:2]),quote(names(tidyselect::peek_data())),quote(base::`(`(a)),quote((a)),quote(base::identity(a)),quote((function(x)x)(chosen)),quote(all_of(c(sel,chosen))),quote(dot1),quote(`a b`))
-wrap <- list(plain=identity,syntactic=function(x)rlang::call2("(",x),qualified=function(x)rlang::call2(quote(base::`(`),x),private=function(x)rlang::call2(quote(base:::`(`),x),identity=function(x)rlang::call2(quote(base::identity),x),double=function(x)rlang::call2(quote(base::`(`),rlang::call2("(",x)))
+private_parenthesis <- rlang::call2(":::", quote(base), quote(`(`))
+wrap <- list(plain=identity,syntactic=function(x)rlang::call2("(",x),qualified=function(x)rlang::call2(quote(base::`(`),x),private=function(x)rlang::call2(private_parenthesis,x),identity=function(x)rlang::call2(quote(base::identity),x),double=function(x)rlang::call2(quote(base::`(`),rlang::call2("(",x)))
 rows <- list()
 for(e in seq_along(expressions)) for(w in names(wrap)) {
  q<-rlang::new_quosure(wrap[[w]](expressions[[e]]),base_env)
