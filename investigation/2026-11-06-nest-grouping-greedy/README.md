@@ -98,6 +98,8 @@ tested SHA. No parent issue was modified or closed.
 Run from the tested source root; track READMEs give output-location options
 and individual matrix commands. The two `--assert` commands intentionally
 required desired behavior and exited 1 on the investigated source.
+Saved logs omit trailing horizontal whitespace; CSV values retain their
+captured contents. `MANIFEST.sha256` identifies the retained evidence files.
 
 ```sh
 evidence=investigation/2026-11-06-nest-grouping-greedy
