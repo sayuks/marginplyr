@@ -1,0 +1,10 @@
+              method matches_reference Freq
+1            embrace             FALSE   50
+2              enquo             FALSE   50
+3      numbered_dots             FALSE   50
+4 parenthesized_dots             FALSE   50
+False duplicate: Duplicate grouping sets were produced at positions:
+ℹ 1, 2.
+ℹ Use `.duplicates = "drop"` or `"keep"`.
+False fixed-key overlap: Columns cannot appear in both `.by` and `.grouping`:
+ℹ `a`.

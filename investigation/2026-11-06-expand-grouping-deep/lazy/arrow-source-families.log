@@ -1,0 +1,99 @@
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l1dcachesize'. Detail: [errno 1] Operation not permitted
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l2cachesize'. Detail: [errno 1] Operation not permitted
+/Volumes/Temp/tmp/RtmpkxX6uE/R.INSTALL12c473d9025d6/arrow/tools/cpp/src/arrow/util/cpu_info.cc:181: IOError: sysctlbyname failed for 'hw.l3cachesize'. Detail: [errno 1] Operation not permitted
+                status   n
+1                match 972
+2 ordinary-order-error 216
+   type shape      family  sort consumer               status
+1  list table total_first first  collect ordinary-order-error
+2  list table total_first first  compute ordinary-order-error
+3  list table total_first first   reader ordinary-order-error
+4  list table total_first  last  collect ordinary-order-error
+5  list table total_first  last  compute ordinary-order-error
+6  list table total_first  last   reader ordinary-order-error
+7  list table    repeated first  collect ordinary-order-error
+8  list table    repeated first  compute ordinary-order-error
+9  list table    repeated first   reader ordinary-order-error
+10 list table    repeated  last  collect ordinary-order-error
+11 list table    repeated  last  compute ordinary-order-error
+12 list table    repeated  last   reader ordinary-order-error
+13 list table   composite first  collect ordinary-order-error
+14 list table   composite first  compute ordinary-order-error
+15 list table   composite first   reader ordinary-order-error
+16 list table   composite  last  collect ordinary-order-error
+17 list table   composite  last  compute ordinary-order-error
+18 list table   composite  last   reader ordinary-order-error
+19 list batch total_first first  collect ordinary-order-error
+20 list batch total_first first  compute ordinary-order-error
+21 list batch total_first first   reader ordinary-order-error
+22 list batch total_first  last  collect ordinary-order-error
+23 list batch total_first  last  compute ordinary-order-error
+24 list batch total_first  last   reader ordinary-order-error
+25 list batch    repeated first  collect ordinary-order-error
+26 list batch    repeated first  compute ordinary-order-error
+27 list batch    repeated first   reader ordinary-order-error
+28 list batch    repeated  last  collect ordinary-order-error
+29 list batch    repeated  last  compute ordinary-order-error
+30 list batch    repeated  last   reader ordinary-order-error
+                                                                     error
+1  Type error: Unsupported type for RecordBatch sorting: list<item: int32>
+2  Type error: Unsupported type for RecordBatch sorting: list<item: int32>
+3  Type error: Unsupported type for RecordBatch sorting: list<item: int32>
+4  Type error: Unsupported type for RecordBatch sorting: list<item: int32>
+5  Type error: Unsupported type for RecordBatch sorting: list<item: int32>
+6  Type error: Unsupported type for RecordBatch sorting: list<item: int32>
+7  Type error: Unsupported type for RecordBatch sorting: list<item: int32>
+8  Type error: Unsupported type for RecordBatch sorting: list<item: int32>
+9  Type error: Unsupported type for RecordBatch sorting: list<item: int32>
+10 Type error: Unsupported type for RecordBatch sorting: list<item: int32>
+11 Type error: Unsupported type for RecordBatch sorting: list<item: int32>
+12 Type error: Unsupported type for RecordBatch sorting: list<item: int32>
+13 Type error: Unsupported type for RecordBatch sorting: list<item: int32>
+14 Type error: Unsupported type for RecordBatch sorting: list<item: int32>
+15 Type error: Unsupported type for RecordBatch sorting: list<item: int32>
+16 Type error: Unsupported type for RecordBatch sorting: list<item: int32>
+17 Type error: Unsupported type for RecordBatch sorting: list<item: int32>
+18 Type error: Unsupported type for RecordBatch sorting: list<item: int32>
+19 Type error: Unsupported type for RecordBatch sorting: list<item: int32>
+20 Type error: Unsupported type for RecordBatch sorting: list<item: int32>
+21 Type error: Unsupported type for RecordBatch sorting: list<item: int32>
+22 Type error: Unsupported type for RecordBatch sorting: list<item: int32>
+23 Type error: Unsupported type for RecordBatch sorting: list<item: int32>
+24 Type error: Unsupported type for RecordBatch sorting: list<item: int32>
+25 Type error: Unsupported type for RecordBatch sorting: list<item: int32>
+26 Type error: Unsupported type for RecordBatch sorting: list<item: int32>
+27 Type error: Unsupported type for RecordBatch sorting: list<item: int32>
+28 Type error: Unsupported type for RecordBatch sorting: list<item: int32>
+29 Type error: Unsupported type for RecordBatch sorting: list<item: int32>
+30 Type error: Unsupported type for RecordBatch sorting: list<item: int32>
+                                                   native_error
+1  Type error: Sorting not supported for type list<item: int32>
+2  Type error: Sorting not supported for type list<item: int32>
+3  Type error: Sorting not supported for type list<item: int32>
+4  Type error: Sorting not supported for type list<item: int32>
+5  Type error: Sorting not supported for type list<item: int32>
+6  Type error: Sorting not supported for type list<item: int32>
+7  Type error: Sorting not supported for type list<item: int32>
+8  Type error: Sorting not supported for type list<item: int32>
+9  Type error: Sorting not supported for type list<item: int32>
+10 Type error: Sorting not supported for type list<item: int32>
+11 Type error: Sorting not supported for type list<item: int32>
+12 Type error: Sorting not supported for type list<item: int32>
+13 Type error: Sorting not supported for type list<item: int32>
+14 Type error: Sorting not supported for type list<item: int32>
+15 Type error: Sorting not supported for type list<item: int32>
+16 Type error: Sorting not supported for type list<item: int32>
+17 Type error: Sorting not supported for type list<item: int32>
+18 Type error: Sorting not supported for type list<item: int32>
+19 Type error: Sorting not supported for type list<item: int32>
+20 Type error: Sorting not supported for type list<item: int32>
+21 Type error: Sorting not supported for type list<item: int32>
+22 Type error: Sorting not supported for type list<item: int32>
+23 Type error: Sorting not supported for type list<item: int32>
+24 Type error: Sorting not supported for type list<item: int32>
+25 Type error: Sorting not supported for type list<item: int32>
+26 Type error: Sorting not supported for type list<item: int32>
+27 Type error: Sorting not supported for type list<item: int32>
+28 Type error: Sorting not supported for type list<item: int32>
+29 Type error: Sorting not supported for type list<item: int32>
+30 Type error: Sorting not supported for type list<item: int32>

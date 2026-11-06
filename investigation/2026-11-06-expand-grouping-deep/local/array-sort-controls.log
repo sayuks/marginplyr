@@ -1,0 +1,46 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+     family width packed                     ordinary
+1      date     1  FALSE expressionStackOverflowError
+2      date     1   TRUE expressionStackOverflowError
+3      date     2  FALSE expressionStackOverflowError
+4      date     2   TRUE expressionStackOverflowError
+5  datetime     1  FALSE expressionStackOverflowError
+6  datetime     1   TRUE expressionStackOverflowError
+7  datetime     2  FALSE expressionStackOverflowError
+8  datetime     2   TRUE expressionStackOverflowError
+9    factor     1  FALSE expressionStackOverflowError
+10   factor     1   TRUE expressionStackOverflowError
+11   factor     2  FALSE expressionStackOverflowError
+12   factor     2   TRUE expressionStackOverflowError
+13  ordered     1  FALSE expressionStackOverflowError
+14  ordered     1   TRUE expressionStackOverflowError
+15  ordered     2  FALSE expressionStackOverflowError
+16  ordered     2   TRUE expressionStackOverflowError
+                        package
+1  expressionStackOverflowError
+2  expressionStackOverflowError
+3  expressionStackOverflowError
+4  expressionStackOverflowError
+5  expressionStackOverflowError
+6  expressionStackOverflowError
+7  expressionStackOverflowError
+8  expressionStackOverflowError
+9  expressionStackOverflowError
+10 expressionStackOverflowError
+11 expressionStackOverflowError
+12 expressionStackOverflowError
+13 expressionStackOverflowError
+14 expressionStackOverflowError
+15 expressionStackOverflowError
+16 expressionStackOverflowError
+Sixteen ordinary-composition matches and sixteen shared value-ordering errors confirmed.

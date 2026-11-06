@@ -1,0 +1,21 @@
+R 4.6.1
+sysname: Darwin
+release: 25.6.0
+version: Darwin Kernel Version 25.6.0: Fri Jul 31 19:11:03 PDT 2026; root:xnu-12377.161.14~5/RELEASE_ARM64_T8132
+nodename: Sasakis-Mac-mini.local
+machine: arm64
+login: root
+user: sayuks
+effective_user: sayuks
+dplyr 1.2.1
+dbplyr 2.6.0
+rlang 1.3.0
+tidyselect 1.2.1
+vctrs 0.7.3
+tibble 3.3.1
+RSQLite 3.53.3
+duckdb 1.5.5
+dtplyr 1.3.3
+data.table 1.18.6.1
+arrow 25.0.1
+pkgload 1.5.3

@@ -1,0 +1,30 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+sqlite qualified included: u
+# A tibble: 4 × 4
+  u       sid     v   rid
+  <chr> <int> <int> <int>
+1 north     1     7     1
+2 south     1     9     2
+3 <NA>      2     7     1
+4 <NA>      2     9     2
+sqlite ordinary/identity oracle controls: pass
+duckdb qualified included: u
+# A tibble: 4 × 4
+  u       sid     v   rid
+  <chr> <int> <int> <int>
+1 north     1     7     1
+2 south     1     9     2
+3 <NA>      2     7     1
+4 <NA>      2     9     2
+duckdb ordinary/identity oracle controls: pass
+wrong expansion results: sqlite, duckdb

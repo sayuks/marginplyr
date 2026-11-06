@@ -1,0 +1,15 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+ordinary arranged source: 2 rows x 1998 columns
+unsorted included-only expansion: exact match
+public columns: 1998 ; private order columns: 2
+sorted included-only expansion: success

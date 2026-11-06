@@ -1,0 +1,5 @@
+  status   n
+1  match 486
+ [1] n        shape    family   label    sort     status   error    native_a
+ [9] native_b actual_a actual_b
+<0 rows> (or 0-length row.names)
