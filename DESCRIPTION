@@ -324,7 +324,10 @@ Config/testthat/start-first:
     retail-sales,
     package-metadata,
     dependency-floor,
-    dtplyr-empty-projection
+    dtplyr-empty-projection,
+    share-closure-carriers,
+    share-dynamic-environment-names,
+    share-environment-paths
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
