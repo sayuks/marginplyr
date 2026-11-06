@@ -321,7 +321,9 @@ dtplyr_metadata_safe_step <- function(step, env = step[["env"]]) {
     return(FALSE)
   }
   if (inherits(step, "dtplyr_step_first")) {
-    return(TRUE)
+    # Subclass truncation may recast empty metadata or write to source rows.
+    # Refuse before isolation can dispatch either head() or `[` (ADR 0020).
+    return(identical(class(step[["parent"]]), c("data.table", "data.frame")))
   }
   # Generated brackets use the outer query's lexical environment, including
   # for subsets whose proxy can otherwise be read directly from parent schema.

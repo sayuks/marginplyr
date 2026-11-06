@@ -5,6 +5,10 @@
   closure transfers while preserving proven independent reads (#1385, #1386,
   #1388, #1389).
 
+* Typed dtplyr Grouping-plan inspection and nesting safely refuse root table
+  subclasses before truncation methods can change metadata or source rows
+  (#1382).
+
 * Local list-backed matrix and array dimensions accept representable
   typed-missing Margin labels, including packed dimensions (#1364).
 

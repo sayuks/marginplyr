@@ -33,3 +33,31 @@ dtplyr_metadata_nest_result <- function(x) {
   x$data <- lapply(x$data, tibble::as_tibble)
   x
 }
+
+# A root subclass with a lexical S3 method, independent of the head generic
+# and generated-bracket bindings. The caller has made dtplyr available.
+local_dtplyr_root_subclass <- function(dispatch, mutating = FALSE,
+                                       .env = parent.frame()) {
+  fixture <- new.env(parent = emptyenv())
+  fixture$source <- data.table::data.table(g = c("a", "b"), value = 1:2)
+  class(fixture$source) <- c("marginplyr_test_root", class(fixture$source))
+  fixture$before <- serialize(fixture$source, NULL)
+  fixture$calls <- integer()
+  method <- function(x, ...) {
+    fixture$calls <- c(fixture$calls, nrow(x))
+    if (mutating) {
+      data.table::set(x, j = "g", value = rep("changed", nrow(x)))
+    }
+    out <- NextMethod()
+    if (!mutating && nrow(out) == 0L) {
+      data.table::set(out, j = "g", value = integer())
+    }
+    out
+  }
+  name <- paste0(dispatch, ".marginplyr_test_root")
+  # GlobalEnv is the S3 lookup boundary, not the test evaluation environment.
+  stopifnot(!exists(name, envir = .GlobalEnv, inherits = FALSE))
+  rlang::local_bindings(!!!setNames(list(method), name),
+                        .env = .GlobalEnv, .frame = .env)
+  fixture
+}
