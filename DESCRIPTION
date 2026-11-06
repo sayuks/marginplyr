@@ -335,7 +335,8 @@ Config/testthat/start-first:
     share-environment-search-bounds,
     share-known-closure-transfers,
     share-member-dependencies,
-    margin-label-check-flags
+    margin-label-check-flags,
+    dtplyr-head-metadata
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
