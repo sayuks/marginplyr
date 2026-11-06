@@ -6,7 +6,8 @@ test_that("list-matrix missing labels match ordinary row construction", {
   )
 
   expect_identical(dim(ordinary$key), c(2L, 1L))
-  expect_identical(as.vector(ordinary$key), list(7L, NULL))
+  expect_identical(ordinary$key[[1L]], 7L)
+  expect_null(ordinary$key[[2L]])
   expect_identical(ordinary$payload, c(19L, 19L))
   expect_identical(
     expand_with_margins(input, .grouping = rollup(key),
