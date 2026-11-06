@@ -258,8 +258,8 @@ dtplyr_join_set_types_match <- function(step, env = step[["env"]]) {
   }, error = function(...) FALSE)
 }
 
-# A subset is metadata preserving only when `j` names existing columns. Its
-# `i` may be any row predicate; the proxy below never evaluates it.
+# A subset preserves metadata when `j` names existing columns or is literal
+# zero with no output columns. Its `i` is never evaluated by the proxy below.
 dtplyr_metadata_subset_columns <- function(step) {
   parent_vars <- step[["parent"]][["vars"]]
   j <- step[["j"]]
@@ -268,6 +268,9 @@ dtplyr_metadata_subset_columns <- function(step) {
       return(parent_vars)
     }
     return(NULL)
+  }
+  if (identical(j, 0L) && identical(step[["vars"]], character())) {
+    return(character())
   }
   if (!is.call(j)) {
     return(NULL)

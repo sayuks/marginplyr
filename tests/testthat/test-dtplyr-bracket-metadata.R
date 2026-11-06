@@ -418,9 +418,14 @@ test_that("standard lazy bracket registrations admit typed derived plans", {
   }
   registry <- get(".__S3MethodsTable__.", envir = baseenv())
   ordinary <- get("[.data.table", envir = registry, inherits = FALSE)
-  on.exit(assign("[.data.table", ordinary, envir = registry), add = TRUE)
+  ns <- asNamespace("data.table")
+  methods <- getNamespaceInfo(ns, "S3methods")
+  on.exit({
+    assign("[.data.table", ordinary, envir = registry)
+    setNamespaceInfo(ns, "S3methods", methods)
+  }, add = TRUE)
   base::registerS3method("[", "data.table", "[.data.table",
-                         envir = asNamespace("data.table"))
+                         envir = ns)
   expect_true(rlang::env_binding_are_lazy(registry, "[.data.table")[[1L]])
   step <- dplyr::filter(dtplyr::lazy_dt(source), probe(value))
   expect_identical(inspect_grouping(
@@ -509,9 +514,14 @@ test_that("unavailable promise inspectors safely refuse lazy registrations", {
         step <- dplyr::filter(dtplyr::lazy_dt(source), value > 0L)
         registry <- get(".__S3MethodsTable__.", envir = baseenv())
         ordinary <- get("[.data.table", envir = registry, inherits = FALSE)
-        on.exit(assign("[.data.table", ordinary, envir = registry), add = TRUE)
+        ns <- asNamespace("data.table")
+        methods <- getNamespaceInfo(ns, "S3methods")
+        on.exit({
+          assign("[.data.table", ordinary, envir = registry)
+          setNamespaceInfo(ns, "S3methods", methods)
+        }, add = TRUE)
         base::registerS3method("[", "data.table", "[.data.table",
-                               envir = asNamespace("data.table"))
+                               envir = ns)
         bindings <- stats::setNames(list(replacement), inspector)
         testthat::local_mocked_bindings(!!!bindings, .package = "rlang")
         expect_error(inspect_grouping(step, .by = where(is.character)),
