@@ -1,0 +1,13 @@
+
+ERROR  PASS
+   72  1008
+ status
+  ERROR
+  ERROR
+  ERROR
+                                                                                                                               detail
+ A typed-missing `.margin_label` cannot be represented for:\nℹ `key`.\nℹ Choose a supported non-missing label or change the grouping.
+                            Can't convert `..1$marginplyr_column_2` <factor<edd3b>> to match type of `marginplyr_column_2` <integer>.
+                                                            evaluation nested too deeply: infinite recursion / options(expressions=)?
+Independent membership/value/schema/source-mutation checks: 1008 PASS; 72 classified external/refused calls
+Independent Margin order oracle: 672 PASS

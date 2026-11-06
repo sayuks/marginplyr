@@ -1,0 +1,5 @@
+Included: ()
+Head input rows: 2, 0
+Error in main() : correct || refusal is not TRUE
+Calls: main -> stopifnot
+Execution halted
