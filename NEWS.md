@@ -1,8 +1,5 @@
 # marginplyr 0.1.0
 
-* dtplyr Margin order now works when the caller binds `::` in the lazy root
-  environment (@LeonidasZhak, #1357).
-
 * dtplyr Margin order preserves missing-last and margins-first/last ordering
   independently of caller bindings for `is.na` and `%in%`, including bindings
   changed after lazy result construction (#1176).
