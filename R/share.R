@@ -4645,8 +4645,12 @@ scope_value_closure <- function(expr, scope, lookup) {
   }
   name <- unparenthesized_value(head)
   if (is_name_part(name)) {
-    return(scope_closure_binding(rlang::as_name(name), scope,
-                                 function_lookup = FALSE))
+    name <- rlang::as_name(name)
+    closure <- scope_closure_binding(name, scope, function_lookup = FALSE)
+    if (!is.null(closure)) return(closure)
+    promise <- scope_promise(name, scope, function_lookup = FALSE,
+                             visible = scope_visible_frames(scope))
+    return(scope_promise_closure(promise, lookup))
   }
   operator <- static_call_name(head)
   transfer_lookup <- lookup
@@ -4921,7 +4925,7 @@ scope_closure_list <- function(expr, scope, lookup) {
   }
   if (identical(static_call_name(expr), "list") &&
         is_known_base_frame_call(expr, "list", scope, lookup)) {
-    parts <- static_call_args(expr)
+    parts <- scope_list_arguments(expr, scope)
     elements <- vector("list", length(parts))
     names(elements) <- names(parts)
     for (index in seq_along(parts)) {
@@ -5005,6 +5009,26 @@ scope_closure_list <- function(expr, scope, lookup) {
   scope_map_closure_elements(result$value, function(closure) {
     scope_rebase_factory_closure(closure, result)
   })
+}
+
+# Expand a literal list's finite dots as reads in their owning frame.
+# Numbered reads retain each promise's evaluation frame and argument tag.
+# Unproven expansions retain the original syntax for the list walk.
+scope_list_arguments <- function(expr, scope) {
+  parts <- static_call_args(expr)
+  splice <- which(vapply(parts, identical, logical(1), quote(...)))
+  if (length(splice) != 1L) return(parts)
+  for (index in scope_visible_frames(scope)) {
+    frame <- scope[[index]]
+    if (!"..." %in% frame$bound) next
+    if (!isTRUE(frame$invoked) || length(frame$unmatched) > 0L ||
+          any(vapply(frame$dots, rlang::is_missing, logical(1)))) return(parts)
+    dots <- lapply(paste0("..", seq_along(frame$dots), recycle0 = TRUE),
+                   rlang::sym)
+    names(dots) <- names(frame$dots)
+    return(append(parts[-splice], dots, after = splice - 1L))
+  }
+  parts
 }
 
 # Remap established plain-list descriptors with matched literal arguments.
@@ -5315,6 +5339,19 @@ scope_promise <- function(name, scope, function_lookup,
   NULL
 }
 
+# Read a pending closure value in its evaluation frame and restore its offset.
+scope_promise_closure <- function(promise, lookup) {
+  if (is.null(promise)) return(NULL)
+  frames <- promise$evaluation
+  closure <- scope_value_closure(
+    promise$expression, promise$scope[frames], lookup
+  )
+  if (!is.null(closure)) {
+    closure$enclosing <- closure$enclosing + frames[[1L]] - 1L
+  }
+  closure
+}
+
 # The dependencies of syntax that a lexical read may force.
 scope_promise_symbols <- function(name, scope, lookup,
                                   function_lookup = FALSE) {
@@ -5351,21 +5388,19 @@ scope_after_promise <- function(name, scope, lookup, function_lookup = FALSE) {
   scope <- promise$scope
   frames <- promise$evaluation
   binding <- promise$binding
-  definition <- literal_function_definition(promise$expression)
-  if (!is.null(definition) && !is.null(binding)) {
-    scope[[binding]]$closures[[name]] <- list(
-      definition = definition, enclosing = frames[[1L]] - binding
-    )
-    return(scope)
-  }
-  elements <- if (!is.null(binding)) {
+  closure <- if (!is.null(binding)) scope_promise_closure(promise, lookup)
+  elements <- if (is.null(closure) && !is.null(binding)) {
     scope_closure_list(promise$expression, scope[frames], lookup)
   }
   scope[frames] <- statement_reads_and_scope(
     promise$expression, scope[frames], lookup, read_symbols = no_scope_reads
   )$scope
-  if (!is.null(elements) && name %in% scope[[binding]]$bound) {
-    # Forcing the formal retains the list even if its source is later removed.
+  # A forced formal retains its value even if its source is later removed.
+  if (!is.null(closure) && name %in% scope[[binding]]$bound) {
+    closure$enclosing <- closure$enclosing - binding
+    scope[[binding]]$kinds[[name]] <- "function"
+    scope[[binding]]$closures[[name]] <- closure
+  } else if (!is.null(elements) && name %in% scope[[binding]]$bound) {
     scope[[binding]]$kinds[[name]] <- "value"
     scope[[binding]]$closure_lists[[name]] <- scope_shift_closure_elements(
       elements, frames[[1L]] - binding - 1L

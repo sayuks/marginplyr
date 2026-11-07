@@ -444,3 +444,113 @@ test_that("inline list planning does not run caller code", {
   expect_identical(probe$invoked, 0L)
   expect_identical(probe$forced, 0L)
 })
+
+test_that("list factories retain the identity of supplied closures", {
+  data <- data.frame(group = c("a", "b"), x = c(1, 3), prior = c(10, 20))
+  reads <- alist(
+    (function(prior) {
+      callback <- function() sum(prior)
+      carrier <- (function(value) list(read = value))(callback)
+      rm(prior)
+      carrier$read()
+    })(11),
+    (function(prior) {
+      callback <- function() sum(prior)
+      carrier <- (function(value) {
+        force(value)
+        rm("callback", envir = parent.frame())
+        list(read = value)
+      })(callback)
+      rm(prior)
+      carrier$read()
+    })(11)
+  )
+  expect_carrier_dependencies(data, reads)
+})
+
+test_that("list factories retain closures named by defaults", {
+  data <- data.frame(group = c("a", "b"), x = c(1, 3), prior = c(10, 20))
+  read <- quote((function(prior) {
+    callback <- function() sum(prior)
+    carrier <- (function(value = callback) list(read = value))()
+    rm(prior)
+    carrier$read()
+  })(11))
+  expect_carrier_dependencies(data, list(read))
+})
+
+test_that("list factories retain closure names and positions through dots", {
+  data <- data.frame(group = c("a", "b"), x = c(1, 3), prior = c(10, 20))
+  reads <- alist(
+    (function(prior) {
+      callback <- function() sum(prior)
+      carrier <- (function(...) list(...))(callback)
+      rm(prior)
+      carrier[[1L]]()
+    })(11),
+    (function(prior) {
+      callback <- function() sum(prior)
+      carrier <- (function(...) list(0, ...))(0, read = callback)
+      rm(prior)
+      carrier$read()
+    })(11)
+  )
+  expect_carrier_dependencies(data, reads)
+})
+
+test_that("list factories respect lexical lookup and promise timing", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
+  reads <- alist(
+    (function(prior) {
+      callback <- function() sum(prior)
+      carrier <- (function(value) list(read = value))(callback)
+      carrier$read()
+    })(11),
+    (function(prior) {
+      callback <- function() 11
+      carrier <- (function(...) list(...))(read = callback)
+      rm(prior)
+      carrier$read()
+    })(11),
+    (function(prior) {
+      callback <- function() sum(prior)
+      list <- function(...) base::list(read = function() 11)
+      carrier <- (function(...) list(...))(read = callback)
+      rm(prior)
+      carrier$read()
+    })(11),
+    (function() {
+      callback <- function() 11
+      (function(prior) {
+        callback <- function() sum(prior)
+        carrier <- (function(value, unused) {
+          rm("callback", envir = parent.frame())
+          list(read = value)
+        })(callback, stop("unused argument forced"))
+        rm(prior)
+        carrier$read()
+      })(11)
+    })()
+  )
+  expect_share_dependency_values(data, reads, expected = 11)
+})
+
+test_that("closure argument analysis leaves caller promises unforced", {
+  data <- data.frame(group = c("a", "b"), x = c(1, 3), prior = c(10, 20))
+  probe <- rlang::env(forced = 0L, invoked = 0L)
+  read <- rlang::quo((function(prior) {
+    callback <- function() {
+      probe$invoked <- probe$invoked + 1L
+      sum(prior)
+    }
+    carrier <- (function(value) list(read = value))({
+      probe$forced <- probe$forced + 1L
+      callback
+    })
+    rm(prior)
+    carrier$read()
+  })(11))
+  expect_carrier_dependencies(data, list(read))
+  expect_identical(probe$forced, 0L)
+  expect_identical(probe$invoked, 0L)
+})
