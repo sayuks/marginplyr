@@ -5764,16 +5764,34 @@ statement_reads_and_scope <- function(expr, scope, lookup = NULL,
     return(step)
   }
   if (identical(call_name, "for")) {
+    index <- expr[[2L]]
+    sequence <- unparenthesized_value(expr[[3L]])
+    literal_loop <- length(expr) == 4L && is_name_part(index) &&
+      !rlang::is_missing(sequence) &&
+      (is.null(sequence) ||
+         (is.atomic(sequence) && !is.object(sequence) &&
+            length(sequence) <= 1L)) &&
+      is_known_base_frame_call(expr, call_name, scope, lookup)
     # R binds the index even for an empty sequence. The sequence runs first.
+    reads <- read_symbols(expr[[3L]], scope, lookup)
     inner <- scope_after_removals(expr[[3L]], scope, lookup)
-    if (is_name_part(expr[[2L]])) {
-      inner <- scope_bind_local(inner, rlang::as_name(expr[[2L]]))
+    if (literal_loop) {
+      inner <- scope_bind_local(inner, rlang::as_name(index), sequence, lookup)
+      if (length(sequence) == 0L) {
+        return(list(reads = reads, scope = inner))
+      }
+      # A body with loop exits needs control flow beyond statement ordering.
+      if (!any(c("break", "next") %in% all.names(expr[[4L]]))) {
+        step <- statement_reads_and_scope(expr[[4L]], inner, lookup,
+                                          read_symbols)
+        step$reads <- unique(c(reads, step$reads))
+        return(step)
+      }
+    } else if (is_name_part(index)) {
+      inner <- scope_bind_local(inner, rlang::as_name(index))
     }
     return(list(
-      reads = unique(c(
-        read_symbols(expr[[3L]], scope, lookup),
-        read_symbols(expr[[4L]], inner, lookup)
-      )),
+      reads = unique(c(reads, read_symbols(expr[[4L]], inner, lookup))),
       scope = scope_after_removals(expr[[4L]], inner, lookup)
     ))
   }
