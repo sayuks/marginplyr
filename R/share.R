@@ -4587,32 +4587,9 @@ scope_value_closure <- function(expr, scope, lookup) {
     }
     return(scope_value_closure(statements[[length(statements)]], scope, lookup))
   }
-  factory <- if (rlang::is_call(head)) scope_call_closure(head, scope, lookup)
-  if (!is.null(factory) && !scope_closure_is_active(factory, scope)) {
-    definition <- factory$definition
-    captured <- length(factory$frames)
-    frame <- function_scope_frame(definition[[2L]], head)
-    frame$enclosing <- if (captured > 0L) 1L else factory$enclosing
-    frame$caller <- 1L + captured
-    frame$closure_origin <- factory$enclosing + captured
-    frame$definition <- definition
-    inner <- c(list(frame), scope_closure_scope(factory, scope))
-    result <- scope_returned_closure(definition[[3L]], inner, lookup)
-    returned <- result$value
-    if (!is.null(returned)) {
-      if (returned$enclosing <= 1L + captured) {
-        frames <- result$scope[seq.int(returned$enclosing, 1L + captured)]
-        frames <- lapply(frames, function(frame) {
-          frame$invoked <- FALSE
-          frame
-        })
-        returned$frames <- c(returned$frames, frames)
-        returned$enclosing <- factory$enclosing
-      } else {
-        returned$enclosing <- returned$enclosing - 1L - captured
-      }
-      return(returned)
-    }
+  result <- scope_factory_result(head, scope, lookup, scope_value_closure)
+  if (!is.null(result$value)) {
+    return(scope_rebase_factory_closure(result$value, result))
   }
   name <- unparenthesized_value(head)
   if (is_name_part(name)) {
@@ -4753,21 +4730,61 @@ scope_literal_list_index <- function(expr, scope, lookup) {
   do.call(base::c, unname(values))
 }
 
-# Read a visible factory's result, retained bindings and selected return exit.
+# Read a visible factory's result in the invoked frame and its captured frames.
+scope_factory_result <- function(expr, scope, lookup, read_value) {
+  factory <- if (rlang::is_call(expr)) scope_call_closure(expr, scope, lookup)
+  if (is.null(factory) || scope_closure_is_active(factory, scope)) {
+    return(NULL)
+  }
+  definition <- factory$definition
+  captured <- length(factory$frames)
+  frame <- function_scope_frame(definition[[2L]], expr)
+  frame$enclosing <- if (captured > 0L) 1L else factory$enclosing
+  frame$caller <- 1L + captured
+  frame$closure_origin <- factory$enclosing + captured
+  frame$definition <- definition
+  inner <- c(list(frame), scope_closure_scope(factory, scope))
+  result <- scope_returned_value(definition[[3L]], inner, lookup, read_value)
+  result$factory_frames <- 1L + captured
+  result$enclosing <- factory$enclosing
+  result
+}
+
+# Retain factory frames closed over by a returned member. Closures from the
+# live stack only need their offsets moved past the departing frames.
+scope_rebase_factory_closure <- function(closure, result) {
+  if (closure$enclosing <= result$factory_frames) {
+    frames <- result$scope[seq.int(closure$enclosing, result$factory_frames)]
+    frames <- lapply(frames, function(frame) {
+      frame$invoked <- FALSE
+      frame
+    })
+    closure$frames <- c(closure$frames, frames)
+    closure$enclosing <- result$enclosing
+  } else {
+    closure$enclosing <- closure$enclosing - result$factory_frames
+  }
+  closure
+}
+
+# Read a factory's selected return value and surviving bindings.
 # Nonfinal expressions contribute effects, but only an explicit return exits.
 # Only syntax is inspected; caller code is never invoked to discover a value.
-scope_returned_closure <- function(expr, scope, lookup, final = TRUE) {
+scope_returned_value <- function(expr, scope, lookup, read_value,
+                                 final = TRUE) {
   expr <- unparenthesized_value(expr)
   name <- static_call_name(expr)
   arm <- scope_literal_branch(expr, scope, lookup)
   if (length(arm) == 1L && !rlang::is_missing(arm[[1L]])) {
-    return(scope_returned_closure(arm[[1L]], scope, lookup, final = final))
+    return(scope_returned_value(
+      arm[[1L]], scope, lookup, read_value, final = final
+    ))
   }
   if (identical(name, "return") && length(expr) <= 2L &&
         is_known_base_frame_call(expr, name, scope, lookup)) {
     result <- list(value = NULL, scope = scope)
     if (length(expr) == 2L && !rlang::is_missing(expr[[2L]])) {
-      result <- scope_returned_closure(expr[[2L]], scope, lookup)
+      result <- scope_returned_value(expr[[2L]], scope, lookup, read_value)
     }
     result$returned <- TRUE
     return(result)
@@ -4779,8 +4796,8 @@ scope_returned_closure <- function(expr, scope, lookup, final = TRUE) {
       if (rlang::is_missing(statements[[index]])) {
         next
       }
-      result <- scope_returned_closure(
-        statements[[index]], scope, lookup,
+      result <- scope_returned_value(
+        statements[[index]], scope, lookup, read_value,
         final = final && index == length(statements)
       )
       if (result$returned || index == length(statements)) {
@@ -4795,7 +4812,7 @@ scope_returned_closure <- function(expr, scope, lookup, final = TRUE) {
       expr, scope, lookup, read_symbols = no_scope_reads
     )$scope
   }
-  list(value = if (final) scope_value_closure(expr, scope, lookup),
+  list(value = if (final) read_value(expr, scope, lookup),
        scope = scope, returned = FALSE)
 }
 
@@ -4814,7 +4831,15 @@ scope_closure_list <- function(expr, scope, lookup) {
       }
       elements <- frame$closure_lists[[name]]
       if (is.null(elements)) {
-        return(NULL)
+        promise <- scope_promise(name, scope, function_lookup = FALSE,
+                                 visible = index)
+        if (is.null(promise)) return(NULL)
+        elements <- scope_closure_list(
+          promise$expression, promise$scope[promise$evaluation], lookup
+        )
+        if (is.null(elements)) return(NULL)
+        # These descriptors already count the evaluation frame as index one.
+        index <- promise$evaluation[[1L]] - 1L
       }
       return(scope_shift_closure_elements(elements, index))
     }
@@ -4908,7 +4933,12 @@ scope_closure_list <- function(expr, scope, lookup) {
     return(elements[key])
   }
   member <- scope_closure_list_member(expr, scope, lookup)
-  member$elements
+  if (!is.null(member)) return(member$elements)
+  result <- scope_factory_result(expr, scope, lookup, scope_closure_list)
+  if (is.null(result$value)) return(NULL)
+  scope_map_closure_elements(result$value, function(closure) {
+    scope_rebase_factory_closure(closure, result)
+  })
 }
 
 # Retain only statically visible callable or plain-list member values.
@@ -4921,11 +4951,21 @@ scope_closure_list_element <- function(expr, scope, lookup) {
 
 # Move every contained closure between stack and binding-relative offsets.
 scope_shift_closure_elements <- function(elements, offset) {
+  scope_map_closure_elements(elements, function(closure) {
+    closure$enclosing <- closure$enclosing + offset
+    closure
+  })
+}
+
+# Transform closure descriptors at any depth in a known list.
+scope_map_closure_elements <- function(elements, transform) {
   lapply(elements, function(element) {
     if (!is.null(element$definition)) {
-      element$enclosing <- element$enclosing + offset
+      return(transform(element))
     } else if (!is.null(element$elements)) {
-      element$elements <- scope_shift_closure_elements(element$elements, offset)
+      element$elements <- scope_map_closure_elements(
+        element$elements, transform
+      )
     }
     element
   })
@@ -5151,17 +5191,27 @@ scope_after_promise <- function(name, scope, lookup, function_lookup = FALSE) {
   }
   scope <- promise$scope
   frames <- promise$evaluation
+  binding <- promise$binding
   definition <- literal_function_definition(promise$expression)
-  if (!is.null(definition) && !is.null(promise$binding)) {
-    binding <- promise$binding
+  if (!is.null(definition) && !is.null(binding)) {
     scope[[binding]]$closures[[name]] <- list(
       definition = definition, enclosing = frames[[1L]] - binding
     )
     return(scope)
   }
+  elements <- if (!is.null(binding)) {
+    scope_closure_list(promise$expression, scope[frames], lookup)
+  }
   scope[frames] <- statement_reads_and_scope(
     promise$expression, scope[frames], lookup, read_symbols = no_scope_reads
   )$scope
+  if (!is.null(elements) && name %in% scope[[binding]]$bound) {
+    # Forcing the formal retains the list even if its source is later removed.
+    scope[[binding]]$kinds[[name]] <- "value"
+    scope[[binding]]$closure_lists[[name]] <- scope_shift_closure_elements(
+      elements, frames[[1L]] - binding - 1L
+    )
+  }
   scope
 }
 
@@ -5171,7 +5221,7 @@ scope_after_promise <- function(name, scope, lookup, function_lookup = FALSE) {
 scope_bind_local <- function(scope, name, value = NULL, lookup = NULL,
                              value_scope = scope) {
   closure <- scope_value_closure(value, value_scope, lookup)
-  elements <- if (!missing(value)) {
+  elements <- if (is.null(closure) && !missing(value)) {
     scope_closure_list(value, value_scope, lookup)
   }
   environment_frames <- static_environment_frames(value, value_scope, lookup)
