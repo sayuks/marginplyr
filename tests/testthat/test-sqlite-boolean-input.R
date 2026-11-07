@@ -60,7 +60,7 @@ test_that("SQLite Boolean-word source values need no public source column", {
   }
 })
 
-test_that("SQLite checks observed Margin labels on collapsed Boolean-word keys", {
+test_that("SQLite checks Margin labels on collapsed Boolean-word keys", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
@@ -79,7 +79,9 @@ test_that("SQLite checks observed Margin labels on collapsed Boolean-word keys",
     for (value in c("detail", "Total")) {
       data <- tibble::tibble(key = value, payload = 7L)
       names(data)[[1L]] <- key
-      root <- dplyr::copy_to(con, data, "boolean_label_source", overwrite = TRUE)
+      root <- dplyr::copy_to(
+        con, data, "boolean_label_source", overwrite = TRUE
+      )
       source <- dplyr::collapse(root)
       renamed <- dplyr::collapse(
         dplyr::rename(root, ordinary = dplyr::all_of(key))
