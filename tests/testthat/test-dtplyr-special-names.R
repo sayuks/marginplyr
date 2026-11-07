@@ -614,3 +614,103 @@ test_that("dtplyr key reads preserve lexical names and unnamed outputs", {
   expect_s3_class(query, "dtplyr_step")
   expect_identical(dplyr::collect(query), run(input))
 })
+
+test_that("dtplyr special key reads respect a local loop index", {
+  skip_if_suggest_absent("dtplyr")
+  input <- tibble::tibble(.N = c(10L, 10L, 20L))
+  expressions <- alist(
+    base::local({
+      for (.N in 1:2) i <- 7L + .N
+      i + .N
+    }),
+    (function() {
+      for (.N in 1:2) i <- 7L + .N
+      i + .N
+    })()
+  )
+  run <- function(data, column, expression) {
+    summarize_with_margins(
+      data, observed = !!expression, .grouping = rollup(dplyr::all_of(column)),
+      .margin_label = NULL, .sort = "last"
+    )
+  }
+  for (expression in expressions) {
+    query <- run(dtplyr::lazy_dt(input), ".N", expression)
+    expect_s3_class(query, "dtplyr_step")
+    expected <- run(input, ".N", expression)
+    expect_identical(expected$observed, rep(11L, 3L))
+    safe <- dplyr::rename(input, key = .N)
+    renamed <- dplyr::collect(run(dtplyr::lazy_dt(safe), "key", expression))
+    expect_identical(renamed$observed, expected$observed)
+    expect_identical(dplyr::collect(query), expected)
+  }
+})
+
+test_that("dtplyr defers a malformed evaluation call to collection", {
+  skip_if_suggest_absent("dtplyr")
+  source <- dtplyr::lazy_dt(tibble::tibble(.N = c(10L, 10L, 20L)))
+  query <- summarize_with_margins(
+    source,
+    value = base::evalq(sum(.N), envir = list(.N = c(7L, 8L)), unused = 0L),
+    .grouping = rollup(.N), .margin_label = NULL
+  )
+  expect_s3_class(query, "dtplyr_step")
+  expect_error(dplyr::collect(query), "unused argument")
+})
+
+test_that("dtplyr reads a special key before binding a local loop index", {
+  skip_if_suggest_absent("dtplyr")
+  input <- tibble::tibble(.N = c(10L, 10L, 20L))
+  run <- function(data, key) {
+    expr <- substitute(base::local({
+      for (.N in seq_len(sum(KEY) %/% 20L + 1L)) i <- 7L + .N
+      i + .N
+    }), list(KEY = key))
+    summarize_with_margins(
+      data, observed = !!expr,
+      .grouping = rollup(dplyr::all_of(as.character(key))),
+      .margin_label = NULL, .sort = "last"
+    )
+  }
+  query <- run(dtplyr::lazy_dt(input), quote(.N))
+  expect_s3_class(query, "dtplyr_step")
+  expected <- run(input, quote(.N))
+  expect_identical(expected$observed, c(11L, 11L, 13L))
+  safe <- dtplyr::lazy_dt(dplyr::rename(input, key = .N))
+  renamed <- dplyr::collect(run(safe, quote(key)))
+  expect_identical(renamed$observed, expected$observed)
+  expect_identical(dplyr::collect(query), expected)
+})
+
+test_that("dtplyr key reads retain lexical effects of base control calls", {
+  skip_if_suggest_absent("dtplyr")
+  source <- dtplyr::lazy_dt(tibble::tibble(.N = c(10L, 10L, 20L)))
+  query <- summarize_with_margins(
+    source,
+    selected = base::local({
+      switch(1L, {
+        # The selected arm shadows the special column in this child scope.
+        .N <- 7L # nolint: object_name_linter.
+      }, 0L)
+      .N
+    }),
+    forced = base::local({
+      force({
+        # The forced expression shadows the special column.
+        .N <- 8L # nolint: object_name_linter.
+      })
+      .N
+    }),
+    retained = base::local({
+      # The short-circuited removal leaves this local binding in place.
+      .N <- 9L # nolint: object_name_linter.
+      FALSE && is.null(rm(.N))
+      .N
+    }),
+    .grouping = rollup(.N), .margin_label = NULL, .sort = "last"
+  )
+  expect_identical(dplyr::collect(query), tibble::tibble(
+    .N = c(10L, 20L, NA_integer_), selected = rep(7L, 3L),
+    forced = rep(8L, 3L), retained = rep(9L, 3L)
+  ))
+})

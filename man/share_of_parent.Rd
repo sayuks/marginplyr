@@ -348,7 +348,7 @@ exactly-one-value cardinality rule is established with it:\tabular{ll}{
    Local data frame \tab Both, from the result, before any share \cr
    \code{dtplyr} step \tab Both, at execution, before an invalid row \cr
    Arrow \tab Neither; shares are rejected outright \cr
-   General dbplyr \tab Type only, by asking the dialect itself \cr
+   General dbplyr \tab Type from the dialect, and cardinality as below \cr
 }
 
 

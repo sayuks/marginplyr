@@ -223,8 +223,10 @@ that is not about shares (#179).
 ### Static bindings (`R/static-bindings.R`)
 
 Owns static proofs about lexical functions, environment values and visible
-binding mutations. Summary output-name prediction and the contextual share
-dependency walk use the same proofs without evaluating caller expressions.
+binding mutations. Summary output-name prediction, the dtplyr key rewrite,
+and the contextual share dependency walk use these proofs without evaluating
+caller expressions. The key rewrite carries local binding names across
+statements without tracking the values they hold.
 
 ### Recognized spellings (`R/contextual-helpers.R`)
 
@@ -305,7 +307,7 @@ any of them.
 
 The exported helpers in this file are only context guards: reaching either
 body means the helper was called outside a Margin summary, so it always
-raises. The rest of the module is private and is reached through five entry
+raises. The rest of the module is private and is reached through six entry
 points, and no other:
 
 - `preflight_shares()`, called from the public verb's admission block
@@ -320,7 +322,11 @@ points, and no other:
 - `protect_dtplyr_share_measure()`, called by the portable adapter after
   dtplyr translation, which aliases supported data.table special input
   measures while preserving lexical ownership and the source validator's
-  selected-column mapping; and
+  selected-column mapping;
+- `guard_sql_share_projections()`, called by both SQL summary adapters with
+  the resolved projection and share source names, which checks the
+  cardinality of supported direct `UNNEST()` projections in the result query
+  ([ADR 0010, amendment #1442](adr/0010-compute-parent-shares-as-a-contextual-summary.md#amendment-1442-direct-sql-unnest-checks-source-cardinality)); and
 - `execute_shares()`, called by `execute_margin_summary()`, which
   receives the prepared Margin operation, the staged ordinary-summary result,
   all planned requests, and the verb's `.check_share_source`. It needs the
@@ -356,10 +362,11 @@ The responsibilities divide as follows:
   Local and dtplyr operations additionally wrap the referenced source
   summaries in a type-and-cardinality validator inside the ordinary summary
   itself, so validation costs no extra pass over the input and no
-  validation-only query, and cardinality stays theirs alone — a SQL aggregate
-  returns one value per grouping row by construction. A database applies the
-  rule itself and reports an ineligible summary at collection, unless its
-  dialect converts a value of another type to a number instead of refusing it,
+  validation-only query. A direct SQL aggregate returns one value per grouping
+  row. DuckDB and PostgreSQL also check supported direct `UNNEST()` share
+  sources at execution through `guard_sql_share_projections()`. A database
+  applies the type rule itself and reports an ineligible summary at collection,
+  unless its dialect converts a value of another type to a number,
   in which case nothing applies the rule and the share is refused;
   `share_dialect_verdict()` decides which, with at most two queries
   referencing none of the caller's tables — a probe, and a control
