@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* dtplyr Parent and Total shares preserve supported dot-dot summary output
+  names through lazy construction and data-frame conversion (#1495).
+
 * Parent and Total share dependency checks retain ordinary local closures
   replaced by a definite literal singleton loop (#1492).
 
