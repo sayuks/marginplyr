@@ -224,3 +224,115 @@ test_that("fractional nested indices select the same closures as R", {
   expect_identical(lapply(reads, eval, envir = data), list(400, 400))
   expect_share_dependencies(data, reads)
 })
+
+test_that("nested member replacement changes invocation dependencies", {
+  probe <- rlang::env(calls = 0L, forced = 0L)
+  reads <- alist((function(prior) {
+    carrier <- list(outer = list(read = function() 7))
+    carrier$outer$read <- function() {
+      probe$calls <- probe$calls + 1L
+      sum(prior)
+    }
+    rm(prior)
+    carrier$outer$read()
+  })({
+    probe$forced <- probe$forced + 1L
+    1
+  }))
+  expect_share_dependencies(nested_closure_list_data(), reads)
+  expect_identical(probe$calls, 0L)
+  expect_identical(probe$forced, 0L)
+})
+
+test_that("recursive list replacement reaches the selected nested member", {
+  reads <- alist((function(prior) {
+    carrier <- list(outer = list(read = function() 7))
+    carrier[[c("outer", "read")]] <- function() sum(prior)
+    rm(prior)
+    carrier$outer$read()
+  })(1))
+  expect_share_dependencies(nested_closure_list_data(), reads)
+})
+
+test_that("nested deletion preserves surviving member dependencies", {
+  reads <- alist((function(prior) {
+    carrier <- list(outer = list(function() 7, function() sum(prior)))
+    carrier$outer[[1L]] <- NULL
+    rm(prior)
+    carrier$outer[[1L]]()
+  })(1))
+  expect_share_dependencies(nested_closure_list_data(), reads)
+})
+
+test_that("nested names replacement changes which closure is invoked", {
+  data <- nested_closure_list_data()
+  expect_share_dependencies(data, alist((function(prior) {
+    carrier <- list(outer = list(read = function() sum(prior)))
+    names(carrier$outer) <- "renamed"
+    rm(prior)
+    carrier$outer$renamed()
+  })(1)))
+  expect_share_dependency_values(data, alist((function(prior) {
+    carrier <- list(outer = list(
+      read = function() sum(prior), other = function() 7
+    ))
+    names(carrier$outer) <- c("other", "read")
+    rm(prior)
+    carrier$outer$read()
+  })(1)), 7)
+})
+
+test_that("nested replacement can discard a dependency or keep it local", {
+  data <- nested_closure_list_data()
+  expect_share_dependency_values(data, alist((function(prior) {
+    carrier <- list(outer = list(read = function() sum(prior)))
+    carrier$outer$read <- function() 7
+    rm(prior)
+    carrier$outer$read()
+  })(1)), 7)
+  expect_share_dependency_values(data, alist((function(prior) {
+    carrier <- list(outer = list(read = function() 7))
+    carrier$outer$read <- function() sum(prior)
+    carrier$outer$read()
+  })(1)), 1)
+})
+
+test_that("nested writes preserve list indexing and setter lookup", {
+  data <- nested_closure_list_data()
+  expect_share_dependencies(data, alist(
+    (function(prior) {
+      carrier <- list(outer = list(read = function() 7))
+      carrier$outer[1L] <- list(function() sum(prior))
+      rm(prior)
+      carrier$outer$read()
+    })(1),
+    (function(prior) {
+      carrier <- list(read = function() 7)
+      carrier[1L][[1L]] <- function() sum(prior)
+      rm(prior)
+      carrier$read()
+    })(1)
+  ))
+  expect_share_dependency_values(data, alist(
+    (function(prior) {
+      carrier <- list(outer = list(read = function() 7))
+      carrier$out$read <- function() sum(prior)
+      rm(prior)
+      carrier$outer$read()
+    })(1),
+    (function(prior) {
+      `$<-` <- function(x, name, value) x
+      carrier <- list(outer = list(read = function() 7))
+      carrier$outer[[1L]] <- function() 3 + 4
+      rm(prior)
+      carrier$outer$read()
+    })(1),
+    (function(prior) {
+      `$<-` <- function(x, name, value) x
+      carrier <- list(outer = list(read = function() 7))
+      carrier$outer$read <- function() sum(prior)
+      rm(prior)
+      carrier$outer$read()
+    })(1)
+  ), 7)
+})
