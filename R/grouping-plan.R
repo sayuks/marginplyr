@@ -2549,11 +2549,12 @@ read_grouping_arg <- function(arg, data_vars, wrappers, data_proxy,
     return(selection)
   }
 
-  constructor_head <- if (is_constructor_call) static_call_head(expr)
   # The constructor's name may be bare inside an authored namespace call
   # in the callee. Inspect the written head before that qualifier is stripped.
+  constructor_head <- if (is_constructor_call) static_call_head(expr)
+  namespace_head <- unparenthesized_value(constructor_head, ns = "")
   authored_namespace <- qualified || !is.null(static_call_ns(expr)) ||
-    is_redundant_parens(unparenthesized_value(constructor_head, ns = ""))
+    is_redundant_parens(namespace_head)
   evaluate <- function() rlang::eval_tidy(rlang::new_quosure(evaluation, env))
   value <- if (authored_namespace) {
     if (is.null(data_proxy) &&

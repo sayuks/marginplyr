@@ -4767,18 +4767,20 @@ test_that("empty list indices and call arguments retain evaluation errors", {
 
 test_that("the factory result reader skips a leading empty statement", {
   # R refuses the empty statement before a returned closure can be observed.
-  result <- scope_returned_closure(
+  result <- scope_returned_value(
     call("{", rlang::missing_arg(), quote(function() 7)),
-    list(list(bound = character())), list(env = baseenv())
+    list(list(bound = character())), list(env = baseenv()),
+    scope_value_closure
   )
   expect_false(is.null(result$value))
 })
 
 test_that("the factory result reader gives an empty last statement no value", {
   # R refuses the empty statement before a returned closure can be observed.
-  result <- scope_returned_closure(
+  result <- scope_returned_value(
     call("{", quote(1), rlang::missing_arg()),
-    list(list(bound = character())), list(env = baseenv())
+    list(list(bound = character())), list(env = baseenv()),
+    scope_value_closure
   )
   expect_null(result$value)
 })
