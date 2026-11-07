@@ -544,12 +544,14 @@ is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE) {
     ))
   }
 
-  # tidyselect refuses a bare formula in a selection in `stop_formula()`,
-  # whatever it wraps, so the refusal depends on no column type. It is read
-  # from the shape rather than joined to `selection_refused_operators()`
-  # because `is_nameable_call()` declines a call to `~`, so the name that set
-  # is consulted by is never read (ADR 0019, #163).
-  if (rlang::is_call(expr, "~", ns = "")) {
+  # tidyselect refuses a bare formula by spelling and a public base formula
+  # by its value. Only a proven base namespace operator makes the latter
+  # independent of column types. `is_nameable_call()` declines `~` (#163).
+  if (rlang::is_call(expr, "~", ns = "") || (
+    rlang::is_call(expr, "~", ns = "base") &&
+      rlang::is_call(static_call_head(expr), "::", ns = "") &&
+      namespace_operator_name_only("::", env, allow_unbound = FALSE)
+  )) {
     return(TRUE)
   }
 
@@ -1057,13 +1059,20 @@ is_name_only_namespace <- function(expr, env, bound = character()) {
   if (is.null(operator)) {
     return(TRUE)
   }
+  namespace_operator_name_only(operator, env, bound)
+}
+
+# Whether a qualified head's written operator is stock or fails from names
+# alone. Callers requiring a successful lookup disallow absent operators.
+namespace_operator_name_only <- function(operator, env, bound = character(),
+                                         allow_unbound = TRUE) {
   if (operator %in% bound || selection_binding_deferred(
     env, operator, allow_namespace_promises = FALSE
   )) {
     return(FALSE)
   }
   if (!rlang::env_has(env, operator, inherit = TRUE)) {
-    return(TRUE)
+    return(allow_unbound)
   }
   identical(
     rlang::env_get(env, operator, default = NULL, inherit = TRUE),

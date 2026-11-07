@@ -140,6 +140,32 @@ test_that("genuine formula selections retain tidyselect refusals", {
   }
 })
 
+test_that("deferred public formula operators resolve during typed selection", {
+  data <- data.frame(a = c("A", "B"), b = 1L)
+  for (binding in c("active", "promise")) {
+    case <- qualified_formula_selection("::")
+    selection <- case$selection
+    env <- rlang::quo_get_env(selection)
+    operator <- env[["::"]]
+    rm(list = "::", envir = env)
+    binding_reads <- 0L
+    read_operator <- function() {
+      binding_reads <<- binding_reads + 1L
+      expect_type(tidyselect::peek_data()$a, "character")
+      operator
+    }
+    if (binding == "active") {
+      makeActiveBinding("::", read_operator, env)
+    } else {
+      delayedAssign("::", read_operator(), assign.env = env)
+    }
+    expect_identical(inspect_grouping(data, .by = !!selection)$fixed, "(a)")
+    expect_identical(binding_reads, 1L)
+    expect_identical(case$state$resolutions, 1L)
+    expect_identical(case$state$calls, 1L)
+  }
+})
+
 test_that("leading errors precede qualified formula-shaped caller work", {
   skip_if_suggest_absent("dtplyr")
   data <- data.frame(a = c("A", "B"), b = 1L, value = 1:2)
@@ -153,6 +179,8 @@ test_that("leading errors precede qualified formula-shaped caller work", {
     case <- qualified_formula_selection(operator)
     selection <- case$selection
     for (verb in list(inspect_grouping, summarize_with_margins)) {
+      expect_error(verb(source, .by = base::`~`(a)),
+                   "<formula>", class = "vctrs_error_subscript_type")
       expect_error(verb(source, .by = !!selection),
                    "Can't safely determine column metadata",
                    class = "marginplyr_error")
@@ -160,6 +188,10 @@ test_that("leading errors precede qualified formula-shaped caller work", {
                    "absent", class = "vctrs_error_subscript_oob")
       expect_error(verb(source, .grouping = grouping_sets(~a, !!selection)),
                    "Formula shorthand", class = "rlang_error")
+      expect_error(
+        verb(source, .grouping = grouping_sets(base::`~`(a), !!selection)),
+        "<formula>", class = "vctrs_error_subscript_type"
+      )
       expect_error(verb(source, .grouping = grouping_sets(a, a, !!selection)),
                    "Duplicate grouping sets", class = "marginplyr_error")
       expect_identical(case$state$calls, 0L)
