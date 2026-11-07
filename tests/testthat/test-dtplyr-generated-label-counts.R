@@ -179,7 +179,9 @@ test_that("dtplyr collision checks keep generated helper lookup private", {
   expect_s3_class(query, "dtplyr_step")
   expect_identical(authored_calls, 0L)
   expect_error(
-    expand_with_margins(input, .grouping = rollup(g), .check_margin_label = TRUE),
+    expand_with_margins(
+      input, .grouping = rollup(g), .check_margin_label = TRUE
+    ),
     "already present in grouping", class = "marginplyr_error"
   )
   expect_identical(authored_calls, 1L)
