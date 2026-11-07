@@ -4702,6 +4702,31 @@ scope_value_closure <- function(expr, scope, lookup) {
       return(scope_value_closure(value[[1L]], scope, lookup))
     }
   }
+  if (identical(operator, "as.function") &&
+        is_known_base_frame_call(head, operator, scope, transfer_lookup)) {
+    value <- base_call_argument(head, "x")
+    closure <- if (length(value) == 1L) {
+      scope_value_closure(value[[1L]], scope, lookup)
+    }
+    if (!is.null(closure) && !isTRUE(closure$dispatch_unknown) &&
+      scope_implicit_class_default(
+        operator, "base", closure$dispatch_classes %||% "function",
+        scope, lookup
+      )) {
+      return(closure)
+    }
+  }
+  if (identical(operator, "Vectorize") &&
+        is_known_base_frame_call(head, operator, scope, transfer_lookup)) {
+    parts <- static_matched_arguments(head, base::Vectorize)
+    if ("FUN" %in% names(parts) && !"vectorize.args" %in% names(parts)) {
+      closure <- scope_value_closure(parts$FUN, scope, lookup)
+      # An empty formal list makes Vectorize return FUN unchanged.
+      if (!is.null(closure) && length(closure$definition[[2L]]) == 0L) {
+        return(closure)
+      }
+    }
+  }
   if (identical(operator, "as_function") &&
         is_known_namespace_frame_call(head, "rlang", scope, transfer_lookup)) {
     value <- base_call_argument(head, "x", rlang::as_function)
@@ -5140,7 +5165,9 @@ scope_remapped_closure_list <- function(expr, name, scope, lookup) {
   if (is.null(elements)) return(NULL)
 
   if (isTRUE(rule$dispatch) &&
-        !scope_plain_list_default(name, owner, scope, lookup)) return(NULL)
+        !scope_implicit_class_default(name, owner, "list", scope, lookup)) {
+    return(NULL)
+  }
 
   switch(name,
     rev = base::rev.default(elements),
@@ -5178,10 +5205,11 @@ scope_literal_list_count <- function(parts, name, default, scope, lookup) {
         is.finite(count) && count == trunc(count)) count
 }
 
-# A plain list still participates in UseMethod's implicit list dispatch.
+# Prove that known dispatch classes reach the package's default method.
 # Inspect possible method bindings without invoking or forcing caller code.
-scope_plain_list_default <- function(name, owner, scope, lookup) {
-  methods <- paste0(name, c(".list", ".default"))
+scope_implicit_class_default <- function(name, owner, class, scope, lookup) {
+  methods <- paste0(name, c(paste0(".", class), ".default"))
+  default_method <- paste0(name, ".default")
   rebound <- lookup$function_rebound %||% lookup$rebound
   if (is.null(lookup$env) ||
     any(c(methods, unresolved_lookup_name()) %in% rebound) ||
@@ -5191,14 +5219,14 @@ scope_plain_list_default <- function(name, owner, scope, lookup) {
     )) return(FALSE)
 
   namespace <- asNamespace(owner)
-  default <- get(methods[[2L]], envir = namespace, inherits = FALSE)
+  default <- get(default_method, envir = namespace, inherits = FALSE)
   registry <- get(".__S3MethodsTable__.", envir = namespace, inherits = FALSE)
   absent <- rlang::zap()
   for (method in methods) {
     for (env in list(lookup$env, registry)) {
       binding <- ordinary_function_binding(method, env, owner, absent)
       if (!identical(binding, absent) &&
-            !(identical(method, methods[[2L]]) &&
+            !(identical(method, default_method) &&
                 identical(binding, default))) return(FALSE)
     }
   }
@@ -5600,11 +5628,15 @@ scope_bind_closure_list <- function(scope, name, elements) {
   scope
 }
 
-# Carry a write through list setters or to a fresh environment field.
+# Carry writes to closure attributes, list members or fresh environment fields.
 # Stored closures use offsets relative to the current frame.
 scope_after_carrier_write <- function(scope, target, value, lookup,
                                       value_scope) {
   if (!rlang::is_call(target) || rlang::is_missing(value)) return(scope)
+  updated <- scope_closure_attribute_write(
+    scope, target, value, lookup, value_scope
+  )
+  if (!is.null(updated)) return(updated)
   members <- c("[", "[[", "$")
   name_setters <- c("names", "attr", "attributes")
   path <- list()
@@ -5654,6 +5686,38 @@ scope_after_carrier_write <- function(scope, target, value, lookup,
   }
   if (is.null(elements)) return(scope_bind_local(scope, name))
   scope_bind_closure_list(scope, name, elements)
+}
+
+# Keep invocation dependencies after an attribute write, with separate dispatch
+# classes. Unknown attributes cannot prove that a generic returns this closure.
+scope_closure_attribute_write <- function(scope, target, value, lookup,
+                                          value_scope) {
+  operator <- static_call_name(target)
+  if (is.null(operator) || !operator %in% c("class", "attr", "attributes") ||
+        length(target) < 2L || !is_name_part(target[[2L]]) ||
+        is.null(scope_value_closure(target[[2L]], value_scope, lookup))) {
+    return(NULL)
+  }
+  name <- rlang::as_name(target[[2L]])
+  scope <- scope_bind_local(scope, name, target[[2L]], lookup, value_scope)
+  setter <- paste0(operator, "<-")
+  replacement <- rlang::call2(setter, .ns = static_call_ns(target))
+  classes <- NULL
+  if (identical(operator, "class") && length(target) == 2L &&
+        is_known_base_frame_call(replacement, setter, value_scope, lookup)) {
+    classes <- if (is.null(unparenthesized_value(value))) {
+      "function"
+    } else {
+      static_character_value(value, function(expr) {
+        identical(static_call_name(expr), "c") &&
+          is_known_base_frame_call(expr, "c", value_scope, lookup)
+      })
+    }
+    if (!is.null(classes) && length(classes) == 0L) classes <- "function"
+  }
+  scope[[1L]]$closures[[name]]$dispatch_classes <- classes
+  scope[[1L]]$closures[[name]]$dispatch_unknown <- is.null(classes)
+  scope
 }
 
 # A base $<- or [[<- on a fresh local carrier changes an exact field in place.
