@@ -4779,6 +4779,13 @@ scope_value_closure <- function(expr, scope, lookup) {
       ))
     }
   }
+  member <- scope_closure_list_member(head, scope, lookup)
+  if (!is.null(member$definition)) member else NULL
+}
+
+# Select a visible plain-list member without evaluating its carrier or key.
+scope_closure_list_member <- function(head, scope, lookup) {
+  operator <- static_call_name(head)
   if (is.null(operator) || !operator %in% c("[[", "$") ||
         !length(head) %in% c(3L, 4L) ||
         !is_known_base_frame_call(head, operator, scope, lookup)) {
@@ -4793,30 +4800,63 @@ scope_value_closure <- function(expr, scope, lookup) {
     }
     partial <- identical(exact, FALSE)
   }
-  elements <- scope_closure_list(head[[2L]], scope, lookup)
-  key <- unparenthesized_value(head[[3L]])
-  if (identical(operator, "$") && is_name_part(key)) {
-    key <- rlang::as_name(key)
-  }
-  if (is.object(key)) {
-    return(NULL)
-  }
-  index <- if (rlang::is_string(key)) {
-    if (partial) {
-      pmatch(key, names(elements), duplicates.ok = TRUE)
-    } else {
-      match(key, names(elements))
+  if (rlang::is_missing(head[[3L]])) return(NULL)
+  key <- head[[3L]]
+  path <- if (identical(operator, "$")) {
+    # Dollar lookup takes a written name, even in function-call syntax.
+    if (is_name_part(key)) {
+      rlang::as_name(key)
+    } else if (!is.object(key) && rlang::is_string(key)) {
+      key
     }
-  } else if (typeof(key) %in% c("integer", "double") && length(key) == 1L &&
-               is.finite(key) && key >= 1 && key <= length(elements) &&
-               key == trunc(key)) {
-    key
+  } else {
+    scope_literal_list_path(key, scope, lookup)
   }
-  if (is.null(index) || is.na(index) || index < 1L ||
-        index > length(elements)) {
+  if (length(path) == 0L) return(NULL)
+  elements <- scope_closure_list(head[[2L]], scope, lookup)
+  for (step in seq_along(path)) {
+    key <- path[[step]]
+    # R list lookup never matches an empty name to an unnamed element.
+    index <- if (rlang::is_string(key) && nzchar(key)) {
+      if (partial) {
+        pmatch(key, names(elements), duplicates.ok = TRUE)
+      } else {
+        match(key, names(elements))
+      }
+    } else if (typeof(key) %in% c("integer", "double") &&
+                 is.finite(key) && key >= 1 && key <= length(elements) &&
+                 key == trunc(key)) {
+      key
+    }
+    if (is.null(index) || is.na(index) || index < 1L ||
+          index > length(elements)) {
+      return(NULL)
+    }
+    member <- elements[[index]]
+    if (step == length(path)) return(member)
+    elements <- member$elements
+    if (is.null(elements)) return(NULL)
+  }
+  NULL
+}
+
+# Read only unclassed literal keys and known base concatenations for [[ paths.
+scope_literal_list_path <- function(expr, scope, lookup) {
+  if (rlang::is_missing(expr)) return(NULL)
+  expr <- unparenthesized_value(expr)
+  if (is.object(expr)) return(NULL)
+  if (typeof(expr) %in% c("character", "integer", "double")) {
+    if (!anyNA(expr)) return(expr)
     return(NULL)
   }
-  elements[[index]]
+  if (!identical(static_call_name(expr), "c") ||
+        !is_known_base_frame_call(expr, "c", scope, lookup)) return(NULL)
+  parts <- static_call_args(expr)
+  if (any(names(parts) %in% c("recursive", "use.names"))) return(NULL)
+  values <- lapply(parts, scope_literal_list_path,
+                   scope = scope, lookup = lookup)
+  if (any(vapply(values, is.null, logical(1)))) return(NULL)
+  do.call(base::c, unname(values))
 }
 
 # Read a visible factory's result, retained bindings and selected return exit.
@@ -4865,7 +4905,7 @@ scope_returned_closure <- function(expr, scope, lookup, final = TRUE) {
        scope = scope, returned = FALSE)
 }
 
-# Closure elements of a plain list value, relative to the current stack.
+# Closure and nested-list elements, relative to the current stack.
 # Each element captures its value before the next element changes bindings.
 scope_closure_list <- function(expr, scope, lookup) {
   if (rlang::is_missing(expr)) return(NULL)
@@ -4882,10 +4922,7 @@ scope_closure_list <- function(expr, scope, lookup) {
       if (is.null(elements)) {
         return(NULL)
       }
-      return(lapply(elements, function(closure) {
-        if (!is.null(closure)) closure$enclosing <- closure$enclosing + index
-        closure
-      }))
+      return(scope_shift_closure_elements(elements, index))
     }
   }
   operator <- static_call_name(expr)
@@ -4906,7 +4943,7 @@ scope_closure_list <- function(expr, scope, lookup) {
     names(elements) <- names(parts)
     for (index in seq_along(parts)) {
       elements[index] <- list(
-        scope_value_closure(parts[[index]], scope, lookup)
+        scope_closure_list_element(parts[[index]], scope, lookup)
       )
       scope <- statement_reads_and_scope(
         parts[[index]], scope, lookup, read_symbols = no_scope_reads
@@ -4968,7 +5005,28 @@ scope_closure_list <- function(expr, scope, lookup) {
     }
     return(elements[key])
   }
-  NULL
+  member <- scope_closure_list_member(expr, scope, lookup)
+  member$elements
+}
+
+# Retain only statically visible callable or plain-list member values.
+scope_closure_list_element <- function(expr, scope, lookup) {
+  closure <- scope_value_closure(expr, scope, lookup)
+  if (!is.null(closure)) return(closure)
+  elements <- scope_closure_list(expr, scope, lookup)
+  if (!is.null(elements)) list(elements = elements) else NULL
+}
+
+# Move every contained closure between stack and binding-relative offsets.
+scope_shift_closure_elements <- function(elements, offset) {
+  lapply(elements, function(element) {
+    if (!is.null(element$definition)) {
+      element$enclosing <- element$enclosing + offset
+    } else if (!is.null(element$elements)) {
+      element$elements <- scope_shift_closure_elements(element$elements, offset)
+    }
+    element
+  })
 }
 
 # Find a local literal closure using function or value lookup as written.
@@ -5233,10 +5291,7 @@ scope_bind_local <- function(scope, name, value = NULL, lookup = NULL,
     closure
   }
   scope[[1L]]$closure_lists[[name]] <- if (!is.null(elements)) {
-    lapply(elements, function(closure) {
-      if (!is.null(closure)) closure$enclosing <- closure$enclosing - 1L
-      closure
-    })
+    scope_shift_closure_elements(elements, -1L)
   }
   # Offsets stay relative to the binding's frame when a child scope is added.
   scope[[1L]]$environments[[name]] <- if (length(environment_frames) > 0L) {
@@ -5307,17 +5362,18 @@ scope_after_list_write <- function(scope, target, value, lookup, value_scope) {
     if (is.null(unparenthesized_value(value))) {
       elements[index] <- NULL
     } else {
-      elements[index] <- list(scope_value_closure(value, value_scope, lookup))
+      elements[index] <- list(
+        scope_closure_list_element(value, value_scope, lookup)
+      )
       if (rlang::is_string(key)) names(elements)[index] <- key
     }
   }
   name <- rlang::as_name(target[[2L]])
   scope <- scope_bind_local(scope, name)
   scope[[1L]]$kinds[[name]] <- "value"
-  scope[[1L]]$closure_lists[[name]] <- lapply(elements, function(closure) {
-    if (!is.null(closure)) closure$enclosing <- closure$enclosing - 1L
-    closure
-  })
+  scope[[1L]]$closure_lists[[name]] <- scope_shift_closure_elements(
+    elements, -1L
+  )
   scope
 }
 
@@ -5363,10 +5419,9 @@ scope_after_list_names <- function(scope, target, value, lookup, value_scope) {
   name <- rlang::as_name(target[[2L]])
   scope <- scope_bind_local(scope, name)
   scope[[1L]]$kinds[[name]] <- "value"
-  scope[[1L]]$closure_lists[[name]] <- lapply(elements, function(closure) {
-    if (!is.null(closure)) closure$enclosing <- closure$enclosing - 1L
-    closure
-  })
+  scope[[1L]]$closure_lists[[name]] <- scope_shift_closure_elements(
+    elements, -1L
+  )
   scope
 }
 

@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Parent and Total share dependency checks follow literal member paths through
+  nested lists of local closures, including extracted inner lists (#1432).
+
 * Generated dtplyr Margin-label display and factor restoration preserve source
   dimensions when a caller overrides the namespace operator (#1433).
 
