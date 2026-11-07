@@ -390,7 +390,7 @@ test_that("remapping leaves unselected inline closures unevaluated", {
 })
 
 test_that("partial names on list remapping do not warn during planning", {
-  withr::local_options(warnPartialMatchArgs = TRUE)
+  rlang::local_options(warnPartialMatchArgs = TRUE)
   read <- remapped_closure_read(
     quote(unname(ob = list(callback))), quote(functions[[1L]]())
   )

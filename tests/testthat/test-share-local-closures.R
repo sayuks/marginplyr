@@ -174,7 +174,7 @@ test_that("a saved closure passed to unknown code is analyzed conservatively", {
 })
 
 test_that("matching do.call arguments only warns at execution", {
-  withr::local_options(warnPartialMatchArgs = TRUE)
+  rlang::local_options(warnPartialMatchArgs = TRUE)
   data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(100, 300))
   read <- function(remove) {
     substitute((function(prior) {
