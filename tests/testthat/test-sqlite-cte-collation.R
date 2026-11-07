@@ -1,3 +1,71 @@
+test_that("SQLite unsorted CTE expansion keeps source types and row copies", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:", extended_types = TRUE)
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  for (missing in c(TRUE, FALSE)) {
+    values <- if (missing) {
+      data.frame(text = NA_character_, integer = NA_integer_, double = NA_real_,
+                 day = as.Date(NA_character_), payload = 7L)
+    } else {
+      data.frame(text = "a", integer = 2L, double = 3.5,
+                 day = as.Date("2020-01-01"), payload = 7L)
+    }
+    source <- dplyr::copy_to(con, values, "cte_source_types", overwrite = TRUE)
+    oracle <- dplyr::collect(source)
+    expect_identical(as.data.frame(oracle), values)
+    for (label in list(NULL, NA_character_)) {
+      for (id in list(NULL, "sid")) {
+        query <- expand_with_margins(
+          source, .grouping = rollup(grouping_set(text, integer, double, day)),
+          .margin_label = label, .id = id
+        )
+        detail <- oracle
+        total <- oracle
+        for (column in c("text", "integer", "double", "day")) {
+          total[[column]] <- oracle[[column]][NA_integer_]
+        }
+        if (!is.null(id)) {
+          detail$sid <- 1L
+          total$sid <- 2L
+        }
+        columns <- c("text", "integer", "double", "day", id, "payload")
+        expected <- dplyr::bind_rows(detail, total)[columns]
+        for (cte in c(FALSE, TRUE)) {
+          for (n in c(Inf, 0L, 1L, 2L)) {
+            info <- paste(missing, label, id, cte, n, collapse = " ")
+            result <- dplyr::collect(
+              query, n = n, sql_options = dbplyr::sql_options(cte = cte)
+            )
+            expect_identical(names(result), columns, info = info)
+            expect_identical(nrow(result), as.integer(min(n, 2L)), info = info)
+            for (column in names(oracle)) {
+              expect_identical(class(result[[column]]),
+                               class(oracle[[column]]), info = info)
+              expect_identical(typeof(result[[column]]),
+                               typeof(oracle[[column]]), info = info)
+            }
+            if (!is.null(id)) expect_type(result$sid, "integer")
+            if (n == 1L) {
+              # An unsorted prefix may choose either grouping-set copy.
+              expect_true(any(vapply(1:2, function(i) {
+                identical(as.list(result), as.list(expected[i, ]))
+              }, logical(1))), info = info)
+            } else {
+              target <- if (n == 0L) expected[FALSE, ] else expected
+              expect_identical(
+                dplyr::arrange(result, dplyr::across(dplyr::everything())),
+                dplyr::arrange(target, dplyr::across(dplyr::everything())),
+                info = info
+              )
+            }
+          }
+        }
+      }
+    }
+    expect_identical(dplyr::collect(source), oracle)
+  }
+})
+
 test_that("SQLite direct CTE collection preserves source collation", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")

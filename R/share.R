@@ -4702,6 +4702,21 @@ scope_value_closure <- function(expr, scope, lookup) {
       return(scope_value_closure(value[[1L]], scope, lookup))
     }
   }
+  if (identical(operator, "as_function") &&
+        is_known_namespace_frame_call(head, "rlang", scope, transfer_lookup)) {
+    value <- base_call_argument(head, "x", rlang::as_function)
+    if (length(value) == 1L) {
+      return(scope_value_closure(value[[1L]], scope, lookup))
+    }
+  }
+  if (identical(operator, "cmpfun") &&
+        is_known_namespace_frame_call(head, "compiler", scope,
+                                      transfer_lookup)) {
+    value <- base_call_argument(head, "f", compiler::cmpfun)
+    if (length(value) == 1L) {
+      return(scope_value_closure(value[[1L]], scope, lookup))
+    }
+  }
   if (identical(operator, "get") &&
         is_known_base_frame_call(head, operator, scope, transfer_lookup)) {
     value <- base_call_argument(head, "x")

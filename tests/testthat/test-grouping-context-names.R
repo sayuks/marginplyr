@@ -819,3 +819,113 @@ test_that("typed DuckDB selections use captured names after proxy dispatch", {
     inspect_grouping(data, .grouping = grouping_set(b))
   )
 })
+
+test_that("DuckDB proxy order determines Grouping keys and summary grain", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE))
+  source <- tibble::tibble(a = c("east", "west"), b = c(1L, 1L))
+  original <- source
+  remote <- dplyr::copy_to(con, source, "duckdb_context_proxy_order")
+  DBI::dbExecute(con, "CREATE SEQUENCE grouping_proxy_reads START 1")
+  input <- dplyr::mutate(
+    remote,
+    a = dbplyr::sql("a || CAST(nextval('grouping_proxy_reads') AS VARCHAR)")
+  )
+  typed <- dplyr::collect(utils::head(input, 0L))
+  selectors <- rlang::quos(
+    tidyselect::peek_vars()[1L],
+    tidyselect::peek_vars()[[1L]],
+    names(tidyselect::peek_data())[1L],
+    names(tidyselect::peek_data())[[1L]]
+  )
+  counter <- duckdb_query_counter()
+  on.exit(counter$untrace(), add = TRUE, after = FALSE)
+  expect_identical(DBI::dbGetQuery(con, "SELECT 1 AS n")$n, 1L)
+  counter$queries <- 0L
+  for (selector in selectors) {
+    expect_identical(tidyselect::eval_select(selector, typed), c(a = 1L))
+    expect_identical(
+      inspect_grouping(input, .by = !!selector, .format = "list")$fixed,
+      list("a")
+    )
+  }
+  expect_identical(counter$queries, 0L)
+
+  proxy_rows <- integer()
+  rlang::local_bindings(
+    tidyselect_data_proxy.tbl_df = function(x) {
+      proxy_rows <<- c(proxy_rows, nrow(x))
+      if (identical(attr(x, "names", exact = TRUE), c("a", "b"))) {
+        x[c("b", "a")]
+      } else {
+        x
+      }
+    },
+    .env = asNamespace("tidyselect")$.__S3MethodsTable__.
+  )
+  counter$queries <- 0L
+  expect_error(
+    inspect_grouping(input, .by = absent),
+    "`absent` doesn't exist", fixed = TRUE,
+    class = "vctrs_error_subscript_oob"
+  )
+  expect_identical(
+    inspect_grouping(input, .by = b, .format = "list")$fixed, list("b")
+  )
+  expect_identical(counter$queries, 0L)
+  constructors <- list(grouping_set, grouping_sets, rollup, cube, grouping_spec)
+  for (selector in selectors) {
+    wrapped <- rlang::quo(identity(!!selector))
+    for (selection in list(selector, wrapped)) {
+      expect_identical(tidyselect::eval_select(selection, typed), c(b = 1L))
+      counter$queries <- 0L
+      expect_identical(
+        inspect_grouping(input, .by = !!selection, .format = "list")$fixed,
+        list("b")
+      )
+      expect_identical(counter$queries, 1L)
+      for (constructor in constructors) {
+        expected <- inspect_grouping(
+          typed, .by = a, .grouping = constructor(b), .format = "list"
+        )
+        counter$queries <- 0L
+        expect_identical(
+          inspect_grouping(
+            input, .by = a, .grouping = constructor(!!selection),
+            .format = "list"
+          ),
+          expected
+        )
+        expect_identical(counter$queries, 1L)
+        counter$queries <- 0L
+        expect_error(
+          inspect_grouping(
+            input, .by = b, .grouping = constructor(!!selection)
+          ),
+          "cannot appear in both", class = "marginplyr_error"
+        )
+        expect_identical(counter$queries, 1L)
+      }
+    }
+  }
+  expect_true(length(proxy_rows) > 0L && all(proxy_rows == 0L))
+  expect_true(is.na(DBI::dbGetQuery(
+    con,
+    paste0("SELECT last_value FROM duckdb_sequences() ",
+           "WHERE sequence_name = 'grouping_proxy_reads'")
+  )$last_value))
+
+  for (selector in selectors) {
+    for (selection in list(selector, rlang::quo(identity(!!selector)))) {
+      result <- dplyr::collect(summarize_with_margins(
+        remote, count = dplyr::n(), .by = !!selection
+      ))
+      expect_identical(result$b, 1L)
+      expect_identical(as.double(result$count), 2)
+      expect_named(result, c("b", "count"))
+    }
+  }
+  expect_identical(dplyr::collect(remote), original)
+  expect_identical(source, original)
+})
