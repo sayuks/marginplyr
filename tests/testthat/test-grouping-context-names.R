@@ -488,3 +488,75 @@ test_that("dtplyr captured context names use the typed receiver", {
     list("b")
   )
 })
+
+test_that("Grouping selections keep tidyselect's repaired column names", {
+  data <- data.frame(
+    a1 = c("east", "west"), a2 = 1:2, z = as.Date("2026-11-07") + 0:1
+  )
+  selection <- rlang::quo(c(a = c(a1, a2)))
+  typed <- rlang::quo(identity(c("a1", "a2")))
+  expect_identical(tidyselect::eval_select(selection, data), c(a1 = 1L, a2 = 2L))
+  constructors <- list(grouping_set, grouping_sets, rollup, cube, grouping_spec)
+  expand <- function(...) expand_with_margins(..., .id = "set_id")
+
+  for (verb in list(inspect_grouping, expand)) {
+    fixed <- verb(data, .by = c(a1, a2))
+    expect_identical(verb(data, .by = !!typed), fixed)
+    expect_identical(verb(data, .by = !!selection), fixed)
+
+    for (constructor in constructors) {
+      literal <- verb(data, .grouping = constructor(c(a1, a2)))
+      expect_identical(verb(data, .grouping = constructor(!!typed)), literal)
+      expect_identical(verb(data, .grouping = constructor(!!selection)), literal)
+
+      mixed <- verb(data, .grouping = constructor(c(a1, a2), z))
+      date <- rlang::quo(where(function(x) inherits(x, "Date")))
+      expect_identical(
+        verb(data, .grouping = constructor(!!typed, !!date)), mixed
+      )
+      expect_identical(
+        verb(data, .grouping = constructor(!!selection, !!date)), mixed
+      )
+    }
+  }
+})
+
+test_that("DuckDB resolves repaired Grouping names before typed metadata", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE))
+  data <- data.frame(a1 = c("east", "west"), a2 = 1:2, value = 3:4)
+  remote <- dplyr::copy_to(con, data, "repaired_grouping_names")
+  counter <- duckdb_query_counter()
+  on.exit(counter$untrace(), add = TRUE, after = FALSE)
+
+  selection <- rlang::quo(c(a = a1:a2))
+  literal <- grouping_sets(grouping_set(a1, a2), grouping_set())
+  repaired <- grouping_sets(grouping_set(!!selection), grouping_set())
+  expect_identical(
+    inspect_grouping(remote, .by = !!selection),
+    inspect_grouping(data, .by = c(a1, a2))
+  )
+  expect_identical(
+    inspect_grouping(remote, .grouping = repaired),
+    inspect_grouping(data, .grouping = literal)
+  )
+  expect_error(
+    inspect_grouping(remote, .by = c(renamed = a1:a2)),
+    "renamed1 = a1", fixed = TRUE, class = "marginplyr_error"
+  )
+  expect_error(
+    inspect_grouping(remote, .grouping = grouping_set(c(renamed = a1:a2))),
+    "renamed1 = a1", fixed = TRUE, class = "marginplyr_error"
+  )
+  expect_identical(counter$queries, 0L)
+
+  expected <- expand_with_margins(data, .grouping = literal, .id = "set_id")
+  result <- expand_with_margins(remote, .grouping = repaired, .id = "set_id")
+  expect_s3_class(result, "tbl_lazy")
+  expect_identical(counter$queries, 1L)
+  expect_identical(
+    dplyr::arrange(dplyr::collect(result), set_id, value),
+    tibble::as_tibble(dplyr::arrange(expected, set_id, value))
+  )
+})
