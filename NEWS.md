@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Parent and Total share dependency checks retain ordinary local closures
+  replaced by a definite literal singleton loop (#1492).
+
 * Public `.grouping` capture preserves authored empty constructor arguments
   before empty splices and refuses them with their original position (#1489).
 
