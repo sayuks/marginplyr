@@ -7,6 +7,10 @@
 * Parent and Total share dependency checks follow surviving closures after
   literal list deletions and single-bracket replacements (#1414).
 
+* Parent and Total share dependency checks retain known mask environments
+  returned through blocks, literal branches, numeric switch arms and base
+  identity calls (#1416).
+
 * Typed inspection and Nest verbs refuse replaced registered dtplyr converters
   before they can change Grouping dimensions or fixed keys (#1419).
 
