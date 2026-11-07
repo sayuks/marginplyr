@@ -353,7 +353,8 @@ Config/testthat/start-first:
     qualified-formula-selections,
     nest-namespace,
     across-prior-rebinding,
-    share-list-replacement-dispatch
+    share-list-replacement-dispatch,
+    nest-local-list-converter
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
