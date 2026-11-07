@@ -33,7 +33,12 @@ ordinary_matches <- function(input, values) {
     )
 }
 
-collision <- function() {
+is_collision <- function(x) {
+  inherits(x, "marginplyr_error") &&
+    grepl("already present", conditionMessage(x), fixed = TRUE)
+}
+
+collision <- function(require_contract) {
   root <- new.env(parent = globalenv())
   data <- data.table::data.table(g = "Total", v = 7L)
   input <- source_in(root, data)
@@ -48,25 +53,30 @@ collision <- function() {
   result <- capture_error(expand())
   invoked_during_check <- hits$count
   stopifnot(
-    inherits(result, "dtplyr_step"),
-    identical(invoked_during_check, 1L),
-    identical(dplyr::collect(result)$g, c("Total", "Total")),
     ordinary_matches(input, ordinary),
     identical(hits$count, invoked_during_check)
   )
+  observed_displays <- if (inherits(result, "dtplyr_step")) {
+    dplyr::collect(result)$g
+  }
   rm(list = "::", envir = root)
-  restored <- capture_error(expand())
   stopifnot(
-    inherits(restored, "marginplyr_error"),
-    grepl("already present", conditionMessage(restored), fixed = TRUE),
+    is_collision(capture_error(expand())),
     identical(serialize(data, NULL), original)
+  )
+  if (require_contract) {
+    stopifnot(is_collision(result), invoked_during_check == 0L)
+    return(invisible(NULL))
+  }
+  stopifnot(
+    identical(invoked_during_check, 1L),
+    identical(observed_displays, c("Total", "Total"))
   )
   cat("Collision: 1 generated callback; colliding expansion accepted;",
       "native controls unchanged; removing binding restores rejection.\n")
-  inherits(result, "marginplyr_error") && invoked_during_check == 0L
 }
 
-omission <- function() {
+omission <- function(require_contract) {
   root <- new.env(parent = globalenv())
   data <- data.table::data.table(g = "a", v = 7L)
   input <- source_in(root, data)
@@ -79,21 +89,26 @@ omission <- function() {
   )
   actual <- dplyr::collect(query)
   stopifnot(
-    identical(actual, dplyr::mutate(expected, g = c("a", "MASK"))),
-    ordinary_matches(input, ordinary),
-    identical(hits$count, 1L)
+    ordinary_matches(input, ordinary)
   )
   rm(list = "::", envir = root)
   stopifnot(
     identical(dplyr::collect(query), expected),
     identical(serialize(data, NULL), original)
   )
+  if (require_contract) {
+    stopifnot(identical(actual, expected), hits$count == 0L)
+    return(invisible(NULL))
+  }
+  stopifnot(
+    identical(actual, dplyr::mutate(expected, g = c("a", "MASK"))),
+    identical(hits$count, 1L)
+  )
   cat("Omission: 1 generated callback; labels a/MASK instead of a/Total;",
       "native controls unchanged; the same query recovers.\n")
-  identical(actual, expected) && hits$count == 0L
 }
 
-zero_column_id <- function() {
+zero_column_id <- function(require_contract) {
   root <- new.env(parent = globalenv())
   data <- data.table::data.table()
   input <- source_in(root, data)
@@ -104,29 +119,35 @@ zero_column_id <- function() {
   hits <- intercept_namespace(root, "base::rep", function(...) 999L)
   actual <- dplyr::collect(query)
   stopifnot(
-    identical(actual, tibble::tibble(sid = 999L)),
     identical(nrow(ordinary), 0L),
     identical(ncol(ordinary), 0L),
-    identical(dplyr::collect(input), ordinary),
-    identical(hits$count, 1L)
+    identical(dplyr::collect(input), ordinary)
   )
   rm(list = "::", envir = root)
   stopifnot(
     identical(dplyr::collect(query), expected),
     identical(serialize(data, NULL), original)
   )
+  if (require_contract) {
+    stopifnot(identical(actual, expected), hits$count == 0L)
+    return(invisible(NULL))
+  }
+  stopifnot(
+    identical(actual, tibble::tibble(sid = 999L)),
+    identical(hits$count, 1L)
+  )
   cat("Identifier: 1 generated callback; invented row sid=999;",
       "native input stays empty; the same query recovers.\n")
-  identical(actual, expected) && hits$count == 0L
 }
 
-label_check <- collision()
-label_value <- omission()
-identifier <- zero_column_id()
-args <- commandArgs(trailingOnly = TRUE)
-if ("--assert-label" %in% args) {
-  stopifnot(label_check, label_value)
-}
-if ("--assert-id" %in% args) {
-  stopifnot(identifier)
+mode <- commandArgs(trailingOnly = TRUE)
+if (identical(mode, "--assert-label")) {
+  collision(require_contract = TRUE)
+  omission(require_contract = TRUE)
+} else if (identical(mode, "--assert-id")) {
+  zero_column_id(require_contract = TRUE)
+} else {
+  collision(require_contract = FALSE)
+  omission(require_contract = FALSE)
+  zero_column_id(require_contract = FALSE)
 }

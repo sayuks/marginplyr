@@ -1,7 +1,7 @@
 # Run from the tested package root. --assert requires the desired contract.
 pkgload::load_all(".", quiet = TRUE, export_all = FALSE)
 
-check <- function(extended_types) {
+check <- function(extended_types, require_contract) {
   con <- DBI::dbConnect(
     RSQLite::SQLite(), ":memory:", extended_types = extended_types
   )
@@ -15,7 +15,8 @@ check <- function(extended_types) {
   total <- dplyr::mutate(source, day = "Total", sid = 2L)
   expected <- dplyr::union_all(detail, total) |>
     dplyr::collect() |>
-    dplyr::select(day, sid, payload)
+    dplyr::select(day, sid, payload) |>
+    dplyr::arrange(sid)
   stopifnot(identical(expected$payload, c(7L, 7L)),
             identical(expected$sid, 1:2), identical(expected$day[[2L]], "Total"))
   if (extended_types) {
@@ -37,6 +38,7 @@ check <- function(extended_types) {
         invokeRestart("muffleWarning")
       }
     )
+    actual <- dplyr::arrange(actual, sid)
     sorted <- dplyr::collect(expand_with_margins(
       source, .grouping = rollup(day), .id = "sid", .sort = "last",
       .check_margin_label = enabled
@@ -44,7 +46,10 @@ check <- function(extended_types) {
     missing <- dplyr::collect(expand_with_margins(
       source, .grouping = rollup(day), .id = "sid", .margin_label = NULL
     ))
-    materialized <- dplyr::collect(dplyr::compute(query))
+    missing <- dplyr::arrange(missing, sid)
+    materialized <- dplyr::compute(query) |>
+      dplyr::collect() |>
+      dplyr::arrange(sid)
     stopifnot(
       identical(as.data.frame(sorted), as.data.frame(expected)),
       identical(materialized, expected),
@@ -52,13 +57,13 @@ check <- function(extended_types) {
       identical(names(actual), names(expected))
     )
     if (extended_types) {
+      stopifnot(identical(missing$day, c(day, as.Date(NA_character_))))
+    }
+    if (extended_types && !require_contract) {
       stopifnot(
         identical(actual$day, rep(NA_character_, 2L)),
-        any(grepl("Unknown string format", warnings, fixed = TRUE)),
-        identical(missing$day, c(day, as.Date(NA_character_)))
+        any(grepl("Unknown string format", warnings, fixed = TRUE))
       )
-    } else {
-      stopifnot(identical(actual, expected), !length(warnings))
     }
     cat("extended_types =", extended_types, "checked =", enabled,
         "| expected", paste(expected$day, collapse = "/"),
@@ -70,8 +75,10 @@ check <- function(extended_types) {
   all(observations)
 }
 
-ordinary <- check(FALSE)
-extended <- check(TRUE)
-if ("--assert" %in% commandArgs(trailingOnly = TRUE)) {
-  stopifnot(ordinary, extended)
+require_contract <- "--assert" %in% commandArgs(trailingOnly = TRUE)
+ordinary <- check(FALSE, require_contract)
+extended <- check(TRUE, require_contract)
+stopifnot(ordinary)
+if (require_contract) {
+  stopifnot(extended)
 }

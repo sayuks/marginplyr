@@ -85,9 +85,9 @@ lookup of generated helpers.
 An ordered factor stored levels `south`, `north` and `unused`. Its
 `levels()` method returned the same strings with a character subclass whose
 `as.character()` method uppercased them. The declared check coerced that
-vector while comparing. It missed the existing levels `north` and `unused`,
+vector while comparing. It missed the existing levels `south` and `unused`,
 and reconstruction could duplicate a stored level. It also falsely refused
-the distinct label `NORTH`. The factor level and declared-collision
+the distinct label `SOUTH`. The factor level and declared-collision
 contracts include unused levels and apply for both observed-check settings.
 
 The [collision matrix](2026-11-07-expand-grouping-typed-boundaries/local-collision-matrix.R)
@@ -96,9 +96,12 @@ stored levels, and 48 false refusals in 480 local/dtplyr observations.
 Ordinary factor, unrelated label and typed-missing controls separated the
 stored level strings from the accessor result's class. #1215 and PR #1221
 covered conversion of source factor values. L2 affected the returned levels
-vector with ordinary source factor-value conversion. L1 and L2 comparisons
-aligned rows by identifier and payload. They established full public names,
-values, types and multiplicities, and the probes checked source bytes.
+vector with ordinary source factor-value conversion. The probes checked
+source bytes. L1 result comparisons checked public names, values and
+multiplicities after row alignment. L2 exact cases compared names, values,
+factor codes and stored levels after aligning rows and canonicalizing the
+factor subclass. L2 collision misses checked ordered-factor status and
+duplicate stored levels.
 
 ### D1. Two generated label operations inherited caller namespace lookup
 
@@ -135,12 +138,11 @@ A collapsed SQLite source with one text column named `TRUE` collected
 normally and expanded correctly with the default unchecked path. Enabling
 the observed check failed at construction with `no such column: TRUE`.
 The [replay](2026-11-07-expand-grouping-typed-boundaries/sqlite-boolean-check.R)
-confirmed the failure both for a noncolliding detail and for a genuine
-`Total` collision. The same check on the root or on a source aliased before
+confirmed the failure for both `TRUE` and `FaLsE`, with a noncolliding
+detail and with a genuine `Total` collision. The same check on the root or on a source aliased before
 collapse gave the expected decision. The SQL record identified the
 `observed_label_collision` statement and its nested star projection.
-Exploratory derived-source checks also reproduced the failure for mixed-case
-`FaLsE`. #1398 repaired the direct expansion of a derived source, and
+#1398 repaired the direct expansion of a derived source, and
 #930 covered the label-check path for the `.env` pronoun.
 
 ### S2. A SQLite source declaration overrode the text result type
@@ -152,9 +154,9 @@ Direct unsorted expansion returned two missing character values and emitted
 an RSQLite warning about an unknown string format. Occurrence identifiers
 and the integer payload survived. A zero-row source anchor preserved the
 `DATE` declaration in the direct query even though its later arms emitted
-text. ADR 0031's declared-type guarantee concerns typed-missing labels.
-This text-label path needed the display semantics of the ordinary branch
-union.
+text. ADR 0031's B-direct amendment covers direct collection of text-label
+expansions and requires their character declarations. This path needed the
+display semantics of the ordinary branch union.
 
 The [replay](2026-11-07-expand-grouping-typed-boundaries/sqlite-date-display.R)
 compared both observed-check settings. The requested Margin order and direct
@@ -197,8 +199,9 @@ share behavior.
 The scripts in the [evidence bundle](2026-11-07-expand-grouping-typed-boundaries)
 load the package from the working directory. Run them in fresh R sessions
 from an archive of the tested source, passing the absolute script path.
-The default modes assert the observed findings and their successful
-controls. The local matrix accepts `--assert-observed` and
+The finding replays in default mode check the observed failures and their
+controls. The supplemental matrices report their classifications. The local
+matrix accepts `--assert-observed` and
 `--assert-declared`, the dtplyr script accepts `--assert-label` and
 `--assert-id`, and the local presentation and both SQLite scripts accept
 `--assert` to assert the desired contracts. Those modes intentionally fail
