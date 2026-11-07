@@ -1525,3 +1525,10 @@ static_character_value <- function(expr, is_concat = NULL) {
 .datatable.aware <- TRUE # nolint: object_name_linter
 
 utils::globalVariables(".data")
+
+# Build a generated call whose export lookup runs at collection. Bind the
+# accessor so the lazy root cannot replace it or the namespace operator.
+deferred_export_call <- function(namespace, name, ...) {
+  helper <- rlang::call2(base::getExportedValue, namespace, name)
+  rlang::call2(helper, ...)
+}

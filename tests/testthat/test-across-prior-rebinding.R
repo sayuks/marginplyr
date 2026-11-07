@@ -246,3 +246,47 @@ test_that("unchanged across shapes still refuse collisions before evaluation", {
     expect_false(caller$other)
   }
 })
+
+test_that("across evaluates a qualified call to the namespace operator", {
+  data <- data.frame(x = c(1L, 3L))
+  summary <- quote(dplyr::across(
+    x, base::`::`(base, sum), .names = "answer", .unpack = TRUE
+  ))
+  expected <- data.frame(answer = 4L)
+  expect_identical(dplyr::summarise(data, !!summary), expected)
+  expect_identical(summarize_with_margins(data, !!summary), expected)
+})
+
+test_that("visible removal exposes inherited across functions", {
+  data <- data.frame(x = c(1L, 3L))
+  run <- function(name, margin) {
+    parent <- rlang::env(fns = list(s = sum, m = max))
+    caller <- rlang::env(parent, fns = sum, other = 0L)
+    dots <- list(
+      ready = rlang::new_quosure(rlang::expr({
+        base::rm(list = !!name, envir = !!caller)
+        0L
+      }), caller),
+      rlang::new_quosure(
+        quote(dplyr::across(x, fns, .names = "answer_{.fn}")), caller
+      )
+    )
+    if (!margin) return(dplyr::summarise(data, !!!dots))
+    if (name == "other") {
+      expect_error(
+        summarize_with_margins(data, !!!dots, .id = "answer_1"),
+        "conflicts with a summary output", class = "marginplyr_error"
+      )
+      expect_identical(caller$other, 0L)
+    } else {
+      summarize_with_margins(data, !!!dots, .id = "answer_1")
+    }
+  }
+
+  expected <- data.frame(
+    answer_1 = 1L, ready = 0L, answer_s = 4L, answer_m = 3L
+  )
+  expect_identical(run("fns", margin = FALSE), expected[-1L])
+  expect_identical(run("fns", margin = TRUE), expected)
+  run("other", margin = TRUE)
+})

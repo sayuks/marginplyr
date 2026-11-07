@@ -1,30 +1,20 @@
 # marginplyr 0.1.0
 
-* Parent and Total share dependency checks follow literal member paths through
-  nested lists of local closures, including extracted inner lists (#1432).
+* Parent and Total share dependency checks follow literal member paths through nested lists of local closures, including extracted inner lists (#1432).
 
-* Generated dtplyr Margin-label display and factor restoration preserve source
-  dimensions when a caller overrides the namespace operator (#1433).
+* Generated dtplyr Margin-label display and factor restoration preserve source dimensions when a caller overrides the namespace operator (#1433).
 
-* Ordinary `across()` avoids false grouping key and identifier collisions when
-  preceding summaries visibly change function or unpack settings (#1428).
+* Ordinary `across()` avoids false grouping key and identifier collisions when preceding summaries visibly change function or unpack settings (#1428).
 
-* Parent and Total share dependency checks follow existing closures after literal
-  list names and names-attribute replacement, including swapped names (#1431).
+* Parent and Total share dependency checks follow existing closures after literal list names and names-attribute replacement, including swapped names (#1431).
 
-* Grouping context-name selections preserve local receiver dispatch, keeping
-  fixed keys, grouping dimensions and summary or nested grains consistent
-  with typed tidyselect (#1434).
+* Grouping context-name selections preserve local receiver dispatch, keeping fixed keys, grouping dimensions and summary or nested grains consistent with typed tidyselect (#1434).
 
-* Both Nest verbs preserve dtplyr source keys and cell contents when a caller
-  overrides the namespace operator, including deferred collection (#1427).
+* Both Nest verbs preserve dtplyr source keys and cell contents when a caller overrides the namespace operator, including deferred collection (#1427).
 
-* Parent and Total share dependency checks retain local closures in plain lists
-  transferred through base `identity()`, `invisible()` and `force()` (#1430).
+* Parent and Total share dependency checks retain local closures in plain lists transferred through base `identity()`, `invisible()` and `force()` (#1430).
 
-* Formula-shaped caller-qualified Grouping selections use faithful typed
-  metadata, preserving fixed keys and avoiding false duplicate grouping sets
-  across inspection and summaries, including immutable dtplyr inputs (#1429).
+* Formula-shaped caller-qualified Grouping selections use faithful typed metadata, preserving fixed keys and avoiding false duplicate grouping sets across inspection and summaries, including immutable dtplyr inputs (#1429).
 
 * Parent and Total share dependency checks retain invocation-time dependencies
   of local literal closures installed by `delayedAssign()` (#1417).

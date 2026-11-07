@@ -758,6 +758,5 @@ margin_order_helper_call <- function(name, ..., helper_namespace = NULL) {
   if (is.null(helper_namespace)) {
     return(rlang::call2(name, ...))
   }
-  helper <- rlang::call2(base::getExportedValue, helper_namespace, name)
-  rlang::call2(helper, ...)
+  deferred_export_call(helper_namespace, name, ...)
 }

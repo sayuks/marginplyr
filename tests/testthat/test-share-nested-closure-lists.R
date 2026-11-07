@@ -205,3 +205,22 @@ test_that("nested closure dependency refusal leaves lazy input unread", {
   expect_equal(dplyr::collect(data)$x, c(1, 3))
   expect_identical(probe$calls, 1L)
 })
+
+test_that("fractional nested indices select the same closures as R", {
+  reads <- alist(
+    (function(prior) {
+      carrier <- list(list(function() sum(prior)))
+      rm(prior)
+      carrier[[c(1.9, 1.9)]]()
+    })(1),
+    (function(prior) {
+      carrier <- list(list(function() 7),
+                      list(function() 7, function() sum(prior)))
+      rm(prior)
+      carrier[[c(2.9, 2.9)]]()
+    })(1)
+  )
+  data <- nested_closure_list_data()
+  expect_identical(lapply(reads, eval, envir = data), list(400, 400))
+  expect_share_dependencies(data, reads)
+})

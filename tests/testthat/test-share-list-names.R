@@ -121,3 +121,41 @@ test_that("renamed list dependencies leave lazy input unread", {
   expect_equal(dplyr::collect(data)$x, c(1, 3))
   expect_identical(probe$calls, 1L)
 })
+
+test_that("classed attributes leave list member dispatch to the caller", {
+  registerS3method("$", "margin_share_named_carrier", function(x, name) {
+    if (identical(name, "other")) function() 7 else .subset2(unclass(x), name)
+  }, envir = asNamespace("base"))
+  read <- quote((function(prior) {
+    carrier <- list(read = function() sum(prior))
+    attributes(carrier) <- list(names = "other",
+                                class = "margin_share_named_carrier")
+    rm(prior)
+    carrier$other()
+  })(1))
+  expect_identical(eval(read), 7)
+  expect_share_dependency_values(list_name_data(), list(read), expected = 7)
+})
+
+test_that("incomplete attribute syntax reaches dplyr's empty argument error", {
+  read <- quote((function(prior) {
+    carrier <- list(read = function() sum(prior))
+    attributes(carrier) <- list(names = )
+    rm(prior)
+    carrier$other()
+  })(1))
+  data <- list_name_data()
+  direct <- expect_error(dplyr::summarise(data, observed = !!read))
+  expect_match(conditionMessage(direct$parent), "argument 1 is empty")
+  helpers <- list(quote(share_of_parent(value)), quote(share_of_total(value)))
+  for (helper in helpers) {
+    actual <- expect_error(summarize_with_margins(
+      data, value = sum(.data$x), prior = !!helper, observed = !!read,
+      .grouping = rollup(g)
+    ))
+    expect_identical(class(actual), class(direct))
+    expect_identical(class(actual$parent), class(direct$parent))
+    expect_identical(conditionMessage(actual$parent),
+                     conditionMessage(direct$parent))
+  }
+})
