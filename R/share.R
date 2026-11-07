@@ -4548,7 +4548,7 @@ call_part_symbols <- function(expr, scope, lookup) {
   parts_lookup$defer_definitions <- isTRUE(lookup$defer_definitions) &&
     ((!is.null(call_name) && call_name %in% c("list", "[[") &&
         is_known_base_frame_call(expr, call_name, scope, lookup)) ||
-      !is.null(scope_remapped_closure_list(expr, call_name, scope, lookup)))
+       !is.null(scope_remapped_closure_list(expr, call_name, scope, lookup)))
   for (index in seq_along(parts)) {
     read_symbols <- if (index %in% selection_positions) {
       selection_dependency_symbols
@@ -5010,8 +5010,8 @@ scope_closure_list <- function(expr, scope, lookup) {
 # Remap established plain-list descriptors with matched literal arguments.
 scope_remapped_closure_list <- function(expr, name, scope, lookup) {
   if (is.null(name) ||
-    !name %in% c("rev", "unname", "rep", "as.list", "structure", "setNames",
-                 "tail")) return(NULL)
+        !name %in% c("rev", "unname", "rep", "as.list", "structure", "setNames",
+                     "tail")) return(NULL)
   owner <- switch(name, setNames = "stats", tail = "utils", "base")
   if (!is_known_package_frame_call(expr, name, owner, scope, lookup)) {
     return(NULL)
