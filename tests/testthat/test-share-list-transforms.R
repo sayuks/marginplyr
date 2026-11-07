@@ -6,6 +6,13 @@ plain_list_transform_reads <- function(body = quote(sum(prior)),
                                        remove = quote(rm(prior)),
                                        argument = 1) {
   carriers <- as.list(quote(alist(
+    original,
+    identity(original),
+    invisible(original),
+    force(original),
+    base::identity(x = original),
+    ((base::invisible))(original),
+    base::force(x = original),
     c(original),
     append(list(), original),
     original[1L],
@@ -63,4 +70,47 @@ test_that("list transformation planning never invokes or forces caller code", {
   expect_share_dependencies(plain_list_transform_data(), reads)
   expect_identical(probe$invoked, 0L)
   expect_identical(probe$forced, 0L)
+})
+
+test_that("list value transfers preserve ordinary caller function lookup", {
+  data <- plain_list_transform_data()
+  before <- serialize(data, NULL)
+  for (callee in c("identity", "invisible", "force")) {
+    probe <- rlang::env(calls = 0L)
+    caller <- rlang::env()
+    caller[[callee]] <- function(x) {
+      probe$calls <- probe$calls + 1L
+      list(function() 7)
+    }
+    read <- substitute((function(prior) {
+      original <- list(function() sum(prior))
+      functions <- transfer
+      rm(prior)
+      functions[[1L]]()
+    })(1), list(transfer = rlang::call2(callee, quote(original))))
+    read <- rlang::new_quosure(read, caller)
+    expect_share_dependency_values(data, list(read), expected = 7)
+    expect_identical(probe$calls, 12L)
+    expect_error(
+      summarize_with_margins(
+        data, value = sum(.data$x), prior = share_of_total(value),
+        observed = !!read, forbidden = prior, .grouping = rollup("g")
+      ),
+      "Ordinary summaries cannot use an earlier", class = "marginplyr_error"
+    )
+    expect_identical(probe$calls, 12L)
+
+    read <- substitute((function(prior) {
+      binding <- 0
+      original <- list(function() sum(prior))
+      functions <- transfer
+      rm(prior)
+      functions[[1L]]()
+    })(1), list(
+      binding = rlang::sym(callee),
+      transfer = rlang::call2(callee, quote(original))
+    ))
+    expect_share_dependencies(data, list(read))
+  }
+  expect_identical(serialize(data, NULL), before)
 })

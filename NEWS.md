@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Parent and Total share dependency checks retain local closures in plain lists
+  transferred through base `identity()`, `invisible()` and `force()` (#1430).
+
 * Formula-shaped caller-qualified Grouping selections use faithful typed
   metadata, preserving fixed keys and avoiding false duplicate grouping sets
   across inspection and summaries, including immutable dtplyr inputs (#1429).
