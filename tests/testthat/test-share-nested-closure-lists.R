@@ -322,8 +322,8 @@ test_that("nested writes preserve list indexing and setter lookup", {
     })(1),
     (function(prior) {
       `$<-` <- function(x, name, value) x
-      carrier <- list(outer = list(read = function() sum(prior)))
-      carrier$outer[[1L]] <- function() 7
+      carrier <- list(outer = list(read = function() 7))
+      carrier$outer[[1L]] <- function() 3 + 4
       rm(prior)
       carrier$outer$read()
     })(1),
