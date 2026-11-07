@@ -49,7 +49,8 @@ pivot_read <- function(con) {
   print(list(dynamic_pivot_plan = selected(actual), sequence_after = rows,
              purpose = log$purpose, status = log$status, sql = log$sql))
   list(
-    observed = !inherits(actual, "error") && isTRUE(as.numeric(rows) == 3) &&
+    observed = !inherits(actual, "error") && is.numeric(rows) &&
+      isTRUE(as.numeric(rows) == 3) &&
       identical(log$purpose, "selection_proxy") &&
       grepl("LIMIT 0", log$sql, fixed = TRUE),
     contract = untouched() && (inherits(actual, "marginplyr_error") ||
