@@ -43,6 +43,17 @@ test_that("share dependencies follow a literal closure's invocation", {
       do.call("read_prior", list())
     })(1),
     (function(prior) {
+      read_prior <- function() sum(prior)
+      callbacks <- list(read = read_prior)
+      rm(prior)
+      do.call(callbacks$read, list())
+    })(1),
+    (function(prior) {
+      callbacks <- list(remove = function() rm("prior", envir = parent.frame()))
+      base::do.call(args = base::list(), what = callbacks$remove)
+      sum(prior)
+    })(1),
+    (function(prior) {
       rm(prior)
       read_prior <- function() sum(prior)
       dplyr::summarise(data.frame(x = 1), z = read_prior())$z
@@ -79,6 +90,27 @@ test_that("retained bindings and uncalled local closures are valid", {
       observed <- read_prior()
       rm(prior)
       observed
+    })(1),
+    (function(prior) {
+      callbacks <- list(read = function() sum(prior))
+      base::do.call(args = base::list(), what = callbacks$read)
+    })(1),
+    (function(prior) {
+      callbacks <- list(read = function() 1)
+      rm(prior)
+      do.call(callbacks$read, list())
+    })(1),
+    (function(prior) {
+      do.call <- function(what, args) 1
+      callbacks <- list(read = function() sum(prior))
+      rm(prior)
+      do.call(callbacks$read, list())
+    })(1),
+    (function(prior) {
+      callbacks <- list(read = function(value = sum(prior)) value)
+      list <- function() base::list(1)
+      rm(prior)
+      do.call(callbacks$read, list())
     })(1),
     (function(prior) {
       read_prior <- function() {

@@ -4372,8 +4372,9 @@ scoped_data_symbols <- function(expr, scope, lookup) {
     )))
   }
   if (identical(callee_name, "do.call")) {
+    invocation <- scope_empty_do_call(expr, scope, lookup)
     return(unique(c(
-      call_part_symbols(expr, scope, lookup),
+      call_part_symbols(invocation %||% expr, scope, lookup),
       deferred_call_symbols(expr)
     )))
   }
@@ -4603,6 +4604,30 @@ scope_literal_branch <- function(expr, scope, lookup) {
 literal_function_definition <- function(expr) {
   expr <- unparenthesized_value(expr)
   if (rlang::is_call(expr, "function") && length(expr) >= 3L) expr else NULL
+}
+
+# Model a known closure invoked by base do.call() with no arguments, in the
+# current caller frame. A computed head retains value lookup for `what`.
+scope_empty_do_call <- function(expr, scope, lookup) {
+  if (!identical(static_call_name(expr), "do.call") ||
+        is_parenthesized(static_call_head(expr)) ||
+        !is_known_base_frame_call(expr, "do.call", scope, lookup)) {
+    return(NULL)
+  }
+  parts <- static_matched_arguments(expr, base::do.call)
+  if (!setequal(names(parts), c("what", "args")) ||
+        any(vapply(parts, rlang::is_missing, logical(1)))) {
+    return(NULL)
+  }
+  arguments <- unparenthesized_value(parts$args)
+  if (!identical(static_call_name(arguments), "list") ||
+        length(arguments) != 1L ||
+        is_parenthesized(static_call_head(arguments)) ||
+        !is_known_base_frame_call(arguments, "list", scope, lookup) ||
+        is.null(scope_value_closure(parts$what, scope, lookup))) {
+    return(NULL)
+  }
+  rlang::call2(rlang::call2("(", parts$what))
 }
 
 # Resolve a visible literal function in call position. Its enclosing index
@@ -5829,6 +5854,12 @@ scope_after_removals <- function(expr, scope, lookup) {
   }
   bound <- scope_bound_names(scope)
   name <- static_call_name(expr)
+  if (identical(name, "do.call")) {
+    invocation <- scope_empty_do_call(expr, scope, lookup)
+    if (!is.null(invocation)) {
+      return(scope_after_removals(invocation, scope, lookup))
+    }
+  }
   assignment <- scope_local_closure_assignment(expr, scope, lookup)
   if (!is.null(assignment)) {
     retained <- scope_after_removals(assignment$value, scope, lookup)
@@ -6469,9 +6500,7 @@ reflective_lookup_symbols <- function(expr, bound, lookup = NULL) {
 # run time, which this walk cannot read, so a `do.call()` of a reflective
 # primitive is reported as a lookup it cannot resolve.
 #
-# A `do.call()` of anything else needs no answer here: its arguments are
-# values by the time it runs, and the walk has already reported the expressions
-# that produced them.
+# A known closure invocation follows the ordinary call walk.
 deferred_call_symbols <- function(expr) {
   argument <- call_formal_argument(expr, "what")
   if (length(argument) == 0L) {
