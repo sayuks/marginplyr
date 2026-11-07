@@ -77,18 +77,14 @@ zero_row_dtplyr_proxy_input <- function(.data) {
   step
 }
 
-# The typed selection proxy for a dtplyr step. The registered dtplyr
+# The typed selection proxy for a dtplyr step. The verified dtplyr
 # method evaluates only isolated zero-row roots; calling it directly avoids
 # routing the step through `collect()` or `as_tibble()`.
 # The caller has checked metadata safety for `.data` in the same `env`.
 isolated_dtplyr_proxy <- function(.data, env = .data[["env"]]) {
   proxy <- zero_row_dtplyr_proxy_input(.data)
   proxy[["env"]] <- env
-  as_data_table <- utils::getS3method(
-    "as.data.table",
-    "dtplyr_step",
-    envir = asNamespace("data.table")
-  )
+  as_data_table <- get("as.data.table.dtplyr_step", asNamespace("dtplyr"))
   # Truncate outside dtplyr's query so a lexical head binding cannot run.
   utils::head(as_data_table(proxy), n = 0L)
 }
@@ -117,10 +113,10 @@ dtplyr_function_binding <- function(name, env, expected, fallback = FALSE) {
   fallback
 }
 
-# Whether an unevaluated registration only reads the expected data.table
+# Whether an unevaluated registration only reads the expected namespace
 # method through base's registerS3method() wrapper. Unknown promises stay
 # unread.
-dtplyr_standard_method_promise <- function(name, registry, expected) {
+dtplyr_standard_method_promise <- function(name, registry, expected, home) {
   ns <- asNamespace("rlang")
   delayed_env <- get0("env_binding_delayed_env", envir = ns, inherits = FALSE)
   delayed_expr <- get0("env_binding_delayed_expr", envir = ns, inherits = FALSE)
@@ -143,10 +139,10 @@ dtplyr_standard_method_promise <- function(name, registry, expected) {
       return(FALSE)
     }
     method <- rlang::env_get(wrapper, "method")
-    home <- rlang::env_get(wrapper, "home")
+    method_home <- rlang::env_get(wrapper, "home")
     is.character(method) && !is.object(method) &&
       identical(unname(method), name) &&
-      identical(home, asNamespace("data.table")) &&
+      identical(method_home, home) &&
       identical(get(method, envir = home, inherits = FALSE), expected)
   }, error = function(...) FALSE)
 }
@@ -154,14 +150,19 @@ dtplyr_standard_method_promise <- function(name, registry, expected) {
 # Whether the S3 registry holds the expected method, directly or through its
 # verified standard registration, without evaluating active or unknown bindings.
 # `envir` is the namespace owning the generic's registration table.
-dtplyr_registered_method <- function(name, expected, envir = baseenv()) {
+# `home` owns the method; `absent` permits a direct namespace-method fallback.
+dtplyr_registered_method <- function(name, expected, envir = baseenv(),
+                                     home = asNamespace("data.table"),
+                                     absent = FALSE) {
   registry <- get(".__S3MethodsTable__.", envir = envir)
-  if (!exists(name, envir = registry, inherits = FALSE) ||
-        bindingIsActive(name, registry)) {
+  if (!exists(name, envir = registry, inherits = FALSE)) {
+    return(absent)
+  }
+  if (bindingIsActive(name, registry)) {
     return(FALSE)
   }
   if (rlang::env_binding_are_lazy(registry, name)) {
-    return(dtplyr_standard_method_promise(name, registry, expected))
+    return(dtplyr_standard_method_promise(name, registry, expected, home))
   }
   identical(rlang::env_get(registry, name), expected)
 }
@@ -335,6 +336,13 @@ dtplyr_metadata_safe_step <- function(step, env = step[["env"]]) {
         dtplyr_registered_method(
           "[.data.table",
           get("[.data.table", envir = asNamespace("data.table"))
+        ) &&
+        # The proxy calls the namespace converter when no method is registered.
+        dtplyr_registered_method(
+          "as.data.table.dtplyr_step",
+          get("as.data.table.dtplyr_step", envir = asNamespace("dtplyr")),
+          envir = asNamespace("data.table"),
+          home = asNamespace("dtplyr"), absent = TRUE
         )
     )
   }
