@@ -7,6 +7,10 @@
 * Parent and Total share dependency checks follow existing closures after literal
   list names and names-attribute replacement, including swapped names (#1431).
 
+* Grouping context-name selections preserve local receiver dispatch, keeping
+  fixed keys, grouping dimensions and summary or nested grains consistent
+  with typed tidyselect (#1434).
+
 * Both Nest verbs preserve dtplyr source keys and cell contents when a caller
   overrides the namespace operator, including deferred collection (#1427).
 

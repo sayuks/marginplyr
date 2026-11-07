@@ -349,7 +349,8 @@ Config/testthat/start-first:
     qualified-formula-selections,
     nest-namespace,
     across-prior-rebinding,
-    share-list-names
+    share-list-names,
+    grouping-name-dispatch
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
