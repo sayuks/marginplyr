@@ -564,3 +564,57 @@ test_that("DuckDB resolves repaired Grouping names before typed metadata", {
     tibble::as_tibble(dplyr::arrange(expected, set_id, value))
   )
 })
+
+test_that("DuckDB name-only inspection skips data-frame receiver methods", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE))
+  data <- data.frame(a1 = c("east", "west"), a2 = c(10L, 20L))
+  remote <- dplyr::copy_to(con, data, "grouping_proxy_dispatch")
+  counter <- duckdb_query_counter()
+  on.exit(counter$untrace(), add = TRUE, after = FALSE)
+
+  reject_synthetic <- function(x) {
+    if (identical(attr(x, "names", exact = TRUE), c("a1", "a2")) &&
+          identical(unclass(x)[[1L]], 1L) &&
+          identical(unclass(x)[[2L]], 2L)) {
+      stop("This method requires actual column prototypes.")
+    }
+  }
+  rlang::local_bindings(
+    tidyselect_data_proxy.data.frame = function(x) {
+      reject_synthetic(x)
+      x
+    },
+    tidyselect_data_has_predicates.data.frame = function(x) {
+      reject_synthetic(x)
+      TRUE
+    },
+    .env = asNamespace("tidyselect")$.__S3MethodsTable__.
+  )
+  rlang::local_bindings(
+    names.data.frame = function(x) {
+      reject_synthetic(x)
+      attr(x, "names", exact = TRUE)
+    },
+    .env = asNamespace("base")$.__S3MethodsTable__.
+  )
+
+  expect_identical(
+    tidyselect::eval_select(quote(c(a = a1:a2)), data[0, ]),
+    c(a1 = 1L, a2 = 2L)
+  )
+  expect_identical(
+    inspect_grouping(remote, .grouping = grouping_set(a1, a2)),
+    inspect_grouping(data, .grouping = grouping_set(a1, a2))
+  )
+  expect_identical(
+    inspect_grouping(remote, .by = c(a = a1:a2)),
+    inspect_grouping(data, .by = c(a1, a2))
+  )
+  expect_error(
+    inspect_grouping(remote, .by = c(a1, a1 = a2)),
+    class = "vctrs_error_names_must_be_unique"
+  )
+  expect_identical(counter$queries, 0L)
+})
