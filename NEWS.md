@@ -3,6 +3,9 @@
 * Public `.grouping` capture preserves authored empty constructor arguments
   before empty splices and refuses them with their original position (#1489).
 
+* Parent and Total shares match active geometry fixed keys on local sf
+  inputs without requesting a spatial join (#1494).
+
 * Both Nest verbs preserve local cell values under registered
   `as_tibble.list` converters (#1490).
 
