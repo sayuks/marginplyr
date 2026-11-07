@@ -1,0 +1,21 @@
+
+ complex
+native_nest : [1] "OK 2"
+native_union : [1] "unsupported column type found in x or y: [complex]"
+included_nest : [1] "OK 2"
+rollup_nest : [1] "unsupported column type found in x or y: [complex]"
+
+ list
+native_nest : [1] "Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process."
+native_union : [1] "OK 4"
+included_nest : [1] "Column or expression 2 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process."
+rollup_nest : [1] "Invalid input"
+
+ raw
+native_nest : [1] "Column or expression 1 of 'by' or 'keyby' is type 'raw' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process."
+native_union : [1] "unsupported column type found in x or y: [raw]"
+included_nest : [1] "Column or expression 2 of 'by' or 'keyby' is type 'raw' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process."
+rollup_nest : [1] "A typed-missing `.margin_label` cannot be represented for:\nℹ `g`.\nℹ Choose a supported non-missing label or change the grouping."
+
+ matrix
+native lazy_dt construction: C stack usage  7954656 is too close to the limit

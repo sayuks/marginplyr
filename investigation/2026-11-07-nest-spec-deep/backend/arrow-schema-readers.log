@@ -1,0 +1,6 @@
+
+TRUE
+1200
+480 reader instances retained all source rows
+[1] type      shape     predicate slot      selected  expected  match
+<0 rows> (or 0-length row.names)

@@ -1,0 +1,6 @@
+vctrs_group : OK rows 2 serialized unchanged FALSE
+native_nest : OK rows 2 serialized unchanged FALSE
+margin_nest : OK rows 2 serialized unchanged FALSE
+margin_nest_keep : OK rows 2 serialized unchanged FALSE
+margin_fixed : OK rows 2 serialized unchanged FALSE
+margin_payload : OK rows 1 serialized unchanged FALSE

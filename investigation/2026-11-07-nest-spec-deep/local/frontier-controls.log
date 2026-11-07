@@ -1,0 +1,4 @@
+Surv: ordinary tidyr grouping and included-only Margin nesting recurse; expansion succeeds.
+AsIs POSIXlt: four dimension/keep controls pass; payload union has the same native cast refusal.
+rvar: ordinary vctrs grouping changes serialized metadata; two included-only Margin controls retain source membership.
+Membership calibration rejected missing, duplicated and extra source rows.

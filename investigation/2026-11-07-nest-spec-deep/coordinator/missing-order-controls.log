@@ -1,0 +1,8 @@
+local nest_with_margins first : 2,1,3,4 native-order match
+local nest_with_margins last : 2,1,3,4 native-order match
+local nest_by_with_margins first : 2,1,3,4 native-order match
+local nest_by_with_margins last : 2,1,3,4 native-order match
+dtplyr nest_with_margins first : 2,1,4,3 native-order match
+dtplyr nest_with_margins last : 2,1,4,3 native-order match
+dtplyr nest_by_with_margins first : 2,1,4,3 native-order match
+dtplyr nest_by_with_margins last : 2,1,4,3 native-order match

@@ -1,0 +1,15 @@
+Sys.setenv(TESTTHAT_PARALLEL='false');pkgload::load_all('.',quiet=TRUE)
+probe<-function(label,expr){cat('\n',label,'\n');x<-tryCatch(eval(substitute(expr)),error=identity);if(inherits(x,'error')){cat(class(x)[1],conditionMessage(x),'\n')}else print(x);invisible(x)}
+x<-tibble::tibble(g=I(as.POSIXlt('2020-01-01',tz='UTC')),rid=1L)
+probe('posixlt-only',nest_with_margins(x,.grouping=rollup(g),.margin_label=NULL))
+probe('posixlt-keep',nest_with_margins(x,.grouping=rollup(g),.margin_label=NULL,.keep=TRUE))
+x$p<-x$g
+probe('posixlt-payload',nest_with_margins(x,.grouping=rollup(g),.margin_label=NULL))
+probe('posixlt-payload-native-union',dplyr::union_all(x,x))
+x<-tibble::tibble(g=survival::Surv(1,1),rid=1L)
+probe('surv-expanded',expand_with_margins(x,.grouping=rollup(g),.margin_label=NULL))
+probe('surv-nest',nest_with_margins(x,.grouping=rollup(g),.margin_label=NULL))
+probe('surv-included',nest_with_margins(x,.grouping=grouping_set(g),.margin_label=NULL))
+probe('surv-native',tidyr::nest(x,.by=g))
+x<-tibble::tibble(g=survival::Surv(1,1),rid=1L,p=survival::Surv(1,1))
+probe('surv-with-payload',nest_with_margins(x,.grouping=rollup(g),.margin_label=NULL))

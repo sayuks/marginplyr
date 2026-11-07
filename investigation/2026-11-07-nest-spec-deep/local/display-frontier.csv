@@ -1,0 +1,433 @@
+"type","empty","verb","keep","sort","status","message","serialized_unchanged"
+"hms",FALSE,"nest_with_margins",FALSE,"none","match","",TRUE
+"hms",FALSE,"nest_with_margins",FALSE,"first","match","",TRUE
+"hms",FALSE,"nest_with_margins",FALSE,"last","match","",TRUE
+"hms",FALSE,"nest_with_margins",TRUE,"none","match","",TRUE
+"hms",FALSE,"nest_with_margins",TRUE,"first","match","",TRUE
+"hms",FALSE,"nest_with_margins",TRUE,"last","match","",TRUE
+"hms",FALSE,"nest_by_with_margins",FALSE,"none","match","",TRUE
+"hms",FALSE,"nest_by_with_margins",FALSE,"first","match","",TRUE
+"hms",FALSE,"nest_by_with_margins",FALSE,"last","match","",TRUE
+"hms",FALSE,"nest_by_with_margins",TRUE,"none","match","",TRUE
+"hms",FALSE,"nest_by_with_margins",TRUE,"first","match","",TRUE
+"hms",FALSE,"nest_by_with_margins",TRUE,"last","match","",TRUE
+"hms",TRUE,"nest_with_margins",FALSE,"none","match","",TRUE
+"hms",TRUE,"nest_with_margins",FALSE,"first","match","",TRUE
+"hms",TRUE,"nest_with_margins",FALSE,"last","match","",TRUE
+"hms",TRUE,"nest_with_margins",TRUE,"none","match","",TRUE
+"hms",TRUE,"nest_with_margins",TRUE,"first","match","",TRUE
+"hms",TRUE,"nest_with_margins",TRUE,"last","match","",TRUE
+"hms",TRUE,"nest_by_with_margins",FALSE,"none","match","",TRUE
+"hms",TRUE,"nest_by_with_margins",FALSE,"first","match","",TRUE
+"hms",TRUE,"nest_by_with_margins",FALSE,"last","match","",TRUE
+"hms",TRUE,"nest_by_with_margins",TRUE,"none","match","",TRUE
+"hms",TRUE,"nest_by_with_margins",TRUE,"first","match","",TRUE
+"hms",TRUE,"nest_by_with_margins",TRUE,"last","match","",TRUE
+"units",FALSE,"nest_with_margins",FALSE,"none","match","",TRUE
+"units",FALSE,"nest_with_margins",FALSE,"first","match","",TRUE
+"units",FALSE,"nest_with_margins",FALSE,"last","match","",TRUE
+"units",FALSE,"nest_with_margins",TRUE,"none","match","",TRUE
+"units",FALSE,"nest_with_margins",TRUE,"first","match","",TRUE
+"units",FALSE,"nest_with_margins",TRUE,"last","match","",TRUE
+"units",FALSE,"nest_by_with_margins",FALSE,"none","match","",TRUE
+"units",FALSE,"nest_by_with_margins",FALSE,"first","match","",TRUE
+"units",FALSE,"nest_by_with_margins",FALSE,"last","match","",TRUE
+"units",FALSE,"nest_by_with_margins",TRUE,"none","match","",TRUE
+"units",FALSE,"nest_by_with_margins",TRUE,"first","match","",TRUE
+"units",FALSE,"nest_by_with_margins",TRUE,"last","match","",TRUE
+"units",TRUE,"nest_with_margins",FALSE,"none","match","",TRUE
+"units",TRUE,"nest_with_margins",FALSE,"first","match","",TRUE
+"units",TRUE,"nest_with_margins",FALSE,"last","match","",TRUE
+"units",TRUE,"nest_with_margins",TRUE,"none","match","",TRUE
+"units",TRUE,"nest_with_margins",TRUE,"first","match","",TRUE
+"units",TRUE,"nest_with_margins",TRUE,"last","match","",TRUE
+"units",TRUE,"nest_by_with_margins",FALSE,"none","match","",TRUE
+"units",TRUE,"nest_by_with_margins",FALSE,"first","match","",TRUE
+"units",TRUE,"nest_by_with_margins",FALSE,"last","match","",TRUE
+"units",TRUE,"nest_by_with_margins",TRUE,"none","match","",TRUE
+"units",TRUE,"nest_by_with_margins",TRUE,"first","match","",TRUE
+"units",TRUE,"nest_by_with_margins",TRUE,"last","match","",TRUE
+"integer64",FALSE,"nest_with_margins",FALSE,"none","match","",TRUE
+"integer64",FALSE,"nest_with_margins",FALSE,"first","match","",TRUE
+"integer64",FALSE,"nest_with_margins",FALSE,"last","match","",TRUE
+"integer64",FALSE,"nest_with_margins",TRUE,"none","match","",TRUE
+"integer64",FALSE,"nest_with_margins",TRUE,"first","match","",TRUE
+"integer64",FALSE,"nest_with_margins",TRUE,"last","match","",TRUE
+"integer64",FALSE,"nest_by_with_margins",FALSE,"none","match","",TRUE
+"integer64",FALSE,"nest_by_with_margins",FALSE,"first","match","",TRUE
+"integer64",FALSE,"nest_by_with_margins",FALSE,"last","match","",TRUE
+"integer64",FALSE,"nest_by_with_margins",TRUE,"none","match","",TRUE
+"integer64",FALSE,"nest_by_with_margins",TRUE,"first","match","",TRUE
+"integer64",FALSE,"nest_by_with_margins",TRUE,"last","match","",TRUE
+"integer64",TRUE,"nest_with_margins",FALSE,"none","match","",TRUE
+"integer64",TRUE,"nest_with_margins",FALSE,"first","match","",TRUE
+"integer64",TRUE,"nest_with_margins",FALSE,"last","match","",TRUE
+"integer64",TRUE,"nest_with_margins",TRUE,"none","match","",TRUE
+"integer64",TRUE,"nest_with_margins",TRUE,"first","match","",TRUE
+"integer64",TRUE,"nest_with_margins",TRUE,"last","match","",TRUE
+"integer64",TRUE,"nest_by_with_margins",FALSE,"none","match","",TRUE
+"integer64",TRUE,"nest_by_with_margins",FALSE,"first","match","",TRUE
+"integer64",TRUE,"nest_by_with_margins",FALSE,"last","match","",TRUE
+"integer64",TRUE,"nest_by_with_margins",TRUE,"none","match","",TRUE
+"integer64",TRUE,"nest_by_with_margins",TRUE,"first","match","",TRUE
+"integer64",TRUE,"nest_by_with_margins",TRUE,"last","match","",TRUE
+"labelled",FALSE,"nest_with_margins",FALSE,"none","match","",TRUE
+"labelled",FALSE,"nest_with_margins",FALSE,"first","match","",TRUE
+"labelled",FALSE,"nest_with_margins",FALSE,"last","match","",TRUE
+"labelled",FALSE,"nest_with_margins",TRUE,"none","match","",TRUE
+"labelled",FALSE,"nest_with_margins",TRUE,"first","match","",TRUE
+"labelled",FALSE,"nest_with_margins",TRUE,"last","match","",TRUE
+"labelled",FALSE,"nest_by_with_margins",FALSE,"none","match","",TRUE
+"labelled",FALSE,"nest_by_with_margins",FALSE,"first","match","",TRUE
+"labelled",FALSE,"nest_by_with_margins",FALSE,"last","match","",TRUE
+"labelled",FALSE,"nest_by_with_margins",TRUE,"none","match","",TRUE
+"labelled",FALSE,"nest_by_with_margins",TRUE,"first","match","",TRUE
+"labelled",FALSE,"nest_by_with_margins",TRUE,"last","match","",TRUE
+"labelled",TRUE,"nest_with_margins",FALSE,"none","match","",TRUE
+"labelled",TRUE,"nest_with_margins",FALSE,"first","match","",TRUE
+"labelled",TRUE,"nest_with_margins",FALSE,"last","match","",TRUE
+"labelled",TRUE,"nest_with_margins",TRUE,"none","match","",TRUE
+"labelled",TRUE,"nest_with_margins",TRUE,"first","match","",TRUE
+"labelled",TRUE,"nest_with_margins",TRUE,"last","match","",TRUE
+"labelled",TRUE,"nest_by_with_margins",FALSE,"none","match","",TRUE
+"labelled",TRUE,"nest_by_with_margins",FALSE,"first","match","",TRUE
+"labelled",TRUE,"nest_by_with_margins",FALSE,"last","match","",TRUE
+"labelled",TRUE,"nest_by_with_margins",TRUE,"none","match","",TRUE
+"labelled",TRUE,"nest_by_with_margins",TRUE,"first","match","",TRUE
+"labelled",TRUE,"nest_by_with_margins",TRUE,"last","match","",TRUE
+"labelled_spss",FALSE,"nest_with_margins",FALSE,"none","match","",TRUE
+"labelled_spss",FALSE,"nest_with_margins",FALSE,"first","match","",TRUE
+"labelled_spss",FALSE,"nest_with_margins",FALSE,"last","match","",TRUE
+"labelled_spss",FALSE,"nest_with_margins",TRUE,"none","match","",TRUE
+"labelled_spss",FALSE,"nest_with_margins",TRUE,"first","match","",TRUE
+"labelled_spss",FALSE,"nest_with_margins",TRUE,"last","match","",TRUE
+"labelled_spss",FALSE,"nest_by_with_margins",FALSE,"none","match","",TRUE
+"labelled_spss",FALSE,"nest_by_with_margins",FALSE,"first","match","",TRUE
+"labelled_spss",FALSE,"nest_by_with_margins",FALSE,"last","match","",TRUE
+"labelled_spss",FALSE,"nest_by_with_margins",TRUE,"none","match","",TRUE
+"labelled_spss",FALSE,"nest_by_with_margins",TRUE,"first","match","",TRUE
+"labelled_spss",FALSE,"nest_by_with_margins",TRUE,"last","match","",TRUE
+"labelled_spss",TRUE,"nest_with_margins",FALSE,"none","match","",TRUE
+"labelled_spss",TRUE,"nest_with_margins",FALSE,"first","match","",TRUE
+"labelled_spss",TRUE,"nest_with_margins",FALSE,"last","match","",TRUE
+"labelled_spss",TRUE,"nest_with_margins",TRUE,"none","match","",TRUE
+"labelled_spss",TRUE,"nest_with_margins",TRUE,"first","match","",TRUE
+"labelled_spss",TRUE,"nest_with_margins",TRUE,"last","match","",TRUE
+"labelled_spss",TRUE,"nest_by_with_margins",FALSE,"none","match","",TRUE
+"labelled_spss",TRUE,"nest_by_with_margins",FALSE,"first","match","",TRUE
+"labelled_spss",TRUE,"nest_by_with_margins",FALSE,"last","match","",TRUE
+"labelled_spss",TRUE,"nest_by_with_margins",TRUE,"none","match","",TRUE
+"labelled_spss",TRUE,"nest_by_with_margins",TRUE,"first","match","",TRUE
+"labelled_spss",TRUE,"nest_by_with_margins",TRUE,"last","match","",TRUE
+"tagged_na",FALSE,"nest_with_margins",FALSE,"none","match","",TRUE
+"tagged_na",FALSE,"nest_with_margins",FALSE,"first","match","",TRUE
+"tagged_na",FALSE,"nest_with_margins",FALSE,"last","match","",TRUE
+"tagged_na",FALSE,"nest_with_margins",TRUE,"none","match","",TRUE
+"tagged_na",FALSE,"nest_with_margins",TRUE,"first","match","",TRUE
+"tagged_na",FALSE,"nest_with_margins",TRUE,"last","match","",TRUE
+"tagged_na",FALSE,"nest_by_with_margins",FALSE,"none","match","",TRUE
+"tagged_na",FALSE,"nest_by_with_margins",FALSE,"first","match","",TRUE
+"tagged_na",FALSE,"nest_by_with_margins",FALSE,"last","match","",TRUE
+"tagged_na",FALSE,"nest_by_with_margins",TRUE,"none","match","",TRUE
+"tagged_na",FALSE,"nest_by_with_margins",TRUE,"first","match","",TRUE
+"tagged_na",FALSE,"nest_by_with_margins",TRUE,"last","match","",TRUE
+"tagged_na",TRUE,"nest_with_margins",FALSE,"none","match","",TRUE
+"tagged_na",TRUE,"nest_with_margins",FALSE,"first","match","",TRUE
+"tagged_na",TRUE,"nest_with_margins",FALSE,"last","match","",TRUE
+"tagged_na",TRUE,"nest_with_margins",TRUE,"none","match","",TRUE
+"tagged_na",TRUE,"nest_with_margins",TRUE,"first","match","",TRUE
+"tagged_na",TRUE,"nest_with_margins",TRUE,"last","match","",TRUE
+"tagged_na",TRUE,"nest_by_with_margins",FALSE,"none","match","",TRUE
+"tagged_na",TRUE,"nest_by_with_margins",FALSE,"first","match","",TRUE
+"tagged_na",TRUE,"nest_by_with_margins",FALSE,"last","match","",TRUE
+"tagged_na",TRUE,"nest_by_with_margins",TRUE,"none","match","",TRUE
+"tagged_na",TRUE,"nest_by_with_margins",TRUE,"first","match","",TRUE
+"tagged_na",TRUE,"nest_by_with_margins",TRUE,"last","match","",TRUE
+"yearmon",FALSE,"nest_with_margins",FALSE,"none","match","",TRUE
+"yearmon",FALSE,"nest_with_margins",FALSE,"first","match","",TRUE
+"yearmon",FALSE,"nest_with_margins",FALSE,"last","match","",TRUE
+"yearmon",FALSE,"nest_with_margins",TRUE,"none","match","",TRUE
+"yearmon",FALSE,"nest_with_margins",TRUE,"first","match","",TRUE
+"yearmon",FALSE,"nest_with_margins",TRUE,"last","match","",TRUE
+"yearmon",FALSE,"nest_by_with_margins",FALSE,"none","match","",TRUE
+"yearmon",FALSE,"nest_by_with_margins",FALSE,"first","match","",TRUE
+"yearmon",FALSE,"nest_by_with_margins",FALSE,"last","match","",TRUE
+"yearmon",FALSE,"nest_by_with_margins",TRUE,"none","match","",TRUE
+"yearmon",FALSE,"nest_by_with_margins",TRUE,"first","match","",TRUE
+"yearmon",FALSE,"nest_by_with_margins",TRUE,"last","match","",TRUE
+"yearmon",TRUE,"nest_with_margins",FALSE,"none","match","",TRUE
+"yearmon",TRUE,"nest_with_margins",FALSE,"first","match","",TRUE
+"yearmon",TRUE,"nest_with_margins",FALSE,"last","match","",TRUE
+"yearmon",TRUE,"nest_with_margins",TRUE,"none","match","",TRUE
+"yearmon",TRUE,"nest_with_margins",TRUE,"first","match","",TRUE
+"yearmon",TRUE,"nest_with_margins",TRUE,"last","match","",TRUE
+"yearmon",TRUE,"nest_by_with_margins",FALSE,"none","match","",TRUE
+"yearmon",TRUE,"nest_by_with_margins",FALSE,"first","match","",TRUE
+"yearmon",TRUE,"nest_by_with_margins",FALSE,"last","match","",TRUE
+"yearmon",TRUE,"nest_by_with_margins",TRUE,"none","match","",TRUE
+"yearmon",TRUE,"nest_by_with_margins",TRUE,"first","match","",TRUE
+"yearmon",TRUE,"nest_by_with_margins",TRUE,"last","match","",TRUE
+"yearqtr",FALSE,"nest_with_margins",FALSE,"none","match","",TRUE
+"yearqtr",FALSE,"nest_with_margins",FALSE,"first","match","",TRUE
+"yearqtr",FALSE,"nest_with_margins",FALSE,"last","match","",TRUE
+"yearqtr",FALSE,"nest_with_margins",TRUE,"none","match","",TRUE
+"yearqtr",FALSE,"nest_with_margins",TRUE,"first","match","",TRUE
+"yearqtr",FALSE,"nest_with_margins",TRUE,"last","match","",TRUE
+"yearqtr",FALSE,"nest_by_with_margins",FALSE,"none","match","",TRUE
+"yearqtr",FALSE,"nest_by_with_margins",FALSE,"first","match","",TRUE
+"yearqtr",FALSE,"nest_by_with_margins",FALSE,"last","match","",TRUE
+"yearqtr",FALSE,"nest_by_with_margins",TRUE,"none","match","",TRUE
+"yearqtr",FALSE,"nest_by_with_margins",TRUE,"first","match","",TRUE
+"yearqtr",FALSE,"nest_by_with_margins",TRUE,"last","match","",TRUE
+"yearqtr",TRUE,"nest_with_margins",FALSE,"none","match","",TRUE
+"yearqtr",TRUE,"nest_with_margins",FALSE,"first","match","",TRUE
+"yearqtr",TRUE,"nest_with_margins",FALSE,"last","match","",TRUE
+"yearqtr",TRUE,"nest_with_margins",TRUE,"none","match","",TRUE
+"yearqtr",TRUE,"nest_with_margins",TRUE,"first","match","",TRUE
+"yearqtr",TRUE,"nest_with_margins",TRUE,"last","match","",TRUE
+"yearqtr",TRUE,"nest_by_with_margins",FALSE,"none","match","",TRUE
+"yearqtr",TRUE,"nest_by_with_margins",FALSE,"first","match","",TRUE
+"yearqtr",TRUE,"nest_by_with_margins",FALSE,"last","match","",TRUE
+"yearqtr",TRUE,"nest_by_with_margins",TRUE,"none","match","",TRUE
+"yearqtr",TRUE,"nest_by_with_margins",TRUE,"first","match","",TRUE
+"yearqtr",TRUE,"nest_by_with_margins",TRUE,"last","match","",TRUE
+"posixlt",FALSE,"nest_with_margins",FALSE,"none","error","A non-missing `.margin_label` cannot label packed grouping dimensions:
+ℹ `g`.
+ℹ Use `NULL` or `NA_character_` for a typed-missing label, or unpack the dimension into separate columns.",TRUE
+"posixlt",FALSE,"nest_with_margins",FALSE,"first","error","A non-missing `.margin_label` cannot label packed grouping dimensions:
+ℹ `g`.
+ℹ Use `NULL` or `NA_character_` for a typed-missing label, or unpack the dimension into separate columns.",TRUE
+"posixlt",FALSE,"nest_with_margins",FALSE,"last","error","A non-missing `.margin_label` cannot label packed grouping dimensions:
+ℹ `g`.
+ℹ Use `NULL` or `NA_character_` for a typed-missing label, or unpack the dimension into separate columns.",TRUE
+"posixlt",FALSE,"nest_with_margins",TRUE,"none","error","A non-missing `.margin_label` cannot label packed grouping dimensions:
+ℹ `g`.
+ℹ Use `NULL` or `NA_character_` for a typed-missing label, or unpack the dimension into separate columns.",TRUE
+"posixlt",FALSE,"nest_with_margins",TRUE,"first","error","A non-missing `.margin_label` cannot label packed grouping dimensions:
+ℹ `g`.
+ℹ Use `NULL` or `NA_character_` for a typed-missing label, or unpack the dimension into separate columns.",TRUE
+"posixlt",FALSE,"nest_with_margins",TRUE,"last","error","A non-missing `.margin_label` cannot label packed grouping dimensions:
+ℹ `g`.
+ℹ Use `NULL` or `NA_character_` for a typed-missing label, or unpack the dimension into separate columns.",TRUE
+"posixlt",FALSE,"nest_by_with_margins",FALSE,"none","error","A non-missing `.margin_label` cannot label packed grouping dimensions:
+ℹ `g`.
+ℹ Use `NULL` or `NA_character_` for a typed-missing label, or unpack the dimension into separate columns.",TRUE
+"posixlt",FALSE,"nest_by_with_margins",FALSE,"first","error","A non-missing `.margin_label` cannot label packed grouping dimensions:
+ℹ `g`.
+ℹ Use `NULL` or `NA_character_` for a typed-missing label, or unpack the dimension into separate columns.",TRUE
+"posixlt",FALSE,"nest_by_with_margins",FALSE,"last","error","A non-missing `.margin_label` cannot label packed grouping dimensions:
+ℹ `g`.
+ℹ Use `NULL` or `NA_character_` for a typed-missing label, or unpack the dimension into separate columns.",TRUE
+"posixlt",FALSE,"nest_by_with_margins",TRUE,"none","error","A non-missing `.margin_label` cannot label packed grouping dimensions:
+ℹ `g`.
+ℹ Use `NULL` or `NA_character_` for a typed-missing label, or unpack the dimension into separate columns.",TRUE
+"posixlt",FALSE,"nest_by_with_margins",TRUE,"first","error","A non-missing `.margin_label` cannot label packed grouping dimensions:
+ℹ `g`.
+ℹ Use `NULL` or `NA_character_` for a typed-missing label, or unpack the dimension into separate columns.",TRUE
+"posixlt",FALSE,"nest_by_with_margins",TRUE,"last","error","A non-missing `.margin_label` cannot label packed grouping dimensions:
+ℹ `g`.
+ℹ Use `NULL` or `NA_character_` for a typed-missing label, or unpack the dimension into separate columns.",TRUE
+"posixlt",TRUE,"nest_with_margins",FALSE,"none","error","A non-missing `.margin_label` cannot label packed grouping dimensions:
+ℹ `g`.
+ℹ Use `NULL` or `NA_character_` for a typed-missing label, or unpack the dimension into separate columns.",TRUE
+"posixlt",TRUE,"nest_with_margins",FALSE,"first","error","A non-missing `.margin_label` cannot label packed grouping dimensions:
+ℹ `g`.
+ℹ Use `NULL` or `NA_character_` for a typed-missing label, or unpack the dimension into separate columns.",TRUE
+"posixlt",TRUE,"nest_with_margins",FALSE,"last","error","A non-missing `.margin_label` cannot label packed grouping dimensions:
+ℹ `g`.
+ℹ Use `NULL` or `NA_character_` for a typed-missing label, or unpack the dimension into separate columns.",TRUE
+"posixlt",TRUE,"nest_with_margins",TRUE,"none","error","A non-missing `.margin_label` cannot label packed grouping dimensions:
+ℹ `g`.
+ℹ Use `NULL` or `NA_character_` for a typed-missing label, or unpack the dimension into separate columns.",TRUE
+"posixlt",TRUE,"nest_with_margins",TRUE,"first","error","A non-missing `.margin_label` cannot label packed grouping dimensions:
+ℹ `g`.
+ℹ Use `NULL` or `NA_character_` for a typed-missing label, or unpack the dimension into separate columns.",TRUE
+"posixlt",TRUE,"nest_with_margins",TRUE,"last","error","A non-missing `.margin_label` cannot label packed grouping dimensions:
+ℹ `g`.
+ℹ Use `NULL` or `NA_character_` for a typed-missing label, or unpack the dimension into separate columns.",TRUE
+"posixlt",TRUE,"nest_by_with_margins",FALSE,"none","error","A non-missing `.margin_label` cannot label packed grouping dimensions:
+ℹ `g`.
+ℹ Use `NULL` or `NA_character_` for a typed-missing label, or unpack the dimension into separate columns.",TRUE
+"posixlt",TRUE,"nest_by_with_margins",FALSE,"first","error","A non-missing `.margin_label` cannot label packed grouping dimensions:
+ℹ `g`.
+ℹ Use `NULL` or `NA_character_` for a typed-missing label, or unpack the dimension into separate columns.",TRUE
+"posixlt",TRUE,"nest_by_with_margins",FALSE,"last","error","A non-missing `.margin_label` cannot label packed grouping dimensions:
+ℹ `g`.
+ℹ Use `NULL` or `NA_character_` for a typed-missing label, or unpack the dimension into separate columns.",TRUE
+"posixlt",TRUE,"nest_by_with_margins",TRUE,"none","error","A non-missing `.margin_label` cannot label packed grouping dimensions:
+ℹ `g`.
+ℹ Use `NULL` or `NA_character_` for a typed-missing label, or unpack the dimension into separate columns.",TRUE
+"posixlt",TRUE,"nest_by_with_margins",TRUE,"first","error","A non-missing `.margin_label` cannot label packed grouping dimensions:
+ℹ `g`.
+ℹ Use `NULL` or `NA_character_` for a typed-missing label, or unpack the dimension into separate columns.",TRUE
+"posixlt",TRUE,"nest_by_with_margins",TRUE,"last","error","A non-missing `.margin_label` cannot label packed grouping dimensions:
+ℹ `g`.
+ℹ Use `NULL` or `NA_character_` for a typed-missing label, or unpack the dimension into separate columns.",TRUE
+"blob",FALSE,"nest_with_margins",FALSE,"none","match","",TRUE
+"blob",FALSE,"nest_with_margins",FALSE,"first","match","",TRUE
+"blob",FALSE,"nest_with_margins",FALSE,"last","match","",TRUE
+"blob",FALSE,"nest_with_margins",TRUE,"none","match","",TRUE
+"blob",FALSE,"nest_with_margins",TRUE,"first","match","",TRUE
+"blob",FALSE,"nest_with_margins",TRUE,"last","match","",TRUE
+"blob",FALSE,"nest_by_with_margins",FALSE,"none","match","",TRUE
+"blob",FALSE,"nest_by_with_margins",FALSE,"first","match","",TRUE
+"blob",FALSE,"nest_by_with_margins",FALSE,"last","match","",TRUE
+"blob",FALSE,"nest_by_with_margins",TRUE,"none","match","",TRUE
+"blob",FALSE,"nest_by_with_margins",TRUE,"first","match","",TRUE
+"blob",FALSE,"nest_by_with_margins",TRUE,"last","match","",TRUE
+"blob",TRUE,"nest_with_margins",FALSE,"none","match","",TRUE
+"blob",TRUE,"nest_with_margins",FALSE,"first","match","",TRUE
+"blob",TRUE,"nest_with_margins",FALSE,"last","match","",TRUE
+"blob",TRUE,"nest_with_margins",TRUE,"none","match","",TRUE
+"blob",TRUE,"nest_with_margins",TRUE,"first","match","",TRUE
+"blob",TRUE,"nest_with_margins",TRUE,"last","match","",TRUE
+"blob",TRUE,"nest_by_with_margins",FALSE,"none","match","",TRUE
+"blob",TRUE,"nest_by_with_margins",FALSE,"first","match","",TRUE
+"blob",TRUE,"nest_by_with_margins",FALSE,"last","match","",TRUE
+"blob",TRUE,"nest_by_with_margins",TRUE,"none","match","",TRUE
+"blob",TRUE,"nest_by_with_margins",TRUE,"first","match","",TRUE
+"blob",TRUE,"nest_by_with_margins",TRUE,"last","match","",TRUE
+"surv",FALSE,"nest_with_margins",FALSE,"none","error","A non-missing `.margin_label` cannot label matrix or array grouping dimensions:
+ℹ `g`.
+ℹ A non-missing scalar label cannot represent a matrix or array key. Use `NULL` or `NA_character_` for a typed-missing label, or split the key into separate columns.",TRUE
+"surv",FALSE,"nest_with_margins",FALSE,"first","error","A non-missing `.margin_label` cannot label matrix or array grouping dimensions:
+ℹ `g`.
+ℹ A non-missing scalar label cannot represent a matrix or array key. Use `NULL` or `NA_character_` for a typed-missing label, or split the key into separate columns.",TRUE
+"surv",FALSE,"nest_with_margins",FALSE,"last","error","A non-missing `.margin_label` cannot label matrix or array grouping dimensions:
+ℹ `g`.
+ℹ A non-missing scalar label cannot represent a matrix or array key. Use `NULL` or `NA_character_` for a typed-missing label, or split the key into separate columns.",TRUE
+"surv",FALSE,"nest_with_margins",TRUE,"none","error","A non-missing `.margin_label` cannot label matrix or array grouping dimensions:
+ℹ `g`.
+ℹ A non-missing scalar label cannot represent a matrix or array key. Use `NULL` or `NA_character_` for a typed-missing label, or split the key into separate columns.",TRUE
+"surv",FALSE,"nest_with_margins",TRUE,"first","error","A non-missing `.margin_label` cannot label matrix or array grouping dimensions:
+ℹ `g`.
+ℹ A non-missing scalar label cannot represent a matrix or array key. Use `NULL` or `NA_character_` for a typed-missing label, or split the key into separate columns.",TRUE
+"surv",FALSE,"nest_with_margins",TRUE,"last","error","A non-missing `.margin_label` cannot label matrix or array grouping dimensions:
+ℹ `g`.
+ℹ A non-missing scalar label cannot represent a matrix or array key. Use `NULL` or `NA_character_` for a typed-missing label, or split the key into separate columns.",TRUE
+"surv",FALSE,"nest_by_with_margins",FALSE,"none","error","A non-missing `.margin_label` cannot label matrix or array grouping dimensions:
+ℹ `g`.
+ℹ A non-missing scalar label cannot represent a matrix or array key. Use `NULL` or `NA_character_` for a typed-missing label, or split the key into separate columns.",TRUE
+"surv",FALSE,"nest_by_with_margins",FALSE,"first","error","A non-missing `.margin_label` cannot label matrix or array grouping dimensions:
+ℹ `g`.
+ℹ A non-missing scalar label cannot represent a matrix or array key. Use `NULL` or `NA_character_` for a typed-missing label, or split the key into separate columns.",TRUE
+"surv",FALSE,"nest_by_with_margins",FALSE,"last","error","A non-missing `.margin_label` cannot label matrix or array grouping dimensions:
+ℹ `g`.
+ℹ A non-missing scalar label cannot represent a matrix or array key. Use `NULL` or `NA_character_` for a typed-missing label, or split the key into separate columns.",TRUE
+"surv",FALSE,"nest_by_with_margins",TRUE,"none","error","A non-missing `.margin_label` cannot label matrix or array grouping dimensions:
+ℹ `g`.
+ℹ A non-missing scalar label cannot represent a matrix or array key. Use `NULL` or `NA_character_` for a typed-missing label, or split the key into separate columns.",TRUE
+"surv",FALSE,"nest_by_with_margins",TRUE,"first","error","A non-missing `.margin_label` cannot label matrix or array grouping dimensions:
+ℹ `g`.
+ℹ A non-missing scalar label cannot represent a matrix or array key. Use `NULL` or `NA_character_` for a typed-missing label, or split the key into separate columns.",TRUE
+"surv",FALSE,"nest_by_with_margins",TRUE,"last","error","A non-missing `.margin_label` cannot label matrix or array grouping dimensions:
+ℹ `g`.
+ℹ A non-missing scalar label cannot represent a matrix or array key. Use `NULL` or `NA_character_` for a typed-missing label, or split the key into separate columns.",TRUE
+"surv",TRUE,"nest_with_margins",FALSE,"none","error","A non-missing `.margin_label` cannot label matrix or array grouping dimensions:
+ℹ `g`.
+ℹ A non-missing scalar label cannot represent a matrix or array key. Use `NULL` or `NA_character_` for a typed-missing label, or split the key into separate columns.",TRUE
+"surv",TRUE,"nest_with_margins",FALSE,"first","error","A non-missing `.margin_label` cannot label matrix or array grouping dimensions:
+ℹ `g`.
+ℹ A non-missing scalar label cannot represent a matrix or array key. Use `NULL` or `NA_character_` for a typed-missing label, or split the key into separate columns.",TRUE
+"surv",TRUE,"nest_with_margins",FALSE,"last","error","A non-missing `.margin_label` cannot label matrix or array grouping dimensions:
+ℹ `g`.
+ℹ A non-missing scalar label cannot represent a matrix or array key. Use `NULL` or `NA_character_` for a typed-missing label, or split the key into separate columns.",TRUE
+"surv",TRUE,"nest_with_margins",TRUE,"none","error","A non-missing `.margin_label` cannot label matrix or array grouping dimensions:
+ℹ `g`.
+ℹ A non-missing scalar label cannot represent a matrix or array key. Use `NULL` or `NA_character_` for a typed-missing label, or split the key into separate columns.",TRUE
+"surv",TRUE,"nest_with_margins",TRUE,"first","error","A non-missing `.margin_label` cannot label matrix or array grouping dimensions:
+ℹ `g`.
+ℹ A non-missing scalar label cannot represent a matrix or array key. Use `NULL` or `NA_character_` for a typed-missing label, or split the key into separate columns.",TRUE
+"surv",TRUE,"nest_with_margins",TRUE,"last","error","A non-missing `.margin_label` cannot label matrix or array grouping dimensions:
+ℹ `g`.
+ℹ A non-missing scalar label cannot represent a matrix or array key. Use `NULL` or `NA_character_` for a typed-missing label, or split the key into separate columns.",TRUE
+"surv",TRUE,"nest_by_with_margins",FALSE,"none","error","A non-missing `.margin_label` cannot label matrix or array grouping dimensions:
+ℹ `g`.
+ℹ A non-missing scalar label cannot represent a matrix or array key. Use `NULL` or `NA_character_` for a typed-missing label, or split the key into separate columns.",TRUE
+"surv",TRUE,"nest_by_with_margins",FALSE,"first","error","A non-missing `.margin_label` cannot label matrix or array grouping dimensions:
+ℹ `g`.
+ℹ A non-missing scalar label cannot represent a matrix or array key. Use `NULL` or `NA_character_` for a typed-missing label, or split the key into separate columns.",TRUE
+"surv",TRUE,"nest_by_with_margins",FALSE,"last","error","A non-missing `.margin_label` cannot label matrix or array grouping dimensions:
+ℹ `g`.
+ℹ A non-missing scalar label cannot represent a matrix or array key. Use `NULL` or `NA_character_` for a typed-missing label, or split the key into separate columns.",TRUE
+"surv",TRUE,"nest_by_with_margins",TRUE,"none","error","A non-missing `.margin_label` cannot label matrix or array grouping dimensions:
+ℹ `g`.
+ℹ A non-missing scalar label cannot represent a matrix or array key. Use `NULL` or `NA_character_` for a typed-missing label, or split the key into separate columns.",TRUE
+"surv",TRUE,"nest_by_with_margins",TRUE,"first","error","A non-missing `.margin_label` cannot label matrix or array grouping dimensions:
+ℹ `g`.
+ℹ A non-missing scalar label cannot represent a matrix or array key. Use `NULL` or `NA_character_` for a typed-missing label, or split the key into separate columns.",TRUE
+"surv",TRUE,"nest_by_with_margins",TRUE,"last","error","A non-missing `.margin_label` cannot label matrix or array grouping dimensions:
+ℹ `g`.
+ℹ A non-missing scalar label cannot represent a matrix or array key. Use `NULL` or `NA_character_` for a typed-missing label, or split the key into separate columns.",TRUE
+"distribution",FALSE,"nest_with_margins",FALSE,"none","match","",TRUE
+"distribution",FALSE,"nest_with_margins",FALSE,"first","match","",TRUE
+"distribution",FALSE,"nest_with_margins",FALSE,"last","match","",TRUE
+"distribution",FALSE,"nest_with_margins",TRUE,"none","match","",TRUE
+"distribution",FALSE,"nest_with_margins",TRUE,"first","match","",TRUE
+"distribution",FALSE,"nest_with_margins",TRUE,"last","match","",TRUE
+"distribution",FALSE,"nest_by_with_margins",FALSE,"none","match","",TRUE
+"distribution",FALSE,"nest_by_with_margins",FALSE,"first","match","",TRUE
+"distribution",FALSE,"nest_by_with_margins",FALSE,"last","match","",TRUE
+"distribution",FALSE,"nest_by_with_margins",TRUE,"none","match","",TRUE
+"distribution",FALSE,"nest_by_with_margins",TRUE,"first","match","",TRUE
+"distribution",FALSE,"nest_by_with_margins",TRUE,"last","match","",TRUE
+"distribution",TRUE,"nest_with_margins",FALSE,"none","match","",TRUE
+"distribution",TRUE,"nest_with_margins",FALSE,"first","match","",TRUE
+"distribution",TRUE,"nest_with_margins",FALSE,"last","match","",TRUE
+"distribution",TRUE,"nest_with_margins",TRUE,"none","match","",TRUE
+"distribution",TRUE,"nest_with_margins",TRUE,"first","match","",TRUE
+"distribution",TRUE,"nest_with_margins",TRUE,"last","match","",TRUE
+"distribution",TRUE,"nest_by_with_margins",FALSE,"none","match","",TRUE
+"distribution",TRUE,"nest_by_with_margins",FALSE,"first","match","",TRUE
+"distribution",TRUE,"nest_by_with_margins",FALSE,"last","match","",TRUE
+"distribution",TRUE,"nest_by_with_margins",TRUE,"none","match","",TRUE
+"distribution",TRUE,"nest_by_with_margins",TRUE,"first","match","",TRUE
+"distribution",TRUE,"nest_by_with_margins",TRUE,"last","match","",TRUE
+"sfc",FALSE,"nest_with_margins",FALSE,"none","match","",TRUE
+"sfc",FALSE,"nest_with_margins",FALSE,"first","match","",TRUE
+"sfc",FALSE,"nest_with_margins",FALSE,"last","match","",TRUE
+"sfc",FALSE,"nest_with_margins",TRUE,"none","match","",TRUE
+"sfc",FALSE,"nest_with_margins",TRUE,"first","match","",TRUE
+"sfc",FALSE,"nest_with_margins",TRUE,"last","match","",TRUE
+"sfc",FALSE,"nest_by_with_margins",FALSE,"none","match","",TRUE
+"sfc",FALSE,"nest_by_with_margins",FALSE,"first","match","",TRUE
+"sfc",FALSE,"nest_by_with_margins",FALSE,"last","match","",TRUE
+"sfc",FALSE,"nest_by_with_margins",TRUE,"none","match","",TRUE
+"sfc",FALSE,"nest_by_with_margins",TRUE,"first","match","",TRUE
+"sfc",FALSE,"nest_by_with_margins",TRUE,"last","match","",TRUE
+"sfc",TRUE,"nest_with_margins",FALSE,"none","match","",TRUE
+"sfc",TRUE,"nest_with_margins",FALSE,"first","match","",TRUE
+"sfc",TRUE,"nest_with_margins",FALSE,"last","match","",TRUE
+"sfc",TRUE,"nest_with_margins",TRUE,"none","match","",TRUE
+"sfc",TRUE,"nest_with_margins",TRUE,"first","match","",TRUE
+"sfc",TRUE,"nest_with_margins",TRUE,"last","match","",TRUE
+"sfc",TRUE,"nest_by_with_margins",FALSE,"none","match","",TRUE
+"sfc",TRUE,"nest_by_with_margins",FALSE,"first","match","",TRUE
+"sfc",TRUE,"nest_by_with_margins",FALSE,"last","match","",TRUE
+"sfc",TRUE,"nest_by_with_margins",TRUE,"none","match","",TRUE
+"sfc",TRUE,"nest_by_with_margins",TRUE,"first","match","",TRUE
+"sfc",TRUE,"nest_by_with_margins",TRUE,"last","match","",TRUE
+"rvar",FALSE,"nest_with_margins",FALSE,"none","match","",FALSE
+"rvar",FALSE,"nest_with_margins",FALSE,"first","match","",FALSE
+"rvar",FALSE,"nest_with_margins",FALSE,"last","match","",FALSE
+"rvar",FALSE,"nest_with_margins",TRUE,"none","match","",FALSE
+"rvar",FALSE,"nest_with_margins",TRUE,"first","match","",FALSE
+"rvar",FALSE,"nest_with_margins",TRUE,"last","match","",FALSE
+"rvar",FALSE,"nest_by_with_margins",FALSE,"none","match","",FALSE
+"rvar",FALSE,"nest_by_with_margins",FALSE,"first","match","",FALSE
+"rvar",FALSE,"nest_by_with_margins",FALSE,"last","match","",FALSE
+"rvar",FALSE,"nest_by_with_margins",TRUE,"none","match","",FALSE
+"rvar",FALSE,"nest_by_with_margins",TRUE,"first","match","",FALSE
+"rvar",FALSE,"nest_by_with_margins",TRUE,"last","match","",FALSE
+"rvar",TRUE,"nest_with_margins",FALSE,"none","match","",FALSE
+"rvar",TRUE,"nest_with_margins",FALSE,"first","match","",FALSE
+"rvar",TRUE,"nest_with_margins",FALSE,"last","match","",FALSE
+"rvar",TRUE,"nest_with_margins",TRUE,"none","match","",FALSE
+"rvar",TRUE,"nest_with_margins",TRUE,"first","match","",FALSE
+"rvar",TRUE,"nest_with_margins",TRUE,"last","match","",FALSE
+"rvar",TRUE,"nest_by_with_margins",FALSE,"none","match","",FALSE
+"rvar",TRUE,"nest_by_with_margins",FALSE,"first","match","",FALSE
+"rvar",TRUE,"nest_by_with_margins",FALSE,"last","match","",FALSE
+"rvar",TRUE,"nest_by_with_margins",TRUE,"none","match","",FALSE
+"rvar",TRUE,"nest_by_with_margins",TRUE,"first","match","",FALSE
+"rvar",TRUE,"nest_by_with_margins",TRUE,"last","match","",FALSE
