@@ -17,6 +17,14 @@ test_that("zero-column expansion ignores late caller repetition bindings", {
     999L
   }
   expect_identical(dplyr::collect(query), expected)
+  root$`::` <- function(package, name) {
+    package <- as.character(substitute(package))
+    name <- as.character(substitute(name))
+    if (identical(c(package, name), c("base", "rep"))) {
+      return(root$rep)
+    }
+    getExportedValue(package, name)
+  }
   expect_identical(dplyr::collect(query), expected)
   expect_identical(calls, 0L)
   expect_identical(dim(dplyr::collect(input)), c(0L, 0L))

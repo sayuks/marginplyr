@@ -625,32 +625,16 @@ summarize_margin_branch <- function(.data,
   result
 }
 
-# A literal recycles to whatever the branch holds, which is the whole of the
-# attachment wherever a column-less branch has a row count to recycle to. The
-# `invents_row_on_column_add` capability in `R/grouping-backend.R` is where a
-# backend says it has none, and every branch of such an input arrived carrying
-# a row no source row produced (#184). Counting is what the literal cannot do
-# there -- dtplyr translates `n()` to `.N`, which is zero for that table -- so
-# the identifier lands on as many rows as the branch has and no more.
-#
-# `count_branch_rows` is what each call site knows and this cannot: whether a
-# row this attachment materialises would be a row the branch does not stand
-# for. Both sites spell it out, because the two answers come from different
-# facts rather than from one being the default, and each is a property of the
-# input rather than of a branch, so each is settled once per call.
+# Attach the occurrence identifier. The caller marks a columnless branch on
+# a backend that would create a row by assigning a scalar to it (#184).
 add_grouping_set_id <- function(result,
                                 set_id_name,
                                 set_id,
-                                count_branch_rows) {
+                                empty_columnless_branch) {
   if (is.null(set_id_name)) {
     return(result)
   }
-  set_id <- as.integer(set_id)
-  value <- if (count_branch_rows) {
-    rlang::expr(base::rep(!!set_id, dplyr::n()))
-  } else {
-    set_id
-  }
+  value <- if (empty_columnless_branch) integer() else as.integer(set_id)
   # Injected for the same reason as the factor methods: a bare `set_id` here
   # resolves against the data mask first, so a grouping column of that name
   # would number every row from its own values instead of the branch's
@@ -1097,16 +1081,13 @@ summarize_margin_union <- function(.data,
           factor_info = column_info$factors
         )
 
-        # A summary branch holds one row per group rather than one per source
-        # row, and the placeholder leaves every branch holding a column, so no
-        # identifier column materialises a row and nothing is counted. The
-        # result a `data.table` still cannot hold once every column goes away
-        # again is a documented limit on `summarize_with_margins()`.
+        # The placeholder keeps a column in each summary branch through ID
+        # assignment, so the scalar recycles to the existing groups.
         result <- add_grouping_set_id(
           result,
           set_id_name,
           set_id,
-          count_branch_rows = FALSE
+          empty_columnless_branch = FALSE
         )
 
         # Last, so that the columns the result keeps are all in place before the
@@ -1394,13 +1375,9 @@ expand_margin_union <- function(.data,
   if (identical(backend$kind, "dtplyr") && length(plan$sets) > 1L) {
     .data <- dtplyr_expand_shared_input(.data)
   }
-  # An expansion branch is the input's own rows, so a column-less one standing
-  # for no rows has to stay empty, and only a backend that invents a row when
-  # given a column needs to be told so by counting. Both halves are read from
-  # the input once rather than from each branch: labelling adds a column only
-  # for a dimension, and a column-less input has none, so every branch of one
-  # is column-less too -- and a cube folds 2^n of them.
-  count_branch_rows <- backend$invents_row_on_column_add &&
+  # A columnless data.table has zero rows and no dimensions to label, so
+  # each expansion branch is also empty and columnless.
+  empty_columnless_branch <- backend$invents_row_on_column_add &&
     length(get_col_names(.data, dplyr::everything())) == 0L
 
   branches <- Map(
@@ -1449,7 +1426,7 @@ expand_margin_union <- function(.data,
         result,
         set_id_name,
         set_id,
-        count_branch_rows = count_branch_rows
+        empty_columnless_branch = empty_columnless_branch
       )
     },
     plan$sets,
