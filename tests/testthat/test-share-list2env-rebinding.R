@@ -298,7 +298,7 @@ test_that("fresh environment fields honor exact reads and independent writes", {
     })(11),
     (function(prior) {
       carrier <- list2env(list(read = function() sum(prior),
-                              read = function() 7))
+                               read = function() 7))
       rm(prior)
       carrier$read()
     })(11),
@@ -342,11 +342,13 @@ test_that("fresh environment fields honor exact reads and independent writes", {
 
 test_that("fresh environment proofs preserve caller constructor lookup", {
   data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
-  list2env <- function(...) list(read = function() 7)
-  new.env <- function(...) {
-    structure(list(read = function() 7), class = "fresh_environment_control")
-  }
-  `$<-.fresh_environment_control` <- function(x, name, value) x
+  scope <- rlang::env(
+    list2env = function(...) list(read = function() 7),
+    new.env = function(...) {
+      structure(list(read = function() 7), class = "fresh_environment_control")
+    },
+    `$<-.fresh_environment_control` = function(x, name, value) x
+  )
   reads <- alist(
     (function(prior) {
       carrier <- list2env(list(read = function() sum(prior)))
@@ -375,6 +377,27 @@ test_that("fresh environment proofs preserve caller constructor lookup", {
     })(11)
   )
   expect_share_dependency_values(
-    data, lapply(reads, rlang::as_quosure, env = environment()), 7
+    data, lapply(reads, rlang::as_quosure, env = scope), 7
+  )
+})
+
+test_that("computed constructors preserve ordinary value lookup", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
+  scope <- rlang::env(new.env = 0, list = 0)
+  reads <- alist(
+    tryCatch((function(prior) {
+      carrier <- (new.env)()
+      carrier$read <- function() sum(prior)
+      rm(prior)
+      carrier$read()
+    })(11), error = function(cnd) 7),
+    tryCatch((function(prior) {
+      carrier <- list2env((list)(read = function() sum(prior)))
+      rm(prior)
+      carrier$read()
+    })(11), error = function(cnd) 7)
+  )
+  expect_share_dependency_values(
+    data, lapply(reads, rlang::as_quosure, env = scope), 7
   )
 })

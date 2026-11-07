@@ -5479,6 +5479,7 @@ scope_fresh_env_binding <- function(expr, scope) {
 scope_fresh_env_fields <- function(expr, scope, lookup) {
   operator <- static_call_name(expr)
   if (is.null(operator) || !operator %in% c("new.env", "list2env") ||
+        is_parenthesized(static_call_head(expr)) ||
         !is_known_base_frame_call(expr, operator, scope, lookup)) {
     return(NULL)
   }
@@ -5490,6 +5491,7 @@ scope_fresh_env_fields <- function(expr, scope, lookup) {
   }
   values <- args$x
   if (!identical(static_call_name(values), "list") ||
+        is_parenthesized(static_call_head(values)) ||
         !is_known_base_frame_call(values, "list", scope, lookup)) return(NULL)
   elements <- scope_closure_list(values, scope, lookup)
   keys <- names(elements)
