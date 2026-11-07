@@ -562,15 +562,18 @@ grouping_selection_proxy <- function(.data,
     )
     # DuckDB can deduplicate names when it binds the nested query. Check the
     # stored schema before any selection methods run on the proxy.
-    proxy_names <- attr(proxy, "names", exact = TRUE)
-    if (duckdb && !identical(proxy_names, margin_col_names(.data))) {
-      abort_marginplyr(c(
-        "Can't match DuckDB column metadata to the input's captured names.",
-        i = paste0(
-          "Alias the input columns with unique names, ignoring ASCII letter ",
-          "case, and recreate the lazy input with those names."
-        )
-      ))
+    if (duckdb) {
+      captured <- margin_col_names(.data)
+      if (!identical(attr(proxy, "names", exact = TRUE), captured)) {
+        abort_marginplyr(c(
+          "Can't match DuckDB column metadata to the input's captured names.",
+          i = paste0(
+            "Alias the input columns with unique names, ignoring ASCII letter ",
+            "case, and recreate the lazy input with those names."
+          )
+        ))
+      }
+      attr(proxy, "marginplyr_duckdb_names") <- captured
     }
     return(proxy)
   }

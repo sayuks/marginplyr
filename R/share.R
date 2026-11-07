@@ -4594,6 +4594,7 @@ scope_literal_branch <- function(expr, scope, lookup) {
     return(arm)
   }
   if (!identical(static_call_name(expr), "switch") || length(expr) < 3L ||
+        is_parenthesized(static_call_head(expr)) ||
         !is_known_base_frame_call(expr, "switch", scope, lookup)) {
     return(NULL)
   }
@@ -4673,6 +4674,17 @@ scope_value_closure <- function(expr, scope, lookup) {
     name <- rlang::as_name(name)
     closure <- scope_closure_binding(name, scope, function_lookup = FALSE)
     if (!is.null(closure)) return(closure)
+    dot <- scope_numbered_dot(name, scope, scope_visible_frames(scope))
+    if (!is.null(dot)) {
+      closures <- scope[[dot$binding]]$dot_closures
+      if (dot$slot <= length(closures)) {
+        closure <- closures[[dot$slot]]
+        if (!is.null(closure)) {
+          closure$enclosing <- closure$enclosing + dot$binding
+          return(closure)
+        }
+      }
+    }
     promise <- scope_promise(name, scope, function_lookup = FALSE,
                              visible = scope_visible_frames(scope))
     return(scope_promise_closure(promise, lookup))
@@ -4722,12 +4734,12 @@ scope_value_closure <- function(expr, scope, lookup) {
       ))
     }
   }
-  member <- scope_closure_list_member(head, scope, lookup)
+  member <- scope_closure_carrier_member(head, scope, lookup)
   if (!is.null(member$definition)) member else NULL
 }
 
 # Select a visible member without evaluating its carrier or key.
-scope_closure_list_member <- function(head, scope, lookup) {
+scope_closure_carrier_member <- function(head, scope, lookup) {
   operator <- static_call_name(head)
   if (is.null(operator) ||
         !operator %in% c("[[", "$", "getElement", ".subset2") ||
@@ -4741,8 +4753,7 @@ scope_closure_list_member <- function(head, scope, lookup) {
         !rlang::is_call(static_call_head(head), c("::", ":::"))) return(NULL)
   parts <- static_call_args(head)
   if (identical(operator, "getElement")) {
-    # Argument matching can warn about partial names when the actual call runs.
-    parts <- suppressWarnings(static_matched_arguments(head, base::getElement))
+    parts <- static_matched_arguments(head, base::getElement)
     if (!all(c("object", "name") %in% names(parts))) return(NULL)
     parts <- parts[c("object", "name")]
   }
@@ -5052,7 +5063,7 @@ scope_closure_list <- function(expr, scope, lookup) {
   }
   remapped <- scope_remapped_closure_list(expr, operator, scope, lookup)
   if (!is.null(remapped)) return(remapped)
-  member <- scope_closure_list_member(expr, scope, lookup)
+  member <- scope_closure_carrier_member(expr, scope, lookup)
   if (!is.null(member)) return(member$elements)
   result <- scope_factory_result(expr, scope, lookup, scope_closure_list)
   if (is.null(result$value)) return(NULL)
@@ -5071,8 +5082,10 @@ scope_list_arguments <- function(expr, scope) {
   for (index in scope_visible_frames(scope)) {
     frame <- scope[[index]]
     if (!"..." %in% frame$bound) next
+    missing <- which(vapply(frame$dots, rlang::is_missing, logical(1)))
+    retained <- which(lengths(frame$dot_closures) > 0L)
     if (!isTRUE(frame$invoked) || length(frame$unmatched) > 0L ||
-          any(vapply(frame$dots, rlang::is_missing, logical(1)))) return(parts)
+          !all(missing %in% retained)) return(parts)
     dots <- lapply(paste0("..", seq_along(frame$dots), recycle0 = TRUE),
                    rlang::sym)
     names(dots) <- names(frame$dots)
@@ -5083,24 +5096,27 @@ scope_list_arguments <- function(expr, scope) {
 
 # Remap established plain-list descriptors with matched literal arguments.
 scope_remapped_closure_list <- function(expr, name, scope, lookup) {
-  if (is.null(name) ||
-        !name %in% c("rev", "unname", "rep", "as.list", "structure", "setNames",
-                     "tail")) return(NULL)
-  owner <- switch(name, setNames = "stats", tail = "utils", "base")
+  if (is.null(name) || is_parenthesized(static_call_head(expr))) return(NULL)
+  rule <- switch(name,
+    rev = list(formals = "x", dispatch = TRUE),
+    unname = list(formals = c("obj", "force")),
+    structure = list(formals = c(".Data", "names")),
+    setNames = list(owner = "stats", formals = c("object", "nm")),
+    # The primitive rep() exposes dots; rep.int() names the supported pair.
+    rep = list(formals = c("x", "times"), definition = args(base::rep.int)),
+    as.list = list(formals = "x", dispatch = TRUE),
+    tail = list(owner = "utils", formals = c("x", "n"), dispatch = TRUE,
+                method = "tail.default")
+  )
+  if (is.null(rule)) return(NULL)
+  owner <- rule$owner %||% "base"
   if (!is_known_package_frame_call(expr, name, owner, scope, lookup)) {
     return(NULL)
   }
-  namespace <- asNamespace(owner)
-  definition <- switch(name,
-    # The primitive rep() exposes dots; rep.int() names the supported pair.
-    rep = args(base::rep.int),
-    tail = get("tail.default", envir = namespace, inherits = FALSE),
-    get(name, envir = namespace, inherits = FALSE)
+  definition <- rule$definition %||% get(
+    rule$method %||% name, envir = asNamespace(owner), inherits = FALSE
   )
-  formals <- switch(name, rev = "x", unname = c("obj", "force"),
-                    structure = c(".Data", "names"),
-                    setNames = c("object", "nm"), rep = c("x", "times"),
-                    as.list = "x", tail = c("x", "n"))
+  formals <- rule$formals
   parts <- static_matched_arguments(expr, definition)
   if (!formals[[1L]] %in% names(parts) ||
         !all(names(parts) %in% formals) || anyDuplicated(names(parts)) ||
@@ -5108,7 +5124,7 @@ scope_remapped_closure_list <- function(expr, name, scope, lookup) {
   elements <- scope_closure_list(parts[[formals[[1L]]]], scope, lookup)
   if (is.null(elements)) return(NULL)
 
-  if (name %in% c("rev", "as.list", "tail") &&
+  if (isTRUE(rule$dispatch) &&
         !scope_plain_list_default(name, owner, scope, lookup)) return(NULL)
 
   switch(name,
@@ -5301,6 +5317,7 @@ definition_data_symbols <- function(expr, scope, lookup, invocation = NULL,
     # A definition can capture names without visibly demanding their promises.
     scope <- lapply(scope, function(frame) {
       frame$defaults <- frame$arguments <- frame$dots <- NULL
+      frame$dot_closures <- NULL
       frame
     })
   }
@@ -5335,31 +5352,37 @@ scope_bound_names <- function(scope) {
          use.names = FALSE)
 }
 
+# Numbered dots select a position in the first visible dots binding.
+scope_numbered_dot <- function(name, scope, visible) {
+  if (!startsWith(name, "..") ||
+        !is_numbered_dot_reference(rlang::sym(name))) return(NULL)
+  for (index in visible) {
+    if ("..." %in% scope[[index]]$bound) {
+      return(list(binding = index, slot = as.double(substring(name, 3L))))
+    }
+  }
+  NULL
+}
+
 # Find the first visible binding and the frame in which its pending syntax
 # runs. Clear the promise before following recursive reads.
 scope_promise <- function(name, scope, function_lookup,
                           visible = seq_along(scope)) {
-  if (!function_lookup && startsWith(name, "..") &&
-        is_numbered_dot_reference(rlang::sym(name))) {
-    owners <- vapply(scope[visible], function(frame) {
-      "..." %in% frame$bound
-    }, logical(1))
-    index <- visible[match(TRUE, owners)]
-    if (!is.na(index)) {
-      slot <- as.double(substring(name, 3L))
-      dots <- scope[[index]]$dots
-      if (slot > length(dots) || rlang::is_missing(dots[[slot]])) {
-        return(NULL)
-      }
-      # Keep positions fixed when consuming a dot. A later ..i still looks
-      # in the same ... binding even after its promise has been consumed.
-      scope[[index]]$dots[slot] <- list(rlang::missing_arg())
-      return(list(
-        expression = dots[[slot]], scope = scope,
-        evaluation = seq.int(index + (scope[[index]]$caller %||% 1L),
-                             length(scope))
-      ))
+  dot <- if (!function_lookup) scope_numbered_dot(name, scope, visible)
+  if (!is.null(dot)) {
+    index <- dot$binding
+    slot <- dot$slot
+    dots <- scope[[index]]$dots
+    if (slot > length(dots) || rlang::is_missing(dots[[slot]])) {
+      return(NULL)
     }
+    # Consume the promise while retaining the position and argument tag.
+    scope[[index]]$dots[slot] <- list(rlang::missing_arg())
+    return(list(
+      expression = dots[[slot]], scope = scope, binding = index, slot = slot,
+      evaluation = seq.int(index + (scope[[index]]$caller %||% 1L),
+                           length(scope))
+    ))
   }
   for (index in visible) {
     frame <- scope[[index]]
@@ -5439,14 +5462,19 @@ scope_after_promise <- function(name, scope, lookup, function_lookup = FALSE) {
   frames <- promise$evaluation
   binding <- promise$binding
   closure <- if (!is.null(binding)) scope_promise_closure(promise, lookup)
-  elements <- if (is.null(closure) && !is.null(binding)) {
+  elements <- if (is.null(closure) && is.null(promise$slot)) {
     scope_closure_list(promise$expression, scope[frames], lookup)
   }
   scope[frames] <- statement_reads_and_scope(
     promise$expression, scope[frames], lookup, read_symbols = no_scope_reads
   )$scope
-  # A forced formal retains its value even if its source is later removed.
-  if (!is.null(closure) && name %in% scope[[binding]]$bound) {
+  # A forced argument retains its value even if its source is later removed.
+  if (!is.null(promise$slot)) {
+    if (!is.null(closure) && "..." %in% scope[[binding]]$bound) {
+      closure$enclosing <- closure$enclosing - binding
+      scope[[binding]]$dot_closures[[promise$slot]] <- closure
+    }
+  } else if (!is.null(closure) && name %in% scope[[binding]]$bound) {
     closure$enclosing <- closure$enclosing - binding
     scope[[binding]]$kinds[[name]] <- "function"
     scope[[binding]]$closures[[name]] <- closure
@@ -5484,7 +5512,7 @@ scope_fresh_env_fields <- function(expr, scope, lookup) {
     return(NULL)
   }
   if (identical(operator, "new.env")) return(list())
-  args <- suppressWarnings(static_matched_arguments(expr, base::list2env))
+  args <- static_matched_arguments(expr, base::list2env)
   if (!"x" %in% names(args) || rlang::is_missing(args$x) ||
         !is.null(unparenthesized_value(args$envir))) {
     return(NULL)
@@ -5557,9 +5585,10 @@ scope_bind_closure_list <- function(scope, name, elements) {
   scope
 }
 
-# Carry a literal write through member setters from its leaf to its binding.
+# Carry a write through list setters or to a fresh environment field.
 # Stored closures use offsets relative to the current frame.
-scope_after_list_write <- function(scope, target, value, lookup, value_scope) {
+scope_after_carrier_write <- function(scope, target, value, lookup,
+                                      value_scope) {
   if (!rlang::is_call(target) || rlang::is_missing(value)) return(scope)
   members <- c("[", "[[", "$")
   name_setters <- c("names", "attr", "attributes")
@@ -5930,6 +5959,13 @@ statement_reads_and_scope <- function(expr, scope, lookup = NULL,
   if (identical(call_name, "for")) {
     index <- expr[[2L]]
     sequence <- expr[[3L]]
+    if (is_redundant_parens(sequence, ns = "") &&
+          is_known_base_frame_call(rlang::call2("("), "(", scope, lookup)) {
+      while (is_redundant_parens(sequence, ns = "") &&
+               !rlang::is_missing(sequence[[2L]])) {
+        sequence <- sequence[[2L]]
+      }
+    }
     literal_loop <- length(expr) == 4L && is_name_part(index) &&
       !rlang::is_missing(sequence) &&
       (is.null(sequence) ||
@@ -5971,7 +6007,7 @@ statement_reads_and_scope <- function(expr, scope, lookup = NULL,
   # binding depends on the shape of the target.
   list(
     reads = unique(c(read_symbols(expr[[2L]], scope, lookup), value)),
-    scope = scope_after_list_write(
+    scope = scope_after_carrier_write(
       scope_after_removals(expr[[2L]], retained, lookup),
       expr[[2L]], expr[[3L]], lookup, value_scope = scope
     )
@@ -6029,7 +6065,7 @@ scope_after_removals <- function(expr, scope, lookup) {
     ))
   }
   if (identical(name, "force") && length(expr) == 2L &&
-        is_known_base_call(expr, name, bound, lookup)) {
+        is_known_package_call(expr, name, bound, lookup)) {
     return(statement_reads_and_scope(
       expr[[2L]], scope, lookup, read_symbols = no_scope_reads
     )$scope)
@@ -6340,7 +6376,7 @@ is_known_package_frame_call <- function(expr, name, owner, scope, lookup) {
     name %in% frame$bound &&
       (!function_lookup || !identical(frame$kinds[[name]], "value"))
   }, logical(1)))
-  is_known_base_call(expr, name, name[shadowed], lookup, owner)
+  is_known_package_call(expr, name, name[shadowed], lookup, owner)
 }
 
 # A qualified callee is known only when its operator resolves to base.
@@ -6360,7 +6396,7 @@ retain_scope_bindings <- function(frame, bound) {
   frame$defaults <- frame$defaults[names(frame$defaults) %in% bound]
   frame$arguments <- frame$arguments[names(frame$arguments) %in% bound]
   if (!"..." %in% bound) {
-    frame$dots <- NULL
+    frame$dots <- frame$dot_closures <- NULL
   }
   frame$kinds <- frame$kinds[names(frame$kinds) %in% bound]
   frame$closures <- frame$closures[names(frame$closures) %in% bound]
@@ -6423,7 +6459,7 @@ lookup_reparented_environments <- function(
     parent_name <- static_call_name(parent)
     safe_parent <- !is.null(parent_name) &&
       parent_name %in% c("baseenv", "emptyenv") &&
-      is_known_base_call(parent, parent_name, character(), list(
+      is_known_package_call(parent, parent_name, character(), list(
         env = env, rebound = rebound
       ))
     value <- lookup_environment_value(target[[1L]], character(), list(

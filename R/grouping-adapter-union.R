@@ -716,7 +716,7 @@ rewrite_dtplyr_key_read <- function(expr, keys, env, bound = character()) {
   }
   name <- static_call_name(expr)
   if (any(name %in% c("with", "eval", "evalq")) &&
-        is_known_base_call(expr, name, bound, list(env = env))) {
+        is_known_package_call(expr, name, bound, list(env = env))) {
     fn <- get(name, envir = baseenv())
     args <- static_matched_arguments(expr, fn)
     if (is.null(args)) return(expr)

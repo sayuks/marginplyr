@@ -2022,15 +2022,17 @@ duplicate_alternatives <- function(duplicates_choices) {
 # preflight the caller holds, and reads each argument's reading off the record
 # beside that argument's quosure rather than taking one (ADR 0008). A column
 # selection is resolved here and not there, so it is resolved once per pass,
-# through the resolver that pass supplies. Optional `emit` observes plan
-# occurrences in order for prefix validation. Before deferring to typed
+# through the resolver that pass supplies. Optional `emit` observes families
+# in order for prefix validation. Before deferring to typed
 # selection, the observer can receive incomplete occurrences as a list of
 # product factors. `whole` means that evidence covers every position of
 # the emitting node if its selections succeed. `offset` counts preceding
 # occurrences not already emitted as completed families. `width` is the number
 # of unresolved suffix choices following each incomplete prefix. `witness`
 # carries a proved repeat in a family too large to enumerate. Expansion
-# ignores the observer's return value and returns the family of occurrences.
+# returns the family in plan order and ignores the observer's return value.
+# With a stored duplicate witness, it can emit and return just the combined
+# dimensions for overlap validation.
 expand_grouping_family <- function(preflight, resolve_selection,
                                    emit = NULL, drop_duplicates = FALSE,
                                    duplicate = NULL) {
@@ -2185,6 +2187,12 @@ expand_cube <- function(preflight, resolve_selection, emit, drop_duplicates,
       return(emit_grouping_family(family, emit))
     }
   }
+  emit_grouping_family(cube_grouping_family(units), emit)
+}
+
+# Enumerate resolved cube units in descending subset size and combination order.
+cube_grouping_family <- function(units) {
+  n <- length(units)
   indices <- unlist(
     lapply(
       rev(seq.int(0L, n)),
@@ -2192,21 +2200,16 @@ expand_cube <- function(preflight, resolve_selection, emit, drop_duplicates,
     ),
     recursive = FALSE
   )
-
-  family <- lapply(
-    indices,
-    function(index) {
-      if (length(index) == 0L) character() else unique(unlist(units[index]))
-    }
-  )
-  emit_grouping_family(family, emit)
+  lapply(indices, function(index) {
+    if (length(index) == 0L) character() else unique(unlist(units[index]))
+  })
 }
 
 duplicate_report_limit <- 256L
 
 # A cube repeats the full set if any unit contains only shared columns.
 # The size-(n - 1) combinations omit units in reverse order.
-cube_duplicate_witness <- function(units) {
+cube_duplicate_witness <- function(units, family = "a cube") {
   columns <- unlist(units, use.names = FALSE)
   shared <- columns[duplicated(columns)]
   redundant <- which(vapply(units, function(unit) {
@@ -2216,7 +2219,7 @@ cube_duplicate_witness <- function(units) {
     return(NULL)
   }
   omitted <- length(units) - max(redundant) + 2L
-  list(family = "a cube", positions = c(1L, omitted))
+  list(family = family, positions = c(1L, omitted))
 }
 
 # Retain the earliest full set per membership on `dimensions`, in descending
@@ -2251,6 +2254,10 @@ expand_grouping_product <- function(preflight, resolve_selection, emit,
     return(emit_grouping_family(family, emit))
   }
   args <- preflight$args
+  if (is.null(emit) && !is.null(duplicate)) {
+    family <- expand_single_cube_product(args, resolve_selection, duplicate)
+    if (!is.null(family)) return(family)
+  }
   observed <- !is.null(emit) && length(args) > 0L
   if (observed) {
     families <- vector("list", length(args))
@@ -2277,6 +2284,40 @@ expand_grouping_product <- function(preflight, resolve_selection, emit,
   # The observer already received the occurrences of the first left choice.
   c(combine_grouping_factors(left[1L], right),
     emit_grouping_family(combine_grouping_factors(left[-1L], right), emit))
+}
+
+# Keep one cube unexpanded while its singleton neighbors resolve in order.
+# Their dimensions are present at every cube position in the product.
+expand_single_cube_product <- function(args, resolve_selection, duplicate) {
+  cube <- which(vapply(args, function(arg) {
+    identical(arg$nested$spec$type, "cube") && !isTRUE(arg$deferred)
+  }, logical(1)))
+  if (length(cube) != 1L ||
+        !all(vapply(args[-cube], single_grouping_factor, logical(1)))) {
+    return(NULL)
+  }
+  families <- lapply(seq_along(args), function(index) {
+    arg <- args[[index]]
+    if (index == cube) {
+      resolve_grouping_units(arg$nested, resolve_selection)
+    } else {
+      expand_grouping_factor(arg, resolve_selection, FALSE)
+    }
+  })
+  units <- families[[cube]]
+  if (2^length(units) > duplicate_report_limit) {
+    covered <- unique(unlist(families[-cube], use.names = FALSE))
+    duplicate$witness <- duplicate$witness %||%
+      cube_duplicate_witness(units) %||%
+      cube_duplicate_witness(lapply(units, setdiff, y = covered),
+                             family = "a Cartesian product")
+    if (!is.null(duplicate$witness)) {
+      return(list(unique(as.character(unlist(families, use.names = FALSE)))))
+    }
+  }
+  # Without a witness, each unit in a large cube has a private uncovered key.
+  families[[cube]] <- cube_grouping_family(units)
+  cross_grouping_families(families)
 }
 
 # Once a duplicate is proved, preserve only the dimensions needed for overlap
@@ -3272,6 +3313,18 @@ resolve_column_selection <- function(arg, data_proxy, on_rename) {
   # positions in `selected` index, so it reads a lazy table's columns rather
   # than the fields of the object holding them, which `names()` would return.
   source_names <- names(tidyselect::tidyselect_data_proxy(data_proxy))[selected]
+  captured <- attr(data_proxy, "marginplyr_duckdb_names", exact = TRUE)
+  if (!is.null(captured) &&
+        (length(source_names) != length(selected) ||
+           !all(source_names %in% captured))) {
+    abort_marginplyr(c(
+      "DuckDB selection proxy returned names absent from the input.",
+      i = paste0(
+        "Preserve input names in {.fun tidyselect::tidyselect_data_proxy} ",
+        "or select columns by their captured names."
+      )
+    ))
+  }
   renamed <- selected_names != source_names
   if (any(renamed)) {
     on_rename(selected_names[renamed], source_names[renamed])

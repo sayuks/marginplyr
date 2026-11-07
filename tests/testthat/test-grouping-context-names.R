@@ -779,3 +779,43 @@ test_that("dtplyr proxy order determines overlap for each constructor", {
     }
   }
 })
+
+test_that("typed DuckDB selections use captured names after proxy dispatch", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE))
+  data <- data.frame(a = 1L, b = "east")
+  remote <- dplyr::copy_to(con, data, "typed_grouping_proxy_names")
+
+  rename <- TRUE
+  rlang::local_bindings(
+    tidyselect_data_proxy.tbl_df = function(x) {
+      if (identical(attr(x, "names", exact = TRUE), c("a", "b"))) {
+        x <- x[c("b", "a")]
+        if (rename) names(x) <- c("invented", "a")
+      }
+      x
+    },
+    .env = asNamespace("tidyselect")$.__S3MethodsTable__.
+  )
+
+  diagnostic <- "DuckDB selection proxy returned names absent from the input"
+  expect_error(
+    inspect_grouping(remote, .by = where(is.character)),
+    diagnostic, fixed = TRUE, class = "marginplyr_error"
+  )
+  expect_error(
+    inspect_grouping(remote, .grouping = grouping_set(where(is.character))),
+    diagnostic, fixed = TRUE, class = "marginplyr_error"
+  )
+
+  rename <- FALSE
+  expect_identical(
+    inspect_grouping(remote, .by = where(is.character)),
+    inspect_grouping(data, .by = b)
+  )
+  expect_identical(
+    inspect_grouping(remote, .grouping = grouping_set(where(is.character))),
+    inspect_grouping(data, .grouping = grouping_set(b))
+  )
+})

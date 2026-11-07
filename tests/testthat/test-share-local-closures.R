@@ -172,3 +172,26 @@ test_that("a saved closure passed to unknown code is analyzed conservatively", {
     class = "marginplyr_error"
   )
 })
+
+test_that("matching do.call arguments only warns at execution", {
+  withr::local_options(warnPartialMatchArgs = TRUE)
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(100, 300))
+  read <- function(remove) {
+    substitute((function(prior) {
+      callbacks <- list(read = function() sum(prior))
+      REMOVE
+      do.call(wha = callbacks$read, args = list())
+    })(1), list(REMOVE = remove))
+  }
+
+  expect_no_warning(
+    expect_share_dependencies(data, list(read(quote(rm(prior)))))
+  )
+  expect_warning(
+    summarize_with_margins(
+      data, source = sum(.data$x), prior = share_of_total(source),
+      observed = !!read(NULL), .grouping = rollup("g")
+    ),
+    "partial argument match of 'wha' to 'what'"
+  )
+})

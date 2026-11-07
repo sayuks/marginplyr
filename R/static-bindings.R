@@ -37,19 +37,20 @@ static_statement_bound_names <- function(expr, bound, lookup) {
   }
   arm <- literal_if_parts(expr, name, bound, lookup)
   if (identical(name, "switch") && length(expr) >= 3L &&
-        is_known_base_call(expr, name, bound, lookup)) {
+        !is_parenthesized(static_call_head(expr)) &&
+        is_known_package_call(expr, name, bound, lookup)) {
     arm <- literal_switch_parts(expr)
   }
   if (length(arm) == 1L && !rlang::is_missing(arm[[1L]])) {
     return(static_statement_bound_names(arm[[1L]], bound, lookup))
   }
   if (identical(name, "force") && length(expr) == 2L &&
-        is_known_base_call(expr, name, bound, lookup)) {
+        is_known_package_call(expr, name, bound, lookup)) {
     return(static_statement_bound_names(expr[[2L]], bound, lookup))
   }
   if (length(bound) == 0L || identical(name, "function")) return(bound)
   if (identical(name, "local") &&
-        is_known_base_call(expr, name, bound, lookup) &&
+        is_known_package_call(expr, name, bound, lookup) &&
         length(base_call_argument(expr, "envir")) == 0L) return(bound)
 
   mutation <- if (!any(name %in% bound) || !is.null(static_call_ns(expr))) {
@@ -65,7 +66,7 @@ static_statement_bound_names <- function(expr, bound, lookup) {
       args[!argument_names(args) %in% c("envir", "pos", "inherits")],
       is_concat = function(part) {
         identical(static_call_name(part), "c") &&
-          is_known_base_call(part, "c", bound, lookup)
+          is_known_package_call(part, "c", bound, lookup)
       }
     )
     return(if (is.null(removed)) character() else setdiff(bound, removed))
@@ -102,7 +103,7 @@ is_scope_control_primitive <- function(expr, name, bound, lookup) {
   if (is.null(lookup$env) && is.null(static_call_ns(expr))) {
     return(!name %in% bound)
   }
-  is_known_base_call(expr, name, bound, lookup)
+  is_known_package_call(expr, name, bound, lookup)
 }
 
 # Call arguments that the read and removal walks may visit.
@@ -247,7 +248,7 @@ list2env_setter_names <- function(expr, lookup = NULL) {
   values <- base_call_argument(expr, "x")
   if (length(values) > 0L &&
         identical(static_call_name(values[[1L]]), "list") &&
-        is_known_base_call(values[[1L]], "list", character(), lookup)) {
+        is_known_package_call(values[[1L]], "list", character(), lookup)) {
     return(names(static_call_args(values[[1L]])))
   }
   unresolved_lookup_name()
@@ -270,7 +271,7 @@ visible_removal_binding_names <- function(expr, lookup) {
     args[!argument_names(args) %in% c("envir", "pos", "inherits")],
     is_concat = function(part) {
       identical(static_call_name(part), "c") &&
-        is_known_base_call(part, "c", character(), lookup)
+        is_known_package_call(part, "c", character(), lookup)
     }
   )
 }
@@ -324,7 +325,7 @@ scope_literal_kind <- function(value) {
 
 # Whether a standard package function is the callee, without invoking it.
 # The caller supplies its static name; unresolved bindings prove no exemption.
-is_known_base_call <- function(expr, name, bound, lookup, owner = "base") {
+is_known_package_call <- function(expr, name, bound, lookup, owner = "base") {
   namespace <- static_call_ns(expr)
   if (!is.null(namespace)) {
     return(identical(namespace, owner))
@@ -372,9 +373,11 @@ scope_mutation_call <- function(expr, bound, lookup) {
       callee_bound <- character()
     }
     arguments <- base_call_argument(expr, "args")
-    parts <- if (length(arguments) > 0L &&
-                   identical(static_call_name(arguments[[1L]]), "list") &&
-                   is_known_base_call(arguments[[1L]], "list", bound, lookup)) {
+    parts <- if (
+      length(arguments) > 0L &&
+        identical(static_call_name(arguments[[1L]]), "list") &&
+        is_known_package_call(arguments[[1L]], "list", bound, lookup)
+    ) {
       static_call_args(arguments[[1L]])
     } else if (identical(name, "parent.env<-")) {
       alist(env = NULL, value = NULL)

@@ -151,18 +151,28 @@ test_that("list write analysis never invokes installed caller closures", {
 
 test_that("a singleton loop retains invocation dependencies of list writes", {
   probe <- rlang::env(calls = 0L)
-  read <- quote((function(prior) {
-    callback <- function() {
-      probe$calls <- probe$calls + 1L
-      sum(prior)
-    }
-    carrier <- list(read = function() 7)
-    for (i in 1L) carrier$read <- callback
-    rm(prior)
-    carrier$read()
-  })(1))
-  expect_share_dependencies(list_write_data(), list(read))
+  read <- function(sequence) {
+    substitute((function(prior) {
+      callback <- function() {
+        probe$calls <- probe$calls + 1L
+        sum(prior)
+      }
+      carrier <- list(read = function() 7)
+      for (i in SEQUENCE) carrier$read <- callback
+      rm(prior)
+      carrier$read()
+    })(1), list(SEQUENCE = sequence))
+  }
+  expect_share_dependencies(
+    list_write_data(), list(read(1L), read(quote((1L))))
+  )
   expect_identical(probe$calls, 0L)
+
+  caller <- rlang::env(`(` = function(value) {
+    if (identical(value, 1L)) integer() else value
+  })
+  overridden <- rlang::new_quosure(read(quote((1L))), caller)
+  expect_share_dependency_values(list_write_data(), list(overridden), 7)
 })
 
 test_that("literal loops preserve legal closures and function lookup", {

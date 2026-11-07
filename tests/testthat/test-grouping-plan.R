@@ -3068,3 +3068,25 @@ test_that("large duplicate proofs preserve typed selection precedence", {
   )
   expect_identical(calls, 2L)
 })
+
+test_that("a covered large cube proves duplicates in a product", {
+  keys <- paste0("x", seq_len(20L))
+  data <- as.data.frame(stats::setNames(as.list(seq_along(keys)), keys))
+  columns <- rlang::syms(keys)
+  complete <- grouping_set(!!!columns)
+  spec <- grouping_spec(cube(!!!columns), complete)
+
+  cnd <- expect_error(
+    inspect_grouping(data, .grouping = spec),
+    "Duplicate grouping sets", class = "marginplyr_error"
+  )
+  expect_match(conditionMessage(cnd), "1, 2.", fixed = TRUE)
+  expect_identical(
+    inspect_grouping(data, .grouping = spec, .duplicates = "drop"),
+    inspect_grouping(data, .grouping = grouping_spec(complete))
+  )
+  expect_error(
+    inspect_grouping(data, .grouping = spec, .by = x1),
+    "both", class = "marginplyr_error"
+  )
+})

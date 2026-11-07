@@ -554,3 +554,32 @@ test_that("closure argument analysis leaves caller promises unforced", {
   expect_identical(probe$forced, 0L)
   expect_identical(probe$invoked, 0L)
 })
+
+test_that("a list factory retains a forced dot's original closure", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
+  probe <- rlang::env(forced = 0L)
+  read <- function(remove) {
+    rlang::new_quosure(substitute((function(prior) {
+      callback <- function() sum(prior)
+      carrier <- (function(prior, ...) {
+        ..1
+        rm("callback", envir = parent.frame())
+        list(...)
+      })(20, read = {
+        probe$forced <- probe$forced + 1L
+        callback
+      })
+      REMOVE
+      carrier$read()
+    })(11), list(REMOVE = remove)), environment())
+  }
+  expect_share_dependencies(data, list(read(quote(rm(prior)))))
+  expect_identical(probe$forced, 0L)
+
+  result <- summarize_with_margins(
+    data, source = sum(.data$x), prior = share_of_total(source),
+    observed = !!read(NULL), .grouping = rollup("g")
+  )
+  expect_equal(result$observed, rep(11, 3))
+  expect_identical(probe$forced, 3L)
+})

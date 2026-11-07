@@ -1461,13 +1461,13 @@ parsed_language_values <- function(argument) {
   as.list(parsed)
 }
 
-# Match a call's syntax in an empty environment. An invalid call retains
-# no matches and can still report its ordinary error at execution.
+# Match syntax without evaluating arguments. Invalid calls retain no matches.
+# Partial-match warnings belong to execution.
 static_matched_arguments <- function(expr, definition, expand_dots = TRUE) {
   tryCatch(
-    as.list(match.call(
+    as.list(suppressWarnings(match.call(
       definition, expr, expand.dots = expand_dots, envir = emptyenv()
-    ))[-1L],
+    )))[-1L],
     error = function(cnd) NULL
   )
 }

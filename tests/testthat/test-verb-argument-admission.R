@@ -1020,7 +1020,15 @@ test_that("inspection Option arguments precede Arrow reader schema selection", {
   }
 
   reader <- arrow::RecordBatchReader$create(batch, next_batch)
-  expect_error(inspect_grouping(reader), "Field names must be unique")
+  native_reader <- arrow::RecordBatchReader$create(batch, next_batch)
+  native_error <- expect_error(
+    dplyr::select(native_reader, dplyr::everything()),
+    "Field names must be unique"
+  )
+  reader_error <- expect_error(
+    inspect_grouping(reader), "Field names must be unique"
+  )
+  expect_identical(class(reader_error), class(native_error))
   expect_identical(arrow::as_arrow_table(reader)$num_rows, 2L)
 })
 

@@ -388,3 +388,37 @@ test_that("remapping leaves unselected inline closures unevaluated", {
   })(1))
   expect_share_dependency_values(visible_closure_data(), list(read), 7)
 })
+
+test_that("partial names on list remapping do not warn during planning", {
+  withr::local_options(warnPartialMatchArgs = TRUE)
+  read <- remapped_closure_read(
+    quote(unname(ob = list(callback))), quote(functions[[1L]]())
+  )
+  expect_no_warning(
+    expect_share_dependencies(visible_closure_data(), list(read))
+  )
+})
+
+test_that("computed list transfer heads use caller value lookup", {
+  remapping <- rlang::new_quosure(quote(tryCatch(
+    (function(prior) {
+      callback <- function() sum(prior)
+      callbacks <- (rev)(list(function() 7, callback))
+      rm(prior)
+      callbacks[[1L]]()
+    })(1),
+    error = function(cnd) 7
+  )), rlang::env(rev = 0L))
+  branch <- rlang::new_quosure(quote(tryCatch(
+    (function(prior) {
+      callback <- function() sum(prior)
+      callbacks <- (switch)("read", read = list(callback))
+      rm(prior)
+      callbacks[[1L]]()
+    })(1),
+    error = function(cnd) 7
+  )), rlang::env(switch = 0L))
+  expect_share_dependency_values(
+    visible_closure_data(), list(remapping, branch), expected = 7
+  )
+})
