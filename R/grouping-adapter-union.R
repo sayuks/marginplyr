@@ -1305,10 +1305,10 @@ expand_margin_union <- function(.data,
             missing_exprs <- lapply(omitted_identity, function(col) {
               value <- identity_missing[[col]]
               if (!is.null(size_col)) {
-                size <- rlang::expr(base::length(
-                  !!margin_column_pronoun(safe_name(size_col))
-                ))
-                rlang::expr(vctrs::vec_rep(!!value, !!size))
+                size <- deferred_export_call(
+                  "base", "length", margin_column_pronoun(safe_name(size_col))
+                )
+                deferred_export_call("vctrs", "vec_rep", value, size)
               } else {
                 value
               }
