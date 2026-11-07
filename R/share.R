@@ -5391,6 +5391,7 @@ scope_after_list_write <- function(scope, target, value, lookup, value_scope) {
   if (length(path) == 0L || !is_name_part(carrier)) return(scope)
   name <- rlang::as_name(carrier)
   elements <- value
+  carrier_changed <- FALSE
   for (index in seq_along(path)) {
     target <- path[[index]]
     parent <- scope_closure_list(target[[2L]], value_scope, lookup)
@@ -5399,10 +5400,12 @@ scope_after_list_write <- function(scope, target, value, lookup, value_scope) {
       scope_list_write_names(target, parent, elements, lookup, value_scope)
     } else {
       scope_list_write_elements(
-        target, parent, elements, lookup, value_scope, nested = index > 1L
+        target, parent, elements, lookup, value_scope,
+        nested = index > 1L, carrier_changed = carrier_changed
       )
     }
     if (rlang::is_zap(elements)) return(scope)
+    carrier_changed <- !identical(elements, parent)
   }
   if (is.null(elements)) return(scope_bind_local(scope, name))
   scope_bind_closure_list(scope, name, elements)
@@ -5411,14 +5414,16 @@ scope_after_list_write <- function(scope, target, value, lookup, value_scope) {
 # Apply a member setter to known list elements. An enclosing setter receives
 # the updated carrier's descriptors. NULL means unknown; zap() means unhandled.
 scope_list_write_elements <- function(target, elements, value, lookup,
-                                      value_scope, nested) {
+                                      value_scope, nested, carrier_changed) {
   if (length(target) != 3L) return(rlang::zap())
   operator <- static_call_name(target)
   setter <- paste0(operator, "<-")
   replacement <- rlang::call2(setter, .ns = static_call_ns(target))
   if (!is_known_base_frame_call(replacement, setter, value_scope, lookup)) {
-    if (scope_replacement_keeps_input(replacement, target, value_scope,
-                                      lookup)) return(elements)
+    # An inner setter can mutate an unshared member before this call.
+    if (!carrier_changed && scope_replacement_keeps_input(
+      replacement, target, value_scope, lookup
+    )) return(elements)
     return(NULL)
   }
   if (rlang::is_missing(target[[3L]])) return(rlang::zap())
