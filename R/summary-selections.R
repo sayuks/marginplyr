@@ -1025,12 +1025,10 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
   parsed <- parse_across_arguments(expr)
   unknown_fns <- length(known_across_function_names(parsed, env)) == 0L
   columns <- setdiff(data_vars, group_vars)
-  selection_data <- vctrs::new_data_frame(
-    as.list(data)[columns], n = nrow(data)
-  )
-  carrier <- vctrs::vec_slice(
-    vctrs::new_data_frame(as.list(data), n = nrow(data)), integer()
-  )
+  # Like dplyr's mask, use stored columns without subclass conversion.
+  input <- vctrs::new_data_frame(data, n = nrow(data))
+  selection_data <- input[columns]
+  carrier <- vctrs::vec_slice(input, integer())
   state <- new.env(parent = emptyenv())
   state$warnings <- list()
   state$planning_warnings <- list()
