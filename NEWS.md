@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Typed inspection and Nest verbs refuse replaced registered dtplyr converters
+  before they can change Grouping dimensions or fixed keys (#1419).
+
 * Typed inspection and Nest verbs refuse replaced registered data.table
   brackets before direct, cached or grouped dtplyr roots can lose Grouping
   dimensions or fixed keys (#1418).
