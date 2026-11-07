@@ -4888,6 +4888,17 @@ scope_closure_list <- function(expr, scope, lookup) {
       }))
     }
   }
+  operator <- static_call_name(expr)
+  transfer_lookup <- lookup
+  transfer_lookup$rebound <- lookup$function_rebound %||% lookup$rebound
+  if (!is.null(operator) &&
+        operator %in% c("identity", "invisible", "force") &&
+        is_known_base_frame_call(expr, operator, scope, transfer_lookup)) {
+    value <- base_call_argument(expr, "x")
+    if (length(value) == 1L) {
+      return(scope_closure_list(value[[1L]], scope, lookup))
+    }
+  }
   if (identical(static_call_name(expr), "list") &&
         is_known_base_frame_call(expr, "list", scope, lookup)) {
     parts <- static_call_args(expr)

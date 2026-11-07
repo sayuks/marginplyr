@@ -4,6 +4,16 @@
   unpack-option rebindings in preceding summaries, avoiding false grouping-key
   and identifier collisions (#1428).
 
+* Both Nest verbs preserve dtplyr source keys and cell contents when a caller
+  overrides the namespace operator, including deferred collection (#1427).
+
+* Parent and Total share dependency checks retain local closures in plain lists
+  transferred through base `identity()`, `invisible()` and `force()` (#1430).
+
+* Formula-shaped caller-qualified Grouping selections use faithful typed
+  metadata, preserving fixed keys and avoiding false duplicate grouping sets
+  across inspection and summaries, including immutable dtplyr inputs (#1429).
+
 * Parent and Total share dependency checks retain invocation-time dependencies
   of local literal closures installed by `delayedAssign()` (#1417).
 
