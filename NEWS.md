@@ -6,9 +6,8 @@
 * Generated dtplyr Margin-label display and factor restoration preserve source
   dimensions when a caller overrides the namespace operator (#1433).
 
-* Ordinary `across()` output-name predictions account for visible function and
-  unpack-option rebindings in preceding summaries, avoiding false grouping-key
-  and identifier collisions (#1428).
+* Ordinary `across()` avoids false grouping key and identifier collisions when
+  preceding summaries visibly change function or unpack settings (#1428).
 
 * Parent and Total share dependency checks follow existing closures after literal
   list names and names-attribute replacement, including swapped names (#1431).
