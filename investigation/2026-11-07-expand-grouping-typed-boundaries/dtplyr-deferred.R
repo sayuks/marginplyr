@@ -87,13 +87,14 @@ omission <- function(require_contract) {
   hits <- intercept_namespace(
     root, "base::rep", function(x, times) rep("MASK", times)
   )
-  actual <- dplyr::collect(query)
+  collect_ordered <- function(x) dplyr::arrange(dplyr::collect(x), sid)
+  actual <- collect_ordered(query)
   stopifnot(
     ordinary_matches(input, ordinary)
   )
   rm(list = "::", envir = root)
   stopifnot(
-    identical(dplyr::collect(query), expected),
+    identical(collect_ordered(query), expected),
     identical(serialize(data, NULL), original)
   )
   if (require_contract) {

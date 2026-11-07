@@ -10,7 +10,11 @@ check <- function(con, column, value, require_contract) {
   frame <- function(x) stats::setNames(tibble::tibble(key = x), column)
   root <- dplyr::copy_to(con, frame(value), "facts", overwrite = TRUE)
   source <- dplyr::collapse(root)
-  expected <- c(value, "Total")
+  expected <- sort(c(value, "Total"))
+  collect_ordered <- function(x) {
+    result <- dplyr::collect(x)
+    result[order(result[[1L]]), , drop = FALSE]
+  }
   expand <- function(x, key, check_label) {
     expand_with_margins(
       x, .grouping = rollup(dplyr::all_of(key)),
@@ -25,14 +29,14 @@ check <- function(con, column, value, require_contract) {
   checked_renamed <- caught(expand(renamed, "g", TRUE))
   stopifnot(
     identical(dplyr::collect(source), frame(value)),
-    identical(dplyr::collect(expand(source, column, FALSE)), frame(expected))
+    identical(collect_ordered(expand(source, column, FALSE)), frame(expected))
   )
   if (value == "Total") {
     stopifnot(is_collision(checked_root), is_collision(checked_renamed))
   } else {
     stopifnot(
-      identical(dplyr::collect(checked_root), frame(expected)),
-      identical(dplyr::collect(checked_renamed)$g, expected)
+      identical(collect_ordered(checked_root), frame(expected)),
+      identical(collect_ordered(checked_renamed)$g, expected)
     )
   }
   if (require_contract) {
@@ -40,7 +44,7 @@ check <- function(con, column, value, require_contract) {
       return(is_collision(result))
     }
     return(!inherits(result, "error") &&
-      identical(dplyr::collect(result), frame(expected)))
+      identical(collect_ordered(result), frame(expected)))
   }
   stopifnot(
     inherits(result, "error"),
