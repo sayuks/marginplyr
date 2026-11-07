@@ -254,3 +254,29 @@ test_that("duplicate Grand totals may differ while each self-share is one", {
     possible_shares, identical, logical(1), y = result$fraction[!totals]
   )))
 })
+
+test_that("DuckDB shares require exactly one source value per grouping row", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  expect_sql_share_cardinality(con, "duckdb")
+})
+
+test_that("PostgreSQL renders cardinality checks inside the share query", {
+  source <- dbplyr::lazy_frame(
+    g = "a", x = 1, con = dbplyr::simulate_postgres()
+  )
+  for (duplicates in c("error", "keep")) {
+    query <- summarize_with_margins(
+      source, value = dbplyr::sql("SUM(x) + unnest(ARRAY[10,20])"),
+      total = share_of_total(value),
+      .grouping = rollup(g), .duplicates = duplicates,
+      .check_share_source = FALSE
+    )
+    expect_s3_class(query, "tbl_lazy")
+    expect_match(
+      dbplyr::sql_render(query), "exactly one value per grouping row",
+      fixed = TRUE
+    )
+  }
+})

@@ -45,6 +45,8 @@ jobs:
         run: Rscript tools/postgres-typed-missing.R
       - name: Verify share aliases survive identifier limits
         run: Rscript tools/postgres-share-identifiers.R
+      - name: Verify Parent and Total share source cardinality
+        run: Rscript tools/postgres-share-cardinality.R
       - name: Verify observed label checks on pronoun dimensions
         run: Rscript tools/postgres-env-label-collision.R
       - name: Verify selected inputs stay inside expansion branches

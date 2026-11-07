@@ -95,6 +95,10 @@ summarize_margin_native <- function(.data,
     grouping_backend(.data)
   )
 
+  summary_select <- guard_sql_share_projections(
+    summary_select, summaries$sql_share_sources, con,
+    grouping_backend(.data)$kind, group_vars
+  )
   result <- dplyr::summarize(
     .data = dplyr::group_by(
       .data,

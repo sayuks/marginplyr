@@ -641,3 +641,17 @@ This adds no query or collation API. The equivalence is that of the input the
 caller supplies, including any expressions they applied before the Margin
 operation; it promises no collation retention for later regrouping of a
 materialized result.
+
+## Amendment (#1442): direct SQL UNNEST checks source cardinality
+
+DuckDB and PostgreSQL can return zero or several rows per group when a
+set-returning expression accompanies an aggregate in the same projection.
+For a direct SQL share source with a recognized, single-argument top-level
+`UNNEST()`, both summary adapters check the array inside the result query.
+They require one element before the projection expands it. A check on the
+projected rows would miss a group eliminated by an empty array.
+
+The array retains its type and is evaluated once per grouping row. The
+database raises a cardinality error at caller-requested execution. The
+construction-time read boundary remains ADR 0020's, and the check applies to
+both Parent and Total shares independently of the dialect's type check.
