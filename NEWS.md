@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Parent and Total share dependency checks retain local closures through plain
+  list concatenation, append and literal subsets (#1413).
+
 * Grouping callbacks that rebind an unproven local function resolve against typed
   metadata, keeping fixed keys and dimensions consistent across inspection and
   summaries, including immutable dtplyr inputs (#1400).
