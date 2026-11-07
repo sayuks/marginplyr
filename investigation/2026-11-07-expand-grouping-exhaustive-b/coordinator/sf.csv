@@ -1,0 +1,361 @@
+"n","active","role","special","sort","persistent","status","symptom","control_symptom"
+0,"geom_a","payload",FALSE,"none",FALSE,"match","",""
+0,"geom_a","payload",FALSE,"none",TRUE,"match","",""
+0,"geom_a","payload",FALSE,"first",FALSE,"match","",""
+0,"geom_a","payload",FALSE,"first",TRUE,"match","",""
+0,"geom_a","payload",FALSE,"last",FALSE,"match","",""
+0,"geom_a","payload",FALSE,"last",TRUE,"match","",""
+0,"geom_a","payload",TRUE,"none",FALSE,"ordinary-name-repair","",""
+0,"geom_a","payload",TRUE,"none",TRUE,"ordinary-name-repair","",""
+0,"geom_a","payload",TRUE,"first",FALSE,"ordinary-name-repair","",""
+0,"geom_a","payload",TRUE,"first",TRUE,"ordinary-name-repair","",""
+0,"geom_a","payload",TRUE,"last",FALSE,"ordinary-name-repair","",""
+0,"geom_a","payload",TRUE,"last",TRUE,"ordinary-name-repair","",""
+0,"geom_a","fixed",FALSE,"none",FALSE,"match","",""
+0,"geom_a","fixed",FALSE,"none",TRUE,"match","",""
+0,"geom_a","fixed",FALSE,"first",FALSE,"match","",""
+0,"geom_a","fixed",FALSE,"first",TRUE,"match","",""
+0,"geom_a","fixed",FALSE,"last",FALSE,"match","",""
+0,"geom_a","fixed",FALSE,"last",TRUE,"match","",""
+0,"geom_a","fixed",TRUE,"none",FALSE,"ordinary-name-repair","",""
+0,"geom_a","fixed",TRUE,"none",TRUE,"ordinary-name-repair","",""
+0,"geom_a","fixed",TRUE,"first",FALSE,"ordinary-name-repair","",""
+0,"geom_a","fixed",TRUE,"first",TRUE,"ordinary-name-repair","",""
+0,"geom_a","fixed",TRUE,"last",FALSE,"ordinary-name-repair","",""
+0,"geom_a","fixed",TRUE,"last",TRUE,"ordinary-name-repair","",""
+0,"geom_a","dimension",FALSE,"none",FALSE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+0,"geom_a","dimension",FALSE,"none",TRUE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+0,"geom_a","dimension",FALSE,"first",FALSE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+0,"geom_a","dimension",FALSE,"first",TRUE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+0,"geom_a","dimension",FALSE,"last",FALSE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+0,"geom_a","dimension",FALSE,"last",TRUE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+0,"geom_a","dimension",TRUE,"none",FALSE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+0,"geom_a","dimension",TRUE,"none",TRUE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+0,"geom_a","dimension",TRUE,"first",FALSE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+0,"geom_a","dimension",TRUE,"first",TRUE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+0,"geom_a","dimension",TRUE,"last",FALSE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+0,"geom_a","dimension",TRUE,"last",TRUE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+0,"geom_b","payload",FALSE,"none",FALSE,"match","",""
+0,"geom_b","payload",FALSE,"none",TRUE,"match","",""
+0,"geom_b","payload",FALSE,"first",FALSE,"match","",""
+0,"geom_b","payload",FALSE,"first",TRUE,"match","",""
+0,"geom_b","payload",FALSE,"last",FALSE,"match","",""
+0,"geom_b","payload",FALSE,"last",TRUE,"match","",""
+0,"geom_b","payload",TRUE,"none",FALSE,"ordinary-name-repair","",""
+0,"geom_b","payload",TRUE,"none",TRUE,"ordinary-name-repair","",""
+0,"geom_b","payload",TRUE,"first",FALSE,"ordinary-name-repair","",""
+0,"geom_b","payload",TRUE,"first",TRUE,"ordinary-name-repair","",""
+0,"geom_b","payload",TRUE,"last",FALSE,"ordinary-name-repair","",""
+0,"geom_b","payload",TRUE,"last",TRUE,"ordinary-name-repair","",""
+0,"geom_b","fixed",FALSE,"none",FALSE,"match","",""
+0,"geom_b","fixed",FALSE,"none",TRUE,"match","",""
+0,"geom_b","fixed",FALSE,"first",FALSE,"match","",""
+0,"geom_b","fixed",FALSE,"first",TRUE,"match","",""
+0,"geom_b","fixed",FALSE,"last",FALSE,"match","",""
+0,"geom_b","fixed",FALSE,"last",TRUE,"match","",""
+0,"geom_b","fixed",TRUE,"none",FALSE,"ordinary-name-repair","",""
+0,"geom_b","fixed",TRUE,"none",TRUE,"ordinary-name-repair","",""
+0,"geom_b","fixed",TRUE,"first",FALSE,"ordinary-name-repair","",""
+0,"geom_b","fixed",TRUE,"first",TRUE,"ordinary-name-repair","",""
+0,"geom_b","fixed",TRUE,"last",FALSE,"ordinary-name-repair","",""
+0,"geom_b","fixed",TRUE,"last",TRUE,"ordinary-name-repair","",""
+0,"geom_b","dimension",FALSE,"none",FALSE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+0,"geom_b","dimension",FALSE,"none",TRUE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+0,"geom_b","dimension",FALSE,"first",FALSE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+0,"geom_b","dimension",FALSE,"first",TRUE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+0,"geom_b","dimension",FALSE,"last",FALSE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+0,"geom_b","dimension",FALSE,"last",TRUE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+0,"geom_b","dimension",TRUE,"none",FALSE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+0,"geom_b","dimension",TRUE,"none",TRUE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+0,"geom_b","dimension",TRUE,"first",FALSE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+0,"geom_b","dimension",TRUE,"first",TRUE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+0,"geom_b","dimension",TRUE,"last",FALSE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+0,"geom_b","dimension",TRUE,"last",TRUE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+1,"geom_a","payload",FALSE,"none",FALSE,"match","",""
+1,"geom_a","payload",FALSE,"none",TRUE,"match","",""
+1,"geom_a","payload",FALSE,"first",FALSE,"match","",""
+1,"geom_a","payload",FALSE,"first",TRUE,"match","",""
+1,"geom_a","payload",FALSE,"last",FALSE,"match","",""
+1,"geom_a","payload",FALSE,"last",TRUE,"match","",""
+1,"geom_a","payload",TRUE,"none",FALSE,"ordinary-name-repair","",""
+1,"geom_a","payload",TRUE,"none",TRUE,"ordinary-name-repair","",""
+1,"geom_a","payload",TRUE,"first",FALSE,"ordinary-name-repair","",""
+1,"geom_a","payload",TRUE,"first",TRUE,"ordinary-name-repair","",""
+1,"geom_a","payload",TRUE,"last",FALSE,"ordinary-name-repair","",""
+1,"geom_a","payload",TRUE,"last",TRUE,"ordinary-name-repair","",""
+1,"geom_a","fixed",FALSE,"none",FALSE,"match","",""
+1,"geom_a","fixed",FALSE,"none",TRUE,"match","",""
+1,"geom_a","fixed",FALSE,"first",FALSE,"match","",""
+1,"geom_a","fixed",FALSE,"first",TRUE,"match","",""
+1,"geom_a","fixed",FALSE,"last",FALSE,"match","",""
+1,"geom_a","fixed",FALSE,"last",TRUE,"match","",""
+1,"geom_a","fixed",TRUE,"none",FALSE,"ordinary-name-repair","",""
+1,"geom_a","fixed",TRUE,"none",TRUE,"ordinary-name-repair","",""
+1,"geom_a","fixed",TRUE,"first",FALSE,"ordinary-name-repair","",""
+1,"geom_a","fixed",TRUE,"first",TRUE,"ordinary-name-repair","",""
+1,"geom_a","fixed",TRUE,"last",FALSE,"ordinary-name-repair","",""
+1,"geom_a","fixed",TRUE,"last",TRUE,"ordinary-name-repair","",""
+1,"geom_a","dimension",FALSE,"none",FALSE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+1,"geom_a","dimension",FALSE,"none",TRUE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+1,"geom_a","dimension",FALSE,"first",FALSE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+1,"geom_a","dimension",FALSE,"first",TRUE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+1,"geom_a","dimension",FALSE,"last",FALSE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+1,"geom_a","dimension",FALSE,"last",TRUE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+1,"geom_a","dimension",TRUE,"none",FALSE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+1,"geom_a","dimension",TRUE,"none",TRUE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+1,"geom_a","dimension",TRUE,"first",FALSE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+1,"geom_a","dimension",TRUE,"first",TRUE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+1,"geom_a","dimension",TRUE,"last",FALSE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+1,"geom_a","dimension",TRUE,"last",TRUE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+1,"geom_b","payload",FALSE,"none",FALSE,"match","",""
+1,"geom_b","payload",FALSE,"none",TRUE,"match","",""
+1,"geom_b","payload",FALSE,"first",FALSE,"match","",""
+1,"geom_b","payload",FALSE,"first",TRUE,"match","",""
+1,"geom_b","payload",FALSE,"last",FALSE,"match","",""
+1,"geom_b","payload",FALSE,"last",TRUE,"match","",""
+1,"geom_b","payload",TRUE,"none",FALSE,"ordinary-name-repair","",""
+1,"geom_b","payload",TRUE,"none",TRUE,"ordinary-name-repair","",""
+1,"geom_b","payload",TRUE,"first",FALSE,"ordinary-name-repair","",""
+1,"geom_b","payload",TRUE,"first",TRUE,"ordinary-name-repair","",""
+1,"geom_b","payload",TRUE,"last",FALSE,"ordinary-name-repair","",""
+1,"geom_b","payload",TRUE,"last",TRUE,"ordinary-name-repair","",""
+1,"geom_b","fixed",FALSE,"none",FALSE,"match","",""
+1,"geom_b","fixed",FALSE,"none",TRUE,"match","",""
+1,"geom_b","fixed",FALSE,"first",FALSE,"match","",""
+1,"geom_b","fixed",FALSE,"first",TRUE,"match","",""
+1,"geom_b","fixed",FALSE,"last",FALSE,"match","",""
+1,"geom_b","fixed",FALSE,"last",TRUE,"match","",""
+1,"geom_b","fixed",TRUE,"none",FALSE,"ordinary-name-repair","",""
+1,"geom_b","fixed",TRUE,"none",TRUE,"ordinary-name-repair","",""
+1,"geom_b","fixed",TRUE,"first",FALSE,"ordinary-name-repair","",""
+1,"geom_b","fixed",TRUE,"first",TRUE,"ordinary-name-repair","",""
+1,"geom_b","fixed",TRUE,"last",FALSE,"ordinary-name-repair","",""
+1,"geom_b","fixed",TRUE,"last",TRUE,"ordinary-name-repair","",""
+1,"geom_b","dimension",FALSE,"none",FALSE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+1,"geom_b","dimension",FALSE,"none",TRUE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+1,"geom_b","dimension",FALSE,"first",FALSE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+1,"geom_b","dimension",FALSE,"first",TRUE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+1,"geom_b","dimension",FALSE,"last",FALSE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+1,"geom_b","dimension",FALSE,"last",TRUE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+1,"geom_b","dimension",TRUE,"none",FALSE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+1,"geom_b","dimension",TRUE,"none",TRUE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+1,"geom_b","dimension",TRUE,"first",FALSE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+1,"geom_b","dimension",TRUE,"first",TRUE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+1,"geom_b","dimension",TRUE,"last",FALSE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+1,"geom_b","dimension",TRUE,"last",TRUE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+3,"geom_a","payload",FALSE,"none",FALSE,"match","",""
+3,"geom_a","payload",FALSE,"none",TRUE,"match","",""
+3,"geom_a","payload",FALSE,"first",FALSE,"match","",""
+3,"geom_a","payload",FALSE,"first",TRUE,"match","",""
+3,"geom_a","payload",FALSE,"last",FALSE,"match","",""
+3,"geom_a","payload",FALSE,"last",TRUE,"match","",""
+3,"geom_a","payload",TRUE,"none",FALSE,"ordinary-name-repair","",""
+3,"geom_a","payload",TRUE,"none",TRUE,"ordinary-name-repair","",""
+3,"geom_a","payload",TRUE,"first",FALSE,"ordinary-name-repair","",""
+3,"geom_a","payload",TRUE,"first",TRUE,"ordinary-name-repair","",""
+3,"geom_a","payload",TRUE,"last",FALSE,"ordinary-name-repair","",""
+3,"geom_a","payload",TRUE,"last",TRUE,"ordinary-name-repair","",""
+3,"geom_a","fixed",FALSE,"none",FALSE,"match","",""
+3,"geom_a","fixed",FALSE,"none",TRUE,"match","",""
+3,"geom_a","fixed",FALSE,"first",FALSE,"match","",""
+3,"geom_a","fixed",FALSE,"first",TRUE,"match","",""
+3,"geom_a","fixed",FALSE,"last",FALSE,"match","",""
+3,"geom_a","fixed",FALSE,"last",TRUE,"match","",""
+3,"geom_a","fixed",TRUE,"none",FALSE,"ordinary-name-repair","",""
+3,"geom_a","fixed",TRUE,"none",TRUE,"ordinary-name-repair","",""
+3,"geom_a","fixed",TRUE,"first",FALSE,"ordinary-name-repair","",""
+3,"geom_a","fixed",TRUE,"first",TRUE,"ordinary-name-repair","",""
+3,"geom_a","fixed",TRUE,"last",FALSE,"ordinary-name-repair","",""
+3,"geom_a","fixed",TRUE,"last",TRUE,"ordinary-name-repair","",""
+3,"geom_a","dimension",FALSE,"none",FALSE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+3,"geom_a","dimension",FALSE,"none",TRUE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+3,"geom_a","dimension",FALSE,"first",FALSE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+3,"geom_a","dimension",FALSE,"first",TRUE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+3,"geom_a","dimension",FALSE,"last",FALSE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+3,"geom_a","dimension",FALSE,"last",TRUE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+3,"geom_a","dimension",TRUE,"none",FALSE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+3,"geom_a","dimension",TRUE,"none",TRUE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+3,"geom_a","dimension",TRUE,"first",FALSE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+3,"geom_a","dimension",TRUE,"first",TRUE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+3,"geom_a","dimension",TRUE,"last",FALSE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+3,"geom_a","dimension",TRUE,"last",TRUE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_a`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+3,"geom_b","payload",FALSE,"none",FALSE,"match","",""
+3,"geom_b","payload",FALSE,"none",TRUE,"match","",""
+3,"geom_b","payload",FALSE,"first",FALSE,"match","",""
+3,"geom_b","payload",FALSE,"first",TRUE,"match","",""
+3,"geom_b","payload",FALSE,"last",FALSE,"match","",""
+3,"geom_b","payload",FALSE,"last",TRUE,"match","",""
+3,"geom_b","payload",TRUE,"none",FALSE,"ordinary-name-repair","",""
+3,"geom_b","payload",TRUE,"none",TRUE,"ordinary-name-repair","",""
+3,"geom_b","payload",TRUE,"first",FALSE,"ordinary-name-repair","",""
+3,"geom_b","payload",TRUE,"first",TRUE,"ordinary-name-repair","",""
+3,"geom_b","payload",TRUE,"last",FALSE,"ordinary-name-repair","",""
+3,"geom_b","payload",TRUE,"last",TRUE,"ordinary-name-repair","",""
+3,"geom_b","fixed",FALSE,"none",FALSE,"match","",""
+3,"geom_b","fixed",FALSE,"none",TRUE,"match","",""
+3,"geom_b","fixed",FALSE,"first",FALSE,"match","",""
+3,"geom_b","fixed",FALSE,"first",TRUE,"match","",""
+3,"geom_b","fixed",FALSE,"last",FALSE,"match","",""
+3,"geom_b","fixed",FALSE,"last",TRUE,"match","",""
+3,"geom_b","fixed",TRUE,"none",FALSE,"ordinary-name-repair","",""
+3,"geom_b","fixed",TRUE,"none",TRUE,"ordinary-name-repair","",""
+3,"geom_b","fixed",TRUE,"first",FALSE,"ordinary-name-repair","",""
+3,"geom_b","fixed",TRUE,"first",TRUE,"ordinary-name-repair","",""
+3,"geom_b","fixed",TRUE,"last",FALSE,"ordinary-name-repair","",""
+3,"geom_b","fixed",TRUE,"last",TRUE,"ordinary-name-repair","",""
+3,"geom_b","dimension",FALSE,"none",FALSE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+3,"geom_b","dimension",FALSE,"none",TRUE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+3,"geom_b","dimension",FALSE,"first",FALSE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+3,"geom_b","dimension",FALSE,"first",TRUE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+3,"geom_b","dimension",FALSE,"last",FALSE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+3,"geom_b","dimension",FALSE,"last",TRUE,"required-missing-refusal","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+3,"geom_b","dimension",TRUE,"none",FALSE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+3,"geom_b","dimension",TRUE,"none",TRUE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+3,"geom_b","dimension",TRUE,"first",FALSE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+3,"geom_b","dimension",TRUE,"first",TRUE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+3,"geom_b","dimension",TRUE,"last",FALSE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""
+3,"geom_b","dimension",TRUE,"last",TRUE,"ordinary-name-repair","A typed-missing `.margin_label` cannot be represented for:
+ℹ `geom_b`.
+ℹ Choose a supported non-missing label or change the grouping.",""

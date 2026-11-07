@@ -1,0 +1,6 @@
+inspect : correct literal/typed controls; false overlap -> Columns cannot appear in both `.by` and `.grouping`: | ℹ `a`.
+expand : correct literal/typed controls; false overlap -> Columns cannot appear in both `.by` and `.grouping`: | ℹ `a`.
+summary : correct literal/typed controls; false overlap -> Columns cannot appear in both `.by` and `.grouping`: | ℹ `a`.
+nest : correct literal/typed controls; false overlap -> Columns cannot appear in both `.by` and `.grouping`: | ℹ `a`.
+nest_by : correct literal/typed controls; false overlap -> Columns cannot appear in both `.by` and `.grouping`: | ℹ `a`.
+All five consumers reproduced; source unchanged; removed-method control selected a.

@@ -1,0 +1,18 @@
+Ordinary source:
+# A tibble: 1 × 2
+  g     value
+  <chr> <int>
+1 north    13
+Expected expansion:
+# A tibble: 1 × 2
+  g     value
+  <chr> <int>
+1 north    13
+Actual expansion:
+# A tibble: 1 × 2
+  g     value
+  <chr> <int>
+1 MASK     13
+callbacks: 1
+Error: identical(got, expected) is not TRUE
+Execution halted

@@ -1,0 +1,9 @@
+     mode value_match   n
+1 corrupt       FALSE 216
+2   count        TRUE 216
+3   error       FALSE 216
+construction_calls       native_calls     mutation_calls        union_calls
+                 0                  0                  0                  0
+    expanded_calls
+               744
+PASS: 648 observations classified, 216 callback-only, 216 corrupt results, 216 callback errors

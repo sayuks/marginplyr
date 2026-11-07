@@ -1,0 +1,6 @@
+  match physical   n
+1  TRUE     TRUE 360
+2  TRUE       NA 450
+[1] type     empty    family   sort     route    match    physical error
+<0 rows> (or 0-length row.names)
+PASS: 810 native DuckDB comparisons

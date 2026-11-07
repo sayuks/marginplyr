@@ -1,0 +1,1786 @@
+"backend","role","name","sort","ok","symptom"
+"local","dimension","normal","none",TRUE,""
+"local","dimension","normal","first",TRUE,""
+"local","dimension","normal","last",TRUE,""
+"local","dimension",".env","none",TRUE,""
+"local","dimension",".env","first",TRUE,""
+"local","dimension",".env","last",TRUE,""
+"local","dimension",".data","none",TRUE,""
+"local","dimension",".data","first",TRUE,""
+"local","dimension",".data","last",TRUE,""
+"local","dimension","...","none",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"local","dimension","...","first",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"local","dimension","...","last",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"local","dimension","..1","none",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"local","dimension","..1","first",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"local","dimension","..1","last",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"local","dimension","..0","none",TRUE,""
+"local","dimension","..0","first",TRUE,""
+"local","dimension","..0","last",TRUE,""
+"local","dimension","..00","none",TRUE,""
+"local","dimension","..00","first",TRUE,""
+"local","dimension","..00","last",TRUE,""
+"local","dimension","..01","none",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `..01` doesn't exist."
+"local","dimension","..01","first",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `..01` doesn't exist."
+"local","dimension","..01","last",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `..01` doesn't exist."
+"local","dimension","..-1","none",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `..-1` doesn't exist."
+"local","dimension","..-1","first",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `..-1` doesn't exist."
+"local","dimension","..-1","last",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `..-1` doesn't exist."
+"local","dimension","..+1","none",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `..+1` doesn't exist."
+"local","dimension","..+1","first",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `..+1` doesn't exist."
+"local","dimension","..+1","last",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `..+1` doesn't exist."
+"local","dimension",".. 1","none",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `.. 1` doesn't exist."
+"local","dimension",".. 1","first",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `.. 1` doesn't exist."
+"local","dimension",".. 1","last",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `.. 1` doesn't exist."
+"local","dimension",".. -1","none",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `.. -1` doesn't exist."
+"local","dimension",".. -1","first",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `.. -1` doesn't exist."
+"local","dimension",".. -1","last",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `.. -1` doesn't exist."
+"local","dimension",".BY","none",TRUE,""
+"local","dimension",".BY","first",TRUE,""
+"local","dimension",".BY","last",TRUE,""
+"local","dimension",".I","none",TRUE,""
+"local","dimension",".I","first",TRUE,""
+"local","dimension",".I","last",TRUE,""
+"local","dimension",".N","none",TRUE,""
+"local","dimension",".N","first",TRUE,""
+"local","dimension",".N","last",TRUE,""
+"local","dimension",".SD","none",TRUE,""
+"local","dimension",".SD","first",TRUE,""
+"local","dimension",".SD","last",TRUE,""
+"local","dimension",".GRP","none",TRUE,""
+"local","dimension",".GRP","first",TRUE,""
+"local","dimension",".GRP","last",TRUE,""
+"local","dimension","a b","none",TRUE,""
+"local","dimension","a b","first",TRUE,""
+"local","dimension","a b","last",TRUE,""
+"local","dimension","a`b","none",TRUE,""
+"local","dimension","a`b","first",TRUE,""
+"local","dimension","a`b","last",TRUE,""
+"local","dimension","a
+b","none",TRUE,""
+"local","dimension","a
+b","first",TRUE,""
+"local","dimension","a
+b","last",TRUE,""
+"local","dimension","a	b","none",TRUE,""
+"local","dimension","a	b","first",TRUE,""
+"local","dimension","a	b","last",TRUE,""
+"local","dimension","é","none",TRUE,""
+"local","dimension","é","first",TRUE,""
+"local","dimension","é","last",TRUE,""
+"local","dimension","NA","none",TRUE,""
+"local","dimension","NA","first",TRUE,""
+"local","dimension","NA","last",TRUE,""
+"local","dimension","TRUE","none",TRUE,""
+"local","dimension","TRUE","first",TRUE,""
+"local","dimension","TRUE","last",TRUE,""
+"local","dimension",".marginplyr_set_id","none",TRUE,""
+"local","dimension",".marginplyr_set_id","first",TRUE,""
+"local","dimension",".marginplyr_set_id","last",TRUE,""
+"local","dimension","__marginplyr_set_id","none",TRUE,""
+"local","dimension","__marginplyr_set_id","first",TRUE,""
+"local","dimension","__marginplyr_set_id","last",TRUE,""
+"local","fixed","normal","none",TRUE,""
+"local","fixed","normal","first",TRUE,""
+"local","fixed","normal","last",TRUE,""
+"local","fixed",".env","none",TRUE,""
+"local","fixed",".env","first",TRUE,""
+"local","fixed",".env","last",TRUE,""
+"local","fixed",".data","none",TRUE,""
+"local","fixed",".data","first",TRUE,""
+"local","fixed",".data","last",TRUE,""
+"local","fixed","...","none",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"local","fixed","...","first",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"local","fixed","...","last",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"local","fixed","..1","none",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"local","fixed","..1","first",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"local","fixed","..1","last",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"local","fixed","..0","none",TRUE,""
+"local","fixed","..0","first",TRUE,""
+"local","fixed","..0","last",TRUE,""
+"local","fixed","..00","none",TRUE,""
+"local","fixed","..00","first",TRUE,""
+"local","fixed","..00","last",TRUE,""
+"local","fixed","..01","none",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `..01` doesn't exist."
+"local","fixed","..01","first",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `..01` doesn't exist."
+"local","fixed","..01","last",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `..01` doesn't exist."
+"local","fixed","..-1","none",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `..-1` doesn't exist."
+"local","fixed","..-1","first",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `..-1` doesn't exist."
+"local","fixed","..-1","last",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `..-1` doesn't exist."
+"local","fixed","..+1","none",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `..+1` doesn't exist."
+"local","fixed","..+1","first",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `..+1` doesn't exist."
+"local","fixed","..+1","last",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `..+1` doesn't exist."
+"local","fixed",".. 1","none",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `.. 1` doesn't exist."
+"local","fixed",".. 1","first",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `.. 1` doesn't exist."
+"local","fixed",".. 1","last",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `.. 1` doesn't exist."
+"local","fixed",".. -1","none",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `.. -1` doesn't exist."
+"local","fixed",".. -1","first",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `.. -1` doesn't exist."
+"local","fixed",".. -1","last",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `.. -1` doesn't exist."
+"local","fixed",".BY","none",TRUE,""
+"local","fixed",".BY","first",TRUE,""
+"local","fixed",".BY","last",TRUE,""
+"local","fixed",".I","none",TRUE,""
+"local","fixed",".I","first",TRUE,""
+"local","fixed",".I","last",TRUE,""
+"local","fixed",".N","none",TRUE,""
+"local","fixed",".N","first",TRUE,""
+"local","fixed",".N","last",TRUE,""
+"local","fixed",".SD","none",TRUE,""
+"local","fixed",".SD","first",TRUE,""
+"local","fixed",".SD","last",TRUE,""
+"local","fixed",".GRP","none",TRUE,""
+"local","fixed",".GRP","first",TRUE,""
+"local","fixed",".GRP","last",TRUE,""
+"local","fixed","a b","none",TRUE,""
+"local","fixed","a b","first",TRUE,""
+"local","fixed","a b","last",TRUE,""
+"local","fixed","a`b","none",TRUE,""
+"local","fixed","a`b","first",TRUE,""
+"local","fixed","a`b","last",TRUE,""
+"local","fixed","a
+b","none",TRUE,""
+"local","fixed","a
+b","first",TRUE,""
+"local","fixed","a
+b","last",TRUE,""
+"local","fixed","a	b","none",TRUE,""
+"local","fixed","a	b","first",TRUE,""
+"local","fixed","a	b","last",TRUE,""
+"local","fixed","é","none",TRUE,""
+"local","fixed","é","first",TRUE,""
+"local","fixed","é","last",TRUE,""
+"local","fixed","NA","none",TRUE,""
+"local","fixed","NA","first",TRUE,""
+"local","fixed","NA","last",TRUE,""
+"local","fixed","TRUE","none",TRUE,""
+"local","fixed","TRUE","first",TRUE,""
+"local","fixed","TRUE","last",TRUE,""
+"local","fixed",".marginplyr_set_id","none",TRUE,""
+"local","fixed",".marginplyr_set_id","first",TRUE,""
+"local","fixed",".marginplyr_set_id","last",TRUE,""
+"local","fixed","__marginplyr_set_id","none",TRUE,""
+"local","fixed","__marginplyr_set_id","first",TRUE,""
+"local","fixed","__marginplyr_set_id","last",TRUE,""
+"local","payload","normal","none",TRUE,""
+"local","payload","normal","first",TRUE,""
+"local","payload","normal","last",TRUE,""
+"local","payload",".env","none",TRUE,""
+"local","payload",".env","first",TRUE,""
+"local","payload",".env","last",TRUE,""
+"local","payload",".data","none",TRUE,""
+"local","payload",".data","first",TRUE,""
+"local","payload",".data","last",TRUE,""
+"local","payload","...","none",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"local","payload","...","first",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"local","payload","...","last",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"local","payload","..1","none",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"local","payload","..1","first",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"local","payload","..1","last",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"local","payload","..0","none",TRUE,""
+"local","payload","..0","first",TRUE,""
+"local","payload","..0","last",TRUE,""
+"local","payload","..00","none",TRUE,""
+"local","payload","..00","first",TRUE,""
+"local","payload","..00","last",TRUE,""
+"local","payload","..01","none",TRUE,""
+"local","payload","..01","first",TRUE,""
+"local","payload","..01","last",TRUE,""
+"local","payload","..-1","none",TRUE,""
+"local","payload","..-1","first",TRUE,""
+"local","payload","..-1","last",TRUE,""
+"local","payload","..+1","none",TRUE,""
+"local","payload","..+1","first",TRUE,""
+"local","payload","..+1","last",TRUE,""
+"local","payload",".. 1","none",TRUE,""
+"local","payload",".. 1","first",TRUE,""
+"local","payload",".. 1","last",TRUE,""
+"local","payload",".. -1","none",TRUE,""
+"local","payload",".. -1","first",TRUE,""
+"local","payload",".. -1","last",TRUE,""
+"local","payload",".BY","none",TRUE,""
+"local","payload",".BY","first",TRUE,""
+"local","payload",".BY","last",TRUE,""
+"local","payload",".I","none",TRUE,""
+"local","payload",".I","first",TRUE,""
+"local","payload",".I","last",TRUE,""
+"local","payload",".N","none",TRUE,""
+"local","payload",".N","first",TRUE,""
+"local","payload",".N","last",TRUE,""
+"local","payload",".SD","none",TRUE,""
+"local","payload",".SD","first",TRUE,""
+"local","payload",".SD","last",TRUE,""
+"local","payload",".GRP","none",TRUE,""
+"local","payload",".GRP","first",TRUE,""
+"local","payload",".GRP","last",TRUE,""
+"local","payload","a b","none",TRUE,""
+"local","payload","a b","first",TRUE,""
+"local","payload","a b","last",TRUE,""
+"local","payload","a`b","none",TRUE,""
+"local","payload","a`b","first",TRUE,""
+"local","payload","a`b","last",TRUE,""
+"local","payload","a
+b","none",TRUE,""
+"local","payload","a
+b","first",TRUE,""
+"local","payload","a
+b","last",TRUE,""
+"local","payload","a	b","none",TRUE,""
+"local","payload","a	b","first",TRUE,""
+"local","payload","a	b","last",TRUE,""
+"local","payload","é","none",TRUE,""
+"local","payload","é","first",TRUE,""
+"local","payload","é","last",TRUE,""
+"local","payload","NA","none",TRUE,""
+"local","payload","NA","first",TRUE,""
+"local","payload","NA","last",TRUE,""
+"local","payload","TRUE","none",TRUE,""
+"local","payload","TRUE","first",TRUE,""
+"local","payload","TRUE","last",TRUE,""
+"local","payload",".marginplyr_set_id","none",TRUE,""
+"local","payload",".marginplyr_set_id","first",TRUE,""
+"local","payload",".marginplyr_set_id","last",TRUE,""
+"local","payload","__marginplyr_set_id","none",TRUE,""
+"local","payload","__marginplyr_set_id","first",TRUE,""
+"local","payload","__marginplyr_set_id","last",TRUE,""
+"local","id","normal","none",TRUE,""
+"local","id","normal","first",TRUE,""
+"local","id","normal","last",TRUE,""
+"local","id",".env","none",TRUE,""
+"local","id",".env","first",TRUE,""
+"local","id",".env","last",TRUE,""
+"local","id",".data","none",TRUE,""
+"local","id",".data","first",TRUE,""
+"local","id",".data","last",TRUE,""
+"local","id","...","none",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `...` doesn't exist."
+"local","id","...","first",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `...` doesn't exist."
+"local","id","...","last",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `...` doesn't exist."
+"local","id","..1","none",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `..1` doesn't exist."
+"local","id","..1","first",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `..1` doesn't exist."
+"local","id","..1","last",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `..1` doesn't exist."
+"local","id","..0","none",TRUE,""
+"local","id","..0","first",TRUE,""
+"local","id","..0","last",TRUE,""
+"local","id","..00","none",TRUE,""
+"local","id","..00","first",TRUE,""
+"local","id","..00","last",TRUE,""
+"local","id","..01","none",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `..01` doesn't exist."
+"local","id","..01","first",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `..01` doesn't exist."
+"local","id","..01","last",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `..01` doesn't exist."
+"local","id","..-1","none",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `..-1` doesn't exist."
+"local","id","..-1","first",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `..-1` doesn't exist."
+"local","id","..-1","last",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `..-1` doesn't exist."
+"local","id","..+1","none",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `..+1` doesn't exist."
+"local","id","..+1","first",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `..+1` doesn't exist."
+"local","id","..+1","last",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `..+1` doesn't exist."
+"local","id",".. 1","none",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `.. 1` doesn't exist."
+"local","id",".. 1","first",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `.. 1` doesn't exist."
+"local","id",".. 1","last",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `.. 1` doesn't exist."
+"local","id",".. -1","none",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `.. -1` doesn't exist."
+"local","id",".. -1","first",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `.. -1` doesn't exist."
+"local","id",".. -1","last",NA,"Ordinary operation: ℹ In argument: `tidyselect::all_of(c(fixed, dimension, id))`.
+Caused by error in `tidyselect::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `.. -1` doesn't exist."
+"local","id",".BY","none",TRUE,""
+"local","id",".BY","first",TRUE,""
+"local","id",".BY","last",TRUE,""
+"local","id",".I","none",TRUE,""
+"local","id",".I","first",TRUE,""
+"local","id",".I","last",TRUE,""
+"local","id",".N","none",TRUE,""
+"local","id",".N","first",TRUE,""
+"local","id",".N","last",TRUE,""
+"local","id",".SD","none",TRUE,""
+"local","id",".SD","first",TRUE,""
+"local","id",".SD","last",TRUE,""
+"local","id",".GRP","none",TRUE,""
+"local","id",".GRP","first",TRUE,""
+"local","id",".GRP","last",TRUE,""
+"local","id","a b","none",TRUE,""
+"local","id","a b","first",TRUE,""
+"local","id","a b","last",TRUE,""
+"local","id","a`b","none",TRUE,""
+"local","id","a`b","first",TRUE,""
+"local","id","a`b","last",TRUE,""
+"local","id","a
+b","none",TRUE,""
+"local","id","a
+b","first",TRUE,""
+"local","id","a
+b","last",TRUE,""
+"local","id","a	b","none",TRUE,""
+"local","id","a	b","first",TRUE,""
+"local","id","a	b","last",TRUE,""
+"local","id","é","none",TRUE,""
+"local","id","é","first",TRUE,""
+"local","id","é","last",TRUE,""
+"local","id","NA","none",TRUE,""
+"local","id","NA","first",TRUE,""
+"local","id","NA","last",TRUE,""
+"local","id","TRUE","none",TRUE,""
+"local","id","TRUE","first",TRUE,""
+"local","id","TRUE","last",TRUE,""
+"local","id",".marginplyr_set_id","none",TRUE,""
+"local","id",".marginplyr_set_id","first",TRUE,""
+"local","id",".marginplyr_set_id","last",TRUE,""
+"local","id","__marginplyr_set_id","none",TRUE,""
+"local","id","__marginplyr_set_id","first",TRUE,""
+"local","id","__marginplyr_set_id","last",TRUE,""
+"dtplyr","dimension","normal","none",TRUE,""
+"dtplyr","dimension","normal","first",TRUE,""
+"dtplyr","dimension","normal","last",TRUE,""
+"dtplyr","dimension",".env","none",TRUE,""
+"dtplyr","dimension",".env","first",TRUE,""
+"dtplyr","dimension",".env","last",TRUE,""
+"dtplyr","dimension",".data","none",TRUE,""
+"dtplyr","dimension",".data","first",TRUE,""
+"dtplyr","dimension",".data","last",TRUE,""
+"dtplyr","dimension","...","none",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"dtplyr","dimension","...","first",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"dtplyr","dimension","...","last",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"dtplyr","dimension","..1","none",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"dtplyr","dimension","..1","first",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"dtplyr","dimension","..1","last",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"dtplyr","dimension","..0","none",TRUE,""
+"dtplyr","dimension","..0","first",TRUE,""
+"dtplyr","dimension","..0","last",TRUE,""
+"dtplyr","dimension","..00","none",TRUE,""
+"dtplyr","dimension","..00","first",TRUE,""
+"dtplyr","dimension","..00","last",TRUE,""
+"dtplyr","dimension","..01","none",TRUE,""
+"dtplyr","dimension","..01","first",TRUE,""
+"dtplyr","dimension","..01","last",TRUE,""
+"dtplyr","dimension","..-1","none",TRUE,""
+"dtplyr","dimension","..-1","first",TRUE,""
+"dtplyr","dimension","..-1","last",TRUE,""
+"dtplyr","dimension","..+1","none",TRUE,""
+"dtplyr","dimension","..+1","first",TRUE,""
+"dtplyr","dimension","..+1","last",TRUE,""
+"dtplyr","dimension",".. 1","none",TRUE,""
+"dtplyr","dimension",".. 1","first",TRUE,""
+"dtplyr","dimension",".. 1","last",TRUE,""
+"dtplyr","dimension",".. -1","none",TRUE,""
+"dtplyr","dimension",".. -1","first",TRUE,""
+"dtplyr","dimension",".. -1","last",TRUE,""
+"dtplyr","dimension",".BY","none",TRUE,""
+"dtplyr","dimension",".BY","first",TRUE,""
+"dtplyr","dimension",".BY","last",TRUE,""
+"dtplyr","dimension",".I","none",TRUE,""
+"dtplyr","dimension",".I","first",TRUE,""
+"dtplyr","dimension",".I","last",TRUE,""
+"dtplyr","dimension",".N","none",TRUE,""
+"dtplyr","dimension",".N","first",TRUE,""
+"dtplyr","dimension",".N","last",TRUE,""
+"dtplyr","dimension",".SD","none",TRUE,""
+"dtplyr","dimension",".SD","first",TRUE,""
+"dtplyr","dimension",".SD","last",TRUE,""
+"dtplyr","dimension",".GRP","none",TRUE,""
+"dtplyr","dimension",".GRP","first",TRUE,""
+"dtplyr","dimension",".GRP","last",TRUE,""
+"dtplyr","dimension","a b","none",TRUE,""
+"dtplyr","dimension","a b","first",TRUE,""
+"dtplyr","dimension","a b","last",TRUE,""
+"dtplyr","dimension","a`b","none",TRUE,""
+"dtplyr","dimension","a`b","first",TRUE,""
+"dtplyr","dimension","a`b","last",TRUE,""
+"dtplyr","dimension","a
+b","none",TRUE,""
+"dtplyr","dimension","a
+b","first",TRUE,""
+"dtplyr","dimension","a
+b","last",TRUE,""
+"dtplyr","dimension","a	b","none",TRUE,""
+"dtplyr","dimension","a	b","first",TRUE,""
+"dtplyr","dimension","a	b","last",TRUE,""
+"dtplyr","dimension","é","none",TRUE,""
+"dtplyr","dimension","é","first",TRUE,""
+"dtplyr","dimension","é","last",TRUE,""
+"dtplyr","dimension","NA","none",TRUE,""
+"dtplyr","dimension","NA","first",TRUE,""
+"dtplyr","dimension","NA","last",TRUE,""
+"dtplyr","dimension","TRUE","none",TRUE,""
+"dtplyr","dimension","TRUE","first",TRUE,""
+"dtplyr","dimension","TRUE","last",TRUE,""
+"dtplyr","dimension",".marginplyr_set_id","none",TRUE,""
+"dtplyr","dimension",".marginplyr_set_id","first",TRUE,""
+"dtplyr","dimension",".marginplyr_set_id","last",TRUE,""
+"dtplyr","dimension","__marginplyr_set_id","none",TRUE,""
+"dtplyr","dimension","__marginplyr_set_id","first",TRUE,""
+"dtplyr","dimension","__marginplyr_set_id","last",TRUE,""
+"dtplyr","fixed","normal","none",TRUE,""
+"dtplyr","fixed","normal","first",TRUE,""
+"dtplyr","fixed","normal","last",TRUE,""
+"dtplyr","fixed",".env","none",TRUE,""
+"dtplyr","fixed",".env","first",TRUE,""
+"dtplyr","fixed",".env","last",TRUE,""
+"dtplyr","fixed",".data","none",TRUE,""
+"dtplyr","fixed",".data","first",TRUE,""
+"dtplyr","fixed",".data","last",TRUE,""
+"dtplyr","fixed","...","none",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"dtplyr","fixed","...","first",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"dtplyr","fixed","...","last",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"dtplyr","fixed","..1","none",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"dtplyr","fixed","..1","first",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"dtplyr","fixed","..1","last",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"dtplyr","fixed","..0","none",TRUE,""
+"dtplyr","fixed","..0","first",TRUE,""
+"dtplyr","fixed","..0","last",TRUE,""
+"dtplyr","fixed","..00","none",TRUE,""
+"dtplyr","fixed","..00","first",TRUE,""
+"dtplyr","fixed","..00","last",TRUE,""
+"dtplyr","fixed","..01","none",TRUE,""
+"dtplyr","fixed","..01","first",TRUE,""
+"dtplyr","fixed","..01","last",TRUE,""
+"dtplyr","fixed","..-1","none",TRUE,""
+"dtplyr","fixed","..-1","first",TRUE,""
+"dtplyr","fixed","..-1","last",TRUE,""
+"dtplyr","fixed","..+1","none",TRUE,""
+"dtplyr","fixed","..+1","first",TRUE,""
+"dtplyr","fixed","..+1","last",TRUE,""
+"dtplyr","fixed",".. 1","none",TRUE,""
+"dtplyr","fixed",".. 1","first",TRUE,""
+"dtplyr","fixed",".. 1","last",TRUE,""
+"dtplyr","fixed",".. -1","none",TRUE,""
+"dtplyr","fixed",".. -1","first",TRUE,""
+"dtplyr","fixed",".. -1","last",TRUE,""
+"dtplyr","fixed",".BY","none",TRUE,""
+"dtplyr","fixed",".BY","first",TRUE,""
+"dtplyr","fixed",".BY","last",TRUE,""
+"dtplyr","fixed",".I","none",TRUE,""
+"dtplyr","fixed",".I","first",TRUE,""
+"dtplyr","fixed",".I","last",TRUE,""
+"dtplyr","fixed",".N","none",TRUE,""
+"dtplyr","fixed",".N","first",TRUE,""
+"dtplyr","fixed",".N","last",TRUE,""
+"dtplyr","fixed",".SD","none",TRUE,""
+"dtplyr","fixed",".SD","first",TRUE,""
+"dtplyr","fixed",".SD","last",TRUE,""
+"dtplyr","fixed",".GRP","none",TRUE,""
+"dtplyr","fixed",".GRP","first",TRUE,""
+"dtplyr","fixed",".GRP","last",TRUE,""
+"dtplyr","fixed","a b","none",TRUE,""
+"dtplyr","fixed","a b","first",TRUE,""
+"dtplyr","fixed","a b","last",TRUE,""
+"dtplyr","fixed","a`b","none",TRUE,""
+"dtplyr","fixed","a`b","first",TRUE,""
+"dtplyr","fixed","a`b","last",TRUE,""
+"dtplyr","fixed","a
+b","none",TRUE,""
+"dtplyr","fixed","a
+b","first",TRUE,""
+"dtplyr","fixed","a
+b","last",TRUE,""
+"dtplyr","fixed","a	b","none",TRUE,""
+"dtplyr","fixed","a	b","first",TRUE,""
+"dtplyr","fixed","a	b","last",TRUE,""
+"dtplyr","fixed","é","none",TRUE,""
+"dtplyr","fixed","é","first",TRUE,""
+"dtplyr","fixed","é","last",TRUE,""
+"dtplyr","fixed","NA","none",TRUE,""
+"dtplyr","fixed","NA","first",TRUE,""
+"dtplyr","fixed","NA","last",TRUE,""
+"dtplyr","fixed","TRUE","none",TRUE,""
+"dtplyr","fixed","TRUE","first",TRUE,""
+"dtplyr","fixed","TRUE","last",TRUE,""
+"dtplyr","fixed",".marginplyr_set_id","none",TRUE,""
+"dtplyr","fixed",".marginplyr_set_id","first",TRUE,""
+"dtplyr","fixed",".marginplyr_set_id","last",TRUE,""
+"dtplyr","fixed","__marginplyr_set_id","none",TRUE,""
+"dtplyr","fixed","__marginplyr_set_id","first",TRUE,""
+"dtplyr","fixed","__marginplyr_set_id","last",TRUE,""
+"dtplyr","payload","normal","none",TRUE,""
+"dtplyr","payload","normal","first",TRUE,""
+"dtplyr","payload","normal","last",TRUE,""
+"dtplyr","payload",".env","none",TRUE,""
+"dtplyr","payload",".env","first",TRUE,""
+"dtplyr","payload",".env","last",TRUE,""
+"dtplyr","payload",".data","none",TRUE,""
+"dtplyr","payload",".data","first",TRUE,""
+"dtplyr","payload",".data","last",TRUE,""
+"dtplyr","payload","...","none",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"dtplyr","payload","...","first",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"dtplyr","payload","...","last",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"dtplyr","payload","..1","none",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"dtplyr","payload","..1","first",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"dtplyr","payload","..1","last",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"dtplyr","payload","..0","none",TRUE,""
+"dtplyr","payload","..0","first",TRUE,""
+"dtplyr","payload","..0","last",TRUE,""
+"dtplyr","payload","..00","none",TRUE,""
+"dtplyr","payload","..00","first",TRUE,""
+"dtplyr","payload","..00","last",TRUE,""
+"dtplyr","payload","..01","none",TRUE,""
+"dtplyr","payload","..01","first",TRUE,""
+"dtplyr","payload","..01","last",TRUE,""
+"dtplyr","payload","..-1","none",TRUE,""
+"dtplyr","payload","..-1","first",TRUE,""
+"dtplyr","payload","..-1","last",TRUE,""
+"dtplyr","payload","..+1","none",TRUE,""
+"dtplyr","payload","..+1","first",TRUE,""
+"dtplyr","payload","..+1","last",TRUE,""
+"dtplyr","payload",".. 1","none",TRUE,""
+"dtplyr","payload",".. 1","first",TRUE,""
+"dtplyr","payload",".. 1","last",TRUE,""
+"dtplyr","payload",".. -1","none",TRUE,""
+"dtplyr","payload",".. -1","first",TRUE,""
+"dtplyr","payload",".. -1","last",TRUE,""
+"dtplyr","payload",".BY","none",TRUE,""
+"dtplyr","payload",".BY","first",TRUE,""
+"dtplyr","payload",".BY","last",TRUE,""
+"dtplyr","payload",".I","none",TRUE,""
+"dtplyr","payload",".I","first",TRUE,""
+"dtplyr","payload",".I","last",TRUE,""
+"dtplyr","payload",".N","none",TRUE,""
+"dtplyr","payload",".N","first",TRUE,""
+"dtplyr","payload",".N","last",TRUE,""
+"dtplyr","payload",".SD","none",TRUE,""
+"dtplyr","payload",".SD","first",TRUE,""
+"dtplyr","payload",".SD","last",TRUE,""
+"dtplyr","payload",".GRP","none",TRUE,""
+"dtplyr","payload",".GRP","first",TRUE,""
+"dtplyr","payload",".GRP","last",TRUE,""
+"dtplyr","payload","a b","none",TRUE,""
+"dtplyr","payload","a b","first",TRUE,""
+"dtplyr","payload","a b","last",TRUE,""
+"dtplyr","payload","a`b","none",TRUE,""
+"dtplyr","payload","a`b","first",TRUE,""
+"dtplyr","payload","a`b","last",TRUE,""
+"dtplyr","payload","a
+b","none",TRUE,""
+"dtplyr","payload","a
+b","first",TRUE,""
+"dtplyr","payload","a
+b","last",TRUE,""
+"dtplyr","payload","a	b","none",TRUE,""
+"dtplyr","payload","a	b","first",TRUE,""
+"dtplyr","payload","a	b","last",TRUE,""
+"dtplyr","payload","é","none",TRUE,""
+"dtplyr","payload","é","first",TRUE,""
+"dtplyr","payload","é","last",TRUE,""
+"dtplyr","payload","NA","none",TRUE,""
+"dtplyr","payload","NA","first",TRUE,""
+"dtplyr","payload","NA","last",TRUE,""
+"dtplyr","payload","TRUE","none",TRUE,""
+"dtplyr","payload","TRUE","first",TRUE,""
+"dtplyr","payload","TRUE","last",TRUE,""
+"dtplyr","payload",".marginplyr_set_id","none",TRUE,""
+"dtplyr","payload",".marginplyr_set_id","first",TRUE,""
+"dtplyr","payload",".marginplyr_set_id","last",TRUE,""
+"dtplyr","payload","__marginplyr_set_id","none",TRUE,""
+"dtplyr","payload","__marginplyr_set_id","first",TRUE,""
+"dtplyr","payload","__marginplyr_set_id","last",TRUE,""
+"dtplyr","id","normal","none",TRUE,""
+"dtplyr","id","normal","first",TRUE,""
+"dtplyr","id","normal","last",TRUE,""
+"dtplyr","id",".env","none",TRUE,""
+"dtplyr","id",".env","first",TRUE,""
+"dtplyr","id",".env","last",TRUE,""
+"dtplyr","id",".data","none",TRUE,""
+"dtplyr","id",".data","first",TRUE,""
+"dtplyr","id",".data","last",TRUE,""
+"dtplyr","id","...","none",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"dtplyr","id","...","first",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"dtplyr","id","...","last",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"dtplyr","id","..1","none",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"dtplyr","id","..1","first",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"dtplyr","id","..1","last",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"dtplyr","id","..0","none",TRUE,""
+"dtplyr","id","..0","first",TRUE,""
+"dtplyr","id","..0","last",TRUE,""
+"dtplyr","id","..00","none",TRUE,""
+"dtplyr","id","..00","first",TRUE,""
+"dtplyr","id","..00","last",TRUE,""
+"dtplyr","id","..01","none",TRUE,""
+"dtplyr","id","..01","first",TRUE,""
+"dtplyr","id","..01","last",TRUE,""
+"dtplyr","id","..-1","none",TRUE,""
+"dtplyr","id","..-1","first",TRUE,""
+"dtplyr","id","..-1","last",TRUE,""
+"dtplyr","id","..+1","none",TRUE,""
+"dtplyr","id","..+1","first",TRUE,""
+"dtplyr","id","..+1","last",TRUE,""
+"dtplyr","id",".. 1","none",TRUE,""
+"dtplyr","id",".. 1","first",TRUE,""
+"dtplyr","id",".. 1","last",TRUE,""
+"dtplyr","id",".. -1","none",TRUE,""
+"dtplyr","id",".. -1","first",TRUE,""
+"dtplyr","id",".. -1","last",TRUE,""
+"dtplyr","id",".BY","none",TRUE,""
+"dtplyr","id",".BY","first",TRUE,""
+"dtplyr","id",".BY","last",TRUE,""
+"dtplyr","id",".I","none",TRUE,""
+"dtplyr","id",".I","first",TRUE,""
+"dtplyr","id",".I","last",TRUE,""
+"dtplyr","id",".N","none",TRUE,""
+"dtplyr","id",".N","first",TRUE,""
+"dtplyr","id",".N","last",TRUE,""
+"dtplyr","id",".SD","none",TRUE,""
+"dtplyr","id",".SD","first",TRUE,""
+"dtplyr","id",".SD","last",TRUE,""
+"dtplyr","id",".GRP","none",TRUE,""
+"dtplyr","id",".GRP","first",TRUE,""
+"dtplyr","id",".GRP","last",TRUE,""
+"dtplyr","id","a b","none",TRUE,""
+"dtplyr","id","a b","first",TRUE,""
+"dtplyr","id","a b","last",TRUE,""
+"dtplyr","id","a`b","none",TRUE,""
+"dtplyr","id","a`b","first",TRUE,""
+"dtplyr","id","a`b","last",TRUE,""
+"dtplyr","id","a
+b","none",TRUE,""
+"dtplyr","id","a
+b","first",TRUE,""
+"dtplyr","id","a
+b","last",TRUE,""
+"dtplyr","id","a	b","none",TRUE,""
+"dtplyr","id","a	b","first",TRUE,""
+"dtplyr","id","a	b","last",TRUE,""
+"dtplyr","id","é","none",TRUE,""
+"dtplyr","id","é","first",TRUE,""
+"dtplyr","id","é","last",TRUE,""
+"dtplyr","id","NA","none",TRUE,""
+"dtplyr","id","NA","first",TRUE,""
+"dtplyr","id","NA","last",TRUE,""
+"dtplyr","id","TRUE","none",TRUE,""
+"dtplyr","id","TRUE","first",TRUE,""
+"dtplyr","id","TRUE","last",TRUE,""
+"dtplyr","id",".marginplyr_set_id","none",TRUE,""
+"dtplyr","id",".marginplyr_set_id","first",TRUE,""
+"dtplyr","id",".marginplyr_set_id","last",TRUE,""
+"dtplyr","id","__marginplyr_set_id","none",TRUE,""
+"dtplyr","id","__marginplyr_set_id","first",TRUE,""
+"dtplyr","id","__marginplyr_set_id","last",TRUE,""
+"sqlite","dimension","normal","none",TRUE,""
+"sqlite","dimension","normal","first",TRUE,""
+"sqlite","dimension","normal","last",TRUE,""
+"sqlite","dimension",".env","none",NA,"Ordinary operation: Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite","dimension",".env","first",NA,"Ordinary operation: Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite","dimension",".env","last",NA,"Ordinary operation: Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite","dimension",".data","none",TRUE,""
+"sqlite","dimension",".data","first",TRUE,""
+"sqlite","dimension",".data","last",TRUE,""
+"sqlite","dimension","...","none",NA,"Ordinary operation: Column 2 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"sqlite","dimension","...","first",NA,"Ordinary operation: Column 2 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"sqlite","dimension","...","last",NA,"Ordinary operation: Column 2 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"sqlite","dimension","..1","none",NA,"Ordinary operation: Column 2 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"sqlite","dimension","..1","first",NA,"Ordinary operation: Column 2 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"sqlite","dimension","..1","last",NA,"Ordinary operation: Column 2 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"sqlite","dimension","..0","none",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"sqlite","dimension","..0","first",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"sqlite","dimension","..0","last",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"sqlite","dimension","..00","none",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"sqlite","dimension","..00","first",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"sqlite","dimension","..00","last",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"sqlite","dimension","..01","none",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","dimension","..01","first",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","dimension","..01","last",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","dimension","..-1","none",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"sqlite","dimension","..-1","first",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"sqlite","dimension","..-1","last",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"sqlite","dimension","..+1","none",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","dimension","..+1","first",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","dimension","..+1","last",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","dimension",".. 1","none",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","dimension",".. 1","first",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","dimension",".. 1","last",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","dimension",".. -1","none",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"sqlite","dimension",".. -1","first",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"sqlite","dimension",".. -1","last",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"sqlite","dimension",".BY","none",TRUE,""
+"sqlite","dimension",".BY","first",TRUE,""
+"sqlite","dimension",".BY","last",TRUE,""
+"sqlite","dimension",".I","none",TRUE,""
+"sqlite","dimension",".I","first",TRUE,""
+"sqlite","dimension",".I","last",TRUE,""
+"sqlite","dimension",".N","none",TRUE,""
+"sqlite","dimension",".N","first",TRUE,""
+"sqlite","dimension",".N","last",TRUE,""
+"sqlite","dimension",".SD","none",TRUE,""
+"sqlite","dimension",".SD","first",TRUE,""
+"sqlite","dimension",".SD","last",TRUE,""
+"sqlite","dimension",".GRP","none",TRUE,""
+"sqlite","dimension",".GRP","first",TRUE,""
+"sqlite","dimension",".GRP","last",TRUE,""
+"sqlite","dimension","a b","none",TRUE,""
+"sqlite","dimension","a b","first",TRUE,""
+"sqlite","dimension","a b","last",TRUE,""
+"sqlite","dimension","a`b","none",TRUE,""
+"sqlite","dimension","a`b","first",TRUE,""
+"sqlite","dimension","a`b","last",TRUE,""
+"sqlite","dimension","a
+b","none",TRUE,""
+"sqlite","dimension","a
+b","first",TRUE,""
+"sqlite","dimension","a
+b","last",TRUE,""
+"sqlite","dimension","a	b","none",TRUE,""
+"sqlite","dimension","a	b","first",TRUE,""
+"sqlite","dimension","a	b","last",TRUE,""
+"sqlite","dimension","é","none",TRUE,""
+"sqlite","dimension","é","first",TRUE,""
+"sqlite","dimension","é","last",TRUE,""
+"sqlite","dimension","NA","none",TRUE,""
+"sqlite","dimension","NA","first",TRUE,""
+"sqlite","dimension","NA","last",TRUE,""
+"sqlite","dimension","TRUE","none",NA,"Ordinary operation: Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite","dimension","TRUE","first",NA,"Ordinary operation: Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite","dimension","TRUE","last",NA,"Ordinary operation: Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite","dimension",".marginplyr_set_id","none",TRUE,""
+"sqlite","dimension",".marginplyr_set_id","first",TRUE,""
+"sqlite","dimension",".marginplyr_set_id","last",TRUE,""
+"sqlite","dimension","__marginplyr_set_id","none",TRUE,""
+"sqlite","dimension","__marginplyr_set_id","first",TRUE,""
+"sqlite","dimension","__marginplyr_set_id","last",TRUE,""
+"sqlite","fixed","normal","none",TRUE,""
+"sqlite","fixed","normal","first",TRUE,""
+"sqlite","fixed","normal","last",TRUE,""
+"sqlite","fixed",".env","none",NA,"Ordinary operation: Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite","fixed",".env","first",NA,"Ordinary operation: Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite","fixed",".env","last",NA,"Ordinary operation: Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite","fixed",".data","none",TRUE,""
+"sqlite","fixed",".data","first",TRUE,""
+"sqlite","fixed",".data","last",TRUE,""
+"sqlite","fixed","...","none",NA,"Ordinary operation: Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"sqlite","fixed","...","first",NA,"Ordinary operation: Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"sqlite","fixed","...","last",NA,"Ordinary operation: Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"sqlite","fixed","..1","none",NA,"Ordinary operation: Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"sqlite","fixed","..1","first",NA,"Ordinary operation: Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"sqlite","fixed","..1","last",NA,"Ordinary operation: Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"sqlite","fixed","..0","none",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"sqlite","fixed","..0","first",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"sqlite","fixed","..0","last",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"sqlite","fixed","..00","none",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"sqlite","fixed","..00","first",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"sqlite","fixed","..00","last",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"sqlite","fixed","..01","none",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","fixed","..01","first",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","fixed","..01","last",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","fixed","..-1","none",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"sqlite","fixed","..-1","first",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"sqlite","fixed","..-1","last",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"sqlite","fixed","..+1","none",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","fixed","..+1","first",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","fixed","..+1","last",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","fixed",".. 1","none",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","fixed",".. 1","first",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","fixed",".. 1","last",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","fixed",".. -1","none",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"sqlite","fixed",".. -1","first",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"sqlite","fixed",".. -1","last",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"sqlite","fixed",".BY","none",TRUE,""
+"sqlite","fixed",".BY","first",TRUE,""
+"sqlite","fixed",".BY","last",TRUE,""
+"sqlite","fixed",".I","none",TRUE,""
+"sqlite","fixed",".I","first",TRUE,""
+"sqlite","fixed",".I","last",TRUE,""
+"sqlite","fixed",".N","none",TRUE,""
+"sqlite","fixed",".N","first",TRUE,""
+"sqlite","fixed",".N","last",TRUE,""
+"sqlite","fixed",".SD","none",TRUE,""
+"sqlite","fixed",".SD","first",TRUE,""
+"sqlite","fixed",".SD","last",TRUE,""
+"sqlite","fixed",".GRP","none",TRUE,""
+"sqlite","fixed",".GRP","first",TRUE,""
+"sqlite","fixed",".GRP","last",TRUE,""
+"sqlite","fixed","a b","none",TRUE,""
+"sqlite","fixed","a b","first",TRUE,""
+"sqlite","fixed","a b","last",TRUE,""
+"sqlite","fixed","a`b","none",TRUE,""
+"sqlite","fixed","a`b","first",TRUE,""
+"sqlite","fixed","a`b","last",TRUE,""
+"sqlite","fixed","a
+b","none",TRUE,""
+"sqlite","fixed","a
+b","first",TRUE,""
+"sqlite","fixed","a
+b","last",TRUE,""
+"sqlite","fixed","a	b","none",TRUE,""
+"sqlite","fixed","a	b","first",TRUE,""
+"sqlite","fixed","a	b","last",TRUE,""
+"sqlite","fixed","é","none",TRUE,""
+"sqlite","fixed","é","first",TRUE,""
+"sqlite","fixed","é","last",TRUE,""
+"sqlite","fixed","NA","none",TRUE,""
+"sqlite","fixed","NA","first",TRUE,""
+"sqlite","fixed","NA","last",TRUE,""
+"sqlite","fixed","TRUE","none",NA,"Ordinary operation: Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite","fixed","TRUE","first",NA,"Ordinary operation: Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite","fixed","TRUE","last",NA,"Ordinary operation: Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite","fixed",".marginplyr_set_id","none",TRUE,""
+"sqlite","fixed",".marginplyr_set_id","first",TRUE,""
+"sqlite","fixed",".marginplyr_set_id","last",TRUE,""
+"sqlite","fixed","__marginplyr_set_id","none",TRUE,""
+"sqlite","fixed","__marginplyr_set_id","first",TRUE,""
+"sqlite","fixed","__marginplyr_set_id","last",TRUE,""
+"sqlite","payload","normal","none",TRUE,""
+"sqlite","payload","normal","first",TRUE,""
+"sqlite","payload","normal","last",TRUE,""
+"sqlite","payload",".env","none",NA,"Ordinary operation: Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite","payload",".env","first",NA,"Ordinary operation: Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite","payload",".env","last",NA,"Ordinary operation: Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite","payload",".data","none",TRUE,""
+"sqlite","payload",".data","first",TRUE,""
+"sqlite","payload",".data","last",TRUE,""
+"sqlite","payload","...","none",NA,"Ordinary operation: Column 3 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"sqlite","payload","...","first",NA,"Ordinary operation: Column 3 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"sqlite","payload","...","last",NA,"Ordinary operation: Column 3 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"sqlite","payload","..1","none",NA,"Ordinary operation: Column 3 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"sqlite","payload","..1","first",NA,"Ordinary operation: Column 3 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"sqlite","payload","..1","last",NA,"Ordinary operation: Column 3 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"sqlite","payload","..0","none",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"sqlite","payload","..0","first",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"sqlite","payload","..0","last",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"sqlite","payload","..00","none",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"sqlite","payload","..00","first",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"sqlite","payload","..00","last",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"sqlite","payload","..01","none",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","payload","..01","first",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","payload","..01","last",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","payload","..-1","none",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"sqlite","payload","..-1","first",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"sqlite","payload","..-1","last",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"sqlite","payload","..+1","none",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","payload","..+1","first",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","payload","..+1","last",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","payload",".. 1","none",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","payload",".. 1","first",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","payload",".. 1","last",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","payload",".. -1","none",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"sqlite","payload",".. -1","first",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"sqlite","payload",".. -1","last",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"sqlite","payload",".BY","none",TRUE,""
+"sqlite","payload",".BY","first",TRUE,""
+"sqlite","payload",".BY","last",TRUE,""
+"sqlite","payload",".I","none",TRUE,""
+"sqlite","payload",".I","first",TRUE,""
+"sqlite","payload",".I","last",TRUE,""
+"sqlite","payload",".N","none",TRUE,""
+"sqlite","payload",".N","first",TRUE,""
+"sqlite","payload",".N","last",TRUE,""
+"sqlite","payload",".SD","none",TRUE,""
+"sqlite","payload",".SD","first",TRUE,""
+"sqlite","payload",".SD","last",TRUE,""
+"sqlite","payload",".GRP","none",TRUE,""
+"sqlite","payload",".GRP","first",TRUE,""
+"sqlite","payload",".GRP","last",TRUE,""
+"sqlite","payload","a b","none",TRUE,""
+"sqlite","payload","a b","first",TRUE,""
+"sqlite","payload","a b","last",TRUE,""
+"sqlite","payload","a`b","none",TRUE,""
+"sqlite","payload","a`b","first",TRUE,""
+"sqlite","payload","a`b","last",TRUE,""
+"sqlite","payload","a
+b","none",TRUE,""
+"sqlite","payload","a
+b","first",TRUE,""
+"sqlite","payload","a
+b","last",TRUE,""
+"sqlite","payload","a	b","none",TRUE,""
+"sqlite","payload","a	b","first",TRUE,""
+"sqlite","payload","a	b","last",TRUE,""
+"sqlite","payload","é","none",TRUE,""
+"sqlite","payload","é","first",TRUE,""
+"sqlite","payload","é","last",TRUE,""
+"sqlite","payload","NA","none",TRUE,""
+"sqlite","payload","NA","first",TRUE,""
+"sqlite","payload","NA","last",TRUE,""
+"sqlite","payload","TRUE","none",NA,"Ordinary operation: Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite","payload","TRUE","first",NA,"Ordinary operation: Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite","payload","TRUE","last",NA,"Ordinary operation: Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite","payload",".marginplyr_set_id","none",TRUE,""
+"sqlite","payload",".marginplyr_set_id","first",TRUE,""
+"sqlite","payload",".marginplyr_set_id","last",TRUE,""
+"sqlite","payload","__marginplyr_set_id","none",TRUE,""
+"sqlite","payload","__marginplyr_set_id","first",TRUE,""
+"sqlite","payload","__marginplyr_set_id","last",TRUE,""
+"sqlite","id","normal","none",TRUE,""
+"sqlite","id","normal","first",TRUE,""
+"sqlite","id","normal","last",TRUE,""
+"sqlite","id",".env","none",NA,"Ordinary operation: Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite","id",".env","first",NA,"Ordinary operation: Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite","id",".env","last",NA,"Ordinary operation: Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"sqlite","id",".data","none",TRUE,""
+"sqlite","id",".data","first",TRUE,""
+"sqlite","id",".data","last",TRUE,""
+"sqlite","id","...","none",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"sqlite","id","...","first",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"sqlite","id","...","last",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"sqlite","id","..1","none",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"sqlite","id","..1","first",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"sqlite","id","..1","last",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"sqlite","id","..0","none",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"sqlite","id","..0","first",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"sqlite","id","..0","last",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"sqlite","id","..00","none",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"sqlite","id","..00","first",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"sqlite","id","..00","last",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"sqlite","id","..01","none",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","id","..01","first",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","id","..01","last",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","id","..-1","none",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"sqlite","id","..-1","first",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"sqlite","id","..-1","last",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"sqlite","id","..+1","none",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","id","..+1","first",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","id","..+1","last",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","id",".. 1","none",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","id",".. 1","first",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","id",".. 1","last",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"sqlite","id",".. -1","none",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"sqlite","id",".. -1","first",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"sqlite","id",".. -1","last",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"sqlite","id",".BY","none",TRUE,""
+"sqlite","id",".BY","first",TRUE,""
+"sqlite","id",".BY","last",TRUE,""
+"sqlite","id",".I","none",TRUE,""
+"sqlite","id",".I","first",TRUE,""
+"sqlite","id",".I","last",TRUE,""
+"sqlite","id",".N","none",TRUE,""
+"sqlite","id",".N","first",TRUE,""
+"sqlite","id",".N","last",TRUE,""
+"sqlite","id",".SD","none",TRUE,""
+"sqlite","id",".SD","first",TRUE,""
+"sqlite","id",".SD","last",TRUE,""
+"sqlite","id",".GRP","none",TRUE,""
+"sqlite","id",".GRP","first",TRUE,""
+"sqlite","id",".GRP","last",TRUE,""
+"sqlite","id","a b","none",TRUE,""
+"sqlite","id","a b","first",TRUE,""
+"sqlite","id","a b","last",TRUE,""
+"sqlite","id","a`b","none",TRUE,""
+"sqlite","id","a`b","first",TRUE,""
+"sqlite","id","a`b","last",TRUE,""
+"sqlite","id","a
+b","none",TRUE,""
+"sqlite","id","a
+b","first",TRUE,""
+"sqlite","id","a
+b","last",TRUE,""
+"sqlite","id","a	b","none",TRUE,""
+"sqlite","id","a	b","first",TRUE,""
+"sqlite","id","a	b","last",TRUE,""
+"sqlite","id","é","none",TRUE,""
+"sqlite","id","é","first",TRUE,""
+"sqlite","id","é","last",TRUE,""
+"sqlite","id","NA","none",TRUE,""
+"sqlite","id","NA","first",TRUE,""
+"sqlite","id","NA","last",TRUE,""
+"sqlite","id","TRUE","none",NA,"Ordinary operation: Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite","id","TRUE","first",NA,"Ordinary operation: Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite","id","TRUE","last",NA,"Ordinary operation: Failed to collect lazy table.
+Caused by error:
+! no such column: TRUE"
+"sqlite","id",".marginplyr_set_id","none",TRUE,""
+"sqlite","id",".marginplyr_set_id","first",TRUE,""
+"sqlite","id",".marginplyr_set_id","last",TRUE,""
+"sqlite","id","__marginplyr_set_id","none",TRUE,""
+"sqlite","id","__marginplyr_set_id","first",TRUE,""
+"sqlite","id","__marginplyr_set_id","last",TRUE,""
+"duckdb","dimension","normal","none",TRUE,""
+"duckdb","dimension","normal","first",TRUE,""
+"duckdb","dimension","normal","last",TRUE,""
+"duckdb","dimension",".env","none",NA,"Ordinary operation: Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb","dimension",".env","first",NA,"Ordinary operation: Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb","dimension",".env","last",NA,"Ordinary operation: Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb","dimension",".data","none",TRUE,""
+"duckdb","dimension",".data","first",TRUE,""
+"duckdb","dimension",".data","last",TRUE,""
+"duckdb","dimension","...","none",NA,"Ordinary operation: Column 2 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"duckdb","dimension","...","first",NA,"Ordinary operation: Column 2 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"duckdb","dimension","...","last",NA,"Ordinary operation: Column 2 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"duckdb","dimension","..1","none",NA,"Ordinary operation: Column 2 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"duckdb","dimension","..1","first",NA,"Ordinary operation: Column 2 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"duckdb","dimension","..1","last",NA,"Ordinary operation: Column 2 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"duckdb","dimension","..0","none",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"duckdb","dimension","..0","first",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"duckdb","dimension","..0","last",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"duckdb","dimension","..00","none",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"duckdb","dimension","..00","first",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"duckdb","dimension","..00","last",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"duckdb","dimension","..01","none",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","dimension","..01","first",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","dimension","..01","last",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","dimension","..-1","none",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"duckdb","dimension","..-1","first",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"duckdb","dimension","..-1","last",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"duckdb","dimension","..+1","none",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","dimension","..+1","first",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","dimension","..+1","last",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","dimension",".. 1","none",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","dimension",".. 1","first",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","dimension",".. 1","last",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","dimension",".. -1","none",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"duckdb","dimension",".. -1","first",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"duckdb","dimension",".. -1","last",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"duckdb","dimension",".BY","none",TRUE,""
+"duckdb","dimension",".BY","first",TRUE,""
+"duckdb","dimension",".BY","last",TRUE,""
+"duckdb","dimension",".I","none",TRUE,""
+"duckdb","dimension",".I","first",TRUE,""
+"duckdb","dimension",".I","last",TRUE,""
+"duckdb","dimension",".N","none",TRUE,""
+"duckdb","dimension",".N","first",TRUE,""
+"duckdb","dimension",".N","last",TRUE,""
+"duckdb","dimension",".SD","none",TRUE,""
+"duckdb","dimension",".SD","first",TRUE,""
+"duckdb","dimension",".SD","last",TRUE,""
+"duckdb","dimension",".GRP","none",TRUE,""
+"duckdb","dimension",".GRP","first",TRUE,""
+"duckdb","dimension",".GRP","last",TRUE,""
+"duckdb","dimension","a b","none",TRUE,""
+"duckdb","dimension","a b","first",TRUE,""
+"duckdb","dimension","a b","last",TRUE,""
+"duckdb","dimension","a`b","none",TRUE,""
+"duckdb","dimension","a`b","first",TRUE,""
+"duckdb","dimension","a`b","last",TRUE,""
+"duckdb","dimension","a
+b","none",TRUE,""
+"duckdb","dimension","a
+b","first",TRUE,""
+"duckdb","dimension","a
+b","last",TRUE,""
+"duckdb","dimension","a	b","none",TRUE,""
+"duckdb","dimension","a	b","first",TRUE,""
+"duckdb","dimension","a	b","last",TRUE,""
+"duckdb","dimension","é","none",TRUE,""
+"duckdb","dimension","é","first",TRUE,""
+"duckdb","dimension","é","last",TRUE,""
+"duckdb","dimension","NA","none",TRUE,""
+"duckdb","dimension","NA","first",TRUE,""
+"duckdb","dimension","NA","last",TRUE,""
+"duckdb","dimension","TRUE","none",TRUE,""
+"duckdb","dimension","TRUE","first",TRUE,""
+"duckdb","dimension","TRUE","last",TRUE,""
+"duckdb","dimension",".marginplyr_set_id","none",TRUE,""
+"duckdb","dimension",".marginplyr_set_id","first",TRUE,""
+"duckdb","dimension",".marginplyr_set_id","last",TRUE,""
+"duckdb","dimension","__marginplyr_set_id","none",TRUE,""
+"duckdb","dimension","__marginplyr_set_id","first",TRUE,""
+"duckdb","dimension","__marginplyr_set_id","last",TRUE,""
+"duckdb","fixed","normal","none",TRUE,""
+"duckdb","fixed","normal","first",TRUE,""
+"duckdb","fixed","normal","last",TRUE,""
+"duckdb","fixed",".env","none",NA,"Ordinary operation: Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb","fixed",".env","first",NA,"Ordinary operation: Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb","fixed",".env","last",NA,"Ordinary operation: Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb","fixed",".data","none",TRUE,""
+"duckdb","fixed",".data","first",TRUE,""
+"duckdb","fixed",".data","last",TRUE,""
+"duckdb","fixed","...","none",NA,"Ordinary operation: Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"duckdb","fixed","...","first",NA,"Ordinary operation: Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"duckdb","fixed","...","last",NA,"Ordinary operation: Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"duckdb","fixed","..1","none",NA,"Ordinary operation: Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"duckdb","fixed","..1","first",NA,"Ordinary operation: Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"duckdb","fixed","..1","last",NA,"Ordinary operation: Column 1 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"duckdb","fixed","..0","none",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"duckdb","fixed","..0","first",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"duckdb","fixed","..0","last",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"duckdb","fixed","..00","none",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"duckdb","fixed","..00","first",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"duckdb","fixed","..00","last",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"duckdb","fixed","..01","none",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","fixed","..01","first",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","fixed","..01","last",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","fixed","..-1","none",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"duckdb","fixed","..-1","first",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"duckdb","fixed","..-1","last",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"duckdb","fixed","..+1","none",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","fixed","..+1","first",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","fixed","..+1","last",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","fixed",".. 1","none",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","fixed",".. 1","first",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","fixed",".. 1","last",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","fixed",".. -1","none",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"duckdb","fixed",".. -1","first",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"duckdb","fixed",".. -1","last",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"duckdb","fixed",".BY","none",TRUE,""
+"duckdb","fixed",".BY","first",TRUE,""
+"duckdb","fixed",".BY","last",TRUE,""
+"duckdb","fixed",".I","none",TRUE,""
+"duckdb","fixed",".I","first",TRUE,""
+"duckdb","fixed",".I","last",TRUE,""
+"duckdb","fixed",".N","none",TRUE,""
+"duckdb","fixed",".N","first",TRUE,""
+"duckdb","fixed",".N","last",TRUE,""
+"duckdb","fixed",".SD","none",TRUE,""
+"duckdb","fixed",".SD","first",TRUE,""
+"duckdb","fixed",".SD","last",TRUE,""
+"duckdb","fixed",".GRP","none",TRUE,""
+"duckdb","fixed",".GRP","first",TRUE,""
+"duckdb","fixed",".GRP","last",TRUE,""
+"duckdb","fixed","a b","none",TRUE,""
+"duckdb","fixed","a b","first",TRUE,""
+"duckdb","fixed","a b","last",TRUE,""
+"duckdb","fixed","a`b","none",TRUE,""
+"duckdb","fixed","a`b","first",TRUE,""
+"duckdb","fixed","a`b","last",TRUE,""
+"duckdb","fixed","a
+b","none",TRUE,""
+"duckdb","fixed","a
+b","first",TRUE,""
+"duckdb","fixed","a
+b","last",TRUE,""
+"duckdb","fixed","a	b","none",TRUE,""
+"duckdb","fixed","a	b","first",TRUE,""
+"duckdb","fixed","a	b","last",TRUE,""
+"duckdb","fixed","é","none",TRUE,""
+"duckdb","fixed","é","first",TRUE,""
+"duckdb","fixed","é","last",TRUE,""
+"duckdb","fixed","NA","none",TRUE,""
+"duckdb","fixed","NA","first",TRUE,""
+"duckdb","fixed","NA","last",TRUE,""
+"duckdb","fixed","TRUE","none",TRUE,""
+"duckdb","fixed","TRUE","first",TRUE,""
+"duckdb","fixed","TRUE","last",TRUE,""
+"duckdb","fixed",".marginplyr_set_id","none",TRUE,""
+"duckdb","fixed",".marginplyr_set_id","first",TRUE,""
+"duckdb","fixed",".marginplyr_set_id","last",TRUE,""
+"duckdb","fixed","__marginplyr_set_id","none",TRUE,""
+"duckdb","fixed","__marginplyr_set_id","first",TRUE,""
+"duckdb","fixed","__marginplyr_set_id","last",TRUE,""
+"duckdb","payload","normal","none",TRUE,""
+"duckdb","payload","normal","first",TRUE,""
+"duckdb","payload","normal","last",TRUE,""
+"duckdb","payload",".env","none",NA,"Ordinary operation: Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb","payload",".env","first",NA,"Ordinary operation: Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb","payload",".env","last",NA,"Ordinary operation: Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb","payload",".data","none",TRUE,""
+"duckdb","payload",".data","first",TRUE,""
+"duckdb","payload",".data","last",TRUE,""
+"duckdb","payload","...","none",NA,"Ordinary operation: Column 3 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"duckdb","payload","...","first",NA,"Ordinary operation: Column 3 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"duckdb","payload","...","last",NA,"Ordinary operation: Column 3 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"duckdb","payload","..1","none",NA,"Ordinary operation: Column 3 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"duckdb","payload","..1","first",NA,"Ordinary operation: Column 3 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"duckdb","payload","..1","last",NA,"Ordinary operation: Column 3 must not have names of the form ... or ..j.
+Use `.name_repair` to specify repair.
+Caused by error in `repaired_names()`:
+! Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"duckdb","payload","..0","none",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"duckdb","payload","..0","first",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"duckdb","payload","..0","last",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"duckdb","payload","..00","none",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"duckdb","payload","..00","first",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"duckdb","payload","..00","last",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"duckdb","payload","..01","none",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","payload","..01","first",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","payload","..01","last",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","payload","..-1","none",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"duckdb","payload","..-1","first",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"duckdb","payload","..-1","last",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"duckdb","payload","..+1","none",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","payload","..+1","first",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","payload","..+1","last",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","payload",".. 1","none",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","payload",".. 1","first",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","payload",".. 1","last",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","payload",".. -1","none",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"duckdb","payload",".. -1","first",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"duckdb","payload",".. -1","last",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"duckdb","payload",".BY","none",TRUE,""
+"duckdb","payload",".BY","first",TRUE,""
+"duckdb","payload",".BY","last",TRUE,""
+"duckdb","payload",".I","none",TRUE,""
+"duckdb","payload",".I","first",TRUE,""
+"duckdb","payload",".I","last",TRUE,""
+"duckdb","payload",".N","none",TRUE,""
+"duckdb","payload",".N","first",TRUE,""
+"duckdb","payload",".N","last",TRUE,""
+"duckdb","payload",".SD","none",TRUE,""
+"duckdb","payload",".SD","first",TRUE,""
+"duckdb","payload",".SD","last",TRUE,""
+"duckdb","payload",".GRP","none",TRUE,""
+"duckdb","payload",".GRP","first",TRUE,""
+"duckdb","payload",".GRP","last",TRUE,""
+"duckdb","payload","a b","none",TRUE,""
+"duckdb","payload","a b","first",TRUE,""
+"duckdb","payload","a b","last",TRUE,""
+"duckdb","payload","a`b","none",TRUE,""
+"duckdb","payload","a`b","first",TRUE,""
+"duckdb","payload","a`b","last",TRUE,""
+"duckdb","payload","a
+b","none",TRUE,""
+"duckdb","payload","a
+b","first",TRUE,""
+"duckdb","payload","a
+b","last",TRUE,""
+"duckdb","payload","a	b","none",TRUE,""
+"duckdb","payload","a	b","first",TRUE,""
+"duckdb","payload","a	b","last",TRUE,""
+"duckdb","payload","é","none",TRUE,""
+"duckdb","payload","é","first",TRUE,""
+"duckdb","payload","é","last",TRUE,""
+"duckdb","payload","NA","none",TRUE,""
+"duckdb","payload","NA","first",TRUE,""
+"duckdb","payload","NA","last",TRUE,""
+"duckdb","payload","TRUE","none",TRUE,""
+"duckdb","payload","TRUE","first",TRUE,""
+"duckdb","payload","TRUE","last",TRUE,""
+"duckdb","payload",".marginplyr_set_id","none",TRUE,""
+"duckdb","payload",".marginplyr_set_id","first",TRUE,""
+"duckdb","payload",".marginplyr_set_id","last",TRUE,""
+"duckdb","payload","__marginplyr_set_id","none",TRUE,""
+"duckdb","payload","__marginplyr_set_id","first",TRUE,""
+"duckdb","payload","__marginplyr_set_id","last",TRUE,""
+"duckdb","id","normal","none",TRUE,""
+"duckdb","id","normal","first",TRUE,""
+"duckdb","id","normal","last",TRUE,""
+"duckdb","id",".env","none",NA,"Ordinary operation: Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb","id",".env","first",NA,"Ordinary operation: Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb","id",".env","last",NA,"Ordinary operation: Cannot translate a <rlang_ctxt_pronoun> object to SQL.
+ℹ Do you want to force evaluation in R with (e.g.) `!!x` or `local(x)`?"
+"duckdb","id",".data","none",TRUE,""
+"duckdb","id",".data","first",TRUE,""
+"duckdb","id",".data","last",TRUE,""
+"duckdb","id","...","none",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"duckdb","id","...","first",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"duckdb","id","...","last",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..."" at location 1."
+"duckdb","id","..1","none",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"duckdb","id","..1","first",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"duckdb","id","..1","last",NA,"Ordinary operation: Names can't be of the form `...` or `..j`.
+✖ These names are invalid:
+  * ""..1"" at location 1."
+"duckdb","id","..0","none",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"duckdb","id","..0","first",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"duckdb","id","..0","last",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"duckdb","id","..00","none",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"duckdb","id","..00","first",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"duckdb","id","..00","last",NA,"Ordinary operation: indexing '...' with non-positive index 0"
+"duckdb","id","..01","none",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","id","..01","first",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","id","..01","last",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","id","..-1","none",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"duckdb","id","..-1","first",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"duckdb","id","..-1","last",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"duckdb","id","..+1","none",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","id","..+1","first",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","id","..+1","last",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","id",".. 1","none",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","id",".. 1","first",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","id",".. 1","last",NA,"Ordinary operation: ..1 used in an incorrect context, no ... to look in"
+"duckdb","id",".. -1","none",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"duckdb","id",".. -1","first",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"duckdb","id",".. -1","last",NA,"Ordinary operation: indexing '...' with non-positive index -1"
+"duckdb","id",".BY","none",TRUE,""
+"duckdb","id",".BY","first",TRUE,""
+"duckdb","id",".BY","last",TRUE,""
+"duckdb","id",".I","none",TRUE,""
+"duckdb","id",".I","first",TRUE,""
+"duckdb","id",".I","last",TRUE,""
+"duckdb","id",".N","none",TRUE,""
+"duckdb","id",".N","first",TRUE,""
+"duckdb","id",".N","last",TRUE,""
+"duckdb","id",".SD","none",TRUE,""
+"duckdb","id",".SD","first",TRUE,""
+"duckdb","id",".SD","last",TRUE,""
+"duckdb","id",".GRP","none",TRUE,""
+"duckdb","id",".GRP","first",TRUE,""
+"duckdb","id",".GRP","last",TRUE,""
+"duckdb","id","a b","none",TRUE,""
+"duckdb","id","a b","first",TRUE,""
+"duckdb","id","a b","last",TRUE,""
+"duckdb","id","a`b","none",TRUE,""
+"duckdb","id","a`b","first",TRUE,""
+"duckdb","id","a`b","last",TRUE,""
+"duckdb","id","a
+b","none",TRUE,""
+"duckdb","id","a
+b","first",TRUE,""
+"duckdb","id","a
+b","last",TRUE,""
+"duckdb","id","a	b","none",TRUE,""
+"duckdb","id","a	b","first",TRUE,""
+"duckdb","id","a	b","last",TRUE,""
+"duckdb","id","é","none",TRUE,""
+"duckdb","id","é","first",TRUE,""
+"duckdb","id","é","last",TRUE,""
+"duckdb","id","NA","none",TRUE,""
+"duckdb","id","NA","first",TRUE,""
+"duckdb","id","NA","last",TRUE,""
+"duckdb","id","TRUE","none",TRUE,""
+"duckdb","id","TRUE","first",TRUE,""
+"duckdb","id","TRUE","last",TRUE,""
+"duckdb","id",".marginplyr_set_id","none",TRUE,""
+"duckdb","id",".marginplyr_set_id","first",TRUE,""
+"duckdb","id",".marginplyr_set_id","last",TRUE,""
+"duckdb","id","__marginplyr_set_id","none",TRUE,""
+"duckdb","id","__marginplyr_set_id","first",TRUE,""
+"duckdb","id","__marginplyr_set_id","last",TRUE,""
