@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Grouping selections use faithful typed metadata when a helper operand installs
+  a pattern method before matching, preserving fixed keys and dimensions across
+  inspection and summaries, including immutable dtplyr inputs (#1420).
+
 * Typed inspection and Nest verbs refuse replaced registered dtplyr converters
   before they can change Grouping dimensions or fixed keys (#1419).
 

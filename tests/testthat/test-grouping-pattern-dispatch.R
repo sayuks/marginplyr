@@ -300,3 +300,234 @@ test_that("unrelated pattern methods preserve ordinary names-only matching", {
   }
   expect_identical(calls, 0L)
 })
+
+# The method is constructed without evaluating its metadata-dependent body.
+rebound_pattern_method <- function(modifier = "regex") {
+  state <- rlang::env(seen = character(), operand_calls = 0L)
+  method <- "length.stringr_pattern"
+  present <- exists(method, globalenv(), inherits = FALSE)
+  previous <- if (present) get(method, globalenv()) else NULL
+  source <- basename(tempfile("marginplyr_pattern_method_"))
+  makeActiveBinding(source, function() {
+    type <- typeof(tidyselect::peek_data()$a)
+    state$seen <- c(state$seen, type)
+    if (type == "character") 1L else 2L
+  }, globalenv())
+  state$reset <- function() {
+    if (exists(method, globalenv(), inherits = FALSE)) {
+      rm(list = method, envir = globalenv())
+    }
+    state$seen <- character()
+    state$operand_calls <- 0L
+  }
+  state$cleanup <- function() {
+    state$reset()
+    if (present) assign(method, previous, envir = globalenv())
+    if (exists(source, globalenv(), inherits = FALSE)) {
+      rm(list = source, envir = globalenv())
+    }
+  }
+  state$reset()
+  pattern <- rlang::call2(modifier, "a", .ns = "stringr")
+  counter <- rlang::call2(
+    "<<-", quote(operand_calls), quote(operand_calls + 1L)
+  )
+  install <- rlang::call2("<<-", method, rlang::expr(as.vector(as.vector(
+    list(x = NULL, as.vector(!!source, "symbol")), "pairlist"
+  ), "function")))
+  state$selection <- rlang::new_quosure(rlang::expr(tidyselect::matches(
+    !!pattern, vars = {
+      !!counter
+      !!install
+      tidyselect::peek_vars()
+    }
+  )), state)
+  state
+}
+
+test_that("helper-installed pattern methods receive typed selection metadata", {
+  skip_if_suggest_absent("stringr")
+  data <- data.frame(a = "east", b = 1L)
+  fixture <- rebound_pattern_method()
+  on.exit(fixture$cleanup(), add = TRUE)
+  selection <- fixture$selection
+  expect_identical(names(tidyselect::eval_select(selection, data)), "a")
+  direct_budget <- length(fixture$seen)
+  expect_identical(fixture$operand_calls, 1L)
+  fixture$reset()
+  actual <- inspect_grouping(data, .grouping = grouping_set(!!selection),
+                             .format = "list")
+  expect_identical(actual$included, list("a"))
+  expect_identical(fixture$seen, rep("character", direct_budget))
+  expect_identical(fixture$operand_calls, 1L)
+  expect_identical(data, data.frame(a = "east", b = 1L))
+})
+
+# Compare each public consumer with a literal plan and direct typed selection.
+expect_rebound_pattern_methods <- function(data, local) {
+  a <- rlang::sym("a")
+  b <- rlang::sym("b")
+  original <- serialize(data, NULL)
+  for (modifier in c("fixed", "regex", "coll")) {
+    fixture <- rebound_pattern_method(modifier)
+    on.exit(fixture$cleanup(), add = TRUE)
+    selection <- fixture$selection
+    positions <- c("fixed", "grouping_set", "grouping_sets", "rollup", "cube",
+                   "grouping_spec")
+    for (position in positions) {
+      for (consumer in c("inspect", "summary")) {
+        fixture$reset()
+        expect_identical(names(tidyselect::eval_select(selection, local)), "a")
+        budget <- length(fixture$seen)
+        fixture$reset()
+        run <- function(selection) {
+          construct <- getExportedValue(
+            "marginplyr", if (position == "fixed") "grouping_set" else position
+          )
+          spec <- if (position == "fixed") {
+            construct(!!b)
+          } else {
+            construct(!!selection)
+          }
+          by <- if (position == "fixed") selection else rlang::quo(!!b)
+          original_spec <- spec
+          result <- if (consumer == "inspect") {
+            inspect_grouping(
+              data, .by = !!by, .grouping = spec, .format = "list"
+            )
+          } else {
+            tibble::as_tibble(summarize_with_margins(
+              data, n = dplyr::n(), .by = !!by, .grouping = spec,
+              .margin_label = NULL, .id = "set"
+            ))
+          }
+          expect_identical(spec, original_spec)
+          result
+        }
+        expected <- run(rlang::quo(!!a))
+        actual <- run(selection)
+        expect_identical(actual, expected, info = paste(
+          modifier, position, consumer
+        ))
+        expect_identical(fixture$seen, rep("character", budget))
+        expect_identical(fixture$operand_calls, 1L)
+
+        fixture$reset()
+        wrapped <- rlang::quo_get_expr(selection)
+        wrapped$vars <- rlang::expr(base::identity(!!wrapped$vars))
+        wrapped <- rlang::new_quosure(wrapped, rlang::quo_get_env(selection))
+        expect_identical(run(wrapped), expected)
+        expect_identical(fixture$seen, rep("character", budget))
+        expect_identical(fixture$operand_calls, 1L)
+
+        fixture$seen <- character()
+        fixture$operand_calls <- 0L
+        expect_identical(run(selection), expected)
+        expect_identical(fixture$seen, rep("character", budget))
+        expect_identical(fixture$operand_calls, 1L)
+      }
+    }
+    fixture$cleanup()
+  }
+  expect_identical(serialize(data, NULL), original)
+}
+
+test_that("helper-installed pattern methods agree across eager consumers", {
+  skip_if_suggest_absent("stringr")
+  data <- tibble::tibble(a = c("east", "west"), b = c(1L, 1L))
+  expect_rebound_pattern_methods(data, data)
+  expect_rebound_pattern_methods(as.data.frame(data), data)
+})
+
+test_that("helper-installed pattern methods preserve data.table consumers", {
+  skip_if_suggest_absent("data.table", "stringr")
+  data <- data.table::data.table(a = c("east", "west"), b = c(1L, 1L))
+  expect_rebound_pattern_methods(data, as.data.frame(data))
+})
+
+test_that("helper-installed pattern methods preserve immutable dtplyr plans", {
+  skip_if_suggest_absent("dtplyr", "stringr")
+  data <- tibble::tibble(a = c("east", "west"), b = c(1L, 1L))
+  expect_rebound_pattern_methods(dtplyr::lazy_dt(data, immutable = TRUE), data)
+  expect_identical(data, tibble::tibble(a = c("east", "west"), b = c(1L, 1L)))
+})
+
+test_that("unproven pattern methods refuse before evaluating derived rows", {
+  skip_if_suggest_absent("dtplyr", "stringr")
+  data <- data.frame(a = "east", b = 1L)
+  rows <- 0L
+  touch <- function(x) {
+    rows <<- rows + length(x)
+    x
+  }
+  step <- dplyr::mutate(dtplyr::lazy_dt(data), a = touch(a))
+  fixture <- rebound_pattern_method()
+  on.exit(fixture$cleanup(), add = TRUE)
+  selection <- fixture$selection
+  for (consumer in c("inspect", "summary")) {
+    for (fixed in c(TRUE, FALSE)) {
+      run <- function() {
+        by <- if (fixed) selection else rlang::quo(b)
+        spec <- if (fixed) grouping_set(b) else grouping_set(!!selection)
+        if (consumer == "inspect") {
+          inspect_grouping(step, .by = !!by, .grouping = spec)
+        } else {
+          summarize_with_margins(step, n = dplyr::n(), .by = !!by,
+                                 .grouping = spec)
+        }
+      }
+      expect_error(run(), "Can't safely determine column metadata",
+                   class = "marginplyr_error")
+      expect_identical(fixture$seen, character())
+      expect_identical(fixture$operand_calls, 0L)
+      expect_false(exists(
+        "length.stringr_pattern", globalenv(), inherits = FALSE
+      ))
+    }
+  }
+  expect_identical(rows, 0L)
+  expect_identical(data, data.frame(a = "east", b = 1L))
+})
+
+test_that("stable operands retain names-only pattern evaluation budgets", {
+  skip_if_suggest_absent("dtplyr", "stringr")
+  data <- data.frame(a = "east", b = 1L)
+  step <- dplyr::mutate(dtplyr::lazy_dt(data), added = paste0(a, "!"))
+  for (modifier in c("fixed", "regex", "coll")) {
+    fixture <- rebound_pattern_method(modifier)
+    on.exit(fixture$cleanup(), add = TRUE)
+    selection <- rlang::quo_get_expr(fixture$selection)
+    selection$vars <- quote({
+      operand_calls <<- operand_calls + 1L
+      tidyselect::peek_vars()
+    })
+    selection <- rlang::new_quosure(selection, fixture)
+    actual <- inspect_grouping(step, .by = !!selection, .format = "list")
+    expect_identical(actual$fixed, list(c("a", "added")))
+    expect_identical(fixture$operand_calls, 1L)
+    fixture$reset()
+    actual <- inspect_grouping(
+      step, .by = b, .grouping = grouping_set(!!selection), .format = "list"
+    )
+    expect_identical(actual$included, list(c("a", "added")))
+    expect_identical(fixture$operand_calls, 2L)
+    expect_identical(fixture$seen, character())
+    fixture$cleanup()
+  }
+  expect_identical(data, data.frame(a = "east", b = 1L))
+})
+
+test_that("nested matches operands also preserve typed pattern dispatch", {
+  skip_if_suggest_absent("stringr")
+  data <- data.frame(a = "east", b = 1L)
+  fixture <- rebound_pattern_method()
+  on.exit(fixture$cleanup(), add = TRUE)
+  selection <- rlang::quo(tidyselect::all_of(!!fixture$selection))
+  expect_identical(names(tidyselect::eval_select(selection, data)), "a")
+  budget <- length(fixture$seen)
+  fixture$reset()
+  actual <- inspect_grouping(data, .by = !!selection, .format = "list")
+  expect_identical(actual$fixed, list("a"))
+  expect_identical(fixture$seen, rep("character", budget))
+  expect_identical(fixture$operand_calls, 1L)
+})
