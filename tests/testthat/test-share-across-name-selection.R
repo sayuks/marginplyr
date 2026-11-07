@@ -160,3 +160,68 @@ test_that("ordinary one_of leaves warning and deferred bindings to execution", {
   expect_identical(actual$warnings, control$warnings)
   expect_identical(actual$result[names(control$result)], control$result)
 })
+
+check_first_across_storage <- function(convert) {
+  rlang::local_bindings(
+    as.list.margin_across_input = function(x, ...) {
+      if (nrow(x) > 0L && identical(attr(x, "view"), "refuse")) {
+        stop("Positive-row list conversion is unavailable.")
+      }
+      list(g = x$g, x = as.character(x$x), y = seq_along(x$y))
+    },
+    .env = asNamespace("base")$.__S3MethodsTable__.
+  )
+  fixture <- data.frame(g = c("a", "b", "a"), x = 1:3, y = letters[1:3])
+  fixture <- convert(fixture)
+  ordinary <- rlang::quos(
+    dplyr::across(
+      tidyselect::where(is.numeric), length, .names = "count_{.col}"
+    ),
+    total = sum(.data$x)
+  )
+  for (view in c("alter", "refuse")) {
+    data <- structure(
+      fixture, class = c("margin_across_input", class(fixture)), view = view
+    )
+    expected <- dplyr::summarize(data, !!!ordinary)
+    expect_identical(as.list(expected), list(count_x = 3L, total = 6L))
+
+    for (grouping in rlang::quos(NULL, rollup(dplyr::all_of("g")))) {
+      rolled_up <- !rlang::quo_is_null(grouping)
+      helpers <- c("share_of_total", if (rolled_up) "share_of_parent")
+      for (helper in rlang::syms(helpers)) {
+        request <- rlang::call2(helper, quote(total))
+        direct <- summarize_with_margins(
+          data, !!!ordinary, share = !!request,
+          .grouping = !!grouping, .sort = "last"
+        )
+        selected <- summarize_with_margins(
+          data, !!!ordinary, dplyr::across(
+            dplyr::starts_with("total"), !!helper, .names = "share"
+          ),
+          .grouping = !!grouping, .sort = "last"
+        )
+        expect_identical(as.list(selected), as.list(direct))
+        expect_identical(
+          as.list(direct),
+          if (rolled_up) {
+            list(g = c("a", "b", "Total"), count_x = c(2L, 1L, 3L),
+                 total = c(4L, 2L, 6L), share = c(4 / 6, 2 / 6, 1))
+          } else {
+            c(as.list(expected), list(share = 1))
+          }
+        )
+      }
+    }
+  }
+}
+
+test_that("first across reads stored columns beside local share selections", {
+  check_first_across_storage(identity)
+  check_first_across_storage(tibble::as_tibble)
+})
+
+test_that("first across reads stored eager table columns beside shares", {
+  skip_if_suggest_absent("data.table")
+  check_first_across_storage(data.table::as.data.table)
+})
