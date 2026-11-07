@@ -174,7 +174,9 @@ test_that("literal loops preserve legal closures and function lookup", {
     })(7),
     (function(prior) {
       carrier <- list(read = function() sum(prior))
-      for (i in 1L) carrier$read <- function() 7
+      for (i in 1L) {
+        carrier$read <- function() 7
+      }
       rm(prior)
       carrier$read()
     })(1),
@@ -207,7 +209,7 @@ test_that("literal loops preserve legal closures and function lookup", {
 })
 
 test_that("literal loops leave writes after loop exits unreachable", {
-  for (exit in alist(break, next)) {
+  for (exit in alist(break, next, eval(parse(text = "break")))) {
     read <- substitute((function(prior) {
       carrier <- list(read = function() 7)
       for (i in 1L) {

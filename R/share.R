@@ -5794,6 +5794,23 @@ block_reads_and_scope <- function(expr, scope, lookup, read_symbols,
   list(reads = unique(reads), scope = scope)
 }
 
+# Find one replacement of a closure name or literal through base blocks.
+# The statement walker proves the carrier and setter before carrying the write.
+scope_singleton_loop_write <- function(expr, scope, lookup) {
+  while (rlang::is_call(expr, "{", n = 1L) &&
+           is_known_base_frame_call(expr, "{", scope, lookup)) {
+    expr <- expr[[2L]]
+  }
+  name <- static_call_name(expr)
+  if (!rlang::is_call(expr, c("<-", "="), n = 2L) ||
+        !rlang::is_call(expr[[2L]]) ||
+        !is_known_base_frame_call(expr, name, scope, lookup)) {
+    return(NULL)
+  }
+  value <- expr[[3L]]
+  if (is_name_part(value) || !is.null(literal_function_definition(value))) expr
+}
+
 # Read a statement and carry forward its removals and definite local bindings.
 # A separate result reader can restrict the read of a returned value.
 statement_reads_and_scope <- function(expr, scope, lookup = NULL,
@@ -5825,7 +5842,7 @@ statement_reads_and_scope <- function(expr, scope, lookup = NULL,
   }
   if (identical(call_name, "for")) {
     index <- expr[[2L]]
-    sequence <- unparenthesized_value(expr[[3L]])
+    sequence <- expr[[3L]]
     literal_loop <- length(expr) == 4L && is_name_part(index) &&
       !rlang::is_missing(sequence) &&
       (is.null(sequence) ||
@@ -5840,10 +5857,9 @@ statement_reads_and_scope <- function(expr, scope, lookup = NULL,
       if (length(sequence) == 0L) {
         return(list(reads = reads, scope = inner))
       }
-      # A body with loop exits needs control flow beyond statement ordering.
-      if (!any(c("break", "next") %in% all.names(expr[[4L]]))) {
-        step <- statement_reads_and_scope(expr[[4L]], inner, lookup,
-                                          read_symbols)
+      write <- scope_singleton_loop_write(expr[[4L]], inner, lookup)
+      if (!is.null(write)) {
+        step <- statement_reads_and_scope(write, inner, lookup, read_symbols)
         step$reads <- unique(c(reads, step$reads))
         return(step)
       }
