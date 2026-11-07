@@ -5,6 +5,28 @@ environment_alias_data <- function() {
 environment_alias_reads <- function() {
   alist(
     {
+      mask <- {
+        parent.env(environment())
+      }
+      sum(mask$prior)
+    },
+    {
+      mask <- if (TRUE) parent.env(environment()) else stop("Unselected arm")
+      sum(mask$prior)
+    },
+    {
+      mask <- switch(2L, stop("Unselected arm"), parent.env(environment()))
+      sum(mask$prior)
+    },
+    {
+      mask <- identity(parent.env(environment()))
+      sum(mask$prior)
+    },
+    {
+      mask <- base::identity(x = parent.env(environment()))
+      sum(mask$prior)
+    },
+    {
       mask <- parent.env(environment())
       sum(mask$prior)
     },
@@ -73,6 +95,28 @@ expect_environment_aliases <- function(data) {
   external <- rlang::new_environment(list(prior = 7), parent = emptyenv())
   replace <- FALSE
   reads <- alist(
+    {
+      mask <- {
+        external
+      }
+      sum(mask$prior)
+    },
+    {
+      mask <- if (TRUE) external else stop("Unselected arm")
+      sum(mask$prior)
+    },
+    {
+      mask <- switch(2L, stop("Unselected arm"), external)
+      sum(mask$prior)
+    },
+    {
+      mask <- identity(external)
+      sum(mask$prior)
+    },
+    {
+      mask <- base::identity(x = external)
+      sum(mask$prior)
+    },
     {
       mask <- external
       sum(mask$prior)
@@ -199,4 +243,43 @@ test_that("conditional alias writes retain possible mask dependencies", {
       sum(rlang::env_get(mask, "prior", inherit = TRUE))
     })(7)
   ))
+})
+
+test_that("environment-valued blocks do not execute planning operands", {
+  probe <- rlang::env(calls = 0L)
+  observe <- function() {
+    probe$calls <- probe$calls + 1L
+  }
+  expect_share_dependencies(environment_alias_data(), alist({
+    mask <- base::identity({
+      observe()
+      saved <- parent.env(environment())
+      saved
+    })
+    sum(mask$prior)
+  }))
+  expect_identical(probe$calls, 0L)
+})
+
+test_that("caller identity bindings retain independent environment values", {
+  external <- rlang::new_environment(list(prior = 7), parent = emptyenv())
+  identity <- function(x) external
+  data <- environment_alias_data()
+  for (kind in c("parent", "total")) {
+    helper <- rlang::call2(paste0("share_of_", kind), quote(value))
+    read <- quote({
+      mask <- identity(parent.env(environment()))
+      sum(mask$prior)
+    })
+    forward <- summarize_with_margins(
+      data, value = sum(.data$x), prior = !!helper, observed = !!read,
+      .grouping = rollup("g")
+    )
+    reverse <- summarize_with_margins(
+      data, prior = sum(.data$x), value = !!read, ratio = !!helper,
+      .grouping = rollup("g")
+    )
+    expect_equal(forward$observed, c(7, 7, 7))
+    expect_equal(reverse$value, c(7, 7, 7))
+  }
 })

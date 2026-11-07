@@ -162,3 +162,110 @@ test_that("list write refusal leaves lazy input unread", {
   expect_equal(dplyr::collect(data)$x, c(1, 3))
   expect_identical(probe$calls, 1L)
 })
+
+structural_list_write_reads <- function(body = quote(sum(prior)),
+                                        remove = quote(rm(prior)),
+                                        argument = 1, replacement = FALSE,
+                                        first = quote(7)) {
+  writes <- alist(carrier[[1L]] <- NULL, carrier[["drop"]] <- NULL,
+                  carrier$drop <- NULL)
+  if (replacement) {
+    writes <- as.list(quote(alist(
+      carrier[1L] <- list(function() BODY),
+      carrier["drop"] <- list(function() BODY)
+    )))[-1L]
+    writes <- lapply(writes, function(write) {
+      do.call(substitute, list(write, list(BODY = body)))
+    })
+  }
+  lapply(writes, function(write) {
+    substitute((function(prior) {
+      carrier <- list(drop = function() FIRST, read = function() BODY)
+      WRITE
+      REMOVE
+      carrier[[1L]]()
+    })(ARGUMENT), list(BODY = body, WRITE = write, REMOVE = remove,
+                       ARGUMENT = argument, FIRST = first))
+  })
+}
+
+test_that("list deletion preserves surviving closure dependencies", {
+  expect_share_dependencies(list_write_data(), structural_list_write_reads())
+})
+
+test_that("single-bracket replacement retains closure dependencies", {
+  expect_share_dependencies(
+    list_write_data(), structural_list_write_reads(replacement = TRUE)
+  )
+})
+
+expect_structural_write_values <- function(data, reads, expected) {
+  for (kind in c("parent", "total")) {
+    helper <- rlang::call2(paste0("share_of_", kind), quote(value))
+    for (read in reads) {
+      forward <- summarize_with_margins(
+        data, value = sum(.data$x), prior = !!helper, observed = !!read,
+        .grouping = rollup("g")
+      )
+      reverse <- summarize_with_margins(
+        data, prior = sum(.data$x), value = !!read, ratio = !!helper,
+        .grouping = rollup("g")
+      )
+      expect_equal(forward$observed, rep(expected, 3L))
+      expect_equal(forward$prior, c(0.25, 0.75, 1))
+      expect_equal(reverse$value, rep(expected, 3L))
+      expect_equal(reverse$ratio, c(1, 1, 1))
+    }
+  }
+}
+
+expect_structural_list_writes <- function(data) {
+  before <- serialize(data, NULL)
+  for (replacement in c(FALSE, TRUE)) {
+    expect_share_dependencies(
+      data, structural_list_write_reads(replacement = replacement)
+    )
+    expect_structural_write_values(
+      data, structural_list_write_reads(remove = quote(NULL),
+                                        replacement = replacement),
+      expected = 1
+    )
+    expect_structural_write_values(
+      data, structural_list_write_reads(body = quote(7),
+                                        first = quote(sum(prior)),
+                                        replacement = replacement),
+      expected = 7
+    )
+  }
+  expect_identical(serialize(data, NULL), before)
+}
+
+test_that("structural list writes preserve eager legal controls and inputs", {
+  expect_structural_list_writes(list_write_data())
+  expect_structural_list_writes(tibble::as_tibble(list_write_data()))
+})
+
+test_that("data.table structural writes preserve dependencies and inputs", {
+  skip_if_suggest_absent("data.table")
+  expect_structural_list_writes(data.table::as.data.table(list_write_data()))
+})
+
+test_that("structural write planning does not invoke or force caller code", {
+  probe <- rlang::env(invoked = 0L, forced = 0L)
+  for (replacement in c(FALSE, TRUE)) {
+    reads <- structural_list_write_reads(
+      body = quote({
+        probe$invoked <- probe$invoked + 1L
+        sum(prior)
+      }),
+      argument = quote({
+        probe$forced <- probe$forced + 1L
+        1
+      }),
+      replacement = replacement
+    )
+    expect_share_dependencies(list_write_data(), reads)
+  }
+  expect_identical(probe$invoked, 0L)
+  expect_identical(probe$forced, 0L)
+})
