@@ -4779,29 +4779,31 @@ scope_closure_list_member <- function(head, scope, lookup) {
   if (length(path) == 0L) return(NULL)
   elements <- scope_closure_list(head[[2L]], scope, lookup)
   for (step in seq_along(path)) {
-    key <- path[[step]]
-    # R list lookup never matches an empty name to an unnamed element.
-    index <- if (rlang::is_string(key) && nzchar(key)) {
-      if (partial) {
-        pmatch(key, names(elements), duplicates.ok = TRUE)
-      } else {
-        match(key, names(elements))
-      }
-    } else if (typeof(key) %in% c("integer", "double", "logical") &&
-                 is.finite(key)) {
-      # Index a plain sequence so R handles fractional and invalid positions.
-      tryCatch(seq_along(elements)[[key]], error = function(cnd) NULL)
-    }
-    if (is.null(index) || is.na(index) || index < 1L ||
-          index > length(elements)) {
-      return(NULL)
-    }
+    index <- scope_list_member_index(elements, path[[step]], partial)
+    if (is.null(index)) return(NULL)
     member <- elements[[index]]
     if (step == length(path)) return(member)
     elements <- member$elements
     if (is.null(elements)) return(NULL)
   }
   NULL
+}
+
+# Locate one existing member under exact or partial plain-list indexing.
+scope_list_member_index <- function(elements, key, partial = FALSE) {
+  # R list lookup never matches an empty name to an unnamed element.
+  index <- if (rlang::is_string(key) && nzchar(key)) {
+    if (partial) {
+      pmatch(key, names(elements), duplicates.ok = TRUE)
+    } else {
+      match(key, names(elements))
+    }
+  } else if (typeof(key) %in% c("integer", "double", "logical") &&
+               is.finite(key)) {
+    # Index a plain sequence so R handles fractional and invalid positions.
+    tryCatch(seq_along(elements)[[key]], error = function(cnd) NULL)
+  }
+  if (!is.null(index) && !is.na(index)) index else NULL
 }
 
 # Read unclassed literal list indices, including signed numbers and known base
@@ -5368,84 +5370,132 @@ scope_bind_closure_list <- function(scope, name, elements) {
   scope
 }
 
-# Carry a literal element write to a tracked list without evaluating its value.
+# Carry a literal write through the list setters from its leaf to its binding.
 # Stored closures use offsets relative to the current frame.
 scope_after_list_write <- function(scope, target, value, lookup, value_scope) {
-  if (!rlang::is_call(target)) {
-    return(scope)
+  if (!rlang::is_call(target) || rlang::is_missing(value)) return(scope)
+  members <- c("[", "[[", "$")
+  name_setters <- c("names", "attr", "attributes")
+  path <- list()
+  carrier <- unparenthesized_value(target)
+  while (rlang::is_call(carrier)) {
+    operator <- static_call_name(carrier)
+    allowed <- if (length(path) == 0L) c(members, name_setters) else members
+    if (is.null(operator) || !operator %in% allowed ||
+          length(carrier) < 2L || rlang::is_missing(carrier[[2L]])) {
+      return(scope)
+    }
+    path[[length(path) + 1L]] <- carrier
+    carrier <- unparenthesized_value(carrier[[2L]])
   }
-  target <- unparenthesized_value(target)
+  if (length(path) == 0L || !is_name_part(carrier)) return(scope)
+  name <- rlang::as_name(carrier)
+  elements <- value
+  carrier_changed <- FALSE
+  for (index in seq_along(path)) {
+    target <- path[[index]]
+    parent <- scope_closure_list(target[[2L]], value_scope, lookup)
+    if (is.null(parent)) return(scope)
+    elements <- if (static_call_name(target) %in% name_setters) {
+      scope_list_write_names(target, parent, elements, lookup, value_scope)
+    } else {
+      scope_list_write_elements(
+        target, parent, elements, lookup, value_scope,
+        nested = index > 1L, carrier_changed = carrier_changed
+      )
+    }
+    if (rlang::is_zap(elements)) return(scope)
+    carrier_changed <- !identical(elements, parent)
+  }
+  if (is.null(elements)) return(scope_bind_local(scope, name))
+  scope_bind_closure_list(scope, name, elements)
+}
+
+# Apply a member setter to known list elements. An enclosing setter receives
+# the updated carrier's descriptors. NULL means unknown; zap() means unhandled.
+scope_list_write_elements <- function(target, elements, value, lookup,
+                                      value_scope, nested, carrier_changed) {
+  if (length(target) != 3L) return(rlang::zap())
   operator <- static_call_name(target)
-  if (!is.null(operator) && operator %in% c("names", "attr", "attributes")) {
-    return(scope_after_list_names(scope, target, value, lookup, value_scope))
-  }
-  if (is.null(operator) || !operator %in% c("[", "[[", "$") ||
-        length(target) != 3L || !is_name_part(target[[2L]])) {
-    return(scope)
-  }
-  elements <- scope_closure_list(target[[2L]], value_scope, lookup)
-  if (is.null(elements)) {
-    return(scope)
-  }
-  name <- rlang::as_name(target[[2L]])
   setter <- paste0(operator, "<-")
   replacement <- rlang::call2(setter, .ns = static_call_ns(target))
   if (!is_known_base_frame_call(replacement, setter, value_scope, lookup)) {
-    if (scope_replacement_keeps_input(replacement, target, value_scope,
-                                      lookup)) {
-      return(scope_bind_closure_list(scope, name, elements))
-    }
-    return(scope_bind_local(scope, name))
+    # An inner setter can mutate an unshared member before this call.
+    if (!carrier_changed && scope_replacement_keeps_input(
+      replacement, target, value_scope, lookup
+    )) return(elements)
+    return(NULL)
   }
-  if (rlang::is_missing(target[[3L]])) {
-    return(scope)
-  }
+  if (rlang::is_missing(target[[3L]])) return(rlang::zap())
   key <- unparenthesized_value(target[[3L]])
-  if (identical(operator, "$") && is_name_part(key)) {
-    key <- rlang::as_name(key)
-  }
-  if (is.object(key)) {
-    return(scope)
-  }
+  if (is.object(key)) return(rlang::zap())
+  delete <- !nested && is.null(unparenthesized_value(value))
   if (identical(operator, "[")) {
     if (!typeof(key) %in%
           c("NULL", "integer", "double", "logical", "character") ||
-          anyNA(key)) return(scope)
+          anyNA(key)) return(rlang::zap())
     if (typeof(key) %in% c("integer", "double") &&
           (!all(is.finite(key)) || (any(key < 0) && any(key > 0)))) {
-      return(scope)
+      return(rlang::zap())
     }
-    replacement <- scope_closure_list(value, value_scope, lookup)
-    if (is.null(replacement) ||
-          (length(replacement) == 0L &&
-             !is.null(unparenthesized_value(value)))) return(scope)
-    elements[key] <- if (is.null(unparenthesized_value(value))) {
-      NULL
+    replacement <- if (nested) {
+      value
     } else {
-      replacement
+      scope_closure_list(value, value_scope, lookup)
     }
+    if (is.null(replacement) || (length(replacement) == 0L && !delete)) {
+      return(if (nested && is.null(replacement)) NULL else rlang::zap())
+    }
+    elements[key] <- if (delete) NULL else replacement
+    return(elements)
+  }
+
+  path <- if (identical(operator, "[[")) {
+    scope_literal_list_index(key, value_scope, lookup)
+  } else if (is_name_part(key)) {
+    rlang::as_name(key)
+  } else if (rlang::is_string(key)) {
+    key
+  }
+  if (length(path) == 0L) return(rlang::zap())
+  member <- if (nested) {
+    if (!is.null(value)) list(elements = value)
+  } else if (!delete) {
+    scope_closure_list_element(value, value_scope, lookup)
+  }
+  scope_replace_list_member(elements, path, member, delete)
+}
+
+# Replace or delete at a known exact path. Recursive [[<- traverses plain
+# list members directly and can extend only the innermost tracked list.
+scope_replace_list_member <- function(elements, path, member, delete) {
+  key <- path[[1L]]
+  index <- scope_list_member_index(elements, key)
+  if (length(path) > 1L) {
+    if (is.null(index) || is.null(elements[[index]]$elements)) {
+      return(rlang::zap())
+    }
+    child <- scope_replace_list_member(
+      elements[[index]]$elements, path[-1L], member, delete
+    )
+    if (rlang::is_zap(child)) return(child)
+    elements[[index]]$elements <- child
   } else {
-    index <- if (rlang::is_string(key)) {
-      matched <- match(key, names(elements))
-      if (is.na(matched)) length(elements) + 1L else matched
-    } else if (typeof(key) %in% c("integer", "double") && length(key) == 1L &&
-                 is.finite(key) && key >= 1L && key <= length(elements) + 1L &&
-                 key == trunc(key)) {
-      key
-    }
     if (is.null(index)) {
-      return(scope)
+      if (!rlang::is_string(key) &&
+            !(is.numeric(key) && trunc(key) == length(elements) + 1L)) {
+        return(rlang::zap())
+      }
+      index <- length(elements) + 1L
     }
-    if (is.null(unparenthesized_value(value))) {
+    if (delete) {
       elements[index] <- NULL
     } else {
-      elements[index] <- list(
-        scope_closure_list_element(value, value_scope, lookup)
-      )
+      elements[index] <- list(member)
       if (rlang::is_string(key)) names(elements)[index] <- key
     }
   }
-  scope_bind_closure_list(scope, name, elements)
+  elements
 }
 
 # Prove that a visible replacement closure returns the original list argument.
@@ -5469,26 +5519,24 @@ scope_replacement_keeps_input <- function(replacement, target, scope, lookup) {
 }
 
 # Update a tracked plain list's literal names without invoking replacement code.
-# Stored closures retain their positions and enclosing-frame offsets.
-scope_after_list_names <- function(scope, target, value, lookup, value_scope) {
+# Return NULL for an unproven whole-list value or zap() for an unhandled write.
+scope_list_write_names <- function(target, elements, value, lookup,
+                                   value_scope) {
   operator <- static_call_name(target)
   replacement <- rlang::call2(paste0(operator, "<-"),
                               .ns = static_call_ns(target))
-  if (length(target) < 2L || !is_name_part(target[[2L]])) return(scope)
-  elements <- scope_closure_list(target[[2L]], value_scope, lookup)
-  if (is.null(elements)) return(scope)
-  name <- rlang::as_name(target[[2L]])
   replace_attributes <- identical(operator, "attributes")
-  unknown <- if (replace_attributes) scope_bind_local(scope, name) else scope
+  unknown <- if (replace_attributes) NULL else rlang::zap()
   if (!is_known_base_frame_call(replacement, paste0(operator, "<-"),
                                 value_scope, lookup)) return(unknown)
   if (identical(operator, "attr")) {
     if (length(target) != 3L ||
+          rlang::is_missing(target[[3L]]) ||
           !identical(unparenthesized_value(target[[3L]]), "names")) {
-      return(scope)
+      return(rlang::zap())
     }
   } else if (length(target) != 2L) {
-    return(scope)
+    return(rlang::zap())
   }
   value <- unparenthesized_value(value)
   if (replace_attributes && !is.null(value)) {
@@ -5517,7 +5565,7 @@ scope_after_list_names <- function(scope, target, value, lookup, value_scope) {
   if (!is.null(value) && is.null(labels)) return(unknown)
   if (length(labels) > length(elements)) return(unknown)
   names(elements) <- labels
-  scope_bind_closure_list(scope, name, elements)
+  elements
 }
 
 # Whether the nearest local binding proves that a bare call head is a

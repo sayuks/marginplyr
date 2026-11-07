@@ -517,3 +517,100 @@ test_that("dtplyr special share failures leave the source unchanged", {
   expect_error(dplyr::collect(query), class = "marginplyr_error")
   expect_identical(dplyr::collect(source), input)
 })
+
+test_that("dtplyr ordinary summaries read the .N dimension and count rows", {
+  skip_if_suggest_absent("dtplyr")
+  input <- tibble::tibble(.N = c(10L, 10L, 20L))
+  source <- dtplyr::lazy_dt(input)
+  run <- function(data) {
+    summarize_with_margins(
+      data, total = sum(.data[[".N"]]), count = dplyr::n(),
+      .grouping = rollup(.N), .id = "set", .sort = "last",
+      .margin_label = NULL
+    )
+  }
+  query <- run(source)
+  expect_s3_class(query, "dtplyr_step")
+  expect_identical(dplyr::collect(query), tibble::tibble(
+    .N = c(10L, 20L, NA_integer_), set = c(1L, 1L, 2L),
+    total = c(20L, 20L, 40L), count = c(2L, 1L, 3L)
+  ))
+  expect_identical(dplyr::collect(query), run(input))
+  expect_identical(dplyr::collect(source), input)
+})
+
+test_that("dtplyr ordinary reads keep every special key role", {
+  skip_if_suggest_absent("dtplyr")
+  fixture <- tibble::tibble(key = c(10L, 10L, 20L), x = c(2L, 3L, 5L))
+  run <- function(data, name, role) {
+    key <- rlang::sym(name)
+    dollar <- rlang::call2("$", rlang::sym(".data"), key)
+    if (identical(role, "inherited")) {
+      data <- dplyr::group_by(data, !!key)
+    }
+    summarize_with_margins(
+      data, bare = sum(!!key), dollar = sum(!!dollar),
+      bracket = sum(.data[[name]]), count = dplyr::n(),
+      .by = !!if (identical(role, "fixed")) key else NULL,
+      .grouping = if (identical(role, "dimension")) rollup(dplyr::all_of(name)),
+      .margin_label = NULL, .id = "set", .sort = "last"
+    )
+  }
+  safe <- dtplyr::lazy_dt(fixture)
+  for (name in c(".N", ".I", ".SD", ".GRP", ".NGRP")) {
+    input <- data.table::as.data.table(fixture)
+    data.table::setnames(input, "key", name)
+    before <- data.table::copy(input)
+    source <- dtplyr::lazy_dt(input, immutable = TRUE)
+    local <- tibble::as_tibble(input)
+    for (role in c("dimension", "fixed", "inherited")) {
+      info <- paste(name, role)
+      query <- run(source, name, role)
+      expect_s3_class(query, "dtplyr_step")
+      actual <- dplyr::collect(query)
+      expected <- run(local, name, role)
+      renamed <- dplyr::collect(run(safe, "key", role))
+      names(renamed)[[1L]] <- name
+      expect_identical(actual, expected, info = info)
+      expect_identical(actual, renamed, info = info)
+      expect_identical(input, before, info = info)
+    }
+    expect_identical(dplyr::collect(source), local)
+  }
+})
+
+test_that("dtplyr key reads preserve lexical names and unnamed outputs", {
+  skip_if_suggest_absent("dtplyr")
+  input <- tibble::tibble(.N = c(10L, 10L, 20L), x = c(2L, 3L, 5L))
+  # Match the special variable spelling in a caller function lookup.
+  .N <- function() 5L # nolint: object_name_linter.
+  # The formal deliberately shadows the data.table special name.
+  lexical <- rlang::expr((function(.N) .N)(2L)) # nolint: object_name_linter.
+  local_summary <- rlang::quo(base::local({
+    outer_total <- sum(.N)
+    # The assignment introduces the same spelling in the child scope.
+    .N <- c(7L, 8L) # nolint: object_name_linter.
+    outer_total + sum(.N)
+  }))
+  field <- list(.N = 4L)
+  name <- "x"
+  run <- function(data) {
+    # Use the candidate alias spelling to exercise a caller binding collision.
+    ..marginplyr_read_key_1 <- 1L # nolint: object_name_linter.
+    summarize_with_margins(
+      data, sum(.N),
+      total = sum((.N)) + !!lexical + .N() + field$.N +
+        ..marginplyr_read_key_1,
+      other = sum(.data[[name]]), literal = deparse(base::quote(.N)),
+      nested = base::with(list(.N = c(7L, 8L)), sum(.N)),
+      nested_bare = with(list(.N = c(7L, 8L)), sum(.N)),
+      eval_value = base::eval(quote(sum(.N)), list(.N = c(7L, 8L))),
+      evalq_value = base::evalq(sum(.N), envir = list(.N = c(7L, 8L))),
+      local_value = 0L + !!local_summary,
+      .grouping = rollup(.N), .margin_label = NULL, .sort = "last"
+    )
+  }
+  query <- run(dtplyr::lazy_dt(input))
+  expect_s3_class(query, "dtplyr_step")
+  expect_identical(dplyr::collect(query), run(input))
+})
