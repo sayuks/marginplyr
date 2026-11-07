@@ -5210,11 +5210,23 @@ scope_after_list_write <- function(scope, target, value, lookup, value_scope) {
     return(scope_after_list_names(scope, target, value, lookup, value_scope))
   }
   if (is.null(operator) || !operator %in% c("[", "[[", "$") ||
-        length(target) != 3L || !is_name_part(target[[2L]]) ||
-        !is_known_base_frame_call(target, operator, value_scope, lookup)) {
+        length(target) != 3L || !is_name_part(target[[2L]])) {
     return(scope)
   }
   elements <- scope_closure_list(target[[2L]], value_scope, lookup)
+  if (is.null(elements)) {
+    return(scope)
+  }
+  name <- rlang::as_name(target[[2L]])
+  setter <- paste0(operator, "<-")
+  replacement <- rlang::call2(setter, .ns = static_call_ns(target))
+  if (!is_known_base_frame_call(replacement, setter, value_scope, lookup)) {
+    if (scope_list_replacement_keeps_input(replacement, target, value_scope,
+                                           lookup)) {
+      return(scope_bind_closure_list(scope, name, elements))
+    }
+    return(scope_bind_local(scope, name))
+  }
   if (rlang::is_missing(target[[3L]])) {
     return(scope)
   }
@@ -5222,7 +5234,7 @@ scope_after_list_write <- function(scope, target, value, lookup, value_scope) {
   if (identical(operator, "$") && is_name_part(key)) {
     key <- rlang::as_name(key)
   }
-  if (is.null(elements) || is.object(key)) {
+  if (is.object(key)) {
     return(scope)
   }
   if (identical(operator, "[")) {
@@ -5263,8 +5275,28 @@ scope_after_list_write <- function(scope, target, value, lookup, value_scope) {
       if (rlang::is_string(key)) names(elements)[index] <- key
     }
   }
-  name <- rlang::as_name(target[[2L]])
   scope_bind_closure_list(scope, name, elements)
+}
+
+# Prove that a visible replacement closure returns the original list argument.
+# The argument match uses a marker in place of R's untagged temporary input.
+scope_list_replacement_keeps_input <- function(replacement, target, scope,
+                                               lookup) {
+  closure <- scope_call_closure(replacement, scope, lookup)
+  if (is.null(closure)) return(FALSE)
+  definition <- closure$definition
+  result <- unparenthesized_value(definition[[3L]])
+  if (!is_name_part(result)) return(FALSE)
+  input <- new.env(parent = emptyenv())
+  args <- static_call_args(target)
+  args[1L] <- list(input)
+  names(args) <- replace(rlang::names2(args), 1L, "")
+  call <- rlang::call2(static_call_name(replacement), !!!args, value = NULL)
+  matched <- static_matched_arguments(
+    call, rlang::new_function(definition[[2L]], NULL, emptyenv()),
+    expand_dots = FALSE
+  )
+  identical(matched[[rlang::as_name(result)]], input)
 }
 
 # Update a tracked plain list's literal names without invoking replacement code.
