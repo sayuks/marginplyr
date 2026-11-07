@@ -1029,3 +1029,40 @@ test_that("other DuckDB metadata failures retain their external condition", {
   expect_identical(audit$status, "errored")
   expect_identical(audit$conditions[[1L]]$handling, "propagated")
 })
+
+test_that("typed DuckDB inspection requires matching input column names", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  source <- dplyr::tbl(
+    con, dbplyr::sql("SELECT 1 AS region, 'west' AS REGION"),
+    vars = c("region", "REGION")
+  )
+
+  plan <- inspect_grouping(source, .grouping = grouping_set(REGION))
+  expect_identical(plan$included, "(REGION)")
+  expect_equal(nrow(last_sent_queries()), 0L)
+
+  expect_error(
+    inspect_grouping(source, .grouping = grouping_set(where(is.character))),
+    "Alias the input columns with unique names", fixed = TRUE,
+    class = "marginplyr_error"
+  )
+  audit <- last_sent_queries(details = TRUE)
+  expect_identical(audit$purpose, "selection_proxy")
+  expect_identical(audit$status, "returned")
+  expect_error(
+    inspect_grouping(source, .by = where(is.character)),
+    "Alias the input columns with unique names", fixed = TRUE,
+    class = "marginplyr_error"
+  )
+  expect_error(
+    inspect_grouping(
+      source, .by = REGION, .grouping = grouping_set(where(is.character))
+    ),
+    "Alias the input columns with unique names", fixed = TRUE,
+    class = "marginplyr_error"
+  )
+})
