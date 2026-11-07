@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Ordinary `across()` function expressions respect authored namespace lookup
+  when determining output names, avoiding false grouping-column and identifier
+  collisions while retaining static share-source eligibility (#1421).
+
 * Typed inspection and Nest verbs refuse replaced registered dtplyr converters
   before they can change Grouping dimensions or fixed keys (#1419).
 
