@@ -13,6 +13,10 @@
   `as_tibble.list` converters (#1490).
 
 * Parent and Total share dependency checks retain local closures returned by
+  `base::as.function()` and by `base::Vectorize()` when the closure has no
+  formal arguments (#1491).
+
+* Parent and Total share dependency checks retain local closures returned by
   `rlang::as_function()` and `compiler::cmpfun()` (#1482).
 
 * SQLite Margin expansions preserve source dimension types when directly
