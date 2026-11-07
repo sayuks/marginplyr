@@ -1982,21 +1982,6 @@ validate_unique_grouping_sets <- function(keys, duplicates_choices,
     return(invisible(NULL))
   }
   groups <- split(set_ids[duplicate_keys], keys[duplicate_keys])
-  abort_duplicate_grouping_sets(groups, duplicates_choices)
-}
-
-# Report exact groups for small plans or two positions within a large family.
-abort_duplicate_witness <- function(witness, duplicates_choices) {
-  abort_duplicate_grouping_sets(
-    list(witness$positions), duplicates_choices, witness$family
-  )
-}
-
-# Format duplicate occurrence evidence and the calling verb's available options.
-abort_duplicate_grouping_sets <- function(groups, duplicates_choices,
-                                          family = NULL) {
-  # The nesting verbs' vocabulary excludes `"keep"` (#110).
-  alternatives <- setdiff(duplicates_choices, "error")
   # Each group is already comma-joined. Join groups here to preserve that
   # formatting through cli; codetools cannot see the use in its template.
   # nolint start: object_usage_linter.
@@ -2005,22 +1990,32 @@ abort_duplicate_grouping_sets <- function(groups, duplicates_choices,
     collapse = "; "
   )
   # nolint end
-  offered <- paste0("\"", alternatives, "\"")
-  offered[[1L]] <- paste0(".duplicates = ", offered[[1L]])
-  heading <- if (is.null(family)) {
+  abort_marginplyr(c(
     paste0(
       "Duplicate grouping sets were produced at ",
       "{cli::qty(length(groups))}{?positions/position groups}:"
-    )
-  } else {
-    paste0("Duplicate grouping sets were produced. For example, these ",
-           "positions in ", family, " have the same set:")
-  }
-  abort_marginplyr(c(
-    heading,
+    ),
     i = "{positions}.",
-    i = "Use {.or {.code {offered}}}."
+    i = "Use {.or {.code {duplicate_alternatives(duplicates_choices)}}}."
   ))
+}
+
+# Show two positions with the same membership in the named family.
+abort_duplicate_witness <- function(witness, duplicates_choices) {
+  abort_marginplyr(c(
+    paste0("Duplicate grouping sets were produced. For example, these ",
+           "positions in {witness$family} have the same set:"),
+    i = "{paste(witness$positions, collapse = ', ')}.",
+    i = "Use {.or {.code {duplicate_alternatives(duplicates_choices)}}}."
+  ))
+}
+
+# Offer the calling verb's other duplicate policies. Nest excludes keep (#110).
+duplicate_alternatives <- function(duplicates_choices) {
+  alternatives <- setdiff(duplicates_choices, "error")
+  offered <- paste0("\"", alternatives, "\"")
+  offered[[1L]] <- paste0(".duplicates = ", offered[[1L]])
+  offered
 }
 
 # The families a specification expands to. Every function below it takes the
