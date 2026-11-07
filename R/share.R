@@ -5742,24 +5742,35 @@ scope_after_removals <- function(expr, scope, lookup) {
   scope
 }
 
-# A literal base assign() installs a visible closure in the current frame when
-# neither its target environment nor inheritance can redirect the write.
+# A literal base assignment installs a visible closure in the current frame
+# when its evaluation and assignment environments are both that frame.
 scope_local_closure_assignment <- function(expr, scope, lookup) {
   transfer_lookup <- lookup
   transfer_lookup$rebound <- lookup$function_rebound %||% lookup$rebound
-  if (length(scope) == 0L || !identical(static_call_name(expr), "assign") ||
-        !is_known_base_frame_call(expr, "assign", scope, transfer_lookup)) {
+  callee <- static_call_name(expr)
+  if (length(scope) == 0L || is.null(callee) ||
+        !callee %in% c("assign", "delayedAssign") ||
+        !is_known_base_frame_call(expr, callee, scope, transfer_lookup)) {
     return(NULL)
   }
   name <- base_call_argument(expr, "x")
   value <- base_call_argument(expr, "value")
-  target <- base_call_argument(expr, c("envir", "pos"))
-  inherited <- base_call_argument(expr, "inherits")
+  delayed <- identical(callee, "delayedAssign")
+  target <- base_call_argument(
+    expr, if (delayed) "assign.env" else c("envir", "pos")
+  )
+  inherited <- if (!delayed) base_call_argument(expr, "inherits")
+  evaluation <- if (delayed) base_call_argument(expr, "eval.env")
   local_target <- length(target) == 0L ||
     identical(static_environment_frame(target[[1L]], scope, lookup), 1L)
+  local_evaluation <- length(evaluation) == 0L ||
+    identical(static_environment_frame(evaluation[[1L]], scope, lookup), 1L)
   if (length(name) != 1L || !rlang::is_string(name[[1L]]) ||
-        length(value) != 1L || !local_target ||
+        length(value) != 1L || !local_target || !local_evaluation ||
         (length(inherited) > 0L && !identical(inherited[[1L]], FALSE))) {
+    return(NULL)
+  }
+  if (delayed && is.null(literal_function_definition(value[[1L]]))) {
     return(NULL)
   }
   if (is.null(scope_value_closure(value[[1L]], scope, lookup))) {
