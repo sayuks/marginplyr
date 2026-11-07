@@ -4372,8 +4372,9 @@ scoped_data_symbols <- function(expr, scope, lookup) {
     )))
   }
   if (identical(callee_name, "do.call")) {
+    invocation <- scope_empty_do_call(expr, scope, lookup)
     return(unique(c(
-      call_part_symbols(expr, scope, lookup),
+      call_part_symbols(invocation %||% expr, scope, lookup),
       deferred_call_symbols(expr)
     )))
   }
@@ -4603,6 +4604,30 @@ scope_literal_branch <- function(expr, scope, lookup) {
 literal_function_definition <- function(expr) {
   expr <- unparenthesized_value(expr)
   if (rlang::is_call(expr, "function") && length(expr) >= 3L) expr else NULL
+}
+
+# Model a known closure invoked by base do.call() with no arguments, in the
+# current caller frame. A computed head retains value lookup for `what`.
+scope_empty_do_call <- function(expr, scope, lookup) {
+  if (!identical(static_call_name(expr), "do.call") ||
+        is_parenthesized(static_call_head(expr)) ||
+        !is_known_base_frame_call(expr, "do.call", scope, lookup)) {
+    return(NULL)
+  }
+  parts <- static_matched_arguments(expr, base::do.call)
+  if (!setequal(names(parts), c("what", "args")) ||
+        any(vapply(parts, rlang::is_missing, logical(1)))) {
+    return(NULL)
+  }
+  arguments <- unparenthesized_value(parts$args)
+  if (!identical(static_call_name(arguments), "list") ||
+        length(arguments) != 1L ||
+        is_parenthesized(static_call_head(arguments)) ||
+        !is_known_base_frame_call(arguments, "list", scope, lookup) ||
+        is.null(scope_value_closure(parts$what, scope, lookup))) {
+    return(NULL)
+  }
+  rlang::call2(rlang::call2("(", parts$what))
 }
 
 # Resolve a visible literal function in call position. Its enclosing index
@@ -5854,6 +5879,23 @@ block_reads_and_scope <- function(expr, scope, lookup, read_symbols,
   list(reads = unique(reads), scope = scope)
 }
 
+# Find one replacement of a closure name or literal through base blocks.
+# The statement walker proves the carrier and setter before carrying the write.
+scope_singleton_loop_write <- function(expr, scope, lookup) {
+  while (rlang::is_call(expr, "{", n = 1L) &&
+           is_known_base_frame_call(expr, "{", scope, lookup)) {
+    expr <- expr[[2L]]
+  }
+  name <- static_call_name(expr)
+  if (!rlang::is_call(expr, c("<-", "="), n = 2L) ||
+        !rlang::is_call(expr[[2L]]) ||
+        !is_known_base_frame_call(expr, name, scope, lookup)) {
+    return(NULL)
+  }
+  value <- expr[[3L]]
+  if (is_name_part(value) || !is.null(literal_function_definition(value))) expr
+}
+
 # Read a statement and carry forward its removals and definite local bindings.
 # A separate result reader can restrict the read of a returned value.
 statement_reads_and_scope <- function(expr, scope, lookup = NULL,
@@ -5884,16 +5926,33 @@ statement_reads_and_scope <- function(expr, scope, lookup = NULL,
     return(step)
   }
   if (identical(call_name, "for")) {
+    index <- expr[[2L]]
+    sequence <- expr[[3L]]
+    literal_loop <- length(expr) == 4L && is_name_part(index) &&
+      !rlang::is_missing(sequence) &&
+      (is.null(sequence) ||
+         (is.atomic(sequence) && !is.object(sequence) &&
+            length(sequence) <= 1L)) &&
+      is_known_base_frame_call(expr, call_name, scope, lookup)
     # R binds the index even for an empty sequence. The sequence runs first.
+    reads <- read_symbols(expr[[3L]], scope, lookup)
     inner <- scope_after_removals(expr[[3L]], scope, lookup)
-    if (is_name_part(expr[[2L]])) {
-      inner <- scope_bind_local(inner, rlang::as_name(expr[[2L]]))
+    if (literal_loop) {
+      inner <- scope_bind_local(inner, rlang::as_name(index), sequence, lookup)
+      if (length(sequence) == 0L) {
+        return(list(reads = reads, scope = inner))
+      }
+      write <- scope_singleton_loop_write(expr[[4L]], inner, lookup)
+      if (!is.null(write)) {
+        step <- statement_reads_and_scope(write, inner, lookup, read_symbols)
+        step$reads <- unique(c(reads, step$reads))
+        return(step)
+      }
+    } else if (is_name_part(index)) {
+      inner <- scope_bind_local(inner, rlang::as_name(index))
     }
     return(list(
-      reads = unique(c(
-        read_symbols(expr[[3L]], scope, lookup),
-        read_symbols(expr[[4L]], inner, lookup)
-      )),
+      reads = unique(c(reads, read_symbols(expr[[4L]], inner, lookup))),
       scope = scope_after_removals(expr[[4L]], inner, lookup)
     ))
   }
@@ -5954,6 +6013,12 @@ scope_after_removals <- function(expr, scope, lookup) {
   }
   bound <- scope_bound_names(scope)
   name <- static_call_name(expr)
+  if (identical(name, "do.call")) {
+    invocation <- scope_empty_do_call(expr, scope, lookup)
+    if (!is.null(invocation)) {
+      return(scope_after_removals(invocation, scope, lookup))
+    }
+  }
   assignment <- scope_local_closure_assignment(expr, scope, lookup)
   if (!is.null(assignment)) {
     retained <- scope_after_removals(assignment$value, scope, lookup)
@@ -6611,9 +6676,7 @@ reflective_lookup_symbols <- function(expr, bound, lookup = NULL) {
 # run time, which this walk cannot read, so a `do.call()` of a reflective
 # primitive is reported as a lookup it cannot resolve.
 #
-# A `do.call()` of anything else needs no answer here: its arguments are
-# values by the time it runs, and the walk has already reported the expressions
-# that produced them.
+# A known closure invocation follows the ordinary call walk.
 deferred_call_symbols <- function(expr) {
   argument <- call_formal_argument(expr, "what")
   if (length(argument) == 0L) {

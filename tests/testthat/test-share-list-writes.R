@@ -149,6 +149,80 @@ test_that("list write analysis never invokes installed caller closures", {
   expect_identical(probe$calls, 0L)
 })
 
+test_that("a singleton loop retains invocation dependencies of list writes", {
+  probe <- rlang::env(calls = 0L)
+  read <- quote((function(prior) {
+    callback <- function() {
+      probe$calls <- probe$calls + 1L
+      sum(prior)
+    }
+    carrier <- list(read = function() 7)
+    for (i in 1L) carrier$read <- callback
+    rm(prior)
+    carrier$read()
+  })(1))
+  expect_share_dependencies(list_write_data(), list(read))
+  expect_identical(probe$calls, 0L)
+})
+
+test_that("literal loops preserve legal closures and function lookup", {
+  reads <- alist(
+    (function(prior) {
+      carrier <- list(read = function() 1)
+      for (i in 1L) carrier$read <- function() sum(prior)
+      carrier$read()
+    })(7),
+    (function(prior) {
+      carrier <- list(read = function() sum(prior))
+      for (i in 1L) {
+        carrier$read <- function() 7
+      }
+      rm(prior)
+      carrier$read()
+    })(1),
+    (function(prior) {
+      carrier <- list(read = function() sum(prior))
+      for (i in NULL) rm(prior)
+      carrier$read()
+    })(7),
+    (function(prior) {
+      `for` <- function(...) NULL
+      carrier <- list(read = function() 7)
+      for (i in 1L) carrier$read <- function() sum(prior)
+      rm(prior)
+      carrier$read()
+    })(1)
+  )
+  expect_share_dependency_values(list_write_data(), reads, expected = 7)
+
+  for (sequence in alist(1L, NULL)) {
+    read <- substitute((function(prior) {
+      reader <- function() sum(prior)
+      rm(prior)
+      (function() {
+        for (reader in SEQUENCE) NULL
+        reader()
+      })()
+    })(1), list(SEQUENCE = sequence))
+    expect_share_dependencies(list_write_data(), list(read))
+  }
+})
+
+test_that("literal loops leave writes after loop exits unreachable", {
+  for (exit in alist(break, next, eval(parse(text = "break")))) {
+    read <- substitute((function(prior) {
+      carrier <- list(read = function() 7)
+      for (i in 1L) {
+        EXIT
+        carrier$read <- function() sum(prior)
+      }
+      rm(prior)
+      carrier$read()
+    })(1), list(EXIT = exit))
+    expect_share_dependency_values(list_write_data(), list(read), expected = 7)
+  }
+})
+
 test_that("list write refusal leaves lazy input unread", {
   skip_if_suggest_absent("dtplyr")
   probe <- rlang::env(calls = 0L)
