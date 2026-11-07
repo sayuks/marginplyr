@@ -352,7 +352,8 @@ Config/testthat/start-first:
     dtplyr-converter-metadata,
     qualified-formula-selections,
     nest-namespace,
-    across-prior-rebinding
+    across-prior-rebinding,
+    share-list-replacement-dispatch
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
