@@ -164,6 +164,16 @@ test_that("recursive list paths preserve ordinary caller function lookup", {
   expect_identical(probe$calls, 12L)
 })
 
+test_that("empty literal names do not select unnamed nested closures", {
+  read <- quote((function(prior) {
+    carrier <- list(outer = list(function() sum(prior), safe = function() 7))
+    rm(prior)
+    selected <- carrier[[c("outer", "")]]
+    if (is.null(selected)) 7 else selected()
+  })(1))
+  expect_share_dependency_values(nested_closure_list_data(), list(read), 7)
+})
+
 test_that("nested closure dependency refusal leaves lazy input unread", {
   skip_if_suggest_absent("dtplyr")
   probe <- rlang::env(calls = 0L)

@@ -4810,7 +4810,8 @@ scope_closure_list_member <- function(head, scope, lookup) {
         (identical(operator, "$") && length(path) != 1L)) return(NULL)
   for (step in seq_along(path)) {
     key <- path[[step]]
-    index <- if (rlang::is_string(key)) {
+    # R list lookup never matches an empty name to an unnamed element.
+    index <- if (rlang::is_string(key) && nzchar(key)) {
       if (partial) {
         pmatch(key, names(elements), duplicates.ok = TRUE)
       } else {
