@@ -43,12 +43,14 @@ dtplyr_margin_input <- function(.data, backend) {
 }
 
 # Build a lazy copy of an admitted immutable dtplyr step. step_call() requires
-# a string, but dt_call() accepts a namespaced call head in the stored field.
+# a string, but dt_call() preserves a computed head in the stored field.
 dtplyr_deferred_copy <- function(step) {
   step_call <- utils::getFromNamespace("step_call", "dtplyr")
   step <- step_call(step, "copy")
-  # The qualified name avoids lookup in a cache or caller binding.
-  step[["fun"]] <- quote(data.table::copy)
+  # Bind the generated namespace operator without changing authored calls.
+  step[["fun"]] <- rlang::call2(
+    base::`::`, rlang::sym("data.table"), rlang::sym("copy")
+  )
   step
 }
 

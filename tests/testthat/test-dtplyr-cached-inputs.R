@@ -266,3 +266,147 @@ test_that("reused immutable caches expand multiple sets without caller copy", {
   # detects that it was invoked.
   expect_identical(copy_calls, 0L)
 })
+
+test_that("generated copies preserve expansion payload under late namespaces", {
+  skip_if_suggest_absent("dtplyr")
+  # dtplyr imports data.table; this remains a one-backend test.
+  caller <- new.env(parent = environment())
+  caller$source <- data.table::data.table(g = c("a", "b"), value = c(13L, 29L))
+  before <- serialize(caller$source, NULL)
+  input <- evalq(dtplyr::lazy_dt(source), caller)
+  result <- expand_with_margins(
+    input, .grouping = grouping_set(g), .margin_label = NULL
+  )
+  calls <- 0L
+  caller$`::` <- function(package, name) {
+    package <- as.character(substitute(package))
+    name <- as.character(substitute(name))
+    if (identical(c(package, name), c("data.table", "copy"))) {
+      calls <<- calls + 1L
+      return(function(x) {
+        out <- data.table::copy(x)
+        data.table::set(out, j = "value", value = rep(-99L, nrow(out)))
+        out
+      })
+    }
+    getExportedValue(package, name)
+  }
+  expected <- tibble::tibble(g = c("a", "b"), value = c(13L, 29L))
+  expect_identical(dplyr::collect(input), expected)
+  expect_identical(dplyr::collect(result), expected)
+  expect_identical(calls, 0L)
+  expect_identical(serialize(caller$source, NULL), before)
+})
+
+
+test_that("generated copies preserve immutable rows under caller namespaces", {
+  skip_if_suggest_absent("dtplyr")
+  # dtplyr imports data.table; this remains a one-backend test.
+  cases <- expand.grid(
+    shape = c("root", "filter", "copy_cache", "renamed_cache"),
+    family = c("one", "rollup", "repeated"),
+    sort = c("none", "first", "last"), timing = c("early", "late"),
+    mode = c("count", "empty", "error"), stringsAsFactors = FALSE
+  )
+  for (i in seq_len(nrow(cases))) local({
+    case <- cases[i, ]
+    label <- paste(unlist(case), collapse = "/")
+    caller <- new.env(parent = environment())
+    caller$source <- data.table::data.table(g = "a", value = 13L)
+    before <- serialize(caller$source, NULL)
+    row_reads <- 0L
+    caller$visit <- function(x) {
+      row_reads <<- row_reads + length(x)
+      rep(TRUE, length(x))
+    }
+    input <- evalq(dtplyr::lazy_dt(source), caller)
+    if (case$shape == "filter") {
+      input <- dplyr::filter(input, visit(value))
+    } else if (case$shape == "copy_cache") {
+      input <- dplyr::compute(input, name = "copy")
+    } else if (case$shape == "renamed_cache") {
+      input <- dplyr::rename(dplyr::compute(input, name = "cache"), key = g)
+    }
+    key <- if (case$shape == "renamed_cache") "key" else "g"
+    column <- rlang::sym(key)
+    spec <- switch(case$family,
+      one = grouping_set(!!column), rollup = rollup(!!column),
+      repeated = grouping_sets(grouping_set(!!column), grouping_set(!!column))
+    )
+    calls <- 0L
+    dispatcher <- function(package, name) {
+      package <- as.character(substitute(package))
+      name <- as.character(substitute(name))
+      if (identical(c(package, name), c("data.table", "copy"))) {
+        calls <<- calls + 1L
+        if (case$mode == "error") stop("Caller copy namespace ran.")
+        if (case$mode == "empty") return(function(x) utils::head(x, 0L))
+      }
+      getExportedValue(package, name)
+    }
+    if (case$timing == "early") caller$`::` <- dispatcher
+    result <- expand_with_margins(
+      input, .grouping = spec, .margin_label = NULL, .id = "set",
+      .duplicates = "keep", .sort = case$sort
+    )
+    expect_identical(row_reads, 0L, info = label)
+    expect_identical(calls, 0L, info = label)
+    if (case$timing == "late") caller$`::` <- dispatcher
+    expected_input <- tibble::tibble(!!key := "a", value = 13L)
+    expect_identical(dplyr::collect(input), expected_input, info = label)
+    expect_identical(dplyr::collect(dplyr::mutate(input, value = value)),
+                     expected_input, info = label)
+    expect_identical(dplyr::collect(dplyr::union_all(input, input)),
+                     tibble::tibble(!!key := c("a", "a"), value = c(13L, 13L)),
+                     info = label)
+    expected <- switch(case$family,
+      one = tibble::tibble(!!key := "a", set = 1L, value = 13L),
+      rollup = tibble::tibble(!!key := c("a", NA_character_), set = 1:2,
+                              value = c(13L, 13L)),
+      repeated = tibble::tibble(!!key := c("a", "a"), set = 1:2,
+                                value = c(13L, 13L))
+    )
+    collected <- dplyr::collect(result)
+    expect_identical(dplyr::arrange(collected, set), expected, info = label)
+    expect_identical(calls, 0L, info = label)
+    rm("::", envir = caller)
+    expect_identical(dplyr::collect(result), collected, info = label)
+    expect_identical(dplyr::collect(input), expected_input, info = label)
+    expect_identical(serialize(caller$source, NULL), before, info = label)
+  })
+})
+
+test_that("authored source namespaces retain their caller lookup", {
+  skip_if_suggest_absent("dtplyr")
+  caller <- new.env(parent = environment())
+  caller$source <- data.table::data.table(g = c("a", "b"), value = c(13L, 29L))
+  before <- serialize(caller$source, NULL)
+  input <- evalq(
+    dtplyr::lazy_dt(source) |>
+      dplyr::filter(data.table::copy(value) == value),
+    caller
+  )
+  calls <- 0L
+  caller$`::` <- function(package, name) {
+    package <- as.character(substitute(package))
+    name <- as.character(substitute(name))
+    if (identical(c(package, name), c("data.table", "copy"))) {
+      calls <<- calls + 1L
+    }
+    getExportedValue(package, name)
+  }
+  result <- expand_with_margins(
+    input, .grouping = rollup(g), .margin_label = NULL, .id = "set"
+  )
+  expect_identical(calls, 0L)
+  expected_input <- tibble::tibble(g = c("a", "b"), value = c(13L, 29L))
+  expect_identical(dplyr::collect(input), expected_input)
+  expect_identical(calls, 1L)
+  calls <- 0L
+  expect_identical(dplyr::collect(result), tibble::tibble(
+    g = c("a", "b", NA_character_, NA_character_), set = c(1L, 1L, 2L, 2L),
+    value = c(13L, 29L, 13L, 29L)
+  ))
+  expect_identical(calls, 1L)
+  expect_identical(serialize(caller$source, NULL), before)
+})

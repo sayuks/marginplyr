@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Immutable dtplyr expansions preserve source rows and payload when a caller
+  overrides the namespace operator, including cached inputs (#1422).
+
 * Grouping callbacks that rebind an unproven local function resolve against typed
   metadata, keeping fixed keys and dimensions consistent across inspection and
   summaries, including immutable dtplyr inputs (#1400).
