@@ -506,13 +506,15 @@ local_tibble_context_names <- function() {
 
 expect_tibble_context_names <- function(input, typed) {
   local_tibble_context_names()
+  a <- quote(a)
+  b <- quote(b)
   direct <- rlang::quo(tidyselect::all_of(names(tidyselect::peek_data())[1L]))
   wrapped <- rlang::quo(tidyselect::all_of(
     identity(names(tidyselect::peek_data())[1L])
   ))
-  fixed <- inspect_grouping(typed, .by = b, .format = "list")
+  fixed <- inspect_grouping(typed, .by = !!b, .format = "list")
   dimension <- inspect_grouping(
-    typed, .by = a, .grouping = grouping_set(b), .format = "list"
+    typed, .by = !!a, .grouping = grouping_set(!!b), .format = "list"
   )
   for (selection in list(wrapped, direct)) {
     expect_identical(tidyselect::eval_select(selection, typed), c(b = 2L))
@@ -521,12 +523,13 @@ expect_tibble_context_names <- function(input, typed) {
     )
     expect_identical(
       inspect_grouping(
-        input, .by = a, .grouping = grouping_set(!!selection), .format = "list"
+        input, .by = !!a, .grouping = grouping_set(!!selection),
+        .format = "list"
       ),
       dimension
     )
     expect_error(
-      inspect_grouping(input, .by = b, .grouping = grouping_set(!!selection)),
+      inspect_grouping(input, .by = !!b, .grouping = grouping_set(!!selection)),
       "cannot appear in both", class = "marginplyr_error"
     )
   }
@@ -705,4 +708,74 @@ test_that("DuckDB name-only inspection skips data-frame receiver methods", {
     class = "vctrs_error_names_must_be_unique"
   )
   expect_identical(counter$queries, 0L)
+})
+
+test_that("dtplyr proxy order determines the fixed key and summary grain", {
+  skip_if_suggest_absent("dtplyr")
+  source <- data.table::data.table(a = c("x", "y"), b = c(1L, 1L))
+  original <- data.table::copy(source)
+  step <- dtplyr::lazy_dt(source, immutable = TRUE)
+  typed <- data.table::data.table(a = character(), b = integer())
+  proxy_rows <- integer()
+  rlang::local_bindings(
+    tidyselect_data_proxy.data.table = function(x) {
+      proxy_rows <<- c(proxy_rows, nrow(x))
+      x[, c("b", "a")]
+    },
+    .env = asNamespace("tidyselect")$.__S3MethodsTable__.
+  )
+
+  direct <- rlang::quo(tidyselect::peek_vars()[1L])
+  wrapped <- rlang::quo(identity(!!direct))
+  expected_plan <- inspect_grouping(step, .by = b, .format = "list")
+  expected_summary <- tibble::tibble(b = 1L, count = 2L)
+
+  for (selection in list(direct, wrapped)) {
+    expect_identical(tidyselect::eval_select(selection, typed), c(b = 1L))
+    expect_identical(
+      inspect_grouping(step, .by = !!selection, .format = "list"),
+      expected_plan
+    )
+    expect_identical(
+      dplyr::collect(summarize_with_margins(
+        step, count = dplyr::n(), .by = !!selection
+      )),
+      expected_summary
+    )
+  }
+  expect_true(length(proxy_rows) > 0L && all(proxy_rows == 0L))
+  expect_identical(source, original)
+})
+
+test_that("dtplyr proxy order determines overlap for each constructor", {
+  skip_if_suggest_absent("dtplyr")
+  step <- dtplyr::lazy_dt(data.frame(a = c("x", "y"), b = c(1L, 1L)))
+  rlang::local_bindings(
+    tidyselect_data_proxy.data.frame = function(x) {
+      if (inherits(x, "data.table")) x[, c("b", "a")] else x
+    },
+    .env = asNamespace("tidyselect")$.__S3MethodsTable__.
+  )
+
+  direct <- rlang::quo(tidyselect::peek_vars()[1L])
+  wrapped <- rlang::quo(identity(!!direct))
+  helper <- rlang::quo(tidyselect::all_of(!!direct))
+  constructors <- list(grouping_set, grouping_sets, rollup, cube, grouping_spec)
+  for (constructor in constructors) {
+    expected <- inspect_grouping(
+      step, .by = a, .grouping = constructor(b), .format = "list"
+    )
+    for (selection in list(direct, wrapped, helper)) {
+      expect_identical(
+        inspect_grouping(
+          step, .by = a, .grouping = constructor(!!selection), .format = "list"
+        ),
+        expected
+      )
+      expect_error(
+        inspect_grouping(step, .by = b, .grouping = constructor(!!selection)),
+        "cannot appear in both", class = "marginplyr_error"
+      )
+    }
+  }
 })

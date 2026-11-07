@@ -286,3 +286,77 @@ test_that("nesting namespace isolation keeps empty cells and identities", {
     }
   }
 })
+
+test_that("dtplyr Nest cells preserve source rows under a caller list method", {
+  skip_if_suggest_absent("dtplyr")
+
+  stock_method <- utils::getS3method(
+    "as.data.table", "list", envir = asNamespace("data.table")
+  )
+  for (include_total in c(FALSE, TRUE)) {
+    spec <- if (include_total) rollup(district) else grouping_set(district)
+    for (keep in c(FALSE, TRUE)) {
+      root <- new.env(parent = globalenv())
+      root$source <- data.table::data.table(
+        district = c("E", "E", "W"), pos = 1:3,
+        `payload name` = c("a", "b", "c"), special = c(4L, 7L, 9L)
+      )
+      data.table::setnames(root$source, "special", ".SD")
+      before <- serialize(root$source, NULL)
+      input <- evalq(dtplyr::lazy_dt(source, immutable = TRUE), root)
+      query <- nest_with_margins(
+        input, .grouping = spec, .margin_label = NULL, .id = "set",
+        .keep = keep, .sort = "last"
+      )
+      expect_s3_class(query, "dtplyr_step")
+
+      calls <- 0L
+      root$as.data.table.list <- function(x, ...) {
+        calls <<- calls + 1L
+        x$pos <- rep(-99L, length(x$pos))
+        stock_method(x, ...)
+      }
+      expect_true(is.call(dplyr::show_query(query)))
+      expect_identical(calls, 0L)
+      expect_identical(dplyr::collect(input), tibble::as_tibble(root$source))
+      expect_identical(calls, 0L)
+
+      collected <- dplyr::collect(query)
+      expect_identical(calls, 0L)
+      rowwise <- nest_by_with_margins(
+        input, .grouping = spec, .margin_label = NULL, .id = "set",
+        .keep = keep, .sort = "last"
+      )
+      expect_s3_class(rowwise, "rowwise_df")
+      expect_identical(dplyr::group_vars(rowwise), c("district", "set"))
+      expect_identical(calls, 0L)
+
+      keys <- c("E", "W", NA_character_[include_total])
+      sets <- c(1L, 1L, 2L[include_total])
+      expected <- list(
+        list(pos = 1:2, `payload name` = c("a", "b"), .SD = c(4L, 7L)),
+        list(pos = 3L, `payload name` = "c", .SD = 9L)
+      )
+      if (include_total) {
+        expected[[3L]] <- list(
+          pos = 1:3, `payload name` = c("a", "b", "c"), .SD = c(4L, 7L, 9L)
+        )
+      }
+      if (keep) {
+        districts <- list(c("E", "E"), "W", c("E", "E", "W"))
+        expected <- Map(
+          function(key, cell) c(list(district = key), cell),
+          districts[seq_along(expected)], expected
+        )
+      }
+      for (result in list(collected, rowwise)) {
+        expect_named(result, c("district", "set", "data"))
+        expect_identical(result$district, keys)
+        expect_identical(result$set, sets)
+        expect_true(all(vapply(result$data, is.data.frame, logical(1))))
+        expect_identical(lapply(result$data, as.list), expected)
+      }
+      expect_identical(serialize(root$source, NULL), before)
+    }
+  }
+})
