@@ -1,6 +1,6 @@
 # marginplyr 0.1.0
 
-* Grouping selections preserve dtplyr receiver methods, ordinary tidyselect name repair, and the selection context of explicitly qualified constructor callees (#1439, #1449, #1457).
+* Grouping selections preserve dtplyr receiver methods, ordinary tidyselect name repair, and the selection context of explicitly qualified constructor calls (#1439, #1449, #1457).
 
 * `summarize_with_margins()` identifies incompatible unnamed frame fields across grouping sets and explains how to use consistent fields or pack the summary (#1441).
 
