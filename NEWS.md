@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Formula-shaped caller-qualified Grouping selections use faithful typed
+  metadata, preserving fixed keys and avoiding false duplicate grouping sets
+  across inspection and summaries, including immutable dtplyr inputs (#1429).
+
 * Parent and Total share dependency checks retain invocation-time dependencies
   of local literal closures installed by `delayedAssign()` (#1417).
 

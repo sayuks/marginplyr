@@ -533,12 +533,12 @@ is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE) {
     ))
   }
 
-  # tidyselect refuses a formula in a selection on sight, in `stop_formula()`,
+  # tidyselect refuses a bare formula in a selection in `stop_formula()`,
   # whatever it wraps, so the refusal depends on no column type. It is read
   # from the shape rather than joined to `selection_refused_operators()`
   # because `is_nameable_call()` declines a call to `~`, so the name that set
   # is consulted by is never read (ADR 0019, #163).
-  if (rlang::is_call(expr, "~")) {
+  if (rlang::is_call(expr, "~", ns = "")) {
     return(TRUE)
   }
 
