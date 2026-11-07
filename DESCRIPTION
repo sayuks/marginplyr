@@ -354,7 +354,8 @@ Config/testthat/start-first:
     nest-namespace,
     across-prior-rebinding,
     share-list-replacement-dispatch,
-    nest-local-list-converter
+    nest-local-list-converter,
+    dtplyr-dot-dot-shares
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
