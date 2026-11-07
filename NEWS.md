@@ -3,6 +3,10 @@
 * Parent and Total share dependency checks retain local closures selected by
   unique partial list names through `$` and `[[` with `exact = FALSE` (#1415).
 
+* Ordinary `across()` function expressions respect authored namespace lookup
+  when determining output names, avoiding false grouping-column and identifier
+  collisions while retaining static share-source eligibility (#1421).
+
 * Grouping selections use faithful typed metadata when a helper operand installs
   a pattern method before matching, preserving fixed keys and dimensions across
   inspection and summaries, including immutable dtplyr inputs (#1420).
