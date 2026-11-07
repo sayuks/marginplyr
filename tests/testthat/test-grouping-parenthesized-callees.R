@@ -223,3 +223,54 @@ test_that("explicit qualified parentheses retain the caller's selection", {
     expect_identical(conditionMessage(actual), conditionMessage(direct))
   }
 })
+
+test_that("qualified constructor callees retain the typed selection context", {
+  input <- data.frame(
+    region = c("east", "west"), units = c(1L, 1L), value = 7:8
+  )
+  spellings <- list(
+    quote(base::`(`(rollup)()),
+    quote((base::`(`(rollup))()),
+    quote((base::`(`(rollup)()))
+  )
+  consume <- list(
+    function(spec) inspect_grouping(input, .grouping = spec, .format = "list"),
+    function(spec) nest_with_margins(input, .grouping = spec),
+    function(spec) nest_by_with_margins(input, .grouping = spec)
+  )
+  observed <- rlang::env(reads = c(lookup = 0L, selector = 0L))
+  choose <- function(column) {
+    force(column)
+    function() {
+      observed$reads[["selector"]] <- observed$reads[["selector"]] + 1L
+      column
+    }
+  }
+  caller <- rlang::env(rollup = choose("units"))
+  caller[["::"]] <- function(package, name) {
+    observed$reads[["lookup"]] <- observed$reads[["lookup"]] + 1L
+    stopifnot(identical(substitute(package), quote(base)),
+              identical(substitute(name), quote(`(`)))
+    active <- if (strict) {
+      tidyselect::peek_data()
+    } else {
+      tryCatch(tidyselect::peek_data(), error = function(cnd) NULL)
+    }
+    if (is.character(active$region)) {
+      return(base::`(`)
+    }
+    function(x) choose("region")
+  }
+
+  for (strict in c(FALSE, TRUE)) {
+    for (expr in spellings) {
+      selection <- rlang::new_quosure(expr, caller)
+      spec <- grouping_sets(!!selection)
+      for (verb in consume) {
+        observed$reads[] <- 0L
+        expect_identical(verb(spec), verb(grouping_sets(units)))
+        expect_identical(observed$reads, c(lookup = 1L, selector = 1L))
+      }
+    }
+  }
+})

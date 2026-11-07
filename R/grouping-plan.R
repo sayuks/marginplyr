@@ -2525,10 +2525,12 @@ read_grouping_arg <- function(arg, data_vars, wrappers, data_proxy,
     return(selection)
   }
 
-  # Syntactic pairs affect admission only. An authored qualified pair runs
-  # its namespace operation in its captured environment (ADR 0019).
+  constructor_head <- if (is_constructor_call) static_call_head(expr)
+  # The constructor's name may be bare inside an authored namespace call
+  # in the callee. Inspect the written head before that qualifier is stripped.
+  authored_namespace <- qualified || !is.null(static_call_ns(expr)) ||
+    is_redundant_parens(unparenthesized_value(constructor_head, ns = ""))
   evaluate <- function() rlang::eval_tidy(rlang::new_quosure(evaluation, env))
-  authored_namespace <- qualified || !is.null(static_call_ns(expr))
   value <- if (authored_namespace) {
     if (is.null(data_proxy) &&
           !is_name_only_grouping_arg(authored, data_vars, allow_data_peek)) {
@@ -2573,7 +2575,6 @@ read_grouping_arg <- function(arg, data_vars, wrappers, data_proxy,
       value
     }
     selection_env <- rlang::env(env)
-    constructor_head <- if (is_constructor_call) static_call_head(expr)
     # tidyselect strips bare pairs around the selection before evaluation.
     if (qualified) {
       rlang::env_bind(selection_env, `::` = function(...) retained)
