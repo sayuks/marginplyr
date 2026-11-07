@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Parent and Total shares match active geometry fixed keys on local sf
+  inputs without requesting a spatial join (#1494).
+
 * Both Nest verbs preserve local cell values under registered
   `as_tibble.list` converters (#1490).
 

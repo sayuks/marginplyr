@@ -3244,6 +3244,11 @@ apply_joined_shares <- function(result,
     )
     result <- denominator$result
     mapping <- denominator$mapping
+    # sf refuses an sf right-hand side even for ordinary key equality.
+    # Drop only the mapping's outer class; its geometry keys stay intact.
+    if (inherits(mapping, "sf")) {
+      mapping <- dplyr::as_tibble(mapping)
+    }
     join_names <- denominator$join_names
     key_names <- denominator$key_names
     result <- dplyr::left_join(
