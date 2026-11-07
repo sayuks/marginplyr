@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Parent and Total share dependency checks retain local closures selected by
+  unique partial list names through `$` and `[[` with `exact = FALSE` (#1415).
+
 * Typed inspection and Nest verbs refuse replaced registered dtplyr converters
   before they can change Grouping dimensions or fixed keys (#1419).
 
