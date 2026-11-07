@@ -355,6 +355,7 @@ Config/testthat/start-first:
     across-prior-rebinding,
     share-list-replacement-dispatch,
     nest-local-list-converter,
+    sf-shares,
     dtplyr-dot-dot-shares
 VignetteBuilder:
     quarto
