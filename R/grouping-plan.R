@@ -230,18 +230,19 @@ prepare_grouping_plan <- function(.data,
       # Recognized captures and fixed keys can use the local receiver once.
       # Discarded validation uses only names and leaves dispatched context
       # data reads to the canonical pass.
-      name_proxy <- if (identical(backend$kind, "local")) {
+      local_proxy <- if (identical(backend$kind, "local")) {
         data
-      } else {
-        grouping_name_proxy(data_vars)
       }
       allow_data_peek <- if (identical(backend$kind, "dtplyr")) {
         dtplyr_data_peek_name_only
-      } else if (is.object(name_proxy)) {
+      } else if (!is.null(local_proxy)) {
         function(...) FALSE
+      } else {
+        frame_data_peek_name_only
       }
       by <- resolve_fixed_keys(
-        by_quo, input$groups, data_vars, name_proxy, allow_data_peek
+        by_quo, input$groups, data_vars,
+        local_proxy %||% grouping_name_proxy(data_vars), allow_data_peek
       )
       if (!is.null(validate_names)) {
         validate_names(data_vars)
@@ -251,7 +252,7 @@ prepare_grouping_plan <- function(.data,
       # This is the call's only reading of a nested argument, so a recognized
       # one is evaluated once whichever passes run (ADR-0008).
       preflight <- preflight_grouping_spec(
-        grouping_spec, data_vars, name_proxy = name_proxy,
+        grouping_spec, data_vars, local_proxy = local_proxy,
         allow_data_peek = allow_data_peek
       )
       local_dimensions <- character()
@@ -514,7 +515,7 @@ selection_c_args <- function(args, env) {
 # `allow_caller_code = FALSE` also withholds caller functions and assignments,
 # so a discarded mixed-selection pass cannot change their evaluation order.
 # `allow_data_peek`, when supplied, checks whether the selection can read
-# names from the unclassed proxy in its own lexical scope.
+# names from the names-only proxy in its own lexical scope.
 is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE,
                               allow_data_peek = NULL) {
   # An injected selector is walked in the environment it carries.
@@ -1235,14 +1236,27 @@ is_name_only_selection <- function(arg, data_vars, allow_caller_code = TRUE,
   )
 }
 
+# A names-only data frame so tidyselect applies its data-frame name repair.
 grouping_name_proxy <- function(data_vars) {
-  stats::setNames(as.list(seq_along(data_vars)), data_vars)
+  columns <- stats::setNames(as.list(seq_along(data_vars)), data_vars)
+  vctrs::new_data_frame(columns, n = 1L)
 }
 
-# Whether names() on the typed dtplyr receiver is safe to settle from names
-# alone in this selection scope. Check method bindings without forcing them.
+# Whether names() dispatch can be skipped for the dtplyr or names-only frame.
 dtplyr_data_peek_name_only <- function(env, bound) {
-  methods <- c("names.data.table", "names.data.frame", "names.default")
+  selection_names_methods_absent(env, bound, c(
+    "names.data.table", "names.data.frame", "names.default"
+  ))
+}
+
+frame_data_peek_name_only <- function(env, bound) {
+  selection_names_methods_absent(env, bound, c(
+    "names.data.frame", "names.default"
+  ))
+}
+
+# Check the lexical scope and registered names() methods without forcing them.
+selection_names_methods_absent <- function(env, bound, methods) {
   registry <- asNamespace("base")$.__S3MethodsTable__.
   !any(methods %in% bound |
          rlang::env_has(env, methods, inherit = TRUE) |
@@ -1378,8 +1392,8 @@ validate_grouping_overlap <- function(.by, dimensions) {
 # uses of one specification remain independent readings.
 # `pending` carries a suspension across nested nodes, leaving later arguments
 # unread until the typed continuation.
-# `name_proxy` preserves local receiver dispatch during name-only capture.
-# `allow_data_peek` guards names reads through an unclassed proxy.
+# `local_proxy` preserves local receiver dispatch during name-only capture.
+# `allow_data_peek` guards names reads through the names-only proxy.
 preflight_grouping_spec <- function(
   grouping_spec,
   data_vars,
@@ -1387,7 +1401,7 @@ preflight_grouping_spec <- function(
   data_proxy = NULL,
   previous = NULL,
   pending = new.env(parent = emptyenv()),
-  name_proxy = grouping_name_proxy(data_vars),
+  local_proxy = NULL,
   allow_data_peek = NULL
 ) {
   if (!is.null(previous) && !isTRUE(previous$deferred)) {
@@ -1444,8 +1458,8 @@ preflight_grouping_spec <- function(
       if (is.null(prior$nested)) prior else list(nested = prior$nested$spec)
     } else {
       read_grouping_arg(
-        arg, data_vars, captured$wrappers, data_proxy, name_proxy,
-        allow_data_peek = if (!is.object(name_proxy)) allow_data_peek
+        arg, data_vars, captured$wrappers, data_proxy, local_proxy,
+        allow_data_peek = if (is.null(local_proxy)) allow_data_peek
       )
     }
     if (isTRUE(reading$deferred)) {
@@ -1468,7 +1482,7 @@ preflight_grouping_spec <- function(
 
     nested_preflight <- preflight_grouping_spec(
       reading$nested, data_vars, ancestors, data_proxy,
-      previous = prior$nested, pending = pending, name_proxy = name_proxy,
+      previous = prior$nested, pending = pending, local_proxy = local_proxy,
       allow_data_peek = allow_data_peek
     )
     if (!isTRUE(nested_preflight$deferred)) {
@@ -2482,7 +2496,7 @@ grouping_constructor_names <- function() {
 # typed pass (ADR 0008). `wrappers` holds captured qualified call boundaries;
 # `evaluated` distinguishes a retained answer from an unread column name.
 read_grouping_arg <- function(arg, data_vars, wrappers, data_proxy,
-                              name_proxy = grouping_name_proxy(data_vars),
+                              local_proxy,
                               allow_data_peek = NULL) {
   expr <- nested_arg_expr(arg)
   authored <- restore_nested_arg(arg, wrappers)
@@ -2530,11 +2544,7 @@ read_grouping_arg <- function(arg, data_vars, wrappers, data_proxy,
       )
       integer()
     }
-    proxy <- if (is.null(data_proxy)) {
-      name_proxy
-    } else {
-      data_proxy
-    }
+    proxy <- data_proxy %||% local_proxy %||% grouping_name_proxy(data_vars)
     tidyselect::eval_select(
       rlang::new_quosure(rlang::call2(capture, evaluation), env), proxy
     )
