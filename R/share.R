@@ -5231,7 +5231,7 @@ scope_after_list_write <- function(scope, target, value, lookup, value_scope) {
   }
   target <- unparenthesized_value(target)
   operator <- static_call_name(target)
-  if (is.null(operator) || !operator %in% c("[[", "$") ||
+  if (is.null(operator) || !operator %in% c("[", "[[", "$") ||
         length(target) != 3L || !is_name_part(target[[2L]]) ||
         !is_known_base_frame_call(target, operator, value_scope, lookup)) {
     return(scope)
@@ -5247,19 +5247,42 @@ scope_after_list_write <- function(scope, target, value, lookup, value_scope) {
   if (is.null(elements) || is.object(key)) {
     return(scope)
   }
-  index <- if (rlang::is_string(key)) {
-    matched <- match(key, names(elements))
-    if (is.na(matched)) length(elements) + 1L else matched
-  } else if (typeof(key) %in% c("integer", "double") && length(key) == 1L &&
-               is.finite(key) && key >= 1L && key <= length(elements) + 1L &&
-               key == trunc(key)) {
-    key
+  if (identical(operator, "[")) {
+    if (!typeof(key) %in%
+          c("NULL", "integer", "double", "logical", "character") ||
+          anyNA(key)) return(scope)
+    if (typeof(key) %in% c("integer", "double") &&
+          (!all(is.finite(key)) || (any(key < 0) && any(key > 0)))) {
+      return(scope)
+    }
+    replacement <- scope_closure_list(value, value_scope, lookup)
+    if (is.null(replacement) ||
+          (length(replacement) == 0L &&
+             !is.null(unparenthesized_value(value)))) return(scope)
+    elements[key] <- if (is.null(unparenthesized_value(value))) {
+      NULL
+    } else {
+      replacement
+    }
+  } else {
+    index <- if (rlang::is_string(key)) {
+      matched <- match(key, names(elements))
+      if (is.na(matched)) length(elements) + 1L else matched
+    } else if (typeof(key) %in% c("integer", "double") && length(key) == 1L &&
+                 is.finite(key) && key >= 1L && key <= length(elements) + 1L &&
+                 key == trunc(key)) {
+      key
+    }
+    if (is.null(index)) {
+      return(scope)
+    }
+    if (is.null(unparenthesized_value(value))) {
+      elements[index] <- NULL
+    } else {
+      elements[index] <- list(scope_value_closure(value, value_scope, lookup))
+      if (rlang::is_string(key)) names(elements)[index] <- key
+    }
   }
-  if (is.null(index)) {
-    return(scope)
-  }
-  elements[index] <- list(scope_value_closure(value, value_scope, lookup))
-  if (rlang::is_string(key)) names(elements)[index] <- key
   name <- rlang::as_name(target[[2L]])
   scope <- scope_bind_local(scope, name)
   scope[[1L]]$kinds[[name]] <- "value"

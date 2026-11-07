@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Parent and Total share dependency checks follow surviving closures after
+  literal list deletions and single-bracket replacements (#1414).
+
 * Immutable dtplyr expansions preserve source rows and payload when a caller
   overrides the namespace operator, including cached inputs (#1422).
 
