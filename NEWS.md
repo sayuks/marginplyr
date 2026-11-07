@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Grouping context-name selections preserve local receiver dispatch, keeping
+  fixed keys, grouping dimensions and summary or nested grains consistent
+  with typed tidyselect (#1434).
+
 * Formula-shaped caller-qualified Grouping selections use faithful typed
   metadata, preserving fixed keys and avoiding false duplicate grouping sets
   across inspection and summaries, including immutable dtplyr inputs (#1429).
