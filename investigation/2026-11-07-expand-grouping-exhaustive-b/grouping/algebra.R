@@ -10,8 +10,8 @@ gen <- function(depth = 0L) {
   kind <- if (depth >= 3L) sample(c("set", "rollup", "cube"), 1) else sample(c("set", "sets", "rollup", "cube", "product"), 1)
   n <- sample(if (kind %in% c("set", "product")) 0:3 else 1:3, 1)
   children <- lapply(seq_len(n), function(i) {
-    if (kind %in% c("sets", "product") && runif(1) < .6) return(gen(depth + 1L))
-    if (kind %in% c("rollup", "cube") && runif(1) < .5) return(list(kind="set", children=list(list(kind="leaf", cols=sample(vars, sample(1:3, 1))))))
+    if (kind %in% c("sets", "product") && runif(1) < 0.6) return(gen(depth + 1L))
+    if (kind %in% c("rollup", "cube") && runif(1) < 0.5) return(list(kind="set", children=list(list(kind="leaf", cols=sample(vars, sample(1:3, 1))))))
     x <- leaf()
     if (kind %in% c("rollup", "cube") && !length(x$cols)) x$cols <- sample(vars, 1)
     x

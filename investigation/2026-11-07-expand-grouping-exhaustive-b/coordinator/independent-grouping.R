@@ -6,7 +6,7 @@ names.selection_view <- function(x) {
   original <- attr(x, "names")
   if (busy) return(original)
   busy <<- TRUE
-  on.exit(busy <<- FALSE)
+  on.exit({ busy <<- FALSE })
   proxy <- tryCatch(tidyselect::peek_data(), error = function(cnd) NULL)
   if (!is.null(proxy) && is.character(proxy[[2L]])) rev(original) else original
 }

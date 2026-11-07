@@ -9,7 +9,7 @@ names.selector_frame <- function(x) {
   ordinary <- attr(x, "names")
   if (busy) return(ordinary)
   busy <<- TRUE
-  on.exit(busy <<- FALSE)
+  on.exit({ busy <<- FALSE })
   data <- tryCatch(tidyselect::peek_data(), error=function(e) NULL)
   if (!is.null(data) && is.character(data[[1L]])) rev(ordinary) else ordinary
 }
