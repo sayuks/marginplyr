@@ -134,3 +134,95 @@ test_that("actual expanded names still collide with public names", {
     "conflicts with a summary output", class = "marginplyr_error"
   )
 })
+
+check_unnamed_frame_fields <- function(convert) {
+  data <- convert(data.frame(g = c("a", "b"), x = 1:2))
+  grouping_col <- rlang::sym("g")
+  frame <- function(x, bit) {
+    if (bit == 0L) data.frame(detail = sum(x)) else data.frame(total = sum(x))
+  }
+  error <- expect_error(
+    summarize_with_margins(
+      data, frame(.data$x, grouping_bit(!!grouping_col)),
+      .grouping = rollup("g")
+    ),
+    "consistent field names", class = "marginplyr_error"
+  )
+  expect_identical(rlang::call_name(conditionCall(error)),
+                   "summarize_with_margins")
+  expect_match(conditionMessage(error), "`detail`", fixed = TRUE)
+  expect_match(conditionMessage(error), "`total`", fixed = TRUE)
+  expect_match(conditionMessage(error), "give the summary a name", fixed = TRUE)
+
+  expanded <- summarize_with_margins(
+    data, data.frame(value = sum(.data$x)), .grouping = rollup("g")
+  )
+  expect_identical(names(expanded), c("g", "value"))
+  expect_identical(expanded$value, c(1L, 2L, 3L))
+
+  packed <- summarize_with_margins(
+    data, out = frame(.data$x, grouping_bit(!!grouping_col)),
+    .grouping = rollup("g")
+  )
+  expect_identical(names(packed), c("g", "out"))
+  expect_s3_class(packed$out, "data.frame")
+  expect_identical(packed$out$detail, c(1L, 2L, NA_integer_))
+  expect_identical(packed$out$total, c(NA_integer_, NA_integer_, 3L))
+}
+
+test_that("plain frames diagnose incompatible unnamed summary fields", {
+  check_unnamed_frame_fields(identity)
+})
+
+test_that("tibbles diagnose incompatible unnamed summary fields", {
+  check_unnamed_frame_fields(tibble::as_tibble)
+})
+
+test_that("eager tables diagnose incompatible unnamed summary fields", {
+  skip_if_suggest_absent("data.table")
+  check_unnamed_frame_fields(data.table::as.data.table)
+})
+
+test_that("runtime across unpacking diagnoses incompatible expanded fields", {
+  data <- data.frame(g = c("a", "b"), x = 1:2, ..marginplyr_name_rules_1 = 3:4)
+  frame <- function(x, bit) {
+    if (bit == 0L) data.frame(detail = sum(x)) else data.frame(total = sum(x))
+  }
+  unpack <- TRUE
+  error <- expect_error(
+    summarize_with_margins(
+      data, dplyr::across(x, ~ frame(.x, grouping_bit(g)), .unpack = unpack),
+      .grouping = rollup(g)
+    ),
+    "consistent field names", class = "marginplyr_error"
+  )
+  expect_match(conditionMessage(error), "`x_detail`", fixed = TRUE)
+  expect_match(conditionMessage(error), "`x_total`", fixed = TRUE)
+})
+
+test_that("unnamed summary fields align by name across grouping sets", {
+  data <- data.frame(g = c("a", "b"), x = 1:2)
+  frame <- function(x) {
+    value <- data.frame(value = sum(x), count = length(x))
+    if (length(x) == 1L) value else value[c("count", "value")]
+  }
+  result <- summarize_with_margins(data, frame(x), .grouping = rollup(g))
+  expect_identical(result$value, c(1L, 2L, 3L))
+  expect_identical(result$count, c(1L, 1L, 2L))
+})
+
+test_that("a later summary evaluation error keeps its original cause", {
+  data <- data.frame(g = c("a", "b"), h = c("c", "d"), x = 1:2)
+  frame <- function(x, id) {
+    if (id == 0L) return(data.frame(detail = sum(x)))
+    if (id == 1L) return(data.frame(subtotal = sum(x)))
+    rlang::abort("Caller summary failed.", class = "caller_summary_error")
+  }
+  error <- expect_error(
+    summarize_with_margins(
+      data, frame(x, grouping_id(g, h)), .grouping = rollup(g, h)
+    ),
+    "Caller summary failed.", fixed = TRUE
+  )
+  expect_s3_class(error$parent, "caller_summary_error")
+})
