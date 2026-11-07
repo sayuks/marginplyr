@@ -589,7 +589,8 @@ test_that("dtplyr key reads preserve lexical names and unnamed outputs", {
   field <- list(.N = 4L)
   name <- "x"
   run <- function(data) {
-    ..marginplyr_read_key_1 <- 1L
+    # Use the candidate alias spelling to exercise a caller binding collision.
+    ..marginplyr_read_key_1 <- 1L # nolint: object_name_linter.
     summarize_with_margins(
       data, sum(.N),
       total = sum((.N)) + !!lexical + .N() + field$.N +
