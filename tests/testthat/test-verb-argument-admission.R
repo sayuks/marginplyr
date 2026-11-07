@@ -992,8 +992,12 @@ test_that("direct reader inspection matches reusable Arrow inputs", {
 test_that("inspection Option arguments precede Arrow reader schema selection", {
   skip_if_suggest_absent("arrow")
 
-  batch <- arrow::record_batch(a = 1L, a = 2L)
-  next_batch <- arrow::record_batch(a = 3L, a = 4L)
+  duplicate_batch <- function(first, second) {
+    columns <- stats::setNames(list(first, second), c("a", "a"))
+    do.call(arrow::record_batch, columns)
+  }
+  batch <- duplicate_batch(1L, 2L)
+  next_batch <- duplicate_batch(3L, 4L)
   table <- arrow::Table$create(batch, next_batch)
   invalid_options <- list(.format = "json", .duplicates = "invalid")
 
