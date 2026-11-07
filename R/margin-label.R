@@ -340,10 +340,23 @@ check_observed_label_collision <- function(data,
     return(invisible(NULL))
   }
 
-  # Collision counts concern the selected columns alone; subclass summaries
-  # may also aggregate unrelated payload columns, including empty geometries.
-  data <- margin_column_source(data)
-  data <- dplyr::select(.data = data, dplyr::all_of(read_cols))
+  aliases <- character()
+  if (is.data.frame(data)) {
+    # Read the stored columns used by branch mutation. A subclass's
+    # as_tibble() can supply presentation values in their place.
+    data <- vctrs::new_data_frame(unclass(data)[read_cols], n = nrow(data))
+  } else {
+    if (inherits(data, "tbl_sql") &&
+          inherits(dbplyr::remote_con(data), "SQLiteConnection") &&
+          length(sqlite_boolean_columns(read_cols)) > 0L) {
+      # Bind the input's Boolean-word columns by position before projecting or
+      # aggregating them. The aggregate outputs still use the public names.
+      aliases <- sqlite_boolean_query_aliases(data)
+      data <- sqlite_boolean_input_relation(data, aliases)
+    }
+    selected <- sqlite_boolean_names(read_cols, aliases)
+    data <- dplyr::select(.data = data, dplyr::all_of(selected))
+  }
   query <- margin_safe_column_reads(
     data, read_cols, function(source, safe_name) {
       checks <- lapply(
@@ -355,26 +368,26 @@ check_observed_label_collision <- function(data,
           column <- if (inherits(source, "tbl_sql") && col == ".env") {
             dbplyr::ident(col)
           } else {
-            rlang::data_sym(safe_name(col))
+            rlang::data_sym(sqlite_boolean_names(safe_name(col), aliases))
           }
-          # dtplyr defers these helpers in the input's root environment.
-          conversion <- if (inherits(source, "dtplyr_step")) {
-            rlang::expr(base::as.character(!!column))
+          is_dtplyr <- inherits(source, "dtplyr_step")
+          conversion <- if (is.data.frame(source) || is_dtplyr) {
+            rlang::call2(
+              marginplyr_private_call("margin_display_character"), column
+            )
           } else {
             rlang::expr(as.character(!!column))
           }
-          aggregate <- if (inherits(source, "dtplyr_step")) {
-            rlang::expr(base::sum)
-          } else {
-            rlang::sym("sum")
+          if (is_dtplyr) {
+            # Bind generated lookups while leaving upstream expressions alone.
+            matches <- deferred_export_call(
+              "base", "==", conversion, margin_label
+            )
+            return(deferred_export_call("base", "sum", matches, na.rm = TRUE))
           }
           condition <- rlang::expr(!!conversion == !!margin_label)
-          if (is.data.frame(source) || inherits(source, "dtplyr_step")) {
-            # Scalar displays can retain 1D shape; if_else needs a vector.
-            condition <- rlang::expr(base::as.vector(!!condition))
-          }
           rlang::expr(
-            (!!aggregate)(
+            sum(
               dplyr::if_else(
                 !!condition,
                 1L,
@@ -670,21 +683,25 @@ label_margin_branch <- function(.data,
           # column. A summary branch may have removed the dimension.
           source_col <- safe_name(col)
           branch_size <- if (source_col %in% dtplyr_columns) {
-            rlang::expr(base::length(!!margin_column_pronoun(source_col)))
+            deferred_export_call(
+              "base", "length", margin_column_pronoun(source_col)
+            )
           } else {
             rlang::expr(dplyr::n())
           }
           label <- margin_labels[[col]]
           if (!is_missing_margin_label(label)) {
             if (dtplyr_full_size_label) {
-              return(rlang::expr(base::rep(!!label, !!branch_size)))
+              return(deferred_export_call("base", "rep", label, branch_size))
             }
             return(label)
           }
           if (col %in% missing_label_encoded) {
             # The typed missing this margin row carries, spelled as the
             # included branches spell one (ADR 0012).
-            return(rlang::expr(base::rep(!!sentinels[[col]], !!branch_size)))
+            return(deferred_export_call(
+              "base", "rep", sentinels[[col]], branch_size
+            ))
           }
           value <- prototypes[[col]]
           if (dtplyr_full_size_label && is.list(value) &&
@@ -695,9 +712,9 @@ label_margin_branch <- function(.data,
               1L, dtplyr_columns, prefix = "..marginplyr_label_"
             )
             return(rlang::new_quosure(
-              rlang::expr(vctrs::vec_init(
-                !!rlang::sym(prototype_name), !!branch_size
-              )),
+              deferred_export_call(
+                "vctrs", "vec_init", rlang::sym(prototype_name), branch_size
+              ),
               env = rlang::env(
                 rlang::base_env(),
                 !!!rlang::set_names(list(value), prototype_name)

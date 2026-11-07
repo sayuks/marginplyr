@@ -338,7 +338,7 @@
 #' | Local data frame | Both, from the result, before any share |
 #' | `dtplyr` step | Both, at execution, before an invalid row |
 #' | Arrow | Neither; shares are rejected outright |
-#' | General dbplyr | Type only, by asking the dialect itself |
+#' | General dbplyr | Type from the dialect, and cardinality as below |
 #'
 #' Arrow inputs reject both helpers after expression planning and common
 #' Margin-operation validation but before constructing a summary query. The
@@ -394,11 +394,13 @@
 #' you. They read none of your tables and are included in [last_sent_queries()]
 #' when auditing is enabled.
 #'
-#' Cardinality is not established this way at all: a SQL aggregate returns one
-#' value per grouping row by construction, so there is nothing for a dialect
-#' to convert. A non-scalar summary therefore remains a runtime-only
-#' incompatibility, reported by the database at [dplyr::collect()] rather than
-#' raised by marginplyr before the query is returned.
+#' Ordinary SQL aggregates return one value per grouping row. On DuckDB
+#' and PostgreSQL, the result query checks a bare, single-argument
+#' `UNNEST()` at the top level of a direct [dbplyr::sql()] share source, such
+#' as `SUM(amount) + UNNEST(ARRAY[10])`. An array of zero or more than one
+#' element causes a database error on execution. The check recognizes SQL
+#' expressions with standard quotes and without comments. Other SQL
+#' expressions must also return one value per grouping row.
 #'
 #' The portable value guarantee covers finite numbers, missing values, and
 #' zero denominators. Infinite values and backend-specific `NaN`
@@ -2394,6 +2396,106 @@ check_total_grouping_kind <- function(plan) {
       "specification, or omit the Total share."
     )
   ))
+}
+
+# Enforce scalar cardinality where a DuckDB or PostgreSQL share source uses
+# UNNEST directly in its SQL projection. The adapter supplies resolved output
+# names, so an ordinary summary without a share retains its SQL unchanged.
+guard_sql_share_projections <- function(select, sources, con, kind, keys) {
+  for (index in which(select$name %in% sources)) {
+    expr <- select$expr[[index]]
+    if (inherits(expr, "sql")) {
+      select$expr[[index]] <- guard_share_unnest(
+        expr, select$name[[index]], con, kind, keys
+      )
+    }
+  }
+  select
+}
+
+# Wrap a bare top-level UNNEST's single array argument. Only direct projection
+# calls are recognized: an UNNEST inside a scalar subquery can legitimately
+# feed several rows to its own aggregate. Token spans keep quoted contents
+# and nested arguments from being mistaken for calls or argument separators.
+guard_share_unnest <- function(expr, source, con, kind, keys) {
+  sql <- as.character(expr)
+  if (!grepl("unnest", sql, ignore.case = TRUE)) {
+    return(expr)
+  }
+  tokens_at <- gregexpr(
+    paste0("\"(?:[^\"]|\"\")*\"|'(?:[^'\\\\]|'')*'|",
+           "[[:alpha:]_][[:alnum:]_]*|[^[:space:]]"),
+    sql, perl = TRUE
+  )
+  tokens <- regmatches(sql, tokens_at)[[1L]]
+  # These spellings need dialect-specific lexical rules. Leave them to SQL.
+  if (any(tokens %in% c("\"", "'", "$", "\\", ";")) ||
+        grepl("/\\*|--", sql)) {
+    return(expr)
+  }
+  position <- seq_along(tokens)
+  depth <- cumsum((tokens %in% c("(", "[")) - (tokens %in% c(")", "]")))
+  valid_depth <- all(depth >= 0L) && utils::tail(depth, 1L) == 0L
+  outer_depth <- 0L
+  while (valid_depth && tokens[[outer_depth + 1L]] == "(" &&
+           which(position > outer_depth & depth == outer_depth)[[1L]] ==
+             length(tokens) - outer_depth) {
+    outer_depth <- outer_depth + 1L
+  }
+  upper <- toupper(tokens)
+  projection <- !upper[[outer_depth + 1L]] %in%
+    c("SELECT", "WITH", "VALUES", "TABLE")
+  starts <- which(
+    valid_depth & projection & depth == outer_depth & upper == "UNNEST" &
+      c(tokens[-1L], "") == "(" & c("", tokens[-length(tokens)]) != "."
+  )
+
+  offset <- as.integer(tokens_at[[1L]])
+  width <- attr(tokens_at[[1L]], "match.length")
+  for (start in rev(starts)) {
+    end <- which(position > start & depth == outer_depth)[[1L]]
+    arguments <- position > start + 1L & position < end
+    separators <- depth == outer_depth + 1L & tokens == ","
+    if (!any(arguments) || any(arguments & separators)) {
+      next
+    }
+    first <- offset[[start + 1L]] + width[[start + 1L]]
+    last <- offset[[end]] - 1L
+    guarded <- sql_single_share_array(substr(sql, first, last), source, con,
+                                      kind, keys)
+    sql <- paste0(substr(sql, 1L, first - 1L), guarded,
+                  substring(sql, last + 1L))
+  }
+  dbplyr::sql(sql)
+}
+
+# Check the array before UNNEST can discard or replicate its grouping row.
+# Both engines bind the array once, in the scope of that grouping row.
+sql_single_share_array <- function(array, source, con, kind, keys) {
+  message <- dbplyr::escape(paste0(
+    "Share source ", source, " must return exactly one value per grouping row."
+  ), con = con)
+  if (kind == "duckdb") {
+    return(paste0(
+      "list_transform([", array, "], lambda a: CASE WHEN len(a) = 1 ",
+      "THEN a ELSE error(", message, ") END)[1]"
+    ))
+  }
+
+  offset <- "0"
+  if (length(keys) > 0L) {
+    # OFFSET accepts NULL as zero. The outer grouping key keeps this a
+    # per-group subplan even when the array has only volatile scalar calls.
+    key <- dbplyr::escape(dbplyr::ident(keys[[1L]]), con = con)
+    offset <- paste0("CASE WHEN ", key, " IS NULL THEN NULL ELSE 0 END")
+  }
+  # The offset keeps the payload and count on one evaluation. Including the
+  # evaluated count prevents folding an invalid cast before the CASE runs.
+  paste0(
+    "(SELECT a FROM (SELECT ", array, " AS a OFFSET ", offset, ") AS v ",
+    "WHERE CASE WHEN cardinality(a) = 1 THEN TRUE ELSE CAST(CONCAT(",
+    message, ", ' Count: ', COALESCE(cardinality(a), 0)) AS BOOLEAN) END)"
+  )
 }
 
 # Applies a nonempty set of requested shares to the staged summary result.
@@ -4481,42 +4583,6 @@ selection_dependency_symbols <- function(expr, scope, lookup) {
   scoped_data_symbols(expr, scope, lookup)
 }
 
-# The reachable arm of an if with a literal condition, or NULL when both
-# arms may run. An empty list represents an if with no reachable arm.
-literal_if_parts <- function(expr, name, bound, lookup) {
-  if (identical(name, "if") && length(expr) >= 3L &&
-        is_scope_control_primitive(expr, name, bound, lookup)) {
-    condition <- unparenthesized_value(expr[[2L]])
-    if (identical(condition, FALSE)) {
-      return(if (length(expr) >= 4L) list(expr[[4L]]) else list())
-    }
-    if (identical(condition, TRUE)) {
-      return(list(expr[[3L]]))
-    }
-  }
-  NULL
-}
-
-# Call arguments that the read and removal walks may visit.
-scope_call_args <- function(expr, name, bound, lookup) {
-  if (!is.null(name) && name %in% c("&&", "||") && length(expr) == 3L &&
-        identical(unparenthesized_value(expr[[2L]]), identical(name, "||")) &&
-        is_scope_control_primitive(expr, name, bound, lookup)) {
-    return(list())
-  }
-  literal_if_parts(expr, name, bound, lookup) %||%
-    evaluated_call_args(expr, bound = bound)
-}
-
-# Standalone syntax has no captured caller. With a caller, short-circuiting
-# requires the actual base callee.
-is_scope_control_primitive <- function(expr, name, bound, lookup) {
-  if (is.null(lookup$env) && is.null(static_call_ns(expr))) {
-    return(!name %in% bound)
-  }
-  is_known_base_call(expr, name, bound, lookup)
-}
-
 # A statically selected literal branch, without evaluating its selector.
 # NULL leaves selection unknown; a one-element list retains an empty argument.
 scope_literal_branch <- function(expr, scope, lookup) {
@@ -4529,22 +4595,7 @@ scope_literal_branch <- function(expr, scope, lookup) {
         !is_known_base_frame_call(expr, "switch", scope, lookup)) {
     return(NULL)
   }
-  if (rlang::is_missing(expr[[2L]])) {
-    return(NULL)
-  }
-  key <- unparenthesized_value(expr[[2L]])
-  if (!is.object(key) && typeof(key) %in% c("integer", "double") &&
-        length(key) == 1L && is.finite(key) && key >= 1 &&
-        key < length(expr) - 1L) {
-    return(as.list(expr)[as.integer(key) + 2L])
-  }
-  if (rlang::is_string(key) && !is.object(key)) {
-    index <- match(key, names(expr))
-    if (!is.na(index) && index >= 3L) {
-      return(as.list(expr)[index])
-    }
-  }
-  NULL
+  literal_switch_parts(expr)
 }
 
 # Recognize literal function syntax without constructing an R closure.
@@ -4587,32 +4638,9 @@ scope_value_closure <- function(expr, scope, lookup) {
     }
     return(scope_value_closure(statements[[length(statements)]], scope, lookup))
   }
-  factory <- if (rlang::is_call(head)) scope_call_closure(head, scope, lookup)
-  if (!is.null(factory) && !scope_closure_is_active(factory, scope)) {
-    definition <- factory$definition
-    captured <- length(factory$frames)
-    frame <- function_scope_frame(definition[[2L]], head)
-    frame$enclosing <- if (captured > 0L) 1L else factory$enclosing
-    frame$caller <- 1L + captured
-    frame$closure_origin <- factory$enclosing + captured
-    frame$definition <- definition
-    inner <- c(list(frame), scope_closure_scope(factory, scope))
-    result <- scope_returned_closure(definition[[3L]], inner, lookup)
-    returned <- result$value
-    if (!is.null(returned)) {
-      if (returned$enclosing <= 1L + captured) {
-        frames <- result$scope[seq.int(returned$enclosing, 1L + captured)]
-        frames <- lapply(frames, function(frame) {
-          frame$invoked <- FALSE
-          frame
-        })
-        returned$frames <- c(returned$frames, frames)
-        returned$enclosing <- factory$enclosing
-      } else {
-        returned$enclosing <- returned$enclosing - 1L - captured
-      }
-      return(returned)
-    }
+  result <- scope_factory_result(head, scope, lookup, scope_value_closure)
+  if (!is.null(result$value)) {
+    return(scope_rebase_factory_closure(result$value, result))
   }
   name <- unparenthesized_value(head)
   if (is_name_part(name)) {
@@ -4695,27 +4723,13 @@ scope_closure_list_member <- function(head, scope, lookup) {
       key
     }
   } else {
-    scope_literal_list_path(key, scope, lookup)
+    scope_literal_list_index(key, scope, lookup)
   }
   if (length(path) == 0L) return(NULL)
   elements <- scope_closure_list(head[[2L]], scope, lookup)
   for (step in seq_along(path)) {
-    key <- path[[step]]
-    # R list lookup never matches an empty name to an unnamed element.
-    index <- if (rlang::is_string(key) && nzchar(key)) {
-      if (partial) {
-        pmatch(key, names(elements), duplicates.ok = TRUE)
-      } else {
-        match(key, names(elements))
-      }
-    } else if (typeof(key) %in% c("integer", "double") && is.finite(key)) {
-      # Index a plain sequence so R handles fractional and invalid positions.
-      tryCatch(seq_along(elements)[[key]], error = function(cnd) NULL)
-    }
-    if (is.null(index) || is.na(index) || index < 1L ||
-          index > length(elements)) {
-      return(NULL)
-    }
+    index <- scope_list_member_index(elements, path[[step]], partial)
+    if (is.null(index)) return(NULL)
     member <- elements[[index]]
     if (step == length(path)) return(member)
     elements <- member$elements
@@ -4724,40 +4738,106 @@ scope_closure_list_member <- function(head, scope, lookup) {
   NULL
 }
 
-# Read only unclassed literal keys and known base concatenations for [[ paths.
-scope_literal_list_path <- function(expr, scope, lookup) {
+# Locate one existing member under exact or partial plain-list indexing.
+scope_list_member_index <- function(elements, key, partial = FALSE) {
+  # R list lookup never matches an empty name to an unnamed element.
+  index <- if (rlang::is_string(key) && nzchar(key)) {
+    if (partial) {
+      pmatch(key, names(elements), duplicates.ok = TRUE)
+    } else {
+      match(key, names(elements))
+    }
+  } else if (typeof(key) %in% c("integer", "double", "logical") &&
+               is.finite(key)) {
+    # Index a plain sequence so R handles fractional and invalid positions.
+    tryCatch(seq_along(elements)[[key]], error = function(cnd) NULL)
+  }
+  if (!is.null(index) && !is.na(index)) index else NULL
+}
+
+# Read unclassed literal list indices, including signed numbers and known base
+# concatenations, without evaluating any part of the caller's expression.
+scope_literal_list_index <- function(expr, scope, lookup) {
   if (rlang::is_missing(expr)) return(NULL)
   expr <- unparenthesized_value(expr)
   if (is.object(expr)) return(NULL)
-  if (typeof(expr) %in% c("character", "integer", "double")) {
+  if (typeof(expr) %in% c("character", "integer", "double", "logical")) {
     if (!anyNA(expr)) return(expr)
     return(NULL)
   }
-  if (!identical(static_call_name(expr), "c") ||
-        !is_known_base_frame_call(expr, "c", scope, lookup)) return(NULL)
+  operator <- static_call_name(expr)
+  if (is.null(operator) || !operator %in% c("-", "c") ||
+        !is_known_base_frame_call(expr, operator, scope, lookup)) return(NULL)
   parts <- static_call_args(expr)
+  if (identical(operator, "-")) {
+    if (length(parts) != 1L || rlang::is_missing(parts[[1L]])) return(NULL)
+    value <- unparenthesized_value(parts[[1L]])
+    if (!is.object(value) && typeof(value) %in% c("integer", "double") &&
+          length(value) == 1L && is.finite(value)) return(-value)
+    return(NULL)
+  }
   if (any(names(parts) %in% c("recursive", "use.names"))) return(NULL)
-  values <- lapply(parts, scope_literal_list_path,
+  values <- lapply(parts, scope_literal_list_index,
                    scope = scope, lookup = lookup)
   if (any(vapply(values, is.null, logical(1)))) return(NULL)
   do.call(base::c, unname(values))
 }
 
-# Read a visible factory's result, retained bindings and selected return exit.
+# Read a visible factory's result in the invoked frame and its captured frames.
+scope_factory_result <- function(expr, scope, lookup, read_value) {
+  factory <- if (rlang::is_call(expr)) scope_call_closure(expr, scope, lookup)
+  if (is.null(factory) || scope_closure_is_active(factory, scope)) {
+    return(NULL)
+  }
+  definition <- factory$definition
+  captured <- length(factory$frames)
+  frame <- function_scope_frame(definition[[2L]], expr)
+  frame$enclosing <- if (captured > 0L) 1L else factory$enclosing
+  frame$caller <- 1L + captured
+  frame$closure_origin <- factory$enclosing + captured
+  frame$definition <- definition
+  inner <- c(list(frame), scope_closure_scope(factory, scope))
+  result <- scope_returned_value(definition[[3L]], inner, lookup, read_value)
+  result$factory_frames <- 1L + captured
+  result$enclosing <- factory$enclosing
+  result
+}
+
+# Retain factory frames closed over by a returned member. Closures from the
+# live stack only need their offsets moved past the departing frames.
+scope_rebase_factory_closure <- function(closure, result) {
+  if (closure$enclosing <= result$factory_frames) {
+    frames <- result$scope[seq.int(closure$enclosing, result$factory_frames)]
+    frames <- lapply(frames, function(frame) {
+      frame$invoked <- FALSE
+      frame
+    })
+    closure$frames <- c(closure$frames, frames)
+    closure$enclosing <- result$enclosing
+  } else {
+    closure$enclosing <- closure$enclosing - result$factory_frames
+  }
+  closure
+}
+
+# Read a factory's selected return value and surviving bindings.
 # Nonfinal expressions contribute effects, but only an explicit return exits.
 # Only syntax is inspected; caller code is never invoked to discover a value.
-scope_returned_closure <- function(expr, scope, lookup, final = TRUE) {
+scope_returned_value <- function(expr, scope, lookup, read_value,
+                                 final = TRUE) {
   expr <- unparenthesized_value(expr)
   name <- static_call_name(expr)
   arm <- scope_literal_branch(expr, scope, lookup)
   if (length(arm) == 1L && !rlang::is_missing(arm[[1L]])) {
-    return(scope_returned_closure(arm[[1L]], scope, lookup, final = final))
+    return(scope_returned_value(
+      arm[[1L]], scope, lookup, read_value, final = final
+    ))
   }
   if (identical(name, "return") && length(expr) <= 2L &&
         is_known_base_frame_call(expr, name, scope, lookup)) {
     result <- list(value = NULL, scope = scope)
     if (length(expr) == 2L && !rlang::is_missing(expr[[2L]])) {
-      result <- scope_returned_closure(expr[[2L]], scope, lookup)
+      result <- scope_returned_value(expr[[2L]], scope, lookup, read_value)
     }
     result$returned <- TRUE
     return(result)
@@ -4769,8 +4849,8 @@ scope_returned_closure <- function(expr, scope, lookup, final = TRUE) {
       if (rlang::is_missing(statements[[index]])) {
         next
       }
-      result <- scope_returned_closure(
-        statements[[index]], scope, lookup,
+      result <- scope_returned_value(
+        statements[[index]], scope, lookup, read_value,
         final = final && index == length(statements)
       )
       if (result$returned || index == length(statements)) {
@@ -4785,7 +4865,7 @@ scope_returned_closure <- function(expr, scope, lookup, final = TRUE) {
       expr, scope, lookup, read_symbols = no_scope_reads
     )$scope
   }
-  list(value = if (final) scope_value_closure(expr, scope, lookup),
+  list(value = if (final) read_value(expr, scope, lookup),
        scope = scope, returned = FALSE)
 }
 
@@ -4804,7 +4884,15 @@ scope_closure_list <- function(expr, scope, lookup) {
       }
       elements <- frame$closure_lists[[name]]
       if (is.null(elements)) {
-        return(NULL)
+        promise <- scope_promise(name, scope, function_lookup = FALSE,
+                                 visible = index)
+        if (is.null(promise)) return(NULL)
+        elements <- scope_closure_list(
+          promise$expression, promise$scope[promise$evaluation], lookup
+        )
+        if (is.null(elements)) return(NULL)
+        # These descriptors already count the evaluation frame as index one.
+        index <- promise$evaluation[[1L]] - 1L
       }
       return(scope_shift_closure_elements(elements, index))
     }
@@ -4872,12 +4960,20 @@ scope_closure_list <- function(expr, scope, lookup) {
           after != trunc(after)) return(NULL)
     return(base::append(x, values, after = after))
   }
-  if (identical(static_call_name(expr), "[") && length(expr) == 3L &&
+  if (identical(operator, "[") && length(expr) %in% c(3L, 4L) &&
         is_known_base_frame_call(expr, "[", scope, lookup)) {
+    if (length(expr) == 4L &&
+          (!identical(names(expr)[4L], "drop") ||
+             identical(names(expr)[3L], "drop") ||
+             !rlang::is_bool(unparenthesized_value(expr[[4L]])))) return(NULL)
     elements <- scope_closure_list(expr[[2L]], scope, lookup)
     if (is.null(elements)) return(NULL)
     if (rlang::is_missing(expr[[3L]])) return(elements)
     key <- unparenthesized_value(expr[[3L]])
+    if (is.language(key)) {
+      key <- scope_literal_list_index(key, scope, lookup)
+      if (is.null(key)) return(NULL)
+    }
     if (is.object(key) ||
           !typeof(key) %in%
             c("NULL", "integer", "double", "logical", "character")) {
@@ -4890,7 +4986,12 @@ scope_closure_list <- function(expr, scope, lookup) {
     return(elements[key])
   }
   member <- scope_closure_list_member(expr, scope, lookup)
-  member$elements
+  if (!is.null(member)) return(member$elements)
+  result <- scope_factory_result(expr, scope, lookup, scope_closure_list)
+  if (is.null(result$value)) return(NULL)
+  scope_map_closure_elements(result$value, function(closure) {
+    scope_rebase_factory_closure(closure, result)
+  })
 }
 
 # Retain only statically visible callable or plain-list member values.
@@ -4903,11 +5004,21 @@ scope_closure_list_element <- function(expr, scope, lookup) {
 
 # Move every contained closure between stack and binding-relative offsets.
 scope_shift_closure_elements <- function(elements, offset) {
+  scope_map_closure_elements(elements, function(closure) {
+    closure$enclosing <- closure$enclosing + offset
+    closure
+  })
+}
+
+# Transform closure descriptors at any depth in a known list.
+scope_map_closure_elements <- function(elements, transform) {
   lapply(elements, function(element) {
     if (!is.null(element$definition)) {
-      element$enclosing <- element$enclosing + offset
+      return(transform(element))
     } else if (!is.null(element$elements)) {
-      element$elements <- scope_shift_closure_elements(element$elements, offset)
+      element$elements <- scope_map_closure_elements(
+        element$elements, transform
+      )
     }
     element
   })
@@ -5133,17 +5244,27 @@ scope_after_promise <- function(name, scope, lookup, function_lookup = FALSE) {
   }
   scope <- promise$scope
   frames <- promise$evaluation
+  binding <- promise$binding
   definition <- literal_function_definition(promise$expression)
-  if (!is.null(definition) && !is.null(promise$binding)) {
-    binding <- promise$binding
+  if (!is.null(definition) && !is.null(binding)) {
     scope[[binding]]$closures[[name]] <- list(
       definition = definition, enclosing = frames[[1L]] - binding
     )
     return(scope)
   }
+  elements <- if (!is.null(binding)) {
+    scope_closure_list(promise$expression, scope[frames], lookup)
+  }
   scope[frames] <- statement_reads_and_scope(
     promise$expression, scope[frames], lookup, read_symbols = no_scope_reads
   )$scope
+  if (!is.null(elements) && name %in% scope[[binding]]$bound) {
+    # Forcing the formal retains the list even if its source is later removed.
+    scope[[binding]]$kinds[[name]] <- "value"
+    scope[[binding]]$closure_lists[[name]] <- scope_shift_closure_elements(
+      elements, frames[[1L]] - binding - 1L
+    )
+  }
   scope
 }
 
@@ -5153,7 +5274,7 @@ scope_after_promise <- function(name, scope, lookup, function_lookup = FALSE) {
 scope_bind_local <- function(scope, name, value = NULL, lookup = NULL,
                              value_scope = scope) {
   closure <- scope_value_closure(value, value_scope, lookup)
-  elements <- if (!missing(value)) {
+  elements <- if (is.null(closure) && !missing(value)) {
     scope_closure_list(value, value_scope, lookup)
   }
   environment_frames <- static_environment_frames(value, value_scope, lookup)
@@ -5198,96 +5319,178 @@ scope_bind_closure_list <- function(scope, name, elements) {
   scope
 }
 
-# Carry a literal element write to a tracked list without evaluating its value.
+# Carry a literal write through the list setters from its leaf to its binding.
 # Stored closures use offsets relative to the current frame.
 scope_after_list_write <- function(scope, target, value, lookup, value_scope) {
-  if (!rlang::is_call(target)) {
-    return(scope)
-  }
-  target <- unparenthesized_value(target)
-  operator <- static_call_name(target)
-  if (!is.null(operator) && operator %in% c("names", "attr", "attributes")) {
-    return(scope_after_list_names(scope, target, value, lookup, value_scope))
-  }
-  if (is.null(operator) || !operator %in% c("[", "[[", "$") ||
-        length(target) != 3L || !is_name_part(target[[2L]]) ||
-        !is_known_base_frame_call(target, operator, value_scope, lookup)) {
-    return(scope)
-  }
-  elements <- scope_closure_list(target[[2L]], value_scope, lookup)
-  if (rlang::is_missing(target[[3L]])) {
-    return(scope)
-  }
-  key <- unparenthesized_value(target[[3L]])
-  if (identical(operator, "$") && is_name_part(key)) {
-    key <- rlang::as_name(key)
-  }
-  if (is.null(elements) || is.object(key)) {
-    return(scope)
-  }
-  if (identical(operator, "[")) {
-    if (!typeof(key) %in%
-          c("NULL", "integer", "double", "logical", "character") ||
-          anyNA(key)) return(scope)
-    if (typeof(key) %in% c("integer", "double") &&
-          (!all(is.finite(key)) || (any(key < 0) && any(key > 0)))) {
+  if (!rlang::is_call(target) || rlang::is_missing(value)) return(scope)
+  members <- c("[", "[[", "$")
+  name_setters <- c("names", "attr", "attributes")
+  path <- list()
+  carrier <- unparenthesized_value(target)
+  while (rlang::is_call(carrier)) {
+    operator <- static_call_name(carrier)
+    allowed <- if (length(path) == 0L) c(members, name_setters) else members
+    if (is.null(operator) || !operator %in% allowed ||
+          length(carrier) < 2L || rlang::is_missing(carrier[[2L]])) {
       return(scope)
     }
-    replacement <- scope_closure_list(value, value_scope, lookup)
-    if (is.null(replacement) ||
-          (length(replacement) == 0L &&
-             !is.null(unparenthesized_value(value)))) return(scope)
-    elements[key] <- if (is.null(unparenthesized_value(value))) {
-      NULL
+    path[[length(path) + 1L]] <- carrier
+    carrier <- unparenthesized_value(carrier[[2L]])
+  }
+  if (length(path) == 0L || !is_name_part(carrier)) return(scope)
+  name <- rlang::as_name(carrier)
+  elements <- value
+  carrier_changed <- FALSE
+  for (index in seq_along(path)) {
+    target <- path[[index]]
+    parent <- scope_closure_list(target[[2L]], value_scope, lookup)
+    if (is.null(parent)) return(scope)
+    operator <- static_call_name(target)
+    setter <- paste0(operator, "<-")
+    replacement <- rlang::call2(setter, .ns = static_call_ns(target))
+    elements <- if (!is_known_base_frame_call(
+      replacement, setter, value_scope, lookup
+    )) {
+      # An inner setter can mutate an unshared member before this call.
+      if (!carrier_changed && scope_replacement_keeps_input(
+        replacement, target, value_scope, lookup
+      )) parent
+    } else if (operator %in% name_setters) {
+      scope_list_write_names(target, parent, elements, lookup, value_scope)
     } else {
-      replacement
-    }
-  } else {
-    index <- if (rlang::is_string(key)) {
-      matched <- match(key, names(elements))
-      if (is.na(matched)) length(elements) + 1L else matched
-    } else if (typeof(key) %in% c("integer", "double") && length(key) == 1L &&
-                 is.finite(key) && key >= 1L && key <= length(elements) + 1L &&
-                 key == trunc(key)) {
-      key
-    }
-    if (is.null(index)) {
-      return(scope)
-    }
-    if (is.null(unparenthesized_value(value))) {
-      elements[index] <- NULL
-    } else {
-      elements[index] <- list(
-        scope_closure_list_element(value, value_scope, lookup)
+      scope_list_write_elements(
+        target, parent, elements, lookup, value_scope, nested = index > 1L
       )
-      if (rlang::is_string(key)) names(elements)[index] <- key
     }
+    if (rlang::is_zap(elements)) return(scope)
+    carrier_changed <- !identical(elements, parent)
   }
-  name <- rlang::as_name(target[[2L]])
+  if (is.null(elements)) return(scope_bind_local(scope, name))
   scope_bind_closure_list(scope, name, elements)
 }
 
-# Update a tracked plain list's literal names without invoking replacement code.
-# Stored closures retain their positions and enclosing-frame offsets.
-scope_after_list_names <- function(scope, target, value, lookup, value_scope) {
+# Apply a base member setter to known list elements. An enclosing setter gets
+# the updated carrier's descriptors. NULL means unknown; zap() means unhandled.
+scope_list_write_elements <- function(target, elements, value, lookup,
+                                      value_scope, nested) {
+  if (length(target) != 3L) return(rlang::zap())
   operator <- static_call_name(target)
-  replacement <- rlang::call2(paste0(operator, "<-"),
-                              .ns = static_call_ns(target))
-  if (length(target) < 2L || !is_name_part(target[[2L]])) return(scope)
-  elements <- scope_closure_list(target[[2L]], value_scope, lookup)
-  if (is.null(elements)) return(scope)
-  name <- rlang::as_name(target[[2L]])
+  if (rlang::is_missing(target[[3L]])) return(rlang::zap())
+  key <- unparenthesized_value(target[[3L]])
+  if (is.object(key)) return(rlang::zap())
+  delete <- !nested && is.null(unparenthesized_value(value))
+  if (identical(operator, "[")) {
+    if (!typeof(key) %in%
+          c("NULL", "integer", "double", "logical", "character") ||
+          anyNA(key)) return(rlang::zap())
+    if (typeof(key) %in% c("integer", "double") &&
+          (!all(is.finite(key)) || (any(key < 0) && any(key > 0)))) {
+      return(rlang::zap())
+    }
+    replacement <- if (nested) {
+      value
+    } else {
+      scope_closure_list(value, value_scope, lookup)
+    }
+    if (is.null(replacement) || (length(replacement) == 0L && !delete)) {
+      return(if (nested && is.null(replacement)) NULL else rlang::zap())
+    }
+    elements[key] <- if (delete) NULL else replacement
+    return(elements)
+  }
+
+  path <- if (identical(operator, "[[")) {
+    scope_literal_list_index(key, value_scope, lookup)
+  } else if (is_name_part(key)) {
+    rlang::as_name(key)
+  } else if (rlang::is_string(key)) {
+    key
+  }
+  if (length(path) == 0L) return(rlang::zap())
+  member <- if (nested) {
+    if (!is.null(value)) list(elements = value)
+  } else if (!delete) {
+    scope_closure_list_element(value, value_scope, lookup)
+  }
+  scope_replace_list_member(elements, path, member, delete)
+}
+
+# Replace or delete at a known exact path. Recursive [[<- traverses plain
+# list members directly and can extend only the innermost tracked list.
+scope_replace_list_member <- function(elements, path, member, delete) {
+  key <- path[[1L]]
+  index <- scope_list_member_index(elements, key)
+  if (length(path) > 1L) {
+    if (is.null(index) || is.null(elements[[index]]$elements)) {
+      return(rlang::zap())
+    }
+    child <- scope_replace_list_member(
+      elements[[index]]$elements, path[-1L], member, delete
+    )
+    if (rlang::is_zap(child)) return(child)
+    elements[[index]]$elements <- child
+  } else {
+    if (is.null(index)) {
+      if (!rlang::is_string(key) &&
+            !(is.numeric(key) && trunc(key) == length(elements) + 1L)) {
+        return(rlang::zap())
+      }
+      index <- length(elements) + 1L
+    }
+    if (delete) {
+      elements[index] <- NULL
+    } else {
+      elements[index] <- list(member)
+      if (rlang::is_string(key)) names(elements)[index] <- key
+    }
+  }
+  elements
+}
+
+# Prove that a visible replacement closure returns the original list argument.
+# The argument match uses a marker in place of R's untagged temporary input.
+scope_replacement_keeps_input <- function(replacement, target, scope, lookup) {
+  closure <- scope_call_closure(replacement, scope, lookup)
+  if (is.null(closure)) return(FALSE)
+  definition <- closure$definition
+  result <- unparenthesized_value(definition[[3L]])
+  if (rlang::is_call(result, "{", n = 1L)) {
+    frame <- list(
+      bound = names(definition[[2L]]),
+      enclosing = if (length(closure$frames) > 0L) 1L else closure$enclosing
+    )
+    inner <- c(list(frame), scope_closure_scope(closure, scope))
+    if (!is_known_base_frame_call(result, "{", inner, lookup)) return(FALSE)
+    result <- unparenthesized_value(result[[2L]])
+  }
+  if (!is_name_part(result)) return(FALSE)
+  input <- new.env(parent = emptyenv())
+  args <- static_call_args(target)
+  args[1L] <- list(input)
+  names(args) <- replace(rlang::names2(args), 1L, "")
+  call <- rlang::call2(static_call_name(replacement), !!!args, value = NULL)
+  matched <- static_matched_arguments(
+    call, rlang::new_function(definition[[2L]], NULL, emptyenv()),
+    expand_dots = FALSE
+  )
+  identical(matched[[rlang::as_name(result)]], input)
+}
+
+# Update a tracked plain list's literal names for a known base setter.
+# Return NULL for an unproven whole-list value or zap() for an unhandled write.
+scope_list_write_names <- function(target, elements, value, lookup,
+                                   value_scope) {
+  operator <- static_call_name(target)
   replace_attributes <- identical(operator, "attributes")
-  unknown <- if (replace_attributes) scope_bind_local(scope, name) else scope
-  if (!is_known_base_frame_call(replacement, paste0(operator, "<-"),
-                                value_scope, lookup)) return(unknown)
+  unknown <- if (replace_attributes) NULL else rlang::zap()
   if (identical(operator, "attr")) {
     if (length(target) != 3L ||
+          rlang::is_missing(target[[3L]]) ||
           !identical(unparenthesized_value(target[[3L]]), "names")) {
-      return(scope)
+      return(rlang::zap())
     }
   } else if (length(target) != 2L) {
-    return(scope)
+    return(rlang::zap())
   }
   value <- unparenthesized_value(value)
   if (replace_attributes && !is.null(value)) {
@@ -5316,7 +5519,7 @@ scope_after_list_names <- function(scope, target, value, lookup, value_scope) {
   if (!is.null(value) && is.null(labels)) return(unknown)
   if (length(labels) > length(elements)) return(unknown)
   names(elements) <- labels
-  scope_bind_closure_list(scope, name, elements)
+  elements
 }
 
 # Whether the nearest local binding proves that a bare call head is a

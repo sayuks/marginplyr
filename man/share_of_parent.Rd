@@ -348,7 +348,7 @@ exactly-one-value cardinality rule is established with it:\tabular{ll}{
    Local data frame \tab Both, from the result, before any share \cr
    \code{dtplyr} step \tab Both, at execution, before an invalid row \cr
    Arrow \tab Neither; shares are rejected outright \cr
-   General dbplyr \tab Type only, by asking the dialect itself \cr
+   General dbplyr \tab Type from the dialect, and cardinality as below \cr
 }
 
 
@@ -406,11 +406,13 @@ control statements preserve earlier work and leave commit or rollback to
 you. They read none of your tables and are included in \code{\link[=last_sent_queries]{last_sent_queries()}}
 when auditing is enabled.
 
-Cardinality is not established this way at all: a SQL aggregate returns one
-value per grouping row by construction, so there is nothing for a dialect
-to convert. A non-scalar summary therefore remains a runtime-only
-incompatibility, reported by the database at \code{\link[dplyr:collect]{dplyr::collect()}} rather than
-raised by marginplyr before the query is returned.
+Ordinary SQL aggregates return one value per grouping row. On DuckDB
+and PostgreSQL, the result query checks a bare, single-argument
+\code{UNNEST()} at the top level of a direct \code{\link[dbplyr:sql]{dbplyr::sql()}} share source, such
+as \code{SUM(amount) + UNNEST(ARRAY[10])}. An array of zero or more than one
+element causes a database error on execution. The check recognizes SQL
+expressions with standard quotes and without comments. Other SQL
+expressions must also return one value per grouping row.
 
 The portable value guarantee covers finite numbers, missing values, and
 zero denominators. Infinite values and backend-specific \code{NaN}

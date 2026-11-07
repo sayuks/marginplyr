@@ -108,7 +108,8 @@ normalize_grouping_input <- function(.data, by_quo) {
 # `NULL` defers a selection needing column data to the typed snapshot, as it
 # does for a Grouping dimension.
 resolve_fixed_keys <- function(by_quo, group_vars, data_vars,
-                               name_proxy = grouping_name_proxy(data_vars)) {
+                               name_proxy = grouping_name_proxy(data_vars),
+                               allow_data_peek = NULL) {
   if (length(group_vars) > 0L) {
     # Grouping columns are names dplyr resolved, so they name columns of the
     # input and cannot rename one.
@@ -126,7 +127,7 @@ resolve_fixed_keys <- function(by_quo, group_vars, data_vars,
     return(character())
   }
   if (!is_name_only_selection(
-    by_quo, data_vars, allow_data_peek = !is.object(name_proxy)
+    by_quo, data_vars, allow_data_peek = allow_data_peek
   )) {
     return(NULL)
   }
@@ -229,12 +230,20 @@ prepare_grouping_plan <- function(.data,
       # Recognized captures and fixed keys can use the local receiver once.
       # Discarded validation uses only names and leaves dispatched context
       # data reads to the canonical pass.
-      name_proxy <- if (identical(backend$kind, "local")) {
+      local_proxy <- if (identical(backend$kind, "local")) {
         data
-      } else {
-        grouping_name_proxy(data_vars)
       }
-      by <- resolve_fixed_keys(by_quo, input$groups, data_vars, name_proxy)
+      allow_data_peek <- if (identical(backend$kind, "dtplyr")) {
+        dtplyr_data_peek_name_only
+      } else if (!is.null(local_proxy)) {
+        function(...) FALSE
+      } else {
+        frame_data_peek_name_only
+      }
+      by <- resolve_fixed_keys(
+        by_quo, input$groups, data_vars,
+        local_proxy %||% grouping_name_proxy(data_vars), allow_data_peek
+      )
       if (!is.null(validate_names)) {
         validate_names(data_vars)
       }
@@ -243,7 +252,8 @@ prepare_grouping_plan <- function(.data,
       # This is the call's only reading of a nested argument, so a recognized
       # one is evaluated once whichever passes run (ADR-0008).
       preflight <- preflight_grouping_spec(
-        grouping_spec, data_vars, name_proxy = name_proxy
+        grouping_spec, data_vars, local_proxy = local_proxy,
+        allow_data_peek = allow_data_peek
       )
       local_dimensions <- character()
       if (preflight$name_only) {
@@ -271,7 +281,7 @@ prepare_grouping_plan <- function(.data,
         preflight_warnings <- with_discarded_selections({
           local_dimensions <- validate_leading_selections(
             preflight, data_vars, .by = by, .duplicates, duplicates_choices,
-            allow_data_peek = !is.object(name_proxy)
+            allow_data_peek = allow_data_peek
           )
         })
       }
@@ -504,9 +514,10 @@ selection_c_args <- function(args, env) {
 # column names, which is the pair the symbol branch decides from.
 # `allow_caller_code = FALSE` also withholds caller functions and assignments,
 # so a discarded mixed-selection pass cannot change their evaluation order.
-# A context-data names read may dispatch on a classed local receiver.
+# `allow_data_peek`, when supplied, checks whether the selection can read
+# names from the names-only proxy in its own lexical scope.
 is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE,
-                              allow_data_peek = TRUE) {
+                              allow_data_peek = NULL) {
   # An injected selector is walked in the environment it carries.
   if (rlang::is_quosure(expr)) {
     return(is_name_only_selection(
@@ -626,7 +637,7 @@ is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE,
 # The caller supplies the selection's lexical environment. Indexing a name
 # lookup requires subscripts independent of the typed proxy and caller code.
 is_selection_name_lookup <- function(expr, env, allow_env_pronoun = TRUE,
-                                     allow_data_peek = TRUE) {
+                                     allow_data_peek = NULL) {
   if (!rlang::is_call(expr) || !selection_call_parens_safe(expr, env)) {
     return(FALSE)
   }
@@ -640,8 +651,9 @@ is_selection_name_lookup <- function(expr, env, allow_env_pronoun = TRUE,
   }
   if (identical(fn, base::names)) {
     return(
-      allow_data_peek && length(args) == 1L &&
-        is_selection_data_peek(args[[1L]], env, character(), context = TRUE)
+      length(args) == 1L &&
+        is_selection_data_peek(args[[1L]], env, character(), context = TRUE) &&
+        (is.null(allow_data_peek) || allow_data_peek(env, character()))
     )
   }
   (identical(fn, base::`[`) || identical(fn, base::`[[`)) &&
@@ -697,7 +709,7 @@ is_name_only_helper_arg <- function(expr,
                                       list(expr), assignments = "<<-",
                                       env = env, bound = bound, seen = seen
                                     ),
-                                    allow_data_peek = TRUE) {
+                                    allow_data_peek = NULL) {
   if (rlang::is_quosure(expr)) {
     # Captured syntax keeps ordinary argument evaluation in its own scope.
     # Enclosing closure formals do not bind names inside that scope.
@@ -762,7 +774,7 @@ is_name_only_helper_arg <- function(expr,
     identical(fn, base::names) && length(args) == 1L &&
       is_selection_data_peek(args[[1L]], env, callee_bound, context)
   ) {
-    return(allow_data_peek)
+    return(is.null(allow_data_peek) || allow_data_peek(env, callee_bound))
   }
   if (identical(fn, base::c) && !"..." %in% bound) {
     args <- selection_c_args(args, env)
@@ -1214,7 +1226,7 @@ selection_warning_key <- function(cnd) {
 }
 
 is_name_only_selection <- function(arg, data_vars, allow_caller_code = TRUE,
-                                   allow_data_peek = TRUE) {
+                                   allow_data_peek = NULL) {
   is_name_only_expr(
     rlang::quo_get_expr(arg),
     env = rlang::quo_get_env(arg),
@@ -1224,8 +1236,56 @@ is_name_only_selection <- function(arg, data_vars, allow_caller_code = TRUE,
   )
 }
 
+# A names-only data frame for tidyselect name repair and uniqueness checks.
 grouping_name_proxy <- function(data_vars) {
-  stats::setNames(as.list(seq_along(data_vars)), data_vars)
+  columns <- stats::setNames(as.list(seq_along(data_vars)), data_vars)
+  vctrs::new_data_frame(columns, n = 1L, class = "margin_grouping_name_proxy")
+}
+
+# Keep the synthetic columns in tidyselect without inheriting receiver methods.
+#' @exportS3Method tidyselect::tidyselect_data_proxy
+tidyselect_data_proxy.margin_grouping_name_proxy <- function(x) {
+  x
+}
+
+# Preserve tidyselect's default predicate support for the synthetic frame.
+#' @exportS3Method tidyselect::tidyselect_data_has_predicates
+tidyselect_data_has_predicates.margin_grouping_name_proxy <- function(x) {
+  TRUE
+}
+
+# Let tidyselect's vector assertion see the synthetic frame as it is.
+#' @exportS3Method vctrs::vec_proxy
+vec_proxy.margin_grouping_name_proxy <- function(x, ...) {
+  x
+}
+
+# Expose the stored names directly, including to tidyselect::peek_data() users.
+#' @export
+names.margin_grouping_name_proxy <- function(x) {
+  attr(x, "names", exact = TRUE)
+}
+
+# Whether names() dispatch can be skipped for the dtplyr or names-only frame.
+dtplyr_data_peek_name_only <- function(env, bound) {
+  selection_names_methods_absent(env, bound, c(
+    "names.data.table", "names.data.frame", "names.default"
+  ))
+}
+
+frame_data_peek_name_only <- function(env, bound) {
+  selection_names_methods_absent(env, bound, c(
+    "names.data.frame", "names.default"
+  ))
+}
+
+# Check the lexical scope and registered names() methods without forcing them.
+selection_names_methods_absent <- function(env, bound, methods) {
+  registry <- asNamespace("base")$.__S3MethodsTable__.
+  !any(methods %in% bound |
+         rlang::env_has(env, methods, inherit = TRUE) |
+         rlang::env_has(globalenv(), methods, inherit = TRUE) |
+         rlang::env_has(registry, methods))
 }
 
 # Validate a mixed specification's leading selections without running caller
@@ -1237,7 +1297,7 @@ grouping_name_proxy <- function(data_vars) {
 # `.by` holds the fixed keys already resolved from names, or NULL if unresolved.
 validate_leading_selections <- function(
   preflight, data_vars, .by, .duplicates, duplicates_choices,
-  allow_data_peek = TRUE
+  allow_data_peek = NULL
 ) {
   proxy <- grouping_name_proxy(data_vars)
   resolved <- new.env(parent = emptyenv())
@@ -1356,7 +1416,8 @@ validate_grouping_overlap <- function(.by, dimensions) {
 # uses of one specification remain independent readings.
 # `pending` carries a suspension across nested nodes, leaving later arguments
 # unread until the typed continuation.
-# `name_proxy` preserves local receiver dispatch during name-only capture.
+# `local_proxy` preserves local receiver dispatch during name-only capture.
+# `allow_data_peek` guards names reads through the names-only proxy.
 preflight_grouping_spec <- function(
   grouping_spec,
   data_vars,
@@ -1364,7 +1425,8 @@ preflight_grouping_spec <- function(
   data_proxy = NULL,
   previous = NULL,
   pending = new.env(parent = emptyenv()),
-  name_proxy = grouping_name_proxy(data_vars)
+  local_proxy = NULL,
+  allow_data_peek = NULL
 ) {
   if (!is.null(previous) && !isTRUE(previous$deferred)) {
     return(previous)
@@ -1420,7 +1482,8 @@ preflight_grouping_spec <- function(
       if (is.null(prior$nested)) prior else list(nested = prior$nested$spec)
     } else {
       read_grouping_arg(
-        arg, data_vars, captured$wrappers, data_proxy, name_proxy
+        arg, data_vars, captured$wrappers, data_proxy, local_proxy,
+        allow_data_peek = if (is.null(local_proxy)) allow_data_peek
       )
     }
     if (isTRUE(reading$deferred)) {
@@ -1435,7 +1498,7 @@ preflight_grouping_spec <- function(
         check_ambiguous_nested_name(arg, grouping_spec, rule, data_vars)
       }
       name_only <- name_only && is_name_only_selection(
-        reading$quo, data_vars, allow_data_peek = !is.object(name_proxy)
+        reading$quo, data_vars, allow_data_peek = allow_data_peek
       )
       args[[i]] <- reading
       next
@@ -1443,7 +1506,8 @@ preflight_grouping_spec <- function(
 
     nested_preflight <- preflight_grouping_spec(
       reading$nested, data_vars, ancestors, data_proxy,
-      previous = prior$nested, pending = pending, name_proxy = name_proxy
+      previous = prior$nested, pending = pending, local_proxy = local_proxy,
+      allow_data_peek = allow_data_peek
     )
     if (!isTRUE(nested_preflight$deferred)) {
       rule$validate_nested(grouping_spec, nested_preflight$spec)
@@ -2456,7 +2520,8 @@ grouping_constructor_names <- function() {
 # typed pass (ADR 0008). `wrappers` holds captured qualified call boundaries;
 # `evaluated` distinguishes a retained answer from an unread column name.
 read_grouping_arg <- function(arg, data_vars, wrappers, data_proxy,
-                              name_proxy = grouping_name_proxy(data_vars)) {
+                              local_proxy,
+                              allow_data_peek = NULL) {
   expr <- nested_arg_expr(arg)
   authored <- restore_nested_arg(arg, wrappers)
   env <- rlang::quo_get_env(authored)
@@ -2484,13 +2549,16 @@ read_grouping_arg <- function(arg, data_vars, wrappers, data_proxy,
     return(selection)
   }
 
-  # Syntactic pairs affect admission only. An authored qualified pair runs
-  # its namespace operation in its captured environment (ADR 0019).
+  # The constructor's name may be bare inside an authored namespace call
+  # in the callee. Inspect the written head before that qualifier is stripped.
+  constructor_head <- if (is_constructor_call) static_call_head(expr)
+  namespace_head <- unparenthesized_value(constructor_head, ns = "")
+  authored_namespace <- qualified || !is.null(static_call_ns(expr)) ||
+    is_redundant_parens(namespace_head)
   evaluate <- function() rlang::eval_tidy(rlang::new_quosure(evaluation, env))
-  authored_namespace <- qualified || !is.null(static_call_ns(expr))
   value <- if (authored_namespace) {
     if (is.null(data_proxy) &&
-          !is_name_only_grouping_arg(authored, data_vars)) {
+          !is_name_only_grouping_arg(authored, data_vars, allow_data_peek)) {
       return(c(selection, list(
         deferred = TRUE, arg = arg, wrappers = wrappers
       )))
@@ -2503,11 +2571,7 @@ read_grouping_arg <- function(arg, data_vars, wrappers, data_proxy,
       )
       integer()
     }
-    proxy <- if (is.null(data_proxy)) {
-      name_proxy
-    } else {
-      data_proxy
-    }
+    proxy <- data_proxy %||% local_proxy %||% grouping_name_proxy(data_vars)
     tidyselect::eval_select(
       rlang::new_quosure(rlang::call2(capture, evaluation), env), proxy
     )
@@ -2536,7 +2600,6 @@ read_grouping_arg <- function(arg, data_vars, wrappers, data_proxy,
       value
     }
     selection_env <- rlang::env(env)
-    constructor_head <- if (is_constructor_call) static_call_head(expr)
     # tidyselect strips bare pairs around the selection before evaluation.
     if (qualified) {
       rlang::env_bind(selection_env, `::` = function(...) retained)
@@ -2559,18 +2622,18 @@ read_grouping_arg <- function(arg, data_vars, wrappers, data_proxy,
 
 # Whether an authored namespace expression needs only the names selection
 # context. The caller supplies the input names and the expression's own scope.
-is_name_only_grouping_arg <- function(arg, data_vars) {
+is_name_only_grouping_arg <- function(arg, data_vars, allow_data_peek) {
   expr <- unparenthesized_value(rlang::quo_get_expr(arg), ns = "")
   env <- rlang::quo_get_env(arg)
   if (rlang::is_quosure(expr)) {
-    return(is_name_only_grouping_arg(expr, data_vars))
+    return(is_name_only_grouping_arg(expr, data_vars, allow_data_peek))
   }
   if (is_redundant_parens(expr)) {
     fn <- selection_argument_function(
       rlang::call2(expr[[1L]]), env, character()
     )
     return(identical(fn, base::`(`) && is_name_only_grouping_arg(
-      rlang::new_quosure(expr[[2L]], env), data_vars
+      rlang::new_quosure(expr[[2L]], env), data_vars, allow_data_peek
     ))
   }
   if (is_name_part(expr)) {
@@ -2589,12 +2652,13 @@ is_name_only_grouping_arg <- function(arg, data_vars) {
   selection_call_parens_safe(expr, env) &&
     identical(selection_argument_function(expr, env, character()), stock) &&
     all(vapply(static_call_args(expr), grouping_capture_name_only, logical(1),
-               env = env, data_vars = data_vars))
+               env = env, data_vars = data_vars,
+               allow_data_peek = allow_data_peek))
 }
 
 # Whether constructor capture can run against names alone. Quosures already
 # present are opaque values; only injection operands execute during capture.
-grouping_capture_name_only <- function(expr, env, data_vars) {
+grouping_capture_name_only <- function(expr, env, data_vars, allow_data_peek) {
   if (rlang::is_missing(expr)) {
     return(TRUE)
   }
@@ -2606,7 +2670,8 @@ grouping_capture_name_only <- function(expr, env, data_vars) {
     operand <- expr[[2L]][[2L]]
     splice <- rlang::is_call(operand, "!", n = 1L)
     return(grouping_injection_name_only(
-      if (splice) operand[[2L]] else operand, env, splice = splice
+      if (splice) operand[[2L]] else operand, env, allow_data_peek,
+      splice = splice
     ))
   }
   if (rlang::is_call(expr, "{", n = 1L) &&
@@ -2628,22 +2693,24 @@ grouping_capture_name_only <- function(expr, env, data_vars) {
     if (is_captured_grouping_quosure(captured$written[[1L]], captured$quo)) {
       return(grouping_capture_name_only(
         rlang::quo_get_expr(captured$quo), rlang::quo_get_env(captured$quo),
-        data_vars
+        data_vars, allow_data_peek
       ))
     }
     return(is_name_only_selection(
-      captured$quo, data_vars, allow_caller_code = FALSE
+      captured$quo, data_vars, allow_caller_code = FALSE,
+      allow_data_peek = allow_data_peek
     ))
   }
   !(is.call(expr) || is.pairlist(expr)) ||
     all(vapply(as.list(expr), grouping_capture_name_only, logical(1),
-               env = env, data_vars = data_vars))
+               env = env, data_vars = data_vars,
+               allow_data_peek = allow_data_peek))
 }
 
 # Whether an injection operand reads known values without running caller code.
 # Deferred promises are defused, not forced; `seen` bounds forwarded cycles.
-grouping_injection_name_only <- function(expr, env, splice = FALSE,
-                                         seen = list()) {
+grouping_injection_name_only <- function(expr, env, allow_data_peek,
+                                         splice = FALSE, seen = list()) {
   if (rlang::is_missing(expr)) {
     return(TRUE)
   }
@@ -2673,7 +2740,7 @@ grouping_injection_name_only <- function(expr, env, splice = FALSE,
       }
       return(grouping_injection_name_only(
         rlang::quo_get_expr(captured$quo), rlang::quo_get_env(captured$quo),
-        splice, c(seen, list(key))
+        allow_data_peek, splice, c(seen, list(key))
       ))
     }
     value <- rlang::env_get(binding, name)
@@ -2691,9 +2758,12 @@ grouping_injection_name_only <- function(expr, env, splice = FALSE,
   }
   if (identical(fn, base::list)) {
     return(all(vapply(static_call_args(expr), grouping_injection_name_only,
-                      logical(1), env = env, seen = seen)))
+                      logical(1), env = env, seen = seen,
+                      allow_data_peek = allow_data_peek)))
   }
-  is_name_only_helper_arg(expr, env, allow_caller_code = FALSE)
+  is_name_only_helper_arg(
+    expr, env, allow_caller_code = FALSE, allow_data_peek = allow_data_peek
+  )
 }
 
 # Whether splicing a materialized value needs no caller-defined coercion.

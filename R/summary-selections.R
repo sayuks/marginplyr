@@ -272,22 +272,22 @@ check_internal_summary_names <- function(output_names, internal_names) {
 # An Assigned summary name is needed for scalar values, while an unnamed frame
 # must expand in dplyr's mask before the next summary runs (ADR 0028).
 # Only local branches use this: lazy backends keep their own naming behavior.
-# The caller supplies one assigned name per dot, in the same order.
+# The caller supplies one assigned name and one branch-local type state per dot.
 wrap_assigned_local_summaries <- function(dots, assigned_names, group_vars,
                                           internal_names, set_id_name,
                                           set_id_is_internal,
                                           share_sources,
                                           source_definitions,
+                                          type_states,
                                           alias_state = NULL) {
   for (i in which(!is.na(assigned_names))) {
     dot <- dots[[i]]
-    type_state <- new.env(parent = emptyenv())
     expr <- rlang::call2(
       marginplyr_private_call("local_assigned_summary_value"),
       rlang::quo_get_expr(dot),
       assigned_names[[i]], group_vars, internal_names, set_id_name,
       set_id_is_internal,
-      setdiff(share_sources, source_definitions[[i]]), type_state,
+      setdiff(share_sources, source_definitions[[i]]), type_states[[i]],
       alias_state, i
     )
     dots[[i]] <- rlang::new_quosure(expr, env = rlang::quo_get_env(dot))
@@ -353,12 +353,14 @@ check_local_frame_output_names <- function(output_names, group_vars,
 
 # An unnamed result may be a frame regardless of its written expression.
 # Wrap its value so frames expand and scalars keep their dplyr-assigned name.
+# The caller supplies one branch-local type state per dot.
 wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
                                        set_id_name, set_id_is_internal,
                                        share_sources,
                                        source_definitions,
                                        source_reads,
-                                       auto_names, alias_state = NULL) {
+                                       auto_names, type_states,
+                                       alias_state = NULL) {
   for (i in seq_along(dots)) {
     dot <- dots[[i]]
     if (nzchar(rlang::names2(dots)[[i]])) {
@@ -392,7 +394,7 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
         if (unpack_is_false || empty_unpack) {
           state$unpack <- FALSE
         }
-        state$name_rules <- list(
+        name_rules <- list(
           group_vars = group_vars,
           internal_names = internal_names,
           set_id_name = set_id_name,
@@ -400,9 +402,9 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
           protected_sources = protected_sources,
           source_reads = source_reads[[i]],
           alias_state = alias_state,
-          position = i
+          position = i,
+          type_state = type_states[[i]]
         )
-        state$name_rules_expr <- deparse1(state$name_rules)
         dot_env <- rlang::quo_get_env(dot)
         binding <- new_margin_internal_names(
           1L, c(all.names(expr), ls(dot_env, all.names = TRUE)),
@@ -412,22 +414,10 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
           binding <- paste0(binding, "_")
         }
         dot_env <- rlang::env(dot_env)
-        # Only the generated interpolation calls this selected function;
-        # namespace expressions in the caller's template retain their lookup.
-        rlang::env_poke(dot_env, binding, local_checked_glue_name)
+        # Keep the rules in the checker so a column in the glue mask cannot
+        # shadow them. The caller's template retains its own lookup.
+        rlang::env_poke(dot_env, binding, local_checked_glue_name(name_rules))
         state$glue_name_expr <- binding
-        if (!is.null(alias_state)) {
-          binding <- new_margin_internal_names(
-            1L, c(all.names(expr), ls(dot_env, all.names = TRUE)),
-            "..marginplyr_name_rules_"
-          )
-          while (exists(binding, envir = dot_env, inherits = TRUE)) {
-            binding <- paste0(binding, "_")
-          }
-          dot_env <- rlang::env(dot_env)
-          rlang::env_poke(dot_env, binding, state$name_rules)
-          state$name_rules_expr <- binding
-        }
         index <- parsed$unpack_index
         if (index > 0L && !empty_unpack) {
           call_args[[index]] <- rlang::call2(
@@ -471,13 +461,12 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
         next
       }
     }
-    type_state <- new.env(parent = emptyenv())
     expr <- rlang::call2(
       marginplyr_private_call("local_assigned_summary_value"),
       expr, auto_names[[i]], group_vars, internal_names,
       set_id_name,
       set_id_is_internal,
-      setdiff(share_sources, source_definitions[[i]]), type_state,
+      setdiff(share_sources, source_definitions[[i]]), type_states[[i]],
       alias_state, i
     )
     dots[[i]] <- rlang::new_quosure(expr, env = wrapped_summary_env(dot))
@@ -496,8 +485,7 @@ local_checked_unpack_arg <- function(value, state) {
   spec <- if (isTRUE(value)) "{outer}_{inner}" else value
   paste0(
     "{", state$glue_name_expr, "(",
-    deparse1(spec), ", ",
-    state$name_rules_expr, ")}"
+    deparse1(spec), ", unpacked = TRUE)}"
   )
 }
 
@@ -535,36 +523,40 @@ local_checked_across_names_arg <- function(value, state) {
   if (!(is.character(value) && length(value) == 1L && !is.na(value))) {
     return(value)
   }
-  paste0(
-    "{", state$glue_name_expr, "(",
-    deparse1(value), ", ",
-    state$name_rules_expr, ")}"
-  )
+  paste0("{", state$glue_name_expr, "(", deparse1(value), ")}")
 }
 
-# Returns the checked name from dplyr's glue mask, tagging errors from the
-# caller's template so the generated outer interpolation can be removed.
-local_checked_glue_name <- function(spec, name_rules) {
-  names <- tryCatch(
-    as.character(glue::glue(spec, .envir = parent.frame())),
-    error = function(cnd) {
-      rlang::abort(
-        "Failed to evaluate the caller's name template.",
-        class = "marginplyr_inner_glue_error",
-        parent = cnd
-      )
+# Bind the rules for one dot to a checker called from dplyr's glue mask.
+# Tag errors from the caller's template to remove the outer interpolation.
+# Unpacking supplies the expanded frame fields for branch schema validation.
+local_checked_glue_name <- function(name_rules) {
+  force(name_rules)
+  function(spec, unpacked = FALSE) {
+    names <- tryCatch(
+      as.character(glue::glue(spec, .envir = parent.frame())),
+      error = function(cnd) {
+        rlang::abort(
+          "Failed to evaluate the caller's name template.",
+          class = "marginplyr_inner_glue_error",
+          parent = cnd
+        )
+      }
+    )
+    check_share_alias_reads(names, name_rules$source_reads)
+    record_local_summary_aliases(
+      names, name_rules$alias_state, name_rules$position
+    )
+    check_local_frame_output_names(
+      names, name_rules$group_vars, name_rules$internal_names,
+      name_rules$set_id_name, name_rules$set_id_is_internal,
+      name_rules$protected_sources
+    )
+    if (unpacked) {
+      type_state <- name_rules$type_state
+      type_state$unpacked_fields <- union(type_state$unpacked_fields, names)
     }
-  )
-  check_share_alias_reads(names, name_rules$source_reads)
-  record_local_summary_aliases(
-    names, name_rules$alias_state, name_rules$position
-  )
-  check_local_frame_output_names(
-    names, name_rules$group_vars, name_rules$internal_names,
-    name_rules$set_id_name, name_rules$set_id_is_internal,
-    name_rules$protected_sources
-  )
-  names
+    names
+  }
 }
 
 # Retain the actual outputs of one local dot for later source selections.
@@ -596,13 +588,15 @@ record_local_summary_aliases <- function(names, state, position) {
 # `selection_state` carries local internal keys and share placeholders to
 # deferred selections. `frame_state` carries output names to the union adapter;
 # direct adapter callers receive empty protections and their dots' auto names.
+# `sql_share_sources` names the projections guarded by the two SQL adapters.
 new_summary_arguments <- function(dots,
                                   labels = summary_argument_labels(dots),
                                   assigned_names = rep(
                                     NA_character_,
                                     length(dots)
                                   ),
-                                  selection_state = NULL) {
+                                  selection_state = NULL,
+                                  sql_share_sources = character()) {
   stopifnot(
     is.list(dots),
     is.character(labels),
@@ -627,7 +621,8 @@ new_summary_arguments <- function(dots,
     labels = labels,
     assigned_names = assigned_names,
     selection_state = selection_state,
-    frame_state = frame_state
+    frame_state = frame_state,
+    sql_share_sources = sql_share_sources
   )
 }
 
@@ -972,7 +967,12 @@ plan_summary_expressions <- function(dots,
       summary_plan$dots,
       caller_labels,
       assigned_names,
-      selection_state = selection_state
+      selection_state = selection_state,
+      sql_share_sources = if (backend_kind %in% c("duckdb", "postgres")) {
+        share_source_names(summary_plan$requests)
+      } else {
+        character()
+      }
     ),
     requests = summary_plan$requests,
     predictable_names = predictable_names
@@ -1025,12 +1025,10 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
   parsed <- parse_across_arguments(expr)
   unknown_fns <- length(known_across_function_names(parsed, env)) == 0L
   columns <- setdiff(data_vars, group_vars)
-  selection_data <- vctrs::new_data_frame(
-    as.list(data)[columns], n = nrow(data)
-  )
-  carrier <- vctrs::vec_slice(
-    vctrs::new_data_frame(as.list(data), n = nrow(data)), integer()
-  )
+  # Like dplyr's mask, use stored columns without subclass conversion.
+  input <- vctrs::new_data_frame(data, n = nrow(data))
+  selection_data <- input[columns]
+  carrier <- vctrs::vec_slice(input, integer())
   state <- new.env(parent = emptyenv())
   state$warnings <- list()
   state$planning_warnings <- list()

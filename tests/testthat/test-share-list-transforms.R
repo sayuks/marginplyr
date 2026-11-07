@@ -114,3 +114,68 @@ test_that("list value transfers preserve ordinary caller function lookup", {
   }
   expect_identical(serialize(data, NULL), before)
 })
+
+test_that("static list subsets preserve retained closure dependencies", {
+  subsets <- alist(
+    functions[-2L],
+    functions[c(1L)],
+    functions[1L, drop = FALSE],
+    functions[1L],
+    functions[-1L],
+    functions[base::c(2L, 2L)],
+    functions[2L, drop = TRUE]
+  )
+  reads <- lapply(subsets, function(subset) {
+    substitute((function(prior) {
+      functions <- list(dependent = function() sum(prior), safe = function() 7)
+      functions <- SUBSET
+      rm(prior)
+      functions[[1L]]()
+    })(1), list(SUBSET = subset))
+  })
+  data <- plain_list_transform_data()
+  expect_share_dependencies(data, reads[1:4])
+  expect_share_dependency_values(data, reads[5:7], expected = 7)
+})
+
+test_that("logical and negative member indices select the same closure as R", {
+  indices <- alist(TRUE, -2L, 1L, -1L)
+  reads <- lapply(indices, function(index) {
+    substitute((function(prior) {
+      functions <- list(function() sum(prior), function() 7)
+      rm(prior)
+      functions[[INDEX]]()
+    })(1), list(INDEX = index))
+  })
+  data <- plain_list_transform_data()
+  expect_share_dependencies(data, reads[1:3])
+  expect_share_dependency_values(data, reads[4L], expected = 7)
+})
+
+test_that("list selector code runs only when summaries evaluate", {
+  probe <- rlang::env(calls = 0L)
+  choose <- function() {
+    probe$calls <- probe$calls + 1L
+    -2L
+  }
+  caller <- rlang::env(choose = choose)
+  caller[["-"]] <- function(x) abs(choose())
+  caller[["c"]] <- function(...) abs(choose())
+  subsets <- alist(
+    functions[-2L],
+    functions[c(1L)],
+    functions[base::`-`(choose())],
+    functions[2L, drop = choose() != 0L]
+  )
+  reads <- lapply(subsets, function(subset) {
+    read <- substitute((function(prior) {
+      functions <- list(function() sum(prior), function() 7)
+      functions <- SUBSET
+      rm(prior)
+      functions[[1L]]()
+    })(1), list(SUBSET = subset))
+    rlang::new_quosure(read, caller)
+  })
+  expect_share_dependency_values(plain_list_transform_data(), reads, 7)
+  expect_identical(probe$calls, 48L)
+})

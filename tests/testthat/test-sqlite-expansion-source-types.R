@@ -74,6 +74,74 @@ test_that("SQLite expansion orders dimensions by their source collation", {
   expect_identical(dplyr::collect(computed)$g, expected)
 })
 
+test_that("SQLite text Margin displays retain source collation in filters", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  DBI::dbExecute(con, "CREATE TABLE facts (g TEXT COLLATE NOCASE)")
+  DBI::dbExecute(con, "INSERT INTO facts VALUES ('a')")
+  query <- expand_with_margins(dplyr::tbl(con, "facts"), .grouping = rollup(g))
+
+  result <- dplyr::collect(dplyr::filter(query, .data$g == "A"))
+  expect_identical(result$g, "a")
+})
+
+test_that("SQLite expansion collects Date displays with a text Margin label", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:", extended_types = TRUE)
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(
+    con,
+    tibble::tibble(day = as.Date(c("2020-01-01", NA)), payload = 7:8),
+    "date_display"
+  )
+  expected <- tibble::tibble(
+    day = c("18262", NA_character_, "Total", "Total"),
+    sid = rep(1:2, each = 2L),
+    payload = rep(7:8, 2L)
+  )
+
+  for (checked in c(FALSE, TRUE)) {
+    query <- expand_with_margins(
+      source, .grouping = rollup(day), .id = "sid",
+      .check_margin_label = checked
+    )
+    expect_identical(as.character(dplyr::tbl_vars(query)), names(expected))
+    expect_no_warning(result <- dplyr::collect(query))
+    expect_identical(dplyr::arrange(result, .data$sid, .data$payload), expected)
+
+    sorted <- dplyr::collect(expand_with_margins(
+      source, .grouping = rollup(day), .id = "sid", .sort = "last",
+      .check_margin_label = checked
+    ))
+    expect_identical(sorted$sid, expected$sid)
+    expect_identical(
+      as.data.frame(dplyr::arrange(sorted, .data$sid, .data$payload)),
+      as.data.frame(expected)
+    )
+
+    materialized <- dplyr::collect(dplyr::compute(query))
+    expect_identical(
+      dplyr::arrange(materialized, .data$sid, .data$payload), expected
+    )
+  }
+
+  expected$day <- as.Date(c("2020-01-01", rep(NA_character_, 3L)))
+  for (label in list(NULL, NA_character_)) {
+    for (sort in c("none", "last")) {
+      query <- expand_with_margins(
+        source, .grouping = rollup(day), .id = "sid",
+        .margin_label = label, .sort = sort
+      )
+      expect_no_warning(result <- dplyr::collect(query))
+      expect_identical(
+        as.data.frame(dplyr::arrange(result, .data$sid, .data$payload)),
+        as.data.frame(expected)
+      )
+    }
+  }
+})
+
 test_that("SQLite expansion keeps source types at direct boundaries", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")

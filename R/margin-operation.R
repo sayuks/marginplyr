@@ -410,14 +410,6 @@ finalize_margin_operation <- function(operation, execution,
        any(operation$plan$dimensions %in% type_anchor_columns) ||
        any(vapply(operation$margin_labels, is_missing_margin_label,
                   logical(1))))
-  if (needs_unsorted_anchor) {
-    # Keep the source-column union at the same boundary for direct collection.
-    anchor <- sql_margin_type_anchor(
-      operation$data, result, source_columns = type_anchor_columns
-    )
-    result <- combine_margin_branches(list(anchor, result))
-    unsorted <- result
-  }
   declared_types <- execution$declared_types
   if (live_sqlite_margin_result(operation)) {
     # A non-missing display label needs a character declaration even when the
@@ -442,6 +434,16 @@ finalize_margin_operation <- function(operation, execution,
                       text_dimensions),
       declared_types
     )
+  }
+  if (needs_unsorted_anchor) {
+    # A source DATE declaration makes RSQLite parse even text Margin labels
+    # as dates. Project the character display for text-labelled dimensions.
+    anchor <- sql_margin_type_anchor(
+      operation$data, result, source_columns = type_anchor_columns,
+      source_displays = labelled_dimensions
+    )
+    result <- combine_margin_branches(list(anchor, result))
+    unsorted <- result
   }
   sqlite_boolean_column <- live_sqlite_margin_result(operation) &&
     length(sqlite_boolean_columns(dplyr::tbl_vars(result))) > 0L

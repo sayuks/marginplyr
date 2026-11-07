@@ -1,5 +1,140 @@
-# Static binding and mutation proofs shared by summary naming and the
-# contextual share dependency walk.
+# Static binding and mutation proofs for summary naming, expression rewriting
+# and the contextual share dependency walk.
+
+# Names visible to a loop body. R evaluates the sequence before binding the
+# index, and binds the index even for an empty sequence.
+static_loop_bound_names <- function(expr, bound, lookup) {
+  union(
+    static_statement_bound_names(expr[[3L]], bound, lookup),
+    assignment_target_names(expr[[2L]])
+  )
+}
+
+# Definite local bindings after a statement in the current lexical frame.
+# A possibly evaluated argument may remove a binding but cannot establish one.
+static_statement_bound_names <- function(expr, bound, lookup) {
+  if (!rlang::is_call(expr)) return(bound)
+  if (rlang::is_quosure(expr)) {
+    lookup$env <- rlang::quo_get_env(expr)
+  }
+  expr <- unparenthesized_value(expr)
+  name <- static_call_name(expr)
+  if (rlang::is_call(expr, "{")) {
+    return(Reduce(function(visible, part) {
+      static_statement_bound_names(part, visible, lookup)
+    }, static_call_args(expr), init = bound))
+  }
+  if (rlang::is_call(expr, c("<-", "="), n = 2L) && is_name_part(expr[[2L]])) {
+    return(union(
+      static_statement_bound_names(expr[[3L]], bound, lookup),
+      assignment_target_names(expr[[2L]])
+    ))
+  }
+  if (rlang::is_call(expr, "for", n = 3L) && is_name_part(expr[[2L]])) {
+    bound <- static_loop_bound_names(expr, bound, lookup)
+    after_body <- static_statement_bound_names(expr[[4L]], bound, lookup)
+    return(intersect(bound, after_body))
+  }
+  arm <- literal_if_parts(expr, name, bound, lookup)
+  if (identical(name, "switch") && length(expr) >= 3L &&
+        is_known_base_call(expr, name, bound, lookup)) {
+    arm <- literal_switch_parts(expr)
+  }
+  if (length(arm) == 1L && !rlang::is_missing(arm[[1L]])) {
+    return(static_statement_bound_names(arm[[1L]], bound, lookup))
+  }
+  if (identical(name, "force") && length(expr) == 2L &&
+        is_known_base_call(expr, name, bound, lookup)) {
+    return(static_statement_bound_names(expr[[2L]], bound, lookup))
+  }
+  if (length(bound) == 0L || identical(name, "function")) return(bound)
+  if (identical(name, "local") &&
+        is_known_base_call(expr, name, bound, lookup) &&
+        length(base_call_argument(expr, "envir")) == 0L) return(bound)
+
+  mutation <- if (!any(name %in% bound) || !is.null(static_call_ns(expr))) {
+    scope_mutation_call(expr, bound, lookup)
+  }
+  if (any(static_call_name(mutation) %in% c("rm", "remove"))) {
+    target <- base_call_argument(mutation, c("envir", "pos"))
+    if (length(target) > 0L && !is.null(
+      lookup_environment_value(target[[1L]], bound, lookup)
+    )) return(bound)
+    args <- static_call_args(mutation)
+    removed <- literal_removal_names(
+      args[!argument_names(args) %in% c("envir", "pos", "inherits")],
+      is_concat = function(part) {
+        identical(static_call_name(part), "c") &&
+          is_known_base_call(part, "c", bound, lookup)
+      }
+    )
+    return(if (is.null(removed)) character() else setdiff(bound, removed))
+  }
+  parts <- c(
+    evaluated_call_head(expr),
+    scope_call_args(expr, name, bound, lookup),
+    evaluated_language_parts(expr)
+  )
+  Reduce(function(visible, part) {
+    intersect(visible, static_statement_bound_names(part, visible, lookup))
+  }, parts, init = bound)
+}
+
+# The reachable arm of an if with a literal condition, or NULL when both
+# arms may run. An empty list represents an if with no reachable arm.
+literal_if_parts <- function(expr, name, bound, lookup) {
+  if (identical(name, "if") && length(expr) >= 3L &&
+        is_scope_control_primitive(expr, name, bound, lookup)) {
+    condition <- unparenthesized_value(expr[[2L]])
+    if (identical(condition, FALSE)) {
+      return(if (length(expr) >= 4L) list(expr[[4L]]) else list())
+    }
+    if (identical(condition, TRUE)) {
+      return(list(expr[[3L]]))
+    }
+  }
+  NULL
+}
+
+# Standalone syntax has no captured caller. With a caller, short-circuiting
+# requires the actual base callee.
+is_scope_control_primitive <- function(expr, name, bound, lookup) {
+  if (is.null(lookup$env) && is.null(static_call_ns(expr))) {
+    return(!name %in% bound)
+  }
+  is_known_base_call(expr, name, bound, lookup)
+}
+
+# Call arguments that the read and removal walks may visit.
+scope_call_args <- function(expr, name, bound, lookup) {
+  if (!is.null(name) && name %in% c("&&", "||") && length(expr) == 3L &&
+        identical(unparenthesized_value(expr[[2L]]), identical(name, "||")) &&
+        is_scope_control_primitive(expr, name, bound, lookup)) {
+    return(list())
+  }
+  literal_if_parts(expr, name, bound, lookup) %||%
+    evaluated_call_args(expr, bound = bound)
+}
+
+# The written arm selected by a verified base switch() call.
+literal_switch_parts <- function(expr) {
+  if (rlang::is_missing(expr[[2L]])) {
+    return(NULL)
+  }
+  key <- unparenthesized_value(expr[[2L]])
+  if (!is.object(key) && typeof(key) %in% c("integer", "double") &&
+        length(key) == 1L && is.finite(key) && key >= 1 &&
+        key < length(expr) - 1L) {
+    return(as.list(expr)[as.integer(key) + 2L])
+  }
+  if (rlang::is_string(key) && !is.object(key)) {
+    index <- match(key, names(expr))
+    if (!is.na(index) && index >= 3L) {
+      return(as.list(expr)[index])
+    }
+  }
+  NULL
+}
 
 # Read a function-position name without forcing a caller promise or invoking an
 # active binding. R skips non-function values in a function position; an

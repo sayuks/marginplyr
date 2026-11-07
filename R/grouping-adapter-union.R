@@ -199,10 +199,12 @@ sql_margin_source_anchor <- function(.data) {
 # is first, even if another branch passes a character dimension through. A
 # zero-row anchor keeps each carried source column in the first SELECT without
 # reading it. Declared output columns use a top-level SQL cast so SQLite
-# assigns their types when `compute()` creates an empty table. The query still
+# assigns their types when `compute()` creates an empty table. Source displays
+# cast the source reference to text to keep its SQLite collation. The query
 # executes only when the caller collects or computes the result (ADR 0020).
 sql_margin_type_anchor <- function(.data, branch, source_columns,
-                                   declared_types = character()) {
+                                   declared_types = character(),
+                                   source_displays = character()) {
   .data <- sql_margin_source_anchor(.data) %||% .data
   branch_columns <- get_col_names(branch, dplyr::everything())
   source_columns <- intersect(
@@ -220,7 +222,11 @@ sql_margin_type_anchor <- function(.data, branch, source_columns,
                  character = "TEXT")
   projections <- stats::setNames(lapply(branch_columns, function(name) {
     if (name %in% source_columns) {
-      return(rlang::sym(sqlite_boolean_names(name, aliases)))
+      column <- sqlite_boolean_names(name, aliases)
+      if (name %in% source_displays) {
+        return(rlang::expr(as.character(!!dbplyr::ident(column))))
+      }
+      return(rlang::sym(column))
     }
     if (name %in% names(declared_types)) {
       return(dbplyr::sql(paste0(
@@ -291,6 +297,30 @@ check_branch_columns <- function(branches) {
       toString(setdiff(expected, actual)),
       call. = FALSE
     )
+  }
+  invisible(NULL)
+}
+
+# Compare eager summary schemas before union, reporting only differences
+# attributable to unnamed frame fields. Grouping keys are already excluded.
+check_eager_summary_fields <- function(schemas, call) {
+  first <- schemas[[1L]]
+  for (schema in schemas[-1L]) {
+    fields <- union(
+      intersect(setdiff(first$outputs, schema$outputs), first$fields),
+      intersect(setdiff(schema$outputs, first$outputs), schema$fields)
+    )
+    if (length(fields) == 0L) {
+      next
+    }
+    abort_marginplyr(c(
+      paste0(
+        "Unnamed frame summaries must produce consistent field names ",
+        "across grouping sets."
+      ),
+      i = "Differing fields include {.var {fields}}.",
+      i = "Use consistent fields or give the summary a name to pack it."
+    ), call = call)
   }
   invisible(NULL)
 }
@@ -595,32 +625,16 @@ summarize_margin_branch <- function(.data,
   result
 }
 
-# A literal recycles to whatever the branch holds, which is the whole of the
-# attachment wherever a column-less branch has a row count to recycle to. The
-# `invents_row_on_column_add` capability in `R/grouping-backend.R` is where a
-# backend says it has none, and every branch of such an input arrived carrying
-# a row no source row produced (#184). Counting is what the literal cannot do
-# there -- dtplyr translates `n()` to `.N`, which is zero for that table -- so
-# the identifier lands on as many rows as the branch has and no more.
-#
-# `count_branch_rows` is what each call site knows and this cannot: whether a
-# row this attachment materialises would be a row the branch does not stand
-# for. Both sites spell it out, because the two answers come from different
-# facts rather than from one being the default, and each is a property of the
-# input rather than of a branch, so each is settled once per call.
+# Attach the occurrence identifier. The caller marks a columnless branch on
+# a backend that would create a row by assigning a scalar to it (#184).
 add_grouping_set_id <- function(result,
                                 set_id_name,
                                 set_id,
-                                count_branch_rows) {
+                                empty_columnless_branch) {
   if (is.null(set_id_name)) {
     return(result)
   }
-  set_id <- as.integer(set_id)
-  value <- if (count_branch_rows) {
-    rlang::expr(base::rep(!!set_id, dplyr::n()))
-  } else {
-    set_id
-  }
+  value <- if (empty_columnless_branch) integer() else as.integer(set_id)
   # Injected for the same reason as the factor methods: a bare `set_id` here
   # resolves against the data mask first, so a grouping column of that name
   # would number every row from its own values instead of the branch's
@@ -632,6 +646,112 @@ add_grouping_set_id <- function(result,
       dplyr::mutate(source, !!safe_name(set_id_name) := !!value)
     }
   )
+}
+
+# Redirect dtplyr data reads before calls such as dplyr::n() become engine
+# reads. `keys` maps public names to ungrouped copies of the input columns.
+rewrite_dtplyr_key_read <- function(expr, keys, env, bound = character()) {
+  if (is_name_part(expr) &&
+        rlang::as_name(expr) %in% setdiff(names(keys), bound)) {
+    return(rlang::sym(keys[[rlang::as_name(expr)]]))
+  }
+  if (!rlang::is_call(expr) ||
+        !any(all.names(expr) %in% c(names(keys), ".data"))) {
+    return(expr)
+  }
+  if (rlang::is_call(expr, c("::", ":::"))) {
+    return(expr)
+  }
+  if (rlang::is_quosure(expr)) {
+    env <- rlang::quo_get_env(expr)
+  }
+  if (is_parenthesized(expr)) {
+    expr[[2L]] <- rewrite_dtplyr_key_read(expr[[2L]], keys, env, bound)
+    return(expr)
+  }
+  if (rlang::is_call(expr, c("$", "@", "[["), n = 2L)) {
+    if (rlang::is_symbol(expr[[2L]], ".env")) {
+      return(expr)
+    }
+    if (rlang::is_call(expr, c("$", "[[")) &&
+          rlang::is_symbol(expr[[2L]], ".data") && !".data" %in% bound) {
+      if (rlang::is_call(expr, "[[") && !rlang::is_string(expr[[3L]])) {
+        # dtplyr evaluates the index in its quosure environment. Map the
+        # resulting name there, leaving that evaluation to dtplyr.
+        expr[[3L]] <- rlang::call2(dtplyr_summary_key_alias, expr[[3L]], keys)
+        return(expr)
+      }
+      name <- rlang::as_name(expr[[3L]])
+      if (name %in% names(keys)) {
+        return(rlang::sym(keys[[name]]))
+      }
+      return(expr)
+    }
+    if (rlang::is_call(expr, c("$", "@"))) {
+      expr[[2L]] <- rewrite_dtplyr_key_read(expr[[2L]], keys, env, bound)
+      return(expr)
+    }
+  }
+  if (rlang::is_call(expr, "function")) {
+    bound <- union(bound, names(function_formal_defaults(expr)))
+  }
+  rewrite <- function(part) rewrite_dtplyr_key_read(part, keys, env, bound)
+  if (rlang::is_call(expr, c("<-", "=", "<<-"), n = 2L) &&
+        is_name_part(expr[[2L]])) {
+    expr[[3L]] <- rewrite(expr[[3L]])
+    return(expr)
+  }
+  if (rlang::is_call(expr, "for", n = 3L) && is_name_part(expr[[2L]])) {
+    inner <- static_loop_bound_names(expr, bound, list(env = env))
+    expr[[3L]] <- rewrite(expr[[3L]])
+    expr[[4L]] <- rewrite_dtplyr_key_read(expr[[4L]], keys, env, inner)
+    return(expr)
+  }
+  if (rlang::is_call(expr, "{")) {
+    return(map_call_parts(expr, function(part, index) {
+      rewritten <- rewrite_dtplyr_key_read(part, keys, env, bound)
+      bound <<- static_statement_bound_names(part, bound, list(env = env))
+      rewritten
+    }))
+  }
+  name <- static_call_name(expr)
+  if (any(name %in% c("with", "eval", "evalq")) &&
+        is_known_base_call(expr, name, bound, list(env = env))) {
+    fn <- get(name, envir = baseenv())
+    args <- static_matched_arguments(expr, fn)
+    if (is.null(args)) return(expr)
+    if (identical(name, "with") || "envir" %in% names(args)) {
+      # Keep language evaluated in an independent mask as written. eval()
+      # still evaluates the expression that supplies that language here.
+      outer <- names(args) != "expr" | identical(name, "eval")
+      args[outer] <- lapply(args[outer], rewrite)
+      return(rebuild_static_call(expr, args))
+    }
+  }
+  rewrite_evaluated_call_parts(expr, rewrite)
+}
+
+# Resolve the one name supplied by a dtplyr data pronoun, retaining unmatched
+# names and invalid indexes for dtplyr's usual lookup and diagnostic.
+dtplyr_summary_key_alias <- function(name, keys) {
+  if (rlang::is_string(name) && name %in% names(keys)) keys[[name]] else name
+}
+
+# Retain caller environments and dtplyr's auto-name for each rewritten dot.
+rewrite_dtplyr_key_dots <- function(dots, keys) {
+  output_names <- rlang::names2(dots)
+  for (i in seq_along(dots)) {
+    dot <- dots[[i]]
+    original <- rlang::quo_get_expr(dot)
+    expr <- rewrite_dtplyr_key_read(original, keys, rlang::quo_get_env(dot))
+    if (!identical(expr, original)) {
+      if (!nzchar(output_names[[i]])) {
+        output_names[[i]] <- rlang::as_label(dot)
+      }
+      dots[[i]] <- rlang::quo_set_expr(dot, expr)
+    }
+  }
+  stats::setNames(dots, output_names)
 }
 
 # This is the one function in the package that evaluates the caller's own
@@ -687,23 +807,39 @@ summarize_margin_union <- function(.data,
   }
 
   if (length(group_vars) > 0L) {
+    special_keys <- if (identical(backend$kind, "dtplyr")) {
+      intersect(group_vars, c(".N", ".I", ".SD", ".GRP", ".NGRP"))
+    } else {
+      character()
+    }
+    read_keys <- character()
+    if (length(special_keys) > 0L) {
+      caller_names <- unlist(lapply(dots, all.names), use.names = FALSE)
+      aliases <- rlang::set_names(new_margin_internal_names(
+        length(special_keys), c(reserved_names, caller_names),
+        prefix = "..marginplyr_read_key_"
+      ), special_keys)
+      rewritten <- rewrite_dtplyr_key_dots(dots, aliases)
+      if (!identical(dots, rewritten)) {
+        dots <- rewritten
+        # data.table binds a `by` column to one value within j. Keep an
+        # ungrouped copy for summaries that need all values of that key.
+        read_keys <- aliases
+      }
+    }
+    copies <- c(key_names, read_keys)
     .data <- margin_safe_column_reads(
       .data, group_vars,
       function(source, safe_name) {
-        key_exprs <- lapply(group_vars, function(name) {
+        key_exprs <- lapply(names(copies), function(name) {
           margin_column_pronoun(safe_name(name))
         })
-        names(key_exprs) <- unname(key_names)
+        names(key_exprs) <- unname(copies)
         dplyr::mutate(source, !!!key_exprs)
       }
     )
-    if (identical(backend$kind, "dtplyr")) {
-      special_keys <- intersect(
-        group_vars, c(".N", ".I", ".SD", ".GRP", ".NGRP")
-      )
-      if (length(special_keys) > 0L) {
-        .data <- dplyr::select(.data, -dplyr::all_of(special_keys))
-      }
+    if (length(special_keys) > 0L) {
+      .data <- dplyr::select(.data, -dplyr::all_of(special_keys))
     }
   }
 
@@ -729,6 +865,16 @@ summarize_margin_union <- function(.data,
   # reading of the contract allows.
   on.exit(report_branch_warnings(conditions), add = TRUE)
 
+  eager <- is.data.frame(.data)
+  unnamed_dots <- which(
+    !nzchar(rlang::names2(dots)) | !is.na(summaries$assigned_names)
+  )
+  branch_schemas <- if (eager && length(unnamed_dots) > 0L &&
+                          length(plan$sets) > 1L) {
+    vector("list", length(plan$sets))
+  } else {
+    NULL
+  }
   tryCatch({
     branches <- Map(
       function(grouping_set, set_id) {
@@ -743,7 +889,11 @@ summarize_margin_union <- function(.data,
           sql = FALSE,
           mark_outputs = is.environment(summaries$grouping_type_state)
         )
-        if (is.data.frame(.data)) {
+        if (eager) {
+          type_states <- vector("list", length(branch_dots))
+          type_states[unnamed_dots] <- lapply(
+            unnamed_dots, function(position) new.env(parent = emptyenv())
+          )
           alias_state <- if (is.environment(summaries$selection_state) &&
                                length(frame_state$share_sources) > 0L) {
             summaries$selection_state
@@ -763,6 +913,7 @@ summarize_margin_union <- function(.data,
             source_definitions = frame_state$source_definitions,
             source_reads = frame_state$source_reads,
             auto_names = frame_state$auto_names,
+            type_states = type_states,
             alias_state = alias_state
           )
           branch_dots <- wrap_assigned_local_summaries(
@@ -774,6 +925,7 @@ summarize_margin_union <- function(.data,
             set_id_is_internal = set_id_is_internal,
             share_sources = frame_state$share_sources,
             source_definitions = frame_state$source_definitions,
+            type_states = type_states,
             alias_state = alias_state
           )
         }
@@ -799,6 +951,14 @@ summarize_margin_union <- function(.data,
           conditions = conditions,
           restatements = branch_argument_map(branch_dots, summaries$labels)
         )
+
+        if (length(summaries$sql_share_sources) > 0L) {
+          result$lazy_query$select <- guard_sql_share_projections(
+            result$lazy_query$select, summaries$sql_share_sources,
+            dbplyr::remote_con(result), backend$kind,
+            unname(key_names[grouping_set])
+          )
+        }
 
         if (is.environment(summaries$grouping_type_state)) {
           select <- result$lazy_query$select
@@ -826,8 +986,9 @@ summarize_margin_union <- function(.data,
 
         # Without the placeholder: what this asks about is the names the summary
         # produced, and that column is the adapter's own.
+        output_names <- setdiff(margin_col_names(result), placeholder)
         check_summary_output_names(
-          setdiff(margin_col_names(result), placeholder),
+          output_names,
           group_vars = group_vars,
           internal_names = c(
             unname(key_names[setdiff(group_vars, grouping_set)]),
@@ -836,6 +997,19 @@ summarize_margin_union <- function(.data,
           set_id_name = set_id_name,
           set_id_is_internal = set_id_is_internal
         )
+        if (!is.null(branch_schemas)) {
+          # Capture summary fields before Margin labels add omitted keys.
+          branch_schemas[[set_id]] <<- list(
+            outputs = setdiff(output_names, unname(key_names[grouping_set])),
+            fields = unlist(lapply(type_states[unnamed_dots], function(state) {
+              if (is.data.frame(state$ptype)) {
+                names(state$ptype)
+              } else {
+                state$unpacked_fields
+              }
+            }), use.names = FALSE)
+          )
+        }
         if (backend$is_sql) {
           public_outputs <- setdiff(
             margin_col_names(result),
@@ -909,16 +1083,13 @@ summarize_margin_union <- function(.data,
           factor_info = column_info$factors
         )
 
-        # A summary branch holds one row per group rather than one per source
-        # row, and the placeholder leaves every branch holding a column, so no
-        # identifier column materialises a row and nothing is counted. The
-        # result a `data.table` still cannot hold once every column goes away
-        # again is a documented limit on `summarize_with_margins()`.
+        # The placeholder keeps a column in each summary branch through ID
+        # assignment, so the scalar recycles to the existing groups.
         result <- add_grouping_set_id(
           result,
           set_id_name,
           set_id,
-          count_branch_rows = FALSE
+          empty_columnless_branch = FALSE
         )
 
         # Last, so that the columns the result keeps are all in place before the
@@ -957,6 +1128,10 @@ summarize_margin_union <- function(.data,
       plan$sets,
       plan$set_ids
     )
+
+    if (!is.null(branch_schemas)) {
+      check_eager_summary_fields(branch_schemas, call)
+    }
 
     if (
       identical(backend$kind, "sql") &&
@@ -1202,13 +1377,9 @@ expand_margin_union <- function(.data,
   if (identical(backend$kind, "dtplyr") && length(plan$sets) > 1L) {
     .data <- dtplyr_expand_shared_input(.data)
   }
-  # An expansion branch is the input's own rows, so a column-less one standing
-  # for no rows has to stay empty, and only a backend that invents a row when
-  # given a column needs to be told so by counting. Both halves are read from
-  # the input once rather than from each branch: labelling adds a column only
-  # for a dimension, and a column-less input has none, so every branch of one
-  # is column-less too -- and a cube folds 2^n of them.
-  count_branch_rows <- backend$invents_row_on_column_add &&
+  # A columnless data.table has zero rows and no dimensions to label, so
+  # each expansion branch is also empty and columnless.
+  empty_columnless_branch <- backend$invents_row_on_column_add &&
     length(get_col_names(.data, dplyr::everything())) == 0L
 
   branches <- Map(
@@ -1239,10 +1410,10 @@ expand_margin_union <- function(.data,
             missing_exprs <- lapply(omitted_identity, function(col) {
               value <- identity_missing[[col]]
               if (!is.null(size_col)) {
-                size <- rlang::expr(base::length(
-                  !!margin_column_pronoun(safe_name(size_col))
-                ))
-                rlang::expr(vctrs::vec_rep(!!value, !!size))
+                size <- deferred_export_call(
+                  "base", "length", margin_column_pronoun(safe_name(size_col))
+                )
+                deferred_export_call("vctrs", "vec_rep", value, size)
               } else {
                 value
               }
@@ -1257,7 +1428,7 @@ expand_margin_union <- function(.data,
         result,
         set_id_name,
         set_id,
-        count_branch_rows = count_branch_rows
+        empty_columnless_branch = empty_columnless_branch
       )
     },
     plan$sets,

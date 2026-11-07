@@ -127,7 +127,7 @@ test_that("dtplyr Margin summaries stage typed-missing list dimensions", {
         expect_s3_class(query, "dtplyr_step")
         expect_match(
           paste(deparse(dplyr::show_query(query)), collapse = "\n"),
-          "vctrs::vec_init", fixed = TRUE
+          "vec_init", fixed = TRUE
         )
       }
     }
