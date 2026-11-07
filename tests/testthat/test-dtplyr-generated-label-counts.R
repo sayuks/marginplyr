@@ -151,3 +151,72 @@ test_that(".SD checking reads dtplyr rows at the requested boundary", {
     }
   }
 })
+
+test_that("dtplyr collision checks keep generated helper lookup private", {
+  skip_if_suggest_absent("dtplyr")
+  root <- new.env(parent = globalenv())
+  root$source <- data.table::data.table(g = "Total", value = 7L)
+  before <- serialize(root$source, NULL)
+  input <- evalq(
+    dplyr::filter(dtplyr::lazy_dt(source), base::identity(value) > 0L), root
+  )
+  authored_calls <- 0L
+  generated_calls <- 0L
+  root$`::` <- function(package, name) {
+    package <- as.character(substitute(package))
+    name <- as.character(substitute(name))
+    if (identical(c(package, name), c("base", "identity"))) {
+      authored_calls <<- authored_calls + 1L
+    }
+    if (paste0(package, "::", name) %in%
+          c("base::as.character", "base::sum", "dplyr::if_else")) {
+      generated_calls <<- generated_calls + 1L
+      return(function(...) 0L)
+    }
+    getExportedValue(package, name)
+  }
+  query <- expand_with_margins(input, .grouping = rollup(g), .id = "set")
+  expect_s3_class(query, "dtplyr_step")
+  expect_identical(authored_calls, 0L)
+  expect_error(
+    expand_with_margins(input, .grouping = rollup(g), .check_margin_label = TRUE),
+    "already present in grouping", class = "marginplyr_error"
+  )
+  expect_identical(authored_calls, 1L)
+  expect_identical(generated_calls, 0L)
+  expect_identical(serialize(root$source, NULL), before)
+})
+
+test_that("omitted dtplyr dimensions ignore late namespace dispatch", {
+  skip_if_suggest_absent("dtplyr")
+  root <- new.env(parent = globalenv())
+  root$source <- data.table::data.table(g = c("a", "b"), value = c(7L, 11L))
+  before <- serialize(root$source, NULL)
+  input <- evalq(dtplyr::lazy_dt(source), root)
+  query <- expand_with_margins(
+    input, .grouping = rollup(g), .id = "set", .margin_label = "All"
+  )
+  expect_s3_class(query, "dtplyr_step")
+  calls <- 0L
+  root$`::` <- function(package, name) {
+    package <- as.character(substitute(package))
+    name <- as.character(substitute(name))
+    if (identical(package, "base") && name %in% c("rep", "length")) {
+      calls <<- calls + 1L
+      if (name == "rep") return(function(x, times) rep("MASK", times))
+    }
+    getExportedValue(package, name)
+  }
+  expected <- tibble::tibble(
+    g = c("a", "b", "All", "All"), set = c(1L, 1L, 2L, 2L),
+    value = c(7L, 11L, 7L, 11L)
+  )
+  collect_expansion <- function() {
+    dplyr::arrange(dplyr::collect(query), set, value)
+  }
+  expect_identical(collect_expansion(), expected)
+  expect_identical(calls, 0L)
+  rm("::", envir = root)
+  expect_identical(collect_expansion(), expected)
+  expect_identical(serialize(root$source, NULL), before)
+})
