@@ -701,15 +701,16 @@ rewrite_dtplyr_key_read <- function(expr, keys, env, bound = character()) {
     expr[[3L]] <- rewrite(expr[[3L]])
     return(expr)
   }
+  if (rlang::is_call(expr, "for", n = 3L) && is_name_part(expr[[2L]])) {
+    inner <- static_loop_bound_names(expr, bound, list(env = env))
+    expr[[3L]] <- rewrite(expr[[3L]])
+    expr[[4L]] <- rewrite_dtplyr_key_read(expr[[4L]], keys, env, inner)
+    return(expr)
+  }
   if (rlang::is_call(expr, "{")) {
-    scope <- list(list(bound = bound))
     return(map_call_parts(expr, function(part, index) {
-      rewritten <- rewrite_dtplyr_key_read(
-        part, keys, env, scope_bound_names(scope)
-      )
-      scope <<- statement_reads_and_scope(
-        part, scope, list(env = env), read_symbols = no_scope_reads
-      )$scope
+      rewritten <- rewrite_dtplyr_key_read(part, keys, env, bound)
+      bound <<- static_statement_bound_names(part, bound, list(env = env))
       rewritten
     }))
   }
@@ -717,7 +718,8 @@ rewrite_dtplyr_key_read <- function(expr, keys, env, bound = character()) {
   if (any(name %in% c("with", "eval", "evalq")) &&
         is_known_base_call(expr, name, bound, list(env = env))) {
     fn <- get(name, envir = baseenv())
-    args <- static_call_args(match.call(fn, expr))
+    args <- static_matched_arguments(expr, fn)
+    if (is.null(args)) return(expr)
     if (identical(name, "with") || "envir" %in% names(args)) {
       # Keep language evaluated in an independent mask as written. eval()
       # still evaluates the expression that supplies that language here.

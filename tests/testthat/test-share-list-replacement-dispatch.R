@@ -4,8 +4,12 @@ list_replacement_data <- function() {
 
 unchanged_list_replacements <- function(original, replacement) {
   cases <- as.list(quote(list(
-    alist(`$<-` <- function(x, name, value) x,
-          carrier$read <- function() REPLACEMENT),
+    alist(
+      `$<-` <- function(x, name, value) {
+        x
+      },
+      carrier$read <- function() REPLACEMENT
+    ),
     alist(`[<-` <- function(x, i, value) x,
           carrier[1L] <- list(function() REPLACEMENT)),
     alist(`[[<-` <- function(i, x, value) x,
@@ -75,4 +79,24 @@ test_that("base list replacements follow function and namespace lookup", {
       carrier$read()
     })(1)
   ))
+})
+
+test_that("unproven member and name setters invalidate the original member", {
+  reads <- alist(
+    (function(prior) {
+      `[<-` <- function(x, i, ..., value) base::`[<-`(x, i, value = value)
+      carrier <- list(read = function() sum(prior))
+      carrier[1L, extra = TRUE] <- list(function() 7)
+      rm(prior)
+      carrier$read()
+    })(1),
+    (function(prior) {
+      `names<-` <- function(x, value) base::`names<-`(x, c("other", "read"))
+      carrier <- list(read = function() sum(prior), other = function() 7)
+      names(carrier) <- c("read", "other")
+      rm(prior)
+      carrier$read()
+    })(1)
+  )
+  expect_share_dependency_values(list_replacement_data(), reads, expected = 7)
 })
