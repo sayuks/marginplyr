@@ -506,13 +506,15 @@ local_tibble_context_names <- function() {
 
 expect_tibble_context_names <- function(input, typed) {
   local_tibble_context_names()
+  a <- quote(a)
+  b <- quote(b)
   direct <- rlang::quo(tidyselect::all_of(names(tidyselect::peek_data())[1L]))
   wrapped <- rlang::quo(tidyselect::all_of(
     identity(names(tidyselect::peek_data())[1L])
   ))
-  fixed <- inspect_grouping(typed, .by = b, .format = "list")
+  fixed <- inspect_grouping(typed, .by = !!b, .format = "list")
   dimension <- inspect_grouping(
-    typed, .by = a, .grouping = grouping_set(b), .format = "list"
+    typed, .by = !!a, .grouping = grouping_set(!!b), .format = "list"
   )
   for (selection in list(wrapped, direct)) {
     expect_identical(tidyselect::eval_select(selection, typed), c(b = 2L))
@@ -521,12 +523,13 @@ expect_tibble_context_names <- function(input, typed) {
     )
     expect_identical(
       inspect_grouping(
-        input, .by = a, .grouping = grouping_set(!!selection), .format = "list"
+        input, .by = !!a, .grouping = grouping_set(!!selection),
+        .format = "list"
       ),
       dimension
     )
     expect_error(
-      inspect_grouping(input, .by = b, .grouping = grouping_set(!!selection)),
+      inspect_grouping(input, .by = !!b, .grouping = grouping_set(!!selection)),
       "cannot appear in both", class = "marginplyr_error"
     )
   }
