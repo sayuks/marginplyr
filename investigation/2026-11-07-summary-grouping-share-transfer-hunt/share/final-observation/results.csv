@@ -1,0 +1,169 @@
+"input","kind","direction","form","remove","status","verdict","contract_ok","observation_ok"
+"data.frame","parent","after_share","identity_list",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"data.frame","parent","after_share","identity_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.frame","parent","after_share","invisible_list",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"data.frame","parent","after_share","invisible_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.frame","parent","after_share","force_list",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"data.frame","parent","after_share","force_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.frame","parent","after_share","renamed",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"data.frame","parent","after_share","renamed",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.frame","parent","after_share","nested",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"data.frame","parent","after_share","nested",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.frame","parent","after_share","bare_control",TRUE,"marginplyr_error","refused",TRUE,TRUE
+"data.frame","parent","after_share","bare_control",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.frame","parent","after_share","renamed_numeric_control",TRUE,"marginplyr_error","refused",TRUE,TRUE
+"data.frame","parent","after_share","renamed_numeric_control",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.frame","parent","source","identity_list",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"data.frame","parent","source","identity_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.frame","parent","source","invisible_list",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"data.frame","parent","source","invisible_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.frame","parent","source","force_list",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"data.frame","parent","source","force_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.frame","parent","source","renamed",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"data.frame","parent","source","renamed",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.frame","parent","source","nested",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"data.frame","parent","source","nested",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.frame","parent","source","bare_control",TRUE,"marginplyr_error","refused",TRUE,TRUE
+"data.frame","parent","source","bare_control",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.frame","parent","source","renamed_numeric_control",TRUE,"marginplyr_error","refused",TRUE,TRUE
+"data.frame","parent","source","renamed_numeric_control",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.frame","total","after_share","identity_list",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"data.frame","total","after_share","identity_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.frame","total","after_share","invisible_list",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"data.frame","total","after_share","invisible_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.frame","total","after_share","force_list",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"data.frame","total","after_share","force_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.frame","total","after_share","renamed",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"data.frame","total","after_share","renamed",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.frame","total","after_share","nested",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"data.frame","total","after_share","nested",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.frame","total","after_share","bare_control",TRUE,"marginplyr_error","refused",TRUE,TRUE
+"data.frame","total","after_share","bare_control",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.frame","total","after_share","renamed_numeric_control",TRUE,"marginplyr_error","refused",TRUE,TRUE
+"data.frame","total","after_share","renamed_numeric_control",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.frame","total","source","identity_list",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"data.frame","total","source","identity_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.frame","total","source","invisible_list",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"data.frame","total","source","invisible_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.frame","total","source","force_list",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"data.frame","total","source","force_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.frame","total","source","renamed",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"data.frame","total","source","renamed",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.frame","total","source","nested",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"data.frame","total","source","nested",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.frame","total","source","bare_control",TRUE,"marginplyr_error","refused",TRUE,TRUE
+"data.frame","total","source","bare_control",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.frame","total","source","renamed_numeric_control",TRUE,"marginplyr_error","refused",TRUE,TRUE
+"data.frame","total","source","renamed_numeric_control",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","parent","after_share","identity_list",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"tibble","parent","after_share","identity_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","parent","after_share","invisible_list",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"tibble","parent","after_share","invisible_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","parent","after_share","force_list",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"tibble","parent","after_share","force_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","parent","after_share","renamed",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"tibble","parent","after_share","renamed",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","parent","after_share","nested",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"tibble","parent","after_share","nested",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","parent","after_share","bare_control",TRUE,"marginplyr_error","refused",TRUE,TRUE
+"tibble","parent","after_share","bare_control",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","parent","after_share","renamed_numeric_control",TRUE,"marginplyr_error","refused",TRUE,TRUE
+"tibble","parent","after_share","renamed_numeric_control",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","parent","source","identity_list",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"tibble","parent","source","identity_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","parent","source","invisible_list",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"tibble","parent","source","invisible_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","parent","source","force_list",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"tibble","parent","source","force_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","parent","source","renamed",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"tibble","parent","source","renamed",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","parent","source","nested",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"tibble","parent","source","nested",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","parent","source","bare_control",TRUE,"marginplyr_error","refused",TRUE,TRUE
+"tibble","parent","source","bare_control",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","parent","source","renamed_numeric_control",TRUE,"marginplyr_error","refused",TRUE,TRUE
+"tibble","parent","source","renamed_numeric_control",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","total","after_share","identity_list",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"tibble","total","after_share","identity_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","total","after_share","invisible_list",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"tibble","total","after_share","invisible_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","total","after_share","force_list",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"tibble","total","after_share","force_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","total","after_share","renamed",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"tibble","total","after_share","renamed",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","total","after_share","nested",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"tibble","total","after_share","nested",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","total","after_share","bare_control",TRUE,"marginplyr_error","refused",TRUE,TRUE
+"tibble","total","after_share","bare_control",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","total","after_share","renamed_numeric_control",TRUE,"marginplyr_error","refused",TRUE,TRUE
+"tibble","total","after_share","renamed_numeric_control",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","total","source","identity_list",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"tibble","total","source","identity_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","total","source","invisible_list",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"tibble","total","source","invisible_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","total","source","force_list",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"tibble","total","source","force_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","total","source","renamed",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"tibble","total","source","renamed",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","total","source","nested",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"tibble","total","source","nested",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","total","source","bare_control",TRUE,"marginplyr_error","refused",TRUE,TRUE
+"tibble","total","source","bare_control",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","total","source","renamed_numeric_control",TRUE,"marginplyr_error","refused",TRUE,TRUE
+"tibble","total","source","renamed_numeric_control",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","parent","after_share","identity_list",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"data.table","parent","after_share","identity_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","parent","after_share","invisible_list",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"data.table","parent","after_share","invisible_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","parent","after_share","force_list",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"data.table","parent","after_share","force_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","parent","after_share","renamed",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"data.table","parent","after_share","renamed",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","parent","after_share","nested",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"data.table","parent","after_share","nested",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","parent","after_share","bare_control",TRUE,"marginplyr_error","refused",TRUE,TRUE
+"data.table","parent","after_share","bare_control",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","parent","after_share","renamed_numeric_control",TRUE,"marginplyr_error","refused",TRUE,TRUE
+"data.table","parent","after_share","renamed_numeric_control",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","parent","source","identity_list",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"data.table","parent","source","identity_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","parent","source","invisible_list",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"data.table","parent","source","invisible_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","parent","source","force_list",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"data.table","parent","source","force_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","parent","source","renamed",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"data.table","parent","source","renamed",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","parent","source","nested",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"data.table","parent","source","nested",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","parent","source","bare_control",TRUE,"marginplyr_error","refused",TRUE,TRUE
+"data.table","parent","source","bare_control",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","parent","source","renamed_numeric_control",TRUE,"marginplyr_error","refused",TRUE,TRUE
+"data.table","parent","source","renamed_numeric_control",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","total","after_share","identity_list",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"data.table","total","after_share","identity_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","total","after_share","invisible_list",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"data.table","total","after_share","invisible_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","total","after_share","force_list",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"data.table","total","after_share","force_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","total","after_share","renamed",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"data.table","total","after_share","renamed",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","total","after_share","nested",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"data.table","total","after_share","nested",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","total","after_share","bare_control",TRUE,"marginplyr_error","refused",TRUE,TRUE
+"data.table","total","after_share","bare_control",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","total","after_share","renamed_numeric_control",TRUE,"marginplyr_error","refused",TRUE,TRUE
+"data.table","total","after_share","renamed_numeric_control",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","total","source","identity_list",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"data.table","total","source","identity_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","total","source","invisible_list",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"data.table","total","source","invisible_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","total","source","force_list",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"data.table","total","source","force_list",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","total","source","renamed",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"data.table","total","source","renamed",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","total","source","nested",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"data.table","total","source","nested",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","total","source","bare_control",TRUE,"marginplyr_error","refused",TRUE,TRUE
+"data.table","total","source","bare_control",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","total","source","renamed_numeric_control",TRUE,"marginplyr_error","refused",TRUE,TRUE
+"data.table","total","source","renamed_numeric_control",FALSE,"1,1,1","legal OK",TRUE,TRUE

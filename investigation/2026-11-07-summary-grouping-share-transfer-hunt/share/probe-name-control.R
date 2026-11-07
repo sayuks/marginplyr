@@ -1,0 +1,12 @@
+Sys.setenv(TESTTHAT_PARALLEL='false')
+pkgload::load_all('/private/tmp/marginplyr-bughunt-20261107-share/source',quiet=TRUE)
+suppressPackageStartupMessages(library(dplyr))
+data <- data.frame(g=c('a','b'),x=c(1,3),prior=c(10,20))
+read <- quote((function(prior) {
+ carrier <- list(read=function() sum(prior), other=function() 7)
+ names(carrier) <- c('other','read')
+ rm(prior)
+ carrier$read()
+})(1))
+result <- tryCatch(summarize_with_margins(data,source=sum(x),prior=share_of_total(source),observed=!!read,.grouping=rollup(g)),error=identity)
+print(result)

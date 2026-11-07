@@ -1,0 +1,10 @@
+                         
+                          legal OK refused
+  bare_control                  12      12
+  force_list                    12       0
+  identity_list                 12       0
+  invisible_list                12       0
+  nested                        12       0
+  renamed                       12       0
+  renamed_numeric_control       12      12
+Comparisons: 108 

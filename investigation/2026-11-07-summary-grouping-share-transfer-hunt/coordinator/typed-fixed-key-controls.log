@@ -1,0 +1,60 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+character local none PASS
+character local first PASS
+character local last PASS
+character dtplyr none PASS
+character dtplyr first PASS
+character dtplyr last PASS
+numeric local none PASS
+numeric local first PASS
+numeric local last PASS
+numeric dtplyr none PASS
+numeric dtplyr first PASS
+numeric dtplyr last PASS
+date local none PASS
+date local first PASS
+date local last PASS
+date dtplyr none PASS
+date dtplyr first PASS
+date dtplyr last PASS
+factor local none PASS
+factor local first PASS
+factor local last PASS
+factor dtplyr none PASS
+factor dtplyr first PASS
+factor dtplyr last PASS
+list local none PASS
+list local first PASS
+list local last PASS
+list dtplyr none ERROR Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process. 
+list dtplyr first ERROR Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process. 
+list dtplyr last ERROR Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process. 
+matrix local none PASS
+matrix local first PASS
+matrix local last PASS
+matrix dtplyr none ERROR Can't select columns that don't exist.
+✖ Column `k` doesn't exist. 
+matrix dtplyr first ERROR Can't select columns that don't exist.
+✖ Column `k` doesn't exist. 
+matrix dtplyr last ERROR Can't select columns that don't exist.
+✖ Column `k` doesn't exist. 
+packed local none PASS
+packed local first PASS
+packed local last PASS
+packed dtplyr none ERROR Can't select columns that don't exist.
+✖ Column `k` doesn't exist. 
+packed dtplyr first ERROR Can't select columns that don't exist.
+✖ Column `k` doesn't exist. 
+packed dtplyr last ERROR Can't select columns that don't exist.
+✖ Column `k` doesn't exist. 
+successful comparisons: 33 

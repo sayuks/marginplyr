@@ -1,0 +1,25 @@
+"input","kind","direction","form","remove","status","verdict","contract_ok","observation_ok"
+"data.frame","parent","after_share","renamed",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"data.frame","parent","after_share","renamed",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.frame","parent","source","renamed",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"data.frame","parent","source","renamed",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.frame","total","after_share","renamed",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"data.frame","total","after_share","renamed",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.frame","total","source","renamed",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"data.frame","total","source","renamed",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","parent","after_share","renamed",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"tibble","parent","after_share","renamed",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","parent","source","renamed",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"tibble","parent","source","renamed",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","total","after_share","renamed",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"tibble","total","after_share","renamed",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"tibble","total","source","renamed",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"tibble","total","source","renamed",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","parent","after_share","renamed",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"data.table","parent","after_share","renamed",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","parent","source","renamed",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"data.table","parent","source","renamed",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","total","after_share","renamed",TRUE,"10,20,30","missing refusal",FALSE,TRUE
+"data.table","total","after_share","renamed",FALSE,"1,1,1","legal OK",TRUE,TRUE
+"data.table","total","source","renamed",TRUE,"1,3,4","missing refusal",FALSE,TRUE
+"data.table","total","source","renamed",FALSE,"1,1,1","legal OK",TRUE,TRUE

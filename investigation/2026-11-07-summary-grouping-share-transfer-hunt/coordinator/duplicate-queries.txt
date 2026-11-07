@@ -1,0 +1,89 @@
+Query: known list transfer terms: list AND identity matches: 28
+1389 [P2] Preserve share dependencies across known closure-return and assignment calls
+1144 [P2] Preserve empty dots forwarding in Grouping selectors
+1110 Avoid unnecessary Full reruns for verification-only follow-ups
+1108 Run Documentation and Repository checks without waiting for Full admission
+964 [P2] Support dot-dot output list-column names in nesting verbs
+950 [P2] Preserve dot-dot list-column names through both nesting Margin verbs
+890 [P2] Preserve AsIs identity keys when nesting dtplyr margins
+857 [P2] Preserve .rows outer columns through the nesting fold
+599 Restore Margin-operation correctness at grouping and backend boundaries
+581 Preserve formal CRAN preflight terminal results across agent runtimes
+579 Decide durable storage for CRAN preflight evidence
+507 Add an agent-operated CRAN release playbook
+505 Add a non-mutating, tarball-based CRAN preflight command
+484 NEWS.md announces no entry for two further user-visible changes
+465 Documented features with no example in any guide
+463 House terms used before definition, with no link to where they are defined
+432 The native adapter's translation error blames an internal call rather than the Margin verb
+427 dtplyr expand and nest fail on every non-character, non-factor dimension carrying a margin label
+317 Decide what a Grouping plan records as its kind, and what asks it
+130 expression_data_symbols() does not scope function definitions, and does not walk call heads
+125 Name-collision message blames `.id` for an internally allocated identifier
+121 get_started.qmd uses the _Avoid_ term "root share"
+83 Add share_of_total() for the grand total denominator
+82 Add a recipes vignette for the common reporting tasks
+23 Harden marginplyr for its first CRAN release
+21 Document Grouping identity, Parent shares, labels, and completion
+18 Add inspect_grouping() for backend-independent Grouping plans
+7 Refactor margin verbs around a shared margin-operation lifecycle
+Query: closure list names terms: names AND closure matches: 13
+1415 [P2] Recognize partial list-name closure lookup in share planning
+1400 [P2] Preserve typed Grouping selection after local callee rebinding
+1127 Make repository verification scope govern generic skill test instructions
+1041 [P2] Preserve compatible unspecified values in unnamed frame summaries
+1020 [P2] Preserve cross-group type refusal for unnamed mixed frame summaries
+505 Add a non-mutating, tarball-based CRAN preflight command
+417 Verify that a path a maintained document names exists
+298 Three constraints on invoking a review sit behind a pointer, and each is spent before anything can fail
+295 *Site verification*, *Dependency metadata*, and *Installation instructions* are 171 always-loaded lines, and only one has a target that already argues them
+284 A review can raise a finding about prose that nothing bounds, and nothing bounds what an agent loads before it starts
+130 expression_data_symbols() does not scope function definitions, and does not walk call heads
+69 Collapse the optional-backend list to a single source of truth
+66 Clear the standards and spec findings from the final readiness review
+Query: nested literal list terms: nested AND list matches: 35
+1364 [P2] Accept representable typed-missing local list-array dimensions
+1238 [P2] Isolate dtplyr nested payload construction from caller list bindings
+1235 [P2] Preserve payloads when finalizing an empty keyless row-wise nest
+995 [P2] Respect typed dispatch when resolving Grouping selectors
+968 [P2] Preserve dot-dot Grouping set identifier names on dtplyr Margin results
+950 [P2] Preserve dot-dot list-column names through both nesting Margin verbs
+831 [P2] Preserve scalar output-name semantics for named .id and .key values
+828 [P2] Refuse cyclic Grouping specifications before recursive expansion
+791 Expose internal query outcomes and conditions in a detailed Sent query view
+605 Support typed-missing labels for local packed grouping dimensions
+599 Restore Margin-operation correctness at grouping and backend boundaries
+597 Replace must_error with standard vignette error handling
+507 Add an agent-operated CRAN release playbook
+424 dtplyr nesting fails on a column named key, which data.table() reads as its own argument
+374 Nest verbs refuse a lazy table without naming either way forward
+342 Answer the name-only selection reader from what tidyselect settles from names alone
+336 check_ambiguous_nested_name()'s surviving header re-derives ADR 0008, which neither #272 nor #273 checked it against
+324 Decide what a nested-specification guard compares a kind with
+311 The pluralization coverage table's line references into test-grouping-plan.R point at unrelated lines
+276 The 39-line header above `admitted_nested_kinds()` restates three of ADR 0026's sections
+272 The 96-line header above `check_ambiguous_nested_name()` re-derives about half of ADR 0026's argument
+271 `CONTEXT.md`'s *Nested specification position* carries evaluation order and execution counts, which ADR 0026 owns
+262 A malformed Grouping specification whose class sits on an atomic vector raises an untyped base-R error
+261 A leading or interior empty argument in a Grouping specification constructor reports an rlang argument name
+260 The two shapes a nested position recognizes as a specification have no asserted evaluation count
+259 A nested specification position does not read through redundant parentheses when recognizing a name, or when deciding whose diagnostic a refusal gets
+238 Record ADR 0023 condition 2's element-count reading in the ADR
+165 Rewriting a summary expression flattens an injected quosure into a plain formula
+130 expression_data_symbols() does not scope function definitions, and does not walk call heads
+82 Add a recipes vignette for the common reporting tasks
+77 Reject misspelled options and unsupported input in the caller's terms
+76 Stop source columns from shadowing internal locals in generated expressions
+56 Decide and record how Margin verbs treat input classes and attributes
+10 Route margin nesting through the Margin operation lifecycle
+7 Refactor margin verbs around a shared margin-operation lifecycle
+Query: qualified formula terms: formula AND namespace matches: 3
+178 Treat redundant parentheses as transparent around recognized Margin calls
+130 expression_data_symbols() does not scope function definitions, and does not walk call heads
+21 Document Grouping identity, Parent shares, labels, and completion
+Query: prior summary rebinding terms: across AND rebind matches: 5
+1400 [P2] Preserve typed Grouping selection after local callee rebinding
+1185 [P2] Invalidate share lookup proofs for list2env setters with unresolved keys
+1143 [P2] Isolate dtplyr Margin-label helpers from caller bindings
+1140 [P2] Invalidate share lookup proofs after visible list2env rebinding
+261 A leading or interior empty argument in a Grouping specification constructor reports an rlang argument name

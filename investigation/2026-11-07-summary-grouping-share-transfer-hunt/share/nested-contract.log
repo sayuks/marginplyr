@@ -1,0 +1,6 @@
+        
+         legal OK missing refusal
+  nested       12              12
+Comparisons: 24 
+Error: all(result$contract_ok) is not TRUE
+Execution halted

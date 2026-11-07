@@ -1,0 +1,113 @@
+      class       role  entrance
+     tibble identifier   binding
+     tibble identifier list-call
+     tibble identifier namespace
+     tibble identifier    unpack
+     tibble      fixed   binding
+     tibble      fixed list-call
+     tibble      fixed namespace
+     tibble      fixed    unpack
+     tibble   variable   binding
+     tibble   variable list-call
+     tibble   variable namespace
+     tibble   variable    unpack
+ data.frame identifier   binding
+ data.frame identifier list-call
+ data.frame identifier namespace
+ data.frame identifier    unpack
+ data.frame      fixed   binding
+ data.frame      fixed list-call
+ data.frame      fixed namespace
+ data.frame      fixed    unpack
+ data.frame   variable   binding
+ data.frame   variable list-call
+ data.frame   variable namespace
+ data.frame   variable    unpack
+ data.table identifier   binding
+ data.table identifier list-call
+ data.table identifier namespace
+ data.table identifier    unpack
+ data.table      fixed   binding
+ data.table      fixed list-call
+ data.table      fixed namespace
+ data.table      fixed    unpack
+ data.table   variable   binding
+ data.table   variable list-call
+ data.table   variable namespace
+ data.table   variable    unpack
+                                                            observed
+                 `.id` (`answer_1`) conflicts with a summary output.
+              `.id` (`answer_fake`) conflicts with a summary output.
+                 `.id` (`answer_1`) conflicts with a summary output.
+                   `.id` (`answer`) conflicts with a summary output.
+    Summary results cannot overwrite grouping column:\nℹ `answer_1`.
+ Summary results cannot overwrite grouping column:\nℹ `answer_fake`.
+    Summary results cannot overwrite grouping column:\nℹ `answer_1`.
+      Summary results cannot overwrite grouping column:\nℹ `answer`.
+    Summary results cannot overwrite grouping column:\nℹ `answer_1`.
+ Summary results cannot overwrite grouping column:\nℹ `answer_fake`.
+    Summary results cannot overwrite grouping column:\nℹ `answer_1`.
+      Summary results cannot overwrite grouping column:\nℹ `answer`.
+                 `.id` (`answer_1`) conflicts with a summary output.
+              `.id` (`answer_fake`) conflicts with a summary output.
+                 `.id` (`answer_1`) conflicts with a summary output.
+                   `.id` (`answer`) conflicts with a summary output.
+    Summary results cannot overwrite grouping column:\nℹ `answer_1`.
+ Summary results cannot overwrite grouping column:\nℹ `answer_fake`.
+    Summary results cannot overwrite grouping column:\nℹ `answer_1`.
+      Summary results cannot overwrite grouping column:\nℹ `answer`.
+    Summary results cannot overwrite grouping column:\nℹ `answer_1`.
+ Summary results cannot overwrite grouping column:\nℹ `answer_fake`.
+    Summary results cannot overwrite grouping column:\nℹ `answer_1`.
+      Summary results cannot overwrite grouping column:\nℹ `answer`.
+                 `.id` (`answer_1`) conflicts with a summary output.
+              `.id` (`answer_fake`) conflicts with a summary output.
+                 `.id` (`answer_1`) conflicts with a summary output.
+                   `.id` (`answer`) conflicts with a summary output.
+    Summary results cannot overwrite grouping column:\nℹ `answer_1`.
+ Summary results cannot overwrite grouping column:\nℹ `answer_fake`.
+    Summary results cannot overwrite grouping column:\nℹ `answer_1`.
+      Summary results cannot overwrite grouping column:\nℹ `answer`.
+    Summary results cannot overwrite grouping column:\nℹ `answer_1`.
+ Summary results cannot overwrite grouping column:\nℹ `answer_fake`.
+    Summary results cannot overwrite grouping column:\nℹ `answer_1`.
+      Summary results cannot overwrite grouping column:\nℹ `answer`.
+ false_refusal literal_matches
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+          TRUE            TRUE
+36 forward observations, 36 literal controls, 36 genuine-collision controls, 9 reverse controls
+mode: observation 

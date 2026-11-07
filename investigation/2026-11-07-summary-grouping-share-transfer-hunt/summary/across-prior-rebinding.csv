@@ -1,0 +1,61 @@
+"class","role","entrance","observed","false_refusal","literal_matches"
+"tibble","identifier","binding","`.id` (`answer_1`) conflicts with a summary output.",TRUE,TRUE
+"tibble","identifier","list-call","`.id` (`answer_fake`) conflicts with a summary output.",TRUE,TRUE
+"tibble","identifier","namespace","`.id` (`answer_1`) conflicts with a summary output.",TRUE,TRUE
+"tibble","identifier","unpack","`.id` (`answer`) conflicts with a summary output.",TRUE,TRUE
+"tibble","fixed","binding","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",TRUE,TRUE
+"tibble","fixed","list-call","Summary results cannot overwrite grouping column:
+ℹ `answer_fake`.",TRUE,TRUE
+"tibble","fixed","namespace","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",TRUE,TRUE
+"tibble","fixed","unpack","Summary results cannot overwrite grouping column:
+ℹ `answer`.",TRUE,TRUE
+"tibble","variable","binding","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",TRUE,TRUE
+"tibble","variable","list-call","Summary results cannot overwrite grouping column:
+ℹ `answer_fake`.",TRUE,TRUE
+"tibble","variable","namespace","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",TRUE,TRUE
+"tibble","variable","unpack","Summary results cannot overwrite grouping column:
+ℹ `answer`.",TRUE,TRUE
+"data.frame","identifier","binding","`.id` (`answer_1`) conflicts with a summary output.",TRUE,TRUE
+"data.frame","identifier","list-call","`.id` (`answer_fake`) conflicts with a summary output.",TRUE,TRUE
+"data.frame","identifier","namespace","`.id` (`answer_1`) conflicts with a summary output.",TRUE,TRUE
+"data.frame","identifier","unpack","`.id` (`answer`) conflicts with a summary output.",TRUE,TRUE
+"data.frame","fixed","binding","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",TRUE,TRUE
+"data.frame","fixed","list-call","Summary results cannot overwrite grouping column:
+ℹ `answer_fake`.",TRUE,TRUE
+"data.frame","fixed","namespace","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",TRUE,TRUE
+"data.frame","fixed","unpack","Summary results cannot overwrite grouping column:
+ℹ `answer`.",TRUE,TRUE
+"data.frame","variable","binding","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",TRUE,TRUE
+"data.frame","variable","list-call","Summary results cannot overwrite grouping column:
+ℹ `answer_fake`.",TRUE,TRUE
+"data.frame","variable","namespace","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",TRUE,TRUE
+"data.frame","variable","unpack","Summary results cannot overwrite grouping column:
+ℹ `answer`.",TRUE,TRUE
+"data.table","identifier","binding","`.id` (`answer_1`) conflicts with a summary output.",TRUE,TRUE
+"data.table","identifier","list-call","`.id` (`answer_fake`) conflicts with a summary output.",TRUE,TRUE
+"data.table","identifier","namespace","`.id` (`answer_1`) conflicts with a summary output.",TRUE,TRUE
+"data.table","identifier","unpack","`.id` (`answer`) conflicts with a summary output.",TRUE,TRUE
+"data.table","fixed","binding","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",TRUE,TRUE
+"data.table","fixed","list-call","Summary results cannot overwrite grouping column:
+ℹ `answer_fake`.",TRUE,TRUE
+"data.table","fixed","namespace","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",TRUE,TRUE
+"data.table","fixed","unpack","Summary results cannot overwrite grouping column:
+ℹ `answer`.",TRUE,TRUE
+"data.table","variable","binding","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",TRUE,TRUE
+"data.table","variable","list-call","Summary results cannot overwrite grouping column:
+ℹ `answer_fake`.",TRUE,TRUE
+"data.table","variable","namespace","Summary results cannot overwrite grouping column:
+ℹ `answer_1`.",TRUE,TRUE
+"data.table","variable","unpack","Summary results cannot overwrite grouping column:
+ℹ `answer`.",TRUE,TRUE
