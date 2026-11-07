@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Ordinary `across()` output-name predictions account for visible function and
+  unpack-option rebindings in preceding summaries, avoiding false grouping-key
+  and identifier collisions (#1428).
+
 * Both Nest verbs preserve dtplyr source keys and cell contents when a caller
   overrides the namespace operator, including deferred collection (#1427).
 
