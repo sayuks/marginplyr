@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Grouping selections use faithful typed metadata when a helper operand installs
+  a pattern method before matching, preserving fixed keys and dimensions across
+  inspection and summaries, including immutable dtplyr inputs (#1420).
+
 * Immutable dtplyr expansions preserve source rows and payload when a caller
   overrides the namespace operator, including cached inputs (#1422).
 
