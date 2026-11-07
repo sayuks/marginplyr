@@ -181,7 +181,8 @@ test_that("list selector code runs only when summaries evaluate", {
 })
 
 list_accessor_read <- function(accessor, body = quote(sum(prior)),
-                               remove = quote(rm(prior)), before = quote(NULL)) {
+                               remove = quote(rm(prior)),
+                               before = quote(NULL)) {
   substitute((function(prior) {
     BEFORE
     callbacks <- list(dependent = function() BODY, safe = function() 7)
