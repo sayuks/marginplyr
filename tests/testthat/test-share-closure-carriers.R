@@ -327,3 +327,120 @@ test_that("returned closure arguments run in the runtime caller", {
   )
   expect_equal(result$observed, c(2, 2, 2))
 })
+
+test_that("supplied list arguments retain member dependencies", {
+  data <- data.frame(group = c("a", "b"), x = c(1, 3), prior = c(100, 300))
+  reads <- alist(
+    (function(prior) {
+      carrier <- list(read = function() sum(prior))
+      rm(prior)
+      (function(value) value$read())(carrier)
+    })(1),
+    (function(prior) {
+      carrier <- list(read = function() sum(prior))
+      rm(prior)
+      (function(value) {
+        (function(forwarded) {
+          copied <- forwarded
+          copied$read()
+        })(value)
+      })(carrier)
+    })(1),
+    (function(prior) {
+      rm(prior)
+      (function(value = list(read = function() sum(prior))) value$read())()
+    })(1)
+  )
+  expect_carrier_dependencies(data, reads)
+})
+
+test_that("inline list factories retain returned member dependencies", {
+  data <- data.frame(group = c("a", "b"), x = c(1, 3), prior = c(100, 300))
+  reads <- alist(
+    (function(prior) {
+      carrier <- (function() list(read = function() sum(prior)))()
+      rm(prior)
+      carrier$read()
+    })(1),
+    (function(prior) {
+      carrier <- (function() {
+        read <- function() sum(prior)
+        # The explicit return carries the list value under test.
+        return(list(read = read)) # nolint: return_linter.
+      })()
+      rm(prior)
+      carrier$read()
+    })(1),
+    (function(prior) {
+      carrier <- list(outer = list(read = function() sum(prior)))
+      forwarded <- (function(value) value)(carrier)
+      rm(prior)
+      forwarded$outer$read()
+    })(1)
+  )
+  expect_carrier_dependencies(data, reads)
+})
+
+test_that("forced list formals preserve member identity after caller removal", {
+  data <- data.frame(group = c("a", "b"), x = c(1, 3), prior = c(100, 300))
+  read <- quote((function(prior) {
+    carrier <- list(read = function() sum(prior))
+    rm(prior)
+    (function(value) {
+      force(value)
+      rm("carrier", envir = parent.frame())
+      value$read()
+    })(carrier)
+  })(1))
+  expect_carrier_dependencies(data, list(read))
+})
+
+test_that("inline list calls retain independent and local bindings", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(100, 300))
+  reads <- alist(
+    (function(prior) {
+      carrier <- list(read = function() sum(prior), safe = function() 1)
+      rm(prior)
+      (function(value) value$safe())(carrier)
+    })(1),
+    (function(prior) {
+      carrier <- list(read = function() sum(prior))
+      (function(value) value$read())(carrier)
+    })(1),
+    (function(prior) {
+      carrier <- (function() list(read = function() sum(prior)))()
+      carrier$read()
+    })(1),
+    (function(prior) {
+      carrier <- (function(prior) {
+        list(outer = list(read = function() sum(prior)))
+      })(1)
+      rm(prior)
+      carrier$outer$read()
+    })(1)
+  )
+  expect_share_dependency_values(data, reads, expected = 1)
+})
+
+test_that("inline list planning does not run caller code", {
+  data <- data.frame(group = c("a", "b"), x = c(1, 3), prior = c(100, 300))
+  probe <- rlang::env(built = 0L, invoked = 0L, forced = 0L)
+  read <- rlang::quo((function(prior) {
+    carrier <- (function() {
+      probe$built <- probe$built + 1L
+      list(read = function() {
+        probe$invoked <- probe$invoked + 1L
+        sum(prior)
+      })
+    })()
+    rm(prior)
+    (function(value) value$read())(carrier)
+  })({
+    probe$forced <- probe$forced + 1L
+    1
+  }))
+  expect_carrier_dependencies(data, list(read))
+  expect_identical(probe$built, 0L)
+  expect_identical(probe$invoked, 0L)
+  expect_identical(probe$forced, 0L)
+})
