@@ -563,7 +563,6 @@ nest_cell_expr <- function(cell_cols, kind) {
   )
   # Per backend (ADR 0016).
   if (identical(kind, "dtplyr")) {
-    # dtplyr evaluates the constructor in the input's environment.
     # `as.data.table.list()` refuses `.SD` as a column name. Build the fresh
     # cell under a private name, then restore the caller's spelling on it.
     special <- intersect(names(columns), ".SD")
@@ -572,8 +571,13 @@ nest_cell_expr <- function(cell_cols, kind) {
       prefix = "..marginplyr_cell_"
     )
     names(columns)[match(special, names(columns))] <- aliases
-    cell <- deferred_export_call(
-      "data.table", "as.data.table",
+    # dtplyr evaluates this in the lazy root. The stock list method keeps
+    # the generated payload conversion out of the caller's S3 lookup.
+    converter <- rlang::call2(
+      utils::getFromNamespace, "as.data.table.list", "data.table"
+    )
+    cell <- rlang::call2(
+      converter,
       deferred_export_call("base", "list", !!!columns)
     )
     if (length(special) > 0L) {

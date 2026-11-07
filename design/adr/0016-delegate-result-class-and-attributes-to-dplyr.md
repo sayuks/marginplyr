@@ -237,13 +237,14 @@ formal is `...`, and converts what that returns.
 So marginplyr chooses the converter, and chooses per backend the one that
 answers what a caller nesting the same input without marginplyr would get:
 `dplyr::as_tibble()` locally, where `dplyr::pick()` returned a tibble, and
-`data.table::as.data.table()` under dtplyr, where `tidyr::nest()` translates to
-`.SD` and yields a `data.table`. The promise boundary is where it was — what is
-promised is that each element is a data frame holding the input's non-key
-columns — but the observed behavior the reference describes is now marginplyr's
-to keep in step with the backends rather than something falling out of a
-translation. A backend whose own nesting verb changes what it gives is a change
-to this ADR.
+`data.table`'s own `as.data.table.list()` method under dtplyr, where
+`tidyr::nest()` translates to `.SD` and yields a `data.table`. The generated
+conversion resolves that method in the package namespace at collection.
+
+Each element is promised to be a data frame holding the input's non-key
+columns. marginplyr keeps the observed cell class in step with each backend's
+own nesting verb. A backend whose own nesting verb changes what it gives is a
+change to this ADR.
 
 One cell is not the backend's: the one a nesting leaving no payload column
 builds. The reference documents which class it is and why, in the paragraph
