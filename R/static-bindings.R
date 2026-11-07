@@ -72,7 +72,7 @@ static_statement_bound_names <- function(expr, bound, lookup) {
   }
   parts <- c(
     evaluated_call_head(expr),
-    static_scope_call_args(expr, name, bound, lookup),
+    scope_call_args(expr, name, bound, lookup),
     evaluated_language_parts(expr)
   )
   Reduce(function(visible, part) {
@@ -106,7 +106,7 @@ is_scope_control_primitive <- function(expr, name, bound, lookup) {
 }
 
 # Call arguments that the read and removal walks may visit.
-static_scope_call_args <- function(expr, name, bound, lookup) {
+scope_call_args <- function(expr, name, bound, lookup) {
   if (!is.null(name) && name %in% c("&&", "||") && length(expr) == 3L &&
         identical(unparenthesized_value(expr[[2L]]), identical(name, "||")) &&
         is_scope_control_primitive(expr, name, bound, lookup)) {

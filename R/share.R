@@ -4501,7 +4501,7 @@ pronoun_index_symbols <- function(expr, scope, lookup) {
 call_part_symbols <- function(expr, scope, lookup) {
   call_head <- static_call_head(expr)
   call_name <- static_call_name(expr)
-  parts <- static_scope_call_args(expr, call_name, scope_bound_names(scope), lookup)
+  parts <- scope_call_args(expr, call_name, scope_bound_names(scope), lookup)
   selection <- if (isTRUE(lookup$deferred_selection)) {
     static_spelling_name(expr, "selection")
   }
@@ -5740,7 +5740,7 @@ scope_after_removals <- function(expr, scope, lookup) {
   head <- static_call_head(expr)
   closure <- scope_call_closure(expr, scope, lookup)
   parts <- c(
-    static_scope_call_args(expr, name, bound, lookup), evaluated_language_parts(expr)
+    scope_call_args(expr, name, bound, lookup), evaluated_language_parts(expr)
   )
   if (is_name_part(head)) {
     scope <- scope_after_promise(
