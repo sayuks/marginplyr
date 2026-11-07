@@ -144,8 +144,9 @@ receiver_dispatch <- function(duck, sqlite) {
 }
 
 reader_options <- function() {
-  batch <- arrow::record_batch(a = 1:2, a = 3:4)
-  table <- arrow::arrow_table(a = 1:2, a = 3:4)
+  fields <- stats::setNames(list(1:2, 3:4), c("a", "a"))
+  batch <- do.call(arrow::record_batch, fields)
+  table <- do.call(arrow::arrow_table, fields)
   wrong_format <- function(x) capture(inspect_grouping(x, .format = "bogus"))
   wrong_duplicates <- function(x) capture(inspect_grouping(x, .duplicates = "bogus"))
   check <- function(f, argument) {

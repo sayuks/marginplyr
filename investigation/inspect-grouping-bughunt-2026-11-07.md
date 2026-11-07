@@ -194,7 +194,8 @@ reader boundaries. The five new Issues were read back as open with both labels.
 ## Submission effects
 
 The cumulative branch diff adds this dated note and three replay scripts.
-They are human-invoked evidence in the existing source-package exclusion.
+The replay scripts are human-invoked evidence in the existing source-package
+exclusion. Repository-wide source lint also checks the scripts.
 Package code and tests, generated documentation, examples, vignettes,
 dependencies, build rules and verification tooling are unchanged. The
 Review-ready scope is `source` on that basis. The submitted SHA, compatibility

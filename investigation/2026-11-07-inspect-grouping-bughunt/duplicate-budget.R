@@ -24,12 +24,14 @@ main <- function(mode) {
       identical(dropped$grouping_id, 0:1)
     )
   }
-  timing <- system.time(cube_error <- inspect(cube_of(20L), "error"))
-  print(list(family = "cube", seconds = timing[["elapsed"]],
+  started <- proc.time()[["elapsed"]]
+  cube_error <- inspect(cube_of(20L), "error")
+  print(list(family = "cube", seconds = proc.time()[["elapsed"]] - started,
              class = class(cube_error)[[1L]],
              diagnostic = substr(conditionMessage(cube_error), 1L, 100L)))
-  timing <- system.time(product_error <- inspect(product_of(20L), "error"))
-  print(list(family = "product", seconds = timing[["elapsed"]],
+  started <- proc.time()[["elapsed"]]
+  product_error <- inspect(product_of(20L), "error")
+  print(list(family = "product", seconds = proc.time()[["elapsed"]] - started,
              class = class(product_error)[[1L]],
              diagnostic = substr(conditionMessage(product_error), 1L, 100L)))
   errors <- list(cube_error, product_error)
