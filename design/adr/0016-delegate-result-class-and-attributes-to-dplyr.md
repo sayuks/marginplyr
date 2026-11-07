@@ -236,10 +236,12 @@ formal is `...`, and converts what that returns.
 
 So marginplyr chooses the converter, and chooses per backend the one that
 answers what a caller nesting the same input without marginplyr would get:
-`dplyr::as_tibble()` locally, where `dplyr::pick()` returned a tibble, and
-`data.table`'s own `as.data.table.list()` method under dtplyr, where
-`tidyr::nest()` translates to `.SD` and yields a `data.table`. The generated
-conversion resolves that method in the package namespace at collection.
+`tibble`'s stock `as_tibble.list()` method locally, where `dplyr::pick()`
+returned a tibble, and `data.table`'s own `as.data.table.list()` method under
+dtplyr, where `tidyr::nest()` translates to `.SD` and yields a `data.table`.
+Generated lists belong to marginplyr, so registered list methods do not govern
+their cell payloads. The conversion resolves the stock methods in their package
+namespaces; dtplyr resolves its method at collection.
 
 Each element is promised to be a data frame holding the input's non-key
 columns. marginplyr keeps the observed cell class in step with each backend's
