@@ -52,6 +52,7 @@ for (role in c("fixed", "dimension", "identifier")) {
   stopifnot(collision(genuine))
   reported <- "out"
   hidden <- capture(role)
+  if (mode == "observe") stopifnot(collision(hidden))
   cat(role, "hidden collision", if (inherits(hidden, "error")) {
     conditionMessage(hidden)
   } else {

@@ -14,17 +14,17 @@ cases <- list(
     switch = c("h <- switch('yes', yes = list(f), list(safe))", "h[[1L]]()")
   ),
   transform = list(
-    rev = c("h <- rev(list(safe, f))", "h[[1L]]()"),
-    unname = c("h <- unname(list(a = f, b = safe))", "h[[1L]]()"),
-    rep = c("h <- rep(list(safe, f), 2L)", "h[[4L]]()"),
-    as_list = c("h <- as.list(list(f, safe))", "h[[1L]]()"),
-    structure = c("h <- structure(list(f, safe), names = c('a', 'b'))", "h$a()"),
-    set_names = c("h <- stats::setNames(list(f, safe), c('a', 'b'))", "h$a()"),
+    rev = c("h <- rev(list(safe, f))", "h[[1L]]()", "h[[2L]]()"),
+    unname = c("h <- unname(list(a = f, b = safe))", "h[[1L]]()", "h[[2L]]()"),
+    rep = c("h <- rep(list(safe, f), 2L)", "h[[4L]]()", "h[[3L]]()"),
+    as_list = c("h <- as.list(list(f, safe))", "h[[1L]]()", "h[[2L]]()"),
+    structure = c("h <- structure(list(f), names = 'a')", "h$a()"),
+    set_names = c("h <- stats::setNames(list(f, safe), c('a', 'b'))", "h$a()", "h$b()"),
     tail = c("h <- utils::tail(list(safe, f), 1L)", "h[[1L]]()")
   ),
   extract = list(
-    get_element = c("h <- list(a = f, b = safe)", "getElement(h, 'a')()"),
-    subset2 = c("h <- list(a = f, b = safe)", ".subset2(h, 'a')()")
+    get_element = c("h <- list(a = f, b = safe)", "getElement(h, 'a')()", "getElement(h, 'b')()"),
+    subset2 = c("h <- list(a = f, b = safe)", ".subset2(h, 'a')()", ".subset2(h, 'b')()")
   ),
   factory = list(
     dots = c("h <- (function(...) list(...))(f)", "h[[1L]]()"),
@@ -55,6 +55,8 @@ cases <- list(
     exact_member = c("h <- list(a = f, b = safe)", "h$a()"),
     flat_write = c("h <- list(a = safe); h$a <- f", "h$a()"),
     empty_loop = c("h <- list(a = safe); for (i in NULL) h$a <- f", "h$a()"),
+    loop_replacement = c("h <- list(a = f); for (i in 1L) h$a <- safe", "h$a()"),
+    local_replacement = c("h <- list(a = f); local(h$a <<- safe)", "h$a()"),
     env_replacement = c("h <- list2env(list(a = f)); h$a <- safe", "h$a()"),
     factory_literal = c(
       "h <- (function(callback = function() 7) list(callback))()",
@@ -116,12 +118,20 @@ for (share in c("share_of_total", "share_of_parent")) {
                      direction))
     for (name in names(cases[[family]])) {
       parts <- cases[[family]][[name]]
-      legal <- name %in% c("factory_literal", "empty_loop", "env_replacement")
+      legal <- name %in% c(
+        "factory_literal", "empty_loop", "loop_replacement",
+        "local_replacement", "env_replacement"
+      )
       legal_value <- if (name == "factory_literal") 7 else 13
       for (binding in c("retained", "independent")) {
         control <- run(make_summary(parts, binding), share, direction)
         expected <- if (legal) legal_value else 11
         stopifnot(identical(control[[field]], rep(expected, 3L)))
+      }
+      if (length(parts) == 3L) {
+        other_member <- make_summary(parts[c(1L, 3L)])
+        control <- run(other_member, share, direction)
+        stopifnot(identical(control[[field]], rep(13, 3L)))
       }
       actual <- run(make_summary(parts), share, direction)
       blocked <- refused(actual, direction)

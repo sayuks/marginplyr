@@ -36,11 +36,13 @@ stopifnot(identical(inspect_fixed(wrapped), inspect_fixed(literal)),
           identical(inspect_fixed(literal)$fixed, list("b")),
           identical(count_by(literal)$count, 2L))
 
+actual_fixed <- inspect_fixed(selector)
+actual_count <- count_by(selector)
 results <- c(
-  inspect_fixed = identical(inspect_fixed(selector), inspect_fixed(literal)),
-  summarize_fixed = identical(count_by(selector), count_by(literal))
+  inspect_fixed = identical(actual_fixed, inspect_fixed(literal)),
+  summarize_fixed = identical(actual_count, count_by(literal))
 )
-print(count_by(selector))
+print(actual_count)
 print(count_by(literal))
 
 constructors <- list(
@@ -66,6 +68,7 @@ for (kind in names(constructors)) {
             identical(expected$included[[1L]], "b"),
             inherits(genuine, "marginplyr_error"))
   results[[kind]] <- identical(actual, expected)
+  if (mode == "observe") stopifnot(inherits(actual, "marginplyr_error"))
   if (inherits(actual, "error")) {
     stopifnot(identical(conditionMessage(actual), conditionMessage(genuine)))
     cat(kind, "reports overlap on a\n")
@@ -75,7 +78,10 @@ print(results)
 stopifnot(length(proxy_rows) > 0L, all(proxy_rows == 0L),
           identical(serialize(source_data, NULL), source_bytes))
 if (mode == "observe") {
-  stopifnot(!any(results))
+  stopifnot(identical(actual_fixed$fixed, list("a")),
+            identical(names(actual_count), c("a", "count")),
+            identical(actual_count$a, c("x", "y")),
+            identical(actual_count$count, c(1L, 1L)), !any(results))
 } else {
   stopifnot(all(results))
 }

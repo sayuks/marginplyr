@@ -61,21 +61,24 @@ Each table entry crossed Parent and Total share with the two dependency
 directions. Across the seven families, 80 calls missed the intended refusal.
 Every case also ran a retained-formal and an independent-closure control.
 The alternative member returned 13, so the expected 11 checked member identity
-where more than one callable was available. The direct list witness was
-refused for the intended reason. The repaired group checked identity,
+where more than one callable was available. In five list transformations
+and both literal accessor forms, selecting the independent member while
+leaving the dependent one in the list also returned 13. The direct list
+witness was refused for the intended reason. The repaired group checked identity,
 literal subsets, known lists carried through inline formals, a factory that
 returns the captured closure in a list, exact member invocation, flat and
 literal-if writes, nested literal paths, and legal defaults, empty iterations
-and environment-field replacement. Source serialization stayed equal.
+and independent replacements through loops, local scopes and environment fields.
+Source serialization stayed equal.
 
 | Boundary | Separating evidence and earlier scope | Issue |
 | --- | --- | --- |
 | Block and selected-branch results (B) | Four forms include a multi-statement block and literal if and switch. `scope_value_closure()` follows these forms for a closure itself. `scope_closure_list()` has no corresponding result handling outside factory traversal. #1401 concerns a closure, #1416 a mask environment and #1430 unchanged transfers through known functions. | [#1470](https://github.com/sayuks/marginplyr/issues/1470) |
-| Plain-list transformations | Seven forms include two-member reversal, repetition and tail, removal or replacement of names, a names-only structure, and conversion of a plain list. #1413 repairs concatenation, append and literal subsets. #1431 concerns name assignment to the original list binding. | [#1471](https://github.com/sayuks/marginplyr/issues/1471) |
+| Plain-list transformations | Seven forms include two-member reversal, repetition and tail, removal or replacement of names, a one-member names-only structure, and conversion of a plain list. #1413 repairs concatenation, append and literal subsets. #1431 concerns name assignment to the original list binding. | [#1471](https://github.com/sayuks/marginplyr/issues/1471) |
 | Literal element accessors | Exact `getElement()` and `.subset2()` select the member also reached by direct dollar or double brackets. The known list member reader covers dollar and brackets. #1345 and #1385 concern access to a mask environment. #1415 and #1446 concern partial names and bracket indices. | [#1472](https://github.com/sayuks/marginplyr/issues/1472) |
-| Inline factory formals | An actual closure, symbol default and dots argument became members of the returned list. An actual that was already a list and an inline factory creating the member in its own body were recognized. #1445 repairs those controls. #1232 covers literal values used in function position. | [#1473](https://github.com/sayuks/marginplyr/issues/1473) |
+| Inline factory formals | An actual closure, symbol default and dots argument became members of the returned list. An actual that was already a list and an inline factory returning the captured closure in a list were recognized. #1445 repairs those controls. #1232 covers literal values used in function position. | [#1473](https://github.com/sayuks/marginplyr/issues/1473) |
 | Known invocation through `do.call()` | Direct dollar invocation of the member refused. Using the same member as the target with a literal empty argument list succeeded. The planner's separate deferred-call reader handles reflective lookup primitives from #173 and PR #180. | [#1474](https://github.com/sayuks/marginplyr/issues/1474) |
-| Single-iteration loop write | A flat member replacement occurred once over literal `1L`; the equivalent flat and literal-if writes refused. An empty loop preserved the independent member. The statement reader carries the index binding but omits the demonstrated member change. #1403, #1443 and #1444 concern flat and nested writes and replacement dispatch. | [#1475](https://github.com/sayuks/marginplyr/issues/1475) |
+| Single-iteration loop write | A flat member replacement occurred once over literal `1L`; the equivalent flat and literal-if writes refused. An empty loop preserved the independent member. A single iteration replacing the dependent member with an independent one stayed legal. The statement reader carries the index binding but omits the demonstrated member change. #1403, #1443 and #1444 concern flat and nested writes and replacement dispatch. | [#1475](https://github.com/sayuks/marginplyr/issues/1475) |
 | Fresh local environment fields | A literal `list2env()` and an ordinary field installation after `new.env()` held the same visible closure. Replacement by an independent closure stayed legal. #1140 and #1185 concern rebinding an environment used as a lookup target. #1404 and #1416 concern an alias of the mask environment itself. | [#1476](https://github.com/sayuks/marginplyr/issues/1476) |
 
 Calculated indices made with `paste0()` and `seq_len()`, and a nonlocal
@@ -107,14 +110,19 @@ from real output names. This case isolates the runtime name check.
 
 ## Replay and publication
 
-Run the scripts from the repository root at the tested SHA, using absolute
-script paths if the evidence is stored separately. For example:
+From a checkout containing this note, run the evidence against a disposable
+archive of the tested source:
 
 ```sh
-evidence=investigation/2026-11-07-summary-grouping-share-contracts
-TESTTHAT_PARALLEL=false Rscript "$evidence/grouping-proxy.R" observe
-TESTTHAT_PARALLEL=false Rscript "$evidence/share-carriers.R" contract flow
-TESTTHAT_PARALLEL=false Rscript "$evidence/summary-frame-names.R" observe
+evidence="$PWD/investigation/2026-11-07-summary-grouping-share-contracts"
+tested=$(mktemp -d)
+git archive 0d99de31aa3c23ac36df363e2a655d1c12c0de89 | tar -x -C "$tested"
+(
+  cd "$tested" || exit
+  TESTTHAT_PARALLEL=false Rscript "$evidence/grouping-proxy.R" observe || exit
+  TESTTHAT_PARALLEL=false Rscript "$evidence/summary-frame-names.R" observe || exit
+  TESTTHAT_PARALLEL=false Rscript "$evidence/share-carriers.R" contract flow
+)
 ```
 
 [Captured output](2026-11-07-summary-grouping-share-contracts/replay.txt)
