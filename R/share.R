@@ -4779,9 +4779,19 @@ scope_value_closure <- function(expr, scope, lookup) {
       ))
     }
   }
-  if (is.null(operator) || !operator %in% c("[[", "$") || length(head) != 3L ||
+  if (is.null(operator) || !operator %in% c("[[", "$") ||
+        !length(head) %in% c(3L, 4L) ||
         !is_known_base_frame_call(head, operator, scope, lookup)) {
     return(NULL)
+  }
+  partial <- identical(operator, "$")
+  if (length(head) == 4L) {
+    exact <- unparenthesized_value(head[[4L]])
+    if (!identical(operator, "[[") || !identical(names(head)[4L], "exact") ||
+          !(identical(exact, TRUE) || identical(exact, FALSE))) {
+      return(NULL)
+    }
+    partial <- identical(exact, FALSE)
   }
   elements <- scope_closure_list(head[[2L]], scope, lookup)
   key <- unparenthesized_value(head[[3L]])
@@ -4792,7 +4802,11 @@ scope_value_closure <- function(expr, scope, lookup) {
     return(NULL)
   }
   index <- if (rlang::is_string(key)) {
-    match(key, names(elements))
+    if (partial) {
+      pmatch(key, names(elements), duplicates.ok = TRUE)
+    } else {
+      match(key, names(elements))
+    }
   } else if (typeof(key) %in% c("integer", "double") && length(key) == 1L &&
                is.finite(key) && key >= 1 && key <= length(elements) &&
                key == trunc(key)) {
