@@ -207,3 +207,69 @@ test_that("visible factory analysis never invokes caller functions", {
   expect_share_dependencies(visible_closure_data(), list(read))
   expect_identical(probe$calls, 0L)
 })
+
+test_that("selected blocks and branches retain closure list members", {
+  carriers <- alist(
+    { list(callback, safe) },
+    {
+      local_callback <- callback
+      list(local_callback, safe)
+    },
+    if (TRUE) list(callback, safe) else list(safe, callback),
+    switch("read", read = list(callback, safe), list(safe, callback))
+  )
+  reads <- function(remove = quote(rm(prior)), key = 1L) {
+    lapply(carriers, function(carrier) {
+      substitute((function(prior) {
+        callback <- function() sum(prior)
+        safe <- function() 7
+        functions <- CARRIER
+        REMOVE
+        functions[[KEY]]()
+      })(1), list(CARRIER = carrier, REMOVE = remove, KEY = key))
+    })
+  }
+  data <- visible_closure_data()
+  expect_share_dependency_values(data, reads(remove = NULL), expected = 1)
+  expect_share_dependency_values(data, reads(key = 2L), expected = 7)
+  expect_share_dependencies(data, reads())
+})
+
+test_that("closure list branch planning preserves ordinary switch lookup", {
+  probe <- rlang::env(calls = 0L)
+  record <- function() {
+    probe$calls <- probe$calls + 1L
+  }
+  caller <- rlang::env(record = record)
+  read <- rlang::new_quosure(quote((function(prior) {
+    callback <- function() sum(prior)
+    functions <- switch("read", read = {
+      record()
+      list(callback)
+    })
+    rm(prior)
+    functions[[1L]]()
+  })(1)), caller)
+
+  data <- visible_closure_data()
+  expect_share_dependencies(data, list(read))
+  expect_identical(probe$calls, 0L)
+
+  caller$switch <- function(...) list(function() 7)
+  expect_share_dependency_values(data, list(read), expected = 7)
+  expect_identical(probe$calls, 0L)
+})
+
+test_that("an explicit return from a block bypasses the closure list binding", {
+  read <- quote(length((function(prior) {
+    functions <- {
+      if (TRUE) return(list(function() sum(prior)))
+      list(function() 7)
+    }
+    rm(prior)
+    functions[[1L]]()
+  })(1)))
+  expect_share_dependency_values(
+    visible_closure_data(), list(read), expected = 1
+  )
+})
