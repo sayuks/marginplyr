@@ -348,6 +348,9 @@ Config/testthat/start-first:
     share-partial-list-lookup,
     qualified-formula-selections,
     nest-namespace,
+    across-prior-rebinding,
+    share-list-names,
+    grouping-name-dispatch,
     dtplyr-label-namespaces
 VignetteBuilder:
     quarto

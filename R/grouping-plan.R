@@ -103,11 +103,12 @@ normalize_grouping_input <- function(.data, by_quo) {
   list(data = .data, groups = input_groups)
 }
 
-# The fixed keys, wherever column names alone settle them: the grouping columns
-# of a grouped input, an absent `.by`, or a selection that names columns.
+# The fixed keys resolved without backend metadata: existing groups, an absent
+# `.by`, or an early selection. `name_proxy` preserves local receiver dispatch.
 # `NULL` defers a selection needing column data to the typed snapshot, as it
 # does for a Grouping dimension.
-resolve_fixed_keys <- function(by_quo, group_vars, data_vars) {
+resolve_fixed_keys <- function(by_quo, group_vars, data_vars,
+                               name_proxy = grouping_name_proxy(data_vars)) {
   if (length(group_vars) > 0L) {
     # Grouping columns are names dplyr resolved, so they name columns of the
     # input and cannot rename one.
@@ -127,7 +128,7 @@ resolve_fixed_keys <- function(by_quo, group_vars, data_vars) {
   if (!is_name_only_selection(by_quo, data_vars)) {
     return(NULL)
   }
-  resolve_by_selection(by_quo, grouping_name_proxy(data_vars))
+  resolve_by_selection(by_quo, name_proxy)
 }
 
 # A fixed key is a column of the input, exactly as a grouping dimension is, so
@@ -223,7 +224,14 @@ prepare_grouping_plan <- function(.data,
       }
       remember_sent_query_backend(backend)
       data_vars <- get_col_names(data, dplyr::everything())
-      by <- resolve_fixed_keys(by_quo, input$groups, data_vars)
+      # Local selection keeps the receiver's names() dispatch, which can read
+      # the active typed context. It needs no backend metadata acquisition.
+      name_proxy <- if (identical(backend$kind, "local")) {
+        data
+      } else {
+        grouping_name_proxy(data_vars)
+      }
+      by <- resolve_fixed_keys(by_quo, input$groups, data_vars, name_proxy)
       if (!is.null(validate_names)) {
         validate_names(data_vars)
       }
@@ -231,7 +239,9 @@ prepare_grouping_plan <- function(.data,
       # where the plan is settled by names alone, and the one below otherwise.
       # This is the call's only reading of a nested argument, so a recognized
       # one is evaluated once whichever passes run (ADR-0008).
-      preflight <- preflight_grouping_spec(grouping_spec, data_vars)
+      preflight <- preflight_grouping_spec(
+        grouping_spec, data_vars, name_proxy = name_proxy
+      )
       local_dimensions <- character()
       if (preflight$name_only) {
         # Reject name-only plan errors before acquiring typed metadata. The
@@ -246,7 +256,7 @@ prepare_grouping_plan <- function(.data,
           local_plan <- compile_grouping_spec(
             grouping_spec,
             data_vars = data_vars,
-            data_proxy = grouping_name_proxy(data_vars),
+            data_proxy = name_proxy,
             .by = if (is.null(by)) character() else by,
             .duplicates = .duplicates,
             duplicates_choices = duplicates_choices,
@@ -257,7 +267,8 @@ prepare_grouping_plan <- function(.data,
       } else {
         preflight_warnings <- with_discarded_selections({
           local_dimensions <- validate_leading_selections(
-            preflight, data_vars, .by = by, .duplicates, duplicates_choices
+            preflight, data_vars, .by = by, .duplicates, duplicates_choices,
+            proxy = name_proxy
           )
         })
       }
@@ -1199,9 +1210,10 @@ grouping_name_proxy <- function(data_vars) {
 # can settle the duplicate error.
 # Returns the dimension prefix resolved before that stop.
 # `.by` holds the fixed keys already resolved from names, or NULL if unresolved.
-validate_leading_selections <- function(preflight, data_vars, .by,
-                                        .duplicates, duplicates_choices) {
-  proxy <- grouping_name_proxy(data_vars)
+validate_leading_selections <- function(
+  preflight, data_vars, .by, .duplicates, duplicates_choices,
+  proxy = grouping_name_proxy(data_vars)
+) {
   resolved <- new.env(parent = emptyenv())
   resolved$dimensions <- character()
   resolved$completed <- list()
@@ -1315,12 +1327,16 @@ validate_grouping_overlap <- function(.by, dimensions) {
 # uses of one specification remain independent readings.
 # `pending` carries a suspension across nested nodes, leaving later arguments
 # unread until the typed continuation.
-preflight_grouping_spec <- function(grouping_spec,
-                                    data_vars,
-                                    ancestors = list(),
-                                    data_proxy = NULL,
-                                    previous = NULL,
-                                    pending = new.env(parent = emptyenv())) {
+# `name_proxy` preserves local receiver dispatch during name-only capture.
+preflight_grouping_spec <- function(
+  grouping_spec,
+  data_vars,
+  ancestors = list(),
+  data_proxy = NULL,
+  previous = NULL,
+  pending = new.env(parent = emptyenv()),
+  name_proxy = grouping_name_proxy(data_vars)
+) {
   if (!is.null(previous) && !isTRUE(previous$deferred)) {
     return(previous)
   }
@@ -1374,7 +1390,9 @@ preflight_grouping_spec <- function(grouping_spec,
     reading <- if (reused) {
       if (is.null(prior$nested)) prior else list(nested = prior$nested$spec)
     } else {
-      read_grouping_arg(arg, data_vars, captured$wrappers, data_proxy)
+      read_grouping_arg(
+        arg, data_vars, captured$wrappers, data_proxy, name_proxy
+      )
     }
     if (isTRUE(reading$deferred)) {
       pending$blocked <- TRUE
@@ -1394,7 +1412,7 @@ preflight_grouping_spec <- function(grouping_spec,
 
     nested_preflight <- preflight_grouping_spec(
       reading$nested, data_vars, ancestors, data_proxy,
-      previous = prior$nested, pending = pending
+      previous = prior$nested, pending = pending, name_proxy = name_proxy
     )
     if (!isTRUE(nested_preflight$deferred)) {
       rule$validate_nested(grouping_spec, nested_preflight$spec)
@@ -2406,7 +2424,8 @@ grouping_constructor_names <- function() {
 # selection; its preflight value stays in that argument's environment for the
 # typed pass (ADR 0008). `wrappers` holds captured qualified call boundaries;
 # `evaluated` distinguishes a retained answer from an unread column name.
-read_grouping_arg <- function(arg, data_vars, wrappers, data_proxy) {
+read_grouping_arg <- function(arg, data_vars, wrappers, data_proxy,
+                              name_proxy = grouping_name_proxy(data_vars)) {
   expr <- nested_arg_expr(arg)
   authored <- restore_nested_arg(arg, wrappers)
   env <- rlang::quo_get_env(authored)
@@ -2454,7 +2473,7 @@ read_grouping_arg <- function(arg, data_vars, wrappers, data_proxy) {
       integer()
     }
     proxy <- if (is.null(data_proxy)) {
-      grouping_name_proxy(data_vars)
+      name_proxy
     } else {
       data_proxy
     }

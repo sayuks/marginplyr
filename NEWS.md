@@ -3,6 +3,17 @@
 * Generated dtplyr Margin-label display and factor restoration preserve source
   dimensions when a caller overrides the namespace operator (#1433).
 
+* Ordinary `across()` output-name predictions account for visible function and
+  unpack-option rebindings in preceding summaries, avoiding false grouping-key
+  and identifier collisions (#1428).
+
+* Parent and Total share dependency checks follow existing closures after literal
+  list names and names-attribute replacement, including swapped names (#1431).
+
+* Grouping context-name selections preserve local receiver dispatch, keeping
+  fixed keys, grouping dimensions and summary or nested grains consistent
+  with typed tidyselect (#1434).
+
 * Both Nest verbs preserve dtplyr source keys and cell contents when a caller
   overrides the namespace operator, including deferred collection (#1427).
 
