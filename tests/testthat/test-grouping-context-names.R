@@ -599,6 +599,13 @@ test_that("DuckDB name-only inspection skips data-frame receiver methods", {
     },
     .env = asNamespace("base")$.__S3MethodsTable__.
   )
+  rlang::local_bindings(
+    vec_proxy.data.frame = function(x, ...) {
+      reject_synthetic(x)
+      x
+    },
+    .env = asNamespace("vctrs")$.__S3MethodsTable__.
+  )
 
   expect_identical(
     tidyselect::eval_select(quote(c(a = a1:a2)), data[0, ]),

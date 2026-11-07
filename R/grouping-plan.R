@@ -1254,6 +1254,12 @@ tidyselect_data_has_predicates.margin_grouping_name_proxy <- function(x) {
   TRUE
 }
 
+# Let tidyselect's vector assertion see the synthetic frame as it is.
+#' @exportS3Method vctrs::vec_proxy
+vec_proxy.margin_grouping_name_proxy <- function(x, ...) {
+  x
+}
+
 # Expose the stored names directly, including to tidyselect::peek_data() users.
 #' @export
 names.margin_grouping_name_proxy <- function(x) {
