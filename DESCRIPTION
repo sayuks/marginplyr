@@ -343,6 +343,7 @@ Config/testthat/start-first:
     authored-grouping-namespaces,
     grouping-rebound-callees,
     sqlite-derived-expansion,
+    share-list-transforms,
     dtplyr-converter-metadata
 VignetteBuilder:
     quarto
