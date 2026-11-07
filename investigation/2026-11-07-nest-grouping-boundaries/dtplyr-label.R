@@ -1,4 +1,9 @@
 args <- commandArgs(trailingOnly = TRUE)
+stopifnot(
+  length(args) %in% c(2L, 3L),
+  args[[2L]] %in% c("collision", "display"),
+  length(args) == 2L || identical(args[[3L]], "contract")
+)
 pkgload::load_all(args[[1L]], quiet = TRUE)
 make_source <- function(keys) {
   scope <- new.env(parent = globalenv())
@@ -67,7 +72,9 @@ check_collision <- function() {
       stopifnot(inherits(restored, "marginplyr_error"))
       records[[length(records) + 1L]] <- data.frame(
         verb = verb, helper = paste(target[[1L]], target[[2L]], sep = "::"),
-        observed = observed, visits = visits
+        observed = observed, visits = visits,
+        matches = inherits(out, "marginplyr_error") &&
+          grepl("already present", conditionMessage(out), fixed = TRUE)
       )
     }
   }
@@ -98,7 +105,8 @@ check_display <- function() {
     stopifnot(identical(baseline, restored))
     records[[length(records) + 1L]] <- data.frame(
       verb = verb, expected = paste(unique(baseline$g[baseline$set == 2L]), collapse = "/"),
-      observed = paste(unique(altered$g[altered$set == 2L]), collapse = "/"), visits = visits
+      observed = paste(unique(altered$g[altered$set == 2L]), collapse = "/"), visits = visits,
+      matches = identical(altered, baseline)
     )
   }
   do.call(rbind, records)
@@ -107,9 +115,13 @@ mode <- args[[2L]]
 out <- switch(mode, collision = check_collision(), display = check_display())
 print(out, row.names = FALSE)
 if (length(args) >= 3L && args[[3L]] == "contract") {
-  stopifnot(all(out$visits == 0L))
+  stopifnot(all(out$matches), all(out$visits == 0L))
 } else if (mode == "collision") {
-  stopifnot(any(out$observed == "admitted" & out$visits > 0L))
+  stopifnot(
+    nrow(out) == 16L,
+    sum(out$observed == "admitted" & out$visits == 1L) == 12L,
+    sum(out$matches & out$visits == 0L) == 4L
+  )
 } else {
-  stopifnot(any(out$expected != out$observed & out$visits > 0L))
+  stopifnot(nrow(out) == 4L, all(out$expected != out$observed & out$visits == 1L))
 }

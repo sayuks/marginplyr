@@ -23,9 +23,9 @@ runs.
 | Explicit dtplyr Margin label checks admitted a real collision, and a separate omitted-label operation changed the requested display. | Independent evidence for existing [#1452][label] |
 
 The two new tickets were published with `bug` and `ready-for-agent` under
-`to-tickets`. Both are independently verifiable and have no blockers. The
-user delegated the ticket split. This branch adds dated evidence and
-standalone probes.
+`to-tickets`. Both slices were independently verifiable and had no blockers
+when filed. The user delegated the ticket split. This branch adds dated
+evidence and standalone probes.
 
 ### Omitted dimension identity in dtplyr nesting
 
@@ -100,7 +100,8 @@ repetition helper changed `Total` to `CHANGED` in all four verbs. For each
 lazy result, the binding was installed after construction and removing it
 restored the same query. The row-wise verb was called with the binding in
 place. The native and included-only controls stayed correct. Both observation
-modes exited 0. Their zero-callback contract modes exited 1.
+modes exited 0. The contract modes required the expected refusal or result
+and zero callbacks, and exited 1.
 
 #1452 was already open when publication-time search returned it. Its
 collision-count and omitted-label witnesses cover these results. #1143 and
@@ -135,7 +136,7 @@ declared schema. The [minimal replay][arrow-join] also checked literal names
 and `keep = TRUE`. The evidence was classified as an upstream schema
 inconsistency under the documented Arrow metadata contract.
 
-SQLite and DuckDB inspection controls used quoted, separator-containing and
+[SQLite and DuckDB inspection controls][sql-reads] used quoted, separator-containing and
 non-ASCII names. Name-only selection and invalid format had zero owned SQL
 records. A SQLite type predicate had a Package refusal with no owned SQL.
 DuckDB typed selection had one `selection_proxy` with `LIMIT 0`. Native
@@ -196,3 +197,4 @@ fetched and their state, titles and labels checked.
 [arrow-readers]: 2026-11-07-nest-grouping-boundaries/arrow-readers.R
 [arrow-join]: 2026-11-07-nest-grouping-boundaries/arrow-join-schema.R
 [algebra]: 2026-11-07-nest-spec-bughunt/spec/README.md
+[sql-reads]: 2026-11-07-nest-grouping-boundaries/sql-selection-reads.R
