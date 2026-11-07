@@ -1,0 +1,423 @@
+
+grouping-proxy observe
+# A tibble: 2 × 2
+  a     count
+  <chr> <int>
+1 x         1
+2 y         1
+# A tibble: 1 × 2
+      b count
+  <int> <int>
+1     1     2
+grouping_set reports overlap on a
+grouping_sets reports overlap on a
+rollup reports overlap on a
+cube reports overlap on a
+grouping_spec reports overlap on a
+  inspect_fixed summarize_fixed    grouping_set   grouping_sets          rollup
+          FALSE           FALSE           FALSE           FALSE           FALSE
+           cube   grouping_spec
+          FALSE           FALSE
+exit=0
+
+grouping-proxy contract
+# A tibble: 2 × 2
+  a     count
+  <chr> <int>
+1 x         1
+2 y         1
+# A tibble: 1 × 2
+      b count
+  <int> <int>
+1     1     2
+grouping_set reports overlap on a
+grouping_sets reports overlap on a
+rollup reports overlap on a
+cube reports overlap on a
+grouping_spec reports overlap on a
+  inspect_fixed summarize_fixed    grouping_set   grouping_sets          rollup
+          FALSE           FALSE           FALSE           FALSE           FALSE
+           cube   grouping_spec
+          FALSE           FALSE
+Error: all(results) is not TRUE
+Execution halted
+exit=1
+
+summary-frame-names observe
+fixed Summary results cannot overwrite grouping column:
+ℹ `g`.
+fixed hidden collision Summary results cannot overwrite grouping column:
+ℹ `g`.
+dimension Summary results cannot overwrite grouping column:
+ℹ `g`.
+dimension hidden collision Summary results cannot overwrite grouping column:
+ℹ `g`.
+identifier `.id` (`set`) conflicts with a summary output.
+identifier hidden collision `.id` (`set`) conflicts with a summary output.
+[1] FALSE  TRUE FALSE  TRUE FALSE  TRUE
+exit=0
+
+summary-frame-names contract
+fixed Summary results cannot overwrite grouping column:
+ℹ `g`.
+fixed hidden collision Summary results cannot overwrite grouping column:
+ℹ `g`.
+dimension Summary results cannot overwrite grouping column:
+ℹ `g`.
+dimension hidden collision Summary results cannot overwrite grouping column:
+ℹ `g`.
+identifier `.id` (`set`) conflicts with a summary output.
+identifier hidden collision `.id` (`set`) conflicts with a summary output.
+[1] FALSE  TRUE FALSE  TRUE FALSE  TRUE
+Error: all(matches) is not TRUE
+Execution halted
+exit=1
+
+share-carriers observe flow
+block share_of_total source 1,3,4
+block_rebind share_of_total source 1,3,4
+branch share_of_total source 1,3,4
+switch share_of_total source 1,3,4
+block share_of_total later 10,20,30
+block_rebind share_of_total later 10,20,30
+branch share_of_total later 10,20,30
+switch share_of_total later 10,20,30
+block share_of_parent source 1,3,4
+block_rebind share_of_parent source 1,3,4
+branch share_of_parent source 1,3,4
+switch share_of_parent source 1,3,4
+block share_of_parent later 10,20,30
+block_rebind share_of_parent later 10,20,30
+branch share_of_parent later 10,20,30
+switch share_of_parent later 10,20,30
+exit=0
+
+share-carriers contract flow
+block share_of_total source 1,3,4
+block_rebind share_of_total source 1,3,4
+branch share_of_total source 1,3,4
+switch share_of_total source 1,3,4
+block share_of_total later 10,20,30
+block_rebind share_of_total later 10,20,30
+branch share_of_total later 10,20,30
+switch share_of_total later 10,20,30
+block share_of_parent source 1,3,4
+block_rebind share_of_parent source 1,3,4
+branch share_of_parent source 1,3,4
+switch share_of_parent source 1,3,4
+block share_of_parent later 10,20,30
+block_rebind share_of_parent later 10,20,30
+branch share_of_parent later 10,20,30
+switch share_of_parent later 10,20,30
+Error: all(matches) is not TRUE
+Execution halted
+exit=1
+
+share-carriers observe transform
+rev share_of_total source 1,3,4
+unname share_of_total source 1,3,4
+rep share_of_total source 1,3,4
+as_list share_of_total source 1,3,4
+structure share_of_total source 1,3,4
+set_names share_of_total source 1,3,4
+tail share_of_total source 1,3,4
+rev share_of_total later 10,20,30
+unname share_of_total later 10,20,30
+rep share_of_total later 10,20,30
+as_list share_of_total later 10,20,30
+structure share_of_total later 10,20,30
+set_names share_of_total later 10,20,30
+tail share_of_total later 10,20,30
+rev share_of_parent source 1,3,4
+unname share_of_parent source 1,3,4
+rep share_of_parent source 1,3,4
+as_list share_of_parent source 1,3,4
+structure share_of_parent source 1,3,4
+set_names share_of_parent source 1,3,4
+tail share_of_parent source 1,3,4
+rev share_of_parent later 10,20,30
+unname share_of_parent later 10,20,30
+rep share_of_parent later 10,20,30
+as_list share_of_parent later 10,20,30
+structure share_of_parent later 10,20,30
+set_names share_of_parent later 10,20,30
+tail share_of_parent later 10,20,30
+exit=0
+
+share-carriers contract transform
+rev share_of_total source 1,3,4
+unname share_of_total source 1,3,4
+rep share_of_total source 1,3,4
+as_list share_of_total source 1,3,4
+structure share_of_total source 1,3,4
+set_names share_of_total source 1,3,4
+tail share_of_total source 1,3,4
+rev share_of_total later 10,20,30
+unname share_of_total later 10,20,30
+rep share_of_total later 10,20,30
+as_list share_of_total later 10,20,30
+structure share_of_total later 10,20,30
+set_names share_of_total later 10,20,30
+tail share_of_total later 10,20,30
+rev share_of_parent source 1,3,4
+unname share_of_parent source 1,3,4
+rep share_of_parent source 1,3,4
+as_list share_of_parent source 1,3,4
+structure share_of_parent source 1,3,4
+set_names share_of_parent source 1,3,4
+tail share_of_parent source 1,3,4
+rev share_of_parent later 10,20,30
+unname share_of_parent later 10,20,30
+rep share_of_parent later 10,20,30
+as_list share_of_parent later 10,20,30
+structure share_of_parent later 10,20,30
+set_names share_of_parent later 10,20,30
+tail share_of_parent later 10,20,30
+Error: all(matches) is not TRUE
+Execution halted
+exit=1
+
+share-carriers observe extract
+get_element share_of_total source 1,3,4
+subset2 share_of_total source 1,3,4
+get_element share_of_total later 10,20,30
+subset2 share_of_total later 10,20,30
+get_element share_of_parent source 1,3,4
+subset2 share_of_parent source 1,3,4
+get_element share_of_parent later 10,20,30
+subset2 share_of_parent later 10,20,30
+exit=0
+
+share-carriers contract extract
+get_element share_of_total source 1,3,4
+subset2 share_of_total source 1,3,4
+get_element share_of_total later 10,20,30
+subset2 share_of_total later 10,20,30
+get_element share_of_parent source 1,3,4
+subset2 share_of_parent source 1,3,4
+get_element share_of_parent later 10,20,30
+subset2 share_of_parent later 10,20,30
+Error: all(matches) is not TRUE
+Execution halted
+exit=1
+
+share-carriers observe factory
+dots share_of_total source 1,3,4
+default share_of_total source 1,3,4
+actual share_of_total source 1,3,4
+dots share_of_total later 10,20,30
+default share_of_total later 10,20,30
+actual share_of_total later 10,20,30
+dots share_of_parent source 1,3,4
+default share_of_parent source 1,3,4
+actual share_of_parent source 1,3,4
+dots share_of_parent later 10,20,30
+default share_of_parent later 10,20,30
+actual share_of_parent later 10,20,30
+exit=0
+
+share-carriers contract factory
+dots share_of_total source 1,3,4
+default share_of_total source 1,3,4
+actual share_of_total source 1,3,4
+dots share_of_total later 10,20,30
+default share_of_total later 10,20,30
+actual share_of_total later 10,20,30
+dots share_of_parent source 1,3,4
+default share_of_parent source 1,3,4
+actual share_of_parent source 1,3,4
+dots share_of_parent later 10,20,30
+default share_of_parent later 10,20,30
+actual share_of_parent later 10,20,30
+Error: all(matches) is not TRUE
+Execution halted
+exit=1
+
+share-carriers observe invoke
+do_call share_of_total source 1,3,4
+do_call share_of_total later 10,20,30
+do_call share_of_parent source 1,3,4
+do_call share_of_parent later 10,20,30
+exit=0
+
+share-carriers contract invoke
+do_call share_of_total source 1,3,4
+do_call share_of_total later 10,20,30
+do_call share_of_parent source 1,3,4
+do_call share_of_parent later 10,20,30
+Error: all(matches) is not TRUE
+Execution halted
+exit=1
+
+share-carriers observe loop
+singleton share_of_total source 1,3,4
+singleton share_of_total later 10,20,30
+singleton share_of_parent source 1,3,4
+singleton share_of_parent later 10,20,30
+exit=0
+
+share-carriers contract loop
+singleton share_of_total source 1,3,4
+singleton share_of_total later 10,20,30
+singleton share_of_parent source 1,3,4
+singleton share_of_parent later 10,20,30
+Error: all(matches) is not TRUE
+Execution halted
+exit=1
+
+share-carriers observe environment
+list2env share_of_total source 1,3,4
+new_env share_of_total source 1,3,4
+list2env share_of_total later 10,20,30
+new_env share_of_total later 10,20,30
+list2env share_of_parent source 1,3,4
+new_env share_of_parent source 1,3,4
+list2env share_of_parent later 10,20,30
+new_env share_of_parent later 10,20,30
+exit=0
+
+share-carriers contract environment
+list2env share_of_total source 1,3,4
+new_env share_of_total source 1,3,4
+list2env share_of_total later 10,20,30
+new_env share_of_total later 10,20,30
+list2env share_of_parent source 1,3,4
+new_env share_of_parent source 1,3,4
+list2env share_of_parent later 10,20,30
+new_env share_of_parent later 10,20,30
+Error: all(matches) is not TRUE
+Execution halted
+exit=1
+
+share-carriers observe adjacent
+dynamic share_of_total source 1,3,4
+sequence share_of_total source 1,3,4
+local_write share_of_total source 1,3,4
+dynamic share_of_total later 10,20,30
+sequence share_of_total later 10,20,30
+local_write share_of_total later 10,20,30
+dynamic share_of_parent source 1,3,4
+sequence share_of_parent source 1,3,4
+local_write share_of_parent source 1,3,4
+dynamic share_of_parent later 10,20,30
+sequence share_of_parent later 10,20,30
+local_write share_of_parent later 10,20,30
+exit=0
+
+share-carriers observe repaired
+direct share_of_total source refused
+identity share_of_total source refused
+subset share_of_total source refused
+factory_list share_of_total source refused
+factory_new share_of_total source refused
+exact_member share_of_total source refused
+flat_write share_of_total source refused
+empty_loop share_of_total source 13,13,13
+loop_replacement share_of_total source 13,13,13
+local_replacement share_of_total source 13,13,13
+env_replacement share_of_total source 13,13,13
+factory_literal share_of_total source 7,7,7
+branch_write share_of_total source refused
+nested share_of_total source refused
+direct share_of_total later refused
+identity share_of_total later refused
+subset share_of_total later refused
+factory_list share_of_total later refused
+factory_new share_of_total later refused
+exact_member share_of_total later refused
+flat_write share_of_total later refused
+empty_loop share_of_total later 13,13,13
+loop_replacement share_of_total later 13,13,13
+local_replacement share_of_total later 13,13,13
+env_replacement share_of_total later 13,13,13
+factory_literal share_of_total later 7,7,7
+branch_write share_of_total later refused
+nested share_of_total later refused
+direct share_of_parent source refused
+identity share_of_parent source refused
+subset share_of_parent source refused
+factory_list share_of_parent source refused
+factory_new share_of_parent source refused
+exact_member share_of_parent source refused
+flat_write share_of_parent source refused
+empty_loop share_of_parent source 13,13,13
+loop_replacement share_of_parent source 13,13,13
+local_replacement share_of_parent source 13,13,13
+env_replacement share_of_parent source 13,13,13
+factory_literal share_of_parent source 7,7,7
+branch_write share_of_parent source refused
+nested share_of_parent source refused
+direct share_of_parent later refused
+identity share_of_parent later refused
+subset share_of_parent later refused
+factory_list share_of_parent later refused
+factory_new share_of_parent later refused
+exact_member share_of_parent later refused
+flat_write share_of_parent later refused
+empty_loop share_of_parent later 13,13,13
+loop_replacement share_of_parent later 13,13,13
+local_replacement share_of_parent later 13,13,13
+env_replacement share_of_parent later 13,13,13
+factory_literal share_of_parent later 7,7,7
+branch_write share_of_parent later refused
+nested share_of_parent later refused
+exit=0
+
+share-carriers contract repaired
+direct share_of_total source refused
+identity share_of_total source refused
+subset share_of_total source refused
+factory_list share_of_total source refused
+factory_new share_of_total source refused
+exact_member share_of_total source refused
+flat_write share_of_total source refused
+empty_loop share_of_total source 13,13,13
+loop_replacement share_of_total source 13,13,13
+local_replacement share_of_total source 13,13,13
+env_replacement share_of_total source 13,13,13
+factory_literal share_of_total source 7,7,7
+branch_write share_of_total source refused
+nested share_of_total source refused
+direct share_of_total later refused
+identity share_of_total later refused
+subset share_of_total later refused
+factory_list share_of_total later refused
+factory_new share_of_total later refused
+exact_member share_of_total later refused
+flat_write share_of_total later refused
+empty_loop share_of_total later 13,13,13
+loop_replacement share_of_total later 13,13,13
+local_replacement share_of_total later 13,13,13
+env_replacement share_of_total later 13,13,13
+factory_literal share_of_total later 7,7,7
+branch_write share_of_total later refused
+nested share_of_total later refused
+direct share_of_parent source refused
+identity share_of_parent source refused
+subset share_of_parent source refused
+factory_list share_of_parent source refused
+factory_new share_of_parent source refused
+exact_member share_of_parent source refused
+flat_write share_of_parent source refused
+empty_loop share_of_parent source 13,13,13
+loop_replacement share_of_parent source 13,13,13
+local_replacement share_of_parent source 13,13,13
+env_replacement share_of_parent source 13,13,13
+factory_literal share_of_parent source 7,7,7
+branch_write share_of_parent source refused
+nested share_of_parent source refused
+direct share_of_parent later refused
+identity share_of_parent later refused
+subset share_of_parent later refused
+factory_list share_of_parent later refused
+factory_new share_of_parent later refused
+exact_member share_of_parent later refused
+flat_write share_of_parent later refused
+empty_loop share_of_parent later 13,13,13
+loop_replacement share_of_parent later 13,13,13
+local_replacement share_of_parent later 13,13,13
+env_replacement share_of_parent later 13,13,13
+factory_literal share_of_parent later 7,7,7
+branch_write share_of_parent later refused
+nested share_of_parent later refused
+exit=0
