@@ -1,0 +1,8 @@
+Warning message:
+In data.table::set(x, j = "typed", value = list(value)) :
+  2 column matrix RHS of := will be treated as one vector
+
+             match       native_error       safe_refusal structural_refusal
+             13624                  6               2000                 96
+[1] root    shape   n       pred    slot    kind    message
+<0 rows> (or 0-length row.names)

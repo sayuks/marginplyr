@@ -1,0 +1,7 @@
+Retained occurrence comparisons: 2280 failures: 0 binding reads: 5580
+
+                TRUE
+  character      600
+  integer        600
+  predicate      600
+  specification  480

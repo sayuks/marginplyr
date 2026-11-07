@@ -1,0 +1,7 @@
+"kind","verb","target","intercepted","calls"
+"empty_payload","nest_with_margins","dplyr::tibble",TRUE,1
+"empty_payload","nest_by_with_margins","dplyr::tibble",TRUE,1
+"special_payload","nest_with_margins","data.table::setnames",TRUE,1
+"special_payload","nest_by_with_margins","data.table::setnames",TRUE,1
+"na_factor","nest_with_margins","base::as.integer",TRUE,1
+"na_factor","nest_by_with_margins","base::as.integer",TRUE,1

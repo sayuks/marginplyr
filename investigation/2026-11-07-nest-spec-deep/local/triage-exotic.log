@@ -1,0 +1,39 @@
+
+ posixlt-only
+# A tibble: 2 × 2
+  g$sec  $min $hour $mday  $mon $year $wday $yday $isdst $zone $gmtoff data
+  <dbl> <int> <int> <int> <int> <int> <int> <int>  <int> <chr>   <int> <list>
+1     0     0     0     1     0   120     3     0      0 UTC         0 <tibble>
+2    NA    NA    NA    NA    NA    NA    NA    NA     NA <NA>       NA <tibble>
+
+ posixlt-keep
+# A tibble: 2 × 2
+  g$sec  $min $hour $mday  $mon $year $wday $yday $isdst $zone $gmtoff data
+  <dbl> <int> <int> <int> <int> <int> <int> <int>  <int> <chr>   <int> <list>
+1     0     0     0     1     0   120     3     0      0 UTC         0 <tibble>
+2    NA    NA    NA    NA    NA    NA    NA    NA     NA <NA>       NA <tibble>
+
+ posixlt-payload
+vctrs_error_cast Can't convert `..1$marginplyr_column_3` <POSIXlt<UTC>> to match type of `marginplyr_column_3` <double>.
+
+ posixlt-payload-native-union
+vctrs_error_cast Can't convert `..1$g` <POSIXlt<UTC>> to match type of `g` <double>.
+
+ surv-expanded
+# A tibble: 2 × 2
+       g   rid
+  <Surv> <int>
+1     1      1
+2    NA?     1
+
+ surv-nest
+expressionStackOverflowError evaluation nested too deeply: infinite recursion / options(expressions=)?
+
+ surv-included
+expressionStackOverflowError evaluation nested too deeply: infinite recursion / options(expressions=)?
+
+ surv-native
+expressionStackOverflowError evaluation nested too deeply: infinite recursion / options(expressions=)?
+
+ surv-with-payload
+expressionStackOverflowError evaluation nested too deeply: infinite recursion / options(expressions=)?

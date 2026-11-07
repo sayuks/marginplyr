@@ -1,0 +1,43 @@
+character 0 completed
+character 4 completed
+numeric 0 completed
+numeric 4 completed
+logical 0 completed
+logical 4 completed
+factor 0 completed
+factor 4 completed
+ordered 0 completed
+ordered 4 completed
+na_factor 0 completed
+na_factor 4 completed
+date 0 completed
+date 4 completed
+datetime 0 completed
+datetime 4 completed
+difftime 0 completed
+difftime 4 completed
+hms 0 completed
+hms 4 completed
+integer64 0 completed
+integer64 4 completed
+complex 0 completed
+complex 4 completed
+raw 0 completed
+raw 4 completed
+list 0 completed
+list 4 completed
+matrix 0 completed
+matrix 4 completed
+
+   match MISMATCH  refusal
+     520        8      192
+      type size  keep  sort fixed
+75 numeric    4 FALSE first FALSE
+77 numeric    4 FALSE  last FALSE
+81 numeric    4  TRUE first FALSE
+83 numeric    4  TRUE  last FALSE
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          detail
+75 [1] "Component 4: Component 2: Component 1: 'is.NA' value mismatch: 1 in current 0 in target" | [2] "Component 4: Component 2: Component 2: Mean relative difference: 0.3333333"              | [3] "Component 4: Component 2: Component 3: 1 string mismatch"                                | [4] "Component 5: Component 2: Component 1: 'is.NA' value mismatch: 0 in current 1 in target" | [5] "Component 5: Component 2: Component 2: Mean relative difference: 0.25"                   | [6] "Component 5: Component 2: Component 3: 1 string mismatch"
+77 [1] "Component 3: Component 2: Component 1: 'is.NA' value mismatch: 1 in current 0 in target" | [2] "Component 3: Component 2: Component 2: Mean relative difference: 0.3333333"              | [3] "Component 3: Component 2: Component 3: 1 string mismatch"                                | [4] "Component 4: Component 2: Component 1: 'is.NA' value mismatch: 0 in current 1 in target" | [5] "Component 4: Component 2: Component 2: Mean relative difference: 0.25"                   | [6] "Component 4: Component 2: Component 3: 1 string mismatch"
+81 [1] "Component 4: Component 2: Component 2: 'is.NA' value mismatch: 1 in current 0 in target" | [2] "Component 4: Component 2: Component 3: Mean relative difference: 0.3333333"              | [3] "Component 4: Component 2: Component 4: 1 string mismatch"                                | [4] "Component 5: Component 2: Component 2: 'is.NA' value mismatch: 0 in current 1 in target" | [5] "Component 5: Component 2: Component 3: Mean relative difference: 0.25"                   | [6] "Component 5: Component 2: Component 4: 1 string mismatch"
+83 [1] "Component 3: Component 2: Component 2: 'is.NA' value mismatch: 1 in current 0 in target" | [2] "Component 3: Component 2: Component 3: Mean relative difference: 0.3333333"              | [3] "Component 3: Component 2: Component 4: 1 string mismatch"                                | [4] "Component 4: Component 2: Component 2: 'is.NA' value mismatch: 0 in current 1 in target" | [5] "Component 4: Component 2: Component 3: Mean relative difference: 0.25"                   | [6] "Component 4: Component 2: Component 4: 1 string mismatch"

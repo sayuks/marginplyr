@@ -1,0 +1,10 @@
+data.table::as.data.table completed
+base::list completed
+base::min completed
+vctrs::vec_slice completed
+                           intercepted
+target                      FALSE TRUE
+  base::list                   12   36
+  base::min                    12   36
+  data.table::as.data.table    12   36
+  vctrs::vec_slice             12   36

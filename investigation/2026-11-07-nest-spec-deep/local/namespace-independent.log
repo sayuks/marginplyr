@@ -1,0 +1,23 @@
+                    target                 verb affected_calls control_calls
+                 base::min    nest_with_margins              2             0
+                 base::min nest_by_with_margins              2             0
+             base::seq_len    nest_with_margins              2             0
+             base::seq_len nest_by_with_margins              2             0
+          vctrs::vec_slice    nest_with_margins              2             0
+          vctrs::vec_slice nest_by_with_margins              2             0
+                base::list    nest_with_margins              4             0
+                base::list nest_by_with_margins              4             0
+ data.table::as.data.table    nest_with_margins              2             0
+ data.table::as.data.table nest_by_with_margins              2             0
+ matched                  values
+   FALSE           NA,NA | 41,67
+   FALSE           NA,NA | 41,67
+   FALSE           NA,NA | 41,67
+   FALSE           NA,NA | 41,67
+   FALSE   SHADOW,SHADOW | 41,67
+   FALSE   SHADOW,SHADOW | 41,67
+   FALSE north,south | -311,-311
+   FALSE north,south | -311,-311
+   FALSE north,south | -311,-311
+   FALSE north,south | -311,-311
+All 10 selective namespace boundaries changed package-generated Nest results; native and restored controls passed.

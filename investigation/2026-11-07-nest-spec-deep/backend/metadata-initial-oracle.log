@@ -1,0 +1,200 @@
+Warning message:
+In data.table::set(x, j = "typed", value = list(value)) :
+  2 column matrix RHS of := will be treated as one vector
+
+       error        match native_error safe_refusal
+          96        13624            6         2000
+       root shape n      pred      slot  kind
+    integer group 0 character dimension error
+    integer group 0    atomic dimension error
+    integer group 1 character dimension error
+    integer group 1    atomic dimension error
+    integer group 4 character dimension error
+    integer group 4    atomic dimension error
+     double group 0 character dimension error
+     double group 0    atomic dimension error
+     double group 1 character dimension error
+     double group 1    atomic dimension error
+     double group 4 character dimension error
+     double group 4    atomic dimension error
+    logical group 0 character dimension error
+    logical group 0    atomic dimension error
+    logical group 1 character dimension error
+    logical group 1    atomic dimension error
+    logical group 4 character dimension error
+    logical group 4    atomic dimension error
+  character group 0 character dimension error
+  character group 0    atomic dimension error
+  character group 1 character dimension error
+  character group 1    atomic dimension error
+  character group 4 character dimension error
+  character group 4    atomic dimension error
+        raw group 0 character dimension error
+        raw group 0    atomic dimension error
+        raw group 1 character dimension error
+        raw group 1    atomic dimension error
+        raw group 4 character dimension error
+        raw group 4    atomic dimension error
+    complex group 0 character dimension error
+    complex group 0    atomic dimension error
+    complex group 1 character dimension error
+    complex group 1    atomic dimension error
+    complex group 4 character dimension error
+    complex group 4    atomic dimension error
+     factor group 0 character dimension error
+     factor group 0    atomic dimension error
+     factor group 1 character dimension error
+     factor group 1    atomic dimension error
+     factor group 4 character dimension error
+     factor group 4    atomic dimension error
+    ordered group 0 character dimension error
+    ordered group 0    atomic dimension error
+    ordered group 1 character dimension error
+    ordered group 1    atomic dimension error
+    ordered group 4 character dimension error
+    ordered group 4    atomic dimension error
+       date group 0 character dimension error
+       date group 0    atomic dimension error
+       date group 1 character dimension error
+       date group 1    atomic dimension error
+       date group 4 character dimension error
+       date group 4    atomic dimension error
+      posix group 0 character dimension error
+      posix group 0    atomic dimension error
+      posix group 1 character dimension error
+      posix group 1    atomic dimension error
+      posix group 4 character dimension error
+      posix group 4    atomic dimension error
+   difftime group 0 character dimension error
+   difftime group 0    atomic dimension error
+   difftime group 1 character dimension error
+   difftime group 1    atomic dimension error
+   difftime group 4 character dimension error
+   difftime group 4    atomic dimension error
+ attributed group 0 character dimension error
+ attributed group 0    atomic dimension error
+ attributed group 1 character dimension error
+ attributed group 1    atomic dimension error
+ attributed group 4 character dimension error
+ attributed group 4    atomic dimension error
+      named group 0 character dimension error
+      named group 0    atomic dimension error
+      named group 1 character dimension error
+      named group 1    atomic dimension error
+      named group 4 character dimension error
+      named group 4    atomic dimension error
+     matrix group 0 character dimension error
+     matrix group 0    atomic dimension error
+     matrix group 1 character dimension error
+     matrix group 1    atomic dimension error
+     matrix group 4 character dimension error
+     matrix group 4    atomic dimension error
+       list group 0 character dimension error
+       list group 0    atomic dimension error
+       list group 1 character dimension error
+       list group 1    atomic dimension error
+       list group 4 character dimension error
+       list group 4    atomic dimension error
+     packed group 0 character dimension error
+     packed group 0    atomic dimension error
+     packed group 1 character dimension error
+     packed group 1    atomic dimension error
+     packed group 4 character dimension error
+     packed group 4    atomic dimension error
+                                                            message
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.
+ Columns cannot appear in both `.by` and `.grouping`:\nℹ `key_chr`.

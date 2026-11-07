@@ -1,0 +1,9 @@
+Retained occurrence comparisons: 2280 failures: 380 binding reads: 5580
+
+                FALSE TRUE
+  character         0  600
+  integer           0  600
+  predicate       300  300
+  specification    80  400
+Error: Retained occurrence comparison failed.
+Execution halted

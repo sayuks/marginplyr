@@ -1,0 +1,913 @@
+"type","size","verb","keep","sort","fixed","status","detail"
+"character",0,"nest_with_margins",FALSE,"none",FALSE,"match",""
+"character",0,"nest_with_margins",FALSE,"none",TRUE,"match",""
+"character",0,"nest_with_margins",FALSE,"first",FALSE,"match",""
+"character",0,"nest_with_margins",FALSE,"first",TRUE,"match",""
+"character",0,"nest_with_margins",FALSE,"last",FALSE,"match",""
+"character",0,"nest_with_margins",FALSE,"last",TRUE,"match",""
+"character",0,"nest_with_margins",TRUE,"none",FALSE,"match",""
+"character",0,"nest_with_margins",TRUE,"none",TRUE,"match",""
+"character",0,"nest_with_margins",TRUE,"first",FALSE,"match",""
+"character",0,"nest_with_margins",TRUE,"first",TRUE,"match",""
+"character",0,"nest_with_margins",TRUE,"last",FALSE,"match",""
+"character",0,"nest_with_margins",TRUE,"last",TRUE,"match",""
+"character",0,"nest_by_with_margins",FALSE,"none",FALSE,"match",""
+"character",0,"nest_by_with_margins",FALSE,"none",TRUE,"match",""
+"character",0,"nest_by_with_margins",FALSE,"first",FALSE,"match",""
+"character",0,"nest_by_with_margins",FALSE,"first",TRUE,"match",""
+"character",0,"nest_by_with_margins",FALSE,"last",FALSE,"match",""
+"character",0,"nest_by_with_margins",FALSE,"last",TRUE,"match",""
+"character",0,"nest_by_with_margins",TRUE,"none",FALSE,"match",""
+"character",0,"nest_by_with_margins",TRUE,"none",TRUE,"match",""
+"character",0,"nest_by_with_margins",TRUE,"first",FALSE,"match",""
+"character",0,"nest_by_with_margins",TRUE,"first",TRUE,"match",""
+"character",0,"nest_by_with_margins",TRUE,"last",FALSE,"match",""
+"character",0,"nest_by_with_margins",TRUE,"last",TRUE,"match",""
+"character",4,"nest_with_margins",FALSE,"none",FALSE,"match",""
+"character",4,"nest_with_margins",FALSE,"none",TRUE,"match",""
+"character",4,"nest_with_margins",FALSE,"first",FALSE,"match",""
+"character",4,"nest_with_margins",FALSE,"first",TRUE,"match",""
+"character",4,"nest_with_margins",FALSE,"last",FALSE,"match",""
+"character",4,"nest_with_margins",FALSE,"last",TRUE,"match",""
+"character",4,"nest_with_margins",TRUE,"none",FALSE,"match",""
+"character",4,"nest_with_margins",TRUE,"none",TRUE,"match",""
+"character",4,"nest_with_margins",TRUE,"first",FALSE,"match",""
+"character",4,"nest_with_margins",TRUE,"first",TRUE,"match",""
+"character",4,"nest_with_margins",TRUE,"last",FALSE,"match",""
+"character",4,"nest_with_margins",TRUE,"last",TRUE,"match",""
+"character",4,"nest_by_with_margins",FALSE,"none",FALSE,"match",""
+"character",4,"nest_by_with_margins",FALSE,"none",TRUE,"match",""
+"character",4,"nest_by_with_margins",FALSE,"first",FALSE,"match",""
+"character",4,"nest_by_with_margins",FALSE,"first",TRUE,"match",""
+"character",4,"nest_by_with_margins",FALSE,"last",FALSE,"match",""
+"character",4,"nest_by_with_margins",FALSE,"last",TRUE,"match",""
+"character",4,"nest_by_with_margins",TRUE,"none",FALSE,"match",""
+"character",4,"nest_by_with_margins",TRUE,"none",TRUE,"match",""
+"character",4,"nest_by_with_margins",TRUE,"first",FALSE,"match",""
+"character",4,"nest_by_with_margins",TRUE,"first",TRUE,"match",""
+"character",4,"nest_by_with_margins",TRUE,"last",FALSE,"match",""
+"character",4,"nest_by_with_margins",TRUE,"last",TRUE,"match",""
+"numeric",0,"nest_with_margins",FALSE,"none",FALSE,"match",""
+"numeric",0,"nest_with_margins",FALSE,"none",TRUE,"match",""
+"numeric",0,"nest_with_margins",FALSE,"first",FALSE,"match",""
+"numeric",0,"nest_with_margins",FALSE,"first",TRUE,"match",""
+"numeric",0,"nest_with_margins",FALSE,"last",FALSE,"match",""
+"numeric",0,"nest_with_margins",FALSE,"last",TRUE,"match",""
+"numeric",0,"nest_with_margins",TRUE,"none",FALSE,"match",""
+"numeric",0,"nest_with_margins",TRUE,"none",TRUE,"match",""
+"numeric",0,"nest_with_margins",TRUE,"first",FALSE,"match",""
+"numeric",0,"nest_with_margins",TRUE,"first",TRUE,"match",""
+"numeric",0,"nest_with_margins",TRUE,"last",FALSE,"match",""
+"numeric",0,"nest_with_margins",TRUE,"last",TRUE,"match",""
+"numeric",0,"nest_by_with_margins",FALSE,"none",FALSE,"match",""
+"numeric",0,"nest_by_with_margins",FALSE,"none",TRUE,"match",""
+"numeric",0,"nest_by_with_margins",FALSE,"first",FALSE,"match",""
+"numeric",0,"nest_by_with_margins",FALSE,"first",TRUE,"match",""
+"numeric",0,"nest_by_with_margins",FALSE,"last",FALSE,"match",""
+"numeric",0,"nest_by_with_margins",FALSE,"last",TRUE,"match",""
+"numeric",0,"nest_by_with_margins",TRUE,"none",FALSE,"match",""
+"numeric",0,"nest_by_with_margins",TRUE,"none",TRUE,"match",""
+"numeric",0,"nest_by_with_margins",TRUE,"first",FALSE,"match",""
+"numeric",0,"nest_by_with_margins",TRUE,"first",TRUE,"match",""
+"numeric",0,"nest_by_with_margins",TRUE,"last",FALSE,"match",""
+"numeric",0,"nest_by_with_margins",TRUE,"last",TRUE,"match",""
+"numeric",4,"nest_with_margins",FALSE,"none",FALSE,"match",""
+"numeric",4,"nest_with_margins",FALSE,"none",TRUE,"match",""
+"numeric",4,"nest_with_margins",FALSE,"first",FALSE,"MISMATCH","[1] ""Component 4: Component 2: Component 1: 'is.NA' value mismatch: 1 in current 0 in target"" | [2] ""Component 4: Component 2: Component 2: Mean relative difference: 0.3333333""              | [3] ""Component 4: Component 2: Component 3: 1 string mismatch""                                | [4] ""Component 5: Component 2: Component 1: 'is.NA' value mismatch: 0 in current 1 in target"" | [5] ""Component 5: Component 2: Component 2: Mean relative difference: 0.25""                   | [6] ""Component 5: Component 2: Component 3: 1 string mismatch""                               "
+"numeric",4,"nest_with_margins",FALSE,"first",TRUE,"match",""
+"numeric",4,"nest_with_margins",FALSE,"last",FALSE,"MISMATCH","[1] ""Component 3: Component 2: Component 1: 'is.NA' value mismatch: 1 in current 0 in target"" | [2] ""Component 3: Component 2: Component 2: Mean relative difference: 0.3333333""              | [3] ""Component 3: Component 2: Component 3: 1 string mismatch""                                | [4] ""Component 4: Component 2: Component 1: 'is.NA' value mismatch: 0 in current 1 in target"" | [5] ""Component 4: Component 2: Component 2: Mean relative difference: 0.25""                   | [6] ""Component 4: Component 2: Component 3: 1 string mismatch""                               "
+"numeric",4,"nest_with_margins",FALSE,"last",TRUE,"match",""
+"numeric",4,"nest_with_margins",TRUE,"none",FALSE,"match",""
+"numeric",4,"nest_with_margins",TRUE,"none",TRUE,"match",""
+"numeric",4,"nest_with_margins",TRUE,"first",FALSE,"MISMATCH","[1] ""Component 4: Component 2: Component 2: 'is.NA' value mismatch: 1 in current 0 in target"" | [2] ""Component 4: Component 2: Component 3: Mean relative difference: 0.3333333""              | [3] ""Component 4: Component 2: Component 4: 1 string mismatch""                                | [4] ""Component 5: Component 2: Component 2: 'is.NA' value mismatch: 0 in current 1 in target"" | [5] ""Component 5: Component 2: Component 3: Mean relative difference: 0.25""                   | [6] ""Component 5: Component 2: Component 4: 1 string mismatch""                               "
+"numeric",4,"nest_with_margins",TRUE,"first",TRUE,"match",""
+"numeric",4,"nest_with_margins",TRUE,"last",FALSE,"MISMATCH","[1] ""Component 3: Component 2: Component 2: 'is.NA' value mismatch: 1 in current 0 in target"" | [2] ""Component 3: Component 2: Component 3: Mean relative difference: 0.3333333""              | [3] ""Component 3: Component 2: Component 4: 1 string mismatch""                                | [4] ""Component 4: Component 2: Component 2: 'is.NA' value mismatch: 0 in current 1 in target"" | [5] ""Component 4: Component 2: Component 3: Mean relative difference: 0.25""                   | [6] ""Component 4: Component 2: Component 4: 1 string mismatch""                               "
+"numeric",4,"nest_with_margins",TRUE,"last",TRUE,"match",""
+"numeric",4,"nest_by_with_margins",FALSE,"none",FALSE,"match",""
+"numeric",4,"nest_by_with_margins",FALSE,"none",TRUE,"match",""
+"numeric",4,"nest_by_with_margins",FALSE,"first",FALSE,"MISMATCH","[1] ""Component 4: Component 2: Component 1: 'is.NA' value mismatch: 1 in current 0 in target"" | [2] ""Component 4: Component 2: Component 2: Mean relative difference: 0.3333333""              | [3] ""Component 4: Component 2: Component 3: 1 string mismatch""                                | [4] ""Component 5: Component 2: Component 1: 'is.NA' value mismatch: 0 in current 1 in target"" | [5] ""Component 5: Component 2: Component 2: Mean relative difference: 0.25""                   | [6] ""Component 5: Component 2: Component 3: 1 string mismatch""                               "
+"numeric",4,"nest_by_with_margins",FALSE,"first",TRUE,"match",""
+"numeric",4,"nest_by_with_margins",FALSE,"last",FALSE,"MISMATCH","[1] ""Component 3: Component 2: Component 1: 'is.NA' value mismatch: 1 in current 0 in target"" | [2] ""Component 3: Component 2: Component 2: Mean relative difference: 0.3333333""              | [3] ""Component 3: Component 2: Component 3: 1 string mismatch""                                | [4] ""Component 4: Component 2: Component 1: 'is.NA' value mismatch: 0 in current 1 in target"" | [5] ""Component 4: Component 2: Component 2: Mean relative difference: 0.25""                   | [6] ""Component 4: Component 2: Component 3: 1 string mismatch""                               "
+"numeric",4,"nest_by_with_margins",FALSE,"last",TRUE,"match",""
+"numeric",4,"nest_by_with_margins",TRUE,"none",FALSE,"match",""
+"numeric",4,"nest_by_with_margins",TRUE,"none",TRUE,"match",""
+"numeric",4,"nest_by_with_margins",TRUE,"first",FALSE,"MISMATCH","[1] ""Component 4: Component 2: Component 2: 'is.NA' value mismatch: 1 in current 0 in target"" | [2] ""Component 4: Component 2: Component 3: Mean relative difference: 0.3333333""              | [3] ""Component 4: Component 2: Component 4: 1 string mismatch""                                | [4] ""Component 5: Component 2: Component 2: 'is.NA' value mismatch: 0 in current 1 in target"" | [5] ""Component 5: Component 2: Component 3: Mean relative difference: 0.25""                   | [6] ""Component 5: Component 2: Component 4: 1 string mismatch""                               "
+"numeric",4,"nest_by_with_margins",TRUE,"first",TRUE,"match",""
+"numeric",4,"nest_by_with_margins",TRUE,"last",FALSE,"MISMATCH","[1] ""Component 3: Component 2: Component 2: 'is.NA' value mismatch: 1 in current 0 in target"" | [2] ""Component 3: Component 2: Component 3: Mean relative difference: 0.3333333""              | [3] ""Component 3: Component 2: Component 4: 1 string mismatch""                                | [4] ""Component 4: Component 2: Component 2: 'is.NA' value mismatch: 0 in current 1 in target"" | [5] ""Component 4: Component 2: Component 3: Mean relative difference: 0.25""                   | [6] ""Component 4: Component 2: Component 4: 1 string mismatch""                               "
+"numeric",4,"nest_by_with_margins",TRUE,"last",TRUE,"match",""
+"logical",0,"nest_with_margins",FALSE,"none",FALSE,"match",""
+"logical",0,"nest_with_margins",FALSE,"none",TRUE,"match",""
+"logical",0,"nest_with_margins",FALSE,"first",FALSE,"match",""
+"logical",0,"nest_with_margins",FALSE,"first",TRUE,"match",""
+"logical",0,"nest_with_margins",FALSE,"last",FALSE,"match",""
+"logical",0,"nest_with_margins",FALSE,"last",TRUE,"match",""
+"logical",0,"nest_with_margins",TRUE,"none",FALSE,"match",""
+"logical",0,"nest_with_margins",TRUE,"none",TRUE,"match",""
+"logical",0,"nest_with_margins",TRUE,"first",FALSE,"match",""
+"logical",0,"nest_with_margins",TRUE,"first",TRUE,"match",""
+"logical",0,"nest_with_margins",TRUE,"last",FALSE,"match",""
+"logical",0,"nest_with_margins",TRUE,"last",TRUE,"match",""
+"logical",0,"nest_by_with_margins",FALSE,"none",FALSE,"match",""
+"logical",0,"nest_by_with_margins",FALSE,"none",TRUE,"match",""
+"logical",0,"nest_by_with_margins",FALSE,"first",FALSE,"match",""
+"logical",0,"nest_by_with_margins",FALSE,"first",TRUE,"match",""
+"logical",0,"nest_by_with_margins",FALSE,"last",FALSE,"match",""
+"logical",0,"nest_by_with_margins",FALSE,"last",TRUE,"match",""
+"logical",0,"nest_by_with_margins",TRUE,"none",FALSE,"match",""
+"logical",0,"nest_by_with_margins",TRUE,"none",TRUE,"match",""
+"logical",0,"nest_by_with_margins",TRUE,"first",FALSE,"match",""
+"logical",0,"nest_by_with_margins",TRUE,"first",TRUE,"match",""
+"logical",0,"nest_by_with_margins",TRUE,"last",FALSE,"match",""
+"logical",0,"nest_by_with_margins",TRUE,"last",TRUE,"match",""
+"logical",4,"nest_with_margins",FALSE,"none",FALSE,"match",""
+"logical",4,"nest_with_margins",FALSE,"none",TRUE,"match",""
+"logical",4,"nest_with_margins",FALSE,"first",FALSE,"match",""
+"logical",4,"nest_with_margins",FALSE,"first",TRUE,"match",""
+"logical",4,"nest_with_margins",FALSE,"last",FALSE,"match",""
+"logical",4,"nest_with_margins",FALSE,"last",TRUE,"match",""
+"logical",4,"nest_with_margins",TRUE,"none",FALSE,"match",""
+"logical",4,"nest_with_margins",TRUE,"none",TRUE,"match",""
+"logical",4,"nest_with_margins",TRUE,"first",FALSE,"match",""
+"logical",4,"nest_with_margins",TRUE,"first",TRUE,"match",""
+"logical",4,"nest_with_margins",TRUE,"last",FALSE,"match",""
+"logical",4,"nest_with_margins",TRUE,"last",TRUE,"match",""
+"logical",4,"nest_by_with_margins",FALSE,"none",FALSE,"match",""
+"logical",4,"nest_by_with_margins",FALSE,"none",TRUE,"match",""
+"logical",4,"nest_by_with_margins",FALSE,"first",FALSE,"match",""
+"logical",4,"nest_by_with_margins",FALSE,"first",TRUE,"match",""
+"logical",4,"nest_by_with_margins",FALSE,"last",FALSE,"match",""
+"logical",4,"nest_by_with_margins",FALSE,"last",TRUE,"match",""
+"logical",4,"nest_by_with_margins",TRUE,"none",FALSE,"match",""
+"logical",4,"nest_by_with_margins",TRUE,"none",TRUE,"match",""
+"logical",4,"nest_by_with_margins",TRUE,"first",FALSE,"match",""
+"logical",4,"nest_by_with_margins",TRUE,"first",TRUE,"match",""
+"logical",4,"nest_by_with_margins",TRUE,"last",FALSE,"match",""
+"logical",4,"nest_by_with_margins",TRUE,"last",TRUE,"match",""
+"factor",0,"nest_with_margins",FALSE,"none",FALSE,"match",""
+"factor",0,"nest_with_margins",FALSE,"none",TRUE,"match",""
+"factor",0,"nest_with_margins",FALSE,"first",FALSE,"match",""
+"factor",0,"nest_with_margins",FALSE,"first",TRUE,"match",""
+"factor",0,"nest_with_margins",FALSE,"last",FALSE,"match",""
+"factor",0,"nest_with_margins",FALSE,"last",TRUE,"match",""
+"factor",0,"nest_with_margins",TRUE,"none",FALSE,"match",""
+"factor",0,"nest_with_margins",TRUE,"none",TRUE,"match",""
+"factor",0,"nest_with_margins",TRUE,"first",FALSE,"match",""
+"factor",0,"nest_with_margins",TRUE,"first",TRUE,"match",""
+"factor",0,"nest_with_margins",TRUE,"last",FALSE,"match",""
+"factor",0,"nest_with_margins",TRUE,"last",TRUE,"match",""
+"factor",0,"nest_by_with_margins",FALSE,"none",FALSE,"match",""
+"factor",0,"nest_by_with_margins",FALSE,"none",TRUE,"match",""
+"factor",0,"nest_by_with_margins",FALSE,"first",FALSE,"match",""
+"factor",0,"nest_by_with_margins",FALSE,"first",TRUE,"match",""
+"factor",0,"nest_by_with_margins",FALSE,"last",FALSE,"match",""
+"factor",0,"nest_by_with_margins",FALSE,"last",TRUE,"match",""
+"factor",0,"nest_by_with_margins",TRUE,"none",FALSE,"match",""
+"factor",0,"nest_by_with_margins",TRUE,"none",TRUE,"match",""
+"factor",0,"nest_by_with_margins",TRUE,"first",FALSE,"match",""
+"factor",0,"nest_by_with_margins",TRUE,"first",TRUE,"match",""
+"factor",0,"nest_by_with_margins",TRUE,"last",FALSE,"match",""
+"factor",0,"nest_by_with_margins",TRUE,"last",TRUE,"match",""
+"factor",4,"nest_with_margins",FALSE,"none",FALSE,"match",""
+"factor",4,"nest_with_margins",FALSE,"none",TRUE,"match",""
+"factor",4,"nest_with_margins",FALSE,"first",FALSE,"match",""
+"factor",4,"nest_with_margins",FALSE,"first",TRUE,"match",""
+"factor",4,"nest_with_margins",FALSE,"last",FALSE,"match",""
+"factor",4,"nest_with_margins",FALSE,"last",TRUE,"match",""
+"factor",4,"nest_with_margins",TRUE,"none",FALSE,"match",""
+"factor",4,"nest_with_margins",TRUE,"none",TRUE,"match",""
+"factor",4,"nest_with_margins",TRUE,"first",FALSE,"match",""
+"factor",4,"nest_with_margins",TRUE,"first",TRUE,"match",""
+"factor",4,"nest_with_margins",TRUE,"last",FALSE,"match",""
+"factor",4,"nest_with_margins",TRUE,"last",TRUE,"match",""
+"factor",4,"nest_by_with_margins",FALSE,"none",FALSE,"match",""
+"factor",4,"nest_by_with_margins",FALSE,"none",TRUE,"match",""
+"factor",4,"nest_by_with_margins",FALSE,"first",FALSE,"match",""
+"factor",4,"nest_by_with_margins",FALSE,"first",TRUE,"match",""
+"factor",4,"nest_by_with_margins",FALSE,"last",FALSE,"match",""
+"factor",4,"nest_by_with_margins",FALSE,"last",TRUE,"match",""
+"factor",4,"nest_by_with_margins",TRUE,"none",FALSE,"match",""
+"factor",4,"nest_by_with_margins",TRUE,"none",TRUE,"match",""
+"factor",4,"nest_by_with_margins",TRUE,"first",FALSE,"match",""
+"factor",4,"nest_by_with_margins",TRUE,"first",TRUE,"match",""
+"factor",4,"nest_by_with_margins",TRUE,"last",FALSE,"match",""
+"factor",4,"nest_by_with_margins",TRUE,"last",TRUE,"match",""
+"ordered",0,"nest_with_margins",FALSE,"none",FALSE,"match",""
+"ordered",0,"nest_with_margins",FALSE,"none",TRUE,"match",""
+"ordered",0,"nest_with_margins",FALSE,"first",FALSE,"match",""
+"ordered",0,"nest_with_margins",FALSE,"first",TRUE,"match",""
+"ordered",0,"nest_with_margins",FALSE,"last",FALSE,"match",""
+"ordered",0,"nest_with_margins",FALSE,"last",TRUE,"match",""
+"ordered",0,"nest_with_margins",TRUE,"none",FALSE,"match",""
+"ordered",0,"nest_with_margins",TRUE,"none",TRUE,"match",""
+"ordered",0,"nest_with_margins",TRUE,"first",FALSE,"match",""
+"ordered",0,"nest_with_margins",TRUE,"first",TRUE,"match",""
+"ordered",0,"nest_with_margins",TRUE,"last",FALSE,"match",""
+"ordered",0,"nest_with_margins",TRUE,"last",TRUE,"match",""
+"ordered",0,"nest_by_with_margins",FALSE,"none",FALSE,"match",""
+"ordered",0,"nest_by_with_margins",FALSE,"none",TRUE,"match",""
+"ordered",0,"nest_by_with_margins",FALSE,"first",FALSE,"match",""
+"ordered",0,"nest_by_with_margins",FALSE,"first",TRUE,"match",""
+"ordered",0,"nest_by_with_margins",FALSE,"last",FALSE,"match",""
+"ordered",0,"nest_by_with_margins",FALSE,"last",TRUE,"match",""
+"ordered",0,"nest_by_with_margins",TRUE,"none",FALSE,"match",""
+"ordered",0,"nest_by_with_margins",TRUE,"none",TRUE,"match",""
+"ordered",0,"nest_by_with_margins",TRUE,"first",FALSE,"match",""
+"ordered",0,"nest_by_with_margins",TRUE,"first",TRUE,"match",""
+"ordered",0,"nest_by_with_margins",TRUE,"last",FALSE,"match",""
+"ordered",0,"nest_by_with_margins",TRUE,"last",TRUE,"match",""
+"ordered",4,"nest_with_margins",FALSE,"none",FALSE,"match",""
+"ordered",4,"nest_with_margins",FALSE,"none",TRUE,"match",""
+"ordered",4,"nest_with_margins",FALSE,"first",FALSE,"match",""
+"ordered",4,"nest_with_margins",FALSE,"first",TRUE,"match",""
+"ordered",4,"nest_with_margins",FALSE,"last",FALSE,"match",""
+"ordered",4,"nest_with_margins",FALSE,"last",TRUE,"match",""
+"ordered",4,"nest_with_margins",TRUE,"none",FALSE,"match",""
+"ordered",4,"nest_with_margins",TRUE,"none",TRUE,"match",""
+"ordered",4,"nest_with_margins",TRUE,"first",FALSE,"match",""
+"ordered",4,"nest_with_margins",TRUE,"first",TRUE,"match",""
+"ordered",4,"nest_with_margins",TRUE,"last",FALSE,"match",""
+"ordered",4,"nest_with_margins",TRUE,"last",TRUE,"match",""
+"ordered",4,"nest_by_with_margins",FALSE,"none",FALSE,"match",""
+"ordered",4,"nest_by_with_margins",FALSE,"none",TRUE,"match",""
+"ordered",4,"nest_by_with_margins",FALSE,"first",FALSE,"match",""
+"ordered",4,"nest_by_with_margins",FALSE,"first",TRUE,"match",""
+"ordered",4,"nest_by_with_margins",FALSE,"last",FALSE,"match",""
+"ordered",4,"nest_by_with_margins",FALSE,"last",TRUE,"match",""
+"ordered",4,"nest_by_with_margins",TRUE,"none",FALSE,"match",""
+"ordered",4,"nest_by_with_margins",TRUE,"none",TRUE,"match",""
+"ordered",4,"nest_by_with_margins",TRUE,"first",FALSE,"match",""
+"ordered",4,"nest_by_with_margins",TRUE,"first",TRUE,"match",""
+"ordered",4,"nest_by_with_margins",TRUE,"last",FALSE,"match",""
+"ordered",4,"nest_by_with_margins",TRUE,"last",TRUE,"match",""
+"na_factor",0,"nest_with_margins",FALSE,"none",FALSE,"match",""
+"na_factor",0,"nest_with_margins",FALSE,"none",TRUE,"match",""
+"na_factor",0,"nest_with_margins",FALSE,"first",FALSE,"match",""
+"na_factor",0,"nest_with_margins",FALSE,"first",TRUE,"match",""
+"na_factor",0,"nest_with_margins",FALSE,"last",FALSE,"match",""
+"na_factor",0,"nest_with_margins",FALSE,"last",TRUE,"match",""
+"na_factor",0,"nest_with_margins",TRUE,"none",FALSE,"match",""
+"na_factor",0,"nest_with_margins",TRUE,"none",TRUE,"match",""
+"na_factor",0,"nest_with_margins",TRUE,"first",FALSE,"match",""
+"na_factor",0,"nest_with_margins",TRUE,"first",TRUE,"match",""
+"na_factor",0,"nest_with_margins",TRUE,"last",FALSE,"match",""
+"na_factor",0,"nest_with_margins",TRUE,"last",TRUE,"match",""
+"na_factor",0,"nest_by_with_margins",FALSE,"none",FALSE,"match",""
+"na_factor",0,"nest_by_with_margins",FALSE,"none",TRUE,"match",""
+"na_factor",0,"nest_by_with_margins",FALSE,"first",FALSE,"match",""
+"na_factor",0,"nest_by_with_margins",FALSE,"first",TRUE,"match",""
+"na_factor",0,"nest_by_with_margins",FALSE,"last",FALSE,"match",""
+"na_factor",0,"nest_by_with_margins",FALSE,"last",TRUE,"match",""
+"na_factor",0,"nest_by_with_margins",TRUE,"none",FALSE,"match",""
+"na_factor",0,"nest_by_with_margins",TRUE,"none",TRUE,"match",""
+"na_factor",0,"nest_by_with_margins",TRUE,"first",FALSE,"match",""
+"na_factor",0,"nest_by_with_margins",TRUE,"first",TRUE,"match",""
+"na_factor",0,"nest_by_with_margins",TRUE,"last",FALSE,"match",""
+"na_factor",0,"nest_by_with_margins",TRUE,"last",TRUE,"match",""
+"na_factor",4,"nest_with_margins",FALSE,"none",FALSE,"match",""
+"na_factor",4,"nest_with_margins",FALSE,"none",TRUE,"match",""
+"na_factor",4,"nest_with_margins",FALSE,"first",FALSE,"match",""
+"na_factor",4,"nest_with_margins",FALSE,"first",TRUE,"match",""
+"na_factor",4,"nest_with_margins",FALSE,"last",FALSE,"match",""
+"na_factor",4,"nest_with_margins",FALSE,"last",TRUE,"match",""
+"na_factor",4,"nest_with_margins",TRUE,"none",FALSE,"match",""
+"na_factor",4,"nest_with_margins",TRUE,"none",TRUE,"match",""
+"na_factor",4,"nest_with_margins",TRUE,"first",FALSE,"match",""
+"na_factor",4,"nest_with_margins",TRUE,"first",TRUE,"match",""
+"na_factor",4,"nest_with_margins",TRUE,"last",FALSE,"match",""
+"na_factor",4,"nest_with_margins",TRUE,"last",TRUE,"match",""
+"na_factor",4,"nest_by_with_margins",FALSE,"none",FALSE,"match",""
+"na_factor",4,"nest_by_with_margins",FALSE,"none",TRUE,"match",""
+"na_factor",4,"nest_by_with_margins",FALSE,"first",FALSE,"match",""
+"na_factor",4,"nest_by_with_margins",FALSE,"first",TRUE,"match",""
+"na_factor",4,"nest_by_with_margins",FALSE,"last",FALSE,"match",""
+"na_factor",4,"nest_by_with_margins",FALSE,"last",TRUE,"match",""
+"na_factor",4,"nest_by_with_margins",TRUE,"none",FALSE,"match",""
+"na_factor",4,"nest_by_with_margins",TRUE,"none",TRUE,"match",""
+"na_factor",4,"nest_by_with_margins",TRUE,"first",FALSE,"match",""
+"na_factor",4,"nest_by_with_margins",TRUE,"first",TRUE,"match",""
+"na_factor",4,"nest_by_with_margins",TRUE,"last",FALSE,"match",""
+"na_factor",4,"nest_by_with_margins",TRUE,"last",TRUE,"match",""
+"date",0,"nest_with_margins",FALSE,"none",FALSE,"match",""
+"date",0,"nest_with_margins",FALSE,"none",TRUE,"match",""
+"date",0,"nest_with_margins",FALSE,"first",FALSE,"match",""
+"date",0,"nest_with_margins",FALSE,"first",TRUE,"match",""
+"date",0,"nest_with_margins",FALSE,"last",FALSE,"match",""
+"date",0,"nest_with_margins",FALSE,"last",TRUE,"match",""
+"date",0,"nest_with_margins",TRUE,"none",FALSE,"match",""
+"date",0,"nest_with_margins",TRUE,"none",TRUE,"match",""
+"date",0,"nest_with_margins",TRUE,"first",FALSE,"match",""
+"date",0,"nest_with_margins",TRUE,"first",TRUE,"match",""
+"date",0,"nest_with_margins",TRUE,"last",FALSE,"match",""
+"date",0,"nest_with_margins",TRUE,"last",TRUE,"match",""
+"date",0,"nest_by_with_margins",FALSE,"none",FALSE,"match",""
+"date",0,"nest_by_with_margins",FALSE,"none",TRUE,"match",""
+"date",0,"nest_by_with_margins",FALSE,"first",FALSE,"match",""
+"date",0,"nest_by_with_margins",FALSE,"first",TRUE,"match",""
+"date",0,"nest_by_with_margins",FALSE,"last",FALSE,"match",""
+"date",0,"nest_by_with_margins",FALSE,"last",TRUE,"match",""
+"date",0,"nest_by_with_margins",TRUE,"none",FALSE,"match",""
+"date",0,"nest_by_with_margins",TRUE,"none",TRUE,"match",""
+"date",0,"nest_by_with_margins",TRUE,"first",FALSE,"match",""
+"date",0,"nest_by_with_margins",TRUE,"first",TRUE,"match",""
+"date",0,"nest_by_with_margins",TRUE,"last",FALSE,"match",""
+"date",0,"nest_by_with_margins",TRUE,"last",TRUE,"match",""
+"date",4,"nest_with_margins",FALSE,"none",FALSE,"match",""
+"date",4,"nest_with_margins",FALSE,"none",TRUE,"match",""
+"date",4,"nest_with_margins",FALSE,"first",FALSE,"match",""
+"date",4,"nest_with_margins",FALSE,"first",TRUE,"match",""
+"date",4,"nest_with_margins",FALSE,"last",FALSE,"match",""
+"date",4,"nest_with_margins",FALSE,"last",TRUE,"match",""
+"date",4,"nest_with_margins",TRUE,"none",FALSE,"match",""
+"date",4,"nest_with_margins",TRUE,"none",TRUE,"match",""
+"date",4,"nest_with_margins",TRUE,"first",FALSE,"match",""
+"date",4,"nest_with_margins",TRUE,"first",TRUE,"match",""
+"date",4,"nest_with_margins",TRUE,"last",FALSE,"match",""
+"date",4,"nest_with_margins",TRUE,"last",TRUE,"match",""
+"date",4,"nest_by_with_margins",FALSE,"none",FALSE,"match",""
+"date",4,"nest_by_with_margins",FALSE,"none",TRUE,"match",""
+"date",4,"nest_by_with_margins",FALSE,"first",FALSE,"match",""
+"date",4,"nest_by_with_margins",FALSE,"first",TRUE,"match",""
+"date",4,"nest_by_with_margins",FALSE,"last",FALSE,"match",""
+"date",4,"nest_by_with_margins",FALSE,"last",TRUE,"match",""
+"date",4,"nest_by_with_margins",TRUE,"none",FALSE,"match",""
+"date",4,"nest_by_with_margins",TRUE,"none",TRUE,"match",""
+"date",4,"nest_by_with_margins",TRUE,"first",FALSE,"match",""
+"date",4,"nest_by_with_margins",TRUE,"first",TRUE,"match",""
+"date",4,"nest_by_with_margins",TRUE,"last",FALSE,"match",""
+"date",4,"nest_by_with_margins",TRUE,"last",TRUE,"match",""
+"datetime",0,"nest_with_margins",FALSE,"none",FALSE,"match",""
+"datetime",0,"nest_with_margins",FALSE,"none",TRUE,"match",""
+"datetime",0,"nest_with_margins",FALSE,"first",FALSE,"match",""
+"datetime",0,"nest_with_margins",FALSE,"first",TRUE,"match",""
+"datetime",0,"nest_with_margins",FALSE,"last",FALSE,"match",""
+"datetime",0,"nest_with_margins",FALSE,"last",TRUE,"match",""
+"datetime",0,"nest_with_margins",TRUE,"none",FALSE,"match",""
+"datetime",0,"nest_with_margins",TRUE,"none",TRUE,"match",""
+"datetime",0,"nest_with_margins",TRUE,"first",FALSE,"match",""
+"datetime",0,"nest_with_margins",TRUE,"first",TRUE,"match",""
+"datetime",0,"nest_with_margins",TRUE,"last",FALSE,"match",""
+"datetime",0,"nest_with_margins",TRUE,"last",TRUE,"match",""
+"datetime",0,"nest_by_with_margins",FALSE,"none",FALSE,"match",""
+"datetime",0,"nest_by_with_margins",FALSE,"none",TRUE,"match",""
+"datetime",0,"nest_by_with_margins",FALSE,"first",FALSE,"match",""
+"datetime",0,"nest_by_with_margins",FALSE,"first",TRUE,"match",""
+"datetime",0,"nest_by_with_margins",FALSE,"last",FALSE,"match",""
+"datetime",0,"nest_by_with_margins",FALSE,"last",TRUE,"match",""
+"datetime",0,"nest_by_with_margins",TRUE,"none",FALSE,"match",""
+"datetime",0,"nest_by_with_margins",TRUE,"none",TRUE,"match",""
+"datetime",0,"nest_by_with_margins",TRUE,"first",FALSE,"match",""
+"datetime",0,"nest_by_with_margins",TRUE,"first",TRUE,"match",""
+"datetime",0,"nest_by_with_margins",TRUE,"last",FALSE,"match",""
+"datetime",0,"nest_by_with_margins",TRUE,"last",TRUE,"match",""
+"datetime",4,"nest_with_margins",FALSE,"none",FALSE,"match",""
+"datetime",4,"nest_with_margins",FALSE,"none",TRUE,"match",""
+"datetime",4,"nest_with_margins",FALSE,"first",FALSE,"match",""
+"datetime",4,"nest_with_margins",FALSE,"first",TRUE,"match",""
+"datetime",4,"nest_with_margins",FALSE,"last",FALSE,"match",""
+"datetime",4,"nest_with_margins",FALSE,"last",TRUE,"match",""
+"datetime",4,"nest_with_margins",TRUE,"none",FALSE,"match",""
+"datetime",4,"nest_with_margins",TRUE,"none",TRUE,"match",""
+"datetime",4,"nest_with_margins",TRUE,"first",FALSE,"match",""
+"datetime",4,"nest_with_margins",TRUE,"first",TRUE,"match",""
+"datetime",4,"nest_with_margins",TRUE,"last",FALSE,"match",""
+"datetime",4,"nest_with_margins",TRUE,"last",TRUE,"match",""
+"datetime",4,"nest_by_with_margins",FALSE,"none",FALSE,"match",""
+"datetime",4,"nest_by_with_margins",FALSE,"none",TRUE,"match",""
+"datetime",4,"nest_by_with_margins",FALSE,"first",FALSE,"match",""
+"datetime",4,"nest_by_with_margins",FALSE,"first",TRUE,"match",""
+"datetime",4,"nest_by_with_margins",FALSE,"last",FALSE,"match",""
+"datetime",4,"nest_by_with_margins",FALSE,"last",TRUE,"match",""
+"datetime",4,"nest_by_with_margins",TRUE,"none",FALSE,"match",""
+"datetime",4,"nest_by_with_margins",TRUE,"none",TRUE,"match",""
+"datetime",4,"nest_by_with_margins",TRUE,"first",FALSE,"match",""
+"datetime",4,"nest_by_with_margins",TRUE,"first",TRUE,"match",""
+"datetime",4,"nest_by_with_margins",TRUE,"last",FALSE,"match",""
+"datetime",4,"nest_by_with_margins",TRUE,"last",TRUE,"match",""
+"difftime",0,"nest_with_margins",FALSE,"none",FALSE,"match",""
+"difftime",0,"nest_with_margins",FALSE,"none",TRUE,"match",""
+"difftime",0,"nest_with_margins",FALSE,"first",FALSE,"match",""
+"difftime",0,"nest_with_margins",FALSE,"first",TRUE,"match",""
+"difftime",0,"nest_with_margins",FALSE,"last",FALSE,"match",""
+"difftime",0,"nest_with_margins",FALSE,"last",TRUE,"match",""
+"difftime",0,"nest_with_margins",TRUE,"none",FALSE,"match",""
+"difftime",0,"nest_with_margins",TRUE,"none",TRUE,"match",""
+"difftime",0,"nest_with_margins",TRUE,"first",FALSE,"match",""
+"difftime",0,"nest_with_margins",TRUE,"first",TRUE,"match",""
+"difftime",0,"nest_with_margins",TRUE,"last",FALSE,"match",""
+"difftime",0,"nest_with_margins",TRUE,"last",TRUE,"match",""
+"difftime",0,"nest_by_with_margins",FALSE,"none",FALSE,"match",""
+"difftime",0,"nest_by_with_margins",FALSE,"none",TRUE,"match",""
+"difftime",0,"nest_by_with_margins",FALSE,"first",FALSE,"match",""
+"difftime",0,"nest_by_with_margins",FALSE,"first",TRUE,"match",""
+"difftime",0,"nest_by_with_margins",FALSE,"last",FALSE,"match",""
+"difftime",0,"nest_by_with_margins",FALSE,"last",TRUE,"match",""
+"difftime",0,"nest_by_with_margins",TRUE,"none",FALSE,"match",""
+"difftime",0,"nest_by_with_margins",TRUE,"none",TRUE,"match",""
+"difftime",0,"nest_by_with_margins",TRUE,"first",FALSE,"match",""
+"difftime",0,"nest_by_with_margins",TRUE,"first",TRUE,"match",""
+"difftime",0,"nest_by_with_margins",TRUE,"last",FALSE,"match",""
+"difftime",0,"nest_by_with_margins",TRUE,"last",TRUE,"match",""
+"difftime",4,"nest_with_margins",FALSE,"none",FALSE,"match",""
+"difftime",4,"nest_with_margins",FALSE,"none",TRUE,"match",""
+"difftime",4,"nest_with_margins",FALSE,"first",FALSE,"match",""
+"difftime",4,"nest_with_margins",FALSE,"first",TRUE,"match",""
+"difftime",4,"nest_with_margins",FALSE,"last",FALSE,"match",""
+"difftime",4,"nest_with_margins",FALSE,"last",TRUE,"match",""
+"difftime",4,"nest_with_margins",TRUE,"none",FALSE,"match",""
+"difftime",4,"nest_with_margins",TRUE,"none",TRUE,"match",""
+"difftime",4,"nest_with_margins",TRUE,"first",FALSE,"match",""
+"difftime",4,"nest_with_margins",TRUE,"first",TRUE,"match",""
+"difftime",4,"nest_with_margins",TRUE,"last",FALSE,"match",""
+"difftime",4,"nest_with_margins",TRUE,"last",TRUE,"match",""
+"difftime",4,"nest_by_with_margins",FALSE,"none",FALSE,"match",""
+"difftime",4,"nest_by_with_margins",FALSE,"none",TRUE,"match",""
+"difftime",4,"nest_by_with_margins",FALSE,"first",FALSE,"match",""
+"difftime",4,"nest_by_with_margins",FALSE,"first",TRUE,"match",""
+"difftime",4,"nest_by_with_margins",FALSE,"last",FALSE,"match",""
+"difftime",4,"nest_by_with_margins",FALSE,"last",TRUE,"match",""
+"difftime",4,"nest_by_with_margins",TRUE,"none",FALSE,"match",""
+"difftime",4,"nest_by_with_margins",TRUE,"none",TRUE,"match",""
+"difftime",4,"nest_by_with_margins",TRUE,"first",FALSE,"match",""
+"difftime",4,"nest_by_with_margins",TRUE,"first",TRUE,"match",""
+"difftime",4,"nest_by_with_margins",TRUE,"last",FALSE,"match",""
+"difftime",4,"nest_by_with_margins",TRUE,"last",TRUE,"match",""
+"hms",0,"nest_with_margins",FALSE,"none",FALSE,"match",""
+"hms",0,"nest_with_margins",FALSE,"none",TRUE,"match",""
+"hms",0,"nest_with_margins",FALSE,"first",FALSE,"match",""
+"hms",0,"nest_with_margins",FALSE,"first",TRUE,"match",""
+"hms",0,"nest_with_margins",FALSE,"last",FALSE,"match",""
+"hms",0,"nest_with_margins",FALSE,"last",TRUE,"match",""
+"hms",0,"nest_with_margins",TRUE,"none",FALSE,"match",""
+"hms",0,"nest_with_margins",TRUE,"none",TRUE,"match",""
+"hms",0,"nest_with_margins",TRUE,"first",FALSE,"match",""
+"hms",0,"nest_with_margins",TRUE,"first",TRUE,"match",""
+"hms",0,"nest_with_margins",TRUE,"last",FALSE,"match",""
+"hms",0,"nest_with_margins",TRUE,"last",TRUE,"match",""
+"hms",0,"nest_by_with_margins",FALSE,"none",FALSE,"match",""
+"hms",0,"nest_by_with_margins",FALSE,"none",TRUE,"match",""
+"hms",0,"nest_by_with_margins",FALSE,"first",FALSE,"match",""
+"hms",0,"nest_by_with_margins",FALSE,"first",TRUE,"match",""
+"hms",0,"nest_by_with_margins",FALSE,"last",FALSE,"match",""
+"hms",0,"nest_by_with_margins",FALSE,"last",TRUE,"match",""
+"hms",0,"nest_by_with_margins",TRUE,"none",FALSE,"match",""
+"hms",0,"nest_by_with_margins",TRUE,"none",TRUE,"match",""
+"hms",0,"nest_by_with_margins",TRUE,"first",FALSE,"match",""
+"hms",0,"nest_by_with_margins",TRUE,"first",TRUE,"match",""
+"hms",0,"nest_by_with_margins",TRUE,"last",FALSE,"match",""
+"hms",0,"nest_by_with_margins",TRUE,"last",TRUE,"match",""
+"hms",4,"nest_with_margins",FALSE,"none",FALSE,"match",""
+"hms",4,"nest_with_margins",FALSE,"none",TRUE,"match",""
+"hms",4,"nest_with_margins",FALSE,"first",FALSE,"match",""
+"hms",4,"nest_with_margins",FALSE,"first",TRUE,"match",""
+"hms",4,"nest_with_margins",FALSE,"last",FALSE,"match",""
+"hms",4,"nest_with_margins",FALSE,"last",TRUE,"match",""
+"hms",4,"nest_with_margins",TRUE,"none",FALSE,"match",""
+"hms",4,"nest_with_margins",TRUE,"none",TRUE,"match",""
+"hms",4,"nest_with_margins",TRUE,"first",FALSE,"match",""
+"hms",4,"nest_with_margins",TRUE,"first",TRUE,"match",""
+"hms",4,"nest_with_margins",TRUE,"last",FALSE,"match",""
+"hms",4,"nest_with_margins",TRUE,"last",TRUE,"match",""
+"hms",4,"nest_by_with_margins",FALSE,"none",FALSE,"match",""
+"hms",4,"nest_by_with_margins",FALSE,"none",TRUE,"match",""
+"hms",4,"nest_by_with_margins",FALSE,"first",FALSE,"match",""
+"hms",4,"nest_by_with_margins",FALSE,"first",TRUE,"match",""
+"hms",4,"nest_by_with_margins",FALSE,"last",FALSE,"match",""
+"hms",4,"nest_by_with_margins",FALSE,"last",TRUE,"match",""
+"hms",4,"nest_by_with_margins",TRUE,"none",FALSE,"match",""
+"hms",4,"nest_by_with_margins",TRUE,"none",TRUE,"match",""
+"hms",4,"nest_by_with_margins",TRUE,"first",FALSE,"match",""
+"hms",4,"nest_by_with_margins",TRUE,"first",TRUE,"match",""
+"hms",4,"nest_by_with_margins",TRUE,"last",FALSE,"match",""
+"hms",4,"nest_by_with_margins",TRUE,"last",TRUE,"match",""
+"integer64",0,"nest_with_margins",FALSE,"none",FALSE,"match",""
+"integer64",0,"nest_with_margins",FALSE,"none",TRUE,"match",""
+"integer64",0,"nest_with_margins",FALSE,"first",FALSE,"match",""
+"integer64",0,"nest_with_margins",FALSE,"first",TRUE,"match",""
+"integer64",0,"nest_with_margins",FALSE,"last",FALSE,"match",""
+"integer64",0,"nest_with_margins",FALSE,"last",TRUE,"match",""
+"integer64",0,"nest_with_margins",TRUE,"none",FALSE,"match",""
+"integer64",0,"nest_with_margins",TRUE,"none",TRUE,"match",""
+"integer64",0,"nest_with_margins",TRUE,"first",FALSE,"match",""
+"integer64",0,"nest_with_margins",TRUE,"first",TRUE,"match",""
+"integer64",0,"nest_with_margins",TRUE,"last",FALSE,"match",""
+"integer64",0,"nest_with_margins",TRUE,"last",TRUE,"match",""
+"integer64",0,"nest_by_with_margins",FALSE,"none",FALSE,"match",""
+"integer64",0,"nest_by_with_margins",FALSE,"none",TRUE,"match",""
+"integer64",0,"nest_by_with_margins",FALSE,"first",FALSE,"match",""
+"integer64",0,"nest_by_with_margins",FALSE,"first",TRUE,"match",""
+"integer64",0,"nest_by_with_margins",FALSE,"last",FALSE,"match",""
+"integer64",0,"nest_by_with_margins",FALSE,"last",TRUE,"match",""
+"integer64",0,"nest_by_with_margins",TRUE,"none",FALSE,"match",""
+"integer64",0,"nest_by_with_margins",TRUE,"none",TRUE,"match",""
+"integer64",0,"nest_by_with_margins",TRUE,"first",FALSE,"match",""
+"integer64",0,"nest_by_with_margins",TRUE,"first",TRUE,"match",""
+"integer64",0,"nest_by_with_margins",TRUE,"last",FALSE,"match",""
+"integer64",0,"nest_by_with_margins",TRUE,"last",TRUE,"match",""
+"integer64",4,"nest_with_margins",FALSE,"none",FALSE,"match",""
+"integer64",4,"nest_with_margins",FALSE,"none",TRUE,"match",""
+"integer64",4,"nest_with_margins",FALSE,"first",FALSE,"match",""
+"integer64",4,"nest_with_margins",FALSE,"first",TRUE,"match",""
+"integer64",4,"nest_with_margins",FALSE,"last",FALSE,"match",""
+"integer64",4,"nest_with_margins",FALSE,"last",TRUE,"match",""
+"integer64",4,"nest_with_margins",TRUE,"none",FALSE,"match",""
+"integer64",4,"nest_with_margins",TRUE,"none",TRUE,"match",""
+"integer64",4,"nest_with_margins",TRUE,"first",FALSE,"match",""
+"integer64",4,"nest_with_margins",TRUE,"first",TRUE,"match",""
+"integer64",4,"nest_with_margins",TRUE,"last",FALSE,"match",""
+"integer64",4,"nest_with_margins",TRUE,"last",TRUE,"match",""
+"integer64",4,"nest_by_with_margins",FALSE,"none",FALSE,"match",""
+"integer64",4,"nest_by_with_margins",FALSE,"none",TRUE,"match",""
+"integer64",4,"nest_by_with_margins",FALSE,"first",FALSE,"match",""
+"integer64",4,"nest_by_with_margins",FALSE,"first",TRUE,"match",""
+"integer64",4,"nest_by_with_margins",FALSE,"last",FALSE,"match",""
+"integer64",4,"nest_by_with_margins",FALSE,"last",TRUE,"match",""
+"integer64",4,"nest_by_with_margins",TRUE,"none",FALSE,"match",""
+"integer64",4,"nest_by_with_margins",TRUE,"none",TRUE,"match",""
+"integer64",4,"nest_by_with_margins",TRUE,"first",FALSE,"match",""
+"integer64",4,"nest_by_with_margins",TRUE,"first",TRUE,"match",""
+"integer64",4,"nest_by_with_margins",TRUE,"last",FALSE,"match",""
+"integer64",4,"nest_by_with_margins",TRUE,"last",TRUE,"match",""
+"complex",0,"nest_with_margins",FALSE,"none",FALSE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",0,"nest_with_margins",FALSE,"none",TRUE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",0,"nest_with_margins",FALSE,"first",FALSE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",0,"nest_with_margins",FALSE,"first",TRUE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",0,"nest_with_margins",FALSE,"last",FALSE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",0,"nest_with_margins",FALSE,"last",TRUE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",0,"nest_with_margins",TRUE,"none",FALSE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",0,"nest_with_margins",TRUE,"none",TRUE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",0,"nest_with_margins",TRUE,"first",FALSE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",0,"nest_with_margins",TRUE,"first",TRUE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",0,"nest_with_margins",TRUE,"last",FALSE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",0,"nest_with_margins",TRUE,"last",TRUE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",0,"nest_by_with_margins",FALSE,"none",FALSE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",0,"nest_by_with_margins",FALSE,"none",TRUE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",0,"nest_by_with_margins",FALSE,"first",FALSE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",0,"nest_by_with_margins",FALSE,"first",TRUE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",0,"nest_by_with_margins",FALSE,"last",FALSE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",0,"nest_by_with_margins",FALSE,"last",TRUE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",0,"nest_by_with_margins",TRUE,"none",FALSE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",0,"nest_by_with_margins",TRUE,"none",TRUE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",0,"nest_by_with_margins",TRUE,"first",FALSE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",0,"nest_by_with_margins",TRUE,"first",TRUE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",0,"nest_by_with_margins",TRUE,"last",FALSE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",0,"nest_by_with_margins",TRUE,"last",TRUE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",4,"nest_with_margins",FALSE,"none",FALSE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",4,"nest_with_margins",FALSE,"none",TRUE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",4,"nest_with_margins",FALSE,"first",FALSE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",4,"nest_with_margins",FALSE,"first",TRUE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",4,"nest_with_margins",FALSE,"last",FALSE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",4,"nest_with_margins",FALSE,"last",TRUE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",4,"nest_with_margins",TRUE,"none",FALSE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",4,"nest_with_margins",TRUE,"none",TRUE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",4,"nest_with_margins",TRUE,"first",FALSE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",4,"nest_with_margins",TRUE,"first",TRUE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",4,"nest_with_margins",TRUE,"last",FALSE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",4,"nest_with_margins",TRUE,"last",TRUE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",4,"nest_by_with_margins",FALSE,"none",FALSE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",4,"nest_by_with_margins",FALSE,"none",TRUE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",4,"nest_by_with_margins",FALSE,"first",FALSE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",4,"nest_by_with_margins",FALSE,"first",TRUE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",4,"nest_by_with_margins",FALSE,"last",FALSE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",4,"nest_by_with_margins",FALSE,"last",TRUE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",4,"nest_by_with_margins",TRUE,"none",FALSE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",4,"nest_by_with_margins",TRUE,"none",TRUE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",4,"nest_by_with_margins",TRUE,"first",FALSE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",4,"nest_by_with_margins",TRUE,"first",TRUE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",4,"nest_by_with_margins",TRUE,"last",FALSE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"complex",4,"nest_by_with_margins",TRUE,"last",TRUE,"refusal"," dtplyr: unsupported column type found in x or y: [complex]"
+"raw",0,"nest_with_margins",FALSE,"none",FALSE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",0,"nest_with_margins",FALSE,"none",TRUE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",0,"nest_with_margins",FALSE,"first",FALSE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",0,"nest_with_margins",FALSE,"first",TRUE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",0,"nest_with_margins",FALSE,"last",FALSE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",0,"nest_with_margins",FALSE,"last",TRUE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",0,"nest_with_margins",TRUE,"none",FALSE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",0,"nest_with_margins",TRUE,"none",TRUE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",0,"nest_with_margins",TRUE,"first",FALSE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",0,"nest_with_margins",TRUE,"first",TRUE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",0,"nest_with_margins",TRUE,"last",FALSE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",0,"nest_with_margins",TRUE,"last",TRUE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",0,"nest_by_with_margins",FALSE,"none",FALSE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",0,"nest_by_with_margins",FALSE,"none",TRUE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",0,"nest_by_with_margins",FALSE,"first",FALSE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",0,"nest_by_with_margins",FALSE,"first",TRUE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",0,"nest_by_with_margins",FALSE,"last",FALSE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",0,"nest_by_with_margins",FALSE,"last",TRUE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",0,"nest_by_with_margins",TRUE,"none",FALSE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",0,"nest_by_with_margins",TRUE,"none",TRUE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",0,"nest_by_with_margins",TRUE,"first",FALSE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",0,"nest_by_with_margins",TRUE,"first",TRUE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",0,"nest_by_with_margins",TRUE,"last",FALSE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",0,"nest_by_with_margins",TRUE,"last",TRUE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",4,"nest_with_margins",FALSE,"none",FALSE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",4,"nest_with_margins",FALSE,"none",TRUE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",4,"nest_with_margins",FALSE,"first",FALSE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",4,"nest_with_margins",FALSE,"first",TRUE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",4,"nest_with_margins",FALSE,"last",FALSE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",4,"nest_with_margins",FALSE,"last",TRUE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",4,"nest_with_margins",TRUE,"none",FALSE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",4,"nest_with_margins",TRUE,"none",TRUE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",4,"nest_with_margins",TRUE,"first",FALSE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",4,"nest_with_margins",TRUE,"first",TRUE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",4,"nest_with_margins",TRUE,"last",FALSE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",4,"nest_with_margins",TRUE,"last",TRUE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",4,"nest_by_with_margins",FALSE,"none",FALSE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",4,"nest_by_with_margins",FALSE,"none",TRUE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",4,"nest_by_with_margins",FALSE,"first",FALSE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",4,"nest_by_with_margins",FALSE,"first",TRUE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",4,"nest_by_with_margins",FALSE,"last",FALSE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",4,"nest_by_with_margins",FALSE,"last",TRUE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",4,"nest_by_with_margins",TRUE,"none",FALSE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",4,"nest_by_with_margins",TRUE,"none",TRUE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",4,"nest_by_with_margins",TRUE,"first",FALSE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",4,"nest_by_with_margins",TRUE,"first",TRUE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",4,"nest_by_with_margins",TRUE,"last",FALSE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"raw",4,"nest_by_with_margins",TRUE,"last",TRUE,"refusal","local: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping. dtplyr: A typed-missing `.margin_label` cannot be represented for:
+ℹ `g`.
+ℹ Choose a supported non-missing label or change the grouping."
+"list",0,"nest_with_margins",FALSE,"none",FALSE,"refusal"," dtplyr: Invalid input"
+"list",0,"nest_with_margins",FALSE,"none",TRUE,"refusal"," dtplyr: Invalid input"
+"list",0,"nest_with_margins",FALSE,"first",FALSE,"refusal"," dtplyr: Invalid input"
+"list",0,"nest_with_margins",FALSE,"first",TRUE,"refusal"," dtplyr: Invalid input"
+"list",0,"nest_with_margins",FALSE,"last",FALSE,"refusal"," dtplyr: Invalid input"
+"list",0,"nest_with_margins",FALSE,"last",TRUE,"refusal"," dtplyr: Invalid input"
+"list",0,"nest_with_margins",TRUE,"none",FALSE,"refusal"," dtplyr: Invalid input"
+"list",0,"nest_with_margins",TRUE,"none",TRUE,"refusal"," dtplyr: Invalid input"
+"list",0,"nest_with_margins",TRUE,"first",FALSE,"refusal"," dtplyr: Invalid input"
+"list",0,"nest_with_margins",TRUE,"first",TRUE,"refusal"," dtplyr: Invalid input"
+"list",0,"nest_with_margins",TRUE,"last",FALSE,"refusal"," dtplyr: Invalid input"
+"list",0,"nest_with_margins",TRUE,"last",TRUE,"refusal"," dtplyr: Invalid input"
+"list",0,"nest_by_with_margins",FALSE,"none",FALSE,"refusal"," dtplyr: Invalid input"
+"list",0,"nest_by_with_margins",FALSE,"none",TRUE,"refusal"," dtplyr: Invalid input"
+"list",0,"nest_by_with_margins",FALSE,"first",FALSE,"refusal"," dtplyr: Invalid input"
+"list",0,"nest_by_with_margins",FALSE,"first",TRUE,"refusal"," dtplyr: Invalid input"
+"list",0,"nest_by_with_margins",FALSE,"last",FALSE,"refusal"," dtplyr: Invalid input"
+"list",0,"nest_by_with_margins",FALSE,"last",TRUE,"refusal"," dtplyr: Invalid input"
+"list",0,"nest_by_with_margins",TRUE,"none",FALSE,"refusal"," dtplyr: Invalid input"
+"list",0,"nest_by_with_margins",TRUE,"none",TRUE,"refusal"," dtplyr: Invalid input"
+"list",0,"nest_by_with_margins",TRUE,"first",FALSE,"refusal"," dtplyr: Invalid input"
+"list",0,"nest_by_with_margins",TRUE,"first",TRUE,"refusal"," dtplyr: Invalid input"
+"list",0,"nest_by_with_margins",TRUE,"last",FALSE,"refusal"," dtplyr: Invalid input"
+"list",0,"nest_by_with_margins",TRUE,"last",TRUE,"refusal"," dtplyr: Invalid input"
+"list",4,"nest_with_margins",FALSE,"none",FALSE,"refusal"," dtplyr: Invalid input"
+"list",4,"nest_with_margins",FALSE,"none",TRUE,"refusal"," dtplyr: Invalid input"
+"list",4,"nest_with_margins",FALSE,"first",FALSE,"refusal"," dtplyr: Invalid input"
+"list",4,"nest_with_margins",FALSE,"first",TRUE,"refusal"," dtplyr: Invalid input"
+"list",4,"nest_with_margins",FALSE,"last",FALSE,"refusal"," dtplyr: Invalid input"
+"list",4,"nest_with_margins",FALSE,"last",TRUE,"refusal"," dtplyr: Invalid input"
+"list",4,"nest_with_margins",TRUE,"none",FALSE,"refusal"," dtplyr: Invalid input"
+"list",4,"nest_with_margins",TRUE,"none",TRUE,"refusal"," dtplyr: Invalid input"
+"list",4,"nest_with_margins",TRUE,"first",FALSE,"refusal"," dtplyr: Invalid input"
+"list",4,"nest_with_margins",TRUE,"first",TRUE,"refusal"," dtplyr: Invalid input"
+"list",4,"nest_with_margins",TRUE,"last",FALSE,"refusal"," dtplyr: Invalid input"
+"list",4,"nest_with_margins",TRUE,"last",TRUE,"refusal"," dtplyr: Invalid input"
+"list",4,"nest_by_with_margins",FALSE,"none",FALSE,"refusal"," dtplyr: Invalid input"
+"list",4,"nest_by_with_margins",FALSE,"none",TRUE,"refusal"," dtplyr: Invalid input"
+"list",4,"nest_by_with_margins",FALSE,"first",FALSE,"refusal"," dtplyr: Invalid input"
+"list",4,"nest_by_with_margins",FALSE,"first",TRUE,"refusal"," dtplyr: Invalid input"
+"list",4,"nest_by_with_margins",FALSE,"last",FALSE,"refusal"," dtplyr: Invalid input"
+"list",4,"nest_by_with_margins",FALSE,"last",TRUE,"refusal"," dtplyr: Invalid input"
+"list",4,"nest_by_with_margins",TRUE,"none",FALSE,"refusal"," dtplyr: Invalid input"
+"list",4,"nest_by_with_margins",TRUE,"none",TRUE,"refusal"," dtplyr: Invalid input"
+"list",4,"nest_by_with_margins",TRUE,"first",FALSE,"refusal"," dtplyr: Invalid input"
+"list",4,"nest_by_with_margins",TRUE,"first",TRUE,"refusal"," dtplyr: Invalid input"
+"list",4,"nest_by_with_margins",TRUE,"last",FALSE,"refusal"," dtplyr: Invalid input"
+"list",4,"nest_by_with_margins",TRUE,"last",TRUE,"refusal"," dtplyr: Invalid input"
+"matrix",0,"nest_with_margins",FALSE,"none",FALSE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",0,"nest_with_margins",FALSE,"none",TRUE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",0,"nest_with_margins",FALSE,"first",FALSE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",0,"nest_with_margins",FALSE,"first",TRUE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",0,"nest_with_margins",FALSE,"last",FALSE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",0,"nest_with_margins",FALSE,"last",TRUE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",0,"nest_with_margins",TRUE,"none",FALSE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",0,"nest_with_margins",TRUE,"none",TRUE,"refusal"," dtplyr: C stack usage  7954180 is too close to the limit"
+"matrix",0,"nest_with_margins",TRUE,"first",FALSE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",0,"nest_with_margins",TRUE,"first",TRUE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",0,"nest_with_margins",TRUE,"last",FALSE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",0,"nest_with_margins",TRUE,"last",TRUE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",0,"nest_by_with_margins",FALSE,"none",FALSE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",0,"nest_by_with_margins",FALSE,"none",TRUE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",0,"nest_by_with_margins",FALSE,"first",FALSE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",0,"nest_by_with_margins",FALSE,"first",TRUE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",0,"nest_by_with_margins",FALSE,"last",FALSE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",0,"nest_by_with_margins",FALSE,"last",TRUE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",0,"nest_by_with_margins",TRUE,"none",FALSE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",0,"nest_by_with_margins",TRUE,"none",TRUE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",0,"nest_by_with_margins",TRUE,"first",FALSE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",0,"nest_by_with_margins",TRUE,"first",TRUE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",0,"nest_by_with_margins",TRUE,"last",FALSE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",0,"nest_by_with_margins",TRUE,"last",TRUE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",4,"nest_with_margins",FALSE,"none",FALSE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",4,"nest_with_margins",FALSE,"none",TRUE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",4,"nest_with_margins",FALSE,"first",FALSE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",4,"nest_with_margins",FALSE,"first",TRUE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",4,"nest_with_margins",FALSE,"last",FALSE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",4,"nest_with_margins",FALSE,"last",TRUE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",4,"nest_with_margins",TRUE,"none",FALSE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",4,"nest_with_margins",TRUE,"none",TRUE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",4,"nest_with_margins",TRUE,"first",FALSE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",4,"nest_with_margins",TRUE,"first",TRUE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",4,"nest_with_margins",TRUE,"last",FALSE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",4,"nest_with_margins",TRUE,"last",TRUE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",4,"nest_by_with_margins",FALSE,"none",FALSE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",4,"nest_by_with_margins",FALSE,"none",TRUE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",4,"nest_by_with_margins",FALSE,"first",FALSE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",4,"nest_by_with_margins",FALSE,"first",TRUE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",4,"nest_by_with_margins",FALSE,"last",FALSE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",4,"nest_by_with_margins",FALSE,"last",TRUE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",4,"nest_by_with_margins",TRUE,"none",FALSE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",4,"nest_by_with_margins",TRUE,"none",TRUE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",4,"nest_by_with_margins",TRUE,"first",FALSE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",4,"nest_by_with_margins",TRUE,"first",TRUE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",4,"nest_by_with_margins",TRUE,"last",FALSE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"
+"matrix",4,"nest_by_with_margins",TRUE,"last",TRUE,"refusal"," dtplyr: C stack usage  7954352 is too close to the limit"

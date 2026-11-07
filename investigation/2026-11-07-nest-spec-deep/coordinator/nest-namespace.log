@@ -1,0 +1,20 @@
+# A tibble: 2 × 2
+  region data
+  <chr>  <list>
+1 east   <dt [1 × 1]>
+2 west   <dt [1 × 1]>
+[[1]]
+[[1]]$units
+[1] -99
+
+
+[[2]]
+[[2]]$units
+[1] -99
+
+
+ [1] "base::list"                "data.table::as.data.table"
+ [3] "base::list"                "vctrs::vec_slice"
+ [5] "base::min"                 "base::list"
+ [7] "data.table::as.data.table" "base::list"
+ [9] "vctrs::vec_slice"          "base::min"

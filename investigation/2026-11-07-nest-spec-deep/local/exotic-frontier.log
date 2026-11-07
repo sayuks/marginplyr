@@ -1,0 +1,71 @@
+
+                error match
+  blob              0    24
+  distribution      0    24
+  hms               0    24
+  integer64         0    24
+  labelled          0    24
+  labelled_spss     0    24
+  posixlt          12    12
+  rvar             24     0
+  sfc              24     0
+  surv             24     0
+  tagged_na         0    24
+  units             0    24
+  yearmon           0    24
+  yearqtr           0    24
+    type empty status
+ posixlt FALSE  error
+    surv FALSE  error
+    surv  TRUE  error
+     sfc FALSE  error
+     sfc  TRUE  error
+    rvar FALSE  error
+    rvar  TRUE  error
+                                                                                                                            message
+                              Can't combine `..1$marginplyr_column_5` <double> and `..3$marginplyr_column_5` <POSIXlt<Asia/Tokyo>>.
+                                                          evaluation nested too deeply: infinite recursion / options(expressions=)?
+                                                          evaluation nested too deeply: infinite recursion / options(expressions=)?
+ A typed-missing `.margin_label` cannot be represented for:\nℹ `g`.\nℹ Choose a supported non-missing label or change the grouping.
+ A typed-missing `.margin_label` cannot be represented for:\nℹ `g`.\nℹ Choose a supported non-missing label or change the grouping.
+ A typed-missing `.margin_label` cannot be represented for:\nℹ `g`.\nℹ Choose a supported non-missing label or change the grouping.
+ A typed-missing `.margin_label` cannot be represented for:\nℹ `g`.\nℹ Choose a supported non-missing label or change the grouping.
+All 336 calls matched their independently classified contract or native boundary.
+R version 4.6.1 (2026-06-24)
+Platform: aarch64-apple-darwin23
+Running under: macOS Tahoe 26.6.2
+
+Matrix products: default
+BLAS:   /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRblas.0.dylib
+LAPACK: /Library/Frameworks/R.framework/Versions/4.6/Resources/lib/libRlapack.dylib;  LAPACK version 3.12.1
+
+locale:
+[1] C.UTF-8/C.UTF-8/C.UTF-8/C/C.UTF-8/C.UTF-8
+
+time zone: Asia/Tokyo
+tzcode source: internal
+
+attached base packages:
+[1] stats     graphics  grDevices utils     datasets  methods   base
+
+other attached packages:
+[1] marginplyr_0.1.0 testthat_3.3.2
+
+loaded via a namespace (and not attached):
+ [1] Matrix_1.7-6         bit_4.6.0            dplyr_1.2.1
+ [4] compiler_4.6.1       brio_1.1.5           tidyselect_1.2.1
+ [7] Rcpp_1.1.2           blob_1.3.0           splines_4.6.1
+[10] lattice_0.23-1       R6_2.6.1             generics_0.1.4
+[13] classInt_0.4-11      distributional_0.8.1 sf_1.1-2
+[16] backports_1.5.1      forcats_1.0.1        checkmate_2.3.4
+[19] tibble_3.3.1         desc_1.4.3           units_1.0-1
+[22] rprojroot_2.1.1      DBI_1.3.0            posterior_1.7.0
+[25] pillar_1.11.1        rlang_1.3.0          bit64_4.8.6
+[28] pkgload_1.5.3        otel_0.2.0           cli_3.6.6
+[31] withr_3.0.3          magrittr_2.0.5       class_7.3-24
+[34] grid_4.6.1           dbplyr_2.6.0         haven_2.5.5
+[37] hms_1.1.4            lifecycle_1.0.5      vctrs_0.7.3
+[40] KernSmooth_2.23-27   tensorA_0.36.2.1     proxy_0.4-29
+[43] glue_1.8.1           zoo_1.9-0            abind_1.4-8
+[46] survival_3.8-11      pkgbuild_1.4.8       e1071_1.7-17
+[49] tools_4.6.1          pkgconfig_2.0.3
