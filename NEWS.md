@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Both Nest verbs preserve dtplyr source keys and cell contents when a caller
+  overrides the namespace operator, including deferred collection (#1427).
+
 * Parent and Total share dependency checks retain invocation-time dependencies
   of local literal closures installed by `delayedAssign()` (#1417).
 
