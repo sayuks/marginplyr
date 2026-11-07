@@ -5438,7 +5438,9 @@ scope_list_write_elements <- function(target, elements, value, lookup,
           (!all(is.finite(key)) || (any(key < 0) && any(key > 0)))) {
       return(rlang::zap())
     }
-    replacement <- if (nested) value else {
+    replacement <- if (nested) {
+      value
+    } else {
       scope_closure_list(value, value_scope, lookup)
     }
     if (is.null(replacement) || (length(replacement) == 0L && !delete)) {
