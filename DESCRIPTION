@@ -350,6 +350,8 @@ Config/testthat/start-first:
     nest-namespace,
     across-prior-rebinding,
     share-list-names,
+    grouping-name-dispatch,
+    dtplyr-label-namespaces,
     share-nested-closure-lists
 VignetteBuilder:
     quarto
