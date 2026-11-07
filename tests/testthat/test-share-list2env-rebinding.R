@@ -227,3 +227,154 @@ test_that("injected list2env syntax keeps its callee environment", {
   expect_equal(result$value, c(7, 7, 7))
   expect_equal(result$fraction, c(1, 1, 1))
 })
+
+test_that("fresh list2env fields retain eager closure dependencies", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
+  probe <- new.env()
+  probe$calls <- 0L
+  read <- quote((function(prior) {
+    callback <- function() {
+      probe$calls <- probe$calls + 1L
+      sum(prior)
+    }
+    carrier <- list2env(list(read = callback))
+    rm(prior)
+    carrier$read()
+  })(11))
+  expect_share_dependencies(data, list(read))
+  expect_identical(probe$calls, 0L)
+})
+
+test_that("fresh environment field writes keep the installed closure's scope", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
+  probe <- new.env()
+  probe$calls <- 0L
+  read <- quote((function(prior) {
+    callback <- function() sum(prior)
+    carrier <- new.env(parent = {
+      probe$calls <- probe$calls + 1L
+      emptyenv()
+    })
+    carrier$read <- callback
+    rm(prior)
+    carrier$read()
+  })(11))
+  expect_share_dependencies(data, list(read))
+  expect_identical(probe$calls, 0L)
+})
+
+test_that("fresh environment fields honor exact reads and independent writes", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
+  expect_share_dependency_values(data, alist(
+    (function(prior) {
+      carrier <- new.env()
+      carrier$read <- function() sum(prior)
+      carrier$read()
+    })(11),
+    (function(prior) {
+      carrier <- base::list2env(list(read = function() sum(prior)),
+                                envir = NULL)
+      carrier[["read"]]()
+    })(11)
+  ), 11)
+  expect_share_dependencies(data, alist((function(prior) {
+    carrier <- new.env()
+    carrier[["read"]] <- function() sum(prior)
+    rm(prior)
+    carrier[["read"]]()
+  })(11)))
+  reads <- alist(
+    (function(prior) {
+      carrier <- list2env(list(read = function() sum(prior)))
+      carrier$read <- function() 7
+      rm(prior)
+      carrier$read()
+    })(11),
+    (function(prior) {
+      carrier <- list2env(list(read = function() sum(prior)))
+      carrier[["read"]] <- function() 7
+      rm(prior)
+      carrier[["read"]]()
+    })(11),
+    (function(prior) {
+      carrier <- list2env(list(read = function() sum(prior),
+                              read = function() 7))
+      rm(prior)
+      carrier$read()
+    })(11),
+    (function(prior) {
+      carrier <- list2env(list(reader = function() sum(prior)))
+      rm(prior)
+      if (is.null(carrier$read)) 7 else carrier$read()
+    })(11),
+    (function(prior) {
+      carrier <- list2env(list(read = function() sum(prior)))
+      alias <- carrier
+      alias$read <- function() 7
+      rm(prior)
+      carrier$read()
+    })(11),
+    (function(prior) {
+      carrier <- list2env(list(read = function() sum(prior)))
+      key <- "read"
+      carrier[[key]] <- function() 7
+      rm(prior)
+      carrier$read()
+    })(11),
+    (function() {
+      entries <- list(read = function() 7)
+      carrier <- base::list2env(entries)
+      carrier$read()
+    })(),
+    (function() {
+      carrier <- base::list2env(list(read = function() 7))
+      getElement(carrier, "read")()
+    })(),
+    tryCatch((function(prior) {
+      carrier <- base::list2env(list(function() sum(prior)))
+      carrier$read()
+    })(11), error = function(cnd) 7)
+  )
+  expect_share_dependency_values(
+    data, lapply(reads, rlang::as_quosure, env = environment()), 7
+  )
+})
+
+test_that("fresh environment proofs preserve caller constructor lookup", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
+  list2env <- function(...) list(read = function() 7)
+  new.env <- function(...) {
+    structure(list(read = function() 7), class = "fresh_environment_control")
+  }
+  `$<-.fresh_environment_control` <- function(x, name, value) x
+  reads <- alist(
+    (function(prior) {
+      carrier <- list2env(list(read = function() sum(prior)))
+      rm(prior)
+      carrier$read()
+    })(11),
+    (function(prior) {
+      carrier <- new.env()
+      carrier$read <- function() sum(prior)
+      rm(prior)
+      carrier$read()
+    })(11),
+    (function(prior) {
+      carrier <- base::list2env(list(read = function() sum(prior)),
+                                envir = base::new.env())
+      carrier$read <- function() 7
+      rm(prior)
+      carrier$read()
+    })(11),
+    (function(prior) {
+      `$<-` <- function(x, name, value) base::`$<-`(x, "read", function() 7)
+      carrier <- base::new.env()
+      carrier$read <- function() sum(prior)
+      rm(prior)
+      carrier$read()
+    })(11)
+  )
+  expect_share_dependency_values(
+    data, lapply(reads, rlang::as_quosure, env = environment()), 7
+  )
+})
