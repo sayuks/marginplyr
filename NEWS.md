@@ -4,6 +4,9 @@
   a pattern method before matching, preserving fixed keys and dimensions across
   inspection and summaries, including immutable dtplyr inputs (#1420).
 
+* Parent and Total share dependency checks follow surviving closures after
+  literal list deletions and single-bracket replacements (#1414).
+
 * Typed inspection and Nest verbs refuse replaced registered dtplyr converters
   before they can change Grouping dimensions or fixed keys (#1419).
 
