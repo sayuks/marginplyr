@@ -1236,10 +1236,28 @@ is_name_only_selection <- function(arg, data_vars, allow_caller_code = TRUE,
   )
 }
 
-# A names-only data frame so tidyselect applies its data-frame name repair.
+# A names-only data frame for tidyselect name repair and uniqueness checks.
 grouping_name_proxy <- function(data_vars) {
   columns <- stats::setNames(as.list(seq_along(data_vars)), data_vars)
-  vctrs::new_data_frame(columns, n = 1L)
+  vctrs::new_data_frame(columns, n = 1L, class = "margin_grouping_name_proxy")
+}
+
+# Keep the synthetic columns in tidyselect without inheriting receiver methods.
+#' @exportS3Method tidyselect::tidyselect_data_proxy
+tidyselect_data_proxy.margin_grouping_name_proxy <- function(x) {
+  x
+}
+
+# Preserve tidyselect's default predicate support for the synthetic frame.
+#' @exportS3Method tidyselect::tidyselect_data_has_predicates
+tidyselect_data_has_predicates.margin_grouping_name_proxy <- function(x) {
+  TRUE
+}
+
+# Expose the stored names directly, including to tidyselect::peek_data() users.
+#' @export
+names.margin_grouping_name_proxy <- function(x) {
+  attr(x, "names", exact = TRUE)
 }
 
 # Whether names() dispatch can be skipped for the dtplyr or names-only frame.
