@@ -295,6 +295,30 @@ check_branch_columns <- function(branches) {
   invisible(NULL)
 }
 
+# Compare eager summary schemas before union, reporting only differences
+# attributable to unnamed frame fields. Grouping keys are already excluded.
+check_eager_summary_fields <- function(schemas, call) {
+  first <- schemas[[1L]]
+  for (schema in schemas[-1L]) {
+    fields <- union(
+      intersect(setdiff(first$outputs, schema$outputs), first$fields),
+      intersect(setdiff(schema$outputs, first$outputs), schema$fields)
+    )
+    if (length(fields) == 0L) {
+      next
+    }
+    abort_marginplyr(c(
+      paste0(
+        "Unnamed frame summaries must produce consistent field names ",
+        "across grouping sets."
+      ),
+      i = "Differing fields include {.var {fields}}.",
+      i = "Use consistent fields or give the summary a name to pack it."
+    ), call = call)
+  }
+  invisible(NULL)
+}
+
 # A lazy branch list has to be combined two at a time, since no backend here
 # exposes an n-ary `union_all()`. Pairing adjacent branches and halving makes
 # the work O(n log n) rather than quadratic and, just as importantly, bounds the
@@ -729,6 +753,16 @@ summarize_margin_union <- function(.data,
   # reading of the contract allows.
   on.exit(report_branch_warnings(conditions), add = TRUE)
 
+  eager <- is.data.frame(.data)
+  unnamed_dots <- which(
+    !nzchar(rlang::names2(dots)) | !is.na(summaries$assigned_names)
+  )
+  branch_schemas <- if (eager && length(unnamed_dots) > 0L &&
+                          length(plan$sets) > 1L) {
+    vector("list", length(plan$sets))
+  } else {
+    NULL
+  }
   tryCatch({
     branches <- Map(
       function(grouping_set, set_id) {
@@ -743,7 +777,11 @@ summarize_margin_union <- function(.data,
           sql = FALSE,
           mark_outputs = is.environment(summaries$grouping_type_state)
         )
-        if (is.data.frame(.data)) {
+        if (eager) {
+          type_states <- vector("list", length(branch_dots))
+          type_states[unnamed_dots] <- lapply(
+            unnamed_dots, function(position) new.env(parent = emptyenv())
+          )
           alias_state <- if (is.environment(summaries$selection_state) &&
                                length(frame_state$share_sources) > 0L) {
             summaries$selection_state
@@ -763,6 +801,7 @@ summarize_margin_union <- function(.data,
             source_definitions = frame_state$source_definitions,
             source_reads = frame_state$source_reads,
             auto_names = frame_state$auto_names,
+            type_states = type_states,
             alias_state = alias_state
           )
           branch_dots <- wrap_assigned_local_summaries(
@@ -774,6 +813,7 @@ summarize_margin_union <- function(.data,
             set_id_is_internal = set_id_is_internal,
             share_sources = frame_state$share_sources,
             source_definitions = frame_state$source_definitions,
+            type_states = type_states,
             alias_state = alias_state
           )
         }
@@ -826,8 +866,9 @@ summarize_margin_union <- function(.data,
 
         # Without the placeholder: what this asks about is the names the summary
         # produced, and that column is the adapter's own.
+        output_names <- setdiff(margin_col_names(result), placeholder)
         check_summary_output_names(
-          setdiff(margin_col_names(result), placeholder),
+          output_names,
           group_vars = group_vars,
           internal_names = c(
             unname(key_names[setdiff(group_vars, grouping_set)]),
@@ -836,6 +877,19 @@ summarize_margin_union <- function(.data,
           set_id_name = set_id_name,
           set_id_is_internal = set_id_is_internal
         )
+        if (!is.null(branch_schemas)) {
+          # Capture summary fields before Margin labels add omitted keys.
+          branch_schemas[[set_id]] <<- list(
+            outputs = setdiff(output_names, unname(key_names[grouping_set])),
+            fields = unlist(lapply(type_states[unnamed_dots], function(state) {
+              if (is.data.frame(state$ptype)) {
+                names(state$ptype)
+              } else {
+                state$unpacked_fields
+              }
+            }), use.names = FALSE)
+          )
+        }
         if (backend$is_sql) {
           public_outputs <- setdiff(
             margin_col_names(result),
@@ -957,6 +1011,10 @@ summarize_margin_union <- function(.data,
       plan$sets,
       plan$set_ids
     )
+
+    if (!is.null(branch_schemas)) {
+      check_eager_summary_fields(branch_schemas, call)
+    }
 
     if (
       identical(backend$kind, "sql") &&

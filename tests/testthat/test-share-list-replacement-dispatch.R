@@ -3,16 +3,16 @@ list_replacement_data <- function() {
 }
 
 unchanged_list_replacements <- function(original, replacement) {
-  cases <- list(
+  cases <- as.list(quote(list(
     alist(`$<-` <- function(x, name, value) x,
           carrier$read <- function() REPLACEMENT),
     alist(`[<-` <- function(x, i, value) x,
           carrier[1L] <- list(function() REPLACEMENT)),
     alist(`[[<-` <- function(i, x, value) x,
           carrier[[i = 1L]] <- function() REPLACEMENT)
-  )
+  )))[-1L]
   lapply(cases, function(parts) {
-    write <- do.call(substitute, list(parts[[2L]],
+    write <- do.call(substitute, list(parts[[3L]],
                                       list(REPLACEMENT = replacement)))
     substitute((function(prior) {
       SETTER
@@ -20,7 +20,7 @@ unchanged_list_replacements <- function(original, replacement) {
       WRITE
       rm(prior)
       carrier$read()
-    })(1), list(SETTER = parts[[1L]], ORIGINAL = original, WRITE = write))
+    })(1), list(SETTER = parts[[2L]], ORIGINAL = original, WRITE = write))
   })
 }
 
@@ -34,7 +34,7 @@ test_that("local replacements can retain the original list member", {
   )
 })
 
-test_that("an unknown replacement does not establish a list member dependency", {
+test_that("an unknown replacement leaves list dependencies unproven", {
   data <- list_replacement_data()
   probe <- rlang::env(calls = 0L)
   read <- rlang::quo((function(prior) {
