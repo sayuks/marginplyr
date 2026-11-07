@@ -350,7 +350,8 @@ Config/testthat/start-first:
     nest-namespace,
     across-prior-rebinding,
     share-list-names,
-    grouping-name-dispatch
+    grouping-name-dispatch,
+    dtplyr-label-namespaces
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
