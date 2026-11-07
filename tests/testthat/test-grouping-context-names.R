@@ -363,3 +363,128 @@ test_that("embraced predicates still require typed metadata", {
     )
   }
 })
+
+# dtplyr imports data.table. The typed metadata receiver has its methods
+# even though the input to the public Margin verbs is a lazy step.
+local_dtplyr_context_names <- function() {
+  rlang::local_bindings(
+    names.data.table = function(x) {
+      columns <- attr(x, "names")
+      active <- tryCatch(tidyselect::peek_data(), error = function(cnd) NULL)
+      if (identical(x, active) && is.character(x[["a"]])) {
+        return(rev(columns))
+      }
+      columns
+    },
+    .env = asNamespace("base")$.__S3MethodsTable__.,
+    .frame = parent.frame()
+  )
+}
+
+test_that("dtplyr context names select the typed fixed key", {
+  skip_if_suggest_absent("dtplyr")
+  source <- data.table::data.table(a = c("x", "y"), b = c(1L, 1L))
+  original <- data.table::copy(source)
+  reads <- 0L
+  observe <- function(x) {
+    reads <<- reads + 1L
+    x != ""
+  }
+  step <- dtplyr::lazy_dt(source, immutable = TRUE) |>
+    dplyr::filter(observe(a))
+  typed <- data.table::data.table(a = character(), b = integer())
+  local_dtplyr_context_names()
+
+  direct <- rlang::quo(names(tidyselect::peek_data())[1L])
+  wrapped <- rlang::quo(identity(!!direct))
+  for (selection in list(direct, wrapped)) {
+    before <- reads
+    expect_identical(tidyselect::eval_select(selection, typed), c(b = 2L))
+    expect_identical(
+      inspect_grouping(step, .by = !!selection, .format = "list")$fixed,
+      list("b")
+    )
+    result <- summarize_with_margins(
+      step, count = dplyr::n(), .by = !!selection
+    )
+    expect_s3_class(result, "dtplyr_step")
+    expect_identical(reads, before)
+    expect_identical(
+      dplyr::collect(result),
+      tibble::tibble(b = 1L, count = 2L)
+    )
+    expect_gt(reads, before)
+  }
+  expect_identical(source, original)
+})
+
+test_that("dtplyr still resolves proven names before typed metadata", {
+  skip_if_suggest_absent("dtplyr")
+  step <- dtplyr::lazy_dt(data.frame(a = "x", b = 1L), immutable = TRUE) |>
+    dplyr::mutate(added = paste0(a, "!"))
+  local_dtplyr_context_names()
+
+  expect_identical(
+    inspect_grouping(
+      step, .by = tidyselect::peek_vars()[[1L]], .format = "list"
+    )$fixed,
+    list("a")
+  )
+  expect_error(
+    inspect_grouping(step, .by = absent),
+    "`absent` doesn't exist", fixed = TRUE, class = "vctrs_error_subscript_oob"
+  )
+  expect_error(
+    inspect_grouping(step, .grouping = grouping_sets(
+      absent, names(tidyselect::peek_data())[[1L]]
+    )),
+    "`absent` doesn't exist", fixed = TRUE, class = "vctrs_error_subscript_oob"
+  )
+})
+
+test_that("dtplyr context names select dimensions without false overlap", {
+  skip_if_suggest_absent("dtplyr")
+  source <- data.table::data.table(a = c("x", "y"), b = c(1L, 1L))
+  step <- dtplyr::lazy_dt(source, immutable = TRUE)
+  typed <- data.table::data.table(a = character(), b = integer())
+  local_dtplyr_context_names()
+
+  direct <- rlang::quo(names(tidyselect::peek_data())[1L])
+  wrapped <- rlang::quo(identity(!!direct))
+  for (selection in list(direct, wrapped)) {
+    expect_identical(tidyselect::eval_select(selection, typed), c(b = 2L))
+    for (constructor in list(grouping_set, grouping_sets, rollup, cube,
+                             grouping_spec)) {
+      expect_identical(
+        inspect_grouping(
+          step, .by = a, .grouping = constructor(!!selection), .format = "list"
+        ),
+        inspect_grouping(
+          typed, .by = a, .grouping = constructor(b), .format = "list"
+        )
+      )
+      expect_error(
+        inspect_grouping(step, .by = b, .grouping = constructor(!!selection)),
+        "cannot appear in both", class = "marginplyr_error"
+      )
+    }
+  }
+})
+
+test_that("dtplyr captured context names use the typed receiver", {
+  skip_if_suggest_absent("dtplyr")
+  step <- dtplyr::lazy_dt(data.frame(a = "x", b = 1L), immutable = TRUE)
+  local_dtplyr_context_names()
+
+  expression <- quote(base::`(`(marginplyr::grouping_set(
+    !!names(tidyselect::peek_data())[1L]
+  )))
+  selection <- rlang::new_quosure(expression, new.env(parent = baseenv()))
+  specification <- eval(rlang::call2("grouping_sets", selection))
+  expect_identical(
+    inspect_grouping(
+      step, .by = a, .grouping = specification, .format = "list"
+    )$included,
+    list("b")
+  )
+})
