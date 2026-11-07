@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Immutable dtplyr expansions preserve source rows and payload when a caller
+  overrides the namespace operator, including cached inputs (#1422).
+
 * Typed inspection and Nest verbs refuse replaced registered data.table
   brackets before direct, cached or grouped dtplyr roots can lose Grouping
   dimensions or fixed keys (#1418).

@@ -417,7 +417,11 @@ dtplyr_metadata_safe_step <- function(step, env = step[["env"]]) {
   }
   if (inherits(step, "dtplyr_step_call")) {
     fun <- step[["fun"]]
+    copy_call <- rlang::call2(
+      base::`::`, rlang::sym("data.table"), rlang::sym("copy")
+    )
     return(identical(fun, quote(data.table::copy)) ||
+             identical(fun, copy_call) ||
              (is.character(fun) &&
                 fun %in% c("copy", "setnames", "setcolorder", "setorder")))
   }
