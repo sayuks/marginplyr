@@ -943,3 +943,89 @@ test_that("dispatched helper arguments use one zero-row snapshot", {
   expect_identical(inspect_proxy_capture$source_evaluations, 0L)
   expect_identical(rows, 0L)
 })
+
+test_that("typed DuckDB inspection refuses dynamic pivots before row reads", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  DBI::dbExecute(con, "CREATE SEQUENCE inspected_rows START 1")
+  sequence_value <- function() {
+    DBI::dbGetQuery(con, "SELECT currval('inspected_rows')")[[1L]]
+  }
+  first <- DBI::dbGetQuery(con, "SELECT nextval('inspected_rows')")[[1L]]
+  source <- dplyr::tbl(con, dbplyr::sql(paste(
+    "PIVOT (SELECT CASE WHEN nextval('inspected_rows') > 0",
+    "THEN region ELSE 'other' END AS k, value",
+    "FROM (VALUES ('east', 1), ('west', 2), ('west', 3)) AS t(region, value))",
+    "ON k USING sum(value)"
+  )), vars = c("east", "west"))
+
+  plan <- inspect_grouping(source, .grouping = grouping_set(east))
+  expect_identical(plan$included, "(east)")
+  expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+  expect_identical(sequence_value(), first)
+
+  expect_error(
+    inspect_grouping(source, .grouping = grouping_set(where(is.numeric))),
+    "dplyr::collect()", fixed = TRUE, class = "marginplyr_error"
+  )
+  expect_identical(sequence_value(), first)
+  audit <- last_sent_queries(details = TRUE)
+  expect_identical(audit$purpose, "selection_proxy")
+  expect_identical(audit$status, "errored")
+  expect_identical(audit$conditions[[1L]]$handling, "handled")
+})
+
+test_that("DuckDB metadata preserves static pivots and ordinary queries", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  DBI::dbExecute(con, "CREATE SEQUENCE inspected_rows START 1")
+  first <- DBI::dbGetQuery(con, "SELECT nextval('inspected_rows')")[[1L]]
+  rows <- paste(
+    "SELECT CASE WHEN nextval('inspected_rows') > 0",
+    "THEN region ELSE 'other' END AS k, value",
+    "FROM (VALUES ('east', 1), ('west', 2), ('west', 3)) AS t(region, value)"
+  )
+  static <- dplyr::tbl(con, dbplyr::sql(paste0(
+    "PIVOT (", rows, ") ON k IN ('east', 'west') USING sum(value)"
+  )), vars = c("east", "west"))
+  ordinary <- dplyr::tbl(con, dbplyr::sql(rows), vars = c("k", "value"))
+  for (case in list(list(static, "(east, west)"), list(ordinary, "(value)"))) {
+    plan <- inspect_grouping(case[[1L]], .grouping = grouping_set(
+      where(is.numeric)
+    ))
+    expect_identical(plan$included, case[[2L]])
+    expect_identical(
+      DBI::dbGetQuery(con, "SELECT currval('inspected_rows')")[[1L]], first
+    )
+    audit <- last_sent_queries(details = TRUE)
+    expect_identical(audit$purpose, "selection_proxy")
+    expect_identical(audit$status, "returned")
+    expect_match(audit$sql, "LIMIT 0", fixed = TRUE)
+  }
+})
+
+test_that("other DuckDB metadata failures retain their external condition", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  source <- dplyr::tbl(
+    con, dbplyr::sql("SELECT k FROM absent_table"), vars = "k"
+  )
+  err <- expect_error(
+    inspect_grouping(source, .grouping = grouping_set(where(is.numeric))),
+    "absent_table", class = "rlang_error"
+  )
+  expect_false(inherits(err, "marginplyr_error"))
+  audit <- last_sent_queries(details = TRUE)
+  expect_identical(audit$purpose, "selection_proxy")
+  expect_identical(audit$status, "errored")
+  expect_identical(audit$conditions[[1L]]$handling, "propagated")
+})

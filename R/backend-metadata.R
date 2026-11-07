@@ -491,6 +491,32 @@ dtplyr_selection_proxy <- function(.data, env = .data[["env"]]) {
   )
 }
 
+# DuckDB's query() refuses the auxiliary statements that discover dynamic
+# PIVOT columns. Qualify the built-in so a caller's macro cannot replace it.
+# Rendering and wrapping the zero-row query sends nothing (ADR 0020).
+duckdb_selection_query <- function(proxy) {
+  con <- dbplyr::remote_con(proxy)
+  sql <- dbplyr::build_sql(
+    "SELECT * FROM system.main.query(",
+    as.character(dbplyr::sql_render(proxy)), ")",
+    con = con
+  )
+  dplyr::tbl(con, sql, vars = margin_col_names(proxy))
+}
+
+# Match the specific DuckDB parser refusal, including when dbplyr wraps it.
+is_duckdb_dynamic_pivot <- function(cnd) {
+  any(vapply(condition_chain(cnd), function(error) {
+    startsWith(
+      error$message %||% "",
+      paste0(
+        "Parser Error: PIVOT statements without explicit IN clauses ",
+        "are not supported in query() function."
+      )
+    )
+  }, logical(1)))
+}
+
 grouping_selection_proxy <- function(.data,
                                      backend = grouping_backend(.data)) {
   if (identical(backend$kind, "arrow")) {
@@ -501,8 +527,30 @@ grouping_selection_proxy <- function(.data,
     return(proxy)
   }
   if (backend$collect_selection_proxy) {
-    proxy <- utils::head(.data, n = 0L)
-    return(with_sent_query("selection_proxy", proxy, dplyr::collect(proxy)))
+    # dtplyr uses its isolated proxy above this seam. DuckDB's LIMIT 0
+    # alone cannot stop preparation from executing dynamic pivot inputs.
+    proxy <- duckdb_selection_query(utils::head(.data, n = 0L))
+    return(tryCatch(
+      with_sent_query(
+        "selection_proxy", proxy, dplyr::collect(proxy),
+        error_handling = function(cnd) {
+          if (is_duckdb_dynamic_pivot(cnd)) "handled" else "propagated"
+        }
+      ),
+      error = function(cnd) {
+        if (!is_duckdb_dynamic_pivot(cnd)) {
+          stop(cnd)
+        }
+        abort_marginplyr(c(
+          "Can't determine column metadata for a dynamic DuckDB PIVOT.",
+          i = "Specify the pivot values in a literal {.code IN} list.",
+          i = paste0(
+            "To discover the values now, collect the input with ",
+            "{.code dplyr::collect()} and pass the resulting data frame."
+          )
+        ), parent = cnd)
+      }
+    ))
   }
   .data
 }

@@ -199,8 +199,9 @@ observe_sent_query_resumption <- function(frames, reset) {
 
 # Observes one owned backend operation without catching or rethrowing it.
 # `expr` is the backend call alone; its existing suppression/catch surrounds
-# this seam and supplies the handling known there. Nonlocal unwinding without
-# an observed error/interrupt leaves unknown completion, never success.
+# this seam and supplies the handling known there. Error handling can be a
+# function of the observed error. Nonlocal unwinding without an observed
+# error/interrupt leaves completion unknown.
 with_sent_query <- function(purpose, query, expr,
                             error_handling = "propagated",
                             warning_handling = "propagated") {
@@ -226,7 +227,11 @@ with_sent_query <- function(purpose, query, expr,
             !is.null(findRestart("muffleWarning"))) {
         handling <- "suppressed"
       } else if (inherits(cnd, "error")) {
-        handling <- error_handling
+        handling <- if (is.function(error_handling)) {
+          error_handling(cnd)
+        } else {
+          error_handling
+        }
         status <<- "errored"
         pending_interrupt <<- NULL
       } else if (inherits(cnd, "interrupt")) {
