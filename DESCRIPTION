@@ -342,7 +342,8 @@ Config/testthat/start-first:
     share-environment-aliases,
     authored-grouping-namespaces,
     grouping-rebound-callees,
-    sqlite-derived-expansion
+    sqlite-derived-expansion,
+    share-list-transforms
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
