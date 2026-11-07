@@ -237,6 +237,8 @@ prepare_grouping_plan <- function(.data,
         dtplyr_data_peek_name_only
       } else if (!is.null(local_proxy)) {
         function(...) FALSE
+      } else if (backend$is_sql || identical(backend$kind, "arrow")) {
+        tibble_data_peek_name_only
       } else {
         frame_data_peek_name_only
       }
@@ -1266,13 +1268,21 @@ names.margin_grouping_name_proxy <- function(x) {
   attr(x, "names", exact = TRUE)
 }
 
-# Whether names() dispatch can be skipped for the dtplyr or names-only frame.
+# Whether names() dispatch can be skipped for dtplyr's data.table proxy.
 dtplyr_data_peek_name_only <- function(env, bound) {
   selection_names_methods_absent(env, bound, c(
     "names.data.table", "names.data.frame", "names.default"
   ))
 }
 
+# Whether names() dispatch can be skipped for lazy Arrow and SQL tibbles.
+tibble_data_peek_name_only <- function(env, bound) {
+  selection_names_methods_absent(env, bound, c(
+    "names.tbl_df", "names.tbl", "names.data.frame", "names.default"
+  ))
+}
+
+# Whether names() dispatch can be skipped for a plain data frame.
 frame_data_peek_name_only <- function(env, bound) {
   selection_names_methods_absent(env, bound, c(
     "names.data.frame", "names.default"
