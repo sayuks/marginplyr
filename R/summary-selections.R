@@ -1503,6 +1503,12 @@ known_context_fns <- function(parsed, lookup) {
   fns <- unparenthesized_value(parsed$fns)
   if (rlang::is_symbol(fns) &&
         !is_unrebound_name(rlang::as_string(fns), lookup)) return(FALSE)
+  operator <- if (rlang::is_call(fns, c("::", ":::"), ns = "")) {
+    rlang::as_string(static_call_head(fns))
+  } else {
+    selection_namespace_operator(fns)
+  }
+  if (!is.null(operator) && !is_unrebound_name(operator, lookup)) return(FALSE)
   if (is_known_function_list_call(fns, lookup$env) &&
         is.null(static_call_ns(fns)) &&
         !is_unrebound_name("list", lookup)) return(FALSE)
@@ -1564,18 +1570,23 @@ is_context_only_name_expr <- function(expr, lookup, allow_context = TRUE) {
 # Names an unnamed local `across()` only when both its columns and `.names`
 # template are literal or already resolved. No caller function or summary
 # expression runs while reserving internal key names from the input name list.
+# Earlier visible mutations invalidate the lexical bindings they replace.
 predictable_local_across_names <- function(dots, input_names) {
   available <- input_names
   predicted <- character()
+  rebound <- character()
   arg_names <- rlang::names2(dots)
   for (i in seq_along(dots)) {
     dot <- dots[[i]]
     name <- arg_names[[i]]
     expr <- rlang::quo_get_expr(dot)
+    lookup <- list(env = rlang::quo_get_env(dot), rebound = rebound)
     if (is_across_call(expr) && !nzchar(name) && !contains_share_helper(expr)) {
       parsed <- parse_across_arguments(expr)
       cols <- parsed$cols
       template <- parsed$names
+      stable_unpack <- !rlang::is_symbol(parsed$unpack) ||
+        is_unrebound_name(rlang::as_string(parsed$unpack), lookup)
       simple_cols <- is_literal_summary_selection(cols, available)
       literal_template <- !is.null(attr(
         template, "marginplyr_across_names", exact = TRUE
@@ -1587,7 +1598,8 @@ predictable_local_across_names <- function(dots, input_names) {
             fixed = TRUE
           ), fixed = TRUE)
       )
-      if (simple_cols && literal_template) {
+      if (simple_cols && literal_template && stable_unpack &&
+            known_context_fns(parsed, lookup)) {
         proxy <- stats::setNames(as.list(seq_along(available)), available)
         output <- tryCatch(
           known_across_output_names(
@@ -1602,6 +1614,9 @@ predictable_local_across_names <- function(dots, input_names) {
     if (nzchar(name)) {
       available <- c(available, name)
     }
+    rebound <- union(rebound, lookup_rebound_names(
+      expr, lookup$env, available, visible_removals = TRUE
+    ))
   }
   predicted
 }
@@ -2726,34 +2741,6 @@ is_known_frame_constructor <- function(expr, env) {
   identical(ordinary_function_binding(name, env), constructor)
 }
 
-# Read a function-position name without forcing a caller promise or invoking an
-# active binding. R skips non-function values in a function position; an
-# unresolved binding leaves its eventual callee unknown to prediction. Known
-# package owners may load their namespace and attached export promises.
-ordinary_function_binding <- function(name, env, owners = character()) {
-  allowed <- c(
-    list(baseenv(), asNamespace("base")),
-    lapply(owners, asNamespace),
-    lapply(intersect(paste0("package:", owners), search()), as.environment)
-  )
-  current <- env
-  while (!identical(current, emptyenv())) {
-    if (exists(name, envir = current, inherits = FALSE)) {
-      if (bindingIsActive(name, current) ||
-            (!any(vapply(allowed, identical, logical(1), y = current)) &&
-               rlang::env_binding_are_lazy(current, name))) {
-        return(NULL)
-      }
-      binding <- get(name, envir = current, inherits = FALSE)
-      if (is.function(binding)) {
-        return(binding)
-      }
-    }
-    current <- parent.env(current)
-  }
-  NULL
-}
-
 # A recognized constructor consumes these full formal names as controls.
 frame_constructor_controls <- function(expr) {
   constructor <- if (is_static_spelling_call(
@@ -2902,8 +2889,7 @@ known_across_function_names <- function(parsed, env) {
     return("1")
   }
 
-  if (rlang::is_call(parsed$fns, "::") ||
-        rlang::is_call(parsed$fns, ":::")) {
+  if (rlang::is_call(parsed$fns, c("::", ":::"), ns = "")) {
     operator <- rlang::as_string(parsed$fns[[1L]])
     if (!identical(ordinary_function_binding(operator, env),
                    get(operator, envir = baseenv(), inherits = FALSE))) {

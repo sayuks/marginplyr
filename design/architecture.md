@@ -220,6 +220,12 @@ dependency runs one way: a reader that lived in `R/share.R` would make the
 grouping-context rewrite reach into the contextual-share module for a fact
 that is not about shares (#179).
 
+### Static bindings (`R/static-bindings.R`)
+
+Owns static proofs about lexical functions, environment values and visible
+binding mutations. Summary output-name prediction and the contextual share
+dependency walk use the same proofs without evaluating caller expressions.
+
 ### Recognized spellings (`R/contextual-helpers.R`)
 
 Owns which names a Margin verb recognizes before anything runs, and decides

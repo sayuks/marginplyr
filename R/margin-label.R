@@ -601,8 +601,7 @@ label_margin_branch <- function(.data,
       function(source, safe_name) {
         encoded_exprs <- lapply(encoded_factors, function(info) {
           col <- info$col
-          # The head is qualified because dtplyr defers this expression
-          # (`marginplyr_private_call()`, #491).
+          # dtplyr defers this helper lookup; bind its namespace accessor.
           rlang::call2(
             marginplyr_private_call("encode_factor_for_margin"),
             margin_column_pronoun(safe_name(col)),

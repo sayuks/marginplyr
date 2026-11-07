@@ -160,22 +160,11 @@ margin_safe_column_reads <- function(.data, read, transform,
 # How an internal function is spelled as the head of an expression a backend
 # defers. `name` is that function's name in this namespace.
 #
-# A bare symbol is resolved where the deferred expression runs, which is not
-# where marginplyr built it. dplyr resolves one below the quosure's own
-# environment, so the local backend hides the difference; dtplyr translates
-# the expression into a `data.table` call evaluated in the environment the
-# caller wrote the pipeline in, where no internal name is bound and the call
-# fails for every user (#491).
-#
-# `:::` and not `::`, because none of these functions is exported. The call is
-# built rather than written, so this package's source carries no literal
-# `marginplyr:::` for `R CMD check` to raise its NOTE over.
+# Embed the private namespace accessor so dtplyr cannot resolve either the
+# helper or its namespace operator in the caller's lazy root. Lookup remains
+# deferred until the backend evaluates the expression.
 marginplyr_private_call <- function(name) {
-  rlang::call2(
-    ":::",
-    rlang::sym("marginplyr"),
-    rlang::sym(name)
-  )
+  rlang::call2(utils::getFromNamespace, name, "marginplyr")
 }
 
 # Return the evaluation environment after staging a call around a summary.
@@ -1536,3 +1525,10 @@ static_character_value <- function(expr, is_concat = NULL) {
 .datatable.aware <- TRUE # nolint: object_name_linter
 
 utils::globalVariables(".data")
+
+# Build a generated call whose export lookup runs at collection. Bind the
+# accessor so the lazy root cannot replace it or the namespace operator.
+deferred_export_call <- function(namespace, name, ...) {
+  helper <- rlang::call2(base::getExportedValue, namespace, name)
+  rlang::call2(helper, ...)
+}
