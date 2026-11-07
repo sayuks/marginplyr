@@ -3,6 +3,9 @@
 * Parent and Total share dependency checks retain local closures returned by
   `rlang::as_function()` and `compiler::cmpfun()` (#1482).
 
+* DuckDB Grouping context-name selections honor registered tibble selection
+  proxy methods for fixed keys, dimensions, and summary grain (#1481).
+
 * Typed DuckDB Grouping inspection refuses dynamic pivots before evaluating
   source rows and checks that metadata preserves captured column names
   (#1461, #1462).
