@@ -967,15 +967,17 @@ test_that("typed DuckDB inspection refuses dynamic pivots before row reads", {
   expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
   expect_identical(sequence_value(), first)
 
-  expect_error(
-    inspect_grouping(source, .grouping = grouping_set(where(is.numeric))),
-    "dplyr::collect()", fixed = TRUE, class = "marginplyr_error"
-  )
-  expect_identical(sequence_value(), first)
-  audit <- last_sent_queries(details = TRUE)
-  expect_identical(audit$purpose, "selection_proxy")
-  expect_identical(audit$status, "errored")
-  expect_identical(audit$conditions[[1L]]$handling, "handled")
+  for (input in list(source, dplyr::filter(source, east > 0))) {
+    expect_error(
+      inspect_grouping(input, .grouping = grouping_set(where(is.numeric))),
+      "dplyr::collect()", fixed = TRUE, class = "marginplyr_error"
+    )
+    expect_identical(sequence_value(), first)
+    audit <- last_sent_queries(details = TRUE)
+    expect_identical(audit$purpose, "selection_proxy")
+    expect_identical(audit$status, "errored")
+    expect_identical(audit$conditions[[1L]]$handling, "handled")
+  }
 })
 
 test_that("DuckDB metadata preserves static pivots and ordinary queries", {

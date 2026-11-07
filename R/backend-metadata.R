@@ -493,15 +493,16 @@ dtplyr_selection_proxy <- function(.data, env = .data[["env"]]) {
 
 # DuckDB's query() refuses the auxiliary statements that discover dynamic
 # PIVOT columns. Qualify the built-in so a caller's macro cannot replace it.
-# Rendering and wrapping the zero-row query sends nothing (ADR 0020).
-duckdb_selection_query <- function(proxy) {
-  con <- dbplyr::remote_con(proxy)
-  sql <- dbplyr::build_sql(
+# Keep rendering within the original audit and collect paths (ADR 0027).
+#' @exportS3Method dbplyr::sql_render
+#' @noRd
+sql_render.marginplyr_duckdb_selection <- function(query, con = NULL, ...) {
+  sql <- NextMethod()
+  dbplyr::build_sql(
     "SELECT * FROM system.main.query(",
-    as.character(dbplyr::sql_render(proxy)), ")",
-    con = con
+    as.character(sql), ")",
+    con = con %||% dbplyr::remote_con(query)
   )
-  dplyr::tbl(con, sql, vars = margin_col_names(proxy))
 }
 
 # Match the specific DuckDB parser refusal, including when dbplyr wraps it.
@@ -527,18 +528,26 @@ grouping_selection_proxy <- function(.data,
     return(proxy)
   }
   if (backend$collect_selection_proxy) {
-    # dtplyr uses its isolated proxy above this seam. DuckDB's LIMIT 0
-    # alone cannot stop preparation from executing dynamic pivot inputs.
-    query <- duckdb_selection_query(utils::head(.data, n = 0L))
+    query <- utils::head(.data, n = 0L)
+    duckdb <- identical(backend$kind, "duckdb")
+    con <- if (duckdb) dbplyr::remote_con(query)
+    # The simulated dialect carries the class name on an S3 object.
+    if (isS4(con) && inherits(con, "duckdb_connection")) {
+      class(query) <- c("marginplyr_duckdb_selection", class(query))
+    }
     proxy <- tryCatch(
       with_sent_query(
         "selection_proxy", query, dplyr::collect(query),
         error_handling = function(cnd) {
-          if (is_duckdb_dynamic_pivot(cnd)) "handled" else "propagated"
+          if (duckdb && is_duckdb_dynamic_pivot(cnd)) {
+            "handled"
+          } else {
+            "propagated"
+          }
         }
       ),
       error = function(cnd) {
-        if (!is_duckdb_dynamic_pivot(cnd)) {
+        if (!duckdb || !is_duckdb_dynamic_pivot(cnd)) {
           stop(cnd)
         }
         abort_marginplyr(c(
@@ -554,7 +563,7 @@ grouping_selection_proxy <- function(.data,
     # DuckDB can deduplicate names when it binds the nested query. Check the
     # stored schema before any selection methods run on the proxy.
     proxy_names <- attr(proxy, "names", exact = TRUE)
-    if (!identical(proxy_names, margin_col_names(.data))) {
+    if (duckdb && !identical(proxy_names, margin_col_names(.data))) {
       abort_marginplyr(c(
         "Can't match DuckDB column metadata to the input's captured names.",
         i = paste0(
