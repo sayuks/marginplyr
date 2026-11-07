@@ -9,8 +9,10 @@ nest_namespace_dispatcher <- function(root, target, payload = "weight",
     if (selected %in% target) {
       root$calls <- c(root$calls, selected)
       return(switch(member,
+        length = base::length,
         min = function(...) 0L,
         seq_len = function(...) integer(),
+        vec_rep = function(value, size) paste0("row_", seq_len(size)),
         vec_slice = function(x, i, ...) rep("SHADOW", length(i)),
         list = function(...) {
           columns <- base::list(...)
@@ -98,9 +100,11 @@ test_that("nesting namespace isolation preserves plans keep and order", {
     sort = c("none", "first", "last"), stringsAsFactors = FALSE
   )
   targets <- c("base::min", "base::seq_len", "vctrs::vec_size",
-               "vctrs::vec_slice", "base::list", "data.table::as.data.table")
+               "vctrs::vec_slice", "base::list", "data.table::as.data.table",
+               "base::length", "vctrs::vec_rep")
   for (i in seq_len(nrow(options))) {
     option <- options[i, ]
+    info <- as.character(i)
     for (verb in list(nest_with_margins, nest_by_with_margins)) {
       root <- new.env(parent = globalenv())
       root$source <- tibble::tibble(
@@ -148,11 +152,12 @@ test_that("nesting namespace isolation preserves plans keep and order", {
       } else {
         seq_along(keys)
       }
-      expect_identical(actual$district, keys[positions], info = i)
-      expect_identical(actual$set, sets[positions], info = i)
-      expect_identical(lapply(actual$data, as.list), cells[positions], info = i)
+      expect_identical(actual$district, keys[positions], info = info)
+      expect_identical(actual$set, sets[positions], info = info)
+      expect_identical(lapply(actual$data, as.list), cells[positions],
+                       info = info)
       expect_identical(names(actual), c("district", "set", "data"))
-      expect_identical(root$calls, character(), info = i)
+      expect_identical(root$calls, character(), info = info)
       expect_identical(serialize(root$source, NULL), before)
     }
   }
@@ -162,7 +167,8 @@ test_that("nesting keeps authored namespace lookup and collection boundaries", {
   skip_if_suggest_absent("dtplyr")
   root <- new.env(parent = globalenv())
   root$source <- tibble::tibble(
-    district = c("north", "south"), weight = c(41L, 67L)
+    partition = c("a", "a", "b"), district = c("north", "south", "north"),
+    weight = c(41L, 67L, 89L)
   )
   before <- serialize(root$source, NULL)
   reads <- 0L
@@ -179,7 +185,8 @@ test_that("nesting keeps authored namespace lookup and collection boundaries", {
     }
     if (paste(package, member, sep = "::") %in% c(
       "base::list", "base::min", "base::seq_len", "vctrs::vec_slice",
-      "vctrs::vec_size", "data.table::as.data.table"
+      "vctrs::vec_size", "data.table::as.data.table", "base::length",
+      "vctrs::vec_rep"
     )) stop("GENERATED_NEST_NAMESPACE_INTERCEPT")
     getExportedValue(package, member)
   }
@@ -187,14 +194,21 @@ test_that("nesting keeps authored namespace lookup and collection boundaries", {
   input <- evalq(dplyr::filter(
     dtplyr::lazy_dt(source, immutable = TRUE), base::identity(weight) > 0L
   ), root)
-  query <- nest_with_margins(input, .grouping = grouping_set(district))
+  query <- nest_with_margins(
+    input, .by = partition, .grouping = rollup(district), .margin_label = NULL,
+    .id = "set", .sort = "last"
+  )
   expect_s3_class(query, "dtplyr_step")
   expect_identical(reads, 0L)
   actual <- dplyr::collect(query)
   expect_gt(reads, 0L)
-  expect_identical(actual$district, c("north", "south"))
-  expect_identical(lapply(actual$data, as.list),
-                   list(list(weight = 41L), list(weight = 67L)))
+  expect_identical(actual$partition, c("a", "a", "a", "b", "b"))
+  expect_identical(actual$district, c("north", "south", NA, "north", NA))
+  expect_identical(actual$set, c(1L, 1L, 2L, 1L, 2L))
+  expect_identical(lapply(actual$data, as.list), list(
+    list(weight = 41L), list(weight = 67L), list(weight = c(41L, 67L)),
+    list(weight = 89L), list(weight = 89L)
+  ))
 
   reads <- 0L
   rm("::", envir = root)
@@ -209,14 +223,16 @@ test_that("nesting keeps authored namespace lookup and collection boundaries", {
   input <- evalq(dplyr::filter(
     dtplyr::lazy_dt(source, immutable = TRUE), observe(weight)
   ), root)
-  rowwise <- nest_by_with_margins(input, .grouping = grouping_set(district))
+  rowwise <- nest_by_with_margins(
+    input, .by = partition, .grouping = rollup(district), .margin_label = NULL,
+    .id = "set", .sort = "last"
+  )
   expect_gt(reads, 0L)
   expect_identical(root$`::`, dispatcher)
   expect_s3_class(rowwise, "rowwise_df")
-  expect_identical(dplyr::group_vars(rowwise), "district")
-  expect_identical(rowwise$district, c("north", "south"))
-  expect_identical(lapply(rowwise$data, as.list),
-                   list(list(weight = 41L), list(weight = 67L)))
+  expect_identical(dplyr::group_vars(rowwise),
+                   c("partition", "district", "set"))
+  expect_identical(dplyr::ungroup(rowwise), actual)
   expect_identical(serialize(root$source, NULL), before)
 })
 
