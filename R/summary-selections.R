@@ -2891,8 +2891,8 @@ known_across_source_names <- function(expr, env, data_proxy) {
 
 # `"1"` is what `{.fn}` expands to for a statically single function or an
 # omitted `.fns`. Resolved function bindings, including namespace exports, are
-# also single. `substitute()` reads a caller binding without forcing a promise;
-# active bindings are left unknown so prediction cannot run caller code.
+# also single when the authored namespace operator is known. `substitute()`
+# reads caller bindings without forcing promises or invoking active bindings.
 known_across_function_names <- function(parsed, env) {
   parsed$fns <- unparenthesized_value(parsed$fns)
   if (is.null(parsed$fns) || is.function(parsed$fns) ||
@@ -2904,6 +2904,11 @@ known_across_function_names <- function(parsed, env) {
 
   if (rlang::is_call(parsed$fns, "::") ||
         rlang::is_call(parsed$fns, ":::")) {
+    operator <- rlang::as_string(parsed$fns[[1L]])
+    if (!identical(ordinary_function_binding(operator, env),
+                   get(operator, envir = baseenv(), inherits = FALSE))) {
+      return(character())
+    }
     package <- parsed$fns[[2L]]
     name <- parsed$fns[[3L]]
     if (rlang::is_symbol(package) && rlang::is_symbol(name)) {
@@ -2982,7 +2987,7 @@ is_known_function_list_call <- function(expr, env) {
   }
   namespace <- static_call_ns(expr)
   if (!is.null(namespace)) {
-    return(identical(namespace, "base"))
+    return(identical(namespace, "base") && is_name_only_namespace(expr, env))
   }
   identical(ordinary_function_binding("list", env), base::list)
 }
