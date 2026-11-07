@@ -658,6 +658,78 @@ add_grouping_set_id <- function(result,
   )
 }
 
+# Redirect dtplyr data reads before calls such as dplyr::n() become engine
+# reads. `keys` maps public names to ungrouped copies of the input columns.
+rewrite_dtplyr_key_read <- function(expr, keys, bound = character()) {
+  if (is_name_part(expr) &&
+        rlang::as_name(expr) %in% setdiff(names(keys), bound)) {
+    return(rlang::sym(keys[[rlang::as_name(expr)]]))
+  }
+  if (!rlang::is_call(expr) ||
+        !any(all.names(expr) %in% c(names(keys), ".data"))) {
+    return(expr)
+  }
+  if (rlang::is_call(expr, c("::", ":::"))) {
+    return(expr)
+  }
+  if (is_parenthesized(expr)) {
+    expr[[2L]] <- rewrite_dtplyr_key_read(expr[[2L]], keys, bound)
+    return(expr)
+  }
+  if (rlang::is_call(expr, c("$", "@", "[["), n = 2L)) {
+    if (rlang::is_symbol(expr[[2L]], ".env")) {
+      return(expr)
+    }
+    if (rlang::is_call(expr, c("$", "[[")) &&
+          rlang::is_symbol(expr[[2L]], ".data") && !".data" %in% bound) {
+      if (rlang::is_call(expr, "[[") && !rlang::is_string(expr[[3L]])) {
+        # dtplyr evaluates the index in its quosure environment. Map the
+        # resulting name there, leaving that evaluation to dtplyr.
+        expr[[3L]] <- rlang::call2(dtplyr_summary_key_alias, expr[[3L]], keys)
+        return(expr)
+      }
+      name <- rlang::as_name(expr[[3L]])
+      if (name %in% names(keys)) {
+        return(rlang::sym(keys[[name]]))
+      }
+      return(expr)
+    }
+    if (rlang::is_call(expr, c("$", "@"))) {
+      expr[[2L]] <- rewrite_dtplyr_key_read(expr[[2L]], keys, bound)
+      return(expr)
+    }
+  }
+  if (rlang::is_call(expr, "function")) {
+    bound <- union(bound, names(function_formal_defaults(expr)))
+  }
+  rewrite_evaluated_call_parts(expr, rewrite = function(part) {
+    rewrite_dtplyr_key_read(part, keys, bound)
+  })
+}
+
+# Resolve the one name supplied by a dtplyr data pronoun, retaining unmatched
+# names and invalid indexes for dtplyr's usual lookup and diagnostic.
+dtplyr_summary_key_alias <- function(name, keys) {
+  if (rlang::is_string(name) && name %in% names(keys)) keys[[name]] else name
+}
+
+# Retain caller environments and dtplyr's auto-name for each rewritten dot.
+rewrite_dtplyr_key_dots <- function(dots, keys) {
+  output_names <- rlang::names2(dots)
+  for (i in seq_along(dots)) {
+    dot <- dots[[i]]
+    original <- rlang::quo_get_expr(dot)
+    expr <- rewrite_dtplyr_key_read(original, keys)
+    if (!identical(expr, original)) {
+      if (!nzchar(output_names[[i]])) {
+        output_names[[i]] <- rlang::as_label(dot)
+      }
+      dots[[i]] <- rlang::quo_set_expr(dot, expr)
+    }
+  }
+  stats::setNames(dots, output_names)
+}
+
 # This is the one function in the package that evaluates the caller's own
 # summary expressions more than once, so it is the one that can report an
 # External condition once per grouping set and in names the caller never wrote:
@@ -711,23 +783,39 @@ summarize_margin_union <- function(.data,
   }
 
   if (length(group_vars) > 0L) {
+    special_keys <- if (identical(backend$kind, "dtplyr")) {
+      intersect(group_vars, c(".N", ".I", ".SD", ".GRP", ".NGRP"))
+    } else {
+      character()
+    }
+    read_keys <- character()
+    if (length(special_keys) > 0L) {
+      caller_names <- unlist(lapply(dots, all.names), use.names = FALSE)
+      aliases <- rlang::set_names(new_margin_internal_names(
+        length(special_keys), c(reserved_names, caller_names),
+        prefix = "..marginplyr_read_key_"
+      ), special_keys)
+      rewritten <- rewrite_dtplyr_key_dots(dots, aliases)
+      if (!identical(dots, rewritten)) {
+        dots <- rewritten
+        # data.table binds a `by` column to one value within j. Keep an
+        # ungrouped copy for summaries that need all values of that key.
+        read_keys <- aliases
+      }
+    }
+    copies <- c(key_names, read_keys)
     .data <- margin_safe_column_reads(
       .data, group_vars,
       function(source, safe_name) {
-        key_exprs <- lapply(group_vars, function(name) {
+        key_exprs <- lapply(names(copies), function(name) {
           margin_column_pronoun(safe_name(name))
         })
-        names(key_exprs) <- unname(key_names)
+        names(key_exprs) <- unname(copies)
         dplyr::mutate(source, !!!key_exprs)
       }
     )
-    if (identical(backend$kind, "dtplyr")) {
-      special_keys <- intersect(
-        group_vars, c(".N", ".I", ".SD", ".GRP", ".NGRP")
-      )
-      if (length(special_keys) > 0L) {
-        .data <- dplyr::select(.data, -dplyr::all_of(special_keys))
-      }
+    if (length(special_keys) > 0L) {
+      .data <- dplyr::select(.data, -dplyr::all_of(special_keys))
     }
   }
 
