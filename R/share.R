@@ -6151,7 +6151,7 @@ static_environment_frame <- function(expr, scope, lookup) {
   if (length(frames) == 1L) frames else NULL
 }
 
-# Resolve visible environment paths and aliases to lexical frame indices.
+# Resolve visible environment values to lexical frame indices.
 # The index after the summary frame denotes dplyr's column mask. Possible
 # targets survive conditional writes; no caller expression is run.
 static_environment_frames <- function(expr, scope, lookup, definite = FALSE) {
@@ -6173,6 +6173,32 @@ static_environment_frames <- function(expr, scope, lookup, definite = FALSE) {
     return(integer())
   }
   name <- static_call_name(expr)
+  arm <- scope_literal_branch(expr, scope, lookup)
+  if (length(arm) == 1L && !rlang::is_missing(arm[[1L]])) {
+    return(static_environment_frames(arm[[1L]], scope, lookup, definite))
+  }
+  if (identical(name, "identity") &&
+        is_known_base_frame_call(expr, name, scope, lookup)) {
+    value <- base_call_argument(expr, "x")
+    if (length(value) == 1L && !rlang::is_missing(value[[1L]])) {
+      return(static_environment_frames(value[[1L]], scope, lookup, definite))
+    }
+  }
+  if (identical(name, "{") &&
+        is_known_base_frame_call(expr, name, scope, lookup)) {
+    statements <- static_call_args(expr)
+    if (length(statements) == 0L) {
+      return(integer())
+    }
+    for (index in seq_len(length(statements) - 1L)) {
+      scope <- statement_reads_and_scope(
+        statements[[index]], scope, lookup, read_symbols = no_scope_reads
+      )$scope
+    }
+    return(static_environment_frames(
+      statements[[length(statements)]], scope, lookup, definite
+    ))
+  }
   if (length(static_call_args(expr)) == 0L &&
         ((identical(name, "environment") &&
             is_known_base_frame_call(expr, name, scope, lookup)) ||

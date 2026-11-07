@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Parent and Total share dependency checks retain known mask environments
+  returned through blocks, literal branches, numeric switch arms and base
+  identity calls (#1416).
+
 * Typed inspection and Nest verbs refuse replaced registered dtplyr converters
   before they can change Grouping dimensions or fixed keys (#1419).
 
