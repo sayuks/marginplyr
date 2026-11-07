@@ -4704,34 +4704,51 @@ scope_value_closure <- function(expr, scope, lookup) {
 # Select a visible plain-list member without evaluating its carrier or key.
 scope_closure_list_member <- function(head, scope, lookup) {
   operator <- static_call_name(head)
-  if (is.null(operator) || !operator %in% c("[[", "$") ||
+  if (is.null(operator) ||
+        !operator %in% c("[[", "$", "getElement", ".subset2") ||
         !length(head) %in% c(3L, 4L) ||
         !is_known_base_frame_call(head, operator, scope, lookup)) {
     return(NULL)
   }
+  # A computed accessor head uses value lookup, including non-functions.
+  if (operator %in% c("getElement", ".subset2") &&
+        !is_name_part(static_call_head(head)) &&
+        !rlang::is_call(static_call_head(head), c("::", ":::"))) return(NULL)
+  parts <- static_call_args(head)
+  if (identical(operator, "getElement")) {
+    # Argument matching can warn about partial names when the actual call runs.
+    parts <- suppressWarnings(static_matched_arguments(head, base::getElement))
+    if (!all(c("object", "name") %in% names(parts))) return(NULL)
+    parts <- parts[c("object", "name")]
+  }
+  # The primitive takes its operands positionally but removes these controls.
+  if (identical(operator, ".subset2") &&
+        argument_names(parts)[[2L]] %in% c("exact", "drop")) return(NULL)
   partial <- identical(operator, "$")
-  if (length(head) == 4L) {
-    exact <- unparenthesized_value(head[[4L]])
-    if (!identical(operator, "[[") || !identical(names(head)[4L], "exact") ||
-          !(identical(exact, TRUE) || identical(exact, FALSE))) {
+  if (length(parts) == 3L) {
+    if (!operator %in% c("[[", ".subset2") ||
+          !identical(names(parts)[3L], "exact") ||
+          rlang::is_missing(parts[[3L]])) {
       return(NULL)
     }
+    exact <- unparenthesized_value(parts[[3L]])
+    if (!identical(exact, TRUE) &&
+          !(identical(operator, "[[") && identical(exact, FALSE))) return(NULL)
     partial <- identical(exact, FALSE)
   }
-  if (rlang::is_missing(head[[3L]])) return(NULL)
-  key <- head[[3L]]
+  if (rlang::is_missing(parts[[2L]])) return(NULL)
   path <- if (identical(operator, "$")) {
     # Dollar lookup takes a written name, even in function-call syntax.
-    if (is_name_part(key)) {
-      rlang::as_name(key)
-    } else if (!is.object(key) && rlang::is_string(key)) {
-      key
+    if (is_name_part(parts[[2L]])) {
+      rlang::as_name(parts[[2L]])
+    } else if (!is.object(parts[[2L]]) && rlang::is_string(parts[[2L]])) {
+      parts[[2L]]
     }
   } else {
-    scope_literal_list_index(key, scope, lookup)
+    scope_literal_list_index(parts[[2L]], scope, lookup)
   }
   if (length(path) == 0L) return(NULL)
-  elements <- scope_closure_list(head[[2L]], scope, lookup)
+  elements <- scope_closure_list(parts[[1L]], scope, lookup)
   for (step in seq_along(path)) {
     index <- scope_list_member_index(elements, path[[step]], partial)
     if (is.null(index)) return(NULL)

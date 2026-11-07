@@ -236,7 +236,7 @@ prepare_grouping_plan <- function(.data,
       allow_data_peek <- if (identical(backend$kind, "dtplyr")) {
         dtplyr_data_peek_name_only
       } else if (!is.null(local_proxy)) {
-        function(...) FALSE
+        function(..., from_peek_data = TRUE) !from_peek_data
       } else if (backend$is_sql || identical(backend$kind, "arrow")) {
         tibble_data_peek_name_only
       } else {
@@ -516,8 +516,8 @@ selection_c_args <- function(args, env) {
 # column names, which is the pair the symbol branch decides from.
 # `allow_caller_code = FALSE` also withholds caller functions and assignments,
 # so a discarded mixed-selection pass cannot change their evaluation order.
-# `allow_data_peek`, when supplied, checks whether the selection can read
-# names from the names-only proxy in its own lexical scope.
+# `allow_data_peek`, when supplied, checks whether selection-context names
+# can be read from the names-only proxy in the selection's lexical scope.
 is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE,
                               allow_data_peek = NULL) {
   # An injected selector is walked in the environment it carries.
@@ -649,7 +649,11 @@ is_selection_name_lookup <- function(expr, env, allow_env_pronoun = TRUE,
     return(is_name_only_env_value(fn, args[[2L]], env))
   }
   if (identical(fn, tidyselect::peek_vars)) {
-    return(length(args) == 0L)
+    return(
+      length(args) == 0L &&
+        (is.null(allow_data_peek) ||
+           allow_data_peek(env, character(), from_peek_data = FALSE))
+    )
   }
   if (identical(fn, base::names)) {
     return(
@@ -811,8 +815,14 @@ is_name_only_helper_arg <- function(expr,
       c(paste0("stringr_", modifier), "stringr_pattern", "character"), env
     ))
   }
-  if (leaf_helper || identical(fn, tidyselect::peek_vars)) {
+  if (leaf_helper) {
     return(TRUE)
+  }
+  if (identical(fn, tidyselect::peek_vars)) {
+    return(
+      is.null(allow_data_peek) ||
+        allow_data_peek(env, callee_bound, from_peek_data = FALSE)
+    )
   }
   # Ordinary S3 generics can dispatch on implicit classes even when every
   # argument is unclassed. They, and set operations that call them, need the
@@ -1268,30 +1278,42 @@ names.margin_grouping_name_proxy <- function(x) {
   attr(x, "names", exact = TRUE)
 }
 
-# Whether names() dispatch can be skipped for dtplyr's data.table proxy.
-dtplyr_data_peek_name_only <- function(env, bound) {
-  selection_names_methods_absent(env, bound, c(
+# Whether tidyselect's active names can be read without dtplyr metadata.
+dtplyr_data_peek_name_only <- function(env, bound, from_peek_data = TRUE) {
+  # tidyselect installs the active names after proxy dispatch.
+  proxy_methods <- c(
+    "tidyselect_data_proxy.data.table", "tidyselect_data_proxy.data.frame"
+  )
+  tidyselect_ns <- asNamespace("tidyselect")
+  if (!selection_methods_absent(
+    tidyselect_ns, character(), proxy_methods,
+    registry = tidyselect_ns$.__S3MethodsTable__.
+  )) {
+    return(FALSE)
+  }
+  !from_peek_data || selection_methods_absent(env, bound, c(
     "names.data.table", "names.data.frame", "names.default"
   ))
 }
 
 # Whether names() dispatch can be skipped for lazy Arrow and SQL tibbles.
-tibble_data_peek_name_only <- function(env, bound) {
-  selection_names_methods_absent(env, bound, c(
+tibble_data_peek_name_only <- function(env, bound, from_peek_data = TRUE) {
+  !from_peek_data || selection_methods_absent(env, bound, c(
     "names.tbl_df", "names.tbl", "names.data.frame", "names.default"
   ))
 }
 
 # Whether names() dispatch can be skipped for a plain data frame.
-frame_data_peek_name_only <- function(env, bound) {
-  selection_names_methods_absent(env, bound, c(
+frame_data_peek_name_only <- function(env, bound, from_peek_data = TRUE) {
+  !from_peek_data || selection_methods_absent(env, bound, c(
     "names.data.frame", "names.default"
   ))
 }
 
-# Check the lexical scope and registered names() methods without forcing them.
-selection_names_methods_absent <- function(env, bound, methods) {
-  registry <- asNamespace("base")$.__S3MethodsTable__.
+# Check the lexical scope and registered methods without forcing them.
+selection_methods_absent <- function(
+  env, bound, methods, registry = asNamespace("base")$.__S3MethodsTable__.
+) {
   !any(methods %in% bound |
          rlang::env_has(env, methods, inherit = TRUE) |
          rlang::env_has(globalenv(), methods, inherit = TRUE) |
