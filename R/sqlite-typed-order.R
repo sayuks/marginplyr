@@ -178,12 +178,34 @@ sqlite_typed_result <- function(operation, unsorted, ordered,
   if (length(boolean_aliases) > 0L) {
     ordered <- sqlite_boolean_public_query(ordered)
   }
+  public_boolean_aliases <- boolean_aliases[
+    intersect(public_columns, names(boolean_aliases))
+  ]
+  input_collect_errors <- attr(input_anchor, "marginplyr_collect_errors")
+  driver_anchor <- !is.null(input_anchor) &&
+    !identical(input_collect_errors, "dbplyr")
+  collect_errors <- if (length(key_names) > 0L ||
+                          length(public_boolean_aliases) > 0L ||
+                          driver_anchor) {
+    "driver"
+  } else {
+    "dbplyr"
+  }
+  # Source-only anchors retain delegated collection conditions when carried.
+  # Declared types and identifier-safe boundaries keep direct conditions.
+  anchor_collect_errors <- if (identical(collect_errors, "driver") ||
+                                 length(declared_types) > 0L ||
+                                 ".env" %in% public_columns) {
+    "driver"
+  } else {
+    "dbplyr"
+  }
   class(ordered) <- c("marginplyr_sqlite_typed_result", class(ordered))
   attr(ordered, "marginplyr_anchored_source") <-
     !is.null(input_anchor) || length(source_columns) > 0L
-  attr(ordered, "marginplyr_boolean_aliases") <- boolean_aliases[
-    intersect(public_columns, names(boolean_aliases))
-  ]
+  attr(ordered, "marginplyr_collect_errors") <- collect_errors
+  attr(ordered, "marginplyr_anchor_collect_errors") <- anchor_collect_errors
+  attr(ordered, "marginplyr_boolean_aliases") <- public_boolean_aliases
   attr(ordered, "marginplyr_typed_union") <- typed_union
   attr(ordered, "marginplyr_public_anchor") <- public_anchor
   attr(ordered, "marginplyr_order_keys") <- key_names
@@ -281,8 +303,16 @@ collect.marginplyr_sqlite_typed_result <- function(x, ..., n = Inf,
         "\nLIMIT ", format(n, scientific = FALSE, trim = TRUE)
       ))
     }
-    out <- dbplyr::db_collect(
-      x$con, sql, n = n, warn_incomplete = warn_incomplete, ...
+    out <- withCallingHandlers(
+      dbplyr::db_collect(
+        x$con, sql, n = n, warn_incomplete = warn_incomplete, ...
+      ),
+      error = function(cnd) {
+        # Keep dbplyr's wrapper and its original driver cause at this boundary.
+        if (identical(attr(x, "marginplyr_collect_errors"), "dbplyr")) {
+          cli::cli_abort("Failed to collect lazy table.", parent = cnd)
+        }
+      }
     )
   }
   out <- out[attr(x, "marginplyr_public_columns")]

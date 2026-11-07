@@ -185,6 +185,8 @@ sql_margin_source_anchor <- function(.data) {
     }
     attr(anchor, "marginplyr_declared_types") <-
       attr(.data, "marginplyr_declared_types")
+    attr(anchor, "marginplyr_collect_errors") <-
+      attr(.data, "marginplyr_anchor_collect_errors")
     return(anchor)
   }
   input <- attr(.data, "marginplyr_input_anchor")

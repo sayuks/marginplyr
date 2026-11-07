@@ -12,6 +12,58 @@ test_that("SQLite unsorted finite expansion keeps missing source types", {
   expect_identical(dplyr::collect(query, n = 1L)$g, NA_character_)
 })
 
+test_that("SQLite expansion preserves runtime collection conditions", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(
+    con, data.frame(g = "a", value = 1L), "expansion_runtime_conditions"
+  ) |>
+    dplyr::mutate(bad = no_such_function(value))
+  baseline <- expect_error(dplyr::collect(source))
+
+  for (id in list(NULL, "sid")) {
+    query <- expand_with_margins(
+      source, .grouping = rollup(g), .margin_label = NULL, .id = id
+    )
+    for (cte in c(FALSE, TRUE)) {
+      for (n in c(1L, Inf)) {
+        error <- expect_error(dplyr::collect(
+          query, n = n, sql_options = dbplyr::sql_options(cte = cte)
+        ))
+        expect_identical(class(error), class(baseline))
+        expect_identical(error$message, baseline$message)
+        expect_identical(class(error$parent), class(baseline$parent))
+        expect_identical(conditionMessage(error$parent),
+                         conditionMessage(baseline$parent))
+        expect_identical(conditionCall(error)[[1L]], quote(dplyr::collect))
+      }
+    }
+    carried <- expand_with_margins(
+      query, .grouping = rollup(g), .margin_label = NULL
+    )
+    error <- expect_error(dplyr::collect(carried))
+    expected <- if (is.null(id)) baseline else baseline$parent
+    expect_identical(class(error), class(expected))
+    expect_identical(conditionMessage(error), conditionMessage(expected))
+    expect_identical(class(error$parent), class(expected$parent))
+  }
+
+  sorted <- expand_with_margins(
+    source, .grouping = rollup(g), .margin_label = NULL, .sort = "last"
+  )
+  carried <- expand_with_margins(
+    sorted, .grouping = rollup(g), .margin_label = NULL
+  )
+  for (query in list(sorted, carried)) {
+    error <- expect_error(dplyr::collect(query))
+    expect_identical(class(error), class(baseline$parent))
+    expect_identical(conditionMessage(error),
+                     conditionMessage(baseline$parent))
+    expect_null(error$parent)
+  }
+})
+
 test_that("SQLite finite expansion keeps source schema and row copies", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
