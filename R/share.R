@@ -4820,7 +4820,7 @@ scope_rebase_factory_closure <- function(closure, result) {
   closure
 }
 
-# Read a factory's selected return value and surviving bindings.
+# Read a selected result and surviving bindings in the supplied frame.
 # Nonfinal expressions contribute effects, but only an explicit return exits.
 # Only syntax is inspected; caller code is never invoked to discover a value.
 scope_returned_value <- function(expr, scope, lookup, read_value,
@@ -4898,6 +4898,16 @@ scope_closure_list <- function(expr, scope, lookup) {
     }
   }
   operator <- static_call_name(expr)
+  arm <- scope_literal_branch(expr, scope, lookup)
+  if (length(arm) == 1L && !rlang::is_missing(arm[[1L]])) {
+    return(scope_closure_list(arm[[1L]], scope, lookup))
+  }
+  if (identical(operator, "{") &&
+        is_known_base_frame_call(expr, operator, scope, lookup)) {
+    result <- scope_returned_value(expr, scope, lookup, scope_closure_list)
+    # An explicit return exits the enclosing function before the list is used.
+    return(if (!isTRUE(result$returned)) result$value)
+  }
   transfer_lookup <- lookup
   transfer_lookup$rebound <- lookup$function_rebound %||% lookup$rebound
   if (!is.null(operator) &&
