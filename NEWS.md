@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Parent and Total share dependency checks follow literal member paths through
+  nested lists of local closures, including extracted inner lists (#1432).
+
 * Ordinary `across()` output-name predictions account for visible function and
   unpack-option rebindings in preceding summaries, avoiding false grouping-key
   and identifier collisions (#1428).
