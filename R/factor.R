@@ -128,9 +128,8 @@ reconstruct_factor.data.frame <- function(data,
   # `ord`, or `missing_sentinel` would supply the argument instead of the
   # local, silently rebuilding the factor from the wrong levels.
   #
-  # The head is qualified for a separate reason: the dtplyr method below shares
-  # this body, and dtplyr defers the expression
-  # (`marginplyr_private_call()`, #491).
+  # The dtplyr method below shares this deferred expression, so its helper
+  # lookup uses the bound namespace accessor.
   dplyr::mutate(
     .data = data,
     "{col}" := !!rlang::call2(

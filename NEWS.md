@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Generated dtplyr Margin-label display and factor restoration preserve source
+  dimensions when a caller overrides the namespace operator (#1433).
+
 * Both Nest verbs preserve dtplyr source keys and cell contents when a caller
   overrides the namespace operator, including deferred collection (#1427).
 
