@@ -345,7 +345,8 @@ Config/testthat/start-first:
     sqlite-derived-expansion,
     share-list-transforms,
     dtplyr-converter-metadata,
-    share-partial-list-lookup
+    share-partial-list-lookup,
+    qualified-formula-selections
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
