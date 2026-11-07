@@ -394,11 +394,13 @@
 #' you. They read none of your tables and are included in [last_sent_queries()]
 #' when auditing is enabled.
 #'
-#' Cardinality is not established this way at all: a SQL aggregate returns one
-#' value per grouping row by construction, so there is nothing for a dialect
-#' to convert. A non-scalar summary therefore remains a runtime-only
-#' incompatibility, reported by the database at [dplyr::collect()] rather than
-#' raised by marginplyr before the query is returned.
+#' Ordinary SQL aggregates return one value per grouping row. On DuckDB
+#' and PostgreSQL, the result query checks a bare, single-argument
+#' `UNNEST()` at the top level of a direct [dbplyr::sql()] share source, such
+#' as `SUM(amount) + UNNEST(ARRAY[10])`. An array of zero or more than one
+#' element causes a database error on execution. The check recognizes SQL
+#' expressions with standard quotes and without comments. Other SQL
+#' expressions must also return one value per grouping row.
 #'
 #' The portable value guarantee covers finite numbers, missing values, and
 #' zero denominators. Infinite values and backend-specific `NaN`
@@ -2394,6 +2396,106 @@ check_total_grouping_kind <- function(plan) {
       "specification, or omit the Total share."
     )
   ))
+}
+
+# Enforce scalar cardinality where a DuckDB or PostgreSQL share source uses
+# UNNEST directly in its SQL projection. The adapter supplies resolved output
+# names, so an ordinary summary without a share retains its SQL unchanged.
+guard_sql_share_projections <- function(select, sources, con, kind, keys) {
+  for (index in which(select$name %in% sources)) {
+    expr <- select$expr[[index]]
+    if (inherits(expr, "sql")) {
+      select$expr[[index]] <- guard_share_unnest(
+        expr, select$name[[index]], con, kind, keys
+      )
+    }
+  }
+  select
+}
+
+# Wrap a bare top-level UNNEST's single array argument. Only direct projection
+# calls are recognized: an UNNEST inside a scalar subquery can legitimately
+# feed several rows to its own aggregate. Token spans keep quoted contents
+# and nested arguments from being mistaken for calls or argument separators.
+guard_share_unnest <- function(expr, source, con, kind, keys) {
+  sql <- as.character(expr)
+  if (!grepl("unnest", sql, ignore.case = TRUE)) {
+    return(expr)
+  }
+  tokens_at <- gregexpr(
+    paste0("\"(?:[^\"]|\"\")*\"|'(?:[^'\\\\]|'')*'|",
+           "[[:alpha:]_][[:alnum:]_]*|[^[:space:]]"),
+    sql, perl = TRUE
+  )
+  tokens <- regmatches(sql, tokens_at)[[1L]]
+  # These spellings need dialect-specific lexical rules. Leave them to SQL.
+  if (any(tokens %in% c("\"", "'", "$", "\\", ";")) ||
+        grepl("/\\*|--", sql)) {
+    return(expr)
+  }
+  position <- seq_along(tokens)
+  depth <- cumsum((tokens %in% c("(", "[")) - (tokens %in% c(")", "]")))
+  valid_depth <- all(depth >= 0L) && utils::tail(depth, 1L) == 0L
+  outer_depth <- 0L
+  while (valid_depth && tokens[[outer_depth + 1L]] == "(" &&
+           which(position > outer_depth & depth == outer_depth)[[1L]] ==
+             length(tokens) - outer_depth) {
+    outer_depth <- outer_depth + 1L
+  }
+  upper <- toupper(tokens)
+  projection <- !upper[[outer_depth + 1L]] %in%
+    c("SELECT", "WITH", "VALUES", "TABLE")
+  starts <- which(
+    valid_depth & projection & depth == outer_depth & upper == "UNNEST" &
+      c(tokens[-1L], "") == "(" & c("", tokens[-length(tokens)]) != "."
+  )
+
+  offset <- as.integer(tokens_at[[1L]])
+  width <- attr(tokens_at[[1L]], "match.length")
+  for (start in rev(starts)) {
+    end <- which(position > start & depth == outer_depth)[[1L]]
+    arguments <- position > start + 1L & position < end
+    separators <- depth == outer_depth + 1L & tokens == ","
+    if (!any(arguments) || any(arguments & separators)) {
+      next
+    }
+    first <- offset[[start + 1L]] + width[[start + 1L]]
+    last <- offset[[end]] - 1L
+    guarded <- sql_single_share_array(substr(sql, first, last), source, con,
+                                      kind, keys)
+    sql <- paste0(substr(sql, 1L, first - 1L), guarded,
+                  substring(sql, last + 1L))
+  }
+  dbplyr::sql(sql)
+}
+
+# Check the array before UNNEST can discard or replicate its grouping row.
+# Both engines bind the array once, in the scope of that grouping row.
+sql_single_share_array <- function(array, source, con, kind, keys) {
+  message <- dbplyr::escape(paste0(
+    "Share source ", source, " must return exactly one value per grouping row."
+  ), con = con)
+  if (kind == "duckdb") {
+    return(paste0(
+      "list_transform([", array, "], lambda a: CASE WHEN len(a) = 1 ",
+      "THEN a ELSE error(", message, ") END)[1]"
+    ))
+  }
+
+  offset <- "0"
+  if (length(keys) > 0L) {
+    # OFFSET accepts NULL as zero. The outer grouping key keeps this a
+    # per-group subplan even when the array has only volatile scalar calls.
+    key <- dbplyr::escape(dbplyr::ident(keys[[1L]]), con = con)
+    offset <- paste0("CASE WHEN ", key, " IS NULL THEN NULL ELSE 0 END")
+  }
+  # The offset keeps the payload and count on one evaluation. Including the
+  # evaluated count prevents folding an invalid cast before the CASE runs.
+  paste0(
+    "(SELECT a FROM (SELECT ", array, " AS a OFFSET ", offset, ") AS v ",
+    "WHERE CASE WHEN cardinality(a) = 1 THEN TRUE ELSE CAST(CONCAT(",
+    message, ", ' Count: ', COALESCE(cardinality(a), 0)) AS BOOLEAN) END)"
+  )
 }
 
 # Applies a nonempty set of requested shares to the staged summary result.

@@ -588,13 +588,15 @@ record_local_summary_aliases <- function(names, state, position) {
 # `selection_state` carries local internal keys and share placeholders to
 # deferred selections. `frame_state` carries output names to the union adapter;
 # direct adapter callers receive empty protections and their dots' auto names.
+# `sql_share_sources` names the projections guarded by the two SQL adapters.
 new_summary_arguments <- function(dots,
                                   labels = summary_argument_labels(dots),
                                   assigned_names = rep(
                                     NA_character_,
                                     length(dots)
                                   ),
-                                  selection_state = NULL) {
+                                  selection_state = NULL,
+                                  sql_share_sources = character()) {
   stopifnot(
     is.list(dots),
     is.character(labels),
@@ -619,7 +621,8 @@ new_summary_arguments <- function(dots,
     labels = labels,
     assigned_names = assigned_names,
     selection_state = selection_state,
-    frame_state = frame_state
+    frame_state = frame_state,
+    sql_share_sources = sql_share_sources
   )
 }
 
@@ -964,7 +967,12 @@ plan_summary_expressions <- function(dots,
       summary_plan$dots,
       caller_labels,
       assigned_names,
-      selection_state = selection_state
+      selection_state = selection_state,
+      sql_share_sources = if (backend_kind %in% c("duckdb", "postgres")) {
+        share_source_names(summary_plan$requests)
+      } else {
+        character()
+      }
     ),
     requests = summary_plan$requests,
     predictable_names = predictable_names
