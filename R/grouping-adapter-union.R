@@ -800,6 +800,14 @@ summarize_margin_union <- function(.data,
           restatements = branch_argument_map(branch_dots, summaries$labels)
         )
 
+        if (length(summaries$sql_share_sources) > 0L) {
+          result$lazy_query$select <- guard_sql_share_projections(
+            result$lazy_query$select, summaries$sql_share_sources,
+            dbplyr::remote_con(result), backend$kind,
+            unname(key_names[grouping_set])
+          )
+        }
+
         if (is.environment(summaries$grouping_type_state)) {
           select <- result$lazy_query$select
           outputs <- select$name[vapply(select$expr, grouping_marked_output,
