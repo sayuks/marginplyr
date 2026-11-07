@@ -36,6 +36,8 @@ workflow_contract_cases <- function() {
       ".github/workflows/lint.yaml")), diagnostic = "workflow inventory differs"),
     command = list(edit = edit_workflow("run: Rscript tools/verify-test-priority.R",
       "run: echo skipped"), diagnostic = mismatch),
+    setup_go_version = list(edit = edit_workflow("actions/setup-go@v7",
+      "actions/setup-go@v6"), diagnostic = mismatch),
     removed_step = list(edit = edit_workflow(step, ""), diagnostic = mismatch),
     disabled_step = list(edit = edit_workflow(step,
       sub("        run:", "        if: false\n        run:", step, fixed = TRUE)), diagnostic = mismatch),
