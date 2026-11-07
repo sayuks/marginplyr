@@ -107,7 +107,8 @@ guarantees.
 | Probe | Completed evidence |
 | --- | --- |
 | Independent ordered-set algebra | 998 families combining sets, unions, overlapping/composite rollups and cubes, and products; all three duplicate policies and both formats on populated, empty and grouped inputs. Each carrier produced 4,516 exact full plans and 1,472 expected duplicate refusals: 17,964 comparisons total. All six output columns, ordinary ungrouped tibble class, occurrence order, fixed keys, bits and identifiers matched. |
-| Local selection and admission boundaries | 231 assertion groups, including 176 native selection comparisons over 22 selectors and tibble/data.frame/data.table/empty input in fixed-key and dimension positions. Empty specifications and zero-column inputs, widths 0/1/2/30/31/32/64/96, invalid options, constructor arguments, nested ambiguity, renaming, overlap, missing columns, rowwise and `.drop = FALSE` refusals passed. |
+| Local selection and admission boundaries | 231 assertion groups, including 176 native selection comparisons over 22 selectors and tibble/data.frame/data.table/empty input in fixed-key and dimension positions. Empty specifications and zero-column inputs, widths 0/1/2/30/31/32/64/96, invalid options, constructor arguments, renaming, overlap, missing columns, rowwise and `.drop = FALSE` refusals passed. |
+| Nested reading and evaluation budgets | 107 additional controls covered all five parent kinds against all five bound kinds: bare/parenthesized colliding names, explicit column selection and injected specification. Also checked arbitrary top-level versus unrecognized nested calls, cyclic references, independent branch reuse, and one active-binding read for external selection, nested specification and fixed key. All matched ADR 0008 and ADR 0026. |
 | Symbolic width and exact names | Seven complete plans at widths 0/1/30/31/32/64/96, with 32 occurrences, independently checked full inclusion, first/middle/last omission and the empty set. Named bits stayed complete beyond 31 dimensions while numeric IDs became `NA_integer_`. Three additional occurrences preserved comma, equals, backtick, newline, Japanese, parentheses, pronoun-like and slash names in list output. |
 | Ordinary selector equivalence | 22 selectors in all five constructors and `.by`: 132 public calls matched native tidyselect selection or refusal. Included positions, negation, helper arguments, ordering, pronouns, same-name selections, predicates, parentheses, unusual names and context-name lookups. |
 | Plan/execution identity correspondence | 288 comparisons across 12 specifications, drop/keep, populated/empty data, tibble/data.frame/data.table and grouped/explicit-fixed input. Output `.id` and bare `grouping_id()` matched the inspected occurrence, fixed bits were zero, independent distinct-key row counts and occurrence-weighted source counts matched. |
@@ -163,7 +164,8 @@ Temporary programs and logs were kept under
 `/private/tmp/marginplyr-inspect-systematic-backends`,
 `/private/tmp/inspect-selection-systematic` and
 `/private/tmp/inspect-systematic-evidence`. The final algebra, edges, width,
-backend, ordinary-selector, identity and observation runs exited 0. The
+backend, ordinary-selector, nested-reading, identity and observation runs
+exited 0. The
 desired-contract reproduction exited 1 deliberately. All original execution
 handles were collected to terminal completion; no in-progress run was used as
 a result. These paths are temporary evidence, not repository replay assets.
