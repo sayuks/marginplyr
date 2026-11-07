@@ -340,10 +340,13 @@ check_observed_label_collision <- function(data,
     return(invisible(NULL))
   }
 
-  # Collision counts concern the selected columns alone; subclass summaries
-  # may also aggregate unrelated payload columns, including empty geometries.
-  data <- margin_column_source(data)
-  data <- dplyr::select(.data = data, dplyr::all_of(read_cols))
+  if (is.data.frame(data)) {
+    # Read the stored columns used by branch mutation. A subclass's
+    # as_tibble() can supply presentation values in their place.
+    data <- vctrs::new_data_frame(unclass(data)[read_cols], n = nrow(data))
+  } else {
+    data <- dplyr::select(.data = data, dplyr::all_of(read_cols))
+  }
   query <- margin_safe_column_reads(
     data, read_cols, function(source, safe_name) {
       checks <- lapply(
@@ -357,9 +360,11 @@ check_observed_label_collision <- function(data,
           } else {
             rlang::data_sym(safe_name(col))
           }
-          # dtplyr defers these helpers in the input's root environment.
-          conversion <- if (inherits(source, "dtplyr_step")) {
-            rlang::expr(base::as.character(!!column))
+          conversion <- if (is.data.frame(source) ||
+                              inherits(source, "dtplyr_step")) {
+            rlang::call2(
+              marginplyr_private_call("margin_display_character"), column
+            )
           } else {
             rlang::expr(as.character(!!column))
           }
@@ -369,10 +374,6 @@ check_observed_label_collision <- function(data,
             rlang::sym("sum")
           }
           condition <- rlang::expr(!!conversion == !!margin_label)
-          if (is.data.frame(source) || inherits(source, "dtplyr_step")) {
-            # Scalar displays can retain 1D shape; if_else needs a vector.
-            condition <- rlang::expr(base::as.vector(!!condition))
-          }
           rlang::expr(
             (!!aggregate)(
               dplyr::if_else(
