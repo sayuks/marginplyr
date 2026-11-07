@@ -226,3 +226,53 @@ test_that("a later summary evaluation error keeps its original cause", {
   )
   expect_s3_class(error$parent, "caller_summary_error")
 })
+
+test_that("unnamed frames check their stored names against public names", {
+  data <- tibble::tibble(g = c("x", "y"), x = c(1, 3))
+  stored <- "out"
+  reported <- "g"
+  rlang::local_bindings(
+    names.margin_reported_summary = function(x) {
+      if (nrow(x) > 0L) reported else attr(x, "names", exact = TRUE)
+    },
+    .env = asNamespace("base")$.__S3MethodsTable__.
+  )
+  frame <- function(x) {
+    vctrs::new_data_frame(
+      stats::setNames(list(sum(x)), stored), n = 1L,
+      class = "margin_reported_summary"
+    )
+  }
+  expected <- tibble::tibble(g = c("x", "y"), out = c(1, 3))
+  expect_identical(dplyr::summarise(data, frame(x), .by = g), expected)
+  expect_identical(summarize_with_margins(data, frame(x), .by = g), expected)
+  expect_identical(
+    summarize_with_margins(
+      data, frame(dplyr::pick(x)$x), .grouping = grouping_set(g)
+    ),
+    expected
+  )
+  reported <- "set"
+  expect_identical(
+    summarize_with_margins(data, frame(x), .id = "set"),
+    tibble::tibble(set = 1L, out = 4)
+  )
+
+  reported <- "out"
+  stored <- "g"
+  expect_error(
+    summarize_with_margins(data, frame(x), .by = g),
+    "cannot overwrite grouping column.*`g`", class = "marginplyr_error"
+  )
+  expect_error(
+    summarize_with_margins(
+      data, frame(dplyr::pick(x)$x), .grouping = grouping_set(g)
+    ),
+    "cannot overwrite grouping column.*`g`", class = "marginplyr_error"
+  )
+  stored <- "set"
+  expect_error(
+    summarize_with_margins(data, frame(x), .id = "set"),
+    "`set`.*conflicts with a summary output", class = "marginplyr_error"
+  )
+})

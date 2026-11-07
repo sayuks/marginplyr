@@ -313,13 +313,13 @@ local_assigned_summary_value <- function(value, name, group_vars,
   type_state$ptype <- vctrs::vec_ptype2(
     type_state$ptype, value, x_arg = name, y_arg = name, call = NULL
   )
-  record_local_summary_aliases(
-    if (is.data.frame(value)) names(value) else name,
-    alias_state, position
-  )
-  if (is.data.frame(value)) {
+  frame <- is.data.frame(value)
+  # The carrier expands the stored columns of a frame subclass.
+  output_names <- if (frame) attr(value, "names", exact = TRUE) else name
+  record_local_summary_aliases(output_names, alias_state, position)
+  if (frame) {
     check_local_frame_output_names(
-      names(value), group_vars, internal_names, set_id_name,
+      output_names, group_vars, internal_names, set_id_name,
       set_id_is_internal, protected_sources
     )
   }
