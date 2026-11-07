@@ -343,7 +343,17 @@ check_observed_label_collision <- function(data,
   # Collision counts concern the selected columns alone; subclass summaries
   # may also aggregate unrelated payload columns, including empty geometries.
   data <- margin_column_source(data)
-  data <- dplyr::select(.data = data, dplyr::all_of(read_cols))
+  aliases <- character()
+  if (inherits(data, "tbl_sql") &&
+        inherits(dbplyr::remote_con(data), "SQLiteConnection") &&
+        length(sqlite_boolean_columns(read_cols)) > 0L) {
+    # Bind the input's Boolean-word columns by position before projecting or
+    # aggregating them. The aggregate outputs still use the public names.
+    aliases <- sqlite_boolean_query_aliases(data)
+    data <- sqlite_boolean_input_relation(data, aliases)
+  }
+  selected <- sqlite_boolean_names(read_cols, aliases)
+  data <- dplyr::select(.data = data, dplyr::all_of(selected))
   query <- margin_safe_column_reads(
     data, read_cols, function(source, safe_name) {
       checks <- lapply(
@@ -355,7 +365,7 @@ check_observed_label_collision <- function(data,
           column <- if (inherits(source, "tbl_sql") && col == ".env") {
             dbplyr::ident(col)
           } else {
-            rlang::data_sym(safe_name(col))
+            rlang::data_sym(sqlite_boolean_names(safe_name(col), aliases))
           }
           # dtplyr defers these helpers in the input's root environment.
           conversion <- if (inherits(source, "dtplyr_step")) {
