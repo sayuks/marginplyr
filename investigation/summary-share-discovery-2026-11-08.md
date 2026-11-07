@@ -184,7 +184,7 @@ additional composed-Grouping and output-name comparisons.
 
 | Area | Executed scope | Result |
 | --- | --- | --- |
-| Independent summary/share oracle | 1,920 cases: 80 generated inputs, three explicit set families, fixed/unfixed partitions, four measures | All values, ratios, keys, types, occurrence identifiers and output order matched the independently enumerated dplyr results |
+| Independent summary/share oracle | 1,920 cases: 80 generated inputs, three explicit set families, fixed/unfixed partitions, four measures | All values, ratios, keys, types, occurrence identifiers and column order matched the independently enumerated dplyr results |
 | Composed Grouping algebra | 90 cases: identity product, composite rollup, product, overlapping product and union; empty/single/five-row input; fixed/unfixed; three duplicate policies | Explicit set-occurrence enumeration matched values, ratios, cardinality and column order or the required duplicate refusal |
 | Fixed-key numeric/type boundary | 144 cases across 12 key kinds, four value vectors and three sort requests | Input-membership ratios and fixed-key prototypes matched; keys included NA/NaN/infinities, complex/raw, Date/time/duration, factors, list, packed frame and matrix |
 | Share source admission | 216 cases across 27 eligible/ineligible fixtures, local/dtplyr, explicit/implicit fixed keys and checking enabled/disabled | Expected refusals inherited `marginplyr_error`; accepted shares retained double type and root one |
