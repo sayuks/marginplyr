@@ -529,10 +529,10 @@ grouping_selection_proxy <- function(.data,
   if (backend$collect_selection_proxy) {
     # dtplyr uses its isolated proxy above this seam. DuckDB's LIMIT 0
     # alone cannot stop preparation from executing dynamic pivot inputs.
-    proxy <- duckdb_selection_query(utils::head(.data, n = 0L))
-    return(tryCatch(
+    query <- duckdb_selection_query(utils::head(.data, n = 0L))
+    proxy <- tryCatch(
       with_sent_query(
-        "selection_proxy", proxy, dplyr::collect(proxy),
+        "selection_proxy", query, dplyr::collect(query),
         error_handling = function(cnd) {
           if (is_duckdb_dynamic_pivot(cnd)) "handled" else "propagated"
         }
@@ -550,7 +550,20 @@ grouping_selection_proxy <- function(.data,
           )
         ), parent = cnd)
       }
-    ))
+    )
+    # DuckDB can deduplicate names when it binds the nested query. Check the
+    # stored schema before any selection methods run on the proxy.
+    proxy_names <- attr(proxy, "names", exact = TRUE)
+    if (!identical(proxy_names, margin_col_names(.data))) {
+      abort_marginplyr(c(
+        "Can't match DuckDB column metadata to the input's captured names.",
+        i = paste0(
+          "Alias the input columns with unique names, ignoring ASCII letter ",
+          "case, and recreate the lazy input with those names."
+        )
+      ))
+    }
+    return(proxy)
   }
   .data
 }
