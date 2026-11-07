@@ -199,10 +199,12 @@ sql_margin_source_anchor <- function(.data) {
 # is first, even if another branch passes a character dimension through. A
 # zero-row anchor keeps each carried source column in the first SELECT without
 # reading it. Declared output columns use a top-level SQL cast so SQLite
-# assigns their types when `compute()` creates an empty table. The query still
+# assigns their types when `compute()` creates an empty table. Source displays
+# cast the source reference to text to keep its SQLite collation. The query
 # executes only when the caller collects or computes the result (ADR 0020).
 sql_margin_type_anchor <- function(.data, branch, source_columns,
-                                   declared_types = character()) {
+                                   declared_types = character(),
+                                   source_displays = character()) {
   .data <- sql_margin_source_anchor(.data) %||% .data
   branch_columns <- get_col_names(branch, dplyr::everything())
   source_columns <- intersect(
@@ -220,7 +222,11 @@ sql_margin_type_anchor <- function(.data, branch, source_columns,
                  character = "TEXT")
   projections <- stats::setNames(lapply(branch_columns, function(name) {
     if (name %in% source_columns) {
-      return(rlang::sym(sqlite_boolean_names(name, aliases)))
+      column <- sqlite_boolean_names(name, aliases)
+      if (name %in% source_displays) {
+        return(rlang::expr(as.character(!!dbplyr::ident(column))))
+      }
+      return(rlang::sym(column))
     }
     if (name %in% names(declared_types)) {
       return(dbplyr::sql(paste0(
@@ -658,6 +664,110 @@ add_grouping_set_id <- function(result,
   )
 }
 
+# Redirect dtplyr data reads before calls such as dplyr::n() become engine
+# reads. `keys` maps public names to ungrouped copies of the input columns.
+rewrite_dtplyr_key_read <- function(expr, keys, env, bound = character()) {
+  if (is_name_part(expr) &&
+        rlang::as_name(expr) %in% setdiff(names(keys), bound)) {
+    return(rlang::sym(keys[[rlang::as_name(expr)]]))
+  }
+  if (!rlang::is_call(expr) ||
+        !any(all.names(expr) %in% c(names(keys), ".data"))) {
+    return(expr)
+  }
+  if (rlang::is_call(expr, c("::", ":::"))) {
+    return(expr)
+  }
+  if (rlang::is_quosure(expr)) {
+    env <- rlang::quo_get_env(expr)
+  }
+  if (is_parenthesized(expr)) {
+    expr[[2L]] <- rewrite_dtplyr_key_read(expr[[2L]], keys, env, bound)
+    return(expr)
+  }
+  if (rlang::is_call(expr, c("$", "@", "[["), n = 2L)) {
+    if (rlang::is_symbol(expr[[2L]], ".env")) {
+      return(expr)
+    }
+    if (rlang::is_call(expr, c("$", "[[")) &&
+          rlang::is_symbol(expr[[2L]], ".data") && !".data" %in% bound) {
+      if (rlang::is_call(expr, "[[") && !rlang::is_string(expr[[3L]])) {
+        # dtplyr evaluates the index in its quosure environment. Map the
+        # resulting name there, leaving that evaluation to dtplyr.
+        expr[[3L]] <- rlang::call2(dtplyr_summary_key_alias, expr[[3L]], keys)
+        return(expr)
+      }
+      name <- rlang::as_name(expr[[3L]])
+      if (name %in% names(keys)) {
+        return(rlang::sym(keys[[name]]))
+      }
+      return(expr)
+    }
+    if (rlang::is_call(expr, c("$", "@"))) {
+      expr[[2L]] <- rewrite_dtplyr_key_read(expr[[2L]], keys, env, bound)
+      return(expr)
+    }
+  }
+  if (rlang::is_call(expr, "function")) {
+    bound <- union(bound, names(function_formal_defaults(expr)))
+  }
+  rewrite <- function(part) rewrite_dtplyr_key_read(part, keys, env, bound)
+  if (rlang::is_call(expr, c("<-", "=", "<<-"), n = 2L) &&
+        is_name_part(expr[[2L]])) {
+    expr[[3L]] <- rewrite(expr[[3L]])
+    return(expr)
+  }
+  if (rlang::is_call(expr, "{")) {
+    scope <- list(list(bound = bound))
+    return(map_call_parts(expr, function(part, index) {
+      rewritten <- rewrite_dtplyr_key_read(
+        part, keys, env, scope_bound_names(scope)
+      )
+      scope <<- statement_reads_and_scope(
+        part, scope, list(env = env), read_symbols = no_scope_reads
+      )$scope
+      rewritten
+    }))
+  }
+  name <- static_call_name(expr)
+  if (any(name %in% c("with", "eval", "evalq")) &&
+        is_known_base_call(expr, name, bound, list(env = env))) {
+    fn <- get(name, envir = baseenv())
+    args <- static_call_args(match.call(fn, expr))
+    if (identical(name, "with") || "envir" %in% names(args)) {
+      # Keep language evaluated in an independent mask as written. eval()
+      # still evaluates the expression that supplies that language here.
+      outer <- names(args) != "expr" | identical(name, "eval")
+      args[outer] <- lapply(args[outer], rewrite)
+      return(rebuild_static_call(expr, args))
+    }
+  }
+  rewrite_evaluated_call_parts(expr, rewrite)
+}
+
+# Resolve the one name supplied by a dtplyr data pronoun, retaining unmatched
+# names and invalid indexes for dtplyr's usual lookup and diagnostic.
+dtplyr_summary_key_alias <- function(name, keys) {
+  if (rlang::is_string(name) && name %in% names(keys)) keys[[name]] else name
+}
+
+# Retain caller environments and dtplyr's auto-name for each rewritten dot.
+rewrite_dtplyr_key_dots <- function(dots, keys) {
+  output_names <- rlang::names2(dots)
+  for (i in seq_along(dots)) {
+    dot <- dots[[i]]
+    original <- rlang::quo_get_expr(dot)
+    expr <- rewrite_dtplyr_key_read(original, keys, rlang::quo_get_env(dot))
+    if (!identical(expr, original)) {
+      if (!nzchar(output_names[[i]])) {
+        output_names[[i]] <- rlang::as_label(dot)
+      }
+      dots[[i]] <- rlang::quo_set_expr(dot, expr)
+    }
+  }
+  stats::setNames(dots, output_names)
+}
+
 # This is the one function in the package that evaluates the caller's own
 # summary expressions more than once, so it is the one that can report an
 # External condition once per grouping set and in names the caller never wrote:
@@ -711,23 +821,39 @@ summarize_margin_union <- function(.data,
   }
 
   if (length(group_vars) > 0L) {
+    special_keys <- if (identical(backend$kind, "dtplyr")) {
+      intersect(group_vars, c(".N", ".I", ".SD", ".GRP", ".NGRP"))
+    } else {
+      character()
+    }
+    read_keys <- character()
+    if (length(special_keys) > 0L) {
+      caller_names <- unlist(lapply(dots, all.names), use.names = FALSE)
+      aliases <- rlang::set_names(new_margin_internal_names(
+        length(special_keys), c(reserved_names, caller_names),
+        prefix = "..marginplyr_read_key_"
+      ), special_keys)
+      rewritten <- rewrite_dtplyr_key_dots(dots, aliases)
+      if (!identical(dots, rewritten)) {
+        dots <- rewritten
+        # data.table binds a `by` column to one value within j. Keep an
+        # ungrouped copy for summaries that need all values of that key.
+        read_keys <- aliases
+      }
+    }
+    copies <- c(key_names, read_keys)
     .data <- margin_safe_column_reads(
       .data, group_vars,
       function(source, safe_name) {
-        key_exprs <- lapply(group_vars, function(name) {
+        key_exprs <- lapply(names(copies), function(name) {
           margin_column_pronoun(safe_name(name))
         })
-        names(key_exprs) <- unname(key_names)
+        names(key_exprs) <- unname(copies)
         dplyr::mutate(source, !!!key_exprs)
       }
     )
-    if (identical(backend$kind, "dtplyr")) {
-      special_keys <- intersect(
-        group_vars, c(".N", ".I", ".SD", ".GRP", ".NGRP")
-      )
-      if (length(special_keys) > 0L) {
-        .data <- dplyr::select(.data, -dplyr::all_of(special_keys))
-      }
+    if (length(special_keys) > 0L) {
+      .data <- dplyr::select(.data, -dplyr::all_of(special_keys))
     }
   }
 
@@ -1305,10 +1431,10 @@ expand_margin_union <- function(.data,
             missing_exprs <- lapply(omitted_identity, function(col) {
               value <- identity_missing[[col]]
               if (!is.null(size_col)) {
-                size <- rlang::expr(base::length(
-                  !!margin_column_pronoun(safe_name(size_col))
-                ))
-                rlang::expr(vctrs::vec_rep(!!value, !!size))
+                size <- deferred_export_call(
+                  "base", "length", margin_column_pronoun(safe_name(size_col))
+                )
+                deferred_export_call("vctrs", "vec_rep", value, size)
               } else {
                 value
               }
