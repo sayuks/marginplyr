@@ -495,7 +495,9 @@ test_that("Grouping selections keep tidyselect's repaired column names", {
   )
   selection <- rlang::quo(c(a = c(a1, a2)))
   typed <- rlang::quo(identity(c("a1", "a2")))
-  expect_identical(tidyselect::eval_select(selection, data), c(a1 = 1L, a2 = 2L))
+  expect_identical(
+    tidyselect::eval_select(selection, data), c(a1 = 1L, a2 = 2L)
+  )
   constructors <- list(grouping_set, grouping_sets, rollup, cube, grouping_spec)
   expand <- function(...) expand_with_margins(..., .id = "set_id")
 
@@ -507,7 +509,9 @@ test_that("Grouping selections keep tidyselect's repaired column names", {
     for (constructor in constructors) {
       literal <- verb(data, .grouping = constructor(c(a1, a2)))
       expect_identical(verb(data, .grouping = constructor(!!typed)), literal)
-      expect_identical(verb(data, .grouping = constructor(!!selection)), literal)
+      expect_identical(
+        verb(data, .grouping = constructor(!!selection)), literal
+      )
 
       mixed <- verb(data, .grouping = constructor(c(a1, a2), z))
       date <- rlang::quo(where(function(x) inherits(x, "Date")))
