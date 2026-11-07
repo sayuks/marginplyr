@@ -19,14 +19,14 @@ sqlite_final_anchor_path <- function(operation) {
     (margin_sorting(operation) || !is.null(operation$set_id_name))
 }
 
-# Whether a live SQLite result needs its declared types at the result boundary.
+# Whether a live SQLite result needs its types at the result boundary.
 # The caller supplies source columns and package-created output types.
 sqlite_typed_result_needed <- function(operation, source_columns,
                                        declared_types) {
   live_sqlite_margin_result(operation) &&
     (length(declared_types) > 0L ||
        !is.null(sql_margin_source_anchor(operation$data)) ||
-       (length(source_columns) > 0L && margin_sorting(operation)))
+       length(source_columns) > 0L)
 }
 
 # `margin_order_terms()` includes `desc()` only for a Grouping bit. Negating
@@ -178,7 +178,8 @@ sqlite_typed_result <- function(operation, unsorted, ordered,
     ordered <- sqlite_boolean_public_query(ordered)
   }
   class(ordered) <- c("marginplyr_sqlite_typed_result", class(ordered))
-  attr(ordered, "marginplyr_anchored_input") <- !is.null(input_anchor)
+  attr(ordered, "marginplyr_anchored_source") <-
+    !is.null(input_anchor) || length(source_columns) > 0L
   attr(ordered, "marginplyr_boolean_aliases") <- boolean_aliases[
     intersect(public_columns, names(boolean_aliases))
   ]
@@ -241,7 +242,7 @@ sql_render.marginplyr_sqlite_typed_result <- function(query, ...,
   dbplyr::sql(paste0(sql, "\nORDER BY ", paste(quoted, collapse = ", ")))
 }
 
-# Direct collection keeps a carried source anchor outermost and drops internal
+# Direct collection keeps a source anchor outermost and drops internal
 # sort columns after reading. Boolean-word outputs also avoid a finite
 # collection subquery. Other unsorted results delegate to dbplyr. All paths
 # restore declared R types for all-missing columns.
@@ -254,7 +255,7 @@ collect.marginplyr_sqlite_typed_result <- function(x, ..., n = Inf,
     return(NextMethod())
   }
   boolean_output <- length(attr(x, "marginplyr_boolean_aliases")) > 0L
-  anchor_only <- isTRUE(attr(x, "marginplyr_anchored_input")) &&
+  anchor_only <- isTRUE(attr(x, "marginplyr_anchored_source")) &&
     length(attr(x, "marginplyr_order_keys")) == 0L && !boolean_output
   if (length(attr(x, "marginplyr_order_keys")) == 0L &&
         !boolean_output && !anchor_only) {

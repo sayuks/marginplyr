@@ -3,6 +3,9 @@
 * Parent and Total share dependency checks retain local closures returned by
   `rlang::as_function()` and `compiler::cmpfun()` (#1482).
 
+* SQLite Margin expansions preserve source dimension types when directly
+  collecting finite unsorted prefixes with typed-missing labels (#1484).
+
 * DuckDB Grouping context-name selections honor registered tibble selection
   proxy methods for fixed keys, dimensions, and summary grain (#1481).
 
