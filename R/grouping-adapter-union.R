@@ -660,7 +660,7 @@ add_grouping_set_id <- function(result,
 
 # Redirect dtplyr data reads before calls such as dplyr::n() become engine
 # reads. `keys` maps public names to ungrouped copies of the input columns.
-rewrite_dtplyr_key_read <- function(expr, keys, bound = character()) {
+rewrite_dtplyr_key_read <- function(expr, keys, env, bound = character()) {
   if (is_name_part(expr) &&
         rlang::as_name(expr) %in% setdiff(names(keys), bound)) {
     return(rlang::sym(keys[[rlang::as_name(expr)]]))
@@ -672,8 +672,11 @@ rewrite_dtplyr_key_read <- function(expr, keys, bound = character()) {
   if (rlang::is_call(expr, c("::", ":::"))) {
     return(expr)
   }
+  if (rlang::is_quosure(expr)) {
+    env <- rlang::quo_get_env(expr)
+  }
   if (is_parenthesized(expr)) {
-    expr[[2L]] <- rewrite_dtplyr_key_read(expr[[2L]], keys, bound)
+    expr[[2L]] <- rewrite_dtplyr_key_read(expr[[2L]], keys, env, bound)
     return(expr)
   }
   if (rlang::is_call(expr, c("$", "@", "[["), n = 2L)) {
@@ -695,16 +698,40 @@ rewrite_dtplyr_key_read <- function(expr, keys, bound = character()) {
       return(expr)
     }
     if (rlang::is_call(expr, c("$", "@"))) {
-      expr[[2L]] <- rewrite_dtplyr_key_read(expr[[2L]], keys, bound)
+      expr[[2L]] <- rewrite_dtplyr_key_read(expr[[2L]], keys, env, bound)
       return(expr)
     }
   }
   if (rlang::is_call(expr, "function")) {
     bound <- union(bound, names(function_formal_defaults(expr)))
   }
-  rewrite_evaluated_call_parts(expr, rewrite = function(part) {
-    rewrite_dtplyr_key_read(part, keys, bound)
-  })
+  rewrite <- function(part) rewrite_dtplyr_key_read(part, keys, env, bound)
+  if (rlang::is_call(expr, c("<-", "=", "<<-"), n = 2L) &&
+        is_name_part(expr[[2L]])) {
+    expr[[3L]] <- rewrite(expr[[3L]])
+    return(expr)
+  }
+  if (rlang::is_call(expr, "{")) {
+    scope <- list(list(bound = bound))
+    return(map_call_parts(expr, function(part, index) {
+      rewritten <- rewrite_dtplyr_key_read(
+        part, keys, env, scope_bound_names(scope)
+      )
+      scope <<- statement_reads_and_scope(
+        part, scope, list(env = env), read_symbols = no_scope_reads
+      )$scope
+      rewritten
+    }))
+  }
+  if (identical(static_call_name(expr), "with") &&
+        is_known_base_call(expr, "with", bound, list(env = env))) {
+    # with() evaluates expr against its own data before searching this scope.
+    args <- static_call_args(match.call(base::with, expr))
+    outer <- names(args) != "expr"
+    args[outer] <- lapply(args[outer], rewrite)
+    return(rebuild_static_call(expr, args))
+  }
+  rewrite_evaluated_call_parts(expr, rewrite)
 }
 
 # Resolve the one name supplied by a dtplyr data pronoun, retaining unmatched
@@ -719,7 +746,7 @@ rewrite_dtplyr_key_dots <- function(dots, keys) {
   for (i in seq_along(dots)) {
     dot <- dots[[i]]
     original <- rlang::quo_get_expr(dot)
-    expr <- rewrite_dtplyr_key_read(original, keys)
+    expr <- rewrite_dtplyr_key_read(original, keys, rlang::quo_get_env(dot))
     if (!identical(expr, original)) {
       if (!nzchar(output_names[[i]])) {
         output_names[[i]] <- rlang::as_label(dot)

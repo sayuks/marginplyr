@@ -586,6 +586,12 @@ test_that("dtplyr key reads preserve lexical names and unnamed outputs", {
   .N <- function() 5L # nolint: object_name_linter.
   # The formal deliberately shadows the data.table special name.
   lexical <- rlang::expr((function(.N) .N)(2L)) # nolint: object_name_linter.
+  local_summary <- rlang::quo(base::local({
+    outer_total <- sum(.N)
+    # The assignment introduces the same spelling in the child scope.
+    .N <- c(7L, 8L) # nolint: object_name_linter.
+    outer_total + sum(.N)
+  }))
   field <- list(.N = 4L)
   name <- "x"
   run <- function(data) {
@@ -596,6 +602,9 @@ test_that("dtplyr key reads preserve lexical names and unnamed outputs", {
       total = sum((.N)) + !!lexical + .N() + field$.N +
         ..marginplyr_read_key_1,
       other = sum(.data[[name]]), literal = deparse(base::quote(.N)),
+      nested = base::with(list(.N = c(7L, 8L)), sum(.N)),
+      nested_bare = with(list(.N = c(7L, 8L)), sum(.N)),
+      local_value = 0L + !!local_summary,
       .grouping = rollup(.N), .margin_label = NULL, .sort = "last"
     )
   }
