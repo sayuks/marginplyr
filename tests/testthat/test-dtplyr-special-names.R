@@ -604,6 +604,8 @@ test_that("dtplyr key reads preserve lexical names and unnamed outputs", {
       other = sum(.data[[name]]), literal = deparse(base::quote(.N)),
       nested = base::with(list(.N = c(7L, 8L)), sum(.N)),
       nested_bare = with(list(.N = c(7L, 8L)), sum(.N)),
+      eval_value = base::eval(quote(sum(.N)), list(.N = c(7L, 8L))),
+      evalq_value = base::evalq(sum(.N), envir = list(.N = c(7L, 8L))),
       local_value = 0L + !!local_summary,
       .grouping = rollup(.N), .margin_label = NULL, .sort = "last"
     )

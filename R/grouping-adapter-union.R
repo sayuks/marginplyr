@@ -723,13 +723,18 @@ rewrite_dtplyr_key_read <- function(expr, keys, env, bound = character()) {
       rewritten
     }))
   }
-  if (identical(static_call_name(expr), "with") &&
-        is_known_base_call(expr, "with", bound, list(env = env))) {
-    # with() evaluates expr against its own data before searching this scope.
-    args <- static_call_args(match.call(base::with, expr))
-    outer <- names(args) != "expr"
-    args[outer] <- lapply(args[outer], rewrite)
-    return(rebuild_static_call(expr, args))
+  name <- static_call_name(expr)
+  if (any(name %in% c("with", "eval", "evalq")) &&
+        is_known_base_call(expr, name, bound, list(env = env))) {
+    fn <- get(name, envir = baseenv())
+    args <- static_call_args(match.call(fn, expr))
+    if (identical(name, "with") || "envir" %in% names(args)) {
+      # Keep language evaluated in an independent mask as written. eval()
+      # still evaluates the expression that supplies that language here.
+      outer <- names(args) != "expr" | identical(name, "eval")
+      args[outer] <- lapply(args[outer], rewrite)
+      return(rebuild_static_call(expr, args))
+    }
   }
   rewrite_evaluated_call_parts(expr, rewrite)
 }
