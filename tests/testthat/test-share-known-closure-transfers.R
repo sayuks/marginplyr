@@ -461,6 +461,18 @@ known_converter_transfers <- function() {
   alist(
     (function(prior) {
       read <- function() sum(prior)
+      copied <- base::as.function(read)
+      rm(prior)
+      copied()
+    })(11),
+    (function(prior) {
+      read <- function() sum(prior)
+      copied <- base::Vectorize(read)
+      rm(prior)
+      copied()
+    })(11),
+    (function(prior) {
+      read <- function() sum(prior)
       copied <- rlang::as_function(read)
       rm(prior)
       copied()
@@ -511,6 +523,8 @@ known_converter_controls <- function(retain = TRUE) {
   body <- if (retain) quote(sum(prior)) else 7
   remove <- if (retain) quote(NULL) else quote(rm(prior))
   transfers <- list(
+    quote(base::as.function(x = read)),
+    quote(base::Vectorize(FUN = read)),
     quote(rlang::as_function(x = read)),
     quote(compiler::cmpfun(f = read, options = list(optimize = 0)))
   )
@@ -575,7 +589,8 @@ test_that("dtplyr closure converters preserve legal bindings at collection", {
 
 test_that("closure converter planning never invokes captured closures", {
   probe <- rlang::env(calls = 0L)
-  for (transfer in alist(rlang::as_function(read), compiler::cmpfun(read))) {
+  for (transfer in alist(base::as.function(read), base::Vectorize(read),
+                         rlang::as_function(read), compiler::cmpfun(read))) {
     read <- rlang::quo((function(prior) {
       # The injected converter reads this local binding.
       read <- function() { # nolint: object_usage_linter.
@@ -604,5 +619,99 @@ test_that("caller namespace converters follow ordinary lookup at execution", {
     read <- rlang::new_quosure(expr, caller)
     expect_converter_values(known_closure_transfer_data(), list(read), 7)
     expect_identical(probe$calls, 12L)
+  }
+})
+
+test_that("base closure conversion preserves caller generic methods", {
+  for (method in c("as.function.function", "as.function.default")) {
+    probe <- rlang::env(calls = 0L)
+    caller <- rlang::env()
+    caller[[method]] <- function(x, ...) {
+      probe$calls <- probe$calls + 1L
+      function() 7
+    }
+    read <- rlang::new_quosure(known_converter_transfers()[[1L]], caller)
+    expect_converter_values(known_closure_transfer_data(), list(read), 7)
+    expect_identical(probe$calls, 12L)
+  }
+})
+
+test_that("base closure converters follow ordinary function lookup", {
+  data <- known_closure_transfer_data()
+  for (converter in c("as.function", "Vectorize")) {
+    probe <- rlang::env(calls = 0L)
+    caller <- rlang::env()
+    caller[[converter]] <- function(x) {
+      probe$calls <- probe$calls + 1L
+      function() 7
+    }
+    read <- rlang::expr((function(prior) {
+      # The injected converter reads this local binding.
+      read <- function() sum(prior) # nolint: object_usage_linter.
+      copied <- !!rlang::call2(converter, quote(read))
+      rm(prior)
+      copied()
+    })(11))
+    read <- rlang::new_quosure(read, caller)
+    expect_converter_values(data, list(read), 7)
+    expect_identical(probe$calls, 12L)
+
+    caller[[converter]] <- 0L
+    expect_transfer_dependencies(data, list(read))
+    expect_identical(probe$calls, 12L)
+  }
+})
+
+test_that("as.function honors a class assigned to a local closure", {
+  probe <- rlang::env(calls = 0L)
+  caller <- rlang::env()
+  caller$as.function.margin_share_closure <- function(x, ...) {
+    probe$calls <- probe$calls + 1L
+    function() 7
+  }
+  writes <- alist(
+    class(read) <- "margin_share_closure",
+    class(read) <- c("margin_share_closure", "function"),
+    attr(read, "class") <- "margin_share_closure",
+    attributes(read) <- list(class = "margin_share_closure")
+  )
+  for (write in writes) {
+    read <- rlang::expr((function(prior) {
+      read <- function() sum(prior)
+      !!write
+      copied <- base::as.function(read)
+      rm(prior)
+      copied()
+    })(11))
+    read <- rlang::new_quosure(read, caller)
+    expect_converter_values(known_closure_transfer_data(), list(read), 7)
+  }
+  expect_identical(probe$calls, 48L)
+})
+
+test_that("closure class writes retain direct and default-converted reads", {
+  writes <- alist(
+    class(read) <- "margin_share_default",
+    class(read) <- NULL,
+    attr(read, "class") <- "margin_share_default",
+    attributes(read) <- list(class = "margin_share_default")
+  )
+  for (index in seq_along(writes)) {
+    transfers <- if (index <= 2L) {
+      alist(read, base::as.function(read))
+    } else {
+      alist(read)
+    }
+    for (transfer in transfers) {
+      read <- rlang::expr((function(prior) {
+        # The injected write and transfer use this local binding.
+        read <- function() sum(prior) # nolint: object_usage_linter.
+        !!writes[[index]]
+        copied <- !!transfer
+        rm(prior)
+        copied()
+      })(11))
+      expect_transfer_dependencies(known_closure_transfer_data(), list(read))
+    }
   }
 })
