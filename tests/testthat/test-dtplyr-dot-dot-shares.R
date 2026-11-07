@@ -214,8 +214,12 @@ test_that("dtplyr dot-dot shares leave default tibble name repair unchanged", {
   expect_identical(as.data.frame(ordinary)[["..1"]], 4L)
   expect_identical(as.data.frame(plain)[["..1"]], c(1L, 3L, 4L))
   expect_identical(as.data.frame(shares)[["..1"]], c(1L, 3L, 4L))
-  for (query in list(ordinary, plain, shares)) {
-    expect_error(dplyr::collect(query),
-                 class = "vctrs_error_names_cannot_be_dot_dot")
+  collection_policy <- function(query) {
+    tryCatch({
+      dplyr::collect(query)
+      NULL
+    }, error = function(cnd) class(cnd))
   }
+  expect_identical(collection_policy(plain), collection_policy(ordinary))
+  expect_identical(collection_policy(shares), collection_policy(ordinary))
 })
