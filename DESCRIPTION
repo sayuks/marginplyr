@@ -347,6 +347,7 @@ Config/testthat/start-first:
     dtplyr-converter-metadata,
     share-partial-list-lookup,
     qualified-formula-selections,
+    nest-namespace,
     grouping-name-dispatch
 VignetteBuilder:
     quarto
