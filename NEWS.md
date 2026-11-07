@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Parent and Total share dependency checks follow existing closures after literal
+  list names and names-attribute replacement, including swapped names (#1431).
+
 * Both Nest verbs preserve dtplyr source keys and cell contents when a caller
   overrides the namespace operator, including deferred collection (#1427).
 
