@@ -346,7 +346,8 @@ Config/testthat/start-first:
     share-list-transforms,
     dtplyr-converter-metadata,
     share-partial-list-lookup,
-    qualified-formula-selections
+    qualified-formula-selections,
+    nest-namespace
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool

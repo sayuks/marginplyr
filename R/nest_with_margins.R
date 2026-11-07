@@ -448,7 +448,10 @@ execute_margin_nest <- function(operation, .key, .keep) {
                 if (identical(operation$backend$kind, "dtplyr")) {
                   # data.table groups factors by their stored codes rather
                   # than a vctrs equality proxy.
-                  return(rlang::expr(base::as.integer(base::unclass(!!value))))
+                  return(nest_helper_call(
+                    "base", "as.integer",
+                    nest_helper_call("base", "unclass", value)
+                  ))
                 }
                 # Group identifiers retain source equality.
                 rlang::expr(vctrs::vec_group_id(!!value))
@@ -541,6 +544,9 @@ nest_cell_expr <- function(cell_cols, kind) {
     # is a tibble on either, because a `data.table` cannot hold rows without
     # columns — `dim()` reads its row count from its first column, so a
     # column-less one is always empty.
+    if (identical(kind, "dtplyr")) {
+      return(nest_helper_call("dplyr", "tibble", .rows = quote(dplyr::n())))
+    }
     return(quote(dplyr::tibble(.rows = dplyr::n())))
   }
 
@@ -566,14 +572,24 @@ nest_cell_expr <- function(cell_cols, kind) {
       prefix = "..marginplyr_cell_"
     )
     names(columns)[match(special, names(columns))] <- aliases
-    cell <- rlang::expr(data.table::as.data.table(base::list(!!!columns)))
+    cell <- nest_helper_call(
+      "data.table", "as.data.table",
+      nest_helper_call("base", "list", !!!columns)
+    )
     if (length(special) > 0L) {
-      cell <- rlang::expr(data.table::setnames(!!cell, !!aliases, !!special))
+      cell <- nest_helper_call("data.table", "setnames", cell, aliases, special)
     }
     cell
   } else {
     rlang::expr(dplyr::as_tibble(list(!!!columns)))
   }
+}
+
+# Build a generated dtplyr call whose export lookup stays deferred without
+# resolving the namespace operator or accessor in the caller's lazy root.
+nest_helper_call <- function(namespace, name, ...) {
+  helper <- rlang::call2(base::getExportedValue, namespace, name)
+  rlang::call2(helper, ...)
 }
 
 # Fold expanded rows into cells by fixed keys, set identifier, and original
@@ -636,14 +652,26 @@ nest_expanded_margins <- function(.data,
         display_exprs <- rlang::set_names(lapply(display_cols, function(col) {
           # Summaries can be evaluated on zero rows to infer output types.
           value <- margin_column_pronoun(col)
+          if (identical(kind, "dtplyr")) {
+            size <- nest_helper_call("vctrs", "vec_size", value)
+            index <- nest_helper_call(
+              "base", "seq_len", nest_helper_call("base", "min", size, 1L)
+            )
+            return(nest_helper_call("vctrs", "vec_slice", value, index))
+          }
           rlang::expr(vctrs::vec_slice(
             !!value, base::seq_len(base::min(vctrs::vec_size(!!value), 1L))
           ))
         }), display_cols)
-        # dtplyr evaluates the cell wrapper in the input's environment.
+        cell <- nest_cell_expr(safe_cells, kind)
+        wrapper <- if (identical(kind, "dtplyr")) {
+          nest_helper_call("base", "list", cell)
+        } else {
+          rlang::expr(base::list(!!cell))
+        }
         result <- dplyr::summarize(
           source,
-          "{.key}" := base::list(!!nest_cell_expr(safe_cells, kind)),
+          "{.key}" := !!wrapper,
           !!!display_exprs,
           .by = dplyr::all_of(setdiff(safe_outer, display_cols))
         )
