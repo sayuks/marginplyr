@@ -237,6 +237,8 @@ prepare_grouping_plan <- function(.data,
         dtplyr_data_peek_name_only
       } else if (!is.null(local_proxy)) {
         function(..., from_peek_data = TRUE) !from_peek_data
+      } else if (identical(backend$kind, "duckdb")) {
+        duckdb_data_peek_name_only
       } else if (backend$is_sql || identical(backend$kind, "arrow")) {
         tibble_data_peek_name_only
       } else {
@@ -1294,6 +1296,17 @@ dtplyr_data_peek_name_only <- function(env, bound, from_peek_data = TRUE) {
   !from_peek_data || selection_methods_absent(env, bound, c(
     "names.data.table", "names.data.frame", "names.default"
   ))
+}
+
+# Whether DuckDB's tibble receiver preserves captured selection-context names.
+duckdb_data_peek_name_only <- function(env, bound, from_peek_data = TRUE) {
+  tidyselect_ns <- asNamespace("tidyselect")
+  selection_methods_absent(
+    tidyselect_ns, character(), c(
+      "tidyselect_data_proxy.tbl_df", "tidyselect_data_proxy.tbl",
+      "tidyselect_data_proxy.data.frame"
+    ), registry = tidyselect_ns$.__S3MethodsTable__.
+  ) && tibble_data_peek_name_only(env, bound, from_peek_data)
 }
 
 # Whether names() dispatch can be skipped for lazy Arrow and SQL tibbles.

@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* DuckDB Grouping context-name selections honor registered tibble selection
+  proxy methods for fixed keys, dimensions, and summary grain (#1481).
+
 * Typed DuckDB Grouping inspection refuses dynamic pivots before evaluating
   source rows and checks that metadata preserves captured column names
   (#1461, #1462).
