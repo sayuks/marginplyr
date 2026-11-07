@@ -60,7 +60,8 @@ sqlite_direct_execution_sql <- function(result,
     }
     # The anchor must keep its source projection direct for RSQLite types.
     # Other arms keep their final projection over a separately rendered input.
-    if (!inherits(op$x, "lazy_base_query") &&
+    if (!inherits(op, "lazy_base_query") &&
+          !inherits(op$x, "lazy_base_query") &&
           length(sqlite_boolean_columns(dbplyr::op_vars(op$x))) == 0L) {
       input <- dbplyr::sql_render(op$x, con = con, sql_options = sql_options)
       op$x <- dplyr::tbl(con, input, vars = dbplyr::op_vars(op$x))$lazy_query
