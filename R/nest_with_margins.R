@@ -309,7 +309,7 @@ nest_margin_pipeline <- function(.data,
       # The data.frame converter also admits payloads named `.SD`.
       data.table::as.data.table(tibble::new_tibble(columns, nrow = 0L))
     } else {
-      dplyr::as_tibble(columns)
+      tibble::new_tibble(columns, nrow = 0L)
     }
     id <- operation$set_id_name
     result <- tibble::new_tibble(
@@ -589,7 +589,12 @@ nest_cell_expr <- function(cell_cols, kind) {
     }
     cell
   } else {
-    rlang::expr(dplyr::as_tibble(list(!!!columns)))
+    # The generated list uses the stock converter, independent of registered
+    # methods for caller-owned lists.
+    rlang::call2(
+      utils::getFromNamespace("as_tibble.list", "tibble"),
+      rlang::expr(base::list(!!!columns))
+    )
   }
 }
 
