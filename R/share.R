@@ -4546,8 +4546,9 @@ call_part_symbols <- function(expr, scope, lookup) {
   # the function values in their arguments deferred.
   parts_lookup <- lookup
   parts_lookup$defer_definitions <- isTRUE(lookup$defer_definitions) &&
-    !is.null(call_name) && call_name %in% c("list", "[[") &&
-    is_known_base_frame_call(expr, call_name, scope, lookup)
+    ((!is.null(call_name) && call_name %in% c("list", "[[") &&
+        is_known_base_frame_call(expr, call_name, scope, lookup)) ||
+       !is.null(scope_remapped_closure_list(expr, call_name, scope, lookup)))
   for (index in seq_along(parts)) {
     read_symbols <- if (index %in% selection_positions) {
       selection_dependency_symbols
@@ -4995,6 +4996,8 @@ scope_closure_list <- function(expr, scope, lookup) {
     }
     return(elements[key])
   }
+  remapped <- scope_remapped_closure_list(expr, operator, scope, lookup)
+  if (!is.null(remapped)) return(remapped)
   member <- scope_closure_list_member(expr, scope, lookup)
   if (!is.null(member)) return(member$elements)
   result <- scope_factory_result(expr, scope, lookup, scope_closure_list)
@@ -5002,6 +5005,99 @@ scope_closure_list <- function(expr, scope, lookup) {
   scope_map_closure_elements(result$value, function(closure) {
     scope_rebase_factory_closure(closure, result)
   })
+}
+
+# Remap established plain-list descriptors with matched literal arguments.
+scope_remapped_closure_list <- function(expr, name, scope, lookup) {
+  if (is.null(name) ||
+        !name %in% c("rev", "unname", "rep", "as.list", "structure", "setNames",
+                     "tail")) return(NULL)
+  owner <- switch(name, setNames = "stats", tail = "utils", "base")
+  if (!is_known_package_frame_call(expr, name, owner, scope, lookup)) {
+    return(NULL)
+  }
+  namespace <- asNamespace(owner)
+  definition <- switch(name,
+    # The primitive rep() exposes dots; rep.int() names the supported pair.
+    rep = args(base::rep.int),
+    tail = get("tail.default", envir = namespace, inherits = FALSE),
+    get(name, envir = namespace, inherits = FALSE)
+  )
+  formals <- switch(name, rev = "x", unname = c("obj", "force"),
+                    structure = c(".Data", "names"),
+                    setNames = c("object", "nm"), rep = c("x", "times"),
+                    as.list = "x", tail = c("x", "n"))
+  parts <- static_matched_arguments(expr, definition)
+  if (!formals[[1L]] %in% names(parts) ||
+        !all(names(parts) %in% formals) || anyDuplicated(names(parts)) ||
+        any(vapply(parts, rlang::is_missing, logical(1)))) return(NULL)
+  elements <- scope_closure_list(parts[[formals[[1L]]]], scope, lookup)
+  if (is.null(elements)) return(NULL)
+
+  if (name %in% c("rev", "as.list", "tail") &&
+        !scope_plain_list_default(name, owner, scope, lookup)) return(NULL)
+
+  switch(name,
+    rev = base::rev.default(elements),
+    as.list = elements,
+    unname = if (!"force" %in% names(parts) ||
+                   rlang::is_bool(unparenthesized_value(parts$force))) {
+      base::unname(elements)
+    },
+    structure = if ("names" %in% names(parts)) {
+      scope_list_literal_names(elements, parts$names, scope, lookup)
+    },
+    setNames = if ("nm" %in% names(parts)) {
+      scope_list_literal_names(elements, parts$nm, scope, lookup)
+    },
+    rep = {
+      times <- scope_literal_list_count(parts, "times", 1L, scope, lookup)
+      # Retain small literal repetitions without expanding an unbounded list.
+      limit <- max(1024L, length(elements)) / max(1L, length(elements))
+      if (!is.null(times) && times >= 0L && times <= limit) {
+        base::rep(elements, times = times)
+      }
+    },
+    tail = {
+      n <- scope_literal_list_count(parts, "n", 6L, scope, lookup)
+      if (!is.null(n)) definition(elements, n = n)
+    }
+  )
+}
+
+# Read one finite integer count without evaluating a supplied expression.
+scope_literal_list_count <- function(parts, name, default, scope, lookup) {
+  if (!name %in% names(parts)) return(default)
+  count <- scope_literal_list_index(parts[[name]], scope, lookup)
+  if (typeof(count) %in% c("integer", "double") && length(count) == 1L &&
+        is.finite(count) && count == trunc(count)) count
+}
+
+# A plain list still participates in UseMethod's implicit list dispatch.
+# Inspect possible method bindings without invoking or forcing caller code.
+scope_plain_list_default <- function(name, owner, scope, lookup) {
+  methods <- paste0(name, c(".list", ".default"))
+  rebound <- lookup$function_rebound %||% lookup$rebound
+  if (is.null(lookup$env) ||
+    any(c(methods, unresolved_lookup_name()) %in% rebound) ||
+    any(methods %in% scope_bound_names(scope)) ||
+    !lookup_environment_is_external(
+      lookup$env, character(), lookup, safe_parents = FALSE
+    )) return(FALSE)
+
+  namespace <- asNamespace(owner)
+  default <- get(methods[[2L]], envir = namespace, inherits = FALSE)
+  registry <- get(".__S3MethodsTable__.", envir = namespace, inherits = FALSE)
+  absent <- rlang::zap()
+  for (method in methods) {
+    for (env in list(lookup$env, registry)) {
+      binding <- ordinary_function_binding(method, env, owner, absent)
+      if (!identical(binding, absent) &&
+            !(identical(method, methods[[2L]]) &&
+                identical(binding, default))) return(FALSE)
+    }
+  }
+  TRUE
 }
 
 # Retain only statically visible callable or plain-list member values.
@@ -5520,10 +5616,17 @@ scope_list_write_names <- function(target, elements, value, lookup,
     if (length(selected) > 1L) return(unknown)
     value <- if (length(selected) == 1L) attributes[[selected]] else NULL
   }
+  scope_list_literal_names(elements, value, value_scope, lookup, unknown)
+}
+
+# Replace names with known literal labels, using plain-list padding rules.
+scope_list_literal_names <- function(elements, value, scope, lookup,
+                                     unknown = NULL) {
+  value <- unparenthesized_value(value)
   labels <- if (!is.null(value)) {
     static_character_value(value, function(expr) {
       identical(static_call_name(expr), "c") &&
-        is_known_base_frame_call(expr, "c", value_scope, lookup)
+        is_known_base_frame_call(expr, "c", scope, lookup)
     })
   }
   if (!is.null(value) && is.null(labels)) return(unknown)
@@ -6001,15 +6104,20 @@ static_frame_depth_argument <- function(expr) {
 # Check a base callee against lexical frames before ordinary caller lookup.
 # Bare call heads skip known non-functions in those frames.
 is_known_base_frame_call <- function(expr, name, scope, lookup) {
+  is_known_package_frame_call(expr, name, "base", scope, lookup)
+}
+
+# Resolve a standard package function through the caller's lexical frames.
+is_known_package_frame_call <- function(expr, name, owner, scope, lookup) {
   if (!is.null(static_call_ns(expr))) {
-    return(is_known_namespace_frame_call(expr, "base", scope, lookup))
+    return(is_known_namespace_frame_call(expr, owner, scope, lookup))
   }
   function_lookup <- is_name_part(static_call_head(expr))
   shadowed <- any(vapply(scope[scope_visible_frames(scope)], function(frame) {
     name %in% frame$bound &&
       (!function_lookup || !identical(frame$kinds[[name]], "value"))
   }, logical(1)))
-  is_known_base_call(expr, name, name[shadowed], lookup)
+  is_known_base_call(expr, name, name[shadowed], lookup, owner)
 }
 
 # A qualified callee is known only when its operator resolves to base.

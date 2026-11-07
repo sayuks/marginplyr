@@ -322,12 +322,12 @@ scope_literal_kind <- function(value) {
   }
 }
 
-# Whether a recognized base function is the actual callee, without invoking it.
+# Whether a standard package function is the callee, without invoking it.
 # The caller supplies its static name; unresolved bindings prove no exemption.
-is_known_base_call <- function(expr, name, bound, lookup) {
+is_known_base_call <- function(expr, name, bound, lookup, owner = "base") {
   namespace <- static_call_ns(expr)
   if (!is.null(namespace)) {
-    return(identical(namespace, "base"))
+    return(identical(namespace, owner))
   }
   rebound <- lookup$function_rebound %||% lookup$rebound
   if (is.null(lookup$env) || name %in% c(bound, rebound) ||
@@ -335,8 +335,8 @@ is_known_base_call <- function(expr, name, bound, lookup) {
     return(FALSE)
   }
   identical(
-    ordinary_function_binding(name, lookup$env),
-    get(name, envir = baseenv())
+    ordinary_function_binding(name, lookup$env, owners = owner),
+    get(name, envir = asNamespace(owner), inherits = FALSE)
   )
 }
 
