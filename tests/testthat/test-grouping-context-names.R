@@ -489,6 +489,87 @@ test_that("dtplyr captured context names use the typed receiver", {
   )
 })
 
+local_tibble_context_names <- function() {
+  rlang::local_bindings(
+    names.tbl_df = function(x) {
+      columns <- attr(x, "names", exact = TRUE)
+      active <- tryCatch(tidyselect::peek_data(), error = function(cnd) NULL)
+      if (identical(columns, c("a", "b")) && identical(x, active)) {
+        return(rev(columns))
+      }
+      columns
+    },
+    .env = asNamespace("base")$.__S3MethodsTable__.,
+    .frame = parent.frame()
+  )
+}
+
+expect_tibble_context_names <- function(input, typed) {
+  local_tibble_context_names()
+  direct <- rlang::quo(tidyselect::all_of(names(tidyselect::peek_data())[1L]))
+  wrapped <- rlang::quo(tidyselect::all_of(
+    identity(names(tidyselect::peek_data())[1L])
+  ))
+  fixed <- inspect_grouping(typed, .by = b, .format = "list")
+  dimension <- inspect_grouping(
+    typed, .by = a, .grouping = grouping_set(b), .format = "list"
+  )
+  for (selection in list(wrapped, direct)) {
+    expect_identical(tidyselect::eval_select(selection, typed), c(b = 2L))
+    expect_identical(
+      inspect_grouping(input, .by = !!selection, .format = "list"), fixed
+    )
+    expect_identical(
+      inspect_grouping(
+        input, .by = a, .grouping = grouping_set(!!selection), .format = "list"
+      ),
+      dimension
+    )
+    expect_error(
+      inspect_grouping(input, .by = b, .grouping = grouping_set(!!selection)),
+      "cannot appear in both", class = "marginplyr_error"
+    )
+  }
+}
+
+test_that("DuckDB context names respect tibble methods", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  data <- tibble::tibble(a = 1L, b = "x")
+  remote <- dplyr::copy_to(con, data, "tibble_context_names")
+  rlang::local_options(marginplyr.audit_sql = TRUE)
+
+  expect_identical(
+    inspect_grouping(
+      remote, .by = tidyselect::all_of(names(tidyselect::peek_data())[1L]),
+      .format = "list"
+    )$fixed,
+    list("a")
+  )
+  expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+  expect_tibble_context_names(remote, data[0L, ])
+  audit <- last_sent_queries(details = TRUE)
+  expect_identical(audit$purpose, "selection_proxy")
+  expect_identical(audit$status, "returned")
+  expect_match(audit$sql, "LIMIT 0", fixed = TRUE)
+})
+
+test_that("Arrow context names respect tibble methods", {
+  skip_if_suggest_absent("arrow")
+  data <- tibble::tibble(a = 1L, b = "x")
+  expect_tibble_context_names(arrow::arrow_table(data), data[0L, ])
+})
+
+test_that("SQLite context names respect tibble methods", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  data <- tibble::tibble(a = 1L, b = "x")
+  remote <- dplyr::copy_to(con, data, "tibble_context_names")
+  expect_tibble_context_names(remote, data[0L, ])
+})
+
 test_that("Grouping selections keep tidyselect's repaired column names", {
   data <- data.frame(
     a1 = c("east", "west"), a2 = 1:2, z = as.Date("2026-11-07") + 0:1
