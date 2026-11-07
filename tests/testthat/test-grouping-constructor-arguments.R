@@ -177,3 +177,235 @@ test_that("captured selections retain empty positions around splices", {
     }
   }
 })
+
+# jarl-ignore missing_argument: The empty position is the capture witness.
+test_that("literal inspection refuses an empty position before a splice", {
+  data <- data.frame(region = c("E", "W"), value = 1:2)
+  error <- tryCatch(
+    inspect_grouping(data, .grouping = grouping_set(, !!!list())),
+    error = identity
+  )
+  expect_s3_class(error, "marginplyr_error")
+  if (inherits(error, "error")) {
+    expect_match(conditionMessage(error),
+                 "Argument 1 of `grouping_set()` is empty.", fixed = TRUE)
+  }
+})
+
+# jarl-ignore missing_argument: Literal and stored empty positions are compared.
+test_that("literal public calls refuse empty positions like stored specs", {
+  data <- data.frame(region = c("E", "W"), value = 1:2)
+  # The closures write .grouping at the public capture boundary. eval(expr)
+  # inside .grouping and tidy-evaluating assertions recapture the witness.
+  calls_for <- function(interior) {
+    if (interior) {
+      return(list(
+        function(consume) {
+          consume(data, .grouping = grouping_set(region, , !!!list()))
+        },
+        function(consume) {
+          consume(data, .grouping = grouping_sets(region, , !!!list()))
+        },
+        function(consume) {
+          consume(data, .grouping = rollup(region, , !!!list()))
+        },
+        function(consume) {
+          consume(data, .grouping = cube(region, , !!!list()))
+        },
+        function(consume) {
+          consume(data, .grouping = grouping_spec(region, , !!!list()))
+        }
+      ))
+    }
+    list(
+      function(consume) consume(data, .grouping = grouping_set(, !!!list())),
+      function(consume) consume(data, .grouping = grouping_sets(, !!!list())),
+      function(consume) consume(data, .grouping = rollup(, !!!list())),
+      function(consume) consume(data, .grouping = cube(, !!!list())),
+      function(consume) consume(data, .grouping = grouping_spec(, !!!list()))
+    )
+  }
+  constructors <- c("grouping_set", "grouping_sets", "rollup", "cube",
+                    "grouping_spec")
+  consumers <- list(inspect_grouping, summarize_with_margins,
+                    expand_with_margins, nest_with_margins,
+                    nest_by_with_margins)
+  for (position in 1:2) {
+    calls <- calls_for(interior = position == 2L)
+    stored <- if (position == 1L) {
+      list(grouping_set(, !!!list()), grouping_sets(, !!!list()),
+           rollup(, !!!list()), cube(, !!!list()), grouping_spec(, !!!list()))
+    } else {
+      list(grouping_set(region, , !!!list()),
+           grouping_sets(region, , !!!list()), rollup(region, , !!!list()),
+           cube(region, , !!!list()), grouping_spec(region, , !!!list()))
+    }
+    for (i in seq_along(constructors)) {
+      for (consume in consumers) {
+        literal <- tryCatch(calls[[i]](consume), error = identity)
+        bound <- tryCatch(
+          consume(data, .grouping = stored[[i]]), error = identity
+        )
+        expect_s3_class(literal, "marginplyr_error")
+        expect_s3_class(bound, "marginplyr_error")
+        if (inherits(literal, "error") && inherits(bound, "error")) {
+          expect_identical(conditionMessage(literal), conditionMessage(bound))
+          expect_match(conditionMessage(literal),
+                       paste0("Argument ", position, " of `", constructors[[i]],
+                              "()` is empty."), fixed = TRUE)
+        }
+      }
+    }
+  }
+})
+
+# jarl-ignore missing_argument: The inner empty position is the witness.
+test_that("nested qualified public calls retain empty constructor positions", {
+  data <- data.frame(region = c("E", "W"), value = 1:2)
+  calls <- list(
+    function(consume) {
+      consume(data, .grouping = grouping_sets(
+        ((marginplyr::grouping_set)(region, , !!!list())), value
+      ))
+    },
+    function(consume) {
+      consume(data, .grouping = grouping_sets(
+        ((marginplyr::grouping_sets)(region, , !!!list())), value
+      ))
+    },
+    function(consume) {
+      consume(data, .grouping = grouping_sets(
+        ((marginplyr::rollup)(region, , !!!list())), value
+      ))
+    },
+    function(consume) {
+      consume(data, .grouping = grouping_sets(
+        ((marginplyr::cube)(region, , !!!list())), value
+      ))
+    },
+    function(consume) {
+      consume(data, .grouping = grouping_sets(
+        ((marginplyr::grouping_spec)(region, , !!!list())), value
+      ))
+    }
+  )
+  constructors <- c("grouping_set", "grouping_sets", "rollup", "cube",
+                    "grouping_spec")
+  for (consume in list(inspect_grouping, summarize_with_margins,
+                       expand_with_margins, nest_with_margins,
+                       nest_by_with_margins)) {
+    for (i in seq_along(calls)) {
+      error <- tryCatch(calls[[i]](consume), error = identity)
+      expect_s3_class(error, "marginplyr_error")
+      if (inherits(error, "error")) {
+        expect_match(conditionMessage(error),
+                     paste0("Argument 2 of `", constructors[[i]],
+                            "()` is empty."), fixed = TRUE)
+      }
+    }
+  }
+})
+
+# jarl-ignore missing_argument: Trailing and selection commas are controls.
+test_that("literal capture retains trailing omission and quosure scope", {
+  data <- data.frame(region = c("E", "W"), value = 1:2)
+  selection <- local({
+    selected <- "region"
+    rlang::quo(all_of(selected))
+  })
+  selected <- "value"
+  calls <- list(
+    function(consume) {
+      consume(data, .grouping = grouping_set(!!selection, !!!list(), ))
+    },
+    function(consume) {
+      consume(data, .grouping = grouping_sets(!!selection, !!!list(), ))
+    },
+    function(consume) {
+      consume(data, .grouping = rollup(!!selection, !!!list(), ))
+    },
+    function(consume) {
+      consume(data, .grouping = cube(!!selection, !!!list(), ))
+    },
+    function(consume) {
+      consume(data, .grouping = grouping_spec(!!selection, !!!list(), ))
+    }
+  )
+  expected <- list(grouping_set(region), grouping_sets(region), rollup(region),
+                   cube(region), grouping_spec(region))
+  for (consume in list(inspect_grouping, summarize_with_margins,
+                       expand_with_margins, nest_with_margins,
+                       nest_by_with_margins)) {
+    for (i in seq_along(calls)) {
+      actual <- calls[[i]](consume)
+      expect_identical(actual, consume(data, .grouping = expected[[i]]))
+    }
+    ordinary <- consume(data, .grouping = grouping_set(c(region, , !!!list())))
+    expect_identical(ordinary, consume(data, .grouping = grouping_set(region)))
+    nonempty <- tryCatch(
+      consume(data, .grouping = grouping_set(region, , !!!list(quote(value)))),
+      error = identity
+    )
+    expect_s3_class(nonempty, "marginplyr_error")
+    if (inherits(nonempty, "error")) {
+      expect_match(conditionMessage(nonempty),
+                   "Argument 2 of `grouping_set()` is empty.", fixed = TRUE)
+    }
+    repeated <- consume(
+      data, .grouping = grouping_sets(region, region, !!!list()),
+      .duplicates = "drop"
+    )
+    expect_identical(repeated, consume(
+      data, .grouping = grouping_sets(region, region), .duplicates = "drop"
+    ))
+    identity_result <- consume(data, .grouping = grouping_spec(!!!list()))
+    expect_identical(identity_result,
+                     consume(data, .grouping = grouping_set()))
+  }
+  expect_identical(selected, "value")
+})
+
+# jarl-ignore missing_argument: Refusal must preserve the splice's read budget.
+test_that("literal public capture evaluates injection operands once", {
+  data <- data.frame(region = c("E", "W"), value = 1:2)
+  reads <- 0L
+  splice <- function() {
+    reads <<- reads + 1L
+    if (reads > 1L) stop("second splice evaluation")
+    list()
+  }
+  for (consume in list(inspect_grouping, summarize_with_margins,
+                       expand_with_margins, nest_with_margins,
+                       nest_by_with_margins)) {
+    reads <- 0L
+    error <- tryCatch(
+      consume(data, .grouping = grouping_set(region, , !!!splice())),
+      error = identity
+    )
+    expect_s3_class(error, "marginplyr_error")
+    expect_identical(reads, 1L)
+    reads <- 0L
+    actual <- consume(data, .grouping = grouping_set(region, !!!splice()))
+    expect_identical(actual, consume(data, .grouping = grouping_set(region)))
+    expect_identical(reads, 1L)
+  }
+})
+
+# jarl-ignore missing_argument: The callee must receive a missing argument.
+test_that("literal capture preserves missing arguments for caller functions", {
+  data <- data.frame(region = c("E", "W"), value = 1:2)
+  grouping_set <- function(x, ...) {
+    if (missing(x)) {
+      marginplyr::grouping_set(region)
+    } else {
+      marginplyr::grouping_set(value)
+    }
+  }
+  stored <- grouping_set(, !!!list())
+  for (consume in list(inspect_grouping, summarize_with_margins,
+                       expand_with_margins, nest_with_margins,
+                       nest_by_with_margins)) {
+    actual <- consume(data, .grouping = grouping_set(, !!!list()))
+    expect_identical(actual, consume(data, .grouping = stored))
+  }
+})

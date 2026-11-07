@@ -173,7 +173,9 @@ nest_with_margins <- function(.data,
   if (is.null(.key)) {
     .key <- "data"
   }
-  grouping_quo <- rlang::enquo(.grouping)
+  grouping_quo <- capture_public_grouping(
+    rlang::enquo0(.grouping), substitute(.grouping)
+  )
   by_quo <- rlang::enquo(.by)
 
   nest_margin_pipeline(

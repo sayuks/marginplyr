@@ -122,7 +122,9 @@ nest_by_with_margins <- function(.data,
     sent_query_scope <- reset_sent_queries() # nolint: object_usage_linter.
   })
   call <- rlang::current_call()
-  grouping_quo <- rlang::enquo(.grouping)
+  grouping_quo <- capture_public_grouping(
+    rlang::enquo0(.grouping), substitute(.grouping)
+  )
   by_quo <- rlang::enquo(.by)
 
   nest_margin_pipeline(

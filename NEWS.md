@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Public `.grouping` capture preserves authored empty constructor arguments
+  before empty splices and refuses them with their original position (#1489).
+
 * Both Nest verbs preserve local cell values under registered
   `as_tibble.list` converters (#1490).
 

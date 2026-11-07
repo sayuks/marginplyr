@@ -1052,7 +1052,9 @@ summarize_with_margins <- function(.data,
   })
   call <- rlang::current_call()
   dots <- rlang::enquos(...)
-  grouping_quo <- rlang::enquo(.grouping)
+  grouping_quo <- capture_public_grouping(
+    rlang::enquo0(.grouping), substitute(.grouping)
+  )
   by_quo <- rlang::enquo(.by)
 
   share_kinds <- with_margin_error_call(
