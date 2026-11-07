@@ -341,6 +341,35 @@ test_that("a globally bound single function keeps its share source name", {
   expect_equal(result$share, c(1 / 3, 2 / 3, 1))
 })
 
+authored_namespace_fixture <- function(operator, entrance, functions,
+                                       .env = parent.frame()) {
+  force(functions)
+  target <- if (entrance == "value") "sum" else "list"
+  fixture <- rlang::env(hits = 0L)
+  caller <- rlang::new_environment(parent = .env)
+  caller[[operator]] <- function(pkg, name) {
+    package <- as.character(substitute(pkg))
+    member <- as.character(substitute(name))
+    if (package == "base" && member == target) {
+      fixture$hits <- fixture$hits + 1L
+      return(if (entrance == "value") {
+        functions
+      } else {
+        function(...) functions
+      })
+    }
+    get(member, envir = asNamespace(package))
+  }
+  qualified <- rlang::call2(operator, quote(base), as.name(target))
+  fixture$fns <- if (entrance == "value") {
+    qualified
+  } else {
+    rlang::call2(qualified, fake = quote(mean))
+  }
+  fixture$caller <- caller
+  fixture
+}
+
 for (input_kind in c("data.frame", "tibble", "data.table")) {
   test_that(paste("authored namespace across shapes respect", input_kind), {
     if (input_kind == "data.table") skip_if_suggest_absent("data.table")
@@ -364,34 +393,10 @@ for (input_kind in c("data.frame", "tibble", "data.table")) {
             } else {
               list(s = sum, m = max)
             }
-            hits <- 0L
-            caller <- rlang::env()
-            caller[[operator]] <- function(pkg, name) {
-              package <- as.character(substitute(pkg))
-              member <- as.character(substitute(name))
-              target <- if (entrance == "value") "sum" else "list"
-              if (package == "base" && member == target) {
-                hits <<- hits + 1L
-                return(if (entrance == "value") {
-                  functions
-                } else {
-                  function(...) functions
-                })
-              }
-              get(member, envir = asNamespace(package))
-            }
-            qualified <- rlang::call2(
-              operator, quote(base),
-              as.name(if (entrance == "value") "sum" else "list")
-            )
-            fns <- if (entrance == "value") {
-              qualified
-            } else {
-              rlang::call2(qualified, fake = quote(mean))
-            }
+            fixture <- authored_namespace_fixture(operator, entrance, functions)
             authored <- rlang::new_quosure(rlang::expr(
-              dplyr::across(x, !!fns, .names = "answer_{.fn}")
-            ), caller)
+              dplyr::across(x, !!fixture$fns, .names = "answer_{.fn}")
+            ), fixture$caller)
             literal <- rlang::quo(dplyr::across(
               x, !!functions, .names = "answer_{.fn}"
             ))
@@ -425,12 +430,12 @@ for (input_kind in c("data.frame", "tibble", "data.table")) {
               )
               expected <- dplyr::bind_rows(expected, total)
             }
-            expected_hits <- hits
-            hits <- 0L
+            expected_hits <- fixture$hits
+            fixture$hits <- 0L
             expect_identical(run(literal), expected)
-            expect_identical(hits, 0L)
+            expect_identical(fixture$hits, 0L)
             expect_identical(run(authored), expected)
-            expect_identical(hits, expected_hits)
+            expect_identical(fixture$hits, expected_hits)
             expect_identical(serialize(data, NULL), before)
           }
         }
@@ -444,34 +449,11 @@ test_that("authored namespace outputs keep static share provenance", {
   for (operator in c("::", ":::")) {
     for (entrance in c("value", "list")) {
       for (grouped in c(FALSE, TRUE)) {
-        hits <- 0L
-        caller <- rlang::env()
-        caller[[operator]] <- function(pkg, name) {
-          package <- as.character(substitute(pkg))
-          member <- as.character(substitute(name))
-          target <- if (entrance == "value") "sum" else "list"
-          if (package == "base" && member == target) {
-            hits <<- hits + 1L
-            functions <- list(s = sum, m = max)
-            return(if (entrance == "value") {
-              functions
-            } else {
-              function(...) functions
-            })
-          }
-          get(member, envir = asNamespace(package))
-        }
-        qualified <- rlang::call2(
-          operator, quote(base),
-          as.name(if (entrance == "value") "sum" else "list")
+        fixture <- authored_namespace_fixture(
+          operator, entrance, list(s = sum, m = max)
         )
-        fns <- if (entrance == "value") {
-          qualified
-        } else {
-          rlang::call2(qualified, fake = quote(mean))
-        }
         ordinary <- rlang::new_quosure(
-          rlang::expr(dplyr::across(x, !!fns)), caller
+          rlang::expr(dplyr::across(x, !!fixture$fns)), fixture$caller
         )
         run <- function(dot, selection) {
           summarize_with_margins(
@@ -483,9 +465,9 @@ test_that("authored namespace outputs keep static share provenance", {
         }
         expect_error(run(ordinary, quote(x_s)), "eligible preceding ordinary",
                      class = "marginplyr_error")
-        expect_identical(hits, 0L)
+        expect_identical(fixture$hits, 0L)
         result <- run(ordinary, quote(dplyr::starts_with("x")))
-        expect_identical(hits, if (grouped) 2L else 1L)
+        expect_identical(fixture$hits, if (grouped) 2L else 1L)
         expect_identical(names(result), c(if (grouped) "g", "x_s", "x_m"))
         expect_identical(result$x_s, if (grouped) c(1L, 3L, 4L) else 4L)
         expect_identical(result$x_m, if (grouped) c(1L, 3L, 3L) else 3L)
@@ -502,33 +484,12 @@ test_that("authored namespace outputs keep static share provenance", {
 test_that("authored namespace outputs retain actual collision protection", {
   for (operator in c("::", ":::")) {
     for (entrance in c("value", "list")) {
-      caller <- rlang::env()
-      caller[[operator]] <- function(pkg, name) {
-        package <- as.character(substitute(pkg))
-        member <- as.character(substitute(name))
-        target <- if (entrance == "value") "sum" else "list"
-        if (package == "base" && member == target) {
-          functions <- list(s = sum, m = max)
-          return(if (entrance == "value") {
-            functions
-          } else {
-            function(...) functions
-          })
-        }
-        get(member, envir = asNamespace(package))
-      }
-      qualified <- rlang::call2(
-        operator, quote(base),
-        as.name(if (entrance == "value") "sum" else "list")
+      fixture <- authored_namespace_fixture(
+        operator, entrance, list(s = sum, m = max)
       )
-      fns <- if (entrance == "value") {
-        qualified
-      } else {
-        rlang::call2(qualified, fake = quote(mean))
-      }
       dot <- rlang::new_quosure(rlang::expr(
-        dplyr::across(x, !!fns, .names = "answer_{.fn}")
-      ), caller)
+        dplyr::across(x, !!fixture$fns, .names = "answer_{.fn}")
+      ), fixture$caller)
       data <- data.frame(answer_s = c("a", "b"), x = c(1L, 3L))
       before <- serialize(data, NULL)
       expect_error(summarize_with_margins(

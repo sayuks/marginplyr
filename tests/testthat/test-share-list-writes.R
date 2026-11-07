@@ -199,38 +199,18 @@ test_that("single-bracket replacement retains closure dependencies", {
   )
 })
 
-expect_structural_write_values <- function(data, reads, expected) {
-  for (kind in c("parent", "total")) {
-    helper <- rlang::call2(paste0("share_of_", kind), quote(value))
-    for (read in reads) {
-      forward <- summarize_with_margins(
-        data, value = sum(.data$x), prior = !!helper, observed = !!read,
-        .grouping = rollup("g")
-      )
-      reverse <- summarize_with_margins(
-        data, prior = sum(.data$x), value = !!read, ratio = !!helper,
-        .grouping = rollup("g")
-      )
-      expect_equal(forward$observed, rep(expected, 3L))
-      expect_equal(forward$prior, c(0.25, 0.75, 1))
-      expect_equal(reverse$value, rep(expected, 3L))
-      expect_equal(reverse$ratio, c(1, 1, 1))
-    }
-  }
-}
-
 expect_structural_list_writes <- function(data) {
   before <- serialize(data, NULL)
   for (replacement in c(FALSE, TRUE)) {
     expect_share_dependencies(
       data, structural_list_write_reads(replacement = replacement)
     )
-    expect_structural_write_values(
+    expect_share_dependency_values(
       data, structural_list_write_reads(remove = quote(NULL),
                                         replacement = replacement),
       expected = 1
     )
-    expect_structural_write_values(
+    expect_share_dependency_values(
       data, structural_list_write_reads(body = quote(7),
                                         first = quote(sum(prior)),
                                         replacement = replacement),
