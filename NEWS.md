@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Parent and Total share dependency checks retain local closures in plain lists
+  transferred through base `identity()`, `invisible()` and `force()` (#1430).
+
 * Parent and Total share dependency checks retain invocation-time dependencies
   of local literal closures installed by `delayedAssign()` (#1417).
 
