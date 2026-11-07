@@ -5221,8 +5221,8 @@ scope_after_list_write <- function(scope, target, value, lookup, value_scope) {
   setter <- paste0(operator, "<-")
   replacement <- rlang::call2(setter, .ns = static_call_ns(target))
   if (!is_known_base_frame_call(replacement, setter, value_scope, lookup)) {
-    if (scope_list_replacement_keeps_input(replacement, target, value_scope,
-                                           lookup)) {
+    if (scope_replacement_keeps_input(replacement, target, value_scope,
+                                      lookup)) {
       return(scope_bind_closure_list(scope, name, elements))
     }
     return(scope_bind_local(scope, name))
@@ -5280,8 +5280,7 @@ scope_after_list_write <- function(scope, target, value, lookup, value_scope) {
 
 # Prove that a visible replacement closure returns the original list argument.
 # The argument match uses a marker in place of R's untagged temporary input.
-scope_list_replacement_keeps_input <- function(replacement, target, scope,
-                                               lookup) {
+scope_replacement_keeps_input <- function(replacement, target, scope, lookup) {
   closure <- scope_call_closure(replacement, scope, lookup)
   if (is.null(closure)) return(FALSE)
   definition <- closure$definition
