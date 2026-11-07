@@ -10,7 +10,7 @@ connections <- list(
 data <- data.frame(fixed = rep(c("east", "west", NA), each = 4L),
   g = rep(c("a", NA, "a", "b"), 3L),
   h = rep(c("u", "x", "y", NA), 3L), x = c(0, -2, 2, 0, -1, 2, -3, 4, NA, 3, NA, 4))
-agree <- function(result, type) {
+agree <- function(result) {
   for (i in seq_len(nrow(result))) {
     row <- result[i, ]
     f <- vctrs::vec_equal(result$fixed, row$fixed, na_equal = TRUE)
@@ -37,12 +37,10 @@ for (kind in names(connections)) {
   extra <- switch(kind,
     sqlite = list(volatile = quote(sum(x, na.rm = TRUE) + dbplyr::sql("1.0+ABS(RANDOM()%999)"))),
     duckdb = list(volatile = quote(sum(x, na.rm = TRUE) + dbplyr::sql("nextval('share_probe_seq')")),
-                  highscale = quote(sum(dbplyr::sql("CAST(x / 3 AS DECIMAL(38,37))"), na.rm = TRUE))),
+                  highscale = quote(sum(dbplyr::sql("CAST(x / 10 AS DECIMAL(38,37))"), na.rm = TRUE))),
     postgres = list(volatile = quote(sum(x, na.rm = TRUE) + dbplyr::sql("nextval('share_probe_seq')")),
                     highscale = quote(sum(dbplyr::sql("CAST(x / 3 AS NUMERIC(100,80))"), na.rm = TRUE)))
   )
-  if (kind == "duckdb") extra$highscale <- quote(sum(
-    dbplyr::sql("CAST(x / 10 AS DECIMAL(38,37))"), na.rm = TRUE))
   values <- c(list(sum = quote(sum(x, na.rm = TRUE)),
                    average = quote(mean(x, na.rm = TRUE)),
                    count = quote(dplyr::n()),
@@ -65,7 +63,7 @@ for (kind in names(connections)) {
           result <- dplyr::collect(dplyr::compute(query, name = "frozen"))
           DBI::dbExecute(con, "DROP TABLE frozen")
         } else result <- dplyr::collect(query)
-        agree(result, kind)
+        agree(result)
         TRUE
       }, error = identity)
       if (isTRUE(outcome)) counts["ok"] <- counts["ok"] + 1 else {

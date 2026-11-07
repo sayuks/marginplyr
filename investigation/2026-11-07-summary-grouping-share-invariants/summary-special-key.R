@@ -90,6 +90,8 @@ for (name in names_to_check) {
       if (!bad) {
         stopifnot(identical(actual, expected))
         controls <- controls + 1L
+      } else if (mode == "contract") {
+        stopifnot(identical(actual, expected))
       } else if (mode == "observe") {
         stopifnot(!identical(actual$answer, expected$answer))
         wrong <- wrong + 1L

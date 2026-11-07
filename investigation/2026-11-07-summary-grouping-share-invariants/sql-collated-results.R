@@ -6,6 +6,11 @@ suppressPackageStartupMessages({
 
 normalize_key <- function(x) tolower(trimws(x))
 
+unordered_order <- function(value, fixed) {
+  partition <- if (fixed) value$p else value$sid
+  order(value$sid, value$value, partition, value$g, value$h)
+}
+
 reference <- function(data, plan, fixed, mode) {
   data$p <- normalize_key(data$p)
   data$g <- normalize_key(data$g)
@@ -49,7 +54,7 @@ reference <- function(data, plan, fixed, mode) {
     }))
   }
   order_value <- function(value, mode) {
-    if (mode == "none") return(order(value$sid, value$value, if (fixed) value$p else value$sid, value$g, value$h))
+    if (mode == "none") return(unordered_order(value, fixed))
     ordering <- list()
     if (fixed) ordering <- c(ordering, list(is.na(value$p), value$p))
     for (k in c("g", "h")) {
@@ -143,7 +148,7 @@ main <- function(engine) {
               }
               observed$value <- as.numeric(observed$value)
               if (mode == "none") {
-                observed <- observed[order(observed$sid, observed$value, if (fixed) observed$p else observed$sid, observed$g, observed$h), ]
+                observed <- observed[unordered_order(observed, fixed), ]
               }
               result <- all.equal(as.list(observed), as.list(want),
                                   check.attributes = FALSE, tolerance = 1e-12)

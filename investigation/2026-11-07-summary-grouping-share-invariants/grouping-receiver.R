@@ -38,9 +38,12 @@ construct <- list(
   grouping_spec = function(x) grouping_spec(grouping_set(!!x))
 )
 stopifnot(identical(fixed(wrapped), "b"), identical(counts(wrapped), 2L))
-results <- lapply(construct, function(constructor) {
+expected_dimensions <- lapply(construct, function(constructor) {
   valid <- dimensions(constructor(wrapped))
   stopifnot(identical(valid[[1L]], "b"))
+  valid
+})
+results <- lapply(construct, function(constructor) {
   tryCatch(dimensions(constructor(direct)), error = identity)
 })
 stopifnot(identical(serialize(step, NULL), before))
@@ -52,8 +55,17 @@ print(lapply(results, function(x) {
   if (inherits(x, "error")) conditionMessage(x) else x
 }))
 if ("contract" %in% commandArgs(trailingOnly = TRUE)) {
-  stopifnot(identical(actual, "b"), identical(actual_counts, 2L))
+  stopifnot(
+    identical(actual, "b"), identical(actual_counts, 2L),
+    identical(results, expected_dimensions)
+  )
 } else {
   stopifnot(identical(actual, "a"), identical(actual_counts, c(1L, 1L)))
-  stopifnot(all(vapply(results, inherits, logical(1), "marginplyr_error")))
+  overlap <- vapply(results, function(x) {
+    inherits(x, "marginplyr_error") && grepl(
+      "Columns cannot appear in both `.by` and `.grouping`",
+      conditionMessage(x), fixed = TRUE
+    )
+  }, logical(1))
+  stopifnot(all(overlap))
 }

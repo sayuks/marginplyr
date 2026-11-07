@@ -31,9 +31,9 @@ historical results were kept separate from the executions below.
 | Static plain-list indices | Literal negative and logical keys, a literal index concatenation, and an explicit drop option could select a known closure while planning lost its identity. | [#1446](https://github.com/sayuks/marginplyr/issues/1446) |
 | First ordinary across beside contextual shares | The early selection used the input subclass's list view. It silently selected the wrong column in a one-set summary and refused valid rollups. | [#1447](https://github.com/sayuks/marginplyr/issues/1447) |
 
-Each issue has a public acceptance boundary, the `bug` and
-`ready-for-agent` labels, and no blockers. The independently verifiable
-boundaries supported separate vertical slices. The two directions of an
+At publication on 2026-11-07, each issue had a public acceptance boundary,
+the `bug` and `ready-for-agent` labels, and no blockers. The independently
+verifiable boundaries supported separate vertical slices. The two directions of an
 individual share dependency failure stayed together, as did actual and return
 carriers across the finite inline call boundary.
 
@@ -114,7 +114,7 @@ summaries. Closed #623 and #652 concerned local or dtplyr validation.
 | Probe | Result and boundary |
 | --- | --- |
 | [Grouping-family oracle](2026-11-07-summary-grouping-share-transfer-hunt/grouping/plan-fuzz.R) | Replaying 1,500 seeded recursive specifications on the new snapshot matched the independently enumerated ordered set families under duplicate removal. |
-| [Ordinary summary comparison](2026-11-07-summary-grouping-share-invariants/summary-backends.R) | 2,217 of 2,640 cross-backend comparisons met a loose row, name and value oracle. Direct backend controls explained 60 Arrow absorbing pronoun calls, 114 DuckDB and 249 SQLite differences in empty or all-missing SQL aggregates and SQLite Boolean output storage. Those outcomes were excluded from package findings. |
+| [Ordinary summary comparison](2026-11-07-summary-grouping-share-invariants/summary-backends.R) | 2,217 of 2,640 comparisons met a loose cross-backend row, name and value oracle. The remaining 423 outcomes comprised 60 Arrow bracket-pronoun refusals and ordinary output differences in 114 DuckDB and 249 SQLite comparisons, including empty-result typing, SQL NULL aggregates and SQLite comparison output storage. These exploratory differences did not establish additional defects. |
 | [Collated SQL results](2026-11-07-summary-grouping-share-invariants/sql-collated-results.R) | 144 SQLite and 144 PostgreSQL comparisons matched independently assembled groups, displayed-denominator shares and observed Margin order. The matrix used collated columns and derived expressions, missing fixed or dimension keys, both sorted modes, duplicate occurrences, CTE options and direct collection or materialization. It normalized equivalent spellings and numeric aggregate representations. |
 | [Valid SQL share values](2026-11-07-summary-grouping-share-invariants/sql-share-valid-values.R) | 276 SQLite, DuckDB and PostgreSQL collections or materializations matched ratios recomputed from the displayed denominator rows. The oracle checked share types and ratios, without making a row-order claim. |
 
@@ -151,10 +151,11 @@ disposable cluster over a local Unix socket. Set `PGHOST`, `PGPORT` and
 | `share-dependencies.R` | observation 0, control 0, contract 1. An optional second argument selects a named family. |
 | `sql-share-cardinality.R` | observation 0, control 0, contract 1 on each of DuckDB and PostgreSQL, selected by the second argument. |
 
-Observation modes assert the dated behavior. Contract modes intentionally
-return nonzero where the intended behavior is absent. Controls assert the
-known legal or already guarded behavior. The replay and the source check have
-separate purposes.
+Observation modes assert the dated behavior. Contract modes exercise selected
+intended outcomes and intentionally return nonzero on this snapshot. The
+tickets define the complete repair criteria, including where an actionable
+refusal is acceptable. Controls assert the known legal or already guarded
+behavior.
 
 Duplicate checks used 729 all-state issue bodies and 707 PR bodies fetched
 through paginated GitHub API results, plus a recent-issue refresh before
