@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* SQLite Margin expansions preserve source dimension types when directly
+  collecting finite unsorted prefixes with typed-missing labels (#1484).
+
 * Typed DuckDB Grouping inspection refuses dynamic pivots before evaluating
   source rows and checks that metadata preserves captured column names
   (#1461, #1462).
