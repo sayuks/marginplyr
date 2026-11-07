@@ -165,7 +165,7 @@ test_that("a singleton loop retains invocation dependencies of list writes", {
   expect_identical(probe$calls, 0L)
 })
 
-test_that("literal loops preserve legal closures and ordinary function lookup", {
+test_that("literal loops preserve legal closures and function lookup", {
   reads <- alist(
     (function(prior) {
       carrier <- list(read = function() 1)
