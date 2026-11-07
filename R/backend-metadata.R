@@ -658,10 +658,13 @@ margin_column_info <- function(data_proxy,
       names(schema)[vapply(schema, is.factor, logical(1))],
       function(col) {
         x <- schema[[col]]
-        has_na_in_level <- anyNA(levels(x))
+        # Admission and reconstruction use the stored strings. A factor
+        # subclass can dispatch on the accessor or its returned vector.
+        levels <- as.vector(unclass(attr(x, "levels", exact = TRUE)))
+        has_na_in_level <- anyNA(levels)
         list(
           col = col,
-          levels = levels(x),
+          levels = levels,
           ordered = is.ordered(x),
           has_na_in_level = has_na_in_level,
           preserve_missing_value = backend$can_encode_factor_missing_values,

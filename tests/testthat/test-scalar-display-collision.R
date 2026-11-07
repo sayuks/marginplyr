@@ -35,6 +35,102 @@ test_that("scalar array displays distinguish Margin label collisions", {
   expect_identical(serialize(input, NULL), before)
 })
 
+# The same source conversion can yield displays with different equality rules.
+expect_display_collisions <- function(as_source) {
+  display <- function(x) c("key", NA_character_)[unclass(x)]
+  rlang::local_bindings(
+    as.character.margin_strict_key = function(x, ...) {
+      structure(display(x), class = "margin_strict_display")
+    },
+    Ops.margin_strict_display = function(e1, e2) {
+      inherits(e2, "margin_strict_display") & (unclass(e1) == unclass(e2))
+    },
+    as.character.margin_folded_key = function(x, ...) {
+      structure(display(x), class = "margin_folded_display")
+    },
+    Ops.margin_folded_display = function(e1, e2) {
+      tolower(unclass(e1)) == tolower(e2)
+    },
+    as.character.margin_vctrs_key = function(x, ...) {
+      vctrs::new_vctr(display(x), class = "margin_vctrs_display")
+    },
+    .env = asNamespace("base")$.__S3MethodsTable__.
+  )
+
+  kinds <- c("margin_strict_key", "margin_folded_key", "margin_vctrs_key")
+  for (kind in kinds) {
+    data <- tibble::tibble(g = structure(1:2, class = kind), row = 1:2)
+    before <- serialize(data, NULL)
+    source <- as_source(data)
+    expand <- function(label, checked = TRUE) {
+      dplyr::collect(expand_with_margins(
+        source, .grouping = rollup("g"), .margin_label = label,
+        .check_margin_label = checked, .id = "set"
+      ))
+    }
+    expect_error(expand("key"), "already present in grouping",
+                 class = "marginplyr_error", info = kind)
+    for (case in list(list(label = "KEY", checked = TRUE),
+                      list(label = "key", checked = FALSE))) {
+      actual <- expand(case$label, case$checked)
+      expect_identical(
+        actual[order(actual$set, actual$row), ],
+        tibble::tibble(
+          g = c("key", NA_character_, case$label, case$label),
+          set = c(1L, 1L, 2L, 2L), row = c(1L, 2L, 1L, 2L)
+        ),
+        info = kind
+      )
+    }
+    expect_identical(serialize(data, NULL), before)
+  }
+}
+
+test_that("local observed collisions use plain character displays", {
+  expect_display_collisions(identity)
+})
+
+test_that("dtplyr observed collisions use plain character displays", {
+  skip_if_suggest_absent("dtplyr")
+  expect_display_collisions(dtplyr::lazy_dt)
+})
+
+test_that("collision checks read the columns used by local mutation", {
+  rlang::local_bindings(
+    as_tibble.margin_display_frame = function(x, ...) {
+      dplyr::mutate(tibble::as_tibble(unclass(x), ...), g = "presentation")
+    },
+    .env = asNamespace("tibble")$.__S3MethodsTable__.
+  )
+  source <- structure(
+    data.frame(g = "stored", row = 17L),
+    class = c("margin_display_frame", "data.frame")
+  )
+  before <- serialize(source, NULL)
+  expect_identical(tibble::as_tibble(source)$g, "presentation")
+  native <- dplyr::union_all(
+    dplyr::mutate(source, g = as.character(g), set = 1L),
+    dplyr::mutate(source, g = "presentation", set = 2L)
+  )
+  expect_identical(native$g, c("stored", "presentation"))
+  expand <- function(label, checked = TRUE) {
+    expand_with_margins(
+      source, .grouping = rollup(g), .margin_label = label,
+      .check_margin_label = checked, .id = "set"
+    )
+  }
+  expect_error(expand("stored"), "already present in grouping",
+               class = "marginplyr_error")
+  for (checked in c(FALSE, TRUE)) {
+    result <- expand("presentation", checked)
+    rows <- order(result$set)
+    expect_identical(result$g[rows], native$g)
+    expect_identical(result$row[rows], native$row)
+    expect_identical(result$set[rows], native$set)
+  }
+  expect_identical(serialize(source, NULL), before)
+})
+
 # Source grouping supplies membership; literal displays and copies pin labels.
 expect_scalar_display_nesting <- function(as_source) {
   input <- as_source(scalar_display_input())

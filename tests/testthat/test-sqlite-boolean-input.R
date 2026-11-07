@@ -59,3 +59,61 @@ test_that("SQLite Boolean-word source values need no public source column", {
     expect_identical(as.data.frame(result), expected)
   }
 })
+
+test_that("SQLite checks Margin labels on collapsed Boolean-word keys", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  expand <- function(data, key, ...) {
+    expand_with_margins(data, .grouping = rollup(dplyr::all_of(key)),
+                        .id = "set", .sort = "last", ...)
+  }
+  expect_aggregate_check <- function() {
+    sent <- last_sent_queries(include_result = FALSE)
+    expect_identical(sent$purpose, "observed_label_collision")
+    expect_match(sent$sql, "SUM(", fixed = TRUE)
+  }
+  for (key in c("TRUE", "FaLsE")) {
+    for (value in c("detail", "Total")) {
+      data <- tibble::tibble(key = value, payload = 7L)
+      names(data)[[1L]] <- key
+      root <- dplyr::copy_to(
+        con, data, "boolean_label_source", overwrite = TRUE
+      )
+      source <- dplyr::collapse(root)
+      renamed <- dplyr::collapse(
+        dplyr::rename(root, ordinary = dplyr::all_of(key))
+      )
+      expect_identical(dplyr::collect(source), data)
+
+      expected <- data.frame(key = c(value, "Total"), set = 1:2,
+                             payload = c(7L, 7L))
+      names(expected)[[1L]] <- key
+      unchecked <- expand(source, key, .check_margin_label = FALSE)
+      expect_length(last_sent_queries(include_result = FALSE)$purpose, 0L)
+      expect_identical(as.data.frame(dplyr::collect(unchecked)), expected)
+      default <- expand(source, key)
+      expect_length(last_sent_queries(include_result = FALSE)$purpose, 0L)
+      expect_identical(as.data.frame(dplyr::collect(default)), expected)
+
+      for (input in list(root, renamed, source)) {
+        name <- colnames(input)[[1L]]
+        if (value == "Total") {
+          error <- expect_error(
+            expand(input, name, .check_margin_label = TRUE),
+            "already present", class = "marginplyr_error"
+          )
+          expect_match(conditionMessage(error), name, fixed = TRUE)
+          expect_aggregate_check()
+        } else {
+          checked <- expand(input, name, .check_margin_label = TRUE)
+          expect_aggregate_check()
+          names(expected)[[1L]] <- name
+          expect_identical(as.data.frame(dplyr::collect(checked)), expected)
+        }
+      }
+    }
+  }
+})

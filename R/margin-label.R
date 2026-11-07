@@ -340,10 +340,23 @@ check_observed_label_collision <- function(data,
     return(invisible(NULL))
   }
 
-  # Collision counts concern the selected columns alone; subclass summaries
-  # may also aggregate unrelated payload columns, including empty geometries.
-  data <- margin_column_source(data)
-  data <- dplyr::select(.data = data, dplyr::all_of(read_cols))
+  aliases <- character()
+  if (is.data.frame(data)) {
+    # Read the stored columns used by branch mutation. A subclass's
+    # as_tibble() can supply presentation values in their place.
+    data <- vctrs::new_data_frame(unclass(data)[read_cols], n = nrow(data))
+  } else {
+    if (inherits(data, "tbl_sql") &&
+          inherits(dbplyr::remote_con(data), "SQLiteConnection") &&
+          length(sqlite_boolean_columns(read_cols)) > 0L) {
+      # Bind the input's Boolean-word columns by position before projecting or
+      # aggregating them. The aggregate outputs still use the public names.
+      aliases <- sqlite_boolean_query_aliases(data)
+      data <- sqlite_boolean_input_relation(data, aliases)
+    }
+    selected <- sqlite_boolean_names(read_cols, aliases)
+    data <- dplyr::select(.data = data, dplyr::all_of(selected))
+  }
   query <- margin_safe_column_reads(
     data, read_cols, function(source, safe_name) {
       checks <- lapply(
@@ -355,11 +368,13 @@ check_observed_label_collision <- function(data,
           column <- if (inherits(source, "tbl_sql") && col == ".env") {
             dbplyr::ident(col)
           } else {
-            rlang::data_sym(safe_name(col))
+            rlang::data_sym(sqlite_boolean_names(safe_name(col), aliases))
           }
-          # dtplyr defers these helpers in the input's root environment.
-          conversion <- if (inherits(source, "dtplyr_step")) {
-            rlang::expr(base::as.character(!!column))
+          conversion <- if (is.data.frame(source) ||
+                              inherits(source, "dtplyr_step")) {
+            rlang::call2(
+              marginplyr_private_call("margin_display_character"), column
+            )
           } else {
             rlang::expr(as.character(!!column))
           }
@@ -369,10 +384,6 @@ check_observed_label_collision <- function(data,
             rlang::sym("sum")
           }
           condition <- rlang::expr(!!conversion == !!margin_label)
-          if (is.data.frame(source) || inherits(source, "dtplyr_step")) {
-            # Scalar displays can retain 1D shape; if_else needs a vector.
-            condition <- rlang::expr(base::as.vector(!!condition))
-          }
           rlang::expr(
             (!!aggregate)(
               dplyr::if_else(
