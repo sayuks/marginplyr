@@ -1503,6 +1503,12 @@ known_context_fns <- function(parsed, lookup) {
   fns <- unparenthesized_value(parsed$fns)
   if (rlang::is_symbol(fns) &&
         !is_unrebound_name(rlang::as_string(fns), lookup)) return(FALSE)
+  operator <- if (rlang::is_call(fns, c("::", ":::"))) {
+    rlang::as_string(static_call_head(fns))
+  } else {
+    selection_namespace_operator(fns)
+  }
+  if (!is.null(operator) && !is_unrebound_name(operator, lookup)) return(FALSE)
   if (is_known_function_list_call(fns, lookup$env) &&
         is.null(static_call_ns(fns)) &&
         !is_unrebound_name("list", lookup)) return(FALSE)
@@ -1564,18 +1570,23 @@ is_context_only_name_expr <- function(expr, lookup, allow_context = TRUE) {
 # Names an unnamed local `across()` only when both its columns and `.names`
 # template are literal or already resolved. No caller function or summary
 # expression runs while reserving internal key names from the input name list.
+# Earlier visible mutations invalidate the lexical bindings they replace.
 predictable_local_across_names <- function(dots, input_names) {
   available <- input_names
   predicted <- character()
+  rebound <- character()
   arg_names <- rlang::names2(dots)
   for (i in seq_along(dots)) {
     dot <- dots[[i]]
     name <- arg_names[[i]]
     expr <- rlang::quo_get_expr(dot)
+    lookup <- list(env = rlang::quo_get_env(dot), rebound = rebound)
     if (is_across_call(expr) && !nzchar(name) && !contains_share_helper(expr)) {
       parsed <- parse_across_arguments(expr)
       cols <- parsed$cols
       template <- parsed$names
+      stable_unpack <- !rlang::is_symbol(parsed$unpack) ||
+        is_unrebound_name(rlang::as_string(parsed$unpack), lookup)
       simple_cols <- is_literal_summary_selection(cols, available)
       literal_template <- !is.null(attr(
         template, "marginplyr_across_names", exact = TRUE
@@ -1587,7 +1598,8 @@ predictable_local_across_names <- function(dots, input_names) {
             fixed = TRUE
           ), fixed = TRUE)
       )
-      if (simple_cols && literal_template) {
+      if (simple_cols && literal_template && stable_unpack &&
+            known_context_fns(parsed, lookup)) {
         proxy <- stats::setNames(as.list(seq_along(available)), available)
         output <- tryCatch(
           known_across_output_names(
@@ -1602,6 +1614,7 @@ predictable_local_across_names <- function(dots, input_names) {
     if (nzchar(name)) {
       available <- c(available, name)
     }
+    rebound <- union(rebound, lookup_rebound_names(expr, lookup$env, available))
   }
   predicted
 }

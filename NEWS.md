@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Ordinary `across()` output-name predictions account for visible function and
+  unpack-option rebindings in preceding summaries, avoiding false grouping-key
+  and identifier collisions (#1428).
+
 * Parent and Total share dependency checks retain invocation-time dependencies
   of local literal closures installed by `delayedAssign()` (#1417).
 
