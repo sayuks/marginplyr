@@ -4800,14 +4800,20 @@ scope_closure_list_member <- function(head, scope, lookup) {
     }
     partial <- identical(exact, FALSE)
   }
-  elements <- scope_closure_list(head[[2L]], scope, lookup)
-  key <- unparenthesized_value(head[[3L]])
-  if (identical(operator, "$") && is_name_part(key)) {
-    key <- rlang::as_name(key)
+  if (rlang::is_missing(head[[3L]])) return(NULL)
+  key <- head[[3L]]
+  path <- if (identical(operator, "$")) {
+    # Dollar lookup takes a written name, even in function-call syntax.
+    if (is_name_part(key)) {
+      rlang::as_name(key)
+    } else if (!is.object(key) && rlang::is_string(key)) {
+      key
+    }
+  } else {
+    scope_literal_list_path(key, scope, lookup)
   }
-  path <- scope_literal_list_path(key, scope, lookup)
-  if (length(path) == 0L ||
-        (identical(operator, "$") && length(path) != 1L)) return(NULL)
+  if (length(path) == 0L) return(NULL)
+  elements <- scope_closure_list(head[[2L]], scope, lookup)
   for (step in seq_along(path)) {
     key <- path[[step]]
     # R list lookup never matches an empty name to an unnamed element.

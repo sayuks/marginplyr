@@ -174,6 +174,23 @@ test_that("empty literal names do not select unnamed nested closures", {
   expect_share_dependency_values(nested_closure_list_data(), list(read), 7)
 })
 
+test_that("dollar members preserve invalid subscript diagnostics", {
+  data <- nested_closure_list_data()
+  error <- expect_error(
+    summarize_with_margins(
+      data, value = sum(.data$x), prior = share_of_total(value),
+      observed = (function(prior) {
+        carrier <- list(outer = list(read = function() sum(prior)))
+        rm(prior)
+        base::`$`(carrier, c("outer"))$read()
+      })(1),
+      .grouping = rollup("g")
+    ),
+    "invalid subscript type"
+  )
+  expect_false(inherits(error, "marginplyr_error"))
+})
+
 test_that("nested closure dependency refusal leaves lazy input unread", {
   skip_if_suggest_absent("dtplyr")
   probe <- rlang::env(calls = 0L)
