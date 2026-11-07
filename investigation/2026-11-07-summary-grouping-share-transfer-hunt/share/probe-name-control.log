@@ -1,0 +1,20 @@
+<error/marginplyr_error>
+Error in `summarize_with_margins()`:
+! Ordinary summaries cannot use an earlier Total share (`prior`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values.
+---
+Backtrace:
+     ▆
+  1. ├─base::tryCatch(...)
+  2. │ └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+  3. │   └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+  4. │     └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+  5. └─marginplyr::summarize_with_margins(...)
+  6.   └─marginplyr:::execute_margin_summary(operation, dots, check_share_source = .check_share_source) at source/R/summarize_with_margins.R:1114:3
+  7.     ├─marginplyr:::with_margin_error_call(...) at source/R/summarize_with_margins.R:1167:3
+  8.     │ └─base::tryCatch(...) at source/R/margin-operation.R:97:3
+  9.     │   └─base (local) tryCatchList(expr, classes, parentenv, handlers)
+ 10.     │     └─base (local) tryCatchOne(expr, names, parentenv, handlers[[1L]])
+ 11.     │       └─base (local) doTryCatch(return(expr), name, parentenv, handler)
+ 12.     └─marginplyr:::plan_summary_expressions(...) at source/R/summarize_with_margins.R:1171:7
+ 13.       └─marginplyr:::plan_share_expressions(...) at source/R/summary-selections.R:844:5

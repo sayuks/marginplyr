@@ -1,0 +1,36 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+1 original :  marginplyr_error Ordinary summaries cannot use an earlier Total share (`prior`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values. 
+2 unname(original) :  10,20,30 
+3 setNames(original, "read") :  10,20,30 
+4 structure(original, names = "read") :  10,20,30 
+5 as.list(original) :  10,20,30 
+6 rep(original, 1L) :  10,20,30 
+7 rev(original) :  10,20,30 
+8 head(original, 1L) :  10,20,30 
+9 tail(original, 1L) :  10,20,30 
+10 unlist(list(original), recursive = FALSE) :  10,20,30 
+11 c(list(), original) :  marginplyr_error Ordinary summaries cannot use an earlier Total share (`prior`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values. 
+12 identity(original) :  10,20,30 
+13 invisible(original) :  10,20,30 
+14 force(original) :  10,20,30 
+15 original[TRUE] :  marginplyr_error Ordinary summaries cannot use an earlier Total share (`prior`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values. 
+16 original[-integer()] :  rlang_error ℹ In argument: `observed = (function(prior) {...`.
+ℹ In group 1: `g = "a"`.
+Caused by error in `copied[[1L]]`:
+! subscript out of bounds 
+17 original[seq_along(original)] :  10,20,30 
+18 lapply(original, identity) :  10,20,30 
+19 Map(identity, original) :  10,20,30 

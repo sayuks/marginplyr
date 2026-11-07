@@ -1,0 +1,19 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+1 :  10,20,30 
+2 :  10,20,30 
+3 :  10,20,30 
+4 :  10,20,30 
+5 :  10,20,30 
+6 :  marginplyr_error Ordinary summaries cannot use an earlier Total share (`prior`) in the same `summarize_with_margins()` call.
+ℹ Use a following `dplyr::mutate()` for derived values. 
+7 :  10,20,30 

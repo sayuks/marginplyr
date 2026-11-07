@@ -1,0 +1,195 @@
+
+Attaching package: ‘dplyr’
+
+The following objects are masked from ‘package:stats’:
+
+    filter, lag
+
+The following objects are masked from ‘package:base’:
+
+    intersect, setdiff, setequal, union
+
+$where
+[1] "cols"
+
+$initial
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$final
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$a
+# A tibble: 1 × 1
+  answer_1
+     <dbl>
+1        4
+
+$b
+[1] "`.id` (`answer_1`) conflicts with a summary output."
+
+$where
+[1] "cols"
+
+$initial
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$final
+$final$s
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$final$m
+function (..., na.rm = FALSE)  .Primitive("max")
+
+
+$a
+# A tibble: 1 × 1
+  answer_1
+     <dbl>
+1        4
+
+$b
+[1] "`.id` (`answer_1`) conflicts with a summary output."
+
+$where
+[1] "cols"
+
+$initial
+$initial$s
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+
+$final
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$a
+# A tibble: 1 × 1
+  answer_s
+     <dbl>
+1        4
+
+$b
+# A tibble: 1 × 2
+  answer_1 answer_s
+     <int>    <dbl>
+1        1        4
+
+$where
+[1] "cols"
+
+$initial
+$initial$s
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+
+$final
+$final$s
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$final$m
+function (..., na.rm = FALSE)  .Primitive("max")
+
+
+$a
+# A tibble: 1 × 1
+  answer_s
+     <dbl>
+1        4
+
+$b
+# A tibble: 1 × 2
+  answer_1 answer_s
+     <int>    <dbl>
+1        1        4
+
+$where
+[1] "names"
+
+$initial
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$final
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$a
+# A tibble: 1 × 1
+  answer_1
+     <dbl>
+1        4
+
+$b
+[1] "`.id` (`answer_1`) conflicts with a summary output."
+
+$where
+[1] "names"
+
+$initial
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$final
+$final$s
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$final$m
+function (..., na.rm = FALSE)  .Primitive("max")
+
+
+$a
+# A tibble: 1 × 1
+  answer_1
+     <dbl>
+1        4
+
+$b
+[1] "`.id` (`answer_1`) conflicts with a summary output."
+
+$where
+[1] "names"
+
+$initial
+$initial$s
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+
+$final
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$a
+# A tibble: 1 × 1
+  answer_s
+     <dbl>
+1        4
+
+$b
+# A tibble: 1 × 2
+  answer_1 answer_s
+     <int>    <dbl>
+1        1        4
+
+$where
+[1] "names"
+
+$initial
+$initial$s
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+
+$final
+$final$s
+function (..., na.rm = FALSE)  .Primitive("sum")
+
+$final$m
+function (..., na.rm = FALSE)  .Primitive("max")
+
+
+$a
+# A tibble: 1 × 1
+  answer_s
+     <dbl>
+1        4
+
+$b
+# A tibble: 1 × 2
+  answer_1 answer_s
+     <int>    <dbl>
+1        1        4
+

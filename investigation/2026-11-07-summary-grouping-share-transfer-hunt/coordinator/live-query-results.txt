@@ -1,0 +1,187 @@
+live-share-transfer : 25 matches; limit 100; archive used separately
+1389 [P2] Preserve share dependencies across known closure-return and assignment calls
+857 [P2] Preserve .rows outer columns through the nesting fold
+1170 [P2] Preserve forwarded function-factory evaluation under dynamic across unpacking
+464 Anchorless cross-links and duplicated blocks between guides
+360 A dtplyr share re-parses a caller call that deparse cannot round-trip
+1158 Propose stable Git-tracked test priorities from successful local full checks
+1110 Avoid unnecessary Full reruns for verification-only follow-ups
+599 Restore Margin-operation correctness at grouping and backend boundaries
+21 Document Grouping identity, Parent shares, labels, and completion
+463 House terms used before definition, with no link to where they are defined
+371 `.margin_label` cannot express a per-dimension `NULL`, and both halves of the collision check depend on one
+317 Decide what a Grouping plan records as its kind, and what asks it
+172 Define how unqualified contextual helper names resolve
+199 The argument context quotes marginplyr's rewrite rather than the caller's spelling
+217 Deduplication of a repeated warning does not hold under cli's rendering options
+83 Add share_of_total() for the grand total denominator
+39 Reconcile architecture, ADRs, and the review disposition ledger
+23 Harden marginplyr for its first CRAN release
+82 Add a recipes vignette for the common reporting tasks
+7 Refactor margin verbs around a shared margin-operation lifecycle
+18 Add inspect_grouping() for backend-independent Grouping plans
+130 expression_data_symbols() does not scope function definitions, and does not walk call heads
+40 Run the final CRAN-readiness review
+125 Name-collision message blames `.id` for an internally allocated identifier
+223 Re-author shipped diagnostics in the cli idiom
+live-share-rename : 18 matches; limit 100; archive used separately
+1415 [P2] Recognize partial list-name closure lookup in share planning
+1401 [P2] Preserve share dependencies through visible closure-valued syntax
+1361 [P2] Validate copied local closures against current share dependency scope
+1317 [P2] Validate locally invoked closures against current share dependency scope
+1389 [P2] Preserve share dependencies across known closure-return and assignment calls
+1414 [P2] Update closure provenance after structural list writes
+1416 [P2] Retain mask identity through known environment-valued expressions
+1114 Simplify Review-ready with a repository-owned R runner and one shared heavy-check slot
+360 A dtplyr share re-parses a caller call that deparse cannot round-trip
+362 parent_sql_count() answers 1 for a pattern it does not find, and one share assertion reads it
+392 Vignette prose describing a diagnostic printed directly below it
+217 Deduplication of a repeated warning does not hold under cli's rendering options
+66 Clear the standards and spec findings from the final readiness review
+23 Harden marginplyr for its first CRAN release
+40 Run the final CRAN-readiness review
+254 A Margin summary over an Arrow table fails with an untyped error when Arrow cannot translate the expression
+223 Re-author shipped diagnostics in the cli idiom
+505 Add a non-mutating, tarball-based CRAN preflight command
+live-share-nested : 40 matches; limit 100; archive used separately
+1224 [P2] Preserve share dependency checks across nested inline function scopes
+1364 [P2] Accept representable typed-missing local list-array dimensions
+831 [P2] Preserve scalar output-name semantics for named .id and .key values
+968 [P2] Preserve dot-dot Grouping set identifier names on dtplyr Margin results
+857 [P2] Preserve .rows outer columns through the nesting fold
+360 A dtplyr share re-parses a caller call that deparse cannot round-trip
+374 Nest verbs refuse a lazy table without naming either way forward
+260 The two shapes a nested position recognizes as a specification have no asserted evaluation count
+255 A nested Grouping specification position reads a bound specification as a column selection when a column shares its name
+276 The 39-line header above `admitted_nested_kinds()` restates three of ADR 0026's sections
+262 A malformed Grouping specification whose class sits on an atomic vector raises an untyped base-R error
+791 Expose internal query outcomes and conditions in a detailed Sent query view
+599 Restore Margin-operation correctness at grouping and backend boundaries
+259 A nested specification position does not read through redundant parentheses when recognizing a name, or when deciding whose diagnostic a refusal gets
+110 match.arg() partial matching accepts undocumented abbreviations of .sort and .duplicates
+7 Refactor margin verbs around a shared margin-operation lifecycle
+342 Answer the name-only selection reader from what tidyselect settles from names alone
+172 Define how unqualified contextual helper names resolve
+769 Preserve LIMIT boundaries when composing SQLite Margin results
+371 `.margin_label` cannot express a per-dimension `NULL`, and both halves of the collision check depend on one
+10 Route margin nesting through the Margin operation lifecycle
+351 Read an empty argument inside a .by or .grouping selection as tidyselect reads one
+35 Prove the remaining secondary package contracts
+238 Record ADR 0023 condition 2's element-count reading in the ADR
+383 Decide whether a caller reads back the last call's SQL, and from what
+495 Seven smaller standards and spec findings from the final readiness review
+82 Add a recipes vignette for the common reporting tasks
+144 A `NULL` option value is now rejected, where `.key` and `.id` document `NULL` as "use the default"
+208 Decide whether "Option argument" belongs in CONTEXT.md
+210 An option argument accepts its whole vocabulary written out, which nothing documents
+23 Harden marginplyr for its first CRAN release
+392 Vignette prose describing a diagnostic printed directly below it
+130 expression_data_symbols() does not scope function definitions, and does not walk call heads
+311 The pluralization coverage table's line references into test-grouping-plan.R point at unrelated lines
+77 Reject misspelled options and unsupported input in the caller's terms
+318 Record the SQL marginplyr sends, and read it back with last_sent_queries()
+66 Clear the standards and spec findings from the final readiness review
+40 Run the final CRAN-readiness review
+223 Re-author shipped diagnostics in the cli idiom
+85 Add .sort for a structural Margin order
+live-pr-transfer : 100 matches; limit 100; archive used separately
+1408 Preserve share dependencies through local closure and mask values
+1014 Fix contextual-share dependencies per across output
+1208 Fix dtplyr contextual-share membership ownership
+1148 Fix share lookup proofs after visible list2env rebinding
+1393 Preserve contextual share dependencies across reflective reads and closure transfers
+1372 Fix contextual share dependencies across environments and local closures
+1426 Fix share provenance, Grouping metadata, across names, and dtplyr copies
+1378 Fix Margin label flags and typed-missing list-array dimensions
+1353 Preserve generated summary and share function lookup
+881 Preserve typed-missing classed list dimensions on dtplyr
+1299 Guard contextual share dependencies in selectors and local scopes
+1133 Fix share dependency refusals for resolved scope mutations
+1190 Protect share lookup proofs and dtplyr lexical bindings under list2env
+1294 Normalize character scalars in Margin labels
+961 fix: shield dtplyr nesting from special column names
+1331 Resolve Margin character arguments by their stored values
+1262 Preserve evaluated source rows during lazy expansion
+1259 Preserve Nest payloads and Margin branch types
+1174 fix: preserve forwarded factories under dynamic unpacking
+1391 Record deep expansion and Grouping specification bug hunt
+945 Verify DuckDB 2.0 compatibility and NULL-key results
+1168 fix: isolate dtplyr Margin-label helpers from caller bindings
+1163 Admit local Review-ready heavy checks in acceptance order
+1339 Reject locally known Nest and Margin label names before metadata
+1087 Preserve first local selector timing beside selection-based shares
+361 Stage a share without the caller's own call (#357)
+617 Keep uncertain across output names from causing false collisions (#607)
+444 Refuse a character share source from the staged query itself
+448 Bind the share source where the plan builds no ratio
+1204 Use eight local check workers and fix progress CI assertions
+441 Record that the staged share can refuse a character source itself
+337 Read the last eight of #273's list, and cut four (#273)
+364 Write a dtplyr share's call as source it can read back (#360)
+1130 fix: preserve scalar classes in omitted local dimensions
+1225 Preserve caller-promoted Grouping errors before metadata
+334 Cut ADR 0019, 0020, and 0023's arguments from R/share.R (#273)
+152 Name the Parent share of a Grand total set row
+1117 Run Review-ready from the target worktree with R
+445 Give the dialect probe's control its own reading of a result
+1412 Preserve Grouping selection evaluation boundaries
+1162 Replace Python development tools with R
+473 Give the live-SQLite verification scope one owner
+137 Refuse a named across() share source as the pack it is
+476 Answer three documentation issues against one guide
+180 Read a name a summary reaches for reflectively as the read it is
+235 Author R/grouping-plan.R's diagnostics in the cli idiom
+405 Record the queries the four internal sites send
+164 Scope function definitions and walk call heads in the data-symbol walk
+323 Record a Grouping plan's kind as the name it spells (#317)
+156 Share the must_error chunk option and let it assert a condition class
+478 Capitalize a house term only where it names the concept
+480 Write NEWS.md as a changelog (#466)
+148 Combine grouping-set branches without folding pairwise
+97 Clear the remaining Grand total set _Avoid_ violations
+497 Qualify internal heads in deferred expressions (#491)
+171 Reach a call's parts by subscript, so an empty argument falls through
+335 Cut what ADR 0015 and 0023 own from R/grouping-plan.R (#273)
+192 Treat redundant parentheses as transparent
+251 Give the namespace walk one home and a gate that keeps it there
+132 Stop reading a `$` field name as a data-mask reference
+355 Terminate the readers that restart on a pair holding the empty argument
+151 Shorten the test titles that forced reasonless `# nolint`s
+485 Capitalize a House term in R/, and lowercase what it borrows (#479)
+188 Respect non-evaluation boundaries in static summary analysis
+509 Clarify Arrow input contract
+269 Print a specification that cannot be asked for its kind
+94 Prove backend coverage by construction instead of by `proves`
+499 Document Arrow Margin label collisions
+332 Cut what the ADRs and the tests own from R/summary-selections.R (#273)
+167 Bind the names `<-`, `for`, and a block introduce
+394 Decide that a caller writes a Margin order key of their own
+84 Divide by the grand total when the caller asks for it
+54 Reconcile architecture, ADRs, and the review disposition ledger
+469 Refuse a dtplyr step a backend would write to
+143 Admit only the documented spelling of an option value
+333 Cut ADR 0019's own amendments from R/utils.R's comments (#273)
+267 Establish the specification can be read before reading a field of it
+345 Refuse a selection the names settle before the typed snapshot
+285 Bound what a review may raise about prose, and what an agent loads before it starts
+475 Correct what four guides claim about themselves
+422 Verify that a path a maintained document names exists (#417)
+202 Read a forwarded name for the name it carries
+222 Give the one-test-one-backend policy one home, and say why no gate guards it
+338 Cite ADR 0008 in check_ambiguous_nested_name()'s header (#336)
+75 Clear the standards and spec findings from the readiness review
+142 Number an unnamed `across()` argument by its own position
+194 State what a nested specification position recognizes
+219 Read a condition's message blind to how cli rendered it
+263 Refuse a nested name the input and a binding both claim
+348 Refuse an empty summary, and select no columns for an empty .by
+127 Check actual summary names on the native grouping-sets path
+170 Give back the node a walk descended into, not a rebuilt call
+81 Reject misspelled options and unsupported input in the caller's terms
+191 Resolve contextual helper names by static spelling
+211 Name the Option argument in the glossary
+309 Read a recognized nested specification argument once
+128 Report an internally allocated set identifier as an internal column
+59 Decide and document how Margin verbs treat result class and attributes
+68 Stop the release matrix restoring a fully provisioned package cache
+58 Ship retail_sales as a plain data frame again

@@ -1,0 +1,8 @@
+positional marginplyr_error 
+exact marginplyr_error 
+partial marginplyr_error 
+reorder marginplyr_error 
+rowwise marginplyr_error 
+count marginplyr_error 
+nested marginplyr_error 
+PASS: all seven nested-input spellings retain prohibited dependency refusal

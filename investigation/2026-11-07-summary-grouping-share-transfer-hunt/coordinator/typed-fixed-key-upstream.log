@@ -1,0 +1,9 @@
+list Column or expression 1 of 'by' or 'keyby' is type 'list' which is not currently supported. If you have a compelling use case, please add it to https://github.com/Rdatatable/data.table/issues/1597. As a workaround, consider converting the column to a supported type, e.g. by=sapply(list_col, toString), whilst taking care to maintain distinctness in the process. 
+matrix ℹ In argument: `dplyr::all_of("k")`.
+Caused by error in `dplyr::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `k` doesn't exist. 
+packed ℹ In argument: `dplyr::all_of("k")`.
+Caused by error in `dplyr::all_of()`:
+! Can't subset elements that don't exist.
+✖ Element `k` doesn't exist. 
