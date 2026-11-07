@@ -101,7 +101,8 @@ test_that("retained bindings and uncalled local closures are valid", {
       do.call(callbacks$read, list())
     })(1),
     (function(prior) {
-      do.call <- function(what, args) 1
+      # The binding must use base's name to shadow its function lookup.
+      do.call <- function(what, args) 1 # nolint: object_name_linter.
       callbacks <- list(read = function() sum(prior))
       rm(prior)
       do.call(callbacks$read, list())
