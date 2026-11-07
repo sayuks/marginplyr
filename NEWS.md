@@ -4,8 +4,14 @@
   a pattern method before matching, preserving fixed keys and dimensions across
   inspection and summaries, including immutable dtplyr inputs (#1420).
 
+* Typed inspection and Nest verbs refuse replaced registered dtplyr converters
+  before they can change Grouping dimensions or fixed keys (#1419).
+
 * Immutable dtplyr expansions preserve source rows and payload when a caller
   overrides the namespace operator, including cached inputs (#1422).
+
+* Parent and Total share dependency checks retain local closures through plain
+  list concatenation, append and literal subsets (#1413).
 
 * Typed inspection and Nest verbs refuse replaced registered data.table
   brackets before direct, cached or grouped dtplyr roots can lose Grouping
