@@ -199,10 +199,12 @@ sql_margin_source_anchor <- function(.data) {
 # is first, even if another branch passes a character dimension through. A
 # zero-row anchor keeps each carried source column in the first SELECT without
 # reading it. Declared output columns use a top-level SQL cast so SQLite
-# assigns their types when `compute()` creates an empty table. The query still
+# assigns their types when `compute()` creates an empty table. Source displays
+# cast the source reference to text to keep its SQLite collation. The query
 # executes only when the caller collects or computes the result (ADR 0020).
 sql_margin_type_anchor <- function(.data, branch, source_columns,
-                                   declared_types = character()) {
+                                   declared_types = character(),
+                                   source_displays = character()) {
   .data <- sql_margin_source_anchor(.data) %||% .data
   branch_columns <- get_col_names(branch, dplyr::everything())
   source_columns <- intersect(
@@ -220,7 +222,11 @@ sql_margin_type_anchor <- function(.data, branch, source_columns,
                  character = "TEXT")
   projections <- stats::setNames(lapply(branch_columns, function(name) {
     if (name %in% source_columns) {
-      return(rlang::sym(sqlite_boolean_names(name, aliases)))
+      column <- sqlite_boolean_names(name, aliases)
+      if (name %in% source_displays) {
+        return(rlang::expr(as.character(!!dbplyr::ident(column))))
+      }
+      return(rlang::sym(column))
     }
     if (name %in% names(declared_types)) {
       return(dbplyr::sql(paste0(
