@@ -254,7 +254,7 @@ test_that("recursive list replacement reaches the selected nested member", {
   expect_share_dependencies(nested_closure_list_data(), reads)
 })
 
-test_that("nested deletion shifts invocation dependencies to surviving members", {
+test_that("nested deletion preserves surviving member dependencies", {
   reads <- alist((function(prior) {
     carrier <- list(outer = list(function() 7, function() sum(prior)))
     carrier$outer[[1L]] <- NULL
