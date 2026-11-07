@@ -340,3 +340,168 @@ test_that("a globally bound single function keeps its share source name", {
   expect_identical(names(result), c("group", "x_1", "share"))
   expect_equal(result$share, c(1 / 3, 2 / 3, 1))
 })
+
+authored_namespace_fixture <- function(operator, entrance, functions,
+                                       .env = parent.frame()) {
+  force(functions)
+  target <- if (entrance == "value") "sum" else "list"
+  fixture <- rlang::env(hits = 0L)
+  caller <- rlang::new_environment(parent = .env)
+  caller[[operator]] <- function(pkg, name) {
+    package <- as.character(substitute(pkg))
+    member <- as.character(substitute(name))
+    if (package == "base" && member == target) {
+      fixture$hits <- fixture$hits + 1L
+      return(if (entrance == "value") {
+        functions
+      } else {
+        function(...) functions
+      })
+    }
+    get(member, envir = asNamespace(package))
+  }
+  qualified <- rlang::call2(operator, quote(base), as.name(target))
+  fixture$fns <- if (entrance == "value") {
+    qualified
+  } else {
+    rlang::call2(qualified, fake = quote(mean))
+  }
+  fixture$caller <- caller
+  fixture
+}
+
+for (input_kind in c("data.frame", "tibble", "data.table")) {
+  test_that(paste("authored namespace across shapes respect", input_kind), {
+    if (input_kind == "data.table") skip_if_suggest_absent("data.table")
+    for (operator in c("::", ":::")) {
+      for (entrance in c("value", "list")) {
+        for (count in c(1L, 2L)) {
+          for (role in c("id", "fixed", "dimension")) {
+            protected <- if (entrance == "value") "answer_1" else "answer_fake"
+            data <- stats::setNames(
+              data.frame(key = c("a", "b"), x = c(1L, 3L)),
+              c(protected, "x")
+            )
+            data <- switch(input_kind,
+              tibble = tibble::as_tibble(data),
+              data.table = data.table::as.data.table(data),
+              data
+            )
+            before <- serialize(data, NULL)
+            functions <- if (count == 1L) {
+              list(s = sum)
+            } else {
+              list(s = sum, m = max)
+            }
+            fixture <- authored_namespace_fixture(operator, entrance, functions)
+            authored <- rlang::new_quosure(rlang::expr(
+              dplyr::across(x, !!fixture$fns, .names = "answer_{.fn}")
+            ), fixture$caller)
+            literal <- rlang::quo(dplyr::across(
+              x, !!functions, .names = "answer_{.fn}"
+            ))
+            run <- function(dot) {
+              switch(role,
+                id = summarize_with_margins(
+                  dplyr::select(data, "x"), !!dot, .id = protected
+                ),
+                fixed = summarize_with_margins(
+                  data, !!dot, .by = dplyr::all_of(protected)
+                ),
+                dimension = summarize_with_margins(
+                  data, !!dot, .grouping = rollup(dplyr::all_of(protected)),
+                  .margin_label = NULL
+                )
+              )
+            }
+            expected <- if (role == "id") {
+              dplyr::summarise(dplyr::select(data, "x"), !!authored)
+            } else {
+              dplyr::summarise(data, !!authored, .by = dplyr::all_of(protected))
+            }
+            if (role == "id") {
+              expected <- dplyr::mutate(
+                expected, !!protected := 1L, .before = 1L
+              )
+            } else if (role == "dimension") {
+              total <- dplyr::summarise(data, !!authored)
+              total <- dplyr::mutate(
+                total, !!protected := NA_character_, .before = 1L
+              )
+              expected <- dplyr::bind_rows(expected, total)
+            }
+            expected_hits <- fixture$hits
+            fixture$hits <- 0L
+            expect_identical(run(literal), expected)
+            expect_identical(fixture$hits, 0L)
+            expect_identical(run(authored), expected)
+            expect_identical(fixture$hits, expected_hits)
+            expect_identical(serialize(data, NULL), before)
+          }
+        }
+      }
+    }
+  })
+}
+
+test_that("authored namespace outputs keep static share provenance", {
+  data <- data.frame(g = c("a", "b"), x = c(1L, 3L))
+  for (operator in c("::", ":::")) {
+    for (entrance in c("value", "list")) {
+      for (grouped in c(FALSE, TRUE)) {
+        fixture <- authored_namespace_fixture(
+          operator, entrance, list(s = sum, m = max)
+        )
+        ordinary <- rlang::new_quosure(
+          rlang::expr(dplyr::across(x, !!fixture$fns)), fixture$caller
+        )
+        run <- function(dot, selection) {
+          summarize_with_margins(
+            data, !!dot,
+            dplyr::across(!!selection, share_of_total, .names = "{.col}_p"),
+            .grouping = if (grouped) rollup(g) else NULL,
+            .margin_label = NULL
+          )
+        }
+        expect_error(run(ordinary, quote(x_s)), "eligible preceding ordinary",
+                     class = "marginplyr_error")
+        expect_identical(fixture$hits, 0L)
+        result <- run(ordinary, quote(dplyr::starts_with("x")))
+        expect_identical(fixture$hits, if (grouped) 2L else 1L)
+        expect_identical(names(result), c(if (grouped) "g", "x_s", "x_m"))
+        expect_identical(result$x_s, if (grouped) c(1L, 3L, 4L) else 4L)
+        expect_identical(result$x_m, if (grouped) c(1L, 3L, 3L) else 3L)
+        literal <- rlang::quo(dplyr::across(x, list(s = sum, m = max)))
+        control <- run(literal, quote(dplyr::starts_with("x")))
+        expect_identical(control[names(result)], result)
+        expect_equal(control$x_s_p, if (grouped) c(0.25, 0.75, 1) else 1)
+        expect_equal(control$x_m_p, if (grouped) c(1 / 3, 1, 1) else 1)
+      }
+    }
+  }
+})
+
+test_that("authored namespace outputs retain actual collision protection", {
+  for (operator in c("::", ":::")) {
+    for (entrance in c("value", "list")) {
+      fixture <- authored_namespace_fixture(
+        operator, entrance, list(s = sum, m = max)
+      )
+      dot <- rlang::new_quosure(rlang::expr(
+        dplyr::across(x, !!fixture$fns, .names = "answer_{.fn}")
+      ), fixture$caller)
+      data <- data.frame(answer_s = c("a", "b"), x = c(1L, 3L))
+      before <- serialize(data, NULL)
+      expect_error(summarize_with_margins(
+        dplyr::select(data, x), !!dot, .id = "answer_s"
+      ), "conflicts with a summary output", class = "marginplyr_error")
+      expect_error(summarize_with_margins(
+        data, !!dot, .by = answer_s
+      ), "cannot overwrite grouping column", class = "marginplyr_error")
+      expect_error(summarize_with_margins(
+        data, !!dot, .grouping = rollup(answer_s)
+      ), "cannot overwrite grouping column", class = "marginplyr_error")
+      expect_identical(serialize(data, NULL), before)
+    }
+  }
+})

@@ -205,6 +205,18 @@ test_that("known closure transfers respect retained lexical bindings", {
       read <- function() sum(prior)
       assign("copied", read)
       copied()
+    })(1),
+    (function(prior) {
+      delayedAssign("copied", function() sum(prior))
+      copied()
+    })(1),
+    (function(prior) {
+      base::delayedAssign("copied", function() sum(prior))
+      copied()
+    })(1),
+    (function(prior) {
+      copied <- function() sum(prior)
+      copied()
     })(1)
   )
   for (data in inputs) {
@@ -256,7 +268,7 @@ test_that("known closure return calls follow function lookup", {
 
 test_that("planning does not execute caller closure transfer functions", {
   for (callee in c("identity", "invisible", "force", "get", "match.fun",
-                   "assign")) {
+                   "assign", "delayedAssign")) {
     probe <- new.env(parent = emptyenv())
     probe$calls <- 0L
     transfer <- function(x) {
@@ -264,7 +276,7 @@ test_that("planning does not execute caller closure transfer functions", {
       function() 7
     }
     caller <- rlang::env()
-    caller[[callee]] <- if (callee == "assign") {
+    caller[[callee]] <- if (callee %in% c("assign", "delayedAssign")) {
       function(x, value) {
         probe$calls <- probe$calls + 1L
         base::assign(x, function() 7, envir = parent.frame())
@@ -272,10 +284,10 @@ test_that("planning does not execute caller closure transfer functions", {
     } else {
       transfer
     }
-    expr <- if (callee == "assign") {
-      quote((function(prior) {
+    expr <- if (callee %in% c("assign", "delayedAssign")) {
+      rlang::expr((function(prior) {
         read <- function() sum(prior)
-        assign("copied", read)
+        !!rlang::call2(callee, "copied", quote(read))
         rm(prior)
         copied()
       })(1))
@@ -361,4 +373,86 @@ test_that("external get targets and independent closures stay legal", {
       expect_equal(reverse$ratio, c(1, 1, 1))
     }
   }
+})
+
+# Delayed bindings retain the closure until its eventual invocation.
+delayed_literal_transfers <- function() {
+  alist(
+    (function(prior) {
+      delayedAssign("copied", function() sum(prior))
+      rm(prior)
+      copied()
+    })(1),
+    (function(prior) {
+      base::delayedAssign(value = function() sum(prior), x = "copied",
+                          eval.env = environment(), assign.env = environment())
+      rm(prior)
+      # delayedAssign() installs this function through a literal string name.
+      copied() # nolint: object_usage_linter.
+    })(1)
+  )
+}
+
+test_that("literal delayed closure bindings retain invocation dependencies", {
+  data <- known_closure_transfer_data()
+  expect_transfer_dependencies(data, delayed_literal_transfers())
+  expect_transfer_dependencies(tibble::as_tibble(data),
+                               delayed_literal_transfers())
+})
+
+test_that("data.table delayed closures retain invocation dependencies", {
+  skip_if_suggest_absent("data.table")
+  expect_transfer_dependencies(
+    data.table::as.data.table(known_closure_transfer_data()),
+    delayed_literal_transfers()
+  )
+})
+
+test_that("planning refuses dependencies without invoking delayed closures", {
+  probe <- rlang::env(calls = 0L)
+  for (callee in c("delayedAssign", "base::delayedAssign")) {
+    bind <- rlang::call2(
+      rlang::parse_expr(callee), "copied", rlang::expr(function() {
+        probe$calls <- probe$calls + 1L
+        sum(prior)
+      })
+    )
+    expr <- rlang::quo((function(prior) {
+      !!bind
+      rm(prior)
+      copied()
+    })(1))
+    expect_transfer_dependencies(known_closure_transfer_data(), list(expr))
+  }
+  expect_identical(probe$calls, 0L)
+})
+
+test_that("ordinary delayed values run only when the summary demands them", {
+  data <- known_closure_transfer_data()
+  before <- serialize(data, NULL)
+  probe <- rlang::env(values = 0L, calls = 0L)
+  for (callee in c("delayedAssign", "base::delayedAssign")) {
+    bind <- rlang::call2(
+      rlang::parse_expr(callee), "copied", rlang::expr({
+        probe$values <- probe$values + 1L
+        function() {
+          probe$calls <- probe$calls + 1L
+          sum(prior)
+        }
+      })
+    )
+    expr <- rlang::quo((function(prior) {
+      !!bind
+      prior <- 7
+      copied() + copied()
+    })(1))
+    result <- summarize_with_margins(
+      data, value = sum(.data$x), ratio = share_of_total(value),
+      observed = !!expr, .grouping = rollup("group")
+    )
+    expect_equal(result$observed, c(14, 14, 14))
+  }
+  expect_identical(probe$values, 6L)
+  expect_identical(probe$calls, 12L)
+  expect_identical(serialize(data, NULL), before)
 })

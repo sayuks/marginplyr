@@ -537,3 +537,87 @@ test_that("unavailable promise inspectors safely refuse lazy registrations", {
     }
   }
 })
+
+test_that("registered brackets cannot change root dimensions or fixed keys", {
+  skip_if_suggest_absent("dtplyr")
+  # dtplyr imports data.table; only dtplyr is an optional backend here.
+  source <- data.table::data.table(g = c("a", "b"), value = 1:2)
+  before <- serialize(source, NULL)
+  root <- dtplyr::lazy_dt(source)
+  predicate_calls <- 0L
+  predicate <- function(x) {
+    predicate_calls <<- predicate_calls + 1L
+    x > 0L
+  }
+  steps <- list(root, dplyr::compute(root), dplyr::group_by(root, value),
+                dplyr::filter(root, predicate(value)),
+                dplyr::mutate(root, derived = value + 1L))
+  for (step in steps) local({
+    ordinary <- utils::getS3method("[", "data.table")
+    on.exit(registerS3method("[", "data.table", ordinary,
+                             envir = baseenv()), add = TRUE)
+    calls <- integer()
+    replacement <- function(x, ...) {
+      calls <<- c(calls, nrow(x))
+      out <- ordinary(x, ...)
+      if (nrow(out) == 0L) {
+        data.table::set(out, j = "g", value = integer())
+      }
+      out
+    }
+    registerS3method("[", "data.table", replacement, envir = baseenv())
+    native <- dplyr::collect(step)
+    expect_identical(native$g, c("a", "b"))
+    expect_identical(native$value, 1:2)
+    calls <- integer()
+    predicate_calls <<- 0L
+    expect_identical(inspect_grouping(
+      step, .grouping = grouping_set(g)
+    )$included, "(g)")
+    grouped <- dplyr::is_grouped_df(native)
+    if (!grouped) {
+      expect_identical(inspect_grouping(step, .by = g)$fixed, "(g)")
+    }
+    for (verb in list(inspect_grouping, nest_with_margins,
+                      nest_by_with_margins)) {
+      if (grouped) {
+        expect_error(verb(step, .by = where(is.character)),
+                     "Can't supply", fixed = TRUE, class = "marginplyr_error")
+      } else {
+        expect_error(verb(step, .by = where(is.character)),
+                     "dplyr::collect()", fixed = TRUE,
+                     class = "marginplyr_error")
+      }
+      expect_error(verb(
+        step, .grouping = grouping_set(where(is.character))
+      ), "dplyr::collect()", fixed = TRUE, class = "marginplyr_error")
+    }
+    expect_identical(calls, integer())
+    expect_identical(predicate_calls, 0L)
+    expect_identical(serialize(source, NULL), before)
+
+    registerS3method("[", "data.table", ordinary, envir = baseenv())
+    expect_identical(inspect_grouping(
+      step, .grouping = grouping_set(where(is.character))
+    )$included, "(g)")
+    for (verb in list(nest_with_margins, nest_by_with_margins)) {
+      result <- dtplyr_metadata_nest_result(verb(
+        step, .grouping = grouping_set(where(is.character))
+      ))
+      expect_identical(result$g, c("a", "b"))
+      if (grouped) {
+        expect_identical(result$value, 1:2)
+      } else {
+        expect_identical(lapply(result$data, function(cell) cell$value),
+                         list(1L, 2L))
+        result <- dtplyr_metadata_nest_result(verb(
+          step, .by = where(is.character)
+        ))
+        expect_identical(result$g, c("a", "b"))
+        expect_identical(lapply(result$data, function(cell) cell$value),
+                         list(1L, 2L))
+      }
+    }
+    expect_identical(serialize(source, NULL), before)
+  })
+})
