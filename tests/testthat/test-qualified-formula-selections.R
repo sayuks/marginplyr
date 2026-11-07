@@ -200,3 +200,31 @@ test_that("leading errors precede qualified formula-shaped caller work", {
     }
   }
 })
+
+test_that("base formula function lookup preserves leading dtplyr errors", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.frame(a = c("A", "B"), b = 1L)
+  reads <- 0L
+  derive <- function(x) {
+    reads <<- reads + 1L
+    paste0(x, "!")
+  }
+  source <- dplyr::mutate(dtplyr::lazy_dt(data), derived = derive(a))
+  caller <- rlang::env(baseenv(), `::` = 1L)
+  for (env in list(caller, emptyenv())) {
+    selection <- rlang::new_quosure(quote(base::`~`(a)), env)
+    direct <- expect_error(tidyselect::eval_select(selection, data),
+                           "<formula>|could not find function")
+    for (verb in list(inspect_grouping, summarize_with_margins)) {
+      fixed <- expect_error(verb(source, .by = !!selection))
+      union <- expect_error(verb(source, .grouping = grouping_sets(
+        !!selection, identity("b")
+      )))
+      for (actual in list(fixed, union)) {
+        expect_identical(class(actual), class(direct))
+        expect_identical(conditionMessage(actual), conditionMessage(direct))
+      }
+    }
+    expect_identical(reads, 0L)
+  }
+})

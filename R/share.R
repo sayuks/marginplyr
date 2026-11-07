@@ -4123,121 +4123,6 @@ expression_alias_dependencies <- function(expr, aliases, env = emptyenv(),
   intersect(symbols, aliases)
 }
 
-# Names that may be rebound while the expression runs. Unlike the walk's
-# definite `bound` set, conditional assignments also prevent a lexical
-# environment value from proving an external lookup. An unresolved reflective
-# assignment reports the lookup marker, excluding every lexical binding.
-# Literal list2env setter keys invalidate only the bindings they name;
-# unresolved setter keys invalidate every external binding proof.
-lookup_rebound_names <- function(expr, env = emptyenv(), mask = character(),
-                                 function_lookup = FALSE) {
-  rebound <- expression_rebound_names(expr)
-  written <- if (function_lookup) {
-    expression_rebound_names(expr, function_lookup = TRUE)
-  } else {
-    rebound
-  }
-  unique(c(written, expression_rebound_names(expr, list(
-    env = env, mask = mask, rebound = rebound,
-    function_rebound = expression_rebound_names(expr, function_lookup = TRUE)
-  ), function_lookup = function_lookup)))
-}
-
-# Rebindings visible in evaluated syntax. The first pass supplies ordinary
-# assignments before the second pass resolves mutation callees against them.
-# Function lookup includes replacement roots and skips plain assignments of
-# literal non-function values. Parent mutations are tracked separately by
-# lookup_reparented_environments().
-expression_rebound_names <- function(expr, lookup = NULL,
-                                     function_lookup = FALSE) {
-  if (rlang::is_quosure(expr) && !is.null(lookup)) {
-    lookup$env <- rlang::quo_get_env(expr)
-  }
-  if (!rlang::is_call(expr)) {
-    return(character())
-  }
-  if (is_parenthesized(expr)) {
-    return(expression_rebound_names(
-      unparenthesized_value(expr), lookup, function_lookup
-    ))
-  }
-  assigned <- lookup_assignment_names(expr, replacement = function_lookup)
-  if (function_lookup && rlang::is_call(expr, c("<-", "=")) &&
-        length(expr) >= 3L && is_name_part(expr[[2L]]) &&
-        identical(scope_literal_kind(expr[[3L]]), "value")) {
-    assigned <- character()
-  }
-  if (!is.null(lookup)) {
-    mutation <- scope_mutation_call(expr, character(), lookup)
-    if (!is.null(mutation) &&
-          identical(static_call_name(mutation), "list2env")) {
-      assigned <- c(assigned, list2env_setter_names(mutation, lookup))
-    }
-  }
-  parts <- c(evaluated_call_args(expr), evaluated_language_parts(expr))
-  head <- static_call_head(expr)
-  if (!rlang::is_symbol(head)) {
-    parts <- c(list(head), parts)
-  }
-  unique(c(assigned, unlist(lapply(
-    parts, expression_rebound_names, lookup = lookup,
-    function_lookup = function_lookup
-  ), use.names = FALSE)))
-}
-
-# Binding names replaced by a recognized base list2env call. Omitted/NULL
-# targets construct an environment; unreadable setter keys remain unresolved.
-list2env_setter_names <- function(expr, lookup = NULL) {
-  target <- base_call_argument(expr, "envir")
-  if (length(target) == 0L ||
-        is.null(unparenthesized_value(target[[1L]]))) {
-    return(character())
-  }
-  values <- base_call_argument(expr, "x")
-  if (length(values) > 0L &&
-        identical(static_call_name(values[[1L]]), "list") &&
-        is_known_base_call(values[[1L]], "list", character(), lookup)) {
-    return(names(static_call_args(values[[1L]])))
-  }
-  unresolved_lookup_name()
-}
-
-# The root binding written by an assignment target, including replacement calls.
-assignment_target_names <- function(expr) {
-  if (is_name_part(expr) || rlang::is_string(expr)) {
-    return(rlang::as_name(expr))
-  }
-  if (rlang::is_call(expr) && length(expr) >= 2L) {
-    return(assignment_target_names(expr[[2L]]))
-  }
-  character()
-}
-
-# Names assigned by this call itself, or the unresolved marker when a reflective
-# assignment's target is not statically known. The caller supplies a call.
-lookup_assignment_names <- function(expr, replacement = TRUE) {
-  name <- resolved_callee_name(expr)
-  assigned <- if (!is.null(name) && name %in% c("<-", "=", "<<-", "for") &&
-                    length(expr) >= 3L &&
-                    (replacement || is_name_part(expr[[2L]]) ||
-                       rlang::is_string(expr[[2L]]))) {
-    assignment_target_names(expr[[2L]])
-  } else {
-    character()
-  }
-  if (!is.null(name) &&
-        name %in% c("assign", "delayedAssign", "makeActiveBinding")) {
-    formal <- if (name == "makeActiveBinding") "sym" else "x"
-    assigned <- unlist(lapply(
-      call_formal_argument(expr, formal), static_character_value
-    ), use.names = FALSE)
-    if (is.null(assigned)) {
-      assigned <- unresolved_lookup_name()
-    }
-  }
-  assigned
-}
-
 # `bound` carries the names a construct inside the expression has bound, so a
 # symbol matching one is a read of that binding rather than of a column. It is
 # threaded through the recursion rather than applied to the result, because the
@@ -4823,10 +4708,9 @@ scope_closure_list_member <- function(head, scope, lookup) {
       } else {
         match(key, names(elements))
       }
-    } else if (typeof(key) %in% c("integer", "double") &&
-                 is.finite(key) && key >= 1 && key <= length(elements) &&
-                 key == trunc(key)) {
-      key
+    } else if (typeof(key) %in% c("integer", "double") && is.finite(key)) {
+      # Index a plain sequence so R handles fractional and invalid positions.
+      tryCatch(seq_along(elements)[[key]], error = function(cnd) NULL)
     }
     if (is.null(index) || is.na(index) || index < 1L ||
           index > length(elements)) {
@@ -5303,6 +5187,17 @@ scope_bind_local <- function(scope, name, value = NULL, lookup = NULL,
   scope
 }
 
+# Bind tracked list elements in the current frame, discarding the old value.
+# Element descriptors arrive with offsets relative to the current scope.
+scope_bind_closure_list <- function(scope, name, elements) {
+  scope <- scope_bind_local(scope, name)
+  scope[[1L]]$kinds[[name]] <- "value"
+  scope[[1L]]$closure_lists[[name]] <- scope_shift_closure_elements(
+    elements, -1L
+  )
+  scope
+}
+
 # Carry a literal element write to a tracked list without evaluating its value.
 # Stored closures use offsets relative to the current frame.
 scope_after_list_write <- function(scope, target, value, lookup, value_scope) {
@@ -5369,12 +5264,7 @@ scope_after_list_write <- function(scope, target, value, lookup, value_scope) {
     }
   }
   name <- rlang::as_name(target[[2L]])
-  scope <- scope_bind_local(scope, name)
-  scope[[1L]]$kinds[[name]] <- "value"
-  scope[[1L]]$closure_lists[[name]] <- scope_shift_closure_elements(
-    elements, -1L
-  )
-  scope
+  scope_bind_closure_list(scope, name, elements)
 }
 
 # Update a tracked plain list's literal names without invoking replacement code.
@@ -5383,11 +5273,14 @@ scope_after_list_names <- function(scope, target, value, lookup, value_scope) {
   operator <- static_call_name(target)
   replacement <- rlang::call2(paste0(operator, "<-"),
                               .ns = static_call_ns(target))
-  if (!is_known_base_frame_call(replacement, paste0(operator, "<-"),
-                                value_scope, lookup) ||
-        length(target) < 2L || !is_name_part(target[[2L]])) return(scope)
+  if (length(target) < 2L || !is_name_part(target[[2L]])) return(scope)
   elements <- scope_closure_list(target[[2L]], value_scope, lookup)
   if (is.null(elements)) return(scope)
+  name <- rlang::as_name(target[[2L]])
+  replace_attributes <- identical(operator, "attributes")
+  unknown <- if (replace_attributes) scope_bind_local(scope, name) else scope
+  if (!is_known_base_frame_call(replacement, paste0(operator, "<-"),
+                                value_scope, lookup)) return(unknown)
   if (identical(operator, "attr")) {
     if (length(target) != 3L ||
           !identical(unparenthesized_value(target[[3L]]), "names")) {
@@ -5397,14 +5290,21 @@ scope_after_list_names <- function(scope, target, value, lookup, value_scope) {
     return(scope)
   }
   value <- unparenthesized_value(value)
-  if (identical(operator, "attributes") && !is.null(value)) {
+  if (replace_attributes && !is.null(value)) {
     if (!rlang::is_call(value, "list") ||
           !is_known_base_frame_call(value, "list", value_scope, lookup)) {
-      return(scope)
+      return(unknown)
     }
     attributes <- static_call_args(value)
+    if (any(vapply(attributes, rlang::is_missing, logical(1))) ||
+          !all(nzchar(rlang::names2(attributes)))) return(unknown)
+    # Classes can dispatch and dimensions can change character indexing.
+    dispatch_attributes <- names(attributes) %in% c("class", "dim", "dimnames")
+    if (!all(vapply(attributes[dispatch_attributes], is.null, logical(1)))) {
+      return(unknown)
+    }
     selected <- which(names(attributes) == "names")
-    if (length(selected) > 1L) return(scope)
+    if (length(selected) > 1L) return(unknown)
     value <- if (length(selected) == 1L) attributes[[selected]] else NULL
   }
   labels <- if (!is.null(value)) {
@@ -5413,27 +5313,10 @@ scope_after_list_names <- function(scope, target, value, lookup, value_scope) {
         is_known_base_frame_call(expr, "c", value_scope, lookup)
     })
   }
-  if (!is.null(value) && is.null(labels)) return(scope)
-  if (length(labels) > length(elements)) return(scope)
+  if (!is.null(value) && is.null(labels)) return(unknown)
+  if (length(labels) > length(elements)) return(unknown)
   names(elements) <- labels
-  name <- rlang::as_name(target[[2L]])
-  scope <- scope_bind_local(scope, name)
-  scope[[1L]]$kinds[[name]] <- "value"
-  scope[[1L]]$closure_lists[[name]] <- scope_shift_closure_elements(
-    elements, -1L
-  )
-  scope
-}
-
-# Identify literal function or value syntax without evaluating it.
-# NULL leaves the kind unknown.
-scope_literal_kind <- function(value) {
-  value <- unparenthesized_value(value)
-  if (is.function(value) || rlang::is_call(value, "function")) {
-    "function"
-  } else if (!is.language(value)) {
-    "value"
-  }
+  scope_bind_closure_list(scope, name, elements)
 }
 
 # Whether the nearest local binding proves that a bare call head is a
@@ -5581,24 +5464,6 @@ statement_reads_and_scope <- function(expr, scope, lookup = NULL,
   )
 }
 
-# Whether a recognized base function is the actual callee, without invoking it.
-# The caller supplies its static name; unresolved bindings prove no exemption.
-is_known_base_call <- function(expr, name, bound, lookup) {
-  namespace <- static_call_ns(expr)
-  if (!is.null(namespace)) {
-    return(identical(namespace, "base"))
-  }
-  rebound <- lookup$function_rebound %||% lookup$rebound
-  if (is.null(lookup$env) || name %in% c(bound, rebound) ||
-        unresolved_lookup_name() %in% rebound) {
-    return(FALSE)
-  }
-  identical(
-    ordinary_function_binding(name, lookup$env),
-    get(name, envir = baseenv())
-  )
-}
-
 # The body and child scope of a known base local() with its default environment.
 # Explicit environments continue through the ordinary call walk.
 implicit_local_parts <- function(expr, name, scope, lookup) {
@@ -5611,159 +5476,6 @@ implicit_local_parts <- function(expr, name, scope, lookup) {
       list(body = body[[1L]], scope = c(list(child), scope))
     }
   }
-}
-
-# A recognized scope mutation in direct-call form, without evaluating its head
-# or arguments. An unreadable do.call() argument list retains unknown targets.
-scope_mutation_call <- function(expr, bound, lookup) {
-  name <- resolved_callee_name(expr)
-  if (is.null(name) ||
-        !name %in% c("rm", "remove", "parent.env<-", "list2env", "do.call")) {
-    return(NULL)
-  }
-  head <- static_call_head(expr)
-  callee_bound <- bound
-  callee_lookup <- lookup
-  if (identical(name, "do.call")) {
-    if (scope_callee_is_shadowed(head, name, bound, lookup)) {
-      return(NULL)
-    }
-    target <- base_call_argument(expr, "what")
-    if (length(target) == 0L) {
-      return(NULL)
-    }
-    name <- static_callee_name(target[[1L]])
-    head <- target[[1L]]
-    environment <- base_call_argument(expr, "envir")
-    # String targets use envir; function values are evaluated in the caller.
-    if (length(static_character_value(head)) == 1L &&
-          length(environment) > 0L) {
-      callee_lookup$env <- lookup_environment_value(
-        environment[[1L]], bound, lookup
-      )
-      callee_lookup$mask <- character()
-      callee_bound <- character()
-    }
-    arguments <- base_call_argument(expr, "args")
-    parts <- if (length(arguments) > 0L &&
-                   identical(static_call_name(arguments[[1L]]), "list") &&
-                   is_known_base_call(arguments[[1L]], "list", bound, lookup)) {
-      static_call_args(arguments[[1L]])
-    } else if (identical(name, "parent.env<-")) {
-      alist(env = NULL, value = NULL)
-    } else {
-      alist(list = NULL)
-    }
-  } else {
-    parts <- static_call_args(expr)
-  }
-  if (is.null(name) ||
-        !name %in% c("rm", "remove", "parent.env<-", "list2env")) {
-    return(NULL)
-  }
-  if (scope_callee_is_shadowed(head, name, callee_bound, callee_lookup)) {
-    return(NULL)
-  }
-  rlang::call2(name, !!!parts)
-}
-
-# Whether ordinary lookup proves a named scope callee is caller-defined.
-# Unknown bindings remain conservative; function-naming resolvers are inspected
-# only for literal targets and existing environments, never invoked.
-scope_callee_is_shadowed <- function(callee, name, bound, lookup) {
-  if (is_parenthesized(callee)) {
-    return(scope_callee_is_shadowed(
-      unparenthesized_value(callee), name, bound, lookup
-    ))
-  }
-  if (rlang::is_call(callee, c("::", ":::"))) {
-    return(!identical(rlang::as_string(callee[[2L]]), "base"))
-  }
-  if (rlang::is_symbol(callee) && name %in% lookup$local_functions) {
-    return(TRUE)
-  }
-  if (is.null(lookup$env) || name %in% c(bound, lookup$rebound) ||
-        unresolved_lookup_name() %in% lookup$rebound) {
-    return(FALSE)
-  }
-  env <- lookup$env
-  own_lookup <- exclude_generic <- FALSE
-  if (rlang::is_call(callee)) {
-    resolver <- static_call_name(callee)
-    if (is.null(resolver) || is.null(function_naming_formal(resolver))) {
-      return(FALSE)
-    }
-    if (resolver %in% c(bound, lookup$rebound)) {
-      return(FALSE)
-    }
-    owner <- if (identical(resolver, "getFunction")) "methods" else "base"
-    namespace <- static_call_ns(callee)
-    binding <- if (is.null(namespace)) {
-      ordinary_function_binding(resolver, env, owners = owner)
-    } else if (identical(namespace, owner)) {
-      get(resolver, envir = asNamespace(owner))
-    } else {
-      return(TRUE)
-    }
-    if (!is.null(binding) &&
-          !identical(binding, get(resolver, envir = asNamespace(owner)))) {
-      return(TRUE)
-    }
-    if (is.null(binding)) {
-      return(FALSE)
-    }
-    if (resolver %in% c("get", "get0")) {
-      inherited <- base_call_argument(callee, "inherits", definition = binding)
-      own_lookup <- length(inherited) > 0L &&
-        !identical(unparenthesized_value(inherited[[1L]]), TRUE)
-    }
-    if (identical(resolver, "getFunction")) {
-      generic <- base_call_argument(callee, "generic", definition = binding)
-      exclude_generic <- length(generic) > 0L &&
-        !identical(unparenthesized_value(generic[[1L]]), TRUE)
-    }
-    environment <- base_call_argument(
-      callee, c("envir", "pos", "where"), definition = binding
-    )
-    if (length(environment) > 0L) {
-      env <- lookup_environment_value(environment[[1L]], bound, lookup)
-      if (is.null(env)) {
-        return(FALSE)
-      }
-    } else if (resolver %in% c("match.fun", "getFunction")) {
-      # These resolvers can start outside the captured lexical frame. A shadow
-      # confined to that frame cannot establish the function they will find.
-      if (identical(resolver, "match.fun")) {
-        lexical <- ordinary_function_binding(name, env)
-        if (!is.function(lexical) ||
-              identical(lexical, get(name, envir = baseenv()))) {
-          return(FALSE)
-        }
-      }
-      env <- topenv(env)
-    } else if (own_lookup || name %in% lookup$mask) {
-      return(FALSE)
-    }
-  }
-  if (!lookup_environment_is_external(
-    env, bound, lookup, inherits = !own_lookup, safe_parents = FALSE
-  )) {
-    return(FALSE)
-  }
-  binding <- if (own_lookup) {
-    if (!exists(name, envir = env, inherits = FALSE) ||
-          bindingIsActive(name, env) ||
-          rlang::env_binding_are_lazy(env, name)) {
-      return(FALSE)
-    }
-    get(name, envir = env, inherits = FALSE)
-  } else {
-    ordinary_function_binding(name, env)
-  }
-  if (exclude_generic && inherits(binding, "genericFunction")) {
-    return(FALSE)
-  }
-  is.function(binding) && !identical(binding, get(name, envir = baseenv()))
 }
 
 # Carry visible removals through expressions. Literal closures and implicit
@@ -6125,132 +5837,6 @@ removal_retained_bound <- function(expr, bound) {
   if (is.null(removed)) character() else setdiff(bound, removed)
 }
 
-# Names requested by a removal call. NULL denotes an unreadable name.
-# A caller with lexical scope can verify concatenation in a `list` argument.
-literal_removal_names <- function(args, is_concat = function(expr) FALSE) {
-  arg_names <- argument_names(args)
-  removed <- character()
-  for (i in seq_along(args)) {
-    name <- arg_names[[i]]
-    # An empty argument is R's missing marker, which cannot be read by name.
-    if (rlang::is_missing(args[[i]])) {
-      return(NULL)
-    }
-    arg <- args[[i]]
-    literal <- if (identical(name, "list")) {
-      static_character_value(arg, is_concat)
-    } else if (!nzchar(name) && is_name_part(arg)) {
-      rlang::as_name(arg)
-    } else if (!nzchar(name) && is.character(arg) && !anyNA(arg)) {
-      arg
-    }
-    if (is.null(literal)) {
-      return(NULL)
-    }
-    removed <- c(removed, literal)
-  }
-  removed
-}
-
-# The first supplied formal in priority order, or an empty list for defaults.
-# Match without evaluating caller expressions. A non-base resolver supplies its
-# verified definition; other callers use the recognized base primitive.
-base_call_argument <- function(expr, formals, definition = NULL) {
-  callee <- resolved_callee_name(expr)
-  args <- static_matched_arguments(
-    rlang::call2(callee, !!!static_call_args(expr)),
-    if (is.null(definition)) {
-      args(get(callee, envir = baseenv()))
-    } else {
-      args(definition)
-    }
-  )
-  for (formal in formals) {
-    if (formal %in% names(args)) {
-      return(args[formal])
-    }
-  }
-  list()
-}
-
-# Existing environment values without forcing caller bindings, or NULL.
-# Unknown expressions, promises, active bindings, and names shadowed by the
-# mask or an expression-local binding stay conservative without running code.
-lookup_environment_value <- function(expr, bound, lookup) {
-  if (is_parenthesized(expr)) {
-    return(lookup_environment_value(
-      unparenthesized_value(expr), bound, lookup
-    ))
-  }
-  if (is.environment(expr)) {
-    return(expr)
-  }
-  if (unresolved_lookup_name() %in% lookup$rebound) {
-    return(NULL)
-  }
-  if (rlang::is_call(expr, c("$", "[["), n = 2L) &&
-        rlang::is_symbol(expr[[2L]], ".env") &&
-        !".env" %in% c(bound, lookup$rebound)) {
-    name <- if (rlang::is_call(expr, "$") && is_name_part(expr[[3L]])) {
-      rlang::as_name(expr[[3L]])
-    } else {
-      static_character_value(expr[[3L]])
-    }
-    if (!is.null(name) && length(name) == 1L && !is.null(lookup)) {
-      return(lookup_environment_value(
-        rlang::sym(name), character(),
-        list(env = lookup$env, mask = character(), rebound = lookup$rebound)
-      ))
-    }
-  }
-  if (!is_name_part(expr)) {
-    return(NULL)
-  }
-  name <- rlang::as_name(expr)
-  if (is.null(lookup) || name %in% c(bound, lookup$mask, lookup$rebound)) {
-    return(NULL)
-  }
-  current <- lookup$env
-  while (!identical(current, emptyenv())) {
-    if (exists(name, envir = current, inherits = FALSE)) {
-      if (bindingIsActive(name, current) ||
-            rlang::env_binding_are_lazy(current, name)) {
-        return(NULL)
-      }
-      value <- get(name, envir = current, inherits = FALSE)
-      return(if (is.environment(value)) value else NULL)
-    }
-    current <- parent.env(current)
-  }
-  NULL
-}
-
-# Whether a lookup stays outside the mask after visible parent replacements.
-# Non-inheriting reads cannot reach a changed parent. A TRUE target value
-# denotes an unresolved mutation target, which invalidates every proof.
-# Safe parents exclude mask reads, but can still change function lookup.
-lookup_environment_is_external <- function(expr, bound, lookup,
-                                           inherits = TRUE,
-                                           safe_parents = TRUE) {
-  value <- lookup_environment_value(expr, bound, lookup)
-  if (is.null(value)) {
-    return(FALSE)
-  }
-  if (!inherits) {
-    return(TRUE)
-  }
-  while (!identical(value, emptyenv())) {
-    if (any(vapply(lookup$reparented, function(target) {
-      !(safe_parents && target$safe_parent) &&
-        (isTRUE(target$value) || identical(target$value, value))
-    }, logical(1)))) {
-      return(FALSE)
-    }
-    value <- parent.env(value)
-  }
-  TRUE
-}
-
 # Visible parent replacements: target identities and mask-excluding parents.
 # An unreadable target is TRUE; no caller expression is run.
 lookup_reparented_environments <- function(
@@ -6577,27 +6163,4 @@ evaluated_language_symbols <- function(expr, scope, lookup) {
     lapply(values, scoped_data_symbols, scope = scope, lookup = lookup),
     use.names = FALSE
   ))
-}
-
-# The name the walk reports for a read it could not resolve.
-#
-# #130 fixed the walk as two-valued -- a name is read or it is not -- and this
-# keeps that shape rather than adding a third answer to it: the marker is a
-# name, carried in the vector every branch already unions, and the one site
-# that reads it is `expression_alias_dependencies()`, which turns it into a
-# read of every alias in scope. Returning a record instead, as
-# `statement_reads_and_scope()` does for the two answers a binding statement
-# has, would rewrite every branch of the walk to carry a second field that
-# only three of them can set.
-#
-# The alternatives are the two #130 rules out. Reporting nothing is the silence
-# the whole walk exists to prevent, and refusing the call outright would reject
-# `get(name)` wherever a summary precedes it, which is legal code.
-#
-# The `..marginplyr` prefix is the one this package's internal names carry. A
-# column of this name would be read as unresolvable rather than as itself,
-# which is the over-reporting direction, so a collision costs a diagnostic and
-# never a silent miss.
-unresolved_lookup_name <- function() {
-  "..marginplyr_unresolved_lookup"
 }

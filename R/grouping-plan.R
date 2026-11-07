@@ -125,7 +125,9 @@ resolve_fixed_keys <- function(by_quo, group_vars, data_vars,
   if (rlang::quo_is_null(by_quo) || is_empty_argument(by_quo)) {
     return(character())
   }
-  if (!is_name_only_selection(by_quo, data_vars)) {
+  if (!is_name_only_selection(
+    by_quo, data_vars, allow_data_peek = !is.object(name_proxy)
+  )) {
     return(NULL)
   }
   resolve_by_selection(by_quo, name_proxy)
@@ -224,8 +226,9 @@ prepare_grouping_plan <- function(.data,
       }
       remember_sent_query_backend(backend)
       data_vars <- get_col_names(data, dplyr::everything())
-      # Local selection keeps the receiver's names() dispatch, which can read
-      # the active typed context. It needs no backend metadata acquisition.
+      # Recognized captures and fixed keys can use the local receiver once.
+      # Discarded validation uses only names and leaves dispatched context
+      # data reads to the canonical pass.
       name_proxy <- if (identical(backend$kind, "local")) {
         data
       } else {
@@ -256,7 +259,7 @@ prepare_grouping_plan <- function(.data,
           local_plan <- compile_grouping_spec(
             grouping_spec,
             data_vars = data_vars,
-            data_proxy = name_proxy,
+            data_proxy = grouping_name_proxy(data_vars),
             .by = if (is.null(by)) character() else by,
             .duplicates = .duplicates,
             duplicates_choices = duplicates_choices,
@@ -268,7 +271,7 @@ prepare_grouping_plan <- function(.data,
         preflight_warnings <- with_discarded_selections({
           local_dimensions <- validate_leading_selections(
             preflight, data_vars, .by = by, .duplicates, duplicates_choices,
-            proxy = name_proxy
+            allow_data_peek = !is.object(name_proxy)
           )
         })
       }
@@ -501,10 +504,14 @@ selection_c_args <- function(args, env) {
 # column names, which is the pair the symbol branch decides from.
 # `allow_caller_code = FALSE` also withholds caller functions and assignments,
 # so a discarded mixed-selection pass cannot change their evaluation order.
-is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE) {
+# A context-data names read may dispatch on a classed local receiver.
+is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE,
+                              allow_data_peek = TRUE) {
   # An injected selector is walked in the environment it carries.
   if (rlang::is_quosure(expr)) {
-    return(is_name_only_selection(expr, data_vars, allow_caller_code))
+    return(is_name_only_selection(
+      expr, data_vars, allow_caller_code, allow_data_peek
+    ))
   }
   # `is_name_part()` rather than `rlang::is_symbol()`, for the reason its
   # header gives: a part read by subscript may be R's empty argument.
@@ -540,17 +547,18 @@ is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE) {
         !is_redundant_parens(ordinary, ns = "")) {
     return(is_name_only_helper_arg(
       ordinary, env, allow_caller_code = allow_caller_code,
-      allow_env_pronoun = TRUE
+      allow_env_pronoun = TRUE, allow_data_peek = allow_data_peek
     ))
   }
 
   # tidyselect refuses a bare formula by spelling and a public base formula
-  # by its value. Only a proven base namespace operator makes the latter
-  # independent of column types. `is_nameable_call()` declines `~` (#163).
+  # by its value. A proven stock or absent namespace operator settles the
+  # qualified call from names alone. `is_nameable_call()` declines `~` (#163).
   if (rlang::is_call(expr, "~", ns = "") || (
     rlang::is_call(expr, "~", ns = "base") &&
       rlang::is_call(static_call_head(expr), "::", ns = "") &&
-      namespace_operator_name_only("::", env, allow_unbound = FALSE)
+      identical(ordinary_function_binding("::", env, absent = base::`::`),
+                base::`::`)
   )) {
     return(TRUE)
   }
@@ -582,7 +590,8 @@ is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE) {
       env = env,
       allow_caller_code = allow_caller_code,
       allow_stringr_pattern = identical(call_name, "matches"),
-      allow_env_pronoun = TRUE
+      allow_env_pronoun = TRUE,
+      allow_data_peek = allow_data_peek
     )))
   }
   # tidyselect refuses only a bare operator head. Qualified or parenthesized
@@ -594,7 +603,9 @@ is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE) {
     return(TRUE)
   }
   if (!is_selection_walk_call(expr)) {
-    return(is_selection_name_lookup(expr, env))
+    return(is_selection_name_lookup(
+      expr, env, allow_data_peek = allow_data_peek
+    ))
   }
   args <- static_call_args(expr)
   if (identical(call_name, "c")) {
@@ -606,14 +617,16 @@ is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE) {
     logical(1),
     env = env,
     data_vars = data_vars,
-    allow_caller_code = allow_caller_code
+    allow_caller_code = allow_caller_code,
+    allow_data_peek = allow_data_peek
   ))
 }
 
 # Whether a call reads selection-context names or uses a literal .env subscript.
 # The caller supplies the selection's lexical environment. Indexing a name
 # lookup requires subscripts independent of the typed proxy and caller code.
-is_selection_name_lookup <- function(expr, env, allow_env_pronoun = TRUE) {
+is_selection_name_lookup <- function(expr, env, allow_env_pronoun = TRUE,
+                                     allow_data_peek = TRUE) {
   if (!rlang::is_call(expr) || !selection_call_parens_safe(expr, env)) {
     return(FALSE)
   }
@@ -627,16 +640,20 @@ is_selection_name_lookup <- function(expr, env, allow_env_pronoun = TRUE) {
   }
   if (identical(fn, base::names)) {
     return(
-      length(args) == 1L &&
+      allow_data_peek && length(args) == 1L &&
         is_selection_data_peek(args[[1L]], env, character(), context = TRUE)
     )
   }
   (identical(fn, base::`[`) || identical(fn, base::`[[`)) &&
     length(args) > 0L &&
-    is_selection_name_lookup(args[[1L]], env, allow_env_pronoun = FALSE) &&
+    is_selection_name_lookup(
+      args[[1L]], env, allow_env_pronoun = FALSE,
+      allow_data_peek = allow_data_peek
+    ) &&
     all(vapply(
       args[-1L], is_name_only_helper_arg, logical(1),
-      env = env, allow_caller_code = FALSE, allow_env_pronoun = TRUE
+      env = env, allow_caller_code = FALSE, allow_env_pronoun = TRUE,
+      allow_data_peek = allow_data_peek
     ))
 }
 
@@ -679,7 +696,8 @@ is_name_only_helper_arg <- function(expr,
                                     outer_rebound = selection_rebound_names(
                                       list(expr), assignments = "<<-",
                                       env = env, bound = bound, seen = seen
-                                    )) {
+                                    ),
+                                    allow_data_peek = TRUE) {
   if (rlang::is_quosure(expr)) {
     # Captured syntax keeps ordinary argument evaluation in its own scope.
     # Enclosing closure formals do not bind names inside that scope.
@@ -688,6 +706,7 @@ is_name_only_helper_arg <- function(expr,
       allow_caller_code = allow_caller_code,
       allow_stringr_pattern = allow_stringr_pattern,
       allow_env_pronoun = allow_env_pronoun,
+      allow_data_peek = allow_data_peek,
       outer_rebound = union(outer_rebound, selection_rebound_names(
         list(rlang::quo_get_expr(expr)), assignments = "<<-",
         env = rlang::quo_get_env(expr), seen = seen
@@ -724,7 +743,7 @@ is_name_only_helper_arg <- function(expr,
   if (is_redundant_parens(expr)) {
     return(is_name_only_helper_arg(
       expr[[2L]], env, bound, seen, allow_caller_code, allow_stringr_pattern,
-      allow_env_pronoun, rebound, outer_rebound
+      allow_env_pronoun, rebound, outer_rebound, allow_data_peek
     ))
   }
   context <- length(seen) == 0L
@@ -743,7 +762,7 @@ is_name_only_helper_arg <- function(expr,
     identical(fn, base::names) && length(args) == 1L &&
       is_selection_data_peek(args[[1L]], env, callee_bound, context)
   ) {
-    return(TRUE)
+    return(allow_data_peek)
   }
   if (identical(fn, base::c) && !"..." %in% bound) {
     args <- selection_c_args(args, env)
@@ -761,7 +780,8 @@ is_name_only_helper_arg <- function(expr,
     allow_caller_code = allow_caller_code,
     allow_stringr_pattern = leaf_helper && identical(name, "matches"),
     allow_env_pronoun = allow_env_pronoun,
-    rebound = rebound, outer_rebound = outer_rebound
+    rebound = rebound, outer_rebound = outer_rebound,
+    allow_data_peek = allow_data_peek
   ))) {
     return(FALSE)
   }
@@ -815,6 +835,7 @@ is_name_only_helper_arg <- function(expr,
     env = environment(fn),
     bound = names(formals(fn)),
     seen = c(seen, list(fn)),
+    allow_data_peek = allow_data_peek,
     rebound = selection_rebound_names(parts),
     outer_rebound = union(outer_rebound, selection_rebound_names(
       parts, assignments = "<<-", env = environment(fn),
@@ -1059,20 +1080,13 @@ is_name_only_namespace <- function(expr, env, bound = character()) {
   if (is.null(operator)) {
     return(TRUE)
   }
-  namespace_operator_name_only(operator, env, bound)
-}
-
-# Whether a qualified head's written operator is stock or fails from names
-# alone. Callers requiring a successful lookup disallow absent operators.
-namespace_operator_name_only <- function(operator, env, bound = character(),
-                                         allow_unbound = TRUE) {
   if (operator %in% bound || selection_binding_deferred(
     env, operator, allow_namespace_promises = FALSE
   )) {
     return(FALSE)
   }
   if (!rlang::env_has(env, operator, inherit = TRUE)) {
-    return(allow_unbound)
+    return(TRUE)
   }
   identical(
     rlang::env_get(env, operator, default = NULL, inherit = TRUE),
@@ -1199,12 +1213,14 @@ selection_warning_key <- function(cnd) {
   list(class(cnd), conditionMessage(cnd), conditionCall(cnd))
 }
 
-is_name_only_selection <- function(arg, data_vars, allow_caller_code = TRUE) {
+is_name_only_selection <- function(arg, data_vars, allow_caller_code = TRUE,
+                                   allow_data_peek = TRUE) {
   is_name_only_expr(
     rlang::quo_get_expr(arg),
     env = rlang::quo_get_env(arg),
     data_vars = data_vars,
-    allow_caller_code = allow_caller_code
+    allow_caller_code = allow_caller_code,
+    allow_data_peek = allow_data_peek
   )
 }
 
@@ -1221,8 +1237,9 @@ grouping_name_proxy <- function(data_vars) {
 # `.by` holds the fixed keys already resolved from names, or NULL if unresolved.
 validate_leading_selections <- function(
   preflight, data_vars, .by, .duplicates, duplicates_choices,
-  proxy = grouping_name_proxy(data_vars)
+  allow_data_peek = TRUE
 ) {
+  proxy <- grouping_name_proxy(data_vars)
   resolved <- new.env(parent = emptyenv())
   resolved$dimensions <- character()
   resolved$completed <- list()
@@ -1230,7 +1247,10 @@ validate_leading_selections <- function(
   resolved$offset <- 0L
   resolved$width <- 1L
   resolve_selection <- function(arg) {
-    if (!is_name_only_selection(arg, data_vars, allow_caller_code = FALSE)) {
+    if (!is_name_only_selection(
+      arg, data_vars, allow_caller_code = FALSE,
+      allow_data_peek = allow_data_peek
+    )) {
       invokeRestart("needs_typed_selection")
     }
     selected <- resolve_grouping_selection(arg, proxy)
@@ -1414,7 +1434,9 @@ preflight_grouping_spec <- function(
       if (!reused && !reading$evaluated) {
         check_ambiguous_nested_name(arg, grouping_spec, rule, data_vars)
       }
-      name_only <- name_only && is_name_only_selection(reading$quo, data_vars)
+      name_only <- name_only && is_name_only_selection(
+        reading$quo, data_vars, allow_data_peek = !is.object(name_proxy)
+      )
       args[[i]] <- reading
       next
     }

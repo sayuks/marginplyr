@@ -1,6 +1,6 @@
 # The receiver keeps ordinary names outside selection and distinguishes typed
 # metadata from the unclassed integer-list proxy inside selection.
-context_name_dispatch_data <- function() {
+context_name_dispatch_data <- function(reverse_once = FALSE) {
   state <- rlang::env(busy = FALSE, typed = 0L)
   registerS3method("names", "margin_context_names", function(x) {
     ordinary <- attr(x, "names")
@@ -14,7 +14,7 @@ context_name_dispatch_data <- function() {
     data <- tryCatch(tidyselect::peek_data(), error = function(cnd) NULL)
     if (!is.null(data) && is.character(data[[1L]])) {
       state$typed <- state$typed + 1L
-      return(rev(ordinary))
+      if (!reverse_once || state$typed == 1L) return(rev(ordinary))
     }
     ordinary
   }, envir = asNamespace("base"))
@@ -137,4 +137,30 @@ test_that("captured context-name operands retain their dispatched receiver", {
                      .grouping = grouping_set(b), .format = "list")
   )
   expect_identical(serialize(data, NULL), original)
+})
+
+test_that("canonical selections use the first dispatched context names", {
+  case <- context_name_dispatch_data(reverse_once = TRUE)
+  data <- case$data
+  direct <- rlang::quo(names(tidyselect::peek_data())[1L])
+  wrapped <- rlang::quo(identity(!!direct))
+  for (selection in list(direct, wrapped)) {
+    case$state$typed <- 0L
+    expect_identical(tidyselect::eval_select(selection, data), c(b = 2L))
+    expect_identical(case$state$typed, 1L)
+
+    case$state$typed <- 0L
+    single <- inspect_grouping(data, .by = a, .grouping = grouping_set(
+      !!selection
+    ), .format = "list")
+    expect_identical(single$included, list("b"))
+    expect_identical(case$state$typed, 1L)
+
+    case$state$typed <- 0L
+    mixed <- inspect_grouping(data, .by = a, .grouping = grouping_sets(
+      !!selection, identity("b")
+    ), .format = "list", .duplicates = "keep")
+    expect_identical(mixed$included, list("b", "b"))
+    expect_identical(case$state$typed, 1L)
+  }
 })
