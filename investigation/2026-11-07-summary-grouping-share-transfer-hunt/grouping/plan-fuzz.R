@@ -7,7 +7,7 @@ gen <- function(depth = 0L) {
   if (kind == "grouping_set") return(as.call(c(list(as.name(kind)), lapply(sample(letters[1:4], sample(0:4, 1L)), as.name))))
   n <- if (kind %in% c("rollup", "cube")) sample(1:4, 1L) else sample(1:3, 1L)
   args <- if (kind %in% c("rollup", "cube")) lapply(seq_len(n), function(i) {
-    if (runif(1) < .4) as.call(c(list(as.name("grouping_set")), lapply(sample(letters[1:4], sample(1:3, 1L)), as.name))) else as.name(sample(letters[1:4], 1L))
+    if (runif(1) < 0.4) as.call(c(list(as.name("grouping_set")), lapply(sample(letters[1:4], sample(1:3, 1L)), as.name))) else as.name(sample(letters[1:4], 1L))
   }) else lapply(seq_len(n), function(i) gen(depth + 1L))
   as.call(c(list(as.name(kind)), args))
 }

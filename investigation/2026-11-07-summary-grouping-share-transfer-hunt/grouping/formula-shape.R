@@ -69,7 +69,7 @@ if (mode == "contract" && !all(results$good)) quit(status=1L)
 
 # Ordinary bare and genuinely qualified formula controls remain caller errors.
 if (mode == "controls") {
-  for (expr in list(quote(~a), quote(base::`~`(a)), quote(base:::`~`(a)))) {
+  for (expr in list(quote(~a), quote(base::`~`(a)), rlang::call2(rlang::call2(":::", quote(base), rlang::sym("~")), quote(a)))) {
     actual <- tryCatch(inspect_grouping(input, .grouping=grouping_set(!!expr)),error=identity)
     stopifnot(inherits(actual,"error"))
   }
