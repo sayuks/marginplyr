@@ -1,5 +1,23 @@
 # marginplyr 0.1.0
 
+* Grouping selections preserve dtplyr receiver methods, ordinary tidyselect name repair, and the selection context of explicitly qualified constructor callees (#1439, #1449, #1457).
+
+* `summarize_with_margins()` identifies incompatible unnamed frame fields across grouping sets and explains how to use consistent fields or pack the summary (#1441).
+
+* Parent and Total shares on DuckDB and PostgreSQL check that a direct single-argument SQL `UNNEST()` source returns one value per grouping row (#1442).
+
+* Parent and Total share dependency checks follow closures through nested list writes, replacement dispatch, inline call frames, and literal list indices (#1443, #1444, #1445, #1446).
+
+* Ordinary dtplyr Margin summaries read special-name key columns such as `.N` with their original row values, while `dplyr::n()` still counts rows (#1440).
+
+* The first ordinary `across()` beside a contextual share selects the stored local input columns (#1447).
+
+* Margin label checks compare the character displays emitted by expansion and the stored level strings of factor dimensions (#1450, #1451).
+
+* dtplyr Margin operations preserve generated label checks, omitted labels, empty Grouping set identifiers, and Nest cell membership when a caller overrides namespace lookup (#1452, #1453, #1456).
+
+* SQLite Margin expansions check labels on derived Boolean-word columns and collect unsorted Date displays as text when a text Margin label is requested (#1454, #1455).
+
 * Parent and Total share dependency checks follow literal member paths through nested lists of local closures, including extracted inner lists (#1432).
 
 * Generated dtplyr Margin-label display and factor restoration preserve source dimensions when a caller overrides the namespace operator (#1433).
