@@ -203,38 +203,78 @@
 #'   ) |>
 #'   dplyr::show_query()
 grouping_set <- function(...) {
-  new_grouping_spec("set", capture_grouping_args(...))
+  args <- capture_grouping_args(...)
+  new_grouping_spec("set", args)
 }
 
 #' @rdname grouping_set
 #' @export
 grouping_sets <- function(...) {
-  new_grouping_spec("sets", capture_grouping_args(...))
+  args <- capture_grouping_args(...)
+  new_grouping_spec("sets", args)
 }
 
 #' @rdname grouping_set
 #' @export
 rollup <- function(...) {
-  new_grouping_spec("rollup", capture_grouping_args(...))
+  args <- capture_grouping_args(...)
+  new_grouping_spec("rollup", args)
 }
 
 #' @rdname grouping_set
 #' @export
 cube <- function(...) {
-  new_grouping_spec("cube", capture_grouping_args(...))
+  args <- capture_grouping_args(...)
+  new_grouping_spec("cube", args)
 }
 
 #' @rdname grouping_set
 #' @export
 grouping_spec <- function(...) {
-  new_grouping_spec("product", capture_grouping_args(...))
+  args <- capture_grouping_args(...)
+  new_grouping_spec("product", args)
+}
+
+# Capture a public .grouping argument before an empty splice can make an
+# authored constructor position look like an omitted trailing comma.
+capture_public_grouping <- function(quo, written) {
+  if (is_captured_grouping_quosure(written, quo)) {
+    return(quo)
+  }
+  capture <- function(x) rlang::enquo(x)
+  env <- rlang::quo_get_env(quo)
+  expr <- mark_grouping_empty_args(rlang::quo_get_expr(quo))
+  rlang::eval_bare(rlang::call2(capture, expr), env)
+}
+
+# Mark calls whose last argument can become an authored empty after splicing.
+# Argument syntax stays intact for caller-defined constructor functions.
+mark_grouping_empty_args <- function(expr) {
+  if (rlang::is_missing(expr) || rlang::is_quosure(expr) ||
+        !(is.call(expr) || is.pairlist(expr))) {
+    return(expr)
+  }
+  parts <- as.list(expr)
+  positions <- seq_along(parts)[-c(1L, length(parts))]
+  keep_empty <- !is.null(static_spelling_name(expr, "grouping_constructor")) &&
+    any(vapply(parts[positions], rlang::is_missing, logical(1))) &&
+    !rlang::is_missing(parts[[length(parts)]])
+  parts <- lapply(parts, mark_grouping_empty_args)
+  out <- if (is.call(expr)) as.call(parts) else as.pairlist(parts)
+  attributes(out) <- attributes(expr)
+  if (keep_empty) {
+    attr(out, "marginplyr_keep_empty") <- TRUE
+  }
+  out
 }
 
 # Capture tagged arguments without interpreting their values, so preflight can
 # report their original names. Untagged arguments retain tidy-eval capture,
 # including injections and the omission of a trailing empty argument. Already
-# captured quosures retain their own injection boundary.
+# captured quosures retain their own injection boundary. The caller must be
+# the constructor itself, whose invocation can carry the outer capture marker.
 capture_grouping_args <- function(...) {
+  keep_empty <- isTRUE(attr(sys.call(-1L), "marginplyr_keep_empty"))
   written <- as.list(substitute(list(...)))[-1L]
   args <- rlang::enquos0(...)
   if (length(args) == 0L || any(nzchar(rlang::names2(args)))) {
@@ -246,12 +286,15 @@ capture_grouping_args <- function(...) {
   }, logical(1))
   protected <- lapply(expressions, preserve_grouping_quosures)
   if (!any(captured) && identical(expressions, protected)) {
-    return(rlang::enquos(...))
+    return(rlang::enquos(
+      ..., .ignore_empty = if (keep_empty) "none" else "trailing"
+    ))
   }
   capture <- function(...) rlang::enquos(..., .ignore_empty = "none")
   positions <- seq_along(args)
   # Omit the last raw empty argument before splicing can remove a successor.
-  if (rlang::is_missing(expressions[[length(args)]])) {
+  if (!keep_empty &&
+        rlang::is_missing(expressions[[length(args)]])) {
     positions <- positions[-length(positions)]
   }
   args <- lapply(positions, function(i) {

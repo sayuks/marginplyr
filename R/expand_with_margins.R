@@ -105,7 +105,9 @@ expand_with_margins <- function(.data,
     },
     call = call
   )
-  grouping_quo <- rlang::enquo(.grouping)
+  grouping_quo <- capture_public_grouping(
+    rlang::enquo0(.grouping), substitute(.grouping)
+  )
   by_quo <- rlang::enquo(.by)
 
   operation <- prepare_margin_operation(

@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Public `.grouping` capture preserves authored empty constructor arguments
+  before empty splices and refuses them with their original position (#1489).
+
 * Parent and Total share dependency checks retain local closures returned by
   `rlang::as_function()` and `compiler::cmpfun()` (#1482).
 
