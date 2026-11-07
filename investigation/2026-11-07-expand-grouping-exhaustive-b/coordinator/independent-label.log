@@ -1,0 +1,6 @@
+Source, mutation and union controls: zero callbacks; exact matches
+Expected region: east, west
+Actual region: changed:east, changed:west ; generated-label callbacks: 1
+Payload and source bytes unchanged; restored binding recovers exact expected frame
+Error: identical(actual, expected) is not TRUE
+Execution halted

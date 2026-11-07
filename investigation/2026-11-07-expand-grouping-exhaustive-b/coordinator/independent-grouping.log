@@ -1,0 +1,9 @@
+Direct selection: dimension ; ordinary fixed group: fixed
+Typed control included: dimension
+Inspection error: Columns cannot appear in both `.by` and `.grouping`:
+ℹ `fixed`.
+Expansion error: Columns cannot appear in both `.by` and `.grouping`:
+ℹ `fixed`.
+Caller source bytes unchanged
+Error: !inherits(inspect, "error") is not TRUE
+Execution halted

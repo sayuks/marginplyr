@@ -1,0 +1,12 @@
+[[1]]
+[1] "a"
+
+[[1]]
+[1] "b"
+
+  a n
+1 A 1
+2 B 1
+  b n
+1 1 2
+Fixed-key selection silently changed summary and both nested grains.
