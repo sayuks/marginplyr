@@ -5256,6 +5256,9 @@ scope_after_list_write <- function(scope, target, value, lookup, value_scope) {
   }
   target <- unparenthesized_value(target)
   operator <- static_call_name(target)
+  if (!is.null(operator) && operator %in% c("names", "attr", "attributes")) {
+    return(scope_after_list_names(scope, target, value, lookup, value_scope))
+  }
   if (is.null(operator) || !operator %in% c("[", "[[", "$") ||
         length(target) != 3L || !is_name_part(target[[2L]]) ||
         !is_known_base_frame_call(target, operator, value_scope, lookup)) {
@@ -5308,6 +5311,55 @@ scope_after_list_write <- function(scope, target, value, lookup, value_scope) {
       if (rlang::is_string(key)) names(elements)[index] <- key
     }
   }
+  name <- rlang::as_name(target[[2L]])
+  scope <- scope_bind_local(scope, name)
+  scope[[1L]]$kinds[[name]] <- "value"
+  scope[[1L]]$closure_lists[[name]] <- lapply(elements, function(closure) {
+    if (!is.null(closure)) closure$enclosing <- closure$enclosing - 1L
+    closure
+  })
+  scope
+}
+
+# Update a tracked plain list's literal names without invoking replacement code.
+# Stored closures retain their positions and enclosing-frame offsets.
+scope_after_list_names <- function(scope, target, value, lookup, value_scope) {
+  operator <- static_call_name(target)
+  replacement <- rlang::call2(paste0(operator, "<-"),
+                              .ns = static_call_ns(target))
+  if (!is_known_base_frame_call(replacement, paste0(operator, "<-"),
+                                value_scope, lookup) ||
+        length(target) < 2L || !is_name_part(target[[2L]])) return(scope)
+  elements <- scope_closure_list(target[[2L]], value_scope, lookup)
+  if (is.null(elements)) return(scope)
+  if (identical(operator, "attr")) {
+    if (length(target) != 3L ||
+          !identical(unparenthesized_value(target[[3L]]), "names")) {
+      return(scope)
+    }
+  } else if (length(target) != 2L) {
+    return(scope)
+  }
+  value <- unparenthesized_value(value)
+  if (identical(operator, "attributes") && !is.null(value)) {
+    if (!rlang::is_call(value, "list") ||
+          !is_known_base_frame_call(value, "list", value_scope, lookup)) {
+      return(scope)
+    }
+    attributes <- static_call_args(value)
+    selected <- which(names(attributes) == "names")
+    if (length(selected) > 1L) return(scope)
+    value <- if (length(selected) == 1L) attributes[[selected]] else NULL
+  }
+  labels <- if (!is.null(value)) {
+    static_character_value(value, function(expr) {
+      identical(static_call_name(expr), "c") &&
+        is_known_base_frame_call(expr, "c", value_scope, lookup)
+    })
+  }
+  if (!is.null(value) && is.null(labels)) return(scope)
+  if (length(labels) > length(elements)) return(scope)
+  names(elements) <- labels
   name <- rlang::as_name(target[[2L]])
   scope <- scope_bind_local(scope, name)
   scope[[1L]]$kinds[[name]] <- "value"
