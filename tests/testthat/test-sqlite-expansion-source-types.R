@@ -1,3 +1,237 @@
+test_that("SQLite unsorted finite expansion keeps missing source types", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(
+    con, data.frame(g = NA_character_), "finite_missing_dimension"
+  )
+  query <- expand_with_margins(
+    source, .grouping = rollup(g), .margin_label = NULL
+  )
+
+  expect_identical(dplyr::collect(query, n = 1L)$g, NA_character_)
+})
+
+test_that("SQLite expansion preserves runtime collection conditions", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(
+    con, data.frame(g = "a", value = 1L), "expansion_runtime_conditions"
+  ) |>
+    dplyr::mutate(bad = no_such_function(value))
+  baseline <- expect_error(dplyr::collect(source))
+
+  for (id in list(NULL, "sid")) {
+    query <- expand_with_margins(
+      source, .grouping = rollup(g), .margin_label = NULL, .id = id
+    )
+    for (cte in c(FALSE, TRUE)) {
+      for (n in c(1L, Inf)) {
+        error <- expect_error(dplyr::collect(
+          query, n = n, sql_options = dbplyr::sql_options(cte = cte)
+        ))
+        expect_identical(class(error), class(baseline))
+        expect_identical(error$message, baseline$message)
+        expect_identical(class(error$parent), class(baseline$parent))
+        expect_identical(conditionMessage(error$parent),
+                         conditionMessage(baseline$parent))
+        expect_identical(conditionCall(error)[[1L]], quote(dplyr::collect))
+      }
+    }
+    carried <- expand_with_margins(
+      query, .grouping = rollup(g), .margin_label = NULL
+    )
+    error <- expect_error(dplyr::collect(carried))
+    expected <- if (is.null(id)) baseline else baseline$parent
+    expect_identical(class(error), class(expected))
+    expect_identical(conditionMessage(error), conditionMessage(expected))
+    expect_identical(class(error$parent), class(expected$parent))
+  }
+
+  sorted <- expand_with_margins(
+    source, .grouping = rollup(g), .margin_label = NULL, .sort = "last"
+  )
+  carried <- expand_with_margins(
+    sorted, .grouping = rollup(g), .margin_label = NULL
+  )
+  for (query in list(sorted, carried)) {
+    error <- expect_error(dplyr::collect(query))
+    expect_identical(class(error), class(baseline$parent))
+    expect_identical(conditionMessage(error),
+                     conditionMessage(baseline$parent))
+    expect_null(error$parent)
+  }
+})
+
+test_that("SQLite finite expansion keeps source schema and row copies", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  plans <- list(
+    rollup = rollup(grouping_set(text, integer, double)),
+    detail_first = grouping_sets(
+      grouping_set(text, integer, double), grouping_set()
+    ),
+    total_first = grouping_sets(
+      grouping_set(), grouping_set(text, integer, double)
+    )
+  )
+  for (missing in c(TRUE, FALSE)) {
+    values <- if (missing) {
+      data.frame(text = NA_character_, integer = NA_integer_, double = NA_real_,
+                 payload = 7L)
+    } else {
+      data.frame(text = "a", integer = 2L, double = 3.5, payload = 7L)
+    }
+    source <- dplyr::copy_to(
+      con, values, "finite_source_schema", overwrite = TRUE
+    )
+    # The unexpanded source is an independent driver-level type oracle.
+    oracle <- dplyr::collect(source)
+    expect_identical(as.data.frame(oracle), values)
+    margin <- oracle
+    for (column in c("text", "integer", "double")) {
+      margin[[column]] <- oracle[[column]][NA_integer_]
+    }
+    for (kind in names(plans)) {
+      for (label in list(NULL, NA_character_)) {
+        for (id in list(NULL, "sid")) {
+          for (sort in c("none", "first", "last")) {
+            info <- paste(missing, kind, label, id, sort, collapse = " ")
+            detail <- oracle
+            total <- margin
+            if (!is.null(id)) {
+              detail$sid <- if (identical(kind, "total_first")) 2L else 1L
+              total$sid <- 3L - detail$sid
+            }
+            expected <- if (identical(sort, "first")) {
+              dplyr::bind_rows(total, detail)
+            } else {
+              dplyr::bind_rows(detail, total)
+            }
+            columns <- c("text", "integer", "double", id, "payload")
+            expected <- expected[columns]
+            query <- expand_with_margins(
+              source, .grouping = plans[[kind]], .margin_label = label,
+              .id = id, .sort = sort
+            )
+            for (n in c(0L, 1L, 2L, Inf)) {
+              result <- dplyr::collect(query, n = n)
+              rows <- seq_len(min(n, 2L))
+              expect_identical(names(result), columns, info = info)
+              expect_identical(nrow(result), length(rows), info = info)
+              if (identical(sort, "none")) {
+                expect_identical(class(result), class(oracle), info = info)
+              }
+              for (column in c("text", "integer", "double", "payload")) {
+                expect_identical(typeof(result[[column]]),
+                                 typeof(oracle[[column]]), info = info)
+              }
+              if (!is.null(id)) {
+                expect_type(result$sid, "integer")
+              }
+              if (identical(sort, "none") && length(rows) == 1L) {
+                # An unsorted prefix may choose either grouping-set copy.
+                expect_true(any(vapply(1:2, function(i) {
+                  identical(as.list(result), as.list(expected[i, ]))
+                }, logical(1))), info = info)
+              } else if (identical(sort, "none")) {
+                expect_identical(
+                  as.data.frame(dplyr::arrange(
+                    result, dplyr::across(dplyr::everything())
+                  )),
+                  as.data.frame(dplyr::arrange(
+                    expected[rows, ], dplyr::across(dplyr::everything())
+                  )), info = info
+                )
+              } else {
+                expect_identical(as.list(result), as.list(expected[rows, ]),
+                                 info = info)
+              }
+            }
+            materialized <- dplyr::collect(dplyr::compute(query))
+            expect_identical(names(materialized), columns, info = info)
+            expect_identical(
+              as.data.frame(dplyr::arrange(
+                materialized, dplyr::across(dplyr::everything())
+              )),
+              as.data.frame(dplyr::arrange(
+                expected, dplyr::across(dplyr::everything())
+              )), info = info
+            )
+          }
+        }
+      }
+    }
+    expect_identical(dplyr::collect(source), oracle)
+  }
+})
+
+test_that("SQLite finite expansion keeps limit validation and warnings", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(
+    con, data.frame(g = NA_character_), "finite_expansion_limits"
+  )
+  for (id in list(NULL, "sid")) {
+    query <- expand_with_margins(
+      source, .grouping = rollup(g), .margin_label = NULL, .id = id
+    )
+    for (n in list(-1L, "1", c(1L, 2L))) {
+      expect_error(dplyr::collect(query, n = n), "non-negative integer")
+    }
+    expect_error(dplyr::collect(query, n = 1.5), "datatype mismatch")
+    for (warn in c(FALSE, TRUE)) {
+      for (n in c(0L, 1L, 2L, Inf)) {
+        expect_no_warning(result <- dplyr::collect(
+          query, n = n, warn_incomplete = warn
+        ))
+        expect_identical(result$g, rep(NA_character_, min(n, 2L)))
+      }
+    }
+  }
+})
+
+test_that("SQLite finite expansion preserves construction laziness and audit", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(
+    con, data.frame(g = NA_character_), "finite_expansion_audit"
+  )
+  old_options <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old_options), add = TRUE)
+  build <- function(id, label) {
+    testthat::local_mocked_bindings(
+      dbSendQuery = function(...) stop("unexpected source query"),
+      dbSendStatement = function(...) stop("unexpected source statement"),
+      .package = "DBI"
+    )
+    expand_with_margins(
+      source, .grouping = rollup(g), .margin_label = label, .id = id
+    )
+  }
+  first <- build(NULL, NULL)
+  first_record <- last_sent_queries()
+  expect_identical(first_record$purpose, "result")
+  expect_identical(first_record$sql, as.character(dbplyr::sql_render(first)))
+  second <- build("sid", NA_character_)
+  second_record <- last_sent_queries()
+  expect_identical(second_record$purpose, "result")
+  expect_identical(second_record$sql, as.character(dbplyr::sql_render(second)))
+  expect_false(identical(first_record$sql, second_record$sql))
+
+  DBI::dbExecute(con, "INSERT INTO finite_expansion_audit VALUES (NULL)")
+  expect_identical(dplyr::collect(first)$g, rep(NA_character_, 4L))
+  expect_identical(dplyr::collect(first, n = 1L)$g, NA_character_)
+  expect_identical(last_sent_queries(), second_record)
+  materialized <- dplyr::compute(first)
+  expect_identical(dplyr::collect(materialized)$g, rep(NA_character_, 4L))
+  expect_identical(last_sent_queries(), second_record)
+})
+
 test_that("SQLite expansion copies each evaluated SQL payload", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")

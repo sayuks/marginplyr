@@ -456,3 +456,153 @@ test_that("ordinary delayed values run only when the summary demands them", {
   expect_identical(probe$calls, 12L)
   expect_identical(serialize(data, NULL), before)
 })
+
+known_converter_transfers <- function() {
+  alist(
+    (function(prior) {
+      read <- function() sum(prior)
+      copied <- rlang::as_function(read)
+      rm(prior)
+      copied()
+    })(11),
+    (function(prior) {
+      read <- function() sum(prior)
+      copied <- compiler::cmpfun(read)
+      rm(prior)
+      copied()
+    })(11)
+  )
+}
+
+test_that("known closure converters retain invocation dependencies", {
+  expect_transfer_dependencies(
+    known_closure_transfer_data(), known_converter_transfers()
+  )
+  expect_transfer_dependencies(
+    tibble::as_tibble(known_closure_transfer_data()),
+    known_converter_transfers()
+  )
+})
+
+test_that("data.table closure converters retain invocation dependencies", {
+  skip_if_suggest_absent("data.table")
+  expect_transfer_dependencies(
+    data.table::as.data.table(known_closure_transfer_data()),
+    known_converter_transfers()
+  )
+})
+
+test_that("dtplyr closure converters refuse dependencies without reading", {
+  skip_if_suggest_absent("dtplyr")
+  probe <- rlang::env(calls = 0L)
+  observe <- function(x) {
+    probe$calls <- probe$calls + 1L
+    x
+  }
+  data <- dtplyr::lazy_dt(known_closure_transfer_data(), immutable = TRUE)
+  data <- dplyr::filter(data, observe(x) > 0)
+  expect_transfer_dependencies(data, known_converter_transfers())
+  expect_identical(probe$calls, 0L)
+  expect_equal(dplyr::collect(data)$x, c(1, 3))
+  expect_identical(probe$calls, 1L)
+})
+
+known_converter_controls <- function(retain = TRUE) {
+  body <- if (retain) quote(sum(prior)) else 7
+  remove <- if (retain) quote(NULL) else quote(rm(prior))
+  transfers <- list(
+    quote(rlang::as_function(x = read)),
+    quote(compiler::cmpfun(f = read, options = list(optimize = 0)))
+  )
+  lapply(transfers, function(transfer) {
+    rlang::expr((function(prior) {
+      # The injected converter reads this local binding.
+      read <- function() !!body # nolint: object_usage_linter.
+      copied <- !!transfer
+      !!remove
+      copied()
+    })(11))
+  })
+}
+
+expect_converter_values <- function(data, expressions, expected) {
+  before <- serialize(data, NULL)
+  materialize <- if (is.data.frame(data)) identity else dplyr::collect
+  for (kind in c("parent", "total")) {
+    share <- rlang::call2(paste0("share_of_", kind), quote(value))
+    for (expr in expressions) {
+      forward <- materialize(summarize_with_margins(
+        data, value = sum(.data$x), prior = !!share, observed = !!expr,
+        .grouping = rollup("group")
+      ))
+      reverse <- materialize(summarize_with_margins(
+        data, prior = sum(.data$x), value = !!expr, ratio = !!share,
+        .grouping = rollup("group")
+      ))
+      expect_equal(forward$observed, rep(expected, 3L))
+      expect_equal(forward$prior, c(0.25, 0.75, 1))
+      expect_equal(reverse$value, rep(expected, 3L))
+      expect_equal(reverse$ratio, c(1, 1, 1))
+    }
+  }
+  expect_identical(serialize(data, NULL), before)
+}
+
+expect_legal_converter_values <- function(data) {
+  expect_converter_values(data, known_converter_controls(), 11)
+  expect_converter_values(data, known_converter_controls(retain = FALSE), 7)
+}
+
+test_that("closure converters preserve legal lexical bindings", {
+  data <- known_closure_transfer_data()
+  expect_legal_converter_values(data)
+  expect_legal_converter_values(tibble::as_tibble(data))
+})
+
+test_that("data.table closure converters preserve legal bindings", {
+  skip_if_suggest_absent("data.table")
+  expect_legal_converter_values(
+    data.table::as.data.table(known_closure_transfer_data())
+  )
+})
+
+test_that("dtplyr closure converters preserve legal bindings at collection", {
+  skip_if_suggest_absent("dtplyr")
+  expect_legal_converter_values(
+    dtplyr::lazy_dt(known_closure_transfer_data(), immutable = TRUE)
+  )
+})
+
+test_that("closure converter planning never invokes captured closures", {
+  probe <- rlang::env(calls = 0L)
+  for (transfer in alist(rlang::as_function(read), compiler::cmpfun(read))) {
+    read <- rlang::quo((function(prior) {
+      # The injected converter reads this local binding.
+      read <- function() { # nolint: object_usage_linter.
+        probe$calls <- probe$calls + 1L
+        sum(prior)
+      }
+      copied <- !!transfer
+      rm(prior)
+      copied()
+    })(11))
+    expect_transfer_dependencies(known_closure_transfer_data(), list(read))
+  }
+  expect_identical(probe$calls, 0L)
+})
+
+test_that("caller namespace converters follow ordinary lookup at execution", {
+  for (expr in known_converter_transfers()) {
+    probe <- rlang::env(calls = 0L)
+    caller <- rlang::env()
+    caller[["::"]] <- function(package, name) {
+      function(x) {
+        probe$calls <- probe$calls + 1L
+        function() 7
+      }
+    }
+    read <- rlang::new_quosure(expr, caller)
+    expect_converter_values(known_closure_transfer_data(), list(read), 7)
+    expect_identical(probe$calls, 12L)
+  }
+})

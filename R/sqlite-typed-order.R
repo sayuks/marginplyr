@@ -19,14 +19,14 @@ sqlite_final_anchor_path <- function(operation) {
     (margin_sorting(operation) || !is.null(operation$set_id_name))
 }
 
-# Whether a live SQLite result needs its declared types at the result boundary.
+# Whether a live SQLite result needs its types at the result boundary.
 # The caller supplies source columns and package-created output types.
 sqlite_typed_result_needed <- function(operation, source_columns,
                                        declared_types) {
   live_sqlite_margin_result(operation) &&
     (length(declared_types) > 0L ||
        !is.null(sql_margin_source_anchor(operation$data)) ||
-       (length(source_columns) > 0L && margin_sorting(operation)))
+       length(source_columns) > 0L)
 }
 
 # `margin_order_terms()` includes `desc()` only for a Grouping bit. Negating
@@ -60,7 +60,8 @@ sqlite_direct_execution_sql <- function(result,
     }
     # The anchor must keep its source projection direct for RSQLite types.
     # Other arms keep their final projection over a separately rendered input.
-    if (!inherits(op$x, "lazy_base_query") &&
+    if (!inherits(op, "lazy_base_query") &&
+          !inherits(op$x, "lazy_base_query") &&
           length(sqlite_boolean_columns(dbplyr::op_vars(op$x))) == 0L) {
       input <- dbplyr::sql_render(op$x, con = con, sql_options = sql_options)
       op$x <- dplyr::tbl(con, input, vars = dbplyr::op_vars(op$x))$lazy_query
@@ -177,11 +178,34 @@ sqlite_typed_result <- function(operation, unsorted, ordered,
   if (length(boolean_aliases) > 0L) {
     ordered <- sqlite_boolean_public_query(ordered)
   }
-  class(ordered) <- c("marginplyr_sqlite_typed_result", class(ordered))
-  attr(ordered, "marginplyr_anchored_input") <- !is.null(input_anchor)
-  attr(ordered, "marginplyr_boolean_aliases") <- boolean_aliases[
+  public_boolean_aliases <- boolean_aliases[
     intersect(public_columns, names(boolean_aliases))
   ]
+  input_collect_errors <- attr(input_anchor, "marginplyr_collect_errors")
+  driver_anchor <- !is.null(input_anchor) &&
+    !identical(input_collect_errors, "dbplyr")
+  collect_errors <- if (length(key_names) > 0L ||
+                          length(public_boolean_aliases) > 0L ||
+                          driver_anchor) {
+    "driver"
+  } else {
+    "dbplyr"
+  }
+  # Source-only anchors retain delegated collection conditions when carried.
+  # Declared types and identifier-safe boundaries keep direct conditions.
+  anchor_collect_errors <- if (identical(collect_errors, "driver") ||
+                                 length(declared_types) > 0L ||
+                                 ".env" %in% public_columns) {
+    "driver"
+  } else {
+    "dbplyr"
+  }
+  class(ordered) <- c("marginplyr_sqlite_typed_result", class(ordered))
+  attr(ordered, "marginplyr_anchored_source") <-
+    !is.null(input_anchor) || length(source_columns) > 0L
+  attr(ordered, "marginplyr_collect_errors") <- collect_errors
+  attr(ordered, "marginplyr_anchor_collect_errors") <- anchor_collect_errors
+  attr(ordered, "marginplyr_boolean_aliases") <- public_boolean_aliases
   attr(ordered, "marginplyr_typed_union") <- typed_union
   attr(ordered, "marginplyr_public_anchor") <- public_anchor
   attr(ordered, "marginplyr_order_keys") <- key_names
@@ -241,7 +265,7 @@ sql_render.marginplyr_sqlite_typed_result <- function(query, ...,
   dbplyr::sql(paste0(sql, "\nORDER BY ", paste(quoted, collapse = ", ")))
 }
 
-# Direct collection keeps a carried source anchor outermost and drops internal
+# Direct collection keeps a source anchor outermost and drops internal
 # sort columns after reading. Boolean-word outputs also avoid a finite
 # collection subquery. Other unsorted results delegate to dbplyr. All paths
 # restore declared R types for all-missing columns.
@@ -254,7 +278,7 @@ collect.marginplyr_sqlite_typed_result <- function(x, ..., n = Inf,
     return(NextMethod())
   }
   boolean_output <- length(attr(x, "marginplyr_boolean_aliases")) > 0L
-  anchor_only <- isTRUE(attr(x, "marginplyr_anchored_input")) &&
+  anchor_only <- isTRUE(attr(x, "marginplyr_anchored_source")) &&
     length(attr(x, "marginplyr_order_keys")) == 0L && !boolean_output
   if (length(attr(x, "marginplyr_order_keys")) == 0L &&
         !boolean_output && !anchor_only) {
@@ -279,8 +303,16 @@ collect.marginplyr_sqlite_typed_result <- function(x, ..., n = Inf,
         "\nLIMIT ", format(n, scientific = FALSE, trim = TRUE)
       ))
     }
-    out <- dbplyr::db_collect(
-      x$con, sql, n = n, warn_incomplete = warn_incomplete, ...
+    out <- withCallingHandlers(
+      dbplyr::db_collect(
+        x$con, sql, n = n, warn_incomplete = warn_incomplete, ...
+      ),
+      error = function(cnd) {
+        # Keep dbplyr's wrapper and its original driver cause at this boundary.
+        if (identical(attr(x, "marginplyr_collect_errors"), "dbplyr")) {
+          cli::cli_abort("Failed to collect lazy table.", parent = cnd)
+        }
+      }
     )
   }
   out <- out[attr(x, "marginplyr_public_columns")]

@@ -1673,7 +1673,11 @@ test_that("RSQLite Parent shares preserve runtime backend conditions", {
   expect_s3_class(query, "tbl_lazy")
   error <- expect_error(dplyr::collect(query))
   expect_identical(class(error), class(baseline))
+  expect_identical(error$message, baseline$message)
   expect_identical(class(error$parent), class(baseline$parent))
+  expect_identical(conditionMessage(error$parent),
+                   conditionMessage(baseline$parent))
+  expect_identical(conditionCall(error), quote(dplyr::collect(query)))
   expect_false(inherits(error, "marginplyr_error"))
 })
 

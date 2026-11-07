@@ -444,7 +444,7 @@
             "run": "Rscript tools/test-suite-coverage-workers.R"
           },
           {
-            "uses": "actions/setup-go@v6",
+            "uses": "actions/setup-go@v7",
             "with": {
               "go-version": "1.25.x",
               "cache": "false"
