@@ -3,6 +3,10 @@
 * Immutable dtplyr expansions preserve source rows and payload when a caller
   overrides the namespace operator, including cached inputs (#1422).
 
+* Typed inspection and Nest verbs refuse replaced registered data.table
+  brackets before direct, cached or grouped dtplyr roots can lose Grouping
+  dimensions or fixed keys (#1418).
+
 * Grouping callbacks that rebind an unproven local function resolve against typed
   metadata, keeping fixed keys and dimensions consistent across inspection and
   summaries, including immutable dtplyr inputs (#1400).
