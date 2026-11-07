@@ -179,3 +179,102 @@ test_that("list selector code runs only when summaries evaluate", {
   expect_share_dependency_values(plain_list_transform_data(), reads, 7)
   expect_identical(probe$calls, 48L)
 })
+
+list_accessor_read <- function(accessor, body = quote(sum(prior)),
+                               remove = quote(rm(prior)),
+                               before = quote(NULL)) {
+  substitute((function(prior) {
+    BEFORE
+    callbacks <- list(dependent = function() BODY, safe = function() 7)
+    REMOVE
+    ACCESSOR()
+  })(11), list(ACCESSOR = accessor, BODY = body, REMOVE = remove,
+               BEFORE = before))
+}
+
+test_that("literal getElement selects the same closure as exact brackets", {
+  data <- plain_list_transform_data()
+  dependent <- alist(
+    callbacks[["dependent"]],
+    getElement(callbacks, "dependent"),
+    base::getElement(name = "dependent", object = callbacks)
+  )
+  expect_share_dependencies(data, lapply(dependent, list_accessor_read))
+  expect_share_dependency_values(data, lapply(
+    dependent, list_accessor_read, remove = quote(NULL)
+  ), 11)
+  expect_share_dependency_values(data, lapply(alist(
+    callbacks[["safe"]], getElement(callbacks, "safe")
+  ), list_accessor_read), 7)
+})
+
+test_that("literal .subset2 selects the same closure as exact brackets", {
+  data <- plain_list_transform_data()
+  dependent <- alist(
+    callbacks[[1L]],
+    .subset2(callbacks, 1L),
+    base::.subset2(x = callbacks, key = "dependent"),
+    .subset2(callbacks, "dependent", exact = TRUE)
+  )
+  expect_share_dependencies(data, lapply(dependent, list_accessor_read))
+  expect_share_dependency_values(data, lapply(
+    dependent, list_accessor_read, remove = quote(NULL)
+  ), 11)
+  expect_share_dependency_values(data, lapply(alist(
+    callbacks[[2L]], .subset2(callbacks, 2L)
+  ), list_accessor_read), 7)
+})
+
+test_that("plain list accessors preserve ordinary function lookup", {
+  data <- plain_list_transform_data()
+  for (name in c("getElement", ".subset2")) {
+    caller <- rlang::env()
+    caller[[name]] <- function(...) function() 7
+    bare <- rlang::call2(name, quote(callbacks), "dependent")
+    qualified <- rlang::call2(name, quote(callbacks), "dependent", .ns = "base")
+    read <- rlang::new_quosure(list_accessor_read(bare), caller)
+    expect_share_dependency_values(data, list(read), 7)
+    reads <- list(
+      rlang::new_quosure(list_accessor_read(qualified), caller),
+      list_accessor_read(bare, before = rlang::call2("<-", rlang::sym(name), 0))
+    )
+    expect_share_dependencies(data, reads)
+
+    caller[[name]] <- 0L
+    computed <- rlang::call2(rlang::call2("(", rlang::sym(name)),
+                             quote(callbacks), "dependent")
+    read <- rlang::new_quosure(list_accessor_read(computed), caller)
+    expect_error(
+      summarize_with_margins(
+        data, value = sum(.data$x), prior = share_of_total(value),
+        observed = !!read, .grouping = rollup("g")
+      ),
+      "attempt to apply non-function"
+    )
+  }
+})
+
+test_that("plain list accessor planning leaves caller code unevaluated", {
+  data <- plain_list_transform_data()
+  probe <- rlang::env(invoked = 0L, keys = 0L)
+  key <- function() {
+    probe$keys <- probe$keys + 1L
+    "safe"
+  }
+  caller <- rlang::env(key = key, probe = probe)
+  body <- quote({
+    probe$invoked <- probe$invoked + 1L
+    sum(prior)
+  })
+  expect_share_dependencies(data, lapply(alist(
+    getElement(callbacks, "dependent"), .subset2(callbacks, "dependent")
+  ), list_accessor_read, body = body))
+  reads <- lapply(alist(
+    getElement(callbacks, key()), .subset2(callbacks, key())
+  ), function(accessor) {
+    rlang::new_quosure(list_accessor_read(accessor, body = body), caller)
+  })
+  expect_share_dependency_values(data, reads, 7)
+  expect_identical(probe$invoked, 0L)
+  expect_identical(probe$keys, 24L)
+})

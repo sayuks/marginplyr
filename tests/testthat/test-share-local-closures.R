@@ -43,6 +43,17 @@ test_that("share dependencies follow a literal closure's invocation", {
       do.call("read_prior", list())
     })(1),
     (function(prior) {
+      read_prior <- function() sum(prior)
+      callbacks <- list(read = read_prior)
+      rm(prior)
+      do.call(callbacks$read, list())
+    })(1),
+    (function(prior) {
+      callbacks <- list(remove = function() rm("prior", envir = parent.frame()))
+      base::do.call(args = base::list(), what = callbacks$remove)
+      sum(prior)
+    })(1),
+    (function(prior) {
       rm(prior)
       read_prior <- function() sum(prior)
       dplyr::summarise(data.frame(x = 1), z = read_prior())$z
@@ -79,6 +90,28 @@ test_that("retained bindings and uncalled local closures are valid", {
       observed <- read_prior()
       rm(prior)
       observed
+    })(1),
+    (function(prior) {
+      callbacks <- list(read = function() sum(prior))
+      base::do.call(args = base::list(), what = callbacks$read)
+    })(1),
+    (function(prior) {
+      callbacks <- list(read = function() 1)
+      rm(prior)
+      do.call(callbacks$read, list())
+    })(1),
+    (function(prior) {
+      # The binding must use base's name to shadow its function lookup.
+      do.call <- function(what, args) 1 # nolint: object_name_linter.
+      callbacks <- list(read = function() sum(prior))
+      rm(prior)
+      do.call(callbacks$read, list())
+    })(1),
+    (function(prior) {
+      callbacks <- list(read = function(value = sum(prior)) value)
+      list <- function() base::list(1)
+      rm(prior)
+      do.call(callbacks$read, list())
     })(1),
     (function(prior) {
       read_prior <- function() {
@@ -137,5 +170,28 @@ test_that("a saved closure passed to unknown code is analyzed conservatively", {
     ),
     "Ordinary summaries cannot use an earlier Parent share",
     class = "marginplyr_error"
+  )
+})
+
+test_that("matching do.call arguments only warns at execution", {
+  rlang::local_options(warnPartialMatchArgs = TRUE)
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(100, 300))
+  read <- function(remove) {
+    substitute((function(prior) {
+      callbacks <- list(read = function() sum(prior))
+      REMOVE
+      do.call(wha = callbacks$read, args = list())
+    })(1), list(REMOVE = remove))
+  }
+
+  expect_no_warning(
+    expect_share_dependencies(data, list(read(quote(rm(prior)))))
+  )
+  expect_warning(
+    summarize_with_margins(
+      data, source = sum(.data$x), prior = share_of_total(source),
+      observed = !!read(NULL), .grouping = rollup("g")
+    ),
+    "partial argument match of 'wha' to 'what'"
   )
 })

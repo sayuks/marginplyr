@@ -491,6 +491,33 @@ dtplyr_selection_proxy <- function(.data, env = .data[["env"]]) {
   )
 }
 
+# DuckDB's query() refuses the auxiliary statements that discover dynamic
+# PIVOT columns. Qualify the built-in so a caller's macro cannot replace it.
+# Keep rendering within the original audit and collect paths (ADR 0027).
+#' @exportS3Method dbplyr::sql_render
+#' @noRd
+sql_render.marginplyr_duckdb_selection <- function(query, con = NULL, ...) {
+  sql <- NextMethod()
+  dbplyr::build_sql(
+    "SELECT * FROM system.main.query(",
+    as.character(sql), ")",
+    con = con %||% dbplyr::remote_con(query)
+  )
+}
+
+# Match the specific DuckDB parser refusal, including when dbplyr wraps it.
+is_duckdb_dynamic_pivot <- function(cnd) {
+  any(vapply(condition_chain(cnd), function(error) {
+    startsWith(
+      error$message %||% "",
+      paste0(
+        "Parser Error: PIVOT statements without explicit IN clauses ",
+        "are not supported in query() function."
+      )
+    )
+  }, logical(1)))
+}
+
 grouping_selection_proxy <- function(.data,
                                      backend = grouping_backend(.data)) {
   if (identical(backend$kind, "arrow")) {
@@ -501,8 +528,54 @@ grouping_selection_proxy <- function(.data,
     return(proxy)
   }
   if (backend$collect_selection_proxy) {
-    proxy <- utils::head(.data, n = 0L)
-    return(with_sent_query("selection_proxy", proxy, dplyr::collect(proxy)))
+    query <- utils::head(.data, n = 0L)
+    duckdb <- identical(backend$kind, "duckdb")
+    con <- if (duckdb) dbplyr::remote_con(query)
+    # The simulated dialect carries the class name on an S3 object.
+    if (isS4(con) && inherits(con, "duckdb_connection")) {
+      class(query) <- c("marginplyr_duckdb_selection", class(query))
+    }
+    proxy <- tryCatch(
+      with_sent_query(
+        "selection_proxy", query, dplyr::collect(query),
+        error_handling = function(cnd) {
+          if (duckdb && is_duckdb_dynamic_pivot(cnd)) {
+            "handled"
+          } else {
+            "propagated"
+          }
+        }
+      ),
+      error = function(cnd) {
+        if (!duckdb || !is_duckdb_dynamic_pivot(cnd)) {
+          stop(cnd)
+        }
+        abort_marginplyr(c(
+          "Can't determine column metadata for a dynamic DuckDB PIVOT.",
+          i = "Specify the pivot values in a literal {.code IN} list.",
+          i = paste0(
+            "To discover the values now, collect the input with ",
+            "{.code dplyr::collect()} and pass the resulting data frame."
+          )
+        ), parent = cnd)
+      }
+    )
+    # DuckDB can deduplicate names when it binds the nested query. Check the
+    # stored schema before any selection methods run on the proxy.
+    if (duckdb) {
+      captured <- margin_col_names(.data)
+      if (!identical(attr(proxy, "names", exact = TRUE), captured)) {
+        abort_marginplyr(c(
+          "Can't match DuckDB column metadata to the input's captured names.",
+          i = paste0(
+            "Alias the input columns with unique names, ignoring ASCII letter ",
+            "case, and recreate the lazy input with those names."
+          )
+        ))
+      }
+      attr(proxy, "marginplyr_duckdb_names") <- captured
+    }
+    return(proxy)
   }
   .data
 }

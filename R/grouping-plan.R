@@ -236,7 +236,9 @@ prepare_grouping_plan <- function(.data,
       allow_data_peek <- if (identical(backend$kind, "dtplyr")) {
         dtplyr_data_peek_name_only
       } else if (!is.null(local_proxy)) {
-        function(...) FALSE
+        function(..., from_peek_data = TRUE) !from_peek_data
+      } else if (backend$is_sql || identical(backend$kind, "arrow")) {
+        tibble_data_peek_name_only
       } else {
         frame_data_peek_name_only
       }
@@ -514,8 +516,8 @@ selection_c_args <- function(args, env) {
 # column names, which is the pair the symbol branch decides from.
 # `allow_caller_code = FALSE` also withholds caller functions and assignments,
 # so a discarded mixed-selection pass cannot change their evaluation order.
-# `allow_data_peek`, when supplied, checks whether the selection can read
-# names from the names-only proxy in its own lexical scope.
+# `allow_data_peek`, when supplied, checks whether selection-context names
+# can be read from the names-only proxy in the selection's lexical scope.
 is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE,
                               allow_data_peek = NULL) {
   # An injected selector is walked in the environment it carries.
@@ -647,7 +649,11 @@ is_selection_name_lookup <- function(expr, env, allow_env_pronoun = TRUE,
     return(is_name_only_env_value(fn, args[[2L]], env))
   }
   if (identical(fn, tidyselect::peek_vars)) {
-    return(length(args) == 0L)
+    return(
+      length(args) == 0L &&
+        (is.null(allow_data_peek) ||
+           allow_data_peek(env, character(), from_peek_data = FALSE))
+    )
   }
   if (identical(fn, base::names)) {
     return(
@@ -809,8 +815,14 @@ is_name_only_helper_arg <- function(expr,
       c(paste0("stringr_", modifier), "stringr_pattern", "character"), env
     ))
   }
-  if (leaf_helper || identical(fn, tidyselect::peek_vars)) {
+  if (leaf_helper) {
     return(TRUE)
+  }
+  if (identical(fn, tidyselect::peek_vars)) {
+    return(
+      is.null(allow_data_peek) ||
+        allow_data_peek(env, callee_bound, from_peek_data = FALSE)
+    )
   }
   # Ordinary S3 generics can dispatch on implicit classes even when every
   # argument is unclassed. They, and set operations that call them, need the
@@ -1266,22 +1278,42 @@ names.margin_grouping_name_proxy <- function(x) {
   attr(x, "names", exact = TRUE)
 }
 
-# Whether names() dispatch can be skipped for the dtplyr or names-only frame.
-dtplyr_data_peek_name_only <- function(env, bound) {
-  selection_names_methods_absent(env, bound, c(
+# Whether tidyselect's active names can be read without dtplyr metadata.
+dtplyr_data_peek_name_only <- function(env, bound, from_peek_data = TRUE) {
+  # tidyselect installs the active names after proxy dispatch.
+  proxy_methods <- c(
+    "tidyselect_data_proxy.data.table", "tidyselect_data_proxy.data.frame"
+  )
+  tidyselect_ns <- asNamespace("tidyselect")
+  if (!selection_methods_absent(
+    tidyselect_ns, character(), proxy_methods,
+    registry = tidyselect_ns$.__S3MethodsTable__.
+  )) {
+    return(FALSE)
+  }
+  !from_peek_data || selection_methods_absent(env, bound, c(
     "names.data.table", "names.data.frame", "names.default"
   ))
 }
 
-frame_data_peek_name_only <- function(env, bound) {
-  selection_names_methods_absent(env, bound, c(
+# Whether names() dispatch can be skipped for lazy Arrow and SQL tibbles.
+tibble_data_peek_name_only <- function(env, bound, from_peek_data = TRUE) {
+  !from_peek_data || selection_methods_absent(env, bound, c(
+    "names.tbl_df", "names.tbl", "names.data.frame", "names.default"
+  ))
+}
+
+# Whether names() dispatch can be skipped for a plain data frame.
+frame_data_peek_name_only <- function(env, bound, from_peek_data = TRUE) {
+  !from_peek_data || selection_methods_absent(env, bound, c(
     "names.data.frame", "names.default"
   ))
 }
 
-# Check the lexical scope and registered names() methods without forcing them.
-selection_names_methods_absent <- function(env, bound, methods) {
-  registry <- asNamespace("base")$.__S3MethodsTable__.
+# Check the lexical scope and registered methods without forcing them.
+selection_methods_absent <- function(
+  env, bound, methods, registry = asNamespace("base")$.__S3MethodsTable__.
+) {
   !any(methods %in% bound |
          rlang::env_has(env, methods, inherit = TRUE) |
          rlang::env_has(globalenv(), methods, inherit = TRUE) |
@@ -1306,6 +1338,9 @@ validate_leading_selections <- function(
   resolved$incomplete <- list()
   resolved$offset <- 0L
   resolved$width <- 1L
+  duplicate <- if (identical(.duplicates, "error")) {
+    new.env(parent = emptyenv())
+  }
   resolve_selection <- function(arg) {
     if (!is_name_only_selection(
       arg, data_vars, allow_caller_code = FALSE,
@@ -1319,25 +1354,36 @@ validate_leading_selections <- function(
   }
   emit <- if (identical(.duplicates, "error")) {
     function(family = NULL, incomplete = NULL, whole = FALSE, offset = 0L,
-             width = 1L) {
+             width = 1L, witness = NULL) {
       if (!is.null(incomplete)) {
         resolved$incomplete <- incomplete
         resolved$offset <- offset
         resolved$width <- width
+        resolved$witness <- witness %||% resolved$witness
       } else {
         resolved$completed[[length(resolved$completed) + 1L]] <- family
+        resolved$witness <- duplicate$witness
       }
     }
   }
   withRestarts(
     expand_grouping_family(
       preflight, resolve_selection, emit,
-      drop_duplicates = identical(.duplicates, "drop")
+      drop_duplicates = identical(.duplicates, "drop"), duplicate = duplicate
     ),
     needs_typed_selection = function(selected = character()) NULL
   )
   validate_grouping_overlap(.by, resolved$dimensions)
   if (!is.null(emit)) {
+    if (!is.null(resolved$witness)) {
+      abort_duplicate_witness(resolved$witness, duplicates_choices)
+    }
+    if (!is.null(duplicate$witness)) {
+      completed <- unlist(resolved$completed, recursive = FALSE)
+      keys <- grouping_set_keys(completed, resolved$dimensions)
+      validate_unique_grouping_sets(keys, duplicates_choices)
+      return(invisible(resolved$dimensions))
+    }
     completed <- unlist(resolved$completed, recursive = FALSE)
     incomplete <- duplicate_prefix_candidates(resolved$incomplete)
     dimensions <- unique(unlist(c(completed, incomplete), use.names = FALSE))
@@ -1370,6 +1416,14 @@ validate_leading_selections <- function(
 # A product prefix is distinct if each factor can be identified using its
 # private dimensions. Universally present columns identify no factor.
 duplicate_prefix_candidates <- function(families) {
+  if (product_has_private_keys(families)) {
+    return(list())
+  }
+  cross_grouping_families(families)
+}
+
+# Private columns identify each factor's choice in the combined set.
+product_has_private_keys <- function(families) {
   required <- lapply(families, function(family) Reduce(intersect, family))
   required <- Reduce(union, required, init = character())
   varying <- lapply(families, function(family) {
@@ -1377,14 +1431,10 @@ duplicate_prefix_candidates <- function(families) {
   })
   dimensions <- unlist(varying, use.names = FALSE)
   shared <- dimensions[duplicated(dimensions)]
-  distinct <- vapply(seq_along(families), function(i) {
+  all(vapply(seq_along(families), function(i) {
     private <- setdiff(varying[[i]], shared)
     anyDuplicated(grouping_set_keys(families[[i]], private)) == 0L
-  }, logical(1))
-  if (all(distinct)) {
-    return(list())
-  }
-  cross_grouping_families(families)
+  }, logical(1)))
 }
 
 # Reject dimensions that are also among the already resolved fixed keys.
@@ -1845,13 +1895,19 @@ compile_grouping_spec_impl <- function(preflight,
     )
   }
 
+  duplicate <- if (identical(.duplicates, "error")) {
+    new.env(parent = emptyenv())
+  }
   expanded <- unname(expand_grouping_family(
     preflight, function(arg) resolve_grouping_selection(arg, data_proxy),
-    drop_duplicates = identical(.duplicates, "drop")
+    drop_duplicates = identical(.duplicates, "drop"), duplicate = duplicate
   ))
   dimensions <- unique(unlist(expanded, use.names = FALSE))
 
   validate_grouping_overlap(.by, dimensions)
+  if (!is.null(duplicate$witness)) {
+    abort_duplicate_witness(duplicate$witness, duplicates_choices)
+  }
 
   normalized <- lapply(
     expanded,
@@ -1909,13 +1965,23 @@ grouping_set_key <- function(set, dimensions) {
 # Reject repeated membership keys at the supplied occurrence positions.
 validate_unique_grouping_sets <- function(keys, duplicates_choices,
                                           set_ids = seq_along(keys)) {
+  if (length(keys) > duplicate_report_limit) {
+    repeated <- anyDuplicated(keys)
+    if (repeated > 0L) {
+      original <- match(keys[[repeated]], keys)
+      abort_duplicate_witness(
+        list(family = "the grouping plan",
+             positions = set_ids[c(original, repeated)]),
+        duplicates_choices
+      )
+    }
+    return(invisible(NULL))
+  }
   duplicate_keys <- duplicated(keys) | duplicated(keys, fromLast = TRUE)
   if (!any(duplicate_keys)) {
     return(invisible(NULL))
   }
   groups <- split(set_ids[duplicate_keys], keys[duplicate_keys])
-  # The nesting verbs' vocabulary excludes `"keep"` (#110).
-  alternatives <- setdiff(duplicates_choices, "error")
   # Each group is already comma-joined. Join groups here to preserve that
   # formatting through cli; codetools cannot see the use in its template.
   # nolint start: object_usage_linter.
@@ -1924,37 +1990,57 @@ validate_unique_grouping_sets <- function(keys, duplicates_choices,
     collapse = "; "
   )
   # nolint end
-  offered <- paste0("\"", alternatives, "\"")
-  offered[[1L]] <- paste0(".duplicates = ", offered[[1L]])
   abort_marginplyr(c(
     paste0(
       "Duplicate grouping sets were produced at ",
       "{cli::qty(length(groups))}{?positions/position groups}:"
     ),
     i = "{positions}.",
-    i = "Use {.or {.code {offered}}}."
+    i = "Use {.or {.code {duplicate_alternatives(duplicates_choices)}}}."
   ))
+}
+
+# Show two positions with the same membership in the named family.
+abort_duplicate_witness <- function(witness, duplicates_choices) {
+  abort_marginplyr(c(
+    paste0("Duplicate grouping sets were produced. For example, these ",
+           "positions in {witness$family} have the same set:"),
+    i = "{paste(witness$positions, collapse = ', ')}.",
+    i = "Use {.or {.code {duplicate_alternatives(duplicates_choices)}}}."
+  ))
+}
+
+# Offer the calling verb's other duplicate policies. Nest excludes keep (#110).
+duplicate_alternatives <- function(duplicates_choices) {
+  alternatives <- setdiff(duplicates_choices, "error")
+  offered <- paste0("\"", alternatives, "\"")
+  offered[[1L]] <- paste0(".duplicates = ", offered[[1L]])
+  offered
 }
 
 # The families a specification expands to. Every function below it takes the
 # preflight the caller holds, and reads each argument's reading off the record
 # beside that argument's quosure rather than taking one (ADR 0008). A column
 # selection is resolved here and not there, so it is resolved once per pass,
-# through the resolver that pass supplies. Optional `emit` observes plan
-# occurrences in order for prefix validation. Before deferring to typed
+# through the resolver that pass supplies. Optional `emit` observes families
+# in order for prefix validation. Before deferring to typed
 # selection, the observer can receive incomplete occurrences as a list of
 # product factors. `whole` means that evidence covers every position of
 # the emitting node if its selections succeed. `offset` counts preceding
 # occurrences not already emitted as completed families. `width` is the number
-# of unresolved suffix choices following each incomplete prefix. Expansion
-# ignores the observer's return value and returns the family of occurrences.
+# of unresolved suffix choices following each incomplete prefix. `witness`
+# carries a proved repeat in a family too large to enumerate. Expansion
+# returns the family in plan order and ignores the observer's return value.
+# With a stored duplicate witness, it can emit and return just the combined
+# dimensions for overlap validation.
 expand_grouping_family <- function(preflight, resolve_selection,
-                                   emit = NULL, drop_duplicates = FALSE) {
+                                   emit = NULL, drop_duplicates = FALSE,
+                                   duplicate = NULL) {
   rule <- find_grouping_kind_rule(preflight$spec$type)
   if (is.null(rule)) {
     stop("Unknown Grouping specification kind.", call. = FALSE)
   }
-  rule$expand(preflight, resolve_selection, emit, drop_duplicates)
+  rule$expand(preflight, resolve_selection, emit, drop_duplicates, duplicate)
 }
 
 # Notify a prefix observer of completed occurrences and return them unchanged.
@@ -1967,7 +2053,7 @@ emit_grouping_family <- function(family, emit) {
 
 # Emit one occurrence after resolving the entire set.
 expand_single_grouping_set <- function(preflight, resolve_selection, emit,
-                                       drop_duplicates) {
+                                       drop_duplicates, duplicate) {
   set <- resolve_grouping_set(preflight, resolve_selection, !is.null(emit))
   emit_grouping_family(list(set), emit)
 }
@@ -2010,13 +2096,14 @@ resolve_grouping_set <- function(preflight, resolve_selection,
 
 # Each branch of a union contributes its occurrences directly to the plan.
 expand_grouping_sets <- function(preflight, resolve_selection, emit,
-                                 drop_duplicates) {
+                                 drop_duplicates, duplicate) {
   if (!is.null(emit) && length(preflight$args) > 1L) {
     # An incomplete branch accounts for only part of this union.
     emit_union <- emit
     emit <- function(family = NULL, incomplete = NULL, whole = FALSE,
-                     offset = 0L, width = 1L) {
-      emit_union(family, incomplete, offset = offset, width = width)
+                     offset = 0L, width = 1L, witness = NULL) {
+      emit_union(family, incomplete, offset = offset, width = width,
+                 witness = witness)
     }
   }
   unlist(
@@ -2029,7 +2116,7 @@ expand_grouping_sets <- function(preflight, resolve_selection, emit,
           ))
         }
         expand_grouping_family(
-          arg$nested, resolve_selection, emit, drop_duplicates
+          arg$nested, resolve_selection, emit, drop_duplicates, duplicate
         )
       }
     ),
@@ -2071,7 +2158,8 @@ resolve_grouping_units <- function(preflight, resolve_selection) {
 }
 
 # Emit the rollup after resolving every unit.
-expand_rollup <- function(preflight, resolve_selection, emit, drop_duplicates) {
+expand_rollup <- function(preflight, resolve_selection, emit, drop_duplicates,
+                          duplicate) {
   units <- resolve_grouping_units(preflight, resolve_selection)
   family <- lapply(
     rev(seq.int(0L, length(units))),
@@ -2083,11 +2171,27 @@ expand_rollup <- function(preflight, resolve_selection, emit, drop_duplicates) {
 }
 
 # Emit the cube after resolving every unit.
-expand_cube <- function(preflight, resolve_selection, emit, drop_duplicates) {
+expand_cube <- function(preflight, resolve_selection, emit, drop_duplicates,
+                        duplicate) {
   units <- resolve_grouping_units(preflight, resolve_selection)
   if (drop_duplicates) {
     return(emit_grouping_family(distinct_cube_sets(units), emit))
   }
+  n <- length(units)
+  if (!is.null(duplicate) && 2^n > duplicate_report_limit) {
+    if (is.null(duplicate$witness)) {
+      duplicate$witness <- cube_duplicate_witness(units)
+    }
+    if (!is.null(duplicate$witness)) {
+      family <- list(unique(unlist(units, use.names = FALSE)))
+      return(emit_grouping_family(family, emit))
+    }
+  }
+  emit_grouping_family(cube_grouping_family(units), emit)
+}
+
+# Enumerate resolved cube units in descending subset size and combination order.
+cube_grouping_family <- function(units) {
   n <- length(units)
   indices <- unlist(
     lapply(
@@ -2096,14 +2200,26 @@ expand_cube <- function(preflight, resolve_selection, emit, drop_duplicates) {
     ),
     recursive = FALSE
   )
+  lapply(indices, function(index) {
+    if (length(index) == 0L) character() else unique(unlist(units[index]))
+  })
+}
 
-  family <- lapply(
-    indices,
-    function(index) {
-      if (length(index) == 0L) character() else unique(unlist(units[index]))
-    }
-  )
-  emit_grouping_family(family, emit)
+duplicate_report_limit <- 256L
+
+# A cube repeats the full set if any unit contains only shared columns.
+# The size-(n - 1) combinations omit units in reverse order.
+cube_duplicate_witness <- function(units, family = "a cube") {
+  columns <- unlist(units, use.names = FALSE)
+  shared <- columns[duplicated(columns)]
+  redundant <- which(vapply(units, function(unit) {
+    all(unit %in% shared)
+  }, logical(1)))
+  if (length(redundant) == 0L) {
+    return(NULL)
+  }
+  omitted <- length(units) - max(redundant) + 2L
+  list(family = family, positions = c(1L, omitted))
 }
 
 # Retain the earliest full set per membership on `dimensions`, in descending
@@ -2132,27 +2248,37 @@ distinct_cube_sets <- function(
 # Resolve factors in order. Keep their families separate until the last
 # factor resolves, so an unresolved selection can stop a large product.
 expand_grouping_product <- function(preflight, resolve_selection, emit,
-                                    drop_duplicates) {
+                                    drop_duplicates, duplicate) {
   if (drop_duplicates) {
     family <- distinct_grouping_product(preflight, resolve_selection)
     return(emit_grouping_family(family, emit))
   }
   args <- preflight$args
-  if (is.null(emit) || length(args) == 0L) {
+  if (is.null(emit) && !is.null(duplicate)) {
+    family <- expand_single_cube_product(args, resolve_selection, duplicate)
+    if (!is.null(family)) return(family)
+  }
+  observed <- !is.null(emit) && length(args) > 0L
+  if (observed) {
+    families <- vector("list", length(args))
+    for (i in seq_along(args)) {
+      families[[i]] <- observe_product_factor(
+        args[[i]], families[seq_len(i - 1L)], args[-seq_len(i)],
+        resolve_selection, emit, duplicate
+      )
+    }
+  } else {
     families <- lapply(args, expand_grouping_factor,
                        resolve_selection = resolve_selection,
-                       drop_duplicates = FALSE)
-    return(emit_grouping_family(cross_grouping_families(families), emit))
+                       drop_duplicates = FALSE, duplicate = duplicate)
   }
-
-  families <- vector("list", length(args))
+  witness_family <- duplicate_product_family(families, duplicate)
+  if (!observed || !is.null(witness_family)) {
+    return(emit_grouping_family(
+      witness_family %||% cross_grouping_families(families), emit
+    ))
+  }
   n <- length(args)
-  for (i in seq_along(args)) {
-    families[[i]] <- observe_product_factor(
-      args[[i]], families[seq_len(i - 1L)], args[-seq_len(i)],
-      resolve_selection, emit
-    )
-  }
   left <- cross_grouping_families(families[-n])
   right <- families[[n]]
   # The observer already received the occurrences of the first left choice.
@@ -2160,18 +2286,106 @@ expand_grouping_product <- function(preflight, resolve_selection, emit,
     emit_grouping_family(combine_grouping_factors(left[-1L], right), emit))
 }
 
+# Keep one cube unexpanded while its singleton neighbors resolve in order.
+# Their dimensions are present at every cube position in the product.
+expand_single_cube_product <- function(args, resolve_selection, duplicate) {
+  cube <- which(vapply(args, function(arg) {
+    identical(arg$nested$spec$type, "cube") && !isTRUE(arg$deferred)
+  }, logical(1)))
+  if (length(cube) != 1L ||
+        !all(vapply(args[-cube], single_grouping_factor, logical(1)))) {
+    return(NULL)
+  }
+  families <- lapply(seq_along(args), function(index) {
+    arg <- args[[index]]
+    if (index == cube) {
+      resolve_grouping_units(arg$nested, resolve_selection)
+    } else {
+      expand_grouping_factor(arg, resolve_selection, FALSE)
+    }
+  })
+  units <- families[[cube]]
+  if (2^length(units) > duplicate_report_limit) {
+    covered <- unique(unlist(families[-cube], use.names = FALSE))
+    duplicate$witness <- duplicate$witness %||%
+      cube_duplicate_witness(units) %||%
+      cube_duplicate_witness(lapply(units, setdiff, y = covered),
+                             family = "a Cartesian product")
+    if (!is.null(duplicate$witness)) {
+      return(list(unique(as.character(unlist(families, use.names = FALSE)))))
+    }
+  }
+  # Without a witness, each unit in a large cube has a private uncovered key.
+  families[[cube]] <- cube_grouping_family(units)
+  cross_grouping_families(families)
+}
+
+# Once a duplicate is proved, preserve only the dimensions needed for overlap
+# validation. The caller has already resolved all factors in selection order.
+duplicate_product_family <- function(families, duplicate) {
+  if (is.null(duplicate)) {
+    return(NULL)
+  }
+  duplicate$witness <- duplicate$witness %||% large_product_witness(families)
+  if (!is.null(duplicate$witness)) {
+    list(unique(as.character(unlist(families, use.names = FALSE))))
+  }
+}
+
+# Small products use the complete diagnostic. For larger ones, private columns
+# can establish uniqueness without walking the product.
+large_product_witness <- function(families, family = "a Cartesian product") {
+  if (prod(lengths(families)) > duplicate_report_limit &&
+        !product_has_private_keys(families)) {
+    product_duplicate_witness(families, family)
+  }
+}
+
+# Walk left-major choices until a membership repeats. Storage grows with
+# the distinct memberships visited rather than the number of occurrences.
+product_duplicate_witness <- function(families, family) {
+  dimensions <- unique(unlist(families, use.names = FALSE))
+  widths <- lengths(families)
+  choices <- rep(1L, length(widths))
+  seen <- new.env(parent = emptyenv())
+  position <- 1
+  repeat {
+    sets <- Map(`[[`, families, choices)
+    key <- grouping_set_key(unlist(sets, use.names = FALSE), dimensions)
+    # Compare keys inside the hash bucket, as in distinct_product_step().
+    bucket <- rlang::hash(key)
+    previous <- seen[[bucket]]
+    original <- match(key, names(previous))
+    if (!is.na(original)) {
+      return(list(family = family,
+                  positions = c(previous[[original]], position)))
+    }
+    seen[[bucket]] <- c(previous, stats::setNames(position, key))
+
+    remaining <- which(choices < widths)
+    if (length(remaining) == 0L) {
+      return(NULL)
+    }
+    pivot <- max(remaining)
+    choices[pivot] <- choices[pivot] + 1L
+    choices[seq_along(choices) > pivot] <- 1L
+    position <- position + 1
+  }
+}
+
 # Observe the first left choice crossing the tail. A fixed-size unresolved
 # suffix fixes the positions of equal prefixes without settling its membership.
 observe_product_factor <- function(arg, prefix, suffix,
-                                   resolve_selection, emit) {
+                                   resolve_selection, emit, duplicate) {
   tail <- length(suffix) == 0L
   single_suffix <- function() {
     all(vapply(suffix, single_grouping_factor, logical(1)))
   }
   first <- lapply(prefix, `[`, 1L)
+  prefix_witness <- duplicate$witness
   completed <- list()
   observe <- function(family = NULL, incomplete = NULL, whole = FALSE,
-                      offset = 0L, width = 1L) {
+                      offset = 0L, width = 1L, witness = NULL) {
     if (is.null(incomplete)) {
       completed <<- c(completed, family)
       if (tail) {
@@ -2184,7 +2398,7 @@ observe_product_factor <- function(arg, prefix, suffix,
         offset <- offset + length(completed)
       }
       emit(incomplete = c(prefix, incomplete), whole = TRUE,
-           offset = offset * size, width = width * size)
+           offset = offset * size, width = width * size, witness = witness)
     } else if (!is.na(grouping_factors_size(suffix)) &&
                  width * grouping_factors_size(suffix) <= 2^53) {
       size <- grouping_factors_size(suffix)
@@ -2194,13 +2408,23 @@ observe_product_factor <- function(arg, prefix, suffix,
         offset <- offset + length(completed)
       }
       emit(incomplete = c(first, incomplete), offset = offset * size,
-           width = width * size)
+           width = width * size, witness = witness)
     }
   }
   withRestarts(
-    expand_grouping_factor(arg, resolve_selection, FALSE, observe),
+    expand_grouping_factor(arg, resolve_selection, FALSE, observe, duplicate),
     needs_typed_selection = function(selected = character()) {
       width <- grouping_factors_size(c(list(arg), suffix))
+      if (!is.na(width)) {
+        witness <- prefix_witness %||% large_product_witness(
+          prefix, family = "a Cartesian product prefix"
+        )
+        if (!is.null(witness)) {
+          emit(incomplete = prefix, whole = TRUE, width = width,
+               witness = witness)
+          invokeRestart("needs_typed_selection", selected)
+        }
+      }
       if (!is.na(width) && width > 1L) {
         known <- duplicate_prefix_candidates(prefix)
         dimensions <- unique(unlist(known, use.names = FALSE))
@@ -2268,13 +2492,14 @@ grouping_factors_size <- function(args) {
 
 # Resolve one factor, optionally observing its completed occurrences.
 expand_grouping_factor <- function(arg, resolve_selection, drop_duplicates,
-                                   emit = NULL) {
+                                   emit = NULL, duplicate = NULL) {
   if (is.null(arg$nested)) {
     return(emit_grouping_family(
       list(resolve_selection(grouping_selection_quo(arg))), emit
     ))
   }
-  expand_grouping_family(arg$nested, resolve_selection, emit, drop_duplicates)
+  expand_grouping_family(arg$nested, resolve_selection, emit, drop_duplicates,
+                         duplicate)
 }
 
 # Cross fully resolved factors in left-major order, preserving occurrences.
@@ -3088,6 +3313,18 @@ resolve_column_selection <- function(arg, data_proxy, on_rename) {
   # positions in `selected` index, so it reads a lazy table's columns rather
   # than the fields of the object holding them, which `names()` would return.
   source_names <- names(tidyselect::tidyselect_data_proxy(data_proxy))[selected]
+  captured <- attr(data_proxy, "marginplyr_duckdb_names", exact = TRUE)
+  if (!is.null(captured) &&
+        (length(source_names) != length(selected) ||
+           !all(source_names %in% captured))) {
+    abort_marginplyr(c(
+      "DuckDB selection proxy returned names absent from the input.",
+      i = paste0(
+        "Preserve input names in {.fun tidyselect::tidyselect_data_proxy} ",
+        "or select columns by their captured names."
+      )
+    ))
+  }
   renamed <- selected_names != source_names
   if (any(renamed)) {
     on_rename(selected_names[renamed], source_names[renamed])

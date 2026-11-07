@@ -207,3 +207,218 @@ test_that("visible factory analysis never invokes caller functions", {
   expect_share_dependencies(visible_closure_data(), list(read))
   expect_identical(probe$calls, 0L)
 })
+
+test_that("selected blocks and branches retain closure list members", {
+  carriers <- alist(
+    { list(callback, safe) },
+    {
+      local_callback <- callback
+      list(local_callback, safe)
+    },
+    if (TRUE) list(callback, safe) else list(safe, callback),
+    switch("read", read = list(callback, safe), list(safe, callback))
+  )
+  reads <- function(remove = quote(rm(prior)), key = 1L) {
+    lapply(carriers, function(carrier) {
+      substitute((function(prior) {
+        callback <- function() sum(prior)
+        safe <- function() 7
+        functions <- CARRIER
+        REMOVE
+        functions[[KEY]]()
+      })(1), list(CARRIER = carrier, REMOVE = remove, KEY = key))
+    })
+  }
+  data <- visible_closure_data()
+  expect_share_dependency_values(data, reads(remove = NULL), expected = 1)
+  expect_share_dependency_values(data, reads(key = 2L), expected = 7)
+  expect_share_dependencies(data, reads())
+})
+
+test_that("closure list branch planning preserves ordinary switch lookup", {
+  probe <- rlang::env(calls = 0L)
+  record <- function() {
+    probe$calls <- probe$calls + 1L
+  }
+  caller <- rlang::env(record = record)
+  read <- rlang::new_quosure(quote((function(prior) {
+    callback <- function() sum(prior)
+    functions <- switch("read", read = {
+      record()
+      list(callback)
+    })
+    rm(prior)
+    functions[[1L]]()
+  })(1)), caller)
+
+  data <- visible_closure_data()
+  expect_share_dependencies(data, list(read))
+  expect_identical(probe$calls, 0L)
+
+  caller$switch <- function(...) list(function() 7)
+  expect_share_dependency_values(data, list(read), expected = 7)
+  expect_identical(probe$calls, 0L)
+})
+
+test_that("an explicit return from a block bypasses the closure list binding", {
+  read <- quote(length((function(prior) {
+    functions <- {
+      if (TRUE) return(list(function() sum(prior)))
+      list(function() 7)
+    }
+    rm(prior)
+    functions[[1L]]()
+  })(1)))
+  expect_share_dependency_values(
+    visible_closure_data(), list(read), expected = 1
+  )
+})
+
+remapped_closure_read <- function(carrier, invoke, remove = quote(rm(prior)),
+                                  callback = quote(function() sum(prior))) {
+  substitute((function(prior) {
+    callback <- CALLBACK
+    safe <- function() 7
+    functions <- CARRIER
+    REMOVE
+    INVOKE
+  })(1), list(CARRIER = carrier, INVOKE = invoke, REMOVE = remove,
+              CALLBACK = callback))
+}
+
+test_that("reversing a plain list preserves the selected closure", {
+  data <- visible_closure_data()
+  carrier <- quote(rev(list(safe, callback)))
+  read <- function(key, remove = quote(rm(prior))) {
+    remapped_closure_read(carrier, bquote(functions[[.(key)]]()), remove)
+  }
+  expect_share_dependencies(data, list(read(1L)))
+  expect_share_dependency_values(data, list(read(1L, NULL)), expected = 1)
+  expect_share_dependency_values(data, list(read(2L)), expected = 7)
+})
+
+test_that("plain list naming preserves the selected closure", {
+  data <- visible_closure_data()
+  cases <- list(
+    alist(unname(list(a = callback, b = safe), force = TRUE),
+          functions[[1L]](), functions[[2L]]()),
+    alist(structure(list(a = callback, b = safe), names = c("x", "y")),
+          functions$x(), functions$y()),
+    alist(stats::setNames(list(callback, safe), c("x", "y")),
+          functions$x(), functions$y())
+  )
+  reads <- function(member, ...) {
+    lapply(cases, function(case) {
+      remapped_closure_read(case[[1L]], case[[member]], ...)
+    })
+  }
+  expect_share_dependency_values(data, reads(2L, remove = NULL), expected = 1)
+  expect_share_dependency_values(data, reads(3L), expected = 7)
+  expect_share_dependencies(data, reads(2L))
+})
+
+test_that("repeating, converting, and slicing a list preserves closures", {
+  data <- visible_closure_data()
+  cases <- list(
+    alist(rep(list(safe, callback), times = 2L), functions[[4L]](),
+          functions[[3L]]()),
+    alist(rep(list(callback, safe)), functions[[1L]](), functions[[2L]]()),
+    alist(as.list(list(callback, safe)), functions[[1L]](), functions[[2L]]()),
+    alist(utils::tail(list(safe, callback, safe), n = -1L), functions[[1L]](),
+          functions[[2L]]())
+  )
+  reads <- function(member, ...) {
+    lapply(cases, function(case) {
+      remapped_closure_read(case[[1L]], case[[member]], ...)
+    })
+  }
+  expect_share_dependency_values(data, reads(2L, remove = NULL), expected = 1)
+  expect_share_dependency_values(data, reads(3L), expected = 7)
+  independent <- reads(2L, callback = quote(function() 9))
+  expect_share_dependency_values(data, independent, expected = 9)
+  expect_share_dependencies(data, reads(2L))
+})
+
+test_that("plain list remapping preserves caller lookup and S3 dispatch", {
+  caller <- rlang::env()
+  data <- visible_closure_data()
+  bare <- rlang::new_quosure(remapped_closure_read(
+    quote(rev(list(safe, callback))), quote(functions[[1L]]())
+  ), caller)
+  qualified <- rlang::new_quosure(remapped_closure_read(
+    quote(base::rev(list(safe, callback))), quote(functions[[1L]]())
+  ), caller)
+
+  caller$rev <- function(x) x
+  expect_share_dependency_values(data, list(bare), expected = 7)
+  expect_share_dependencies(data, list(qualified))
+
+  caller$rev.list <- function(x) x
+  expect_share_dependency_values(data, list(qualified), expected = 7)
+
+  caller$rev.marginplyr_test_list <- function(x) x
+  classed <- rlang::new_quosure(remapped_closure_read(
+    quote(base::rev(structure(list(safe, callback),
+                              class = "marginplyr_test_list"))),
+    quote(functions[[1L]]())
+  ), caller)
+  expect_share_dependency_values(data, list(classed), expected = 7)
+})
+
+test_that("planning a list remapping leaves its elements unevaluated", {
+  probe <- rlang::env(calls = 0L)
+  record <- function() {
+    probe$calls <- probe$calls + 1L
+  }
+  read <- remapped_closure_read(
+    quote(base::rev(list(safe, {
+      record()
+      callback
+    }))),
+    quote(functions[[1L]]())
+  )
+  expect_share_dependencies(visible_closure_data(), list(read))
+  expect_identical(probe$calls, 0L)
+})
+
+test_that("remapping leaves unselected inline closures unevaluated", {
+  read <- quote((function(prior) {
+    rm(prior)
+    rev(list(function() sum(prior), function() 7))[[1L]]()
+  })(1))
+  expect_share_dependency_values(visible_closure_data(), list(read), 7)
+})
+
+test_that("partial names on list remapping do not warn during planning", {
+  rlang::local_options(warnPartialMatchArgs = TRUE)
+  read <- remapped_closure_read(
+    quote(unname(ob = list(callback))), quote(functions[[1L]]())
+  )
+  expect_no_warning(
+    expect_share_dependencies(visible_closure_data(), list(read))
+  )
+})
+
+test_that("computed list transfer heads use caller value lookup", {
+  remapping <- rlang::new_quosure(quote(tryCatch(
+    (function(prior) {
+      callback <- function() sum(prior)
+      callbacks <- (rev)(list(function() 7, callback))
+      rm(prior)
+      callbacks[[1L]]()
+    })(1),
+    error = function(cnd) 7
+  )), rlang::env(rev = 0L))
+  branch <- rlang::new_quosure(quote(tryCatch(
+    (function(prior) {
+      callback <- function() sum(prior)
+      callbacks <- (switch)("read", read = list(callback))
+      rm(prior)
+      callbacks[[1L]]()
+    })(1),
+    error = function(cnd) 7
+  )), rlang::env(switch = 0L))
+  expect_share_dependency_values(
+    visible_closure_data(), list(remapping, branch), expected = 7
+  )
+})

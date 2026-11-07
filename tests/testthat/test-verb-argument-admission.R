@@ -989,6 +989,49 @@ test_that("direct reader inspection matches reusable Arrow inputs", {
   expect_identical(arrow::as_arrow_table(reader)$num_rows, 5L)
 })
 
+test_that("inspection Option arguments precede Arrow reader schema selection", {
+  skip_if_suggest_absent("arrow")
+
+  duplicate_batch <- function(first, second) {
+    columns <- stats::setNames(list(first, second), c("a", "a"))
+    do.call(arrow::record_batch, columns)
+  }
+  batch <- duplicate_batch(1L, 2L)
+  next_batch <- duplicate_batch(3L, 4L)
+  table <- arrow::Table$create(batch, next_batch)
+  invalid_options <- list(.format = "json", .duplicates = "invalid")
+
+  for (option in names(invalid_options)) {
+    reader <- arrow::RecordBatchReader$create(batch, next_batch)
+    arguments <- invalid_options[option]
+    diagnostic <- paste0("`", option, "` must be one of")
+    table_error <- expect_error(
+      do.call(inspect_grouping, c(list(.data = table), arguments)),
+      diagnostic, class = "marginplyr_error", fixed = TRUE
+    )
+    reader_error <- tryCatch(
+      do.call(inspect_grouping, c(list(.data = reader), arguments)),
+      error = identity
+    )
+    expect_s3_class(reader_error, "marginplyr_error")
+    expect_identical(conditionMessage(reader_error),
+                     conditionMessage(table_error))
+    expect_identical(arrow::as_arrow_table(reader)$num_rows, 2L)
+  }
+
+  reader <- arrow::RecordBatchReader$create(batch, next_batch)
+  native_reader <- arrow::RecordBatchReader$create(batch, next_batch)
+  native_error <- expect_error(
+    dplyr::select(native_reader, dplyr::everything()),
+    "Field names must be unique"
+  )
+  reader_error <- expect_error(
+    inspect_grouping(reader), "Field names must be unique"
+  )
+  expect_identical(class(reader_error), class(native_error))
+  expect_identical(arrow::as_arrow_table(reader)$num_rows, 2L)
+})
+
 test_that("a reader anywhere in an Arrow query is refused", {
   skip_if_suggest_absent("arrow")
 

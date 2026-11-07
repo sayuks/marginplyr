@@ -2968,3 +2968,125 @@ test_that("invalid Grouping kinds and empty frames yield no match", {
   expect_null(find_grouping_kind_rule(c("set", "cube")))
   expect_false(holds_grouping_spec_function(new.env(parent = emptyenv())))
 })
+
+test_that("large repeated cubes report a bounded duplicate witness", {
+  data <- data.frame(k = 1L)
+  spec <- cube(!!!rep(list(quote(k)), 12L))
+  cnd <- expect_error(
+    inspect_grouping(data, .grouping = spec),
+    "Duplicate grouping sets",
+    class = "marginplyr_error"
+  )
+  expect_match(conditionMessage(cnd), "1, 2.", fixed = TRUE)
+  expect_lt(nchar(conditionMessage(cnd)), 256L)
+})
+
+test_that("large Cartesian products report a bounded duplicate witness", {
+  data <- data.frame(k = 1L)
+  factor <- grouping_sets(k, grouping_set())
+  spec <- grouping_spec(!!!rep(list(factor), 12L))
+  cnd <- expect_error(
+    inspect_grouping(data, .grouping = spec),
+    "Duplicate grouping sets",
+    class = "marginplyr_error"
+  )
+  expect_match(conditionMessage(cnd), "1, 2.", fixed = TRUE)
+  expect_lt(nchar(conditionMessage(cnd)), 256L)
+})
+
+test_that("large distinct plans retain their complete occurrence order", {
+  extra <- paste0("col", seq_len(7L))
+  columns <- c("x", "y", "u", "v", extra)
+  data <- as.data.frame(stats::setNames(as.list(seq_along(columns)), columns))
+  optional <- lapply(rlang::syms(extra), function(column) {
+    grouping_sets(!!column, grouping_set())
+  })
+
+  distinct <- list(
+    cube(x, y, !!!rlang::syms(extra)),
+    grouping_spec(grouping_sets(x, grouping_set()),
+                  grouping_sets(y, grouping_set()), !!!optional),
+    grouping_spec(grouping_sets(grouping_set(x, y), grouping_set()),
+                  grouping_sets(grouping_set(x, u), grouping_set(y, v)),
+                  !!!optional)
+  )
+  for (spec in distinct) {
+    result <- inspect_grouping(data, .grouping = spec)
+    kept <- inspect_grouping(data, .grouping = spec, .duplicates = "keep")
+    expect_identical(result, kept)
+    expect_identical(result$set_id, seq_len(512L))
+  }
+})
+
+test_that("large explicit families also bound duplicate position text", {
+  data <- data.frame(k = 1L)
+  spec <- grouping_sets(!!!rep(list(quote(k)), 300L))
+  cnd <- expect_error(
+    inspect_grouping(data, .grouping = spec),
+    "Duplicate grouping sets", class = "marginplyr_error"
+  )
+  expect_match(conditionMessage(cnd), "1, 2.", fixed = TRUE)
+  expect_lt(nchar(conditionMessage(cnd)), 256L)
+})
+
+test_that("large duplicate proofs preserve typed selection precedence", {
+  data <- data.frame(a = 1L, b = "x")
+  repeated <- cube(!!!rep(list(quote(a)), 9L))
+  calls <- 0L
+  character_column <- function(column) {
+    calls <<- calls + 1L
+    is.character(column)
+  }
+  pending <- grouping_set(where(character_column))
+  known <- grouping_spec(!!repeated, !!pending)
+  expect_error(
+    inspect_grouping(data, .grouping = known),
+    "Duplicate grouping sets", class = "marginplyr_error"
+  )
+  expect_identical(calls, 0L)
+
+  factor <- grouping_sets(a, grouping_set())
+  crossed <- grouping_spec(!!!rep(list(factor), 9L), !!pending)
+  expect_error(
+    inspect_grouping(data, .grouping = crossed),
+    "a Cartesian product prefix", class = "marginplyr_error"
+  )
+  expect_identical(calls, 0L)
+
+  unknown <- grouping_spec(!!repeated, rollup(where(character_column)))
+  expect_error(
+    inspect_grouping(data, .grouping = unknown),
+    "Duplicate grouping sets", class = "marginplyr_error"
+  )
+  expect_identical(calls, 2L)
+
+  calls <- 0L
+  expect_error(
+    inspect_grouping(data, .grouping = grouping_sets(!!pending, !!repeated),
+                     .by = where(is.numeric)),
+    "both `.by` and `.grouping`", class = "marginplyr_error"
+  )
+  expect_identical(calls, 2L)
+})
+
+test_that("a covered large cube proves duplicates in a product", {
+  keys <- paste0("x", seq_len(20L))
+  data <- as.data.frame(stats::setNames(as.list(seq_along(keys)), keys))
+  columns <- rlang::syms(keys)
+  complete <- grouping_set(!!!columns)
+  spec <- grouping_spec(cube(!!!columns), complete)
+
+  cnd <- expect_error(
+    inspect_grouping(data, .grouping = spec),
+    "Duplicate grouping sets", class = "marginplyr_error"
+  )
+  expect_match(conditionMessage(cnd), "1, 2.", fixed = TRUE)
+  expect_identical(
+    inspect_grouping(data, .grouping = spec, .duplicates = "drop"),
+    inspect_grouping(data, .grouping = grouping_spec(complete))
+  )
+  expect_error(
+    inspect_grouping(data, .grouping = spec, .by = x1),
+    "both", class = "marginplyr_error"
+  )
+})

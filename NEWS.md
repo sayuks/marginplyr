@@ -1,5 +1,29 @@
 # marginplyr 0.1.0
 
+* Typed DuckDB Grouping inspection refuses dynamic pivots before evaluating
+  source rows and checks that metadata preserves captured column names
+  (#1461, #1462).
+
+* Grouping context-name selections honor tibble names methods on lazy inputs
+  and tidyselect data proxy methods on immutable dtplyr inputs (#1463, #1469).
+
+* The default Grouping duplicate policy can reject large repeated cubes and
+  Cartesian products without building every occurrence (#1464).
+
+* `inspect_grouping()` checks Option arguments before normalizing a direct
+  Arrow reader (#1465).
+
+* Both Nest verbs preserve dtplyr cell values when a caller supplies an
+  `as.data.table.list` method, including at deferred collection (#1466).
+
+* Parent and Total share dependency checks follow closure members through
+  selected branches, plain-list remapping and accessors, inline list factories,
+  known `do.call()` invocations, singleton loops and fresh environment fields
+  (#1470, #1471, #1472, #1473, #1474, #1475, #1476).
+
+* Unnamed local frame summaries check for collisions using the columns they
+  expand into the result (#1477).
+
 * Grouping selections preserve dtplyr receiver methods, ordinary tidyselect name repair, and the selection context of explicitly qualified constructor calls (#1439, #1449, #1457).
 
 * `summarize_with_margins()` identifies incompatible unnamed frame fields across grouping sets and explains how to use consistent fields or pack the summary (#1441).
