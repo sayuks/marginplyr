@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Typed inspection and Nest verbs refuse replaced registered dtplyr converters
+  before they can change Grouping dimensions or fixed keys (#1419).
+
 * Immutable dtplyr expansions preserve source rows and payload when a caller
   overrides the namespace operator, including cached inputs (#1422).
 
