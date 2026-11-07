@@ -557,8 +557,13 @@ is_name_only_expr <- function(expr, env, data_vars, allow_caller_code = TRUE) {
         (is.null(call_ns) || call_ns %in% c("tidyselect", "dplyr")) &&
         selection_call_parens_safe(unparenthesized_call(expr), env) &&
         is_name_only_namespace(expr, env)) {
+    args <- static_call_args(expr)
+    if (identical(call_name, "matches") &&
+          !pattern_methods_stable(args, env)) {
+      return(FALSE)
+    }
     return(all(vapply(
-      static_call_args(expr),
+      args,
       is_name_only_helper_arg,
       logical(1),
       env = env,
@@ -733,6 +738,10 @@ is_name_only_helper_arg <- function(expr,
   name <- static_call_name(expr)
   leaf_helper <- context && name %in% selection_leaf_helpers() &&
     identical(fn, tidyselect::vars_select_helpers[[name]])
+  if (leaf_helper && identical(name, "matches") &&
+        !pattern_methods_stable(args, env, bound, seen)) {
+    return(FALSE)
+  }
   if (is.null(args) || !all(vapply(
     args, is_name_only_helper_arg, logical(1),
     env = env, bound = bound, seen = seen,
@@ -846,6 +855,21 @@ selection_rebound_names <- function(parts, assignments = c("<-", "<<-", "="),
       env = env, bound = bound, seen = seen
     ))
   }), use.names = FALSE))
+}
+
+# Whether helper operands leave implicit pattern method lookup unchanged.
+# The caller supplies all operands together because any one can install a
+# method before matches() consumes its pattern. No operand is evaluated.
+pattern_methods_stable <- function(parts, env, bound = character(),
+                                   seen = list()) {
+  rebound <- selection_rebound_names(
+    parts, env = env, bound = bound, seen = seen
+  )
+  !any(grepl(paste0(
+    "^(length|vec_proxy)[.]",
+    "(stringr_(regex|fixed|coll|boundary|pattern)|character)$",
+    "|^length[.]default$"
+  ), rebound))
 }
 
 # Whether a call with a resolved callee indexes tidyselect's lexical pronoun.

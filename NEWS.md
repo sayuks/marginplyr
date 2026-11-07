@@ -4,6 +4,17 @@
   when determining output names, avoiding false grouping-column and identifier
   collisions while retaining static share-source eligibility (#1421).
 
+* Grouping selections use faithful typed metadata when a helper operand installs
+  a pattern method before matching, preserving fixed keys and dimensions across
+  inspection and summaries, including immutable dtplyr inputs (#1420).
+
+* Parent and Total share dependency checks follow surviving closures after
+  literal list deletions and single-bracket replacements (#1414).
+
+* Parent and Total share dependency checks retain known mask environments
+  returned through blocks, literal branches, numeric switch arms and base
+  identity calls (#1416).
+
 * Typed inspection and Nest verbs refuse replaced registered dtplyr converters
   before they can change Grouping dimensions or fixed keys (#1419).
 
