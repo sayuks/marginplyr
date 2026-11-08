@@ -44,6 +44,7 @@ jobs:
       - uses: quarto-dev/quarto-actions/setup@v2
 
       - uses: r-lib/actions/setup-r@v2
+        id: setup-r
         with:
           r-version: ${{ matrix.config.r }}
           http-user-agent: ${{ matrix.config.http-user-agent }}
@@ -271,7 +272,7 @@ jobs:
       # NOTE on the run page, so auditing them does not require downloading
       # and unzipping the check directory.
       - name: Summarize the check log
-        if: always()
+        if: always() && steps.setup-r.outcome == 'success'
         run: Rscript .github/scripts/summarize-check-log.R
         env:
           MARGINPLYR_CHECK_LABEL: >-

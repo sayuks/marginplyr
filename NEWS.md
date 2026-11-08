@@ -1,5 +1,17 @@
 # marginplyr 0.1.0
 
+* `share_of_parent()` and `share_of_total()` now follow visible closure enclosure replacements when validating dependencies, refusing earlier-summary dependencies while preserving unchanged and proven independent enclosures (#1504).
+
+* Typed DuckDB Grouping inspection refuses CSV auto-detection before binding
+  reader SQL, preserving name-only inspection and explicit-schema CSV metadata
+  with `auto_detect = false` (#1506).
+
+* `share_of_parent()` and `share_of_total()` now validate dependencies against local closures' replaced bodies and formals, refusing earlier-summary dependencies while preserving proven independent replacements (#1502).
+
+* Top-level `.grouping` factories now preserve quoted language and supplied function bodies, while directly authored empty constructor arguments before splices remain refused (#1505).
+
+* `nest_by_with_margins()` preserves typed empty dtplyr payloads when frame conversion methods are registered (#1503).
+
 * Parent and Total share dependency checks follow unchanged fresh closure
   environments through `invisible()` and local aliases, while preserving
   independent field replacements and dependencies through conditional alias
