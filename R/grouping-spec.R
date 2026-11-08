@@ -248,7 +248,7 @@ capture_public_grouping <- function(quo, written) {
 }
 
 # Mark calls whose last argument can become an authored empty after splicing.
-# Language captures and function literals remain caller-owned syntax.
+# Language captures and supplied function literals remain caller-owned syntax.
 mark_grouping_empty_args <- function(expr) {
   if (rlang::is_missing(expr) || rlang::is_quosure(expr) ||
         !(is.call(expr) || is.pairlist(expr))) {
@@ -261,6 +261,9 @@ mark_grouping_empty_args <- function(expr) {
     if (identical(static_call_name(capture), "function") ||
           any(captured_call_parts(capture))) {
       return(expr)
+    }
+    if (identical(static_call_name(capture[[1L]]), "function")) {
+      expr[[1L]] <- mark_executed_grouping_body(expr[[1L]])
     }
   }
   parts <- as.list(expr)
@@ -275,6 +278,17 @@ mark_grouping_empty_args <- function(expr) {
     attr(out, "marginplyr_keep_empty") <- TRUE
   }
   out
+}
+
+# Mark only the body of an immediately called function literal. The caller
+# establishes that the callee is a literal, possibly wrapped in parentheses.
+mark_executed_grouping_body <- function(expr) {
+  if (is_parenthesized(expr)) {
+    expr[[2L]] <- mark_executed_grouping_body(expr[[2L]])
+  } else {
+    expr[[3L]] <- mark_grouping_empty_args(expr[[3L]])
+  }
+  expr
 }
 
 # Capture tagged arguments without interpreting their values, so preflight can
