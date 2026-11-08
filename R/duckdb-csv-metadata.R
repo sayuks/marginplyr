@@ -21,6 +21,45 @@ duckdb_metadata_tokens <- function(sql) {
   structure(sql_ascii_lower(tokens), quoted = quoted)
 }
 
+# Remove only parentheses enclosing a complete token expression.
+duckdb_metadata_unwrap <- function(tokens) {
+  while (length(tokens) > 2L && tokens[[1L]] == "(" &&
+           utils::tail(tokens, 1L) == ")") {
+    depth <- cumsum((tokens == "(") - (tokens == ")"))
+    if (any(depth[-length(depth)] == 0L) || utils::tail(depth, 1L) != 0L) break
+    tokens <- tokens[-c(1L, length(tokens))]
+  }
+  tokens
+}
+
+# Recognize stored-view literal reader arguments without evaluating them.
+# The caller has already ruled out macros in this view's function heads.
+duckdb_stored_reader_arg <- function(arg) {
+  arg <- duckdb_metadata_unwrap(arg)
+  if (length(arg) < 3L || !arg[[2L]] %in% c("=", ":=")) return(arg)
+  value <- duckdb_metadata_unwrap(arg[-c(1L, 2L)])
+  if (length(value) == 6L &&
+        identical(value[c(1L, 2L, 4L, 5L, 6L)],
+                  c("cast", "(", "as", "boolean", ")"))) {
+    literal <- value[[3L]]
+    if (literal %in% c("false", "'false'", "'f'")) value <- "false"
+    if (literal %in% c("true", "'true'", "'t'")) value <- "true"
+  }
+  if (arg[[1L]] == "columns") {
+    open <- match("(", value)
+    heads <- list("struct_pack", c("main", ".", "struct_pack"),
+                  c("system", ".", "main", ".", "struct_pack"))
+    if (!is.na(open) && utils::tail(value, 1L) == ")" &&
+          any(vapply(heads, identical, logical(1),
+                     value[seq_len(open - 1L)]))) {
+      entries <- value[seq.int(open + 1L, length(value) - 1L)]
+      entries[entries == ":="] <- ":"
+      value <- c("{", entries, "}")
+    }
+  }
+  c(arg[1:2], value)
+}
+
 # Count columns in a literal JSON schema; expressions leave the count unknown.
 # DuckDB's JSON BindReader disables type inference for these columns and also
 # resolves automatic record inference when more than one column is supplied.
@@ -456,6 +495,9 @@ validate_duckdb_csv_metadata <- function(sql, catalog, namespace = NULL,
       arguments <- lapply(seq_along(starts), function(i) {
         rest[seq.int(starts[[i]], ends[[i]])]
       })
+      if (!is.null(namespace)) {
+        arguments <- lapply(arguments, duckdb_stored_reader_arg)
+      }
       disabled <- vapply(arguments, function(arg) {
         identical(arg, c("auto_detect", "=", "false")) ||
           identical(arg, c("auto_detect", ":=", "false"))
