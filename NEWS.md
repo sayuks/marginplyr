@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Typed dtplyr inspection excludes object columns before numeric admission
+  checks, preventing unrequested S4 method calls on source values (#1518).
+
 * Top-level `.grouping` factories preserve authored empty constructor positions
   in evaluated quotation operands, including `bquote()` substitutions and
   `substitute()` environments (#1514).
