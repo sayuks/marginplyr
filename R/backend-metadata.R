@@ -369,7 +369,8 @@ dtplyr_metadata_safe_step <- function(step, env = step[["env"]]) {
     }
     source <- parent[["parent"]]
     numeric_columns <- names(source)[vapply(source, function(x) {
-      is.numeric(x) && !is.object(x)
+      # Exclude objects before S4 numeric methods can receive source rows.
+      !is.object(x) && is.numeric(x)
     }, logical(1))]
     updates <- step[["new_vars"]]
     columns <- names(source)

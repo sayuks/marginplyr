@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Typed dtplyr inspection excludes object columns before numeric admission
+  checks, preventing unrequested S4 method calls on source values (#1518).
+
 * Both Nest verbs preserve local cell values, fixed partitions, and displayed
   keys under registered `as_tibble.data.frame` converters (#1512).
 
