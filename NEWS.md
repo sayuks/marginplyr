@@ -2,7 +2,8 @@
 
 * Typed DuckDB Grouping inspection refuses CSV filename replacement scans
   before source-value inference, while preserving captured-name inspection
-  and explicit reader metadata (#1519).
+  and explicit reader metadata. CSV- and JSON-like CTE and catalog relation
+  names retain ordinary typed inspection (#1519).
 
 * Parent and Total shares preserve requested sf summary geometry columns and
   explicit output order without exposing private denominator geometry (#1515).

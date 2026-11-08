@@ -1,3 +1,155 @@
+test_that("reader-like catalog relations and CTEs retain typed inspection", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  DBI::dbExecute(con, "CREATE SCHEMA metadata")
+  for (name in c("ordinary.csv", "ordinary.tsv", "ordinary.json",
+                 "ordinary.jsonl", "ordinary.ndjson")) {
+    identifier <- DBI::dbQuoteIdentifier(con, name)
+    DBI::dbWriteTable(con, name, data.frame(k = 101L, label = "east"))
+    DBI::dbWriteTable(con, DBI::Id(schema = "metadata", table = name),
+                      data.frame(k = 101L, label = "east"))
+    for (sql in c(
+      paste("SELECT * FROM", identifier),
+      paste0("SELECT * FROM metadata.", identifier),
+      paste0("SELECT * FROM memory.metadata.", identifier),
+      paste0("SELECT * FROM memory.", identifier),
+      paste0("WITH ", identifier,
+             " AS (SELECT 101 AS k, 'east' AS label) SELECT * FROM ",
+             identifier)
+    )) {
+      source <- dplyr::tbl(con, dbplyr::sql(sql), vars = c("k", "label"))
+      before <- serialize(source$lazy_query, NULL)
+      plan <- inspect_grouping(
+        source, .by = where(is.character),
+        .grouping = grouping_set(where(is.numeric))
+      )
+      expect_identical(plan$fixed, "(label)")
+      expect_identical(plan$included, "(k)")
+      audit <- last_sent_queries(details = TRUE)
+      expect_identical(sum(audit$purpose == "selection_proxy"), 1L)
+      expect_identical(audit$purpose, if (startsWith(sql, "WITH")) {
+        "selection_proxy"
+      } else {
+        c("relation_catalog", "selection_proxy")
+      })
+      expect_true(all(audit$status == "returned"))
+      expect_identical(serialize(source$lazy_query, NULL), before)
+      joined <- dplyr::left_join(source, dplyr::select(source, k), by = "k")
+      expect_identical(inspect_grouping(
+        joined, .by = where(is.character),
+        .grouping = grouping_set(where(is.numeric))
+      )$included, "(k)")
+      expect_identical(last_sent_queries(details = TRUE)$purpose, audit$purpose)
+    }
+  }
+})
+
+test_that("reader-like relations follow search paths and temporary catalogs", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  DBI::dbExecute(con, "CREATE SCHEMA metadata")
+  DBI::dbExecute(con, "SET search_path = 'metadata,main'")
+  DBI::dbExecute(con, 'CREATE TABLE metadata."schema.csv" AS SELECT 101 AS k')
+  DBI::dbExecute(con, 'CREATE TEMP TABLE "temporary.json" AS SELECT 101 AS k')
+  DBI::dbExecute(con, 'CREATE VIEW metadata."view.json" AS SELECT 101 AS k')
+  DBI::dbExecute(con, "CREATE MACRO current_database() AS 'unrelated'")
+  DBI::dbExecute(con, "CREATE MACRO current_setting(setting) AS 'unrelated'")
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  for (name in c("schema.csv", "temporary.json", "view.json")) {
+    source <- dplyr::tbl(con, dbplyr::sql(paste(
+      "SELECT * FROM", DBI::dbQuoteIdentifier(con, name)
+    )), vars = "k")
+    expect_identical(inspect_grouping(
+      source, .grouping = grouping_set(where(is.numeric))
+    )$included, "(k)")
+    audit <- last_sent_queries(details = TRUE)
+    expect_identical(audit$purpose, c("relation_catalog", "selection_proxy"))
+    expect_identical(audit$status, c("returned", "returned"))
+  }
+})
+
+test_that("reader-like CTE names retain their SQL scope", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  for (name in c("local.csv", "local.json")) {
+    identifier <- DBI::dbQuoteIdentifier(con, name)
+    for (sql in c(
+      paste0("WITH ", identifier, " AS (SELECT 101 AS k) TABLE ", identifier),
+      paste0("WITH ", identifier, "(k) AS MATERIALIZED (SELECT 101) ",
+             "SELECT * FROM ", identifier),
+      paste0("SELECT * FROM (WITH ", identifier,
+             " AS NOT MATERIALIZED (SELECT 101 AS k) TABLE ", identifier,
+             ") AS nested"),
+      paste0("WITH RECURSIVE ", identifier,
+             "(k) AS (SELECT 101 UNION ALL SELECT k + 1 FROM ", identifier,
+             " WHERE k < 102) SELECT * FROM ", identifier),
+      paste0("WITH ", identifier, " AS (SELECT 101 AS k), derived AS (TABLE ",
+             identifier, ") TABLE derived")
+    )) {
+      source <- dplyr::tbl(con, dbplyr::sql(sql), vars = "k")
+      expect_identical(inspect_grouping(
+        source, .grouping = grouping_set(where(is.numeric))
+      )$included, "(k)")
+      audit <- last_sent_queries(details = TRUE)
+      expect_identical(audit$purpose, "selection_proxy")
+      expect_identical(audit$status, "returned")
+    }
+  }
+})
+
+test_that("unresolved files stay refused outside CTE and catalog visibility", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  identifier <- DBI::dbQuoteIdentifier(con, path)
+  DBI::dbExecute(con, "CREATE SCHEMA hidden")
+  DBI::dbWriteTable(con, DBI::Id(schema = "hidden", table = path),
+                    data.frame(k = 999L))
+  DBI::dbExecute(con, "ATTACH ':memory:' AS other")
+  DBI::dbWriteTable(
+    con, DBI::Id(catalog = "other", schema = "main", table = path),
+    data.frame(k = 999L)
+  )
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  for (sql in c(
+    paste("SELECT * FROM", identifier),
+    paste0("WITH ", identifier, " AS (SELECT * FROM ", identifier,
+           ") SELECT * FROM ", identifier),
+    paste0("SELECT file.k FROM (WITH ", identifier,
+           " AS (SELECT 1 AS k) TABLE ", identifier,
+           ") AS bounded CROSS JOIN ", identifier, " AS file")
+  )) {
+    source <- dplyr::tbl(con, dbplyr::sql(sql), vars = "k")
+    before <- serialize(source$lazy_query, NULL)
+    expect_identical(inspect_grouping(
+      source, .grouping = grouping_set(k)
+    )$included, "(k)")
+    expect_equal(nrow(last_sent_queries()), 0L)
+    for (value in c("101", "source_tail")) {
+      writeLines(c("k", value), path)
+      native <- dplyr::collect(utils::head(source, 0L))
+      expect_identical(is.numeric(native$k), identical(value, "101"))
+      expect_error(inspect_grouping(
+        source, .grouping = grouping_set(where(is.numeric))
+      ), "source rows", fixed = TRUE, class = "marginplyr_error")
+      expect_duckdb_catalog_only()
+    }
+    expect_identical(serialize(source$lazy_query, NULL), before)
+    unlink(path)
+  }
+})
+
 test_that("CSV replacement inspection refuses source-value inference", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
@@ -32,12 +184,12 @@ test_that("CSV replacement inspection refuses source-value inference", {
         inspect_grouping(input, .by = where(is.numeric)),
         "source rows", fixed = TRUE, class = "marginplyr_error"
       )
-      expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+      expect_duckdb_catalog_only()
       expect_error(
         inspect_grouping(input, .grouping = grouping_set(where(is.numeric))),
         "dplyr::collect()", fixed = TRUE, class = "marginplyr_error"
       )
-      expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+      expect_duckdb_catalog_only()
       expect_identical(serialize(input$lazy_query, NULL), input_before)
     }
     expect_identical(as.character(dplyr::collect(source)$k), value)
@@ -84,7 +236,7 @@ test_that("CSV replacement guards follow SQL relation positions", {
       inspect_grouping(source, .grouping = grouping_set(where(is.numeric))),
       "source rows", fixed = TRUE, class = "marginplyr_error"
     )
-    expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+    expect_duckdb_catalog_only()
   }
 })
 
@@ -172,12 +324,12 @@ test_that("CSV relation parsing keeps quoted identifiers out of SQL grammar", {
         inspect_grouping(source, .by = where(is.numeric)),
         "source rows", fixed = TRUE, class = "marginplyr_error"
       )
-      expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+      expect_duckdb_catalog_only()
       expect_error(
         inspect_grouping(source, .grouping = grouping_set(where(is.numeric))),
         "source rows", fixed = TRUE, class = "marginplyr_error"
       )
-      expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+      expect_duckdb_catalog_only()
     }
     expect_identical(serialize(source$lazy_query, NULL), before)
   }
@@ -251,7 +403,7 @@ test_that("qualified CSV names cannot hide replacement inference", {
         inspect_grouping(source, .by = where(is.numeric)),
         "source rows", fixed = TRUE, class = "marginplyr_error"
       )
-      expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+      expect_duckdb_catalog_only()
       expect_error(
         inspect_grouping(source, .grouping = grouping_set(where(is.numeric))),
         "source rows", fixed = TRUE, class = "marginplyr_error"
@@ -320,7 +472,7 @@ test_that("equivalent CSV replacement spellings keep inference disabled", {
         inspect_grouping(source, .by = where(is.numeric)),
         "source rows", fixed = TRUE, class = "marginplyr_error"
       )
-      expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+      expect_duckdb_catalog_only()
       unlink(actual)
     }
   }

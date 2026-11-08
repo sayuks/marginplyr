@@ -42,6 +42,26 @@ duckdb_test_json_extension <- function(con) {
   invisible(NULL)
 }
 
+# A replacement-scan refusal may read catalog names, never bind its source.
+# The public audit exposes that complete, successful internal operation.
+expect_duckdb_catalog_only <- function() {
+  audit <- marginplyr::last_sent_queries(details = TRUE)
+  testthat::expect_identical(audit$purpose, "relation_catalog")
+  testthat::expect_identical(audit$source, "literal")
+  testthat::expect_identical(audit$status, "returned")
+  testthat::expect_identical(audit$sql, paste(
+    "SELECT database_name, schema_name, table_name AS relation_name,",
+    "system.main.current_database() AS default_database,",
+    "system.main.current_setting('search_path') AS search_path",
+    "FROM system.main.duckdb_tables() UNION ALL",
+    "SELECT database_name, schema_name, view_name AS relation_name,",
+    "system.main.current_database(),",
+    "system.main.current_setting('search_path')",
+    "FROM system.main.duckdb_views()"
+  ))
+  testthat::expect_equal(nrow(audit$conditions[[1L]]), 0L)
+}
+
 # Count actual query sends. The caller registers `counter$untrace()` on exit.
 duckdb_query_counter <- function() {
   counter <- new.env(parent = emptyenv())
