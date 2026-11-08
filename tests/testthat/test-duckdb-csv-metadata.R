@@ -786,10 +786,10 @@ test_that("equivalent CSV replacement spellings keep inference disabled", {
       expect_duckdb_catalog_only()
       expect_identical(serialize(source$lazy_query, NULL), before)
     }
-    # E strings are reader arguments on both DuckDB 1.5 and 2, but cease to be
-    # filename relations in DuckDB 2. Each control still resolves this filename.
+    # E and dollar strings remain reader arguments on both DuckDB 1.5 and 2;
+    # DuckDB 2 rejects them as filename relations.
     controls <- ifelse(
-      startsWith(spellings, "E"),
+      startsWith(spellings, "E") | startsWith(spellings, "$"),
       paste0("read_csv_auto(", spellings, ")"), spellings
     )
     # COPY writes valid compressed controls without an extra dependency.
