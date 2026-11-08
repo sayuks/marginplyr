@@ -147,6 +147,60 @@ test_that("view dependencies resolve within their own schema before callers", {
   }
 })
 
+test_that("view alias and CTE declarations do not call same-named macros", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  DBI::dbWriteTable(con, "src", data.frame(k = 101L))
+  DBI::dbExecute(con, "CREATE MACRO f(x) AS x")
+  DBI::dbExecute(con, 'CREATE MACRO "as"(x) AS x')
+  DBI::dbExecute(con, 'CREATE MACRO "in"(x) AS x')
+  DBI::dbExecute(con, "CREATE MACRO over(x) AS x")
+  DBI::dbExecute(con, "CREATE MACRO filter(x) AS x")
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  for (sql in c(
+    "SELECT * FROM src AS f(k)",
+    "SELECT * FROM src f(k)",
+    'SELECT * FROM src AS "F"(k)',
+    "WITH f(k) AS (SELECT k FROM src) SELECT * FROM f",
+    "WITH c AS (SELECT k FROM src) SELECT * FROM c",
+    "SELECT k FROM src WHERE k IN (101)",
+    "SELECT sum(k) OVER () AS k FROM src",
+    "SELECT sum(k) FILTER (WHERE k > 0) AS k FROM src"
+  )) {
+    DBI::dbExecute(con, paste('CREATE OR REPLACE VIEW "alias.csv" AS', sql))
+    source <- dplyr::tbl(con, dbplyr::sql('TABLE "alias.csv"'), vars = "k")
+    before <- serialize(source$lazy_query, NULL)
+    expect_true(is.numeric(dplyr::collect(utils::head(source, 0L))$k))
+    expect_identical(inspect_grouping(
+      source, .grouping = grouping_set(where(is.numeric))
+    )$included, "(k)")
+    audit <- last_sent_queries(details = TRUE)
+    expect_identical(audit$purpose, c("relation_catalog", "selection_proxy"))
+    expect_identical(audit$status, c("returned", "returned"))
+    expect_identical(serialize(source$lazy_query, NULL), before)
+  }
+  for (sql in c(
+    "SELECT f(k) AS k FROM src AS f(k)",
+    "WITH f(k) AS (SELECT k FROM src) SELECT f(k) AS k FROM f",
+    'SELECT "as"(k) AS k FROM src',
+    'SELECT "in"(k) AS k FROM src',
+    "SELECT main.as(k) AS k FROM src",
+    "SELECT main.in(k) AS k FROM src",
+    "SELECT over(k) AS k FROM src",
+    "SELECT filter(k) AS k FROM src"
+  )) {
+    DBI::dbExecute(con, paste('CREATE OR REPLACE VIEW "alias.csv" AS', sql))
+    source <- dplyr::tbl(con, dbplyr::sql('TABLE "alias.csv"'), vars = "k")
+    expect_true(is.numeric(dplyr::collect(utils::head(source, 0L))$k))
+    expect_error(inspect_grouping(
+      source, .grouping = grouping_set(where(is.numeric))
+    ), "dplyr::collect()", fixed = TRUE, class = "marginplyr_error")
+    expect_duckdb_catalog_only()
+  }
+})
+
 test_that("stored explicit CSV reader metadata survives view normalization", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()

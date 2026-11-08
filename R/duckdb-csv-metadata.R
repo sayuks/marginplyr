@@ -163,6 +163,7 @@ duckdb_metadata_relations <- function(tokens, functions = FALSE) {
 
 # Find each CTE's visible interval within its enclosing SQL scope. A normal
 # CTE becomes visible after its definition; RECURSIVE admits self-reference.
+# Retain token positions of main-query starts and CTE column declarations.
 duckdb_metadata_ctes <- function(tokens) {
   quoted <- attr(tokens, "quoted")
   opens <- which(tokens == "(" & !quoted)
@@ -174,6 +175,7 @@ duckdb_metadata_ctes <- function(tokens) {
   }
   bindings <- list()
   query_starts <- integer()
+  column_declarations <- integer()
   for (start in which(tokens == "with" & !quoted)) {
     parents <- opens[opens < start & vapply(opens, end_of, integer(1)) > start]
     scope_end <- if (length(parents)) end_of(utils::tail(parents, 1L)) else
@@ -187,6 +189,7 @@ duckdb_metadata_ctes <- function(tokens) {
       position <- position + 1L
       if (position < scope_end && tokens[[position]] == "(" &&
             !quoted[[position]]) {
+        column_declarations <- c(column_declarations, position - 1L)
         position <- end_of(position) + 1L
       }
       if (position >= scope_end || tokens[[position]] != "as" ||
@@ -212,7 +215,8 @@ duckdb_metadata_ctes <- function(tokens) {
     }
     query_starts <- c(query_starts, position)
   }
-  structure(bindings, query_starts = query_starts)
+  structure(bindings, query_starts = query_starts,
+            column_declarations = column_declarations)
 }
 
 # Decode a captured reader relation spelling without asking DuckDB to bind it.
@@ -292,7 +296,11 @@ duckdb_metadata_catalog <- function(con) {
     "system.main.current_database(),",
     "system.main.current_setting('search_path')",
     "FROM system.main.duckdb_functions()",
-    "WHERE function_type IN ('macro', 'table_macro')"
+    "WHERE function_type IN ('macro', 'table_macro') UNION ALL",
+    "SELECT NULL, NULL, keyword_name, 'keyword', keyword_category,",
+    "system.main.current_database(),",
+    "system.main.current_setting('search_path')",
+    "FROM system.main.duckdb_keywords()"
   ))
   with_sent_query("relation_catalog", sql, DBI::dbGetQuery(con, sql))
 }
@@ -382,6 +390,23 @@ validate_duckdb_view_metadata <- function(index, catalog, seen) {
   namespace <- c(view$database_name[[1L]], view$schema_name[[1L]])
   heads <- which(c(body[-1L], "") == "(" &
                    !c(attr(body, "quoted")[-1L], FALSE))
+  grammar <- catalog()
+  syntax_keywords <- grammar$kind == "keyword" &
+    grammar$definition %in% c("reserved", "column_name")
+  noncall <- grammar$relation_name[syntax_keywords]
+  identifier <- grepl(paste0(
+    "(*UTF)^[a-z_\\x{80}-\\x{10ffff}]",
+    "[a-z_0-9$\\x{80}-\\x{10ffff}]*$"
+  ), body[heads], perl = TRUE)
+  # Keyword categories decide which unquoted words can be function names.
+  heads <- heads[attr(body, "quoted")[heads] |
+                   (identifier & !body[heads] %in% noncall)]
+  declarations <- attr(duckdb_metadata_ctes(body), "column_declarations")
+  previous <- pmax(1L, heads - 1L)
+  # Stored aliases follow AS. Completed expressions precede clauses, not calls.
+  syntax <- heads > 1L & body[previous] %in% c("as", ")") &
+    !attr(body, "quoted")[previous]
+  heads <- heads[!syntax & !heads %in% declarations]
   for (head in heads) {
     while (head > 2L && body[[head - 1L]] == "." &&
              !attr(body, "quoted")[[head - 1L]]) head <- head - 2L

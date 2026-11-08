@@ -68,7 +68,11 @@ expect_duckdb_catalog_only <- function() {
     "system.main.current_database(),",
     "system.main.current_setting('search_path')",
     "FROM system.main.duckdb_functions()",
-    "WHERE function_type IN ('macro', 'table_macro')"
+    "WHERE function_type IN ('macro', 'table_macro') UNION ALL",
+    "SELECT NULL, NULL, keyword_name, 'keyword', keyword_category,",
+    "system.main.current_database(),",
+    "system.main.current_setting('search_path')",
+    "FROM system.main.duckdb_keywords()"
   )))
   testthat::expect_equal(nrow(audit$conditions[[1L]]), 0L)
 }
