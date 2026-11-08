@@ -1,3 +1,152 @@
+test_that("non-ASCII catalog and CTE names cannot admit a distinct CSV file", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  directory <- tempfile()
+  dir.create(directory)
+  previous <- setwd(directory)
+  on.exit({
+    setwd(previous)
+    unlink(directory, recursive = TRUE)
+  }, add = TRUE)
+  path <- "\u00e4.csv"
+  table <- "\u00c4.csv"
+  DBI::dbWriteTable(con, table, data.frame(k = 999L))
+  identifier <- DBI::dbQuoteIdentifier(con, path)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  for (sql in c(
+    paste("SELECT * FROM", identifier),
+    paste0("WITH ", DBI::dbQuoteIdentifier(con, table),
+           " AS (SELECT 999 AS k) SELECT * FROM ", identifier)
+  )) {
+    source <- dplyr::tbl(con, dbplyr::sql(sql), vars = "k")
+    before <- serialize(source$lazy_query, NULL)
+    expect_identical(inspect_grouping(
+      source, .grouping = grouping_set(k)
+    )$included, "(k)")
+    expect_equal(nrow(last_sent_queries()), 0L)
+    for (value in c("101", "source_tail")) {
+      writeLines(c("k", value), path)
+      expect_identical(is.numeric(dplyr::collect(utils::head(source, 0L))$k),
+                       identical(value, "101"))
+      expect_error(inspect_grouping(
+        source, .grouping = grouping_set(where(is.numeric))
+      ), "source rows", fixed = TRUE, class = "marginplyr_error")
+      expect_duckdb_catalog_only()
+    }
+    expect_identical(serialize(source$lazy_query, NULL), before)
+    unlink(path)
+  }
+})
+
+test_that("view admission cannot hide source-value CSV inference", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  writeLines(c("k", "101"), path)
+  quoted <- DBI::dbQuoteString(con, path)
+  DBI::dbExecute(con, paste(
+    'CREATE VIEW "ordinary.csv" AS SELECT * FROM', quoted
+  ))
+  DBI::dbExecute(con, 'CREATE VIEW "nested.csv" AS TABLE "ordinary.csv"')
+  DBI::dbExecute(con, paste0(
+    'CREATE VIEW "reader.csv" AS SELECT * FROM read_csv_auto(', quoted, ")"
+  ))
+  DBI::dbExecute(con, paste(
+    "CREATE MACRO hidden_reader() AS TABLE SELECT * FROM", quoted
+  ))
+  DBI::dbExecute(con, paste(
+    'CREATE VIEW "macro.csv" AS SELECT * FROM hidden_reader()'
+  ))
+  DBI::dbExecute(con, paste0(
+    "CREATE MACRO hidden_scalar() AS (SELECT k FROM ", quoted, ")"
+  ))
+  DBI::dbExecute(con, 'CREATE VIEW "scalar.csv" AS SELECT hidden_scalar() AS k')
+  DBI::dbExecute(con, paste0(
+    'CREATE VIEW "query.csv" AS WITH query AS (SELECT 999 AS k) ',
+    "SELECT * FROM query(",
+    DBI::dbQuoteString(con, paste("SELECT * FROM", quoted)), ")"
+  ))
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  unlink(path)
+  for (name in c("ordinary.csv", "nested.csv", "reader.csv", "macro.csv",
+                 "scalar.csv", "query.csv")) {
+    source <- dplyr::tbl(con, dbplyr::sql(paste(
+      "SELECT * FROM", DBI::dbQuoteIdentifier(con, name)
+    )), vars = "k")
+    before <- serialize(source$lazy_query, NULL)
+    expect_identical(inspect_grouping(
+      source, .grouping = grouping_set(k)
+    )$included, "(k)")
+    expect_equal(nrow(last_sent_queries()), 0L)
+    for (value in c("101", "source_tail")) {
+      writeLines(c("k", value), path)
+      expect_identical(is.numeric(dplyr::collect(utils::head(source, 0L))$k),
+                       identical(value, "101"))
+      expect_error(inspect_grouping(
+        source, .grouping = grouping_set(where(is.numeric))
+      ), class = "marginplyr_error")
+      expect_duckdb_catalog_only()
+      expect_error(inspect_grouping(
+        source, .by = where(is.numeric)
+      ), "dplyr::collect()", fixed = TRUE, class = "marginplyr_error")
+      expect_duckdb_catalog_only()
+    }
+    expect_identical(serialize(source$lazy_query, NULL), before)
+    unlink(path)
+  }
+})
+
+test_that("view dependencies resolve within their own schema before callers", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  writeLines(c("k", "101"), path)
+  DBI::dbExecute(con, "CREATE SCHEMA metadata")
+  DBI::dbWriteTable(con, "local_source", data.frame(k = 999L))
+  DBI::dbWriteTable(con, DBI::Id(schema = "metadata", table = "safe_source"),
+                    data.frame(k = 101L))
+  for (name in c("metadata.local_source", "main.safe_source")) {
+    DBI::dbExecute(con, paste(
+      "CREATE VIEW", name, "AS SELECT * FROM", DBI::dbQuoteString(con, path)
+    ))
+  }
+  DBI::dbExecute(con, paste(
+    'CREATE VIEW metadata."unsafe.csv" AS TABLE local_source'
+  ))
+  DBI::dbExecute(con, paste(
+    'CREATE VIEW metadata."safe.csv" AS SELECT abs(k) AS k FROM safe_source'
+  ))
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  for (value in c("101", "source_tail")) {
+    writeLines(c("k", value), path)
+    unsafe <- dplyr::tbl(con, dbplyr::sql(paste(
+      'WITH local_source AS (SELECT 999 AS k) TABLE metadata."unsafe.csv"'
+    )), vars = "k")
+    expect_identical(is.numeric(dplyr::collect(utils::head(unsafe, 0L))$k),
+                     identical(value, "101"))
+    expect_error(inspect_grouping(
+      unsafe, .grouping = grouping_set(where(is.numeric))
+    ), "source rows", fixed = TRUE, class = "marginplyr_error")
+    expect_duckdb_catalog_only()
+    safe <- dplyr::tbl(
+      con, dbplyr::sql('TABLE metadata."safe.csv"'), vars = "k"
+    )
+    expect_identical(inspect_grouping(
+      safe, .grouping = grouping_set(where(is.numeric))
+    )$included, "(k)")
+    expect_identical(last_sent_queries(details = TRUE)$purpose,
+                     c("relation_catalog", "selection_proxy"))
+  }
+})
+
 test_that("reader-like catalog relations and CTEs retain typed inspection", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()

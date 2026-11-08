@@ -1,5 +1,5 @@
-# SQL lexical tokens for reader metadata guards. Quoted values stay opaque,
-# quoted identifiers keep their spelling, and nested comments are discarded.
+# SQL lexical tokens for reader metadata guards, using ASCII identifier keys.
+# Quoted values stay opaque and nested comments are discarded.
 duckdb_metadata_tokens <- function(sql) {
   pattern <- paste0(
     "(?s)",
@@ -18,7 +18,7 @@ duckdb_metadata_tokens <- function(sql) {
     '""', '"', substring(tokens[quoted], 2L, nchar(tokens[quoted]) - 1L),
     fixed = TRUE
   )
-  structure(tolower(tokens), quoted = quoted)
+  structure(sql_ascii_lower(tokens), quoted = quoted)
 }
 
 # Count columns in a literal JSON schema; expressions leave the count unknown.
@@ -45,7 +45,9 @@ duckdb_json_schema_size <- function(arg) {
 
 # Return multipart relation names outside locally bound CTE references.
 # Scalar function arguments have their own scope and do not name relations.
-duckdb_metadata_relations <- function(tokens) {
+duckdb_metadata_relations <- function(tokens, functions = FALSE) {
+  bindings <- duckdb_metadata_ctes(tokens)
+  query_starts <- attr(bindings, "query_starts")
   frames <- list(list(
     query = TRUE, table = FALSE, expect = FALSE, start = TRUE
   ))
@@ -55,6 +57,8 @@ duckdb_metadata_relations <- function(tokens) {
     token <- tokens[[i]]
     n <- length(frames)
     frame <- frames[[n]]
+    # WITH's final definition precedes the main query's TABLE/SELECT position.
+    if (i %in% query_starts) frame$start <- TRUE
     qualified <- grepl("^[[:alpha:]_][[:alnum:]_$]*$", token) &&
       ((i > 1L && tokens[[i - 1L]] == "." && !quoted[[i - 1L]]) ||
          (frame$expect && i < length(tokens) &&
@@ -104,16 +108,16 @@ duckdb_metadata_relations <- function(tokens) {
       (frame$start && token %in% c("all", "distinct"))
     frames[[n]] <- frame
   }
-  bindings <- duckdb_metadata_ctes(tokens)
   relations <- relations[!vapply(relations, function(position) {
-    parts <- duckdb_relation_parts(tokens, position)
-    length(parts) == 1L && any(vapply(bindings, function(binding) {
-      parts[[1L]] == binding$name && position >= binding$start &&
-        position <= binding$end
-    }, logical(1)))
+    parts <- duckdb_relation_parts(tokens, position, functions)
+    length(parts) == 1L && !isTRUE(attr(parts, "function")) &&
+      any(vapply(bindings, function(binding) {
+        parts[[1L]] == binding$name && position >= binding$start &&
+          position <= binding$end
+      }, logical(1)))
   }, logical(1))]
   paths <- lapply(relations, function(position) {
-    duckdb_relation_parts(tokens, position)
+    duckdb_relation_parts(tokens, position, functions)
   })
   paths[lengths(paths) > 0L]
 }
@@ -130,6 +134,7 @@ duckdb_metadata_ctes <- function(tokens) {
     if (length(ends)) ends[[1L]] else length(tokens) + 1L
   }
   bindings <- list()
+  query_starts <- integer()
   for (start in which(tokens == "with" & !quoted)) {
     parents <- opens[opens < start & vapply(opens, end_of, integer(1)) > start]
     scope_end <- if (length(parents)) end_of(utils::tail(parents, 1L)) else
@@ -166,8 +171,9 @@ duckdb_metadata_ctes <- function(tokens) {
             quoted[[position]]) break
       position <- position + 1L
     }
+    query_starts <- c(query_starts, position)
   }
-  bindings
+  structure(bindings, query_starts = query_starts)
 }
 
 # Decode a captured reader relation spelling without asking DuckDB to bind it.
@@ -201,12 +207,12 @@ duckdb_reader_relation_path <- function(token) {
       switch(value, n = "\n", r = "\r", t = "\t", b = "\b", f = "\f", value)
     }
   }, character(1)))
-  tolower(path)
+  sql_ascii_lower(path)
 }
 
 # Decode the qualified name beginning at a captured relation position.
-# Function heads are excluded; their reader arguments have separate admission.
-duckdb_relation_parts <- function(tokens, position) {
+# Function heads are optionally marked for view admission rather than excluded.
+duckdb_relation_parts <- function(tokens, position, functions = FALSE) {
   quoted <- attr(tokens, "quoted")
   last <- position
   while (last + 2L <= length(tokens) && tokens[[last + 1L]] == "." &&
@@ -217,13 +223,15 @@ duckdb_relation_parts <- function(tokens, position) {
     )) break
     last <- last + 2L
   }
-  if (last < length(tokens) && tokens[[last + 1L]] == "(" &&
-        !quoted[[last + 1L]]) {
+  function_head <- last < length(tokens) && tokens[[last + 1L]] == "(" &&
+    !quoted[[last + 1L]]
+  if (function_head && !functions) {
     return(character())
   }
   parts <- vapply(seq.int(position, last, by = 2L), function(i) {
     if (quoted[[i]]) tokens[[i]] else duckdb_reader_relation_path(tokens[[i]])
   }, character(1))
+  if (functions) attr(parts, "function") <- function_head
   parts
 }
 
@@ -233,13 +241,19 @@ duckdb_metadata_catalog <- function(con) {
   # System qualification keeps caller macros outside this metadata query.
   sql <- dbplyr::sql(paste(
     "SELECT database_name, schema_name, table_name AS relation_name,",
+    "'table' AS kind, NULL::VARCHAR AS definition,",
     "system.main.current_database() AS default_database,",
     "system.main.current_setting('search_path') AS search_path",
     "FROM system.main.duckdb_tables() UNION ALL",
-    "SELECT database_name, schema_name, view_name AS relation_name,",
+    "SELECT database_name, schema_name, view_name, 'view', sql,",
     "system.main.current_database(),",
     "system.main.current_setting('search_path')",
-    "FROM system.main.duckdb_views()"
+    "FROM system.main.duckdb_views() UNION ALL",
+    "SELECT database_name, schema_name, function_name, function_type, NULL,",
+    "system.main.current_database(),",
+    "system.main.current_setting('search_path')",
+    "FROM system.main.duckdb_functions()",
+    "WHERE function_type IN ('macro', 'table_macro')"
   ))
   with_sent_query("relation_catalog", sql, DBI::dbGetQuery(con, sql))
 }
@@ -247,9 +261,12 @@ duckdb_metadata_catalog <- function(con) {
 # Resolve one captured multipart name against catalog-only metadata. DuckDB's
 # search path includes temp.main, its configured entries, then default main.
 # The caller supplies this operation's duckdb_metadata_catalog() result.
-duckdb_metadata_catalog_has <- function(parts, catalog) {
-  if (!nrow(catalog) || length(parts) > 3L) return(FALSE)
-  catalog[] <- lapply(catalog, tolower)
+duckdb_metadata_catalog_match <- function(parts, catalog, namespace = NULL,
+                                          kinds = c("table", "view")) {
+  if (!nrow(catalog) || length(parts) > 3L) return(integer())
+  identifiers <- c("database_name", "schema_name", "relation_name",
+                   "default_database", "search_path")
+  catalog[identifiers] <- lapply(catalog[identifiers], sql_ascii_lower)
   default <- catalog$default_database[[1L]]
   tokens <- duckdb_metadata_tokens(catalog$search_path[[1L]])
   separators <- which(tokens == "," & !attr(tokens, "quoted"))
@@ -260,7 +277,13 @@ duckdb_metadata_catalog_has <- function(parts, catalog) {
     path <- path[seq.int(1L, length(path), by = 2L)]
     if (length(path) == 1L) c(default, path) else path
   }) else list()
-  paths <- c(list(c("temp", "main")), configured,
+  view_paths <- if (!is.null(namespace) &&
+                      !namespace[[1L]] %in% c("temp", "system")) {
+    list(sql_ascii_lower(namespace), c(sql_ascii_lower(namespace[[1L]]), ""))
+  } else {
+    list()
+  }
+  paths <- c(list(c("temp", "main")), view_paths, configured,
              list(c(default, "main"), c("system", "main"),
                   c("system", "pg_catalog")))
   if (length(parts) == 3L) {
@@ -269,18 +292,69 @@ duckdb_metadata_catalog_has <- function(parts, catalog) {
     prefix <- parts[[1L]]
     # Two-part names can qualify a schema or an attached database.
     if (prefix %in% catalog$database_name) {
-      paths <- Filter(function(path) path[[1L]] == prefix, paths)
+      paths <- Filter(function(path) {
+        path[[1L]] == prefix && nzchar(path[[2L]])
+      }, paths)
       if (!length(paths)) paths <- list(c(prefix, "main"))
     } else {
-      paths <- Filter(function(path) path[[2L]] == prefix, paths)
+      paths <- Filter(function(path) path[[2L]] %in% c(prefix, ""), paths)
+      paths <- lapply(paths, function(path) c(path[[1L]], prefix))
       if (!length(paths)) paths <- list(c(default, prefix))
     }
   }
-  any(vapply(paths, function(path) {
-    any(catalog$database_name == path[[1L]] &
-          catalog$schema_name == path[[2L]] &
-          catalog$relation_name == utils::tail(parts, 1L))
-  }, logical(1)))
+  for (path in paths) {
+    matched <- which(catalog$database_name == path[[1L]] &
+                       catalog$schema_name == path[[2L]] &
+                       catalog$relation_name == utils::tail(parts, 1L) &
+                       catalog$kind %in% kinds)
+    if (length(matched)) return(matched[[1L]])
+  }
+  integer()
+}
+
+# Refuse view work whose safety cannot be established from captured definitions.
+abort_duckdb_view_metadata <- function() {
+  abort_marginplyr(c(
+    "Can't safely determine column metadata for this DuckDB view.",
+    i = "Its definition could hide source work while binding a zero-row query.",
+    i = paste0(
+      "Supply established reader metadata directly, or collect the input ",
+      "explicitly with {.code dplyr::collect()} ",
+      "and pass the resulting data frame."
+    )
+  ))
+}
+
+# Inspect a stored view without binding it. Strip CREATE VIEW's header, keep
+# its own catalog/schema search context, and stop cycles or hidden macro work.
+# `seen` holds catalog row positions on the current view path.
+validate_duckdb_view_metadata <- function(index, catalog, seen) {
+  if (index %in% seen) abort_duckdb_view_metadata()
+  view <- catalog()[index, , drop = FALSE]
+  sql <- view$definition[[1L]]
+  if (is.na(sql) || !nzchar(sql)) abort_duckdb_view_metadata()
+  tokens <- duckdb_metadata_tokens(sql)
+  quoted <- attr(tokens, "quoted")
+  depth <- cumsum((tokens == "(" & !quoted) - (tokens == ")" & !quoted))
+  start <- which(tokens == "as" & !quoted & depth == 0L)
+  if (!length(start)) abort_duckdb_view_metadata()
+  range <- seq.int(start[[1L]] + 1L, length(tokens))
+  body <- structure(tokens[range], quoted = quoted[range])
+  namespace <- c(view$database_name[[1L]], view$schema_name[[1L]])
+  heads <- which(c(body[-1L], "") == "(" &
+                   !c(attr(body, "quoted")[-1L], FALSE))
+  for (head in heads) {
+    while (head > 2L && body[[head - 1L]] == "." &&
+             !attr(body, "quoted")[[head - 1L]]) head <- head - 2L
+    parts <- duckdb_relation_parts(body, head, functions = TRUE)
+    macro <- duckdb_metadata_catalog_match(
+      parts, catalog(), namespace, kinds = c("macro", "table_macro")
+    )
+    if (length(macro)) abort_duckdb_view_metadata()
+  }
+  validate_duckdb_csv_metadata(
+    body, catalog, namespace = namespace, seen = c(seen, index)
+  )
 }
 
 # Refuse reader inference before DuckDB can bind the captured input (ADR 0020).
@@ -320,16 +394,36 @@ abort_duckdb_reader_metadata <- function(family) {
 # whose literal arguments establish inference is disabled at their own depth.
 # The caller supplies captured SQL, without binding the input (ADR 0020).
 # `catalog` lazily returns this operation's catalog-only name snapshot.
-validate_duckdb_csv_metadata <- function(sql, catalog) {
-  tokens <- duckdb_metadata_tokens(as.character(sql))
-  relations <- duckdb_metadata_relations(tokens)
+validate_duckdb_csv_metadata <- function(sql, catalog, namespace = NULL,
+                                         seen = integer()) {
+  tokens <- if (is.null(namespace)) {
+    duckdb_metadata_tokens(as.character(sql))
+  } else {
+    sql
+  }
+  relations <- duckdb_metadata_relations(
+    tokens, functions = !is.null(namespace)
+  )
   relation_paths <- vapply(relations, paste, character(1), collapse = ".")
   candidates <- grepl(paste0(
     "[.](csv|tsv|json|jsonl|ndjson)([.](gz|zst))?$|",
     "[.](csv|tsv|json|jsonl|ndjson)[?]"
   ), relation_paths)
-  for (i in which(candidates)) {
-    if (duckdb_metadata_catalog_has(relations[[i]], catalog())) {
+  readers <- c("read_csv", "read_csv_auto", "read_json", "read_json_auto",
+               "read_ndjson", "read_ndjson_auto")
+  for (i in which(candidates | !is.null(namespace))) {
+    if (isTRUE(attr(relations[[i]], "function"))) {
+      if (!utils::tail(relations[[i]], 1L) %in% readers) {
+        abort_duckdb_view_metadata()
+      }
+      relation_paths[[i]] <- ""
+      next
+    }
+    index <- duckdb_metadata_catalog_match(relations[[i]], catalog(), namespace)
+    if (length(index)) {
+      if (catalog()$kind[[index]] == "view") {
+        validate_duckdb_view_metadata(index, catalog, seen)
+      }
       relation_paths[[i]] <- ""
     }
   }

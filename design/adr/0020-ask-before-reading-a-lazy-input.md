@@ -379,17 +379,30 @@ from sampling using malformed JSON contents.
 [json-loading]: https://duckdb.org/docs/1.5/data/json/loading_json
 [json-binding]: https://github.com/duckdb/duckdb/blob/v1.5.0/extension/json/json_multi_file_info.cpp
 
-## Amendment: resolve relations before classifying filename fallback
+## Amendment (#1524): resolve relations before classifying filename fallback
 
 A CSV or JSON suffix names a replacement scan only when DuckDB cannot resolve
 the captured relation as a CTE or catalog relation. CTE visibility follows its
 SQL scope, including self-reference under `WITH RECURSIVE`; its definition is
 still checked for unsafe readers and unresolved filenames. Typed metadata
-preflight may read DuckDB's system catalog names and configured search path
-once per operation to distinguish existing relations from filename fallback.
+preflight may read DuckDB's system catalog names, stored view definitions,
+macro names and configured search path once per operation to distinguish
+existing relations from filename fallback.
 That query binds no caller relation and reads no source values. It is not a
 second input-type snapshot under ADR 0002 or a further exemption for reading
 the input. Name-only inspection performs neither catalog nor typed reads.
+
+Identifier comparison uses ADR 0032's ASCII-only equivalence throughout captured
+SQL, decoded names, common table expressions and catalog lookup. Distinct
+non-ASCII spellings remain distinct; the caller's SQL is unchanged.
+
+A stored view's name alone does not establish safety. Preflight follows its
+definition and nested views in their own catalog/schema search context, without
+inheriting the caller's common table expressions. Existing reader checks apply
+inside those definitions. Cycles, macro calls and table functions whose safety
+is not established are refused before binding, with the option to supply
+established reader metadata directly or collect explicitly. View definitions
+and macro names belong to the same catalog acquisition, not additional queries.
 
 The catalog query is a Sent query under ADR 0027, including when an unresolved
 filename is subsequently refused. The existing zero-row input query remains
@@ -400,9 +413,14 @@ replacement scan being guarded.
 Catalog resolution follows `GetCatalogEntries` in DuckDB's
 [catalog implementation][relation-catalog] and `SetPathsInternal` in its
 [search-path implementation][relation-search-path].
+View lookup follows `Binder::GetSearchPath` and `Binder::Bind(BaseTableRef&)` in
+the [view binder][relation-view-binder], and `SetSearchPath` in the
+[catalog entry retriever][relation-entry-retriever].
 
 [relation-catalog]: https://github.com/duckdb/duckdb/blob/v1.5.0/src/catalog/catalog.cpp
 [relation-search-path]: https://github.com/duckdb/duckdb/blob/v1.5.0/src/catalog/catalog_search_path.cpp
+[relation-view-binder]: https://github.com/duckdb/duckdb/blob/v1.5.0/src/planner/binder/tableref/bind_basetableref.cpp
+[relation-entry-retriever]: https://github.com/duckdb/duckdb/blob/v1.5.0/src/catalog/catalog_entry_retriever.cpp
 
 ## Amendment (#640): SQLite typed-order execution follows an explicit request
 

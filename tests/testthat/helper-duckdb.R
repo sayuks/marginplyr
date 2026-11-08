@@ -49,16 +49,27 @@ expect_duckdb_catalog_only <- function() {
   testthat::expect_identical(audit$purpose, "relation_catalog")
   testthat::expect_identical(audit$source, "literal")
   testthat::expect_identical(audit$status, "returned")
-  testthat::expect_identical(audit$sql, paste(
+  # Compare the complete catalog-only query shape without fixing whitespace.
+  tokens <- function(sql) {
+    regmatches(sql, gregexpr("'(?:[^']|'')*'|[[:alnum:]_]+|[^[:space:]]",
+                             sql, perl = TRUE))
+  }
+  testthat::expect_identical(tokens(audit$sql), tokens(paste(
     "SELECT database_name, schema_name, table_name AS relation_name,",
+    "'table' AS kind, NULL::VARCHAR AS definition,",
     "system.main.current_database() AS default_database,",
     "system.main.current_setting('search_path') AS search_path",
     "FROM system.main.duckdb_tables() UNION ALL",
-    "SELECT database_name, schema_name, view_name AS relation_name,",
+    "SELECT database_name, schema_name, view_name, 'view', sql,",
     "system.main.current_database(),",
     "system.main.current_setting('search_path')",
-    "FROM system.main.duckdb_views()"
-  ))
+    "FROM system.main.duckdb_views() UNION ALL",
+    "SELECT database_name, schema_name, function_name, function_type, NULL,",
+    "system.main.current_database(),",
+    "system.main.current_setting('search_path')",
+    "FROM system.main.duckdb_functions()",
+    "WHERE function_type IN ('macro', 'table_macro')"
+  )))
   testthat::expect_equal(nrow(audit$conditions[[1L]]), 0L)
 }
 
