@@ -242,6 +242,9 @@ jobs:
           message("Loaded arrow and duckdb under ", R.version.string)
         shell: Rscript {0}
 
+      - name: Provision DuckDB JSON extension
+        run: Rscript .github/scripts/provision-duckdb-json.R
+
       # No `upload-snapshots` here, and no `NOT_CRAN`. This matrix emulates
       # CRAN, and testthat skips snapshot expectations under CRAN semantics, so
       # all three snapshot-bearing tests skip and there is never a snapshot to
