@@ -355,7 +355,8 @@ Config/testthat/start-first:
     across-prior-rebinding,
     share-list-replacement-dispatch,
     nest-local-list-converter,
-    sf-shares
+    sf-shares,
+    share-fresh-environment-exposure
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool

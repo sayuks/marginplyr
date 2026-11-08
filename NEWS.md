@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Parent and Total share dependency checks follow unchanged fresh closure
+  environments through `invisible()` and local aliases, while preserving
+  independent field replacements (#1493).
+
 * Public `.grouping` capture preserves authored empty constructor arguments
   before empty splices and refuses them with their original position (#1489).
 
