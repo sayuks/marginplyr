@@ -28,7 +28,9 @@ families <- list(
 )
 canonical <- function(x) {
   x <- as.data.frame(x)
-  for (nm in names(x)) if (is.factor(x[[nm]])) x[[nm]] <- as.character(x[[nm]])
+  for (nm in names(x)) {
+    if (is.factor(x[[nm]])) x[[nm]] <- as.character(x[[nm]])
+  }
   if (nrow(x)) x <- x[do.call(order, c(unname(x[intersect(c("id","p","a","b"),names(x))]), na.last = TRUE)), , drop=FALSE]
   rownames(x) <- NULL
   x

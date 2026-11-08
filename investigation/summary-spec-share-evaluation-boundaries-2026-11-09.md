@@ -198,7 +198,10 @@ finite lanes. Finding count did not determine that checkpoint.
 ## Replays, tracker reconciliation and limits
 
 The [replay directory](2026-11-09-summary-spec-share) contains five minimal
-witnesses and both independent oracles. Run from a checkout of the pinned SHA:
+witnesses and both independent oracles. The following commands run from this
+research branch, whose package sources were unchanged from the pinned SHA.
+For a separate checkout of the investigated SHA, use absolute paths to these
+retained scripts while working from that checkout's root:
 
 ```sh
 Rscript investigation/2026-11-09-summary-spec-share/first-source-minimal.R

@@ -12,7 +12,7 @@ node <- function(depth = 0L) {
   kind <- if (depth > 1L) "set" else sample(c("set", "sets", "rollup", "cube", "product"), 1L)
   ctor <- c(set = "grouping_set", sets = "grouping_sets", rollup = "rollup", cube = "cube", product = "grouping_spec")[[kind]]
   if (kind == "set") {
-    dims <- if (runif(1) < .25) character() else unit()
+    dims <- if (runif(1) < 0.25) character() else unit()
     return(list(expr = as.call(c(list(as.name(ctor)), lapply(dims, as.name))), dims = dims, sets = list(dims)))
   }
   n <- sample.int(3L, 1L)
