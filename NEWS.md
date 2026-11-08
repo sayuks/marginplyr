@@ -2,21 +2,21 @@
 
 * Typed DuckDB Grouping inspection refuses CSV filename replacement scans
   before source-value inference, while preserving captured-name inspection
-  and explicit reader schemas (#1519).
+  and explicit reader metadata (#1519).
 
 * Parent and Total shares preserve requested sf summary geometry columns and
   explicit output order without exposing private denominator geometry (#1515).
 
 * Top-level `.grouping` factories preserve caller-owned constructor syntax
-  through custom NSE and quotation aliases, while rebound quotation names
+  through custom expression capture and quotation aliases, while rebound quotation names
   retain the authored-empty refusal of constructors they execute (#1517).
 
 * Typed DuckDB Grouping inspection refuses JSON type and record inference
   before sampling source values, including JSON file replacement scans, while
-  preserving name-only inspection and established reader schemas (#1516).
+  preserving name-only inspection and established reader metadata (#1516).
 
 * Typed dtplyr inspection excludes object columns before numeric admission
-  checks, preventing unrequested S4 method calls on source values (#1518).
+  checks, preventing implicit S4 method calls on source values (#1518).
 
 * Both Nest verbs preserve local cell values, fixed partitions, and displayed
   keys under registered `as_tibble.data.frame` converters (#1512).
