@@ -1,3 +1,131 @@
+mixed_factory_read <- function(dependent, probe, retained = FALSE,
+                               list_first = FALSE) {
+  force(probe)
+  unused <- if (dependent) 7 else quote(sum(prior))
+  callable <- rlang::expr(function() {
+    probe$factories <- probe$factories + 1L
+    function() {
+      probe$closures <- probe$closures + 1L
+      !!unused
+    }
+  })
+  body <- if (dependent || retained) quote(sum(prior)) else 7
+  listed <- rlang::expr(function() {
+    probe$factories <- probe$factories + 1L
+    list(read = function() {
+      probe$closures <- probe$closures + 1L
+      !!body
+    })
+  })
+  if (retained) listed[[2L]] <- as.pairlist(alist(prior = 11))
+  first <- if (list_first) listed else callable
+  second <- if (list_first) callable else listed
+  predicate <- if (list_first) quote(sum(x) < 0) else quote(sum(x) > 0)
+  rlang::quo((function(prior) {
+    box <- list2env(list(make = !!first))
+    alias <- box
+    if (!!predicate) alias <- list2env(list(make = !!second))
+    made <- alias$make()
+    rm(prior)
+    made$read()
+  })(11))
+}
+
+test_that("mixed factory result kinds retain list callback dependencies", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
+  before <- serialize(data, NULL)
+  probe <- rlang::env(factories = 0L, closures = 0L)
+  reads <- lapply(c(FALSE, TRUE), function(first) {
+    mixed_factory_read(TRUE, probe, list_first = first)
+  })
+  expect_share_dependencies(data, reads)
+  expect_identical(probe$factories, 0L)
+  expect_identical(probe$closures, 0L)
+  expect_identical(serialize(data, NULL), before)
+})
+
+test_that("mixed factories leave unused callable bodies deferred", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
+  probe <- rlang::env(factories = 0L, closures = 0L)
+  for (first in c(FALSE, TRUE)) {
+    for (retained in c(FALSE, TRUE)) {
+      read <- mixed_factory_read(FALSE, probe, retained, first)
+      expect_share_dependency_values(data, list(read), if (retained) 11 else 7)
+    }
+  }
+  expect_gt(probe$factories, 0L)
+  expect_gt(probe$closures, 0L)
+})
+
+test_that("dtplyr mixed factories preserve independent and captured values", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.table::data.table(
+    g = c("a", "b"), x = c(1, 3), prior = c(10, 20)
+  )
+  before <- serialize(data, NULL)
+  probe <- rlang::env(factories = 0L, closures = 0L, reads = 0L)
+  observe <- function(x) {
+    probe$reads <- probe$reads + 1L
+    x
+  }
+  input <- dtplyr::lazy_dt(data, immutable = TRUE)
+  input <- dplyr::filter(input, observe(x) > 0)
+  for (kind in c("parent", "total")) {
+    helper <- rlang::call2(paste0("share_of_", kind), quote(value))
+    for (first in c(FALSE, TRUE)) {
+      for (retained in c(FALSE, TRUE)) {
+        read <- mixed_factory_read(FALSE, probe, retained, first)
+        expected <- if (retained) 11 else 7
+        forward <- summarize_with_margins(
+          input, value = sum(.data$x), prior = !!helper, observed = !!read,
+          .grouping = rollup("g")
+        )
+        reverse <- summarize_with_margins(
+          input, prior = sum(.data$x), value = !!read, ratio = !!helper,
+          .grouping = rollup("g")
+        )
+        expect_identical(probe$factories, 0L)
+        expect_identical(probe$closures, 0L)
+        expect_identical(probe$reads, 0L)
+        forward <- dplyr::collect(forward)
+        reverse <- dplyr::collect(reverse)
+        expect_equal(forward$observed, rep(expected, 3L))
+        expect_equal(forward$prior, c(0.25, 0.75, 1))
+        expect_equal(reverse$value, rep(expected, 3L))
+        expect_equal(reverse$ratio, c(1, 1, 1))
+        expect_gt(probe$factories, 0L)
+        expect_gt(probe$closures, 0L)
+        expect_gt(probe$reads, 0L)
+        probe$factories <- probe$closures <- probe$reads <- 0L
+      }
+    }
+  }
+  expect_identical(serialize(data, NULL), before)
+})
+
+test_that("dtplyr mixed factory dependencies are refused without execution", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.table::data.table(
+    g = c("a", "b"), x = c(1, 3), prior = c(10, 20)
+  )
+  before <- serialize(data, NULL)
+  probe <- rlang::env(factories = 0L, closures = 0L, reads = 0L)
+  observe <- function(x) {
+    probe$reads <- probe$reads + 1L
+    x
+  }
+  input <- dtplyr::lazy_dt(data, immutable = TRUE)
+  input <- dplyr::filter(input, observe(x) > 0)
+  reads <- lapply(c(FALSE, TRUE), function(first) {
+    mixed_factory_read(TRUE, probe, list_first = first)
+  })
+  expect_share_dependencies(input, reads)
+  expect_identical(probe$factories, 0L)
+  expect_identical(probe$closures, 0L)
+  expect_identical(probe$reads, 0L)
+  expect_identical(serialize(data, NULL), before)
+})
+
 fresh_env_exposure_reads <- function() {
   alist(
     (function(prior) {

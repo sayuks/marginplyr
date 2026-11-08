@@ -4902,19 +4902,21 @@ scope_literal_list_index <- function(expr, scope, lookup) {
   do.call(base::c, unname(values))
 }
 
-# Known returned closures, relative to the current stack. Each factory result
-# is rebased with its own invoked and captured frames before candidates merge.
+# Known callable results retain accompanying list candidates. Each result is
+# rebased with its own invoked and captured frames before candidates merge.
 scope_factory_closure <- function(expr, scope, lookup) {
-  returned <- scope_factory_results(expr, scope, lookup, scope_value_closure)
+  returned <- scope_factory_results(expr, scope, lookup,
+                                    scope_closure_list_element)
   if (is.null(returned)) return(NULL)
   values <- lapply(returned$results, function(result) {
     if (!is.null(result$value)) {
-      scope_rebase_factory_closure(result$value, result)
+      scope_map_closure_elements(list(result$value), function(closure) {
+        scope_rebase_factory_closure(closure, result)
+      })[[1L]]
     }
   })
-  if (!returned$alternatives) return(values[[1L]])
-  variants <- unlist(lapply(values, scope_closure_variants), recursive = FALSE)
-  if (length(variants) > 0L) list(alternatives = variants)
+  member <- scope_join_members(values)
+  if (length(scope_closure_variants(member)) > 0L) member
 }
 
 # Known list results retain each candidate's names, positions and frames.
@@ -5644,6 +5646,10 @@ scope_promise_symbols <- function(name, scope, lookup,
   if (!function_lookup) {
     closure <- scope_closure_binding(name, scope, function_lookup = FALSE)
     if (!is.null(closure)) {
+      # Selecting a tracked list member does not invoke callable alternatives.
+      if (isTRUE(lookup$defer_definitions) && !is.null(closure$elements)) {
+        return(character())
+      }
       variants <- scope_closure_variants(closure)
       return(unique(unlist(lapply(variants, function(variant) {
         if (scope_closure_is_active(variant, scope)) return(character())
@@ -5783,7 +5789,9 @@ scope_fresh_env_fields <- function(expr, scope, lookup) {
 scope_bind_local <- function(scope, name, value = NULL, lookup = NULL,
                              value_scope = scope) {
   closure <- scope_value_closure(value, value_scope, lookup)
-  elements <- if (is.null(closure) && !missing(value)) {
+  elements <- if (!is.null(closure)) {
+    closure$elements
+  } else if (!missing(value)) {
     scope_closure_list(value, value_scope, lookup)
   }
   fields <- scope_fresh_env_fields(value, value_scope, lookup)
