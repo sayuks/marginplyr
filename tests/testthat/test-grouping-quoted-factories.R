@@ -560,3 +560,205 @@ test_that("capture operands preserve scope, source values and read budgets", {
   expect_identical(serialize(data, NULL), before)
   expect_identical(selected, "b")
 })
+
+# jarl-ignore missing_argument: The factory reads the original call as language.
+test_that("an NSE factory preserves the caller Grouping syntax", {
+  data <- data.frame(a = c(1L, 2L), b = c(3L, 4L))
+  make <- function(expr) {
+    raw <- substitute(expr)
+    if (identical(raw, quote(grouping_set(, a)))) rollup(a) else rollup(b)
+  }
+  stored <- make(grouping_set(, a))
+  expected <- expand_with_margins(data, .grouping = stored, .id = "sid")
+  expect_identical(expected$a, c("1", "2", "Total", "Total"))
+  expect_identical(expected$b, c(3L, 4L, 3L, 4L))
+  expect_identical(expected$sid, c(1L, 1L, 2L, 2L))
+  actual <- expand_with_margins(
+    data, .grouping = make(grouping_set(, a)), .id = "sid"
+  )
+  expect_identical(actual, expected)
+})
+
+# jarl-ignore missing_argument: Factory inputs are language data.
+test_that("NSE and aliased quotation factories agree at public boundaries", {
+  data <- data.frame(a = c(1L, 1L, 2L), b = c(3L, 4L, 5L))
+  before <- serialize(data, NULL)
+  counts <- new.env(parent = emptyenv())
+  counts$nse <- counts$quoted <- 0L
+  make <- function(expr) {
+    counts$nse <- counts$nse + 1L
+    if (identical(substitute(expr), quote(grouping_set(, a)))) {
+      rollup(a)
+    } else {
+      rollup(b)
+    }
+  }
+  q <- base::quote
+  choose <- function(expr) {
+    counts$quoted <- counts$quoted + 1L
+    if (identical(expr, base::quote(grouping_set(, a)))) {
+      rollup(a)
+    } else {
+      rollup(b)
+    }
+  }
+  drop_last <- function(expr) {
+    expr[[length(expr)]] <- NULL
+    eval(expr)
+  }
+  stored <- make(grouping_set(, a))
+  quoted <- choose(q(grouping_set(, a)))
+  empty <- drop_last(q(grouping_set(, a)))
+  expect_identical(inspect_grouping(data, .grouping = stored)$included,
+                   c("(a)", "()"))
+  expect_identical(inspect_grouping(data, .grouping = empty)$included, "()")
+  for (consume in list(inspect_grouping, summarize_with_margins,
+                       expand_with_margins, nest_with_margins,
+                       nest_by_with_margins)) {
+    counts$nse <- counts$quoted <- 0L
+    expected <- consume(data, .grouping = stored)
+    actual <- consume(data, .grouping = make(grouping_set(, a)))
+    expect_identical(actual, expected)
+    actual <- consume(data, .grouping = choose(q(grouping_set(, a))))
+    expect_identical(actual, expected)
+    expect_identical(actual, consume(data, .grouping = quoted))
+    expect_identical(counts$nse, 1L)
+    expect_identical(counts$quoted, 1L)
+    actual <- consume(data, .grouping = drop_last(q(grouping_set(, a))))
+    expect_identical(actual, consume(data, .grouping = empty))
+  }
+  expected <- expand_with_margins(data, .grouping = stored, .id = "sid")
+  actual <- expand_with_margins(
+    data, .grouping = choose(q(grouping_set(, a))), .id = "sid"
+  )
+  expect_identical(actual, expected)
+  expect_identical(actual$a, c("1", "1", "2", "Total", "Total", "Total"))
+  expect_identical(actual$b, c(3L, 4L, 5L, 3L, 4L, 5L))
+  expect_identical(actual$sid, c(1L, 1L, 1L, 2L, 2L, 2L))
+  expect_identical(serialize(data, NULL), before)
+})
+
+# jarl-ignore missing_argument: Rebound capture names execute their operands.
+test_that("caller capture names follow their actual evaluation semantics", {
+  data <- data.frame(a = 1:2, b = 3:4)
+  quote <- substitute <- expression <- identity
+  calls <- list(
+    function(consume) {
+      consume(data, .grouping = quote(grouping_set(a, , !!!list())))
+    },
+    function(consume) {
+      consume(data, .grouping = quote(grouping_sets(a, , !!!list())))
+    },
+    function(consume) {
+      consume(data, .grouping = quote(rollup(a, , !!!list())))
+    },
+    function(consume) {
+      consume(data, .grouping = quote(cube(a, , !!!list())))
+    },
+    function(consume) {
+      consume(data, .grouping = quote(grouping_spec(a, , !!!list())))
+    },
+    function(consume) {
+      consume(data, .grouping = substitute(grouping_set(a, , !!!list())))
+    },
+    function(consume) {
+      consume(data, .grouping = substitute(grouping_sets(a, , !!!list())))
+    },
+    function(consume) {
+      consume(data, .grouping = substitute(rollup(a, , !!!list())))
+    },
+    function(consume) {
+      consume(data, .grouping = substitute(cube(a, , !!!list())))
+    },
+    function(consume) {
+      consume(data, .grouping = substitute(grouping_spec(a, , !!!list())))
+    },
+    function(consume) {
+      consume(data, .grouping = expression(grouping_set(a, , !!!list())))
+    },
+    function(consume) {
+      consume(data, .grouping = expression(grouping_sets(a, , !!!list())))
+    },
+    function(consume) {
+      consume(data, .grouping = expression(rollup(a, , !!!list())))
+    },
+    function(consume) {
+      consume(data, .grouping = expression(cube(a, , !!!list())))
+    },
+    function(consume) {
+      consume(data, .grouping = expression(grouping_spec(a, , !!!list())))
+    }
+  )
+  constructors <- c("grouping_set", "grouping_sets", "rollup", "cube",
+                    "grouping_spec")
+  stored <- list(
+    quote(grouping_set(a, , !!!list())),
+    quote(grouping_sets(a, , !!!list())),
+    quote(rollup(a, , !!!list())),
+    quote(cube(a, , !!!list())),
+    quote(grouping_spec(a, , !!!list()))
+  )
+  for (consume in list(inspect_grouping, summarize_with_margins,
+                       expand_with_margins, nest_with_margins,
+                       nest_by_with_margins)) {
+    for (i in seq_along(calls)) {
+      constructor <- (i - 1L) %% length(constructors) + 1L
+      expected <- tryCatch(consume(data, .grouping = stored[[constructor]]),
+                           error = identity)
+      actual <- tryCatch(calls[[i]](consume), error = identity)
+      expect_s3_class(expected, "marginplyr_error")
+      expect_s3_class(actual, "marginplyr_error")
+      if (inherits(actual, "error")) {
+        expect_identical(conditionMessage(actual), conditionMessage(expected))
+        expect_match(conditionMessage(actual),
+                     paste0("Argument 2 of `", constructors[[constructor]],
+                            "()` is empty."), fixed = TRUE)
+      }
+    }
+    nested <- tryCatch(consume(
+      data, .grouping = expression(grouping_sets(
+        ((marginplyr::grouping_set)(a, , !!!list())), b
+      ))
+    ), error = identity)
+    expect_s3_class(nested, "marginplyr_error")
+    if (inherits(nested, "error")) {
+      expect_match(conditionMessage(nested),
+                   "Argument 2 of `grouping_set()` is empty.", fixed = TRUE)
+    }
+  }
+})
+
+# jarl-ignore missing_argument: The factory inspects a nonexecuted constructor.
+test_that("public outer injection evaluates its original operand", {
+  data <- data.frame(a = 1:2, b = 3:4)
+  make <- function(expr) {
+    if (identical(substitute(expr), quote(grouping_set(, a)))) {
+      rollup(a)
+    } else {
+      rollup(b)
+    }
+  }
+  stored <- rollup(a)
+  for (consume in list(inspect_grouping, summarize_with_margins,
+                       expand_with_margins, nest_with_margins,
+                       nest_by_with_margins)) {
+    actual <- tryCatch(consume(data, .grouping = !!rollup(a)), error = identity)
+    expect_identical(actual, consume(data, .grouping = stored))
+    actual <- consume(data, .grouping = !!make(grouping_set(, a)))
+    expect_identical(actual, consume(data, .grouping = stored))
+  }
+})
+
+test_that("caller constructor bindings retain public outer injection", {
+  data <- data.frame(a = 1:2, b = 3:4)
+  stored <- rollup(a)
+  grouping_set <- identity
+  for (consume in list(inspect_grouping, summarize_with_margins,
+                       expand_with_margins, nest_with_margins,
+                       nest_by_with_margins)) {
+    actual <- tryCatch(
+      consume(data, .grouping = grouping_set(!!stored)), error = identity
+    )
+    expect_identical(actual, consume(data, .grouping = stored))
+  }
+})

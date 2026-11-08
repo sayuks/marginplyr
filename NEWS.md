@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Top-level `.grouping` factories preserve caller-owned constructor syntax
+  through custom NSE and quotation aliases, while rebound quotation names
+  retain the authored-empty refusal of constructors they execute (#1517).
+
 * Typed dtplyr inspection excludes object columns before numeric admission
   checks, preventing unrequested S4 method calls on source values (#1518).
 
