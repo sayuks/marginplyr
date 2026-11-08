@@ -85,7 +85,7 @@ test_that("JSON replacement scans cannot infer types during inspection", {
           inspect_grouping(source, .by = where(is.numeric)),
           "source rows", fixed = TRUE, class = "marginplyr_error"
         )
-        expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+        expect_duckdb_catalog_only()
       }
       unlink(path)
       expect_error(
@@ -135,12 +135,12 @@ test_that("JSON relation escapes and globs cannot hide type inference", {
           inspect_grouping(input, .by = where(is.numeric)),
           "source rows", fixed = TRUE, class = "marginplyr_error"
         )
-        expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+        expect_duckdb_catalog_only()
         expect_error(
           inspect_grouping(input, .grouping = grouping_set(where(is.numeric))),
           "source rows", fixed = TRUE, class = "marginplyr_error"
         )
-        expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+        expect_duckdb_catalog_only()
       }
     }
     expect_identical(serialize(source$lazy_query, NULL), before)
@@ -200,7 +200,7 @@ test_that("qualified JSON names cannot hide replacement inference", {
         inspect_grouping(source, .by = where(is.numeric)),
         "source rows", fixed = TRUE, class = "marginplyr_error"
       )
-      expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+      expect_duckdb_catalog_only()
       expect_error(
         inspect_grouping(source, .grouping = grouping_set(where(is.numeric))),
         "source rows", fixed = TRUE, class = "marginplyr_error"
@@ -232,7 +232,7 @@ test_that("TABLE queries cannot hide JSON replacement inference", {
       inspect_grouping(source, .grouping = grouping_set(where(is.numeric))),
       "source rows", fixed = TRUE, class = "marginplyr_error"
     )
-    expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+    expect_duckdb_catalog_only()
   }
 })
 
@@ -318,7 +318,7 @@ test_that("JSON preflight follows joins and ignores SQL values and comments", {
       inspect_grouping(input, .grouping = grouping_set(where(is.numeric))),
       "source rows", fixed = TRUE, class = "marginplyr_error"
     )
-    expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+    expect_duckdb_catalog_only()
   }
   for (sql in c(
     paste0("SELECT file.k FROM (SELECT 1 AS k) AS control, ", path, " AS file"),

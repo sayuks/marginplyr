@@ -379,6 +379,31 @@ from sampling using malformed JSON contents.
 [json-loading]: https://duckdb.org/docs/1.5/data/json/loading_json
 [json-binding]: https://github.com/duckdb/duckdb/blob/v1.5.0/extension/json/json_multi_file_info.cpp
 
+## Amendment: resolve relations before classifying filename fallback
+
+A CSV or JSON suffix names a replacement scan only when DuckDB cannot resolve
+the captured relation as a CTE or catalog relation. CTE visibility follows its
+SQL scope, including self-reference under `WITH RECURSIVE`; its definition is
+still checked for unsafe readers and unresolved filenames. Typed metadata
+preflight may read DuckDB's system catalog names and configured search path
+once per operation to distinguish existing relations from filename fallback.
+That query binds no caller relation and reads no source values. It is not a
+second input-type snapshot under ADR 0002 or a further exemption for reading
+the input. Name-only inspection performs neither catalog nor typed reads.
+
+The catalog query is a Sent query under ADR 0027, including when an unresolved
+filename is subsequently refused. The existing zero-row input query remains
+the sole typed snapshot. `dbExistsTable()` is unsuitable here: DuckDB's DBI
+method binds `SELECT * FROM <name> WHERE FALSE`, which can itself trigger the
+replacement scan being guarded.
+
+Catalog resolution follows `GetCatalogEntries` in DuckDB's
+[catalog implementation][relation-catalog] and `SetPathsInternal` in its
+[search-path implementation][relation-search-path].
+
+[relation-catalog]: https://github.com/duckdb/duckdb/blob/v1.5.0/src/catalog/catalog.cpp
+[relation-search-path]: https://github.com/duckdb/duckdb/blob/v1.5.0/src/catalog/catalog_search_path.cpp
+
 ## Amendment (#640): SQLite typed-order execution follows an explicit request
 
 ADR 0031's live SQLite result builds its typed compound query without executing
