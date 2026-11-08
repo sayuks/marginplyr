@@ -4530,6 +4530,10 @@ call_part_symbols <- function(expr, scope, lookup) {
   }
   if (!is.null(closure)) {
     for (variant in scope_closure_variants(closure)) {
+      if (length(variant$unknown_definition_parts) > 0L) {
+        reads <- c(reads, unresolved_lookup_name())
+        next
+      }
       if (scope_closure_is_active(variant, scope)) next
       reads <- c(reads, definition_data_symbols(
         variant$definition, scope_closure_scope(variant, scope), lookup, expr,
@@ -4696,6 +4700,8 @@ scope_value_closure <- function(expr, scope, lookup) {
     return(scope_promise_closure(promise, lookup))
   }
   operator <- static_call_name(head)
+  replacement <- scope_definition_replacement(head, scope, lookup)
+  if (!is.null(replacement)) return(replacement)
   transfer_lookup <- lookup
   transfer_lookup$rebound <- lookup$function_rebound %||% lookup$rebound
   if (!is.null(operator) &&
@@ -4785,6 +4791,134 @@ scope_value_closure <- function(expr, scope, lookup) {
   if (!is.null(member$definition) || !is.null(member$alternatives)) {
     member
   }
+}
+
+# Resolve base definition setters without evaluating the replacement expression.
+# An unreadable definition retains a callable with unresolved dependencies.
+scope_definition_replacement <- function(expr, scope, lookup) {
+  operator <- static_call_name(expr)
+  if (is.null(operator) || !operator %in% c("body<-", "formals<-") ||
+        !is_known_base_frame_call(expr, operator, scope, lookup)) return(NULL)
+  parts <- static_matched_arguments(expr, get(operator, envir = baseenv()))
+  if (!all(c("fun", "value") %in% names(parts))) return(NULL)
+  closure <- scope_value_closure(parts$fun, scope, lookup)
+  if (is.null(closure)) return(NULL)
+  value <- scope_definition_value(parts$value, scope, lookup)
+  if (!is.null(value) &&
+        (rlang::is_missing(value[[1L]]) || is.object(value[[1L]]))) {
+    value <- NULL
+  }
+  part <- if (identical(operator, "body<-")) "body" else "formals"
+  slot <- if (identical(part, "body")) 3L else 2L
+  if (identical(part, "formals") && !is.null(value) &&
+        !(is.null(value[[1L]]) || is.pairlist(value[[1L]]) ||
+            is.list(value[[1L]]))) value <- NULL
+  if ("envir" %in% names(parts)) value <- NULL
+  scope_map_closure_elements(list(closure), function(variant) {
+    if (is.null(value)) {
+      variant$definition[slot] <- list(NULL)
+      variant$unknown_definition_parts <- union(
+        variant$unknown_definition_parts, part
+      )
+    } else {
+      if (identical(part, "formals")) value <- list(as.pairlist(value[[1L]]))
+      variant$definition[slot] <- value
+      variant$unknown_definition_parts <- setdiff(
+        variant$unknown_definition_parts, part
+      )
+    }
+    variant
+  })[[1L]]
+}
+
+# Read literal definition values, captures and formal-list member writes.
+# A list wrapper distinguishes a known NULL from an unreadable value.
+scope_definition_value <- function(expr, scope, lookup) {
+  expr <- unparenthesized_value(expr)
+  if (rlang::is_missing(expr) || is.object(expr)) return(NULL)
+  if (!is.language(expr)) return(list(expr))
+  if (rlang::is_call(expr, n = 1L) &&
+        identical(static_call_name(expr), "quote") &&
+        is_known_base_frame_call(expr, "quote", scope, lookup)) {
+    return(static_call_args(expr))
+  }
+  operator <- static_call_name(expr)
+  if (is.null(operator) || !is_known_base_frame_call(
+    expr, operator, scope, lookup
+  )) return(NULL)
+  if (identical(operator, "formals")) {
+    parts <- static_matched_arguments(expr, base::formals)
+    if (!"fun" %in% names(parts)) return(NULL)
+    closure <- scope_value_closure(parts$fun, scope, lookup)
+    values <- lapply(scope_closure_variants(closure), function(variant) {
+      if (!"formals" %in% variant$unknown_definition_parts) {
+        list(variant$definition[[2L]])
+      }
+    })
+    values <- unique(values)
+    if (length(values) == 1L) return(values[[1L]])
+  }
+  if (operator %in% c("alist", "list", "pairlist")) {
+    values <- static_call_args(expr)
+    if (!identical(operator, "alist")) {
+      values <- lapply(values, scope_definition_value,
+                       scope = scope, lookup = lookup)
+      if (any(lengths(values) != 1L)) return(NULL)
+      values <- lapply(values, `[[`, 1L)
+    }
+    return(list(as.pairlist(values)))
+  }
+  if (operator %in% c("$<-", "[[<-")) {
+    definition <- if (identical(operator, "$<-")) {
+      function(x, name, value) NULL
+    } else {
+      function(x, i, value) NULL
+    }
+    parts <- static_matched_arguments(expr, definition)
+    key_name <- if (identical(operator, "$<-")) "name" else "i"
+    if (!all(c("x", key_name, "value") %in% names(parts))) return(NULL)
+    parent <- scope_definition_value(parts$x, scope, lookup)
+    value <- scope_definition_value(parts$value, scope, lookup)
+    key <- if (identical(operator, "$<-") && is_name_part(parts[[key_name]])) {
+      rlang::as_name(parts[[key_name]])
+    } else {
+      scope_literal_list_index(parts[[key_name]], scope, lookup)
+    }
+    if (is.null(parent) || is.null(value) || length(key) != 1L ||
+          !(is.pairlist(parent[[1L]]) || is.list(parent[[1L]]))) return(NULL)
+    updated <- tryCatch({
+      values <- as.list(parent[[1L]])
+      values[[key]] <- value[[1L]]
+      list(as.pairlist(values))
+    }, error = function(cnd) NULL)
+    return(updated)
+  }
+  NULL
+}
+
+# Expand a visible replacement path into setter calls, keeping ordinary heads.
+# Only paths reaching a local closure's body or formals belong to this reader.
+scope_definition_write <- function(target, value) {
+  path <- list()
+  carrier <- unparenthesized_value(target)
+  while (rlang::is_call(carrier)) {
+    operator <- static_call_name(carrier)
+    if (is.null(operator) || length(carrier) < 2L ||
+          rlang::is_missing(carrier[[2L]])) return(NULL)
+    path[[length(path) + 1L]] <- carrier
+    carrier <- unparenthesized_value(carrier[[2L]])
+  }
+  if (length(path) == 0L || !is_name_part(carrier) ||
+        !static_call_name(path[[length(path)]]) %in% c("body", "formals")) {
+    return(NULL)
+  }
+  for (step in path) {
+    args <- static_call_args(step)
+    names(args) <- replace(rlang::names2(args), 1L, "")
+    value <- rlang::call2(paste0(static_call_name(step), "<-"), !!!args,
+                          value = value, .ns = static_call_ns(step))
+  }
+  list(name = rlang::as_name(carrier), value = value)
 }
 
 # Select a visible member without evaluating its carrier or key.
@@ -4947,7 +5081,8 @@ scope_factory_results <- function(expr, scope, lookup, read_value) {
 # factory is an already-resolved single literal closure descriptor.
 scope_factory_result <- function(expr, scope, lookup, read_value,
                                  factory) {
-  if (scope_closure_is_active(factory, scope)) {
+  if (length(factory$unknown_definition_parts) > 0L ||
+        scope_closure_is_active(factory, scope)) {
     return(NULL)
   }
   definition <- factory$definition
@@ -5866,6 +6001,11 @@ scope_bind_closure_list <- function(scope, name, elements) {
 scope_after_carrier_write <- function(scope, target, value, lookup,
                                       value_scope) {
   if (!rlang::is_call(target) || rlang::is_missing(value)) return(scope)
+  replacement <- scope_definition_write(target, value)
+  if (!is.null(replacement)) {
+    return(scope_bind_local(scope, replacement$name, replacement$value,
+                            lookup, value_scope))
+  }
   updated <- scope_closure_attribute_write(
     scope, target, value, lookup, value_scope
   )
@@ -6111,7 +6251,8 @@ scope_replace_list_member <- function(elements, path, member, delete) {
 # The argument match uses a marker in place of R's untagged temporary input.
 scope_replacement_keeps_input <- function(replacement, target, scope, lookup) {
   closure <- scope_call_closure(replacement, scope, lookup)
-  if (is.null(closure) || !is.null(closure$alternatives)) return(FALSE)
+  if (is.null(closure) || !is.null(closure$alternatives) ||
+        length(closure$unknown_definition_parts) > 0L) return(FALSE)
   definition <- closure$definition
   result <- unparenthesized_value(definition[[3L]])
   if (rlang::is_call(result, "{", n = 1L)) {
@@ -6216,6 +6357,9 @@ scope_after_closure_call <- function(expr, closure, scope, lookup) {
       after <- scope_possible_losses(after, reached)
     }
     return(c(list(list(arguments = static_call_args(expr))), after))
+  }
+  if (length(closure$unknown_definition_parts) > 0L) {
+    return(c(list(list(arguments = static_call_args(expr))), scope))
   }
   definition <- closure$definition
   frame <- function_scope_frame(definition[[2L]], expr)
