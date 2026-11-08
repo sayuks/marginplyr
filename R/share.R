@@ -5965,13 +5965,20 @@ scope_closure_attribute_write <- function(scope, target, value, lookup,
     }
     if (!is.null(classes) && length(classes) == 0L) classes <- "function"
   }
-  scope[[1L]]$closures[name] <- scope_map_closure_elements(
-    scope[[1L]]$closures[name], function(closure) {
-      closure$dispatch_classes <- classes
-      closure$dispatch_unknown <- is.null(classes)
-      closure
-    }
-  )
+  # Update one outer callable, retaining its associated list element metadata.
+  update_dispatch <- function(closure) {
+    closure$dispatch_classes <- classes
+    closure$dispatch_unknown <- is.null(classes)
+    closure
+  }
+  closure <- scope[[1L]]$closures[[name]]
+  if (is.null(closure$alternatives)) {
+    closure <- update_dispatch(closure)
+  } else {
+    closure$alternatives <- lapply(scope_closure_variants(closure),
+                                   update_dispatch)
+  }
+  scope[[1L]]$closures[[name]] <- closure
   scope
 }
 
