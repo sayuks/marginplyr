@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Typed DuckDB Grouping inspection refuses JSON type and record inference
+  before sampling source values, including JSON file replacement scans, while
+  preserving name-only inspection and established reader schemas (#1516).
+
 * Top-level `.grouping` factories preserve authored empty constructor positions
   in evaluated quotation operands, including `bquote()` substitutions and
   `substitute()` environments (#1514).

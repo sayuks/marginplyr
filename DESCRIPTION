@@ -365,7 +365,8 @@ Config/testthat/start-first:
     grouping-quoted-factories,
     duckdb-csv-metadata,
     share-enclosure-replacements,
-    share-member-definition-replacements
+    share-member-definition-replacements,
+    duckdb-json-metadata
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool

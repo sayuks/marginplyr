@@ -21,6 +21,27 @@ duckdb_test_connection <- function(...) {
   DBI::dbConnect(duckdb::duckdb(shared_home = FALSE), ...)
 }
 
+# Live JSON tests need the extension already available; never install it here.
+# A supplied path permits an isolated extension without a shared home cache.
+duckdb_test_json_extension <- function(con) {
+  path <- Sys.getenv("MARGINPLYR_DUCKDB_JSON_EXTENSION", "")
+  sql <- if (nzchar(path)) {
+    paste("LOAD", DBI::dbQuoteString(con, path))
+  } else {
+    "LOAD json"
+  }
+  tryCatch(DBI::dbExecute(con, sql), error = function(cnd) {
+    if (nzchar(path)) {
+      stop(cnd)
+    }
+    testthat::skip(paste(
+      "DuckDB json extension unavailable; install it before testing or set",
+      "MARGINPLYR_DUCKDB_JSON_EXTENSION to an isolated extension path."
+    ))
+  })
+  invisible(NULL)
+}
+
 # Count actual query sends. The caller registers `counter$untrace()` on exit.
 duckdb_query_counter <- function() {
   counter <- new.env(parent = emptyenv())

@@ -1,0 +1,245 @@
+test_that("typed JSON inspection refuses before source type inference", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  duckdb_test_json_extension(con)
+  path <- tempfile(fileext = ".json")
+  on.exit(unlink(path), add = TRUE)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+
+  for (reader in c(
+    "read_json", "read_json_auto", "read_ndjson", "read_ndjson_auto",
+    '"read_json"'
+  )) {
+    for (sampling in c("", ", sample_size = -1")) {
+      source <- dplyr::tbl(con, dbplyr::sql(paste0(
+        "SELECT * FROM ", reader, "(", DBI::dbQuoteString(con, path),
+        sampling, ")"
+      )), vars = "k")
+      before <- serialize(source$lazy_query, NULL)
+      expect_identical(
+        inspect_grouping(source, .grouping = grouping_set(k))$included, "(k)"
+      )
+      expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+
+      for (value in c("101", "source_tail")) {
+        writeLines(paste0(
+          '{"k":', if (value == "101") value else '"source_tail"', "}"
+        ), path)
+        # Only the value changes: native zero-row metadata infers different
+        # types, so returning zero rows cannot establish absence of source work.
+        native <- dplyr::collect(utils::head(source, 0L))
+        expect_identical(is.numeric(native$k), identical(value, "101"))
+        for (input in list(source, dplyr::filter(source, k == k))) {
+          expect_error(
+            inspect_grouping(input, .by = where(is.numeric)),
+            "dplyr::collect()", fixed = TRUE, class = "marginplyr_error"
+          )
+          expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+          expect_error(
+            inspect_grouping(input, .grouping = grouping_set(
+              where(is.character)
+            )),
+            "source rows", fixed = TRUE, class = "marginplyr_error"
+          )
+          expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+        }
+        # Explicit collection remains the caller's choice.
+        expect_identical(as.character(dplyr::collect(source)$k), value)
+      }
+      unlink(path)
+      # A file error would prove the binder was reached before the refusal.
+      expect_error(
+        inspect_grouping(source, .by = where(is.numeric)),
+        "source rows", fixed = TRUE, class = "marginplyr_error"
+      )
+      expect_identical(serialize(source$lazy_query, NULL), before)
+    }
+  }
+})
+
+test_that("JSON replacement scans cannot infer types during inspection", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  duckdb_test_json_extension(con)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  for (extension in c(".json", ".jsonl", ".ndjson")) {
+    path <- tempfile(fileext = extension)
+    on.exit(unlink(path), add = TRUE)
+    for (quote in list(DBI::dbQuoteString, DBI::dbQuoteIdentifier)) {
+      source <- dplyr::tbl(con, dbplyr::sql(paste0(
+        "SELECT * FROM ", quote(con, path)
+      )), vars = "k")
+      expect_identical(
+        inspect_grouping(source, .grouping = grouping_set(k))$included, "(k)"
+      )
+      expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+      for (value in c('{"k":101}', '{"k":"source_tail"}')) {
+        writeLines(value, path)
+        native <- dplyr::collect(utils::head(source, 0L))
+        expect_identical(is.numeric(native$k), identical(value, '{"k":101}'))
+        expect_error(
+          inspect_grouping(source, .by = where(is.numeric)),
+          "source rows", fixed = TRUE, class = "marginplyr_error"
+        )
+        expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+      }
+      unlink(path)
+      expect_error(
+        inspect_grouping(source, .by = where(is.numeric)),
+        "source rows", fixed = TRUE, class = "marginplyr_error"
+      )
+    }
+  }
+})
+
+test_that("established JSON schemas retain metadata without sampling", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  duckdb_test_json_extension(con)
+  path <- tempfile(fileext = ".json")
+  on.exit(unlink(path), add = TRUE)
+  # Any parse attempt fails, independently of whether conversion is deferred.
+  writeLines("INVALID JSON", path)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  ordinary <- dplyr::copy_to(
+    con, tibble::tibble(k = 101L, label = "east"), "json_control"
+  )
+  for (reader in c(
+    "read_json", "read_json_auto", "read_ndjson", "read_ndjson_auto"
+  )) {
+    for (schema in c(
+      "columns = {'k': 'INTEGER'}, records = true, auto_detect = false",
+      "columns = {'k': 'INTEGER'}, records := 'true'",
+      "columns = {'k': 'INTEGER'}, records = false, auto_detect = false",
+      "columns = {'k': 'INTEGER', 'label': 'VARCHAR'}"
+    )) {
+      vars <- if (grepl("label", schema, fixed = TRUE)) c("k", "label") else "k"
+      source <- dplyr::tbl(con, dbplyr::sql(paste0(
+        "SELECT * FROM ", reader, "(", DBI::dbQuoteString(con, path),
+        ", ", schema, ")"
+      )), vars = vars)
+      before <- serialize(source$lazy_query, NULL)
+      for (input in list(source, dplyr::filter(source, k == k), ordinary)) {
+        plan <- inspect_grouping(
+          input, .by = where(is.character),
+          .grouping = grouping_set(where(is.numeric))
+        )
+        expect_identical(plan$included, "(k)")
+        audit <- last_sent_queries(details = TRUE)
+        expect_identical(audit$purpose, "selection_proxy")
+        expect_identical(audit$status, "returned")
+        expect_match(audit$sql, "LIMIT 0", fixed = TRUE)
+      }
+      expect_error(dplyr::collect(source), "Malformed JSON")
+      expect_identical(serialize(source$lazy_query, NULL), before)
+    }
+  }
+})
+
+test_that("JSON preflight follows joins and ignores SQL values and comments", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  duckdb_test_json_extension(con)
+  path <- DBI::dbQuoteString(con, tempfile(fileext = ".json"))
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  for (arguments in c(
+    " /* auto_detect=false, records=true */",
+    ", auto_detect=false, columns={'k':'INTEGER'} /* records=true */",
+    ", auto_detect=false, columns={'k':'INTEGER'}, records='auto'",
+    ", columns={'k':'INTEGER'}, dateformat='records=true'"
+  )) {
+    source <- dplyr::tbl(con, dbplyr::sql(paste0(
+      'SELECT * FROM "read_json" /* outer /* nested */ comment */ (',
+      path, arguments, ")"
+    )), vars = "k")
+    expect_error(
+      inspect_grouping(source, .by = where(is.numeric)),
+      "source rows", fixed = TRUE, class = "marginplyr_error"
+    )
+    expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+  }
+  established <- dplyr::tbl(con, dbplyr::sql("SELECT 1 AS k"), vars = "k")
+  unsafe <- dplyr::tbl(con, dbplyr::sql(paste0(
+    "SELECT * FROM ", path
+  )), vars = "k")
+  for (input in list(
+    dplyr::left_join(established, unsafe, by = "k"),
+    dplyr::left_join(unsafe, established, by = "k")
+  )) {
+    expect_error(
+      inspect_grouping(input, .grouping = grouping_set(where(is.numeric))),
+      "source rows", fixed = TRUE, class = "marginplyr_error"
+    )
+    expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+  }
+  for (sql in c(
+    paste0("SELECT file.k FROM (SELECT 1 AS k) AS control, ", path, " AS file"),
+    paste0("SELECT * FROM (", path, ")")
+  )) {
+    input <- dplyr::tbl(con, dbplyr::sql(sql), vars = "k")
+    expect_error(
+      inspect_grouping(input, .by = where(is.numeric)),
+      "source rows", fixed = TRUE, class = "marginplyr_error"
+    )
+  }
+  literal <- dplyr::tbl(con, dbplyr::sql(paste(
+    "SELECT substring('a.json' FROM 1) AS k, $$read_json($$ AS label,",
+    "1 AS value /* FROM 'absent.json', read_ndjson('absent.json') */"
+  )), vars = c("k", "label", "value"))
+  expect_identical(
+    inspect_grouping(literal, .grouping = grouping_set(
+      where(is.character)
+    ))$included,
+    "(k, label)"
+  )
+})
+
+test_that("static pivots cannot hide JSON replacement inference", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  duckdb_test_json_extension(con)
+  path <- tempfile(fileext = ".json")
+  on.exit(unlink(path), add = TRUE)
+  writeLines("INVALID JSON", path)
+  source <- dplyr::tbl(con, dbplyr::sql(paste0(
+    "PIVOT ", DBI::dbQuoteString(con, path),
+    " ON k IN ('east') USING count(*)"
+  )), vars = "east")
+  expect_error(dplyr::collect(utils::head(source, 0L)), "Malformed JSON")
+  expect_error(
+    inspect_grouping(source, .by = where(is.numeric)),
+    "source rows", fixed = TRUE, class = "marginplyr_error"
+  )
+})
+
+test_that("JSON record inference is refused even with explicit column types", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  duckdb_test_json_extension(con)
+  path <- tempfile(fileext = ".json")
+  on.exit(unlink(path), add = TRUE)
+  writeLines("INVALID JSON", path)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  source <- dplyr::tbl(con, dbplyr::sql(paste0(
+    "SELECT * FROM read_json(", DBI::dbQuoteString(con, path),
+    ", auto_detect = false, columns = {'k': 'INTEGER'})"
+  )), vars = "k")
+  # Malformed contents distinguish record inference from schema-only binding.
+  expect_error(dplyr::collect(utils::head(source, 0L)), "Malformed JSON")
+  expect_error(
+    inspect_grouping(source, .by = where(is.numeric)),
+    "source rows", fixed = TRUE, class = "marginplyr_error"
+  )
+  expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+})
