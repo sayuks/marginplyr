@@ -3244,12 +3244,15 @@ apply_joined_shares <- function(result,
     )
     result <- denominator$result
     mapping <- denominator$mapping
-    # sf refuses an sf right-hand side even for ordinary key equality.
-    # Drop only the mapping's outer class; its geometry keys stay intact.
-    if (inherits(mapping, "sf")) {
-      mapping <- dplyr::as_tibble(mapping)
-    }
     join_names <- denominator$join_names
+    # sf keeps unselected active geometry in its private mapping and refuses
+    # an sf join input. Project after conversion so only geometry keys remain.
+    if (inherits(mapping, "sf")) {
+      mapping <- dplyr::select(
+        dplyr::as_tibble(mapping),
+        dplyr::all_of(c(join_names, unname(denominator_names)))
+      )
+    }
     key_names <- denominator$key_names
     result <- dplyr::left_join(
       result, mapping, by = join_names, na_matches = "na"

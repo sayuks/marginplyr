@@ -1315,6 +1315,18 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
             check_share_source = check_share_source
           ),
           sort_id = margin_summary_stage_sort_id(staged_result),
+          # sf moves active summary geometry behind scalar outputs. The
+          # per-dot runtime names retain their order, including unnamed frames.
+          output_order = if (local_share &&
+                               inherits(staged_result$result, "sf")) {
+            intersect(
+              unlist(summaries$selection_state$summary_aliases,
+                     use.names = FALSE),
+              names(staged_result$result)
+            )
+          } else {
+            character()
+          },
           declared_types = if (declare_sqlite_types) {
             c(declared_id, stats::setNames(
               rep("double", length(share_names)), share_names

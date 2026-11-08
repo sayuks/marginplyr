@@ -4,6 +4,9 @@
   before source-value inference, while preserving captured-name inspection
   and explicit reader schemas (#1519).
 
+* Parent and Total shares preserve requested sf summary geometry columns and
+  explicit output order without exposing private denominator geometry (#1515).
+
 * Top-level `.grouping` factories preserve caller-owned constructor syntax
   through custom NSE and quotation aliases, while rebound quotation names
   retain the authored-empty refusal of constructors they execute (#1517).
