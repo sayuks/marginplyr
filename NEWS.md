@@ -2,7 +2,8 @@
 
 * Parent and Total share dependency checks follow unchanged fresh closure
   environments through `invisible()` and local aliases, while preserving
-  independent field replacements (#1493).
+  independent field replacements and dependencies through conditional alias
+  rebinding (#1493, #1501).
 
 * dtplyr Parent and Total shares preserve supported dot-dot summary output
   names through lazy construction and data-frame conversion (#1495).
