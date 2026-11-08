@@ -147,6 +147,50 @@ test_that("view dependencies resolve within their own schema before callers", {
   }
 })
 
+test_that("stored explicit CSV reader metadata survives view normalization", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  writeLines(c("k", "not_an_integer"), path)
+  statement <- paste0(
+    'CREATE OR REPLACE VIEW "safe.csv" AS SELECT * FROM read_csv(',
+    DBI::dbQuoteString(con, path),
+    ", columns={'k':'BIGINT'}, auto_detect=false, header=true)"
+  )
+  DBI::dbExecute(con, statement)
+  source <- dplyr::tbl(con, dbplyr::sql('TABLE "safe.csv"'), vars = "k")
+  before <- serialize(source$lazy_query, NULL)
+  expect_true(is.numeric(dplyr::collect(utils::head(source, 0L))$k))
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  expect_identical(inspect_grouping(
+    source, .grouping = grouping_set(where(is.numeric))
+  )$included, "(k)")
+  expect_identical(last_sent_queries(details = TRUE)$purpose,
+                   c("relation_catalog", "selection_proxy"))
+  expect_identical(last_sent_queries(details = TRUE)$status,
+                   c("returned", "returned"))
+  expect_error(dplyr::collect(source), "Conversion Error", fixed = TRUE)
+  expect_identical(serialize(source$lazy_query, NULL), before)
+  DBI::dbExecute(con, paste0(
+    'CREATE OR REPLACE VIEW "safe.csv" AS SELECT * FROM read_csv(',
+    DBI::dbQuoteString(con, path),
+    ", columns={'k':'BIGINT'}, auto_detect=(false OR true), header=true)"
+  ))
+  expect_error(inspect_grouping(
+    source, .grouping = grouping_set(where(is.numeric))
+  ), "source rows", fixed = TRUE, class = "marginplyr_error")
+  expect_duckdb_catalog_only()
+  DBI::dbExecute(con, statement)
+  DBI::dbExecute(con, "CREATE MACRO struct_pack(k) AS k")
+  expect_error(inspect_grouping(
+    source, .grouping = grouping_set(where(is.numeric))
+  ), "dplyr::collect()", fixed = TRUE, class = "marginplyr_error")
+  expect_duckdb_catalog_only()
+})
+
 test_that("reader-like catalog relations and CTEs retain typed inspection", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()

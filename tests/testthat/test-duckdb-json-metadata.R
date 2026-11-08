@@ -74,6 +74,41 @@ test_that("JSON view admission checks nested reader definitions", {
   expect_identical(serialize(source$lazy_query, NULL), before)
 })
 
+test_that("stored JSON schema and record metadata survive view normalization", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  duckdb_test_json_extension(con)
+  path <- tempfile(fileext = ".json")
+  on.exit(unlink(path), add = TRUE)
+  writeLines("INVALID JSON", path)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  for (schema in c(
+    "columns={'k':'BIGINT'}, auto_detect=false, records=true",
+    "columns={'k':'BIGINT'}, records=false, auto_detect=false",
+    "columns={'k':'BIGINT', 'label':'VARCHAR'}"
+  )) {
+    DBI::dbExecute(con, paste0(
+      'CREATE OR REPLACE VIEW "safe.json" AS SELECT * FROM read_json(',
+      DBI::dbQuoteString(con, path), ", ", schema, ")"
+    ))
+    vars <- if (grepl("label", schema, fixed = TRUE)) c("k", "label") else "k"
+    source <- dplyr::tbl(con, dbplyr::sql('TABLE "safe.json"'), vars = vars)
+    before <- serialize(source$lazy_query, NULL)
+    expect_true(is.numeric(dplyr::collect(utils::head(source, 0L))$k))
+    expect_identical(inspect_grouping(
+      source, .grouping = grouping_set(where(is.numeric))
+    )$included, "(k)")
+    expect_identical(last_sent_queries(details = TRUE)$purpose,
+                     c("relation_catalog", "selection_proxy"))
+    expect_identical(last_sent_queries(details = TRUE)$status,
+                     c("returned", "returned"))
+    expect_error(dplyr::collect(source), "Malformed JSON")
+    expect_identical(serialize(source$lazy_query, NULL), before)
+  }
+})
+
 test_that("typed JSON inspection refuses before source type inference", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()

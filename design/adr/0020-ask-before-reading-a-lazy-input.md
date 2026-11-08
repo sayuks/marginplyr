@@ -403,6 +403,10 @@ inside those definitions. Cycles, macro calls and table functions whose safety
 is not established are refused before binding, with the option to supply
 established reader metadata directly or collect explicitly. View definitions
 and macro names belong to the same catalog acquisition, not additional queries.
+After macro admission, stored-view arguments also accept DuckDB's parenthesized
+named arguments, literal Boolean casts and literal `struct_pack` schema form.
+These are recognized syntactically without evaluating expressions. Other
+expressions do not establish a disabled inference option or a literal schema.
 
 The catalog query is a Sent query under ADR 0027, including when an unresolved
 filename is subsequently refused. The existing zero-row input query remains
