@@ -183,6 +183,96 @@ test_that("CSV relation parsing keeps quoted identifiers out of SQL grammar", {
   }
 })
 
+test_that("qualified keywords preserve column and joined-relation scopes", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  DBI::dbExecute(con, "CREATE SCHEMA metadata")
+  DBI::dbWriteTable(con, DBI::Id(schema = "metadata", table = "select"),
+                    data.frame(z = 1L))
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  source <- dplyr::tbl(con, dbplyr::sql(paste0(
+    "SELECT file.k FROM metadata.select AS ordinary JOIN ",
+    DBI::dbQuoteString(con, path), " AS file ON true"
+  )), vars = "k")
+  for (value in c("101", "source_tail")) {
+    writeLines(c("k", value), path)
+    native <- dplyr::collect(utils::head(source, 0L))
+    expect_identical(is.numeric(native$k), identical(value, "101"))
+    expect_error(
+      inspect_grouping(source, .grouping = grouping_set(where(is.numeric))),
+      "source rows", fixed = TRUE, class = "marginplyr_error"
+    )
+  }
+  literal <- dplyr::tbl(con, dbplyr::sql(paste(
+    "SELECT row_value.from AS label, 'absent.csv' AS text,101 AS k",
+    "FROM (SELECT {'from':'east'} AS row_value) AS control"
+  )), vars = c("label", "text", "k"))
+  expect_true(is.numeric(dplyr::collect(utils::head(literal, 0L))$k))
+  plan <- inspect_grouping(
+    literal, .grouping = grouping_set(where(is.numeric))
+  )
+  expect_identical(plan$included, "(k)")
+})
+
+test_that("qualified CSV names cannot hide replacement inference", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  directory <- tempfile()
+  dir.create(directory)
+  previous <- setwd(directory)
+  on.exit({
+    setwd(previous)
+    unlink(directory, recursive = TRUE)
+  }, add = TRUE)
+  forms <- c(
+    "replacement.csv", '"replacement".csv', 'replacement."csv"',
+    '"replacement"."csv"', "ONLY replacement.csv",
+    "ONLY (replacement.csv)", "replacement.more.csv",
+    '"replacement.more".csv', '"replacement"."more"."csv"'
+  )
+  paths <- c(rep("replacement.csv", 6L), rep("replacement.more.csv", 3L))
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  for (i in seq_along(forms)) {
+    source <- dplyr::tbl(con, dbplyr::sql(paste(
+      "SELECT * FROM", forms[[i]]
+    )), vars = "k")
+    expect_identical(
+      inspect_grouping(source, .grouping = grouping_set(k))$included, "(k)"
+    )
+    for (value in c("101", "source_tail")) {
+      writeLines(c("k", value), paths[[i]])
+      native <- dplyr::collect(utils::head(source, 0L))
+      expect_identical(is.numeric(native$k), identical(value, "101"))
+      expect_error(
+        inspect_grouping(source, .by = where(is.numeric)),
+        "source rows", fixed = TRUE, class = "marginplyr_error"
+      )
+      expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+      expect_error(
+        inspect_grouping(source, .grouping = grouping_set(where(is.numeric))),
+        "source rows", fixed = TRUE, class = "marginplyr_error"
+      )
+    }
+    unlink(paths[[i]])
+  }
+  DBI::dbExecute(con, "CREATE SCHEMA metadata")
+  DBI::dbExecute(con, "CREATE MACRO metadata.csv() AS TABLE SELECT 101 AS k")
+  DBI::dbExecute(con, 'CREATE MACRO "reader.csv"() AS TABLE SELECT 101 AS k')
+  for (form in c("metadata.csv()", '"reader.csv"()')) {
+    source <- dplyr::tbl(con, dbplyr::sql(paste(
+      "SELECT * FROM", form
+    )), vars = "k")
+    plan <- inspect_grouping(
+      source, .grouping = grouping_set(where(is.numeric))
+    )
+    expect_identical(plan$included, "(k)")
+  }
+})
+
 test_that("equivalent CSV replacement spellings keep inference disabled", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
@@ -207,10 +297,6 @@ test_that("equivalent CSV replacement spellings keep inference disabled", {
         paste0("E", sub(".csv", paste0(dot, "csv"),
                         DBI::dbQuoteString(con, path), fixed = TRUE))
       }, character(1)))
-      spellings <- c(spellings, paste0("E", sub(
-        ".csv", "\\x2e\\x43\\x53\\x56", DBI::dbQuoteString(con, path),
-        fixed = TRUE
-      )))
     }
     for (spelling in spellings) {
       source <- dplyr::tbl(con, dbplyr::sql(paste0(
@@ -236,6 +322,27 @@ test_that("equivalent CSV replacement spellings keep inference disabled", {
       unlink(actual)
     }
   }
+})
+
+test_that("escaped uppercase CSV names retain their native filename", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".CSV")
+  on.exit(unlink(path), add = TRUE)
+  writeLines(c("k", "101"), path)
+  spelling <- paste0("E", sub(
+    ".CSV", "\\x2e\\x43\\x53\\x56", DBI::dbQuoteString(con, path),
+    fixed = TRUE
+  ))
+  source <- dplyr::tbl(con, dbplyr::sql(paste(
+    "SELECT * FROM", spelling
+  )), vars = "k")
+  expect_true(is.numeric(dplyr::collect(utils::head(source, 0L))$k))
+  expect_error(
+    inspect_grouping(source, .grouping = grouping_set(where(is.numeric))),
+    "source rows", fixed = TRUE, class = "marginplyr_error"
+  )
 })
 
 test_that("typed CSV inspection refuses before DuckDB can infer source types", {

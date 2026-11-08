@@ -165,6 +165,48 @@ test_that("JSON-like ordinary table names retain faithful metadata", {
   }
 })
 
+test_that("qualified JSON names cannot hide replacement inference", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  duckdb_test_json_extension(con)
+  directory <- tempfile()
+  dir.create(directory)
+  previous <- setwd(directory)
+  on.exit({
+    setwd(previous)
+    unlink(directory, recursive = TRUE)
+  }, add = TRUE)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  for (form in c(
+    "replacement.json", '"replacement".json', 'replacement."json"',
+    '"replacement"."json"', "ONLY replacement.json"
+  )) {
+    source <- dplyr::tbl(con, dbplyr::sql(paste(
+      "SELECT * FROM", form
+    )), vars = "k")
+    expect_identical(
+      inspect_grouping(source, .grouping = grouping_set(k))$included, "(k)"
+    )
+    for (value in c('{"k":101}', '{"k":"source_tail"}')) {
+      writeLines(value, "replacement.json")
+      native <- dplyr::collect(utils::head(source, 0L))
+      expect_identical(is.numeric(native$k), identical(value, '{"k":101}'))
+      expect_error(
+        inspect_grouping(source, .by = where(is.numeric)),
+        "source rows", fixed = TRUE, class = "marginplyr_error"
+      )
+      expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+      expect_error(
+        inspect_grouping(source, .grouping = grouping_set(where(is.numeric))),
+        "source rows", fixed = TRUE, class = "marginplyr_error"
+      )
+    }
+    unlink("replacement.json")
+  }
+})
+
 test_that("TABLE queries cannot hide JSON replacement inference", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()

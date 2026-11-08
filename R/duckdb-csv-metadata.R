@@ -43,25 +43,31 @@ duckdb_json_schema_size <- function(arg) {
   if (all(valid)) length(starts) else 0L
 }
 
-# Return relation spellings from duckdb_metadata_tokens() output.
+# Return decoded relation paths from duckdb_metadata_tokens() output.
 # Scalar function arguments have their own scope and do not name relations.
 duckdb_metadata_relations <- function(tokens) {
   frames <- list(list(
     query = TRUE, table = FALSE, expect = FALSE, start = TRUE
   ))
-  relations <- character()
+  relations <- integer()
   quoted <- attr(tokens, "quoted")
   for (i in seq_along(tokens)) {
     token <- tokens[[i]]
     n <- length(frames)
     frame <- frames[[n]]
-    # Consume quoted keywords and punctuation before SQL scope handling.
-    if (quoted[[i]]) {
-      if (frame$expect) relations <- c(relations, token)
+    qualified <- grepl("^[[:alpha:]_][[:alnum:]_$]*$", token) &&
+      ((i > 1L && tokens[[i - 1L]] == "." && !quoted[[i - 1L]]) ||
+         (frame$expect && i < length(tokens) &&
+            tokens[[i + 1L]] == "." && !quoted[[i + 1L]]))
+    # Consume quoted and qualified names before SQL scope handling.
+    if (quoted[[i]] || qualified) {
+      if (frame$expect) relations <- c(relations, i)
       frame$expect <- frame$start <- FALSE
       frames[[n]] <- frame
       next
     }
+    # ONLY prefixes a table name without supplying the relation itself.
+    if (frame$expect && token == "only") next
     if (token == "(") {
       frames[[n]]$expect <- FALSE
       frames[[n + 1L]] <- list(
@@ -91,14 +97,17 @@ duckdb_metadata_relations <- function(tokens) {
     } else if (token == "," && frame$table) {
       frame$expect <- TRUE
     } else if (frame$expect) {
-      relations <- c(relations, token)
+      relations <- c(relations, i)
       frame$expect <- FALSE
     }
     frame$start <- token %in% c("union", "intersect", "except") ||
       (frame$start && token %in% c("all", "distinct"))
     frames[[n]] <- frame
   }
-  relations
+  paths <- vapply(relations, function(position) {
+    duckdb_qualified_relation_path(tokens, position)
+  }, character(1))
+  paths[nzchar(paths)]
 }
 
 # Decode a captured reader relation spelling without asking DuckDB to bind it.
@@ -135,6 +144,29 @@ duckdb_reader_relation_path <- function(token) {
   tolower(path)
 }
 
+# Decode the qualified name beginning at a captured relation position.
+# Function heads are excluded; their reader arguments have separate admission.
+duckdb_qualified_relation_path <- function(tokens, position) {
+  quoted <- attr(tokens, "quoted")
+  last <- position
+  while (last + 2L <= length(tokens) && tokens[[last + 1L]] == "." &&
+           !quoted[[last + 1L]]) {
+    part <- tokens[[last + 2L]]
+    if (!quoted[[last + 2L]] && !grepl(
+      "^[[:alpha:]_][[:alnum:]_$]*$|^e?'|^\\$[a-z_0-9]*\\$", part
+    )) break
+    last <- last + 2L
+  }
+  if (last < length(tokens) && tokens[[last + 1L]] == "(" &&
+        !quoted[[last + 1L]]) {
+    return("")
+  }
+  parts <- vapply(seq.int(position, last, by = 2L), function(i) {
+    if (quoted[[i]]) tokens[[i]] else duckdb_reader_relation_path(tokens[[i]])
+  }, character(1))
+  paste(parts, collapse = ".")
+}
+
 # Refuse reader inference before DuckDB can bind the captured input (ADR 0020).
 abort_duckdb_reader_metadata <- function(family) {
   abort_marginplyr(c(
@@ -161,8 +193,7 @@ abort_duckdb_reader_metadata <- function(family) {
 # The caller supplies captured SQL, without binding the input (ADR 0020).
 validate_duckdb_csv_metadata <- function(sql) {
   tokens <- duckdb_metadata_tokens(as.character(sql))
-  relations <- duckdb_metadata_relations(tokens)
-  relation_paths <- vapply(relations, duckdb_reader_relation_path, character(1))
+  relation_paths <- duckdb_metadata_relations(tokens)
   if (any(grepl(
     "[.](csv|tsv)([.](gz|zst))?$|[.](csv|tsv)[?]", relation_paths
   ))) {
