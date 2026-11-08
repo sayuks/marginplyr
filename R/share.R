@@ -5800,8 +5800,8 @@ scope_after_carrier_write <- function(scope, target, value, lookup,
   scope_bind_closure_list(scope, name, elements)
 }
 
-# Keep invocation dependencies after an attribute write, with separate dispatch
-# classes. Unknown attributes cannot prove that a generic returns this closure.
+# Follow a proven setter result; base setters retain the closure with separate
+# dispatch classes. Unknown attributes cannot establish default dispatch.
 scope_closure_attribute_write <- function(scope, target, value, lookup,
                                           value_scope) {
   operator <- static_call_name(target)
@@ -5811,19 +5811,29 @@ scope_closure_attribute_write <- function(scope, target, value, lookup,
     return(NULL)
   }
   name <- rlang::as_name(target[[2L]])
-  scope <- scope_bind_local(scope, name, target[[2L]], lookup, value_scope)
   setter <- paste0(operator, "<-")
   replacement <- rlang::call2(setter, .ns = static_call_ns(target))
+  if (!is_known_base_frame_call(replacement, setter, value_scope, lookup)) {
+    if (scope_replacement_keeps_input(
+      replacement, target, value_scope, lookup
+    )) {
+      return(scope_bind_local(scope, name, target[[2L]], lookup, value_scope))
+    }
+    args <- static_call_args(target)
+    names(args) <- replace(rlang::names2(args), 1L, "")
+    invocation <- rlang::call2(static_call_head(replacement), !!!args,
+                               value = value)
+    return(scope_bind_local(scope, name, invocation, lookup, value_scope))
+  }
+  scope <- scope_bind_local(scope, name, target[[2L]], lookup, value_scope)
   if (identical(operator, "attr") && length(target) == 3L &&
         rlang::is_string(unparenthesized_value(target[[3L]])) &&
-        !identical(unparenthesized_value(target[[3L]]), "class") &&
-        is_known_base_frame_call(replacement, setter, value_scope, lookup)) {
+        !identical(unparenthesized_value(target[[3L]]), "class")) {
     # A base non-class attribute write preserves the closure's dispatch classes.
     return(scope)
   }
   classes <- NULL
-  if (identical(operator, "class") && length(target) == 2L &&
-        is_known_base_frame_call(replacement, setter, value_scope, lookup)) {
+  if (identical(operator, "class") && length(target) == 2L) {
     classes <- if (is.null(unparenthesized_value(value))) {
       "function"
     } else {
@@ -5834,8 +5844,13 @@ scope_closure_attribute_write <- function(scope, target, value, lookup,
     }
     if (!is.null(classes) && length(classes) == 0L) classes <- "function"
   }
-  scope[[1L]]$closures[[name]]$dispatch_classes <- classes
-  scope[[1L]]$closures[[name]]$dispatch_unknown <- is.null(classes)
+  scope[[1L]]$closures[name] <- scope_map_closure_elements(
+    scope[[1L]]$closures[name], function(closure) {
+      closure$dispatch_classes <- classes
+      closure$dispatch_unknown <- is.null(classes)
+      closure
+    }
+  )
   scope
 }
 
@@ -5944,7 +5959,7 @@ scope_replace_list_member <- function(elements, path, member, delete) {
   elements
 }
 
-# Prove that a visible replacement closure returns the original list argument.
+# Prove that a visible replacement closure returns the original input argument.
 # The argument match uses a marker in place of R's untagged temporary input.
 scope_replacement_keeps_input <- function(replacement, target, scope, lookup) {
   closure <- scope_call_closure(replacement, scope, lookup)

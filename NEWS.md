@@ -22,7 +22,9 @@
 
 * Parent and Total share dependency checks retain local closures returned by
   `base::as.function()` and by `base::Vectorize()` when the closure has no
-  formal arguments, including after non-class attribute writes (#1491).
+  formal arguments, including after non-class attribute writes, and follow
+  independent closures returned by caller-defined attribute setters
+  (#1491, #1501).
 
 * Parent and Total share dependency checks retain local closures returned by
   `rlang::as_function()` and `compiler::cmpfun()` (#1482).
