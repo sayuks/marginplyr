@@ -4842,15 +4842,19 @@ scope_closure_carrier_member <- function(head, scope, lookup) {
     return(scope_shift_closure_elements(fields[path], frame)[[1L]])
   }
   elements <- scope_closure_list(parts[[1L]], scope, lookup)
-  for (step in seq_along(path)) {
-    index <- scope_list_member_index(elements, path[[step]], partial)
+  scope_list_path_member(elements, path, partial)
+}
+
+# Select the written path separately in each known list layout.
+scope_list_path_member <- function(elements, path, partial) {
+  members <- lapply(scope_list_choices(elements), function(choice) {
+    index <- scope_list_member_index(choice, path[[1L]], partial)
     if (is.null(index)) return(NULL)
-    member <- elements[[index]]
-    if (step == length(path)) return(member)
-    elements <- member$elements
-    if (is.null(elements)) return(NULL)
-  }
-  NULL
+    member <- choice[[index]]
+    if (length(path) == 1L) return(member)
+    scope_list_path_member(member$elements, path[-1L], partial)
+  })
+  scope_join_members(members)
 }
 
 # Locate one existing member under exact or partial plain-list indexing.
@@ -4901,30 +4905,47 @@ scope_literal_list_index <- function(expr, scope, lookup) {
 # Known returned closures, relative to the current stack. Each factory result
 # is rebased with its own invoked and captured frames before candidates merge.
 scope_factory_closure <- function(expr, scope, lookup) {
-  factory <- if (rlang::is_call(expr)) scope_call_closure(expr, scope, lookup)
-  if (is.null(factory)) return(NULL)
-  values <- lapply(scope_closure_variants(factory), function(candidate) {
-    result <- scope_factory_result(
-      expr, scope, lookup, scope_value_closure, factory = candidate
-    )
+  returned <- scope_factory_results(expr, scope, lookup, scope_value_closure)
+  if (is.null(returned)) return(NULL)
+  values <- lapply(returned$results, function(result) {
     if (!is.null(result$value)) {
       scope_rebase_factory_closure(result$value, result)
     }
   })
-  if (is.null(factory$alternatives)) return(values[[1L]])
+  if (!returned$alternatives) return(values[[1L]])
   variants <- unlist(lapply(values, scope_closure_variants), recursive = FALSE)
   if (length(variants) > 0L) list(alternatives = variants)
+}
+
+# Known list results retain each candidate's names, positions and frames.
+scope_factory_lists <- function(expr, scope, lookup) {
+  returned <- scope_factory_results(expr, scope, lookup, scope_closure_list)
+  if (is.null(returned)) return(NULL)
+  scope_join_lists(lapply(returned$results, function(result) {
+    if (is.null(result$value)) return(NULL)
+    scope_map_closure_elements(result$value, function(closure) {
+      scope_rebase_factory_closure(closure, result)
+    })
+  }))
+}
+
+# Run the existing bounded reader independently for each known factory.
+scope_factory_results <- function(expr, scope, lookup, read_value) {
+  factory <- if (rlang::is_call(expr)) scope_call_closure(expr, scope, lookup)
+  if (is.null(factory)) return(NULL)
+  list(
+    alternatives = !is.null(factory$alternatives),
+    results = lapply(scope_closure_variants(factory), function(candidate) {
+      scope_factory_result(expr, scope, lookup, read_value, candidate)
+    })
+  )
 }
 
 # Read one factory's result in its invoked and captured frames. A supplied
 # factory is an already-resolved single literal closure descriptor.
 scope_factory_result <- function(expr, scope, lookup, read_value,
-                                 factory = NULL) {
-  factory <- factory %||% if (rlang::is_call(expr)) {
-    scope_call_closure(expr, scope, lookup)
-  }
-  if (is.null(factory) || !is.null(factory$alternatives) ||
-        scope_closure_is_active(factory, scope)) {
+                                 factory) {
+  if (scope_closure_is_active(factory, scope)) {
     return(NULL)
   }
   definition <- factory$definition
@@ -5026,7 +5047,8 @@ scope_closure_list <- function(expr, scope, lookup) {
       if (!name %in% frame$bound) {
         next
       }
-      elements <- frame$closure_lists[[name]]
+      elements <- frame$closure_lists[[name]] %||%
+        frame$closures[[name]]$elements
       if (is.null(elements)) {
         promise <- scope_promise(name, scope, function_lookup = FALSE,
                                  visible = index)
@@ -5090,7 +5112,7 @@ scope_closure_list <- function(expr, scope, lookup) {
         parts[[index]], scope, lookup, read_symbols = no_scope_reads
       )$scope
     }
-    return(do.call(base::c, values))
+    return(scope_list_product(values, function(parts) do.call(base::c, parts)))
   }
   if (identical(static_call_name(expr), "append") &&
         is_known_base_frame_call(expr, "append", scope, lookup)) {
@@ -5104,15 +5126,18 @@ scope_closure_list <- function(expr, scope, lookup) {
     )$scope
     values <- scope_closure_list(parts$values, scope, lookup)
     if (is.null(x) || is.null(values)) return(NULL)
-    after <- if ("after" %in% names(parts) && !rlang::is_missing(parts$after)) {
+    explicit <- "after" %in% names(parts) && !rlang::is_missing(parts$after)
+    after <- if (explicit) {
       unparenthesized_value(parts$after)
-    } else {
-      length(x)
     }
-    if (is.object(after) || !typeof(after) %in% c("integer", "double") ||
-          length(after) != 1L || !is.finite(after) || after < 0 ||
-          after != trunc(after)) return(NULL)
-    return(base::append(x, values, after = after))
+    if (explicit && (
+      is.object(after) || !typeof(after) %in% c("integer", "double") ||
+        length(after) != 1L || !is.finite(after) || after < 0 ||
+        after != trunc(after)
+    )) return(NULL)
+    return(scope_list_product(list(x = x, values = values), function(parts) {
+      base::append(parts$x, parts$values, after = after %||% length(parts$x))
+    }))
   }
   if (identical(operator, "[") && length(expr) %in% c(3L, 4L) &&
         is_known_base_frame_call(expr, "[", scope, lookup)) {
@@ -5137,17 +5162,13 @@ scope_closure_list <- function(expr, scope, lookup) {
           (!all(is.finite(key)) || (any(key < 0) && any(key > 0)))) {
       return(NULL)
     }
-    return(elements[key])
+    return(scope_map_lists(elements, function(choice) choice[key]))
   }
   remapped <- scope_remapped_closure_list(expr, operator, scope, lookup)
   if (!is.null(remapped)) return(remapped)
   member <- scope_closure_carrier_member(expr, scope, lookup)
   if (!is.null(member)) return(member$elements)
-  result <- scope_factory_result(expr, scope, lookup, scope_closure_list)
-  if (is.null(result$value)) return(NULL)
-  scope_map_closure_elements(result$value, function(closure) {
-    scope_rebase_factory_closure(closure, result)
-  })
+  scope_factory_lists(expr, scope, lookup)
 }
 
 # Expand a literal list's finite dots as reads in their owning frame.
@@ -5207,32 +5228,34 @@ scope_remapped_closure_list <- function(expr, name, scope, lookup) {
     return(NULL)
   }
 
-  switch(name,
-    rev = base::rev.default(elements),
-    as.list = elements,
-    unname = if (!"force" %in% names(parts) ||
-                   rlang::is_bool(unparenthesized_value(parts$force))) {
-      base::unname(elements)
-    },
-    structure = if ("names" %in% names(parts)) {
-      scope_list_literal_names(elements, parts$names, scope, lookup)
-    },
-    setNames = if ("nm" %in% names(parts)) {
-      scope_list_literal_names(elements, parts$nm, scope, lookup)
-    },
-    rep = {
-      times <- scope_literal_list_count(parts, "times", 1L, scope, lookup)
-      # Retain small literal repetitions without expanding an unbounded list.
-      limit <- max(1024L, length(elements)) / max(1L, length(elements))
-      if (!is.null(times) && times >= 0L && times <= limit) {
-        base::rep(elements, times = times)
+  scope_map_lists(elements, function(elements) {
+    switch(name,
+      rev = base::rev.default(elements),
+      as.list = elements,
+      unname = if (!"force" %in% names(parts) ||
+                     rlang::is_bool(unparenthesized_value(parts$force))) {
+        base::unname(elements)
+      },
+      structure = if ("names" %in% names(parts)) {
+        scope_list_literal_names(elements, parts$names, scope, lookup)
+      },
+      setNames = if ("nm" %in% names(parts)) {
+        scope_list_literal_names(elements, parts$nm, scope, lookup)
+      },
+      rep = {
+        times <- scope_literal_list_count(parts, "times", 1L, scope, lookup)
+        # Retain small literal repetitions without expanding an unbounded list.
+        limit <- max(1024L, length(elements)) / max(1L, length(elements))
+        if (!is.null(times) && times >= 0L && times <= limit) {
+          base::rep(elements, times = times)
+        }
+      },
+      tail = {
+        n <- scope_literal_list_count(parts, "n", 6L, scope, lookup)
+        if (!is.null(n)) definition(elements, n = n)
       }
-    },
-    tail = {
-      n <- scope_literal_list_count(parts, "n", 6L, scope, lookup)
-      if (!is.null(n)) definition(elements, n = n)
-    }
-  )
+    )
+  })
 }
 
 # Read one finite integer count without evaluating a supplied expression.
@@ -5304,6 +5327,63 @@ scope_filter_closure <- function(closure, predicate) {
   list(alternatives = variants[proven])
 }
 
+# A list descriptor can hold several layouts without aligning their members.
+# The tag belongs only to parser-created descriptors, never caller values.
+scope_list_choices <- function(elements) {
+  if (is.null(elements) || rlang::is_zap(elements)) return(list())
+  attr(elements, "marginplyr_lists", exact = TRUE) %||% list(elements)
+}
+
+# Join known list results while retaining each candidate's names and indices.
+scope_join_lists <- function(values) {
+  choices <- unique(unlist(lapply(values, scope_list_choices),
+                           recursive = FALSE))
+  if (length(choices) == 0L) return(NULL)
+  if (length(choices) == 1L) return(choices[[1L]])
+  structure(list(), marginplyr_lists = choices)
+}
+
+# Apply one existing plain-list operation independently to known layouts.
+scope_map_lists <- function(elements, transform) {
+  values <- lapply(scope_list_choices(elements), transform)
+  if (length(values) > 0L && all(vapply(values, rlang::is_zap, logical(1)))) {
+    return(rlang::zap())
+  }
+  scope_join_lists(values)
+}
+
+# Combine candidate arguments before applying an existing multi-list operation.
+scope_list_product <- function(values, transform) {
+  combinations <- list(list())
+  for (value in values) {
+    next_combinations <- list()
+    for (prefix in combinations) {
+      for (choice in scope_list_choices(value)) {
+        next_combinations <- c(next_combinations, list(c(prefix, list(choice))))
+      }
+    }
+    combinations <- next_combinations
+  }
+  scope_join_lists(lapply(combinations, function(parts) {
+    names(parts) <- names(values)
+    transform(parts)
+  }))
+}
+
+# Known callable and nested-list possibilities for one selected member.
+scope_join_members <- function(members) {
+  members <- unique(Filter(Negate(is.null), members))
+  if (length(members) == 0L) return(NULL)
+  if (length(members) == 1L) return(members[[1L]])
+  variants <- unique(unlist(lapply(members, scope_closure_variants),
+                            recursive = FALSE))
+  elements <- scope_join_lists(lapply(members, "[[", "elements"))
+  result <- list()
+  if (length(variants) > 0L) result$alternatives <- variants
+  if (!is.null(elements)) result$elements <- elements
+  if (length(result) > 0L) result
+}
+
 # Join field values without choosing which conditional path executes.
 # Descriptors on both sides use offsets relative to the same binding frame.
 scope_possible_fields <- function(before, after) {
@@ -5313,9 +5393,7 @@ scope_possible_fields <- function(before, after) {
     first <- before[[key]]
     second <- after[[key]]
     if (identical(first, second)) return(first)
-    variants <- unique(c(scope_closure_variants(first),
-                         scope_closure_variants(second)))
-    if (length(variants) > 0L) list(alternatives = variants)
+    scope_join_members(list(first, second))
   })
   stats::setNames(fields, keys)
 }
@@ -5332,6 +5410,11 @@ scope_environment_alias <- function(identity) {
 
 # Transform closure descriptors at any depth in a known list.
 scope_map_closure_elements <- function(elements, transform) {
+  if (!is.null(attr(elements, "marginplyr_lists", exact = TRUE))) {
+    return(scope_map_lists(elements, function(choice) {
+      scope_map_closure_elements(choice, transform)
+    }))
+  }
   lapply(elements, function(element) {
     if (!is.null(element$definition)) {
       return(transform(element))
@@ -5339,7 +5422,8 @@ scope_map_closure_elements <- function(elements, transform) {
       element$alternatives <- scope_map_closure_elements(
         element$alternatives, transform
       )
-    } else if (!is.null(element$elements)) {
+    }
+    if (!is.null(element$elements)) {
       element$elements <- scope_map_closure_elements(
         element$elements, transform
       )
@@ -5914,6 +5998,12 @@ scope_after_environment_write <- function(scope, frame, name, path, value,
 # the updated carrier's descriptors. NULL means unknown; zap() means unhandled.
 scope_list_write_elements <- function(target, elements, value, lookup,
                                       value_scope, nested) {
+  if (!is.null(attr(elements, "marginplyr_lists", exact = TRUE))) {
+    return(scope_map_lists(elements, function(choice) {
+      scope_list_write_elements(target, choice, value, lookup, value_scope,
+                                nested)
+    }))
+  }
   if (length(target) != 3L) return(rlang::zap())
   operator <- static_call_name(target)
   if (rlang::is_missing(target[[3L]])) return(rlang::zap())
@@ -5933,11 +6023,19 @@ scope_list_write_elements <- function(target, elements, value, lookup,
     } else {
       scope_closure_list(value, value_scope, lookup)
     }
-    if (is.null(replacement) || (length(replacement) == 0L && !delete)) {
-      return(if (nested && is.null(replacement)) NULL else rlang::zap())
+    if (is.null(replacement)) {
+      return(if (nested) NULL else rlang::zap())
     }
-    elements[key] <- if (delete) NULL else replacement
-    return(elements)
+    if (delete) {
+      elements[key] <- NULL
+      return(elements)
+    }
+    return(scope_map_lists(replacement, function(choice) {
+      if (length(choice) == 0L) return(rlang::zap())
+      updated <- elements
+      updated[key] <- choice
+      updated
+    }))
   }
 
   path <- if (identical(operator, "[[")) {
@@ -5959,6 +6057,11 @@ scope_list_write_elements <- function(target, elements, value, lookup,
 # Replace or delete at a known exact path. Recursive [[<- traverses plain
 # list members directly and can extend only the innermost tracked list.
 scope_replace_list_member <- function(elements, path, member, delete) {
+  if (!is.null(attr(elements, "marginplyr_lists", exact = TRUE))) {
+    return(scope_map_lists(elements, function(choice) {
+      scope_replace_list_member(choice, path, member, delete)
+    }))
+  }
   key <- path[[1L]]
   index <- scope_list_member_index(elements, key)
   if (length(path) > 1L) {
@@ -6057,6 +6160,11 @@ scope_list_write_names <- function(target, elements, value, lookup,
 # Replace names with known literal labels, using plain-list padding rules.
 scope_list_literal_names <- function(elements, value, scope, lookup,
                                      unknown = NULL) {
+  if (!is.null(attr(elements, "marginplyr_lists", exact = TRUE))) {
+    return(scope_map_lists(elements, function(choice) {
+      scope_list_literal_names(choice, value, scope, lookup, unknown)
+    }))
+  }
   value <- unparenthesized_value(value)
   labels <- if (!is.null(value)) {
     static_character_value(value, function(expr) {
