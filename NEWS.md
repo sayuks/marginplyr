@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Both Nest verbs preserve local cell values, fixed partitions, and displayed
+  keys under registered `as_tibble.data.frame` converters (#1512).
+
 * Top-level `.grouping` factories preserve authored empty constructor positions
   in evaluated quotation operands, including `bquote()` substitutions and
   `substitute()` environments (#1514).
