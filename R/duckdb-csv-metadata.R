@@ -391,20 +391,18 @@ validate_duckdb_view_metadata <- function(index, catalog, seen) {
   heads <- which(c(body[-1L], "") == "(" &
                    !c(attr(body, "quoted")[-1L], FALSE))
   grammar <- catalog()
-  syntax_keywords <- grammar$kind == "keyword" &
-    grammar$definition %in% c("reserved", "column_name")
-  noncall <- grammar$relation_name[syntax_keywords]
+  noncall <- grammar$relation_name[grammar$kind == "keyword"]
   identifier <- grepl(paste0(
     "(*UTF)^[a-z_\\x{80}-\\x{10ffff}]",
     "[a-z_0-9$\\x{80}-\\x{10ffff}]*$"
   ), body[heads], perl = TRUE)
-  # Keyword categories decide which unquoted words can be function names.
+  # Stored FunctionExpression names quote every keyword (ADR 0020).
   heads <- heads[attr(body, "quoted")[heads] |
                    (identifier & !body[heads] %in% noncall)]
   declarations <- attr(duckdb_metadata_ctes(body), "column_declarations")
   previous <- pmax(1L, heads - 1L)
-  # Stored aliases follow AS. Completed expressions precede clauses, not calls.
-  syntax <- heads > 1L & body[previous] %in% c("as", ")") &
+  # Stored aliases follow AS; CTE column lists have their own declaration heads.
+  syntax <- heads > 1L & body[previous] == "as" &
     !attr(body, "quoted")[previous]
   heads <- heads[!syntax & !heads %in% declarations]
   for (head in heads) {
