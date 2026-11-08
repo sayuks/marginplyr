@@ -230,22 +230,20 @@ test_that("computed closure dependency refusal leaves lazy input unread", {
 test_that("unsupported literal list indices retain their R diagnostic", {
   data <- data.frame(group = c("a", "b"), x = c(1, 3))
   for (index in c(Inf, 1e20)) {
-    message <- if (is.infinite(index)) {
-      "attempt to apply non-function"
-    } else {
-      "subscript out of bounds"
-    }
+    expression <- rlang::expr((function() {
+      functions <- list(function() 1)
+      functions[[!!index]]()
+    })())
+    baseline <- expect_error(eval(expression))
     error <- expect_error(
       summarize_with_margins(
         data, value = sum(.data$x), ratio = share_of_total(value),
-        observed = (function() {
-          functions <- list(function() 1)
-          functions[[!!index]]()
-        })(),
+        observed = !!expression,
         .grouping = rollup("group")
-      ),
-      message
+      )
     )
+    expect_identical(class(error$parent), class(baseline))
+    expect_identical(conditionMessage(error$parent), conditionMessage(baseline))
     expect_false(inherits(error, "marginplyr_error"))
   }
 })
