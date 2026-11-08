@@ -151,8 +151,8 @@ inline callback controls agreed. This ruled out the initial callback hypothesis
 before the function-replacement boundary was isolated.
 
 Four additional ordinary-selection controls checked the share-marker
-intersection: implicit pick/across everything exposed only eligible ordinary
-columns, an explicit earlier-share request refused, and a negative any_of
+intersection: implicit pick/across everything exposed the ordinary input/output
+columns x and v, an explicit earlier-share request refused, and a negative any_of
 selection excluded the unavailable share name. No private marker leak was
 established. The first harness wrongly expected every implicit selection to
 refuse; a later bare negative selection also requested an unavailable name.
@@ -209,8 +209,8 @@ selection-after-share.R; A's minimal.R, closure-mutations.R and
 closure-repair-controls.R; B's structured-oracle.R and sqlite-proxy.R; and
 C's probe-sql-controls.R and probe-arrow.R. Observation assertions established
 the dated failure, while desired-refusal assertions intentionally exited one;
-those failures were not passing contract checks. All owned executions were
-collected before verification and publication.
+those failures were not passing contract checks. All owned reproductions were
+collected before Review-ready verification.
 
 The submission added dated prose for research readers only. Package code,
 tests, dependencies, installed files, generation sources, build exclusions and
