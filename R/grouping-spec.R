@@ -248,11 +248,20 @@ capture_public_grouping <- function(quo, written) {
 }
 
 # Mark calls whose last argument can become an authored empty after splicing.
-# Argument syntax stays intact for caller-defined constructor functions.
+# Language captures and function literals remain caller-owned syntax.
 mark_grouping_empty_args <- function(expr) {
   if (rlang::is_missing(expr) || rlang::is_quosure(expr) ||
         !(is.call(expr) || is.pairlist(expr))) {
     return(expr)
+  }
+  if (is.call(expr)) {
+    capture <- expr
+    # Grouping capture preserves language even through a parenthesized callee.
+    capture[[1L]] <- unparenthesized_value(capture[[1L]])
+    if (identical(static_call_name(capture), "function") ||
+          any(captured_call_parts(capture))) {
+      return(expr)
+    }
   }
   parts <- as.list(expr)
   positions <- seq_along(parts)[-c(1L, length(parts))]

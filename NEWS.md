@@ -1,5 +1,7 @@
 # marginplyr 0.1.0
 
+* Top-level `.grouping` factories now preserve quoted language and supplied function bodies, while directly authored empty constructor arguments before splices remain refused (#1505).
+
 * `nest_by_with_margins()` preserves typed empty dtplyr payloads when frame conversion methods are registered (#1503).
 
 * Parent and Total share dependency checks follow unchanged fresh closure

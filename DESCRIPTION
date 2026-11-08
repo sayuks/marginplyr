@@ -360,6 +360,7 @@ Config/testthat/start-first:
     sf-shares,
     share-singleton-bindings,
     nest-dtplyr-frame-converter,
+    grouping-quoted-factories,
     share-definition-replacements
 VignetteBuilder:
     quarto
