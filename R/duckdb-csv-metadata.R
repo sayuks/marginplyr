@@ -296,7 +296,11 @@ duckdb_metadata_catalog <- function(con) {
     "system.main.current_database(),",
     "system.main.current_setting('search_path')",
     "FROM system.main.duckdb_functions()",
-    "WHERE function_type IN ('macro', 'table_macro')"
+    "WHERE function_type IN ('macro', 'table_macro') UNION ALL",
+    "SELECT NULL, NULL, keyword_name, 'keyword', keyword_category,",
+    "system.main.current_database(),",
+    "system.main.current_setting('search_path')",
+    "FROM system.main.duckdb_keywords()"
   ))
   with_sent_query("relation_catalog", sql, DBI::dbGetQuery(con, sql))
 }
@@ -386,12 +390,23 @@ validate_duckdb_view_metadata <- function(index, catalog, seen) {
   namespace <- c(view$database_name[[1L]], view$schema_name[[1L]])
   heads <- which(c(body[-1L], "") == "(" &
                    !c(attr(body, "quoted")[-1L], FALSE))
+  grammar <- catalog()
+  syntax_keywords <- grammar$kind == "keyword" &
+    grammar$definition %in% c("reserved", "column_name")
+  noncall <- grammar$relation_name[syntax_keywords]
+  identifier <- grepl(paste0(
+    "(*UTF)^[a-z_\\x{80}-\\x{10ffff}]",
+    "[a-z_0-9$\\x{80}-\\x{10ffff}]*$"
+  ), body[heads], perl = TRUE)
+  # Keyword categories decide which unquoted words can be function names.
+  heads <- heads[attr(body, "quoted")[heads] |
+                   (identifier & !body[heads] %in% noncall)]
   declarations <- attr(duckdb_metadata_ctes(body), "column_declarations")
   previous <- pmax(1L, heads - 1L)
-  # Stored table aliases use AS; CTE column lists declare names at WITH heads.
-  aliases <- heads > 1L & body[previous] == "as" &
+  # Stored aliases follow AS. Completed expressions precede clauses, not calls.
+  syntax <- heads > 1L & body[previous] %in% c("as", ")") &
     !attr(body, "quoted")[previous]
-  heads <- heads[!aliases & !heads %in% declarations]
+  heads <- heads[!syntax & !heads %in% declarations]
   for (head in heads) {
     while (head > 2L && body[[head - 1L]] == "." &&
              !attr(body, "quoted")[[head - 1L]]) head <- head - 2L

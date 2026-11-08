@@ -153,13 +153,21 @@ test_that("view alias and CTE declarations do not call same-named macros", {
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   DBI::dbWriteTable(con, "src", data.frame(k = 101L))
   DBI::dbExecute(con, "CREATE MACRO f(x) AS x")
+  DBI::dbExecute(con, 'CREATE MACRO "as"(x) AS x')
+  DBI::dbExecute(con, 'CREATE MACRO "in"(x) AS x')
+  DBI::dbExecute(con, "CREATE MACRO over(x) AS x")
+  DBI::dbExecute(con, "CREATE MACRO filter(x) AS x")
   old <- options(marginplyr.audit_sql = TRUE)
   on.exit(options(old), add = TRUE)
   for (sql in c(
     "SELECT * FROM src AS f(k)",
     "SELECT * FROM src f(k)",
     'SELECT * FROM src AS "F"(k)',
-    "WITH f(k) AS (SELECT k FROM src) SELECT * FROM f"
+    "WITH f(k) AS (SELECT k FROM src) SELECT * FROM f",
+    "WITH c AS (SELECT k FROM src) SELECT * FROM c",
+    "SELECT k FROM src WHERE k IN (101)",
+    "SELECT sum(k) OVER () AS k FROM src",
+    "SELECT sum(k) FILTER (WHERE k > 0) AS k FROM src"
   )) {
     DBI::dbExecute(con, paste('CREATE OR REPLACE VIEW "alias.csv" AS', sql))
     source <- dplyr::tbl(con, dbplyr::sql('TABLE "alias.csv"'), vars = "k")
@@ -175,7 +183,13 @@ test_that("view alias and CTE declarations do not call same-named macros", {
   }
   for (sql in c(
     "SELECT f(k) AS k FROM src AS f(k)",
-    "WITH f(k) AS (SELECT k FROM src) SELECT f(k) AS k FROM f"
+    "WITH f(k) AS (SELECT k FROM src) SELECT f(k) AS k FROM f",
+    'SELECT "as"(k) AS k FROM src',
+    'SELECT "in"(k) AS k FROM src',
+    "SELECT main.as(k) AS k FROM src",
+    "SELECT main.in(k) AS k FROM src",
+    "SELECT over(k) AS k FROM src",
+    "SELECT filter(k) AS k FROM src"
   )) {
     DBI::dbExecute(con, paste('CREATE OR REPLACE VIEW "alias.csv" AS', sql))
     source <- dplyr::tbl(con, dbplyr::sql('TABLE "alias.csv"'), vars = "k")
