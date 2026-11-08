@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Typed DuckDB Grouping inspection refuses CSV filename replacement scans
+  before source-value inference, while preserving captured-name inspection
+  and explicit reader schemas (#1519).
+
 * Parent and Total shares preserve requested sf summary geometry columns and
   explicit output order without exposing private denominator geometry (#1515).
 

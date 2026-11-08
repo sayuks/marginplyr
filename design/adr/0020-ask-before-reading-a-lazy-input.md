@@ -343,6 +343,21 @@ or collect explicitly. Name-only inspection still uses captured names without
 opening the source. Ordinary tables, explicit-schema CSV metadata, the dynamic
 PIVOT refusal and the single typed snapshot remain unchanged.
 
+## Amendment (#1519): CSV filename replacement scans also infer source values
+
+DuckDB binds CSV filename relations such as `FROM 'path.csv'` through
+`read_csv_auto`, so the CSV sampling refusal also applies to those captured
+relations. It covers CSV and TSV suffixes, gzip and zstd compression, glob
+patterns, and equivalent quoted or escaped spellings in relation positions.
+Scalar strings and non-CSV relations do not establish an inferred CSV source.
+Name-only inspection still uses captured names without opening a file; typed
+inspection requires an established reader schema or explicit collection.
+
+The accepted suffixes follow `ReadCSVReplacement` in the
+[DuckDB 1.5 source][csv-replacement].
+
+[csv-replacement]: https://github.com/duckdb/duckdb/blob/v1.5.0/src/function/table/read_csv.cpp
+
 ## Amendment (#1516): JSON schema and record inference are source work
 
 The first exemption also excludes JSON sampling during DuckDB binding, for

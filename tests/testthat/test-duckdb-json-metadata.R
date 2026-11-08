@@ -96,6 +96,32 @@ test_that("JSON replacement scans cannot infer types during inspection", {
   }
 })
 
+test_that("TABLE queries cannot hide JSON replacement inference", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  duckdb_test_json_extension(con)
+  path <- tempfile(fileext = ".json")
+  on.exit(unlink(path), add = TRUE)
+  writeLines("INVALID JSON", path)
+  identifier <- DBI::dbQuoteIdentifier(con, path)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  for (sql in c(
+    paste0("TABLE ", identifier),
+    paste0("SELECT * FROM (TABLE ", identifier, ") AS t"),
+    paste0("TABLE ", identifier, " UNION ALL TABLE ", identifier)
+  )) {
+    source <- dplyr::tbl(con, dbplyr::sql(sql), vars = "k")
+    expect_error(dplyr::collect(utils::head(source, 0L)), "Malformed JSON")
+    expect_error(
+      inspect_grouping(source, .grouping = grouping_set(where(is.numeric))),
+      "source rows", fixed = TRUE, class = "marginplyr_error"
+    )
+    expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+  }
+})
+
 test_that("established JSON schemas retain metadata without sampling", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
