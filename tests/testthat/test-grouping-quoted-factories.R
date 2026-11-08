@@ -80,9 +80,10 @@ test_that("quoted factories leave an inspected Arrow reader unconsumed", {
 # jarl-ignore missing_argument: Template equality observes unmodified language.
 test_that("quoted and expression templates keep their selected column", {
   data <- data.frame(a = 1L, b = 2L)
-  reads <- 0L
+  counter <- new.env(parent = emptyenv())
+  counter$reads <- 0L
   choose <- function(expr) {
-    reads <<- reads + 1L
+    counter$reads <- counter$reads + 1L
     if (identical(expr, quote(grouping_set(, a)))) {
       grouping_set(a)
     } else {
@@ -117,10 +118,10 @@ test_that("quoted and expression templates keep their selected column", {
                        nest_by_with_margins)) {
     expected <- consume(data, .grouping = stored)
     for (call in calls) {
-      reads <- 0L
+      counter$reads <- 0L
       actual <- call(consume)
       expect_identical(actual, expected)
-      expect_identical(reads, 1L)
+      expect_identical(counter$reads, 1L)
     }
   }
 })
