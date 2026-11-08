@@ -4716,18 +4716,13 @@ scope_value_closure <- function(expr, scope, lookup) {
     closure <- if (length(value) == 1L) {
       scope_value_closure(value[[1L]], scope, lookup)
     }
-    variants <- scope_closure_variants(closure)
-    default <- vapply(variants, function(variant) {
+    closure <- scope_filter_closure(closure, function(variant) {
       !isTRUE(variant$dispatch_unknown) && scope_implicit_class_default(
         operator, "base", variant$dispatch_classes %||% "function",
         scope, lookup
       )
-    }, logical(1))
-    if (any(default)) {
-      if (all(default)) return(closure)
-      # Other methods remain opaque; retain only possible default results.
-      return(list(alternatives = variants[default]))
-    }
+    })
+    if (!is.null(closure)) return(closure)
   }
   if (identical(operator, "Vectorize") &&
         is_known_base_frame_call(head, operator, scope, transfer_lookup)) {
@@ -4735,12 +4730,10 @@ scope_value_closure <- function(expr, scope, lookup) {
     if ("FUN" %in% names(parts) && !"vectorize.args" %in% names(parts)) {
       closure <- scope_value_closure(parts$FUN, scope, lookup)
       # An empty formal list makes Vectorize return FUN unchanged.
-      if (!is.null(closure) && all(vapply(
-        scope_closure_variants(closure),
-        function(variant) length(variant$definition[[2L]]) == 0L, logical(1)
-      ))) {
-        return(closure)
-      }
+      closure <- scope_filter_closure(closure, function(variant) {
+        length(variant$definition[[2L]]) == 0L
+      })
+      if (!is.null(closure)) return(closure)
     }
   }
   if (identical(operator, "as_function") &&
@@ -5279,6 +5272,16 @@ scope_closure_variants <- function(closure) {
   if (is.null(closure)) return(list())
   if (!is.null(closure$alternatives)) return(closure$alternatives)
   if (!is.null(closure$definition)) list(closure) else list()
+}
+
+# A static predicate selects variants with proven unchanged results.
+# Unproven transfer outcomes remain opaque rather than erasing known results.
+scope_filter_closure <- function(closure, predicate) {
+  variants <- scope_closure_variants(closure)
+  proven <- vapply(variants, predicate, logical(1))
+  if (!any(proven)) return(NULL)
+  if (all(proven)) return(closure)
+  list(alternatives = variants[proven])
 }
 
 # Join field values without choosing which conditional path executes.
