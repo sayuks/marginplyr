@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Typed DuckDB Grouping inspection refuses CSV filename replacement scans
+  before source-value inference, while preserving captured-name inspection
+  and explicit reader schemas (#1519).
+
 * Top-level `.grouping` factories preserve caller-owned constructor syntax
   through custom NSE and quotation aliases, while rebound quotation names
   retain the authored-empty refusal of constructors they execute (#1517).

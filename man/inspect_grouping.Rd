@@ -92,7 +92,8 @@ captured column names. To inspect a derived dtplyr step with typed
 selections, call \code{\link[dplyr:collect]{dplyr::collect()}} on it explicitly and
 pass the resulting data frame. DuckDB CSV readers that use auto-detection
 are also refused before typed metadata is requested: binding even a
-zero-row query can sample CSV values. Supply an explicit CSV schema with
+zero-row query can sample CSV values. This includes filename replacement
+scans such as \verb{FROM 'path.csv'}. Supply an explicit CSV schema with
 \code{auto_detect = false}, or collect explicitly before typed inspection.
 The Grouping plan is deliberately separate
 from a SQL execution plan. Use \code{\link[dplyr:show_query]{dplyr::show_query()}} for generated SQL and

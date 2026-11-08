@@ -1,3 +1,189 @@
+test_that("CSV replacement inspection refuses source-value inference", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  source <- dplyr::tbl(con, dbplyr::sql(paste0(
+    "SELECT * FROM ", DBI::dbQuoteString(con, path)
+  )), vars = "k")
+  before <- serialize(source$lazy_query, NULL)
+  established <- dplyr::tbl(con, dbplyr::sql("SELECT 101 AS k"), vars = "k")
+  inputs <- list(
+    source, dplyr::filter(source, k == k),
+    dplyr::left_join(established, source, by = "k"),
+    dplyr::left_join(source, established, by = "k")
+  )
+  expect_identical(
+    inspect_grouping(source, .grouping = grouping_set(k))$included, "(k)"
+  )
+  expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+
+  for (value in c("101", "source_tail")) {
+    writeLines(c("k", value), path)
+    # Only the data row changes, exposing inference hidden by LIMIT 0.
+    native <- dplyr::collect(utils::head(source, 0L))
+    expect_identical(is.numeric(native$k), identical(value, "101"))
+    for (input in inputs) {
+      input_before <- serialize(input$lazy_query, NULL)
+      expect_error(
+        inspect_grouping(input, .by = where(is.numeric)),
+        "source rows", fixed = TRUE, class = "marginplyr_error"
+      )
+      expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+      expect_error(
+        inspect_grouping(input, .grouping = grouping_set(where(is.numeric))),
+        "dplyr::collect()", fixed = TRUE, class = "marginplyr_error"
+      )
+      expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+      expect_identical(serialize(input$lazy_query, NULL), input_before)
+    }
+    expect_identical(as.character(dplyr::collect(source)$k), value)
+  }
+  unlink(path)
+  expect_error(
+    inspect_grouping(source, .by = where(is.numeric)),
+    "source rows", fixed = TRUE, class = "marginplyr_error"
+  )
+  expect_identical(serialize(source$lazy_query, NULL), before)
+})
+
+test_that("CSV replacement guards follow SQL relation positions", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  writeLines(c("k", "101"), path)
+  quoted <- DBI::dbQuoteString(con, path)
+  identifier <- DBI::dbQuoteIdentifier(con, path)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  for (sql in c(
+    paste0("TABLE ", identifier),
+    paste0("SELECT * FROM (TABLE ", identifier, ") AS t"),
+    paste0("TABLE ", identifier, " UNION ALL TABLE ", identifier),
+    paste0("FROM ", quoted),
+    paste0("SELECT t.k FROM (SELECT 1 AS v) AS t0 JOIN ", quoted,
+           " AS t ON true"),
+    paste0("SELECT t.k FROM (SELECT 1 AS v) AS t0, ", quoted, " AS t"),
+    paste0("SELECT k FROM (", identifier,
+           " CROSS JOIN (SELECT 1 AS v) AS u)"),
+    paste0("PIVOT ", quoted, " ON k IN (101) USING count(*)")
+  )) {
+    vars <- if (startsWith(sql, "PIVOT")) "101" else "k"
+    source <- dplyr::tbl(con, dbplyr::sql(sql), vars = vars)
+    expect_true(is.numeric(dplyr::collect(utils::head(source, 0L))[[1L]]))
+    expect_identical(
+      inspect_grouping(source, .grouping = grouping_set(everything()))$included,
+      paste0("(", vars, ")")
+    )
+    expect_error(
+      inspect_grouping(source, .grouping = grouping_set(where(is.numeric))),
+      "source rows", fixed = TRUE, class = "marginplyr_error"
+    )
+    expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+  }
+})
+
+test_that("CSV replacement guards preserve ordinary values and non-CSV files", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".parquet")
+  on.exit(unlink(path), add = TRUE)
+  DBI::dbExecute(con, paste0(
+    "COPY (SELECT 101 AS k, 'east.csv' AS label) TO ",
+    DBI::dbQuoteString(con, path), " (FORMAT PARQUET)"
+  ))
+  parquet <- dplyr::tbl(con, dbplyr::sql(paste0(
+    "SELECT * FROM ", DBI::dbQuoteString(con, path)
+  )), vars = c("k", "label"))
+  literal <- dplyr::tbl(con, dbplyr::sql(paste(
+    'SELECT substring(coalesce("table", \'absent.csv\') FROM 1) AS label,',
+    "101 AS k FROM (VALUES ('east', $$absent.tsv$$, E'absent.csv.gz'))",
+    'AS t("table", a, b)',
+    "WHERE 'absent.csv' = 'absent.csv' /* FROM 'absent.csv' */"
+  )), vars = c("label", "k"))
+  ordinary <- lapply(c("report.csv.zstd", "report.csv'"), function(name) {
+    dplyr::copy_to(con, tibble::tibble(k = 101L, label = "east.csv"), name)
+    dplyr::tbl(con, dbplyr::sql(paste(
+      "SELECT * FROM", DBI::dbQuoteIdentifier(con, name)
+    )), vars = c("k", "label"))
+  })
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  for (input in c(list(literal, parquet), ordinary)) {
+    plan <- inspect_grouping(
+      input, .by = where(is.character),
+      .grouping = grouping_set(where(is.numeric))
+    )
+    expect_identical(plan$fixed, "(label)")
+    expect_identical(plan$included, "(k)")
+    audit <- last_sent_queries(details = TRUE)
+    expect_identical(audit$purpose, "selection_proxy")
+    expect_identical(audit$status, "returned")
+    expect_match(audit$sql, "LIMIT 0", fixed = TRUE)
+  }
+})
+
+test_that("equivalent CSV replacement spellings keep inference disabled", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  directory <- tempfile()
+  dir.create(directory)
+  on.exit(unlink(directory, recursive = TRUE), add = TRUE)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  for (extension in c(".csv", ".tsv", ".csv.gz", ".csv.zst", ".csv?part")) {
+    path <- file.path(directory, paste0("source'\"", extension))
+    actual <- sub("?", "1", path, fixed = TRUE)
+    spellings <- c(
+      DBI::dbQuoteString(con, path), DBI::dbQuoteIdentifier(con, path),
+      paste0("E", DBI::dbQuoteString(con, path)),
+      paste0("E", gsub("''", "\\'", DBI::dbQuoteString(con, path),
+                       fixed = TRUE)),
+      paste0("$path$", path, "$path$")
+    )
+    if (extension == ".csv") {
+      spellings <- c(spellings, vapply(c("\\x2e", "\\056"), function(dot) {
+        paste0("E", sub(".csv", paste0(dot, "csv"),
+                        DBI::dbQuoteString(con, path), fixed = TRUE))
+      }, character(1)))
+      spellings <- c(spellings, paste0("E", sub(
+        ".csv", "\\x2e\\x43\\x53\\x56", DBI::dbQuoteString(con, path),
+        fixed = TRUE
+      )))
+    }
+    for (spelling in spellings) {
+      source <- dplyr::tbl(con, dbplyr::sql(paste0(
+        "SELECT * FROM ", spelling
+      )), vars = "k")
+      expect_identical(
+        inspect_grouping(source, .grouping = grouping_set(k))$included, "(k)"
+      )
+      expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+      # COPY writes valid compressed controls without an extra dependency.
+      DBI::dbExecute(con, paste0(
+        "COPY (SELECT 101 AS k) TO ", DBI::dbQuoteString(con, actual),
+        " (FORMAT CSV, HEADER, COMPRESSION ",
+        if (extension == ".csv.gz") "GZIP" else
+          if (extension == ".csv.zst") "ZSTD" else "NONE", ")"
+      ))
+      expect_true(is.numeric(dplyr::collect(utils::head(source, 0L))$k))
+      expect_error(
+        inspect_grouping(source, .by = where(is.numeric)),
+        "source rows", fixed = TRUE, class = "marginplyr_error"
+      )
+      expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+      unlink(actual)
+    }
+  }
+})
+
 test_that("typed CSV inspection refuses before DuckDB can infer source types", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()

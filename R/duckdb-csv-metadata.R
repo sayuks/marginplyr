@@ -18,7 +18,7 @@ duckdb_metadata_tokens <- function(sql) {
     '""', '"', substring(tokens[quoted], 2L, nchar(tokens[quoted]) - 1L),
     fixed = TRUE
   )
-  tolower(tokens)
+  structure(tolower(tokens), quoted = quoted)
 }
 
 # Count columns in a literal JSON schema; expressions leave the count unknown.
@@ -50,7 +50,9 @@ duckdb_metadata_relations <- function(tokens) {
     query = TRUE, table = FALSE, expect = FALSE, start = TRUE
   ))
   relations <- character()
-  for (token in tokens) {
+  quoted <- attr(tokens, "quoted")
+  for (i in seq_along(tokens)) {
+    token <- tokens[[i]]
     n <- length(frames)
     frame <- frames[[n]]
     if (token == "(") {
@@ -69,6 +71,7 @@ duckdb_metadata_relations <- function(tokens) {
       frame$table <- frame$expect <- FALSE
     } else if ((token %in% c("from", "pivot", "unpivot") &&
                   (frame$query || frame$start)) ||
+                 (token == "table" && frame$start && !quoted[[i]]) ||
                  (token == "join" && frame$table)) {
       frame$table <- frame$expect <- TRUE
     } else if (token %in% c(
@@ -84,10 +87,45 @@ duckdb_metadata_relations <- function(tokens) {
       relations <- c(relations, token)
       frame$expect <- FALSE
     }
-    frame$start <- FALSE
+    frame$start <- token %in% c("union", "intersect", "except") ||
+      (frame$start && token %in% c("all", "distinct"))
     frames[[n]] <- frame
   }
   relations
+}
+
+# Decode a captured CSV relation spelling without asking DuckDB to bind it.
+# Escape strings permit hexadecimal and octal bytes within a filename suffix.
+duckdb_csv_relation_path <- function(token) {
+  if (grepl("^\\$[a-z_0-9]*\\$", token)) {
+    return(sub(
+      "(?s)^\\$([a-z_0-9]*)\\$(.*)\\$\\1\\$$", "\\2", token, perl = TRUE
+    ))
+  }
+  if (!startsWith(token, "e'")) {
+    return(if (startsWith(token, "'")) {
+      gsub("''", "'", substring(token, 2L, nchar(token) - 1L), fixed = TRUE)
+    } else {
+      token
+    })
+  }
+  path <- substring(token, 3L, nchar(token) - 1L)
+  path <- gsub("''", "'", path, fixed = TRUE)
+  positions <- gregexpr(
+    "\\\\(?:[0-7]{1,3}|x[0-9a-f]{1,2}|.)", path, perl = TRUE
+  )
+  escapes <- regmatches(path, positions)[[1L]]
+  regmatches(path, positions) <- list(vapply(escapes, function(escape) {
+    value <- substring(escape, 2L)
+    if (grepl("^x[0-9a-f]+$", value)) {
+      intToUtf8(strtoi(substring(value, 2L), base = 16L))
+    } else if (grepl("^[0-7]", value)) {
+      intToUtf8(strtoi(value, base = 8L))
+    } else {
+      switch(value, n = "\n", r = "\r", t = "\t", b = "\b", f = "\f", value)
+    }
+  }, character(1)))
+  tolower(path)
 }
 
 # Refuse reader inference before DuckDB can bind the captured input (ADR 0020).
@@ -117,6 +155,12 @@ abort_duckdb_reader_metadata <- function(family) {
 validate_duckdb_csv_metadata <- function(sql) {
   tokens <- duckdb_metadata_tokens(as.character(sql))
   relations <- duckdb_metadata_relations(tokens)
+  csv_relations <- vapply(relations, duckdb_csv_relation_path, character(1))
+  if (any(grepl(
+    "[.](csv|tsv)([.](gz|zst))?$|[.](csv|tsv)[?]", csv_relations
+  ))) {
+    abort_duckdb_reader_metadata("CSV")
+  }
   if (any(grepl("[.](json|jsonl|ndjson)([.](gz|zst|zstd))?'?$", relations))) {
     abort_duckdb_reader_metadata("JSON")
   }
