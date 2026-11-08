@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Both Nest verbs preserve local cell values, fixed partitions, and displayed
+  keys under registered `as_tibble.data.frame` converters (#1512).
+
 * `share_of_parent()` and `share_of_total()` now follow visible closure enclosure replacements when validating dependencies, refusing earlier-summary dependencies while preserving unchanged and proven independent enclosures (#1504).
 
 * Typed DuckDB Grouping inspection refuses CSV auto-detection before binding
