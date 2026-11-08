@@ -331,6 +331,18 @@ inspection remain in force. This amendment narrows the dtplyr instance of the
 first exemption; it does not alter DuckDB's zero-row metadata read or the
 second exemption.
 
+## Amendment (#1506): CSV auto-detection is source work during DuckDB binding
+
+The first exemption does not permit CSV auto-detection to sample source values
+while DuckDB binds a zero-row query. Captured SQL `read_csv()` and
+`read_csv_auto()` calls must explicitly disable auto-detection with a literal
+`auto_detect = false` before marginplyr requests typed metadata. An explicit
+schema alone does not disable dialect or header inference. If that opt-out is
+absent, a Package condition directs the caller to supply an established schema
+or collect explicitly. Name-only inspection still uses captured names without
+opening the source. Ordinary tables, explicit-schema CSV metadata, the dynamic
+PIVOT refusal and the single typed snapshot remain unchanged.
+
 ## Amendment (#640): SQLite typed-order execution follows an explicit request
 
 ADR 0031's live SQLite result builds its typed compound query without executing
