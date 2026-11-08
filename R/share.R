@@ -4793,16 +4793,57 @@ scope_value_closure <- function(expr, scope, lookup) {
   }
 }
 
-# Resolve base definition setters without evaluating the replacement expression.
-# An unreadable definition retains a callable with unresolved dependencies.
+# Resolve base closure setters without evaluating the replacement expression.
+# An unreadable replacement retains a callable with unresolved dependencies.
 scope_definition_replacement <- function(expr, scope, lookup) {
   operator <- static_call_name(expr)
-  if (is.null(operator) || !operator %in% c("body<-", "formals<-") ||
+  if (is.null(operator) ||
+        !operator %in% c("body<-", "formals<-", "environment<-") ||
         !is_known_base_frame_call(expr, operator, scope, lookup)) return(NULL)
-  parts <- static_matched_arguments(expr, get(operator, envir = baseenv()))
+  parts <- static_matched_arguments(
+    expr, args(get(operator, envir = baseenv()))
+  )
   if (!all(c("fun", "value") %in% names(parts))) return(NULL)
   closure <- scope_value_closure(parts$fun, scope, lookup)
   if (is.null(closure)) return(NULL)
+  if (identical(operator, "environment<-")) {
+    enclosing <- static_environment_frame(parts$value, scope, lookup)
+    getter <- identical(static_call_name(parts$value), "environment") &&
+      is_known_base_frame_call(parts$value, "environment", scope, lookup)
+    original <- if (getter) {
+      argument <- base_call_argument(parts$value, "fun")
+      if (length(argument) == 1L) {
+        scope_value_closure(argument[[1L]], scope, lookup)
+      }
+    }
+    originals <- scope_closure_variants(original)
+    original <- if (length(originals) == 1L &&
+                      !"enclosure" %in%
+                        originals[[1L]]$unknown_definition_parts) {
+      originals[[1L]]
+    }
+    external <- if (is.null(enclosing)) {
+      scope_external_enclosure(parts$value, scope, lookup)
+    }
+    return(scope_map_closure_elements(list(closure), function(variant) {
+      variant$frames <- if (!is.null(original)) {
+        original$frames
+      } else if (!is.null(external)) {
+        list(external)
+      }
+      variant$enclosing <- original$enclosing %||% enclosing %||%
+        (length(scope) + 1L)
+      variant$unknown_definition_parts <- setdiff(
+        variant$unknown_definition_parts, "enclosure"
+      )
+      if (is.null(enclosing) && is.null(original) && is.null(external)) {
+        variant$unknown_definition_parts <- union(
+          variant$unknown_definition_parts, "enclosure"
+        )
+      }
+      variant
+    })[[1L]])
+  }
   value <- scope_definition_value(parts$value, scope, lookup)
   if (!is.null(value) &&
         (rlang::is_missing(value[[1L]]) || is.object(value[[1L]]))) {
@@ -4829,6 +4870,55 @@ scope_definition_replacement <- function(expr, scope, lookup) {
     }
     variant
   })[[1L]]
+}
+
+# Retain bindings of a literal fresh or existing independent enclosure without
+# forcing promises or active bindings. Unknown bindings prove no independence.
+scope_external_enclosure <- function(expr, scope, lookup) {
+  operator <- static_call_name(expr)
+  if (!is.null(operator) &&
+        operator %in% c("baseenv", "emptyenv", "new.env", "list2env") &&
+        is_known_base_frame_call(expr, operator, scope, lookup)) {
+    if (operator %in% c("baseenv", "emptyenv") && length(expr) == 1L) {
+      return(list(bound = character()))
+    }
+    fields <- scope_fresh_env_fields(expr, scope, lookup)
+    if (!is.null(fields)) {
+      parts <- static_matched_arguments(
+        expr, args(get(operator, envir = baseenv()))
+      )
+      parent <- if ("parent" %in% names(parts)) {
+        scope_external_enclosure(parts$parent, scope, lookup)
+      }
+      if (!is.null(parent)) {
+        keys <- names(fields)
+        parent$bound <- union(keys, parent$bound)
+        parent$kinds[keys] <- lapply(fields, function(field) {
+          if (length(scope_closure_variants(field)) > 0L) "function"
+        })
+        parent$closures[keys] <- fields
+        return(parent)
+      }
+    }
+  }
+  bound <- scope_bound_names(scope)
+  if (!lookup_environment_is_external(expr, bound, lookup)) return(NULL)
+  env <- lookup_environment_value(expr, bound, lookup)
+  bindings <- character()
+  kinds <- list()
+  while (!identical(env, emptyenv()) && !identical(env, baseenv())) {
+    keys <- setdiff(ls(env, all.names = TRUE), bindings)
+    for (key in keys) {
+      bindings <- c(bindings, key)
+      if (bindingIsActive(key, env) || rlang::env_binding_are_lazy(env, key)) {
+        next
+      }
+      value <- get(key, envir = env, inherits = FALSE)
+      kinds[[key]] <- scope_literal_kind(value)
+    }
+    env <- parent.env(env)
+  }
+  list(bound = names(kinds), kinds = kinds)
 }
 
 # Read literal definition values, captures and formal-list member writes.
@@ -4897,7 +4987,7 @@ scope_definition_value <- function(expr, scope, lookup) {
 }
 
 # Expand a visible replacement path into setter calls, keeping ordinary heads.
-# Only paths reaching a local closure's body or formals belong to this reader.
+# Only paths reaching a local closure's definition or enclosure belong here.
 scope_definition_write <- function(target, value) {
   path <- list()
   carrier <- unparenthesized_value(target)
@@ -4909,7 +4999,8 @@ scope_definition_write <- function(target, value) {
     carrier <- unparenthesized_value(carrier[[2L]])
   }
   if (length(path) == 0L || !is_name_part(carrier) ||
-        !static_call_name(path[[length(path)]]) %in% c("body", "formals")) {
+        !static_call_name(path[[length(path)]]) %in%
+          c("body", "formals", "environment")) {
     return(NULL)
   }
   for (step in path) {
@@ -5788,7 +5879,11 @@ scope_promise_symbols <- function(name, scope, lookup,
       variants <- scope_closure_variants(closure)
       return(unique(unlist(lapply(variants, function(variant) {
         if (scope_closure_is_active(variant, scope)) return(character())
-        enclosure <- seq.int(variant$enclosing, length(scope))
+        enclosure <- if (variant$enclosing <= length(scope)) {
+          seq.int(variant$enclosing, length(scope))
+        } else {
+          integer()
+        }
         definition_data_symbols(
           variant$definition, c(variant$frames, scope[enclosure]), lookup,
           closure_origin = 1L + length(variant$frames)
