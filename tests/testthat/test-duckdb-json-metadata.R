@@ -1,3 +1,79 @@
+test_that("non-ASCII catalog and CTE names cannot admit a distinct JSON file", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  duckdb_test_json_extension(con)
+  directory <- tempfile()
+  dir.create(directory)
+  previous <- setwd(directory)
+  on.exit({
+    setwd(previous)
+    unlink(directory, recursive = TRUE)
+  }, add = TRUE)
+  path <- "\u00e4.json"
+  table <- "\u00c4.json"
+  DBI::dbWriteTable(con, table, data.frame(k = 999L))
+  identifier <- DBI::dbQuoteIdentifier(con, path)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  for (sql in c(
+    paste("SELECT * FROM", identifier),
+    paste0("WITH ", DBI::dbQuoteIdentifier(con, table),
+           " AS (SELECT 999 AS k) SELECT * FROM ", identifier)
+  )) {
+    source <- dplyr::tbl(con, dbplyr::sql(sql), vars = "k")
+    before <- serialize(source$lazy_query, NULL)
+    expect_identical(inspect_grouping(
+      source, .grouping = grouping_set(k)
+    )$included, "(k)")
+    expect_equal(nrow(last_sent_queries()), 0L)
+    for (value in c('{"k":101}', '{"k":"source_tail"}')) {
+      writeLines(value, path)
+      expect_identical(is.numeric(dplyr::collect(utils::head(source, 0L))$k),
+                       identical(value, '{"k":101}'))
+      expect_error(inspect_grouping(
+        source, .by = where(is.numeric)
+      ), "source rows", fixed = TRUE, class = "marginplyr_error")
+      expect_duckdb_catalog_only()
+    }
+    expect_identical(serialize(source$lazy_query, NULL), before)
+    unlink(path)
+  }
+})
+
+test_that("JSON view admission checks nested reader definitions", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  duckdb_test_json_extension(con)
+  path <- tempfile(fileext = ".json")
+  on.exit(unlink(path), add = TRUE)
+  writeLines('{"k":101}', path)
+  DBI::dbExecute(con, paste(
+    "CREATE VIEW inner_source AS SELECT * FROM", DBI::dbQuoteString(con, path)
+  ))
+  DBI::dbExecute(con, 'CREATE VIEW "outer.json" AS TABLE inner_source')
+  source <- dplyr::tbl(con, dbplyr::sql('TABLE "outer.json"'), vars = "k")
+  before <- serialize(source$lazy_query, NULL)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  unlink(path)
+  expect_identical(inspect_grouping(
+    source, .grouping = grouping_set(k)
+  )$included, "(k)")
+  expect_equal(nrow(last_sent_queries()), 0L)
+  for (value in c('{"k":101}', '{"k":"source_tail"}')) {
+    writeLines(value, path)
+    expect_identical(is.numeric(dplyr::collect(utils::head(source, 0L))$k),
+                     identical(value, '{"k":101}'))
+    expect_error(inspect_grouping(
+      source, .grouping = grouping_set(where(is.numeric))
+    ), "source rows", fixed = TRUE, class = "marginplyr_error")
+    expect_duckdb_catalog_only()
+  }
+  expect_identical(serialize(source$lazy_query, NULL), before)
+})
+
 test_that("typed JSON inspection refuses before source type inference", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
