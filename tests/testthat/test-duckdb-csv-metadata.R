@@ -693,29 +693,39 @@ test_that("qualified CSV names cannot hide replacement inference", {
     "ONLY (replacement.csv)", "replacement.more.csv",
     '"replacement.more".csv', '"replacement"."more"."csv"'
   )
-  paths <- c(rep("replacement.csv", 6L), rep("replacement.more.csv", 3L))
   old <- options(marginplyr.audit_sql = TRUE)
   on.exit(options(old), add = TRUE)
-  for (i in seq_along(forms)) {
+  for (form in forms) {
     source <- dplyr::tbl(con, dbplyr::sql(paste(
-      "SELECT * FROM", forms[[i]]
+      "SELECT * FROM", form
     )), vars = "k")
+    before <- serialize(source$lazy_query, NULL)
     expect_identical(
       inspect_grouping(source, .grouping = grouping_set(k))$included, "(k)"
     )
+    expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+    expect_error(
+      inspect_grouping(source, .by = where(is.numeric)),
+      "source rows", fixed = TRUE, class = "marginplyr_error"
+    )
+    expect_duckdb_catalog_only()
+    expect_error(
+      inspect_grouping(source, .grouping = grouping_set(where(is.numeric))),
+      "source rows", fixed = TRUE, class = "marginplyr_error"
+    )
+    expect_duckdb_catalog_only()
+    expect_identical(serialize(source$lazy_query, NULL), before)
+  }
+  # ONLY is guarded syntactically; DuckDB 2 rejects it as a filename relation.
+  native_forms <- forms[!startsWith(forms, "ONLY")]
+  paths <- c(rep("replacement.csv", 4L), rep("replacement.more.csv", 3L))
+  for (i in seq_along(native_forms)) {
     for (value in c("101", "source_tail")) {
       writeLines(c("k", value), paths[[i]])
-      native <- dplyr::collect(utils::head(source, 0L))
+      native <- DBI::dbGetQuery(con, paste(
+        "SELECT * FROM", native_forms[[i]], "LIMIT 0"
+      ))
       expect_identical(is.numeric(native$k), identical(value, "101"))
-      expect_error(
-        inspect_grouping(source, .by = where(is.numeric)),
-        "source rows", fixed = TRUE, class = "marginplyr_error"
-      )
-      expect_duckdb_catalog_only()
-      expect_error(
-        inspect_grouping(source, .grouping = grouping_set(where(is.numeric))),
-        "source rows", fixed = TRUE, class = "marginplyr_error"
-      )
     }
     unlink(paths[[i]])
   }
@@ -764,25 +774,38 @@ test_that("equivalent CSV replacement spellings keep inference disabled", {
       source <- dplyr::tbl(con, dbplyr::sql(paste0(
         "SELECT * FROM ", spelling
       )), vars = "k")
+      before <- serialize(source$lazy_query, NULL)
       expect_identical(
         inspect_grouping(source, .grouping = grouping_set(k))$included, "(k)"
       )
       expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
-      # COPY writes valid compressed controls without an extra dependency.
-      DBI::dbExecute(con, paste0(
-        "COPY (SELECT 101 AS k) TO ", DBI::dbQuoteString(con, actual),
-        " (FORMAT CSV, HEADER, COMPRESSION ",
-        if (extension == ".csv.gz") "GZIP" else
-          if (extension == ".csv.zst") "ZSTD" else "NONE", ")"
-      ))
-      expect_true(is.numeric(dplyr::collect(utils::head(source, 0L))$k))
       expect_error(
         inspect_grouping(source, .by = where(is.numeric)),
         "source rows", fixed = TRUE, class = "marginplyr_error"
       )
       expect_duckdb_catalog_only()
-      unlink(actual)
+      expect_identical(serialize(source$lazy_query, NULL), before)
     }
+    # E and dollar strings remain reader arguments on both DuckDB 1.5 and 2;
+    # DuckDB 2 rejects them as filename relations.
+    controls <- ifelse(
+      startsWith(spellings, "E") | startsWith(spellings, "$"),
+      paste0("read_csv_auto(", spellings, ")"), spellings
+    )
+    # COPY writes valid compressed controls without an extra dependency.
+    DBI::dbExecute(con, paste0(
+      "COPY (SELECT 101 AS k) TO ", DBI::dbQuoteString(con, actual),
+      " (FORMAT CSV, HEADER, COMPRESSION ",
+      if (extension == ".csv.gz") "GZIP" else
+        if (extension == ".csv.zst") "ZSTD" else "NONE", ")"
+    ))
+    for (control in controls) {
+      native <- DBI::dbGetQuery(con, paste(
+        "SELECT * FROM", control, "LIMIT 0"
+      ))
+      expect_true(is.numeric(native$k))
+    }
+    unlink(actual)
   }
 })
 
@@ -795,7 +818,6 @@ test_that("escaped uppercase CSV names retain their native filename", {
     basename(tempfile(fileext = ".CSV"))
   )
   on.exit(unlink(path), add = TRUE)
-  writeLines(c("k", "101"), path)
   spelling <- paste0("E", sub(
     ".CSV", "\\x2e\\x43\\x53\\x56", DBI::dbQuoteString(con, path),
     fixed = TRUE
@@ -803,11 +825,25 @@ test_that("escaped uppercase CSV names retain their native filename", {
   source <- dplyr::tbl(con, dbplyr::sql(paste(
     "SELECT * FROM", spelling
   )), vars = "k")
-  expect_true(is.numeric(dplyr::collect(utils::head(source, 0L))$k))
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  before <- serialize(source$lazy_query, NULL)
+  expect_identical(
+    inspect_grouping(source, .grouping = grouping_set(k))$included, "(k)"
+  )
+  expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
   expect_error(
     inspect_grouping(source, .grouping = grouping_set(where(is.numeric))),
     "source rows", fixed = TRUE, class = "marginplyr_error"
   )
+  expect_duckdb_catalog_only()
+  expect_identical(serialize(source$lazy_query, NULL), before)
+  writeLines(c("k", "101"), path)
+  native <- DBI::dbGetQuery(con, paste0(
+    "SELECT k, filename FROM read_csv_auto(", spelling, ", filename=true)"
+  ))
+  expect_true(is.numeric(native$k))
+  expect_identical(native$filename, path)
 })
 
 test_that("typed CSV inspection refuses before DuckDB can infer source types", {
