@@ -1,15 +1,15 @@
 mixed_factory_read <- function(dependent, probe, retained = FALSE,
-                               list_first = FALSE) {
+                               list_first = FALSE, invoke_callable = FALSE) {
   force(probe)
-  unused <- if (dependent) 7 else quote(sum(prior))
+  callable_body <- if (xor(dependent, invoke_callable)) 7 else quote(sum(prior))
   callable <- rlang::expr(function() {
     probe$factories <- probe$factories + 1L
     function() {
       probe$closures <- probe$closures + 1L
-      !!unused
+      !!callable_body
     }
   })
-  body <- if (dependent || retained) quote(sum(prior)) else 7
+  body <- if (dependent || retained || invoke_callable) quote(sum(prior)) else 7
   listed <- rlang::expr(function() {
     probe$factories <- probe$factories + 1L
     list(read = function() {
@@ -20,14 +20,19 @@ mixed_factory_read <- function(dependent, probe, retained = FALSE,
   if (retained) listed[[2L]] <- as.pairlist(alist(prior = 11))
   first <- if (list_first) listed else callable
   second <- if (list_first) callable else listed
-  predicate <- if (list_first) quote(sum(x) < 0) else quote(sum(x) > 0)
+  predicate <- if (xor(list_first, invoke_callable)) {
+    quote(sum(x) < 0)
+  } else quote(sum(x) > 0)
+  invocation <- rlang::call2(
+    if (invoke_callable) quote(made) else quote(made$read)
+  )
   rlang::quo((function(prior) {
     box <- list2env(list(make = !!first))
     alias <- box
     if (!!predicate) alias <- list2env(list(make = !!second))
     made <- alias$make()
     rm(prior)
-    made$read()
+    !!invocation
   })(11))
 }
 
@@ -126,6 +131,40 @@ test_that("dtplyr mixed factory dependencies are refused without execution", {
   expect_identical(serialize(data, NULL), before)
 })
 
+test_that("invoked mixed factory callables retain their dependencies", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
+  probe <- rlang::env(factories = 0L, closures = 0L)
+  reads <- lapply(c(FALSE, TRUE), function(first) {
+    mixed_factory_read(TRUE, probe, list_first = first, invoke_callable = TRUE)
+  })
+  expect_share_dependencies(data, reads)
+  expect_identical(probe$factories, 0L)
+  expect_identical(probe$closures, 0L)
+})
+
+test_that("dtplyr invoked mixed callables retain dependencies without reads", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.table::data.table(
+    g = c("a", "b"), x = c(1, 3), prior = c(10, 20)
+  )
+  before <- serialize(data, NULL)
+  probe <- rlang::env(factories = 0L, closures = 0L, reads = 0L)
+  observe <- function(x) {
+    probe$reads <- probe$reads + 1L
+    x
+  }
+  input <- dtplyr::lazy_dt(data, immutable = TRUE)
+  input <- dplyr::filter(input, observe(x) > 0)
+  reads <- lapply(c(FALSE, TRUE), function(first) {
+    mixed_factory_read(TRUE, probe, list_first = first, invoke_callable = TRUE)
+  })
+  expect_share_dependencies(input, reads)
+  expect_identical(probe$factories, 0L)
+  expect_identical(probe$closures, 0L)
+  expect_identical(probe$reads, 0L)
+  expect_identical(serialize(data, NULL), before)
+})
+
 partial_list_write_read <- function(dependent, probe, nested = FALSE,
                                     overwrite = FALSE) {
   force(probe)
@@ -142,7 +181,9 @@ partial_list_write_read <- function(dependent, probe, nested = FALSE,
   selected <- if (nested) quote(callbacks$cfg$read) else quote(callbacks$read)
   target <- if (nested) quote(callbacks$cfg[[3L]]) else quote(callbacks[[3L]])
   write <- rlang::call2("<-", target, quote(function() 7))
-  replacement <- if (overwrite) rlang::call2("<-", selected, quote(function() 7))
+  replacement <- if (overwrite) {
+    rlang::call2("<-", selected, quote(function() 7))
+  }
   predicate <- quote(sum(x) < 0)
   rlang::quo((function(prior) {
     box <- list2env(list(cfg = !!small))
