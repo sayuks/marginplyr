@@ -2,7 +2,7 @@ test_that("dtplyr typed inspection does not classify populated S4 columns", {
   skip_if_suggest_absent("dtplyr")
   class <- "marginplyr_numeric_metadata_witness"
   methods::setClass(class, contains = "numeric")
-  withr::defer(methods::removeClass(class))
+  on.exit(methods::removeClass(class), add = TRUE)
   witness <- new.env(parent = emptyenv())
   witness$seen <- list()
   methods::setMethod("is.numeric", class, function(x) {
@@ -71,7 +71,7 @@ test_that("S4 metadata and explicit collection survive ordinary derivations", {
   skip_if_suggest_absent("dtplyr")
   class <- "marginplyr_preserved_numeric_metadata"
   methods::setClass(class, contains = "numeric")
-  withr::defer(methods::removeClass(class))
+  on.exit(methods::removeClass(class), add = TRUE)
   source <- data.table::data.table(
     a = methods::new(class, c(13, 29)), n = 1:2, label = c("x", "y")
   )
