@@ -231,3 +231,341 @@ test_that("dtplyr conditional aliases are refused without source reads", {
   expect_identical(probe$calls, 0L)
   expect_identical(serialize(data, NULL), before)
 })
+
+conditional_factory_read <- function(kind, probe) {
+  force(probe)
+  first <- if (kind == "retained") {
+    quote(function(retained = 11) {
+      probe$factories <- probe$factories + 1L
+      function() {
+        probe$closures <- probe$closures + 1L
+        retained
+      }
+    })
+  } else {
+    quote(function() {
+      probe$factories <- probe$factories + 1L
+      function() {
+        probe$closures <- probe$closures + 1L
+        7
+      }
+    })
+  }
+  second <- switch(kind,
+    dependent = quote(function() {
+      probe$factories <- probe$factories + 1L
+      function() {
+        probe$closures <- probe$closures + 1L
+        sum(prior)
+      }
+    }),
+    retained = quote(function(prior = 11) {
+      probe$factories <- probe$factories + 1L
+      function() {
+        probe$closures <- probe$closures + 1L
+        sum(prior)
+      }
+    }),
+    independent = quote(function() {
+      probe$factories <- probe$factories + 1L
+      function() {
+        probe$closures <- probe$closures + 1L
+        7 + 0
+      }
+    })
+  )
+  predicate <- quote(sum(x) > 0)
+  rlang::quo((function(prior) {
+    box <- list2env(list(make = !!first))
+    alias <- box
+    if (!!predicate) alias <- list2env(list(make = !!second))
+    box$make <- !!first
+    made <- alias$make()
+    rm(prior)
+    made()
+  })(11))
+}
+
+test_that("conditional factories retain returned closure dependencies", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
+  probe <- rlang::env(factories = 0L, closures = 0L)
+  read <- conditional_factory_read("dependent", probe)
+  expect_share_dependencies(data, list(read))
+  expect_identical(probe$factories, 0L)
+  expect_identical(probe$closures, 0L)
+})
+
+test_that("dtplyr conditional factories refuse dependencies before execution", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.table::data.table(
+    g = c("a", "b"), x = c(1, 3), prior = c(10, 20)
+  )
+  before <- serialize(data, NULL)
+  probe <- rlang::env(factories = 0L, closures = 0L, reads = 0L)
+  observe <- function(x) {
+    probe$reads <- probe$reads + 1L
+    x
+  }
+  input <- dtplyr::lazy_dt(data, immutable = TRUE)
+  input <- dplyr::filter(input, observe(x) > 0)
+  read <- conditional_factory_read("dependent", probe)
+  expect_share_dependencies(input, list(read))
+  expect_identical(probe$factories, 0L)
+  expect_identical(probe$closures, 0L)
+  expect_identical(probe$reads, 0L)
+  expect_identical(serialize(data, NULL), before)
+})
+
+test_that("factory alternatives retain independent and captured values", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
+  probe <- rlang::env(factories = 0L, closures = 0L)
+  for (control in c("independent", "retained")) {
+    read <- conditional_factory_read(control, probe)
+    expected <- if (control == "retained") 11 else 7
+    expect_share_dependency_values(data, list(read), expected)
+  }
+  expect_gt(probe$factories, 0L)
+  expect_gt(probe$closures, 0L)
+})
+
+test_that("dtplyr factory alternatives defer captured and independent values", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.table::data.table(
+    g = c("a", "b"), x = c(1, 3), prior = c(10, 20)
+  )
+  before <- serialize(data, NULL)
+  probe <- rlang::env(factories = 0L, closures = 0L, reads = 0L)
+  observe <- function(x) {
+    probe$reads <- probe$reads + 1L
+    x
+  }
+  input <- dtplyr::lazy_dt(data, immutable = TRUE)
+  input <- dplyr::filter(input, observe(x) > 0)
+  for (kind in c("parent", "total")) {
+    helper <- rlang::call2(paste0("share_of_", kind), quote(value))
+    for (control in c("independent", "retained")) {
+      read <- conditional_factory_read(control, probe)
+      expected <- if (control == "retained") 11 else 7
+      forward <- summarize_with_margins(
+        input, value = sum(.data$x), prior = !!helper, observed = !!read,
+        .grouping = rollup("g")
+      )
+      reverse <- summarize_with_margins(
+        input, prior = sum(.data$x), value = !!read, ratio = !!helper,
+        .grouping = rollup("g")
+      )
+      expect_identical(probe$factories, 0L)
+      expect_identical(probe$closures, 0L)
+      expect_identical(probe$reads, 0L)
+      forward <- dplyr::collect(forward)
+      reverse <- dplyr::collect(reverse)
+      expect_equal(forward$observed, rep(expected, 3L))
+      expect_equal(forward$prior, c(0.25, 0.75, 1))
+      expect_equal(reverse$value, rep(expected, 3L))
+      expect_equal(reverse$ratio, c(1, 1, 1))
+      expect_gt(probe$factories, 0L)
+      expect_gt(probe$closures, 0L)
+      expect_gt(probe$reads, 0L)
+      probe$factories <- probe$closures <- probe$reads <- 0L
+    }
+  }
+  expect_identical(serialize(data, NULL), before)
+})
+
+list_alternative_read <- function(kind, selector, dependent, probe,
+                                  choices = TRUE, retained = FALSE,
+                                  remap = FALSE, overwrite = FALSE) {
+  force(probe)
+  member <- function(body) {
+    rlang::expr(function() {
+      probe$closures <- probe$closures + 1L
+      !!body
+    })
+  }
+  payload <- function(body, reverse = FALSE) {
+    parts <- list(member(body), member(quote(sum(prior))))
+    if (selector == "name") {
+      names(parts) <- c("read", "other")
+      if (reverse) parts <- rev(parts)
+    }
+    rlang::call2("list", !!!parts)
+  }
+  first <- payload(if (!choices && dependent) quote(sum(prior)) else 7,
+                   reverse = TRUE)
+  second <- payload(if (dependent || retained) quote(sum(prior)) else 7)
+  if (kind == "factory") {
+    wrap <- function(value) {
+      body <- rlang::expr({
+        probe$factories <- probe$factories + 1L
+        !!value
+      })
+      if (retained) {
+        rlang::expr(function(prior = 11) !!body)
+      } else {
+        rlang::expr(function() !!body)
+      }
+    }
+    first <- wrap(first)
+    second <- wrap(second)
+  }
+  key <- if (kind == "factory") "make" else "cfg"
+  initial <- rlang::call2("list", !!!stats::setNames(list(first), key))
+  replacement <- rlang::call2("list", !!!stats::setNames(list(second), key))
+  predicate <- quote(sum(x) > 0)
+  setup <- if (choices) rlang::expr({
+    # The injected accessor reads this alias.
+    alias <- box # nolint: object_usage_linter.
+    if (!!predicate) alias <- list2env(!!replacement)
+    !!rlang::call2("<-", rlang::call2("$", quote(box), rlang::sym(key)), first)
+  })
+  carrier <- if (choices) quote(alias) else quote(box)
+  value <- rlang::call2("$", carrier, rlang::sym(key))
+  if (kind == "factory") value <- rlang::call2(value)
+  remapping <- if (remap) rlang::expr({
+    callbacks <- !!value
+    callbacks <- c(callbacks)
+    callbacks <- append(list(), callbacks)
+    callbacks <- rev(rev(callbacks))
+    callbacks <- callbacks[c(1L, 2L)]
+    callbacks[2L] <- list(
+      # This callback is injected into the summary closure binding prior.
+      function() sum(prior) # nolint: object_usage_linter.
+    )
+    names(callbacks) <- c("read", "other")
+    !!if (overwrite) quote(callbacks[[1L]] <- function() 7) else NULL
+  })
+  if (remap) value <- quote(callbacks)
+  selection <- if (selector == "name") {
+    rlang::call2("$", value, quote(read))
+  } else {
+    rlang::call2("[[", value, 1L)
+  }
+  rlang::quo((function(prior) {
+    # The injected setup and accessor read this carrier.
+    box <- list2env(!!initial) # nolint: object_usage_linter.
+    !!setup
+    !!remapping
+    selected <- !!selection
+    rm(prior)
+    selected()
+  })(11))
+}
+
+list_alternative_dependencies <- function(probe) {
+  reads <- list()
+  for (kind in c("factory", "nested")) {
+    for (selector in c("name", "index")) {
+      for (choices in c(FALSE, TRUE)) {
+        reads <- c(reads, list(list_alternative_read(
+          kind, selector, TRUE, probe, choices = choices
+        )))
+      }
+    }
+  }
+  reads
+}
+
+test_that("list candidates retain selected closure dependencies", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
+  probe <- rlang::env(factories = 0L, closures = 0L)
+  expect_share_dependencies(data, list_alternative_dependencies(probe))
+  expect_identical(probe$factories, 0L)
+  expect_identical(probe$closures, 0L)
+})
+
+test_that("known list operations preserve alternative dependencies", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
+  probe <- rlang::env(factories = 0L, closures = 0L)
+  reads <- lapply(c("factory", "nested"), function(kind) {
+    list_alternative_read(kind, "index", TRUE, probe, remap = TRUE)
+  })
+  expect_share_dependencies(data, reads)
+})
+
+test_that("known list remaps and independent replacements retain values", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
+  probe <- rlang::env(factories = 0L, closures = 0L)
+  for (kind in c("factory", "nested")) {
+    for (overwrite in c(FALSE, TRUE)) {
+      read <- list_alternative_read(kind, "index", overwrite, probe,
+                                    remap = TRUE, overwrite = overwrite)
+      expect_share_dependency_values(data, list(read), 7)
+    }
+  }
+})
+
+test_that("dtplyr list candidates refuse dependencies without source reads", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.table::data.table(
+    g = c("a", "b"), x = c(1, 3), prior = c(10, 20)
+  )
+  before <- serialize(data, NULL)
+  probe <- rlang::env(factories = 0L, closures = 0L, reads = 0L)
+  observe <- function(x) {
+    probe$reads <- probe$reads + 1L
+    x
+  }
+  input <- dtplyr::lazy_dt(data, immutable = TRUE)
+  input <- dplyr::filter(input, observe(x) > 0)
+  expect_share_dependencies(input, list_alternative_dependencies(probe))
+  expect_identical(probe$factories, 0L)
+  expect_identical(probe$closures, 0L)
+  expect_identical(probe$reads, 0L)
+  expect_identical(serialize(data, NULL), before)
+})
+
+test_that("list choices preserve literal names, indices and captured formals", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
+  probe <- rlang::env(factories = 0L, closures = 0L)
+  for (kind in c("factory", "nested")) {
+    for (selector in c("name", "index")) {
+      read <- list_alternative_read(kind, selector, FALSE, probe)
+      expect_share_dependency_values(data, list(read), 7)
+      if (kind == "factory") {
+        read <- list_alternative_read(kind, selector, FALSE, probe,
+                                      retained = TRUE)
+        expect_share_dependency_values(data, list(read), 11)
+      }
+    }
+  }
+})
+
+test_that("dtplyr list choices preserve independent values at collection", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.table::data.table(
+    g = c("a", "b"), x = c(1, 3), prior = c(10, 20)
+  )
+  before <- serialize(data, NULL)
+  input <- dtplyr::lazy_dt(data, immutable = TRUE)
+  probe <- rlang::env(factories = 0L, closures = 0L)
+  for (kind in c("factory", "nested")) {
+    for (selector in c("name", "index")) {
+      for (retained in if (kind == "factory") c(FALSE, TRUE) else FALSE) {
+        read <- list_alternative_read(kind, selector, FALSE, probe,
+                                      retained = retained)
+        expected <- if (retained) 11 else 7
+        for (share in c("parent", "total")) {
+          helper <- rlang::call2(paste0("share_of_", share), quote(value))
+          forward <- summarize_with_margins(
+            input, value = sum(.data$x), prior = !!helper, observed = !!read,
+            .grouping = rollup("g")
+          )
+          reverse <- summarize_with_margins(
+            input, prior = sum(.data$x), value = !!read, ratio = !!helper,
+            .grouping = rollup("g")
+          )
+          expect_identical(probe$factories, 0L)
+          expect_identical(probe$closures, 0L)
+          forward <- dplyr::collect(forward)
+          reverse <- dplyr::collect(reverse)
+          expect_equal(forward$observed, rep(expected, 3L))
+          expect_equal(forward$prior, c(0.25, 0.75, 1))
+          expect_equal(reverse$value, rep(expected, 3L))
+          expect_equal(reverse$ratio, c(1, 1, 1))
+          probe$factories <- probe$closures <- 0L
+        }
+      }
+    }
+  }
+  expect_identical(serialize(data, NULL), before)
+})

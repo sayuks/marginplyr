@@ -1032,3 +1032,87 @@ test_that("dtplyr mixed independent dispatch waits for explicit collection", {
   }
   expect_identical(serialize(data, NULL), before)
 })
+
+partial_vectorize_read <- function(dependent, probe) {
+  force(probe)
+  body <- if (dependent) quote(sum(prior)) else 7
+  predicate <- quote(sum(x) < 0)
+  rlang::quo((function(prior) {
+    box <- list2env(list(read = function() {
+      probe$closures <- probe$closures + 1L
+      !!body
+    }))
+    alias <- box
+    if (!!predicate) {
+      alias <- list2env(list(read = function(unused = 7) {
+        probe$closures <- probe$closures + 1L
+        sum(prior)
+      }))
+    }
+    converted <- base::Vectorize(alias$read)
+    rm(prior)
+    converted()
+  })(11))
+}
+
+test_that("Vectorize keeps known zero-formal alternative dependencies", {
+  probe <- rlang::env(closures = 0L)
+  read <- partial_vectorize_read(TRUE, probe)
+  expect_transfer_dependencies(known_closure_transfer_data(), list(read))
+  expect_identical(probe$closures, 0L)
+})
+
+test_that("dtplyr Vectorize alternatives retain dependencies without reads", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.table::as.data.table(known_closure_transfer_data())
+  before <- serialize(data, NULL)
+  probe <- rlang::env(closures = 0L, reads = 0L)
+  observe <- function(x) {
+    probe$reads <- probe$reads + 1L
+    x
+  }
+  input <- dtplyr::lazy_dt(data, immutable = TRUE)
+  input <- dplyr::filter(input, observe(x) > 0)
+  read <- partial_vectorize_read(TRUE, probe)
+  expect_transfer_dependencies(input, list(read))
+  expect_identical(probe$closures, 0L)
+  expect_identical(probe$reads, 0L)
+  expect_identical(serialize(data, NULL), before)
+})
+
+test_that("Vectorize leaves nonzero-formal alternative bodies opaque", {
+  probe <- rlang::env(closures = 0L)
+  read <- partial_vectorize_read(FALSE, probe)
+  expect_converter_values(known_closure_transfer_data(), list(read), 7)
+  expect_gt(probe$closures, 0L)
+})
+
+test_that("dtplyr independent Vectorize alternatives remain lazy and legal", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.table::as.data.table(known_closure_transfer_data())
+  before <- serialize(data, NULL)
+  input <- dtplyr::lazy_dt(data, immutable = TRUE)
+  probe <- rlang::env(closures = 0L)
+  read <- partial_vectorize_read(FALSE, probe)
+  for (kind in c("parent", "total")) {
+    helper <- rlang::call2(paste0("share_of_", kind), quote(value))
+    forward <- summarize_with_margins(
+      input, value = sum(.data$x), prior = !!helper, observed = !!read,
+      .grouping = rollup("group")
+    )
+    reverse <- summarize_with_margins(
+      input, prior = sum(.data$x), value = !!read, ratio = !!helper,
+      .grouping = rollup("group")
+    )
+    expect_identical(probe$closures, 0L)
+    forward <- dplyr::collect(forward)
+    reverse <- dplyr::collect(reverse)
+    expect_equal(forward$observed, c(7, 7, 7))
+    expect_equal(forward$prior, c(0.25, 0.75, 1))
+    expect_equal(reverse$value, c(7, 7, 7))
+    expect_equal(reverse$ratio, c(1, 1, 1))
+    expect_gt(probe$closures, 0L)
+    probe$closures <- 0L
+  }
+  expect_identical(serialize(data, NULL), before)
+})
