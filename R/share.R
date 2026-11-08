@@ -4716,15 +4716,17 @@ scope_value_closure <- function(expr, scope, lookup) {
     closure <- if (length(value) == 1L) {
       scope_value_closure(value[[1L]], scope, lookup)
     }
-    if (!is.null(closure) && all(vapply(
-      scope_closure_variants(closure), function(variant) {
-        !isTRUE(variant$dispatch_unknown) && scope_implicit_class_default(
-          operator, "base", variant$dispatch_classes %||% "function",
-          scope, lookup
-        )
-      }, logical(1)
-    ))) {
-      return(closure)
+    variants <- scope_closure_variants(closure)
+    default <- vapply(variants, function(variant) {
+      !isTRUE(variant$dispatch_unknown) && scope_implicit_class_default(
+        operator, "base", variant$dispatch_classes %||% "function",
+        scope, lookup
+      )
+    }, logical(1))
+    if (any(default)) {
+      if (all(default)) return(closure)
+      # Other methods remain opaque; retain only possible default results.
+      return(list(alternatives = variants[default]))
     }
   }
   if (identical(operator, "Vectorize") &&
@@ -5272,7 +5274,7 @@ scope_shift_closure_elements <- function(elements, offset) {
   })
 }
 
-# The literal closures a field may hold after a conditional path.
+# Known literal closure variants of a descriptor; other outcomes stay opaque.
 scope_closure_variants <- function(closure) {
   if (is.null(closure)) return(list())
   if (!is.null(closure$alternatives)) return(closure$alternatives)

@@ -934,3 +934,101 @@ test_that("attribute setter planning invokes neither setter nor closure", {
   }
   expect_identical(serialize(data, NULL), before)
 })
+
+mixed_converter_read <- function(dependent, invoke_method, probe) {
+  force(probe)
+  body <- if (dependent) quote(sum(prior)) else 7
+  predicate <- if (invoke_method) quote(sum(x) > 0) else quote(sum(x) < 0)
+  rlang::quo((function(prior) {
+    # S3 dispatch resolves this method by its written name.
+    as.function.alternative <- function(x, ...) { # nolint: object_usage_linter.
+      probe$methods <- probe$methods + 1L
+      function() {
+        probe$closures <- probe$closures + 1L
+        7
+      }
+    }
+    read <- function() !!body
+    box <- list2env(list(read = read))
+    alias <- box
+    if (!!predicate) {
+      read <- function() sum(prior)
+      class(read) <- "alternative"
+      alias <- list2env(list(read = read))
+    }
+    converted <- base::as.function(alias$read)
+    rm(prior)
+    converted()
+  })(11))
+}
+
+test_that("mixed closure dispatch keeps known default dependencies", {
+  probe <- rlang::env(methods = 0L, closures = 0L)
+  read <- mixed_converter_read(TRUE, FALSE, probe)
+  expect_transfer_dependencies(known_closure_transfer_data(), list(read))
+  expect_identical(probe$methods, 0L)
+  expect_identical(probe$closures, 0L)
+})
+
+test_that("dtplyr mixed dispatch retains default dependencies without reads", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.table::as.data.table(known_closure_transfer_data())
+  before <- serialize(data, NULL)
+  probe <- rlang::env(methods = 0L, closures = 0L, reads = 0L)
+  observe <- function(x) {
+    probe$reads <- probe$reads + 1L
+    x
+  }
+  input <- dtplyr::lazy_dt(data, immutable = TRUE)
+  input <- dplyr::filter(input, observe(x) > 0)
+  read <- mixed_converter_read(TRUE, FALSE, probe)
+  expect_transfer_dependencies(input, list(read))
+  expect_identical(probe$methods, 0L)
+  expect_identical(probe$closures, 0L)
+  expect_identical(probe$reads, 0L)
+  expect_identical(serialize(data, NULL), before)
+})
+
+test_that("mixed dispatch preserves independent conversion outcomes", {
+  probe <- rlang::env(methods = 0L, closures = 0L)
+  reads <- lapply(c(FALSE, TRUE), function(invoke) {
+    mixed_converter_read(FALSE, invoke, probe)
+  })
+  expect_converter_values(known_closure_transfer_data(), reads, 7)
+  expect_gt(probe$methods, 0L)
+  expect_gt(probe$closures, 0L)
+})
+
+test_that("dtplyr mixed independent dispatch waits for explicit collection", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.table::as.data.table(known_closure_transfer_data())
+  before <- serialize(data, NULL)
+  input <- dtplyr::lazy_dt(data, immutable = TRUE)
+  probe <- rlang::env(methods = 0L, closures = 0L)
+  reads <- lapply(c(FALSE, TRUE), function(invoke) {
+    mixed_converter_read(FALSE, invoke, probe)
+  })
+  for (kind in c("parent", "total")) {
+    helper <- rlang::call2(paste0("share_of_", kind), quote(value))
+    for (read in reads) {
+      forward <- summarize_with_margins(
+        input, value = sum(.data$x), prior = !!helper, observed = !!read,
+        .grouping = rollup("group")
+      )
+      reverse <- summarize_with_margins(
+        input, prior = sum(.data$x), value = !!read, ratio = !!helper,
+        .grouping = rollup("group")
+      )
+      expect_identical(probe$methods, 0L)
+      expect_identical(probe$closures, 0L)
+      forward <- dplyr::collect(forward)
+      reverse <- dplyr::collect(reverse)
+      expect_equal(forward$observed, c(7, 7, 7))
+      expect_equal(forward$prior, c(0.25, 0.75, 1))
+      expect_equal(reverse$value, c(7, 7, 7))
+      expect_equal(reverse$ratio, c(1, 1, 1))
+      probe$methods <- probe$closures <- 0L
+    }
+  }
+  expect_identical(serialize(data, NULL), before)
+})
