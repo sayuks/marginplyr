@@ -5535,8 +5535,7 @@ scope_after_promise <- function(name, scope, lookup, function_lookup = FALSE) {
   scope
 }
 
-# Locate the first visible binding of a fresh carrier. Field proofs end when
-# its environment may acquire an alias that can change it in place.
+# Locate the first visible binding with proven fresh environment fields.
 scope_fresh_env_binding <- function(expr, scope) {
   expr <- unparenthesized_value(expr)
   if (!is_name_part(expr)) return(NULL)
@@ -5548,6 +5547,22 @@ scope_fresh_env_binding <- function(expr, scope) {
     }
   }
   NULL
+}
+
+# Update every known alias of a fresh carrier with frame-relative fields.
+scope_set_environment_fields <- function(scope, frame, name, fields) {
+  identity <- scope[[frame]]$closure_environment_ids[[name]]
+  for (index in seq_along(scope)) {
+    aliases <- names(scope[[index]]$closure_environment_ids)
+    for (alias in aliases) {
+      if (identical(scope[[index]]$closure_environment_ids[[alias]], identity)) {
+        scope[[index]]$closure_environments[[alias]] <- if (!is.null(fields)) {
+          scope_shift_closure_elements(fields, frame - index)
+        }
+      }
+    }
+  }
+  scope
 }
 
 # Describe fields of a fresh environment from a verified base constructor.
@@ -5588,6 +5603,20 @@ scope_bind_local <- function(scope, name, value = NULL, lookup = NULL,
     scope_closure_list(value, value_scope, lookup)
   }
   fields <- scope_fresh_env_fields(value, value_scope, lookup)
+  carrier <- scope_fresh_env_binding(value, value_scope)
+  identity <- if (!is.null(fields)) new.env(parent = emptyenv())
+  if (!is.null(carrier)) {
+    source <- rlang::as_name(unparenthesized_value(value))
+    fields <- scope_shift_closure_elements(
+      value_scope[[carrier]]$closure_environments[[source]], carrier
+    )
+    identity <- value_scope[[carrier]]$closure_environment_ids[[source]]
+    # A local alias does not let caller code mutate the carrier.
+    scope <- scope_set_environment_fields(
+      scope, carrier, source,
+      value_scope[[carrier]]$closure_environments[[source]]
+    )
+  }
   environment_frames <- static_environment_frames(value, value_scope, lookup)
   environment_definite <- !is.null(
     static_environment_frame(value, value_scope, lookup)
@@ -5612,6 +5641,7 @@ scope_bind_local <- function(scope, name, value = NULL, lookup = NULL,
   scope[[1L]]$closure_environments[[name]] <- if (!is.null(fields)) {
     scope_shift_closure_elements(fields, -1L)
   }
+  scope[[1L]]$closure_environment_ids[[name]] <- identity
   # Offsets stay relative to the binding's frame when a child scope is added.
   scope[[1L]]$environments[[name]] <- if (length(environment_frames) > 0L) {
     list(
@@ -5755,7 +5785,7 @@ scope_after_environment_write <- function(scope, frame, name, path, value,
       fields[key] <- scope_shift_closure_elements(list(member), -1L)
     }
   }
-  scope[[frame]]$closure_environments[[name]] <- fields
+  scope <- scope_set_environment_fields(scope, frame, name, fields)
   if (is.null(fields)) scope_bind_local(scope, name) else scope
 }
 
@@ -6129,7 +6159,7 @@ scope_after_removals <- function(expr, scope, lookup) {
     name <- rlang::as_name(expr)
     carrier <- scope_fresh_env_binding(expr, scope)
     if (!is.null(carrier)) {
-      scope[[carrier]]$closure_environments[[name]] <- NULL
+      scope <- scope_set_environment_fields(scope, carrier, name, NULL)
     }
     return(scope_after_promise(name, scope, lookup))
   }
@@ -6141,6 +6171,13 @@ scope_after_removals <- function(expr, scope, lookup) {
   }
   bound <- scope_bound_names(scope)
   name <- static_call_name(expr)
+  if (identical(name, "invisible") && length(expr) == 2L &&
+        !is.null(scope_fresh_env_binding(expr[[2L]], scope)) &&
+        is_known_base_frame_call(expr, name, scope, lookup)) {
+    return(scope_after_promise(
+      rlang::as_name(unparenthesized_value(expr[[2L]])), scope, lookup
+    ))
+  }
   if (identical(name, "do.call")) {
     invocation <- scope_empty_do_call(expr, scope, lookup)
     if (!is.null(invocation)) {
@@ -6283,6 +6320,9 @@ scope_forget_kinds <- function(scope, assigned) {
     frame$closure_environments <- frame$closure_environments[
       names(frame$closure_environments) %in% names(frame$kinds)
     ]
+    frame$closure_environment_ids <- frame$closure_environment_ids[
+      names(frame$closure_environment_ids) %in% names(frame$kinds)
+    ]
     # A possible environment target can survive a loss of its binding kind.
     frame$environments <- if (unresolved_lookup_name() %in% assigned) {
       NULL
@@ -6322,7 +6362,9 @@ scope_possible_losses <- function(scope, after) {
     frame$closure_lists <- frame$closure_lists[stable_lists]
     stable_fields <- vapply(names(frame$closure_environments), function(name) {
       identical(frame$closure_environments[[name]],
-                reached$closure_environments[[name]])
+                reached$closure_environments[[name]]) &&
+        identical(frame$closure_environment_ids[[name]],
+                  reached$closure_environment_ids[[name]])
     }, logical(1))
     frame$closure_environments <- frame$closure_environments[stable_fields]
     environment_names <- intersect(
@@ -6495,6 +6537,9 @@ retain_scope_bindings <- function(frame, bound) {
   ]
   frame$closure_environments <- frame$closure_environments[
     names(frame$closure_environments) %in% bound
+  ]
+  frame$closure_environment_ids <- frame$closure_environment_ids[
+    names(frame$closure_environment_ids) %in% bound
   ]
   frame$environments <- frame$environments[names(frame$environments) %in% bound]
   frame
