@@ -5555,7 +5555,9 @@ scope_set_environment_fields <- function(scope, frame, name, fields) {
   for (index in seq_along(scope)) {
     aliases <- names(scope[[index]]$closure_environment_ids)
     for (alias in aliases) {
-      if (identical(scope[[index]]$closure_environment_ids[[alias]], identity)) {
+      if (identical(
+        scope[[index]]$closure_environment_ids[[alias]], identity
+      )) {
         scope[[index]]$closure_environments[[alias]] <- if (!is.null(fields)) {
           scope_shift_closure_elements(fields, frame - index)
         }

@@ -1,4 +1,4 @@
-fresh_environment_exposure_reads <- function() {
+fresh_env_exposure_reads <- function() {
   alist(
     (function(prior) {
       box <- list2env(list(read = function() sum(prior)))
@@ -18,11 +18,11 @@ fresh_environment_exposure_reads <- function() {
 test_that("unchanged fresh environment exposure retains share dependencies", {
   data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
   before <- serialize(data, NULL)
-  expect_share_dependencies(data, fresh_environment_exposure_reads())
+  expect_share_dependencies(data, fresh_env_exposure_reads())
   expect_identical(serialize(data, NULL), before)
 })
 
-fresh_environment_exposure_controls <- function() {
+fresh_env_exposure_controls <- function() {
   alist(
     (function(prior) {
       box <- list2env(list(read = function() sum(prior)))
@@ -37,7 +37,7 @@ fresh_environment_exposure_controls <- function() {
   )
 }
 
-fresh_environment_replacement_controls <- function() {
+fresh_env_replacement_controls <- function() {
   alist(
     (function(prior) {
       box <- list2env(list(read = function() sum(prior)))
@@ -59,10 +59,10 @@ fresh_environment_replacement_controls <- function() {
 test_that("exposed fresh environments preserve independent lexical reads", {
   data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
   expect_share_dependency_values(
-    data, fresh_environment_exposure_controls(), 11
+    data, fresh_env_exposure_controls(), 11
   )
   expect_share_dependency_values(
-    data, fresh_environment_replacement_controls(), 7
+    data, fresh_env_replacement_controls(), 7
   )
 })
 
@@ -73,7 +73,7 @@ test_that("immutable dtplyr refuses exposed fresh environment dependencies", {
   )
   before <- serialize(data, NULL)
   input <- dtplyr::lazy_dt(data, immutable = TRUE)
-  expect_share_dependencies(input, fresh_environment_exposure_reads())
+  expect_share_dependencies(input, fresh_env_exposure_reads())
   expect_identical(serialize(data, NULL), before)
 })
 
@@ -84,8 +84,8 @@ test_that("immutable dtplyr retains legal exposed environment values", {
   )
   before <- serialize(data, NULL)
   input <- dtplyr::lazy_dt(data, immutable = TRUE)
-  controls <- c(fresh_environment_exposure_controls(),
-                fresh_environment_replacement_controls())
+  controls <- c(fresh_env_exposure_controls(),
+                fresh_env_replacement_controls())
   expected <- c(11, 11, 7, 7)
   for (kind in c("parent", "total")) {
     helper <- rlang::call2(paste0("share_of_", kind), quote(value))
