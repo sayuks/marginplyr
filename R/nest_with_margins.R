@@ -306,8 +306,12 @@ nest_margin_pipeline <- function(.data,
     columns <- proxy_columns(operation$data_proxy, operation$data_vars)
     columns <- lapply(columns, vctrs::vec_slice, integer())
     cell <- if (is_dtplyr && length(columns) > 0L) {
-      # The data.frame converter also admits payloads named `.SD`.
-      data.table::as.data.table(tibble::new_tibble(columns, nrow = 0L))
+      # The stock data.frame converter admits `.SD` without dispatching the
+      # generated payload through caller-registered frame methods (ADR 0016).
+      converter <- utils::getFromNamespace(
+        "as.data.table.data.frame", "data.table"
+      )
+      converter(tibble::new_tibble(columns, nrow = 0L))
     } else {
       tibble::new_tibble(columns, nrow = 0L)
     }
