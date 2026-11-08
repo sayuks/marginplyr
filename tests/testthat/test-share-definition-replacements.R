@@ -22,6 +22,11 @@ definition_formal_reads <- function() {
       f <- function(arg = 7) arg
       formals(f)$arg <- quote(sum(prior))
       f()
+    },
+    {
+      f <- function(arg = 7) arg
+      formals(f)[["arg"]] <- quote(sum(prior))
+      f()
     }
   )))[-1L]
 }
@@ -67,6 +72,12 @@ definition_controls <- function() {
     (function(prior) {
       f <- function() sum(prior)
       formals(f) <- alist(prior = 11)
+      rm(prior)
+      f()
+    })(1),
+    (function(prior) {
+      f <- function() sum(prior)
+      formals(f)$prior <- 11
       rm(prior)
       f()
     })(1),
