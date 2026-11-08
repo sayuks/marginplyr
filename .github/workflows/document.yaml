@@ -26,7 +26,7 @@ jobs:
       # Use the current stable Quarto and only its bundled Pandoc. The
       # executable versions deliberately float together; the diagnostic below
       # records both when their writer output changes.
-      - uses: ./.github/actions/setup-quarto
+      - uses: quarto-dev/quarto-actions/setup@v2
 
       - uses: r-lib/actions/setup-r@v2
         with:

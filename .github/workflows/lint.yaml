@@ -136,7 +136,6 @@ jobs:
         run: |
           Rscript tools/verify-ci-artifacts.R
           Rscript tools/test-ci-artifacts.R
-          Rscript tools/test-quarto-setup.R
           Rscript tools/test-interruption-supervisors.R
 
       - name: Verify R runner process contracts

@@ -130,7 +130,7 @@ jobs:
           token: ${{ secrets.RHUB_TOKEN }}
       # r-hub's dependency action installs the R package but not the Quarto
       # CLI required by this package's quarto::html vignette engine.
-      - uses: ./.github/actions/setup-quarto
+      - uses: quarto-dev/quarto-actions/setup@v2
       - uses: r-hub/actions/platform-info@v1
         with:
           token: ${{ secrets.RHUB_TOKEN }}
