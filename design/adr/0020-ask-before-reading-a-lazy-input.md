@@ -407,6 +407,9 @@ After macro admission, stored-view arguments also accept DuckDB's parenthesized
 named arguments, literal Boolean casts and literal `struct_pack` schema form.
 These are recognized syntactically without evaluating expressions. Other
 expressions do not establish a disabled inference option or a literal schema.
+Macro lookup distinguishes call positions from stored table-alias and common
+table expression column declarations. Declaring a name does not exempt an
+actual call to the same name elsewhere in that definition.
 
 The catalog query is a Sent query under ADR 0027, including when an unresolved
 filename is subsequently refused. The existing zero-row input query remains
