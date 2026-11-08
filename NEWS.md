@@ -1,5 +1,7 @@
 # marginplyr 0.1.0
 
+* `nest_by_with_margins()` preserves typed empty dtplyr payloads when frame conversion methods are registered (#1503).
+
 * Parent and Total share dependency checks follow unchanged fresh closure
   environments through `invisible()` and local aliases, while preserving
   independent field replacements and dependencies through conditional alias
