@@ -201,6 +201,67 @@ test_that("view alias and CTE declarations do not call same-named macros", {
   }
 })
 
+test_that("view star modifiers do not call unrelated same-named macros", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  DBI::dbWriteTable(con, "src", data.frame(k = 101L, other = 2L))
+  for (name in c("exclude", "replace", "rename", "columns", "rollup", "cube",
+                 "sets", "grouping")) {
+    DBI::dbExecute(con, paste(
+      "CREATE MACRO", DBI::dbQuoteIdentifier(con, name), "(x) AS x"
+    ))
+  }
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  for (sql in c(
+    "SELECT * EXCLUDE (other) FROM src",
+    "SELECT src.* EXCLUDE (other) FROM src",
+    "SELECT k FROM (SELECT * REPLACE (k+1 AS k) FROM src)",
+    "SELECT renamed AS k FROM (SELECT * RENAME (other AS renamed) FROM src)",
+    "SELECT k FROM (SELECT COLUMNS(*) FROM src)",
+    "SELECT COLUMNS(* EXCLUDE (other)) FROM src",
+    "SELECT COLUMNS('k') FROM src",
+    "SELECT k FROM src GROUP BY ROLLUP(k)",
+    "SELECT k FROM src GROUP BY CUBE(k)",
+    "SELECT k FROM src GROUP BY GROUPING SETS ((k), ())",
+    "SELECT k FROM src GROUP BY GROUPING SETS (ROLLUP(k), CUBE(other))",
+    "SELECT grouping(k) AS k FROM src GROUP BY ROLLUP(k)"
+  )) {
+    DBI::dbExecute(con, paste('CREATE OR REPLACE VIEW "star.csv" AS', sql))
+    source <- dplyr::tbl(con, dbplyr::sql('TABLE "star.csv"'), vars = "k")
+    before <- serialize(source$lazy_query, NULL)
+    expect_true(is.numeric(dplyr::collect(utils::head(source, 0L))$k))
+    expect_identical(inspect_grouping(
+      source, .grouping = grouping_set(where(is.numeric))
+    )$included, "(k)")
+    audit <- last_sent_queries(details = TRUE)
+    expect_identical(audit$purpose, c("relation_catalog", "selection_proxy"))
+    expect_identical(audit$status, c("returned", "returned"))
+    expect_identical(serialize(source$lazy_query, NULL), before)
+  }
+  for (sql in c(
+    "SELECT k * exclude(k) AS k FROM src",
+    "SELECT k * replace(k) AS k FROM src",
+    "SELECT k * rename(k) AS k FROM src",
+    'SELECT "columns"(k) AS k FROM src',
+    "SELECT main.columns(k) AS k FROM src",
+    "SELECT rollup(k) AS k FROM src",
+    "SELECT cube(k) AS k FROM src",
+    'SELECT "sets"(k) AS k FROM src',
+    "SELECT main.grouping(k) AS k FROM src",
+    "SELECT k FROM src GROUP BY k + rollup(k), k"
+  )) {
+    DBI::dbExecute(con, paste('CREATE OR REPLACE VIEW "star.csv" AS', sql))
+    source <- dplyr::tbl(con, dbplyr::sql('TABLE "star.csv"'), vars = "k")
+    expect_true(is.numeric(dplyr::collect(utils::head(source, 0L))$k))
+    expect_error(inspect_grouping(
+      source, .grouping = grouping_set(where(is.numeric))
+    ), "dplyr::collect()", fixed = TRUE, class = "marginplyr_error")
+    expect_duckdb_catalog_only()
+  }
+})
+
 test_that("stored explicit CSV reader metadata survives view normalization", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()

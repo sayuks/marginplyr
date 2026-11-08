@@ -410,10 +410,15 @@ expressions do not establish a disabled inference option or a literal schema.
 Macro lookup distinguishes call positions from stored table-alias and common
 table expression column declarations. Declaring a name does not exempt an
 actual call to the same name elsewhere in that definition.
-The same catalog query includes DuckDB's keyword categories. Unquoted grammar
-keywords that cannot name functions are excluded from macro lookup, while quoted
-identifiers remain eligible. The categories are supplied by
-[`duckdb_keywords()`][relation-keywords], rather than a maintained keyword list.
+The same catalog query includes DuckDB's keyword inventory from
+[`duckdb_keywords()`][relation-keywords]. In stored view SQL,
+[`FunctionExpression::ToString`][relation-function-printer] writes function names
+through `KeywordHelper::WriteOptionallyQuoted`. Its
+[default keyword category][relation-keyword-default] and
+[quoting rule][relation-keyword-quoting] quote every keyword, including unreserved
+ones. Unquoted keyword heads in that stored representation are therefore syntax,
+while quoted function names remain eligible for macro lookup. This rule is
+restricted to stored view SQL; it is not applied to authored captured SQL.
 
 The catalog query is a Sent query under ADR 0027, including when an unresolved
 filename is subsequently refused. The existing zero-row input query remains
@@ -433,6 +438,9 @@ the [view binder][relation-view-binder], and `SetSearchPath` in the
 [relation-view-binder]: https://github.com/duckdb/duckdb/blob/v1.5.0/src/planner/binder/tableref/bind_basetableref.cpp
 [relation-entry-retriever]: https://github.com/duckdb/duckdb/blob/v1.5.0/src/catalog/catalog_entry_retriever.cpp
 [relation-keywords]: https://duckdb.org/docs/1.5/sql/meta/duckdb_table_functions#duckdb_keywords
+[relation-function-printer]: https://github.com/duckdb/duckdb/blob/v1.5.0/src/include/duckdb/parser/expression/function_expression.hpp
+[relation-keyword-default]: https://github.com/duckdb/duckdb/blob/v1.5.0/src/include/duckdb/parser/keyword_helper.hpp
+[relation-keyword-quoting]: https://github.com/duckdb/duckdb/blob/v1.5.0/src/parser/keyword_helper.cpp
 
 ## Amendment (#640): SQLite typed-order execution follows an explicit request
 
