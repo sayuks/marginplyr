@@ -533,6 +533,7 @@ grouping_selection_proxy <- function(.data,
     con <- if (duckdb) dbplyr::remote_con(query)
     # The simulated dialect carries the class name on an S3 object.
     if (isS4(con) && inherits(con, "duckdb_connection")) {
+      validate_duckdb_csv_query(query$lazy_query)
       class(query) <- c("marginplyr_duckdb_selection", class(query))
     }
     proxy <- tryCatch(
