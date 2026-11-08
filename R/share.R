@@ -4671,10 +4671,8 @@ scope_value_closure <- function(expr, scope, lookup) {
     }
     return(scope_value_closure(statements[[length(statements)]], scope, lookup))
   }
-  result <- scope_factory_result(head, scope, lookup, scope_value_closure)
-  if (!is.null(result$value)) {
-    return(scope_rebase_factory_closure(result$value, result))
-  }
+  returned <- scope_factory_closure(head, scope, lookup)
+  if (!is.null(returned)) return(returned)
   name <- unparenthesized_value(head)
   if (is_name_part(name)) {
     name <- rlang::as_name(name)
@@ -4900,9 +4898,31 @@ scope_literal_list_index <- function(expr, scope, lookup) {
   do.call(base::c, unname(values))
 }
 
-# Read a visible factory's result in the invoked frame and its captured frames.
-scope_factory_result <- function(expr, scope, lookup, read_value) {
+# Known returned closures, relative to the current stack. Each factory result
+# is rebased with its own invoked and captured frames before candidates merge.
+scope_factory_closure <- function(expr, scope, lookup) {
   factory <- if (rlang::is_call(expr)) scope_call_closure(expr, scope, lookup)
+  if (is.null(factory)) return(NULL)
+  values <- lapply(scope_closure_variants(factory), function(candidate) {
+    result <- scope_factory_result(
+      expr, scope, lookup, scope_value_closure, factory = candidate
+    )
+    if (!is.null(result$value)) {
+      scope_rebase_factory_closure(result$value, result)
+    }
+  })
+  if (is.null(factory$alternatives)) return(values[[1L]])
+  variants <- unlist(lapply(values, scope_closure_variants), recursive = FALSE)
+  if (length(variants) > 0L) list(alternatives = variants)
+}
+
+# Read one factory's result in its invoked and captured frames. A supplied
+# factory is an already-resolved single literal closure descriptor.
+scope_factory_result <- function(expr, scope, lookup, read_value,
+                                 factory = NULL) {
+  factory <- factory %||% if (rlang::is_call(expr)) {
+    scope_call_closure(expr, scope, lookup)
+  }
   if (is.null(factory) || !is.null(factory$alternatives) ||
         scope_closure_is_active(factory, scope)) {
     return(NULL)
