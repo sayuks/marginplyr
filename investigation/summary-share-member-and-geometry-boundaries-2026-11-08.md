@@ -170,6 +170,7 @@ comparisons, rather than a package-suite result.
 | Hypothesis and distinguishing check | Executed evidence and disposition | Next evidence needed |
 | --- | --- | --- |
 | Basic grouping sets or Total denominators might differ from explicit-grain calculation. | 200 coordinator comparisons: five small inputs, five plans, fixed keys absent/present, local/dtplyr/SQLite/DuckDB. After correcting the oracle's empty type and SQL aggregate assumptions, all matched. | A different concrete grain/value boundary or backend. |
+| Nonfinite values or overwriting an input measure name might change local share rules. | 28 comparisons over Inf/-Inf/NaN/NA/zero/cancelling sums, missing-value handling and direct/across forms matched plain R values/ratios and double type. Source output reused input name x. | Remote nonfinite representations remain outside the portable value guarantee. |
 | Runtime local selection might retain deleted columns, stale types or packed/expanded schemas. | 30 ordinary-summary comparisons over populated tibble, empty tibble and plain frame; NULL deletion, type overwrite, unpacking, packed frames, empty frames, rewritten assigned frames/matrices and data-dependent naming. Results or expected upstream errors agreed with ordinary per-grain dplyr. | A new expression/evaluation boundary. |
 | Structured keys might change Total denominator identity or mutate inputs. | 102 lane comparisons: 17 key kinds, fixed/dimension placement and three sort choices. Ninety-nine matched independent ratios/ordinary output and preserved inputs; three raw typed-missing dimensions were refused as documented. | Exact arbitrary-class/backend ordering was not established. |
 | Fixed-key database equivalence might differ in the denominator. | 288 SQLite/DuckDB comparisons across BINARY/NOCASE/RTRIM or NOACCENT collations, one/two fixed keys, four plans, two labels and three sort modes matched independent SQL denominator calculations. | Other dialects or collation operators. |
@@ -248,6 +249,11 @@ carrier-matrix.R, factory-matrix.R, probe-collation.R and
 03-sf-summary-geometry.R. Observation assertions established the dated
 failures; desired-contract assertions intentionally failed at those boundaries
 and were not passing package checks.
+
+The final 28 nonfinite comparisons used a disposable archive of submitted
+`7ec029abad686f0d0a2d2a3bca1ac2333af7ea19` while its source check ran. That
+revision added this note only; its package bytes equaled the investigation
+snapshot. The script nonfinite.R and its log remained with coordinator evidence.
 
 The submission added dated research prose for investigation readers only.
 Package code, tests, installed files, dependencies, generated documentation,
