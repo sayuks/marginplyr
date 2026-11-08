@@ -236,30 +236,35 @@ test_that("JSON relation escapes and globs cannot hide type inference", {
       inspect_grouping(source, .grouping = grouping_set(k))$included, "(k)"
     )
     expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
-    for (value in c('{"k":101}', '{"k":"source_tail"}')) {
-      writeLines(value, path)
-      writeLines(value, glob_path)
-      native <- dplyr::collect(utils::head(source, 0L))
-      expect_identical(is.numeric(native$k), identical(value, '{"k":101}'))
-      for (input in list(source, dplyr::filter(source, k == k))) {
-        expect_error(
-          inspect_grouping(input, .by = where(is.numeric)),
-          "source rows", fixed = TRUE, class = "marginplyr_error"
-        )
-        expect_duckdb_catalog_only()
-        expect_error(
-          inspect_grouping(input, .grouping = grouping_set(where(is.numeric))),
-          "source rows", fixed = TRUE, class = "marginplyr_error"
-        )
-        expect_duckdb_catalog_only()
-      }
+    for (input in list(source, dplyr::filter(source, k == k))) {
+      expect_error(
+        inspect_grouping(input, .by = where(is.numeric)),
+        "source rows", fixed = TRUE, class = "marginplyr_error"
+      )
+      expect_duckdb_catalog_only()
+      expect_error(
+        inspect_grouping(input, .grouping = grouping_set(where(is.numeric))),
+        "source rows", fixed = TRUE, class = "marginplyr_error"
+      )
+      expect_duckdb_catalog_only()
     }
     expect_identical(serialize(source$lazy_query, NULL), before)
-    unlink(c(path, glob_path))
-    expect_error(
-      inspect_grouping(source, .by = where(is.numeric)),
-      "source rows", fixed = TRUE, class = "marginplyr_error"
-    )
+  }
+  # E and dollar strings remain reader arguments on both DuckDB 1.5 and 2;
+  # DuckDB 2 rejects them as filename relations.
+  controls <- ifelse(
+    startsWith(spellings, "E") | startsWith(spellings, "$"),
+    paste0("read_json_auto(", spellings, ")"), spellings
+  )
+  for (value in c('{"k":101}', '{"k":"source_tail"}')) {
+    writeLines(value, path)
+    writeLines(value, glob_path)
+    for (control in controls) {
+      native <- DBI::dbGetQuery(con, paste(
+        "SELECT * FROM", control, "LIMIT 0"
+      ))
+      expect_identical(is.numeric(native$k), identical(value, '{"k":101}'))
+    }
   }
 })
 
@@ -293,29 +298,42 @@ test_that("qualified JSON names cannot hide replacement inference", {
   }, add = TRUE)
   old <- options(marginplyr.audit_sql = TRUE)
   on.exit(options(old), add = TRUE)
-  for (form in c(
+  forms <- c(
     "replacement.json", '"replacement".json', 'replacement."json"',
     '"replacement"."json"', "ONLY replacement.json"
-  )) {
+  )
+  for (form in forms) {
     source <- dplyr::tbl(con, dbplyr::sql(paste(
       "SELECT * FROM", form
     )), vars = "k")
+    before <- serialize(source$lazy_query, NULL)
     expect_identical(
       inspect_grouping(source, .grouping = grouping_set(k))$included, "(k)"
     )
-    for (value in c('{"k":101}', '{"k":"source_tail"}')) {
-      writeLines(value, "replacement.json")
-      native <- dplyr::collect(utils::head(source, 0L))
-      expect_identical(is.numeric(native$k), identical(value, '{"k":101}'))
+    expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+    for (input in list(source, dplyr::filter(source, k == k))) {
       expect_error(
-        inspect_grouping(source, .by = where(is.numeric)),
+        inspect_grouping(input, .by = where(is.numeric)),
         "source rows", fixed = TRUE, class = "marginplyr_error"
       )
       expect_duckdb_catalog_only()
       expect_error(
-        inspect_grouping(source, .grouping = grouping_set(where(is.numeric))),
+        inspect_grouping(input, .grouping = grouping_set(where(is.numeric))),
         "source rows", fixed = TRUE, class = "marginplyr_error"
       )
+      expect_duckdb_catalog_only()
+    }
+    expect_identical(serialize(source$lazy_query, NULL), before)
+  }
+  # ONLY is guarded syntactically; DuckDB 2 rejects it as a filename relation.
+  native_forms <- forms[!startsWith(forms, "ONLY")]
+  for (form in native_forms) {
+    for (value in c('{"k":101}', '{"k":"source_tail"}')) {
+      writeLines(value, "replacement.json")
+      native <- DBI::dbGetQuery(con, paste(
+        "SELECT * FROM", form, "LIMIT 0"
+      ))
+      expect_identical(is.numeric(native$k), identical(value, '{"k":101}'))
     }
     unlink("replacement.json")
   }
