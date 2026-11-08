@@ -103,7 +103,10 @@ test_that("JSON relation escapes and globs cannot hide type inference", {
   duckdb_test_json_extension(con)
   old <- options(marginplyr.audit_sql = TRUE)
   on.exit(options(old), add = TRUE)
-  path <- tempfile(fileext = ".json")
+  path <- file.path(
+    normalizePath(tempdir(), winslash = "/", mustWork = TRUE),
+    basename(tempfile(fileext = ".json"))
+  )
   glob_path <- paste0(path, "_part")
   on.exit(unlink(c(path, glob_path)), add = TRUE)
   prefix <- substr(path, 1L, nchar(path) - 5L)

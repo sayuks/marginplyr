@@ -168,21 +168,33 @@ duckdb_qualified_relation_path <- function(tokens, position) {
 }
 
 # Refuse reader inference before DuckDB can bind the captured input (ADR 0020).
+# The caller supplies the CSV or JSON family established from captured SQL.
 abort_duckdb_reader_metadata <- function(family) {
+  if (family == "JSON") {
+    abort_marginplyr(c(
+      "Can't safely determine column metadata for this DuckDB JSON input.",
+      i = paste0(
+        "JSON auto-detection could sample source rows ",
+        "even with a zero-row query."
+      ),
+      i = paste0(
+        "Supply a JSON source with an explicit schema and ",
+        "{.code auto_detect = false} and explicit ",
+        "{.code records = true} or {.code records = false}, ",
+        "or collect the input explicitly with {.code dplyr::collect()} ",
+        "and pass the resulting data frame."
+      )
+    ))
+  }
   abort_marginplyr(c(
-    paste0(
-      "Can't safely determine column metadata for this DuckDB ",
-      family, " input."
-    ),
+    "Can't safely determine column metadata for this DuckDB CSV input.",
     i = paste0(
-      family, " auto-detection could sample source rows ",
+      "CSV auto-detection could sample source rows ",
       "even with a zero-row query."
     ),
     i = paste0(
-      "Supply a ", family, " source with an explicit schema and ",
-      "{.code auto_detect = false}",
-      if (family == "JSON") " and explicit {.code records = true} or false",
-      ", or collect the input explicitly with ",
+      "Supply a CSV source with an explicit schema and ",
+      "{.code auto_detect = false}, or collect the input explicitly with ",
       "{.code dplyr::collect()} and pass the resulting data frame."
     )
   ))

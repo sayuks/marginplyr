@@ -279,11 +279,13 @@ test_that("equivalent CSV replacement spellings keep inference disabled", {
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   directory <- tempfile()
   dir.create(directory)
+  directory <- normalizePath(directory, winslash = "/", mustWork = TRUE)
   on.exit(unlink(directory, recursive = TRUE), add = TRUE)
   old <- options(marginplyr.audit_sql = TRUE)
   on.exit(options(old), add = TRUE)
+  stem <- if (.Platform$OS.type == "windows") "source'" else "source'\""
   for (extension in c(".csv", ".tsv", ".csv.gz", ".csv.zst", ".csv?part")) {
-    path <- file.path(directory, paste0("source'\"", extension))
+    path <- file.path(directory, paste0(stem, extension))
     actual <- sub("?", "1", path, fixed = TRUE)
     spellings <- c(
       DBI::dbQuoteString(con, path), DBI::dbQuoteIdentifier(con, path),
@@ -328,7 +330,10 @@ test_that("escaped uppercase CSV names retain their native filename", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
-  path <- tempfile(fileext = ".CSV")
+  path <- file.path(
+    normalizePath(tempdir(), winslash = "/", mustWork = TRUE),
+    basename(tempfile(fileext = ".CSV"))
+  )
   on.exit(unlink(path), add = TRUE)
   writeLines(c("k", "101"), path)
   spelling <- paste0("E", sub(
