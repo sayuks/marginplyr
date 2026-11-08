@@ -5707,6 +5707,13 @@ scope_closure_attribute_write <- function(scope, target, value, lookup,
   scope <- scope_bind_local(scope, name, target[[2L]], lookup, value_scope)
   setter <- paste0(operator, "<-")
   replacement <- rlang::call2(setter, .ns = static_call_ns(target))
+  if (identical(operator, "attr") && length(target) == 3L &&
+        rlang::is_string(unparenthesized_value(target[[3L]])) &&
+        !identical(unparenthesized_value(target[[3L]]), "class") &&
+        is_known_base_frame_call(replacement, setter, value_scope, lookup)) {
+    # A base non-class attribute write preserves the closure's dispatch classes.
+    return(scope)
+  }
   classes <- NULL
   if (identical(operator, "class") && length(target) == 2L &&
         is_known_base_frame_call(replacement, setter, value_scope, lookup)) {

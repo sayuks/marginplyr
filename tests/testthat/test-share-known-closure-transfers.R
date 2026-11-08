@@ -597,6 +597,7 @@ test_that("closure converter planning never invokes captured closures", {
         probe$calls <- probe$calls + 1L
         sum(prior)
       }
+      attr(read, "tag") <- 1L
       copied <- !!transfer
       rm(prior)
       copied()
@@ -714,4 +715,99 @@ test_that("closure class writes retain direct and default-converted reads", {
       expect_transfer_dependencies(known_closure_transfer_data(), list(read))
     }
   }
+})
+
+nonclass_attribute_transfers <- function() {
+  alist(
+    (function(prior) {
+      read <- function() sum(prior)
+      attr(read, "tag") <- 1L
+      copied <- base::as.function(read)
+      rm(prior)
+      copied()
+    })(11),
+    (function(prior) {
+      read <- function() sum(prior)
+      class(read) <- "margin_share_default"
+      base::attr(read, which = "tag") <- 1L
+      copied <- base::as.function(read)
+      rm(prior)
+      copied()
+    })(11)
+  )
+}
+
+test_that("non-class attributes retain default-converted dependencies", {
+  expect_transfer_dependencies(
+    known_closure_transfer_data(), nonclass_attribute_transfers()
+  )
+})
+
+test_that("dtplyr non-class attributes retain converted dependencies", {
+  skip_if_suggest_absent("dtplyr")
+  probe <- rlang::env(calls = 0L)
+  observe <- function(x) {
+    probe$calls <- probe$calls + 1L
+    x
+  }
+  data <- dtplyr::lazy_dt(known_closure_transfer_data(), immutable = TRUE)
+  data <- dplyr::filter(data, observe(x) > 0)
+  expect_transfer_dependencies(data, nonclass_attribute_transfers())
+  expect_identical(probe$calls, 0L)
+  expect_equal(dplyr::collect(data)$x, c(1, 3))
+  expect_identical(probe$calls, 1L)
+})
+
+expect_attribute_controls <- function(data) {
+  independent <- quote((function(prior) {
+    read <- function() 7
+    attr(read, "tag") <- 1L
+    copied <- base::as.function(read)
+    rm(prior)
+    copied()
+  })(11))
+  expect_converter_values(data, list(independent), 7)
+
+  writes <- alist(
+    {
+      class(read) <- "margin_share_default"
+      attr(read, "tag") <- 1L
+    },
+    {
+      field <- "class"
+      attr(read, field) <- "margin_share_default"
+      attr(read, "tag") <- 1L
+    },
+    {
+      `attr<-` <- function(x, which, value) {
+        base::structure(x, class = "margin_share_default")
+      }
+      attr(read, "tag") <- 1L
+    }
+  )
+  for (write in writes) {
+    expr <- rlang::expr((function(prior) {
+      # S3 dispatch resolves this method by its name.
+      as.function.margin_share_default <- # nolint: object_usage_linter.
+        function(x, ...) function() 7
+      # The injected attribute write and converter read this binding.
+      read <- function() sum(prior) # nolint: object_usage_linter.
+      !!write
+      copied <- base::as.function(read)
+      rm(prior)
+      copied()
+    })(11))
+    expect_converter_values(data, list(expr), 7)
+  }
+}
+
+test_that("non-class writes preserve independent closures and caller methods", {
+  expect_attribute_controls(known_closure_transfer_data())
+})
+
+test_that("dtplyr non-class writes preserve legal converters at collection", {
+  skip_if_suggest_absent("dtplyr")
+  expect_attribute_controls(
+    dtplyr::lazy_dt(known_closure_transfer_data(), immutable = TRUE)
+  )
 })
