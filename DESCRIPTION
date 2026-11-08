@@ -359,6 +359,7 @@ Config/testthat/start-first:
     nest-local-list-converter,
     sf-shares,
     share-singleton-bindings,
+    nest-dtplyr-frame-converter,
     share-definition-replacements
 VignetteBuilder:
     quarto
