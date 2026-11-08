@@ -811,3 +811,126 @@ test_that("dtplyr non-class writes preserve legal converters at collection", {
     dtplyr::lazy_dt(known_closure_transfer_data(), immutable = TRUE)
   )
 })
+
+custom_attribute_closures <- function() {
+  alist(
+    (function(prior) {
+      `attr<-` <- function(x, which, value) function() 7
+      read <- function() sum(prior)
+      attr(read, "tag") <- 1L
+      copied <- base::Vectorize(read)
+      rm(prior)
+      copied()
+    })(11),
+    (function(prior) {
+      `attr<-` <- function(x, which, value) function() 7
+      read <- function() sum(prior)
+      attr(read, "tag") <- 1L
+      copied <- read
+      rm(prior)
+      copied()
+    })(11)
+  )
+}
+
+test_that("caller attribute setters can return an independent closure", {
+  expect_converter_values(
+    known_closure_transfer_data(), custom_attribute_closures(), 7
+  )
+})
+
+test_that("dtplyr executes independent attribute-setter closures lazily", {
+  skip_if_suggest_absent("dtplyr")
+  expect_converter_values(
+    dtplyr::lazy_dt(known_closure_transfer_data(), immutable = TRUE),
+    custom_attribute_closures(), 7
+  )
+})
+
+attribute_setter_dependencies <- function() {
+  alist(
+    (function(prior) {
+      read <- function() sum(prior)
+      base::attr(read, "tag") <- 1L
+      copied <- base::Vectorize(read)
+      rm(prior)
+      copied()
+    })(11),
+    (function(prior) {
+      `attr<-` <- function(x, which, value) x
+      read <- function() sum(prior)
+      attr(read, "tag") <- 1L
+      copied <- base::Vectorize(read)
+      rm(prior)
+      copied()
+    })(11),
+    (function(prior) {
+      `attr<-` <- function(x, which, value) function() sum(prior)
+      read <- function() 7
+      attr(read, "tag") <- 1L
+      copied <- base::Vectorize(read)
+      rm(prior)
+      copied()
+    })(11)
+  )
+}
+
+test_that("attribute setter results retain their own share dependencies", {
+  expect_transfer_dependencies(
+    known_closure_transfer_data(), attribute_setter_dependencies()
+  )
+})
+
+test_that("dtplyr attribute setter results retain forbidden dependencies", {
+  skip_if_suggest_absent("dtplyr")
+  expect_transfer_dependencies(
+    dtplyr::lazy_dt(known_closure_transfer_data(), immutable = TRUE),
+    attribute_setter_dependencies()
+  )
+})
+
+test_that("attribute setter planning invokes neither setter nor closure", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.table::as.data.table(known_closure_transfer_data())
+  before <- serialize(data, NULL)
+  probe <- rlang::env(setters = 0L, closures = 0L, reads = 0L)
+  observe <- function(x) {
+    probe$reads <- probe$reads + 1L
+    x
+  }
+  input <- dtplyr::lazy_dt(data, immutable = TRUE)
+  input <- dplyr::filter(input, observe(x) > 0)
+  expr <- quote((function(prior) {
+    `attr<-` <- function(x, which, value) {
+      probe$setters <- probe$setters + 1L
+      function() {
+        probe$closures <- probe$closures + 1L
+        7
+      }
+    }
+    read <- function() sum(prior)
+    attr(read, "tag") <- 1L
+    copied <- base::Vectorize(read)
+    rm(prior)
+    copied()
+  })(11))
+  for (kind in c("parent", "total")) {
+    helper <- rlang::call2(paste0("share_of_", kind), quote(value))
+    result <- summarize_with_margins(
+      input, prior = sum(.data$x), value = !!expr, ratio = !!helper,
+      .grouping = rollup("group")
+    )
+    expect_s3_class(result, "dtplyr_step")
+    expect_identical(probe$setters, 0L)
+    expect_identical(probe$closures, 0L)
+    expect_identical(probe$reads, 0L)
+    collected <- dplyr::collect(result)
+    expect_equal(collected$value, c(7, 7, 7))
+    expect_equal(collected$ratio, c(1, 1, 1))
+    expect_gt(probe$setters, 0L)
+    expect_gt(probe$closures, 0L)
+    expect_gt(probe$reads, 0L)
+    probe$setters <- probe$closures <- probe$reads <- 0L
+  }
+  expect_identical(serialize(data, NULL), before)
+})

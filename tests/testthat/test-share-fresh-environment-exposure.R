@@ -52,6 +52,18 @@ fresh_env_replacement_controls <- function() {
       alias$read <- function() 7
       rm(prior)
       box$read()
+    })(11),
+    (function(prior) {
+      box <- list2env(list(read = function() sum(prior)))
+      alias <- box
+      # A nested data.table expression reads the data column by its bare name.
+      if (sum(x) > 0) { # nolint: object_usage_linter.
+        alias <- list2env(list(read = function() sum(prior)))
+      }
+      second <- alias
+      second$read <- function() 7
+      rm(prior)
+      alias$read()
     })(11)
   )
 }
@@ -86,7 +98,7 @@ test_that("immutable dtplyr retains legal exposed environment values", {
   input <- dtplyr::lazy_dt(data, immutable = TRUE)
   controls <- c(fresh_env_exposure_controls(),
                 fresh_env_replacement_controls())
-  expected <- c(11, 11, 7, 7)
+  expected <- c(11, 11, 7, 7, 7)
   for (kind in c("parent", "total")) {
     helper <- rlang::call2(paste0("share_of_", kind), quote(value))
     for (index in seq_along(controls)) {
@@ -149,5 +161,66 @@ test_that("fresh environment analysis never runs caller code", {
     expect_equal(collected$p, c(1, 1, 1))
     probe$calls <- 0L
   }
+  expect_identical(serialize(data, NULL), before)
+})
+
+conditional_fresh_env_reads <- function() {
+  alist(
+    (function(prior) {
+      box <- list2env(list(read = function() 7))
+      alias <- box
+      # A nested data.table expression reads the data column by its bare name.
+      if (sum(x) > 0) { # nolint: object_usage_linter.
+        alias <- list2env(list(read = function() sum(prior)))
+      }
+      box$read <- function() 7
+      rm(prior)
+      alias$read()
+    })(11),
+    (function(prior) {
+      box <- list2env(list(read = function() sum(prior)))
+      alias <- list2env(list(read = function() sum(prior)))
+      # A nested data.table expression reads the data column by its bare name.
+      if (sum(x) > 0) alias <- box # nolint: object_usage_linter.
+      box$read <- function() 7
+      rm(prior)
+      alias$read()
+    })(11),
+    (function(prior) {
+      box1 <- list2env(list(read = function() sum(prior)))
+      box2 <- list2env(list(read = function() sum(prior)))
+      a <- box1
+      b <- box1
+      # These conditions read the data column in the nested data.table call.
+      if (sum(x) > 0) a <- box2 # nolint: object_usage_linter.
+      # The separate condition does not establish that a and b are aliases.
+      if (sum(x) < 0) b <- box2 # nolint: object_usage_linter.
+      b$read <- function() 7
+      rm(prior)
+      a$read()
+    })(11)
+  )
+}
+
+test_that("conditional fresh aliases retain every possible field dependency", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
+  expect_share_dependencies(data, conditional_fresh_env_reads())
+})
+
+test_that("dtplyr conditional aliases are refused without source reads", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.table::data.table(
+    g = c("a", "b"), x = c(1, 3), prior = c(10, 20)
+  )
+  before <- serialize(data, NULL)
+  probe <- rlang::env(calls = 0L)
+  observe <- function(x) {
+    probe$calls <- probe$calls + 1L
+    x
+  }
+  input <- dtplyr::lazy_dt(data, immutable = TRUE)
+  input <- dplyr::filter(input, observe(x) > 0)
+  expect_share_dependencies(input, conditional_fresh_env_reads())
+  expect_identical(probe$calls, 0L)
   expect_identical(serialize(data, NULL), before)
 })
