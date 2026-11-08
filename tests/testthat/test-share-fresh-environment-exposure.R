@@ -22,7 +22,9 @@ mixed_factory_read <- function(dependent, probe, retained = FALSE,
   second <- if (list_first) callable else listed
   predicate <- if (xor(list_first, invoke_callable)) {
     quote(sum(x) < 0)
-  } else quote(sum(x) > 0)
+  } else {
+    quote(sum(x) > 0)
+  }
   invocation <- rlang::call2(
     if (invoke_callable) quote(made) else quote(made$read)
   )
@@ -30,7 +32,8 @@ mixed_factory_read <- function(dependent, probe, retained = FALSE,
     box <- list2env(list(make = !!first))
     alias <- box
     if (!!predicate) alias <- list2env(list(make = !!second))
-    made <- alias$make()
+    # The injected invocation reads this factory result.
+    made <- alias$make() # nolint: object_usage_linter.
     rm(prior)
     !!invocation
   })(11))
@@ -189,7 +192,8 @@ partial_list_write_read <- function(dependent, probe, nested = FALSE,
     box <- list2env(list(cfg = !!small))
     alias <- box
     if (!!predicate) alias <- list2env(list(cfg = !!large))
-    callbacks <- alias$cfg
+    # The injected writes and invocation read this list binding.
+    callbacks <- alias$cfg # nolint: object_usage_linter.
     !!write
     !!replacement
     rm(prior)
