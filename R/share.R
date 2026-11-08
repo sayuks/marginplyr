@@ -5614,8 +5614,12 @@ scope_set_environment_fields <- function(scope, frame, name, fields) {
     aliases <- names(scope[[index]]$closure_environment_ids)
     for (alias in aliases) {
       target <- scope[[index]]$closure_environment_ids[[alias]]
-      common <- intersect(identities, scope_environment_identities(target))
-      if (length(common) > 0L) {
+      # intersect() coerces environment lists; compare the tokens themselves.
+      possible <- scope_environment_identities(target)
+      common <- any(vapply(possible, function(token) {
+        any(vapply(identities, identical, logical(1), y = token))
+      }, logical(1)))
+      if (common) {
         updated <- if (!is.null(fields)) {
           scope_shift_closure_elements(fields, frame - index)
         }
