@@ -4872,9 +4872,35 @@ scope_definition_replacement <- function(expr, scope, lookup) {
   })[[1L]]
 }
 
-# Retain ordinary bindings of an existing independent enclosure without forcing
-# promises or active bindings. Unknown bindings cannot prove independence.
+# Retain bindings of a literal fresh or existing independent enclosure without
+# forcing promises or active bindings. Unknown bindings prove no independence.
 scope_external_enclosure <- function(expr, scope, lookup) {
+  operator <- static_call_name(expr)
+  if (!is.null(operator) &&
+        operator %in% c("baseenv", "emptyenv", "new.env", "list2env") &&
+        is_known_base_frame_call(expr, operator, scope, lookup)) {
+    if (operator %in% c("baseenv", "emptyenv") && length(expr) == 1L) {
+      return(list(bound = character()))
+    }
+    fields <- scope_fresh_env_fields(expr, scope, lookup)
+    if (!is.null(fields)) {
+      parts <- static_matched_arguments(
+        expr, args(get(operator, envir = baseenv()))
+      )
+      parent <- if ("parent" %in% names(parts)) {
+        scope_external_enclosure(parts$parent, scope, lookup)
+      }
+      if (!is.null(parent)) {
+        keys <- names(fields)
+        parent$bound <- union(keys, parent$bound)
+        parent$kinds[keys] <- lapply(fields, function(field) {
+          if (length(scope_closure_variants(field)) > 0L) "function"
+        })
+        parent$closures[keys] <- fields
+        return(parent)
+      }
+    }
+  }
   bound <- scope_bound_names(scope)
   if (!lookup_environment_is_external(expr, bound, lookup)) return(NULL)
   env <- lookup_environment_value(expr, bound, lookup)

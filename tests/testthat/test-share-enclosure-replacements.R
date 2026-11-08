@@ -42,6 +42,12 @@ test_that("independent replacement discards the obsolete captured frame", {
     rm(prior)
     f()
   })(7))), 11)
+  expect_share_dependency_values(data, alist((function(prior) {
+    f <- function() sum(prior)
+    environment(f) <- list2env(list(prior = 11), parent = baseenv())
+    rm(prior)
+    f()
+  })(7)), 11)
 })
 
 enclosure_control_reads <- function() {
@@ -134,8 +140,14 @@ test_that("lazy enclosure controls retain independent and ordinary values", {
     rm(prior)
     f()
   })(7))
+  fresh <- rlang::quo((function(prior) {
+    f <- function() sum(prior)
+    environment(f) <- list2env(list(prior = 11), parent = baseenv())
+    rm(prior)
+    f()
+  })(7))
   for (kind in c("parent", "total")) {
-    for (read in c(enclosure_control_reads()[1:3], list(independent))) {
+    for (read in c(enclosure_control_reads()[1:3], list(independent, fresh))) {
       expected <- if (rlang::is_quosure(read)) 11 else 7
       share <- rlang::call2(paste0("share_of_", kind), quote(value))
       forward <- summarize_with_margins(
