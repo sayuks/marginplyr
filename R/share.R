@@ -5345,12 +5345,12 @@ scope_join_lists <- function(values) {
   structure(list(), marginplyr_lists = choices)
 }
 
-# Apply one existing plain-list operation independently to known layouts.
+# Apply an existing operation to each layout, retaining unhandled inputs.
 scope_map_lists <- function(elements, transform) {
-  values <- lapply(scope_list_choices(elements), transform)
-  if (length(values) > 0L && all(vapply(values, rlang::is_zap, logical(1)))) {
-    return(rlang::zap())
-  }
+  values <- lapply(scope_list_choices(elements), function(choice) {
+    value <- transform(choice)
+    if (rlang::is_zap(value)) choice else value
+  })
   scope_join_lists(values)
 }
 
@@ -6039,7 +6039,8 @@ scope_list_write_elements <- function(target, elements, value, lookup,
       return(elements)
     }
     return(scope_map_lists(replacement, function(choice) {
-      if (length(choice) == 0L) return(rlang::zap())
+      # An unhandled replacement retains the target, not the replacement list.
+      if (length(choice) == 0L) return(elements)
       updated <- elements
       updated[key] <- choice
       updated

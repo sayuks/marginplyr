@@ -126,6 +126,123 @@ test_that("dtplyr mixed factory dependencies are refused without execution", {
   expect_identical(serialize(data, NULL), before)
 })
 
+partial_list_write_read <- function(dependent, probe, nested = FALSE,
+                                    overwrite = FALSE) {
+  force(probe)
+  body <- if (dependent) quote(sum(prior)) else 7
+  small <- rlang::expr(list(read = function() {
+    probe$closures <- probe$closures + 1L
+    !!body
+  }))
+  large <- quote(list(read = function() 7, other = function() 7))
+  if (nested) {
+    small <- rlang::expr(list(cfg = !!small))
+    large <- rlang::expr(list(cfg = !!large))
+  }
+  selected <- if (nested) quote(callbacks$cfg$read) else quote(callbacks$read)
+  target <- if (nested) quote(callbacks$cfg[[3L]]) else quote(callbacks[[3L]])
+  write <- rlang::call2("<-", target, quote(function() 7))
+  replacement <- if (overwrite) rlang::call2("<-", selected, quote(function() 7))
+  predicate <- quote(sum(x) < 0)
+  rlang::quo((function(prior) {
+    box <- list2env(list(cfg = !!small))
+    alias <- box
+    if (!!predicate) alias <- list2env(list(cfg = !!large))
+    callbacks <- alias$cfg
+    !!write
+    !!replacement
+    rm(prior)
+    (!!selected)()
+  })(11))
+}
+
+test_that("partially handled list writes retain unchanged callback proofs", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
+  before <- serialize(data, NULL)
+  probe <- rlang::env(closures = 0L)
+  reads <- lapply(c(FALSE, TRUE), function(nested) {
+    partial_list_write_read(TRUE, probe, nested)
+  })
+  expect_share_dependencies(data, reads)
+  expect_identical(probe$closures, 0L)
+  expect_identical(serialize(data, NULL), before)
+})
+
+test_that("dtplyr partially handled list writes refuse before execution", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.table::data.table(
+    g = c("a", "b"), x = c(1, 3), prior = c(10, 20)
+  )
+  before <- serialize(data, NULL)
+  probe <- rlang::env(closures = 0L, reads = 0L)
+  observe <- function(x) {
+    probe$reads <- probe$reads + 1L
+    x
+  }
+  input <- dtplyr::lazy_dt(data, immutable = TRUE)
+  input <- dplyr::filter(input, observe(x) > 0)
+  reads <- lapply(c(FALSE, TRUE), function(nested) {
+    partial_list_write_read(TRUE, probe, nested)
+  })
+  expect_share_dependencies(input, reads)
+  expect_identical(probe$closures, 0L)
+  expect_identical(probe$reads, 0L)
+  expect_identical(serialize(data, NULL), before)
+})
+
+test_that("partial list writes preserve independent replacement values", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
+  probe <- rlang::env(closures = 0L)
+  for (nested in c(FALSE, TRUE)) {
+    for (overwrite in c(FALSE, TRUE)) {
+      read <- partial_list_write_read(overwrite, probe, nested, overwrite)
+      expect_share_dependency_values(data, list(read), 7)
+    }
+  }
+})
+
+test_that("dtplyr partial list writes keep legal values until collection", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.table::data.table(
+    g = c("a", "b"), x = c(1, 3), prior = c(10, 20)
+  )
+  before <- serialize(data, NULL)
+  probe <- rlang::env(closures = 0L, reads = 0L)
+  observe <- function(x) {
+    probe$reads <- probe$reads + 1L
+    x
+  }
+  input <- dtplyr::lazy_dt(data, immutable = TRUE)
+  input <- dplyr::filter(input, observe(x) > 0)
+  for (kind in c("parent", "total")) {
+    helper <- rlang::call2(paste0("share_of_", kind), quote(value))
+    for (nested in c(FALSE, TRUE)) {
+      for (overwrite in c(FALSE, TRUE)) {
+        read <- partial_list_write_read(overwrite, probe, nested, overwrite)
+        forward <- summarize_with_margins(
+          input, value = sum(.data$x), prior = !!helper, observed = !!read,
+          .grouping = rollup("g")
+        )
+        reverse <- summarize_with_margins(
+          input, prior = sum(.data$x), value = !!read, ratio = !!helper,
+          .grouping = rollup("g")
+        )
+        expect_identical(probe$closures, 0L)
+        expect_identical(probe$reads, 0L)
+        forward <- dplyr::collect(forward)
+        reverse <- dplyr::collect(reverse)
+        expect_equal(forward$observed, c(7, 7, 7))
+        expect_equal(forward$prior, c(0.25, 0.75, 1))
+        expect_equal(reverse$value, c(7, 7, 7))
+        expect_equal(reverse$ratio, c(1, 1, 1))
+        expect_gt(probe$reads, 0L)
+        probe$closures <- probe$reads <- 0L
+      }
+    }
+  }
+  expect_identical(serialize(data, NULL), before)
+})
+
 fresh_env_exposure_reads <- function() {
   alist(
     (function(prior) {
