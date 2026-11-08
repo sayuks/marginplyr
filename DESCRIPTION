@@ -366,6 +366,7 @@ Config/testthat/start-first:
     duckdb-csv-metadata,
     share-enclosure-replacements,
     dtplyr-numeric-metadata,
+    duckdb-json-metadata,
     nest-local-frame-converter,
     share-member-definition-replacements
 VignetteBuilder:

@@ -343,6 +343,27 @@ or collect explicitly. Name-only inspection still uses captured names without
 opening the source. Ordinary tables, explicit-schema CSV metadata, the dynamic
 PIVOT refusal and the single typed snapshot remain unchanged.
 
+## Amendment (#1516): JSON schema and record inference are source work
+
+The first exemption also excludes JSON sampling during DuckDB binding, for
+`read_json`, `read_json_auto`, `read_ndjson`, `read_ndjson_auto` and JSON file
+replacement scans. JSON requires established types and an established record
+mode. A literal schema disables type inference; more than one literal column
+also establishes record mode. With a single column, record mode must be
+explicit, even with `auto_detect = false`: automatic record detection still
+samples objects. Unresolved readers are refused before binding and direct the
+caller to established metadata or explicit collection. Name-only inspection
+continues to use captured names.
+
+DuckDB's [JSON loading reference][json-loading] documents its inference options.
+The additional record-mode boundary is implemented by
+`JSONMultiFileInfo::BindReader` in the
+[DuckDB 1.5 source][json-binding], and live tests distinguish schema-only binding
+from sampling using malformed JSON contents.
+
+[json-loading]: https://duckdb.org/docs/1.5/data/json/loading_json
+[json-binding]: https://github.com/duckdb/duckdb/blob/v1.5.0/extension/json/json_multi_file_info.cpp
+
 ## Amendment (#640): SQLite typed-order execution follows an explicit request
 
 ADR 0031's live SQLite result builds its typed compound query without executing

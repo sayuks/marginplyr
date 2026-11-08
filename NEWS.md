@@ -3,6 +3,14 @@
 * Parent and Total shares preserve requested sf summary geometry columns and
   explicit output order without exposing private denominator geometry (#1515).
 
+* Top-level `.grouping` factories preserve caller-owned constructor syntax
+  through custom NSE and quotation aliases, while rebound quotation names
+  retain the authored-empty refusal of constructors they execute (#1517).
+
+* Typed DuckDB Grouping inspection refuses JSON type and record inference
+  before sampling source values, including JSON file replacement scans, while
+  preserving name-only inspection and established reader schemas (#1516).
+
 * Typed dtplyr inspection excludes object columns before numeric admission
   checks, preventing unrequested S4 method calls on source values (#1518).
 
