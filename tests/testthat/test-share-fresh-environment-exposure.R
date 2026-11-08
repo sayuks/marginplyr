@@ -64,6 +64,13 @@ fresh_env_replacement_controls <- function() {
       second$read <- function() 7
       rm(prior)
       alias$read()
+    })(11),
+    (function(prior) {
+      box <- list2env(list(read = function() sum(prior)))
+      other <- list2env(list(read = function() 7))
+      box$read <- function() sum(prior)
+      rm(prior)
+      other$read()
     })(11)
   )
 }
@@ -98,7 +105,7 @@ test_that("immutable dtplyr retains legal exposed environment values", {
   input <- dtplyr::lazy_dt(data, immutable = TRUE)
   controls <- c(fresh_env_exposure_controls(),
                 fresh_env_replacement_controls())
-  expected <- c(11, 11, 7, 7, 7)
+  expected <- c(11, 11, 7, 7, 7, 7)
   for (kind in c("parent", "total")) {
     helper <- rlang::call2(paste0("share_of_", kind), quote(value))
     for (index in seq_along(controls)) {
