@@ -145,3 +145,149 @@ test_that("a supplied function body remains ordinary factory input", {
     expect_identical(actual, consume(data, .grouping = stored))
   }
 })
+
+test_that("an immediately executed literal refuses an empty before a splice", {
+  data <- data.frame(a = 1L)
+  stored <- (function() grouping_set(a, , !!!list()))()
+  expected <- tryCatch(inspect_grouping(data, .grouping = stored),
+                       error = identity)
+  expect_s3_class(expected, "marginplyr_error")
+  actual <- tryCatch(
+    inspect_grouping(
+      data, .grouping = (function() grouping_set(a, , !!!list()))()
+    ),
+    error = identity
+  )
+  expect_s3_class(actual, "marginplyr_error")
+  if (inherits(actual, "error")) {
+    expect_identical(conditionMessage(actual), conditionMessage(expected))
+    expect_match(conditionMessage(actual),
+                 "Argument 2 of `grouping_set()` is empty.", fixed = TRUE)
+  }
+})
+
+test_that("executed literals retain constructor refusals at every boundary", {
+  data <- data.frame(a = 1L, b = 2L)
+  calls <- list(
+    function(consume) {
+      consume(data, .grouping = (function() grouping_set(a, , !!!list()))())
+    },
+    function(consume) {
+      consume(data, .grouping = (function() grouping_sets(a, , !!!list()))())
+    },
+    function(consume) {
+      consume(data, .grouping = (function() rollup(a, , !!!list()))())
+    },
+    function(consume) {
+      consume(data, .grouping = (function() cube(a, , !!!list()))())
+    },
+    function(consume) {
+      consume(data, .grouping = (function() grouping_spec(a, , !!!list()))())
+    }
+  )
+  constructors <- c("grouping_set", "grouping_sets", "rollup", "cube",
+                    "grouping_spec")
+  for (consume in list(inspect_grouping, summarize_with_margins,
+                       expand_with_margins, nest_with_margins,
+                       nest_by_with_margins)) {
+    for (i in seq_along(calls)) {
+      error <- tryCatch(calls[[i]](consume), error = identity)
+      expect_s3_class(error, "marginplyr_error")
+      if (inherits(error, "error")) {
+        expect_match(conditionMessage(error),
+                     paste0("Argument 2 of `", constructors[[i]],
+                            "()` is empty."), fixed = TRUE)
+      }
+    }
+    leading <- tryCatch(
+      consume(data, .grouping = (function() grouping_set(, !!!list()))()),
+      error = identity
+    )
+    expect_s3_class(leading, "marginplyr_error")
+    if (inherits(leading, "error")) {
+      expect_match(conditionMessage(leading),
+                   "Argument 1 of `grouping_set()` is empty.", fixed = TRUE)
+    }
+    nested <- tryCatch(
+      consume(data, .grouping = ((function() {
+        (function() {
+          grouping_sets(((marginplyr::grouping_set)(a, , !!!list())), b)
+        })()
+      }))()),
+      error = identity
+    )
+    expect_s3_class(nested, "marginplyr_error")
+    if (inherits(nested, "error")) {
+      expect_match(conditionMessage(nested),
+                   "Argument 2 of `grouping_set()` is empty.", fixed = TRUE)
+    }
+  }
+})
+
+test_that("executed literals preserve injection scope and evaluation budgets", {
+  data <- data.frame(a = 1L, b = 2L)
+  counts <- new.env(parent = emptyenv())
+  counts$reads <- counts$runs <- 0L
+  splice <- function() {
+    counts$reads <- counts$reads + 1L
+    if (counts$reads > 1L) stop("second splice evaluation")
+    list()
+  }
+  selection <- local({
+    selected <- "a"
+    rlang::quo(all_of(selected))
+  })
+  selected <- "b"
+  stored <- grouping_set(a)
+  for (consume in list(inspect_grouping, summarize_with_margins,
+                       expand_with_margins, nest_with_margins,
+                       nest_by_with_margins)) {
+    counts$reads <- counts$runs <- 0L
+    error <- tryCatch(
+      consume(data, .grouping = (function() {
+        counts$runs <- counts$runs + 1L
+        grouping_set(a, , !!!splice())
+      })()),
+      error = identity
+    )
+    expect_s3_class(error, "marginplyr_error")
+    expect_identical(counts$reads, 1L)
+    expect_identical(counts$runs, 1L)
+    counts$reads <- counts$runs <- 0L
+    actual <- consume(data, .grouping = (function() {
+      counts$runs <- counts$runs + 1L
+      grouping_set(!!selection, !!!splice(), )
+    })())
+    expect_identical(actual, consume(data, .grouping = stored))
+    expect_identical(counts$reads, 1L)
+    expect_identical(counts$runs, 1L)
+  }
+  expect_identical(selected, "b")
+})
+
+# jarl-ignore missing_argument: These bodies and quotes are inspected as data.
+test_that("executed literals still preserve supplied syntax for factories", {
+  data <- data.frame(a = 1L, b = 2L)
+  choose <- function(expr) {
+    if (is.function(expr)) expr <- body(expr)
+    if (identical(expr, quote(grouping_set(, a)))) {
+      grouping_set(a)
+    } else {
+      grouping_set(b)
+    }
+  }
+  stored <- choose(function() grouping_set(, a))
+  for (consume in list(inspect_grouping, summarize_with_margins,
+                       expand_with_margins, nest_with_margins,
+                       nest_by_with_margins)) {
+    expected <- consume(data, .grouping = stored)
+    actual <- consume(data, .grouping = (function() {
+      choose(base::quote(grouping_set(, a)))
+    })())
+    expect_identical(actual, expected)
+    actual <- consume(data, .grouping = (function() {
+      choose(function() grouping_set(, a))
+    })())
+    expect_identical(actual, expected)
+  }
+})
