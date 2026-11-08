@@ -364,7 +364,8 @@ Config/testthat/start-first:
     nest-dtplyr-frame-converter,
     grouping-quoted-factories,
     duckdb-csv-metadata,
-    share-enclosure-replacements
+    share-enclosure-replacements,
+    share-member-definition-replacements
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool

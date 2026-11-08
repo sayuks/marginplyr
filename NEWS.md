@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Parent and Total share dependency checks follow closure body, formal and
+  enclosure replacements through known list and fresh environment members,
+  including replacements that remove an earlier dependency (#1513).
+
 * `share_of_parent()` and `share_of_total()` now follow visible closure enclosure replacements when validating dependencies, refusing earlier-summary dependencies while preserving unchanged and proven independent enclosures (#1504).
 
 * Typed DuckDB Grouping inspection refuses CSV auto-detection before binding
