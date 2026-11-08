@@ -4793,12 +4793,15 @@ scope_value_closure <- function(expr, scope, lookup) {
   }
 }
 
-# Resolve base closure setters without evaluating the replacement expression.
+# Resolve stock closure setters without evaluating the replacement expression.
 # An unreadable replacement retains a callable with unresolved dependencies.
 scope_definition_replacement <- function(expr, scope, lookup) {
   operator <- static_call_name(expr)
   if (is.null(operator) ||
-        !operator %in% c("body<-", "formals<-", "environment<-") ||
+        !operator %in% c("body<-", "formals<-", "environment<-")) return(NULL)
+  methods_body <- identical(operator, "body<-") &&
+    is_known_package_frame_call(expr, operator, "methods", scope, lookup)
+  if (!methods_body &&
         !is_known_base_frame_call(expr, operator, scope, lookup)) return(NULL)
   parts <- static_matched_arguments(
     expr, args(get(operator, envir = baseenv()))
@@ -4856,6 +4859,16 @@ scope_definition_replacement <- function(expr, scope, lookup) {
             is.list(value[[1L]]))) value <- NULL
   if ("envir" %in% names(parts)) value <- NULL
   scope_map_closure_elements(list(closure), function(variant) {
+    if (methods_body && !is.null(value)) {
+      # The omitted envir dispatches as missing. Only a plain closure and a
+      # known replacement reaching base retain a precise proof.
+      method <- methods::selectMethod(
+        methods::`body<-`, c("function", "missing", class(value[[1L]])[[1L]])
+      )
+      if (isTRUE(variant$dispatch_unknown) ||
+            !identical(variant$dispatch_classes %||% "function", "function") ||
+            !identical(method@.Data, base::`body<-`)) value <- NULL
+    }
     if (is.null(value)) {
       variant$definition[slot] <- list(NULL)
       variant$unknown_definition_parts <- union(
@@ -5878,6 +5891,9 @@ scope_promise_symbols <- function(name, scope, lookup,
       }
       variants <- scope_closure_variants(closure)
       return(unique(unlist(lapply(variants, function(variant) {
+        if (length(variant$unknown_definition_parts) > 0L) {
+          return(unresolved_lookup_name())
+        }
         if (scope_closure_is_active(variant, scope)) return(character())
         enclosure <- if (variant$enclosing <= length(scope)) {
           seq.int(variant$enclosing, length(scope))
