@@ -27,7 +27,7 @@ duckdb_metadata_tokens <- function(sql) {
 duckdb_json_schema_size <- function(arg) {
   if (length(arg) < 7L || arg[[1L]] != "columns" ||
         !arg[[2L]] %in% c("=", ":=") || arg[[3L]] != "{" ||
-        tail(arg, 1L) != "}") {
+        utils::tail(arg, 1L) != "}") {
     return(0L)
   }
   entries <- arg[seq.int(4L, length(arg) - 1L)]
@@ -43,7 +43,7 @@ duckdb_json_schema_size <- function(arg) {
   if (all(valid)) length(starts) else 0L
 }
 
-# Captured relation tokens, including comma joins and parenthesized sources.
+# Return relation spellings from duckdb_metadata_tokens() output.
 # Scalar function arguments have their own scope and do not name relations.
 duckdb_metadata_relations <- function(tokens) {
   frames <- list(list(
@@ -55,6 +55,13 @@ duckdb_metadata_relations <- function(tokens) {
     token <- tokens[[i]]
     n <- length(frames)
     frame <- frames[[n]]
+    # Consume quoted keywords and punctuation before SQL scope handling.
+    if (quoted[[i]]) {
+      if (frame$expect) relations <- c(relations, token)
+      frame$expect <- frame$start <- FALSE
+      frames[[n]] <- frame
+      next
+    }
     if (token == "(") {
       frames[[n]]$expect <- FALSE
       frames[[n + 1L]] <- list(
@@ -71,7 +78,7 @@ duckdb_metadata_relations <- function(tokens) {
       frame$table <- frame$expect <- FALSE
     } else if ((token %in% c("from", "pivot", "unpivot") &&
                   (frame$query || frame$start)) ||
-                 (token == "table" && frame$start && !quoted[[i]]) ||
+                 (token == "table" && frame$start) ||
                  (token == "join" && frame$table)) {
       frame$table <- frame$expect <- TRUE
     } else if (token %in% c(
@@ -94,9 +101,9 @@ duckdb_metadata_relations <- function(tokens) {
   relations
 }
 
-# Decode a captured CSV relation spelling without asking DuckDB to bind it.
+# Decode a captured reader relation spelling without asking DuckDB to bind it.
 # Escape strings permit hexadecimal and octal bytes within a filename suffix.
-duckdb_csv_relation_path <- function(token) {
+duckdb_reader_relation_path <- function(token) {
   if (grepl("^\\$[a-z_0-9]*\\$", token)) {
     return(sub(
       "(?s)^\\$([a-z_0-9]*)\\$(.*)\\$\\1\\$$", "\\2", token, perl = TRUE
@@ -155,13 +162,16 @@ abort_duckdb_reader_metadata <- function(family) {
 validate_duckdb_csv_metadata <- function(sql) {
   tokens <- duckdb_metadata_tokens(as.character(sql))
   relations <- duckdb_metadata_relations(tokens)
-  csv_relations <- vapply(relations, duckdb_csv_relation_path, character(1))
+  relation_paths <- vapply(relations, duckdb_reader_relation_path, character(1))
   if (any(grepl(
-    "[.](csv|tsv)([.](gz|zst))?$|[.](csv|tsv)[?]", csv_relations
+    "[.](csv|tsv)([.](gz|zst))?$|[.](csv|tsv)[?]", relation_paths
   ))) {
     abort_duckdb_reader_metadata("CSV")
   }
-  if (any(grepl("[.](json|jsonl|ndjson)([.](gz|zst|zstd))?'?$", relations))) {
+  if (any(grepl(
+    "[.](json|jsonl|ndjson)([.](gz|zst))?$|[.](json|jsonl|ndjson)[?]",
+    relation_paths
+  ))) {
     abort_duckdb_reader_metadata("JSON")
   }
   json <- c("read_json", "read_json_auto", "read_ndjson", "read_ndjson_auto")

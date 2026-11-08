@@ -96,6 +96,75 @@ test_that("JSON replacement scans cannot infer types during inspection", {
   }
 })
 
+test_that("JSON relation escapes and globs cannot hide type inference", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  duckdb_test_json_extension(con)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  path <- tempfile(fileext = ".json")
+  glob_path <- paste0(path, "_part")
+  on.exit(unlink(c(path, glob_path)), add = TRUE)
+  prefix <- substr(path, 1L, nchar(path) - 5L)
+  spellings <- c(
+    paste0("E'", prefix, "\\x2ejson'"),
+    paste0("E'", prefix, "\\056json'"),
+    paste0("$$", path, "$$"),
+    as.character(DBI::dbQuoteString(con, paste0(path, "?part")))
+  )
+  for (spelling in spellings) {
+    source <- dplyr::tbl(con, dbplyr::sql(paste0(
+      "SELECT * FROM ", spelling
+    )), vars = "k")
+    before <- serialize(source$lazy_query, NULL)
+    expect_identical(
+      inspect_grouping(source, .grouping = grouping_set(k))$included, "(k)"
+    )
+    expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+    for (value in c('{"k":101}', '{"k":"source_tail"}')) {
+      writeLines(value, path)
+      writeLines(value, glob_path)
+      native <- dplyr::collect(utils::head(source, 0L))
+      expect_identical(is.numeric(native$k), identical(value, '{"k":101}'))
+      for (input in list(source, dplyr::filter(source, k == k))) {
+        expect_error(
+          inspect_grouping(input, .by = where(is.numeric)),
+          "source rows", fixed = TRUE, class = "marginplyr_error"
+        )
+        expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+        expect_error(
+          inspect_grouping(input, .grouping = grouping_set(where(is.numeric))),
+          "source rows", fixed = TRUE, class = "marginplyr_error"
+        )
+        expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+      }
+    }
+    expect_identical(serialize(source$lazy_query, NULL), before)
+    unlink(c(path, glob_path))
+    expect_error(
+      inspect_grouping(source, .by = where(is.numeric)),
+      "source rows", fixed = TRUE, class = "marginplyr_error"
+    )
+  }
+})
+
+test_that("JSON-like ordinary table names retain faithful metadata", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  for (name in c("ordinary.json.zstd", "ordinary.json'")) {
+    DBI::dbWriteTable(con, name, data.frame(k = 1L))
+    source <- dplyr::tbl(con, dbplyr::sql(paste0(
+      "SELECT * FROM ", DBI::dbQuoteIdentifier(con, name)
+    )), vars = "k")
+    plan <- inspect_grouping(
+      source, .grouping = grouping_set(where(is.numeric))
+    )
+    expect_identical(plan$included, "(k)")
+  }
+})
+
 test_that("TABLE queries cannot hide JSON replacement inference", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()

@@ -129,6 +129,60 @@ test_that("CSV replacement guards preserve ordinary values and non-CSV files", {
   }
 })
 
+test_that("CSV relation parsing keeps quoted identifiers out of SQL grammar", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  for (name in c(
+    "select", "from", "join", "pivot", "unpivot", "table", "where",
+    "order", "union", "all", "(", ")", ","
+  )) {
+    identifier <- DBI::dbQuoteIdentifier(con, name)
+    literal <- dplyr::tbl(con, dbplyr::sql(paste0(
+      "SELECT coalesce(", identifier, ", 'absent.csv') AS label,101 AS k ",
+      "FROM (VALUES ('east')) AS control(", identifier, ")"
+    )), vars = c("label", "k"))
+    expect_true(is.numeric(dplyr::collect(utils::head(literal, 0L))$k))
+    plan <- inspect_grouping(
+      literal, .by = where(is.character),
+      .grouping = grouping_set(where(is.numeric))
+    )
+    expect_identical(plan$fixed, "(label)")
+    expect_identical(plan$included, "(k)")
+    expect_identical(last_sent_queries(details = TRUE)$purpose,
+                     "selection_proxy")
+  }
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  for (name in c("select", "where", "(", ")", ",")) {
+    DBI::dbWriteTable(con, name, data.frame(z = 1L))
+    source <- dplyr::tbl(con, dbplyr::sql(paste0(
+      "SELECT file.k FROM ", DBI::dbQuoteIdentifier(con, name),
+      " AS ordinary JOIN ", DBI::dbQuoteString(con, path),
+      " AS file ON true"
+    )), vars = "k")
+    before <- serialize(source$lazy_query, NULL)
+    for (value in c("101", "source_tail")) {
+      writeLines(c("k", value), path)
+      native <- dplyr::collect(utils::head(source, 0L))
+      expect_identical(is.numeric(native$k), identical(value, "101"))
+      expect_error(
+        inspect_grouping(source, .by = where(is.numeric)),
+        "source rows", fixed = TRUE, class = "marginplyr_error"
+      )
+      expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+      expect_error(
+        inspect_grouping(source, .grouping = grouping_set(where(is.numeric))),
+        "source rows", fixed = TRUE, class = "marginplyr_error"
+      )
+      expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
+    }
+    expect_identical(serialize(source$lazy_query, NULL), before)
+  }
+})
+
 test_that("equivalent CSV replacement spellings keep inference disabled", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
