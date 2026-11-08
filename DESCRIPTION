@@ -358,7 +358,8 @@ Config/testthat/start-first:
     share-list-replacement-dispatch,
     nest-local-list-converter,
     sf-shares,
-    share-singleton-bindings
+    share-singleton-bindings,
+    nest-dtplyr-frame-converter
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
