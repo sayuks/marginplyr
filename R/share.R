@@ -5994,8 +5994,7 @@ block_reads_and_scope <- function(expr, scope, lookup, read_symbols,
   list(reads = unique(reads), scope = scope)
 }
 
-# Find one replacement of a closure name or literal through base blocks.
-# The statement walker proves the carrier and setter before carrying the write.
+# Find one closure assignment through base blocks.
 scope_singleton_loop_write <- function(expr, scope, lookup) {
   while (rlang::is_call(expr, "{", n = 1L) &&
            is_known_base_frame_call(expr, "{", scope, lookup)) {
@@ -6003,7 +6002,7 @@ scope_singleton_loop_write <- function(expr, scope, lookup) {
   }
   name <- static_call_name(expr)
   if (!rlang::is_call(expr, c("<-", "="), n = 2L) ||
-        !rlang::is_call(expr[[2L]]) ||
+        !(is_name_part(expr[[2L]]) || rlang::is_call(expr[[2L]])) ||
         !is_known_base_frame_call(expr, name, scope, lookup)) {
     return(NULL)
   }

@@ -3,6 +3,9 @@
 * dtplyr Parent and Total shares preserve supported dot-dot summary output
   names through lazy construction and data-frame conversion (#1495).
 
+* Parent and Total share dependency checks retain ordinary local closures
+  replaced by a definite literal singleton loop (#1492).
+
 * Public `.grouping` capture preserves authored empty constructor arguments
   before empty splices and refuses them with their original position (#1489).
 
