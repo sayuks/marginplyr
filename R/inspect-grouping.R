@@ -70,7 +70,11 @@
 #' those types. Name-only inspection on dtplyr and DuckDB uses the input's
 #' captured column names. To inspect a derived dtplyr step with typed
 #' selections, call [dplyr::collect()] on it explicitly and
-#' pass the resulting data frame. The Grouping plan is deliberately separate
+#' pass the resulting data frame. DuckDB CSV readers that use auto-detection
+#' are also refused before typed metadata is requested: binding even a
+#' zero-row query can sample CSV values. Supply an explicit CSV schema with
+#' `auto_detect = false`, or collect explicitly before typed inspection.
+#' The Grouping plan is deliberately separate
 #' from a SQL execution plan. Use [dplyr::show_query()] for generated SQL and
 #' backend-native tools for an optimizer plan. With recording enabled before
 #' inspection, [last_sent_queries(include_result = FALSE)][last_sent_queries]

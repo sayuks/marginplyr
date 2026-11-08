@@ -361,7 +361,8 @@ Config/testthat/start-first:
     share-singleton-bindings,
     nest-dtplyr-frame-converter,
     grouping-quoted-factories,
-    share-definition-replacements
+    share-definition-replacements,
+    duckdb-csv-metadata
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
