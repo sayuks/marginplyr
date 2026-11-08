@@ -369,7 +369,8 @@ dtplyr_metadata_safe_step <- function(step, env = step[["env"]]) {
     }
     source <- parent[["parent"]]
     numeric_columns <- names(source)[vapply(source, function(x) {
-      is.numeric(x) && !is.object(x)
+      # Exclude objects before S4 numeric methods can receive source rows.
+      !is.object(x) && is.numeric(x)
     }, logical(1))]
     updates <- step[["new_vars"]]
     columns <- names(source)
@@ -533,7 +534,12 @@ grouping_selection_proxy <- function(.data,
     con <- if (duckdb) dbplyr::remote_con(query)
     # The simulated dialect carries the class name on an S3 object.
     if (isS4(con) && inherits(con, "duckdb_connection")) {
-      validate_duckdb_csv_query(query$lazy_query)
+      catalog <- NULL
+      read_catalog <- function() {
+        if (is.null(catalog)) catalog <<- duckdb_metadata_catalog(con)
+        catalog
+      }
+      validate_duckdb_csv_query(query$lazy_query, read_catalog)
       class(query) <- c("marginplyr_duckdb_selection", class(query))
     }
     proxy <- tryCatch(

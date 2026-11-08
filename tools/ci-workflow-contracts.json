@@ -112,6 +112,10 @@
             "shell": "Rscript {0}"
           },
           {
+            "name": "Provision DuckDB JSON extension",
+            "run": "Rscript .github/scripts/provision-duckdb-json.R"
+          },
+          {
             "name": "Check package",
             "uses": "r-lib/actions/check-r-package@v2",
             "with": {
@@ -637,6 +641,14 @@
             }
           },
           {
+            "name": "Provision DuckDB JSON extension",
+            "run": "Rscript .github/scripts/provision-duckdb-json.R"
+          },
+          {
+            "name": "Verify DuckDB JSON provisioning command fixtures",
+            "run": "Rscript tools/test-duckdb-json-provision.R"
+          },
+          {
             "name": "Verify every test executes in some backend configuration",
             "run": "Rscript .github/scripts/verify-suite-coverage.R"
           }
@@ -970,6 +982,11 @@
             }
           },
           {
+            "name": "Provision DuckDB JSON extension",
+            "if": "matrix.backend.name == 'duckdb'",
+            "run": "Rscript .github/scripts/provision-duckdb-json.R"
+          },
+          {
             "name": "Check the tarball with ${{ matrix.backend.name }} installed",
             "run": "Rscript .github/scripts/check-tarball.R"
           },
@@ -1174,6 +1191,10 @@
               "extra-packages": "any::covr, any::xml2, any::yaml",
               "needs": "coverage"
             }
+          },
+          {
+            "name": "Provision DuckDB JSON extension",
+            "run": "Rscript .github/scripts/provision-duckdb-json.R"
           },
           {
             "name": "Verify coverage exclusion policy",

@@ -343,6 +343,105 @@ or collect explicitly. Name-only inspection still uses captured names without
 opening the source. Ordinary tables, explicit-schema CSV metadata, the dynamic
 PIVOT refusal and the single typed snapshot remain unchanged.
 
+## Amendment (#1519): CSV filename replacement scans also infer source values
+
+DuckDB binds CSV filename relations such as `FROM 'path.csv'` through
+`read_csv_auto`, so the CSV sampling refusal also applies to those captured
+relations. It covers CSV and TSV suffixes, gzip and zstd compression, glob
+patterns, and equivalent quoted or escaped spellings in relation positions.
+Scalar strings and non-CSV relations do not establish an inferred CSV source.
+Name-only inspection still uses captured names without opening a file; typed
+inspection requires an established reader schema or explicit collection.
+
+The accepted suffixes follow `ReadCSVReplacement` in the
+[DuckDB 1.5 source][csv-replacement].
+
+[csv-replacement]: https://github.com/duckdb/duckdb/blob/v1.5.0/src/function/table/read_csv.cpp
+
+## Amendment (#1516): JSON schema and record inference are source work
+
+The first exemption also excludes JSON sampling during DuckDB binding, for
+`read_json`, `read_json_auto`, `read_ndjson`, `read_ndjson_auto` and JSON file
+replacement scans. JSON requires established types and an established record
+mode. A literal schema disables type inference; more than one literal column
+also establishes record mode. With a single column, record mode must be
+explicit, even with `auto_detect = false`: automatic record detection still
+samples objects. Unresolved readers are refused before binding and direct the
+caller to established metadata or explicit collection. Name-only inspection
+continues to use captured names.
+
+DuckDB's [JSON loading reference][json-loading] documents its inference options.
+The additional record-mode boundary is implemented by
+`JSONMultiFileInfo::BindReader` in the
+[DuckDB 1.5 source][json-binding], and live tests distinguish schema-only binding
+from sampling using malformed JSON contents.
+
+[json-loading]: https://duckdb.org/docs/1.5/data/json/loading_json
+[json-binding]: https://github.com/duckdb/duckdb/blob/v1.5.0/extension/json/json_multi_file_info.cpp
+
+## Amendment (#1524): resolve relations before classifying filename fallback
+
+A CSV or JSON suffix names a replacement scan only when DuckDB cannot resolve
+the captured relation as a CTE or catalog relation. CTE visibility follows its
+SQL scope, including self-reference under `WITH RECURSIVE`; its definition is
+still checked for unsafe readers and unresolved filenames. Typed metadata
+preflight may read DuckDB's system catalog names, stored view definitions,
+macro names and configured search path once per operation to distinguish
+existing relations from filename fallback.
+That query binds no caller relation and reads no source values. It is not a
+second input-type snapshot under ADR 0002 or a further exemption for reading
+the input. Name-only inspection performs neither catalog nor typed reads.
+
+Identifier comparison uses ADR 0032's ASCII-only equivalence throughout captured
+SQL, decoded names, common table expressions and catalog lookup. Distinct
+non-ASCII spellings remain distinct; the caller's SQL is unchanged.
+
+A stored view's name alone does not establish safety. Preflight follows its
+definition and nested views in their own catalog/schema search context, without
+inheriting the caller's common table expressions. Existing reader checks apply
+inside those definitions. Cycles, macro calls and table functions whose safety
+is not established are refused before binding, with the option to supply
+established reader metadata directly or collect explicitly. View definitions
+and macro names belong to the same catalog acquisition, not additional queries.
+After macro admission, stored-view arguments also accept DuckDB's parenthesized
+named arguments, literal Boolean casts and literal `struct_pack` schema form.
+These are recognized syntactically without evaluating expressions. Other
+expressions do not establish a disabled inference option or a literal schema.
+Macro lookup distinguishes call positions from stored table-alias and common
+table expression column declarations. Declaring a name does not exempt an
+actual call to the same name elsewhere in that definition.
+The same catalog query includes DuckDB's keyword inventory from
+[`duckdb_keywords()`][relation-keywords]. In stored view SQL,
+[`FunctionExpression::ToString`][relation-function-printer] writes function names
+through `KeywordHelper::WriteOptionallyQuoted`. Its
+[default keyword category][relation-keyword-default] and
+[quoting rule][relation-keyword-quoting] quote every keyword, including unreserved
+ones. Unquoted keyword heads in that stored representation are therefore syntax,
+while quoted function names remain eligible for macro lookup. This rule is
+restricted to stored view SQL; it is not applied to authored captured SQL.
+
+The catalog query is a Sent query under ADR 0027, including when an unresolved
+filename is subsequently refused. The existing zero-row input query remains
+the sole typed snapshot. `dbExistsTable()` is unsuitable here: DuckDB's DBI
+method binds `SELECT * FROM <name> WHERE FALSE`, which can itself trigger the
+replacement scan being guarded.
+
+Catalog resolution follows `GetCatalogEntries` in DuckDB's
+[catalog implementation][relation-catalog] and `SetPathsInternal` in its
+[search-path implementation][relation-search-path].
+View lookup follows `Binder::GetSearchPath` and `Binder::Bind(BaseTableRef&)` in
+the [view binder][relation-view-binder], and `SetSearchPath` in the
+[catalog entry retriever][relation-entry-retriever].
+
+[relation-catalog]: https://github.com/duckdb/duckdb/blob/v1.5.0/src/catalog/catalog.cpp
+[relation-search-path]: https://github.com/duckdb/duckdb/blob/v1.5.0/src/catalog/catalog_search_path.cpp
+[relation-view-binder]: https://github.com/duckdb/duckdb/blob/v1.5.0/src/planner/binder/tableref/bind_basetableref.cpp
+[relation-entry-retriever]: https://github.com/duckdb/duckdb/blob/v1.5.0/src/catalog/catalog_entry_retriever.cpp
+[relation-keywords]: https://duckdb.org/docs/1.5/sql/meta/duckdb_table_functions#duckdb_keywords
+[relation-function-printer]: https://github.com/duckdb/duckdb/blob/v1.5.0/src/include/duckdb/parser/expression/function_expression.hpp
+[relation-keyword-default]: https://github.com/duckdb/duckdb/blob/v1.5.0/src/include/duckdb/parser/keyword_helper.hpp
+[relation-keyword-quoting]: https://github.com/duckdb/duckdb/blob/v1.5.0/src/parser/keyword_helper.cpp
+
 ## Amendment (#640): SQLite typed-order execution follows an explicit request
 
 ADR 0031's live SQLite result builds its typed compound query without executing

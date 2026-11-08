@@ -50,11 +50,13 @@ new_margin_operation <- function(data,
 # payload into a cell and rebuilds it there (#421).
 # `declared_types` names package-created result columns and their promised R
 # types, independent of what an empty SQL result lets its driver infer.
+# `output_order` carries summary expression order through subclass methods.
 new_margin_execution <- function(result, sort_id = NULL, factor_info = NULL,
-                                 declared_types = character()) {
+                                 declared_types = character(),
+                                 output_order = character()) {
   structure(
     list(result = result, sort_id = sort_id, factor_info = factor_info,
-         declared_types = declared_types),
+         declared_types = declared_types, output_order = output_order),
     class = "marginplyr_margin_execution"
   )
 }
@@ -393,7 +395,8 @@ finalize_margin_operation <- function(operation, execution,
   margin_cols <- c(
     operation$plan$by,
     operation$plan$dimensions,
-    operation$set_id_name
+    operation$set_id_name,
+    execution$output_order
   )
   result <- reorder_margin_columns(result, margin_cols)
 

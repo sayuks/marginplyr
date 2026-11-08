@@ -21,6 +21,62 @@ duckdb_test_connection <- function(...) {
   DBI::dbConnect(duckdb::duckdb(shared_home = FALSE), ...)
 }
 
+# Live JSON tests need the extension already available; never install it here.
+# A supplied path permits an isolated extension without a shared home cache.
+duckdb_test_json_extension <- function(con) {
+  path <- Sys.getenv("MARGINPLYR_DUCKDB_JSON_EXTENSION", "")
+  sql <- if (nzchar(path)) {
+    paste("LOAD", DBI::dbQuoteString(con, path))
+  } else {
+    "LOAD json"
+  }
+  tryCatch(DBI::dbExecute(con, sql), error = function(cnd) {
+    if (nzchar(path)) {
+      stop(cnd)
+    }
+    testthat::skip(paste(
+      "DuckDB json extension unavailable; install it before testing or set",
+      "MARGINPLYR_DUCKDB_JSON_EXTENSION to an isolated extension path."
+    ))
+  })
+  invisible(NULL)
+}
+
+# A replacement-scan refusal may read catalog names, never bind its source.
+# The public audit exposes that complete, successful internal operation.
+expect_duckdb_catalog_only <- function() {
+  audit <- marginplyr::last_sent_queries(details = TRUE)
+  testthat::expect_identical(audit$purpose, "relation_catalog")
+  testthat::expect_identical(audit$source, "literal")
+  testthat::expect_identical(audit$status, "returned")
+  # Compare the complete catalog-only query shape without fixing whitespace.
+  tokens <- function(sql) {
+    regmatches(sql, gregexpr("'(?:[^']|'')*'|[[:alnum:]_]+|[^[:space:]]",
+                             sql, perl = TRUE))
+  }
+  testthat::expect_identical(tokens(audit$sql), tokens(paste(
+    "SELECT database_name, schema_name, table_name AS relation_name,",
+    "'table' AS kind, NULL::VARCHAR AS definition,",
+    "system.main.current_database() AS default_database,",
+    "system.main.current_setting('search_path') AS search_path",
+    "FROM system.main.duckdb_tables() UNION ALL",
+    "SELECT database_name, schema_name, view_name, 'view', sql,",
+    "system.main.current_database(),",
+    "system.main.current_setting('search_path')",
+    "FROM system.main.duckdb_views() UNION ALL",
+    "SELECT database_name, schema_name, function_name, function_type, NULL,",
+    "system.main.current_database(),",
+    "system.main.current_setting('search_path')",
+    "FROM system.main.duckdb_functions()",
+    "WHERE function_type IN ('macro', 'table_macro') UNION ALL",
+    "SELECT NULL, NULL, keyword_name, 'keyword', keyword_category,",
+    "system.main.current_database(),",
+    "system.main.current_setting('search_path')",
+    "FROM system.main.duckdb_keywords()"
+  )))
+  testthat::expect_equal(nrow(audit$conditions[[1L]]), 0L)
+}
+
 # Count actual query sends. The caller registers `counter$untrace()` on exit.
 duckdb_query_counter <- function() {
   counter <- new.env(parent = emptyenv())

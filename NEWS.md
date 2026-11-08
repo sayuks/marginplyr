@@ -1,5 +1,35 @@
 # marginplyr 0.1.0
 
+* Typed DuckDB Grouping inspection refuses CSV filename replacement scans
+  before source-value inference, while preserving captured-name inspection
+  and explicit reader metadata. Common table expressions and catalog relations
+  with CSV or JSON names retain ordinary typed inspection (#1519).
+
+* Parent and Total shares preserve requested sf summary geometry columns and
+  explicit output order without exposing private denominator geometry (#1515).
+
+* Top-level `.grouping` factories preserve caller-owned constructor syntax
+  through custom expression capture and quotation aliases, while rebound quotation names
+  retain the authored-empty refusal of constructors they execute (#1517).
+
+* Typed DuckDB Grouping inspection refuses JSON type and record inference
+  before sampling source values, including JSON file replacement scans, while
+  preserving name-only inspection and established reader metadata (#1516).
+
+* Typed dtplyr inspection excludes object columns before numeric admission
+  checks, preventing implicit S4 method calls on source values (#1518).
+
+* Both Nest verbs preserve local cell values, fixed partitions, and displayed
+  keys under registered `as_tibble.data.frame` converters (#1512).
+
+* Top-level `.grouping` factories preserve authored empty constructor positions
+  in evaluated quotation operands, including `bquote()` substitutions and
+  `substitute()` environments (#1514).
+
+* Parent and Total share dependency checks follow closure body, formal and
+  enclosure replacements through known list and fresh environment members,
+  including replacements that remove an earlier dependency (#1513).
+
 * `share_of_parent()` and `share_of_total()` now follow visible closure enclosure replacements when validating dependencies, refusing earlier-summary dependencies while preserving unchanged and proven independent enclosures (#1504).
 
 * Typed DuckDB Grouping inspection refuses CSV auto-detection before binding

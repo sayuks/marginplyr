@@ -33,6 +33,7 @@
       collect.marginplyr_sqlite_typed_result
       compute.marginplyr_duckdb_env
       compute.marginplyr_sqlite_typed_result
+      duckdb_metadata_catalog
       execute_margin_expand
       execute_margin_nest
       execute_margin_summary

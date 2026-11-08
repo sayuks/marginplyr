@@ -72,7 +72,8 @@
 #' selections, call [dplyr::collect()] on it explicitly and
 #' pass the resulting data frame. DuckDB CSV readers that use auto-detection
 #' are also refused before typed metadata is requested: binding even a
-#' zero-row query can sample CSV values. Supply an explicit CSV schema with
+#' zero-row query can sample CSV values. This includes filename replacement
+#' scans such as `FROM 'path.csv'`. Supply an explicit CSV schema with
 #' `auto_detect = false`, or collect explicitly before typed inspection.
 #' The Grouping plan is deliberately separate
 #' from a SQL execution plan. Use [dplyr::show_query()] for generated SQL and

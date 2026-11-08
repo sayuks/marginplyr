@@ -235,69 +235,24 @@ grouping_spec <- function(...) {
   new_grouping_spec("product", args)
 }
 
-# Capture a public .grouping argument before an empty splice can make an
-# authored constructor position look like an omitted trailing comma.
+# Capture public injection without rewriting authored empty constructor syntax.
+# A factory may inspect any argument as language before deciding what to run.
 capture_public_grouping <- function(quo, written) {
   if (is_captured_grouping_quosure(written, quo)) {
     return(quo)
   }
   capture <- function(x) rlang::enquo(x)
   env <- rlang::quo_get_env(quo)
-  expr <- mark_grouping_empty_args(rlang::quo_get_expr(quo))
+  expr <- preserve_grouping_quosures(rlang::quo_get_expr(quo))
   rlang::eval_bare(rlang::call2(capture, expr), env)
-}
-
-# Mark calls whose last argument can become an authored empty after splicing.
-# Language captures and supplied function literals remain caller-owned syntax.
-mark_grouping_empty_args <- function(expr) {
-  if (rlang::is_missing(expr) || rlang::is_quosure(expr) ||
-        !(is.call(expr) || is.pairlist(expr))) {
-    return(expr)
-  }
-  if (is.call(expr)) {
-    capture <- expr
-    # Grouping capture preserves language even through a parenthesized callee.
-    capture[[1L]] <- unparenthesized_value(capture[[1L]])
-    if (identical(static_call_name(capture), "function") ||
-          any(captured_call_parts(capture))) {
-      return(expr)
-    }
-    if (identical(static_call_name(capture[[1L]]), "function")) {
-      expr[[1L]] <- mark_executed_grouping_body(expr[[1L]])
-    }
-  }
-  parts <- as.list(expr)
-  positions <- seq_along(parts)[-c(1L, length(parts))]
-  keep_empty <- !is.null(static_spelling_name(expr, "grouping_constructor")) &&
-    any(vapply(parts[positions], rlang::is_missing, logical(1))) &&
-    !rlang::is_missing(parts[[length(parts)]])
-  parts <- lapply(parts, mark_grouping_empty_args)
-  out <- if (is.call(expr)) as.call(parts) else as.pairlist(parts)
-  attributes(out) <- attributes(expr)
-  if (keep_empty) {
-    attr(out, "marginplyr_keep_empty") <- TRUE
-  }
-  out
-}
-
-# Mark only the body of an immediately called function literal. The caller
-# establishes that the callee is a literal, possibly wrapped in parentheses.
-mark_executed_grouping_body <- function(expr) {
-  if (is_parenthesized(expr)) {
-    expr[[2L]] <- mark_executed_grouping_body(expr[[2L]])
-  } else {
-    expr[[3L]] <- mark_grouping_empty_args(expr[[3L]])
-  }
-  expr
 }
 
 # Capture tagged arguments without interpreting their values, so preflight can
 # report their original names. Untagged arguments retain tidy-eval capture,
 # including injections and the omission of a trailing empty argument. Already
 # captured quosures retain their own injection boundary. The caller must be
-# the constructor itself, whose invocation can carry the outer capture marker.
+# the constructor itself.
 capture_grouping_args <- function(...) {
-  keep_empty <- isTRUE(attr(sys.call(-1L), "marginplyr_keep_empty"))
   written <- as.list(substitute(list(...)))[-1L]
   args <- rlang::enquos0(...)
   if (length(args) == 0L || any(nzchar(rlang::names2(args)))) {
@@ -310,14 +265,13 @@ capture_grouping_args <- function(...) {
   protected <- lapply(expressions, preserve_grouping_quosures)
   if (!any(captured) && identical(expressions, protected)) {
     return(rlang::enquos(
-      ..., .ignore_empty = if (keep_empty) "none" else "trailing"
+      ..., .ignore_empty = "trailing"
     ))
   }
   capture <- function(...) rlang::enquos(..., .ignore_empty = "none")
   positions <- seq_along(args)
   # Omit the last raw empty argument before splicing can remove a successor.
-  if (!keep_empty &&
-        rlang::is_missing(expressions[[length(args)]])) {
+  if (rlang::is_missing(expressions[[length(args)]])) {
     positions <- positions[-length(positions)]
   }
   args <- lapply(positions, function(i) {
@@ -347,13 +301,21 @@ capture_grouping_binding <- function(expr, env) {
   ), error = function(cnd) NULL)
 }
 
-# Keep already captured quosures opaque to a constructor's next injection pass.
+# Keep quosures and empty constructor syntax opaque to another injection pass.
 preserve_grouping_quosures <- function(expr) {
+  # Injection operands execute as written in the caller's environment.
+  if (rlang::is_call(expr, "!", n = 1L) &&
+        rlang::is_call(expr[[2L]], "!", n = 1L)) {
+    return(expr)
+  }
   if (rlang::is_missing(expr)) {
     return(rlang::missing_arg())
   }
-  if (rlang::is_quosure(expr)) {
-    # Injection must receive the captured value rather than evaluate its body.
+  if (rlang::is_quosure(expr) ||
+        !is.null(static_spelling_name(expr, "grouping_constructor")) &&
+          any(vapply(utils::head(static_call_args(expr), -1L),
+                     rlang::is_missing, logical(1)))) {
+    # Insert the original value without another recursive injection pass.
     value <- function() expr
     return(rlang::call2("!", rlang::call2("!", rlang::call2(value))))
   }

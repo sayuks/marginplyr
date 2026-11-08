@@ -1,7 +1,7 @@
 # Shared mutation inputs for the existing local and CI command seams.
 workflow_contract_cases <- function() {
-  edit_workflow <- function(old, new) function(root) {
-    path <- file.path(root, ".github/workflows/lint.yaml")
+  edit_workflow <- function(old, new, workflow = "lint.yaml") function(root) {
+    path <- file.path(root, ".github/workflows", workflow)
     text <- paste0(paste(readLines(path), collapse = "\n"), "\n")
     stopifnot(grepl(old, text, fixed = TRUE))
     cat(sub(old, new, text, fixed = TRUE), file = path)
@@ -36,6 +36,21 @@ workflow_contract_cases <- function() {
       ".github/workflows/lint.yaml")), diagnostic = "workflow inventory differs"),
     command = list(edit = edit_workflow("run: Rscript tools/verify-test-priority.R",
       "run: echo skipped"), diagnostic = mismatch),
+    json_check_setup = list(edit = edit_workflow(
+      "run: Rscript .github/scripts/provision-duckdb-json.R", "run: echo skipped",
+      "R-CMD-check.yaml"), diagnostic = mismatch),
+    json_structure_setup = list(edit = edit_workflow(
+      "run: Rscript .github/scripts/provision-duckdb-json.R", "run: echo skipped",
+      "release-matrix.yaml"), diagnostic = mismatch),
+    json_setup_fixtures = list(edit = edit_workflow(
+      "run: Rscript tools/test-duckdb-json-provision.R", "run: echo skipped",
+      "release-matrix.yaml"), diagnostic = mismatch),
+    json_backend_isolation = list(edit = edit_workflow(
+      "if: matrix.backend.name == 'duckdb'", "if: true",
+      "release-matrix.yaml"), diagnostic = mismatch),
+    json_coverage_setup = list(edit = edit_workflow(
+      "run: Rscript .github/scripts/provision-duckdb-json.R", "run: echo skipped",
+      "test-coverage.yaml"), diagnostic = mismatch),
     setup_go_version = list(edit = edit_workflow("actions/setup-go@v7",
       "actions/setup-go@v6"), diagnostic = mismatch),
     removed_step = list(edit = edit_workflow(step, ""), diagnostic = mismatch),

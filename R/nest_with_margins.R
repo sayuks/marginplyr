@@ -614,8 +614,12 @@ nest_expanded_margins <- function(.data,
                                   .key,
                                   kind,
                                   drop_set_col = TRUE) {
-  # Subclass summary methods may aggregate payload columns outside the cells.
-  .data <- margin_column_source(.data)
+  # The fold receives a generated frame. Its keys and payload use tibble's
+  # stock frame converter without as_tibble() dispatch (ADR 0016).
+  if (is.data.frame(.data) && length(class(.data)) > 1L) {
+    converter <- utils::getFromNamespace("as_tibble.data.frame", "tibble")
+    .data <- converter(.data, .name_repair = "minimal")
+  }
   # dplyr consumes `.rows` when it constructs local grouping keys. Alias
   # only outer keys; payload and list-column names never enter that metadata.
   outer_cols <- c(group_cols, set_col, unname(identity_cols))
