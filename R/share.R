@@ -5011,18 +5011,20 @@ scope_definition_write <- function(target, value) {
     path[[length(path) + 1L]] <- carrier
     carrier <- unparenthesized_value(carrier[[2L]])
   }
-  if (length(path) == 0L || !is_name_part(carrier) ||
-        !static_call_name(path[[length(path)]]) %in%
-          c("body", "formals", "environment")) {
+  definitions <- which(vapply(path, function(step) {
+    static_call_name(step) %in% c("body", "formals", "environment")
+  }, logical(1)))
+  if (length(definitions) == 0L || !is_name_part(carrier)) {
     return(NULL)
   }
-  for (step in path) {
+  definition <- definitions[[1L]]
+  for (step in path[seq_len(definition)]) {
     args <- static_call_args(step)
     names(args) <- replace(rlang::names2(args), 1L, "")
     value <- rlang::call2(paste0(static_call_name(step), "<-"), !!!args,
                           value = value, .ns = static_call_ns(step))
   }
-  list(name = rlang::as_name(carrier), value = value)
+  list(target = path[[definition]][[2L]], value = value)
 }
 
 # Select a visible member without evaluating its carrier or key.
@@ -6114,8 +6116,15 @@ scope_after_carrier_write <- function(scope, target, value, lookup,
   if (!rlang::is_call(target) || rlang::is_missing(value)) return(scope)
   replacement <- scope_definition_write(target, value)
   if (!is.null(replacement)) {
-    return(scope_bind_local(scope, replacement$name, replacement$value,
-                            lookup, value_scope))
+    if (is_name_part(unparenthesized_value(replacement$target))) {
+      return(scope_bind_local(
+        scope, rlang::as_name(unparenthesized_value(replacement$target)),
+        replacement$value, lookup, value_scope
+      ))
+    }
+    return(scope_after_carrier_write(
+      scope, replacement$target, replacement$value, lookup, value_scope
+    ))
   }
   updated <- scope_closure_attribute_write(
     scope, target, value, lookup, value_scope
