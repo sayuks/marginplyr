@@ -365,6 +365,8 @@ Config/testthat/start-first:
     grouping-quoted-factories,
     duckdb-csv-metadata,
     share-enclosure-replacements,
+    dtplyr-numeric-metadata,
+    nest-local-frame-converter,
     share-member-definition-replacements,
     duckdb-json-metadata
 VignetteBuilder:

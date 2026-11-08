@@ -4,6 +4,12 @@
   before sampling source values, including JSON file replacement scans, while
   preserving name-only inspection and established reader schemas (#1516).
 
+* Typed dtplyr inspection excludes object columns before numeric admission
+  checks, preventing unrequested S4 method calls on source values (#1518).
+
+* Both Nest verbs preserve local cell values, fixed partitions, and displayed
+  keys under registered `as_tibble.data.frame` converters (#1512).
+
 * Top-level `.grouping` factories preserve authored empty constructor positions
   in evaluated quotation operands, including `bquote()` substitutions and
   `substitute()` environments (#1514).
