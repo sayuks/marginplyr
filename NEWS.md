@@ -4,6 +4,12 @@
   environments through `invisible()` and local aliases, while preserving
   independent field replacements (#1493).
 
+* dtplyr Parent and Total shares preserve supported dot-dot summary output
+  names through lazy construction and data-frame conversion (#1495).
+
+* Parent and Total share dependency checks retain ordinary local closures
+  replaced by a definite literal singleton loop (#1492).
+
 * Public `.grouping` capture preserves authored empty constructor arguments
   before empty splices and refuses them with their original position (#1489).
 
@@ -12,6 +18,10 @@
 
 * Both Nest verbs preserve local cell values under registered
   `as_tibble.list` converters (#1490).
+
+* Parent and Total share dependency checks retain local closures returned by
+  `base::as.function()` and by `base::Vectorize()` when the closure has no
+  formal arguments (#1491).
 
 * Parent and Total share dependency checks retain local closures returned by
   `rlang::as_function()` and `compiler::cmpfun()` (#1482).
