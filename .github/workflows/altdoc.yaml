@@ -29,7 +29,7 @@ jobs:
         with:
           use-public-rspm: true
 
-      - uses: quarto-dev/quarto-actions/setup@v2
+      - uses: ./.github/actions/setup-quarto
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:

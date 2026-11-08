@@ -62,10 +62,11 @@
             "uses": "actions/checkout@v7"
           },
           {
-            "uses": "quarto-dev/quarto-actions/setup@v2"
+            "uses": "./.github/actions/setup-quarto"
           },
           {
             "uses": "r-lib/actions/setup-r@v2",
+            "id": "setup-r",
             "with": {
               "r-version": "${{ matrix.config.r }}",
               "http-user-agent": "${{ matrix.config.http-user-agent }}"
@@ -121,7 +122,7 @@
           },
           {
             "name": "Summarize the check log",
-            "if": "always()",
+            "if": "always() && steps.setup-r.outcome == 'success'",
             "run": "Rscript .github/scripts/summarize-check-log.R",
             "env": {
               "MARGINPLYR_CHECK_LABEL": "${{ matrix.config.os }} (${{ matrix.config.r }})"
@@ -172,7 +173,7 @@
             }
           },
           {
-            "uses": "quarto-dev/quarto-actions/setup@v2"
+            "uses": "./.github/actions/setup-quarto"
           },
           {
             "uses": "r-lib/actions/setup-r-dependencies@v2",
@@ -265,7 +266,7 @@
             "uses": "actions/checkout@v7"
           },
           {
-            "uses": "quarto-dev/quarto-actions/setup@v2"
+            "uses": "./.github/actions/setup-quarto"
           },
           {
             "uses": "r-lib/actions/setup-r@v2",
@@ -456,7 +457,7 @@
           },
           {
             "name": "Verify CI artifacts and their command fixtures",
-            "run": "Rscript tools/verify-ci-artifacts.R\nRscript tools/test-ci-artifacts.R\nRscript tools/test-interruption-supervisors.R\n"
+            "run": "Rscript tools/verify-ci-artifacts.R\nRscript tools/test-ci-artifacts.R\nRscript tools/test-quarto-setup.R\nRscript tools/test-interruption-supervisors.R\n"
           },
           {
             "name": "Verify R runner process contracts",
@@ -680,7 +681,7 @@
             "uses": "actions/checkout@v7"
           },
           {
-            "uses": "quarto-dev/quarto-actions/setup@v2"
+            "uses": "./.github/actions/setup-quarto"
           },
           {
             "uses": "r-lib/actions/setup-r@v2",
@@ -787,7 +788,7 @@
             "uses": "actions/checkout@v7"
           },
           {
-            "uses": "quarto-dev/quarto-actions/setup@v2"
+            "uses": "./.github/actions/setup-quarto"
           },
           {
             "uses": "r-lib/actions/setup-r@v2",
@@ -873,7 +874,7 @@
             "uses": "actions/checkout@v7"
           },
           {
-            "uses": "quarto-dev/quarto-actions/setup@v2"
+            "uses": "./.github/actions/setup-quarto"
           },
           {
             "uses": "r-lib/actions/setup-r@v2",
@@ -1101,7 +1102,7 @@
             }
           },
           {
-            "uses": "quarto-dev/quarto-actions/setup@v2"
+            "uses": "./.github/actions/setup-quarto"
           },
           {
             "uses": "r-hub/actions/platform-info@v1",
