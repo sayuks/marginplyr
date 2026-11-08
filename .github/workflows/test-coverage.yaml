@@ -35,6 +35,9 @@ jobs:
           extra-packages: any::covr, any::xml2, any::yaml
           needs: coverage
 
+      - name: Provision DuckDB JSON extension
+        run: Rscript .github/scripts/provision-duckdb-json.R
+
       - name: Verify coverage exclusion policy
         run: Rscript .github/scripts/verify-coverage-policy.R
 

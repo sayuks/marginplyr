@@ -23,6 +23,7 @@ main <- function() {
              "tools/dependency-requirements.R", "tools/fixtures/workflow-contract-cases.R",
              "tools/fixtures/review-dependency-contract-cases.R", ".github/scripts/verify-cran-preflight.R",
              ".github/scripts/verify-doc-references.R", ".github/scripts/summarize-check-log.R",
+             ".github/scripts/provision-duckdb-json.R",
              list.files(file.path(source_root, ".github/workflows"),
                         pattern = "\\.ya?ml$", full.names = FALSE))
   files[!grepl("/", files, fixed = TRUE)] <- file.path(".github/workflows", files[!grepl("/", files, fixed = TRUE)])
