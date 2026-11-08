@@ -248,7 +248,7 @@ capture_public_grouping <- function(quo, written) {
 }
 
 # Mark calls whose last argument can become an authored empty after splicing.
-# Language captures and supplied function literals remain caller-owned syntax.
+# Quoted operands and supplied function literals remain caller-owned syntax.
 mark_grouping_empty_args <- function(expr) {
   if (rlang::is_missing(expr) || rlang::is_quosure(expr) ||
         !(is.call(expr) || is.pairlist(expr))) {
@@ -258,9 +258,24 @@ mark_grouping_empty_args <- function(expr) {
     capture <- expr
     # Grouping capture preserves language even through a parenthesized callee.
     capture[[1L]] <- unparenthesized_value(capture[[1L]])
-    if (identical(static_call_name(capture), "function") ||
-          any(captured_call_parts(capture))) {
+    if (identical(static_call_name(capture), "function")) {
       return(expr)
+    }
+    captured <- captured_call_parts(capture)
+    if (any(captured)) {
+      parts <- as.list(expr)
+      for (i in seq_along(captured)) {
+        if (!captured[[i]]) {
+          parts[i + 1L] <- list(mark_grouping_empty_args(parts[[i + 1L]]))
+        } else if (is_bquote_capture(capture, captured)) {
+          parts[i + 1L] <- list(map_bquote_substitutions(
+            parts[[i + 1L]], mark_grouping_empty_args
+          ))
+        }
+      }
+      out <- as.call(parts)
+      attributes(out) <- attributes(expr)
+      return(out)
     }
     if (identical(static_call_name(capture[[1L]]), "function")) {
       expr[[1L]] <- mark_executed_grouping_body(expr[[1L]])
