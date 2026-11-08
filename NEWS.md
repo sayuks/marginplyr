@@ -1,5 +1,31 @@
 # marginplyr 0.1.0
 
+* Parent and Total share dependency checks follow unchanged fresh closure
+  environments through `invisible()` and local aliases, while preserving
+  independent field replacements and dependencies through conditional alias
+  rebinding (#1493, #1501).
+
+* dtplyr Parent and Total shares preserve supported dot-dot summary output
+  names through lazy construction and data-frame conversion (#1495).
+
+* Parent and Total share dependency checks retain ordinary local closures
+  replaced by a definite literal singleton loop (#1492).
+
+* Public `.grouping` capture preserves authored empty constructor arguments
+  before empty splices and refuses them with their original position (#1489).
+
+* Parent and Total shares match active geometry fixed keys on local sf
+  inputs without requesting a spatial join (#1494).
+
+* Both Nest verbs preserve local cell values under registered
+  `as_tibble.list` converters (#1490).
+
+* Parent and Total share dependency checks retain local closures returned by
+  `base::as.function()` and by `base::Vectorize()` when the closure has no
+  formal arguments, including after non-class attribute writes, and follow
+  independent closures returned by caller-defined attribute setters
+  (#1491, #1501).
+
 * Parent and Total share dependency checks retain local closures returned by
   `rlang::as_function()` and `compiler::cmpfun()` (#1482).
 
