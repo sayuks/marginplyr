@@ -6,8 +6,11 @@ test_that("SQLite expansion preserves an empty-first ordered input LIMIT", {
     con, data.frame(g = c("c", "b", "a"), v = 1:3), "facts"
   )
   selected <- head(dplyr::arrange(source, .data$v), 2L)
+  # Qualified constructors avoid testthat's cloned lazy bindings.
   query <- expand_with_margins(
-    selected, .grouping = grouping_sets(grouping_set(), grouping_set("g")),
+    selected, .grouping = grouping_sets(
+      marginplyr::grouping_set(), marginplyr::grouping_set("g")
+    ),
     .margin_label = NULL
   )
   expected <- data.frame(g = c(NA_character_, NA_character_, "b", "c"),
