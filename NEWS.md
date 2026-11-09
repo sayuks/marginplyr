@@ -1,5 +1,10 @@
 # marginplyr 0.1.0
 
+* Typed DuckDB inspection and expansion refuse opaque authored macro and
+  `query()` calls before binding can infer types from source values. Captured
+  names, explicit reader metadata and ordinary table functions remain available
+  (#1533).
+
 * Typed DuckDB Grouping inspection follows authored SQL views regardless of
   their names before binding, so ordinary names cannot hide source-value
   inference. Safe nested common table expressions retain typed inspection

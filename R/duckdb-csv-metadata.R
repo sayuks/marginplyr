@@ -84,6 +84,7 @@ duckdb_json_schema_size <- function(arg) {
 
 # Return multipart relation names outside locally bound CTE references.
 # Scalar function arguments have their own scope and do not name relations.
+# The positions attribute retains source starts before CTE filtering.
 duckdb_metadata_relations <- function(tokens, functions = FALSE) {
   bindings <- duckdb_metadata_ctes(tokens)
   query_starts <- attr(bindings, "query_starts")
@@ -109,8 +110,8 @@ duckdb_metadata_relations <- function(tokens, functions = FALSE) {
       frames[[n]] <- frame
       next
     }
-    # ONLY prefixes a table name without supplying the relation itself.
-    if (frame$expect && token == "only") next
+    # ONLY/LATERAL prefix a source without supplying the relation itself.
+    if (frame$expect && token %in% c("only", "lateral")) next
     if (token == "(") {
       frames[[n]]$expect <- FALSE
       frames[[n + 1L]] <- list(
@@ -147,6 +148,7 @@ duckdb_metadata_relations <- function(tokens, functions = FALSE) {
       (frame$start && token %in% c("all", "distinct"))
     frames[[n]] <- frame
   }
+  positions <- relations
   relations <- relations[!vapply(relations, function(position) {
     parts <- duckdb_relation_parts(tokens, position, functions)
     length(parts) == 1L && !isTRUE(attr(parts, "function")) &&
@@ -158,7 +160,7 @@ duckdb_metadata_relations <- function(tokens, functions = FALSE) {
   paths <- lapply(relations, function(position) {
     duckdb_relation_parts(tokens, position, functions)
   })
-  paths[lengths(paths) > 0L]
+  structure(paths[lengths(paths) > 0L], positions = positions)
 }
 
 # Find each CTE's visible interval within its enclosing SQL scope. A normal
@@ -372,6 +374,67 @@ abort_duckdb_view_metadata <- function() {
   ))
 }
 
+# Refuse authored calls whose source dependencies are opaque before binding.
+abort_duckdb_call_metadata <- function() {
+  abort_marginplyr(c(
+    "Can't safely determine column metadata for this DuckDB call.",
+    i = "A macro or query() call could hide source work during binding.",
+    i = paste0(
+      "Supply established reader metadata directly, or collect the input ",
+      "explicitly with {.code dplyr::collect()} ",
+      "and pass the resulting data frame."
+    )
+  ))
+}
+
+# Identify authored function calls without treating SQL declarations as calls.
+# The caller supplies this operation's catalog-only snapshot, never a binding.
+validate_duckdb_authored_calls <- function(tokens, catalog) {
+  quoted <- attr(tokens, "quoted")
+  heads <- which(c(tokens[-1L], "") == "(" & !c(quoted[-1L], FALSE))
+  identifier <- grepl(paste0(
+    "(*UTF)^[a-z_\\x{80}-\\x{10ffff}]",
+    "[a-z_0-9$\\x{80}-\\x{10ffff}]*$"
+  ), tokens[heads], perl = TRUE)
+  syntax <- c("select", "from", "where", "on", "having", "qualify", "in",
+              "exists", "as", "with", "values", "using",
+              "group", "by", "order", "distinct", "not", "and", "or")
+  qualified <- heads > 1L & tokens[pmax(1L, heads - 1L)] == "."
+  heads <- heads[quoted[heads] | (identifier &
+                                    (!tokens[heads] %in% syntax | qualified))]
+  declarations <- attr(duckdb_metadata_ctes(tokens), "column_declarations")
+  relations <- duckdb_metadata_relations(tokens, functions = TRUE)
+  for (position in attr(relations, "positions")) {
+    parts <- duckdb_relation_parts(tokens, position, functions = TRUE)
+    if (!isTRUE(attr(parts, "function"))) {
+      declarations <- c(declarations, position + 2L * length(parts) - 1L)
+    }
+  }
+  previous <- pmax(1L, heads - 1L)
+  alias <- heads > 1L & tokens[previous] == "as" & !quoted[previous]
+  materialized <- tokens[heads] == "materialized" & !quoted[heads] &
+    tokens[previous] == "not" & heads > 2L &
+    tokens[pmax(1L, heads - 2L)] == "as"
+  modifier <- tokens[heads] %in% c("exclude", "replace", "rename") &
+    !quoted[heads] & tokens[previous] == "*" & !quoted[previous]
+  # A name directly after a closing expression introduces an implicit alias.
+  implicit_alias <- heads > 1L & tokens[previous] == ")" & !quoted[previous]
+  heads <- heads[!alias & !materialized & !modifier &
+                   !implicit_alias & !heads %in% declarations]
+  for (head in heads) {
+    while (head > 2L && tokens[[head - 1L]] == "." &&
+             !quoted[[head - 1L]]) head <- head - 2L
+    parts <- duckdb_relation_parts(tokens, head, functions = TRUE)
+    macro <- duckdb_metadata_catalog_match(
+      parts, catalog(), kinds = c("macro", "table_macro")
+    )
+    if (length(macro) || utils::tail(parts, 1L) == "query") {
+      abort_duckdb_call_metadata()
+    }
+  }
+  invisible(NULL)
+}
+
 # Inspect a stored view without binding it. Strip CREATE VIEW's header, keep
 # its own catalog/schema search context, and stop cycles or hidden macro work.
 # `seen` holds catalog row positions on the current view path.
@@ -541,6 +604,7 @@ validate_duckdb_csv_metadata <- function(
     }
     abort_duckdb_reader_metadata(family)
   }
+  if (is.null(namespace)) validate_duckdb_authored_calls(tokens, catalog)
   invisible(NULL)
 }
 

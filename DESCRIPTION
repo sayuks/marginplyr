@@ -375,7 +375,8 @@ Config/testthat/start-first:
     duckdb-captured-relations,
     first-local-across-factories,
     dtplyr-multislot-metadata,
-    duckdb-sql-relations
+    duckdb-sql-relations,
+    duckdb-authored-calls
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
