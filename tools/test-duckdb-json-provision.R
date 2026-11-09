@@ -452,8 +452,7 @@ main()
             file.exists(first$path))
   writeLines("release", holder_args$lease_release)
   finish_worker(holder)
-  run("tools/setup-duckdb-json.R", c("--remove", first$version, first$platform,
-                                     "--cache", cache))
+  run_worker(cleanup)
   stopifnot(!file.exists(first$path))
   cat("JSON shared leases, retention and in-use cleanup refusal passed.\n")
 
