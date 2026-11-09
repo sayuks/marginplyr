@@ -99,6 +99,58 @@ test_that("local contextual across reads signed dot-dot source summaries", {
   }
 })
 
+test_that("signed across sources retain selection grains and empty values", {
+  input <- data.frame(
+    fixed = rep(c("u", "v"), each = 2L), g = rep(c("a", "b"), 2L),
+    x = c(1, 3, 2, 6), y = c(10, 30, 20, 60)
+  )
+  for (column in c("..-1", "..-0", "..+1", "..+0", ".. 1")) {
+    calls <- 0L
+    choose <- function() {
+      calls <<- calls + 1L
+      if (calls == 1L) "x" else "y"
+    }
+    actual <- summarize_with_margins(
+      input, dplyr::across(dplyr::all_of(choose()), sum, .names = column),
+      dplyr::across(dplyr::all_of(column), share_of_parent, .names = "parent"),
+      dplyr::across(dplyr::all_of(column), share_of_total, .names = "total"),
+      .by = fixed, .grouping = rollup(g), .sort = "last"
+    )
+    expect_identical(calls, 2L)
+    expect_identical(actual[[column]], c(1, 3, 40, 2, 6, 80))
+    expect_identical(actual$parent, c(1 / 40, 3 / 40, 1, 2 / 80, 6 / 80, 1))
+    expect_identical(actual$total, actual$parent)
+
+    empty <- summarize_with_margins(
+      input[integer(), ], dplyr::across(x, sum, .names = column),
+      dplyr::across(dplyr::all_of(column), share_of_parent, .names = "parent"),
+      .grouping = rollup(g), .sort = "last"
+    )
+    expect_identical(empty[[column]], 0)
+    expect_identical(empty$parent, 1)
+  }
+})
+
+test_that("signed across sources still require one numeric scalar", {
+  input <- data.frame(g = c("a", "b"), x = c(1, 3))
+  for (column in c("..-1", "..-0", "..+1", "..+0", ".. 1")) {
+    for (helper in rlang::syms(c("share_of_parent", "share_of_total"))) {
+      request <- rlang::expr(dplyr::across(
+        dplyr::all_of(column), !!helper, .names = "fraction"
+      ))
+      expect_error(summarize_with_margins(
+        input, dplyr::across(x, ~ as.character(sum(.x)), .names = column),
+        !!!list(request), .grouping = rollup(g)
+      ), "plain integer or double scalar", class = "marginplyr_error")
+      expect_error(summarize_with_margins(
+        input, dplyr::across(x, ~ c(1, 2), .names = column),
+        later = stop("source check must precede this summary"),
+        !!!list(request), .grouping = rollup(g)
+      ), "exactly one value per grouping row", class = "marginplyr_error")
+    }
+  }
+})
+
 test_that("dtplyr shares read signed and whitespace dot-dot sources lazily", {
   skip_if_suggest_absent("dtplyr")
   # dtplyr imports data.table; only the dtplyr backend is required.
