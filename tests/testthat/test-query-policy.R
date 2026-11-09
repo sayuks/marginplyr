@@ -443,10 +443,13 @@ test_that("SQLite limited Margin inputs add no construction read", {
         input, .grouping = rollup("g"), .id = "sid", .sort = "last"
       )
     ), 0L)
+    # Qualified constructors avoid testthat's cloned lazy bindings.
     expect_identical(count_entry_point_invocations(
       expand_with_margins(
         input,
-        .grouping = grouping_sets(grouping_set(), grouping_set("g")),
+        .grouping = grouping_sets(
+          marginplyr::grouping_set(), marginplyr::grouping_set("g")
+        ),
         .margin_label = NULL
       )
     ), 0L)
