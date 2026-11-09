@@ -66,8 +66,9 @@ records the inventory and public-document discrepancies.
 DuckDB admission resolves direct captured relations and every parsed SQL base
 relation, following stored views in their own namespace. Authored native
 function calls and established direct readers also need checks for macro shadowing;
-opaque macros and `query()` calls are refused before binding. Visibly unsafe
-direct readers retain their early refusal without needing the catalog.
+opaque macros and `query()` calls are refused before binding. With auditing
+enabled, those refusals record only the returned catalog operation. Visibly
+unsafe direct readers retain their early refusal without needing the catalog.
 At most one operation-local query reads catalog table/view names, stored view
 definitions, macro names, SQL keywords, the current database and search path.
 It binds no caller relation and reads no source values. This is distinct from
