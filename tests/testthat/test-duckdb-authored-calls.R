@@ -36,7 +36,8 @@ test_that("authored table macros cannot hide source-value inference", {
           expect_false(any(sent$purpose == "selection_proxy"))
           expect_true(all(sent$status == "returned"))
         } else {
-          expect_error(last_sent_queries(), "marginplyr.audit_sql", fixed = TRUE)
+          expect_error(last_sent_queries(), "marginplyr.audit_sql",
+                       fixed = TRUE)
         }
       }
       expect_identical(serialize(input$lazy_query, NULL), before)
