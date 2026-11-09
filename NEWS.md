@@ -8,7 +8,8 @@
   (#1532).
 
 * Typed DuckDB inspection and expansion refuse opaque authored macro and
-  `query()` calls before binding can infer types from source values. Captured
+  calls to `query()` or `query_table()` before binding can infer types from
+  source values. Captured
   names, explicit reader metadata and ordinary table functions remain available
   (#1533).
 
