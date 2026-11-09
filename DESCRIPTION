@@ -377,7 +377,8 @@ Config/testthat/start-first:
     dtplyr-multislot-metadata,
     duckdb-sql-relations,
     caller-error-causes,
-    later-local-across-factories
+    later-local-across-factories,
+    duckdb-authored-calls
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
