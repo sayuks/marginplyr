@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Summaries preserve caller-owned errors and their payloads when their cause
+  is a caught Package condition, including invalid nested Margin calls (#1531).
+
 * Typed DuckDB Grouping inspection follows authored SQL views regardless of
   their names before binding, so ordinary names cannot hide source-value
   inference. Safe nested common table expressions retain typed inspection
