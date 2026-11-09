@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Local Parent and Total shares preserve Grouping helpers in the first ordinary
+  `across()` selector and name template, including summaries unrelated to the
+  share source (#1546).
+
 * Parent and Total shares accept eligible columns from parenthesized ordinary
   `across()` sources while preserving their per-group evaluation (#1530).
 
