@@ -1948,7 +1948,7 @@ test_that("Parent planning preserves every public-call environment", {
   expect_setequal(result$share, c(0.25, 0.75, 1, 1, 1))
 })
 
-test_that("Parent planning evaluates across arguments once", {
+test_that("Parent planning keeps selectors per grain and naming once", {
   data <- data.frame(group = c("x", "y"), value = 1:2)
   ordinary_cols_n <- 0L
   ordinary_names_n <- 0L
@@ -1983,11 +1983,14 @@ test_that("Parent planning evaluates across arguments once", {
       share_of_parent,
       .names = parent_names()
     ),
-    .grouping = rollup(group)
+    .grouping = rollup(group),
+    .sort = "last"
   )
 
-  expect_true("value_share" %in% names(result))
-  expect_identical(ordinary_cols_n, 1L)
+  expect_identical(names(result), c("group", "value", "value_share"))
+  expect_identical(result$value, c(1L, 2L, 3L))
+  expect_identical(result$value_share, c(1 / 3, 2 / 3, 1))
+  expect_identical(ordinary_cols_n, 2L)
   expect_identical(ordinary_names_n, 1L)
   expect_identical(parent_cols_n, 1L)
   expect_identical(parent_names_n, 1L)

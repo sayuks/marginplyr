@@ -49,15 +49,20 @@ summarize_across_coercion <- function() {
 # across-share dot with one dot per output, so the warning raised by the dot
 # after it sits at a position the caller's dots do not have -- and a label read
 # by position there describes another argument, or none.
-summarize_share_coercion <- function() {
+summarize_share_coercion <- function(ordinary_across = FALSE) {
   data <- coercion_frame()
   data$revenue <- c(2, 4, 8)
   # `units`, `revenue`, `grade`, and `region` are columns of the frame, which
   # codetools reads as undefined globals inside a function.
   # nolint start: object_usage_linter.
+  ordinary <- if (ordinary_across) {
+    rlang::quos(dplyr::across(c(units, revenue), sum))
+  } else {
+    rlang::quos(units = sum(units), revenue = sum(revenue))
+  }
   summarize_with_margins(
     data,
-    dplyr::across(c(units, revenue), sum),
+    !!!ordinary,
     dplyr::across(c(units, revenue), share_of_parent, .names = "{.col}_share"),
     dplyr::across(c(grade), ~ sum(as.numeric(.x))),
     .grouping = rollup(region)
@@ -359,6 +364,18 @@ test_that("a share does not shift which argument is restored", {
     fixed = TRUE
   )
   expect_false(grepl("all_of", message, fixed = TRUE))
+})
+
+test_that("ambiguous across labels retain dplyr's argument context", {
+  warnings <- collect_warnings(summarize_share_coercion(ordinary_across = TRUE))
+
+  expect_length(warnings, 1L)
+  message <- conditionMessage(warnings[[1L]])
+  expect_match(message, "`dplyr::across(...)`", fixed = TRUE)
+  expect_match(message, "NAs introduced by coercion", fixed = TRUE)
+  expect_match(message, "1 further grouping set", fixed = TRUE)
+  expect_false(grepl("dplyr::across(c(units, revenue), sum)", message,
+                     fixed = TRUE))
 })
 
 # Restoring the spelling is what makes this one report, so the identity is read

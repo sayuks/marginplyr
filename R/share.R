@@ -958,6 +958,9 @@ plan_local_across_checks <- function(plan) {
     if (!position %in% checked) next
     checks <- checks_by_position[[as.character(position)]]
     values <- lapply(checks, function(check) {
+      if (margin_dot_dot_names(check$source_summary)) {
+        return(rlang::call2(local_across_dot_dot_source, check$source_summary))
+      }
       rlang::call2(base::`[[`, rlang::sym(".data"), check$source_summary)
     })
     validator <- rlang::new_quosure(rlang::call2(
@@ -976,6 +979,37 @@ plan_local_across_checks <- function(plan) {
   plan$cardinality <- lapply(plan$cardinality, remap)
   plan$ordinary_cardinality <- lapply(plan$ordinary_cardinality, remap)
   plan
+}
+
+# Read a produced dot-dot summary without evaluating its name as an R dots
+# reference. dplyr's active binding closes over the column's group chunks;
+# the ordinary binding in that environment is safe to read by string.
+# The caller is a generated check-only dot in a local dplyr summary mask.
+local_across_dot_dot_source <- function(source) {
+  mask <- parent.frame()
+  while (!identical(mask, emptyenv()) &&
+           !exists(source, envir = mask, inherits = FALSE)) {
+    mask <- parent.env(mask)
+  }
+  stopifnot(!identical(mask, emptyenv()), bindingIsActive(source, mask))
+  binding <- activeBindingFunction(source, mask)
+  expected <- rlang::call2(
+    base::.subset2, rlang::sym(source), rlang::sym("dplyr:::current_group_id")
+  )
+  chunks_env <- environment(binding)
+  # This is a dplyr mask invariant, not input a caller can rewrite (ADR 0015).
+  stopifnot(
+    identical(formals(binding), NULL), identical(body(binding), expected),
+    is.environment(chunks_env),
+    exists(source, envir = chunks_env, inherits = FALSE),
+    !bindingIsActive(source, chunks_env),
+    !rlang::env_binding_are_lazy(chunks_env, source)
+  )
+  chunks <- get(source, envir = chunks_env, inherits = FALSE)
+  group <- dplyr::cur_group_id()
+  stopifnot(is.list(chunks), length(group) == 1L, !is.na(group),
+            group >= 1L, group <= length(chunks))
+  chunks[[group]]
 }
 
 # Validate saved summary chunks before the following ordinary dot can run.
