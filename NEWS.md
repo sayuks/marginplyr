@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Parent and Total shares preserve dplyr expansion of later bare `across()`
+  sources, including function factory context and ordinary lambda masks
+  (#1529).
+
 * Summaries preserve caller-owned errors and their payloads when their cause
   is a caught Package condition, including invalid nested Margin calls (#1531).
 
