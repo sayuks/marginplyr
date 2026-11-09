@@ -92,7 +92,7 @@ main <- function() {
     c("name: lint.yaml", "name: R-CMD-check.yaml"),
     c("run: Rscript .github/scripts/verify-context-budget.R", "run: echo skipped"),
     c("run: Rscript tools/verify-test-priority.R", "run: echo skipped"),
-    c("  context-budget:\n", "  context-budget:\n    if: github.event_name == 'push'\n"),
+    c("  repository-hygiene:\n", "  repository-hygiene:\n    if: github.event_name == 'push'\n"),
     c("Rscript tools/test-review-ready-progress.R", "echo skipped"),
     c("Rscript tools/test-review-ready-priority.R", "echo skipped"),
     c("Rscript tools/test-review-ready-runner.R", "echo skipped"),

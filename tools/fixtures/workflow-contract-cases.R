@@ -36,6 +36,21 @@ workflow_contract_cases <- function() {
       ".github/workflows/lint.yaml")), diagnostic = "workflow inventory differs"),
     command = list(edit = edit_workflow("run: Rscript tools/verify-test-priority.R",
       "run: echo skipped"), diagnostic = mismatch),
+    automatic_cancellation = list(edit = edit_workflow(
+      "cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}",
+      "cancel-in-progress: false", "postgres-transactions.yaml"), diagnostic = mismatch),
+    manual_namespace = list(edit = edit_workflow("manual-{0}", "refs/heads/main",
+      "release-matrix.yaml"), diagnostic = mismatch),
+    hygiene_failure_continuation = list(edit = edit_workflow(
+      "!cancelled() && steps.setup-r.outcome == 'success'", "success()"), diagnostic = mismatch),
+    close_event = list(edit = edit_workflow("pull_request_target:", "pull_request:",
+      "retire-pr-ci.yaml"), diagnostic = mismatch),
+    close_permission = list(edit = edit_workflow("actions: write", "actions: read",
+      "retire-pr-ci.yaml"), diagnostic = mismatch),
+    close_selection = list(edit = edit_workflow("run.event === 'pull_request'",
+      "true", "retire-pr-ci.yaml"), diagnostic = mismatch),
+    queue_fixtures = list(edit = edit_workflow("Rscript tools/test-ci-queue.R",
+      "echo skipped"), diagnostic = mismatch),
     json_check_setup = list(edit = edit_workflow(
       "run: Rscript .github/scripts/provision-duckdb-json.R", "run: echo skipped",
       "R-CMD-check.yaml"), diagnostic = mismatch),

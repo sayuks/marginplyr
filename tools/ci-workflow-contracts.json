@@ -14,8 +14,8 @@
       "contents": "read"
     },
     "concurrency": {
-      "group": "${{ github.workflow }}-${{ github.ref }}",
-      "cancel-in-progress": "true"
+      "group": "${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && format('manual-{0}', github.run_id) || github.ref }}",
+      "cancel-in-progress": "${{ github.event_name != 'workflow_dispatch' }}"
     },
     "jobs": {
       "R-CMD-check": {
@@ -160,8 +160,8 @@
         "runs-on": "ubuntu-latest",
         "timeout-minutes": "60",
         "concurrency": {
-          "group": "altdoc-build-${{ github.ref }}",
-          "cancel-in-progress": "true"
+          "group": "altdoc-build-${{ github.event_name == 'workflow_dispatch' && format('manual-{0}', github.run_id) || format('auto-{0}', github.ref) }}",
+          "cancel-in-progress": "${{ github.event_name != 'workflow_dispatch' }}"
         },
         "env": {
           "GITHUB_PAT": "${{ secrets.GITHUB_TOKEN }}"
@@ -255,8 +255,8 @@
       "contents": "read"
     },
     "concurrency": {
-      "group": "${{ github.workflow }}-${{ github.ref }}",
-      "cancel-in-progress": "true"
+      "group": "${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && format('manual-{0}', github.run_id) || github.ref }}",
+      "cancel-in-progress": "${{ github.event_name != 'workflow_dispatch' }}"
     },
     "jobs": {
       "document": {
@@ -326,11 +326,11 @@
       "contents": "read"
     },
     "concurrency": {
-      "group": "${{ github.workflow }}-${{ github.ref }}",
-      "cancel-in-progress": "true"
+      "group": "${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && format('manual-{0}', github.run_id) || github.ref }}",
+      "cancel-in-progress": "${{ github.event_name != 'workflow_dispatch' }}"
     },
     "jobs": {
-      "context-budget": {
+      "repository-hygiene": {
         "runs-on": "ubuntu-latest",
         "timeout-minutes": "30",
         "steps": [
@@ -338,71 +338,43 @@
             "uses": "actions/checkout@v7"
           },
           {
-            "uses": "r-lib/actions/setup-r@v2"
+            "uses": "r-lib/actions/setup-r@v2",
+            "id": "setup-r"
           },
           {
             "name": "Verify the always-loaded context is within its baseline",
-            "run": "Rscript .github/scripts/verify-context-budget.R"
-          }
-        ]
-      },
-      "doc-references": {
-        "runs-on": "ubuntu-latest",
-        "timeout-minutes": "30",
-        "steps": [
-          {
-            "uses": "actions/checkout@v7"
-          },
-          {
-            "uses": "r-lib/actions/setup-r@v2"
+            "run": "Rscript .github/scripts/verify-context-budget.R",
+            "if": "${{ !cancelled() && steps.setup-r.outcome == 'success' }}"
           },
           {
             "name": "Verify every path a maintained document names exists",
-            "run": "Rscript .github/scripts/verify-doc-references.R"
-          }
-        ]
-      },
-      "codex-config": {
-        "runs-on": "ubuntu-latest",
-        "timeout-minutes": "30",
-        "steps": [
-          {
-            "uses": "actions/checkout@v7"
-          },
-          {
-            "uses": "r-lib/actions/setup-r@v2"
+            "run": "Rscript .github/scripts/verify-doc-references.R",
+            "if": "${{ !cancelled() && steps.setup-r.outcome == 'success' }}"
           },
           {
             "name": "Verify the project-scoped Codex configuration",
-            "run": "Rscript .github/scripts/verify-codex-config.R"
-          }
-        ]
-      },
-      "release-contract": {
-        "runs-on": "ubuntu-latest",
-        "timeout-minutes": "30",
-        "steps": [
-          {
-            "uses": "actions/checkout@v7"
-          },
-          {
-            "uses": "r-lib/actions/setup-r@v2"
+            "run": "Rscript .github/scripts/verify-codex-config.R",
+            "if": "${{ !cancelled() && steps.setup-r.outcome == 'success' }}"
           },
           {
             "name": "Verify the agent sandbox network policy",
-            "run": "Rscript .github/scripts/verify-agent-network-policy.R"
+            "run": "Rscript .github/scripts/verify-agent-network-policy.R",
+            "if": "${{ !cancelled() && steps.setup-r.outcome == 'success' }}"
           },
           {
             "name": "Verify the local CRAN preflight contract",
-            "run": "Rscript .github/scripts/verify-cran-preflight.R"
+            "run": "Rscript .github/scripts/verify-cran-preflight.R",
+            "if": "${{ !cancelled() && steps.setup-r.outcome == 'success' }}"
           },
           {
             "name": "Verify the CRAN release helper contract",
-            "run": "Rscript .github/scripts/verify-cran-release.R"
+            "run": "Rscript .github/scripts/verify-cran-release.R",
+            "if": "${{ !cancelled() && steps.setup-r.outcome == 'success' }}"
           },
           {
             "name": "Verify the review-ready check contract",
-            "run": "Rscript .github/scripts/verify-review-ready-check.R"
+            "run": "Rscript .github/scripts/verify-review-ready-check.R",
+            "if": "${{ !cancelled() && steps.setup-r.outcome == 'success' }}"
           }
         ]
       },
@@ -461,7 +433,7 @@
           },
           {
             "name": "Verify CI artifacts and their command fixtures",
-            "run": "Rscript tools/verify-ci-artifacts.R\nRscript tools/test-ci-artifacts.R\nRscript tools/test-interruption-supervisors.R\n"
+            "run": "Rscript tools/verify-ci-artifacts.R\nRscript tools/test-ci-artifacts.R\nRscript tools/test-ci-queue.R\nRscript tools/test-interruption-supervisors.R\n"
           },
           {
             "name": "Verify R runner process contracts",
@@ -591,6 +563,10 @@
           }
         ]
       }
+    },
+    "concurrency": {
+      "group": "${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && format('manual-{0}', github.run_id) || format('auto-{0}', github.ref) }}",
+      "cancel-in-progress": "${{ github.event_name != 'workflow_dispatch' }}"
     }
   },
   ".github/workflows/release-matrix.yaml": {
@@ -609,8 +585,8 @@
       "contents": "read"
     },
     "concurrency": {
-      "group": "${{ github.workflow }}-${{ github.ref }}",
-      "cancel-in-progress": "true"
+      "group": "${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && format('manual-{0}', github.run_id) || format('auto-{0}', github.ref) }}",
+      "cancel-in-progress": "${{ github.event_name != 'workflow_dispatch' }}"
     },
     "env": {
       "GITHUB_PAT": "${{ secrets.GITHUB_TOKEN }}",
@@ -1008,6 +984,35 @@
       }
     }
   },
+  ".github/workflows/retire-pr-ci.yaml": {
+    "name": "Retire closed PR CI",
+    "on": {
+      "pull_request_target": {
+        "types": [
+          "closed"
+        ]
+      }
+    },
+    "permissions": {
+      "actions": "write",
+      "pull-requests": "read"
+    },
+    "jobs": {
+      "retire": {
+        "runs-on": "ubuntu-latest",
+        "timeout-minutes": "10",
+        "steps": [
+          {
+            "uses": "actions/github-script@v8",
+            "with": {
+              "retries": "0",
+              "script": "const repo = {...context.repo, request: {timeout: 10000}};\nconst event = context.payload;\nif (context.eventName !== 'pull_request_target' || event.action !== 'closed') {\n  throw new Error('Only trusted PR-close events are supported.');\n}\nconst number = event.pull_request.number;\nconst closedAt = event.pull_request.closed_at;\nif (!Number.isSafeInteger(event.pull_request.head.repo?.id)) {\n  core.setFailed('Cannot identify runs: the PR head repository is unavailable.');\n  return;\n}\nconst known = new Set([\n  'R-CMD-check.yaml', 'altdoc.yaml', 'document.yaml', 'lint.yaml',\n  'postgres-transactions.yaml', 'release-matrix.yaml', 'test-coverage.yaml'\n].map(name => `.github/workflows/${name}`));\nconst active = ['queued', 'in_progress', 'waiting', 'pending', 'requested'];\nconst errors = [];\nconst report = message => { errors.push(message); core.warning(message); };\nconst stillClosed = async () => {\n  const {data: pr} = await github.rest.pulls.get({...repo, pull_number: number});\n  return pr.state === 'closed' && pr.closed_at === closedAt;\n};\nconst eligible = run => run.id !== context.runId &&\n  run.event === 'pull_request' && active.includes(run.status) &&\n  known.has(run.path.split('@')[0]) &&\n  run.repository?.id === event.repository.id &&\n  run.head_repository?.id === event.pull_request.head.repo?.id &&\n  run.head_branch === event.pull_request.head.ref &&\n  Date.parse(run.created_at) <= Date.parse(closedAt);\nlet history;\nconst historicalHead = async sha => {\n  if (!history) {\n    const head = event.pull_request.head;\n    const {data: prs} = await github.rest.pulls.list({\n      ...repo, state: 'all', head: `${head.repo.owner.login}:${head.ref}`, per_page: 100, page: 1\n    });\n    const matching = prs.filter(pr => pr.head.repo?.id === head.repo.id && pr.head.ref === head.ref);\n    if (prs.length === 100 || matching.length !== 1 || matching[0].number !== number) {\n      throw new Error('Cannot identify PR: head repository/ref has ambiguous or incomplete API associations.');\n    }\n    history = new Set();\n    for (let page = 1; page <= 3; page++) {\n      const {data: commits} = await github.rest.pulls.listCommits({\n        ...repo, pull_number: number, per_page: 100, page\n      });\n      for (const commit of commits) history.add(commit.sha);\n      if (commits.length < 100) break;\n    }\n  }\n  return history.has(sha);\n};\nconst belongs = async run => {\n  let prs = run.pull_requests;\n  if (!prs?.length) {\n    // Run associations can be empty for closed/fork PRs. A unique\n    // all-state PR lookup plus API commit membership covers that case.\n    if (await historicalHead(run.head_sha)) return true;\n    report(`Cannot identify PR for run ${run.id}: head SHA absent from bounded PR history.`);\n    return false;\n  }\n  if (prs.length > 1 && prs.some(pr => pr.number === number)) {\n    report(`Cannot identify PR for run ${run.id}: multiple run associations.`);\n    return false;\n  }\n  return prs.length === 1 && prs[0].number === number &&\n    prs[0].base.repo.id === event.repository.id;\n};\nif (!await stillClosed()) {\n  core.info('PR reopened or closed again; this close event is obsolete.');\n  return;\n}\nconst candidates = new Map();\nfor (const status of active) {\n  for (let page = 1; page <= 3; page++) {\n    const {data} = await github.rest.actions.listWorkflowRunsForRepo({\n      ...repo, event: 'pull_request', branch: event.pull_request.head.ref,\n      status, per_page: 100, page, exclude_pull_requests: false\n    });\n    for (const run of data.workflow_runs) {\n      if (eligible(run)) candidates.set(run.id, run);\n    }\n    if (data.total_count <= page * 100) break;\n    if (page === 3) report(`Run pagination limit reached for ${status}.`);\n  }\n}\nif (candidates.size > 50) {\n  core.setFailed('Target budget exceeded: refusing more than 50 candidate runs.');\n  return;\n}\nconst pending = new Map();\nfor (const candidate of candidates.values()) {\n  try {\n    const args = {...repo, run_id: candidate.id};\n    const {data: run} = await github.rest.actions.getWorkflowRun(args);\n    if (!eligible(run) || run.run_attempt !== candidate.run_attempt || !await belongs(run)) continue;\n    // Recheck after association lookup, immediately before the write.\n    if (!await stillClosed()) {\n      core.info('PR reopened or closed again; stopping retirement.');\n      break;\n    }\n    try {\n      await github.rest.actions.cancelWorkflowRun(args);\n    } catch (error) {\n      if (error.status !== 409) throw error;\n    }\n    pending.set(run.id, run.run_attempt);\n  } catch (error) {\n    report(`Unable to retire run ${candidate.id}: ${error.message}`);\n  }\n}\n// Poll all requests together so one slow cancellation cannot delay\n// retirement of the other positively identified runs.\nfor (let attempt = 0; attempt < 12 && pending.size; attempt++) {\n  for (const [id, runAttempt] of pending) {\n    try {\n      const {data: current} = await github.rest.actions.getWorkflowRun({...repo, run_id: id});\n      if (current.run_attempt !== runAttempt) {\n        report(`Run ${id} changed attempts while waiting for cancellation.`);\n        pending.delete(id);\n      } else if (current.status === 'completed') {\n        core.info(`Run ${id} completed (${current.conclusion || 'natural completion'}).`);\n        pending.delete(id);\n      }\n    } catch (error) {\n      report(`Unable to observe cancellation of run ${id}: ${error.message}`);\n      pending.delete(id);\n    }\n  }\n  if (attempt < 11 && pending.size) await new Promise(resolve => setTimeout(resolve, 5000));\n}\nfor (const id of pending.keys()) report(`Run ${id} did not complete within the cancellation polling limit.`);\nif (errors.length) core.setFailed(errors.join('\\n'));"
+            }
+          }
+        ]
+      }
+    }
+  },
   ".github/workflows/rhub.yaml": {
     "name": "R-hub",
     "run-name": "${{ github.event.inputs.id || format('Manual run by @{0}', github.triggering_actor) }}: ${{ github.event.inputs.name || github.event.inputs.config }}",
@@ -1168,8 +1173,8 @@
       "id-token": "write"
     },
     "concurrency": {
-      "group": "${{ github.workflow }}-${{ github.ref }}",
-      "cancel-in-progress": "true"
+      "group": "${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && format('manual-{0}', github.run_id) || github.ref }}",
+      "cancel-in-progress": "${{ github.event_name != 'workflow_dispatch' }}"
     },
     "jobs": {
       "test-coverage": {

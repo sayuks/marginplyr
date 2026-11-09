@@ -11,75 +11,46 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && format('manual-{0}', github.run_id) || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
 
 jobs:
-  # Here rather than in a workflow of its own because it is repository hygiene
-  # on the same trigger, and beside `lint` rather than inside it because it
-  # needs no package installed: a byte count over `CLAUDE.md`'s closure runs on
-  # a bare R, so it reports before the dependency install that job waits on.
-  context-budget:
+  # These checks need only base R and git; each keeps its own failure outcome.
+  repository-hygiene:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
 
       - uses: r-lib/actions/setup-r@v2
+        id: setup-r
 
       - name: Verify the always-loaded context is within its baseline
+        if: ${{ !cancelled() && steps.setup-r.outcome == 'success' }}
         run: Rscript .github/scripts/verify-context-budget.R
 
-  # Beside `context-budget` and for its reason: repository hygiene on the same
-  # trigger, needing no package installed. A grep for a name a document cites
-  # is what makes the name fail loudly, and until this step nothing ran one.
-  doc-references:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: r-lib/actions/setup-r@v2
-
       - name: Verify every path a maintained document names exists
+        if: ${{ !cancelled() && steps.setup-r.outcome == 'success' }}
         run: Rscript .github/scripts/verify-doc-references.R
 
-  # Project-local Codex configuration is repository hygiene and needs no
-  # package installed. This keeps the sandbox fix and its source-package
-  # exclusion together under the same pull-request trigger.
-  codex-config:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: r-lib/actions/setup-r@v2
-
       - name: Verify the project-scoped Codex configuration
+        if: ${{ !cancelled() && steps.setup-r.outcome == 'success' }}
         run: Rscript .github/scripts/verify-codex-config.R
 
-  # The release and review-ready tools' policy and fixture checks use only base
-  # R and local git. Keeping them beside the other repository-hygiene jobs makes
-  # their contracts fail before a package dependency installation or remote
-  # check.
-  release-contract:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7
-
-      - uses: r-lib/actions/setup-r@v2
-
       - name: Verify the agent sandbox network policy
+        if: ${{ !cancelled() && steps.setup-r.outcome == 'success' }}
         run: Rscript .github/scripts/verify-agent-network-policy.R
 
       - name: Verify the local CRAN preflight contract
+        if: ${{ !cancelled() && steps.setup-r.outcome == 'success' }}
         run: Rscript .github/scripts/verify-cran-preflight.R
 
       - name: Verify the CRAN release helper contract
+        if: ${{ !cancelled() && steps.setup-r.outcome == 'success' }}
         run: Rscript .github/scripts/verify-cran-release.R
 
       - name: Verify the review-ready check contract
+        if: ${{ !cancelled() && steps.setup-r.outcome == 'success' }}
         run: Rscript .github/scripts/verify-review-ready-check.R
 
   lint:
@@ -136,6 +107,7 @@ jobs:
         run: |
           Rscript tools/verify-ci-artifacts.R
           Rscript tools/test-ci-artifacts.R
+          Rscript tools/test-ci-queue.R
           Rscript tools/test-interruption-supervisors.R
 
       - name: Verify R runner process contracts
