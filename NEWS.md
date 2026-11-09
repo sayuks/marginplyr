@@ -7,11 +7,10 @@
   check when standard-quoted strings or identifiers contain comment markers
   (#1532).
 
-* Typed DuckDB inspection and expansion refuse opaque authored macro and
-  calls to `query()` or `query_table()` before binding can infer types from
-  source values. Captured
-  names, explicit reader metadata and ordinary table functions remain available
-  (#1533).
+* Typed DuckDB inspection and expansion refuse opaque authored macros and calls
+  to `query()` or `query_table()` before binding can infer types from source
+  values. Captured names, explicit reader metadata and ordinary table functions
+  remain available (#1533).
 
 * Parent and Total shares preserve dplyr expansion of later bare `across()`
   sources, including function factory context and ordinary lambda masks
