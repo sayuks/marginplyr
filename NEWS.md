@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Parent and Total shares preserve each grain's ordinary first `across()`
+  function factories, including stateful sources and Grouping helpers (#1527).
+
 * Typed DuckDB Grouping inspection checks views captured by direct table names
   and qualified identifiers before binding, including derived inputs, so a
   stored reader cannot bypass source-inference admission (#1525).
