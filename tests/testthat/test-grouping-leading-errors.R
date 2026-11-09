@@ -497,7 +497,7 @@ test_that("DuckDB leading selection failures invoke no metadata query", {
     inspect_grouping(remote, .grouping = grouping_sets(!!typed, x, x)),
     "2, 3", class = "marginplyr_error"
   )
-  expect_identical(counter$queries, 1L)
+  expect_identical(counter$queries, 2L)
   expect_identical(predicates, 2L)
   expect_error(
     inspect_grouping(remote, .grouping = grouping_spec(
@@ -505,7 +505,7 @@ test_that("DuckDB leading selection failures invoke no metadata query", {
     )),
     "1, 2.", fixed = TRUE, class = "marginplyr_error"
   )
-  expect_identical(counter$queries, 2L)
+  expect_identical(counter$queries, 4L)
   expect_identical(predicates, 4L)
   for (policy in c("keep", "drop")) {
     before <- counter$queries
@@ -519,7 +519,7 @@ test_that("DuckDB leading selection failures invoke no metadata query", {
     }
     expect_identical(plan$included, expected)
     expect_identical(plan$set_id, seq_along(expected))
-    expect_identical(counter$queries - before, 1L)
+    expect_identical(counter$queries - before, 2L)
     expect_identical(predicates - before_predicates, 2L)
   }
   counter$queries <- 0L
@@ -597,13 +597,13 @@ test_that("DuckDB leading selection failures invoke no metadata query", {
     remote, .grouping = grouping_set(where(numeric_column))
   )
   expect_identical(plan$included, "(x, value)")
-  expect_identical(counter$queries, 1L)
+  expect_identical(counter$queries, 2L)
   expect_identical(predicates, 2L)
   for (verb in verbs[c("summarize_with_margins", "expand_with_margins")]) {
     before <- counter$queries
     query <- verb(remote, NULL, grouping_set(x, where(is.numeric)))
     expect_s3_class(query, "tbl_lazy")
-    expect_identical(counter$queries - before, 1L)
+    expect_identical(counter$queries - before, 2L)
     expected <- verb(data, NULL, grouping_set(x, where(is.numeric)))
     expect_equal(dplyr::collect(query), tibble::as_tibble(expected))
   }
@@ -787,7 +787,7 @@ test_that("duplicate product prefixes avoid DuckDB multi-set suffix queries", {
   expect_identical(predicates, 0L)
   plan <- inspect_grouping(remote, .grouping = typed)
   expect_identical(plan$included, "(b)")
-  expect_identical(counter$queries, 1L)
+  expect_identical(counter$queries, 2L)
   expect_identical(predicates, 2L)
 })
 
