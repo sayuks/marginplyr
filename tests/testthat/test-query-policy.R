@@ -1205,10 +1205,17 @@ test_that("DuckDB special summary outputs add no construction read", {
   check_special_sql_reads(source, portable = TRUE)
 })
 
-test_that("DuckDB structured missing labels keep the zero-row read budget", {
+test_that("DuckDB structured missing labels keep the typed metadata budget", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection(array = "matrix")
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  rlang::local_options(marginplyr.audit_sql = TRUE)
+  # Catalog acquisition reads system metadata, independently of the input's
+  # sole zero-row typed snapshot (ADR 0020, relation-resolution amendment).
+  catalog <- count_entry_point_invocations(DBI::dbGetQuery(
+    con, "SELECT schema_name FROM system.main.duckdb_tables()"
+  ))
+  expect_gt(catalog, 0L)
   for (expr in c("struct_pack(x := v)", "CAST([v, v + 1] AS INTEGER[2])")) {
     source <- dplyr::tbl(con, dbplyr::sql(paste(
       "SELECT", expr, "AS g FROM (VALUES (1), (2)) t(v)"
@@ -1225,14 +1232,24 @@ test_that("DuckDB structured missing labels keep the zero-row read budget", {
           .margin_label = label, .id = "sid", .duplicates = "keep"
         )
         dbplyr::sql_render(query)
-      }), metadata)
+      }), catalog + metadata)
+      internal <- last_sent_queries(FALSE, TRUE)
+      expect_identical(
+        internal$purpose, c("relation_catalog", "selection_proxy")
+      )
+      expect_identical(internal$status, c("returned", "returned"))
       expect_identical(count_entry_point_invocations({
         query <- expand_with_margins(
           source, .grouping = rollup(g), .margin_label = label,
           .id = "sid", .sort = "first"
         )
         dbplyr::sql_render(query)
-      }), metadata)
+      }), catalog + metadata)
+      internal <- last_sent_queries(FALSE, TRUE)
+      expect_identical(
+        internal$purpose, c("relation_catalog", "selection_proxy")
+      )
+      expect_identical(internal$status, c("returned", "returned"))
     }
   }
 })
