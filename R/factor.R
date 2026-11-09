@@ -35,6 +35,52 @@ margin_factor_sentinels <- function(factor_info, margin_labels) {
   )
 }
 
+# Compare a captured factor before any branch can erase its stored definition.
+# Matching values pass through with their classes and attributes untouched.
+validate_margin_factor <- function(x, levels, ordered, col) {
+  stored <- as.vector(unclass(attr(x, "levels", exact = TRUE)))
+  if (!is.factor(x) || !identical(stored, levels) ||
+        !identical(is.ordered(x), ordered)) {
+    abort_marginplyr(c(
+      "The captured factor definition of {.var {col}} has changed.",
+      i = "Rebuild the Margin result after changing the input schema."
+    ))
+  }
+  x
+}
+
+# Validate the R factors the operation captured using the input already being
+# processed. Deferred expressions retain construction-time definitions.
+validate_margin_factor_input <- function(data, factor_info, backend,
+                                         plan, margin_labels) {
+  if (!(backend$kind %in% c("local", "dtplyr")) ||
+        length(factor_info) == 0L) {
+    return(data)
+  }
+  encoded <- vapply(factor_info, function(info) {
+    label <- margin_label_of(margin_labels, info$col)
+    encodes_missing_label_factor(info, label) ||
+      (info$col %in% plan$dimensions && !is_missing_margin_label(label))
+  }, logical(1))
+  # A single native branch neither decomposes nor combines factors. Leave
+  # that passthrough under dplyr's delegated class rules (ADR 0016).
+  if (nrow(plan$grouping_masks) == 1L && !any(encoded)) {
+    return(data)
+  }
+  columns <- vapply(factor_info, function(info) info$col, character(1))
+  margin_safe_column_reads(data, columns, function(source, safe_name) {
+    expressions <- lapply(factor_info, function(info) {
+      rlang::call2(
+        marginplyr_private_call("validate_margin_factor"),
+        margin_column_pronoun(safe_name(info$col)),
+        levels = info$levels, ordered = info$ordered, col = info$col
+      )
+    })
+    names(expressions) <- unname(vapply(columns, safe_name, character(1)))
+    dplyr::mutate(source, !!!expressions)
+  })
+}
+
 # Encode stored level values for reconstruction, preserving missing codes
 # separately from observations on an NA level when requested.
 encode_factor_for_margin <- function(x,
@@ -57,6 +103,12 @@ reconstruct_factor_vector <- function(x,
                                       missing_sentinel) {
   missing_value <- !is.na(x) & x == missing_sentinel
   codes <- match(x, new_levels)
+  # Supplied definitions were checked before branching. An ordinary value
+  # outside this domain is a package-created invalid mapping (ADR 0015).
+  stopifnot(
+    "An unmatched value reached factor reconstruction." =
+      !any(!is.na(x) & !missing_value & is.na(codes))
+  )
   codes[missing_value] <- NA_integer_
   structure(
     codes,

@@ -5,12 +5,14 @@ status: accepted
 # Grouping caller context and lazy factor-schema boundaries
 
 Accepted: 2026-11-09
-Implementation: pending in #1550 and #1551
+Implementation: factor-schema boundary implemented in #1550;
+caller-context boundary pending in #1551
 
 The owner approved this specification for two independent implementation
 tickets: context consistency, ordinary rlang injection semantics, prevention
 of silent factor-value loss, conservative typed deferral, and reconstruction
-of a lazy result after schema changes. No package implementation is included.
+of a lazy result after schema changes. The factor-schema boundary is implemented;
+the caller-context boundary remains pending.
 
 Evidence baseline: `5835fd6788d0fddd4cf42a2aa524a62072f36814`.
 The [independent investigation](https://github.com/sayuks/marginplyr/blob/54f6c55ad43dc5b8eb4483a91b7dda4e775eab05/investigation/expand-grouping-independent-hunt-2026-11-09.md)
@@ -115,5 +117,5 @@ Implementation tickets, with no blocking edge between them:
    conservative evaluation rule.
 
 The approved submission contains contract documentation and publication of
-these two independently verifiable tickets. Package fixes remain separate work;
-the original investigation's no-implementation scope continues.
+these two independently verifiable tickets. Their implementations land
+independently; the original investigation's no-implementation scope continues.
