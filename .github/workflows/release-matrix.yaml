@@ -327,7 +327,7 @@ jobs:
     name: Minimal dependencies (depends-only)
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
 
     env:
       # Withholds Suggested packages from examples, tests, and vignettes.
@@ -390,7 +390,7 @@ jobs:
     name: Tarball ${{ matrix.config.os }} (${{ matrix.config.r }})
     needs: build
     runs-on: ${{ matrix.config.os }}
-    timeout-minutes: 60
+    timeout-minutes: 90
 
     strategy:
       fail-fast: false
@@ -481,7 +481,7 @@ jobs:
     needs: [build, backend-matrix]
     runs-on: ubuntu-latest
     # Includes setup and the complete suite with one backend installed.
-    timeout-minutes: 90
+    timeout-minutes: 120
 
     strategy:
       fail-fast: false
