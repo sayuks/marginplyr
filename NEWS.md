@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Parent and Total shares accept eligible columns from parenthesized ordinary
+  `across()` sources while preserving their per-group evaluation (#1530).
+
 * Direct SQL Parent and Total share sources retain their `UNNEST()` cardinality
   check when standard-quoted strings or identifiers contain comment markers
   (#1532).

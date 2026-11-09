@@ -379,7 +379,8 @@ Config/testthat/start-first:
     caller-error-causes,
     later-local-across-factories,
     duckdb-authored-calls,
-    sql-share-quoted-markers
+    sql-share-quoted-markers,
+    parenthesized-across-identity
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool

@@ -1088,7 +1088,9 @@ wrap_share_sources <- function(dots,
     )
     quo <- dots[[position]]
     expr <- rlang::quo_get_expr(quo)
-    if (is_across_call(expr)) {
+    # The planned source retains across identity before local namespace
+    # isolation replaces its runtime head with a function-value call.
+    if (is_across_call(checks[[1L]]$dependency_expr)) {
       if (identical(backend_kind, "dtplyr")) {
         wrapped <- wrap_dtplyr_share_across(
           expr,
