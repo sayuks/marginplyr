@@ -3,6 +3,15 @@
 * Parent and Total shares accept eligible columns from parenthesized ordinary
   `across()` sources while preserving their per-group evaluation (#1530).
 
+* Direct SQL Parent and Total share sources retain their `UNNEST()` cardinality
+  check when standard-quoted strings or identifiers contain comment markers
+  (#1532).
+
+* Typed DuckDB inspection and expansion refuse opaque authored macro and
+  `query()` calls before binding can infer types from source values. Captured
+  names, explicit reader metadata and ordinary table functions remain available
+  (#1533).
+
 * Parent and Total shares preserve dplyr expansion of later bare `across()`
   sources, including function factory context and ordinary lambda masks
   (#1529).

@@ -585,8 +585,7 @@ test_that("CSV replacement guards preserve ordinary values and non-CSV files", {
     expect_identical(plan$fixed, "(label)")
     expect_identical(plan$included, "(k)")
     audit <- last_sent_queries(details = TRUE)
-    expect_identical(audit$purpose,
-                     c(if (i > 1L) "relation_catalog", "selection_proxy"))
+    expect_identical(audit$purpose, c("relation_catalog", "selection_proxy"))
     expect_true(all(audit$status == "returned"))
     expect_match(audit$sql[audit$purpose == "selection_proxy"],
                  "LIMIT 0", fixed = TRUE)
@@ -616,7 +615,7 @@ test_that("CSV relation parsing keeps quoted identifiers out of SQL grammar", {
     expect_identical(plan$fixed, "(label)")
     expect_identical(plan$included, "(k)")
     expect_identical(last_sent_queries(details = TRUE)$purpose,
-                     "selection_proxy")
+                     c("relation_catalog", "selection_proxy"))
   }
   path <- tempfile(fileext = ".csv")
   on.exit(unlink(path), add = TRUE)
@@ -740,10 +739,11 @@ test_that("qualified CSV names cannot hide replacement inference", {
     source <- dplyr::tbl(con, dbplyr::sql(paste(
       "SELECT * FROM", form
     )), vars = "k")
-    plan <- inspect_grouping(
+    # A macro's body is opaque even when its name resembles a filename.
+    expect_error(inspect_grouping(
       source, .grouping = grouping_set(where(is.numeric))
-    )
-    expect_identical(plan$included, "(k)")
+    ), "dplyr::collect()", fixed = TRUE, class = "marginplyr_error")
+    expect_duckdb_catalog_only()
   }
 })
 
@@ -968,7 +968,7 @@ test_that("explicit CSV schemas retain typed inspection without source work", {
       expect_identical(plan$fixed, "(label)")
       expect_identical(plan$included, "(k)")
       audit <- last_sent_queries(details = TRUE)
-      expected <- c(if (kind == "table") "relation_catalog", "selection_proxy")
+      expected <- c("relation_catalog", "selection_proxy")
       expect_identical(audit$purpose, expected)
       expect_true(all(audit$status == "returned"))
       snapshot <- audit[audit$purpose == "selection_proxy", , drop = FALSE]
