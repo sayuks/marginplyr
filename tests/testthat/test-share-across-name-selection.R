@@ -287,7 +287,7 @@ check_source_selection_grains <- function(convert) {
     g = rep(c("a", "b"), 2L),
     x = c(1, 3, 2, 6), y = c(10, 30, 20, 60)
   ))
-  before <- as.list(data)
+  before <- serialize(data, NULL)
   for (form in c("bare", "head", "call")) {
     for (duplicate in c(FALSE, TRUE)) {
       run <- function(margin, share = NULL, sort = "none", pattern = FALSE) {
@@ -354,7 +354,7 @@ check_source_selection_grains <- function(convert) {
       }
     }
   }
-  expect_identical(as.list(data), before)
+  expect_identical(serialize(data, NULL), before)
 }
 
 test_that("source selectors preserve fixed grains and Margin orders", {
