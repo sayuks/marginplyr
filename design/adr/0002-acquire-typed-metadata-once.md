@@ -34,3 +34,32 @@ rule — [ADR 0005](0005-reject-local-errors-before-backend-reads.md): a read ma
 happen only after the snapshot and only for something the call cannot be shown
 to be wrong about locally. A read that could be answered by the snapshot
 belongs to the snapshot, and this decision is what says so.
+
+## Amendment: a lazy result retains its construction-time schema (2026-11-09)
+
+A returned lazy Margin result is planned against the input schema captured
+during construction: column names and types, including factor levels, their
+order and ordered status. After changing that schema, the caller constructs
+a new Margin result. The prepared operation still belongs to one public verb
+call; schema values retained in the returned query do not make that operation
+a reusable cache.
+
+This is a schema precondition, not a snapshot of source rows. Value changes
+within the same schema follow the backend's ordinary lazy execution semantics.
+Execution does not refresh metadata or replan the result, and this decision
+promises no complete detection of schema changes. In particular, it does not
+add monitoring of every column addition, rename, type transition or factor
+outside the captured metadata used by the operation.
+
+[ADR 0012](0012-distinguish-factor-na-levels-from-missing-margin-values.md)
+owns the required comparison before R factor processing can lose source
+values. The delegated class and attribute boundary in
+[ADR 0016](0016-delegate-result-class-and-attributes-to-dplyr.md) remains in
+force.
+
+This amendment was accepted on 2026-11-09; implementation remains pending in
+[#1550](https://github.com/sayuks/marginplyr/issues/1550).
+The shared [construction-time schema and safe factor processing acceptance][factor-schema-acceptance]
+records the implementation controls.
+
+[factor-schema-acceptance]: ../specs/grouping-context-and-factor-schema-boundaries.md#3-construction-time-schema-and-safe-factor-processing

@@ -225,3 +225,55 @@ evidence are in
 
 The inspection sentence is superseded by ADR 0020's amendment *inspect a
 direct Arrow reader through an unexecuted query* (#510).
+
+## Amendment: reject changed captured factor definitions before loss (2026-11-09)
+
+[ADR 0002](0002-acquire-typed-metadata-once.md) owns the construction-time
+schema precondition. For local and dtplyr inputs, marginplyr must compare each
+captured factor relevant to keys or carried columns with its expected stored
+levels and ordered status before branch processing can erase that definition.
+The expected levels exclude the synthetic Margin label. The comparison reads
+stored levels by the same rules as metadata acquisition, so a subclass's
+display method does not redefine the domain. It includes unused levels, NA
+levels and level order, and still runs when the processed factor has zero
+observations.
+
+The comparison is required on native factor paths as well as already-selected
+encoder paths. A factor captured without an NA level can gain one later; with
+a `NULL` label, the captured definition may then have selected no encoder, so
+an encoder-only guard would miss the loss caused by branch combination.
+The comparison precedes encoding even when a new level equals an internal
+sentinel or the Margin label, so encoding cannot hide the changed domain.
+
+Validate the factor value already being processed and return it unchanged on
+a match, including its attributes. Add no schema snapshot, query or extra
+source evaluation. A mismatch raises a Package condition naming the caller's
+column and directing them to reconstruct the Margin result. There is no
+opt-out for silent value loss and no new public argument, result subclass or
+collection lifecycle.
+
+A later mapping must not silently turn an unmatched ordinary non-missing value
+into a missing factor code. Any mapping backstop distinguishes an observation
+on a legitimate NA level, an actual missing code and an internal sentinel.
+Under [ADR 0015](0015-separate-package-conditions-from-internal-invariants.md),
+a supplied schema mismatch is a Package condition because reconstruction
+avoids it; a package-created invalid mapping behind that comparison remains
+an internal invariant.
+
+This guard covers captured factors processed in R, not complete schema
+monitoring. Native passthrough outside that processing retains its delegated
+behavior under [ADR 0016](0016-delegate-result-class-and-attributes-to-dplyr.md).
+SQL retains its existing execution boundary, including DuckDB's ordinary
+unknown-value ENUM cast error; it gains no schema probe or conversion of that
+External condition into a Package condition. Arrow gains no factor-level
+restoration or schema-change detection guarantee. The unrequested-read
+boundary in [ADR 0020](0020-ask-before-reading-a-lazy-input.md) is unchanged.
+
+This amendment was accepted on 2026-11-09; implementation remains pending in
+[#1550](https://github.com/sayuks/marginplyr/issues/1550).
+The [construction-time schema and safe factor processing acceptance][factor-schema-acceptance]
+covers labels, fixed keys, carried payloads, empty execution, shared summary
+and nesting paths, repeated execution and backend controls. Public help and
+release notes describing the runtime change land with that implementation.
+
+[factor-schema-acceptance]: ../specs/grouping-context-and-factor-schema-boundaries.md#3-construction-time-schema-and-safe-factor-processing
