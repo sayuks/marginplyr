@@ -49,9 +49,11 @@ main <- function() {
     stopifnot(grepl(missing, result$stderr, fixed = TRUE),
               identical(readLines(env_file), "EXISTING_ENTRY=retained"))
   }
-  for (args in list("--unknown", "--cache", "--remove", c("--remove", "v1"))) {
+  for (args in list("--unknown", "--cache", c("--cache", file.path(workspace, "custom-cache")),
+                   "--remove", c("--remove", "v1"))) {
     run("tools/setup-duckdb-json.R", args, status = NULL)
   }
+  stopifnot(!dir.exists(file.path(workspace, "custom-cache")))
   result <- run(command, values = ci_env, timeout = 180000L)
   cat(result$stdout, result$stderr, sep = "")
   entries <- readLines(env_file, encoding = "UTF-8", warn = FALSE)

@@ -6,26 +6,15 @@ entry <- normalizePath(sub("^--file=", "", argument[[1L]]), mustWork = TRUE)
 source(file.path(dirname(entry), "duckdb-json.R"))
 
 main <- function(args) {
-  cache <- duckdb_json_default_cache()
-  cache_option <- which(args == "--cache")
-  if (length(cache_option)) {
-    if (length(cache_option) != 1L || cache_option[[1L]] == length(args)) {
-      stop("Usage: Rscript tools/setup-duckdb-json.R [--remove VERSION PLATFORM] [--cache DIR]",
-           call. = FALSE)
-    }
-    position <- cache_option[[1L]]
-    cache <- args[[position + 1L]]
-    args <- args[-c(position, position + 1L)]
-  }
   if (length(args) == 0L) {
-    lease <- duckdb_json_acquire(cache = cache)
+    lease <- duckdb_json_acquire()
     on.exit(duckdb_json_release(lease), add = TRUE)
     cat("Prepared DuckDB JSON extension: ", lease$path, "\n", sep = "")
   } else if (length(args) == 3L && identical(args[[1L]], "--remove")) {
-    removed <- duckdb_json_cleanup(args[[2L]], args[[3L]], cache)
+    removed <- duckdb_json_cleanup(args[[2L]], args[[3L]])
     cat(if (removed) "Removed DuckDB JSON cache entry.\n" else "No DuckDB JSON cache entry exists.\n")
   } else {
-    stop("Usage: Rscript tools/setup-duckdb-json.R [--remove VERSION PLATFORM] [--cache DIR]",
+    stop("Usage: Rscript tools/setup-duckdb-json.R [--remove VERSION PLATFORM]",
          call. = FALSE)
   }
 }
