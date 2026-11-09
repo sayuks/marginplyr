@@ -374,7 +374,8 @@ Config/testthat/start-first:
     nest-local-frame-converter,
     duckdb-captured-relations,
     first-local-across-factories,
-    dtplyr-multislot-metadata
+    dtplyr-multislot-metadata,
+    caller-error-causes
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool

@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Summaries preserve caller-owned errors and their payloads when their cause
+  is a caught Package condition, including invalid nested Margin calls (#1531).
+
 * Included-only dtplyr expansions acquire faithful multi-slot S4 metadata,
   allowing character displays of Period and Interval dimensions without an
   internal prototype error (#1528).
