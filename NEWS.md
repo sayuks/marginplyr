@@ -3,6 +3,11 @@
 * Summaries preserve caller-owned errors and their payloads when their cause
   is a caught Package condition, including invalid nested Margin calls (#1531).
 
+* Typed DuckDB Grouping inspection follows authored SQL views regardless of
+  their names before binding, so ordinary names cannot hide source-value
+  inference. Safe nested common table expressions retain typed inspection
+  (#1526).
+
 * Included-only dtplyr expansions acquire faithful multi-slot S4 metadata,
   allowing character displays of Period and Interval dimensions without an
   internal prototype error (#1528).

@@ -375,6 +375,7 @@ Config/testthat/start-first:
     duckdb-captured-relations,
     first-local-across-factories,
     dtplyr-multislot-metadata,
+    duckdb-sql-relations,
     caller-error-causes
 VignetteBuilder:
     quarto
