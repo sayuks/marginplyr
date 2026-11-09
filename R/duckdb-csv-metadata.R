@@ -417,7 +417,7 @@ validate_duckdb_authored_calls <- function(tokens, catalog) {
     tokens[pmax(1L, heads - 2L)] == "as"
   modifier <- tokens[heads] %in% c("exclude", "replace", "rename") &
     !quoted[heads] & tokens[previous] == "*" & !quoted[previous]
-  # A name directly after a closing expression introduces an implicit alias.
+  # Alias column lists and OVER/FILTER clauses follow closing expressions.
   implicit_alias <- heads > 1L & tokens[previous] == ")" & !quoted[previous]
   heads <- heads[!alias & !materialized & !modifier &
                    !implicit_alias & !heads %in% declarations]
