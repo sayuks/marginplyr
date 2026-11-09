@@ -51,12 +51,12 @@ test_that("audit preserves an internal selection-proxy warning failure", {
     off$result$error, "Missing values are always removed", fixed = TRUE
   )
   expect_identical(on$result$error, off$result$error)
-  expect_identical(on$record$purpose, "selection_proxy")
-  expect_false(is.na(on$record$sql))
+  expect_identical(on$record$purpose, c("relation_catalog", "selection_proxy"))
+  expect_false(anyNA(on$record$sql))
   expect_match(on$record$sql, "SELECT", fixed = TRUE)
   expect_true(on$warning_verbosity_restored)
-  expect_identical(on$details$status, "errored")
-  observed <- on$details$conditions[[1L]]
+  expect_identical(on$details$status, c("returned", "errored"))
+  observed <- on$details$conditions[[2L]]
   expect_true(all(observed$phase == "invocation"))
   expect_identical(observed$handling, c("propagated", "propagated"))
   expect_true("warning" %in% observed$classes[[1L]])

@@ -396,16 +396,22 @@ test_that("established JSON schemas retain metadata without sampling", {
         ", ", schema, ")"
       )), vars = vars)
       before <- serialize(source$lazy_query, NULL)
-      for (input in list(source, dplyr::filter(source, k == k), ordinary)) {
+      inputs <- list(reader = source, filtered = dplyr::filter(source, k == k),
+                     table = ordinary)
+      for (kind in names(inputs)) {
+        input <- inputs[[kind]]
         plan <- inspect_grouping(
           input, .by = where(is.character),
           .grouping = grouping_set(where(is.numeric))
         )
         expect_identical(plan$included, "(k)")
         audit <- last_sent_queries(details = TRUE)
-        expect_identical(audit$purpose, "selection_proxy")
-        expect_identical(audit$status, "returned")
-        expect_match(audit$sql, "LIMIT 0", fixed = TRUE)
+        expected <- c(if (kind == "table") "relation_catalog",
+                      "selection_proxy")
+        expect_identical(audit$purpose, expected)
+        expect_true(all(audit$status == "returned"))
+        expect_match(audit$sql[audit$purpose == "selection_proxy"],
+                     "LIMIT 0", fixed = TRUE)
       }
       expect_error(dplyr::collect(source), "Malformed JSON")
       expect_identical(serialize(source$lazy_query, NULL), before)

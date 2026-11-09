@@ -160,9 +160,10 @@ test_that("DuckDB metadata is an internal view with no result execution", {
   summarize_with_margins(remote, total = sum(v), .grouping = rollup(g))
   recorded <- last_sent_queries()
   internal <- last_sent_queries(FALSE)
-  expect_identical(internal$purpose, "selection_proxy")
-  expect_identical(nrow(DBI::dbGetQuery(con, internal$sql)), 0L)
-  expect_identical(recorded$purpose, c("selection_proxy", "result"))
+  expect_identical(internal$purpose, c("relation_catalog", "selection_proxy"))
+  expect_identical(nrow(DBI::dbGetQuery(con, internal$sql[[2L]])), 0L)
+  expect_identical(recorded$purpose,
+                   c("relation_catalog", "selection_proxy", "result"))
   expect_identical(last_sent_queries(), recorded)
   inspect_grouping(remote, .grouping = rollup(where(is.character)))
   expect_identical(last_sent_queries(FALSE), internal)
@@ -188,10 +189,12 @@ test_that("cached dialect checks create no artificial internal SQL", {
     if (attempt == 1L) {
       expect_identical(
         internal$purpose,
-        c("selection_proxy", "share_dialect", "share_dialect_control")
+        c("relation_catalog", "selection_proxy", "share_dialect",
+          "share_dialect_control")
       )
     } else {
-      expect_identical(internal$purpose, "selection_proxy")
+      expect_identical(internal$purpose,
+                       c("relation_catalog", "selection_proxy"))
     }
   }
 })
