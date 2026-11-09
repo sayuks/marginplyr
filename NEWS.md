@@ -1,5 +1,10 @@
 # marginplyr 0.1.0
 
+* Typed DuckDB Grouping inspection follows authored SQL views regardless of
+  their names before binding, so ordinary names cannot hide source-value
+  inference. Safe nested common table expressions retain typed inspection
+  (#1526).
+
 * Typed DuckDB Grouping inspection checks views captured by direct table names
   and qualified identifiers before binding, including derived inputs, so a
   stored reader cannot bypass source-inference admission (#1525).
