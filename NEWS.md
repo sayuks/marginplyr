@@ -404,6 +404,14 @@
 * `last_sent_queries(include_result = FALSE)` selects the latest call's
   internal SQL while preserving the default two-column record (#790).
 
+* `last_sent_queries(details = TRUE)` adds the SQL `source`, internal-operation
+  `status`, and ordered `conditions` summaries. These describe observed outcomes
+  at the package boundary, including handled errors; they establish neither
+  whole-call success nor server completion (#791). The query-policy help also
+  distinguishes DuckDB's catalog-only admission from its typed snapshot, and
+  the accessor example clarifies that restoring the audit option leaves the
+  saved call's record readable (#1539).
+
 * SQLite Parent shares now match equivalent grouping keys under `NOCASE` and
   `RTRIM` collations, including when children retain different spellings of
   their Parent key (#767).

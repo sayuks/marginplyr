@@ -115,8 +115,9 @@ neither the stored rows nor a copy you already hold.
 With \code{.check_margin_label = TRUE}, an observed label check aggregates
 collision counts in the database and retrieves one row, with one count per
 checked column. It does not retrieve all unique values. Zero-row SQL
-metadata on DuckDB is a separate internal operation. Recording requests
-neither check: a cache hit or a label check with no columns adds no query.
+metadata on DuckDB and its preceding catalog-only admission are separate
+internal operations. Recording requests none of this work: a cache hit or a
+label check with no columns adds no query.
 
 An internal query is recorded before invoking the backend operation.
 The SQL is a render, not a capture of DBI arguments or proof that the
@@ -176,9 +177,9 @@ utils::write.csv(do.call(rbind, records), path)
 }
 
 \examples{
-# The record is kept only while the option is set, so the example restores
-# it. The guard shipped with marginplyr keeps the example runnable without
-# DuckDB.
+# Recording uses the option's setting when the call begins. Restoring it
+# afterwards leaves that call's record readable until the next tracked call.
+# The guard keeps the example runnable without DuckDB.
 source(system.file("suggests", "guard.R", package = "marginplyr"))
 if (
   marginplyr_suggest_available("DBI") &&
@@ -238,6 +239,8 @@ if (
   details$conditions[details$status == "errored"]
   DBI::dbDisconnect(con)
   options(old)
+  # The last call remains readable under its saved entry-time setting.
+  last_sent_queries(include_result = FALSE, details = TRUE)
 }
 }
 \seealso{
