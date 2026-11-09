@@ -528,6 +528,7 @@ local_checked_across_names_arg <- function(value, state) {
 
 # Bind the rules for one dot to a checker called from dplyr's glue mask.
 # Tag errors from the caller's template to remove the outer interpolation.
+# Wrap generated refusals separately so their ownership ends at restatement.
 # Unpacking supplies the expanded frame fields for branch schema validation.
 local_checked_glue_name <- function(name_rules) {
   force(name_rules)
@@ -542,14 +543,26 @@ local_checked_glue_name <- function(name_rules) {
         )
       }
     )
-    check_share_alias_reads(names, name_rules$source_reads)
-    record_local_summary_aliases(
-      names, name_rules$alias_state, name_rules$position
-    )
-    check_local_frame_output_names(
-      names, name_rules$group_vars, name_rules$internal_names,
-      name_rules$set_id_name, name_rules$set_id_is_internal,
-      name_rules$protected_sources
+    tryCatch(
+      {
+        check_share_alias_reads(names, name_rules$source_reads)
+        record_local_summary_aliases(
+          names, name_rules$alias_state, name_rules$position
+        )
+        check_local_frame_output_names(
+          names, name_rules$group_vars, name_rules$internal_names,
+          name_rules$set_id_name, name_rules$set_id_is_internal,
+          name_rules$protected_sources
+        )
+      },
+      marginplyr_error = function(cnd) {
+        # Only these generated checks own the refusal inside glue's wrapper.
+        rlang::abort(
+          "Failed to validate the generated summary name.",
+          class = "marginplyr_generated_glue_error",
+          parent = cnd
+        )
+      }
     )
     if (unpacked) {
       type_state <- name_rules$type_state
