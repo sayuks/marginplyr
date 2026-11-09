@@ -219,6 +219,7 @@ desired-contract assertion exited one.
 | Hypothesis | Evidence and result | Disposition and next evidence |
 | --- | --- | --- |
 | Ordinary Total denominators mix fixed partitions, missing keys or occurrences | The coordinator's 1,400 explicit-set comparisons covered 70 independently generated empty/small inputs, five families, fixed-key presence and both missing-value sum policies. Values, names, types and cardinality matched. | Refuted for this finite family; arbitrary classes were not inferred. |
+| Nonfinite local summaries break missing-value or ratio arithmetic | Forty-eight local/dtplyr comparisons covered positive/negative infinity, their sum, NaN, NA and zero, both sum policies and fixed-key presence. Ordinary grain sums and separate R division matched. | Refuted for these local cases; no portable SQL nonfinite guarantee was inferred. |
 | Source/output overlap or unusual names break later ordinary masks | Seventy-eight comparisons crossed 13 names, direct/across/unnamed-frame forms and fixed-key presence. Per-set ordinary dplyr results matched, including changed summary aliases. | Refuted; independent per-set comparison avoided accidental name repair during oracle combination. |
 | Composite/product/union overlap corrupts plan order or root admission | B's 702 generated comparisons gave 120 duplicate refusals, 198 no-root share refusals and 384 matching accepted plan/value/type/identifier results. | Refuted for generated depth-at-most-two families and identity/empty/overlap controls. |
 | Structured keys break denominator equality or Margin order | Forty local comparisons covered numeric NA/NaN/Inf, factor NA levels, list/list_of, matrix, packed-frame, array and zero-width keys, fixed/dimension roles and first/last ordering. | Values, types and exact independently constructed order matched; arbitrary extension ordering remained unproven. |
@@ -268,6 +269,14 @@ The three minimal reproductions above and the Issue bodies retained the
 essential public witnesses. Coordinator observation-mode replays exited zero;
 the three desired-contract modes exited one on the investigated SHA. Those
 are reproduced failures, not successful package-check results.
+
+The additional nonfinite comparisons used a disposable archive of research
+commit `af7744a5cf088c5a6ce43d5b2f1532df6ef4f3ef` during its source check.
+That commit added only this note to the investigated main; its package code,
+tests, dependencies and installed files were byte-unchanged. Its execution
+handle reached exit zero, and all reproduction work was collected before the
+source check's terminal result was handled. Defect reproductions remained
+evidence for the original main SHA, separately from this supplementary run.
 
 Environment: R 4.6.1 on arm64 macOS Tahoe 26.6.2, dplyr 1.2.1, dbplyr 2.6.0,
 rlang 1.3.0, vctrs 0.7.3, tibble 3.3.1, data.table 1.18.6.1, dtplyr 1.3.3,
