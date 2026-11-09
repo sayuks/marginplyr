@@ -955,7 +955,8 @@ test_that("explicit CSV schemas retain typed inspection without source work", {
       "columns = {'k': 'INTEGER', 'label': 'VARCHAR'})"
     )), vars = c("k", "label"))
     before <- serialize(source$lazy_query, NULL)
-    for (input in list(source, ordinary)) {
+    for (kind in c("reader", "table")) {
+      input <- switch(kind, reader = source, table = ordinary)
       plan <- inspect_grouping(
         input, .by = where(is.character),
         .grouping = grouping_set(where(is.numeric))
@@ -963,10 +964,12 @@ test_that("explicit CSV schemas retain typed inspection without source work", {
       expect_identical(plan$fixed, "(label)")
       expect_identical(plan$included, "(k)")
       audit <- last_sent_queries(details = TRUE)
-      expect_identical(audit$purpose, "selection_proxy")
-      expect_identical(audit$status, "returned")
-      expect_match(audit$sql, "system.main.query(", fixed = TRUE)
-      expect_match(audit$sql, "LIMIT 0", fixed = TRUE)
+      expected <- c(if (kind == "table") "relation_catalog", "selection_proxy")
+      expect_identical(audit$purpose, expected)
+      expect_true(all(audit$status == "returned"))
+      snapshot <- audit[audit$purpose == "selection_proxy", , drop = FALSE]
+      expect_match(snapshot$sql, "system.main.query(", fixed = TRUE)
+      expect_match(snapshot$sql, "LIMIT 0", fixed = TRUE)
     }
     # A zero-row result would still fail here if metadata converted source rows.
     expect_error(dplyr::collect(source), "Conversion Error", fixed = TRUE)

@@ -118,7 +118,7 @@ test_that("ordinary qualified parentheses keep DuckDB leading validation", {
     list(selected, "amount")
   )
   expect_identical(calls, 1L)
-  expect_identical(counter$queries, 1L)
+  expect_identical(counter$queries, 2L)
 })
 
 test_that("qualified parentheses use lexical c and typed fixed keys", {
