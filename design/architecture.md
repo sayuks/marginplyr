@@ -111,10 +111,11 @@ that works. Being marginplyr's own report about a position of its own, it is
 parentless, as a share selection naming something ineligible is. The refused
 value is read from the condition rather than by evaluating the argument a
 second time to identify it, so identifying it adds no evaluation. What each
-shape of nested argument costs a caller is written down in one place, the *one
-reading of a recognized nested argument* amendment to
-[ADR 0008](adr/0008-centralize-grouping-specification-kind-rules.md). The
-replacement covers the argument the position owns and not a part
+shape of nested argument costs a caller is written down in
+[ADR 0008](adr/0008-centralize-grouping-specification-kind-rules.md), in *one
+reading of a recognized nested argument* and *one context rule for recognized
+constructor-shaped caller calls*. The latter records accepted behavior awaiting
+implementation. The replacement covers the argument the position owns and not a part
 of one: a specification written inside a selection keeps tidyselect's report,
 which names the sub-selection and is accurate about it — and where the input
 has a column of that name, tidyselect refuses nothing at all, because the

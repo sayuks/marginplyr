@@ -414,6 +414,9 @@ cache, kept to one call rather than held across calls.
 
 **Evaluations.** The following table includes the non-specification selection
 amendments below. Each is a count per call, not per pass.
+The [common selection-context amendment](#amendment-one-context-rule-for-recognized-constructor-shaped-caller-calls)
+below supersedes the constructor-call placement in this table and the *Timing*
+paragraph.
 
 | The argument | Evaluations | Where |
 | --- | --- | --- |
@@ -496,6 +499,10 @@ argument occurrences or calls. Neither preserves this argument's budget.
 
 ## Amendment: retain a constructor-shaped call's selection value (#946)
 
+The [common selection-context amendment](#amendment-one-context-rule-for-recognized-constructor-shaped-caller-calls)
+below supersedes this amendment's promise that every bare constructor-shaped
+call runs before typed metadata. Its retention and one-invocation rules stand.
+
 A call recognized by a constructor spelling can return an ordinary selection:
 ADR 0019 runs the caller's actual function. The evaluation table above did not
 previously cover this shape. It now receives one caller-function invocation per
@@ -524,6 +531,10 @@ object the operation does not own. The per-argument child environment avoids
 those changes.
 
 ## Amendment: authored namespace arguments retain selection context (#1396)
+
+The [common selection-context amendment](#amendment-one-context-rule-for-recognized-constructor-shaped-caller-calls)
+below extends this decision to bare spellings and owns the common rule. The
+account here records the authored-namespace change.
 
 An authored namespace call admitted by the nested spelling gate runs as the
 caller wrote it, including its namespace operation. That operation, its returned
@@ -577,6 +588,49 @@ that return a plausible wrong answer. Resolving only the namespace operator
 before deferral fails when that operator itself reads metadata. A second general
 R interpreter to prove arbitrary caller functions independent of types is not
 required; unproven calls conservatively use the faithful typed context.
+
+## Amendment: one context rule for recognized constructor-shaped caller calls
+
+Accepted on 2026-11-09; implementation is pending in
+[#1551](https://github.com/sayuks/marginplyr/issues/1551). Bare and explicitly qualified
+calls admitted by the constructor-spelling gate receive the same selection
+context rule. The caller's actual function runs once per argument occurrence
+and public call, in its captured environment; its first answer is retained
+whether it is a specification or an ordinary selection.
+
+A call proven independent of typed metadata may run early in the names
+selection context. The proof covers the actual callee, any authored namespace
+operation, capture-time injection operands, and deferred promises and bindings;
+stock callee identity alone is insufficient. It must not force an active
+binding or unknown promise to establish that proof. An unproven call suspends
+preflight before caller code runs, then runs once after faithful typed metadata
+is available. A names-only placeholder with invented column types is not that
+metadata. If the backend cannot safely provide the required context, the call
+is refused before invoking the callback. No speculative invocation or retry is
+permitted.
+
+The authored-namespace prefix and resume rules above extend to bare calls:
+earlier settled selections may fail before metadata acquisition, later arguments
+wait behind the pending call, and resumed preflight precedes typed `.by`
+resolution. Named arguments and reachable grammar or ambiguity errors retain
+their early checks. The spelling gate, nesting grammar, and ADR 0026's bare-name
+binding and ambiguity budgets are unchanged, as is ADR 0007's public capture
+boundary.
+
+This amends evaluation timing, detection order, and lazy acceptance for unproven
+calls. Their conditions and side effects move after metadata acquisition;
+acquisition failure can prevent them, and earlier selection errors can take
+precedence. Even a callback that would return a name-only specification needs
+metadata when its safety cannot be established before invocation. Some formerly
+successful name-only lazy inspections can consequently refuse. These costs are
+accepted to avoid running caller code against a context that can silently give
+the wrong answer. Proven calls retain their early behavior. One operation still
+acquires at most one typed snapshot under ADR 0002, and ADR 0020's source-read
+policy gains no exemption.
+
+The [approved specification's caller-context acceptance](../specs/grouping-context-and-factor-schema-boundaries.md#1-one-context-rule-for-recognized-constructor-shaped-caller-calls)
+owns the implementation acceptance cases, including forwarding, faithful-context
+refusals, condition identity, and coverage of the shared public consumers.
 
 ## Amendment: refuse a cyclic nested reference (#828)
 
