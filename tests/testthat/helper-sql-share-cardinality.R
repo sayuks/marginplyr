@@ -177,6 +177,23 @@ expect_sql_share_quoted <- function(con, backend) {
           testthat::expect_equal(result[[share]], expected / denominators)
         }
       }
+      ordinary <- summarize(quote(sum(x, na.rm = TRUE)), shares, portable)
+      result <- dplyr::arrange(dplyr::collect(ordinary),
+                               .data$fixed, .data$set, .data$g)
+      values <- list(c(1, 3, 4), c(2, 6, 8), c(4, 12, 16))
+      expected <- unlist(lapply(values, function(x) {
+        if (portable) x[c(1L, 2L, 1L, 2L, 3L)] else x
+      }), use.names = FALSE)
+      testthat::expect_equal(as.double(result$value), expected)
+      rows <- if (portable) 5L else 3L
+      testthat::expect_equal(result[[share]],
+                             expected / rep(c(4, 8, 16), each = rows))
+
+      value <- dbplyr::sql(paste0(
+        "SUM(CAST(x AS VARCHAR)) + UNNEST(", array("10"), ") + LENGTH('--')"
+      ))
+      query <- summarize(value, shares, portable)
+      testthat::expect_error(dplyr::collect(query), "[Ss][Uu][Mm]")
     }
   }
 
