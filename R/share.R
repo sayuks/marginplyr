@@ -2489,13 +2489,12 @@ guard_share_unnest <- function(expr, source, con, kind, keys) {
   }
   tokens_at <- gregexpr(
     paste0("\"(?:[^\"]|\"\")*\"|'(?:[^'\\\\]|'')*'|",
-           "[[:alpha:]_][[:alnum:]_]*|[^[:space:]]"),
+           "/\\*|--|[[:alpha:]_][[:alnum:]_]*|[^[:space:]]"),
     sql, perl = TRUE
   )
   tokens <- regmatches(sql, tokens_at)[[1L]]
   # These spellings need dialect-specific lexical rules. Leave them to SQL.
-  if (any(tokens %in% c("\"", "'", "$", "\\", ";")) ||
-        grepl("/\\*|--", sql)) {
+  if (any(tokens %in% c("\"", "'", "$", "\\", ";", "/*", "--"))) {
     return(expr)
   }
   position <- seq_along(tokens)
