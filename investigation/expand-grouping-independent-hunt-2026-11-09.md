@@ -1,6 +1,7 @@
 # Independent expansion and Grouping specification investigation
 
 Investigated: 2026-11-09
+Revised: 2026-11-09 — ordinary-rlang control and the accepted injection boundary in ADR 0007
 Tested main: `5835fd6788d0fddd4cf42a2aa524a62072f36814`
 Scope: functional investigation; no implementation changes
 
@@ -204,6 +205,55 @@ inherited. Source scope supplied no timing proposal. The submitted SHA,
 integration assessment, mandatory checks and separate Standards/Spec review
 belonged on the PR. This research-only record required no NEWS entry.
 CI monitoring was outside the requested work.
+
+## Revisions (2026-11-09)
+
+The `do.call`/`alist` observation above was resolved as a difference in written
+injection boundaries, with no implementation repair selected. On the same
+tested package SHA, R 4.6.1 and rlang 1.3.0, ordinary `enquo()` capture produced
+the same inline result as marginplyr. A control using no marginplyr function
+isolated the cause:
+
+```r
+ordinary <- function(...) rlang::enquos(..., .ignore_empty = "trailing")
+capture <- function(x) rlang::eval_tidy(rlang::enquo(x))
+
+length(do.call(ordinary, alist(, !!!list())))          # 1
+length(capture(do.call(ordinary, alist(, !!!list())))) # 0
+```
+
+The outer capture removed the empty splice before the called function ran,
+leaving its empty argument trailing. Ordinary `enquo0()` retained the missing
+argument, as did constructing the argument list before public capture.
+Non-injection and filled-splice controls agreed. The matching result therefore
+did not establish extra marginplyr language rewriting of the kind #1517 fixed.
+This did not mean that the result difference was unobservable: a factory
+inspecting the changed language could select a different dimension, and the
+ordinary-rlang control selected that same dimension.
+
+The owner adopted rlang's written injection boundary and explicitly excluded
+this observation from repair work. Replacing capture globally with `enquo0()`
+or adding an `alist()` spelling exception was not selected. The durable
+decision is [ADR 0007, public injection keeps its written evaluation boundary](../design/adr/0007-capture-user-expressions-at-public-verbs.md#amendment-public-injection-keeps-its-written-evaluation-boundary).
+The [accepted boundary specification](../design/specs/grouping-context-and-factor-schema-boundaries.md#2-public-injection-follows-its-written-evaluation-boundary)
+records it separately from the two implementation targets. No repair Issue
+was created for this injection observation.
+
+The follow-up probe and complete control matrix were retained as
+`/private/tmp/marginplyr-grill-injection-facts-20261109.R`, `.log` and `.rds`.
+Its execution returned exit 0. These temporary files carried no repository
+retention guarantee; the control above retained the separating evidence.
+
+The owner separately resolved the caller-context and schema-lifetime questions
+by adopting the accepted targets in ADRs 0008 and 0002/0012. Freshly fetched
+main still named `5835fd6788d0fddd4cf42a2aa524a62072f36814`; a new disposable
+archive reproduced both witnesses. Searches over 799 Issues and 748 PRs found
+no identical implementation ticket. The independent follow-ups were
+[#1550](https://github.com/sayuks/marginplyr/issues/1550) for factor loss
+prevention and [#1551](https://github.com/sayuks/marginplyr/issues/1551) for
+faithful caller context, both without blockers. These were newly adopted
+contract targets, not a claim that the earlier investigation had already
+established those wider guarantees. Package implementation remained pending.
 
 [functional]: expand-grouping-functional-validation-2026-11-08.md
 [language]: expand-grouping-language-and-replacement-scans-2026-11-08.md
