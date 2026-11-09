@@ -65,6 +65,7 @@ evidence that would justify reopening it.
 | Derived typed metadata differs from explicitly collected input. Inspection typed-selection section; ADRs 0002/0020/0029. | Consistency agent: 1,652 exact selected-name comparisons and 90 expected grouped-`.by`/overlap Package-condition class comparisons matched, over 60 dtplyr and seven Arrow shapes, 13 predicates and both selection positions. Empty/singleton/populated roots, immutable/Mutable inputs, projection, rename, relocation, ordering, filtering, grouping, aliases, arithmetic and constants were represented. | Another constructible type/derivation or dependency version. |
 | Inspection changes inputs, consumes readers, performs source work, or leaks recording ownership. Inspection reference; ADRs 0020/0027/0029/0037. | Consistency agent: 93 assertions matched for safe/unsafe dtplyr source callbacks, Mutable table bytes, Arrow reader success/refusal, and local/SQL reentry with audited/unaudited inner and outer calls and failures. Parent ownership and saved entry-time audit settings survived; three reader rows remained after inspection. Explicit collection of isolated copies calibrated the source-row observers. | Another callback/control-transfer path with an independently calibrated observer. |
 | A zero-row DuckDB metadata read still evaluates source expressions. Inspection laziness section; ADR 0020. | Parent sequence witnesses in a projected expression, filter, ordering, materialized CTE, lateral join and union did not advance during typed inspection. Independent `nextval()` calls before/after calibrated the sequence. Each inspection recorded catalog admission and its typed snapshot separately. Seven CTE/declaration/FROM-first/TABLE controls also matched. | Another SQL preparation shape with independently observable source work. |
+| Generic SQL inspection differs from local Plans or reads rows to resolve types. Inspection reference; ADRs 0002/0020. | A final path audit added 72 name-only comparisons across temporary SQLite and simulated PostgreSQL, six specifications, three duplicate policies and both formats; all matched local controls. Four typed selections correctly refused. Derived rename/reorder/filter and unchanged-input controls passed. A separately calibrated DBI query observer saw one explicit-collect query, then zero queries across two successful SQLite inspections and one typed refusal. These compatibility checks used shared Plan paths rather than a new independent expansion oracle. | Another generic dialect/version or observable backend entry point. |
 | A further reader-like function necessarily samples values during binding. ADR 0020. | Parent `sniff_csv()` typed inspection still succeeded after numeric/character/broken contents and deletion of the temporary CSV. Its fixed output schema supplied no witness of source-row processing. No defect was inferred merely from its function name. | An independently observable value read during binding, not just a zero-row result or SQL count. |
 
 ## Candidate rejection and existing coverage
@@ -112,6 +113,8 @@ feedback. The parent's terminal handles were 4148 (fixture failure), 17007
 exit 0) and 99149 (corrected cube comparisons, exit 0). Earlier synchronous cube
 expectation failures were retained as harness failures. All owned executions
 were collected before another target ran in their worktree.
+The final generic-SQL execution session 56998 ended at exit 0; its calibrated
+SQLite observer also ended at exit 0 synchronously.
 The consistency agent's matrix, state and observer-calibration sessions
 23751/88216/67407 each ended at exit 0; the other agents likewise collected every
 execution to a terminal result.
@@ -134,7 +137,8 @@ tested source; dplyr 1.2.1, dbplyr 2.6.0, rlang 1.3.0, tidyselect 1.2.1,
 tibble 3.3.1, vctrs 0.7.3, dtplyr 1.3.3, data.table 1.18.6.1, DBI 1.3.0 and
 DuckDB 1.5.5. Database work used an owned in-memory connection and synthetic
 data; connections were closed and temporary input files removed. Arrow 25.0.1
-supplied the in-memory table/query/reader controls.
+supplied the in-memory table/query/reader controls; RSQLite 3.53.3 supplied the
+temporary generic-SQL controls. PostgreSQL was simulated, not a live server.
 
 After integrating the independent reports, the team checked both display and
 exact formats, local and lazy paths, successful and rejected inputs, name/type/
