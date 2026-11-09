@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Parent and Total shares accept eligible columns from parenthesized ordinary
+  `across()` sources while preserving their per-group evaluation (#1530).
+
 * Parent and Total shares preserve dplyr expansion of later bare `across()`
   sources, including function factory context and ordinary lambda masks
   (#1529).
