@@ -942,6 +942,9 @@ summarize_margin_union <- function(.data,
         # The map is built per branch rather than once, because `branch_dots`
         # is where `grouping_bit()` has become this branch's own constant, and
         # that is the expression dplyr will quote.
+        if (!is.null(summaries$prepare_first_across)) {
+          summaries$prepare_first_across(grouping_set, set_id, conditions)
+        }
         result <- with_branch_conditions(
           summarize_margin_branch(
             .data = .data,
