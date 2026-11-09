@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Included-only dtplyr expansions acquire faithful multi-slot S4 metadata,
+  allowing character displays of Period and Interval dimensions without an
+  internal prototype error (#1528).
+
 * Local DuckDB JSON tests prepare and reuse a signed extension cache, and fail
   when required support is unavailable. Review-ready and the local CRAN check
   wrapper prepare the same support before checking (#1540).
