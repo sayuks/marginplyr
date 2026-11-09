@@ -216,7 +216,7 @@ argument, which is where the counts of these shapes are written down.
 ## Amendment: ambiguity checks follow the reachable prefix
 
 ADR 0008's *one context rule for recognized constructor-shaped caller calls*,
-accepted on 2026-11-09 with implementation pending, qualifies the statements
+accepted on 2026-11-09 and implemented in #1551, qualifies the statements
 above that put refusal before metadata acquisition. A reachable ambiguity check
 retains its early refusal; a
 check after a suspended caller call waits for preflight to resume. The binding

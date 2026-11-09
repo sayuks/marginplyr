@@ -1520,14 +1520,14 @@ test_that("an unrecognized nested argument is evaluated as a selection is", {
 })
 
 # The two shapes the test above does not reach, which are the two a nested
-# position recognizes as a specification. Each is read in the preflight and
-# nowhere else, so it is evaluated once per call however many compilation
-# passes run (ADR 0008, #260).
+# position recognizes as a specification. Each is read once in preflight,
+# before metadata for a bound name and after metadata for an unproven caller
+# constructor (ADR 0008).
 #
 # The counted selection travels beside it in every specification below, because
 # a count of one would also be what a call that compiled nothing produced. It
-# is name-only, so it is resolved once per pass, and the two paths differ in
-# how many passes run.
+# needs only names, so its count distinguishes the two-pass names path from
+# typed continuation.
 test_that("a recognized nested specification is evaluated once", {
   data <- data.frame(
     region = c("E", "E", "W"),
@@ -1660,26 +1660,27 @@ test_that("a recognized nested specification is evaluated once", {
       list(bind = bind_name(position$nested), arg = quote(s)),
       list(
         bind = bind_constructor(position$nested),
-        arg = rlang::call2(position$nested, quote(region))
+        arg = rlang::call2(position$nested, quote(region)),
+        deferred = TRUE
       )
     )
   }
 
   for (position in positions) {
     for (form in position_forms(position)) {
-      # Settled by name alone, so the plan is compiled against the names first
-      # and against the typed snapshot after, and the selection is resolved in
-      # each.
+      # A bound specification settles from names; an unknown constructor
+      # suspends before the trailing selection, leaving one typed resolution.
       name_only <- measure(
         form$bind,
         parent_call(position, form$arg, selection)
       )
       expect_identical(name_only$forced, 1L)
-      expect_identical(name_only$selected, 2L)
+      expect_identical(
+        name_only$selected, if (isTRUE(form$deferred)) 1L else 2L
+      )
 
-      # A predicate elsewhere in the specification withholds the name-only
-      # pass. One pass fewer resolves the selection one time fewer, and the
-      # recognized argument is read the same once.
+      # A predicate requires typed resolution for either shape of nested
+      # specification. The recognized argument is still read once.
       withheld <- measure(
         form$bind,
         parent_call(position, form$arg, selection, predicate)
@@ -1689,15 +1690,22 @@ test_that("a recognized nested specification is evaluated once", {
     }
   }
 
-  # A lazy input reaches the name-only path, where the two passes read
-  # different proxies and the count is still one. It reaches no further: the
-  # `postgres` kind holds no `collect_selection_proxy`, so a specification
-  # carrying a predicate is refused there before a count could be taken. No
-  # optional backend is needed for either, and a local data frame above
-  # reaches both paths.
+  # PostgreSQL supplies names without faithful R column types. Bound
+  # specifications retain the names path; unknown caller constructors refuse
+  # before invocation even when their eventual answer would need only names.
   remote <- dbplyr::tbl_lazy(data, con = dbplyr::simulate_postgres())
   for (position in positions) {
     for (form in position_forms(position)) {
+      if (isTRUE(form$deferred)) {
+        expect_error(measure(
+          form$bind,
+          parent_call(position, form$arg, selection),
+          input = quote(remote)
+        ), "faithful typed selection context", class = "marginplyr_error")
+        expect_identical(forced, 0L)
+        expect_identical(selected, 0L)
+        next
+      }
       lazy <- measure(
         form$bind,
         parent_call(position, form$arg, selection),
