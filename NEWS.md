@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Parent and Total shares retain invocation-time dependencies through known
+  base closure returns from `structure()`, `unname()`, `withVisible()`,
+  `eval()`, `evalq()`, `get0()` and `forceAndCall()` (#1545).
+
 * Parent and Total shares accept eligible columns from parenthesized ordinary
   `across()` sources while preserving their per-group evaluation (#1530).
 

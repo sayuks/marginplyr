@@ -4783,6 +4783,30 @@ scope_value_closure <- function(expr, scope, lookup) {
       return(scope_value_closure(value[[1L]], scope, lookup))
     }
   }
+  if (identical(operator, "unname") &&
+        is_known_base_frame_call(head, operator, scope, transfer_lookup)) {
+    value <- base_call_argument(head, "obj")
+    closure <- if (length(value) == 1L) {
+      scope_value_closure(value[[1L]], scope, lookup)
+    }
+    return(scope_filter_closure(closure, function(variant) {
+      !isTRUE(variant$dispatch_unknown) && all(vapply(
+        c("names", "dimnames", "names<-", "dimnames<-"), function(generic) {
+          scope_implicit_class_default(
+            generic, "base", variant$dispatch_classes %||% "function",
+            scope, lookup
+          )
+        }, logical(1)
+      ))
+    }))
+  }
+  if (identical(operator, "structure") &&
+        is_known_base_frame_call(head, operator, scope, transfer_lookup)) {
+    parts <- static_matched_arguments(head, base::structure)
+    if (identical(names(parts), ".Data")) {
+      return(scope_value_closure(parts$.Data, scope, lookup))
+    }
+  }
   if (identical(operator, "as.function") &&
         is_known_base_frame_call(head, operator, scope, transfer_lookup)) {
     value <- base_call_argument(head, "x")
@@ -4824,7 +4848,35 @@ scope_value_closure <- function(expr, scope, lookup) {
       return(scope_value_closure(value[[1L]], scope, lookup))
     }
   }
-  if (identical(operator, "get") &&
+  if (identical(operator, "forceAndCall") &&
+        is_known_base_frame_call(head, operator, scope, transfer_lookup)) {
+    parts <- static_matched_arguments(head, args(base::forceAndCall))
+    if (all(c("n", "FUN") %in% names(parts))) {
+      count <- unparenthesized_value(parts$n)
+      if (!is.object(count) && typeof(count) %in% c("integer", "double") &&
+            length(count) == 1L && is.finite(count) && count >= 0) {
+        invocation <- rlang::call2(
+          parts$FUN, !!!parts[!names(parts) %in% c("n", "FUN")]
+        )
+        return(scope_value_closure(invocation, scope, lookup))
+      }
+    }
+  }
+  if (!is.null(operator) && operator %in% c("eval", "evalq") &&
+        is_known_base_frame_call(head, operator, scope, transfer_lookup)) {
+    parts <- static_matched_arguments(head, base::eval)
+    if (identical(names(parts), "expr")) {
+      value <- if (identical(operator, "evalq")) {
+        list(parts$expr)
+      } else {
+        scope_definition_value(parts$expr, scope, lookup)
+      }
+      if (length(value) == 1L) {
+        return(scope_value_closure(value[[1L]], scope, lookup))
+      }
+    }
+  }
+  if (!is.null(operator) && operator %in% c("get", "get0") &&
         is_known_base_frame_call(head, operator, scope, transfer_lookup)) {
     value <- base_call_argument(head, "x")
     target <- base_call_argument(head, c("envir", "pos"))
@@ -5396,6 +5448,15 @@ scope_closure_list <- function(expr, scope, lookup) {
       return(scope_closure_list(value[[1L]], scope, lookup))
     }
   }
+  if (identical(operator, "withVisible") &&
+        is_known_base_frame_call(expr, operator, scope, transfer_lookup)) {
+    value <- base_call_argument(expr, "x")
+    if (length(value) == 1L) {
+      return(list(value = scope_closure_list_element(
+        value[[1L]], scope, lookup
+      ), visible = NULL))
+    }
+  }
   if (identical(static_call_name(expr), "list") &&
         is_known_base_frame_call(expr, "list", scope, lookup)) {
     parts <- scope_list_arguments(expr, scope)
@@ -5578,7 +5639,7 @@ scope_literal_list_count <- function(parts, name, default, scope, lookup) {
         is.finite(count) && count == trunc(count)) count
 }
 
-# Prove that known dispatch classes reach the package's default method.
+# Prove that known classes reach a package default method or primitive default.
 # Inspect possible method bindings without invoking or forcing caller code.
 scope_implicit_class_default <- function(name, owner, class, scope, lookup) {
   methods <- paste0(name, c(paste0(".", class), ".default"))
@@ -5592,9 +5653,10 @@ scope_implicit_class_default <- function(name, owner, class, scope, lookup) {
     )) return(FALSE)
 
   namespace <- asNamespace(owner)
-  default <- get(default_method, envir = namespace, inherits = FALSE)
-  registry <- get(".__S3MethodsTable__.", envir = namespace, inherits = FALSE)
   absent <- rlang::zap()
+  default <- get0(default_method, envir = namespace, inherits = FALSE,
+                  ifnotfound = absent)
+  registry <- get(".__S3MethodsTable__.", envir = namespace, inherits = FALSE)
   for (method in methods) {
     for (env in list(lookup$env, registry)) {
       binding <- ordinary_function_binding(method, env, owner, absent)
