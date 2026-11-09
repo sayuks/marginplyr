@@ -210,8 +210,8 @@ checking what the test asserted: its selector always returned x, and only its
 name-template count was pinned. Neither that test nor ADR 0019's own-planning
 sentence established a public exception allowing ordinary input choices to
 freeze while output schema stayed identical. Ordinary summary semantics and
-ADR 0017's stateful-source amendment supplied the value contract. The three
-investigators independently confirmed the difference; the coordinator's
+ADR 0017's stateful-source amendment supplied the value contract. A, B and
+the coordinator independently confirmed the difference; the coordinator's
 desired-contract assertion exited one.
 
 ## Refuted candidates and finite coverage
