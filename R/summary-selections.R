@@ -543,27 +543,17 @@ local_checked_glue_name <- function(name_rules) {
         )
       }
     )
-    tryCatch(
-      {
-        check_share_alias_reads(names, name_rules$source_reads)
-        record_local_summary_aliases(
-          names, name_rules$alias_state, name_rules$position
-        )
-        check_local_frame_output_names(
-          names, name_rules$group_vars, name_rules$internal_names,
-          name_rules$set_id_name, name_rules$set_id_is_internal,
-          name_rules$protected_sources
-        )
-      },
-      marginplyr_error = function(cnd) {
-        # Only these generated checks own the refusal inside glue's wrapper.
-        rlang::abort(
-          "Failed to validate the generated summary name.",
-          class = "marginplyr_generated_glue_error",
-          parent = cnd
-        )
-      }
-    )
+    with_generated_summary_check({
+      check_share_alias_reads(names, name_rules$source_reads)
+      record_local_summary_aliases(
+        names, name_rules$alias_state, name_rules$position
+      )
+      check_local_frame_output_names(
+        names, name_rules$group_vars, name_rules$internal_names,
+        name_rules$set_id_name, name_rules$set_id_is_internal,
+        name_rules$protected_sources
+      )
+    })
     if (unpacked) {
       type_state <- name_rules$type_state
       type_state$unpacked_fields <- union(type_state$unpacked_fields, names)
@@ -2124,7 +2114,9 @@ local_summary_selection <- function(selection, env, group_vars,
           deferred_selection = TRUE
         ))
       ))
-      check_share_alias_reads(preceding_aliases, list(check))
+      with_generated_summary_check(
+        check_share_alias_reads(preceding_aliases, list(check))
+      )
     }
   }
   if (!identical(names(selected), source_names)) {
@@ -2145,10 +2137,10 @@ resolve_share_source_selection <- function(selection, env, data, aliases,
   )
   dependencies <- intersect(reads, aliases)
   if (length(dependencies) > 0L) {
-    abort_share_alias_dependency(
+    with_generated_summary_check(abort_share_alias_dependency(
       check$share_kind, check$share_output, check$source_summary,
       dependencies[[1L]]
-    )
+    ))
   }
   tryCatch(
     resolve_summary_selection(
@@ -2156,10 +2148,10 @@ resolve_share_source_selection <- function(selection, env, data, aliases,
     ),
     error = function(cnd) {
       if (is_unsupported_predicate(cnd)) {
-        abort_share_alias_dependency(
+        with_generated_summary_check(abort_share_alias_dependency(
           check$share_kind, check$share_output, check$source_summary,
           aliases[[1L]]
-        )
+        ))
       }
       stop(cnd)
     }

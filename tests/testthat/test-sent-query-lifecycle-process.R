@@ -44,9 +44,29 @@ expect_lifecycle_audit <- function(case) {
     expect_identical(on$internal, on$details[on$details$purpose != "result", ])
     expect_false(anyNA(on$details$sql))
     expect_match(on$internal$sql, "SELECT", fixed = TRUE)
-    expect_identical(on$internal$status,
+    purpose <- if (case == "collision") {
+      "observed_label_collision"
+    } else {
+      "selection_proxy"
+    }
+    expected_purposes <- if (case == "collision") {
+      purpose
+    } else {
+      c("relation_catalog", purpose)
+    }
+    expect_identical(on$internal$purpose, expected_purposes)
+    if (case != "collision") {
+      catalog <- on$internal[on$internal$purpose == "relation_catalog", ]
+      expect_identical(catalog$status, "returned")
+      expect_identical(catalog$source, "literal")
+      expect_equal(nrow(catalog$conditions[[1L]]), 0L)
+    }
+    # The injected translation warning belongs to the input query, not to
+    # DuckDB's preceding system-catalog acquisition.
+    invocation <- on$internal[on$internal$purpose == purpose, ]
+    expect_identical(invocation$status,
                      if (warning_level == 0L) "returned" else "errored")
-    observed <- on$internal$conditions[[1L]]
+    observed <- invocation$conditions[[1L]]
     expect_true(all(observed$phase == "invocation"))
     expect_true(all(observed$handling == "propagated"))
     expect_identical(

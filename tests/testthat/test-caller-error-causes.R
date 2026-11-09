@@ -204,3 +204,37 @@ test_that("generated across glue checks retain their own reporting", {
   )
   expect_caller_error(propagated, wrapped)
 })
+
+test_that("generated selector refusals release their temporary ownership", {
+  data <- data.frame(value = 1)
+  refusal <- tryCatch(
+    summarize_with_margins(
+      data, previous = sum(value), source = sum(dplyr::pick(previous)),
+      share = share_of_total(source), .grouping = grouping_set()
+    ), error = identity
+  )
+  expect_s3_class(refusal, "marginplyr_error")
+  expect_null(refusal$parent)
+  expect_identical(
+    rlang::call_name(conditionCall(refusal)), "summarize_with_margins"
+  )
+  failure <- rlang::error_cnd(
+    "caller_summary_failure", message = "Caught selector refusal",
+    parent = refusal, token = new.env(parent = emptyenv())
+  )
+  fail <- function(x) stop(failure)
+  actual <- tryCatch(
+    summarize_with_margins(
+      data, source = fail(value), .grouping = grouping_set()
+    ), error = identity
+  )
+  expect_caller_error(actual, failure)
+  selected <- tryCatch(
+    summarize_with_margins(
+      data, previous = sum(value),
+      source = sum(dplyr::pick(dplyr::all_of(fail()))),
+      share = share_of_total(source), .grouping = grouping_set()
+    ), error = identity
+  )
+  expect_caller_error(selected, failure)
+})

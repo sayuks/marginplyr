@@ -18,6 +18,7 @@
 
 * Summaries preserve caller-owned errors and their payloads when their cause
   is a caught Package condition, including invalid nested Margin calls (#1531).
+  Generated share-source alias refusals retain their Package condition class.
 
 * Typed DuckDB Grouping inspection follows authored SQL views regardless of
   their names before binding, so ordinary names cannot hide source-value
