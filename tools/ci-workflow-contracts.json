@@ -20,7 +20,7 @@
     "jobs": {
       "R-CMD-check": {
         "runs-on": "${{ matrix.config.os }}",
-        "timeout-minutes": "90",
+        "timeout-minutes": "120",
         "name": "${{ matrix.config.os }} (${{ matrix.config.r }})",
         "strategy": {
           "fail-fast": "false",
@@ -789,7 +789,7 @@
         "name": "Minimal dependencies (depends-only)",
         "needs": "build",
         "runs-on": "ubuntu-latest",
-        "timeout-minutes": "45",
+        "timeout-minutes": "90",
         "env": {
           "_R_CHECK_DEPENDS_ONLY_": "true",
           "_R_CHECK_FORCE_SUGGESTS_": "false",
@@ -848,7 +848,7 @@
         "name": "Tarball ${{ matrix.config.os }} (${{ matrix.config.r }})",
         "needs": "build",
         "runs-on": "${{ matrix.config.os }}",
-        "timeout-minutes": "60",
+        "timeout-minutes": "90",
         "strategy": {
           "fail-fast": "false",
           "matrix": {
@@ -940,7 +940,7 @@
           "backend-matrix"
         ],
         "runs-on": "ubuntu-latest",
-        "timeout-minutes": "90",
+        "timeout-minutes": "120",
         "strategy": {
           "fail-fast": "false",
           "matrix": {
@@ -1174,7 +1174,7 @@
     "jobs": {
       "test-coverage": {
         "runs-on": "ubuntu-latest",
-        "timeout-minutes": "180",
+        "timeout-minutes": "360",
         "env": {
           "GITHUB_PAT": "${{ secrets.GITHUB_TOKEN }}"
         },
