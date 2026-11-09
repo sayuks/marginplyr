@@ -378,6 +378,7 @@ Config/testthat/start-first:
     duckdb-sql-relations,
     caller-error-causes,
     later-local-across-factories,
+    duckdb-authored-calls,
     sql-share-quoted-markers
 VignetteBuilder:
     quarto

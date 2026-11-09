@@ -406,8 +406,7 @@ test_that("established JSON schemas retain metadata without sampling", {
         )
         expect_identical(plan$included, "(k)")
         audit <- last_sent_queries(details = TRUE)
-        expected <- c(if (kind == "table") "relation_catalog",
-                      "selection_proxy")
+        expected <- c("relation_catalog", "selection_proxy")
         expect_identical(audit$purpose, expected)
         expect_true(all(audit$status == "returned"))
         expect_match(audit$sql[audit$purpose == "selection_proxy"],
