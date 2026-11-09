@@ -18,8 +18,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     concurrency:
-      group: altdoc-build-${{ github.ref }}
-      cancel-in-progress: true
+      group: altdoc-build-${{ github.event_name == 'workflow_dispatch' && format('manual-{0}', github.run_id) || format('auto-{0}', github.ref) }}
+      cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
     env:
       GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
     steps:

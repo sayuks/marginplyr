@@ -1,6 +1,6 @@
 # CI queue efficiency
 
-Status: design agreed on 2026-11-09; implementation pending. Inspection baseline:
+Status: design agreed on 2026-11-09; implementation proposed. Inspection baseline:
 `2cd91ea24726115d1506e0dc42ae77d3ad0c496c`.
 
 ## Agreed constraints

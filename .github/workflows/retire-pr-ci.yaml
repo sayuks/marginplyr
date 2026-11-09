@@ -1,0 +1,152 @@
+name: Retire closed PR CI
+on:
+  pull_request_target:
+    types: [closed]
+
+permissions:
+  actions: write
+  pull-requests: read
+
+jobs:
+  retire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      # github-script supplies authenticated Octokit without installing R or
+      # dependencies in this privileged, checkout-free control workflow.
+      - uses: actions/github-script@v8
+        with:
+          retries: 0
+          script: |
+            const repo = {...context.repo, request: {timeout: 10000}};
+            const event = context.payload;
+            if (context.eventName !== 'pull_request_target' || event.action !== 'closed') {
+              throw new Error('Only trusted PR-close events are supported.');
+            }
+            const number = event.pull_request.number;
+            const closedAt = event.pull_request.closed_at;
+            if (!Number.isSafeInteger(event.pull_request.head.repo?.id)) {
+              core.setFailed('Cannot identify runs: the PR head repository is unavailable.');
+              return;
+            }
+            const known = new Set([
+              'R-CMD-check.yaml', 'altdoc.yaml', 'document.yaml', 'lint.yaml',
+              'postgres-transactions.yaml', 'release-matrix.yaml', 'test-coverage.yaml'
+            ].map(name => `.github/workflows/${name}`));
+            const active = ['queued', 'in_progress', 'waiting', 'pending', 'requested'];
+            const errors = [];
+            const report = message => { errors.push(message); core.warning(message); };
+            const stillClosed = async () => {
+              const {data: pr} = await github.rest.pulls.get({...repo, pull_number: number});
+              return pr.state === 'closed' && pr.closed_at === closedAt;
+            };
+            const eligible = run => run.id !== context.runId &&
+              run.event === 'pull_request' && active.includes(run.status) &&
+              known.has(run.path.split('@')[0]) &&
+              run.repository?.id === event.repository.id &&
+              run.head_repository?.id === event.pull_request.head.repo?.id &&
+              run.head_branch === event.pull_request.head.ref &&
+              Date.parse(run.created_at) <= Date.parse(closedAt);
+            let history;
+            const historicalHead = async sha => {
+              if (!history) {
+                const head = event.pull_request.head;
+                const {data: prs} = await github.rest.pulls.list({
+                  ...repo, state: 'all', head: `${head.repo.owner.login}:${head.ref}`, per_page: 100, page: 1
+                });
+                const matching = prs.filter(pr => pr.head.repo?.id === head.repo.id && pr.head.ref === head.ref);
+                if (prs.length === 100 || matching.length !== 1 || matching[0].number !== number) {
+                  throw new Error('Cannot identify PR: head repository/ref has ambiguous or incomplete API associations.');
+                }
+                history = new Set();
+                for (let page = 1; page <= 3; page++) {
+                  const {data: commits} = await github.rest.pulls.listCommits({
+                    ...repo, pull_number: number, per_page: 100, page
+                  });
+                  for (const commit of commits) history.add(commit.sha);
+                  if (commits.length < 100) break;
+                }
+              }
+              return history.has(sha);
+            };
+            const belongs = async run => {
+              let prs = run.pull_requests;
+              if (!prs?.length) {
+                // Run associations can be empty for closed/fork PRs. A unique
+                // all-state PR lookup plus API commit membership covers that case.
+                if (await historicalHead(run.head_sha)) return true;
+                report(`Cannot identify PR for run ${run.id}: head SHA absent from bounded PR history.`);
+                return false;
+              }
+              if (prs.length > 1 && prs.some(pr => pr.number === number)) {
+                report(`Cannot identify PR for run ${run.id}: multiple run associations.`);
+                return false;
+              }
+              return prs.length === 1 && prs[0].number === number &&
+                prs[0].base.repo.id === event.repository.id;
+            };
+            if (!await stillClosed()) {
+              core.info('PR reopened or closed again; this close event is obsolete.');
+              return;
+            }
+            const candidates = new Map();
+            for (const status of active) {
+              for (let page = 1; page <= 3; page++) {
+                const {data} = await github.rest.actions.listWorkflowRunsForRepo({
+                  ...repo, event: 'pull_request', branch: event.pull_request.head.ref,
+                  status, per_page: 100, page, exclude_pull_requests: false
+                });
+                for (const run of data.workflow_runs) {
+                  if (eligible(run)) candidates.set(run.id, run);
+                }
+                if (data.total_count <= page * 100) break;
+                if (page === 3) report(`Run pagination limit reached for ${status}.`);
+              }
+            }
+            if (candidates.size > 50) {
+              core.setFailed('Target budget exceeded: refusing more than 50 candidate runs.');
+              return;
+            }
+            const pending = new Map();
+            for (const candidate of candidates.values()) {
+              try {
+                const args = {...repo, run_id: candidate.id};
+                const {data: run} = await github.rest.actions.getWorkflowRun(args);
+                if (!eligible(run) || run.run_attempt !== candidate.run_attempt || !await belongs(run)) continue;
+                // Recheck after association lookup, immediately before the write.
+                if (!await stillClosed()) {
+                  core.info('PR reopened or closed again; stopping retirement.');
+                  break;
+                }
+                try {
+                  await github.rest.actions.cancelWorkflowRun(args);
+                } catch (error) {
+                  if (error.status !== 409) throw error;
+                }
+                pending.set(run.id, run.run_attempt);
+              } catch (error) {
+                report(`Unable to retire run ${candidate.id}: ${error.message}`);
+              }
+            }
+            // Poll all requests together so one slow cancellation cannot delay
+            // retirement of the other positively identified runs.
+            for (let attempt = 0; attempt < 12 && pending.size; attempt++) {
+              for (const [id, runAttempt] of pending) {
+                try {
+                  const {data: current} = await github.rest.actions.getWorkflowRun({...repo, run_id: id});
+                  if (current.run_attempt !== runAttempt) {
+                    report(`Run ${id} changed attempts while waiting for cancellation.`);
+                    pending.delete(id);
+                  } else if (current.status === 'completed') {
+                    core.info(`Run ${id} completed (${current.conclusion || 'natural completion'}).`);
+                    pending.delete(id);
+                  }
+                } catch (error) {
+                  report(`Unable to observe cancellation of run ${id}: ${error.message}`);
+                  pending.delete(id);
+                }
+              }
+              if (attempt < 11 && pending.size) await new Promise(resolve => setTimeout(resolve, 5000));
+            }
+            for (const id of pending.keys()) report(`Run ${id} did not complete within the cancellation polling limit.`);
+            if (errors.length) core.setFailed(errors.join('\n'));
