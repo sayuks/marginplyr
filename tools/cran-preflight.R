@@ -42,6 +42,7 @@ if (!policy_verified) {
 }
 
 source(file.path(repository_path, ".github", "scripts", "cran-note-policy.R"))
+source(file.path(repository_path, "tools", "duckdb-json.R"))
 source(file.path(repository_path, "tools", "dependency-requirements.R"))
 source(file.path(repository_path, "tools", "cran-preflight-lib.R"))
 

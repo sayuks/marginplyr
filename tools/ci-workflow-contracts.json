@@ -635,7 +635,7 @@
           {
             "uses": "r-lib/actions/setup-r-dependencies@v2",
             "with": {
-              "extra-packages": "local::.",
+              "extra-packages": "local::., any::filelock",
               "needs": "check",
               "cache-version": "full-1"
             }

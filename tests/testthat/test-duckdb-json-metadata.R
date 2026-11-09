@@ -1,3 +1,5 @@
+prepare_duckdb_json_tests()
+
 test_that("non-ASCII catalog and CTE names cannot admit a distinct JSON file", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()

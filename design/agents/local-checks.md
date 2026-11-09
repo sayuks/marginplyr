@@ -195,7 +195,10 @@ build/check. Correct and commit the fix explicitly before invoking again.
 reason. It establishes repository consistency and the six checks for that SHA,
 never a full package-check pass.
 
-After the baseline succeeds, `full` atomically registers in acceptance order
+After the baseline succeeds, `full` prepares signed DuckDB JSON support before
+admission; the runner guide's *Setup and invocation* owns cache preparation and
+its failure boundary. Test cases do not acquire extensions. After preparation,
+`full` atomically registers in acceptance order
 across this user's marginplyr clones and worktrees on the Mac. Only the oldest
 live waiter may acquire the stable shared heavy lock; admission starts
 automatically. The [runner guide](../../tools/review-ready-runner.md) owns
