@@ -914,7 +914,7 @@ plan_share_expressions <- function(dots,
     ),
     recursive = FALSE
   )
-  list(
+  result <- list(
     dots = planned_dots,
     requests = requests,
     cardinality = cardinality,
@@ -925,6 +925,69 @@ plan_share_expressions <- function(dots,
     # value per dot the caller wrote cannot subscript it by position.
     origin_positions = rep(which(keep), widths)
   )
+  if (defer_local) plan_local_across_checks(result) else result
+}
+
+# Add one check-only dot immediately after each later bare across source.
+# The across call retains dplyr's expansion and function invocation; the new
+# dot reads each produced summary from the same mask without adding output.
+plan_local_across_checks <- function(plan) {
+  positions <- unique(vapply(plan$cardinality, `[[`, integer(1), "position"))
+  checked <- integer()
+  checks_by_position <- list()
+  for (position in positions) {
+    quo <- plan$dots[[position]]
+    expr <- rlang::quo_get_expr(quo)
+    if (position == 1L || nzchar(rlang::names2(plan$dots)[[position]]) ||
+          !rlang::is_call(expr, "across", ns = c("", "dplyr"))) next
+    parsed <- parse_across_arguments(expr)
+    if (length(parsed$additional) > 0L || !across_unpack_is_false(
+      parsed$unpack, rlang::quo_get_env(quo)
+    )) next
+    checked <- c(checked, position)
+    checks_by_position[[as.character(position)]] <- Filter(function(record) {
+      record$position == position
+    }, plan$cardinality)
+  }
+  if (length(checked) == 0L) return(plan)
+  dots <- list()
+  origins <- integer()
+  for (position in seq_along(plan$dots)) {
+    dots <- c(dots, plan$dots[position])
+    origins <- c(origins, position)
+    if (!position %in% checked) next
+    checks <- checks_by_position[[as.character(position)]]
+    values <- lapply(checks, function(check) {
+      rlang::call2(base::`[[`, rlang::sym(".data"), check$source_summary)
+    })
+    validator <- rlang::new_quosure(rlang::call2(
+      check_local_across_sources, rlang::call2(base::list, !!!values), checks
+    ), rlang::quo_get_env(plan$dots[[position]]))
+    dots <- c(dots, stats::setNames(list(validator), ""))
+    origins <- c(origins, position)
+  }
+  remap <- function(record) {
+    if (record$position %in% checked) record$post_across <- TRUE
+    record$position <- match(record$position, origins)
+    record
+  }
+  plan$dots <- dots
+  plan$origin_positions <- plan$origin_positions[origins]
+  plan$cardinality <- lapply(plan$cardinality, remap)
+  plan$ordinary_cardinality <- lapply(plan$ordinary_cardinality, remap)
+  plan
+}
+
+# Validate saved summary chunks before the following ordinary dot can run.
+# NULL leaves dplyr's output shape and the caller's column order unchanged.
+check_local_across_sources <- function(values, checks) {
+  for (i in seq_along(checks)) {
+    check <- checks[[i]]
+    check_share_scalar(
+      values[[i]], check$share_output, check$source_summary, check$share_kind
+    )
+  }
+  NULL
 }
 
 # Ordinary summaries outside a share source can expand the staged grouped
@@ -1009,6 +1072,8 @@ wrap_share_sources <- function(dots,
                                cardinality,
                                call,
                                backend_kind) {
+  cardinality <- Filter(function(record) !isTRUE(record$post_across),
+                        cardinality)
   positions <- unique(vapply(
     cardinality,
     `[[`,
