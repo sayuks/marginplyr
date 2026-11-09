@@ -1036,6 +1036,7 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
   state$planning <- TRUE
   state$warnings <- list()
   state$fns_warnings <- list()
+  state$names_warnings <- list()
   state$planning_warnings <- list()
   nested_state <- rlang::env(
     emptyenv(), forbidden_names = character(), internal_names = character(),
@@ -1050,15 +1051,37 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
     }))
     value
   }
+  capture_names <- function(value) {
+    withCallingHandlers(value, warning = function(cnd) {
+      state$names_warnings <- c(state$names_warnings, list(cnd))
+      invokeRestart("muffleWarning")
+    })
+  }
   resolve <- function() {
     state$result <- tryCatch(withCallingHandlers({
       state$selecting <- TRUE
       # dplyr exposes a plain column list while resolving across selectors.
       selected <- resolve_summary_selection(
-        parsed$cols, env, as.list(selection_data)
+        rewrite_grouping_expr(
+          parsed$cols, plan, grouping_set = plan$sets[[1L]],
+          sql = FALSE, con = NULL
+        ), env, as.list(selection_data)
       )
       state$selecting <- FALSE
       args <- parsed$call_args
+      if (parsed$names_index > 0L) {
+        args[parsed$names_index] <- list(rewrite_grouping_expr(
+          parsed$names, plan, grouping_set = plan$sets[[1L]],
+          sql = FALSE, con = NULL
+        ))
+        if (contains_grouping_helper(parsed$names)) {
+          # Branch-rewritten templates report their first warning in the same
+          # expansion context as later grains, so ADR 0021 can identify repeats.
+          args[[parsed$names_index]] <- rlang::call2(
+            capture_names, args[[parsed$names_index]]
+          )
+        }
+      }
       selection <- summary_all_of_expr(selected, selection_data)
       if (parsed$cols_index == 0L) {
         args <- append(list(.cols = selection), args)
@@ -1114,7 +1137,8 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
   )
   if (!is.null(state$error)) {
     conditions$error <- state$error
-    warnings <- c(state$fns_warnings, state$warnings, state$planning_warnings)
+    warnings <- c(state$fns_warnings, state$warnings, state$names_warnings,
+                  state$planning_warnings)
     for (cnd in warnings) {
       buffer_branch_warning(cnd, conditions, character())
     }
@@ -1180,7 +1204,34 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
       }
     }
   }
+  if (length(state$names_warnings) > 0L) {
+    prepare <- result$summaries$prepare_first_across
+    result$summaries$prepare_first_across <- function(grouping_set, set_id,
+                                                      conditions) {
+      if (set_id == 1L) {
+        replay <- rlang::call2(replay_local_name_warnings, state)
+        probe <- rlang::quo(dplyr::across(character(), !!replay))
+        with_branch_conditions(
+          dplyr::summarize(carrier, !!probe, .by = dplyr::all_of(grouping_set)),
+          conditions, restatements = branch_argument_map(
+            list(probe), summary_argument_labels(list(original))
+          )
+        )
+      }
+      if (!is.null(prepare)) prepare(grouping_set, set_id, conditions)
+      invisible(NULL)
+    }
+  }
   result
+}
+
+# Replay first-grain template warnings during dplyr's function preparation.
+# The identity function leaves the empty probe selection without output.
+replay_local_name_warnings <- function(state) {
+  warnings <- state$names_warnings
+  state$names_warnings <- list()
+  for (cnd in warnings) warning(cnd)
+  identity
 }
 
 # Replace the first planned across function argument after source analysis.
