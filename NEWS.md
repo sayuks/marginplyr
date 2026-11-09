@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Direct SQL Parent and Total share sources retain their `UNNEST()` cardinality
+  check when standard-quoted strings or identifiers contain comment markers
+  (#1532).
+
 * Summaries preserve caller-owned errors and their payloads when their cause
   is a caught Package condition, including invalid nested Margin calls (#1531).
 
