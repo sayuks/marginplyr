@@ -18,7 +18,7 @@ jobs:
   R-CMD-check:
     runs-on: ${{ matrix.config.os }}
     # Includes setup, vignette rebuilding and the complete test suite.
-    timeout-minutes: 90
+    timeout-minutes: 120
 
     name: ${{ matrix.config.os }} (${{ matrix.config.r }})
 

@@ -371,7 +371,16 @@ Config/testthat/start-first:
     share-enclosure-replacements,
     dtplyr-numeric-metadata,
     duckdb-json-metadata,
-    nest-local-frame-converter
+    nest-local-frame-converter,
+    duckdb-captured-relations,
+    first-local-across-factories,
+    dtplyr-multislot-metadata,
+    duckdb-sql-relations,
+    caller-error-causes,
+    later-local-across-factories,
+    duckdb-authored-calls,
+    sql-share-quoted-markers,
+    parenthesized-across-identity
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool

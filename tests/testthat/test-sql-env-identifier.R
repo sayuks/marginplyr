@@ -76,8 +76,9 @@ check_sql_env_identifier <- function(con, source_name) {
         info <- paste(source_name, plan, kind, portable)
         purposes <- last_sent_queries()$purpose
         expect_identical(tail(purposes, 1L), "result", info = info)
-        expect_true(all(purposes %in% c("selection_proxy", "result")),
-                    info = info)
+        expect_true(all(purposes %in% c(
+          "relation_catalog", "selection_proxy", "result"
+        )), info = info)
         expect_s3_class(query, "tbl_lazy")
         expected <- if (identical(kind, "summary")) {
           data.frame(g = c("east", "west"), .env = c(1L, 1L),

@@ -1,5 +1,41 @@
 # marginplyr 0.1.0
 
+* Parent and Total shares accept eligible columns from parenthesized ordinary
+  `across()` sources while preserving their per-group evaluation (#1530).
+
+* Direct SQL Parent and Total share sources retain their `UNNEST()` cardinality
+  check when standard-quoted strings or identifiers contain comment markers
+  (#1532).
+
+* Typed DuckDB inspection and expansion refuse opaque authored macros and calls
+  to `query()` or `query_table()` before binding can infer types from source
+  values. Captured names, explicit reader metadata and ordinary table functions
+  remain available (#1533).
+
+* Parent and Total shares preserve dplyr expansion of later bare `across()`
+  sources, including function factory context and ordinary lambda masks
+  (#1529).
+
+* Summaries preserve caller-owned errors and their payloads when their cause
+  is a caught Package condition, including invalid nested Margin calls (#1531).
+  Generated share-source alias refusals retain their Package condition class.
+
+* Typed DuckDB Grouping inspection follows authored SQL views regardless of
+  their names before binding, so ordinary names cannot hide source-value
+  inference. Safe nested common table expressions retain typed inspection
+  (#1526).
+
+* Included-only dtplyr expansions acquire faithful multi-slot S4 metadata,
+  allowing character displays of Period and Interval dimensions without an
+  internal prototype error (#1528).
+
+* Parent and Total shares preserve each grain's ordinary first `across()`
+  function factories, including stateful sources and Grouping helpers (#1527).
+
+* Typed DuckDB Grouping inspection checks views captured by direct table names
+  and qualified identifiers before binding, including derived inputs, so a
+  stored reader cannot bypass source-inference admission (#1525).
+
 * Local DuckDB JSON tests prepare and reuse a signed extension cache, and fail
   when required support is unavailable. Review-ready and the local CRAN check
   wrapper prepare the same support before checking (#1540).
@@ -368,6 +404,14 @@
 
 * `last_sent_queries(include_result = FALSE)` selects the latest call's
   internal SQL while preserving the default two-column record (#790).
+
+* `last_sent_queries(details = TRUE)` adds the SQL `source`, internal-operation
+  `status`, and ordered `conditions` summaries. These describe observed outcomes
+  at the package boundary, including handled errors; they establish neither
+  whole-call success nor server completion (#791). The query-policy help also
+  distinguishes DuckDB's catalog-only admission from its typed snapshot, and
+  the accessor example clarifies that restoring the audit option leaves the
+  saved call's record readable (#1539).
 
 * SQLite Parent shares now match equivalent grouping keys under `NOCASE` and
   `RTRIM` collations, including when children retain different spellings of

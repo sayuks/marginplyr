@@ -575,7 +575,9 @@ test_that("CSV replacement guards preserve ordinary values and non-CSV files", {
   })
   old <- options(marginplyr.audit_sql = TRUE)
   on.exit(options(old), add = TRUE)
-  for (input in c(list(literal, parquet), ordinary)) {
+  inputs <- c(list(literal = literal, parquet = parquet), ordinary)
+  for (i in seq_along(inputs)) {
+    input <- inputs[[i]]
     plan <- inspect_grouping(
       input, .by = where(is.character),
       .grouping = grouping_set(where(is.numeric))
@@ -583,9 +585,10 @@ test_that("CSV replacement guards preserve ordinary values and non-CSV files", {
     expect_identical(plan$fixed, "(label)")
     expect_identical(plan$included, "(k)")
     audit <- last_sent_queries(details = TRUE)
-    expect_identical(audit$purpose, "selection_proxy")
-    expect_identical(audit$status, "returned")
-    expect_match(audit$sql, "LIMIT 0", fixed = TRUE)
+    expect_identical(audit$purpose, c("relation_catalog", "selection_proxy"))
+    expect_true(all(audit$status == "returned"))
+    expect_match(audit$sql[audit$purpose == "selection_proxy"],
+                 "LIMIT 0", fixed = TRUE)
   }
 })
 
@@ -612,7 +615,7 @@ test_that("CSV relation parsing keeps quoted identifiers out of SQL grammar", {
     expect_identical(plan$fixed, "(label)")
     expect_identical(plan$included, "(k)")
     expect_identical(last_sent_queries(details = TRUE)$purpose,
-                     "selection_proxy")
+                     c("relation_catalog", "selection_proxy"))
   }
   path <- tempfile(fileext = ".csv")
   on.exit(unlink(path), add = TRUE)
@@ -736,10 +739,11 @@ test_that("qualified CSV names cannot hide replacement inference", {
     source <- dplyr::tbl(con, dbplyr::sql(paste(
       "SELECT * FROM", form
     )), vars = "k")
-    plan <- inspect_grouping(
+    # A macro's body is opaque even when its name resembles a filename.
+    expect_error(inspect_grouping(
       source, .grouping = grouping_set(where(is.numeric))
-    )
-    expect_identical(plan$included, "(k)")
+    ), "dplyr::collect()", fixed = TRUE, class = "marginplyr_error")
+    expect_duckdb_catalog_only()
   }
 })
 
@@ -955,7 +959,8 @@ test_that("explicit CSV schemas retain typed inspection without source work", {
       "columns = {'k': 'INTEGER', 'label': 'VARCHAR'})"
     )), vars = c("k", "label"))
     before <- serialize(source$lazy_query, NULL)
-    for (input in list(source, ordinary)) {
+    for (kind in c("reader", "table")) {
+      input <- switch(kind, reader = source, table = ordinary)
       plan <- inspect_grouping(
         input, .by = where(is.character),
         .grouping = grouping_set(where(is.numeric))
@@ -963,10 +968,12 @@ test_that("explicit CSV schemas retain typed inspection without source work", {
       expect_identical(plan$fixed, "(label)")
       expect_identical(plan$included, "(k)")
       audit <- last_sent_queries(details = TRUE)
-      expect_identical(audit$purpose, "selection_proxy")
-      expect_identical(audit$status, "returned")
-      expect_match(audit$sql, "system.main.query(", fixed = TRUE)
-      expect_match(audit$sql, "LIMIT 0", fixed = TRUE)
+      expected <- c("relation_catalog", "selection_proxy")
+      expect_identical(audit$purpose, expected)
+      expect_true(all(audit$status == "returned"))
+      snapshot <- audit[audit$purpose == "selection_proxy", , drop = FALSE]
+      expect_match(snapshot$sql, "system.main.query(", fixed = TRUE)
+      expect_match(snapshot$sql, "LIMIT 0", fixed = TRUE)
     }
     # A zero-row result would still fail here if metadata converted source rows.
     expect_error(dplyr::collect(source), "Conversion Error", fixed = TRUE)

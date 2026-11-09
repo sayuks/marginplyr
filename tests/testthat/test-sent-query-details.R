@@ -71,19 +71,22 @@ test_that("metadata and handled dialect failures have separate outcomes", {
   )
   rows <- last_sent_queries(FALSE, TRUE)
   expect_identical(rows$purpose, c(
-    "selection_proxy", "share_dialect", "share_dialect_control"
+    "relation_catalog", "selection_proxy", "share_dialect",
+    "share_dialect_control"
   ))
-  expect_identical(rows$status, c("returned", "errored", "returned"))
-  expect_identical(rows$source, rep("render", 3L))
+  expect_identical(rows$status,
+                   c("returned", "returned", "errored", "returned"))
+  expect_identical(rows$source, c("literal", rep("render", 3L)))
   expect_identical(nrow(rows$conditions[[1L]]), 0L)
-  probe <- rows$conditions[[2L]]
+  expect_identical(nrow(rows$conditions[[2L]]), 0L)
+  probe <- rows$conditions[[3L]]
   expect_true("error" %in% probe$classes[[1L]])
   expect_match(probe$message, "sum", fixed = TRUE)
   expect_identical(probe$phase, "invocation")
   expect_identical(probe$handling, "handled")
-  expect_identical(nrow(rows$conditions[[3L]]), 0L)
+  expect_identical(nrow(rows$conditions[[4L]]), 0L)
   inspect_grouping(remote, .grouping = rollup(where(is.character)))
-  expect_identical(last_sent_queries(FALSE, TRUE), rows[1L, ])
+  expect_identical(last_sent_queries(FALSE, TRUE), rows[1:2, ])
 })
 
 # Controlled driver-boundary conditions cover outcomes real databases need not

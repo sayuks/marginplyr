@@ -743,10 +743,10 @@
 #' because its row-wise return shape exists only locally; see its own
 #' documentation for when it collects.
 #'
-#' Two queries reach your connection without being asked for, and neither
-#' reads a row of your data. This is the rule for every Margin verb, so each
-#' is described against the inputs that can produce it: a verb accepting no
-#' lazy table, or no contextual share, simply never reaches the one that
+#' The following internal work can reach your connection without being asked
+#' for, without reading source values. This is the rule for every Margin verb,
+#' so each is described against the inputs that can produce it: a verb
+#' accepting no lazy table, or no contextual share, never reaches the one that
 #' depends on it.
 #'
 #' - **A zero-row read of the input**, sent only to a backend whose factor
@@ -760,6 +760,20 @@
 #'   Otherwise it refuses before processing source rows. To run the upstream
 #'   operations now, call [dplyr::collect()] on the step explicitly and pass
 #'   the resulting data frame.
+#' - **DuckDB catalog-only admission before typed metadata**, when captured
+#'   table names or parsed SQL base relations need resolution, or authored SQL
+#'   function calls need checking for macros that could hide source work.
+#'   This includes ordinary relation names, native function calls and readers
+#'   whose arguments establish their metadata. One query per operation at most
+#'   reads system-catalog table and view names, stored view definitions, macro
+#'   names, SQL keywords, the current database and configured search path.
+#'   Stored views and their dependencies are checked before binding the input;
+#'   opaque macros and calls to `query()` or `query_table()` are refused.
+#'   A direct reader already showing unsafe inference is refused without
+#'   needing a catalog query.
+#'   The catalog query binds no caller relation and reads no source values.
+#'   It is separate from the single zero-row typed snapshot, which follows
+#'   successful admission. Name-only [inspect_grouping()] needs neither query.
 #' - **At most two queries per share request until the SQL dialect answers**,
 #'   sent when a share is requested there with `.check_share_source` at its
 #'   default of `TRUE`, asking whether the dialect converts a
@@ -783,7 +797,7 @@
 #'   control statements to isolate these questions, preserving your earlier
 #'   work and leaving commit or rollback to you. They read none of your tables.
 #'
-#' Neither query is safe merely because it returns no rows. A read bounded in
+#' A query is not safe merely because it returns no rows. A read bounded in
 #' rows is not bounded in what it costs: BigQuery states plainly that a
 #' `LIMIT` does not reduce the bytes billed for a non-clustered table, and no
 #' vendor documentation exempts `LIMIT 0` from that rule.

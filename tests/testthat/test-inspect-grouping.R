@@ -974,9 +974,10 @@ test_that("typed DuckDB inspection refuses dynamic pivots before row reads", {
     )
     expect_identical(sequence_value(), first)
     audit <- last_sent_queries(details = TRUE)
-    expect_identical(audit$purpose, "selection_proxy")
-    expect_identical(audit$status, "errored")
-    expect_identical(audit$conditions[[1L]]$handling, "handled")
+    expect_identical(audit$purpose, c("relation_catalog", "selection_proxy"))
+    expect_identical(audit$status, c("returned", "errored"))
+    expect_equal(nrow(audit$conditions[[1L]]), 0L)
+    expect_identical(audit$conditions[[2L]]$handling, "handled")
   }
 })
 
@@ -1006,9 +1007,10 @@ test_that("DuckDB metadata preserves static pivots and ordinary queries", {
       DBI::dbGetQuery(con, "SELECT currval('inspected_rows')")[[1L]], first
     )
     audit <- last_sent_queries(details = TRUE)
-    expect_identical(audit$purpose, "selection_proxy")
-    expect_identical(audit$status, "returned")
-    expect_match(audit$sql, "LIMIT 0", fixed = TRUE)
+    expect_identical(audit$purpose, c("relation_catalog", "selection_proxy"))
+    expect_identical(audit$status, c("returned", "returned"))
+    expect_match(audit$sql[audit$purpose == "selection_proxy"],
+                 "LIMIT 0", fixed = TRUE)
   }
 })
 
@@ -1027,9 +1029,10 @@ test_that("other DuckDB metadata failures retain their external condition", {
   )
   expect_false(inherits(err, "marginplyr_error"))
   audit <- last_sent_queries(details = TRUE)
-  expect_identical(audit$purpose, "selection_proxy")
-  expect_identical(audit$status, "errored")
-  expect_identical(audit$conditions[[1L]]$handling, "propagated")
+  expect_identical(audit$purpose, c("relation_catalog", "selection_proxy"))
+  expect_identical(audit$status, c("returned", "errored"))
+  expect_equal(nrow(audit$conditions[[1L]]), 0L)
+  expect_identical(audit$conditions[[2L]]$handling, "propagated")
 })
 
 test_that("typed DuckDB inspection requires matching input column names", {

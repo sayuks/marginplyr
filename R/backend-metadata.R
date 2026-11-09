@@ -72,7 +72,18 @@ zero_row_dtplyr_proxy_input <- function(.data) {
       step[["i"]] <- NULL
     }
   } else {
-    step[["parent"]] <- utils::head(step[["parent"]], n = 0L)
+    source <- step[["parent"]]
+    root <- utils::head(source, n = 0L)
+    for (column in names(source)) {
+      if (isS4(source[[column]])) {
+        # data.table can truncate `.Data` without slicing auxiliary S4 slots.
+        # Let the vector's own proxy and restoration slice those together.
+        data.table::set(root, j = column, value = vctrs::vec_slice(
+          source[[column]], integer()
+        ))
+      }
+    }
+    step[["parent"]] <- root
   }
   step
 }

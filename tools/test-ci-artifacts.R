@@ -134,18 +134,25 @@ main <- function() {
   write(sub(alias_step, "", postgres_original, fixed = TRUE), postgres)
   check(1L, "Workflow executable contract changed")
   write(postgres_original, postgres)
-  deadlines <- list(c("R-CMD-check.yaml", "90", "89"),
-                    c("release-matrix.yaml", "360", "359"),
-                    c("release-matrix.yaml", "90", "89"),
-                    c("test-coverage.yaml", "180", "179"))
+  deadlines <- list(c("R-CMD-check.yaml", "R-CMD-check", "120", "119"),
+                    c("release-matrix.yaml", "structure", "360", "359"),
+                    c("release-matrix.yaml", "depends-only", "90", "89"),
+                    c("release-matrix.yaml", "tarball", "90", "89"),
+                    c("release-matrix.yaml", "backend", "120", "119"),
+                    c("test-coverage.yaml", "test-coverage", "360", "359"))
   for (deadline in deadlines) {
     path <- file.path(dirname(workflow), deadline[[1L]])
-    contents <- read(path)
-    old <- paste0("timeout-minutes: ", deadline[[2L]])
-    expect(length(regmatches(contents, gregexpr(old, contents, fixed = TRUE))[[1L]]) == 1L, old)
-    write(sub(old, paste0("timeout-minutes: ", deadline[[3L]]), contents, fixed = TRUE), path)
+    contents <- readLines(path)
+    job <- match(paste0("  ", deadline[[2L]], ":"), contents)
+    jobs <- c(grep("^  [A-Za-z].*:$", contents), length(contents) + 1L)
+    limit <- which(contents == paste0("    timeout-minutes: ", deadline[[3L]]))
+    limit <- limit[limit > job & limit < min(jobs[jobs > job])]
+    expect(length(limit) == 1L, paste("Missing unique deadline for", deadline[[2L]]))
+    changed <- contents
+    changed[[limit]] <- paste0("    timeout-minutes: ", deadline[[4L]])
+    writeLines(changed, path)
     check(1L, "Workflow executable contract changed")
-    write(contents, path)
+    writeLines(contents, path)
   }
   settings <- file.path(repo, ".claude/settings.json")
   previous_settings <- if (file.exists(settings)) read(settings) else NULL

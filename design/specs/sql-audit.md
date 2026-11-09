@@ -50,16 +50,31 @@ The existing interface already addresses the core SQL-viewing need:
 | Internal work | Existing purpose, descriptive rather than a stable enum | Capture point |
 | --- | --- | --- |
 | Observed Margin label collision | `observed_label_collision` | Render before internal `collect()` |
+| DuckDB catalog-only admission | `relation_catalog` | Literal before `dbGetQuery()`; captured relations and authored function calls checked before binding |
 | Zero-row selection/type metadata | `selection_proxy` | Render before internal `collect()`; the SQL path is DuckDB |
 | Share dialect question | `share_dialect` | Render before internal `collect()` |
 | Numeric control after a failed dialect question | `share_dialect_control` | Render before internal `collect()` |
 | RPostgres probe savepoint / rollback / release | `share_dialect_transaction` | Literal before `dbExecute()` |
 
 These are facts from `R/sent-queries.R`, `grouping_selection_proxy()`,
-`check_observed_label_collision()`, `probe_share_dialect_answer()`, and
+`duckdb_metadata_catalog()`, `check_observed_label_collision()`,
+`probe_share_dialect_answer()`, and
 `execute_share_probe_control()`. The
 [recording investigation](../../investigation/sql-audit-recording-2026-10-13.md)
 records the inventory and public-document discrepancies.
+
+DuckDB admission resolves direct captured relations and every parsed SQL base
+relation, following stored views in their own namespace. Authored native
+function calls and established direct readers also need checks for macro shadowing.
+Opaque macros and calls to `query()` or `query_table()` are refused before binding.
+With auditing enabled, those refusals record only the returned catalog operation.
+Visibly unsafe direct readers retain their early refusal without needing the
+catalog.
+At most one operation-local query reads catalog table/view names, stored view
+definitions, macro names, SQL keywords, the current database and search path.
+It binds no caller relation and reads no source values. This is distinct from
+the one zero-row typed snapshot after successful admission; name-only inspection
+needs neither read.
 
 The label check does not fetch all unique values. It aggregates collision
 counts in the database and retrieves one result row, with a count per checked

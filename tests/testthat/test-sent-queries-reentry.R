@@ -110,7 +110,12 @@ test_that("nested SQL inspection preserves both calls' partial records", {
   inner_record <- last_sent_queries()
   inspect_grouping(outer, .grouping = rollup(where(is.character)))
   outer_record <- last_sent_queries()
-  expect_identical(nrow(outer_record), 1L)
+  expect_identical(
+    outer_record$purpose, c("relation_catalog", "selection_proxy")
+  )
+  expect_identical(inner_record$purpose, outer_record$purpose)
+  expect_match(outer_record$sql[[2L]], "outer_source", fixed = TRUE)
+  expect_match(inner_record$sql[[2L]], "inner_source", fixed = TRUE)
   expect_false(identical(inner_record, outer_record))
   observed <- new.env(parent = emptyenv())
   observed$inner <- FALSE

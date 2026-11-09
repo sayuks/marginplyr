@@ -188,9 +188,7 @@ new_branch_conditions <- function(keys, call = NULL) {
 }
 
 # Runs one branch, withholding the warnings it raises and restating the context
-# of the error that aborts it. Only the caller's own summary expressions are
-# evaluated inside `expr`: a Package condition is raised by the branch builders
-# around it, which is what keeps this from reaching one.
+# of the error that aborts it.
 #
 # `restatements` is this branch's own map from the label of what it handed
 # dplyr to the label of what the caller wrote. It is a map and not the vector
@@ -221,17 +219,17 @@ with_branch_conditions <- function(expr,
 
 # An error arrives with its context in addressable fields: `$message` holds the
 # argument bullet, `$body` the grouping-value bullet, and `$call` the internal
-# `dplyr::summarize()` the adapter issued. A generated glue name check adds a
-# wrapper around the caller's cause; promote a Package refusal or remove the
-# wrapper around a caller-template error before reporting it.
+# `dplyr::summarize()` the adapter issued. Generated validation checks add a
+# temporary ownership wrapper; promote only those refusals, or remove the
+# interpolation wrapper around a caller-template error.
 #
 # Errors are not deduplicated, and there is nothing to deduplicate: branches
 # run in sequence, so the first error aborts the operation and no second
 # occurrence is ever raised.
 restate_branch_error <- function(cnd, conditions, restatements) {
   if (!is.null(cnd$parent) &&
-        inherits(cnd$parent$parent, "marginplyr_error")) {
-    cnd <- cnd$parent$parent
+        inherits(cnd$parent$parent, "marginplyr_generated_summary_error")) {
+    cnd <- cnd$parent$parent$parent
   } else if (!is.null(cnd$parent) &&
                inherits(cnd$parent$parent, "marginplyr_inner_glue_error")) {
     cnd$parent <- cnd$parent$parent$parent
@@ -242,6 +240,18 @@ restate_branch_error <- function(cnd, conditions, restatements) {
     cnd$call <- conditions$call
   }
   cnd
+}
+
+# Mark only a generated check's own refusal while upstream context wraps it.
+# Restatement consumes this wrapper before returning the Package condition.
+with_generated_summary_check <- function(expr) {
+  tryCatch(expr, marginplyr_error = function(cnd) {
+    rlang::abort(
+      "Failed to validate the generated summary.",
+      class = "marginplyr_generated_summary_error",
+      parent = cnd
+    )
+  })
 }
 
 # The grouping-value bullet is `$body` for an error and part of the rendered

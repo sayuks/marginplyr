@@ -127,8 +127,9 @@ test_that("unresolved typed selections defer Margin label name checks", {
     "must name every Margin dimension\\.\ni Missing `h`",
     class = "marginplyr_error"
   )
-  expect_identical(counter$queries, 1L)
-  expect_identical(last_sent_queries()$purpose, "selection_proxy")
+  expect_identical(counter$queries, 2L)
+  expect_identical(last_sent_queries()$purpose,
+                   c("relation_catalog", "selection_proxy"))
 
   counter$queries <- 0L
   expect_error(
@@ -139,8 +140,9 @@ test_that("unresolved typed selections defer Margin label name checks", {
     "unknown dimension name:\ni `ghost`",
     class = "marginplyr_error"
   )
-  expect_identical(counter$queries, 1L)
-  expect_identical(last_sent_queries()$purpose, "selection_proxy")
+  expect_identical(counter$queries, 2L)
+  expect_identical(last_sent_queries()$purpose,
+                   c("relation_catalog", "selection_proxy"))
 })
 
 test_that("valid named labels retain their mapping across plan selections", {
