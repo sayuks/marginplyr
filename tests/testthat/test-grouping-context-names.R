@@ -553,9 +553,9 @@ test_that("DuckDB context names respect tibble methods", {
   expect_equal(nrow(last_sent_queries(details = TRUE)), 0L)
   expect_tibble_context_names(remote, data[0L, ])
   audit <- last_sent_queries(details = TRUE)
-  expect_identical(audit$purpose, "selection_proxy")
-  expect_identical(audit$status, "returned")
-  expect_match(audit$sql, "LIMIT 0", fixed = TRUE)
+  expect_identical(audit$purpose, c("relation_catalog", "selection_proxy"))
+  expect_identical(audit$status, c("returned", "returned"))
+  expect_match(audit$sql[[2L]], "LIMIT 0", fixed = TRUE)
 })
 
 test_that("Arrow context names respect tibble methods", {
@@ -642,7 +642,7 @@ test_that("DuckDB resolves repaired Grouping names before typed metadata", {
   expected <- expand_with_margins(data, .grouping = literal, .id = "set_id")
   result <- expand_with_margins(remote, .grouping = repaired, .id = "set_id")
   expect_s3_class(result, "tbl_lazy")
-  expect_identical(counter$queries, 1L)
+  expect_identical(counter$queries, 2L)
   expect_identical(
     dplyr::arrange(dplyr::collect(result), set_id, value),
     tibble::as_tibble(dplyr::arrange(expected, set_id, value))
@@ -884,7 +884,7 @@ test_that("DuckDB proxy order determines Grouping keys and summary grain", {
         inspect_grouping(input, .by = !!selection, .format = "list")$fixed,
         list("b")
       )
-      expect_identical(counter$queries, 1L)
+      expect_identical(counter$queries, 2L)
       for (constructor in constructors) {
         expected <- inspect_grouping(
           typed, .by = a, .grouping = constructor(b), .format = "list"
@@ -897,7 +897,7 @@ test_that("DuckDB proxy order determines Grouping keys and summary grain", {
           ),
           expected
         )
-        expect_identical(counter$queries, 1L)
+        expect_identical(counter$queries, 2L)
         counter$queries <- 0L
         expect_error(
           inspect_grouping(
@@ -905,7 +905,7 @@ test_that("DuckDB proxy order determines Grouping keys and summary grain", {
           ),
           "cannot appear in both", class = "marginplyr_error"
         )
-        expect_identical(counter$queries, 1L)
+        expect_identical(counter$queries, 2L)
       }
     }
   }

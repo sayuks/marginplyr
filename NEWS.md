@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Typed DuckDB Grouping inspection checks views captured by direct table names
+  and qualified identifiers before binding, including derived inputs, so a
+  stored reader cannot bypass source-inference admission (#1525).
+
 * Local DuckDB JSON tests prepare and reuse a signed extension cache, and fail
   when required support is unavailable. Review-ready and the local CRAN check
   wrapper prepare the same support before checking (#1540).

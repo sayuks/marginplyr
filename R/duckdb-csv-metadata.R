@@ -456,8 +456,10 @@ abort_duckdb_reader_metadata <- function(family) {
 # whose literal arguments establish inference is disabled at their own depth.
 # The caller supplies captured SQL, without binding the input (ADR 0020).
 # `catalog` lazily returns this operation's catalog-only name snapshot.
-validate_duckdb_csv_metadata <- function(sql, catalog, namespace = NULL,
-                                         seen = integer()) {
+# Direct table paths request relation resolution regardless of their suffix.
+validate_duckdb_csv_metadata <- function(
+  sql, catalog, namespace = NULL, seen = integer(),
+  resolve_relations = !is.null(namespace)) {
   tokens <- if (is.null(namespace)) {
     duckdb_metadata_tokens(as.character(sql))
   } else {
@@ -473,7 +475,7 @@ validate_duckdb_csv_metadata <- function(sql, catalog, namespace = NULL,
   ), relation_paths)
   readers <- c("read_csv", "read_csv_auto", "read_json", "read_json_auto",
                "read_ndjson", "read_ndjson_auto")
-  for (i in which(candidates | !is.null(namespace))) {
+  for (i in which(candidates | resolve_relations)) {
     if (isTRUE(attr(relations[[i]], "function"))) {
       if (!utils::tail(relations[[i]], 1L) %in% readers) {
         abort_duckdb_view_metadata()
@@ -547,14 +549,20 @@ validate_duckdb_csv_metadata <- function(sql, catalog, namespace = NULL,
   invisible(NULL)
 }
 
-# Check SQL fragments throughout a captured lazy query, including both join
-# inputs. Leave translation to the owned audit/collect paths so preflight
-# cannot duplicate translation conditions or change their Sent-query outcomes.
+# Check SQL fragments and table paths throughout a captured lazy query,
+# including both join inputs. Leave translation to the owned audit/collect
+# paths so preflight cannot duplicate translation conditions or change their
+# Sent-query outcomes.
 validate_duckdb_csv_query <- function(query, catalog) {
   if (rlang::is_missing(query)) {
     return(invisible(NULL))
   }
-  if (inherits(query, "sql")) {
+  if (inherits(query, "dbplyr_table_path")) {
+    # dbplyr captures table paths as already quoted multipart SQL identifiers.
+    validate_duckdb_csv_metadata(
+      paste("TABLE", query), catalog, resolve_relations = TRUE
+    )
+  } else if (inherits(query, "sql")) {
     for (sql in as.character(query)) {
       validate_duckdb_csv_metadata(sql, catalog)
     }

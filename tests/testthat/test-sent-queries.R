@@ -638,8 +638,9 @@ test_that("an audited DuckDB call records its selection proxy", {
     record <- last_sent_queries()
   })
 
-  expect_identical(record$purpose, c("selection_proxy", "result"))
-  expect_match(record$sql[[1L]], "sent_queries", fixed = TRUE)
+  expect_identical(record$purpose,
+                   c("relation_catalog", "selection_proxy", "result"))
+  expect_match(record$sql[[2L]], "sent_queries", fixed = TRUE)
 })
 
 test_that("an audited typed DuckDB inspection records its selection proxy", {
@@ -654,8 +655,8 @@ test_that("an audited typed DuckDB inspection records its selection proxy", {
     record <- last_sent_queries()
   })
 
-  expect_identical(record$purpose, "selection_proxy")
-  expect_match(record$sql, "sent_queries", fixed = TRUE)
+  expect_identical(record$purpose, c("relation_catalog", "selection_proxy"))
+  expect_match(record$sql[[2L]], "sent_queries", fixed = TRUE)
 })
 
 test_that("an audited RSQLite call records no selection proxy", {
