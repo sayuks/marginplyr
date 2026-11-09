@@ -374,6 +374,8 @@ Config/testthat/start-first:
     nest-local-frame-converter,
     duckdb-captured-relations,
     first-local-across-factories,
+    dtplyr-multislot-metadata,
+    duckdb-sql-relations,
     later-local-across-factories
 VignetteBuilder:
     quarto

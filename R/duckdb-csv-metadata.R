@@ -122,7 +122,7 @@ duckdb_metadata_relations <- function(tokens, functions = FALSE) {
       frames[[n]] <- NULL
       next
     }
-    if (token == "select") {
+    if (token == "select" || (token %in% c("with", "values") && frame$start)) {
       frame$query <- TRUE
       frame$table <- frame$expect <- FALSE
     } else if ((token %in% c("from", "pivot", "unpivot") &&
@@ -456,10 +456,9 @@ abort_duckdb_reader_metadata <- function(family) {
 # whose literal arguments establish inference is disabled at their own depth.
 # The caller supplies captured SQL, without binding the input (ADR 0020).
 # `catalog` lazily returns this operation's catalog-only name snapshot.
-# Direct table paths request relation resolution regardless of their suffix.
+# Resolve every relation name before following stored reader dependencies.
 validate_duckdb_csv_metadata <- function(
-  sql, catalog, namespace = NULL, seen = integer(),
-  resolve_relations = !is.null(namespace)) {
+  sql, catalog, namespace = NULL, seen = integer()) {
   tokens <- if (is.null(namespace)) {
     duckdb_metadata_tokens(as.character(sql))
   } else {
@@ -469,13 +468,9 @@ validate_duckdb_csv_metadata <- function(
     tokens, functions = !is.null(namespace)
   )
   relation_paths <- vapply(relations, paste, character(1), collapse = ".")
-  candidates <- grepl(paste0(
-    "[.](csv|tsv|json|jsonl|ndjson)([.](gz|zst))?$|",
-    "[.](csv|tsv|json|jsonl|ndjson)[?]"
-  ), relation_paths)
   readers <- c("read_csv", "read_csv_auto", "read_json", "read_json_auto",
                "read_ndjson", "read_ndjson_auto")
-  for (i in which(candidates | resolve_relations)) {
+  for (i in seq_along(relations)) {
     if (isTRUE(attr(relations[[i]], "function"))) {
       if (!utils::tail(relations[[i]], 1L) %in% readers) {
         abort_duckdb_view_metadata()
@@ -559,9 +554,7 @@ validate_duckdb_csv_query <- function(query, catalog) {
   }
   if (inherits(query, "dbplyr_table_path")) {
     # dbplyr captures table paths as already quoted multipart SQL identifiers.
-    validate_duckdb_csv_metadata(
-      paste("TABLE", query), catalog, resolve_relations = TRUE
-    )
+    validate_duckdb_csv_metadata(paste("TABLE", query), catalog)
   } else if (inherits(query, "sql")) {
     for (sql in as.character(query)) {
       validate_duckdb_csv_metadata(sql, catalog)

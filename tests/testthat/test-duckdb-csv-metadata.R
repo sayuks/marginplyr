@@ -575,7 +575,9 @@ test_that("CSV replacement guards preserve ordinary values and non-CSV files", {
   })
   old <- options(marginplyr.audit_sql = TRUE)
   on.exit(options(old), add = TRUE)
-  for (input in c(list(literal, parquet), ordinary)) {
+  inputs <- c(list(literal = literal, parquet = parquet), ordinary)
+  for (i in seq_along(inputs)) {
+    input <- inputs[[i]]
     plan <- inspect_grouping(
       input, .by = where(is.character),
       .grouping = grouping_set(where(is.numeric))
@@ -583,9 +585,11 @@ test_that("CSV replacement guards preserve ordinary values and non-CSV files", {
     expect_identical(plan$fixed, "(label)")
     expect_identical(plan$included, "(k)")
     audit <- last_sent_queries(details = TRUE)
-    expect_identical(audit$purpose, "selection_proxy")
-    expect_identical(audit$status, "returned")
-    expect_match(audit$sql, "LIMIT 0", fixed = TRUE)
+    expect_identical(audit$purpose,
+                     c(if (i > 1L) "relation_catalog", "selection_proxy"))
+    expect_true(all(audit$status == "returned"))
+    expect_match(audit$sql[audit$purpose == "selection_proxy"],
+                 "LIMIT 0", fixed = TRUE)
   }
 })
 

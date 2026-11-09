@@ -4,6 +4,15 @@
   sources, including function factory context and ordinary lambda masks
   (#1529).
 
+* Typed DuckDB Grouping inspection follows authored SQL views regardless of
+  their names before binding, so ordinary names cannot hide source-value
+  inference. Safe nested common table expressions retain typed inspection
+  (#1526).
+
+* Included-only dtplyr expansions acquire faithful multi-slot S4 metadata,
+  allowing character displays of Period and Interval dimensions without an
+  internal prototype error (#1528).
+
 * Parent and Total shares preserve each grain's ordinary first `across()`
   function factories, including stateful sources and Grouping helpers (#1527).
 

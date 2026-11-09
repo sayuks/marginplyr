@@ -1027,9 +1027,10 @@ test_that("other DuckDB metadata failures retain their external condition", {
   )
   expect_false(inherits(err, "marginplyr_error"))
   audit <- last_sent_queries(details = TRUE)
-  expect_identical(audit$purpose, "selection_proxy")
-  expect_identical(audit$status, "errored")
-  expect_identical(audit$conditions[[1L]]$handling, "propagated")
+  expect_identical(audit$purpose, c("relation_catalog", "selection_proxy"))
+  expect_identical(audit$status, c("returned", "errored"))
+  expect_equal(nrow(audit$conditions[[1L]]), 0L)
+  expect_identical(audit$conditions[[2L]]$handling, "propagated")
 })
 
 test_that("typed DuckDB inspection requires matching input column names", {
