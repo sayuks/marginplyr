@@ -81,6 +81,18 @@ selection containing something it cannot select, and is refused as one —
 unless the input has a column named \code{s}, when the selection takes that
 column, as any selection does with a name the data holds.
 
+A recognized constructor call runs the function in your captured environment,
+once per argument occurrence and public call, and keeps its first answer.
+Bare and explicitly qualified calls use the same selection context:
+local data exposes its actual columns; supported lazy inputs expose their
+schema or isolated zero-row columns. A call proven to need only column names
+runs before typed metadata is acquired. Other calls wait for that metadata,
+along with later arguments; earlier settled selection errors can therefore
+take precedence over their conditions or side effects. If a faithful typed
+context cannot be obtained safely, the call is refused before your function
+runs, even if it would return a name-only specification. Collect the input
+explicitly and pass the resulting data frame in that case.
+
 An argument left empty gets neither reading, and is refused naming the
 constructor and the position: \code{grouping_sets(, region)} reports that its
 first argument is empty. A trailing comma is not an empty argument,

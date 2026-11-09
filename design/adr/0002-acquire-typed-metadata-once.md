@@ -57,7 +57,7 @@ values. The delegated class and attribute boundary in
 [ADR 0016](0016-delegate-result-class-and-attributes-to-dplyr.md) remains in
 force.
 
-This amendment was accepted on 2026-11-09; implementation remains pending in
+This amendment was accepted on 2026-11-09 and implemented in
 [#1550](https://github.com/sayuks/marginplyr/issues/1550).
 The shared [construction-time schema and safe factor processing acceptance][factor-schema-acceptance]
 records the implementation controls.

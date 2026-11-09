@@ -32,6 +32,49 @@ expect_transfer_dependencies <- function(data, expressions) {
 known_return_transfers <- function() {
   alist(
     (function(prior) {
+      read <- function() sum(prior)
+      copied <- base::forceAndCall(1L, base::identity, read)
+      rm(prior)
+      copied()
+    })(11),
+    (function(prior) {
+      # get0() reads this binding by a literal string.
+      read <- function() sum(prior) # nolint: object_usage_linter.
+      copied <- base::get0("read")
+      rm(prior)
+      copied()
+    })(11),
+    (function(prior) {
+      # eval() reads this binding through the quoted expression.
+      read <- function() sum(prior) # nolint: object_usage_linter.
+      copied <- base::eval(base::quote(read))
+      rm(prior)
+      copied()
+    })(11),
+    (function(prior) {
+      read <- function() sum(prior)
+      copied <- base::evalq(read)
+      rm(prior)
+      copied()
+    })(11),
+    (function(prior) {
+      read <- function() sum(prior)
+      copied <- base::withVisible(read)$value
+      rm(prior)
+      copied()
+    })(11),
+    (function(prior) {
+      read <- function() sum(prior)
+      copied <- base::unname(read)
+      rm(prior)
+      copied()
+    })(11),
+    (function(prior) {
+      copied <- base::structure(function() sum(prior))
+      rm(prior)
+      copied()
+    })(11),
+    (function(prior) {
       # get() reads this binding by a literal string.
       read <- function() sum(prior) # nolint: object_usage_linter.
       copied <- base::get(x = "read", envir = environment(),
@@ -1113,6 +1156,195 @@ test_that("dtplyr independent Vectorize alternatives remain lazy and legal", {
     expect_equal(reverse$ratio, c(1, 1, 1))
     expect_gt(probe$closures, 0L)
     probe$closures <- 0L
+  }
+  expect_identical(serialize(data, NULL), before)
+})
+
+test_that("base unname preserves caller attribute dispatch", {
+  probe <- rlang::env(calls = 0L)
+  caller <- rlang::env()
+  registry <- get(".__S3MethodsTable__.", envir = baseenv())
+  methods <- c("names.margin_transfer", "names<-.margin_transfer")
+  on.exit(rm(list = methods, envir = registry), add = TRUE)
+  registerS3method("names", "margin_transfer", function(x) "tag",
+                   envir = baseenv())
+  registerS3method("names<-", "margin_transfer", function(x, value) {
+    probe$calls <- probe$calls + 1L
+    function() 7
+  }, envir = baseenv())
+  read <- rlang::quo((function(prior) {
+    read <- function() sum(prior)
+    class(read) <- "margin_transfer"
+    copied <- base::unname(read)
+    rm(prior)
+    copied()
+  })(11))
+  read <- rlang::quo_set_env(read, caller)
+  expect_converter_values(known_closure_transfer_data(), list(read), 7)
+  expect_identical(probe$calls, 12L)
+})
+
+additional_base_return_calls <- function() {
+  list(
+    structure = quote(base::structure(read)),
+    unname = quote(base::unname(read)),
+    withVisible = quote(base::withVisible(read)$value),
+    eval = quote(base::eval(base::quote(read))),
+    evalq = quote(base::evalq(read)),
+    get0 = quote(base::get0("read")),
+    forceAndCall = quote(base::forceAndCall(1L, base::identity, read))
+  )
+}
+
+additional_return_controls <- function(retain = TRUE) {
+  body <- if (retain) quote(sum(prior)) else 7
+  remove <- if (retain) quote(NULL) else quote(rm(prior))
+  lapply(additional_base_return_calls(), function(transfer) {
+    rlang::expr((function(prior) {
+      # The injected transfer reads this local binding.
+      read <- function() !!body # nolint: object_usage_linter.
+      copied <- !!transfer
+      !!remove
+      copied()
+    })(11))
+  })
+}
+
+expect_additional_returns <- function(data) {
+  expect_converter_values(data, additional_return_controls(), 11)
+  expect_converter_values(
+    data, additional_return_controls(retain = FALSE), 7
+  )
+}
+
+test_that("additional base returns preserve legal lexical bindings", {
+  data <- known_closure_transfer_data()
+  expect_additional_returns(data)
+  expect_additional_returns(tibble::as_tibble(data))
+})
+
+test_that("data.table additional base returns preserve legal bindings", {
+  skip_if_suggest_absent("data.table")
+  expect_additional_returns(
+    data.table::as.data.table(known_closure_transfer_data())
+  )
+})
+
+test_that("additional base returns never execute closures during planning", {
+  probe <- rlang::env(calls = 0L)
+  for (transfer in additional_base_return_calls()) {
+    read <- rlang::quo((function(prior) {
+      # The injected transfer reads this local binding.
+      read <- function() { # nolint: object_usage_linter.
+        probe$calls <- probe$calls + 1L
+        sum(prior)
+      }
+      copied <- !!transfer
+      rm(prior)
+      copied()
+    })(11))
+    expect_transfer_dependencies(known_closure_transfer_data(), list(read))
+  }
+  expect_identical(probe$calls, 0L)
+})
+
+test_that("additional base return calls respect caller replacements", {
+  transfers <- additional_base_return_calls()
+  for (callee in names(transfers)) {
+    probe <- rlang::env(calls = 0L)
+    caller <- rlang::env()
+    replacement <- function(...) {
+      probe$calls <- probe$calls + 1L
+      value <- function() 7
+      if (identical(callee, "withVisible")) list(value = value) else value
+    }
+    transfer <- transfers[[callee]]
+    if (identical(callee, "withVisible")) {
+      transfer[[2L]][[1L]] <- rlang::sym(callee)
+    } else {
+      transfer[[1L]] <- rlang::sym(callee)
+    }
+    caller[[callee]] <- replacement
+    read <- rlang::expr((function(prior) {
+      # The injected transfer reads this local binding.
+      read <- function() sum(prior) # nolint: object_usage_linter.
+      copied <- !!transfer
+      rm(prior)
+      copied()
+    })(11))
+    read <- rlang::new_quosure(read, caller)
+    expect_converter_values(known_closure_transfer_data(), list(read), 7)
+    expect_identical(probe$calls, 12L)
+    caller[[callee]] <- 0L
+    expect_transfer_dependencies(known_closure_transfer_data(), list(read))
+    expect_identical(probe$calls, 12L)
+  }
+})
+
+test_that("additional qualified returns respect caller namespace operators", {
+  transfers <- additional_base_return_calls()
+  for (callee in names(transfers)) {
+    probe <- rlang::env(calls = 0L)
+    caller <- rlang::env()
+    caller[["::"]] <- function(package, name) {
+      function(...) {
+        probe$calls <- probe$calls + 1L
+        value <- function() 7
+        if (identical(callee, "withVisible")) list(value = value) else value
+      }
+    }
+    transfer <- transfers[[callee]]
+    read <- rlang::expr((function(prior) {
+      # The injected transfer reads this local binding.
+      read <- function() sum(prior) # nolint: object_usage_linter.
+      copied <- !!transfer
+      rm(prior)
+      copied()
+    })(11))
+    read <- rlang::new_quosure(read, caller)
+    expect_converter_values(known_closure_transfer_data(), list(read), 7)
+    expect_identical(probe$calls, 12L)
+    caller[["::"]] <- 0L
+    expect_transfer_dependencies(known_closure_transfer_data(), list(read))
+    expect_identical(probe$calls, 12L)
+  }
+})
+
+test_that("dtplyr additional return construction stays lazy", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.table::as.data.table(known_closure_transfer_data())
+  before <- serialize(data, NULL)
+  probe <- rlang::env(reads = 0L)
+  observe <- function(x) {
+    probe$reads <- probe$reads + 1L
+    x
+  }
+  input <- dtplyr::lazy_dt(data, immutable = TRUE)
+  input <- dplyr::filter(input, observe(x) > 0)
+  for (retain in c(TRUE, FALSE)) {
+    expected <- if (retain) c(11, 11, 11) else c(7, 7, 7)
+    for (read in additional_return_controls(retain)) {
+      for (kind in c("parent", "total")) {
+        helper <- rlang::call2(paste0("share_of_", kind), quote(value))
+        forward <- summarize_with_margins(
+          input, value = sum(.data$x), prior = !!helper, observed = !!read,
+          .grouping = rollup("group")
+        )
+        reverse <- summarize_with_margins(
+          input, prior = sum(.data$x), value = !!read, ratio = !!helper,
+          .grouping = rollup("group")
+        )
+        expect_identical(probe$reads, 0L)
+        forward <- dplyr::collect(forward)
+        reverse <- dplyr::collect(reverse)
+        expect_equal(forward$observed, expected)
+        expect_equal(forward$prior, c(0.25, 0.75, 1))
+        expect_equal(reverse$value, expected)
+        expect_equal(reverse$ratio, c(1, 1, 1))
+        expect_gt(probe$reads, 0L)
+        probe$reads <- 0L
+      }
+    }
   }
   expect_identical(serialize(data, NULL), before)
 })

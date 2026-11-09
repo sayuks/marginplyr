@@ -331,6 +331,9 @@ prepare_margin_operation <- function(.data,
       )
 
       data <- dtplyr_margin_input(data, backend)
+      data <- validate_margin_factor_input(
+        data, column_info$factors, backend, plan, margin_labels
+      )
       new_margin_operation(
         data = sqlite_margin_input(data, backend, data_vars),
         backend = backend,

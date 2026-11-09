@@ -1,5 +1,29 @@
 # marginplyr 0.1.0
 
+* Parent and Total shares preserve each grouping set's ordinary input
+  selection for the first `across()` source with stable output names,
+  including parenthesized per-group selections (#1547).
+
+* Recognized constructor-shaped caller calls use the same faithful selection
+  context for bare and qualified spellings, invoking each occurrence once and
+  retaining its first answer. Unproven calls and later arguments wait for typed
+  metadata; unsupported SQL contexts and unsafe lazy sources refuse before
+  caller invocation (#1551).
+
+* Lazy Margin results retain their construction-time schema. Local and dtplyr
+  factor processing rejects changed captured levels or ordered status before
+  values can be lost, including native typed-missing label paths and empty
+  inputs. Rebuild the result after schema changes; same-schema value changes
+  retain ordinary backend behavior (#1550).
+
+* Local Parent and Total shares preserve Grouping helpers in the first ordinary
+  `across()` selector and name template, including summaries unrelated to the
+  share source (#1546).
+
+* Parent and Total shares retain invocation-time dependencies through known
+  base closure returns from `structure()`, `unname()`, `withVisible()`,
+  `eval()`, `evalq()`, `get0()` and `forceAndCall()` (#1545).
+
 * Parent and Total shares accept eligible columns from parenthesized ordinary
   `across()` sources while preserving their per-group evaluation (#1530).
 

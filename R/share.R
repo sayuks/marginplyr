@@ -928,7 +928,7 @@ plan_share_expressions <- function(dots,
   if (defer_local) plan_local_across_checks(result) else result
 }
 
-# Add one check-only dot immediately after each later bare across source.
+# Add one check-only dot immediately after each bare across source.
 # The across call retains dplyr's expansion and function invocation; the new
 # dot reads each produced summary from the same mask without adding output.
 plan_local_across_checks <- function(plan) {
@@ -938,7 +938,7 @@ plan_local_across_checks <- function(plan) {
   for (position in positions) {
     quo <- plan$dots[[position]]
     expr <- rlang::quo_get_expr(quo)
-    if (position == 1L || nzchar(rlang::names2(plan$dots)[[position]]) ||
+    if (nzchar(rlang::names2(plan$dots)[[position]]) ||
           !rlang::is_call(expr, "across", ns = c("", "dplyr"))) next
     parsed <- parse_across_arguments(expr)
     if (length(parsed$additional) > 0L || !across_unpack_is_false(
@@ -958,6 +958,9 @@ plan_local_across_checks <- function(plan) {
     if (!position %in% checked) next
     checks <- checks_by_position[[as.character(position)]]
     values <- lapply(checks, function(check) {
+      if (margin_dot_dot_names(check$source_summary)) {
+        return(rlang::call2(local_across_dot_dot_source, check$source_summary))
+      }
       rlang::call2(base::`[[`, rlang::sym(".data"), check$source_summary)
     })
     validator <- rlang::new_quosure(rlang::call2(
@@ -976,6 +979,37 @@ plan_local_across_checks <- function(plan) {
   plan$cardinality <- lapply(plan$cardinality, remap)
   plan$ordinary_cardinality <- lapply(plan$ordinary_cardinality, remap)
   plan
+}
+
+# Read a produced dot-dot summary without evaluating its name as an R dots
+# reference. dplyr's active binding closes over the column's group chunks;
+# the ordinary binding in that environment is safe to read by string.
+# The caller is a generated check-only dot in a local dplyr summary mask.
+local_across_dot_dot_source <- function(source) {
+  mask <- parent.frame()
+  while (!identical(mask, emptyenv()) &&
+           !exists(source, envir = mask, inherits = FALSE)) {
+    mask <- parent.env(mask)
+  }
+  stopifnot(!identical(mask, emptyenv()), bindingIsActive(source, mask))
+  binding <- activeBindingFunction(source, mask)
+  expected <- rlang::call2(
+    base::.subset2, rlang::sym(source), rlang::sym("dplyr:::current_group_id")
+  )
+  chunks_env <- environment(binding)
+  # This is a dplyr mask invariant, not input a caller can rewrite (ADR 0015).
+  stopifnot(
+    identical(formals(binding), NULL), identical(body(binding), expected),
+    is.environment(chunks_env),
+    exists(source, envir = chunks_env, inherits = FALSE),
+    !bindingIsActive(source, chunks_env),
+    !rlang::env_binding_are_lazy(chunks_env, source)
+  )
+  chunks <- get(source, envir = chunks_env, inherits = FALSE)
+  group <- dplyr::cur_group_id()
+  stopifnot(is.list(chunks), length(group) == 1L, !is.na(group),
+            group >= 1L, group <= length(chunks))
+  chunks[[group]]
 }
 
 # Validate saved summary chunks before the following ordinary dot can run.
@@ -4783,6 +4817,30 @@ scope_value_closure <- function(expr, scope, lookup) {
       return(scope_value_closure(value[[1L]], scope, lookup))
     }
   }
+  if (identical(operator, "unname") &&
+        is_known_base_frame_call(head, operator, scope, transfer_lookup)) {
+    value <- base_call_argument(head, "obj")
+    closure <- if (length(value) == 1L) {
+      scope_value_closure(value[[1L]], scope, lookup)
+    }
+    return(scope_filter_closure(closure, function(variant) {
+      !isTRUE(variant$dispatch_unknown) && all(vapply(
+        c("names", "dimnames", "names<-", "dimnames<-"), function(generic) {
+          scope_implicit_class_default(
+            generic, "base", variant$dispatch_classes %||% "function",
+            scope, lookup
+          )
+        }, logical(1)
+      ))
+    }))
+  }
+  if (identical(operator, "structure") &&
+        is_known_base_frame_call(head, operator, scope, transfer_lookup)) {
+    parts <- static_matched_arguments(head, base::structure)
+    if (identical(names(parts), ".Data")) {
+      return(scope_value_closure(parts$.Data, scope, lookup))
+    }
+  }
   if (identical(operator, "as.function") &&
         is_known_base_frame_call(head, operator, scope, transfer_lookup)) {
     value <- base_call_argument(head, "x")
@@ -4824,7 +4882,35 @@ scope_value_closure <- function(expr, scope, lookup) {
       return(scope_value_closure(value[[1L]], scope, lookup))
     }
   }
-  if (identical(operator, "get") &&
+  if (identical(operator, "forceAndCall") &&
+        is_known_base_frame_call(head, operator, scope, transfer_lookup)) {
+    parts <- static_matched_arguments(head, args(base::forceAndCall))
+    if (all(c("n", "FUN") %in% names(parts))) {
+      count <- unparenthesized_value(parts$n)
+      if (!is.object(count) && typeof(count) %in% c("integer", "double") &&
+            length(count) == 1L && is.finite(count) && count >= 0) {
+        invocation <- rlang::call2(
+          parts$FUN, !!!parts[!names(parts) %in% c("n", "FUN")]
+        )
+        return(scope_value_closure(invocation, scope, lookup))
+      }
+    }
+  }
+  if (!is.null(operator) && operator %in% c("eval", "evalq") &&
+        is_known_base_frame_call(head, operator, scope, transfer_lookup)) {
+    parts <- static_matched_arguments(head, base::eval)
+    if (identical(names(parts), "expr")) {
+      value <- if (identical(operator, "evalq")) {
+        list(parts$expr)
+      } else {
+        scope_definition_value(parts$expr, scope, lookup)
+      }
+      if (length(value) == 1L) {
+        return(scope_value_closure(value[[1L]], scope, lookup))
+      }
+    }
+  }
+  if (!is.null(operator) && operator %in% c("get", "get0") &&
         is_known_base_frame_call(head, operator, scope, transfer_lookup)) {
     value <- base_call_argument(head, "x")
     target <- base_call_argument(head, c("envir", "pos"))
@@ -5396,6 +5482,15 @@ scope_closure_list <- function(expr, scope, lookup) {
       return(scope_closure_list(value[[1L]], scope, lookup))
     }
   }
+  if (identical(operator, "withVisible") &&
+        is_known_base_frame_call(expr, operator, scope, transfer_lookup)) {
+    value <- base_call_argument(expr, "x")
+    if (length(value) == 1L) {
+      return(list(value = scope_closure_list_element(
+        value[[1L]], scope, lookup
+      ), visible = NULL))
+    }
+  }
   if (identical(static_call_name(expr), "list") &&
         is_known_base_frame_call(expr, "list", scope, lookup)) {
     parts <- scope_list_arguments(expr, scope)
@@ -5578,7 +5673,7 @@ scope_literal_list_count <- function(parts, name, default, scope, lookup) {
         is.finite(count) && count == trunc(count)) count
 }
 
-# Prove that known dispatch classes reach the package's default method.
+# Prove that known classes reach a package default method or primitive default.
 # Inspect possible method bindings without invoking or forcing caller code.
 scope_implicit_class_default <- function(name, owner, class, scope, lookup) {
   methods <- paste0(name, c(paste0(".", class), ".default"))
@@ -5592,9 +5687,10 @@ scope_implicit_class_default <- function(name, owner, class, scope, lookup) {
     )) return(FALSE)
 
   namespace <- asNamespace(owner)
-  default <- get(default_method, envir = namespace, inherits = FALSE)
-  registry <- get(".__S3MethodsTable__.", envir = namespace, inherits = FALSE)
   absent <- rlang::zap()
+  default <- get0(default_method, envir = namespace, inherits = FALSE,
+                  ifnotfound = absent)
+  registry <- get(".__S3MethodsTable__.", envir = namespace, inherits = FALSE)
   for (method in methods) {
     for (env in list(lookup$env, registry)) {
       binding <- ordinary_function_binding(method, env, owner, absent)

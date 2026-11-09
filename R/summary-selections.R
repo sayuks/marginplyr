@@ -796,6 +796,36 @@ plan_summary_expressions <- function(dots,
   ) {
     preflight_static_selection(dots[[1L]], selection_proxy)
   }
+  first_selection <- NULL
+  if (defer_local && has_shares && length(dots) > 0L && !deferred[[1L]]) {
+    first <- dots[[1L]]
+    expr <- rlang::quo_get_expr(first)
+    if (is_across_call(expr) && (is_parenthesized(expr) ||
+                                   is_parenthesized(static_call_head(expr)))) {
+      first_selection <- new.env(parent = emptyenv())
+      first_selection$warnings <- list()
+      first_selection$pending <- TRUE
+      on.exit({
+        if (first_selection$pending) {
+          for (cnd in first_selection$warnings) warning(cnd)
+        }
+      }, add = TRUE)
+      parsed <- parse_across_arguments(expr)
+      selected <- withCallingHandlers(resolve_summary_selection(
+        rewrite_grouping_expr(
+          parsed$cols, plan, grouping_set = plan$sets[[1L]],
+          sql = FALSE, con = NULL
+        ), rlang::quo_get_env(first), selection_proxy
+      ), warning = function(cnd) {
+        first_selection$warnings <- c(first_selection$warnings, list(cnd))
+        invokeRestart("muffleWarning")
+      })
+      args <- parsed$call_args
+      selection <- summary_all_of_expr(selected, selection_proxy)
+      args <- replace_across_cols(args, parsed$cols_index, selection)
+      dots[[1L]] <- rlang::quo_set_expr(first, rebuild_static_call(expr, args))
+    }
+  }
   if (!defer_local || has_shares) {
     dots <- resolve_summary_selections(
       dots,
@@ -939,6 +969,21 @@ plan_summary_expressions <- function(dots,
       }
     )
   }
+  if (!is.null(first_selection)) {
+    original <- rlang::quo_get_expr(original_dots[[1L]])
+    first <- summary_plan$dots[[1L]]
+    planned <- parse_across_arguments(rlang::quo_get_expr(first))
+    args <- planned$call_args
+    args[[planned$cols_index]] <- rlang::call2(
+      resume_local_selection(first_selection$warnings), planned$cols,
+      parse_across_arguments(original)$cols
+    )
+    summary_plan$dots[[1L]] <- rlang::quo_set_expr(
+      first, rebuild_static_call(original, args)
+    )
+    deferred[[1L]] <- TRUE
+    first_selection$pending <- FALSE
+  }
   summary_plan$dots <- resolve_summary_selections(
     summary_plan$dots,
     group_vars = group_vars,
@@ -982,6 +1027,24 @@ plan_summary_expressions <- function(dots,
   )
 }
 
+# Reuse a planned first selection at its first runtime evaluation, then
+# resume the caller's selector at the ordinary per-group boundary (ADR 0019).
+resume_local_selection <- function(warnings) {
+  force(warnings)
+  first <- TRUE
+  function(initial, subsequent) {
+    if (first) {
+      first <<- FALSE
+      for (cnd in warnings) warning(cnd)
+      initial
+    } else {
+      local_summary_selection(
+        substitute(subsequent), parent.frame(), character(), character()
+      )
+    }
+  }
+}
+
 # Whether share planning needs the first direct local across call's names.
 # Only the shape dplyr expands before groups uses this preparation (ADR 0019).
 first_across_needs_planning <- function(dots) {
@@ -1018,8 +1081,8 @@ first_across_needs_planning <- function(dots) {
 
 # Resolve the first selector once in dplyr's expansion context, then plan with
 # that selection. The zero-row carrier evaluates no input rows; tidyselect
-# receives local columns. Independent summaries resume their original selector
-# in later branches, while share sources retain their planned schema.
+# receives local columns. Later branches resume the original selector; share
+# sources retain only their planned output names.
 plan_first_local_across <- function(dots, data, data_vars, group_vars,
                                     plan, call, planner) {
   original <- dots[[1L]]
@@ -1036,6 +1099,7 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
   state$planning <- TRUE
   state$warnings <- list()
   state$fns_warnings <- list()
+  state$names_warnings <- list()
   state$planning_warnings <- list()
   nested_state <- rlang::env(
     emptyenv(), forbidden_names = character(), internal_names = character(),
@@ -1050,21 +1114,39 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
     }))
     value
   }
+  capture_names <- function(value) {
+    withCallingHandlers(value, warning = function(cnd) {
+      state$names_warnings <- c(state$names_warnings, list(cnd))
+      invokeRestart("muffleWarning")
+    })
+  }
   resolve <- function() {
     state$result <- tryCatch(withCallingHandlers({
       state$selecting <- TRUE
       # dplyr exposes a plain column list while resolving across selectors.
       selected <- resolve_summary_selection(
-        parsed$cols, env, as.list(selection_data)
+        rewrite_grouping_expr(
+          parsed$cols, plan, grouping_set = plan$sets[[1L]],
+          sql = FALSE, con = NULL
+        ), env, as.list(selection_data)
       )
       state$selecting <- FALSE
       args <- parsed$call_args
-      selection <- summary_all_of_expr(selected, selection_data)
-      if (parsed$cols_index == 0L) {
-        args <- append(list(.cols = selection), args)
-      } else {
-        args[[parsed$cols_index]] <- selection
+      if (parsed$names_index > 0L) {
+        args[parsed$names_index] <- list(rewrite_grouping_expr(
+          parsed$names, plan, grouping_set = plan$sets[[1L]],
+          sql = FALSE, con = NULL
+        ))
+        if (contains_grouping_helper(parsed$names)) {
+          # Branch-rewritten templates report their first warning in the same
+          # expansion context as later grains, so ADR 0021 can identify repeats.
+          args[[parsed$names_index]] <- rlang::call2(
+            capture_names, args[[parsed$names_index]]
+          )
+        }
       }
+      selection <- summary_all_of_expr(selected, selection_data)
+      args <- replace_across_cols(args, parsed$cols_index, selection)
       if (unknown_fns && parsed$fns_index > 0L) {
         # Forcing a promise does not establish static source provenance.
         args[[parsed$fns_index]] <- rlang::call2(
@@ -1114,7 +1196,8 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
   )
   if (!is.null(state$error)) {
     conditions$error <- state$error
-    warnings <- c(state$fns_warnings, state$warnings, state$planning_warnings)
+    warnings <- c(state$fns_warnings, state$warnings, state$names_warnings,
+                  state$planning_warnings)
     for (cnd in warnings) {
       buffer_branch_warning(cnd, conditions, character())
     }
@@ -1135,52 +1218,59 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
       rlang::quo_get_env(first)
     )
   }
-  if (length(result$summaries$selection_state$source_definitions[[1L]]) == 0L) {
-    first <- result$summaries$dots[[1L]]
-    first_expr <- rlang::quo_get_expr(first)
-    first_args <- parse_across_arguments(first_expr)
-    args <- first_args$call_args
-    args[[first_args$cols_index]] <- rlang::call2(
-      "c", rlang::call2(
-        replay_local_selector_warnings, state
-      ), first_args$cols
-    )
-    result$summaries$dots[[1L]] <- rlang::new_quosure(
-      rebuild_static_call(first_expr, args), rlang::quo_get_env(first)
-    )
-    result$summaries$subsequent_first <- resolve_summary_selections(
-      list(original), group_vars, result$summaries$labels[[1L]],
-      selection_data, defer_local = TRUE,
-      forbidden_names = result$summaries$selection_state
-    )[[1L]]
-  } else {
-    for (cnd in state$warnings) warning(cnd)
-    # The source check wraps across(), so dplyr cannot expand it at the top
-    # level. Prepare its functions once per grain in that expansion context.
-    if (!is.null(state$fns)) {
-      result$summaries$prepare_first_across <- function(grouping_set, set_id,
-                                                        conditions) {
-        capture <- if (set_id == 1L) {
-          if (length(state$fns_warnings) == 0L) return(invisible(NULL))
-          rlang::new_quosure(rlang::call2(first_local_across_fns, state), env)
-        } else {
-          branch_fns <- rewrite_grouping_expr(
-            fns, plan, grouping_set = grouping_set, sql = FALSE, con = NULL
-          )
-          rlang::new_quosure(rlang::call2(capture_fns, branch_fns), env)
-        }
-        probe <- rlang::quo(dplyr::across(character(), !!capture))
+  first <- result$summaries$dots[[1L]]
+  first_expr <- rlang::quo_get_expr(first)
+  first_args <- parse_across_arguments(first_expr)
+  args <- first_args$call_args
+  args[[first_args$cols_index]] <- rlang::call2(
+    "c", rlang::call2(replay_local_selector_warnings, state), first_args$cols
+  )
+  result$summaries$dots[[1L]] <- rlang::new_quosure(
+    rebuild_static_call(first_expr, args), rlang::quo_get_env(first)
+  )
+  subsequent <- original
+  if (length(result$summaries$selection_state$source_definitions[[1L]]) > 0L) {
+    args <- parsed$call_args
+    if (parsed$names_index == 0L) {
+      args <- append(args, list(.names = first_args$names))
+    } else {
+      args[[parsed$names_index]] <- first_args$names
+    }
+    subsequent <- rlang::quo_set_expr(original, rebuild_static_call(expr, args))
+  }
+  result$summaries$subsequent_first <- resolve_summary_selections(
+    list(subsequent), group_vars, result$summaries$labels[[1L]],
+    selection_data, defer_local = TRUE,
+    forbidden_names = result$summaries$selection_state
+  )[[1L]]
+  if (length(state$names_warnings) > 0L) {
+    prepare <- result$summaries$prepare_first_across
+    result$summaries$prepare_first_across <- function(grouping_set, set_id,
+                                                      conditions) {
+      if (set_id == 1L) {
+        replay <- rlang::call2(replay_local_name_warnings, state)
+        probe <- rlang::quo(dplyr::across(character(), !!replay))
         with_branch_conditions(
           dplyr::summarize(carrier, !!probe, .by = dplyr::all_of(grouping_set)),
           conditions, restatements = branch_argument_map(
             list(probe), summary_argument_labels(list(original))
           )
         )
-        invisible(NULL)
       }
+      if (!is.null(prepare)) prepare(grouping_set, set_id, conditions)
+      invisible(NULL)
     }
   }
   result
+}
+
+# Replay first-grain template warnings during dplyr's function preparation.
+# The identity function leaves the empty probe selection without output.
+replay_local_name_warnings <- function(state) {
+  warnings <- state$names_warnings
+  state$names_warnings <- list()
+  for (cnd in warnings) warning(cnd)
+  identity
 }
 
 # Replace the first planned across function argument after source analysis.
@@ -1297,11 +1387,7 @@ cache_local_context_names <- function(dots, selection_proxy, group_vars) {
         args <- parsed$call_args
         selected <- resolve_summary_selection(parsed$cols, env, proxy)
         selection <- summary_all_of_expr(selected, proxy)
-        if (parsed$cols_index == 0L) {
-          args <- append(list(.cols = selection), args)
-        } else {
-          args[[parsed$cols_index]] <- selection
-        }
+        args <- replace_across_cols(args, parsed$cols_index, selection)
         prepared <- rebuild_static_call(expr, args)
         prepared_args <- parse_across_arguments(prepared)
         args <- prepared_args$call_args
@@ -1992,11 +2078,7 @@ rewrite_local_across_selection <- function(expr, group_vars,
   selection <- local_summary_selection_expr(
     parsed$cols, group_vars, forbidden_names
   )
-  if (parsed$cols_index == 0L) {
-    call_args <- append(list(.cols = selection), call_args)
-  } else {
-    call_args[[parsed$cols_index]] <- selection
-  }
+  call_args <- replace_across_cols(call_args, parsed$cols_index, selection)
   rebuild_static_call(expr, call_args)
 }
 
@@ -2097,6 +2179,13 @@ local_summary_selection <- function(selection, env, group_vars,
     resolve_share_source_selection(
       selection, env, data, visible_aliases, state$source_checks[[1L]]
     )
+  }
+  if (length(selected) == 0L && !is.null(state) &&
+        length(state$source_checks) > 0L) {
+    check <- state$source_checks[[1L]]
+    with_generated_summary_check(check_share_scalar(
+      NULL, check$share_output, check$source_summary, check$share_kind
+    ))
   }
   source_names <- names(data)[unname(selected)]
   if (!is.null(state)) {
@@ -3030,6 +3119,16 @@ name_unnamed_by_position <- function(arg_names, prefix) {
   unnamed <- which(arg_names == "")
   arg_names[unnamed] <- paste0(prefix, unnamed)
   arg_names
+}
+
+# Replaces the parsed `.cols` position without evaluating call arguments.
+# A zero index means `.cols` was omitted and needs a named leading argument.
+replace_across_cols <- function(args, cols_index, selection) {
+  if (cols_index == 0L) {
+    return(append(list(.cols = selection), args))
+  }
+  args[[cols_index]] <- selection
+  args
 }
 
 # The one place that knows an `across()` argument can be empty, so that no

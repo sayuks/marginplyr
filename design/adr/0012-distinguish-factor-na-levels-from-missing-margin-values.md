@@ -269,7 +269,7 @@ External condition into a Package condition. Arrow gains no factor-level
 restoration or schema-change detection guarantee. The unrequested-read
 boundary in [ADR 0020](0020-ask-before-reading-a-lazy-input.md) is unchanged.
 
-This amendment was accepted on 2026-11-09; implementation remains pending in
+This amendment was accepted on 2026-11-09 and implemented in
 [#1550](https://github.com/sayuks/marginplyr/issues/1550).
 The [construction-time schema and safe factor processing acceptance][factor-schema-acceptance]
 covers labels, fixed keys, carried payloads, empty execution, shared summary

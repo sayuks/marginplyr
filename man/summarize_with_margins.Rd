@@ -712,6 +712,16 @@ refused only when \code{.check_margin_label = TRUE}: see that argument above.
 Reconstruction preserves the distinction between an observation that uses a
 factor NA level and an actually missing factor code.
 
+A lazy Margin result uses the input schema captured when it was built.
+Rebuild it after changing column types or factor definitions. Value changes
+within the same schema follow ordinary backend execution behavior.
+Before local or dtplyr factor processing, marginplyr rejects changed stored
+levels, their order, or ordered status for captured keys and carried columns,
+including empty factors. This check uses values already being processed;
+it adds no schema query and does not promise complete schema-change detection
+across backends. SQL retains its ordinary execution errors, and Arrow does
+not gain factor-level restoration.
+
 \code{NA_character_} and \code{NULL} both create a typed missing Margin value and do
 not create a synthetic factor level. Position is therefore a no-op for
 either value, and neither participates in the observed half of collision
