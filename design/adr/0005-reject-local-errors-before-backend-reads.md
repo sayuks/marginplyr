@@ -13,3 +13,8 @@ grammar, source, dependency, naming, and Grouping-plan checks retain
 precedence, then a valid request is rejected before ordinary-summary staging.
 The existing Arrow schema snapshot is the only backend read performed for that
 rejection.
+
+An unknown caller function's answer is not locally available before it runs.
+ADR 0008's amendment *one context rule for recognized constructor-shaped
+caller calls* owns its typed-context admission and the reachable-prefix error
+order; this decision grants no extra source-reading exemption.

@@ -213,6 +213,16 @@ The count this ADR sets is unchanged — 1 for a colliding name, from 0 — and 
 is now one row of the table in ADR 0008's amendment for a recognized nested
 argument, which is where the counts of these shapes are written down.
 
+## Amendment: ambiguity checks follow the reachable prefix
+
+ADR 0008's *one context rule for recognized constructor-shaped caller calls*,
+accepted on 2026-11-09 with implementation pending, qualifies the statements
+above that put refusal before metadata acquisition. A reachable ambiguity check
+retains its early refusal; a
+check after a suspended caller call waits for preflight to resume. The binding
+read budget and the ambiguity decision are unchanged. ADR 0008 owns that
+prefix and resume order.
+
 ## Documentation consequences
 
 `CONTEXT.md`'s *Nested specification position* defines the term and names the
