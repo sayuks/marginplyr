@@ -5,6 +5,13 @@
   inference. Safe nested common table expressions retain typed inspection
   (#1526).
 
+* Included-only dtplyr expansions acquire faithful multi-slot S4 metadata,
+  allowing character displays of Period and Interval dimensions without an
+  internal prototype error (#1528).
+
+* Parent and Total shares preserve each grain's ordinary first `across()`
+  function factories, including stateful sources and Grouping helpers (#1527).
+
 * Typed DuckDB Grouping inspection checks views captured by direct table names
   and qualified identifiers before binding, including derived inputs, so a
   stored reader cannot bypass source-inference admission (#1525).
