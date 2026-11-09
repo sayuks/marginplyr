@@ -378,7 +378,10 @@ abort_duckdb_view_metadata <- function() {
 abort_duckdb_call_metadata <- function() {
   abort_marginplyr(c(
     "Can't safely determine column metadata for this DuckDB call.",
-    i = "A macro or query() call could hide source work during binding.",
+    i = paste0(
+      "A macro, query() or query_table() call could hide source work ",
+      "during binding."
+    ),
     i = paste0(
       "Supply established reader metadata directly, or collect the input ",
       "explicitly with {.code dplyr::collect()} ",
@@ -428,7 +431,8 @@ validate_duckdb_authored_calls <- function(tokens, catalog) {
     macro <- duckdb_metadata_catalog_match(
       parts, catalog(), kinds = c("macro", "table_macro")
     )
-    if (length(macro) || utils::tail(parts, 1L) == "query") {
+    if (length(macro) ||
+          utils::tail(parts, 1L) %in% c("query", "query_table")) {
       abort_duckdb_call_metadata()
     }
   }

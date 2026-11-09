@@ -768,8 +768,9 @@
 #'   reads system-catalog table and view names, stored view definitions, macro
 #'   names, SQL keywords, the current database and configured search path.
 #'   Stored views and their dependencies are checked before binding the input;
-#'   opaque macros and `query()` calls are refused. A direct reader already
-#'   showing unsafe inference is refused without needing a catalog query.
+#'   opaque macros and calls to `query()` or `query_table()` are refused.
+#'   A direct reader already showing unsafe inference is refused without
+#'   needing a catalog query.
 #'   The catalog query binds no caller relation and reads no source values.
 #'   It is separate from the single zero-row typed snapshot, which follows
 #'   successful admission. Name-only [inspect_grouping()] needs neither query.
