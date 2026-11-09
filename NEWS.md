@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Parent and Total shares preserve each grain's ordinary first `across()`
+  function factories, including stateful sources and Grouping helpers (#1527).
+
 * Local DuckDB JSON tests prepare and reuse a signed extension cache, and fail
   when required support is unavailable. Review-ready and the local CRAN check
   wrapper prepare the same support before checking (#1540).

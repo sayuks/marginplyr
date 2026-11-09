@@ -733,7 +733,7 @@ plan_summary_expressions <- function(dots,
   group_vars <- c(plan$by, plan$dimensions)
   if (!is.null(local_data) && first_across_needs_planning(dots)) {
     return(plan_first_local_across(
-      dots, local_data, data_vars, group_vars, plan$sets[[1L]], call,
+      dots, local_data, data_vars, group_vars, plan, call,
       planner = function(resolved) {
         plan_summary_expressions(
           resolved, data_proxy, data_vars, plan, backend_kind,
@@ -1018,7 +1018,7 @@ first_across_needs_planning <- function(dots) {
 # receives local columns. Independent summaries resume their original selector
 # in later branches, while share sources retain their planned schema.
 plan_first_local_across <- function(dots, data, data_vars, group_vars,
-                                    first_set, call, planner) {
+                                    plan, call, planner) {
   original <- dots[[1L]]
   expr <- rlang::quo_get_expr(original)
   env <- rlang::quo_get_env(original)
@@ -1030,7 +1030,9 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
   selection_data <- input[columns]
   carrier <- vctrs::vec_slice(input, integer())
   state <- new.env(parent = emptyenv())
+  state$planning <- TRUE
   state$warnings <- list()
+  state$fns_warnings <- list()
   state$planning_warnings <- list()
   nested_state <- rlang::env(
     emptyenv(), forbidden_names = character(), internal_names = character(),
@@ -1039,7 +1041,8 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
   capture_fns <- function(value) {
     state$fns_env <- parent.frame()
     state$fns <- list(withCallingHandlers(value, warning = function(cnd) {
-      state$warnings <- c(state$warnings, list(cnd))
+      if (!state$planning) return()
+      state$fns_warnings <- c(state$fns_warnings, list(cnd))
       invokeRestart("muffleWarning")
     }))
     value
@@ -1090,22 +1093,26 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
       defer_local = TRUE, group_vars = group_vars,
       forbidden_names = nested_state
     )
+    first_fns <- rewrite_grouping_expr(
+      fns, plan, grouping_set = plan$sets[[1L]], sql = FALSE, con = NULL
+    )
     probe_expr[[3L]] <- rlang::new_quosure(
-      rlang::call2(capture_fns, fns), env
+      rlang::call2(capture_fns, first_fns), env
     )
     probe <- rlang::quo_set_expr(probe, probe_expr)
   }
   conditions <- new_branch_conditions(character(), call)
   on.exit(report_branch_warnings(conditions), add = TRUE)
   with_branch_conditions(
-    dplyr::summarise(carrier, !!probe, .by = dplyr::all_of(first_set)),
+    dplyr::summarise(carrier, !!probe, .by = dplyr::all_of(plan$sets[[1L]])),
     conditions, restatements = branch_argument_map(
       list(probe), summary_argument_labels(list(original))
     )
   )
   if (!is.null(state$error)) {
     conditions$error <- state$error
-    for (cnd in c(state$warnings, state$planning_warnings)) {
+    warnings <- c(state$fns_warnings, state$warnings, state$planning_warnings)
+    for (cnd in warnings) {
       buffer_branch_warning(cnd, conditions, character())
     }
     stop(state$error)
@@ -1113,6 +1120,7 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
   for (cnd in state$planning_warnings) warning(cnd)
   result <- state$result
   state$result <- NULL
+  state$planning <- FALSE
   # Captured closures now use the first dot's live selection state.
   parent.env(nested_state) <- result$summaries$selection_state$by_dot[[1L]]
   rlang::env_unbind(nested_state, ls(nested_state, all.names = TRUE))
@@ -1144,6 +1152,30 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
     )[[1L]]
   } else {
     for (cnd in state$warnings) warning(cnd)
+    # The source check wraps across(), so dplyr cannot expand it at the top
+    # level. Prepare its functions once per grain in that expansion context.
+    if (!is.null(state$fns)) {
+      result$summaries$prepare_first_across <- function(grouping_set, set_id,
+                                                        conditions) {
+        capture <- if (set_id == 1L) {
+          if (length(state$fns_warnings) == 0L) return(invisible(NULL))
+          rlang::new_quosure(rlang::call2(first_local_across_fns, state), env)
+        } else {
+          branch_fns <- rewrite_grouping_expr(
+            fns, plan, grouping_set = grouping_set, sql = FALSE, con = NULL
+          )
+          rlang::new_quosure(rlang::call2(capture_fns, branch_fns), env)
+        }
+        probe <- rlang::quo(dplyr::across(character(), !!capture))
+        with_branch_conditions(
+          dplyr::summarize(carrier, !!probe, .by = dplyr::all_of(grouping_set)),
+          conditions, restatements = branch_argument_map(
+            list(probe), summary_argument_labels(list(original))
+          )
+        )
+        invisible(NULL)
+      }
+    }
   }
   result
 }
@@ -1164,10 +1196,13 @@ cache_first_across_fns <- function(expr, state) {
   rebuild_static_call(expr, args)
 }
 
-# Reuse functions evaluated before the cached selector. A function or formula
-# created in the carrier's mask enters the current mask so dplyr can apply its
-# ordinary lambda handling; factory closures retain their own environments.
+# Reuse functions evaluated in this grain's expansion context. A function or
+# formula created in the carrier's mask enters the current mask so dplyr can
+# apply its ordinary lambda handling; factory closures keep their environments.
 first_local_across_fns <- function(state) {
+  warnings <- state$fns_warnings
+  state$fns_warnings <- list()
+  for (cnd in warnings) warning(cnd)
   mask <- parent.frame()
   restore <- function(value) {
     if (is.list(value)) return(lapply(value, restore))
