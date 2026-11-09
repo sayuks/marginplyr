@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Included-only dtplyr expansions acquire faithful multi-slot S4 metadata,
+  allowing character displays of Period and Interval dimensions without an
+  internal prototype error (#1528).
+
 * Parent and Total shares preserve each grain's ordinary first `across()`
   function factories, including stateful sources and Grouping helpers (#1527).
 

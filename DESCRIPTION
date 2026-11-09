@@ -373,7 +373,8 @@ Config/testthat/start-first:
     duckdb-json-metadata,
     nest-local-frame-converter,
     duckdb-captured-relations,
-    first-local-across-factories
+    first-local-across-factories,
+    dtplyr-multislot-metadata
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
