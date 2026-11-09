@@ -813,7 +813,7 @@ test_that("caller context preserves the nested constructor spelling gate", {
   }
   caller <- rlang::env(alias = choose, rollup = choose,
                        `::` = function(...) choose)
-  for (expr in list(quote(alias()), quote(foreign::rollup()),
+  for (expr in list(quote(alias()), quote(base::rollup()),
                     quote(get("rollup")()), quote(identity(rollup())))) {
     selection <- rlang::new_quosure(expr, caller)
     calls <- 0L
