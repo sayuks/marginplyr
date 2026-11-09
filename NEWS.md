@@ -4,6 +4,12 @@
   selection for the first `across()` source with stable output names,
   including parenthesized per-group selections (#1547).
 
+* Recognized constructor-shaped caller calls use the same faithful selection
+  context for bare and qualified spellings, invoking each occurrence once and
+  retaining its first answer. Unproven calls and later arguments wait for typed
+  metadata; unsupported SQL contexts and unsafe lazy sources refuse before
+  caller invocation (#1551).
+
 * Lazy Margin results retain their construction-time schema. Local and dtplyr
   factor processing rejects changed captured levels or ordered status before
   values can be lost, including native typed-missing label paths and empty

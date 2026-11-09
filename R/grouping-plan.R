@@ -2794,12 +2794,25 @@ read_grouping_arg <- function(arg, data_vars, wrappers, data_proxy,
   authored_namespace <- qualified || !is.null(static_call_ns(expr)) ||
     is_redundant_parens(namespace_head)
   evaluate <- function() rlang::eval_tidy(rlang::new_quosure(evaluation, env))
-  value <- if (authored_namespace) {
-    if (is.null(data_proxy) &&
-          !is_name_only_grouping_arg(authored, data_vars, allow_data_peek)) {
-      return(c(selection, list(
-        deferred = TRUE, arg = arg, wrappers = wrappers
-      )))
+  value <- if (is_constructor_call || authored_namespace) {
+    if (!is_name_only_grouping_arg(authored, data_vars, allow_data_peek)) {
+      if (is.null(data_proxy)) {
+        return(c(selection, list(
+          deferred = TRUE, arg = arg, wrappers = wrappers
+        )))
+      }
+      # dbplyr's generic proxy invents logical columns from names. It cannot
+      # answer an unknown caller's type reads faithfully (ADR 0008).
+      if (inherits(data_proxy, "tbl_lazy")) {
+        abort_marginplyr(c(
+          "Can't provide a faithful typed selection context for this call.",
+          i = "This SQL backend supplies column names without their R types.",
+          i = paste0(
+            "Collect the input with {.code dplyr::collect()} and pass the ",
+            "resulting data frame."
+          )
+        ))
+      }
     }
     # Caller conditions leave the generated capture unchanged (ADR 0008).
     outcome <- NULL
@@ -2858,7 +2871,7 @@ read_grouping_arg <- function(arg, data_vars, wrappers, data_proxy,
   selection
 }
 
-# Whether an authored namespace expression needs only the names selection
+# Whether a recognized caller expression needs only the names selection
 # context. The caller supplies the input names and the expression's own scope.
 is_name_only_grouping_arg <- function(arg, data_vars, allow_data_peek) {
   expr <- unparenthesized_value(rlang::quo_get_expr(arg), ns = "")
