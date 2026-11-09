@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Parent and Total shares preserve each grouping set's ordinary input
+  selection for the first `across()` source with stable output names,
+  including parenthesized per-group selections (#1547).
+
 * Recognized constructor-shaped caller calls use the same faithful selection
   context for bare and qualified spellings, invoking each occurrence once and
   retaining its first answer. Unproven calls and later arguments wait for typed

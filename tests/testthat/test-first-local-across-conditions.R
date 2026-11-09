@@ -194,7 +194,7 @@ test_that("Grouping-aware source naming reports its one planned warning", {
 })
 
 test_that("first across planning preserves naming and selector conditions", {
-  data <- data.frame(g = c("a", "b"), x = c(1, 3))
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), y = c(10, 30))
   cause <- rlang::error_cnd("naming_cause", message = "naming cause")
   failure <- rlang::error_cnd(
     "naming_failure", message = "naming failure", parent = cause
@@ -203,6 +203,7 @@ test_that("first across planning preserves naming and selector conditions", {
     for (source in c(FALSE, TRUE)) {
       warnings <- list()
       reads <- 0L
+      selections <- 0L
       template <- function() {
         reads <<- reads + 1L
         warning("naming warning")
@@ -210,8 +211,9 @@ test_that("first across planning preserves naming and selector conditions", {
         if (source) "total" else "unused"
       }
       choose <- function() {
+        selections <<- selections + 1L
         warning("selector warning")
-        "x"
+        if (selections == 1L) "x" else "y"
       }
       result <- tryCatch(withCallingHandlers(summarize_with_margins(
         data,
@@ -236,13 +238,13 @@ test_that("first across planning preserves naming and selector conditions", {
         expect_identical(result$parent, cause)
         expect_identical(messages, c("selector warning", "naming warning"))
       } else {
-        expect_equal(result$share, c(0.25, 0.75, 1))
+        expect_equal(result$share, if (source) c(1 / 40, 3 / 40, 1) else
+                       c(0.25, 0.75, 1))
         expect_identical(messages[[1L]], "naming warning")
-        if (source) {
-          expect_identical(messages[[2L]], "selector warning")
-        } else {
-          expect_match(messages[[2L]], "1 further grouping set")
-        }
+        expect_identical(selections, 2L)
+        expect_identical(result[[if (source) "total" else "unused"]],
+                         c(1, 3, 40))
+        expect_match(messages[[2L]], "1 further grouping set")
       }
     }
   }

@@ -928,7 +928,7 @@ plan_share_expressions <- function(dots,
   if (defer_local) plan_local_across_checks(result) else result
 }
 
-# Add one check-only dot immediately after each later bare across source.
+# Add one check-only dot immediately after each bare across source.
 # The across call retains dplyr's expansion and function invocation; the new
 # dot reads each produced summary from the same mask without adding output.
 plan_local_across_checks <- function(plan) {
@@ -938,7 +938,7 @@ plan_local_across_checks <- function(plan) {
   for (position in positions) {
     quo <- plan$dots[[position]]
     expr <- rlang::quo_get_expr(quo)
-    if (position == 1L || nzchar(rlang::names2(plan$dots)[[position]]) ||
+    if (nzchar(rlang::names2(plan$dots)[[position]]) ||
           !rlang::is_call(expr, "across", ns = c("", "dplyr"))) next
     parsed <- parse_across_arguments(expr)
     if (length(parsed$additional) > 0L || !across_unpack_is_false(
