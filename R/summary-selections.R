@@ -822,11 +822,7 @@ plan_summary_expressions <- function(dots,
       })
       args <- parsed$call_args
       selection <- summary_all_of_expr(selected, selection_proxy)
-      if (parsed$cols_index == 0L) {
-        args <- append(list(.cols = selection), args)
-      } else {
-        args[[parsed$cols_index]] <- selection
-      }
+      args <- replace_across_cols(args, parsed$cols_index, selection)
       dots[[1L]] <- rlang::quo_set_expr(first, rebuild_static_call(expr, args))
     }
   }
@@ -1150,11 +1146,7 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
         }
       }
       selection <- summary_all_of_expr(selected, selection_data)
-      if (parsed$cols_index == 0L) {
-        args <- append(list(.cols = selection), args)
-      } else {
-        args[[parsed$cols_index]] <- selection
-      }
+      args <- replace_across_cols(args, parsed$cols_index, selection)
       if (unknown_fns && parsed$fns_index > 0L) {
         # Forcing a promise does not establish static source provenance.
         args[[parsed$fns_index]] <- rlang::call2(
@@ -1395,11 +1387,7 @@ cache_local_context_names <- function(dots, selection_proxy, group_vars) {
         args <- parsed$call_args
         selected <- resolve_summary_selection(parsed$cols, env, proxy)
         selection <- summary_all_of_expr(selected, proxy)
-        if (parsed$cols_index == 0L) {
-          args <- append(list(.cols = selection), args)
-        } else {
-          args[[parsed$cols_index]] <- selection
-        }
+        args <- replace_across_cols(args, parsed$cols_index, selection)
         prepared <- rebuild_static_call(expr, args)
         prepared_args <- parse_across_arguments(prepared)
         args <- prepared_args$call_args
@@ -2090,11 +2078,7 @@ rewrite_local_across_selection <- function(expr, group_vars,
   selection <- local_summary_selection_expr(
     parsed$cols, group_vars, forbidden_names
   )
-  if (parsed$cols_index == 0L) {
-    call_args <- append(list(.cols = selection), call_args)
-  } else {
-    call_args[[parsed$cols_index]] <- selection
-  }
+  call_args <- replace_across_cols(call_args, parsed$cols_index, selection)
   rebuild_static_call(expr, call_args)
 }
 
@@ -3135,6 +3119,16 @@ name_unnamed_by_position <- function(arg_names, prefix) {
   unnamed <- which(arg_names == "")
   arg_names[unnamed] <- paste0(prefix, unnamed)
   arg_names
+}
+
+# Replaces the parsed `.cols` position without evaluating call arguments.
+# A zero index means `.cols` was omitted and needs a named leading argument.
+replace_across_cols <- function(args, cols_index, selection) {
+  if (cols_index == 0L) {
+    return(append(list(.cols = selection), args))
+  }
+  args[[cols_index]] <- selection
+  args
 }
 
 # The one place that knows an `across()` argument can be empty, so that no
