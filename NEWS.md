@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Local DuckDB JSON tests prepare and reuse a signed extension cache, and fail
+  when required support is unavailable. Review-ready and local CRAN preflight
+  prepare the same support before checking (#1540).
+
 * Typed DuckDB Grouping inspection refuses CSV filename replacement scans
   before source-value inference, while preserving captured-name inspection
   and explicit reader metadata. Common table expressions and catalog relations
