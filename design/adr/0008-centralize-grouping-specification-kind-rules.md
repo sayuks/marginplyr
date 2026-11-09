@@ -591,7 +591,7 @@ required; unproven calls conservatively use the faithful typed context.
 
 ## Amendment: one context rule for recognized constructor-shaped caller calls
 
-Accepted on 2026-11-09; implementation is pending in
+Accepted on 2026-11-09; implemented in
 [#1551](https://github.com/sayuks/marginplyr/issues/1551). Bare and explicitly qualified
 calls admitted by the constructor-spelling gate receive the same selection
 context rule. The caller's actual function runs once per argument occurrence
