@@ -42,15 +42,18 @@ Suggests:
     RSQLite,
     sf,
     stringr,
-    testthat (>= 3.0.0),
+    testthat (>= 3.1.9),
     tibble,
     tidyr,
-    tools
+    tools,
+    withr
 Config/marginplyr/cran-status: unpublished
 Config/Needs/preflight:
     checktor (== 0.1.0),
+    filelock,
     lintr,
     pkgload,
+    processx,
     rcmdcheck,
     spelling,
     urlchecker

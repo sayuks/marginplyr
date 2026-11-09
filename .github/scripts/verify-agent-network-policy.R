@@ -1,5 +1,6 @@
 # Confirms that both agents allow exactly the hosts sandboxed CRAN preflight
-# needs plus api.github.com for the GitHub CLI. Codex uses full proxy mode
+# needs, official DuckDB JSON preparation and api.github.com for the GitHub CLI.
+# Codex uses full proxy mode
 # because gh sends GraphQL POST requests; the host allowlist still applies.
 # Preflight hosts come from R's standard repositories and the URLs in the
 # current package candidate. A redirect the candidate currently follows is
@@ -171,6 +172,9 @@ required_domains <- sort(unique(c(
   url_hosts(candidate_urls),
   "www.contributor-covenant.org"
 )))
+json_setup <- new.env(parent = baseenv())
+sys.source(file.path(repository_path, "tools", "duckdb-json.R"), json_setup)
+setup_domains <- url_hosts(json_setup$duckdb_json_repository())
 
 codex_config <- readLines(
   file.path(repository_path, ".codex", "config.toml"),
@@ -194,11 +198,13 @@ if (!identical(codex_domains, claude_domains)) {
     call. = FALSE
   )
 }
-if (!identical(codex_domains, sort(unique(c(required_domains, "api.github.com"))))) {
+if (!identical(codex_domains,
+    sort(unique(c(required_domains, setup_domains, "api.github.com"))))) {
   stop(
     paste0(
       "Agent network allowlists must contain only preflight hosts from the ",
-      "standard repositories and current candidate URLs, plus api.github.com."
+      "standard repositories and current candidate URLs, the official DuckDB ",
+      "JSON distribution and api.github.com."
     ),
     call. = FALSE
   )
@@ -270,5 +276,5 @@ if (!all(c("^\\.claude$", "^\\.codex$") %in% build_ignore)) {
 message(
   "Verified matching agent allowlists for ",
   length(required_domains),
-  " preflight hosts and GitHub API access."
+  " preflight hosts, official DuckDB JSON preparation and GitHub API access."
 )

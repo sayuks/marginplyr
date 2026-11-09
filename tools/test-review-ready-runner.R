@@ -85,7 +85,7 @@ local({
   make_repo <- function(name, account_home = account) {
     repo <- file.path(workspace, name)
     dir.create(repo)
-    paths <- c("tools/review-ready.R", "tools/review-ready-check-lib.R", "tools/review-ready-fifo.R",
+    paths <- c("tools/review-ready.R", "tools/duckdb-json.R", "tools/review-ready-check-lib.R", "tools/review-ready-fifo.R",
       "tools/review-ready-progress.R", "tools/review-ready-progress-reporter.R",
       "tools/review-ready-timing.R", "tools/review-ready-priority.R",
       "tools/dependency-requirements.R", "tools/required-test-suggests.R", "tools/repository-contracts.R",
@@ -315,6 +315,27 @@ local({
   expect(all(positions > 0L) && all(diff(positions) > 0L), "six checks run in the required order")
   expect(identical(git(repo, "status", "--porcelain=v1", "--untracked-files=all"), ""),
     "successful generation preserves the submitting worktree")
+  json_repo <- make_repo("json-prerequisite")
+  description <- readLines(file.path(json_repo, "DESCRIPTION"))
+  writeLines(sub("Suggests: testthat, stats, processx",
+    "Suggests: testthat, stats, processx, duckdb", description, fixed = TRUE),
+    file.path(json_repo, "DESCRIPTION"))
+  writeLines('optional_suggest_spec <- function() list(stats = TRUE, duckdb = TRUE)',
+    file.path(json_repo, "tests", "testthat", "helper-optional-backends.R"))
+  # Native provisioning is exercised by test-duckdb-json-provision.R.
+  writeLines('required_test_suggests <- function(...) c("stats", "duckdb")',
+    file.path(json_repo, "tools", "required-test-suggests.R"))
+  writeLines('duckdb_json_acquire <- function(...) stop("fixture JSON preparation unavailable")',
+    file.path(json_repo, "tools", "duckdb-json.R"))
+  git(json_repo, "add", ".")
+  git(json_repo, "commit", "-qm", "JSON prerequisite boundary")
+  json_source <- finish(start(json_repo, "source"))
+  expect(!grepl("Prepare DuckDB JSON", json_source, fixed = TRUE),
+    "source scope never prepares JSON")
+  json_full <- finish(start(json_repo, "full"), 1L)
+  expect(grepl("fixture JSON preparation unavailable", json_full, fixed = TRUE) &&
+    !grepl("FIFO accepted|Waiting for heavy|Build source tarball", json_full),
+    "full JSON preparation failure precedes admission and build")
   documentation <- make_repo("documentation")
   dir.create(file.path(documentation, "man"))
   dir.create(file.path(documentation, "R"))

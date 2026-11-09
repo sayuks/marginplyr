@@ -127,12 +127,12 @@ preflight_requirements <- dependency_requirements(description_value(
 ))
 expect_identical(
   preflight_requirements$package,
-  c("checktor", "lintr", "pkgload", "rcmdcheck", "spelling", "urlchecker"),
+  c("checktor", "filelock", "lintr", "pkgload", "processx", "rcmdcheck", "spelling", "urlchecker"),
   "the preflight dependency set"
 )
 expect_identical(
   intersect(preflight_requirements$package, review_requirements$package),
-  c("lintr", "pkgload", "rcmdcheck", "spelling"),
+  c("filelock", "lintr", "pkgload", "processx", "rcmdcheck", "spelling"),
   "the intentional task-group overlap"
 )
 expect_identical(
@@ -793,6 +793,7 @@ local({
   original_functions <- mget(
     c(
       "preflight_prerequisites",
+      "preflight_json_context",
       "checker_versions",
       "build_candidate_tarball",
       "verify_candidate_tarball",
@@ -822,6 +823,8 @@ local({
     )
   }, envir = .GlobalEnv)
   assign("checker_versions", function(...) character(), envir = .GlobalEnv)
+  assign("preflight_json_context", function(...) function() invisible(NULL),
+    envir = .GlobalEnv)
   assign("build_candidate_tarball", function(...) {
     file.path(fixture, "marginplyr_0.1.0.tar.gz")
   }, envir = .GlobalEnv)
@@ -1108,6 +1111,7 @@ expect_true(
 copied_tools <- file.copy(
   c(
     "tools/cran-preflight.R",
+    "tools/duckdb-json.R",
     "tools/dependency-requirements.R",
     "tools/cran-preflight-lib.R"
   ),
@@ -1399,6 +1403,84 @@ expect_identical(
   7L,
   "a checker subprocess failure status"
 )
+
+local({
+  variables <- c("MARGINPLYR_DUCKDB_JSON_EXTENSION", "MARGINPLYR_REQUIRED_DUCKDB_JSON")
+  before <- Sys.getenv(variables, unset = NA_character_)
+  requested <- NULL
+  released <- FALSE
+  restore <- preflight_json_context(
+    acquire = function(install) {
+      requested <<- install
+      list(path = "fixture-json-extension")
+    },
+    release = function(lease) {
+      released <<- identical(lease$path, "fixture-json-extension")
+    }
+  )
+  on.exit(restore(), add = TRUE)
+  expect_identical(requested, FALSE, "formal preflight never installs JSON")
+  expect_identical(Sys.getenv(variables), stats::setNames(
+    c("fixture-json-extension", "true"), variables),
+    "formal preflight passes the validated extension to check children")
+  expect_identical(released, FALSE, "the JSON lease stays held during checking")
+  restore()
+  expect_true(released, "formal preflight releases its JSON lease")
+  expect_identical(Sys.getenv(variables, unset = NA_character_), before,
+    "formal preflight restores the caller's JSON environment")
+  failure <- tryCatch(preflight_json_context(
+    acquire = function(install) stop("fixture missing extension")),
+    error = base::identity)
+  expect_true(inherits(failure, "error"), "missing JSON is a prerequisite failure")
+  expect_identical(Sys.getenv(variables, unset = NA_character_), before,
+    "missing JSON leaves the caller's environment unchanged")
+})
+
+local({
+  repo <- file.path(fixture_root, "prepared-entry")
+  dir.create(file.path(repo, "tools"), recursive = TRUE)
+  repo <- normalizePath(repo, winslash = "/", mustWork = TRUE)
+  writeLines("fixture formal entry", file.path(repo, "tools", "cran-preflight.R"))
+  git <- function(...) run_system("git", c("-C", repo, ...))
+  expect_identical(git("init", "--quiet")$status, 0L, "wrapper fixture git init")
+  expect_identical(git("add", ".")$status, 0L, "wrapper fixture git add")
+  expect_identical(git("-c", "user.email=fixture@example.invalid",
+    "-c", "user.name=Fixture", "commit", "--quiet", "-m", "fixture")$status,
+    0L, "wrapper fixture git commit")
+  old <- setwd(repo)
+  on.exit(setwd(old), add = TRUE)
+  prepared <- 0L
+  released <- 0L
+  arguments <- c("--output", file.path(fixture_root, "formal evidence with spaces"))
+  acquire <- function() {
+    prepared <<- prepared + 1L
+    list(path = file.path(repo, "fixture prepared JSON"))
+  }
+  release <- function(lease) released <<- released + 1L
+  runner <- function(command, args, wd, env, echo, error_on_status, cleanup_tree) {
+    expect_identical(prepared, 1L, "the wrapper prepares before starting formal preflight")
+    expect_identical(released, 0L, "the wrapper retains the lease for its child")
+    expect_identical(args, c(file.path(repo, "tools", "cran-preflight.R"), arguments),
+      "the wrapper preserves exact formal arguments")
+    expect_identical(as.character(env[c("MARGINPLYR_DUCKDB_JSON_EXTENSION",
+      "MARGINPLYR_REQUIRED_DUCKDB_JSON")]), c(file.path(repo, "fixture prepared JSON"), "true"),
+      "the wrapper exports absolute-path and required JSON settings")
+    expect_true(cleanup_tree, "the formal subprocess owns and cleans its descendants")
+    list(status = 7L)
+  }
+  expect_identical(run_local_cran_preflight(arguments, repo, acquire, release, runner),
+    7L, "the wrapper preserves a failed formal child's terminal status")
+  expect_identical(released, 1L, "the wrapper releases after formal child completion")
+  failure <- tryCatch(run_local_cran_preflight("--unknown", repo, acquire,
+    release, runner), error = base::identity)
+  expect_true(inherits(failure, "error"), "the wrapper rejects invalid arguments")
+  expect_identical(prepared, 1L, "invalid arguments do not prepare JSON")
+  writeLines("dirty", file.path(repo, "untracked.txt"))
+  failure <- tryCatch(run_local_cran_preflight(arguments, repo, acquire,
+    release, runner), error = base::identity)
+  expect_true(inherits(failure, "error"), "the wrapper rejects a dirty candidate")
+  expect_identical(prepared, 1L, "a dirty candidate does not prepare JSON")
+})
 
 message(
   "Verified the CRAN preflight contract against policy, artifact, and ",

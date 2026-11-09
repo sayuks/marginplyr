@@ -8,6 +8,18 @@ cache run and a formal preflight attempt for a release ledger.
 Rscript tools/cran-preflight.R
 ```
 
+For local preparation followed by that same formal gate in one operation, use:
+
+```sh
+Rscript tools/local-cran-preflight.R
+```
+
+The outer command prepares a signed, version/platform-matched DuckDB JSON
+extension and holds its cache lease until the formal child exits. It forwards
+the original arguments, including an approved `--output`, and preserves the
+child's exit status. Its default output remains the diagnostic cache run below;
+the wrapper does not turn a diagnostic run into formal release evidence.
+
 Without `--output`, the command writes a diagnostic cache run below
 `tools::R_user_dir("marginplyr", "cache")/cran-preflight`. It may create its
 own unique cache directory there without separate approval. The run is useful
@@ -52,7 +64,12 @@ it; a lost required bundle is invalid evidence and requires a new formal attempt
 even for the same candidate SHA. No shared raw evidence store or particular
 backup product is required.
 
-The command installs and edits nothing. Before running it, install every
+The direct formal command installs and edits nothing. It validates prepared
+DuckDB JSON support read-only and reports missing or invalid support as an
+unavailable prerequisite. To prepare only that extension, run
+`Rscript tools/setup-duckdb-json.R`; the shared cache and explicit-path behavior
+are documented in the runner guide's [Setup and invocation](review-ready-runner.md#setup-and-invocation).
+Before running the formal command, install every
 `Suggests` entry at the version declared in `DESCRIPTION`, plus the packages in
 `Config/Needs/preflight`, and install Quarto with its bundled Pandoc plus a TeX
 toolchain. The installed `marginplyr` version must equal the candidate version because the
@@ -62,9 +79,11 @@ with an installation hint rather than changing the library.
 ## Agent sandbox network policy
 
 `.codex/config.toml` and `.claude/settings.json` give sandboxed commands the
-same exact host allowlist used by this preflight. The repository verifier
+same exact host allowlist for this preflight, GitHub API access and official
+DuckDB JSON preparation. The repository verifier
 derives that list from R's standard repositories and the current candidate
-URLs, includes a candidate URL's required redirect host, rejects either client
+URLs and the setup module's official JSON origin, includes a candidate URL's
+required redirect host, rejects either client
 drifting from the other, and rejects extra hosts. The preflight runs it before
 loading the audit pipeline, and `lint.yaml` runs it before the preflight
 contract fixtures. Each client grants write access to the platform-specific

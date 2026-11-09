@@ -648,6 +648,15 @@ review_ready_check_cli <- function(args, expected_root) {
         "Package build/check, the complete suite and snapshots omitted: ",
         selection$reason, "\n", sep = "")
     } else {
+      if ("duckdb" %in% required) {
+        cat("\n==> Prepare DuckDB JSON extension\n")
+        json <- duckdb_json_acquire()
+        on.exit(duckdb_json_release(json), add = TRUE)
+        child_env <- c(child_env,
+          MARGINPLYR_DUCKDB_JSON_EXTENSION = json$path,
+          MARGINPLYR_REQUIRED_DUCKDB_JSON = "true")
+        runner <- review_ready_child_runner(child_env)
+      }
       run_review_ready_full(source_root, run, required, prerequisites, runner = runner)
       cat("\nFull package check passed for ", identity$sha, ".\n", sep = "")
     }

@@ -27,6 +27,44 @@ Full scope also needs a working TeX distribution with `pdflatex` on PATH for
 the PDF reference manual. [TinyTeX](https://yihui.org/tinytex/) is one option;
 the CI process fixtures install its full bundle. Source scope does not need TeX.
 
+After the six checks, full scope prepares the running DuckDB engine's JSON
+extension before requesting the heavy slot. It reuses the matching user cache
+offline, or obtains the signed binary from `https://extensions.duckdb.org`.
+Preparation failure ends the invocation before admission; JSON coverage is not
+silently skipped. The parent retains a cache lease until its children finish
+and passes the absolute extension path to build/check. Source scope does not
+prepare JSON.
+
+Prepare the same cache separately when desired:
+
+```sh
+Rscript tools/setup-duckdb-json.R
+```
+
+The cache is under `tools::R_user_dir("marginplyr", "cache")/duckdb-json`, keyed
+by native DuckDB version and platform. Older entries remain until explicitly
+removed with `Rscript tools/setup-duckdb-json.R --remove VERSION PLATFORM`;
+removal refuses an entry in use. This developer cache is outside run-artifact
+retention. `MARGINPLYR_DUCKDB_JSON_EXTENSION` selects an existing binary instead;
+an invalid explicit path fails without repair or substitution.
+
+Ordinary `devtools::test()` and `testthat::test_local()` prepare at the start of
+a selected JSON test file, before its cases. Other files may already have run.
+A focused selection excluding JSON files does not acquire JSON, and
+`pkgload::load_all()` alone does not prepare it. JSON cases only load the
+prepared extension. CRAN and explicit minimal/other-backend verification retain
+optional skips; a local required setup failure is an error. The
+[accepted design](../design/specs/local-duckdb-json-tests.md) owns these
+boundaries.
+
+`MARGINPLYR_REQUIRED_DUCKDB_JSON=true` declares required JSON coverage. Explicit
+`false` permits optional JSON only when DuckDB is not already required through
+`MARGINPLYR_REQUIRED_SUGGESTS`; an existing promise cannot be weakened by that
+setting. Ordinary source tests default to required JSON, while installed checks
+retain optional behavior unless their entry declares it required. A missing or
+too-old DuckDB R package fails required preparation; setup does not install R
+packages.
+
 From a clean committed worktree root:
 
 ```sh

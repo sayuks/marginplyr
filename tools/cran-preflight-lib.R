@@ -955,6 +955,57 @@ run_checktor <- function(repository_root, tarball, evidence_path) {
   )
 }
 
+# Holds a read-only JSON lease and restores the caller's environment on release.
+preflight_json_context <- function(acquire = duckdb_json_acquire,
+                                   release = duckdb_json_release) {
+  lease <- acquire(install = FALSE)
+  variables <- c("MARGINPLYR_DUCKDB_JSON_EXTENSION", "MARGINPLYR_REQUIRED_DUCKDB_JSON")
+  old <- Sys.getenv(variables, unset = NA_character_)
+  restore <- function() {
+    for (name in variables) {
+      if (is.na(old[[name]])) Sys.unsetenv(name) else {
+        do.call(Sys.setenv, stats::setNames(list(old[[name]]), name))
+      }
+    }
+    release(lease)
+  }
+  transferred <- FALSE
+  on.exit(if (!transferred) restore(), add = TRUE)
+  Sys.setenv(MARGINPLYR_DUCKDB_JSON_EXTENSION = lease$path,
+             MARGINPLYR_REQUIRED_DUCKDB_JSON = "true")
+  transferred <- TRUE
+  restore
+}
+
+# Prepares JSON once and retains its lease until the formal child has exited.
+run_local_cran_preflight <- function(args, repository_root,
+                                     acquire = duckdb_json_acquire,
+                                     release = duckdb_json_release,
+                                     runner = processx::run) {
+  parse_preflight_args(args)
+  root <- normalizePath(repository_root, mustWork = TRUE)
+  current <- normalizePath(getwd(), mustWork = TRUE)
+  actual <- normalizePath(git_output(c("rev-parse", "--show-toplevel"))[[1L]],
+                          mustWork = TRUE)
+  if (!identical(root, current) || !identical(root, actual)) {
+    stop("Run local-cran-preflight.R from the repository root.", call. = FALSE)
+  }
+  if (nzchar(git_status_record())) {
+    stop("The preflight candidate must be clean before JSON preparation.", call. = FALSE)
+  }
+  cat("Preparing DuckDB JSON before formal preflight.\n")
+  lease <- acquire()
+  on.exit(release(lease), add = TRUE)
+  env <- Sys.getenv()
+  env[["MARGINPLYR_DUCKDB_JSON_EXTENSION"]] <- lease$path
+  env[["MARGINPLYR_REQUIRED_DUCKDB_JSON"]] <- "true"
+  result <- runner(file.path(R.home("bin"), "Rscript"),
+    c(file.path(root, "tools", "cran-preflight.R"), args),
+    wd = root, env = env, echo = TRUE, error_on_status = FALSE,
+    cleanup_tree = TRUE)
+  as.integer(result$status)
+}
+
 # Runs the sole full R CMD check against an already-built candidate tarball.
 run_rcmdcheck <- function(tarball, evidence_path) {
   check_dir <- file.path(evidence_path, "check")
@@ -1455,13 +1506,24 @@ run_preflight_pipeline <- function(state, repository_root, description) {
     record_problem(state, "tool")
     return(invisible(NULL))
   }
+  json_release <- tryCatch(preflight_json_context(), error = function(cnd) cnd)
+  if (inherits(json_release, "condition")) {
+    record_preflight_step(state, "prerequisites", "unavailable",
+      proc.time()[["elapsed"]] - started, prerequisite_table,
+      paste("DuckDB JSON prerequisite:", conditionMessage(json_release)))
+    cat("DuckDB JSON prerequisite: ", conditionMessage(json_release), "\n",
+        file = stderr(), sep = "")
+    record_problem(state, "tool")
+    return(invisible(NULL))
+  }
+  on.exit(json_release(), add = TRUE)
   record_preflight_step(
     state,
     "prerequisites",
     "passed",
     proc.time()[["elapsed"]] - started,
     prerequisite_table,
-    "All declared tools, Suggests, Quarto, Pandoc, and TeX are available."
+    "All declared tools, Suggests, DuckDB JSON, Quarto, Pandoc, and TeX are available."
   )
 
   started <- proc.time()[["elapsed"]]
