@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Ordinary first `across()` name-template warnings retain their authored
+  context and report once across grouping sets beside pattern-selected shares,
+  while preserving callback order and warning-conversion failures (#1553).
+
 * Parent and Total shares preserve each grouping set's ordinary input
   selection for the first `across()` source with stable output names,
   including parenthesized per-group selections (#1547).
