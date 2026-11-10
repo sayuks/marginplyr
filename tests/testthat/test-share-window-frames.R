@@ -52,7 +52,8 @@ expect_framed_sql_shares <- function(con) {
   expected <- expected_framed_shares()
   for (frame in frames) {
     input <- dbplyr::window_frame(
-      dbplyr::window_order(source, dplyr::desc(.data$g)), frame[[1L]], frame[[2L]]
+      dbplyr::window_order(source, dplyr::desc(.data$g)),
+      frame[[1L]], frame[[2L]]
     )
     input_sql <- dbplyr::sql_render(input)
     for (sort in c("none", "first", "last")) {

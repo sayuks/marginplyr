@@ -429,7 +429,7 @@ test_that("ordinary templates retain their warn = 2 failure boundary", {
   }
 })
 
-test_that("ordinary template warnings keep distinct diagnostics and arguments", {
+test_that("ordinary templates retain distinct diagnostics and arguments", {
   data <- data.frame(g = c("a", "b"), x = c(1, 3))
   for (distinct_argument in c(FALSE, TRUE)) {
     calls <- 0L

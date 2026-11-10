@@ -1139,8 +1139,8 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
         ))
         if (contains_grouping_helper(parsed$names) || getOption("warn") < 2L) {
           # Templates report their first warning in the same expansion context
-          # as later grains, so ADR 0021 can identify repeats. Ordinary templates
-          # retain the planning failure boundary when warnings become errors.
+          # as later grains, so ADR 0021 can identify repeats. Ordinary
+          # templates retain the failure boundary when warnings become errors.
           args[[parsed$names_index]] <- rlang::call2(
             capture_names, args[[parsed$names_index]]
           )
@@ -1205,7 +1205,9 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
     stop(state$error)
   }
   if (!contains_grouping_helper(parsed$names) &&
-        length(state$result$summaries$selection_state$source_definitions[[1L]]) >
+        length(
+          state$result$summaries$selection_state$source_definitions[[1L]]
+        ) >
           0L) {
     # A source template is frozen by planning and never repeats in a branch.
     for (cnd in state$names_warnings) warning(cnd)
