@@ -300,3 +300,10 @@ The dated [column audit](../../investigation/attribute-label-preservation-2026-1
 and [table audit](../../investigation/upstream-table-attribute-contracts-2026-11-10.md)
 record the source paths and versioned observations. ADR 0042 owns the selected
 responsibilities and reference operations.
+
+## Amendment: native column-vector element-name references
+
+[ADR 0043](0043-follow-native-column-element-names.md), accepted on
+2026-11-10, specializes the delegation boundary for column-vector element
+names using explicit native reference operations. It records a target
+contract; implementation is pending.

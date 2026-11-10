@@ -1,0 +1,174 @@
+[1] "R version 4.6.1 (2026-06-24)"
+     dplyr      vctrs     tibble data.table     dtplyr      arrow     dbplyr
+   "1.2.1"    "0.7.3"    "3.3.1" "1.18.6.1"    "1.3.3"   "25.0.1"    "2.6.0"
+   RSQLite
+  "3.53.3"
+
+Input: tibble
+$g
+[1] "k1" "k2" "k3"
+
+$x
+[1] "r1" "r2" "r3"
+
+Native summary names
+$g
+[1] "k1" "k3"
+
+$first
+[1] "r1" "r3"
+
+$total
+NULL
+
+Native nest outer/first inner names
+$g
+[1] "k1" "k3"
+
+$data
+NULL
+
+$x
+[1] "r1" "r2"
+
+
+Input: data.frame
+$g
+[1] "k1" "k2" "k3"
+
+$x
+[1] "r1" "r2" "r3"
+
+Native summary names
+$g
+NULL
+
+$first
+NULL
+
+$total
+NULL
+
+Native nest outer/first inner names
+$g
+[1] "k1" "k3"
+
+$data
+NULL
+
+$x
+[1] "r1" "r2"
+
+
+Input: data.table
+$g
+[1] "k1" "k2" "k3"
+
+$x
+[1] "r1" "r2" "r3"
+
+Native summary names
+$g
+NULL
+
+$first
+NULL
+
+$total
+NULL
+
+Native nest outer/first inner names
+$g
+NULL
+
+$data
+NULL
+
+$x
+NULL
+
+
+Native display replacement and ordering
+$g
+NULL
+
+$x
+[1] "r1" "r2" "r3"
+
+$g
+NULL
+
+$x
+[1] "r1" "r2" "r3"
+
+$g
+[1] "k3" "k2" "k1"
+
+$x
+[1] "r3" "r2" "r1"
+
+Native summary with element names
+[1] "same" "same" "last"
+$g
+[1] "same" "last"
+
+$first
+[1] "same" "last"
+
+Native summary with element names
+[1] "" "" ""
+$g
+[1] "" ""
+
+$first
+[1] "" ""
+
+Native summary with element names
+[1] NA       "second" NA
+$g
+[1] NA NA
+
+$first
+[1] "" ""
+
+
+Names at lazy entry/collection
+$g
+NULL
+
+$x
+NULL
+
+$g
+NULL
+
+$x
+NULL
+
+
+Arrow source names stored in R metadata
+[1] "r1" "r2" "r3"
+Arrow native ordering
+$values
+[1] 30 20 10
+
+$element_names
+[1] "r1" "r2" "r3"
+
+Arrow native filtering; any metadata warning is part of the observation
+$values
+[1] 20 30
+
+$element_names
+NULL
+
+Arrow native union; branch row order is not asserted
+$values
+[1] 10 20 30 10 20 30
+
+$element_names
+[1] "r1" "r2" "r3" NA   NA   NA
+
+Warning messages:
+1: Invalid metadata$[["r"]]
+2: Invalid metadata$[["r"]]
