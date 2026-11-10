@@ -4840,6 +4840,49 @@ scope_value_closure <- function(expr, scope, lookup) {
       return(scope_value_closure(value[[1L]], scope, lookup))
     }
   }
+  if (!is.null(operator) && operator %in% c(
+    "suppressWarnings", "suppressMessages", "tryCatch", "withCallingHandlers",
+    "withRestarts", "try", "local"
+  ) &&
+    is_known_base_frame_call(head, operator, scope, transfer_lookup)) {
+    value <- base_call_argument(head, "expr")
+    # A default local() evaluates its expression in a fresh child frame.
+    if (identical(operator, "local") &&
+          length(base_call_argument(head, "envir")) > 0L) return(NULL)
+    if (identical(operator, "local") && length(value) == 1L) {
+      invocation <- rlang::call2(
+        rlang::call2("function", pairlist(), value[[1L]])
+      )
+      return(scope_factory_closure(invocation, scope, lookup))
+    }
+    if (length(value) == 1L) {
+      return(scope_value_closure(value[[1L]], scope, lookup))
+    }
+  }
+  if (!is.null(operator) && operator %in% c("attr<-", "I") &&
+        is_known_base_frame_call(head, operator, scope, transfer_lookup)) {
+    definition <- get(operator, envir = baseenv())
+    if (is.primitive(definition)) definition <- args(definition)
+    parts <- static_matched_arguments(head, definition)
+    if (!"x" %in% names(parts)) return(NULL)
+    closure <- scope_value_closure(parts$x, scope, lookup)
+    if (identical(operator, "I")) {
+      return(scope_map_closure_elements(list(closure), function(variant) {
+        variant$dispatch_classes <- unique(c(
+          "AsIs", if (!isTRUE(variant$dispatch_implicit)) {
+            variant$dispatch_classes %||% character()
+          }
+        ))
+        variant$dispatch_implicit <- FALSE
+        variant
+      })[[1L]])
+    }
+    if (all(c("which", "value") %in% names(parts)) &&
+          rlang::is_string(unparenthesized_value(parts$which)) &&
+          !identical(unparenthesized_value(parts$which), "class")) {
+      return(closure)
+    }
+  }
   if (identical(operator, "unname") &&
         is_known_base_frame_call(head, operator, scope, transfer_lookup)) {
     value <- base_call_argument(head, "obj")
@@ -4922,7 +4965,11 @@ scope_value_closure <- function(expr, scope, lookup) {
   if (!is.null(operator) && operator %in% c("eval", "evalq") &&
         is_known_base_frame_call(head, operator, scope, transfer_lookup)) {
     parts <- static_matched_arguments(head, base::eval)
-    if (identical(names(parts), "expr")) {
+    current <- !"envir" %in% names(parts) || identical(
+      static_environment_frame(parts$envir, scope, lookup), 1L
+    )
+    if ("expr" %in% names(parts) && current &&
+          all(names(parts) %in% c("expr", "envir"))) {
       value <- if (identical(operator, "evalq")) {
         list(parts$expr)
       } else {
@@ -4964,6 +5011,10 @@ scope_value_closure <- function(expr, scope, lookup) {
         visible = visible
       ))
     }
+  }
+  if (identical(operator, "Reduce")) {
+    elements <- scope_singleton_callback_list(head, scope, lookup)
+    return(scope_join_members(lapply(scope_list_choices(elements), `[[`, 1L)))
   }
   member <- scope_closure_carrier_member(head, scope, lookup)
   if (!is.null(member$definition) || !is.null(member$alternatives)) {
@@ -5594,11 +5645,60 @@ scope_closure_list <- function(expr, scope, lookup) {
     }
     return(scope_map_lists(elements, function(choice) choice[key]))
   }
+  if (!is.null(operator) && operator %in% c("Filter", "lapply", "Map")) {
+    mapped <- scope_singleton_callback_list(expr, scope, lookup)
+    if (!is.null(mapped)) return(mapped)
+  }
   remapped <- scope_remapped_closure_list(expr, operator, scope, lookup)
   if (!is.null(remapped)) return(remapped)
   member <- scope_closure_carrier_member(expr, scope, lookup)
   if (!is.null(member)) return(member$elements)
   scope_factory_lists(expr, scope, lookup)
+}
+
+# Preserve a singleton callable through stock predicates and identity callbacks.
+# Neither the callback nor a caller-supplied collection is executed here.
+scope_singleton_callback_list <- function(expr, scope, lookup) {
+  operator <- static_call_name(expr)
+  rule <- switch(operator,
+    Filter = list(callback = "f", value = "x", stock = "is.function"),
+    lapply = list(callback = "FUN", value = "X", stock = "identity"),
+    Map = list(callback = "f", value = "", stock = "identity"),
+    Reduce = list(callback = "f", value = "x", stock = "identity")
+  )
+  if (is.null(rule)) return(NULL)
+  transfer_lookup <- lookup
+  transfer_lookup$rebound <- lookup$function_rebound %||% lookup$rebound
+  if (!is_known_base_frame_call(expr, operator, scope, transfer_lookup)) {
+    return(NULL)
+  }
+  parts <- static_matched_arguments(expr, get(operator, envir = baseenv()))
+  if (length(parts) != 2L ||
+        !all(c(rule$callback, rule$value) %in% argument_names(parts)) ||
+        any(vapply(parts, rlang::is_missing, logical(1)))) return(NULL)
+  value <- unparenthesized_value(parts[[rule$callback]])
+  if (!is_name_part(value) && !rlang::is_call(value, c("::", ":::"))) {
+    return(NULL)
+  }
+  # Callback arguments use value lookup, so a non-function binding also shadows.
+  if (is_name_part(value) && rlang::as_name(value) %in%
+        scope_bound_names(scope[scope_visible_frames(scope)])) return(NULL)
+  callback <- rlang::call2(value)
+  callback_lookup <- lookup
+  callback_lookup$function_rebound <- lookup$rebound
+  known <- is_known_base_frame_call(
+    callback, rule$stock, scope, callback_lookup
+  )
+  if (!identical(static_call_name(callback), rule$stock) || !known) {
+    return(NULL)
+  }
+  value <- parts[[which(argument_names(parts) == rule$value)]]
+  elements <- scope_closure_list(value, scope, lookup)
+  choices <- scope_list_choices(elements)
+  if (length(choices) == 0L || !all(vapply(choices, function(choice) {
+    length(choice) == 1L && length(scope_closure_variants(choice[[1L]])) > 0L
+  }, logical(1)))) return(NULL)
+  elements
 }
 
 # Expand a literal list's finite dots as reads in their owning frame.
@@ -6402,6 +6502,7 @@ scope_closure_attribute_write <- function(scope, target, value, lookup,
     return(scope)
   }
   classes <- NULL
+  implicit <- FALSE
   if (identical(operator, "class") && length(target) == 2L) {
     classes <- if (is.null(unparenthesized_value(value))) {
       "function"
@@ -6411,11 +6512,14 @@ scope_closure_attribute_write <- function(scope, target, value, lookup,
           is_known_base_frame_call(expr, "c", value_scope, lookup)
       })
     }
+    implicit <- is.null(unparenthesized_value(value)) ||
+      identical(classes, character())
     if (!is.null(classes) && length(classes) == 0L) classes <- "function"
   }
   # Update one outer callable, retaining its associated list element metadata.
   update_dispatch <- function(closure) {
     closure$dispatch_classes <- classes
+    closure$dispatch_implicit <- implicit
     closure$dispatch_unknown <- is.null(classes)
     closure
   }

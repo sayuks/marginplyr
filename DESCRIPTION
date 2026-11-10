@@ -383,7 +383,8 @@ Config/testthat/start-first:
     parenthesized-across-identity,
     factor-schema-lifetime,
     share-complex-keys,
-    share-window-frames
+    share-window-frames,
+    share-condition-wrappers
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool

@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Parent and Total shares retain invocation-time dependencies through base
+  condition and value wrappers, including finite singleton collections with
+  stock callbacks (#1557).
+
 * Ordinary first `across()` name-template warnings retain their authored
   context and report once across grouping sets beside pattern-selected shares,
   while preserving callback order and warning-conversion failures (#1553).
