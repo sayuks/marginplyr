@@ -305,8 +305,8 @@ responsibilities and reference operations.
 
 [ADR 0043](0043-follow-native-column-element-names.md), accepted on
 2026-11-10, specializes the delegation boundary for column-vector element
-names using explicit native reference operations. It records a target
-contract; implementation is pending.
+names using explicit native reference operations. The contract is implemented
+in [#1562](https://github.com/sayuks/marginplyr/issues/1562).
 
 ## Amendment: scoped native references for input classes
 

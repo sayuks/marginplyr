@@ -148,17 +148,25 @@ in a portable branch. Preparation normalizes the label and creates the
 metadata it needs; semantic validation is delayed until the verb executor has
 completed its schema-aware preflight and is about to execute.
 
+Column-vector element names follow [ADR 0043](adr/0043-follow-native-column-element-names.md).
+Display conversion retains the names of the actual branch vector; omitted
+dimensions receive unnamed replacements. No source-element names snapshot
+is captured. Nesting retains representative display vectors in list cells
+while grouping by original identity keys, then combines their current element
+names without scalar summary repair. The fold uses a stock tibble view for
+eager inputs. Outer keys and original inner columns follow their respective
+native references.
+
 ### Factor (`R/factor.R`)
 
 Owns restoration of factor and ordered-factor Margin columns from the metadata
 captured during preparation. Its backend methods preserve levels and ordering
 after labels have been materialized; it does not acquire metadata itself.
 
-This is the only type or attribute restoration in the package, and it exists
-because marginplyr is what decomposed those factors. Every other class and
-attribute of a result is whatever the underlying dplyr and vctrs operations
-produced, and no verb restores one. See
-[ADR 0016](adr/0016-delegate-result-class-and-attributes-to-dplyr.md).
+Factor restoration exists because marginplyr decomposed those factors.
+Element names follow ADR 0043 above; remaining class and attribute behavior
+follows [ADR 0016](adr/0016-delegate-result-class-and-attributes-to-dplyr.md)
+as amended.
 
 The accepted column-label and table-metadata extension is recorded in
 [ADR 0042](adr/0042-preserve-variable-labels-through-margin-operations.md),

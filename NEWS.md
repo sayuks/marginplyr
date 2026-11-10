@@ -1,5 +1,10 @@
 # marginplyr 0.1.0
 
+* Column-vector element names follow native summaries, expansion and nesting,
+  including direct collection, omitted-dimension replacements and empty
+  results. Arrow retains its native metadata behavior without treating names
+  as row identifiers (#1562).
+
 * Ordinary first `across()` name-template warnings retain their authored
   context and report once across grouping sets beside pattern-selected shares,
   while preserving callback order and warning-conversion failures (#1553).

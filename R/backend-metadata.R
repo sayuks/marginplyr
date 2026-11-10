@@ -710,7 +710,10 @@ margin_column_info <- function(data_proxy,
   prototypes <- lapply(schema[dimensions], function(x) {
     if (backend$kind %in% c("local", "dtplyr") ||
           is.data.frame(x) || is.array(x)) {
-      vctrs::vec_init(x, 1L)
+      value <- vctrs::vec_init(x, 1L)
+      # An omitted dimension receives an unnamed replacement (ADR 0043).
+      if (!is.data.frame(value)) attr(value, "names") <- NULL
+      value
     } else if (identical(backend$kind, "duckdb")) {
       dbplyr::sql("NULL")
     } else {

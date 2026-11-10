@@ -4,9 +4,10 @@ status: accepted
 
 # Follow native references for column-vector element names
 
-Accepted on 2026-11-10. This decision records the target contract for
-`names(data[[column]])`; implementation is pending. Column names and data-frame
-row names retain their existing contracts.
+Accepted and implemented on 2026-11-10 in
+[#1562](https://github.com/sayuks/marginplyr/issues/1562). This contract governs
+`names(data[[column]])`. Column names and data-frame row names retain their
+existing contracts.
 
 ## Native reference operations
 
@@ -92,7 +93,7 @@ additional losses caused by package-owned processing. Other attributes retain
 their existing owners. [ADR 0042](0042-preserve-variable-labels-through-margin-operations.md)'s
 variable-label and dataset-attribute policies remain separate.
 
-Public help must describe implemented behavior until implementation lands.
+Public help describes this implemented contract.
 Acceptance verification compares native and Margin results on the same
 backend, covering grouping keys, calculated summaries, converted dimensions,
 expanded payloads, nested original columns, name representations, empty

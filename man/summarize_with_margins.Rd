@@ -331,6 +331,42 @@ Classed columns such as \link{Date} and \link{POSIXct}, including its \code{tzon
 carried through by dplyr and vctrs unchanged.
 }
 
+\section{Column-vector element names}{
+
+Names on individual vector elements (\code{names(data[[column]])}) follow the
+corresponding native operations on the same backend: \code{\link[dplyr:summarise]{dplyr::summarise()}}
+for summaries and the spelling alias, \code{\link[dplyr:mutate]{dplyr::mutate()}} per grouping set
+followed by \code{\link[dplyr:union_all]{dplyr::union_all()}} for expansion, and supported \code{\link[tidyr:nest]{tidyr::nest()}}
+for nesting. Row-wise nesting follows local \code{\link[dplyr:nest_by]{dplyr::nest_by()}}; for a
+\code{dtplyr} input, its reference collects the input before local nesting.
+Partial results combine in Grouping-plan order. Outer keys and original
+nested columns, including keys kept by \code{.keep = TRUE}, are separate
+metadata locations.
+
+Package processing retains names the native reference retains. A dimension
+omitted from a set receives an unnamed Margin-label replacement, including
+a typed missing value; its original element names are not restored.
+Calculated summaries receive no names inferred from a source expression or
+a reused output name. Repeated, empty and missing names, absent names and
+empty results follow native behavior, including the distinction between
+\code{NULL} and \code{character()}. Ordering follows native element-name rules.
+
+This covers plain data frames, tibbles, direct \code{data.table} inputs and
+supported lazy inputs, through the returned result and direct \code{collect()}.
+Names lost before the input reaches marginplyr are outside this guarantee.
+Additional frame classes retain their existing S3 and vctrs behavior;
+complete equivalence to their native methods is not promised. \code{compute()}
+persistence and subsequent ordinary operations follow the backend's rules.
+No independent source-element snapshot or additional source-row read is
+used to preserve names.
+
+Arrow's native R metadata can restore element names that no longer track
+the corresponding source elements. marginplyr follows that behavior and
+adds no tracking, correction or verification of row correspondence.
+Element names are not row identifiers. Native warnings and errors retain
+their usual External condition treatment.
+}
+
 \section{Grouping set identifiers}{
 
 When \code{.id} names an output column, each result row receives the one-based

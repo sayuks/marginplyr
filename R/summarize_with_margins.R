@@ -283,6 +283,40 @@
 #' Classed columns such as [Date] and [POSIXct], including its `tzone`, are
 #' carried through by dplyr and vctrs unchanged.
 #'
+#' @section Column-vector element names:
+#' Names on individual vector elements (`names(data[[column]])`) follow the
+#' corresponding native operations on the same backend: [dplyr::summarise()]
+#' for summaries and the spelling alias, [dplyr::mutate()] per grouping set
+#' followed by [dplyr::union_all()] for expansion, and supported [tidyr::nest()]
+#' for nesting. Row-wise nesting follows local [dplyr::nest_by()]; for a
+#' `dtplyr` input, its reference collects the input before local nesting.
+#' Partial results combine in Grouping-plan order. Outer keys and original
+#' nested columns, including keys kept by `.keep = TRUE`, are separate
+#' metadata locations.
+#'
+#' Package processing retains names the native reference retains. A dimension
+#' omitted from a set receives an unnamed Margin-label replacement, including
+#' a typed missing value; its original element names are not restored.
+#' Calculated summaries receive no names inferred from a source expression or
+#' a reused output name. Repeated, empty and missing names, absent names and
+#' empty results follow native behavior, including the distinction between
+#' `NULL` and `character()`. Ordering follows native element-name rules.
+#'
+#' This covers plain data frames, tibbles, direct `data.table` inputs and
+#' supported lazy inputs, through the returned result and direct `collect()`.
+#' Names lost before the input reaches marginplyr are outside this guarantee.
+#' Additional frame classes retain their existing S3 and vctrs behavior;
+#' complete equivalence to their native methods is not promised. `compute()`
+#' persistence and subsequent ordinary operations follow the backend's rules.
+#' No independent source-element snapshot or additional source-row read is
+#' used to preserve names.
+#'
+#' Arrow's native R metadata can restore element names that no longer track
+#' the corresponding source elements. marginplyr follows that behavior and
+#' adds no tracking, correction or verification of row correspondence.
+#' Element names are not row identifiers. Native warnings and errors retain
+#' their usual External condition treatment.
+#'
 #' @section Grouping set identifiers:
 #' When `.id` names an output column, each result row receives the one-based
 #' position of its grouping set occurrence after applying `.duplicates`.
