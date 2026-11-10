@@ -26,6 +26,7 @@ m$unlink <- function(x, recursive = FALSE, ...) {
       cat('[probe] normalized:', normalizePath(path, winslash = '/'),
           'write access:', file.access(path, 2), '\n')
       cat('[probe] remove remaining:', path, file.remove(path), '\n')
+      cat('[probe] remove normalized:', file.remove(normalizePath(path, winslash = '/')), '\n')
     }
     gc()
     cat('[probe] after gc:', base::unlink(x, recursive = TRUE), '\n')
@@ -46,6 +47,12 @@ cat('[probe] publication returned\n')
     cat("[probe] child status:", result$status, "\n")
     cat("[probe] after child exit removal:", unlink(cache, recursive = TRUE),
         "still exists:", dir.exists(cache), "\n")
+    for (delay in c(0.1, 0.5, 1)) {
+      if (!dir.exists(cache)) break
+      Sys.sleep(delay)
+      cat("[probe] after exit delay:", delay, "removal:", unlink(cache, recursive = TRUE),
+          "remaining:", list.files(cache, all.files = TRUE, recursive = TRUE), "\n")
+    }
   }
 }
 main()
