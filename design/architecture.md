@@ -160,6 +160,10 @@ attribute of a result is whatever the underlying dplyr and vctrs operations
 produced, and no verb restores one. See
 [ADR 0016](adr/0016-delegate-result-class-and-attributes-to-dplyr.md).
 
+The accepted column-label and table-metadata extension is recorded in
+[ADR 0042](adr/0042-preserve-variable-labels-through-margin-operations.md),
+including its implementation status.
+
 ### Summary selection (`R/summary-selections.R`)
 
 Owns summary-only semantics: rejecting the removed `.groups` option — along

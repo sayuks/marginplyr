@@ -1,23 +1,26 @@
 ---
-status: proposed
+status: accepted
 ---
 
-# Preserve variable labels through Margin operations
+# Preserve column labels and follow native table attributes
 
-## Agreed principle
+Accepted on 2026-11-10. Implementation is pending in
+[#1559](https://github.com/sayuks/marginplyr/issues/1559). This decision records
+the target contract; the research/documentation change does not implement it.
+
+## Principle
 
 On 2026-11-10, the maintainer agreed that preserving a column's variable label
 (`label`) should be a default marginplyr guarantee when the output continues
 to represent the same variable. This includes a grouping dimension whose
-display values contain a Margin label. This draft awaits confirmation of the
-complete design; it does not establish an implemented public contract.
+display values contain a Margin label.
 
 Source-derived columns include fixed `.by` keys, grouping dimensions, columns
 carried by expansion, and original columns inside nested cells, including keys
 retained by `.keep = TRUE`. A calculated summary is governed by the upstream
 baseline below, including when its output reuses an input column name.
 
-## Agreed upstream baseline
+## Upstream summary baseline
 
 For calculated summary columns, the maintainer selected the corresponding
 upstream `summarise()` behavior as the baseline: dplyr for local data frames,
@@ -31,15 +34,16 @@ showed why source-name reuse alone cannot define one rule: local dplyr dropped
 the label for both `x = mean(x)` and `avg = mean(x)`, grouped dtplyr retained
 it for both, and Arrow retained it only for the same-named output.
 
-## Agreed output boundary
+## Output boundary
 
-The variable-label guarantee covers the returned result and, for a lazy result,
-its direct `collect()`. Persistence through `compute()` and subsequent ordinary
-dplyr operations follows the backend's own rules. Metadata already absent
-before a Margin operation reaches its input is outside this guarantee.
+The variable-label and dataset-reference guarantees cover the returned result
+and, for a lazy result, its direct `collect()`. Persistence through `compute()`
+and subsequent ordinary dplyr operations follows the backend's own rules.
+Metadata already absent before a Margin operation reaches its input is
+outside this guarantee.
 Obtaining labels introduces no additional source-row read.
 
-## Agreed empty-result and metadata lifetime rules
+## Empty results and metadata lifetime
 
 Source-derived labels are preserved even when the returned column has zero
 rows. A lazy result retains source-derived labels captured when the Margin
@@ -59,16 +63,18 @@ records the observed losses separately from class-owned value-label behavior.
 
 Variable labels describe columns. Value labels map stored codes to descriptions,
 and missing-value declarations affect interpretation of stored values. The
-agreed principle covers `label`; the rules for the other metadata require
-their upstream owners.
+column-label principle covers `label`; the remaining column metadata follows
+its upstream owners.
 
-## Agreed metadata scope
+## Metadata scope
 
-The additional preservation guarantee is limited to the variable label
-`label`. Value-label dictionaries, missing-value declarations and arbitrary
-other attributes follow the corresponding upstream backend and vector-class
-rules. This adds no blanket attribute-copying or class-restoration policy.
-Existing factor type, ordered status and level guarantees remain in force.
+The additional column-attribute preservation guarantee is limited to the
+variable label `label`. Column value-label dictionaries, missing-value
+declarations and arbitrary other column attributes follow the corresponding
+upstream backend and vector-class rules. This adds no blanket attribute-copying
+or class-restoration policy. Existing factor type, ordered status and level
+guarantees remain in force. Dataset-wide attributes have the separate native
+reference policy below.
 
 ## Label representation and combination
 
@@ -92,25 +98,72 @@ These are column attributes: intermediate grouping-set results can each carry
 one label for their own column; the final column still has one label. The
 policy adds no per-cell metadata representation.
 
-## Pending dataset-level boundary
+## Dataset-level reference policy
 
-The agreed `label` guarantee concerns columns. An attribute on the outer data
-frame, including a dataset-level `label`, is a separate property. Its explicit
-treatment, including attributes on the outer nesting result and on each nested
-data frame, remains to be agreed before confirming the complete design.
+On 2026-11-10, the maintainer selected explicit native reference operations as
+the basis for dataset-wide attribute behavior. A frame-level `label` belongs
+to this policy, separately from the column-label guarantee above.
+
+| Margin API | Native reference for dataset-wide attributes |
+| --- | --- |
+| `summarize_with_margins()` and its alias | The corresponding backend's `dplyr::summarise()` |
+| `expand_with_margins()` | Native `dplyr::mutate()` for each grouping set, followed by the backend's `dplyr::union_all()` combination |
+| `nest_with_margins()` | The corresponding supported `tidyr::nest()` method; outer and inner frames are separate metadata locations |
+| `nest_by_with_margins()` | Local `dplyr::nest_by()`; for dtplyr, the reference first collects the input and then applies local `nest_by()` |
+
+Expansion's eager combination must honor that native reference even when its
+implementation uses a more efficient binding strategy. The reference does not
+require replacing the optimized implementation with repeated binary unions.
+It also does not normalize dataset attributes across backends: a native union
+that drops an attribute is a different reference from one that retains it.
+
+For nesting, apply the reference to the original input separately for each
+grouping set. The fixed keys and included dimensions define that set's groups;
+the Margin verb's payload selection and `.keep` determine the inner columns.
+Inner keys retain original values. Margin display values are assigned to the
+outer result, and the partial results are combined. Compare inner frame
+attributes against the corresponding native cells, rather than copying all
+source attributes onto freshly constructed cells by default.
+
+The dtplyr rowwise-nesting reference defines the expected metadata, not a
+required implementation order. Efficient deferred nesting followed by
+collection may remain if it produces the reference metadata without extra
+source reads.
+
+The native-reference guarantee covers plain data frames, tibbles and direct
+data.table inputs, and the existing supported lazy backends. Arbitrary extra
+classes on the data frame itself do not gain a guarantee of complete metadata
+equivalence to their native methods. Their existing S3/vctrs behavior is
+respected; supporting additional frame classes is a separate extension. This
+limit concerns frame classes, not the factor, Date or labelled classes of
+individual columns.
+
+Existing Margin contracts for public names, row counts, grouping and result
+shape take precedence over a literal copy of structural frame attributes.
+Input `names`, `row.names`, class or grouping metadata must not be reattached
+blindly to a differently shaped result. Attribute comparison concerns the
+corresponding reference's metadata for the intended result.
+
 The [table-attribute investigation](../../investigation/upstream-table-attribute-contracts-2026-11-10.md)
 found no single upstream preservation rule covering the complete Margin
-composition. The final boundary must explicitly decide whether original frame
-attributes receive any independent restoration guarantee.
+composition, so the reference operations are explicit. Observed native
+behavior is not a promise that every preserved attribute describes the
+resulting rows correctly.
+
+Grouping-plan inspection, specification constructors and SQL diagnostics
+construct their own outputs; this reference policy does not make those outputs
+inherit source-frame metadata. Package-created identifiers and share outputs
+gain no automatic descriptive label from an input column.
 
 ## Relationship to ADR 0016
 
-The proposed variable-label guarantee changes
+The column-label guarantee and dataset-reference policy supersede
 [ADR 0016](0016-delegate-result-class-and-attributes-to-dplyr.md)'s refusal to
-restore arbitrary column attributes by introducing one explicit responsibility.
-Its general delegation of result classes and other attributes remains a
-separate boundary. Upon confirmation, the accepted decision and ADR 0016's
-affected clauses must be reconciled together. Public help must distinguish the
-new variable-label guarantee from the remaining delegated attributes, and
-behavioral verification must cover native-summary comparison, source-derived
-columns, grouping-set combination, nesting, zero rows and direct collection.
+add independent attribute restoration within these explicit scopes.
+Its delegation of result classes and other column attributes remains a
+separate boundary, while dataset-wide metadata follows the reference policy
+above. The implementation issue owns the corresponding public-help, test and
+architecture updates. Public help must describe implemented behavior until
+that work lands. Verification must cover native-summary comparison,
+source-derived columns, grouping-set combination, nesting, zero rows and
+direct collection.

@@ -281,3 +281,22 @@ attributes or classes.
 ADR 0033 extends this declared-type boundary to direct Grouping-helper outputs
 under its ownership rule, including zero rows. Its implementation remains
 pending in #706.
+
+## Amendment: column labels and native table-attribute references
+
+[ADR 0042](0042-preserve-variable-labels-through-margin-operations.md), accepted
+on 2026-11-10, supersedes this decision's blanket refusal of independent
+restoration for its scoped column-label and dataset-reference guarantees.
+Result shape, existing factor guarantees and other column metadata retain their
+separate owners. Implementation is pending in
+[#1559](https://github.com/sayuks/marginplyr/issues/1559); this amendment changes
+the accepted design, not the behavior of the package at publication.
+
+The earlier rationale that marginplyr removes no other attribute is withdrawn.
+Its own display conversion can remove a variable label before any combination.
+The claim that the final native verb alone determines all attributes is also
+withdrawn: eager multi-set binding and fresh nested-cell construction matter.
+The dated [column audit](../../investigation/attribute-label-preservation-2026-11-09.md)
+and [table audit](../../investigation/upstream-table-attribute-contracts-2026-11-10.md)
+record the source paths and versioned observations. ADR 0042 owns the selected
+responsibilities and reference operations.
