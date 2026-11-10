@@ -635,7 +635,7 @@ nest_cell_expr <- function(cell_cols, kind) {
 }
 
 # Combine representative display vectors without scalar-summary name repair.
-# The fold supplies only current branch values and their declared prototype.
+# The fold supplies current branch values and an empty native slice.
 unchop_margin_display <- function(x, ptype) {
   result <- vctrs::list_unchop(x, ptype = ptype)
   if (is.data.frame(result) || length(x) == 0L) return(result)
@@ -750,11 +750,12 @@ nest_expanded_margins <- function(.data,
         )
 
         if (is.data.frame(source) && length(display_cols) > 0L) {
+          # AsIs POSIXlt slicing yields packed fields, not its source prototype.
           displays <- lapply(display_cols, function(col) {
             rlang::call2(
               marginplyr_private_call("unchop_margin_display"),
               margin_column_pronoun(col),
-              ptype = vctrs::vec_ptype(source[[col]])
+              ptype = vctrs::vec_slice(source[[col]], integer())
             )
           })
           result <- dplyr::mutate(

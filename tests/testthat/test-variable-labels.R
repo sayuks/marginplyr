@@ -411,7 +411,7 @@ test_that("SQLite collection retains native metadata", {
 
 test_that("DuckDB collection retains native metadata", {
   skip_if_suggest_absent("duckdb", "DBI")
-  con <- DBI::dbConnect(duckdb::duckdb())
+  con <- duckdb_test_connection()
   withr::defer(DBI::dbDisconnect(con, shutdown = TRUE))
   input <- dplyr::copy_to(con, label_source(), "label_source", temporary = TRUE)
   for (plan in list(grouping_set(g), rollup(g))) {

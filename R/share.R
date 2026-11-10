@@ -3388,8 +3388,8 @@ apply_joined_shares <- function(result,
 # grouping. The mapping has one row per key after source cardinality checks.
 attach_local_denominators <- function(result, mapping, join_names,
                                       denominator_names) {
-  keys <- dplyr::as_tibble(result)[join_names]
-  mapping <- dplyr::as_tibble(mapping)
+  keys <- margin_column_source(result)[join_names]
+  mapping <- margin_column_source(mapping)
   # Ordered join matching merges distinct complex NaN components; hashed
   # equality preserves the partitions that the ordinary summaries created.
   rows <- vctrs::vec_match(keys, mapping[join_names])
