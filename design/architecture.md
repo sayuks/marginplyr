@@ -169,7 +169,7 @@ follow the native references in
 [ADR 0044](adr/0044-follow-native-references-for-input-classes.md), separately
 from the variable-label and dataset-attribute policies in
 [ADR 0042](adr/0042-preserve-variable-labels-through-margin-operations.md).
-Ordinary nesting folds eager data through the stock tibble converter; a direct
+A direct
 data.table outer result is reconstructed from a generated empty data.table
 template. This follows native outer classes without copying the source's keys
 or frame metadata onto the changed result. Original nested columns and cell
