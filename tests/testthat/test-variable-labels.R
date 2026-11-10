@@ -677,3 +677,265 @@ test_that("dtplyr no-payload metadata matches native nesting", {
   }
   expect_identical(vapply(result$data, nrow, integer(1)), c(1L, 1L, 2L))
 })
+
+test_that("plain-frame index and sorted attributes remain dataset metadata", {
+  skip_if_suggest_absent("tidyr")
+  for (convert in list(identity, as.data.frame)) {
+    source <- convert(tibble::tibble(g = c("a", "b"), x = 1:2))
+    attr(source, "index") <- "Dataset index description"
+    attr(source, "sorted") <- "Dataset sorting description"
+    for (plan in list(grouping_set(g), rollup(g))) {
+      actual <- nest_with_margins(source, .grouping = plan)
+      native <- tidyr::nest(source, data = x, .by = g)
+      for (cell in actual$data) {
+        for (name in c("index", "sorted")) {
+          expect_identical(attr(cell, name, exact = TRUE),
+                           attr(native$data[[1L]], name, exact = TRUE))
+        }
+      }
+    }
+  }
+})
+
+test_that("native scalar grammar preserves summary metadata and errors", {
+  skip_if_suggest_absent("dtplyr")
+  source <- tibble::tibble(g = c("a", "a", "b"),
+                           x = structure(c(1, 2, 4), label = "Measure"),
+                           w = c(1, 2, 1))
+  expressions <- list(quote(x[1L]), quote(x[[1L]]), quote(x[1.5]),
+                      quote(weighted.mean(x, w)),
+                      quote(weighted.mean(x)),
+                      quote(mean(x, na.rm = (TRUE))),
+                      quote(sum(x, na.rm = (TRUE))),
+                      quote(mean(x, na.rm = 1)))
+  for (optimization in 0:2) {
+    withr::local_options(list(datatable.optimize = optimization))
+    for (classed in c(FALSE, TRUE)) {
+      input <- source
+      if (classed) class(input$x) <- "margin_native_scalar"
+      input <- dtplyr::lazy_dt(input)
+      for (expression in expressions) {
+        native <- tryCatch(dplyr::collect(dplyr::summarise(
+          input, value = !!expression, .by = g
+        )), error = identity)
+        result <- summarize_with_margins(
+          input, value = !!expression, p = share_of_total(value),
+          .grouping = rollup(g)
+        )
+        actual <- tryCatch(dplyr::collect(result), error = identity)
+        if (inherits(native, "error")) {
+          expect_s3_class(actual, "error")
+          expect_identical(class(actual), class(native))
+          expect_identical(conditionMessage(actual), conditionMessage(native))
+        } else if (is.object(native$value)) {
+          expect_s3_class(actual, "marginplyr_error")
+          expect_match(conditionMessage(actual), "margin_native_scalar",
+                       fixed = TRUE)
+        } else {
+          expect_false(inherits(actual, "error"))
+          expect_identical(attr(actual$value, "label"),
+                           attr(native$value, "label"))
+          expect_identical(class(actual$value), class(native$value))
+        }
+      }
+    }
+  }
+})
+
+test_that("native optimization inspects weight classes only at execution", {
+  skip_if_suggest_absent("dtplyr")
+  withr::local_options(list(datatable.optimize = 2L))
+  source <- tibble::tibble(g = c("a", "a", "b"),
+                           x = structure(c(1, 2, 4), label = "Measure"),
+                           w = structure(c(1, 2, 1),
+                                         class = "margin_native_weights"))
+  for (answer in c(TRUE, FALSE)) {
+    calls <- 0L
+    registerS3method("is.numeric", "margin_native_weights", function(x) {
+      calls <<- calls + 1L
+      answer
+    }, envir = asNamespace("base"))
+    registry <- get(".__S3MethodsTable__.", asNamespace("base"))
+    withr::defer({
+      if (exists("is.numeric.margin_native_weights", registry,
+                 inherits = FALSE)) {
+        rm("is.numeric.margin_native_weights", envir = registry)
+      }
+    })
+    input <- dtplyr::lazy_dt(source)
+    native <- dplyr::collect(dplyr::summarise(
+      input, value = weighted.mean(x, w), .by = g
+    ))
+    expected_calls <- calls
+    calls <- 0L
+    result <- summarize_with_margins(
+      input, value = weighted.mean(x, w), p = share_of_total(value),
+      .grouping = rollup(g)
+    )
+    expect_identical(calls, 0L)
+    actual <- tryCatch(dplyr::collect(result), error = identity)
+    expect_identical(calls, expected_calls)
+    if (is.object(native$value)) {
+      expect_s3_class(actual, "marginplyr_error")
+      expect_match(conditionMessage(actual), class(native$value)[[1L]],
+                   fixed = TRUE)
+    } else {
+      expect_identical(attr(actual$value, "label"),
+                       attr(native$value, "label"))
+    }
+    rm("is.numeric.margin_native_weights", envir = registry)
+  }
+})
+
+test_that("native scalar checks precede empty-column padding", {
+  skip_if_suggest_absent("dtplyr")
+  withr::local_options(list(datatable.optimize = 2L))
+  source <- tibble::tibble(g = c("a", "a", "b"), x = c(1, 2, 4),
+                           w = structure(c(1, 2, 1),
+                                         class = "margin_padding_weights"))
+  registerS3method("is.numeric", "margin_padding_weights", function(x) FALSE,
+                   envir = asNamespace("base"))
+  registerS3method("Summary", "margin_padding_weights", function(...) numeric(),
+                   envir = asNamespace("base"))
+  registry <- get(".__S3MethodsTable__.", asNamespace("base"))
+  withr::defer(rm("is.numeric.margin_padding_weights",
+                  "Summary.margin_padding_weights", envir = registry))
+  input <- dtplyr::lazy_dt(source)
+  native <- dplyr::collect(dplyr::summarise(
+    input, value = weighted.mean(x, w), other = 1, .by = g
+  ))
+  expect_identical(native$value, c(NA_real_, NA_real_))
+  result <- summarize_with_margins(
+    input, value = weighted.mean(x, w), other = 1, p = share_of_total(value),
+    .grouping = rollup(g)
+  )
+  expect_error(dplyr::collect(result),
+               class = "marginplyr_share_cardinality_error")
+  ordinary <- summarize_with_margins(
+    input, extra = weighted.mean(x, w), value = sum(x),
+    p = share_of_total(value),
+    .grouping = rollup(g)
+  )
+  expect_error(dplyr::collect(ordinary),
+               class = "marginplyr_share_cardinality_error")
+})
+
+test_that("native optimized non-scalar primitives retain share guards", {
+  skip_if_suggest_absent("dtplyr")
+  withr::local_options(list(datatable.optimize = 2L))
+  input <- dtplyr::lazy_dt(tibble::tibble(g = c("a", "a", "b"), x = 1:3))
+  for (expression in list(quote(head(x, 2L)),
+                          quote(data.table::shift(x)),
+                          quote(data.table::shift(x, n = c(1L, 2L))))) {
+    result <- summarize_with_margins(
+      input, value = !!expression, p = share_of_total(value),
+      .grouping = rollup(g)
+    )
+    expect_error(dplyr::collect(result),
+                 class = "marginplyr_share_cardinality_error")
+    ordinary <- summarize_with_margins(
+      input, extra = !!expression, value = sum(x), p = share_of_total(value),
+      .grouping = rollup(g)
+    )
+    expect_error(dplyr::collect(ordinary),
+                 class = "marginplyr_share_cardinality_error")
+  }
+})
+
+test_that("native summary choices defer active and promised callees", {
+  skip_if_suggest_absent("dtplyr")
+  for (binding in c("active", "promise")) {
+    calls <- 0L
+    env <- rlang::env(
+      source = tibble::tibble(g = c("a", "a", "b"), x = c(1, 2, 4)),
+      weighted.mean = stats::weighted.mean
+    )
+    input <- rlang::eval_bare(quote(dtplyr::lazy_dt(source)), env)
+    summary <- rlang::new_quosure(quote(weighted.mean(x)), env)
+    result <- summarize_with_margins(
+      input, value = !!summary, p = share_of_total(value), .grouping = rollup(g)
+    )
+    rm("weighted.mean", envir = env)
+    if (binding == "active") {
+      makeActiveBinding("weighted.mean", function() {
+        calls <<- calls + 1L
+        function(x) sum(x)
+      }, env)
+    } else {
+      provide <- function() {
+        calls <<- calls + 1L
+        function(x) sum(x)
+      }
+      delayedAssign("weighted.mean", provide(), assign.env = env)
+    }
+    expect_identical(calls, 0L)
+    actual <- dplyr::collect(result)
+    expect_identical(calls, if (binding == "active") 3L else 1L)
+    expect_identical(actual$value, c(3, 4, 7))
+    expect_equal(actual$p, c(3 / 7, 4 / 7, 1))
+  }
+})
+
+test_that("native summaries retain one parent evaluation and ordinary edits", {
+  skip_if_suggest_absent("dtplyr")
+  calls <- 0L
+  touch <- function(x) {
+    calls <<- calls + 1L
+    x
+  }
+  input <- dtplyr::lazy_dt(tibble::tibble(
+    g = c("a", "a", "b"), x = structure(c(1, 2, 4), label = "Measure")
+  )) |>
+    dplyr::filter(touch(x) > 0)
+  native <- dplyr::union_all(
+    dplyr::summarise(input, value = mean(x), .by = g),
+    dplyr::relocate(
+      dplyr::mutate(dplyr::summarise(input, value = mean(x)), g = "Total"), g
+    )
+  )
+  calls <- 0L
+  expected <- dplyr::collect(native)
+  expected_calls <- calls
+  result <- summarize_with_margins(
+    input, value = mean(x), p = share_of_total(value), .grouping = rollup(g)
+  )
+  calls <- 0L
+  actual <- dplyr::collect(result)
+  expect_identical(calls, expected_calls)
+  expect_identical(calls, 2L)
+  expect_equal(unname(as.vector(actual$value)),
+               unname(as.vector(expected$value)))
+  expect_identical(attr(actual$value, "label"), attr(expected$value, "label"))
+  changed <- dplyr::collect(dplyr::mutate(result, value = 99))
+  expect_identical(unname(as.vector(changed$value)), rep(99, 3L))
+  resummarized <- dplyr::collect(dplyr::summarise(result, value = sum(value)))
+  expect_equal(resummarized$value, sum(actual$value))
+})
+
+test_that("native source refusal precedes later primitive evaluation", {
+  skip_if_suggest_absent("dtplyr")
+  withr::local_options(list(datatable.optimize = 2L))
+  input <- dtplyr::lazy_dt(tibble::tibble(
+    g = c("a", "a", "b"),
+    x = structure(c(1, 2, 4), class = "margin_native_scalar"), y = 1:3
+  ))
+  calls <- 0L
+  result <- summarize_with_margins(
+    input, value = sum(x), later = mean(y, na.rm = {
+      warning("Later native argument")
+      TRUE
+    }),
+    p = share_of_total(value), .grouping = rollup(g)
+  )
+  expect_identical(calls, 0L)
+  capture_warning <- function(cnd) {
+    calls <<- calls + 1L
+    invokeRestart("muffleWarning")
+  }
+  actual <- tryCatch(
+    withCallingHandlers(dplyr::collect(result), warning = capture_warning),
+    error = identity
+  )
+  expect_s3_class(actual, "marginplyr_error")
+  expect_identical(calls, 0L)
+})

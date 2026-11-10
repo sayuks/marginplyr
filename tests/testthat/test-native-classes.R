@@ -336,3 +336,55 @@ test_that("dtplyr carries native-compatible custom vectors", {
   ))
   expect_native_carried_currency(input, dplyr::collect)
 })
+
+test_that("native nesting preserves original payload structure before union", {
+  skip_if_suggest_absent("tidyr")
+  time <- as.POSIXlt(c("2020-01-01", "2020-01-02"), tz = "UTC")
+  matrix_payload <- as.table(matrix(1:4, 2L,
+    dimnames = list(c("r1", "r2"), c("x", "y"))
+  ))
+  payloads <- list(time, I(time), matrix_payload)
+  for (payload in payloads) {
+    input <- tibble::tibble(g = c("b", "a"), payload = payload)
+    for (empty in c(FALSE, TRUE)) {
+      source <- if (empty) input[0, ] else input
+      for (keep in c(FALSE, TRUE)) {
+        for (rowwise in c(FALSE, TRUE)) {
+          native <- function(keys) {
+            if (rowwise) {
+              dplyr::ungroup(dplyr::nest_by(dplyr::select(source, dplyr::all_of(
+                if (keep) names(source) else c(keys, "payload")
+              )), !!!rlang::syms(keys),
+              .keep = keep))
+            } else {
+              tidyr::nest(source, data = dplyr::all_of(
+                if (keep) names(source) else "payload"
+              ), .by = dplyr::all_of(keys))
+            }
+          }
+          detail <- native("g")
+          total <- dplyr::mutate(native(character()), g = "Total")
+          # An empty plan with dimensions retains zero outer rows, including
+          # its Grand total (ADR 0044 preserves existing row-count contracts).
+          if (empty) total <- total[0, ]
+          for (multi in c(FALSE, TRUE)) {
+            expected <- if (multi) dplyr::union_all(detail, total) else detail
+            verb <- if (rowwise) nest_by_with_margins else nest_with_margins
+            for (sorting in c("none", "last")) {
+              actual <- verb(source, .grouping = if (multi) rollup(g) else
+                               grouping_set(g), .keep = keep, .sort = sorting)
+              expect_equal(nrow(actual), nrow(expected))
+              for (i in seq_along(actual$data)) {
+                index <- match(actual$g[[i]], expected$g)
+                for (column in names(expected$data[[index]])) {
+                  expect_identical(actual$data[[i]][[column]],
+                                   expected$data[[index]][[column]])
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+})

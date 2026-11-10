@@ -271,10 +271,8 @@ nest_margin_pipeline <- function(.data,
     .duplicates = .duplicates,
     .sort = .sort,
     duplicates_choices = nest_duplicates_choices,
-    # Nesting folds all but the grouping columns into `.key`, so every input
-    # column reaches the result -- as a column of its own, or inside a cell
-    # (#421). `execute_margin_nest()` rebuilds the second kind before folding
-    # it, which is the half of the route that lets this name them all.
+    # Every input column remains an outer key or enters a cell; both roles
+    # need source metadata (#421).
     carried_columns = function(data_vars, plan) data_vars,
     .id = set_id_name,
     validate_plan_names = function(by, dimensions, data_vars, complete) {
@@ -319,7 +317,10 @@ nest_margin_pipeline <- function(.data,
       tibble::new_tibble(columns, nrow = 0L)
     }
     cell <- restore_margin_frame_metadata(
-      cell, margin_nest_frame_metadata(operation, rowwise, .keep)[[1L]]
+      cell, margin_nest_frame_metadata(
+        operation$data_proxy, operation$data_vars, operation$plan,
+        operation$backend$kind, rowwise, .keep
+      )[[1L]]
     )
     id <- operation$set_id_name
     result <- tibble::new_tibble(
@@ -361,6 +362,47 @@ execute_margin_nest <- function(operation, .key, .keep, rowwise = FALSE) {
     {
       plan <- operation$plan
       group_cols <- c(plan$by, plan$dimensions)
+      if (identical(operation$backend$kind, "local")) {
+        validate_margin_operation(operation)
+        sorting <- margin_sorting(operation)
+        set_col <- operation$set_id_name %||% new_margin_internal_names(
+          1L, c(operation$data_vars, .key), prefix = "..marginplyr_nest_"
+        )
+        metadata <- margin_nest_frame_metadata(
+          operation$data_proxy, operation$data_vars, plan,
+          operation$backend$kind, rowwise, .keep
+        )
+        branches <- Map(function(set, id) {
+          keys <- unique(c(plan$by, set))
+          payload <- if (.keep) {
+            operation$data_vars
+          } else {
+            setdiff(operation$data_vars, group_cols)
+          }
+          branch <- nest_margin_local_columns(
+            operation$data, keys, payload, .key, metadata[[id]],
+            rowwise && length(group_cols) == 0L
+          )
+          branch <- label_margin_branch(
+            branch, plan, set, operation$margin_labels,
+            operation$column_info$prototypes, operation$column_info$factors
+          )
+          add_grouping_set_id(branch, set_col, id, FALSE)
+        }, plan$sets, plan$set_ids)
+        result <- combine_margin_branches(branches)
+        if (is.null(operation$set_id_name) && !sorting) {
+          result <- drop_margin_columns(result, set_col)
+        }
+        result <- restore_native_nest_frame(
+          result, identical(class(operation$data_proxy),
+                            c("data.table", "data.frame"))
+        )
+        return(new_margin_execution(
+          result, sort_id = if (sorting) set_col else NULL,
+          factor_info = Filter(function(info) info$col %in% group_cols,
+                               operation$column_info$factors)
+        ))
+      }
 
       internal_names <- new_margin_internal_names(
         as.integer(is.null(operation$set_id_name)) +
@@ -457,16 +499,11 @@ execute_margin_nest <- function(operation, .key, .keep, rowwise = FALSE) {
                 if (!identity_encoded[[col]]) {
                   return(value)
                 }
-                if (identical(operation$backend$kind, "dtplyr")) {
-                  # data.table groups factors by their stored codes rather
-                  # than a vctrs equality proxy.
-                  return(deferred_export_call(
-                    "base", "as.integer",
-                    deferred_export_call("base", "unclass", value)
-                  ))
-                }
-                # Group identifiers retain source equality.
-                rlang::expr(vctrs::vec_group_id(!!value))
+                # data.table groups factors by their stored codes.
+                deferred_export_call(
+                  "base", "as.integer",
+                  deferred_export_call("base", "unclass", value)
+                )
               }
             )
             names(identity_exprs) <- unname(identity_cols)
@@ -530,26 +567,20 @@ execute_margin_nest <- function(operation, .key, .keep, rowwise = FALSE) {
         labels <- c(labels, kept)
       }
       expanded <- restore_margin_variable_labels(expanded, labels)
-      # Native nest() returns a data.table outer frame for direct data.table
-      # input; reconstruct from a generated empty template so source keys and
-      # dataset attributes are not copied onto the changed result (ADR 0044).
-      restore_outer <- identical(operation$backend$kind, "local") &&
-        identical(class(operation$data_proxy),
-                  c("data.table", "data.frame"))
       new_margin_execution(
-        restore_native_nest_frame(nest_expanded_margins(
+        nest_expanded_margins(
           expanded,
           group_cols = group_cols,
           set_col = set_col,
           identity_cols = identity_cols,
           keep_cols = keep_cols,
           .key = .key,
-          kind = operation$backend$kind,
           frame_metadata = margin_nest_frame_metadata(
-            operation, rowwise, .keep
+            operation$data_proxy, operation$data_vars, plan,
+            operation$backend$kind, rowwise, .keep
           ),
           drop_set_col = is.null(operation$set_id_name) && !sorting
-        ), restore_outer),
+        ),
         sort_id = if (sorting) set_col else NULL,
         factor_info = column_info$factors[!folded]
       )
@@ -568,88 +599,36 @@ restore_native_nest_frame <- function(result, data_table) {
   dplyr::dplyr_reconstruct(result, constructor())
 }
 
-# The expression building one cell, given the columns it is to hold and the
-# backend kind whose converter it names. `cell_cols` is a named character
-# vector whose names are the names the cell's columns take and whose values
-# are the columns of the expanded step they read; an empty one is a nesting
-# that has no payload column left.
-nest_cell_expr <- function(cell_cols, kind) {
+# Build one deferred dtplyr cell from named source columns. An empty payload
+# retains its native group row count in a zero-column frame.
+nest_cell_expr <- function(cell_cols) {
   if (length(cell_cols) == 0L) {
-    # A nesting that removes every payload column still stands for a known
-    # number of source rows per cell, and once the columns are gone the count
-    # is the only thing left to carry it. `n()` is that count, and dtplyr
-    # translates it to `.N`, so one expression serves both backends. The cell
-    # is a tibble on either, because a `data.table` cannot hold rows without
-    # columns — `dim()` reads its row count from its first column, so a
-    # column-less one is always empty.
-    if (identical(kind, "dtplyr")) {
-      return(deferred_export_call("dplyr", "tibble", .rows = quote(dplyr::n())))
-    }
-    return(quote(dplyr::tibble(.rows = dplyr::n())))
+    # A columnless data.table cannot represent source rows; a tibble can.
+    return(deferred_export_call("dplyr", "tibble", .rows = quote(dplyr::n())))
   }
-
-  # Pass the named columns in one list so their names cannot match converter
-  # formals (ADR 0016).
-  #
-  # `margin_column_pronoun()` rather than a bare symbol, because dtplyr folds a
-  # symbol named `T` or `F` to the logical constant before it looks at the
-  # step's columns, which would put that constant in the cell in place of the
-  # column and report nothing.
+  # Pronouns prevent dtplyr from reading source columns T and F as constants.
   columns <- rlang::set_names(
-    lapply(unname(cell_cols), margin_column_pronoun),
-    names(cell_cols)
+    lapply(unname(cell_cols), margin_column_pronoun), names(cell_cols)
   )
-  # Per backend (ADR 0016).
-  if (identical(kind, "dtplyr")) {
-    # `as.data.table.list()` refuses `.SD` as a column name. Build the fresh
-    # cell under a private name, then restore the caller's spelling on it.
-    special <- intersect(names(columns), ".SD")
-    aliases <- new_margin_internal_names(
-      length(special), used_names = names(columns),
-      prefix = "..marginplyr_cell_"
-    )
-    names(columns)[match(special, names(columns))] <- aliases
-    # dtplyr evaluates this in the lazy root. The stock list method keeps
-    # the generated payload conversion out of the caller's S3 lookup.
-    converter <- rlang::call2(
-      utils::getFromNamespace, "as.data.table.list", "data.table"
-    )
-    cell <- rlang::call2(
-      converter,
-      deferred_export_call("base", "list", !!!columns)
-    )
-    if (length(special) > 0L) {
-      cell <- deferred_export_call(
-        "data.table", "setnames", cell, aliases, special
-      )
-    }
-    cell
-  } else {
-    # The generated list uses the stock converter, independent of registered
-    # methods for caller-owned lists.
-    rlang::call2(
-      utils::getFromNamespace("as_tibble.list", "tibble"),
-      rlang::expr(base::list(!!!columns))
+  # The native list converter refuses .SD as a column name.
+  special <- intersect(names(columns), ".SD")
+  aliases <- new_margin_internal_names(
+    length(special), used_names = names(columns), prefix = "..marginplyr_cell_"
+  )
+  names(columns)[match(special, names(columns))] <- aliases
+  # The stock list method keeps generated conversion out of caller S3 lookup.
+  converter <- rlang::call2(
+    utils::getFromNamespace, "as.data.table.list", "data.table"
+  )
+  cell <- rlang::call2(
+    converter, deferred_export_call("base", "list", !!!columns)
+  )
+  if (length(special) > 0L) {
+    cell <- deferred_export_call(
+      "data.table", "setnames", cell, aliases, special
     )
   }
-}
-
-# Combine representative display vectors without scalar-summary name repair.
-# The fold supplies current branch values and an empty native slice.
-unchop_margin_display <- function(x, ptype) {
-  result <- vctrs::list_unchop(x, ptype = ptype)
-  if (is.data.frame(result) || length(x) == 0L) return(result)
-  named <- vapply(x, function(value) !is.null(names(value)), logical(1))
-  if (any(named)) {
-    names(result) <- unlist(lapply(x, function(value) {
-      if (is.null(names(value))) {
-        rep("", vctrs::vec_size(value))
-      } else {
-        names(value)
-      }
-    }), use.names = FALSE)
-  }
-  result
+  cell
 }
 
 # Fold expanded rows into cells by fixed keys, set identifier, and original
@@ -662,17 +641,8 @@ nest_expanded_margins <- function(.data,
                                   identity_cols,
                                   keep_cols,
                                   .key,
-                                  kind,
                                   frame_metadata = list(),
                                   drop_set_col = TRUE) {
-  # The fold receives a generated frame. Its keys and payload use tibble's
-  # stock frame converter without as_tibble() dispatch (ADR 0016).
-  if (is.data.frame(.data)) {
-    converter <- utils::getFromNamespace("as_tibble.data.frame", "tibble")
-    .data <- converter(.data, .name_repair = "minimal")
-  }
-  # dplyr consumes `.rows` when it constructs local grouping keys. Alias
-  # only outer keys; payload and list-column names never enter that metadata.
   outer_cols <- c(group_cols, set_col, unname(identity_cols))
   with_margin_column_aliases(.data, outer_cols, function(.data, alias_name) {
     set_col <- alias_name(set_col)
@@ -716,20 +686,13 @@ nest_expanded_margins <- function(.data,
         )
         display_exprs <- rlang::set_names(lapply(display_cols, function(col) {
           value <- margin_column_pronoun(col)
-          if (identical(kind, "dtplyr")) {
-            size <- deferred_export_call("vctrs", "vec_size", value)
-            index <- deferred_export_call(
-              "base", "seq_len", deferred_export_call("base", "min", size, 1L)
-            )
-            return(deferred_export_call("vctrs", "vec_slice", value, index))
-          }
-          # Keep the representative as a vector: scalar summary combination
-          # repairs missing element names before native nesting would.
-          rlang::expr(base::list(vctrs::vec_slice(
-            !!value, base::seq_len(base::min(vctrs::vec_size(!!value), 1L))
-          )))
+          size <- deferred_export_call("vctrs", "vec_size", value)
+          index <- deferred_export_call(
+            "base", "seq_len", deferred_export_call("base", "min", size, 1L)
+          )
+          deferred_export_call("vctrs", "vec_slice", value, index)
         }), display_cols)
-        cell <- nest_cell_expr(safe_cells, kind)
+        cell <- nest_cell_expr(safe_cells)
         if (length(frame_metadata) > 0L) {
           cell <- rlang::call2(
             marginplyr_private_call("restore_margin_cell_metadata"),
@@ -737,31 +700,13 @@ nest_expanded_margins <- function(.data,
             margin_column_pronoun(safe_name(set_col))
           )
         }
-        wrapper <- if (identical(kind, "dtplyr")) {
-          deferred_export_call("base", "list", cell)
-        } else {
-          rlang::expr(base::list(!!cell))
-        }
+        wrapper <- deferred_export_call("base", "list", cell)
         result <- dplyr::summarize(
           source,
           "{.key}" := !!wrapper,
           !!!display_exprs,
           .by = dplyr::all_of(setdiff(safe_outer, display_cols))
         )
-
-        if (is.data.frame(source) && length(display_cols) > 0L) {
-          # AsIs POSIXlt slicing yields packed fields, not its source prototype.
-          displays <- lapply(display_cols, function(col) {
-            rlang::call2(
-              marginplyr_private_call("unchop_margin_display"),
-              margin_column_pronoun(col),
-              ptype = vctrs::vec_slice(source[[col]], integer())
-            )
-          })
-          result <- dplyr::mutate(
-            result, !!!rlang::set_names(displays, display_cols)
-          )
-        }
 
         if (drop_set_col) {
           result <- drop_margin_columns(result, safe_name(set_col))
@@ -777,3 +722,21 @@ nest_expanded_margins <- function(.data,
 }
 
 utils::globalVariables(":=")
+
+# Partition original local vectors before any grouping-set common-type binding.
+# Generated cells carry native slices and only the selected frame metadata.
+nest_margin_local_columns <- function(data, keys, payload, key, metadata,
+                                      rowwise) {
+  columns <- proxy_columns(data, unique(c(keys, payload)))
+  frame <- tibble::new_tibble(columns, nrow = nrow(data))
+  groups <- vctrs::vec_group_loc(frame[keys])
+  if (rowwise && length(keys) == 0L && nrow(frame) == 0L) {
+    groups <- list(key = tibble::new_tibble(list(), nrow = 1L),
+                   loc = list(integer()))
+  }
+  cells <- vctrs::vec_chop(frame[payload], groups$loc)
+  cells <- lapply(cells, restore_margin_frame_metadata, metadata = metadata)
+  result <- groups$key
+  result[[key]] <- cells
+  result
+}
