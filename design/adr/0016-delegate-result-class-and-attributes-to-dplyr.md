@@ -317,5 +317,5 @@ references; package-owned processing may not add class loss within that scope.
 Arbitrary input frame subclasses still require individual support decisions.
 The existing generated nesting-container contract remains: lists of data
 frames with the promised contents and row counts, without exact list or
-element-subclass equivalence. This amendment records target behavior and does
-not implement it.
+element-subclass equivalence. The corresponding runtime and public comparisons
+are implemented in #1563.

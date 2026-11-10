@@ -4,10 +4,9 @@ status: accepted
 
 # Follow native references for input classes
 
-Accepted on 2026-11-10. This decision records the target contract; package
-implementation is separate. Class behavior follows explicit official reference
-operations within the scope below, rather than whatever class loss an internal
-implementation happens to introduce.
+Accepted and implemented on 2026-11-10 in #1563. Class behavior follows
+explicit official reference operations within the scope below, rather than
+whatever class loss an internal implementation happens to introduce.
 
 ## Reference operations
 
@@ -110,8 +109,8 @@ alongside separately declared package output types.
 This supersedes [ADR 0016](0016-delegate-result-class-and-attributes-to-dplyr.md)'s
 class delegation within the selected scope: an internal implementation choice
 alone does not justify extra class loss. Its generated-container boundary and
-separate package-owned guarantees remain. Public help must describe implemented
-behavior until implementation lands. Verification compares native and Margin
-results by role, including class-owned state, compatible custom columns and
-cell objects, empty results and direct collection, while retaining the scoped
-container exclusions. This decision does not implement those comparisons.
+separate package-owned guarantees remain. Public help describes implemented
+behavior. Verification compares native and Margin results by role, including
+class-owned state, compatible custom columns and cell objects, empty results
+and direct collection, while retaining the scoped
+container exclusions.

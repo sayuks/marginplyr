@@ -235,12 +235,15 @@
 #' stated with the argument that takes it.
 #'
 #' @section Result class and attributes:
-#' Each Margin verb follows the same class and attribute rules as the dplyr
-#' verb it is built from: [summarize_with_margins()] those of
-#' [dplyr::summarize()], and [expand_with_margins()] and the nesting verbs
-#' those of [dplyr::mutate()] combined with [dplyr::union_all()]. Passing a
-#' plain data frame therefore returns a plain data frame and passing a tibble
-#' returns a tibble.
+#' For plain data frames, tibbles, direct data.table inputs and supported lazy
+#' backends, result classes follow the corresponding native operation:
+#' [dplyr::summarise()] for summaries, [dplyr::mutate()] per grouping set
+#' followed by [dplyr::union_all()] for expansion, and [tidyr::nest()] for
+#' ordinary nesting. Row-wise nesting follows local [dplyr::nest_by()]; its
+#' dtplyr reference first collects the input. Plain data frames therefore nest
+#' to tibbles; ordinary nesting of direct data.table inputs returns data.table.
+#' These comparisons use the same grouping keys and payload selection, subject
+#' to the documented grouping, row-count and column-structure contracts.
 #' A live SQLite result uses a lazy subclass when source-column anchors or
 #' package-declared output types require it. Direct collection preserves source
 #' types and restores package-declared types in empty or all-missing columns.
@@ -251,19 +254,38 @@
 #' Direct materialization creates a typed table with public columns only.
 #' Later dplyr verbs use ordinary dbplyr behavior.
 #'
-#' The input class is not guaranteed to be preserved, and neither are
-#' object-level attributes of the input or attributes of columns marginplyr
-#' does not rewrite. A data frame subclass survives only where dplyr can
-#' reconstruct it, so a subclass with no [dplyr::dplyr_reconstruct()] method
-#' is lost by [dplyr::summarize()] itself. Attributes on a column that carries
-#' no class are dropped wherever branches are combined, because that is what
-#' the vctrs rules for combining bare vectors do with them. Attach the
-#' attributes a result must carry after the Margin operation, as with any
-#' dplyr pipeline.
+#' Source-derived column classes and their class-owned structural state follow
+#' those references for compatible uses. This covers fixed keys, expanded
+#' payloads, original nested columns and objects transported in list-column
+#' cells, including original custom frame objects. With `.keep = TRUE`, inner
+#' keys retain their original values. Carrying, grouping, ordering and summary
+#' evaluation are separate capabilities; support for one does not establish
+#' support for another. There is no fixed list of compatible column or cell
+#' classes and no blanket exclusion of S3, S4 or S7 objects.
 #'
-#' Factor and ordered-factor columns are the one exception, on the backends
-#' whose factors marginplyr can rebuild: local data frames, `dtplyr`, and
-#' DuckDB. There it decomposes them to insert `.margin_label` and rebuilds
+#' Margin-label display conversion still applies: a string label may convert
+#' an ordinary dimension to character, while typed-missing labels follow its
+#' supported prototype. Calculated summaries follow native evaluation and
+#' common-type combination, without inheriting a class from a reused input
+#' column name. A class the reference transforms or drops is not restored.
+#' Arbitrary extra classes on the input frame require individual support
+#' decisions; acceptance alone does not promise their complete native-method
+#' equivalence. This adds no arbitrary-attribute copying or independent repair
+#' of defects in class methods. Variable labels, dataset attributes and vector
+#' element names have their separate policies.
+#'
+#' Generated nesting columns are lists of data frames with the promised
+#' contents and row counts, including zero-column cells. Their exact list and
+#' inner-frame subclasses are not promised; original columns and cell objects
+#' inside them remain covered. The class guarantee covers returned results and
+#' direct `collect()`, without extending to subsequent ordinary operations,
+#' `compute()`, persistence or re-reading. Classes already lost before input
+#' reaches marginplyr are outside it. Empty results retain the native behavior
+#' alongside separately declared package output types.
+#'
+#' Factor and ordered-factor columns retain their existing guarantees on
+#' backends whose factors marginplyr can rebuild: local data frames, `dtplyr`,
+#' and DuckDB. There it decomposes them to insert `.margin_label` and rebuilds
 #' them itself, so their levels and ordering are preserved; see *Display
 #' labels and grouping identity*. On DuckDB it is the levels alone: an `ENUM`
 #' carries no ordered flag, so an ordered factor is already unordered when
