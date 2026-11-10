@@ -1204,11 +1204,10 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
     }
     stop(state$error)
   }
+  source_definitions <-
+    state$result$summaries$selection_state$source_definitions
   if (!contains_grouping_helper(parsed$names) &&
-        length(
-          state$result$summaries$selection_state$source_definitions[[1L]]
-        ) >
-          0L) {
+        length(source_definitions[[1L]]) > 0L) {
     # A source template is frozen by planning and never repeats in a branch.
     for (cnd in state$names_warnings) warning(cnd)
     state$names_warnings <- list()
