@@ -381,6 +381,7 @@ execute_margin_nest <- function(operation, .key, .keep, rowwise = FALSE) {
           }
           branch <- nest_margin_local_columns(
             operation$data, keys, payload, .key, metadata[[id]],
+            operation$column_info$labels,
             rowwise && length(group_cols) == 0L
           )
           branch <- label_margin_branch(
@@ -724,9 +725,9 @@ nest_expanded_margins <- function(.data,
 utils::globalVariables(":=")
 
 # Partition original local vectors before any grouping-set common-type binding.
-# Generated cells carry native slices and only the selected frame metadata.
+# Cells carry native slices, source labels and selected frame metadata.
 nest_margin_local_columns <- function(data, keys, payload, key, metadata,
-                                      rowwise) {
+                                      labels, rowwise) {
   columns <- proxy_columns(data, unique(c(keys, payload)))
   frame <- tibble::new_tibble(columns, nrow = nrow(data))
   groups <- vctrs::vec_group_loc(frame[keys])
@@ -735,6 +736,7 @@ nest_margin_local_columns <- function(data, keys, payload, key, metadata,
                    loc = list(integer()))
   }
   cells <- vctrs::vec_chop(frame[payload], groups$loc)
+  cells <- lapply(cells, restore_margin_variable_labels, labels = labels)
   cells <- lapply(cells, restore_margin_frame_metadata, metadata = metadata)
   result <- groups$key
   result[[key]] <- cells
