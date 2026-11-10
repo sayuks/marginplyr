@@ -16,7 +16,7 @@
 # branches rather than from the operation's backend: what is being combined is
 # what decides, and `build_lazy_parent_mapping()` in `R/share.R` reaches this
 # from every backend despite its name.
-combine_margin_branches <- function(branches) {
+combine_margin_branches <- function(branches, preserve_labels = FALSE) {
   # An invariant, not a Package condition (ADR-0015): a plan holds at least one
   # grouping set, and the share module gates its own call on a non-empty
   # mapping list. `Reduce()` answered `NULL` here, which is not a result any
@@ -29,7 +29,7 @@ combine_margin_branches <- function(branches) {
   if (is.data.frame(branches[[1L]])) {
     return(bind_margin_branches(branches))
   }
-  union_margin_branches(branches)
+  union_margin_branches(branches, preserve_labels = preserve_labels)
 }
 
 # Isolate each dtplyr Margin branch when it executes, even when a row filter
@@ -246,6 +246,8 @@ sql_margin_type_anchor <- function(.data, branch, source_columns,
 # would hide a defect in the branch builders.
 bind_margin_branches <- function(branches) {
   check_branch_columns(branches)
+  labels <- combine_margin_column_labels(branches)
+  template <- branches[[1L]]
   public_names <- names(branches[[1L]])
   private_names <- paste0(
     "marginplyr_column_", seq_along(public_names), recycle0 = TRUE
@@ -260,7 +262,12 @@ bind_margin_branches <- function(branches) {
     rename_margin_branch_columns(branch, public_names, private_names)
   })
   result <- vctrs::vec_rbind(!!!branches)
-  rename_margin_branch_columns(result, private_names, public_names)
+  result <- rename_margin_branch_columns(result, private_names, public_names)
+  if (standard_margin_frame(template)) {
+    # Native union_all restores dataset metadata after its vector binding.
+    result <- dplyr::dplyr_reconstruct(result, template)
+  }
+  restore_margin_variable_labels(result, labels)
 }
 
 # Rename a branch's known columns through dplyr so subclass metadata follows.
@@ -338,7 +345,7 @@ check_eager_summary_fields <- function(schemas, call) {
 # is the same however the pairs are bracketed. SQLite retains SELECT
 # boundaries around compound operands. Other SQL backends let dbplyr flatten
 # unions into one compound query.
-union_margin_branches <- function(branches) {
+union_margin_branches <- function(branches, preserve_labels = FALSE) {
   sqlite <- inherits(branches[[1L]], "tbl_lazy") &&
     inherits(dbplyr::remote_con(branches[[1L]]), "SQLiteConnection")
   if (sqlite) {
@@ -353,7 +360,13 @@ union_margin_branches <- function(branches) {
     n <- length(branches)
     pairs <- lapply(
       seq_len(n %/% 2L),
-      function(i) dplyr::union_all(branches[[2L * i - 1L]], branches[[2L * i]])
+      function(i) {
+        branch <- dplyr::union_all(branches[[2L * i - 1L]], branches[[2L * i]])
+        if (preserve_labels && inherits(branch, "dtplyr_step")) {
+          class(branch) <- c("marginplyr_label_union", class(branch))
+        }
+        branch
+      }
     )
     branches <- if (n %% 2L == 1L) c(pairs, branches[n]) else pairs
   }
@@ -362,7 +375,12 @@ union_margin_branches <- function(branches) {
       sqlite_union_operand(first), sqlite_union_operand(branches[[1L]])
     ))
   }
-  branches[[1L]]
+  result <- branches[[1L]]
+  if (preserve_labels && inherits(result, "dtplyr_step")) {
+    result[["marginplyr_final_union"]] <- TRUE
+
+  }
+  result
 }
 
 # Make a lazy SQLite branch a single SELECT operand without reading it.
@@ -562,7 +580,9 @@ summarize_margin_branch <- function(.data,
                                     ...,
                                     .by,
                                     caller_labels,
-                                    placeholder_name = NULL) {
+                                    placeholder_name = NULL,
+                                    label_schema = NULL,
+                                    native_share_outputs = character()) {
   dots <- rlang::enquos(...)
 
   # The placeholder joins what dplyr is handed and not `dots`, which stays the
@@ -603,6 +623,9 @@ summarize_margin_branch <- function(.data,
 
   if (inherits(result, "dtplyr_step")) {
     result <- protect_dtplyr_share_measure(result)
+    result <- native_margin_scalar_step(
+      result, label_schema, native_share_outputs
+    )
   }
 
   # A lazy input whose branch came back local was read, and both arms of this
@@ -951,7 +974,9 @@ summarize_margin_union <- function(.data,
             !!!branch_dots,
             .by = unname(key_names[grouping_set]),
             caller_labels = summaries$labels,
-            placeholder_name = placeholder
+            placeholder_name = placeholder,
+            label_schema = summaries$label_schema,
+            native_share_outputs = summaries$native_share_outputs
           ),
           conditions = conditions,
           restatements = branch_argument_map(branch_dots, summaries$labels)
@@ -1158,7 +1183,7 @@ summarize_margin_union <- function(.data,
     }
 
     restore_input_window_order(
-      combine_margin_branches(branches),
+      combine_margin_branches(branches, preserve_labels = TRUE),
       input_window_order
     )
   }, interrupt = function(cnd) {

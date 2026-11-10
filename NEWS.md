@@ -1,5 +1,11 @@
 # marginplyr 0.1.0
 
+* Margin verbs preserve source variable labels through display conversion,
+  grouping-set combination, expansion and nesting, including empty columns and
+  direct collection. Calculated labels follow native summaries and agreeing
+  labels survive combination. Dataset metadata follows explicit native summary,
+  mutation/union and nesting references, including each nested frame (#1559).
+
 * Column-vector element names follow native summaries, expansion and nesting,
   including direct collection, omitted-dimension replacements and empty
   results. Arrow retains its native metadata behavior without treating names

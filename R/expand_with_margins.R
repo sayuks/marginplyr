@@ -29,6 +29,7 @@
 #' @inheritSection summarize_with_margins Grouped and row-wise inputs
 #' @inheritSection summarize_with_margins Option arguments
 #' @inheritSection summarize_with_margins Result class and attributes
+#' @inheritSection summarize_with_margins Variable labels and dataset attributes
 #' @inheritSection summarize_with_margins Column-vector element names
 #' @inheritSection summarize_with_margins Grouping set identifiers
 #' @inheritSection summarize_with_margins Margin order
@@ -37,8 +38,9 @@
 #' @inheritSection summarize_with_margins Database backend coverage
 #' @inheritSection summarize_with_margins When marginplyr queries your data
 #' @return An ungrouped data frame, or a lazy table when `.data` is lazy. Its
-#'   class and attributes follow [dplyr::mutate()] combined with
-#'   [dplyr::union_all()]; see *Result class and attributes*.
+#'   class follows [dplyr::mutate()] combined with
+#'   [dplyr::union_all()]; see *Result class and attributes* and
+#'   *Variable labels and dataset attributes*.
 #'   Result row order is unspecified unless `.sort` asks for a Margin order;
 #'   see *Margin order*, or use [dplyr::arrange()] for any other presentation
 #'   order.

@@ -4,9 +4,9 @@ status: accepted
 
 # Preserve column labels and follow native table attributes
 
-Accepted on 2026-11-10. Implementation is pending in
-[#1559](https://github.com/sayuks/marginplyr/issues/1559). This decision records
-the target contract; the research/documentation change does not implement it.
+Accepted and implemented on 2026-11-10 for
+[#1559](https://github.com/sayuks/marginplyr/issues/1559). The original
+research/documentation change recorded the decision before implementation.
 
 ## Principle
 

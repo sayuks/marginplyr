@@ -7,6 +7,7 @@
 #' @inheritSection summarize_with_margins Grouped and row-wise inputs
 #' @inheritSection summarize_with_margins Option arguments
 #' @inheritSection summarize_with_margins Result class and attributes
+#' @inheritSection summarize_with_margins Variable labels and dataset attributes
 #' @inheritSection summarize_with_margins Column-vector element names
 #' @inheritSection summarize_with_margins Grouping set identifiers
 #' @inheritSection summarize_with_margins Margin order

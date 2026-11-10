@@ -288,9 +288,9 @@ pending in #706.
 on 2026-11-10, supersedes this decision's blanket refusal of independent
 restoration for its scoped column-label and dataset-reference guarantees.
 Result shape, existing factor guarantees and other column metadata retain their
-separate owners. Implementation is pending in
-[#1559](https://github.com/sayuks/marginplyr/issues/1559); this amendment changes
-the accepted design, not the behavior of the package at publication.
+separate owners. The scoped extension is implemented for
+[#1559](https://github.com/sayuks/marginplyr/issues/1559); the original amendment
+recorded the accepted design before that implementation.
 
 The earlier rationale that marginplyr removes no other attribute is withdrawn.
 Its own display conversion can remove a variable label before any combination.

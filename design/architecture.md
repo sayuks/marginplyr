@@ -176,6 +176,31 @@ or frame metadata onto the changed result. Original nested columns and cell
 objects retain their scoped native guarantee; newly generated list and frame
 subclasses retain only their contents and row-count contract.
 
+### Variable labels and dataset metadata (`R/margin-metadata.R`)
+
+Owns the scoped variable-label and dataset-reference policy in
+[ADR 0042](adr/0042-preserve-variable-labels-through-margin-operations.md).
+Preparation captures source labels from the existing typed snapshot. Native
+summary results supply their own label evidence before branch binding; labels
+are never inferred from expressions or output names. Eager binding restores
+native union dataset metadata without repeated copying. The dtplyr summary
+call retains the balanced native unions and source graph, carrying only scalar
+label evidence until the final union resolves it.
+
+Generated nested cells receive the appropriate native inner-frame metadata
+for their grouping-set occurrence, separately from outer-frame metadata.
+Finalization restores source labels after display conversion and factor
+reconstruction. Lazy direct collection uses construction-time labels; a query
+boundary prevents a later ordinary operation from reusing that capture for a
+newly computed column. No metadata path reads source rows or runs a second
+native reference pipeline.
+For dtplyr summaries with shares, safe scalar candidates retain native
+aggregation and generated share placeholders are added afterwards. Runtime
+callee, optimizer and nonempty-input checks select one expression, retaining
+the original validators for unproven dispatch. Native aggregate result types
+are checked before union, so semantic classes are never stripped to make a
+share eligible.
+
 ### Summary selection (`R/summary-selections.R`)
 
 Owns summary-only semantics: rejecting the removed `.groups` option — along

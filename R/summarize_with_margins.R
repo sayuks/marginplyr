@@ -96,8 +96,8 @@
 #'   `.key`.
 #'
 #' @return An ungrouped data frame, or a lazy table when `.data` is lazy. Its
-#'   class and attributes follow [dplyr::summarize()]; see *Result class and
-#'   attributes*.
+#'   class follows [dplyr::summarize()]; see *Result class and
+#'   attributes* and *Variable labels and dataset attributes*.
 #'   Result row order is unspecified unless `.sort` asks for a Margin order;
 #'   see *Margin order*, or use [dplyr::arrange()] for any other presentation
 #'   order.
@@ -233,6 +233,55 @@
 #'
 #' Elsewhere in this package `NULL` is a documented value, and what it means is
 #' stated with the argument that takes it.
+#'
+#' @section Variable labels and dataset attributes:
+#' A source column's variable label (`attr(x, "label")`) is retained across
+#' display conversion, grouping-set combination, expansion and nesting. This
+#' includes fixed keys, displayed grouping dimensions, expanded payloads and
+#' original columns inside nested cells, including `.keep = TRUE` keys.
+#' A standard label is one character value, including `NA_character_` or
+#' `""`; `NULL` means absent. Other representations gain no extra guarantee
+#' and no new validation error. Zero-row source columns retain their labels.
+#'
+#' Calculated summaries follow native [dplyr::summarise()]
+#' evaluation for their backend. Neither an expression nor a reused output
+#' name implies a source label. Across grouping-set results, agreeing
+#' non-missing labels survive absent or missing labels; an empty string counts
+#' as a label. With only
+#' absent or missing labels, `NA_character_` survives if present. Conflicting
+#' non-missing labels follow native combination without a new Package condition.
+#' Value-label dictionaries, missing-value declarations and other column
+#' attributes follow their native backend and vector classes. Factor guarantees
+#' below continue to apply. Generated identifiers and shares gain no inferred
+#' source label.
+#'
+#' Dataset-wide attributes, including a frame-level `label`, follow these
+#' concrete native references, separately from column labels:
+#'
+#' * Summary: the corresponding native [dplyr::summarise()] method.
+#' * Expansion: native [dplyr::mutate()] per grouping set, then native
+#'   [dplyr::union_all()] in Grouping-plan order.
+#' * Nesting: supported native [tidyr::nest()] per grouping set, using the
+#'   original source values, the same fixed/included keys and payload selection.
+#'   Outer and inner frames are separate metadata locations. `.keep` decides
+#'   inner keys; Margin display values affect outer keys only.
+#' * Row-wise nesting: local [dplyr::nest_by()]; for `dtplyr`, the metadata
+#'   reference collects the input and then applies local `nest_by()`.
+#'
+#' These dataset references cover plain data frames, tibbles, direct data.table
+#' inputs and supported lazy backends. Extra frame classes retain their existing
+#' S3/vctrs behavior without a complete native-equivalence guarantee. Classed
+#' columns remain within scope. Structural names, row names, class and grouping
+#' metadata describe the actual Margin result, rather than being copied from
+#' the input. Grouping-plan inspection, constructors and query diagnostics do
+#' not inherit source-frame attributes.
+#'
+#' The label and dataset guarantees cover the returned result and direct
+#' [dplyr::collect()]. Lazy results retain source labels captured at
+#' construction; rebuild after changing those labels.
+#' Metadata handling adds no source-row
+#' read. Persistence through [dplyr::compute()] and later ordinary dplyr
+#' operations follows native backend rules.
 #'
 #' @section Result class and attributes:
 #' For plain data frames, tibbles, direct data.table inputs and supported lazy

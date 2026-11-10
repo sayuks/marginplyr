@@ -8,6 +8,7 @@
 #' @inheritSection summarize_with_margins Grouped and row-wise inputs
 #' @inheritSection summarize_with_margins Option arguments
 #' @inheritSection summarize_with_margins Result class and attributes
+#' @inheritSection summarize_with_margins Variable labels and dataset attributes
 #' @inheritSection summarize_with_margins Column-vector element names
 #' @inheritSection summarize_with_margins Grouping set identifiers
 #' @inheritSection summarize_with_margins Margin order
@@ -83,7 +84,8 @@
 #'
 #' @return For a local input, an ungrouped data frame with one list column,
 #'   whose outer class follows [tidyr::nest()]; see *Result class
-#'   and attributes*. A `dtplyr` input returns a lazy `dtplyr` step until
+#'   and attributes* and *Variable labels and dataset attributes*.
+#'   A `dtplyr` input returns a lazy `dtplyr` step until
 #'   collected. Result row order is unspecified unless `.sort` asks for a
 #'   Margin order; see *Margin order*, or use [dplyr::arrange()] for any other
 #'   presentation order.
@@ -283,7 +285,8 @@ nest_margin_pipeline <- function(.data,
   execution <- execute_margin_nest(
     operation,
     .key = .key,
-    .keep = .keep
+    .keep = .keep,
+    rowwise = rowwise
   )
   result <- finalize_margin_operation(operation, execution)
   if (!rowwise) {
@@ -315,6 +318,9 @@ nest_margin_pipeline <- function(.data,
     } else {
       tibble::new_tibble(columns, nrow = 0L)
     }
+    cell <- restore_margin_frame_metadata(
+      cell, margin_nest_frame_metadata(operation, rowwise, .keep)[[1L]]
+    )
     id <- operation$set_id_name
     result <- tibble::new_tibble(
       stats::setNames(c(if (!is.null(id)) list(1L), list(list(cell))),
@@ -349,7 +355,7 @@ check_nest_output_names <- function(group_cols, set_id_name, .key, rowwise) {
 }
 
 # Fold a prepared Margin operation into cells after nesting-specific admission.
-execute_margin_nest <- function(operation, .key, .keep) {
+execute_margin_nest <- function(operation, .key, .keep, rowwise = FALSE) {
   check_margin_operation(operation)
   with_margin_error_call(
     {
@@ -517,6 +523,13 @@ execute_margin_nest <- function(operation, .key, .keep) {
         margin_labels = operation$margin_labels,
         position = operation$margin_label_position
       )
+      labels <- column_info$labels
+      if (length(keep_cols) > 0L) {
+        kept <- labels[intersect(names(labels), names(keep_cols))]
+        names(kept) <- unname(keep_cols[names(kept)])
+        labels <- c(labels, kept)
+      }
+      expanded <- restore_margin_variable_labels(expanded, labels)
       # Native nest() returns a data.table outer frame for direct data.table
       # input; reconstruct from a generated empty template so source keys and
       # dataset attributes are not copied onto the changed result (ADR 0044).
@@ -532,6 +545,9 @@ execute_margin_nest <- function(operation, .key, .keep) {
           keep_cols = keep_cols,
           .key = .key,
           kind = operation$backend$kind,
+          frame_metadata = margin_nest_frame_metadata(
+            operation, rowwise, .keep
+          ),
           drop_set_col = is.null(operation$set_id_name) && !sorting
         ), restore_outer),
         sort_id = if (sorting) set_col else NULL,
@@ -647,6 +663,7 @@ nest_expanded_margins <- function(.data,
                                   keep_cols,
                                   .key,
                                   kind,
+                                  frame_metadata = list(),
                                   drop_set_col = TRUE) {
   # The fold receives a generated frame. Its keys and payload use tibble's
   # stock frame converter without as_tibble() dispatch (ADR 0016).
@@ -713,6 +730,13 @@ nest_expanded_margins <- function(.data,
           )))
         }), display_cols)
         cell <- nest_cell_expr(safe_cells, kind)
+        if (length(frame_metadata) > 0L) {
+          cell <- rlang::call2(
+            marginplyr_private_call("restore_margin_cell_metadata"),
+            cell, margin_metadata_literal(frame_metadata),
+            margin_column_pronoun(safe_name(set_col))
+          )
+        }
         wrapper <- if (identical(kind, "dtplyr")) {
           deferred_export_call("base", "list", cell)
         } else {
