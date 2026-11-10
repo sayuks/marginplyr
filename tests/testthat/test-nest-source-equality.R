@@ -72,11 +72,9 @@ test_that("equal source keys retain their rows across nesting options", {
         expect_identical(dplyr::group_vars(result), c("g", "set"), info = info)
       } else {
         expect_identical(dplyr::group_vars(result), character(), info = info)
-        if (option$tibble) {
-          expect_s3_class(result, "tbl_df")
-        } else {
-          expect_identical(class(result), "data.frame", info = info)
-        }
+        expect_identical(class(result),
+                         class(tidyr::nest(source, data = dplyr::everything())),
+                         info = info)
       }
       for (cell in result$data) {
         expect_identical(

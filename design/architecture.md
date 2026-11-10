@@ -163,14 +163,18 @@ Owns restoration of factor and ordered-factor Margin columns from the metadata
 captured during preparation. Its backend methods preserve levels and ordering
 after labels have been materialized; it does not acquire metadata itself.
 
-Factor restoration exists because marginplyr decomposed those factors.
-Element names follow ADR 0043 above; remaining class and attribute behavior
-follows [ADR 0016](adr/0016-delegate-result-class-and-attributes-to-dplyr.md)
-as amended.
-
-The accepted column-label and table-metadata extension is recorded in
-[ADR 0042](adr/0042-preserve-variable-labels-through-margin-operations.md),
-including its implementation status.
+Factor reconstruction retains its existing backend-specific levels and ordered
+status contract. Other source-derived classes and class-owned structural state
+follow the native references in
+[ADR 0044](adr/0044-follow-native-references-for-input-classes.md), separately
+from the variable-label and dataset-attribute policies in
+[ADR 0042](adr/0042-preserve-variable-labels-through-margin-operations.md).
+Ordinary nesting folds eager data through the stock tibble converter; a direct
+data.table outer result is reconstructed from a generated empty data.table
+template. This follows native outer classes without copying the source's keys
+or frame metadata onto the changed result. Original nested columns and cell
+objects retain their scoped native guarantee; newly generated list and frame
+subclasses retain only their contents and row-count contract.
 
 ### Summary selection (`R/summary-selections.R`)
 

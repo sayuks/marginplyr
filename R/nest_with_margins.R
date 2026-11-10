@@ -82,7 +82,7 @@
 #' before the result is returned.
 #'
 #' @return For a local input, an ungrouped data frame with one list column,
-#'   whose class and attributes follow [dplyr::mutate()]; see *Result class
+#'   whose outer class follows [tidyr::nest()]; see *Result class
 #'   and attributes*. A `dtplyr` input returns a lazy `dtplyr` step until
 #'   collected. Result row order is unspecified unless `.sort` asks for a
 #'   Margin order; see *Margin order*, or use [dplyr::arrange()] for any other
@@ -101,9 +101,8 @@
 #'   .data = january_sales,
 #'   .grouping = rollup(region, store)
 #' )
-#' # `january_sales` is a plain data frame, so nesting it returns one too, and
-#' # `nested` prints its list column as flattened values. A tibble prints each
-#' # nested table as its dimensions instead.
+#' # Nesting a plain data frame returns a tibble, which prints each nested
+#' # table as its dimensions.
 #' nested |>
 #'   dplyr::as_tibble() |>
 #'   head()
@@ -518,8 +517,14 @@ execute_margin_nest <- function(operation, .key, .keep) {
         margin_labels = operation$margin_labels,
         position = operation$margin_label_position
       )
+      # Native nest() returns a data.table outer frame for direct data.table
+      # input; reconstruct from a generated empty template so source keys and
+      # dataset attributes are not copied onto the changed result (ADR 0044).
+      restore_outer <- identical(operation$backend$kind, "local") &&
+        identical(class(operation$data_proxy),
+                  c("data.table", "data.frame"))
       new_margin_execution(
-        nest_expanded_margins(
+        restore_native_nest_frame(nest_expanded_margins(
           expanded,
           group_cols = group_cols,
           set_col = set_col,
@@ -528,13 +533,23 @@ execute_margin_nest <- function(operation, .key, .keep) {
           .key = .key,
           kind = operation$backend$kind,
           drop_set_col = is.null(operation$set_id_name) && !sorting
-        ),
+        ), restore_outer),
         sort_id = if (sorting) set_col else NULL,
         factor_info = column_info$factors[!folded]
       )
     },
     call = operation$call
   )
+}
+
+# Restore the standard direct data.table outer representation from its own
+# generated empty template, without importing source structural metadata.
+restore_native_nest_frame <- function(result, data_table) {
+  if (!data_table) {
+    return(result)
+  }
+  constructor <- utils::getFromNamespace("data.table", "data.table")
+  dplyr::dplyr_reconstruct(result, constructor())
 }
 
 # The expression building one cell, given the columns it is to hold and the
