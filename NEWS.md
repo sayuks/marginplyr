@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Parent and Total shares retain invocation-time dependencies through base
+  condition and value wrappers, including finite singleton collections with
+  stock callbacks (#1557).
+
 * Parent and Total shares preserve each grouping set's ordinary input
   selection for the first `across()` source with stable output names,
   including parenthesized per-group selections (#1547).
