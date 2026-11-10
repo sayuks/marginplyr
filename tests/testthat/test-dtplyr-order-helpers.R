@@ -92,7 +92,8 @@ test_that("nesting order and cells ignore preexisting caller helpers", {
       actual <- dplyr::collect(query)
       expect_identical(names(actual), c(by, ".BY", "set", "data"))
       expect_identical(order_helper_values(actual, option$sort),
-                       order_helper_values(expected, option$sort), info = i)
+                       order_helper_values(expected, option$sort),
+                       info = as.character(i))
       expect_identical(serialize(root$source, NULL), before)
     }
   }

@@ -375,7 +375,7 @@ execute_margin_nest <- function(operation, .key, .keep, rowwise = FALSE) {
         branches <- Map(function(set, id) {
           keys <- unique(c(plan$by, set))
           payload <- if (.keep) {
-            operation$data_vars
+            c(group_cols, setdiff(operation$data_vars, group_cols))
           } else {
             setdiff(operation$data_vars, group_cols)
           }
