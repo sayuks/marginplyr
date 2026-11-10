@@ -381,7 +381,8 @@ Config/testthat/start-first:
     duckdb-authored-calls,
     sql-share-quoted-markers,
     parenthesized-across-identity,
-    factor-schema-lifetime
+    factor-schema-lifetime,
+    share-window-frames
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool

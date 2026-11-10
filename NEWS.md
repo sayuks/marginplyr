@@ -1,5 +1,8 @@
 # marginplyr 0.1.0
 
+* Parent and Total shares use their complete denominator partitions even
+  when SQL inputs carry bounded window frames (#1555).
+
 * Parent and Total shares preserve each grouping set's ordinary input
   selection for the first `across()` source with stable output names,
   including parenthesized per-group selections (#1547).

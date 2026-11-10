@@ -3421,6 +3421,10 @@ apply_windowed_shares <- function(result, requests, plan, set_id_name, kind,
           data, !!!rlang::syms(vapply(keys, safe_name, character(1),
                                       USE.NAMES = FALSE))
         )
+        if (sql_window) {
+          # Input frames cannot narrow the generated denominator partition.
+          data$lazy_query$frame <- NULL
+        }
         denominators <- lapply(sources, function(source) {
           value <- margin_column_pronoun(safe_name(source))
           identifier <- margin_column_pronoun(safe_name(set_id_name))
