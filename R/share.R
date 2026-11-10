@@ -4869,8 +4869,11 @@ scope_value_closure <- function(expr, scope, lookup) {
     if (identical(operator, "I")) {
       return(scope_map_closure_elements(list(closure), function(variant) {
         variant$dispatch_classes <- unique(c(
-          "AsIs", variant$dispatch_classes %||% "function"
+          "AsIs", if (!isTRUE(variant$dispatch_implicit)) {
+            variant$dispatch_classes %||% character()
+          }
         ))
+        variant$dispatch_implicit <- FALSE
         variant
       })[[1L]])
     }
@@ -6499,6 +6502,7 @@ scope_closure_attribute_write <- function(scope, target, value, lookup,
     return(scope)
   }
   classes <- NULL
+  implicit <- FALSE
   if (identical(operator, "class") && length(target) == 2L) {
     classes <- if (is.null(unparenthesized_value(value))) {
       "function"
@@ -6508,11 +6512,14 @@ scope_closure_attribute_write <- function(scope, target, value, lookup,
           is_known_base_frame_call(expr, "c", value_scope, lookup)
       })
     }
+    implicit <- is.null(unparenthesized_value(value)) ||
+      identical(classes, character())
     if (!is.null(classes) && length(classes) == 0L) classes <- "function"
   }
   # Update one outer callable, retaining its associated list element metadata.
   update_dispatch <- function(closure) {
     closure$dispatch_classes <- classes
+    closure$dispatch_implicit <- implicit
     closure$dispatch_unknown <- is.null(classes)
     closure
   }

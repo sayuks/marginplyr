@@ -236,3 +236,38 @@ test_that("bare stock callbacks retain the same callable proofs", {
     condition_wrapper_data(), condition_wrapper_reads(wrappers)
   )
 })
+
+test_that("I replaces an implicit function class before converter dispatch", {
+  read <- quote((function(prior) {
+    # S3 lookup reaches this method only for the explicit function class.
+    as.function.function <- # nolint: object_usage_linter.
+      function(x, ...) function() 7
+    copied <- base::as.function(base::I(function() sum(prior)))
+    base::rm(prior)
+    copied()
+  })(11))
+  reads <- lapply(alist(NULL, base::class(read) <- NULL), function(reset) {
+    rlang::expr((function(prior) {
+      # The converter resolves this method only for an explicit function class.
+      as.function.function <- # nolint: object_usage_linter.
+        function(x, ...) function() 7
+      read <- function() sum(prior)
+      !!reset
+      copied <- base::as.function(base::I(read))
+      base::rm(prior)
+      copied()
+    })(11))
+  })
+  expect_share_dependencies(condition_wrapper_data(), c(list(read), reads))
+  explicit <- quote((function(prior) {
+    # The converter resolves this method from the explicit class on copied.
+    as.function.function <- # nolint: object_usage_linter.
+      function(x, ...) function() 7
+    read <- function() sum(prior)
+    base::class(read) <- "function"
+    copied <- base::as.function(base::I(read))
+    base::rm(prior)
+    copied()
+  })(11))
+  expect_condition_values(condition_wrapper_data(), list(explicit), 7)
+})
