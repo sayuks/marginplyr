@@ -85,10 +85,12 @@ run_local_duckdb_json_fixtures <- function(extension) {
     '  }',
     '} else {',
     '  variables <- c("MARGINPLYR_DUCKDB_JSON_EXTENSION", "MARGINPLYR_REQUIRED_DUCKDB_JSON")',
-    '  before <- Sys.getenv(variables, unset = NA_character_)',
+    '  # Windows Sys.setenv(FOO = "") unsets FOO; the helpers treat both as absent.',
+    '  absent <- if (.Platform$OS.type == "windows") "" else NA_character_',
+    '  before <- Sys.getenv(variables, unset = absent)',
     '  testthat::test_dir(Sys.getenv("FIXTURE_SUITE"), filter = Sys.getenv("FIXTURE_FILTER"),',
     '    reporter = "summary", stop_on_failure = TRUE)',
-    '  stopifnot(identical(Sys.getenv(variables, unset = NA_character_), before))',
+    '  stopifnot(identical(Sys.getenv(variables, unset = absent), before))',
     '}',
     'cat("Local JSON entry fixture passed.\\n")'
   ), child)
