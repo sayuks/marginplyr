@@ -245,12 +245,15 @@ stated with the argument that takes it.
 
 \section{Result class and attributes}{
 
-Each Margin verb follows the same class and attribute rules as the dplyr
-verb it is built from: \code{\link[=summarize_with_margins]{summarize_with_margins()}} those of
-\code{\link[dplyr:summarize]{dplyr::summarize()}}, and \code{\link[=expand_with_margins]{expand_with_margins()}} and the nesting verbs
-those of \code{\link[dplyr:mutate]{dplyr::mutate()}} combined with \code{\link[dplyr:union_all]{dplyr::union_all()}}. Passing a
-plain data frame therefore returns a plain data frame and passing a tibble
-returns a tibble.
+For plain data frames, tibbles, direct data.table inputs and supported lazy
+backends, result classes follow the corresponding native operation:
+\code{\link[dplyr:summarise]{dplyr::summarise()}} for summaries, \code{\link[dplyr:mutate]{dplyr::mutate()}} per grouping set
+followed by \code{\link[dplyr:union_all]{dplyr::union_all()}} for expansion, and \code{\link[tidyr:nest]{tidyr::nest()}} for
+ordinary nesting. Row-wise nesting follows local \code{\link[dplyr:nest_by]{dplyr::nest_by()}}; its
+dtplyr reference first collects the input. Plain data frames therefore nest
+to tibbles; ordinary nesting of direct data.table inputs returns data.table.
+These comparisons use the same grouping keys and payload selection, subject
+to the documented grouping, row-count and column-structure contracts.
 A live SQLite result uses a lazy subclass when source-column anchors or
 package-declared output types require it. Direct collection preserves source
 types and restores package-declared types in empty or all-missing columns.
@@ -261,19 +264,38 @@ data, while \code{\link[dbplyr:sql_render]{dbplyr::sql_render()}} shows them in 
 Direct materialization creates a typed table with public columns only.
 Later dplyr verbs use ordinary dbplyr behavior.
 
-The input class is not guaranteed to be preserved, and neither are
-object-level attributes of the input or attributes of columns marginplyr
-does not rewrite. A data frame subclass survives only where dplyr can
-reconstruct it, so a subclass with no \code{\link[dplyr:dplyr_reconstruct]{dplyr::dplyr_reconstruct()}} method
-is lost by \code{\link[dplyr:summarize]{dplyr::summarize()}} itself. Attributes on a column that carries
-no class are dropped wherever branches are combined, because that is what
-the vctrs rules for combining bare vectors do with them. Attach the
-attributes a result must carry after the Margin operation, as with any
-dplyr pipeline.
+Source-derived column classes and their class-owned structural state follow
+those references for compatible uses. This covers fixed keys, expanded
+payloads, original nested columns and objects transported in list-column
+cells, including original custom frame objects. With \code{.keep = TRUE}, inner
+keys retain their original values. Carrying, grouping, ordering and summary
+evaluation are separate capabilities; support for one does not establish
+support for another. There is no fixed list of compatible column or cell
+classes and no blanket exclusion of S3, S4 or S7 objects.
 
-Factor and ordered-factor columns are the one exception, on the backends
-whose factors marginplyr can rebuild: local data frames, \code{dtplyr}, and
-DuckDB. There it decomposes them to insert \code{.margin_label} and rebuilds
+Margin-label display conversion still applies: a string label may convert
+an ordinary dimension to character, while typed-missing labels follow its
+supported prototype. Calculated summaries follow native evaluation and
+common-type combination, without inheriting a class from a reused input
+column name. A class the reference transforms or drops is not restored.
+Arbitrary extra classes on the input frame require individual support
+decisions; acceptance alone does not promise their complete native-method
+equivalence. This adds no arbitrary-attribute copying or independent repair
+of defects in class methods. Variable labels, dataset attributes and vector
+element names have their separate policies.
+
+Generated nesting columns are lists of data frames with the promised
+contents and row counts, including zero-column cells. Their exact list and
+inner-frame subclasses are not promised; original columns and cell objects
+inside them remain covered. The class guarantee covers returned results and
+direct \code{collect()}, without extending to subsequent ordinary operations,
+\code{compute()}, persistence or re-reading. Classes already lost before input
+reaches marginplyr are outside it. Empty results retain the native behavior
+alongside separately declared package output types.
+
+Factor and ordered-factor columns retain their existing guarantees on
+backends whose factors marginplyr can rebuild: local data frames, \code{dtplyr},
+and DuckDB. There it decomposes them to insert \code{.margin_label} and rebuilds
 them itself, so their levels and ordering are preserved; see \emph{Display
 labels and grouping identity}. On DuckDB it is the levels alone: an \code{ENUM}
 carries no ordered flag, so an ordered factor is already unordered when
@@ -292,6 +314,94 @@ reaches none of this, storing a factor as text before marginplyr sees it.
 
 Classed columns such as \link{Date} and \link{POSIXct}, including its \code{tzone}, are
 carried through by dplyr and vctrs unchanged.
+}
+
+\section{Variable labels and dataset attributes}{
+
+A source column's variable label (\code{attr(x, "label")}) is retained across
+display conversion, grouping-set combination, expansion and nesting. This
+includes fixed keys, displayed grouping dimensions, expanded payloads and
+original columns inside nested cells, including \code{.keep = TRUE} keys.
+A standard label is one character value, including \code{NA_character_} or
+\code{""}; \code{NULL} means absent. Other representations gain no extra guarantee
+and no new validation error. Zero-row source columns retain their labels.
+
+Calculated summaries follow native \code{\link[dplyr:summarise]{dplyr::summarise()}}
+evaluation for their backend. Neither an expression nor a reused output
+name implies a source label. Across grouping-set results, agreeing
+non-missing labels survive absent or missing labels; an empty string counts
+as a label. With only
+absent or missing labels, \code{NA_character_} survives if present. Conflicting
+non-missing labels follow native combination without a new Package condition.
+Value-label dictionaries, missing-value declarations and other column
+attributes follow their native backend and vector classes. Factor guarantees
+below continue to apply. Generated identifiers and shares gain no inferred
+source label.
+
+Dataset-wide attributes, including a frame-level \code{label}, follow these
+concrete native references, separately from column labels:
+\itemize{
+\item Summary: the corresponding native \code{\link[dplyr:summarise]{dplyr::summarise()}} method.
+\item Expansion: native \code{\link[dplyr:mutate]{dplyr::mutate()}} per grouping set, then native
+\code{\link[dplyr:union_all]{dplyr::union_all()}} in Grouping-plan order.
+\item Nesting: supported native \code{\link[tidyr:nest]{tidyr::nest()}} per grouping set, using the
+original source values, the same fixed/included keys and payload selection.
+Outer and inner frames are separate metadata locations. \code{.keep} decides
+inner keys; Margin display values affect outer keys only.
+\item Row-wise nesting: local \code{\link[dplyr:nest_by]{dplyr::nest_by()}}; for \code{dtplyr}, the metadata
+reference collects the input and then applies local \code{nest_by()}.
+}
+
+These dataset references cover plain data frames, tibbles, direct data.table
+inputs and supported lazy backends. Extra frame classes retain their existing
+S3/vctrs behavior without a complete native-equivalence guarantee. Classed
+columns remain within scope. Structural names, row names, class and grouping
+metadata describe the actual Margin result, rather than being copied from
+the input. Grouping-plan inspection, constructors and query diagnostics do
+not inherit source-frame attributes.
+
+The label and dataset guarantees cover the returned result and direct
+\code{\link[dplyr:collect]{dplyr::collect()}}. Lazy results retain source labels captured at
+construction; rebuild after changing those labels.
+Metadata handling adds no source-row
+read. Persistence through \code{\link[dplyr:compute]{dplyr::compute()}} and later ordinary dplyr
+operations follows native backend rules.
+}
+
+\section{Column-vector element names}{
+
+Names on individual vector elements (\code{names(data[[column]])}) follow the
+corresponding native operations on the same backend: \code{\link[dplyr:summarise]{dplyr::summarise()}}
+for summaries and the spelling alias, \code{\link[dplyr:mutate]{dplyr::mutate()}} per grouping set
+followed by \code{\link[dplyr:union_all]{dplyr::union_all()}} for expansion, and supported \code{\link[tidyr:nest]{tidyr::nest()}}
+for nesting. Row-wise nesting follows local \code{\link[dplyr:nest_by]{dplyr::nest_by()}}; for a
+\code{dtplyr} input, its reference collects the input before local nesting.
+Partial results combine in Grouping-plan order. Outer keys and original
+nested columns, including keys kept by \code{.keep = TRUE}, are separate
+metadata locations.
+
+Package processing retains names the native reference retains. A dimension
+omitted from a set receives an unnamed Margin-label replacement, including
+a typed missing value; its original element names are not restored.
+Calculated summaries receive no names inferred from a source expression or
+a reused output name. Repeated, empty and missing names, absent names and
+empty results follow native behavior, including the distinction between
+\code{NULL} and \code{character()}. Ordering follows native element-name rules.
+
+This covers plain data frames, tibbles, direct \code{data.table} inputs and
+supported lazy inputs, through the returned result and direct \code{collect()}.
+Names lost before the input reaches marginplyr are outside this guarantee.
+Additional frame classes retain their existing S3 and vctrs behavior;
+complete equivalence to their native methods is not promised. \code{compute()}
+persistence and subsequent ordinary operations follow native backend rules.
+No independent source-element snapshot or additional source-row read is
+used to preserve names.
+
+Arrow's native R metadata can restore element names that no longer track
+the corresponding source elements. marginplyr follows that behavior and
+adds no tracking, correction or verification of row correspondence.
+Element names are not row identifiers. Native warnings and errors retain
+their usual External condition treatment.
 }
 
 \section{Grouping set identifiers}{

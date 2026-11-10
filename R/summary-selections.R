@@ -599,7 +599,9 @@ new_summary_arguments <- function(dots,
                                     length(dots)
                                   ),
                                   selection_state = NULL,
-                                  sql_share_sources = character()) {
+                                  sql_share_sources = character(),
+                                  label_schema = NULL,
+                                  native_share_outputs = character()) {
   stopifnot(
     is.list(dots),
     is.character(labels),
@@ -625,7 +627,9 @@ new_summary_arguments <- function(dots,
     assigned_names = assigned_names,
     selection_state = selection_state,
     frame_state = frame_state,
-    sql_share_sources = sql_share_sources
+    sql_share_sources = sql_share_sources,
+    label_schema = label_schema,
+    native_share_outputs = native_share_outputs
   )
 }
 
@@ -1016,6 +1020,10 @@ plan_summary_expressions <- function(dots,
       caller_labels,
       assigned_names,
       selection_state = selection_state,
+      label_schema = data_proxy,
+      native_share_outputs = unlist(
+        lapply(summary_plan$requests, `[[`, "outputs"), use.names = FALSE
+      ),
       sql_share_sources = if (backend_kind %in% c("duckdb", "postgres")) {
         share_source_names(summary_plan$requests)
       } else {
@@ -1137,9 +1145,10 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
           parsed$names, plan, grouping_set = plan$sets[[1L]],
           sql = FALSE, con = NULL
         ))
-        if (contains_grouping_helper(parsed$names)) {
-          # Branch-rewritten templates report their first warning in the same
-          # expansion context as later grains, so ADR 0021 can identify repeats.
+        if (contains_grouping_helper(parsed$names) || getOption("warn") < 2L) {
+          # Templates report their first warning in the same expansion context
+          # as later grains, so ADR 0021 can identify repeats. Ordinary
+          # templates retain the failure boundary when warnings become errors.
           args[[parsed$names_index]] <- rlang::call2(
             capture_names, args[[parsed$names_index]]
           )
@@ -1202,6 +1211,14 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
       buffer_branch_warning(cnd, conditions, character())
     }
     stop(state$error)
+  }
+  source_definitions <-
+    state$result$summaries$selection_state$source_definitions
+  if (!contains_grouping_helper(parsed$names) &&
+        length(source_definitions[[1L]]) > 0L) {
+    # A source template is frozen by planning and never repeats in a branch.
+    for (cnd in state$names_warnings) warning(cnd)
+    state$names_warnings <- list()
   }
   for (cnd in state$planning_warnings) warning(cnd)
   result <- state$result

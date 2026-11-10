@@ -535,6 +535,18 @@ grouping_selection_proxy <- function(.data,
   if (identical(backend$kind, "arrow")) {
     schema <- arrow::schema(.data)
     proxy <- as.data.frame(schema)
+    labels <- lapply(schema$metadata$r$columns, function(column) {
+      column$attributes$label
+    })
+    labels <- labels[vapply(labels, function(label) {
+      is.character(label) && !is.object(label) && length(label) == 1L
+    }, logical(1))]
+    proxy <- restore_margin_variable_labels(proxy, labels)
+    if (direct_margin_label_result(.data)) {
+      proxy <- restore_margin_variable_labels(
+        proxy, attr(.data, "marginplyr_variable_labels", exact = TRUE)
+      )
+    }
     # Keep the same snapshot's physical types for omitted Margin dimensions.
     attr(proxy, "marginplyr_arrow_schema") <- schema
     return(proxy)
@@ -710,7 +722,11 @@ margin_column_info <- function(data_proxy,
   prototypes <- lapply(schema[dimensions], function(x) {
     if (backend$kind %in% c("local", "dtplyr") ||
           is.data.frame(x) || is.array(x)) {
-      vctrs::vec_init(x, 1L)
+      value <- vctrs::vec_init(x, 1L)
+      # Array names can alias dimnames, which stay on the typed missing row.
+      # The class method preserves structural names such as POSIXlt fields.
+      if (!is.data.frame(value) && is.null(dim(value))) names(value) <- NULL
+      value
     } else if (identical(backend$kind, "duckdb")) {
       dbplyr::sql("NULL")
     } else {
@@ -789,6 +805,8 @@ margin_column_info <- function(data_proxy,
     prototypes <- lapply(prototypes, function(x) dbplyr::sql("NULL"))
   }
   list(
-    factors = factors, prototypes = prototypes, packed = packed, arrays = arrays
+    factors = factors, prototypes = prototypes,
+    packed = packed, arrays = arrays,
+    labels = margin_variable_labels(schema)
   )
 }

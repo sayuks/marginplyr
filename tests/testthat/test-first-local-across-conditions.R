@@ -240,7 +240,10 @@ test_that("first across planning preserves naming and selector conditions", {
       } else {
         expect_equal(result$share, if (source) c(1 / 40, 3 / 40, 1) else
                        c(0.25, 0.75, 1))
-        expect_identical(messages[[1L]], "naming warning")
+        expect_match(messages[[1L]], "naming warning", fixed = TRUE)
+        if (!source) {
+          expect_match(messages[[1L]], ".names = template()", fixed = TRUE)
+        }
         expect_identical(selections, 2L)
         expect_identical(result[[if (source) "total" else "unused"]],
                          c(1, 3, 40))
@@ -262,4 +265,211 @@ test_that("nested selection detection unwraps injected expressions", {
     data, identity(!!value), .grouping = rollup(g)
   )
   expect_identical(scalar[["identity(1)"]], c(1, 1, 1))
+})
+
+test_that("ordinary first across templates report repeated warnings once", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3))
+  shares <- list(
+    rlang::quos(),
+    rlang::quos(p = share_of_total(total)),
+    rlang::quos(dplyr::across(total, share_of_total, .names = "p")),
+    rlang::quos(dplyr::across(
+      dplyr::starts_with("total"), share_of_total, .names = "p"
+    ))
+  )
+  for (share in shares) {
+    events <- character()
+    warnings <- list()
+    inputs <- list()
+    measure <- function(value) {
+      events <<- c(events, "summary")
+      inputs[[length(inputs) + 1L]] <<- value
+      sum(value)
+    }
+    template <- function() {
+      events <<- c(events, "template")
+      warning("context warning")
+      "ordinary"
+    }
+    actual <- withCallingHandlers(summarize_with_margins(
+      data,
+      dplyr::across(x, ~measure(.x) + grouping_bit(g), .names = template()),
+      total = sum(x), !!!share, .grouping = rollup(g)
+    ), warning = function(cnd) {
+      warnings[[length(warnings) + 1L]] <<- cnd
+      events <<- c(events, "report")
+      invokeRestart("muffleWarning")
+    })
+    expect_identical(events, c(
+      "template", "summary", "summary", "template", "summary", "report"
+    ))
+    expect_identical(inputs, list(1, 3, c(1, 3)))
+    expect_length(warnings, 1L)
+    message <- conditionMessage(warnings[[1L]])
+    expect_match(message, "context warning", fixed = TRUE)
+    expect_match(message, "1 further grouping set raised this warning.",
+                 fixed = TRUE)
+    expect_match(message, ".names = template()", fixed = TRUE)
+    expect_match(message, "grouping_bit(g)", fixed = TRUE)
+    expect_identical(actual$ordinary, c(1, 3, 5))
+    expect_identical(actual$total, c(1, 3, 4))
+    if (length(share) > 0L) expect_identical(actual$p, c(0.25, 0.75, 1))
+  }
+})
+
+test_that("ordinary template warnings retain their originating conditions", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3))
+  cause <- rlang::error_cnd("template_cause", message = "template cause")
+  shares <- list(
+    rlang::quos(),
+    rlang::quos(p = share_of_total(total)),
+    rlang::quos(dplyr::across(total, share_of_total, .names = "p")),
+    rlang::quos(dplyr::across(
+      dplyr::starts_with("total"), share_of_total, .names = "p"
+    ))
+  )
+  for (share in shares) {
+    condition <- rlang::warning_cnd(
+      "template_warning", message = "template warning", parent = cause,
+      payload = list(value = new.env(parent = emptyenv()))
+    )
+    warnings <- list()
+    template <- function() {
+      warning(condition)
+      "ordinary"
+    }
+    withCallingHandlers(summarize_with_margins(
+      data,
+      dplyr::across(x, ~sum(.x) + grouping_bit(g), .names = template()),
+      total = sum(x), !!!share, .grouping = rollup(g)
+    ), warning = function(cnd) {
+      warnings[[length(warnings) + 1L]] <<- cnd
+      invokeRestart("muffleWarning")
+    })
+    expect_length(warnings, 1L)
+    expect_s3_class(warnings[[1L]], "rlang_warning")
+    expect_match(conditionMessage(warnings[[1L]]), "template warning",
+                 fixed = TRUE)
+    # dplyr retains the structured causes behind its aggregate report.
+    stored <- Filter(function(warning) {
+      identical(warning$parent$payload, condition$payload)
+    }, dplyr::last_dplyr_warnings(n = Inf))
+    expect_length(stored, 2L)
+    for (warning in stored) {
+      expect_identical(class(warning$parent), class(condition))
+      expect_identical(warning$parent$message, condition$message)
+      expect_identical(warning$parent$parent, cause)
+      expect_identical(warning$parent$payload, condition$payload)
+    }
+  }
+})
+
+test_that("ordinary template failures retain their custom class and cause", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3))
+  cause <- rlang::error_cnd("template_cause", message = "template cause")
+  failure <- rlang::error_cnd(
+    "template_failure", message = "template failure", parent = cause,
+    payload = list(value = 42)
+  )
+  shares <- list(
+    rlang::quos(),
+    rlang::quos(p = share_of_total(total)),
+    rlang::quos(dplyr::across(total, share_of_total, .names = "p")),
+    rlang::quos(dplyr::across(
+      dplyr::starts_with("total"), share_of_total, .names = "p"
+    ))
+  )
+  for (share in shares) {
+    calls <- 0L
+    template <- function() {
+      calls <<- calls + 1L
+      stop(failure)
+    }
+    actual <- tryCatch(summarize_with_margins(
+      data,
+      dplyr::across(x, ~sum(.x) + grouping_bit(g), .names = template()),
+      total = sum(x), !!!share, .grouping = rollup(g)
+    ), error = identity)
+    while (!inherits(actual, "template_failure") && !is.null(actual$parent)) {
+      actual <- actual$parent
+    }
+    expect_identical(actual, failure)
+    expect_identical(actual$parent, cause)
+    expect_identical(calls, 1L)
+  }
+})
+
+test_that("ordinary templates retain their warn = 2 failure boundary", {
+  rlang::local_options(warn = 2L)
+  data <- data.frame(g = c("a", "b"), x = c(1, 3))
+  shares <- list(
+    rlang::quos(),
+    rlang::quos(p = share_of_total(total)),
+    rlang::quos(dplyr::across(total, share_of_total, .names = "p")),
+    rlang::quos(dplyr::across(
+      dplyr::starts_with("total"), share_of_total, .names = "p"
+    ))
+  )
+  for (i in seq_along(shares)) {
+    calls <- 0L
+    template <- function() {
+      calls <<- calls + 1L
+      warning("template warning")
+      "ordinary"
+    }
+    actual <- tryCatch(summarize_with_margins(
+      data,
+      dplyr::across(x, ~sum(.x) + grouping_bit(g), .names = template()),
+      total = sum(x), !!!shares[[i]], .grouping = rollup(g)
+    ), error = identity)
+    expect_s3_class(actual, "error")
+    expect_match(conditionMessage(actual), "converted from warning",
+                 fixed = TRUE)
+    expect_identical(calls, if (i == 4L) 1L else 2L)
+  }
+})
+
+test_that("ordinary templates retain distinct diagnostics and arguments", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3))
+  for (distinct_argument in c(FALSE, TRUE)) {
+    calls <- 0L
+    warnings <- character()
+    template <- function() {
+      calls <<- calls + 1L
+      warning(if (distinct_argument || calls == 1L) "first warning" else
+                "second warning")
+      "ordinary"
+    }
+    extra <- if (distinct_argument) {
+      rlang::quos(other = {
+        warning("first warning")
+        sum(x)
+      })
+    } else {
+      rlang::quos()
+    }
+    actual <- withCallingHandlers(summarize_with_margins(
+      data,
+      dplyr::across(x, ~sum(.x) + grouping_bit(g), .names = template()),
+      total = sum(x),
+      dplyr::across(dplyr::starts_with("total"), share_of_total, .names = "p"),
+      !!!extra, .grouping = rollup(g)
+    ), warning = function(cnd) {
+      warnings <<- c(warnings, conditionMessage(cnd))
+      invokeRestart("muffleWarning")
+    })
+    expect_length(warnings, 2L)
+    expect_match(warnings[[1L]], "first warning", fixed = TRUE)
+    expect_match(warnings[[1L]], ".names = template()", fixed = TRUE)
+    if (distinct_argument) {
+      expect_match(warnings[[1L]], "1 further grouping set", fixed = TRUE)
+      expect_match(warnings[[2L]], "other =", fixed = TRUE)
+      expect_match(warnings[[2L]], "first warning", fixed = TRUE)
+    } else {
+      expect_match(warnings[[2L]], "second warning", fixed = TRUE)
+      expect_false(any(grepl("further grouping set", warnings, fixed = TRUE)))
+    }
+    expect_identical(actual$p, c(0.25, 0.75, 1))
+    expect_identical(calls, 2L)
+  }
 })

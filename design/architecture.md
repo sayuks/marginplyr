@@ -148,21 +148,63 @@ in a portable branch. Preparation normalizes the label and creates the
 metadata it needs; semantic validation is delayed until the verb executor has
 completed its schema-aware preflight and is about to execute.
 
+Column-vector element names follow [ADR 0043](adr/0043-follow-native-column-element-names.md).
+Display conversion retains the names of the actual branch vector; omitted
+dimensions receive unnamed replacements. No source-element names snapshot
+is captured. Local nesting partitions original vectors into cells before
+combining grouping-set branches. The dtplyr fold retains representative display
+vectors while grouping by original identity keys, then combines their current
+element names without scalar summary repair. Outer keys and original inner
+columns follow their respective native references.
+
 ### Factor (`R/factor.R`)
 
 Owns restoration of factor and ordered-factor Margin columns from the metadata
 captured during preparation. Its backend methods preserve levels and ordering
 after labels have been materialized; it does not acquire metadata itself.
 
-This is the only type or attribute restoration in the package, and it exists
-because marginplyr is what decomposed those factors. Every other class and
-attribute of a result is whatever the underlying dplyr and vctrs operations
-produced, and no verb restores one. See
-[ADR 0016](adr/0016-delegate-result-class-and-attributes-to-dplyr.md).
+Factor reconstruction retains its existing backend-specific levels and ordered
+status contract. Other source-derived classes and class-owned structural state
+follow the native references in
+[ADR 0044](adr/0044-follow-native-references-for-input-classes.md), separately
+from the variable-label and dataset-attribute policies in
+[ADR 0042](adr/0042-preserve-variable-labels-through-margin-operations.md).
+A direct
+data.table outer result is reconstructed from a generated empty data.table
+template. This follows native outer classes without copying the source's keys
+or frame metadata onto the changed result. Original nested columns and cell
+objects retain their scoped native guarantee; newly generated list and frame
+subclasses retain only their contents and row-count contract.
 
-The accepted column-label and table-metadata extension is recorded in
-[ADR 0042](adr/0042-preserve-variable-labels-through-margin-operations.md),
-including its implementation status.
+### Variable labels and dataset metadata (`R/margin-metadata.R`)
+
+Owns the scoped variable-label and dataset-reference policy in
+[ADR 0042](adr/0042-preserve-variable-labels-through-margin-operations.md).
+Preparation captures source labels from the existing typed snapshot. Native
+summary results supply their own label evidence before branch binding; labels
+are never inferred from expressions or output names. Eager binding restores
+native union dataset metadata without repeated copying. The dtplyr summary
+call retains the balanced native unions and source graph, carrying only scalar
+label evidence until the final union resolves it.
+
+Generated nested cells receive the appropriate native inner-frame metadata
+for their grouping-set occurrence, separately from outer-frame metadata.
+Finalization restores source labels after display conversion and factor
+reconstruction. Lazy direct collection uses construction-time labels; a query
+boundary prevents a later ordinary operation from reusing that capture for a
+newly computed column. No metadata path reads source rows or runs a second
+native reference pipeline.
+For grouped dtplyr summaries with shares, an execution-local environment clone
+of the native bracket method retains its optimizer and evaluates its input
+once. The `Cdogroups` boundary receives the optimized expressions with their
+original validators; `gforce` guards each native primitive before the next
+expression and before native padding.
+Native `Cghead`, `Cgtail` and `Cgshift` calls supply already-coerced indices.
+These private boundaries are confined to `native_margin_subset()` and
+`native_margin_primitive()`; unknown shapes stop rather than bypass validation.
+Runtime callee checks retain the
+original guarded expression for unproven bindings. No function body or package
+namespace is modified, and no caller method is invoked to predict optimization.
 
 ### Summary selection (`R/summary-selections.R`)
 
@@ -520,7 +562,7 @@ no third part, because it groups by the caller's own columns. See
 Owns branch materialization and `UNION ALL` composition. The summary path
 summarizes each grouping set, checks dynamic names, restores visible grouping
 keys, and labels omitted dimensions. Expansion emits one labelled input branch
-per grouping set; nesting builds on that expansion in its verb executor. Like
+per grouping set; dtplyr nesting builds on that expansion in its verb executor. Like
 the native adapter, it consumes derived inputs and does not own the lifecycle.
 
 Because it is the one path that summarizes the caller's own expressions once

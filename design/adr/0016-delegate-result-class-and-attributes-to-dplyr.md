@@ -288,9 +288,9 @@ pending in #706.
 on 2026-11-10, supersedes this decision's blanket refusal of independent
 restoration for its scoped column-label and dataset-reference guarantees.
 Result shape, existing factor guarantees and other column metadata retain their
-separate owners. Implementation is pending in
-[#1559](https://github.com/sayuks/marginplyr/issues/1559); this amendment changes
-the accepted design, not the behavior of the package at publication.
+separate owners. The scoped extension is implemented for
+[#1559](https://github.com/sayuks/marginplyr/issues/1559); the original amendment
+recorded the accepted design before that implementation.
 
 The earlier rationale that marginplyr removes no other attribute is withdrawn.
 Its own display conversion can remove a variable label before any combination.
@@ -305,8 +305,8 @@ responsibilities and reference operations.
 
 [ADR 0043](0043-follow-native-column-element-names.md), accepted on
 2026-11-10, specializes the delegation boundary for column-vector element
-names using explicit native reference operations. It records a target
-contract; implementation is pending.
+names using explicit native reference operations. The contract is implemented
+in [#1562](https://github.com/sayuks/marginplyr/issues/1562).
 
 ## Amendment: scoped native references for input classes
 
@@ -317,5 +317,5 @@ references; package-owned processing may not add class loss within that scope.
 Arbitrary input frame subclasses still require individual support decisions.
 The existing generated nesting-container contract remains: lists of data
 frames with the promised contents and row counts, without exact list or
-element-subclass equivalence. This amendment records target behavior and does
-not implement it.
+element-subclass equivalence. The corresponding runtime and public comparisons
+are implemented in #1563.

@@ -85,9 +85,11 @@ validate_margin_factor_input <- function(data, factor_info, backend,
 # separately from observations on an NA level when requested.
 encode_factor_for_margin <- function(x,
                                      missing_sentinel,
-                                     preserve_missing_value) {
+                                     preserve_missing_value,
+                                     preserve_element_names = FALSE) {
   # Reconstruction matches declared levels, not a subclass's display strings.
   result <- as.character.factor(x)
+  if (preserve_element_names) names(result) <- names(x)
   if (!isTRUE(preserve_missing_value)) {
     return(result)
   }
@@ -112,6 +114,7 @@ reconstruct_factor_vector <- function(x,
   codes[missing_value] <- NA_integer_
   structure(
     codes,
+    names = names(x),
     levels = new_levels,
     class = if (ordered) c("ordered", "factor") else "factor"
   )

@@ -219,7 +219,33 @@ union_native_posixlt_branches <- function(detail, grand_first) {
   )
 }
 
+# Original inner columns use native nesting before grouping-set combination
+# (ADR 0044); the outer typed-missing keys keep their separate branch oracle.
+native_posixlt_nesting <- function(input, keep, grand_first, rowwise) {
+  included <- if (grand_first) c(FALSE, TRUE) else c(TRUE, FALSE)
+  payload <- if (keep) c("key", "row") else "row"
+  branches <- lapply(seq_along(included), function(i) {
+    keys <- if (included[[i]]) "key" else character()
+    source <- dplyr::select(input, dplyr::all_of(unique(c(keys, payload))))
+    result <- if (rowwise) {
+      dplyr::ungroup(dplyr::nest_by(
+        source, !!!rlang::syms(keys), .keep = keep
+      ))
+    } else {
+      tidyr::nest(source, data = dplyr::all_of(payload),
+                  .by = dplyr::all_of(keys))
+    }
+    if (!included[[i]]) {
+      result <- dplyr::mutate(result, key = !!vctrs::vec_init(input$key, 1L))
+    }
+    dplyr::relocate(dplyr::mutate(result, set = i),
+                    dplyr::all_of(c("key", "set")))
+  })
+  dplyr::union_all(branches[[1L]], branches[[2L]])
+}
+
 test_that("nesting AsIs POSIXlt keys follows native typed-missing branches", {
+  skip_if_suggest_absent("tidyr")
   for (dates in list(
     c("2020-01-01", "2020-01-02", "2020-01-01"),
     c("2020-01-01", "2020-01-02", "2020-01-01", NA_character_)
@@ -238,10 +264,6 @@ test_that("nesting AsIs POSIXlt keys follows native typed-missing branches", {
           }
           combined <- union_native_posixlt_branches(detail, grand_first)
           expected <- dplyr::nest_by(combined, set, key)
-          expected_cells <- lapply(expected$data, function(cell) {
-            if (!keep) return(cell)
-            dplyr::relocate(dplyr::rename(cell, key = source_key), key)
-          })
           for (label in list(NULL, NA_character_)) {
             for (nest in list(nest_with_margins, nest_by_with_margins)) {
               result <- nest(
@@ -253,7 +275,13 @@ test_that("nesting AsIs POSIXlt keys follows native typed-missing branches", {
               expect_identical(unique(class(result$key)),
                                unique(class(expected$key)))
               expect_identical(as.list(result$key), as.list(expected$key))
-              expect_identical(as.list(result$data), expected_cells)
+              native <- native_posixlt_nesting(
+                input, keep, grand_first, identical(nest, nest_by_with_margins)
+              )
+              expect_identical(vapply(result$data, nrow, integer(1)),
+                               vapply(native$data, nrow, integer(1)))
+              expect_identical(lapply(result$data, as.list),
+                               lapply(native$data, as.list))
             }
           }
         }
@@ -325,6 +353,7 @@ test_that("AsIs POSIXlt keys retain included-only and packed label rules", {
 })
 
 test_that("nesting a packed AsIs POSIXlt field retains original keys", {
+  skip_if_suggest_absent("tidyr")
   input <- tibble::tibble(
     key = tibble::tibble(
       ts = I(as.POSIXlt(
@@ -339,9 +368,6 @@ test_that("nesting a packed AsIs POSIXlt field retains original keys", {
     dplyr::mutate(sliced, source_key = key), grand_first = FALSE
   )
   expected <- dplyr::nest_by(combined, set, key)
-  expected_cells <- lapply(expected$data, function(cell) {
-    dplyr::relocate(dplyr::rename(cell, key = source_key), key)
-  })
   detail <- dplyr::nest_by(input, key, .keep = TRUE)
 
   for (nest in list(nest_with_margins, nest_by_with_margins)) {
@@ -364,7 +390,13 @@ test_that("nesting a packed AsIs POSIXlt field retains original keys", {
                        unique(class(expected$key$ts)))
       expect_identical(as.list(result$key$ts), as.list(expected$key$ts))
       expect_identical(result$key$code, expected$key$code)
-      expect_identical(as.list(result$data), expected_cells)
+      native <- native_posixlt_nesting(
+        input, TRUE, FALSE, identical(nest, nest_by_with_margins)
+      )
+      expect_identical(vapply(result$data, nrow, integer(1)),
+                       vapply(native$data, nrow, integer(1)))
+      expect_identical(lapply(result$data, as.list),
+                       lapply(native$data, as.list))
     }
   }
 })

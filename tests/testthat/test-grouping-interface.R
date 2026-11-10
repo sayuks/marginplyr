@@ -932,7 +932,7 @@ test_that("existing groups become implicit fixed keys", {
   expect_equal(dplyr::group_vars(implicit_nest_by), c("year", "region"))
 })
 
-test_that("Margin results take their class from the underlying dplyr verb", {
+test_that("Margin results follow their official class references", {
   data <- data.frame(
     region = c("East", "East", "West"),
     value = c(1, 2, 3)
@@ -944,12 +944,7 @@ test_that("Margin results take their class from the underlying dplyr verb", {
     .grouping = rollup(region)
   )
 
-  expect_identical(class(summary), "data.frame")
-  # ADR 0016 promises delegation rather than the literal class above:
-  # marginplyr adds no class of its own to what the corresponding dplyr verb
-  # returned. Were dplyr to change what `summarise()` gives a plain data
-  # frame, this expectation would keep passing while the previous one failed,
-  # which is the reading that says marginplyr still honours the promise.
+  # ADR 0044 compares the official operation rather than internal composition.
   expect_identical(
     class(summary),
     class(dplyr::summarise(data, value = sum(value), .by = region))
@@ -957,7 +952,6 @@ test_that("Margin results take their class from the underlying dplyr verb", {
 
   expansion <- expand_with_margins(data, .grouping = rollup(region))
 
-  expect_identical(class(expansion), "data.frame")
   expect_identical(
     class(expansion),
     class(dplyr::union_all(data, dplyr::mutate(data, region = "Total")))
@@ -965,7 +959,7 @@ test_that("Margin results take their class from the underlying dplyr verb", {
 
   nested <- nest_with_margins(data, .grouping = rollup(region))
 
-  expect_identical(class(nested), "data.frame")
+  expect_identical(class(nested), class(tidyr::nest(data, .by = region)))
 })
 
 test_that("nest_by_with_margins() is row-wise whatever the input class", {
