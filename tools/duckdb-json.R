@@ -61,13 +61,8 @@ duckdb_json_cache_paths <- function(version, platform,
   paths
 }
 
-# Connections never acquire extensions implicitly or use DuckDB's shared home.
-duckdb_json_connection <- function(directory = NULL) {
-  if (!requireNamespace("DBI", quietly = TRUE) ||
-      !requireNamespace("duckdb", quietly = TRUE)) {
-    stop("DuckDB JSON preparation requires the DBI and duckdb R packages.",
-         call. = FALSE)
-  }
+# Both installation and validation disable implicit extension acquisition.
+duckdb_json_config <- function(directory = NULL) {
   config <- list(
     autoinstall_known_extensions = "false",
     autoload_known_extensions = "false"
@@ -75,7 +70,17 @@ duckdb_json_connection <- function(directory = NULL) {
   if (!is.null(directory)) {
     config$extension_directory <- duckdb_json_absolute(directory, must_work = TRUE)
   }
-  DBI::dbConnect(duckdb::duckdb(shared_home = FALSE, config = config))
+  config
+}
+
+# Connections never acquire extensions implicitly or use DuckDB's shared home.
+duckdb_json_connection <- function(directory = NULL) {
+  if (!requireNamespace("DBI", quietly = TRUE) ||
+      !requireNamespace("duckdb", quietly = TRUE)) {
+    stop("DuckDB JSON preparation requires the DBI and duckdb R packages.",
+         call. = FALSE)
+  }
+  DBI::dbConnect(duckdb::duckdb(shared_home = FALSE, config = duckdb_json_config(directory)))
 }
 
 duckdb_json_identity <- function(con) {
@@ -172,17 +177,39 @@ duckdb_json_lease <- function(path, identity, lock = NULL) {
   c(list(path = path, lock = lock), identity)
 }
 
-# LOAD keeps DuckDB's signature/compatibility checks; the control proves JSON use.
+# LOAD retains a native library beyond disconnection on Windows. Its process
+# must exit before a staged or leased binary can be replaced or removed.
 duckdb_json_validate <- function(path) {
   path <- duckdb_json_absolute(path, must_work = TRUE)
   if (dir.exists(path)) stop("DuckDB JSON extension must be a file.", call. = FALSE)
-  con <- duckdb_json_connection()
+  if (!requireNamespace("processx", quietly = TRUE)) {
+    stop("DuckDB JSON validation requires the processx development tool.", call. = FALSE)
+  }
+  input <- tempfile("duckdb-json-validation-", fileext = ".rds")
+  script <- paste0(input, ".R")
+  on.exit(unlink(c(input, script)), add = TRUE)
+  saveRDS(list(path = path, libraries = .libPaths(), config = duckdb_json_config()), input)
+  writeLines(r"---(
+main <- function() {
+  args <- readRDS(commandArgs(trailingOnly = TRUE)[[1L]])
+  .libPaths(args$libraries)
+  con <- DBI::dbConnect(duckdb::duckdb(shared_home = FALSE, config = args$config))
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- args$path
   DBI::dbExecute(con, paste("LOAD", DBI::dbQuoteString(con, path)))
   answer <- DBI::dbGetQuery(con,
     "SELECT json_extract_string('{\"answer\":42}', '$.answer') AS answer")
   if (!identical(answer$answer, "42")) {
     stop("DuckDB JSON control query did not return 42.", call. = FALSE)
+  }
+}
+main()
+)---", script)
+  result <- processx::run(file.path(R.home("bin"), "Rscript"),
+    c("--vanilla", script, input), error_on_status = FALSE, timeout = 60000L,
+    cleanup_tree = TRUE)
+  if (result$status != 0L) {
+    stop("DuckDB JSON validation failed:\n", result$stdout, result$stderr, call. = FALSE)
   }
   path
 }
@@ -250,7 +277,8 @@ duckdb_json_publish <- function(paths, identity) {
   if (!dir.create(stage)) stop("Cannot create DuckDB JSON staging directory.")
   previous <- file.path(stage, "previous.duckdb_extension")
   published <- FALSE
-  on.exit(suspendInterrupts({
+  prepared <- FALSE
+  on.exit(tryCatch(suspendInterrupts({
     if (!published && file.exists(previous) &&
         !duckdb_json_restore(paths, previous, stage)) {
       stop("Cannot restore DuckDB JSON predecessor retained at ", previous,
@@ -259,6 +287,10 @@ duckdb_json_publish <- function(paths, identity) {
     if (unlink(stage, recursive = TRUE) != 0L) {
       stop("Cannot remove DuckDB JSON staging directory: ", stage, call. = FALSE)
     }
+  }), error = function(cnd) {
+    if (prepared) stop(cnd)
+    # Unwinding already carries the preparation error or interrupt.
+    message("DuckDB JSON cleanup failed: ", conditionMessage(cnd))
   }), add = TRUE)
   archive <- file.path(stage, "json.duckdb_extension.gz")
   binary <- file.path(stage, "json.duckdb_extension")
@@ -300,6 +332,7 @@ duckdb_json_publish <- function(paths, identity) {
     }
     published <- TRUE
   })
+  prepared <- TRUE
   invisible(paths$binary)
 }
 

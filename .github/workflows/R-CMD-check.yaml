@@ -185,7 +185,7 @@ jobs:
           # The Windows provisioning step reads tzdb before check hides it.
           extra-packages: >-
             any::rcmdcheck, local::.
-            ${{ runner.os == 'Windows' && ', any::tzdb' || '' }}
+            ${{ runner.os == 'Windows' && ', any::tzdb, any::filelock' || '' }}
           needs: check
           # This matrix is the provisioned one, so it shares the `full-1` cache
           # with `release-matrix.yaml`'s `build` job and with nothing else.
@@ -244,6 +244,10 @@ jobs:
 
       - name: Provision DuckDB JSON extension
         run: Rscript .github/scripts/provision-duckdb-json.R
+
+      - name: Verify Windows DuckDB JSON provisioning command fixtures
+        if: runner.os == 'Windows'
+        run: Rscript tools/test-duckdb-json-provision.R
 
       # No `upload-snapshots` here, and no `NOT_CRAN`. This matrix emulates
       # CRAN, and testthat skips snapshot expectations under CRAN semantics, so

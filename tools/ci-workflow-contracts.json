@@ -89,7 +89,7 @@
             "uses": "r-lib/actions/setup-r-dependencies@v2",
             "with": {
               "install-pandoc": "false",
-              "extra-packages": "any::rcmdcheck, local::. ${{ runner.os == 'Windows' && ', any::tzdb' || '' }}",
+              "extra-packages": "any::rcmdcheck, local::. ${{ runner.os == 'Windows' && ', any::tzdb, any::filelock' || '' }}",
               "needs": "check",
               "cache-version": "full-1"
             }
@@ -114,6 +114,11 @@
           {
             "name": "Provision DuckDB JSON extension",
             "run": "Rscript .github/scripts/provision-duckdb-json.R"
+          },
+          {
+            "name": "Verify Windows DuckDB JSON provisioning command fixtures",
+            "if": "runner.os == 'Windows'",
+            "run": "Rscript tools/test-duckdb-json-provision.R"
           },
           {
             "name": "Check package",

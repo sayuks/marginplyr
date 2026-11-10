@@ -64,6 +64,7 @@ main <- function() {
   binary <- substring(entry, nchar(key) + 1L)
   stopifnot(file.exists(binary), !grepl("\\", binary, fixed = TRUE),
             startsWith(binary, paste0(normalizePath(runner, winslash = "/"), "/")))
+  stopifnot(!any(grepl("-stage-", basename(list.dirs(runner)), fixed = TRUE)))
   expected_hash <- unname(tools::md5sum(binary))
   archive <- file.path(workspace, "signed-json.gz")
   bytes <- readBin(binary, "raw", n = file.info(binary)$size)
@@ -126,7 +127,14 @@ main <- function() {
     DBI::dbDisconnect(probe, shutdown = TRUE)
     writeLines('acquisition entered', args$entered)
   }
-  if (args$mode == 'publish-boundary') {
+  if (args$mode == 'cleanup-failure') {
+    module$unlink <- function(x, recursive = FALSE, ...) {
+      if (recursive && any(grepl('-stage-', x, fixed = TRUE))) return(1L)
+      base::unlink(x, recursive = recursive, ...)
+    }
+    module$duckdb_json_acquire(install = TRUE, path = '', cache = args$cache)
+    stop('fixture cleanup failure unexpectedly succeeded')
+  } else if (args$mode == 'publish-boundary') {
     paths <- module$duckdb_json_cache_paths(args$version, args$platform, args$cache)
     original <- list(hash = unname(tools::md5sum(paths$binary)),
       modified = as.numeric(file.info(paths$binary)$mtime))
@@ -313,6 +321,22 @@ main()
             identical(fingerprint(first$path), before), length(downloads(hit$log)) == 1L)
   cat("JSON cache reuse and explicit-path failures passed.\n")
 
+  failed_cleanup <- new_args(file.path(workspace, "primary-and-cleanup-failure"),
+    mode = "cleanup-failure", download = "fail")
+  diagnostics <- run_worker(failed_cleanup, status = NULL)$result
+  diagnostics <- paste(diagnostics$stdout, diagnostics$stderr)
+  stopifnot(grepl("fixture download failed", diagnostics, fixed = TRUE),
+            grepl("Cannot remove DuckDB JSON staging directory", diagnostics, fixed = TRUE))
+  cat("JSON preparation retains primary and secondary cleanup diagnostics.\n")
+
+  cleanup_only <- new_args(file.path(workspace, "cleanup-only-failure"),
+    mode = "cleanup-failure")
+  diagnostics <- run_worker(cleanup_only, status = NULL)$result
+  diagnostics <- paste(diagnostics$stdout, diagnostics$stderr)
+  stopifnot(grepl("Cannot remove DuckDB JSON staging directory", diagnostics, fixed = TRUE),
+            !grepl("fixture cleanup failure unexpectedly succeeded", diagnostics, fixed = TRUE))
+  cat("JSON cleanup-only failure remains nonzero.\n")
+
   for (component in c(first$version, ".locks")) {
     name <- if (component == ".locks") "lock" else "version"
     alias <- new_args(file.path(workspace, paste0(name, "-parent-alias")))
@@ -343,7 +367,8 @@ main()
   stopifnot(grepl("setup-duckdb-json.R", paste(result$stdout, result$stderr), fixed = TRUE),
             length(downloads(absent$log)) == 0L)
   failed <- new_args(file.path(workspace, "failed-download"), download = "fail")
-  run_worker(failed, status = NULL)
+  diagnostic <- run_worker(failed, status = NULL)$result
+  stopifnot(grepl("fixture download failed", diagnostic$stderr, fixed = TRUE))
   expected <- file.path(failed$cache, first$version, first$platform, "json.duckdb_extension")
   stopifnot(!file.exists(expected), length(downloads(failed$log)) == 1L)
   interrupted <- new_args(file.path(workspace, "interrupted-download"), download = "interrupt")
