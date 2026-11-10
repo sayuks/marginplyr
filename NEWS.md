@@ -4,6 +4,17 @@
   condition and value wrappers, including finite singleton collections with
   stock callbacks (#1557).
 
+* Ordinary first `across()` name-template warnings retain their authored
+  context and report once across grouping sets beside pattern-selected shares,
+  while preserving callback order and warning-conversion failures (#1553).
+
+* Parent and Total shares use their complete denominator partitions even
+  when SQL inputs carry bounded window frames (#1555).
+
+* Local Parent and Total shares keep distinct complex missing grouping keys
+  in their own fixed partitions and Parent rows without multiplying rows,
+  including retained duplicate grouping sets (#1556).
+
 * Parent and Total shares preserve each grouping set's ordinary input
   selection for the first `across()` source with stable output names,
   including parenthesized per-group selections (#1547).
