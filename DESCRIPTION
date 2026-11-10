@@ -382,6 +382,7 @@ Config/testthat/start-first:
     sql-share-quoted-markers,
     parenthesized-across-identity,
     factor-schema-lifetime,
+    share-complex-keys,
     share-window-frames
 VignetteBuilder:
     quarto

@@ -2773,7 +2773,8 @@ execute_row_matched_shares <- function(operation,
     plan = operation$plan,
     set_id_name = set_id_name,
     kind = kind,
-    parent_key_names = parent_key_names
+    parent_key_names = parent_key_names,
+    local_match = identical(operation$backend$kind, "local")
   )
 }
 
@@ -3314,7 +3315,8 @@ apply_joined_shares <- function(result,
                                 plan,
                                 set_id_name,
                                 kind,
-                                parent_key_names) {
+                                parent_key_names,
+                                local_match) {
   rule <- share_kind_rule(kind)
   target_ids <- rule$target_ids(plan)
   own_denominator_ids <- plan$set_ids[is.na(target_ids)]
@@ -3354,9 +3356,13 @@ apply_joined_shares <- function(result,
       )
     }
     key_names <- denominator$key_names
-    result <- dplyr::left_join(
-      result, mapping, by = join_names, na_matches = "na"
-    )
+    result <- if (local_match) {
+      attach_local_denominators(
+        result, mapping, join_names, unname(denominator_names)
+      )
+    } else {
+      dplyr::left_join(result, mapping, by = join_names, na_matches = "na")
+    }
   }
 
   result <- apply_share_ratios(
@@ -3376,6 +3382,19 @@ apply_joined_shares <- function(result,
     result <- drop_margin_columns(result, internal_names)
   }
   result
+}
+
+# Attach one denominator per local row using the same equality as ordinary
+# grouping. The mapping has one row per key after source cardinality checks.
+attach_local_denominators <- function(result, mapping, join_names,
+                                      denominator_names) {
+  keys <- dplyr::as_tibble(result)[join_names]
+  mapping <- dplyr::as_tibble(mapping)
+  # Ordered join matching merges distinct complex NaN components; hashed
+  # equality preserves the partitions that the ordinary summaries created.
+  rows <- vctrs::vec_match(keys, mapping[join_names])
+  values <- vctrs::vec_slice(mapping[denominator_names], rows)
+  dplyr::mutate(result, !!!values)
 }
 
 # Add shares by reading denominator rows within the same staged relation.
