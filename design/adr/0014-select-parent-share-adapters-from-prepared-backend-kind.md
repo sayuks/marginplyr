@@ -6,6 +6,13 @@ chosen by looking up the backend kind that the Margin operation already
 prepared — never by inspecting the class of the staged ordinary-summary
 result, and never by a chain of capability predicates rebuilt at this seam.
 
+## Amendment (#1556): local denominator matching preserves grouping identity
+
+The Row-matched adapter uses vctrs equality to locate one denominator for each
+local staged row. Its keys retain the ordinary `.by` grouping identity,
+including distinct complex missing-component patterns that an ordered join
+can cross-match. Nonlocal Row-matched inputs keep the backend join.
+
 ## Amendment (#919): lazy shares read one staged relation
 
 The dtplyr and general dbplyr adapters no longer self-join the staged summary.

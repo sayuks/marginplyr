@@ -7,6 +7,10 @@
 * Parent and Total shares use their complete denominator partitions even
   when SQL inputs carry bounded window frames (#1555).
 
+* Local Parent and Total shares keep distinct complex missing grouping keys
+  in their own fixed partitions and Parent rows without multiplying rows,
+  including retained duplicate grouping sets (#1556).
+
 * Parent and Total shares preserve each grouping set's ordinary input
   selection for the first `across()` source with stable output names,
   including parenthesized per-group selections (#1547).
