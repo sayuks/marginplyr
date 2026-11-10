@@ -282,6 +282,7 @@ native_margin_scalar_step <- function(step, schema, share_outputs) {
   ), dtplyr_share_private_call)
   expressions <- as.list(step$j)[-1L]
   checks <- vector("list", length(expressions))
+  guarded <- rep(FALSE, length(expressions))
   proofs <- list()
   for (i in seq_along(expressions)) {
     expression <- expressions[[i]]
@@ -289,7 +290,10 @@ native_margin_scalar_step <- function(step, schema, share_outputs) {
       validators, identical, logical(1), y = expression[[1L]]
     ))) next
     checks[[i]] <- expression
-    expressions[[i]] <- expression[[2L]]
+    # Native .get_gcall reads q[[2]]; zero-argument calls have no GForce form.
+    value <- expression[[2L]]
+    guarded[[i]] <- rlang::is_call(value) && length(value) == 1L
+    if (!guarded[[i]]) expressions[[i]] <- value
     proof <- native_margin_scalar_proof(expression[[2L]])
     if (!is.null(proof)) proofs[[length(proofs) + 1L]] <- proof
   }
@@ -298,7 +302,9 @@ native_margin_scalar_step <- function(step, schema, share_outputs) {
   placeholders <- placeholders[vapply(expressions[placeholders], identical,
                                       logical(1), y = NA_real_)]
   keep <- !names(expressions) %in% placeholders
-  step[["marginplyr_native_checks"]] <- checks[keep]
+  checks <- checks[keep]
+  attr(checks, "marginplyr_native_guarded") <- guarded[keep]
+  step[["marginplyr_native_checks"]] <- checks
   step[["marginplyr_share_placeholders"]] <- placeholders
   step[["marginplyr_native_j"]] <- rlang::call2(
     step$j[[1L]], !!!expressions[keep]
@@ -466,9 +472,18 @@ check_native_margin_j_shape <- function(j, checks) {
 # Apply the original check to the optimized expression before native padding.
 guard_native_margin_j <- function(j, checks) {
   check_native_margin_j_shape(j, checks)
+  guarded <- attr(checks, "marginplyr_native_guarded", exact = TRUE)
+  stopifnot("Unknown native summary guard ownership." =
+              is.logical(guarded) && length(guarded) == length(checks))
   for (i in seq_along(checks)) {
     if (is.null(checks[[i]])) next
     check <- checks[[i]]
+    if (guarded[[i]]) {
+      stopifnot("Native summary lost its original validator." =
+                  rlang::is_call(j[[i + 1L]]) &&
+                  identical(j[[i + 1L]][[1L]], check[[1L]]))
+      next
+    }
     check[[2L]] <- j[[i + 1L]]
     j[[i + 1L]] <- check
   }
