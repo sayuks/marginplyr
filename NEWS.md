@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Ordinary first `across()` name-template warnings retain their authored
+  context and report once across grouping sets beside pattern-selected shares,
+  while preserving callback order and warning-conversion failures (#1553).
+
 * Parent and Total shares use their complete denominator partitions even
   when SQL inputs carry bounded window frames (#1555).
 
