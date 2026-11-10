@@ -509,8 +509,8 @@ native_margin_share_columns <- function(data, columns, column_order, state) {
   data
 }
 
-# Native scalar proofs establish cardinality; inspect the actual native column
-# type without slicing it through a caller-owned vector method.
+# Inspect the actual native column type without slicing it through a
+# caller-owned vector method.
 check_native_margin_source <- function(value, share_output, source_summary,
                                        share_kind, call_text) {
   if (!is_share_source_type(value)) {
