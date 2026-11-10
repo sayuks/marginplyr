@@ -4,6 +4,9 @@
   context and report once across grouping sets beside pattern-selected shares,
   while preserving callback order and warning-conversion failures (#1553).
 
+* Parent and Total shares use their complete denominator partitions even
+  when SQL inputs carry bounded window frames (#1555).
+
 * Parent and Total shares preserve each grouping set's ordinary input
   selection for the first `across()` source with stable output names,
   including parenthesized per-group selections (#1547).
