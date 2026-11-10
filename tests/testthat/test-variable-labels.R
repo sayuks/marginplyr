@@ -8,6 +8,122 @@ label_source <- function() {
   )
 }
 
+test_that("original nested columns retain labels after native slicing", {
+  input <- tibble::tibble(
+    g = c("b", "a"),
+    payload = I(as.POSIXlt(c("2020-01-01", "2020-01-02"), tz = "UTC"))
+  )
+  attr(input$payload, "label") <- "Timestamp description"
+  expect_identical(attr(input$payload, "label"), "Timestamp description")
+  expect_identical(class(input$payload), c("AsIs", "POSIXlt", "POSIXt"))
+  before <- serialize(input, NULL)
+  for (verb in list(nest_with_margins, nest_by_with_margins)) {
+    for (keep in c(FALSE, TRUE)) {
+      result <- verb(input, .grouping = rollup(g), .keep = keep)
+      expect_identical(vapply(result$data, nrow, integer(1)), c(1L, 1L, 2L))
+      for (cell in result$data) {
+        expect_identical(attr(cell$payload, "label"), "Timestamp description")
+      }
+    }
+  }
+  expect_identical(serialize(input, NULL), before)
+})
+
+test_that("ordered nested source labels cover payloads and retained keys", {
+  skip_if_suggest_absent("tidyr")
+  for (labels in list(c(NA_character_, ""), c("", NA_character_))) {
+    input <- tibble::tibble(
+      k = I(as.POSIXlt(rep("2020-01-01", 2L), tz = "UTC")),
+      g = c("b", "a"),
+      payload = I(as.POSIXlt(c("2020-01-01", "2020-01-02"), tz = "UTC"))
+    )
+    attr(input$k, "label") <- labels[[1L]]
+    attr(input$g, "label") <- "Dimension"
+    attr(input$payload, "label") <- labels[[2L]]
+    expect_identical(lapply(input, attr, which = "label"),
+                     list(k = labels[[1L]], g = "Dimension",
+                          payload = labels[[2L]]))
+    before <- serialize(input, NULL)
+    for (rowwise in c(FALSE, TRUE)) {
+      for (keep in c(FALSE, TRUE)) {
+        native <- function(keys) {
+          payload <- if (keep) names(input) else "payload"
+          if (rowwise) {
+            dplyr::ungroup(dplyr::nest_by(
+              dplyr::select(input, dplyr::all_of(unique(c(keys, payload)))),
+              !!!rlang::syms(keys), .keep = keep
+            ))
+          } else {
+            tidyr::nest(input, data = dplyr::all_of(payload),
+                        .by = dplyr::all_of(keys))
+          }
+        }
+        detail <- native(c("k", "g"))
+        total <- dplyr::mutate(native("k"), g = "Total")
+        verb <- if (rowwise) nest_by_with_margins else nest_with_margins
+        for (multi in c(FALSE, TRUE)) {
+          expected <- if (multi) dplyr::union_all(detail, total) else detail
+          actual <- verb(input, .by = k, .grouping = if (multi) rollup(g) else
+                           grouping_set(g), .keep = keep, .sort = "last")
+          expect_identical(actual$g, structure(c("a", "b", "Total"[multi]),
+                                               label = "Dimension"))
+          expect_identical(attr(actual$k, "label"), labels[[1L]])
+          for (i in seq_along(actual$data)) {
+            cell <- actual$data[[i]]
+            reference <- expected$data[[match(actual$g[[i]], expected$g)]]
+            expect_named(cell, if (keep) names(input) else "payload")
+            expect_identical(nrow(cell), nrow(reference))
+            for (column in names(cell)) {
+              # Native slicing owns class state; ADR 0042 separately retains
+              # the source variable label, including a retained original key.
+              value <- reference[[column]]
+              attr(value, "label") <- attr(input[[column]], "label")
+              expect_identical(cell[[column]], value)
+            }
+          }
+        }
+      }
+    }
+    expect_identical(serialize(input, NULL), before)
+  }
+})
+
+test_that("empty native-sliced nesting retains source label representations", {
+  input <- tibble::tibble(
+    g = character(), payload = I(as.POSIXlt(character(), tz = "UTC"))
+  )
+  attr(input$g, "label") <- ""
+  attr(input$payload, "label") <- NA_character_
+  expect_identical(attr(input$g, "label"), "")
+  expect_identical(attr(input$payload, "label"), NA_character_)
+  before <- serialize(input, NULL)
+  native <- dplyr::nest_by(input)$data[[1L]]
+  for (rowwise in c(FALSE, TRUE)) {
+    verb <- if (rowwise) nest_by_with_margins else nest_with_margins
+    for (keep in c(FALSE, TRUE)) {
+      for (plan in list(NULL, grouping_set(g), rollup(g))) {
+        result <- verb(input, .grouping = plan, .keep = keep, .sort = "last")
+        expect_identical(nrow(result), as.integer(rowwise && is.null(plan)))
+        if ("g" %in% names(result)) expect_identical(
+          attr(result$g, "label"), ""
+        )
+        for (cell in result$data) {
+          expect_named(cell, names(input))
+          expect_identical(nrow(cell), 0L)
+          expect_identical(attr(cell$g, "label"), "")
+          expect_identical(attr(cell$payload, "label"), NA_character_)
+          for (column in names(cell)) {
+            value <- native[[column]]
+            attr(value, "label") <- attr(input[[column]], "label")
+            expect_identical(cell[[column]], value)
+          }
+        }
+      }
+    }
+  }
+  expect_identical(serialize(input, NULL), before)
+})
+
 test_that("source variable labels survive every local Margin verb", {
   source <- label_source()
   original <- source
