@@ -723,9 +723,9 @@ margin_column_info <- function(data_proxy,
     if (backend$kind %in% c("local", "dtplyr") ||
           is.data.frame(x) || is.array(x)) {
       value <- vctrs::vec_init(x, 1L)
-      # An omitted dimension receives an unnamed replacement (ADR 0043).
-      # The class method preserves structural names, such as POSIXlt fields.
-      if (!is.data.frame(value)) names(value) <- NULL
+      # Array names can alias dimnames, which stay on the typed missing row.
+      # The class method preserves structural names such as POSIXlt fields.
+      if (!is.data.frame(value) && is.null(dim(value))) names(value) <- NULL
       value
     } else if (identical(backend$kind, "duckdb")) {
       dbplyr::sql("NULL")
