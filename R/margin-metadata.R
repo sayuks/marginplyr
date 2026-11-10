@@ -59,18 +59,9 @@ combine_margin_column_labels <- function(branches) {
       is.null(value) ||
         (is.character(value) && !is.object(value) && length(value) == 1L)
     }, logical(1))
-    if (!all(standard)) {
-      return(NULL)
-    }
-    present <- unique(unlist(values, use.names = FALSE))
-    nonmissing <- present[!is.na(present)]
-    if (length(nonmissing) == 1L) {
-      return(nonmissing)
-    }
-    if (length(nonmissing) == 0L && anyNA(present)) {
-      return(NA_character_)
-    }
-    NULL
+    margin_label_consensus(
+      all(standard), unique(unlist(values, use.names = FALSE))
+    )
   })
   names(labels) <- columns
   labels[!vapply(labels, is.null, logical(1))]
@@ -87,10 +78,14 @@ standard_margin_frame <- function(data) {
 
 # Dataset metadata excludes fields describing the actual frame structure.
 margin_frame_metadata <- function(data) {
-  attributes(data)[setdiff(names(attributes(data)), c(
-    "names", "row.names", "class", "groups", ".internal.selfref",
-    "sorted", "index"
-  ))]
+  structural <- c("names", "row.names", "class")
+  if (inherits(data, c("grouped_df", "rowwise_df"))) {
+    structural <- c(structural, "groups")
+  }
+  if (inherits(data, "data.table")) {
+    structural <- c(structural, ".internal.selfref", "sorted", "index")
+  }
+  attributes(data)[setdiff(names(attributes(data)), structural)]
 }
 
 # Apply native inner-frame metadata to a generated cell, never its structure.
@@ -101,26 +96,26 @@ restore_margin_frame_metadata <- function(data, metadata) {
 
 # Native tidyr drops metadata for direct data.table or empty dtplyr cells.
 # Local nest_by retains metadata only for keyless sets, also under dtplyr.
-margin_nest_frame_metadata <- function(operation, rowwise, keep) {
-  proxy <- operation$data_proxy
+margin_nest_frame_metadata <- function(proxy, data_vars, plan, kind,
+                                       rowwise, keep) {
   metadata <- if (standard_margin_frame(proxy)) {
     margin_frame_metadata(proxy)
   } else {
     list()
   }
   payload <- if (keep) {
-    operation$data_vars
+    data_vars
   } else {
-    setdiff(operation$data_vars,
-            c(operation$plan$by, operation$plan$dimensions))
+    setdiff(data_vars,
+            c(plan$by, plan$dimensions))
   }
-  empty_dtplyr <- identical(operation$backend$kind, "dtplyr") &&
+  empty_dtplyr <- identical(kind, "dtplyr") &&
     length(payload) == 0L
-  direct_dt <- identical(operation$backend$kind, "local") &&
+  direct_dt <- identical(kind, "local") &&
     inherits(proxy, "data.table")
-  lapply(operation$plan$sets, function(set) {
+  lapply(plan$sets, function(set) {
     if (rowwise) {
-      if (length(c(operation$plan$by, set)) == 0L) metadata else list()
+      if (length(c(plan$by, set)) == 0L) metadata else list()
     } else if (empty_dtplyr || direct_dt) {
       list()
     } else {
@@ -183,11 +178,7 @@ union_dtplyr_margin_labels <- function(x, y, final = FALSE) {
     return(result)
   }
   labels <- lapply(state, function(entry) {
-    if (!entry$valid) return(NULL)
-    values <- entry$values[!is.na(entry$values)]
-    if (length(values) == 1L) return(values)
-    if (length(values) == 0L && anyNA(entry$values)) return(NA_character_)
-    NULL
+    margin_label_consensus(entry$valid, entry$values)
   })
   labels <- labels[!vapply(labels, is.null, logical(1))]
   restore_margin_variable_labels(result, labels)
@@ -239,9 +230,9 @@ direct_margin_label_result <- function(x) {
   identical(x, boundary)
 }
 
-# Numeric storage and generated scalar calls establish safe native candidates.
-# Object columns additionally require proven native optimization at execution.
-native_margin_scalar_proof <- function(expr, schema, grouped) {
+# Callee evidence names functions only; native data.table owns argument grammar.
+# Unknown bindings retain the guarded expression without forcing caller code.
+native_margin_scalar_proof <- function(expr) {
   if (!rlang::is_call(expr)) return(NULL)
   head <- expr[[1L]]
   if (!rlang::is_symbol(head) && !rlang::is_call(head, "::", n = 2L)) {
@@ -252,33 +243,12 @@ native_margin_scalar_proof <- function(expr, schema, grouped) {
   owners <- c(mean = "base", sum = "base", min = "base", max = "base",
               prod = "base", median = "stats", var = "stats", sd = "stats",
               length = "base", head = "utils", tail = "utils",
-              first = "data.table", last = "data.table")
+              first = "data.table", last = "data.table", shift = "data.table",
+              weighted.mean = "stats", `[` = "base", `[[` = "base")
   if (!name %in% names(owners)) return(NULL)
   if (!is.null(namespace) && !identical(namespace, owners[[name]])) return(NULL)
-  args <- as.list(expr)[-1L]
-  if (name %in% c("first", "last") && !grouped) return(NULL)
-  if (length(args) == 0L || !rlang::is_symbol(args[[1L]])) return(NULL)
-  column <- rlang::as_name(args[[1L]])
-  if (!column %in% names(schema)) return(NULL)
-  value <- schema[[column]]
-  if (!typeof(value) %in% c("integer", "double") ||
-        !is.null(attr(value, "dim", exact = TRUE))) return(NULL)
-  if (name %in% c("head", "tail")) {
-    if (!grouped || length(args) != 2L ||
-          rlang::is_missing(args[[2L]]) ||
-          !(identical(args[[2L]], 1L) || identical(args[[2L]], 1))) return(NULL)
-  } else if (length(args) > 1L) {
-    argument <- argument_names(args)[[2L]]
-    partial <- name %in% c("mean", "median", "var", "sd") &&
-      startsWith(argument, "na") && startsWith("na.rm", argument)
-    if (length(args) != 2L ||
-          !(identical(argument, "na.rm") || partial) ||
-          !(identical(args[[2L]], TRUE) || identical(args[[2L]], FALSE))) {
-      return(NULL)
-    }
-  }
-  list(name = name, owner = unname(owners[[name]]), object = is.object(value),
-       gforce_only = name %in% c("first", "last"), namespace = namespace)
+  list(name = name, owner = unname(owners[[name]]), namespace = namespace,
+       gforce_only = name %in% c("first", "last", "shift"))
 }
 
 # Recheck lexical function bindings at execution without forcing caller code.
@@ -296,102 +266,43 @@ native_margin_scalar_bindings <- function(proofs, env) {
   }, logical(1)))
 }
 
-# Retain checked/native alternatives as expressions on the same lazy step.
-# No summary is constructed or evaluated twice and the input schema is reused.
+# Retain checked/native alternatives on the same grouped query node. Native
+# optimization precedes validation; both paths evaluate the parent only once.
 native_margin_scalar_step <- function(step, schema, share_outputs) {
   if (is.null(schema)) return(step)
   if (inherits(step, "dtplyr_step_group")) {
-    step$parent <- native_margin_scalar_step(
-      step$parent, schema, share_outputs
-    )
+    step$parent <- native_margin_scalar_step(step$parent, schema, share_outputs)
     return(step)
   }
-  if (!inherits(step, "dtplyr_step_subset") || !rlang::is_call(step$j)) {
-    return(step)
-  }
+  if (!inherits(step, "dtplyr_step_subset") || !rlang::is_call(step$j) ||
+        length(step$groups) == 0L) return(step)
   validators <- lapply(c(
     "check_dtplyr_share_source", "check_dtplyr_share_scalar",
     "check_dtplyr_share_ordinary"
   ), dtplyr_share_private_call)
   expressions <- as.list(step$j)[-1L]
+  checks <- vector("list", length(expressions))
   proofs <- list()
-  changed <- FALSE
-  positions <- integer()
-  checks <- list()
   for (i in seq_along(expressions)) {
     expression <- expressions[[i]]
     if (!rlang::is_call(expression) || !any(vapply(
       validators, identical, logical(1), y = expression[[1L]]
     ))) next
-    value <- expression[[2L]]
-    proof <- if (identical(value, quote(.N))) {
-      list()
-    } else {
-      native_margin_scalar_proof(value, schema, length(step$groups) > 0L)
-    }
-    if (is.null(proof)) next
-    if (length(proof) > 0L) proofs[[as.character(i)]] <- proof
-    checks[[as.character(i)]] <- expression
-    positions <- c(positions, i)
-    expressions[[i]] <- value
-    changed <- TRUE
+    checks[[i]] <- expression
+    expressions[[i]] <- expression[[2L]]
+    proof <- native_margin_scalar_proof(expression[[2L]])
+    if (!is.null(proof)) proofs[[length(proofs) + 1L]] <- proof
   }
-  if (!changed) return(step)
+  if (all(vapply(checks, is.null, logical(1)))) return(step)
   placeholders <- intersect(names(expressions), share_outputs)
-  placeholders <- placeholders[vapply(expressions[placeholders],
-                                      identical, logical(1), y = NA_real_)]
+  placeholders <- placeholders[vapply(expressions[placeholders], identical,
+                                      logical(1), y = NA_real_)]
   keep <- !names(expressions) %in% placeholders
-  native_expressions <- expressions[keep]
-  all_gforce <- length(step$groups) > 0L && all(vapply(
-    native_expressions, function(expression) {
-      if (identical(expression, quote(.N))) return(TRUE)
-      proof <- native_margin_scalar_proof(expression, schema, grouped = TRUE)
-      !is.null(proof) && (is.null(proof$namespace) ||
-                            identical(proof$namespace, "data.table"))
-    }, logical(1)
-  ))
-  object_positions <- as.integer(names(proofs)[vapply(
-    proofs, function(proof) isTRUE(proof$object), logical(1)
-  )])
-  guarded <- object_positions[!vapply(object_positions, function(i) {
-    (identical(proofs[[as.character(i)]]$name, "mean") &&
-       length(step$groups) > 0L) || all_gforce
-  }, logical(1))]
-  gforce_only <- as.integer(names(proofs)[vapply(
-    proofs, function(proof) isTRUE(proof$gforce_only), logical(1)
-  )])
-  if (!all_gforce) guarded <- union(guarded, gforce_only)
-  for (i in guarded) expressions[[i]] <- as.list(step$j)[[i + 1L]]
-  proofs <- proofs[setdiff(names(proofs), as.character(guarded))]
-  checks <- checks[setdiff(names(checks), as.character(guarded))]
-  positions <- setdiff(positions, guarded)
-  object_positions <- setdiff(object_positions, guarded)
-  if (length(positions) == 0L) return(step)
-  expressions <- expressions[keep]
-  names(checks) <- names(as.list(step$j)[-1L])[as.integer(names(checks))]
-  checks <- checks[!vapply(checks, function(check) {
-    identical(check[[1L]], dtplyr_share_private_call(
-      "check_dtplyr_share_ordinary"
-    ))
-  }, logical(1))]
-  step[["marginplyr_native_checks"]] <- checks
-  object_functions <- vapply(proofs[as.character(object_positions)],
-                             `[[`, character(1), "name")
-  step[["marginplyr_scalar_min_opt"]] <- if (length(object_functions) == 0L) {
-    0L
-  } else if (all(object_functions == "mean")) {
-    1L
-  } else {
-    2L
-  }
-  scalar_functions <- vapply(proofs, `[[`, character(1), "name")
-  if (length(setdiff(gforce_only, guarded)) > 0L) {
-    step[["marginplyr_scalar_min_opt"]] <- 2L
-  }
-  step[["marginplyr_scalar_needs_rows"]] <- any(object_functions != "mean") ||
-    any(scalar_functions %in% c("head", "tail", "first", "last"))
+  step[["marginplyr_native_checks"]] <- checks[keep]
   step[["marginplyr_share_placeholders"]] <- placeholders
-  step[["marginplyr_native_j"]] <- rlang::call2(step$j[[1L]], !!!expressions)
+  step[["marginplyr_native_j"]] <- rlang::call2(
+    step$j[[1L]], !!!expressions[keep]
+  )
   step[["marginplyr_scalar_proofs"]] <- proofs
   step[["marginplyr_checked_scalar"]] <- list(
     j = step$j, vars = step$vars, groups = step$groups
@@ -400,7 +311,7 @@ native_margin_scalar_step <- function(step, schema, share_outputs) {
   step
 }
 
-# Choose one summary call only after native callee bindings are established.
+# Preserve the native query node's ownership boundary after ordinary edits.
 #' @exportS3Method dtplyr::dt_call
 #' @noRd
 dt_call.marginplyr_native_scalars <- function(x, needs_copy = x$needs_copy) {
@@ -410,71 +321,187 @@ dt_call.marginplyr_native_scalars <- function(x, needs_copy = x$needs_copy) {
   }
   checked <- NextMethod()
   native <- checked
-  native[[4L]] <- x[["marginplyr_native_j"]]
-  if (length(x[["marginplyr_share_placeholders"]]) > 0L) {
-    native <- rlang::call2(
-      marginplyr_private_call("native_margin_share_columns"), native,
-      x[["marginplyr_share_placeholders"]], x$vars,
-      margin_metadata_literal(x[["marginplyr_native_checks"]])
-    )
-  }
-  condition <- rlang::call2(
-    marginplyr_private_call("native_margin_scalar_bindings"),
-    margin_metadata_literal(x[["marginplyr_scalar_proofs"]]),
-    margin_metadata_literal(x$env)
+  native[[1L]] <- rlang::call2(
+    marginplyr_private_call("native_margin_subset"),
+    margin_metadata_literal(x[["marginplyr_native_checks"]])
   )
-  minimum <- x[["marginplyr_scalar_min_opt"]]
-  if (minimum > 0L) {
-    condition <- rlang::call2(
-      base::`&&`, condition,
-      rlang::call2(base::`>=`,
-                   rlang::call2(base::getOption, "datatable.optimize"), minimum)
-    )
-  }
-  source_name <- new_margin_internal_names(
-    1L, unique(c(x$vars, all.names(checked), names(x$locals))),
+  native[[4L]] <- x[["marginplyr_native_j"]]
+  private_names <- new_margin_internal_names(
+    2L, unique(c(x$vars, all.names(checked), names(x$locals))),
     prefix = "..marginplyr_scalar_input_"
   )
-  source <- rlang::sym(source_name)
+  source <- rlang::sym(private_names[[1L]])
+  state <- rlang::sym(private_names[[2L]])
+  native[[1L]][[3L]] <- state
   parent <- checked[[2L]]
   checked[[2L]] <- source
-  if (length(x[["marginplyr_share_placeholders"]]) > 0L) {
-    native[[2L]][[2L]] <- source
-  } else {
-    native[[2L]] <- source
-  }
-  if (isTRUE(x[["marginplyr_scalar_needs_rows"]])) {
-    condition <- rlang::call2(
-      base::`&&`, condition,
-      rlang::call2(base::`>`, rlang::call2(base::nrow, source), 0L)
-    )
-  }
-  body <- rlang::call2(base::`if`, condition, native, checked)
-  bind <- rlang::call2(base::`<-`, source, parent)
-  rlang::call2(base::`{`, bind, body)
+  native[[2L]] <- source
+  native <- rlang::call2(
+    marginplyr_private_call("native_margin_share_columns"), native,
+    x[["marginplyr_share_placeholders"]], x$vars, state
+  )
+  native <- rlang::call2(
+    base::`{`,
+    rlang::call2(base::`<-`, state, rlang::call2(
+      base::new.env, parent = rlang::call2(base::emptyenv)
+    )),
+    native
+  )
+  condition <- rlang::call2(
+    base::`&&`,
+    rlang::call2(
+      marginplyr_private_call("native_margin_scalar_bindings"),
+      margin_metadata_literal(x[["marginplyr_scalar_proofs"]]),
+      margin_metadata_literal(x$env)
+    ),
+    rlang::call2(base::`>`, rlang::call2(base::nrow, source), 0L)
+  )
+  rlang::call2(
+    base::`{`, rlang::call2(base::`<-`, source, parent),
+    rlang::call2(base::`if`, condition, native, checked)
+  )
+}
 
+# A local function environment intercepts data.table's grouped evaluation after
+# optimization: Cdogroups receives guarded jsub; gforce guards each primitive.
+# The native function body and namespace remain untouched. Unknown shapes stop.
+native_margin_subset <- function(checks, state) {
+  state$validated <- FALSE
+  native <- utils::getFromNamespace("[.data.table", "data.table")
+  owner <- environment(native)
+  dogroups <- get("Cdogroups", envir = owner)
+  gforce <- get("gforce", envir = owner)
+  shim <- new.env(parent = owner)
+  shim$.Call <- function(native_symbol, ...) {
+    if (identical(native_symbol, dogroups)) {
+      frame <- parent.frame()
+      stopifnot("Native grouped summary has no expression to validate." =
+                  exists("jsub", frame, inherits = FALSE))
+      j <- get("jsub", frame, inherits = FALSE)
+      assign("jsub", guard_native_margin_j(j, checks), envir = frame)
+      state$validated <- TRUE
+    }
+    base::.Call(native_symbol, ...)
+  }
+  shim$gforce <- function(env, jsub, o, f, l, rows) {
+    check_native_margin_j_shape(jsub, checks)
+    evaluated <- jsub
+    for (i in seq_along(checks)) {
+      expression <- jsub[[i + 1L]]
+      if (identical(expression, quote(.N))) next
+      stopifnot("Unknown native optimized summary call." =
+                  rlang::is_call(expression) &&
+                  rlang::is_symbol(expression[[1L]]))
+      evaluated[[i + 1L]][[1L]] <- native_margin_primitive(
+        rlang::as_name(expression[[1L]]), checks[[i]], l, owner
+      )
+    }
+    result <- gforce(env, evaluated, o, f, l, rows)
+    stopifnot("Unknown native grouped summary result shape." =
+                is.list(result) && !is.object(result) &&
+                length(result) == length(checks))
+    state$validated <- TRUE
+    result
+  }
+  environment(native) <- shim
+  native
+}
+
+# Guard one optimized primitive while its native GForce context is active.
+# Cghead/Cgtail/Cgshift supply already-coerced indices without another dispatch.
+native_margin_primitive <- function(name, check, groups, owner) {
+  force(check)
+  force(groups)
+  scalar <- name %in% c(
+    "gfirst", "glast", "g[", "g[[", "gsum", "gmean", "gprod", "gmedian",
+    "gmin", "gmax", "gvar", "gsd", "gweighted.mean"
+  )
+  variable <- name %in% c("ghead", "gtail", "gshift")
+  stopifnot("Unknown native optimized summary primitive." = scalar || variable)
+  native <- get(name, envir = owner)
+  indices <- NULL
+  if (variable) {
+    symbol <- get(paste0("C", name), envir = owner)
+    shim <- new.env(parent = environment(native))
+    shim$.Call <- function(native_symbol, ...) {
+      args <- list(...)
+      stopifnot("Unknown native indexed summary evaluation shape." =
+                  identical(native_symbol, symbol) &&
+                  length(args) == if (name == "gshift") 4L else 2L)
+      value <- do.call(base::.Call, c(list(native_symbol), args), quote = TRUE)
+      stopifnot("Unknown native summary index representation." =
+                  typeof(args[[2L]]) == "integer" && !is.object(args[[2L]]))
+      indices <<- args[[2L]]
+      value
+    }
+    environment(native) <- shim
+  }
+  function(...) {
+    value <- native(...)
+    sizes <- if (scalar) {
+      rep.int(1L, length(groups))
+    } else if (name == "gshift") {
+      if (length(indices) == 1L) {
+        groups
+      } else {
+        rep.int(length(indices), length(groups))
+      }
+    } else {
+      stopifnot("Unknown native head/tail index shape." = length(indices) == 1L)
+      pmin.int(groups, indices)
+    }
+    size <- if (any(sizes != 1L)) sizes[which(sizes != 1L)[[1L]]] else 1L
+    validate_native_margin_value(value, size, check)
+    value
+  }
+}
+
+# Native optimization may rewrite calls, but each output must retain its slot.
+check_native_margin_j_shape <- function(j, checks) {
+  stopifnot("Unknown native grouped summary expression shape." =
+              rlang::is_call(j, "list") && length(j) == length(checks) + 1L)
+  invisible(NULL)
+}
+
+# Apply the original check to the optimized expression before native padding.
+guard_native_margin_j <- function(j, checks) {
+  check_native_margin_j_shape(j, checks)
+  for (i in seq_along(checks)) {
+    if (is.null(checks[[i]])) next
+    check <- checks[[i]]
+    check[[2L]] <- j[[i + 1L]]
+    j[[i + 1L]] <- check
+  }
+  j
+}
+
+# Optimized primitive cardinality comes from its raw result and native groups.
+# Only cardinality failures use a plain witness; type checks use actual columns.
+validate_native_margin_value <- function(value, size, check) {
+  if (is.null(check)) return(invisible(NULL))
+  ordinary <- identical(check[[1L]], dtplyr_share_private_call(
+    "check_dtplyr_share_ordinary"
+  ))
+  if (size != 1L) {
+    witness <- rep.int(NA_real_, if (size == 0L) 0L else 2L)
+    check[[2L]] <- rlang::call2(base::quote, witness)
+    rlang::eval_bare(check, baseenv())
+  }
+  if (!ordinary) {
+    check[[1L]] <- marginplyr_private_call(if (identical(
+      check[[1L]], dtplyr_share_private_call("check_dtplyr_share_source")
+    )) "check_native_margin_source" else "check_native_margin_scalar")
+    check[[2L]] <- rlang::call2(base::quote, value)
+    rlang::eval_bare(check, baseenv())
+  }
+  invisible(NULL)
 }
 
 # Generated share placeholders must not disable native aggregate optimization.
-# Add them on the freshly summarized table, preserving its public column order.
-native_margin_share_columns <- function(data, columns, column_order, checks) {
-  if (nrow(data) > 0L) {
-    for (column in names(checks)) {
-      check <- checks[[column]]
-      value <- data[[column]]
-      checker <- if (identical(check[[1L]], dtplyr_share_private_call(
-        "check_dtplyr_share_source"
-      ))) {
-        "check_native_margin_source"
-      } else {
-        "check_native_margin_scalar"
-      }
-      check[[1L]] <- marginplyr_private_call(checker)
-      # Only the generated validator remains; its caller expression has run.
-      check[[2L]] <- rlang::call2(base::quote, value)
-      rlang::eval_bare(check, baseenv())
-    }
-  }
+native_margin_share_columns <- function(data, columns, column_order, state) {
+  force(data)
+  stopifnot("Native grouped summary bypassed source validation." =
+              isTRUE(state$validated))
   for (column in columns) {
     data.table::set(data, j = column, value = rep(NA_real_, nrow(data)))
   }
@@ -507,7 +534,7 @@ check_native_margin_scalar <- function(value, input, mapping, call_text) {
 # Bare numeric vectors can also acquire implicit S3 methods. Unknown method
 # bindings keep the original guard, without forcing a method or calling it.
 native_margin_default_dispatch <- function(proof, env) {
-  if (!proof$name %in% c("mean", "median")) return(TRUE)
+  if (!proof$name %in% c("mean", "median", "weighted.mean")) return(TRUE)
   missing <- new.env(parent = emptyenv())
   owner <- asNamespace(proof$owner)
   registry <- get(".__S3MethodsTable__.", envir = owner)
@@ -521,8 +548,19 @@ native_margin_default_dispatch <- function(proof, env) {
   }
   method <- paste0(proof$name, ".default")
   expected <- get(method, envir = owner, inherits = FALSE)
-  identical(ordinary_function_binding(method, env, owners = proof$owner),
-            expected) && dtplyr_registered_method(
-    method, expected, envir = owner, home = owner, absent = TRUE
-  )
+  binding <- ordinary_function_binding(method, env, owners = proof$owner,
+                                       absent = missing)
+  (identical(binding, missing) || identical(binding, expected)) &&
+    dtplyr_registered_method(
+      method, expected, envir = owner, home = owner, absent = TRUE
+    )
+}
+
+# Resolve already collected label evidence; NULL leaves native combination.
+margin_label_consensus <- function(valid, values) {
+  if (!valid) return(NULL)
+  present <- unique(values[!is.na(values)])
+  if (length(present) == 1L) return(present)
+  if (length(present) == 0L && anyNA(values)) return(NA_character_)
+  NULL
 }

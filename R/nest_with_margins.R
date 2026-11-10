@@ -319,7 +319,10 @@ nest_margin_pipeline <- function(.data,
       tibble::new_tibble(columns, nrow = 0L)
     }
     cell <- restore_margin_frame_metadata(
-      cell, margin_nest_frame_metadata(operation, rowwise, .keep)[[1L]]
+      cell, margin_nest_frame_metadata(
+        operation$data_proxy, operation$data_vars, operation$plan,
+        operation$backend$kind, rowwise, .keep
+      )[[1L]]
     )
     id <- operation$set_id_name
     result <- tibble::new_tibble(
@@ -361,6 +364,47 @@ execute_margin_nest <- function(operation, .key, .keep, rowwise = FALSE) {
     {
       plan <- operation$plan
       group_cols <- c(plan$by, plan$dimensions)
+      if (identical(operation$backend$kind, "local")) {
+        validate_margin_operation(operation)
+        sorting <- margin_sorting(operation)
+        set_col <- operation$set_id_name %||% new_margin_internal_names(
+          1L, c(operation$data_vars, .key), prefix = "..marginplyr_nest_"
+        )
+        metadata <- margin_nest_frame_metadata(
+          operation$data_proxy, operation$data_vars, plan,
+          operation$backend$kind, rowwise, .keep
+        )
+        branches <- Map(function(set, id) {
+          keys <- unique(c(plan$by, set))
+          payload <- if (.keep) {
+            operation$data_vars
+          } else {
+            setdiff(operation$data_vars, group_cols)
+          }
+          branch <- nest_margin_local_columns(
+            operation$data, keys, payload, .key, metadata[[id]],
+            rowwise && length(group_cols) == 0L
+          )
+          branch <- label_margin_branch(
+            branch, plan, set, operation$margin_labels,
+            operation$column_info$prototypes, operation$column_info$factors
+          )
+          add_grouping_set_id(branch, set_col, id, FALSE)
+        }, plan$sets, plan$set_ids)
+        result <- combine_margin_branches(branches)
+        if (is.null(operation$set_id_name) && !sorting) {
+          result <- drop_margin_columns(result, set_col)
+        }
+        result <- restore_native_nest_frame(
+          result, identical(class(operation$data_proxy),
+                            c("data.table", "data.frame"))
+        )
+        return(new_margin_execution(
+          result, sort_id = if (sorting) set_col else NULL,
+          factor_info = Filter(function(info) info$col %in% group_cols,
+                               operation$column_info$factors)
+        ))
+      }
 
       internal_names <- new_margin_internal_names(
         as.integer(is.null(operation$set_id_name)) +
@@ -546,7 +590,8 @@ execute_margin_nest <- function(operation, .key, .keep, rowwise = FALSE) {
           .key = .key,
           kind = operation$backend$kind,
           frame_metadata = margin_nest_frame_metadata(
-            operation, rowwise, .keep
+            operation$data_proxy, operation$data_vars, plan,
+            operation$backend$kind, rowwise, .keep
           ),
           drop_set_col = is.null(operation$set_id_name) && !sorting
         ), restore_outer),
@@ -777,3 +822,21 @@ nest_expanded_margins <- function(.data,
 }
 
 utils::globalVariables(":=")
+
+# Partition original local vectors before any grouping-set common-type binding.
+# Generated cells carry native slices and only the selected frame metadata.
+nest_margin_local_columns <- function(data, keys, payload, key, metadata,
+                                      rowwise) {
+  columns <- proxy_columns(data, unique(c(keys, payload)))
+  frame <- tibble::new_tibble(columns, nrow = nrow(data))
+  groups <- vctrs::vec_group_loc(frame[keys])
+  if (rowwise && length(keys) == 0L && nrow(frame) == 0L) {
+    groups <- list(key = tibble::new_tibble(list(), nrow = 1L),
+                   loc = list(integer()))
+  }
+  cells <- vctrs::vec_chop(frame[payload], groups$loc)
+  cells <- lapply(cells, restore_margin_frame_metadata, metadata = metadata)
+  result <- groups$key
+  result[[key]] <- cells
+  result
+}

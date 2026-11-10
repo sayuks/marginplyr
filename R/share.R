@@ -2644,7 +2644,8 @@ execute_shares <- function(operation,
       ),
       set_id_name = staged_set_id_name,
       kind = kind,
-      parent_key_names = parent_key_names
+      parent_key_names = parent_key_names,
+      local_match = identical(operation$backend$kind, "local")
     )
   }
   if (length(parent_key_names) > 0L) {
@@ -2766,7 +2767,8 @@ execute_row_matched_shares <- function(operation,
                                        requests,
                                        set_id_name,
                                        kind,
-                                       parent_key_names) {
+                                       parent_key_names,
+                                       local_match) {
   apply_joined_shares(
     result,
     requests = requests,
@@ -2774,7 +2776,7 @@ execute_row_matched_shares <- function(operation,
     set_id_name = set_id_name,
     kind = kind,
     parent_key_names = parent_key_names,
-    local_match = identical(operation$backend$kind, "local")
+    local_match = local_match
   )
 }
 
@@ -2783,7 +2785,8 @@ execute_dtplyr_shares <- function(operation,
                                   requests,
                                   set_id_name,
                                   kind,
-                                  parent_key_names) {
+                                  parent_key_names,
+                                  local_match) {
   apply_windowed_shares(
     result,
     requests = requests,
@@ -2800,7 +2803,8 @@ execute_dbplyr_shares <- function(operation,
                                   requests,
                                   set_id_name,
                                   kind,
-                                  parent_key_names) {
+                                  parent_key_names,
+                                  local_match) {
   apply_windowed_shares(
     result,
     requests = requests,

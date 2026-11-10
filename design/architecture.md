@@ -151,11 +151,11 @@ completed its schema-aware preflight and is about to execute.
 Column-vector element names follow [ADR 0043](adr/0043-follow-native-column-element-names.md).
 Display conversion retains the names of the actual branch vector; omitted
 dimensions receive unnamed replacements. No source-element names snapshot
-is captured. Nesting retains representative display vectors in list cells
-while grouping by original identity keys, then combines their current element
-names without scalar summary repair. The fold uses a stock tibble view for
-eager inputs. Outer keys and original inner columns follow their respective
-native references.
+is captured. Local nesting partitions original vectors into cells before
+combining grouping-set branches. The dtplyr fold retains representative display
+vectors while grouping by original identity keys, then combines their current
+element names without scalar summary repair. Outer keys and original inner
+columns follow their respective native references.
 
 ### Factor (`R/factor.R`)
 
@@ -194,12 +194,17 @@ reconstruction. Lazy direct collection uses construction-time labels; a query
 boundary prevents a later ordinary operation from reusing that capture for a
 newly computed column. No metadata path reads source rows or runs a second
 native reference pipeline.
-For dtplyr summaries with shares, safe scalar candidates retain native
-aggregation and generated share placeholders are added afterwards. Runtime
-callee, optimizer and nonempty-input checks select one expression, retaining
-the original validators for unproven dispatch. Native aggregate result types
-are checked before union, so semantic classes are never stripped to make a
-share eligible.
+For grouped dtplyr summaries with shares, an execution-local environment clone
+of the native bracket method retains its optimizer and evaluates its input
+once. The `Cdogroups` boundary receives the optimized expressions with their
+original validators; `gforce` guards each native primitive before the next
+expression and before native padding.
+Native `Cghead`, `Cgtail` and `Cgshift` calls supply already-coerced indices.
+These private boundaries are confined to `native_margin_subset()` and
+`native_margin_primitive()`; unknown shapes stop rather than bypass validation.
+Runtime callee checks retain the
+original guarded expression for unproven bindings. No function body or package
+namespace is modified, and no caller method is invoked to predict optimization.
 
 ### Summary selection (`R/summary-selections.R`)
 
@@ -557,7 +562,7 @@ no third part, because it groups by the caller's own columns. See
 Owns branch materialization and `UNION ALL` composition. The summary path
 summarizes each grouping set, checks dynamic names, restores visible grouping
 keys, and labels omitted dimensions. Expansion emits one labelled input branch
-per grouping set; nesting builds on that expansion in its verb executor. Like
+per grouping set; dtplyr nesting builds on that expansion in its verb executor. Like
 the native adapter, it consumes derived inputs and does not own the lifecycle.
 
 Because it is the one path that summarizes the caller's own expressions once
