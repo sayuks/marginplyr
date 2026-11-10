@@ -148,6 +148,15 @@ in a portable branch. Preparation normalizes the label and creates the
 metadata it needs; semantic validation is delayed until the verb executor has
 completed its schema-aware preflight and is about to execute.
 
+Column-vector element names follow [ADR 0043](adr/0043-follow-native-column-element-names.md).
+Display conversion retains the names of the actual branch vector; omitted
+dimensions receive unnamed replacements. No source-element names snapshot
+is captured. Nesting retains representative display vectors in list cells
+while grouping by original identity keys, then combines their current element
+names without scalar summary repair. The fold uses a stock tibble view for
+eager inputs. Outer keys and original inner columns follow their respective
+native references.
+
 ### Factor (`R/factor.R`)
 
 Owns restoration of factor and ordered-factor Margin columns from the metadata

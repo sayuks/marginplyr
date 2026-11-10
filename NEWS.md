@@ -1,5 +1,10 @@
 # marginplyr 0.1.0
 
+* Column-vector element names follow native summaries, expansion and nesting,
+  including direct collection, omitted-dimension replacements and empty
+  results. Arrow retains its native metadata behavior without treating names
+  as row identifiers (#1562).
+
 * Parent and Total shares retain invocation-time dependencies through base
   condition and value wrappers, including finite singleton collections with
   stock callbacks (#1557).
