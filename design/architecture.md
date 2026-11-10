@@ -154,15 +154,35 @@ Owns restoration of factor and ordered-factor Margin columns from the metadata
 captured during preparation. Its backend methods preserve levels and ordering
 after labels have been materialized; it does not acquire metadata itself.
 
-This is the only type or attribute restoration in the package, and it exists
-because marginplyr is what decomposed those factors. Every other class and
-attribute of a result is whatever the underlying dplyr and vctrs operations
-produced, and no verb restores one. See
+Factor restoration exists because marginplyr decomposed those factors.
+Other column metadata and result classes retain their native owners, with
+scoped variable-label and dataset handling in the following module. See
 [ADR 0016](adr/0016-delegate-result-class-and-attributes-to-dplyr.md).
 
-The accepted column-label and table-metadata extension is recorded in
-[ADR 0042](adr/0042-preserve-variable-labels-through-margin-operations.md),
-including its implementation status.
+### Variable labels and dataset metadata (`R/margin-metadata.R`)
+
+Owns the scoped variable-label and dataset-reference policy in
+[ADR 0042](adr/0042-preserve-variable-labels-through-margin-operations.md).
+Preparation captures source labels from the existing typed snapshot. Native
+summary results supply their own label evidence before branch binding; labels
+are never inferred from expressions or output names. Eager binding restores
+native union dataset metadata without repeated copying. The dtplyr summary
+call retains the balanced native unions and source graph, carrying only scalar
+label evidence until the final union resolves it.
+
+Generated nested cells receive the appropriate native inner-frame metadata
+for their grouping-set occurrence, separately from outer-frame metadata.
+Finalization restores source labels after display conversion and factor
+reconstruction. Lazy direct collection uses construction-time labels; a query
+boundary prevents a later ordinary operation from reusing that capture for a
+newly computed column. No metadata path reads source rows or runs a second
+native reference pipeline.
+For dtplyr summaries with shares, safe scalar candidates retain native
+aggregation and generated share placeholders are added afterwards. Runtime
+callee, optimizer and nonempty-input checks select one expression, retaining
+the original validators for unproven dispatch. Native aggregate result types
+are checked before union, so semantic classes are never stripped to make a
+share eligible.
 
 ### Summary selection (`R/summary-selections.R`)
 

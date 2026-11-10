@@ -480,6 +480,7 @@ finalize_margin_operation <- function(operation, execution,
   }
   # The one recorded query nobody inside the package sends: the caller runs
   # it, so it is recorded here, before it is returned to them.
+  result <- restore_margin_variable_labels(result, operation$column_info$labels)
   record_sent_query("result", result)
   result
 }

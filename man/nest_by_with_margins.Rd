@@ -261,17 +261,13 @@ data, while \code{\link[dbplyr:sql_render]{dbplyr::sql_render()}} shows them in 
 Direct materialization creates a typed table with public columns only.
 Later dplyr verbs use ordinary dbplyr behavior.
 
-The input class is not guaranteed to be preserved, and neither are
-object-level attributes of the input or attributes of columns marginplyr
-does not rewrite. A data frame subclass survives only where dplyr can
-reconstruct it, so a subclass with no \code{\link[dplyr:dplyr_reconstruct]{dplyr::dplyr_reconstruct()}} method
-is lost by \code{\link[dplyr:summarize]{dplyr::summarize()}} itself. Attributes on a column that carries
-no class are dropped wherever branches are combined, because that is what
-the vctrs rules for combining bare vectors do with them. Attach the
-attributes a result must carry after the Margin operation, as with any
-dplyr pipeline.
+The input class is not guaranteed to be preserved. A data frame subclass
+survives where dplyr can reconstruct it; a subclass with no
+\code{\link[dplyr:dplyr_reconstruct]{dplyr::dplyr_reconstruct()}} method is lost by \code{\link[dplyr:summarize]{dplyr::summarize()}} itself.
+Variable labels and dataset metadata follow \emph{Variable labels and dataset
+attributes}. Other column attributes follow native backend/vector rules.
 
-Factor and ordered-factor columns are the one exception, on the backends
+Factor and ordered-factor columns have additional guarantees on backends
 whose factors marginplyr can rebuild: local data frames, \code{dtplyr}, and
 DuckDB. There it decomposes them to insert \code{.margin_label} and rebuilds
 them itself, so their levels and ordering are preserved; see \emph{Display
@@ -292,6 +288,58 @@ reaches none of this, storing a factor as text before marginplyr sees it.
 
 Classed columns such as \link{Date} and \link{POSIXct}, including its \code{tzone}, are
 carried through by dplyr and vctrs unchanged.
+}
+
+\section{Variable labels and dataset attributes}{
+
+A source column's variable label (\code{attr(x, "label")}) is retained across
+display conversion, grouping-set combination, expansion and nesting. This
+includes fixed keys, displayed grouping dimensions, expanded payloads and
+original columns inside nested cells, including \code{.keep = TRUE} keys.
+A standard label is one character value, including \code{NA_character_} or
+\code{""}; \code{NULL} means absent. Other representations gain no extra guarantee
+and no new validation error. Zero-row source columns retain their labels.
+
+Calculated summaries follow native \code{\link[dplyr:summarise]{dplyr::summarise()}}
+evaluation for their backend. Neither an expression nor a reused output
+name implies a source label. Across grouping-set results, agreeing
+non-missing labels survive absent or missing labels; an empty string counts
+as a label. With only
+absent or missing labels, \code{NA_character_} survives if present. Conflicting
+non-missing labels follow native combination without a new Package condition.
+Value-label dictionaries, missing-value declarations and other column
+attributes follow their native backend and vector classes. Factor guarantees
+below continue to apply. Generated identifiers and shares gain no inferred
+source label.
+
+Dataset-wide attributes, including a frame-level \code{label}, follow these
+concrete native references, separately from column labels:
+\itemize{
+\item Summary: the corresponding native \code{\link[dplyr:summarise]{dplyr::summarise()}} method.
+\item Expansion: native \code{\link[dplyr:mutate]{dplyr::mutate()}} per grouping set, then native
+\code{\link[dplyr:union_all]{dplyr::union_all()}} in Grouping-plan order.
+\item Nesting: supported native \code{\link[tidyr:nest]{tidyr::nest()}} per grouping set, using the
+original source values, the same fixed/included keys and payload selection.
+Outer and inner frames are separate metadata locations. \code{.keep} decides
+inner keys; Margin display values affect outer keys only.
+\item Row-wise nesting: local \code{\link[dplyr:nest_by]{dplyr::nest_by()}}; for \code{dtplyr}, the metadata
+reference collects the input and then applies local \code{nest_by()}.
+}
+
+These dataset references cover plain data frames, tibbles, direct data.table
+inputs and supported lazy backends. Extra frame classes retain their existing
+S3/vctrs behavior without a complete native-equivalence guarantee. Classed
+columns remain within scope. Structural names, row names, class and grouping
+metadata describe the actual Margin result, rather than being copied from
+the input. Grouping-plan inspection, constructors and query diagnostics do
+not inherit source-frame attributes.
+
+The label and dataset guarantees cover the returned result and direct
+\code{\link[dplyr:collect]{dplyr::collect()}}. Lazy results retain source labels captured at
+construction; rebuild after changing those labels.
+Metadata handling adds no source-row
+read. Persistence through \code{\link[dplyr:compute]{dplyr::compute()}} and later ordinary dplyr
+operations follows native backend rules.
 }
 
 \section{Grouping set identifiers}{
