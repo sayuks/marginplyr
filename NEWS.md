@@ -4,6 +4,12 @@
   condition and value wrappers, including finite singleton collections with
   stock callbacks (#1557).
 
+* Source-derived classes and their structural state follow the corresponding
+  native summary, expansion and nesting operations, including compatible
+  custom vectors and original list-cell objects. Ordinary nesting returns the
+  native outer class for plain data frames and direct data.table inputs;
+  generated inner containers retain their contents and row-count contract (#1563).
+
 * Ordinary first `across()` name-template warnings retain their authored
   context and report once across grouping sets beside pattern-selected shares,
   while preserving callback order and warning-conversion failures (#1553).
