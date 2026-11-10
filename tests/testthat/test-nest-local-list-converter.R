@@ -62,6 +62,7 @@ test_that("registered list converters leave empty local Nest cells intact", {
 })
 
 test_that("registered list converters preserve Nest plans and kept keys", {
+  skip_if_suggest_absent("tidyr")
   local({
     plain <- data.frame(
       fixed = rep("p", 3L), district = c("north", "north", "south"),
@@ -70,7 +71,7 @@ test_that("registered list converters preserve Nest plans and kept keys", {
     )
     sources <- list(plain, tibble::as_tibble(plain))
     native_classes <- lapply(sources, function(input) {
-      class(dplyr::summarize(input, rows = dplyr::n()))
+      class(tidyr::nest(input, data = dplyr::everything()))
     })
     ns <- asNamespace("tibble")
     stock <- utils::getS3method("as_tibble", "list", envir = ns)

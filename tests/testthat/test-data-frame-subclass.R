@@ -40,16 +40,15 @@ subclass_data <- function() {
 # because `codetools` cannot follow an NSE pronoun through the closure that a
 # `test_that()` block does not create.
 #
-# Both sides are flattened to a base data frame first. `as.data.frame()` removes
-# the one difference ADR 0016 refuses to promise either way, and it removes
-# nothing else: column classes, factor levels, and row order all survive it,
-# which is the whole of what these tests are about.
+# Compare values, column attributes and row structure after frame conversion.
+# The native data.table outer frame can retain its self-reference pointer
+# through as.data.frame(); that backend-owned pointer has no plain-frame peer.
 expect_margin_agrees <- function(margin_call) {
   data <- subclass_data()
-  expect_equal(
-    as.data.frame(margin_call(data.table::as.data.table(data))),
-    as.data.frame(margin_call(data))
-  )
+  actual <- as.data.frame(margin_call(data.table::as.data.table(data)))
+  expected <- as.data.frame(margin_call(data))
+  attr(actual, ".internal.selfref") <- NULL
+  expect_equal(actual, expected)
 }
 
 test_that("summarize_with_margins() accepts a raw data.table", {

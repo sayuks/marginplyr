@@ -184,7 +184,7 @@ optional_suggest_spec <- function() {
     RPostgres = list(asserted = TRUE, companions = c("DBI", "bit64", "hms")),
     sf = list(asserted = TRUE, companions = c("DBI", "bit64")),
     hms = list(asserted = TRUE, companions = "bit64"),
-    S7 = list(asserted = TRUE, companions = character()),
+    S7 = list(asserted = TRUE, companions = "bit64"),
     # Every job runs the local integer64 array control; dtplyr also uses keys.
     bit64 = list(asserted = FALSE, companions = character()),
     DBI = list(asserted = FALSE, companions = character()),
