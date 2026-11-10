@@ -548,9 +548,12 @@ abort_absorbed_margin_labels <- function() {
 }
 
 # Plain character displays for scalar R dimensions under a non-missing label.
-margin_display_character <- function(x) {
+margin_display_character <- function(x, preserve_factor_names = TRUE) {
   # Empty hms conversion can return logical(0); the display owns its type.
-  as.vector(as.character(x), mode = "character")
+  result <- as.vector(as.character(x), mode = "character")
+  # Conversion changes display values, not native branch element names.
+  if (!is.factor(x) || preserve_factor_names) names(result) <- names(x)
+  result
 }
 
 # One grouping-set branch after label conversion. The caller supplies a
@@ -563,6 +566,13 @@ label_margin_branch <- function(.data,
                                 factor_info = list()) {
   included <- intersect(plan$dimensions, grouping_set)
   omitted <- setdiff(plan$dimensions, grouping_set)
+  # Native union casts a factor to character when another set replaces it
+  # with a string. That cast drops names; a factor-only composition does not.
+  factor_cast_columns <- if (nrow(plan$grouping_masks) > 1L) {
+    plan$dimensions[colSums(plan$grouping_masks) > 0L]
+  } else {
+    character()
+  }
 
   labelled_included <- Filter(
     function(col) !is_missing_margin_label(margin_labels[[col]]),
@@ -619,7 +629,10 @@ label_margin_branch <- function(.data,
             marginplyr_private_call("encode_factor_for_margin"),
             margin_column_pronoun(safe_name(col)),
             missing_sentinel = sentinels[[col]],
-            preserve_missing_value = TRUE
+            preserve_missing_value = TRUE,
+            preserve_element_names =
+              is_missing_margin_label(margin_label_of(margin_labels, col)) ||
+              !(col %in% factor_cast_columns)
           )
         })
         names(encoded_exprs) <- unname(vapply(
@@ -642,11 +655,13 @@ label_margin_branch <- function(.data,
         ))
         # `across()` resolves these names as pronouns when a source column is
         # named `.data` or `.env`; the generated lookup must name the column.
-        conversions <- lapply(safe_columns, function(col) {
+        conversions <- lapply(labelled_as_character, function(original_col) {
+          col <- safe_name(original_col)
           if (is.data.frame(source) || inherits(source, "dtplyr_step")) {
             return(rlang::call2(
               marginplyr_private_call("margin_display_character"),
-              margin_column_pronoun(col)
+              margin_column_pronoun(col),
+              preserve_factor_names = !(original_col %in% factor_cast_columns)
             ))
           }
           rlang::expr(as.character(!!margin_column_pronoun(col)))

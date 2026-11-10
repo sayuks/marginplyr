@@ -634,3 +634,13 @@ test_that("native first and last labels survive share validation", {
     expect_identical(attr(result$avg, "label"), attr(native$avg, "label"))
   }
 })
+
+test_that("ordinary dtplyr edits retain their values", {
+  skip_if_suggest_absent("dtplyr")
+  result <- summarize_with_margins(
+    dtplyr::lazy_dt(label_source()), avg = mean(x), share = share_of_total(avg),
+    .grouping = rollup(g)
+  )
+  changed <- dplyr::collect(dplyr::mutate(result, avg = 99))
+  expect_identical(unname(as.vector(changed$avg)), rep(99, 3L))
+})

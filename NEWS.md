@@ -6,6 +6,25 @@
   labels survive combination. Dataset metadata follows explicit native summary,
   mutation/union and nesting references, including each nested frame (#1559).
 
+* Column-vector element names follow native summaries, expansion and nesting,
+  including direct collection, omitted-dimension replacements and empty
+  results. Arrow retains its native metadata behavior without treating names
+  as row identifiers (#1562).
+
+* Parent and Total shares retain invocation-time dependencies through base
+  condition and value wrappers, including finite singleton collections with
+  stock callbacks (#1557).
+
+* Source-derived classes and their structural state follow the corresponding
+  native summary, expansion and nesting operations, including compatible
+  custom vectors and original list-cell objects. Ordinary nesting returns the
+  native outer class for plain data frames and direct data.table inputs;
+  generated inner containers retain their contents and row-count contract (#1563).
+
+* Ordinary first `across()` name-template warnings retain their authored
+  context and report once across grouping sets beside pattern-selected shares,
+  while preserving callback order and warning-conversion failures (#1553).
+
 * Parent and Total shares use their complete denominator partitions even
   when SQL inputs carry bounded window frames (#1555).
 

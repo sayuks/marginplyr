@@ -9,6 +9,7 @@
 #' @inheritSection summarize_with_margins Option arguments
 #' @inheritSection summarize_with_margins Result class and attributes
 #' @inheritSection summarize_with_margins Variable labels and dataset attributes
+#' @inheritSection summarize_with_margins Column-vector element names
 #' @inheritSection summarize_with_margins Grouping set identifiers
 #' @inheritSection summarize_with_margins Margin order
 #' @inheritSection summarize_with_margins Display labels and grouping identity
@@ -82,7 +83,7 @@
 #' before the result is returned.
 #'
 #' @return For a local input, an ungrouped data frame with one list column,
-#'   whose class follows [dplyr::mutate()]; see *Result class
+#'   whose outer class follows [tidyr::nest()]; see *Result class
 #'   and attributes* and *Variable labels and dataset attributes*.
 #'   A `dtplyr` input returns a lazy `dtplyr` step until
 #'   collected. Result row order is unspecified unless `.sort` asks for a
@@ -102,9 +103,8 @@
 #'   .data = january_sales,
 #'   .grouping = rollup(region, store)
 #' )
-#' # `january_sales` is a plain data frame, so nesting it returns one too, and
-#' # `nested` prints its list column as flattened values. A tibble prints each
-#' # nested table as its dimensions instead.
+#' # Nesting a plain data frame returns a tibble, which prints each nested
+#' # table as its dimensions.
 #' nested |>
 #'   dplyr::as_tibble() |>
 #'   head()
@@ -530,8 +530,14 @@ execute_margin_nest <- function(operation, .key, .keep, rowwise = FALSE) {
         labels <- c(labels, kept)
       }
       expanded <- restore_margin_variable_labels(expanded, labels)
+      # Native nest() returns a data.table outer frame for direct data.table
+      # input; reconstruct from a generated empty template so source keys and
+      # dataset attributes are not copied onto the changed result (ADR 0044).
+      restore_outer <- identical(operation$backend$kind, "local") &&
+        identical(class(operation$data_proxy),
+                  c("data.table", "data.frame"))
       new_margin_execution(
-        nest_expanded_margins(
+        restore_native_nest_frame(nest_expanded_margins(
           expanded,
           group_cols = group_cols,
           set_col = set_col,
@@ -541,13 +547,23 @@ execute_margin_nest <- function(operation, .key, .keep, rowwise = FALSE) {
           kind = operation$backend$kind,
           frame_metadata = margin_nest_frame_metadata(operation, rowwise),
           drop_set_col = is.null(operation$set_id_name) && !sorting
-        ),
+        ), restore_outer),
         sort_id = if (sorting) set_col else NULL,
         factor_info = column_info$factors[!folded]
       )
     },
     call = operation$call
   )
+}
+
+# Restore the standard direct data.table outer representation from its own
+# generated empty template, without importing source structural metadata.
+restore_native_nest_frame <- function(result, data_table) {
+  if (!data_table) {
+    return(result)
+  }
+  constructor <- utils::getFromNamespace("data.table", "data.table")
+  dplyr::dplyr_reconstruct(result, constructor())
 }
 
 # The expression building one cell, given the columns it is to hold and the
@@ -616,6 +632,24 @@ nest_cell_expr <- function(cell_cols, kind) {
   }
 }
 
+# Combine representative display vectors without scalar-summary name repair.
+# The fold supplies only current branch values and their declared prototype.
+unchop_margin_display <- function(x, ptype) {
+  result <- vctrs::list_unchop(x, ptype = ptype)
+  if (is.data.frame(result) || length(x) == 0L) return(result)
+  named <- vapply(x, function(value) !is.null(names(value)), logical(1))
+  if (any(named)) {
+    names(result) <- unlist(lapply(x, function(value) {
+      if (is.null(names(value))) {
+        rep("", vctrs::vec_size(value))
+      } else {
+        names(value)
+      }
+    }), use.names = FALSE)
+  }
+  result
+}
+
 # Fold expanded rows into cells by fixed keys, set identifier, and original
 # typed dimension keys. Displayed dimensions take one representative per cell.
 # dtplyr uses safe aliases during the fold, then restores public names;
@@ -631,7 +665,7 @@ nest_expanded_margins <- function(.data,
                                   drop_set_col = TRUE) {
   # The fold receives a generated frame. Its keys and payload use tibble's
   # stock frame converter without as_tibble() dispatch (ADR 0016).
-  if (is.data.frame(.data) && length(class(.data)) > 1L) {
+  if (is.data.frame(.data)) {
     converter <- utils::getFromNamespace("as_tibble.data.frame", "tibble")
     .data <- converter(.data, .name_repair = "minimal")
   }
@@ -679,7 +713,6 @@ nest_expanded_margins <- function(.data,
           character(1), USE.NAMES = FALSE
         )
         display_exprs <- rlang::set_names(lapply(display_cols, function(col) {
-          # Summaries can be evaluated on zero rows to infer output types.
           value <- margin_column_pronoun(col)
           if (identical(kind, "dtplyr")) {
             size <- deferred_export_call("vctrs", "vec_size", value)
@@ -688,9 +721,11 @@ nest_expanded_margins <- function(.data,
             )
             return(deferred_export_call("vctrs", "vec_slice", value, index))
           }
-          rlang::expr(vctrs::vec_slice(
+          # Keep the representative as a vector: scalar summary combination
+          # repairs missing element names before native nesting would.
+          rlang::expr(base::list(vctrs::vec_slice(
             !!value, base::seq_len(base::min(vctrs::vec_size(!!value), 1L))
-          ))
+          )))
         }), display_cols)
         cell <- nest_cell_expr(safe_cells, kind)
         if (length(frame_metadata) > 0L) {
@@ -711,6 +746,19 @@ nest_expanded_margins <- function(.data,
           !!!display_exprs,
           .by = dplyr::all_of(setdiff(safe_outer, display_cols))
         )
+
+        if (is.data.frame(source) && length(display_cols) > 0L) {
+          displays <- lapply(display_cols, function(col) {
+            rlang::call2(
+              marginplyr_private_call("unchop_margin_display"),
+              margin_column_pronoun(col),
+              ptype = vctrs::vec_ptype(source[[col]])
+            )
+          })
+          result <- dplyr::mutate(
+            result, !!!rlang::set_names(displays, display_cols)
+          )
+        }
 
         if (drop_set_col) {
           result <- drop_margin_columns(result, safe_name(set_col))

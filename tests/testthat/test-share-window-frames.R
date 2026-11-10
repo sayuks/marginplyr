@@ -52,19 +52,23 @@ expect_framed_sql_shares <- function(con) {
   expected <- expected_framed_shares()
   for (frame in frames) {
     input <- dbplyr::window_frame(
-      dbplyr::window_order(source, dplyr::desc(g)), frame[[1L]], frame[[2L]]
+      dbplyr::window_order(source, dplyr::desc(.data$g)),
+      frame[[1L]], frame[[2L]]
     )
     input_sql <- dbplyr::sql_render(input)
     for (sort in c("none", "first", "last")) {
       query <- summarize_with_margins(
-        input, value = sum(x, na.rm = TRUE),
-        parent = share_of_parent(value), total = share_of_total(value),
-        .by = fixed, .grouping = rollup(g, h, h), .duplicates = "keep",
+        input, value = sum(.data$x, na.rm = TRUE),
+        parent = share_of_parent(!!rlang::sym("value")),
+        total = share_of_total(!!rlang::sym("value")),
+        .by = "fixed", .grouping = rollup("g", "h", "h"), .duplicates = "keep",
         .id = "set", .margin_label = NULL, .sort = sort,
         .check_share_source = FALSE
       )
       expect_s3_class(query, "tbl_lazy")
-      result <- dplyr::arrange(dplyr::collect(query), fixed, set, g, h)
+      result <- dplyr::arrange(
+        dplyr::collect(query), .data$fixed, .data$set, .data$g, .data$h
+      )
       expect_equal(as.data.frame(result), expected,
                    info = paste("frame", paste(frame, collapse = ":"), sort))
       expect_type(result$parent, "double")

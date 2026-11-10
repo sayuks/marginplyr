@@ -189,25 +189,13 @@ union_dtplyr_margin_labels <- function(x, y, final = FALSE) {
 #' @exportS3Method dtplyr::dt_call
 #' @noRd
 dt_call.marginplyr_label_union <- function(x, needs_copy = x$needs_copy) {
-  dt_call <- utils::getFromNamespace("dt_call", "dtplyr")
-  branches <- x[["marginplyr_branches"]]
-  calls <- lapply(seq_along(branches), function(i) {
-    if (i == 1L) dt_call(branches[[i]], needs_copy) else dt_call(branches[[i]])
-  })
-  while (length(calls) > 1L) {
-    n <- length(calls)
-    pairs <- lapply(seq_len(n %/% 2L), function(i) {
-      rlang::call2(
-        marginplyr_private_call("union_dtplyr_margin_labels"),
-        calls[[2L * i - 1L]], calls[[2L * i]]
-      )
-    })
-    calls <- if (n %% 2L == 1L) c(pairs, calls[n]) else pairs
-  }
-  calls[[1L]][["final"]] <- TRUE
-  calls[[1L]]
+  native <- NextMethod()
+  rlang::call2(
+    marginplyr_private_call("union_dtplyr_margin_labels"),
+    native[[2L]], native[[3L]],
+    final = isTRUE(x[["marginplyr_final_union"]])
+  )
 }
-
 
 # Restore construction-time labels after the backend's direct collection.
 #' @exportS3Method dplyr::collect
@@ -262,9 +250,10 @@ native_margin_scalar_proof <- function(expr, schema, grouped) {
         !is.null(attr(value, "dim", exact = TRUE))) return(NULL)
   if (name %in% c("head", "tail")) {
     if (!grouped || length(args) != 2L ||
-          !identical(unname(args[[2L]]), 1L)) return(NULL)
+          rlang::is_missing(args[[2L]]) ||
+          !(identical(args[[2L]], 1L) || identical(args[[2L]], 1))) return(NULL)
   } else if (length(args) > 1L) {
-    if (length(args) != 2L || !identical(names(args)[[2L]], "na.rm") ||
+    if (length(args) != 2L || !identical(argument_names(args)[[2L]], "na.rm") ||
           !(identical(args[[2L]], TRUE) || identical(args[[2L]], FALSE))) {
       return(NULL)
     }
@@ -383,6 +372,9 @@ native_margin_scalar_step <- function(step, schema, share_outputs) {
   step[["marginplyr_share_placeholders"]] <- placeholders
   step[["marginplyr_native_j"]] <- rlang::call2(step$j[[1L]], !!!expressions)
   step[["marginplyr_scalar_proofs"]] <- proofs
+  step[["marginplyr_checked_scalar"]] <- list(
+    j = step$j, vars = step$vars, groups = step$groups
+  )
   class(step) <- c("marginplyr_native_scalars", class(step))
   step
 }
@@ -391,6 +383,10 @@ native_margin_scalar_step <- function(step, schema, share_outputs) {
 #' @exportS3Method dtplyr::dt_call
 #' @noRd
 dt_call.marginplyr_native_scalars <- function(x, needs_copy = x$needs_copy) {
+  boundary <- list(j = x$j, vars = x$vars, groups = x$groups)
+  if (!identical(boundary, x[["marginplyr_checked_scalar"]])) {
+    return(NextMethod())
+  }
   checked <- NextMethod()
   native <- checked
   native[[4L]] <- x[["marginplyr_native_j"]]

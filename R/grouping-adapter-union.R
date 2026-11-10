@@ -346,7 +346,6 @@ check_eager_summary_fields <- function(schemas, call) {
 # boundaries around compound operands. Other SQL backends let dbplyr flatten
 # unions into one compound query.
 union_margin_branches <- function(branches, preserve_labels = FALSE) {
-  original_branches <- branches
   sqlite <- inherits(branches[[1L]], "tbl_lazy") &&
     inherits(dbplyr::remote_con(branches[[1L]]), "SQLiteConnection")
   if (sqlite) {
@@ -361,7 +360,13 @@ union_margin_branches <- function(branches, preserve_labels = FALSE) {
     n <- length(branches)
     pairs <- lapply(
       seq_len(n %/% 2L),
-      function(i) dplyr::union_all(branches[[2L * i - 1L]], branches[[2L * i]])
+      function(i) {
+        branch <- dplyr::union_all(branches[[2L * i - 1L]], branches[[2L * i]])
+        if (preserve_labels && inherits(branch, "dtplyr_step")) {
+          class(branch) <- c("marginplyr_label_union", class(branch))
+        }
+        branch
+      }
     )
     branches <- if (n %% 2L == 1L) c(pairs, branches[n]) else pairs
   }
@@ -372,8 +377,8 @@ union_margin_branches <- function(branches, preserve_labels = FALSE) {
   }
   result <- branches[[1L]]
   if (preserve_labels && inherits(result, "dtplyr_step")) {
-    result[["marginplyr_branches"]] <- original_branches
-    class(result) <- c("marginplyr_label_union", class(result))
+    result[["marginplyr_final_union"]] <- TRUE
+
   }
   result
 }

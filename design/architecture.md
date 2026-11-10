@@ -148,16 +148,33 @@ in a portable branch. Preparation normalizes the label and creates the
 metadata it needs; semantic validation is delayed until the verb executor has
 completed its schema-aware preflight and is about to execute.
 
+Column-vector element names follow [ADR 0043](adr/0043-follow-native-column-element-names.md).
+Display conversion retains the names of the actual branch vector; omitted
+dimensions receive unnamed replacements. No source-element names snapshot
+is captured. Nesting retains representative display vectors in list cells
+while grouping by original identity keys, then combines their current element
+names without scalar summary repair. The fold uses a stock tibble view for
+eager inputs. Outer keys and original inner columns follow their respective
+native references.
+
 ### Factor (`R/factor.R`)
 
 Owns restoration of factor and ordered-factor Margin columns from the metadata
 captured during preparation. Its backend methods preserve levels and ordering
 after labels have been materialized; it does not acquire metadata itself.
 
-Factor restoration exists because marginplyr decomposed those factors.
-Other column metadata and result classes retain their native owners, with
-scoped variable-label and dataset handling in the following module. See
-[ADR 0016](adr/0016-delegate-result-class-and-attributes-to-dplyr.md).
+Factor reconstruction retains its existing backend-specific levels and ordered
+status contract. Other source-derived classes and class-owned structural state
+follow the native references in
+[ADR 0044](adr/0044-follow-native-references-for-input-classes.md), separately
+from the variable-label and dataset-attribute policies in
+[ADR 0042](adr/0042-preserve-variable-labels-through-margin-operations.md).
+Ordinary nesting folds eager data through the stock tibble converter; a direct
+data.table outer result is reconstructed from a generated empty data.table
+template. This follows native outer classes without copying the source's keys
+or frame metadata onto the changed result. Original nested columns and cell
+objects retain their scoped native guarantee; newly generated list and frame
+subclasses retain only their contents and row-count contract.
 
 ### Variable labels and dataset metadata (`R/margin-metadata.R`)
 
