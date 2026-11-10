@@ -307,7 +307,7 @@
 #' Names lost before the input reaches marginplyr are outside this guarantee.
 #' Additional frame classes retain their existing S3 and vctrs behavior;
 #' complete equivalence to their native methods is not promised. `compute()`
-#' persistence and subsequent ordinary operations follow the backend's rules.
+#' persistence and subsequent ordinary operations follow native backend rules.
 #' No independent source-element snapshot or additional source-row read is
 #' used to preserve names.
 #'
