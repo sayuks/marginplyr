@@ -99,20 +99,29 @@ restore_margin_frame_metadata <- function(data, metadata) {
   data
 }
 
-# Native tidyr cells retain metadata except direct data.table cells. Local
-# nest_by retains it only for keyless sets; dtplyr uses that local reference.
-margin_nest_frame_metadata <- function(operation, rowwise) {
+# Native tidyr drops metadata for direct data.table or empty dtplyr cells.
+# Local nest_by retains metadata only for keyless sets, also under dtplyr.
+margin_nest_frame_metadata <- function(operation, rowwise, keep) {
   proxy <- operation$data_proxy
   metadata <- if (standard_margin_frame(proxy)) {
     margin_frame_metadata(proxy)
   } else {
     list()
   }
+  payload <- if (keep) {
+    operation$data_vars
+  } else {
+    setdiff(operation$data_vars,
+            c(operation$plan$by, operation$plan$dimensions))
+  }
+  empty_dtplyr <- identical(operation$backend$kind, "dtplyr") &&
+    length(payload) == 0L
+  direct_dt <- identical(operation$backend$kind, "local") &&
+    inherits(proxy, "data.table")
   lapply(operation$plan$sets, function(set) {
     if (rowwise) {
       if (length(c(operation$plan$by, set)) == 0L) metadata else list()
-    } else if (identical(operation$backend$kind, "local") &&
-                 inherits(proxy, "data.table")) {
+    } else if (empty_dtplyr || direct_dt) {
       list()
     } else {
       metadata
@@ -233,13 +242,19 @@ direct_margin_label_result <- function(x) {
 # Numeric storage and generated scalar calls establish safe native candidates.
 # Object columns additionally require proven native optimization at execution.
 native_margin_scalar_proof <- function(expr, schema, grouped) {
-  if (!rlang::is_call(expr) || !rlang::is_symbol(expr[[1L]])) return(NULL)
-  name <- rlang::as_name(expr[[1L]])
+  if (!rlang::is_call(expr)) return(NULL)
+  head <- expr[[1L]]
+  if (!rlang::is_symbol(head) && !rlang::is_call(head, "::", n = 2L)) {
+    return(NULL)
+  }
+  name <- static_call_name(expr)
+  namespace <- static_call_ns(expr)
   owners <- c(mean = "base", sum = "base", min = "base", max = "base",
               prod = "base", median = "stats", var = "stats", sd = "stats",
               length = "base", head = "utils", tail = "utils",
               first = "data.table", last = "data.table")
   if (!name %in% names(owners)) return(NULL)
+  if (!is.null(namespace) && !identical(namespace, owners[[name]])) return(NULL)
   args <- as.list(expr)[-1L]
   if (name %in% c("first", "last") && !grouped) return(NULL)
   if (length(args) == 0L || !rlang::is_symbol(args[[1L]])) return(NULL)
@@ -253,13 +268,17 @@ native_margin_scalar_proof <- function(expr, schema, grouped) {
           rlang::is_missing(args[[2L]]) ||
           !(identical(args[[2L]], 1L) || identical(args[[2L]], 1))) return(NULL)
   } else if (length(args) > 1L) {
-    if (length(args) != 2L || !identical(argument_names(args)[[2L]], "na.rm") ||
+    argument <- argument_names(args)[[2L]]
+    partial <- name %in% c("mean", "median", "var", "sd") &&
+      startsWith(argument, "na") && startsWith("na.rm", argument)
+    if (length(args) != 2L ||
+          !(identical(argument, "na.rm") || partial) ||
           !(identical(args[[2L]], TRUE) || identical(args[[2L]], FALSE))) {
       return(NULL)
     }
   }
   list(name = name, owner = unname(owners[[name]]), object = is.object(value),
-       gforce_only = name %in% c("first", "last"))
+       gforce_only = name %in% c("first", "last"), namespace = namespace)
 }
 
 # Recheck lexical function bindings at execution without forcing caller code.
@@ -270,7 +289,8 @@ native_margin_scalar_bindings <- function(proofs, env) {
     binding <- ordinary_function_binding(
       proof$name, env, owners = proof$owner, absent = missing
     )
-    known <- identical(binding, getExportedValue(proof$owner, proof$name)) ||
+    known <- !is.null(proof$namespace) ||
+      identical(binding, getExportedValue(proof$owner, proof$name)) ||
       (isTRUE(proof$gforce_only) && identical(binding, missing))
     known && native_margin_default_dispatch(proof, env)
   }, logical(1)))
@@ -324,9 +344,10 @@ native_margin_scalar_step <- function(step, schema, share_outputs) {
   native_expressions <- expressions[keep]
   all_gforce <- length(step$groups) > 0L && all(vapply(
     native_expressions, function(expression) {
-      identical(expression, quote(.N)) || !is.null(
-        native_margin_scalar_proof(expression, schema, grouped = TRUE)
-      )
+      if (identical(expression, quote(.N))) return(TRUE)
+      proof <- native_margin_scalar_proof(expression, schema, grouped = TRUE)
+      !is.null(proof) && (is.null(proof$namespace) ||
+                            identical(proof$namespace, "data.table"))
     }, logical(1)
   ))
   object_positions <- as.integer(names(proofs)[vapply(

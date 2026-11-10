@@ -644,3 +644,36 @@ test_that("ordinary dtplyr edits retain their values", {
   changed <- dplyr::collect(dplyr::mutate(result, avg = 99))
   expect_identical(unname(as.vector(changed$avg)), rep(99, 3L))
 })
+
+test_that("qualified and partial native means retain labels through shares", {
+  skip_if_suggest_absent("dtplyr")
+  source <- label_source()
+  source$g <- as.character(source$g)
+  input <- dtplyr::lazy_dt(source)
+  for (expression in list(quote(base::mean(x)), quote(mean(x, na = TRUE)))) {
+    native <- dplyr::collect(dplyr::summarise(
+      input, avg = !!expression, .by = g
+    ))
+    result <- dplyr::collect(summarize_with_margins(
+      input, avg = !!expression, share = share_of_total(avg),
+      .grouping = rollup(g)
+    ))
+    expect_identical(attr(result$avg, "label"), attr(native$avg, "label"))
+  }
+})
+
+test_that("dtplyr no-payload metadata matches native nesting", {
+  skip_if_suggest_absent("dtplyr")
+  source <- structure(
+    tibble::tibble(g = c("a", "b")), label = "Dataset", custom = "Other"
+  )
+  input <- dtplyr::lazy_dt(source)
+  native <- dplyr::collect(tidyr::nest(
+    input, data = dplyr::all_of(character())
+  ))
+  result <- dplyr::collect(nest_with_margins(input, .grouping = rollup(g)))
+  for (cell in result$data) {
+    expect_identical(frame_metadata(cell), frame_metadata(native$data[[1L]]))
+  }
+  expect_identical(vapply(result$data, nrow, integer(1)), c(1L, 1L, 2L))
+})

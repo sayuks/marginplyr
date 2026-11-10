@@ -319,7 +319,7 @@ nest_margin_pipeline <- function(.data,
       tibble::new_tibble(columns, nrow = 0L)
     }
     cell <- restore_margin_frame_metadata(
-      cell, margin_nest_frame_metadata(operation, rowwise)[[1L]]
+      cell, margin_nest_frame_metadata(operation, rowwise, .keep)[[1L]]
     )
     id <- operation$set_id_name
     result <- tibble::new_tibble(
@@ -545,7 +545,9 @@ execute_margin_nest <- function(operation, .key, .keep, rowwise = FALSE) {
           keep_cols = keep_cols,
           .key = .key,
           kind = operation$backend$kind,
-          frame_metadata = margin_nest_frame_metadata(operation, rowwise),
+          frame_metadata = margin_nest_frame_metadata(
+            operation, rowwise, .keep
+          ),
           drop_set_col = is.null(operation$set_id_name) && !sorting
         ), restore_outer),
         sort_id = if (sorting) set_col else NULL,
