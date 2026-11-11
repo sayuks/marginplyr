@@ -6,6 +6,10 @@
   `-grouping_id()` previously applied the operator to one bit's term and
   returned wrong values without a diagnostic (#1569).
 
+* Parent and Total shares over a dtplyr step keep fixed `.by` keys named `T`
+  or `F` as their own partitions and values, instead of reading them as
+  logical constants (#1568).
+
 * A local Margin order over a double key holding both `NaN` and `NA` keeps
   each as one contiguous group with its own margin rows, `NaN` before `NA`,
   instead of interleaving them (#1571).
