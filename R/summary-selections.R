@@ -2355,15 +2355,23 @@ local_summary_selection <- function(selection, env, group_vars,
 # failure in a layer quoting that generated argument, which the caller did not
 # write; `restate_branch_error()` consumes the mark to remove the layer. A
 # generated check carries its own wrapper and is left to it.
+#
+# `blamed_on_verb` records whether tidyselect blamed the failure on the call
+# `resolve_summary_selection()` hands it, which dplyr's selection blames on the
+# selection helper instead; any other failure, such as a predicate's own error,
+# keeps its call as native dplyr does.
 with_deferred_selection <- function(expr) {
   tryCatch(expr, error = function(cnd) {
     if (inherits(cnd, "marginplyr_generated_summary_error")) {
       stop(cnd)
     }
+    verb_call <- margin_selection_call()
     rlang::abort(
       "Failed to resolve a deferred selection.",
       class = "marginplyr_deferred_selection_error",
-      parent = cnd
+      parent = cnd,
+      blamed_on_verb = !is.null(verb_call) &&
+        identical(conditionCall(cnd), verb_call)
     )
   })
 }

@@ -223,23 +223,24 @@ with_branch_conditions <- function(expr,
 # temporary ownership wrapper; promote only those refusals, remove the
 # interpolation wrapper around a caller-template error, or replace the layer
 # quoting a deferred selection's generated argument with the failure it wraps,
-# blamed on the selection helper the caller wrote.
+# blamed as dplyr's own selection would blame it.
 #
 # Errors are not deduplicated, and there is nothing to deduplicate: branches
 # run in sequence, so the first error aborts the operation and no second
 # occurrence is ever raised.
 restate_branch_error <- function(cnd, conditions, restatements) {
+  deferred <- deferred_selection_mark(cnd$parent)
   if (!is.null(cnd$parent) &&
         inherits(cnd$parent$parent, "marginplyr_generated_summary_error")) {
     cnd <- cnd$parent$parent$parent
   } else if (!is.null(cnd$parent) &&
                inherits(cnd$parent$parent, "marginplyr_inner_glue_error")) {
     cnd$parent <- cnd$parent$parent$parent
-  } else if (!is.null(cnd$parent) &&
-               inherits(cnd$parent$parent,
-                        "marginplyr_deferred_selection_error")) {
-    selection <- cnd$parent$parent$parent
-    selection$call <- selection_helper_call(cnd$parent$call)
+  } else if (!is.null(deferred)) {
+    selection <- deferred$parent
+    if (isTRUE(deferred$blamed_on_verb)) {
+      selection$call <- selection_helper_call(cnd$parent$call)
+    }
     cnd$parent <- selection
   }
   cnd <- restate_condition_arguments(cnd, restatements)
@@ -248,6 +249,21 @@ restate_branch_error <- function(cnd, conditions, restatements) {
     cnd$call <- conditions$call
   }
   cnd
+}
+
+# The mark `with_deferred_selection()` put beneath `helper`, the layer dplyr
+# blames on the selection helper, or `NULL` where there is none. Every layer
+# between the two quotes a generated argument or a binding
+# `hoist_local_across_arguments()` allocated.
+deferred_selection_mark <- function(helper) {
+  cnd <- helper$parent
+  while (!is.null(cnd)) {
+    if (inherits(cnd, "marginplyr_deferred_selection_error")) {
+      return(cnd)
+    }
+    cnd <- cnd$parent
+  }
+  NULL
 }
 
 # The selection helper a deferred selection failed under, as the call its

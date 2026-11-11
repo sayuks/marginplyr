@@ -93,6 +93,34 @@ test_that("a refused later local summary selection reads as native dplyr's", {
   }
 })
 
+# Two unnamed `across()` calls share a label, so each has its selection bound
+# apart from the call (#1572), at either position.
+test_that("a selection failing beside another unnamed across reads natively", {
+  data <- tibble::tibble(g = c("a", "a", "b"), v = 1:3)
+  failing <- rlang::exprs(
+    dplyr::across(dplyr::where(function(x) stop("boom")), sum),
+    dplyr::across(dplyr::all_of(nope), sum)
+  )
+  other <- rlang::exprs(dplyr::across(v, sum))
+  for (index in seq_along(failing)) {
+    for (dots in list(c(other, failing[index]), c(failing[index], other))) {
+      native <- expect_error(dplyr::summarise(data, !!!dots, .by = g))
+      actual <- expect_error(summarize_with_margins(
+        data, !!!dots, .grouping = rollup(g)
+      ))
+      expect_identical(conditionMessage(actual), conditionMessage(native))
+      expect_identical(
+        lapply(condition_chain(actual), class),
+        lapply(condition_chain(native), class)
+      )
+      expect_identical(
+        selection_call_names(actual),
+        c("summarize_with_margins", selection_call_names(native)[-1L])
+      )
+    }
+  }
+})
+
 test_that("a refused lazy summary selection names no internal call", {
   data <- dbplyr::lazy_frame(g = c("a", "b"), x = 1:2)
   native <- expect_error(dplyr::summarise(data, n = dplyr::n(), .by = zz))
