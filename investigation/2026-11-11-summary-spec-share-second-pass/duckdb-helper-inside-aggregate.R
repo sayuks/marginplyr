@@ -1,0 +1,21 @@
+# Investigated SHA: 22043a461c5c48662ff54ea0a1238f00ac316059
+# Run from the repository root: Rscript <this file>. Prints observed behaviour.
+suppressMessages(pkgload::load_all(".", quiet = TRUE))
+library(dplyr, warn.conflicts = FALSE)
+d <- data.frame(a = c("x", "x", "y"), b = c("p", "q", "p"), v = c(1, 2, 4))
+show <- function(label, expr) cat(sprintf("%-34s", label), tryCatch({ r <- as.data.frame(collect(expr)); r <- r[order(r$a, r$b), ]; paste(paste0(r$a, "/", r$b, "=", r$detail_only), collapse = " ") }, error = function(e) paste("ERROR", gsub("\n", " | ", conditionMessage(e)))), "\n")
+f <- function(x, spec = rollup(a, b), ...) summarize_with_margins(x, detail_only = sum(v * (1 - grouping_bit(b)), na.rm = TRUE), .grouping = spec, ...)
+# independent expectation: bit(b) is 0 in (a, b) and 1 in (a) and (), so the sum is sum(v) in detail rows and 0 in margins
+con_s <- DBI::dbConnect(RSQLite::SQLite(), ":memory:"); con_d <- DBI::dbConnect(duckdb::duckdb(dbdir = ":memory:", shared_home = FALSE))
+DBI::dbWriteTable(con_s, "t", d); DBI::dbWriteTable(con_d, "t", d)
+show("local data frame", f(d))
+show("dtplyr", f(dtplyr::lazy_dt(d)))
+show("SQLite (portable)", f(tbl(con_s, "t")))
+show("Arrow", f(arrow::arrow_table(d)))
+show("DuckDB (native)", f(tbl(con_d, "t")))
+show("DuckDB max(grouping_id())", summarize_with_margins(tbl(con_d, "t"), detail_only = max(grouping_id(), na.rm = TRUE), .grouping = rollup(a, b)))
+dup <- grouping_sets(rollup(a, b), grouping_set())
+show("DuckDB, duplicate plan, keep", f(tbl(con_d, "t"), dup, .duplicates = "keep"))
+show("DuckDB, duplicate plan, drop", f(tbl(con_d, "t"), dup, .duplicates = "drop"))
+cat(as.character(dbplyr::sql_render(f(tbl(con_d, "t")))), "\n")
+DBI::dbDisconnect(con_s); DBI::dbDisconnect(con_d, shutdown = TRUE)
