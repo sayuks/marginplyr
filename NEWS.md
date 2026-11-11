@@ -1,5 +1,11 @@
 # marginplyr 0.1.0
 
+* On backends that compute native grouping sets, such as DuckDB and
+  PostgreSQL, arithmetic around a multi-column `grouping_id()` applies to the
+  whole mask. `grouping_id() * 10L`, `3L - grouping_id()` and
+  `-grouping_id()` previously applied the operator to one bit's term and
+  returned wrong values without a diagnostic (#1569).
+
 * Margin verbs preserve source variable labels through display conversion,
   grouping-set combination, expansion and nesting, including empty columns and
   direct collection. Calculated labels follow native summaries and agreeing
