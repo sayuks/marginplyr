@@ -392,7 +392,8 @@ conditions. The map and the restatement are otherwise as before.
 leaves a call with more arguments than fit beside their bindings a shared
 label. An
 argument reaching `across()`'s `...` cannot be hoisted, so where a call
-passing one still overflows its head is bound by position as well. The bound
+passing one still overflows its head is bound by position as well, under ADR 0019's
+amendment *an unexpanded across() head is bound by position*. The bound
 head carries the caller's spelling of `across()`, and an error dplyr's
 `across()` raises is blamed on that spelling, as native dplyr blames its own
 call. A call keeps a shared label only where dplyr expands it.

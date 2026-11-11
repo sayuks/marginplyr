@@ -733,3 +733,16 @@ operations that need no backend name recognition. Lazy Contextual selection
 heads keep their qualified form. Caller-authored namespace expressions remain
 ordinary code in their captured environment, including expressions in a
 selection or a nested data mask.
+
+## Amendment: an unexpanded across() head is bound by position
+
+#1576 binds the head of an unnamed top-level local `across()` that passes
+`...` extras, where ADR 0022's amendment *an unexpanded across() binds its
+head too* requires it, to a binding of its position holding dplyr's
+`across()`. *Isolate generated namespace operations* keeps the qualified
+spelling for a call left to dplyr's syntactic expansion, but this is a call
+dplyr does not expand, as `hoist_local_across_arguments()` states. The
+rejected function-value alternative fails a consumer that matches the head by
+name; dplyr's expansion is the only such consumer of a local call, it does not
+read this one, and the binding still runs the function the analysis read. A
+call dplyr expands keeps its qualified head.
