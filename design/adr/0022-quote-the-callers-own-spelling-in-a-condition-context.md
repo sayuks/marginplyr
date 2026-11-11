@@ -374,14 +374,9 @@ the map restores each one. An unnamed top-level `across()` whose label another
 dot shares keeps its head for dplyr's expansion and has its selection hoisted
 into such a binding, and then its other arguments, longest first, while the
 call still deparses onto several lines. A hoisted lambda is evaluated in the
-frame dplyr evaluates the argument in, so dplyr still inlines it. An argument
-reaching `across()`'s `...` cannot be hoisted, so where a call passing one
-still overflows its head is bound by position as well (#1576). The bound head
-carries the caller's spelling of `across()`, and an error dplyr's `across()`
-raises is blamed on that spelling, as native dplyr blames its own call. A call
-with more arguments than fit beside their bindings on one line keeps a shared
-label only where dplyr expands it, and its quotation degrades to dplyr's as
-above.
+frame dplyr evaluates the argument in, so dplyr still inlines it. A call with
+more arguments than fit beside their bindings on one line keeps a shared
+label, and its quotation degrades to dplyr's as above.
 
 Two arguments can also be quoted alike as the caller spelled them: two
 `across()` calls whose own deparse overflows are both `across(...)`, as native
@@ -390,3 +385,14 @@ the deduplication key is computed* is narrowed by one term: where two labels a
 branch handed dplyr are restored to one quotation, the identity also reads the
 dot's position, which every branch shares, so their warnings remain two
 conditions. The map and the restatement are otherwise as before.
+
+## Amendment: an unexpanded across() binds its head too
+
+#1576 narrows the sentence of *each wrapped local summary labels apart* that
+leaves a call with more arguments than fit beside their bindings a shared
+label. An
+argument reaching `across()`'s `...` cannot be hoisted, so where a call
+passing one still overflows its head is bound by position as well. The bound
+head carries the caller's spelling of `across()`, and an error dplyr's
+`across()` raises is blamed on that spelling, as native dplyr blames its own
+call. A call keeps a shared label only where dplyr expands it.
