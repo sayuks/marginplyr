@@ -374,9 +374,15 @@ the map restores each one. An unnamed top-level `across()` whose label another
 dot shares keeps its head for dplyr's expansion and has its selection hoisted
 into such a binding, and then its other arguments, longest first, while the
 call still deparses onto several lines. A hoisted lambda is evaluated in the
-frame dplyr evaluates the argument in, so dplyr still inlines it. A call with
-more arguments than fit beside their bindings on one line keeps a shared
-label, and its quotation degrades to dplyr's as above.
+frame dplyr evaluates the argument in, so dplyr still inlines it. An argument
+reaching `across()`'s `...` cannot be hoisted, and a call passing one is a
+call dplyr evaluates rather than expands, so where such a call still
+overflows its head is bound by position as well (#1576). The bound head
+carries the caller's spelling of `across()`, and an error dplyr's `across()`
+raises is blamed on that spelling, as native dplyr blames its own call. A call
+with more arguments than fit beside their bindings on one line keeps a shared
+label only where dplyr expands it, and its quotation degrades to dplyr's as
+above.
 
 Two arguments can also be quoted alike as the caller spelled them: two
 `across()` calls whose own deparse overflows are both `across(...)`, as native

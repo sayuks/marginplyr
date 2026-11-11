@@ -1,5 +1,12 @@
 # marginplyr 0.1.0
 
+* A condition raised by one of several unnamed `across()` calls on a local
+  input that pass extra arguments through `across()`'s `...` quotes that call
+  as the caller wrote it, rather than as `dplyr::across(...)`, and their
+  warnings are reported separately. A failure `across()` raises in such a call
+  is blamed on `across()` as the caller spelled it, as native `summarise()`
+  blames it (#1576).
+
 * When `across()`, `if_any()` or `if_all()` fails while computing a column
   of a named, nested or parenthesized summary on a local input, the cause is
   blamed on the helper as the caller spelled it, as native `summarise()`

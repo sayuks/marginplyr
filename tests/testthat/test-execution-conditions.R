@@ -1352,6 +1352,106 @@ test_that("a condition from one of several unnamed across calls quotes it", {
   }
 })
 
+# Each call fits the line `rlang::as_label()` deparses at as the caller wrote
+# it, and overflows it beside its bindings and namespace, which hoisting cannot
+# shorten past an argument passed through `across()`'s `...`.
+test_that("an unnamed across() with `...` extras is quoted as native does", {
+  data <- unnamed_summary_frame()
+  fn <- function(x, ...) stop("boom")
+  ok <- function(x, ...) length(x)
+  # Native dplyr reaches the bare helper through the caller's scope.
+  across <- dplyr::across
+  cases <- list(
+    rlang::exprs(
+      across(w, ok, aa = 1, bb = 2, cc = 3, dd = 4, ee = 5),
+      across(v, fn, aa = 1, bb = 2, cc = 3, dd = 4, ee = 6)
+    ),
+    rlang::exprs(
+      dplyr::across(w, ok, aa = 1, bb = 2, cc = 3, dd = 4, ee = 5),
+      dplyr::across(v, fn, aa = 1, bb = 2, cc = 3, dd = 4, ee = 6)
+    ),
+    rlang::exprs(
+      across(w, ok, aa = 1),
+      across(v, fn, aa = 1, bb = 2, cc = 3, dd = 4, ee = 6)
+    ),
+    rlang::exprs(across(v, fn, aa = 1))
+  )
+  for (config in unnamed_summary_renderings()) {
+    rlang::local_options(
+      cli.width = config$width, cli.condition_width = config$width
+    )
+    for (dots in cases) {
+      actual <- expect_error(summarize_with_margins(
+        data, !!!dots, .grouping = rollup(g)
+      ))
+      native <- expect_error(dplyr::summarise(data, !!!dots, .by = g))
+      expect_identical(conditionMessage(actual), conditionMessage(native))
+      expect_identical(
+        lapply(condition_chain(actual), class),
+        lapply(condition_chain(native), class)
+      )
+    }
+  }
+})
+
+test_that("two unnamed across() with `...` extras summarize as native does", {
+  rlang::local_options(lifecycle_verbosity = "quiet")
+  data <- unnamed_summary_frame()
+  add <- function(x, ...) length(x) + sum(...)
+  across <- dplyr::across
+  dots <- rlang::exprs(
+    across(v, add, aa = 1, bb = 2, cc = 3, dd = 4, ee = 5),
+    across(w, add, aa = 1, bb = 2, cc = 3, dd = 4, ee = dplyr::n())
+  )
+  native <- dplyr::summarise(data, !!!dots, .by = g)
+  actual <- summarize_with_margins(data, !!!dots, .grouping = rollup(g))
+  expect_identical(actual$v[1:2], native$v)
+  expect_identical(actual$w[1:2], native$w)
+})
+
+# The first call warns only in the Grand total set and the second only in the
+# set grouped by `g`, with one diagnostic, so each is one report quoting its
+# own call. dplyr's deprecation of `...` would otherwise be each set's first
+# warning, raised by the first call alike in both.
+test_that("warnings from unnamed across() with `...` extras stay separate", {
+  rlang::local_options(lifecycle_verbosity = "quiet")
+  total <- function(x, ...) {
+    if (length(x) == 3L) warning("careful")
+    length(x)
+  }
+  grouped <- function(x, ...) {
+    if (length(x) < 3L) warning("careful")
+    length(x)
+  }
+  for (config in unnamed_summary_renderings()) {
+    warnings <- collect_warnings_rendered(config, summarize_with_margins(
+      unnamed_summary_frame(),
+      across(v, total, aa = 1, bb = 2, cc = 3, dd = 4, ee = 5),
+      across(w, grouped, aa = 1, bb = 2, cc = 3, dd = 4, ee = 6),
+      .grouping = rollup(g)
+    ))
+    expect_length(warnings, 2L)
+    messages <- vapply(warnings, conditionMessage, character(1))
+    expect_match(
+      messages[[1L]],
+      paste0(
+        "In argument: ",
+        "`across(w, grouped, aa = 1, bb = 2, cc = 3, dd = 4, ee = 6)`."
+      ),
+      fixed = TRUE
+    )
+    expect_match(
+      messages[[2L]],
+      paste0(
+        "In argument: ",
+        "`across(v, total, aa = 1, bb = 2, cc = 3, dd = 4, ee = 5)`."
+      ),
+      fixed = TRUE
+    )
+    expect_false(any(grepl("further grouping set", messages, fixed = TRUE)))
+  }
+})
+
 # A caller's own binding spelled like the one a wrapped dot calls is read as the
 # caller's, and the wrapper takes another name.
 test_that("a caller binding spelled like a wrapper keeps its own value", {

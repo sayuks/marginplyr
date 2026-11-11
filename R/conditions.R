@@ -332,10 +332,9 @@ selection_helper_call <- function(call) {
   rlang::call2(head)
 }
 
-# `cnd` and its causes, each blamed on the head the caller wrote where
-# `isolate_local_selection_call()` bound the head of the call it blames, as
-# dplyr blames the helper's own call. A layer blaming any other call is left as
-# it arrived.
+# `cnd` and its causes, each blamed on the head the caller wrote where the
+# selection rewrite marked the head of the call it blames, as dplyr blames the
+# helper's own call. A layer blaming any other call is left as it arrived.
 restate_selection_layers <- function(cnd) {
   if (is.null(cnd)) {
     return(cnd)

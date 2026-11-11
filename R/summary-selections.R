@@ -340,8 +340,8 @@ bind_local_position <- function(expr, env, prefix, position, value) {
 
 # The local branch dots with every unnamed top-level `across()` that shares its
 # label with another dot respelled by `hoist_local_across_arguments()`, as ADR
-# 0022's amendment *each wrapped local summary labels apart* decides. Such a
-# call keeps its head for dplyr's expansion (ADR 0019).
+# 0022's amendment *each wrapped local summary labels apart* decides. A call
+# dplyr expands keeps its head for that expansion (ADR 0019).
 separate_local_across_labels <- function(dots) {
   labels <- summary_argument_labels(dots)
   across <- vapply(
@@ -368,7 +368,8 @@ separate_local_across_labels <- function(dots) {
 # selects from the same data, and the locations it returns are what tidyselect
 # resolves the selection's own spelling to. The arguments matching `.fns`,
 # `.names` and `.unpack` are hoisted, longest first, while the call still
-# deparses onto several lines; one reaching `...` stays as written. Each such
+# deparses onto several lines; one reaching `...` stays as written, and a call
+# that still overflows then has its head bound as well. Each argument's
 # binding evaluates its argument in the frame dplyr calls the binding from,
 # which is the frame the argument itself was evaluated in, so a lambda it
 # returns has the environment dplyr's inlining requires of one written in the
@@ -403,7 +404,21 @@ hoist_local_across_arguments <- function(dot, position) {
     env <- bound$env
     args[[k]] <- rlang::call2(bound$head)
   }
-  rlang::new_quosure(rlang::call2(expr[[1L]], !!!args), env = env)
+  head <- expr[[1L]]
+  if (length(parsed$additional) > 0L &&
+        length(deparse(rlang::call2(head, !!!args), 60L)) > 1L) {
+    # dplyr expands no call passing `...` extras, so its head can name the
+    # position. The parentheses give that head a call to carry the caller's
+    # spelling for the blamed call; a symbol carries no attribute.
+    bound <- bind_local_position(
+      expr, env, prefix, 0L, get("across", envir = asNamespace("dplyr"))
+    )
+    env <- bound$env
+    spelled <- attr(head, "marginplyr_spelled_head", exact = TRUE)
+    head <- rlang::call2("(", bound$head)
+    attr(head, "marginplyr_spelled_head") <- spelled
+  }
+  rlang::new_quosure(rlang::call2(head, !!!args), env = env)
 }
 
 local_selection_thunk <- function(selection) {
@@ -2119,6 +2134,13 @@ rewrite_summary_selections <- function(expr,
       )
       if (top_level_unnamed && identical(call_name, "across") &&
             !is_parenthesized(rewritten)) {
+        # dplyr evaluates a call passing `...` extras instead of expanding it,
+        # and blames its own failures on the call's head.
+        if (length(parse_across_arguments(rewritten)$additional) > 0L) {
+          head <- rewritten[[1L]]
+          attr(head, "marginplyr_spelled_head") <- spelled
+          rewritten[[1L]] <- head
+        }
         return(rewritten)
       }
       return(isolate_local_selection_call(rewritten, call_name, spelled))
