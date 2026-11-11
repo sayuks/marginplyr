@@ -1,5 +1,10 @@
 # marginplyr 0.1.0
 
+* A Margin order on an Arrow table, record batch or dataset now collects for
+  every Grouping plan and `.id` name. Distinct Grouping bits could share one
+  truncated Arrow sort key name, so wide one-way unions and long `.id` names
+  failed in `collect()` (#1570).
+
 * Margin verbs preserve source variable labels through display conversion,
   grouping-set combination, expansion and nesting, including empty columns and
   direct collection. Calculated labels follow native summaries and agreeing

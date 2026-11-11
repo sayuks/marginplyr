@@ -527,7 +527,13 @@ order_margin_result <- function(operation, result, execution) {
         safe_name = safe_name,
         helper_namespace = if (operation$backend$kind == "dtplyr") "base"
       )
-      if (length(terms) > 0L) dplyr::arrange(data, !!!terms) else data
+      if (length(terms) == 0L) {
+        data
+      } else if (operation$backend$kind == "arrow") {
+        arrange_arrow_margin_terms(data, terms, operation$backend)
+      } else {
+        dplyr::arrange(data, !!!terms)
+      }
     }
   )
   if (!is.null(staged_id) && !is.null(key_id)) {
@@ -535,6 +541,45 @@ order_margin_result <- function(operation, result, execution) {
                                             operation$backend)
   }
   forget_margin_window_order(result, backend = operation$backend)
+}
+
+# Arrow names each arranged expression by its first deparsed line, the label
+# `absorbed_expression_label()` reproduces, and refuses two sort keys under one
+# name. Distinct terms whose deparse wraps can share that line, so each such
+# term is computed into an internal column, arranged by name, and dropped
+# again; the order survives the drop and the query stays lazy. A term that
+# deparses to one line is named by the whole expression, and
+# `margin_order_terms()` emits no expression twice.
+arrange_arrow_margin_terms <- function(data, terms, backend) {
+  descending <- vapply(
+    terms, rlang::is_call, logical(1), name = "desc", ns = "dplyr"
+  )
+  values <- Map(
+    function(term, desc) if (desc) term[[2L]] else term, terms, descending
+  )
+  wrapped <- vapply(values, function(value) length(deparse(value)) > 1L,
+                    logical(1))
+  if (!any(wrapped)) {
+    return(dplyr::arrange(data, !!!terms))
+  }
+  helpers <- new_margin_internal_names(
+    sum(wrapped),
+    used_names = margin_col_names(data),
+    prefix = "..marginplyr_order_",
+    backend = backend
+  )
+  data <- dplyr::mutate(data, !!!rlang::set_names(values[wrapped], helpers))
+  terms[wrapped] <- Map(
+    function(helper, desc) {
+      column <- margin_column_pronoun(helper)
+      if (desc) rlang::expr(dplyr::desc(!!column)) else column
+    },
+    helpers, descending[wrapped]
+  )
+  data <- dplyr::arrange(data, !!!unname(terms))
+  dplyr::mutate(
+    data, !!!rlang::set_names(rep(list(NULL), length(helpers)), helpers)
+  )
 }
 
 # The Grouping set identifier the finalizer drops again: the one an executor
