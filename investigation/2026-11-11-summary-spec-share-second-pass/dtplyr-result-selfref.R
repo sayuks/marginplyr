@@ -13,7 +13,7 @@ m <- summarize_with_margins(l, tot = sum(v), .by = year, .grouping = rollup(regi
 nat <- union_all(summarise(l, tot = sum(v), .by = c(year, region)),   # native reference
   summarise(l, tot = sum(v), .by = year) |> mutate(region = "Total") |> select(year, region, tot))
 show <- function(tag, x) { dt <- data.table::as.data.table(x)
-  cat(sprintf("%-28s selfrefok=%d truelength=%d label=%s\n", tag, data.table:::selfrefok(dt),
+  cat(sprintf("%-28s selfrefok=%d truelength=%d label=%s\n", tag, utils::getFromNamespace("selfrefok", "data.table")(dt),
               data.table::truelength(dt), format(attr(dt$year, "label")))) }
 show("margin .sort='none'", m)
 show("margin .sort='last'", summarize_with_margins(l, tot = sum(v), .by = year, .grouping = rollup(region), .sort = "last"))
