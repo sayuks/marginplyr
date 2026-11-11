@@ -900,6 +900,19 @@ ADR and the review that reads it against the code. What it would add is a second
 name restating `grouping_kind_name()`'s contract, for three comparisons that are
 against different literals, in two files, for three different decisions.
 
+## Amendment: the call a refused selection is blamed on (#1573)
+
+*One nested argument, whose reading the spelling does not settle* above says a
+displaced External condition carried tidyselect's blamed call. It did not:
+marginplyr called `tidyselect::eval_select()` without an error call, so
+tidyselect blamed marginplyr's own resolver. A selection marginplyr resolves
+now passes the call `with_margin_error_call()` holds, so tidyselect's class,
+message and cause arrive blamed on the Margin verb or `inspect_grouping()` call
+the caller wrote. The contrast that amendment draws is therefore one of class
+alone: the refusal is a `marginplyr_error` where the displaced rejection was
+tidyselect's class, and both are blamed on the same call. The predicate and
+nested-specification refusals keep their Package conditions.
+
 ## Test strategy
 
 Before replacing the branches, add characterization coverage for:
