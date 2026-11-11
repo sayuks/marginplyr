@@ -1394,6 +1394,39 @@ test_that("an unnamed across() with `...` extras is quoted as native does", {
   }
 })
 
+test_that("a selection failing in an across() with extras reads as native", {
+  data <- unnamed_summary_frame()
+  ok <- function(x, ...) length(x)
+  across <- dplyr::across
+  all_of <- dplyr::all_of
+  cases <- list(
+    rlang::exprs(
+      across(w, ok, aa = 1, bb = 2, cc = 3, dd = 4, ee = 5),
+      across(zz, ok, aa = 1, bb = 2, cc = 3, dd = 4, ee = 6)
+    ),
+    rlang::exprs(
+      across(w, ok, aa = 1, bb = 2, cc = 3, dd = 4, ee = 5),
+      across(all_of("zz"), ok, aa = 1, bb = 2, cc = 3, dd = 4, ee = 6)
+    )
+  )
+  for (config in unnamed_summary_renderings()) {
+    rlang::local_options(
+      cli.width = config$width, cli.condition_width = config$width
+    )
+    for (dots in cases) {
+      actual <- expect_error(summarize_with_margins(
+        data, !!!dots, .grouping = rollup(g)
+      ))
+      native <- expect_error(dplyr::summarise(data, !!!dots, .by = g))
+      expect_identical(conditionMessage(actual), conditionMessage(native))
+      expect_identical(
+        lapply(condition_chain(actual), class),
+        lapply(condition_chain(native), class)
+      )
+    }
+  }
+})
+
 test_that("two unnamed across() with `...` extras summarize as native does", {
   rlang::local_options(lifecycle_verbosity = "quiet")
   data <- unnamed_summary_frame()

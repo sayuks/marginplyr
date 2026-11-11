@@ -319,10 +319,13 @@ deferred_selection_mark <- function(helper) {
 
 # The selection helper a deferred selection failed under, as the call its
 # header names. dplyr blames the helper's call as the rewrite spelled it, which
-# for `if_any()` and `if_all()` carries an inlined `::` that the header cannot
-# name; the header reads only the function, so the arguments are dropped.
+# for `if_any()` and `if_all()` carries an inlined `::` and for a head bound by
+# position a binding, neither of which the header can name; the caller's
+# spelling is read where the rewrite marked it. The header reads only the
+# function, so the arguments are dropped.
 selection_helper_call <- function(call) {
-  head <- call[[1L]]
+  head <- attr(call[[1L]], "marginplyr_spelled_head", exact = TRUE) %||%
+    call[[1L]]
   if (is.call(head)) {
     return(rlang::call2(
       as.character(head[[3L]]),
