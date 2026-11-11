@@ -310,7 +310,10 @@ local_summary_value_quo <- function(dot, env, name, group_vars,
     protected_sources, type_state, alias_state, position
   )
   wrapper <- function(value) {
-    local_assigned_summary_value(
+    # `value` is forced in this call's frame, which R blames for a condition
+    # the caller's expression raises. A head that is not a symbol is a call
+    # rlang renders as no call at all, as native dplyr's mask has none.
+    (local_assigned_summary_value)(
       value, name, group_vars, internal_names, set_id_name,
       set_id_is_internal, protected_sources, type_state, alias_state, position
     )

@@ -1340,6 +1340,47 @@ test_that("a caller binding spelled like a wrapper keeps its own value", {
   expect_identical(actual$low, c(1L, 3L, 1L))
 })
 
+# The cause's own line, as native dplyr renders it, names no function the
+# caller did not call, whether one, several, or no summary is unnamed.
+test_that("a local summary's cause names the call native dplyr names", {
+  cases <- list(
+    rlang::exprs(mean(v), max(stop("bad"))),
+    rlang::exprs(max(stop("bad"))),
+    rlang::exprs(x = max(stop("bad"))),
+    rlang::exprs(mean(v), sum(as.integer("x"))),
+    rlang::exprs(sum(as.integer("x"))),
+    rlang::exprs(x = sum(as.integer("x")))
+  )
+  cause_lines <- function(cnd) {
+    lines <- strsplit(conditionMessage(cnd), "\n", fixed = TRUE)[[1L]]
+    grep("^Caused by", lines, value = TRUE)
+  }
+  outcome <- function(expr) {
+    tryCatch(
+      collect_warnings(expr)[[1L]],
+      error = function(cnd) cnd
+    )
+  }
+  for (config in unnamed_summary_renderings()) {
+    rlang::local_options(
+      cli.width = config$width, cli.condition_width = config$width
+    )
+    for (dots in cases) {
+      actual <- outcome(summarize_with_margins(
+        unnamed_summary_frame(), !!!dots, .grouping = rollup(g)
+      ))
+      native <- outcome(dplyr::summarise(
+        unnamed_summary_frame(), !!!dots, .by = g
+      ))
+      expect_identical(class(actual), class(native))
+      expect_identical(cause_lines(actual), cause_lines(native))
+      if (inherits(native, "error")) {
+        expect_identical(conditionMessage(actual), conditionMessage(native))
+      }
+    }
+  }
+})
+
 test_that("one unnamed summary warning in several sets is reported once", {
   for (config in unnamed_summary_renderings()) {
     warnings <- collect_warnings_rendered(config, summarize_with_margins(
