@@ -47,22 +47,18 @@ Each script under `investigation/2026-11-11-summary-spec-share/` prints the
 observed behaviour and exits zero; with `--assert-contract` it asserts the
 documented behaviour and exited one at the investigated SHA.
 
-| Boundary | Established effect | Script |
-| --- | --- | --- |
-| dtplyr fixed key named `T` or `F` under a share | The key became `TRUE` or `FALSE`, the fixed partitions merged, and shares were wrong with no diagnostic. | `dtplyr-true-false-fixed-key.R` |
-| Multi-column `grouping_id()` in arithmetic on native grouping sets | The mask was spliced in unparenthesized, so the surrounding operator bound to one term and values were wrong with no diagnostic. | `native-grouping-id-arithmetic.R` |
-| Arrow Margin order | Two different Grouping-bit sort terms received one truncated field name, and collecting failed. | `arrow-sort-label-collision.R` |
-| Local Margin order over a double fixed key | `NaN` and `NA` partitions interleaved, separating margin rows from the rows they summarize. | `local-nan-na-margin-order.R` |
-| Two or more unnamed local summaries | The Condition context quoted an internal wrapper, and warnings from different arguments collapsed into one Repeated condition. | `unnamed-summary-condition-context.R` |
-| Failed column selection | The blamed call was an internal function, and a summary selection also quoted an argument the caller did not write. | `selection-condition-context.R` |
+| Boundary | Established effect | Script | Issue |
+| --- | --- | --- | --- |
+| dtplyr fixed key named `T` or `F` under a share | The key became `TRUE` or `FALSE`, the fixed partitions merged, and shares were wrong with no diagnostic. | `dtplyr-true-false-fixed-key.R` | [#1568](https://github.com/sayuks/marginplyr/issues/1568) |
+| Multi-column `grouping_id()` in arithmetic on native grouping sets | The mask was spliced in unparenthesized, so the surrounding operator bound to one term and values were wrong with no diagnostic. | `native-grouping-id-arithmetic.R` | [#1569](https://github.com/sayuks/marginplyr/issues/1569) |
+| Arrow Margin order | Two different Grouping-bit sort terms received one truncated field name, and collecting failed. | `arrow-sort-label-collision.R` | [#1570](https://github.com/sayuks/marginplyr/issues/1570) |
+| Local Margin order over a double fixed key | `NaN` and `NA` partitions interleaved, separating margin rows from the rows they summarize. | `local-nan-na-margin-order.R` | [#1571](https://github.com/sayuks/marginplyr/issues/1571) |
+| Two or more unnamed local summaries | The Condition context quoted an internal wrapper, and warnings from different arguments collapsed into one Repeated condition. | `unnamed-summary-condition-context.R` | [#1572](https://github.com/sayuks/marginplyr/issues/1572) |
+| Failed column selection | The blamed call was an internal function, and a summary selection also quoted an argument the caller did not write. | `selection-condition-context.R` | [#1573](https://github.com/sayuks/marginplyr/issues/1573) |
 
-The `to-tickets` workflow split these into six independent repair slices with
-no blocking edges and no prerequisite prefactoring; splitting had been
-delegated without a confirmation checkpoint. On 2026-11-11 they were written
-as drafts under `investigation/2026-11-11-summary-spec-share/ticket-drafts/`
-and were not published, because `gh` could not reach the tracker from the
-session's sandbox. The tracker is authoritative for whether they have been
-published since.
+The `to-tickets` workflow published these as six independent repair slices,
+each with `bug` and `ready-for-agent`, no blocking edges and no prerequisite
+prefactoring; splitting had been delegated without a confirmation checkpoint.
 
 ### dtplyr fixed key named `T` or `F` under a share
 
