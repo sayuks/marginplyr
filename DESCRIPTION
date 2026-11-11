@@ -390,7 +390,8 @@ Config/testthat/start-first:
     variable-labels,
     share-complex-keys,
     native-grouping-id-precedence,
-    dtplyr-logical-name-shares
+    dtplyr-logical-name-shares,
+    arrow-order-term-names
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool

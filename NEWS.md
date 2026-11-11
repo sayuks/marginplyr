@@ -1,5 +1,10 @@
 # marginplyr 0.1.0
 
+* A Margin order on an Arrow table, record batch or dataset now collects for
+  every Grouping plan and `.id` name. Distinct Grouping bits could share one
+  truncated Arrow sort key name, so wide one-way unions and long `.id` names
+  failed in `collect()` (#1570).
+
 * On backends that compute native grouping sets, such as DuckDB and
   PostgreSQL, arithmetic around a multi-column `grouping_id()` applies to the
   whole mask. `grouping_id() * 10L`, `3L - grouping_id()` and
