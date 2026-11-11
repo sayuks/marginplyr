@@ -251,7 +251,7 @@ test_that("a backend job installs the package it is for and its companions", {
   # would install, run nothing, and report green.
   expect_identical(suggest_job_packages("duckdb"), c("duckdb", "DBI", "bit64"))
   expect_identical(
-    suggest_job_packages("RSQLite"), c("RSQLite", "DBI", "bit64")
+    suggest_job_packages("RSQLite"), c("RSQLite", "DBI", "bit64", "hms")
   )
   # dtplyr declares `Imports: data.table`, so the job installs it regardless;
   # naming it is what keeps `verify-library-isolation.R` from reading a
