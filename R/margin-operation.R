@@ -534,7 +534,7 @@ order_margin_result <- function(operation, result, execution) {
   }
 
   rowwise <- margin_rowwise_sort_columns(result, operation$plan)
-  nan_distinct <- margin_nan_sort_columns(result, operation$plan)
+  nan_columns <- margin_nan_sort_columns(result, operation$plan)
   result <- margin_safe_column_reads(
     result, c(key_id, operation$plan$by, operation$plan$dimensions),
     function(data, safe_name) {
@@ -544,7 +544,7 @@ order_margin_result <- function(operation, result, execution) {
         sort_id = if (is.null(key_id)) NULL else safe_name(key_id),
         value_types = margin_dictionary_sort_types(data, operation$backend),
         rowwise = rowwise,
-        nan_distinct = nan_distinct,
+        nan_columns = nan_columns,
         safe_name = safe_name,
         helper_namespace = if (operation$backend$kind == "dtplyr") "base"
       )
@@ -723,7 +723,7 @@ forget_margin_window_order <- function(result, backend) {
 # `value_types` maps dictionary columns to the types their value terms use.
 # Only the value term takes it. The cast reaches the key alone, so the result's
 # own column keeps whatever the executor left in it.
-# `rowwise` and `nan_distinct` name the local columns whose missingness term
+# `rowwise` and `nan_columns` name the local columns whose missingness term
 # `margin_missing_last_expr()` specializes.
 # `helper_namespace` supplies generated dtplyr helpers without resolving the
 # namespace operator in the caller's lazy root; other translators retain the
@@ -733,18 +733,18 @@ margin_order_terms <- function(plan,
                                sort_id,
                                value_types = list(),
                                rowwise = character(),
-                               nan_distinct = character(),
+                               nan_columns = character(),
                                safe_name = identity,
                                helper_namespace = NULL) {
   rowwise <- vapply(rowwise, safe_name, character(1), USE.NAMES = FALSE)
-  nan_distinct <- vapply(
-    nan_distinct, safe_name, character(1), USE.NAMES = FALSE
+  nan_columns <- vapply(
+    nan_columns, safe_name, character(1), USE.NAMES = FALSE
   )
   terms <- unlist(
     lapply(plan$by, function(key) {
       key <- safe_name(key)
       list(
-        margin_missing_last_expr(key, rowwise, nan_distinct, helper_namespace),
+        margin_missing_last_expr(key, rowwise, nan_columns, helper_namespace),
         margin_sort_value_expr(key, value_types)
       )
     }),
@@ -773,7 +773,7 @@ margin_order_terms <- function(plan,
       terms,
       list(
         margin_missing_last_expr(
-          safe_name(dimension), rowwise, nan_distinct, helper_namespace
+          safe_name(dimension), rowwise, nan_columns, helper_namespace
         ),
         margin_sort_value_expr(safe_name(dimension), value_types)
       )
@@ -800,11 +800,11 @@ margin_sort_value_expr <- function(column, value_types) {
 
 # One column's missingness term, using row-vector semantics for local list
 # and array columns, and ranking `NaN` before `NA` for the local double
-# columns in `nan_distinct` (ADR 0018).
+# columns in `nan_columns` (ADR 0018).
 # `if_else()` produces an integer because not every dialect sorts booleans.
 margin_missing_last_expr <- function(column,
                                      rowwise,
-                                     nan_distinct,
+                                     nan_columns,
                                      helper_namespace) {
   value <- margin_column_pronoun(column)
   missing <- if (column %in% rowwise) {
@@ -816,7 +816,7 @@ margin_missing_last_expr <- function(column,
   }
   # `is.na()` and the value term both tie `NaN` with `NA`, while `summarise()`
   # keeps them apart, so only this rank keeps each group contiguous.
-  missing_rank <- if (column %in% nan_distinct) {
+  missing_rank <- if (column %in% nan_columns) {
     rlang::expr(dplyr::if_else(is.nan(!!value), 1L, 2L))
   } else {
     1L
