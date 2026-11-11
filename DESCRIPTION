@@ -389,6 +389,9 @@ Config/testthat/start-first:
     native-classes,
     variable-labels,
     share-complex-keys,
+    native-grouping-id-precedence,
+    dtplyr-logical-name-shares,
+    arrow-order-term-names,
     selection-error-call
 VignetteBuilder:
     quarto

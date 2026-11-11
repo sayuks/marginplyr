@@ -488,3 +488,28 @@ including dimensions with a typed-missing Margin label represented by `NULL`.
 The Grouping bit still positions margin rows before or after detail rows.
 Classed list-of keys follow their vctrs missingness. The packed data-frame,
 matrix, scalar atomic, and lazy SQL contracts are unchanged.
+
+## Amendment: local double keys keep `NaN` apart from `NA`
+
+For a local double key, fixed or a grouping dimension, the missingness term
+ranks `NaN` before `NA`, both after ordinary values (#1571). `summarise()`
+treats `NaN` and `NA` as two groups, while `is.na()` is true for both and
+`dplyr::arrange()` ties them in the value term too. Read literally, the key
+`is.na(by1), by1, …` therefore interleaved the two groups and their margin
+rows, contradicting the contiguity this decision derives from the key: each
+fixed partition one block, and a margin row beside the rows it summarizes.
+
+Contiguity is what the key exists to give, so the term is refined rather than
+the consequence withdrawn. What `is.na(column)` means for such a column is a
+three-way rank, ordinary value, `NaN`, `NA`, rather than a flag.
+
+The relative order is specified, not left as whichever group a tie leaves
+first. `NaN` before `NA` is the order dtplyr, DuckDB and Arrow returned for the
+same call, measured in
+`investigation/summary-spec-share-differential-hunt-2026-11-11.md`, so
+choosing it keeps a local result in step with those backends rather than
+introducing a split. That agreement is an observation about them, not an
+extension of this amendment's promise to lazy backends; SQLite stores `NaN` as
+`NULL` and has one group. A string Margin label converts a dimension to
+character before ordering, which already separates the two. Double keys
+without `NaN`, and packed, matrix, list and factor keys, order as before.

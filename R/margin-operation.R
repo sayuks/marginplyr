@@ -534,6 +534,7 @@ order_margin_result <- function(operation, result, execution) {
   }
 
   rowwise <- margin_rowwise_sort_columns(result, operation$plan)
+  nan_distinct <- margin_nan_sort_columns(result, operation$plan)
   result <- margin_safe_column_reads(
     result, c(key_id, operation$plan$by, operation$plan$dimensions),
     function(data, safe_name) {
@@ -543,10 +544,17 @@ order_margin_result <- function(operation, result, execution) {
         sort_id = if (is.null(key_id)) NULL else safe_name(key_id),
         value_types = margin_dictionary_sort_types(data, operation$backend),
         rowwise = rowwise,
+        nan_distinct = nan_distinct,
         safe_name = safe_name,
         helper_namespace = if (operation$backend$kind == "dtplyr") "base"
       )
-      if (length(terms) > 0L) dplyr::arrange(data, !!!terms) else data
+      if (length(terms) == 0L) {
+        data
+      } else if (operation$backend$kind == "arrow") {
+        arrange_arrow_margin_terms(data, terms, operation$backend)
+      } else {
+        dplyr::arrange(data, !!!terms)
+      }
     }
   )
   if (!is.null(staged_id) && !is.null(key_id)) {
@@ -554,6 +562,45 @@ order_margin_result <- function(operation, result, execution) {
                                             operation$backend)
   }
   forget_margin_window_order(result, backend = operation$backend)
+}
+
+# Arrow names each arranged expression by its first deparsed line, the label
+# `absorbed_expression_label()` reproduces, and refuses two sort keys under one
+# name. Distinct terms whose deparse wraps can share that line, so each such
+# term is computed into an internal column, arranged by name, and dropped
+# again; the order survives the drop and the query stays lazy. A term that
+# deparses to one line is named by the whole expression, and
+# `margin_order_terms()` emits no expression twice.
+arrange_arrow_margin_terms <- function(data, terms, backend) {
+  descending <- vapply(
+    terms, rlang::is_call, logical(1), name = "desc", ns = "dplyr"
+  )
+  values <- Map(
+    function(term, desc) if (desc) term[[2L]] else term, terms, descending
+  )
+  wrapped <- vapply(values, function(value) length(deparse(value)) > 1L,
+                    logical(1))
+  if (!any(wrapped)) {
+    return(dplyr::arrange(data, !!!terms))
+  }
+  helpers <- new_margin_internal_names(
+    sum(wrapped),
+    used_names = margin_col_names(data),
+    prefix = "..marginplyr_order_",
+    backend = backend
+  )
+  data <- dplyr::mutate(data, !!!rlang::set_names(values[wrapped], helpers))
+  terms[wrapped] <- Map(
+    function(helper, desc) {
+      column <- margin_column_pronoun(helper)
+      if (desc) rlang::expr(dplyr::desc(!!column)) else column
+    },
+    helpers, descending[wrapped]
+  )
+  data <- dplyr::arrange(data, !!!unname(terms))
+  dplyr::mutate(
+    data, !!!rlang::set_names(rep(list(NULL), length(helpers)), helpers)
+  )
 }
 
 # The Grouping set identifier the finalizer drops again: the one an executor
@@ -609,6 +656,24 @@ margin_dictionary_sort_types <- function(result, backend) {
   )
 }
 
+# Names local double keys whose missingness term ranks `NaN` before `NA`. The
+# caller holds a result containing every fixed key and dimension named by that
+# plan.
+margin_nan_sort_columns <- function(result, plan) {
+  if (!is.data.frame(result)) {
+    return(character())
+  }
+  columns <- c(plan$by, plan$dimensions)
+  columns[vapply(
+    columns,
+    function(name) {
+      column <- result[[name]]
+      is.double(column) && !is.array(column)
+    },
+    logical(1)
+  )]
+}
+
 # Names local keys needing row-vector missingness. The caller holds a result
 # containing every fixed key and dimension named by that plan.
 margin_rowwise_sort_columns <- function(result, plan) {
@@ -658,6 +723,8 @@ forget_margin_window_order <- function(result, backend) {
 # `value_types` maps dictionary columns to the types their value terms use.
 # Only the value term takes it. The cast reaches the key alone, so the result's
 # own column keeps whatever the executor left in it.
+# `rowwise` and `nan_distinct` name the local columns whose missingness term
+# `margin_missing_last_expr()` specializes.
 # `helper_namespace` supplies generated dtplyr helpers without resolving the
 # namespace operator in the caller's lazy root; other translators retain the
 # unqualified calls they recognize.
@@ -666,14 +733,18 @@ margin_order_terms <- function(plan,
                                sort_id,
                                value_types = list(),
                                rowwise = character(),
+                               nan_distinct = character(),
                                safe_name = identity,
                                helper_namespace = NULL) {
   rowwise <- vapply(rowwise, safe_name, character(1), USE.NAMES = FALSE)
+  nan_distinct <- vapply(
+    nan_distinct, safe_name, character(1), USE.NAMES = FALSE
+  )
   terms <- unlist(
     lapply(plan$by, function(key) {
       key <- safe_name(key)
       list(
-        margin_missing_last_expr(key, rowwise, helper_namespace),
+        margin_missing_last_expr(key, rowwise, nan_distinct, helper_namespace),
         margin_sort_value_expr(key, value_types)
       )
     }),
@@ -702,7 +773,7 @@ margin_order_terms <- function(plan,
       terms,
       list(
         margin_missing_last_expr(
-          safe_name(dimension), rowwise, helper_namespace
+          safe_name(dimension), rowwise, nan_distinct, helper_namespace
         ),
         margin_sort_value_expr(safe_name(dimension), value_types)
       )
@@ -728,9 +799,13 @@ margin_sort_value_expr <- function(column, value_types) {
 }
 
 # One column's missingness term, using row-vector semantics for local list
-# and array columns (ADR 0018).
+# and array columns, and ranking `NaN` before `NA` for the local double
+# columns in `nan_distinct` (ADR 0018).
 # `if_else()` produces an integer because not every dialect sorts booleans.
-margin_missing_last_expr <- function(column, rowwise, helper_namespace) {
+margin_missing_last_expr <- function(column,
+                                     rowwise,
+                                     nan_distinct,
+                                     helper_namespace) {
   value <- margin_column_pronoun(column)
   missing <- if (column %in% rowwise) {
     rlang::expr(vctrs::vec_detect_missing(!!value))
@@ -739,9 +814,16 @@ margin_missing_last_expr <- function(column, rowwise, helper_namespace) {
       "is.na", value, helper_namespace = helper_namespace
     )
   }
+  # `is.na()` and the value term both tie `NaN` with `NA`, while `summarise()`
+  # keeps them apart, so only this rank keeps each group contiguous.
+  missing_rank <- if (column %in% nan_distinct) {
+    rlang::expr(dplyr::if_else(is.nan(!!value), 1L, 2L))
+  } else {
+    1L
+  }
   rlang::expr(dplyr::if_else(
     !!missing,
-    1L,
+    !!missing_rank,
     0L
   ))
 }
