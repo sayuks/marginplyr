@@ -388,7 +388,8 @@ Config/testthat/start-first:
     factor-schema-lifetime,
     native-classes,
     variable-labels,
-    share-complex-keys
+    share-complex-keys,
+    dtplyr-logical-name-shares
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
