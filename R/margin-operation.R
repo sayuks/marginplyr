@@ -95,7 +95,13 @@ check_margin_operation <- function(operation) {
 # a grouping-set branch raises one, by `with_branch_conditions()`, rather than
 # here: the grouping values in that context are reported under internal column
 # names, and the branch is the only frame that knows what they stand for.
+#
+# `call` is also bound in this frame for `margin_selection_call()`, so that a
+# selection marginplyr itself hands tidyselect is blamed on the same call.
 with_margin_error_call <- function(expr, call) {
+  # Read from this frame by `margin_selection_call()`, which codetools cannot
+  # see.
+  margin_error_call <- call # nolint: object_usage_linter.
   tryCatch(
     expr,
     error = function(cnd) {
@@ -105,6 +111,19 @@ with_margin_error_call <- function(expr, call) {
       stop(cnd)
     }
   )
+}
+
+# The call a selection marginplyr hands `tidyselect::eval_select()` is blamed
+# on: the innermost `with_margin_error_call()` running, and `NULL` outside one.
+# tidyselect otherwise blames the frame that called it, which is marginplyr's
+# own and a call the caller never wrote (CONTEXT.md, *Condition context*).
+margin_selection_call <- function() {
+  for (index in rev(seq_len(sys.nframe()))) {
+    if (identical(sys.function(index), with_margin_error_call)) {
+      return(get("margin_error_call", envir = sys.frame(index)))
+    }
+  }
+  NULL
 }
 
 # One vocabulary per shared option, so a choice list and the guards that

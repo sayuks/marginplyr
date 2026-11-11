@@ -220,8 +220,10 @@ with_branch_conditions <- function(expr,
 # An error arrives with its context in addressable fields: `$message` holds the
 # argument bullet, `$body` the grouping-value bullet, and `$call` the internal
 # `dplyr::summarize()` the adapter issued. Generated validation checks add a
-# temporary ownership wrapper; promote only those refusals, or remove the
-# interpolation wrapper around a caller-template error.
+# temporary ownership wrapper; promote only those refusals, remove the
+# interpolation wrapper around a caller-template error, or replace the layer
+# quoting a deferred selection's generated argument with the failure it wraps,
+# blamed on the selection helper the caller wrote.
 #
 # Errors are not deduplicated, and there is nothing to deduplicate: branches
 # run in sequence, so the first error aborts the operation and no second
@@ -233,6 +235,12 @@ restate_branch_error <- function(cnd, conditions, restatements) {
   } else if (!is.null(cnd$parent) &&
                inherits(cnd$parent$parent, "marginplyr_inner_glue_error")) {
     cnd$parent <- cnd$parent$parent$parent
+  } else if (!is.null(cnd$parent) &&
+               inherits(cnd$parent$parent,
+                        "marginplyr_deferred_selection_error")) {
+    selection <- cnd$parent$parent$parent
+    selection$call <- selection_helper_call(cnd$parent$call)
+    cnd$parent <- selection
   }
   cnd <- restate_condition_arguments(cnd, restatements)
   cnd <- restate_condition_names(cnd, conditions$keys)
@@ -240,6 +248,21 @@ restate_branch_error <- function(cnd, conditions, restatements) {
     cnd$call <- conditions$call
   }
   cnd
+}
+
+# The selection helper a deferred selection failed under, as the call its
+# header names. dplyr blames the helper's call as the rewrite spelled it, which
+# for `if_any()` and `if_all()` carries an inlined `::` that the header cannot
+# name; the header reads only the function, so the arguments are dropped.
+selection_helper_call <- function(call) {
+  head <- call[[1L]]
+  if (is.call(head)) {
+    return(rlang::call2(
+      as.character(head[[3L]]),
+      .ns = as.character(head[[2L]])
+    ))
+  }
+  rlang::call2(head)
 }
 
 # Mark only a generated check's own refusal while upstream context wraps it.

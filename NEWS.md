@@ -1,5 +1,11 @@
 # marginplyr 0.1.0
 
+* A column selection tidyselect refuses in `.by`, `.grouping`, or a summary's
+  `across()`, `pick()`, `if_any()` or `if_all()` keeps tidyselect's class,
+  message and cause and is blamed on the Margin verb or `inspect_grouping()`
+  call the caller wrote, or on the selection helper as native dplyr blames it,
+  rather than on an internal function or a generated argument (#1573).
+
 * Margin verbs preserve source variable labels through display conversion,
   grouping-set combination, expansion and nesting, including empty columns and
   direct collection. Calculated labels follow native summaries and agreeing
