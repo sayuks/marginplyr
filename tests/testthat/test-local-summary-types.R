@@ -13,11 +13,11 @@ test_that("an unnamed local summary refuses mixed frame and scalar values", {
     summarize_with_margins(
       data, mixed(dplyr::pick(x)), .grouping = grouping_set("g")
     ),
-    "Can.t combine"
+    "compatible vectors across groups"
   )
   expect_match(
     conditionMessage(error),
-    "Can't combine `mixed(dplyr::pick(x))`", fixed = TRUE
+    "`mixed(dplyr::pick(x))` must return compatible vectors", fixed = TRUE
   )
 })
 
@@ -47,9 +47,9 @@ check_mixed_local_types <- function(convert) {
       counter$calls <- 0L
       error <- expect_error(
         summarize_with_margins(data, mixed(.data$x), .by = "g"),
-        "Can.t combine"
+        "`mixed(.data$x)` must return compatible vectors", fixed = TRUE
       )
-      expect_s3_class(error$parent, "vctrs_error_incompatible_type")
+      expect_s3_class(error$parent, "dplyr:::error_incompatible_combine")
       expect_false(inherits(error, "marginplyr_error"))
       expect_identical(counter$calls, 2L)
 
@@ -58,7 +58,7 @@ check_mixed_local_types <- function(convert) {
         summarize_with_margins(
           data, mixed(.data$x), .grouping = grouping_set("g")
         ),
-        "Can.t combine"
+        "compatible vectors across groups"
       )
       expect_identical(counter$calls, 2L)
 
@@ -67,7 +67,7 @@ check_mixed_local_types <- function(convert) {
         summarize_with_margins(
           data, mixed(.data$x), .by = "fixed", .grouping = grouping_set("g")
         ),
-        "Can.t combine"
+        "compatible vectors across groups"
       )
       expect_identical(counter$calls, 2L)
 
@@ -294,9 +294,9 @@ check_subclass_frame_summaries <- function(convert) {
                 data, !!summary,
                 .by = dplyr::all_of(fixed), .grouping = grouping
               ),
-              "Can.t combine"
+              "compatible vectors across groups"
             )
-            expect_s3_class(error$parent, "vctrs_error_incompatible_type")
+            expect_s3_class(error$parent, "dplyr:::error_incompatible_combine")
             next
           }
           expected <- dplyr::summarise(

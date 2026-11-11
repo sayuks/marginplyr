@@ -340,8 +340,8 @@ bind_local_position <- function(expr, env, prefix, position, value) {
 
 # The local branch dots with every unnamed top-level `across()` that shares its
 # label with another dot respelled by `hoist_local_across_arguments()`, as ADR
-# 0022's amendment *each wrapped local summary labels apart* decides. Such a
-# call keeps its head for dplyr's expansion (ADR 0019).
+# 0022's amendment *each wrapped local summary labels apart* decides. A call
+# dplyr expands keeps its head for that expansion (ADR 0019).
 separate_local_across_labels <- function(dots) {
   labels <- summary_argument_labels(dots)
   across <- vapply(
@@ -368,7 +368,8 @@ separate_local_across_labels <- function(dots) {
 # selects from the same data, and the locations it returns are what tidyselect
 # resolves the selection's own spelling to. The arguments matching `.fns`,
 # `.names` and `.unpack` are hoisted, longest first, while the call still
-# deparses onto several lines; one reaching `...` stays as written. Each such
+# deparses onto several lines; one reaching `...` stays as written, and a call
+# that still overflows then has its head bound as well. Each argument's
 # binding evaluates its argument in the frame dplyr calls the binding from,
 # which is the frame the argument itself was evaluated in, so a lambda it
 # returns has the environment dplyr's inlining requires of one written in the
@@ -389,9 +390,12 @@ hoist_local_across_arguments <- function(dot, position) {
     others, function(k) sum(nchar(deparse(args[[k]]))), numeric(1)
   )
   prefix <- paste0("..marginplyr_", position, "_")
+  # Reads `args` as the loop below has left it.
+  overflows <- function() {
+    length(deparse(rlang::call2(expr[[1L]], !!!args), 60L)) > 1L
+  }
   for (k in c(selection[selection > 0L], others[order(-widths)])) {
-    if (k != selection &&
-          length(deparse(rlang::call2(expr[[1L]], !!!args), 60L)) == 1L) {
+    if (k != selection && !overflows()) {
       break
     }
     value <- if (k == selection) {
@@ -403,7 +407,20 @@ hoist_local_across_arguments <- function(dot, position) {
     env <- bound$env
     args[[k]] <- rlang::call2(bound$head)
   }
-  rlang::new_quosure(rlang::call2(expr[[1L]], !!!args), env = env)
+  head <- expr[[1L]]
+  if (length(parsed$additional) > 0L && overflows()) {
+    # dplyr expands no call passing `...` extras, so its head can name the
+    # position. The parentheses give that head a call to carry the caller's
+    # spelling for the blamed call; a symbol carries no attribute.
+    bound <- bind_local_position(
+      expr, env, prefix, 0L, get("across", envir = asNamespace("dplyr"))
+    )
+    env <- bound$env
+    head <- mark_spelled_head(
+      rlang::call2("(", bound$head), spelled_head(head)
+    )
+  }
+  rlang::new_quosure(rlang::call2(head, !!!args), env = env)
 }
 
 local_selection_thunk <- function(selection) {
@@ -430,8 +447,13 @@ local_assigned_summary_value <- function(value, name, group_vars,
   if (is.null(value)) {
     return(value)
   }
-  type_state$ptype <- vctrs::vec_ptype2(
-    type_state$ptype, value, x_arg = name, y_arg = name, call = NULL
+  # Types no group can combine are left for dplyr's own combine to refuse,
+  # which the carrier's ptype2 method reaches with the same original types.
+  type_state$ptype <- tryCatch(
+    vctrs::vec_ptype2(
+      type_state$ptype, value, x_arg = name, y_arg = name, call = NULL
+    ),
+    vctrs_error_incompatible_type = function(cnd) type_state$ptype
   )
   frame <- is.data.frame(value)
   # The carrier expands the stored columns of a frame subclass.
@@ -2101,6 +2123,7 @@ rewrite_summary_selections <- function(expr,
   # below inherits it through `rebuild_static_call()` and no branch has to
   # remember. ADR 0019's *Analysis and execution must agree* is authoritative
   # for why a recognized head is qualified at all.
+  spelled <- static_call_head(expr)
   expr <- qualify_static_spelling(expr, "selection", call_name)
 
   if (call_name %in% c("across", "if_any", "if_all")) {
@@ -2113,9 +2136,14 @@ rewrite_summary_selections <- function(expr,
       )
       if (top_level_unnamed && identical(call_name, "across") &&
             !is_parenthesized(rewritten)) {
+        # dplyr blames its own failures in a call passing `...` extras on the
+        # call's head.
+        if (length(parse_across_arguments(rewritten)$additional) > 0L) {
+          rewritten[[1L]] <- mark_spelled_head(rewritten[[1L]], spelled)
+        }
         return(rewritten)
       }
-      return(isolate_local_selection_call(rewritten, call_name))
+      return(isolate_local_selection_call(rewritten, call_name, spelled))
     }
     return(rewrite_across_selection(
       expr,
@@ -2131,7 +2159,7 @@ rewrite_summary_selections <- function(expr,
         expr, group_vars, forbidden_names
       )
       if (expand_local_pick) return(rewritten)
-      return(isolate_local_selection_call(rewritten, call_name))
+      return(isolate_local_selection_call(rewritten, call_name, spelled))
     }
     return(rewrite_pick_selection(expr, env, data_proxy))
   }
@@ -2150,13 +2178,28 @@ rewrite_summary_selections <- function(expr,
 }
 
 # Bind the namespace operator for a rewritten local selection that dplyr
-# evaluates instead of expanding syntactically.
-isolate_local_selection_call <- function(expr, name) {
+# evaluates instead of expanding syntactically. `spelled` is the head the
+# caller wrote, which the bound head carries for `restate_selection_layers()`:
+# rlang names no call under a head whose operator is a function object.
+isolate_local_selection_call <- function(expr, name, spelled) {
   if (!identical(static_spelling_name(expr, "selection"), name)) return(expr)
-  rebuild_static_call(
-    expr, static_call_args(expr),
-    head = rlang::call2(base::`::`, rlang::sym("dplyr"), rlang::sym(name))
+  head <- mark_spelled_head(
+    rlang::call2(base::`::`, rlang::sym("dplyr"), rlang::sym(name)), spelled
   )
+  rebuild_static_call(expr, static_call_args(expr), head = head)
+}
+
+# `head` carrying `spelled`, the head the caller wrote for the call `head` now
+# leads, which `spelled_head()` reads back.
+mark_spelled_head <- function(head, spelled) {
+  attr(head, "marginplyr_spelled_head") <- spelled
+  head
+}
+
+# The head the caller wrote, where `mark_spelled_head()` marked `head`, or
+# `NULL`.
+spelled_head <- function(head) {
+  attr(head, "marginplyr_spelled_head", exact = TRUE)
 }
 
 # Returns a zero-argument closure for the supplied nested call.

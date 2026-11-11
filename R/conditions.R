@@ -243,8 +243,11 @@ restate_branch_error <- function(cnd, conditions, restatements) {
     }
     cnd$parent <- selection
   }
+  cnd$parent <- restate_selection_layers(cnd$parent)
   cnd <- restate_condition_arguments(cnd, restatements)
-  cnd$parent <- restate_result_refusal(cnd$parent, restatements)
+  cnd$parent <- restate_result_refusal(
+    cnd$parent, restatements, conditions$keys
+  )
   cnd <- restate_condition_names(cnd, conditions$keys)
   if (!is.null(conditions$call)) {
     cnd$call <- conditions$call
@@ -253,24 +256,37 @@ restate_branch_error <- function(cnd, conditions, restatements) {
 }
 
 # dplyr's own refusal of a summary's result, which opens by quoting the
-# argument's label as the argument bullet does, restated the same way. Only
-# the sentences dplyr's `summarise()` writes are matched, on a condition
-# blaming no call as dplyr's does, and the span must equal a label the branch
-# handed dplyr; a caller's own condition is otherwise left as it arrived. A
-# restated line is rendered plain, as ADR 0022 decides for the bullet.
-restate_result_refusal <- function(cnd, restatements) {
-  if (is.null(cnd) || !is.null(cnd$call) || !is.character(cnd$message) ||
-        length(cnd$message) == 0L || length(restatements) == 0L) {
+# argument's label as the argument bullet does, restated the same way, and
+# whose `$body` names groups by the `keys` the branch grouped by. Only the
+# sentences dplyr's `summarise()` writes are matched, on a condition rlang
+# renders with no call as it renders dplyr's; a caller's own condition is
+# otherwise left as it arrived. The label is restated only where the span
+# equals one the branch handed dplyr. A restated line is rendered plain, as
+# ADR 0022 decides for the bullet.
+restate_result_refusal <- function(cnd, restatements, keys) {
+  # dplyr's combine refusal blames its calling handler, a call whose head is
+  # the inlined function, which rlang renders as no call.
+  if (is.null(cnd) ||
+        (!is.null(cnd$call) &&
+           !(is.call(cnd$call) && is.function(cnd$call[[1L]]))) ||
+        !is.character(cnd$message) ||
+        length(cnd$message) == 0L) {
     return(cnd)
   }
   first <- cli::ansi_strip(cnd$message[[1L]])
   # cli quotes a span holding a backtick between doubled ones, padded.
   found <- regmatches(first, regexec(
-    "^(`` (.*) ``|`(.*)`)( must (be size .*|be a vector, not .*))$", first,
+    paste0(
+      "^(`` (.*) ``|`(.*)`)( must (be size .*|be a vector, not .*|",
+      "return compatible vectors across groups[.]))$"
+    ), first,
     perl = TRUE
   ))[[1L]]
   if (length(found) == 0L) {
     return(cnd)
+  }
+  if (is.character(cnd$body)) {
+    cnd$body <- restate_margin_keys(cnd$body, keys)
   }
   span <- if (nzchar(found[[3L]])) found[[3L]] else found[[4L]]
   restored <- unname(restatements[span])
@@ -303,10 +319,12 @@ deferred_selection_mark <- function(helper) {
 
 # The selection helper a deferred selection failed under, as the call its
 # header names. dplyr blames the helper's call as the rewrite spelled it, which
-# for `if_any()` and `if_all()` carries an inlined `::` that the header cannot
-# name; the header reads only the function, so the arguments are dropped.
+# for `if_any()` and `if_all()` carries an inlined `::` and for a head bound by
+# position a binding, neither of which the header can name; the caller's
+# spelling is read where the rewrite marked it. The header reads only the
+# function, so the arguments are dropped.
 selection_helper_call <- function(call) {
-  head <- call[[1L]]
+  head <- spelled_head(call[[1L]]) %||% call[[1L]]
   if (is.call(head)) {
     return(rlang::call2(
       as.character(head[[3L]]),
@@ -314,6 +332,24 @@ selection_helper_call <- function(call) {
     ))
   }
   rlang::call2(head)
+}
+
+# `cnd` and its causes, each blamed on the head the caller wrote where the
+# selection rewrite marked the head of the call it blames, as dplyr blames the
+# helper's own call. A layer blaming any other call is left as it arrived.
+restate_selection_layers <- function(cnd) {
+  if (is.null(cnd)) {
+    return(cnd)
+  }
+  spelled <- if (is.call(cnd$call)) spelled_head(cnd$call[[1L]])
+  if (!is.null(spelled)) {
+    cnd$call <- rlang::call2(spelled)
+  }
+  # Assigning `NULL` would drop a `parent` field the condition holds.
+  if (!is.null(cnd$parent)) {
+    cnd$parent <- restate_selection_layers(cnd$parent)
+  }
+  cnd
 }
 
 # Mark only a generated check's own refusal while upstream context wraps it.

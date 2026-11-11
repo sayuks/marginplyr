@@ -180,7 +180,9 @@ optional_suggest_spec <- function() {
     duckdb = list(asserted = TRUE, companions = c("DBI", "bit64")),
     dtplyr = list(asserted = TRUE, companions = c("data.table", "bit64")),
     data.table = list(asserted = TRUE, companions = "bit64"),
-    RSQLite = list(asserted = TRUE, companions = c("DBI", "bit64")),
+    # RSQLite's `extended_types = TRUE`, which its Date tests connect with,
+    # refuses to connect without hms.
+    RSQLite = list(asserted = TRUE, companions = c("DBI", "bit64", "hms")),
     RPostgres = list(asserted = TRUE, companions = c("DBI", "bit64", "hms")),
     sf = list(asserted = TRUE, companions = c("DBI", "bit64")),
     hms = list(asserted = TRUE, companions = "bit64"),

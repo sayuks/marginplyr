@@ -974,6 +974,37 @@ test_that("ten grouping columns substitute without corrupting a name", {
   }
   # A naive replacement leaves `region0` where the tenth column belongs.
   expect_false(grepl("region0", message, fixed = TRUE))
+
+  # dplyr's combine refusal carries its group bullets in its cause.
+  error <- expect_error(summarize_with_margins(
+    data,
+    x = if (value[[1L]] == 1) 1 else "z",
+    .grouping = grouping_sets(dplyr::all_of(columns))
+  ))
+  message <- gsub("[[:space:]]+", " ", conditionMessage(error))
+  expect_match(message, "must return compatible vectors", fixed = TRUE)
+  expect_false(grepl("marginplyr_key", message, fixed = TRUE))
+  expect_match(message, "`tier = \"y\"`", fixed = TRUE)
+  expect_false(grepl("region0", message, fixed = TRUE))
+})
+
+# Keys are restated in dplyr's own refusal only: a caller's condition that
+# spells an internal key name holds the caller's text.
+test_that("a caller condition naming an internal key is left as raised", {
+  data <- data.frame(g = c("a", "a", "b"), v = 1:3)
+  error <- expect_error(summarize_with_margins(
+    data,
+    x = rlang::abort(
+      "Bad.", body = c(i = "`..marginplyr_key_1` is mine."), call = NULL
+    ),
+    .grouping = rollup(g)
+  ))
+  expect_match(
+    conditionMessage(error$parent), "`..marginplyr_key_1` is mine.",
+    fixed = TRUE
+  )
+  expect_match(conditionMessage(error), "In group 1: `g = \"a\"`",
+               fixed = TRUE)
 })
 
 # What the verb rewrites is the Condition context dplyr built from marginplyr's
@@ -1321,6 +1352,139 @@ test_that("a condition from one of several unnamed across calls quotes it", {
   }
 })
 
+# Each call fits the line `rlang::as_label()` deparses at as the caller wrote
+# it, and overflows it beside its bindings and namespace, which hoisting cannot
+# shorten past an argument passed through `across()`'s `...`.
+test_that("an unnamed across() with `...` extras is quoted as native does", {
+  data <- unnamed_summary_frame()
+  fn <- function(x, ...) stop("boom")
+  ok <- function(x, ...) length(x)
+  # Native dplyr reaches the bare helper through the caller's scope.
+  across <- dplyr::across
+  cases <- list(
+    rlang::exprs(
+      across(w, ok, aa = 1, bb = 2, cc = 3, dd = 4, ee = 5),
+      across(v, fn, aa = 1, bb = 2, cc = 3, dd = 4, ee = 6)
+    ),
+    rlang::exprs(
+      dplyr::across(w, ok, aa = 1, bb = 2, cc = 3, dd = 4, ee = 5),
+      dplyr::across(v, fn, aa = 1, bb = 2, cc = 3, dd = 4, ee = 6)
+    ),
+    rlang::exprs(
+      across(w, ok, aa = 1),
+      across(v, fn, aa = 1, bb = 2, cc = 3, dd = 4, ee = 6)
+    ),
+    rlang::exprs(across(v, fn, aa = 1))
+  )
+  for (config in unnamed_summary_renderings()) {
+    rlang::local_options(
+      cli.width = config$width, cli.condition_width = config$width
+    )
+    for (dots in cases) {
+      actual <- expect_error(summarize_with_margins(
+        data, !!!dots, .grouping = rollup(g)
+      ))
+      native <- expect_error(dplyr::summarise(data, !!!dots, .by = g))
+      expect_identical(conditionMessage(actual), conditionMessage(native))
+      expect_identical(
+        lapply(condition_chain(actual), class),
+        lapply(condition_chain(native), class)
+      )
+    }
+  }
+})
+
+test_that("a selection failing in an across() with extras reads as native", {
+  data <- unnamed_summary_frame()
+  ok <- function(x, ...) length(x)
+  across <- dplyr::across
+  all_of <- dplyr::all_of
+  cases <- list(
+    rlang::exprs(
+      across(w, ok, aa = 1, bb = 2, cc = 3, dd = 4, ee = 5),
+      across(zz, ok, aa = 1, bb = 2, cc = 3, dd = 4, ee = 6)
+    ),
+    rlang::exprs(
+      across(w, ok, aa = 1, bb = 2, cc = 3, dd = 4, ee = 5),
+      across(all_of("zz"), ok, aa = 1, bb = 2, cc = 3, dd = 4, ee = 6)
+    )
+  )
+  for (config in unnamed_summary_renderings()) {
+    rlang::local_options(
+      cli.width = config$width, cli.condition_width = config$width
+    )
+    for (dots in cases) {
+      actual <- expect_error(summarize_with_margins(
+        data, !!!dots, .grouping = rollup(g)
+      ))
+      native <- expect_error(dplyr::summarise(data, !!!dots, .by = g))
+      expect_identical(conditionMessage(actual), conditionMessage(native))
+      expect_identical(
+        lapply(condition_chain(actual), class),
+        lapply(condition_chain(native), class)
+      )
+    }
+  }
+})
+
+test_that("two unnamed across() with `...` extras summarize as native does", {
+  rlang::local_options(lifecycle_verbosity = "quiet")
+  data <- unnamed_summary_frame()
+  add <- function(x, ...) length(x) + sum(...)
+  across <- dplyr::across
+  dots <- rlang::exprs(
+    across(v, add, aa = 1, bb = 2, cc = 3, dd = 4, ee = 5),
+    across(w, add, aa = 1, bb = 2, cc = 3, dd = 4, ee = dplyr::n())
+  )
+  native <- dplyr::summarise(data, !!!dots, .by = g)
+  actual <- summarize_with_margins(data, !!!dots, .grouping = rollup(g))
+  expect_identical(actual$v[1:2], native$v)
+  expect_identical(actual$w[1:2], native$w)
+})
+
+# The first call warns only in the Grand total set and the second only in the
+# set grouped by `g`, with one diagnostic, so each is one report quoting its
+# own call. dplyr's deprecation of `...` would otherwise be each set's first
+# warning, raised by the first call alike in both.
+test_that("warnings from unnamed across() with `...` extras stay separate", {
+  rlang::local_options(lifecycle_verbosity = "quiet")
+  total <- function(x, ...) {
+    if (length(x) == 3L) warning("careful")
+    length(x)
+  }
+  grouped <- function(x, ...) {
+    if (length(x) < 3L) warning("careful")
+    length(x)
+  }
+  for (config in unnamed_summary_renderings()) {
+    warnings <- collect_warnings_rendered(config, summarize_with_margins(
+      unnamed_summary_frame(),
+      across(v, total, aa = 1, bb = 2, cc = 3, dd = 4, ee = 5),
+      across(w, grouped, aa = 1, bb = 2, cc = 3, dd = 4, ee = 6),
+      .grouping = rollup(g)
+    ))
+    expect_length(warnings, 2L)
+    messages <- vapply(warnings, conditionMessage, character(1))
+    expect_match(
+      messages[[1L]],
+      paste0(
+        "In argument: ",
+        "`across(w, grouped, aa = 1, bb = 2, cc = 3, dd = 4, ee = 6)`."
+      ),
+      fixed = TRUE
+    )
+    expect_match(
+      messages[[2L]],
+      paste0(
+        "In argument: ",
+        "`across(v, total, aa = 1, bb = 2, cc = 3, dd = 4, ee = 5)`."
+      ),
+      fixed = TRUE
+    )
+    expect_false(any(grepl("further grouping set", messages, fixed = TRUE)))
+  }
+})
+
 # A caller's own binding spelled like the one a wrapped dot calls is read as the
 # caller's, and the wrapper takes another name.
 test_that("a caller binding spelled like a wrapper keeps its own value", {
@@ -1355,6 +1519,35 @@ test_that("a refused unnamed result quotes the caller's argument", {
     rlang::exprs(
       dplyr::across(v, sum), dplyr::across(w, function(x) x + `my var`)
     )
+  )
+  for (config in unnamed_summary_renderings()) {
+    rlang::local_options(
+      cli.width = config$width, cli.condition_width = config$width
+    )
+    for (dots in cases) {
+      actual <- expect_error(summarize_with_margins(
+        data, !!!dots, .grouping = rollup(g)
+      ))
+      native <- expect_error(dplyr::summarise(data, !!!dots, .by = g))
+      expect_identical(conditionMessage(actual), conditionMessage(native))
+      expect_identical(
+        lapply(condition_chain(actual), class),
+        lapply(condition_chain(native), class)
+      )
+    }
+  }
+})
+
+# dplyr's refusal of results its groups cannot combine opens by quoting the
+# argument, as its other result refusals do, and its group bullets name each
+# group by the caller's grouping columns.
+test_that("a result incompatible across groups reads as native dplyr's", {
+  data <- data.frame(g = c("a", "a", "b"), v = 1:3)
+  cases <- list(
+    rlang::exprs(x = if (v[[1L]] == 1L) 1 else "z"),
+    rlang::exprs(if (v[[1L]] == 1L) 1 else "z"),
+    rlang::exprs(mean(v), if (v[[1L]] == 1L) 1 else "z"),
+    rlang::exprs(n = dplyr::n(), if (v[[1L]] == 1L) 1 else "z")
   )
   for (config in unnamed_summary_renderings()) {
     rlang::local_options(
@@ -1413,6 +1606,74 @@ test_that("a local summary's cause names the call native dplyr names", {
       }
     }
   }
+})
+
+test_that("a named local across() blames across() as native dplyr does", {
+  data <- data.frame(g = c("a", "a", "b"), v = 1:3)
+  fn <- function(x) stop("boom")
+  # Native dplyr reaches the bare helpers through the caller's scope.
+  across <- dplyr::across
+  if_any <- dplyr::if_any
+  cause_lines <- function(cnd) {
+    lines <- strsplit(conditionMessage(cnd), "\n", fixed = TRUE)[[1L]]
+    grep("^Caused by", lines, value = TRUE)
+  }
+  # dplyr blames the helper as the caller spelled it, qualified or not.
+  named <- list(
+    rlang::exprs(s = across(v, fn)),
+    rlang::exprs(s = dplyr::across(v, fn)),
+    rlang::exprs(n = dplyr::n(), s = across(v, fn)),
+    rlang::exprs(s = (across(v, fn))),
+    rlang::exprs(s = ncol(across(v, fn))),
+    rlang::exprs((across(v, fn))),
+    rlang::exprs(s = any(if_any(v, fn))),
+    rlang::exprs(s = any(dplyr::if_any(v, fn)))
+  )
+  for (config in unnamed_summary_renderings()) {
+    rlang::local_options(
+      cli.width = config$width, cli.condition_width = config$width
+    )
+    for (dots in named) {
+      actual <- expect_error(summarize_with_margins(
+        data, !!!dots, .grouping = rollup(g)
+      ))
+      native <- expect_error(dplyr::summarise(data, !!!dots, .by = g))
+      expect_identical(conditionMessage(actual), conditionMessage(native))
+      expect_identical(
+        lapply(condition_chain(actual), class),
+        lapply(condition_chain(native), class)
+      )
+    }
+    # The unnamed forms already blame `across()`; the inner layer of each is
+    # pinned as it renders today.
+    unnamed <- list(
+      rlang::exprs(across(v, fn)),
+      rlang::exprs(across(v, fn), across(v, fn))
+    )
+    for (dots in unnamed) {
+      actual <- expect_error(summarize_with_margins(
+        data, !!!dots, .grouping = rollup(g)
+      ))
+      expect_identical(
+        cause_lines(actual),
+        c("Caused by error in `across()`:", "Caused by error:")
+      )
+    }
+  }
+})
+
+test_that("a caller's layer blamed on a qualified head is left as raised", {
+  data <- data.frame(g = c("a", "a", "b"), v = 1:3)
+  blamed <- rlang::call2(
+    rlang::call2(base::`::`, quote(otherpkg), quote(helper)), quote(v)
+  )
+  f <- function(x) {
+    rlang::abort("inner", call = blamed)
+  }
+  actual <- expect_error(summarize_with_margins(
+    data, s = f(v), .grouping = rollup(g)
+  ))
+  expect_identical(actual$parent$call, blamed)
 })
 
 test_that("one unnamed summary warning in several sets is reported once", {

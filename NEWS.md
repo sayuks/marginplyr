@@ -1,5 +1,27 @@
 # marginplyr 0.1.0
 
+* A condition raised by one of several unnamed `across()` calls on a local
+  input that pass extra arguments through `across()`'s `...` quotes that call
+  as the caller wrote it, rather than as `dplyr::across(...)`, and their
+  warnings are reported separately. A failure `across()` raises in such a call
+  is blamed on `across()` as the caller spelled it, as native `summarise()`
+  blames it (#1576).
+
+* When `across()`, `if_any()` or `if_all()` fails while computing a column
+  of a named, nested or parenthesized summary on a local input, the cause is
+  blamed on the helper as the caller spelled it, as native `summarise()`
+  blames it, rather than on no call (#1577).
+
+* When a summary on a local input returns types that cannot be combined
+  across groups, the refusal's group bullets name each group by the caller's
+  grouping columns, as native `summarise()` does, rather than by an internal
+  key column (#1578).
+
+* An unnamed summary on a local input whose groups return types that cannot
+  be combined is refused as native `summarise()` refuses it: the expression
+  as the caller wrote it "must return compatible vectors across groups",
+  rather than vctrs' combine error blamed on one group (#1579).
+
 * A warning or error raised by one of several unnamed summaries on a local
   input, including unnamed `across()` calls, quotes that summary as the caller
   wrote it, and warnings from different unnamed summaries are reported
