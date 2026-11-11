@@ -430,8 +430,13 @@ local_assigned_summary_value <- function(value, name, group_vars,
   if (is.null(value)) {
     return(value)
   }
-  type_state$ptype <- vctrs::vec_ptype2(
-    type_state$ptype, value, x_arg = name, y_arg = name, call = NULL
+  # Types no group can combine are left for dplyr's own combine to refuse,
+  # which the carrier's ptype2 method reaches with the same original types.
+  type_state$ptype <- tryCatch(
+    vctrs::vec_ptype2(
+      type_state$ptype, value, x_arg = name, y_arg = name, call = NULL
+    ),
+    vctrs_error_incompatible_type = function(cnd) type_state$ptype
   )
   frame <- is.data.frame(value)
   # The carrier expands the stored columns of a frame subclass.

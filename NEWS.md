@@ -1,5 +1,10 @@
 # marginplyr 0.1.0
 
+* An unnamed summary on a local input whose groups return types that cannot
+  be combined is refused as native `summarise()` refuses it: the expression
+  as the caller wrote it "must return compatible vectors across groups",
+  rather than vctrs' combine error blamed on one group (#1579).
+
 * A warning or error raised by one of several unnamed summaries on a local
   input, including unnamed `across()` calls, quotes that summary as the caller
   wrote it, and warnings from different unnamed summaries are reported

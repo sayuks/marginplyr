@@ -255,18 +255,27 @@ restate_branch_error <- function(cnd, conditions, restatements) {
 # dplyr's own refusal of a summary's result, which opens by quoting the
 # argument's label as the argument bullet does, restated the same way. Only
 # the sentences dplyr's `summarise()` writes are matched, on a condition
-# blaming no call as dplyr's does, and the span must equal a label the branch
-# handed dplyr; a caller's own condition is otherwise left as it arrived. A
-# restated line is rendered plain, as ADR 0022 decides for the bullet.
+# rlang renders with no call as it renders dplyr's, and the span must equal a
+# label the branch handed dplyr; a caller's own condition is otherwise left as
+# it arrived. A restated line is rendered plain, as ADR 0022 decides for the
+# bullet.
 restate_result_refusal <- function(cnd, restatements) {
-  if (is.null(cnd) || !is.null(cnd$call) || !is.character(cnd$message) ||
+  # dplyr's combine refusal blames its calling handler, a call whose head is
+  # the inlined function, which rlang renders as no call.
+  if (is.null(cnd) ||
+        (!is.null(cnd$call) &&
+           !(is.call(cnd$call) && is.function(cnd$call[[1L]]))) ||
+        !is.character(cnd$message) ||
         length(cnd$message) == 0L || length(restatements) == 0L) {
     return(cnd)
   }
   first <- cli::ansi_strip(cnd$message[[1L]])
   # cli quotes a span holding a backtick between doubled ones, padded.
   found <- regmatches(first, regexec(
-    "^(`` (.*) ``|`(.*)`)( must (be size .*|be a vector, not .*))$", first,
+    paste0(
+      "^(`` (.*) ``|`(.*)`)( must (be size .*|be a vector, not .*|",
+      "return compatible vectors across groups[.]))$"
+    ), first,
     perl = TRUE
   ))[[1L]]
   if (length(found) == 0L) {

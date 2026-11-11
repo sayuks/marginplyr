@@ -1374,6 +1374,36 @@ test_that("a refused unnamed result quotes the caller's argument", {
   }
 })
 
+# dplyr's refusal of results its groups cannot combine opens by quoting the
+# argument, as its other result refusals do. Its group bullets name the
+# grouping keys, whose restatement this test does not read.
+test_that("an unnamed result incompatible across groups quotes the caller", {
+  data <- data.frame(g = c("a", "a", "b"), v = 1:3)
+  cases <- list(
+    rlang::exprs(if (v[[1L]] == 1L) 1 else "z"),
+    rlang::exprs(mean(v), if (v[[1L]] == 1L) 1 else "z"),
+    rlang::exprs(n = dplyr::n(), if (v[[1L]] == 1L) 1 else "z")
+  )
+  for (config in unnamed_summary_renderings()) {
+    rlang::local_options(
+      cli.width = config$width, cli.condition_width = config$width
+    )
+    for (dots in cases) {
+      actual <- expect_error(summarize_with_margins(
+        data, !!!dots, .grouping = rollup(g)
+      ))
+      native <- expect_error(dplyr::summarise(data, !!!dots, .by = g))
+      expect_identical(actual$message, native$message)
+      expect_identical(actual$body, native$body)
+      expect_identical(actual$parent$message, native$parent$message)
+      expect_identical(
+        lapply(condition_chain(actual), class),
+        lapply(condition_chain(native), class)
+      )
+    }
+  }
+})
+
 # The cause's own line, as native dplyr renders it, names no function the
 # caller did not call, whether one, several, or no summary is unnamed.
 test_that("a local summary's cause names the call native dplyr names", {
