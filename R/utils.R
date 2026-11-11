@@ -111,8 +111,8 @@ margin_column_pronoun <- function(name) {
   rlang::call2("[[", rlang::sym(".data"), name)
 }
 
-# Evaluate a generated expression under names safe for R dot arguments and
-# data.table special variables. `read` names source and output columns.
+# Evaluate a generated expression under names safe for R dot arguments,
+# data.table special variables and dtplyr's logical constants. `read` names source and output columns.
 # `transform` receives their temporary names and returns a result; `reserved`
 # keeps its output names out of the alias set.
 margin_safe_column_reads <- function(.data, read, transform,
@@ -123,10 +123,12 @@ margin_safe_column_reads <- function(.data, read, transform,
   if (!inherits(.data, "dtplyr_step")) {
     return(transform(.data, function(name) name))
   }
+  # dtplyr translates the bare symbols `T` and `F` to logical constants rather
+  # than reading columns of those names.
   special <- read[
     margin_dot_dot_names(read) |
       read %in% c(".", ".N", ".I", ".SD", ".SDall", ".GRP", ".NGRP", ".BY",
-                  ".ROW", ".xSD", ".iSD")
+                  ".ROW", ".xSD", ".iSD", "T", "F")
   ]
   if (length(special) == 0L) {
     return(transform(.data, function(name) name))
