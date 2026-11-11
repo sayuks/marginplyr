@@ -15,8 +15,14 @@ logical_name_share_oracle <- function(data, keys, dimensions, sets, parents) {
       grain(c(keys, parents[[index]])), parent_value = "value"
     )
     total <- dplyr::rename(grain(keys), total_value = "value")
-    cells <- dplyr::left_join(cells, parent, by = c(keys, parents[[index]]))
-    cells <- dplyr::left_join(cells, total, by = keys)
+    attach <- function(x, y, by) {
+      if (length(by) == 0L) {
+        return(dplyr::cross_join(x, y))
+      }
+      dplyr::left_join(x, y, by = by)
+    }
+    cells <- attach(cells, parent, c(keys, parents[[index]]))
+    cells <- attach(cells, total, keys)
     for (omitted in setdiff(dimensions, set)) {
       cells[[omitted]] <- "(all)"
     }
@@ -115,4 +121,40 @@ test_that("dtplyr shares keep fixed keys named T and F as partitions", {
       }
     }
   }
+})
+
+test_that("dtplyr keeps T and F intact without a share and as dimensions", {
+  skip_if_suggest_absent("dtplyr")
+  input <- data.table::data.table(
+    T = c("a", "a", "b", "b"), F = c("x", "y", "x", "y"), v = c(1, 2, 3, 4)
+  )
+  before <- data.table::copy(input)
+  plain <- dplyr::collect(summarize_with_margins(
+    dtplyr::lazy_dt(input, immutable = TRUE), value = sum(v),
+    .by = T, .grouping = rollup(F), .margin_label = "(all)", .sort = "last"
+  ))
+  expect_identical(plain$T, c("a", "a", "a", "b", "b", "b"))
+  expect_identical(plain$F, c("x", "y", "(all)", "x", "y", "(all)"))
+  expect_equal(plain$value, c(1, 2, 3, 3, 4, 7))
+  for (dimension in c("T", "F")) {
+    columns <- c(dimension, setdiff(c("T", "F"), dimension))
+    expected <- logical_name_share_oracle(
+      tibble::as_tibble(input), character(), columns,
+      list(columns, dimension, character()),
+      list(dimension, character(), character())
+    )
+    actual <- dplyr::collect(summarize_with_margins(
+      dtplyr::lazy_dt(input, immutable = TRUE), value = sum(v),
+      parent = share_of_parent(value), total = share_of_total(value),
+      .grouping = rollup(!!!rlang::syms(columns)),
+      .margin_label = "(all)", .sort = "last"
+    ))
+    actual <- actual[vctrs::vec_order(actual[columns]), , drop = FALSE]
+    expected <- expected[vctrs::vec_order(expected[columns]), , drop = FALSE]
+    expect_identical(actual[columns], expected[columns], info = dimension)
+    expect_equal(actual$value, expected$value, info = dimension)
+    expect_equal(actual$parent, expected$parent, info = dimension)
+    expect_equal(actual$total, expected$total, info = dimension)
+  }
+  expect_identical(input, before)
 })
