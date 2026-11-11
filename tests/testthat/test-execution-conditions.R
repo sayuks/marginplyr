@@ -1178,14 +1178,10 @@ unnamed_summary_renderings <- function() {
 
 test_that("a warning from one of several unnamed summaries quotes it", {
   for (config in unnamed_summary_renderings()) {
-    # `v` and `w` are columns of the frame, which codetools reads as undefined
-    # globals inside a function.
-    # nolint start: object_usage_linter.
     warnings <- collect_warnings_rendered(config, summarize_with_margins(
       unnamed_summary_frame(), sum(v), sum(as.numeric(w)),
       .grouping = rollup(g)
     ))
-    # nolint end
     expect_length(warnings, 1L)
     message <- conditionMessage(warnings[[1L]])
     expect_match(message, "In argument: `sum(as.numeric(w))`.", fixed = TRUE)
@@ -1198,11 +1194,9 @@ test_that("an error from one of several unnamed summaries quotes it", {
     rlang::local_options(
       cli.width = config$width, cli.condition_width = config$width
     )
-    # nolint start: object_usage_linter.
     error <- expect_error(summarize_with_margins(
       unnamed_summary_frame(), mean(v), max(w + 1), .grouping = rollup(g)
     ))
-    # nolint end
     message <- conditionMessage(error)
     expect_match(message, "`max(w + 1)`.", fixed = TRUE)
     expect_false(grepl("function", message, fixed = TRUE))
@@ -1213,14 +1207,12 @@ test_that("an error from one of several unnamed summaries quotes it", {
 # own: one warning per argument, as the same pair written with names gives.
 test_that("warnings from different unnamed summaries stay separate", {
   for (config in unnamed_summary_renderings()) {
-    # nolint start: object_usage_linter.
     warnings <- collect_warnings_rendered(config, summarize_with_margins(
       unnamed_summary_frame(),
       sum(if (dplyr::n() == 3L) as.integer(w) else v),
       max(if (dplyr::n() < 3L) as.integer(w) else v),
       .grouping = rollup(g)
     ))
-    # nolint end
     expect_length(warnings, 2L)
     messages <- vapply(warnings, conditionMessage, character(1))
     expect_match(
@@ -1237,12 +1229,10 @@ test_that("warnings from different unnamed summaries stay separate", {
 
 test_that("a condition from one of several unnamed across calls quotes it", {
   for (config in unnamed_summary_renderings()) {
-    # nolint start: object_usage_linter.
     warnings <- collect_warnings_rendered(config, summarize_with_margins(
       unnamed_summary_frame(), across(v, sum),
       across(w, ~ sum(as.numeric(.x))), .grouping = rollup(g)
     ))
-    # nolint end
     expect_length(warnings, 1L)
     message <- conditionMessage(warnings[[1L]])
     expect_match(message, "`across(w, ~sum(as.numeric(.x)))`", fixed = TRUE)
@@ -1251,12 +1241,10 @@ test_that("a condition from one of several unnamed across calls quotes it", {
     rlang::local_options(
       cli.width = config$width, cli.condition_width = config$width
     )
-    # nolint start: object_usage_linter.
     error <- expect_error(summarize_with_margins(
       unnamed_summary_frame(), across(v, sum), across(w, ~ .x + 1),
       .grouping = rollup(g)
     ))
-    # nolint end
     message <- conditionMessage(error)
     expect_match(message, "`across(w, ~.x + 1)`", fixed = TRUE)
     expect_false(grepl("(...)", message, fixed = TRUE))
@@ -1270,14 +1258,12 @@ test_that("a caller binding spelled like a wrapper keeps its own value", {
   ..marginplyr_summary_2 <- 10L # nolint: object_name_linter.
   ..marginplyr_4_1 <- "v" # nolint: object_name_linter.
   data <- unnamed_summary_frame()
-  # nolint start: object_usage_linter.
   actual <- summarize_with_margins(
     data, sum(v), sum(v) + ..marginplyr_summary_2,
     across(.cols = v, max, .names = "high"),
     across(all_of(..marginplyr_4_1), min, .names = "low"),
     .grouping = rollup(g)
   )
-  # nolint end
   expect_identical(actual[["sum(v) + ..marginplyr_summary_2"]],
                    c(13L, 13L, 16L))
   expect_identical(actual$high, c(2L, 3L, 3L))
@@ -1286,12 +1272,10 @@ test_that("a caller binding spelled like a wrapper keeps its own value", {
 
 test_that("one unnamed summary warning in several sets is reported once", {
   for (config in unnamed_summary_renderings()) {
-    # nolint start: object_usage_linter.
     warnings <- collect_warnings_rendered(config, summarize_with_margins(
       unnamed_summary_frame(), sum(v), sum(as.numeric(w)), max(v),
       .grouping = cube(g)
     ))
-    # nolint end
     expect_length(warnings, 1L)
     message <- conditionMessage(warnings[[1L]])
     expect_match(message, "`sum(as.numeric(w))`", fixed = TRUE)
