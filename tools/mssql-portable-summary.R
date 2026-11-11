@@ -153,6 +153,24 @@ tryCatch({
     con, data, "portable_summary", temporary = TRUE, overwrite = TRUE
   )
 
+  # The anchor's predicate on its own, as dbplyr spells `filter(x, FALSE)`
+  # for this dialect, so its acceptance does not rest on a larger query.
+  record("")
+  record("== constant-false predicate alone")
+  for (predicate in c("WHERE (0)", "WHERE (1 = 0)")) {
+    probe <- observe(DBI::dbGetQuery(
+      con, paste("SELECT [year] FROM [#portable_summary]", predicate)
+    ))
+    record(
+      predicate, ": ",
+      if (is.null(probe$error)) {
+        paste(nrow(probe$value), "rows")
+      } else {
+        paste("error:", probe$error)
+      }
+    )
+  }
+
   for (case in cases) {
     record("")
     record("== ", case$name)
