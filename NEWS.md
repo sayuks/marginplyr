@@ -4,6 +4,10 @@
   or `F` as their own partitions and values, instead of reading them as
   logical constants (#1568).
 
+* A local Margin order over a double key holding both `NaN` and `NA` keeps
+  each as one contiguous group with its own margin rows, `NaN` before `NA`,
+  instead of interleaving them (#1571).
+
 * Margin verbs preserve source variable labels through display conversion,
   grouping-set combination, expansion and nesting, including empty columns and
   direct collection. Calculated labels follow native summaries and agreeing

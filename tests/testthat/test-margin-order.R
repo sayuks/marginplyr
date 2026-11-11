@@ -506,6 +506,82 @@ test_that("a fixed key sorts its missing values last", {
   expect_identical(result$units, c(4, 4, 1, 1, 2, 2))
 })
 
+# `NaN` and `NA` are two groups to `summarise()` and one value to `is.na()` and
+# `arrange()`, so a key that only tests missingness ties them. The expected
+# rows below are literals rather than an `arrange()` of the result for that
+# reason: the reference would reproduce the tie it is meant to catch.
+margin_order_nan_data <- function() {
+  data.frame(
+    x = c(NaN, NA, NaN, NA, 1, 1),
+    g = c("a", "a", "b", "b", "a", "b"),
+    v = c(1L, 2L, 4L, 8L, 16L, 32L)
+  )
+}
+
+test_that("a double fixed key keeps `NaN` and `NA` partitions contiguous", {
+  inputs <- list(
+    data.frame = margin_order_nan_data(),
+    tibble = tibble::as_tibble(margin_order_nan_data())
+  )
+  for (input in names(inputs)) {
+    last <- summarize_with_margins(
+      inputs[[input]], s = sum(v), .by = x, .grouping = rollup(g),
+      .sort = "last"
+    )
+    expect_identical(
+      last$x, c(1, 1, 1, NaN, NaN, NaN, NA, NA, NA), label = input
+    )
+    expect_identical(last$g, rep(c("a", "b", "Total"), 3L), label = input)
+    expect_identical(
+      last$s, c(16L, 32L, 48L, 1L, 4L, 5L, 2L, 8L, 10L), label = input
+    )
+
+    first <- summarize_with_margins(
+      inputs[[input]], s = sum(v), .by = x, .grouping = rollup(g),
+      .sort = "first"
+    )
+    expect_identical(
+      first$x, c(1, 1, 1, NaN, NaN, NaN, NA, NA, NA), label = input
+    )
+    expect_identical(first$g, rep(c("Total", "a", "b"), 3L), label = input)
+    expect_identical(
+      first$s, c(48L, 16L, 32L, 5L, 1L, 4L, 10L, 2L, 8L), label = input
+    )
+  }
+})
+
+test_that("a double dimension keeps `NaN` and `NA` groups contiguous", {
+  last <- summarize_with_margins(
+    margin_order_nan_data(), s = sum(v), .grouping = rollup(x, g),
+    .margin_label = NULL, .sort = "last"
+  )
+  expect_identical(last$x, c(1, 1, 1, NaN, NaN, NaN, NA, NA, NA, NA))
+  expect_identical(last$g, c(rep(c("a", "b", NA), 3L), NA))
+  expect_identical(
+    last$s, c(16L, 32L, 48L, 1L, 4L, 5L, 2L, 8L, 10L, 63L)
+  )
+
+  first <- summarize_with_margins(
+    margin_order_nan_data(), s = sum(v), .grouping = rollup(x, g),
+    .margin_label = NULL, .sort = "first"
+  )
+  expect_identical(first$x, c(NA, 1, 1, 1, NaN, NaN, NaN, NA, NA, NA))
+  expect_identical(first$g, c(NA, rep(c(NA, "a", "b"), 3L)))
+  expect_identical(
+    first$s, c(63L, 48L, 16L, 32L, 5L, 1L, 4L, 10L, 2L, 8L)
+  )
+})
+
+test_that("a direct data.table keeps `NaN` and `NA` partitions contiguous", {
+  skip_if_suggest_absent("data.table")
+  result <- summarize_with_margins(
+    data.table::as.data.table(margin_order_nan_data()),
+    s = sum(v), .by = x, .grouping = rollup(g), .sort = "last"
+  )
+  expect_identical(result$x, c(1, 1, 1, NaN, NaN, NaN, NA, NA, NA))
+  expect_identical(result$g, rep(c("a", "b", "Total"), 3L))
+})
+
 test_that("plain-list fixed keys put NULL after NA-valued elements", {
   data <- tibble::tibble(key = list(NA_integer_, NULL), units = 1:2)
   original <- data
