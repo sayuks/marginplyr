@@ -6,10 +6,11 @@
   separately (#1572).
 
 * A column selection tidyselect refuses in `.by`, `.grouping`, or a summary's
-  `across()`, `pick()`, `if_any()` or `if_all()` keeps tidyselect's class,
-  message and cause and is blamed on the Margin verb or `inspect_grouping()`
-  call the caller wrote, or on the selection helper as native dplyr blames it,
-  rather than on an internal function or a generated argument (#1573).
+  `across()`, `pick()`, `if_any()` or `if_all()` keeps the class, message and
+  cause tidyselect gives it and is blamed on the Margin verb or
+  `inspect_grouping()` call the caller wrote, or on the selection helper as
+  native dplyr blames it, rather than on an internal function or a generated
+  argument (#1573).
 
 * A Margin order on an Arrow table, record batch or dataset now collects for
   every Grouping plan and `.id` name. Distinct Grouping bits could share one
