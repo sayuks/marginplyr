@@ -373,11 +373,12 @@ separate_local_across_labels <- function(dots) {
 # local selection rewrite has given every such call one, and it is always
 # hoisted. Its binding is called inside the selection `across()` makes, so it
 # selects from the same data, and the locations it returns are what tidyselect
-# resolves the selection's own spelling to. Another argument is hoisted where it
-# deparses onto several lines and is not a formula, which dplyr inlines only
-# while it is written in the call; its binding evaluates it in the frame dplyr
-# calls the binding from, which is the frame the argument itself was evaluated
-# in.
+# resolves the selection's own spelling to. The other arguments are hoisted,
+# longest first, while the call still deparses onto several lines. Each such
+# binding evaluates its argument in the frame dplyr calls the binding from,
+# which is the frame the argument itself was evaluated in, so a lambda it
+# returns has the environment dplyr's inlining requires of one written in the
+# call.
 hoist_local_across_arguments <- function(dot, position) {
   expr <- rlang::quo_get_expr(dot)
   env <- rlang::quo_get_env(dot)
@@ -389,18 +390,20 @@ hoist_local_across_arguments <- function(dot, position) {
     selection
   }
   prefix <- paste0("..marginplyr_", position, "_")
-  for (k in seq_along(args)) {
+  widths <- vapply(args, function(arg) sum(nchar(deparse(arg))), numeric(1))
+  for (k in c(selection, setdiff(order(-widths), selection))) {
+    if (k != selection &&
+          length(deparse(rlang::call2(expr[[1L]], !!!args), 60L)) == 1L) {
+      break
+    }
     value <- if (k == selection) {
       local_selection_thunk(rlang::new_quosure(args[[k]], env))
-    } else if (!rlang::is_call(args[[k]], "~") &&
-                 length(deparse(args[[k]], 60L)) > 1L) {
+    } else {
       local_argument_thunk(args[[k]])
     }
-    if (!is.null(value)) {
-      bound <- bind_local_position(expr, env, prefix, k, value)
-      env <- bound$env
-      args[[k]] <- rlang::call2(bound$head)
-    }
+    bound <- bind_local_position(expr, env, prefix, k, value)
+    env <- bound$env
+    args[[k]] <- rlang::call2(bound$head)
   }
   rlang::new_quosure(rlang::call2(expr[[1L]], !!!args), env = env)
 }

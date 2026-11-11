@@ -317,10 +317,15 @@ buffer_branch_warning <- function(cnd, conditions, restatements) {
   # The spelling is restored before the identity is read, so the identity is
   # over the argument the caller wrote: `grouping_bit()` renders as a different
   # constant in every branch, which split one written expression into one
-  # report per branch (ADR 0022).
+  # report per branch (ADR 0022). The identity reads the map's `identities`,
+  # which tell apart two arguments the caller's spelling quotes alike.
+  identities <- attr(restatements, "identities", exact = TRUE) %||%
+    restatements
+  key <- branch_warning_identity(restate_condition_names(
+    restate_condition_arguments(cnd, identities), conditions$keys
+  ))
   cnd <- restate_condition_arguments(cnd, restatements)
   cnd <- restate_condition_names(cnd, conditions$keys)
-  key <- branch_warning_identity(cnd)
 
   buffered <- conditions$warnings
   seen <- buffered[[key]]
@@ -549,6 +554,11 @@ summary_argument_labels <- function(dots) {
 # since the replacement is then the same whichever dot dplyr meant; where they
 # differ the entry is dropped and the quotation stays as dplyr wrote it. An
 # entry no rewrite changed is dropped as well, having nothing to restate.
+#
+# Where two labels the branch handed dplyr would be quoted alike, an
+# `identities` attribute holds the map `buffer_branch_warning()`'s identity
+# reads instead, in which each such quotation also carries its dot's position,
+# which every branch shares.
 branch_argument_map <- function(dots, caller_labels) {
   stopifnot(length(dots) == length(caller_labels))
 
@@ -564,7 +574,19 @@ branch_argument_map <- function(dots, caller_labels) {
     USE.NAMES = FALSE
   )
   keep <- !is.na(restored) & restored != written
-  stats::setNames(restored[keep], written[keep])
+  map <- stats::setNames(restored[keep], written[keep])
+
+  quoted <- ifelse(is.na(restored), written, restored)
+  shared <- quoted %in% quoted[duplicated(quoted)]
+  if (any(shared)) {
+    identities <- ifelse(
+      shared, paste0(quoted, " <dot ", match(written, labels), ">"), quoted
+    )
+    attr(map, "identities") <- stats::setNames(
+      identities[keep | shared], written[keep | shared]
+    )
+  }
+  map
 }
 
 # The argument bullet, restated to quote the expression the caller wrote. The

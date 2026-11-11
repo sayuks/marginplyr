@@ -1227,6 +1227,76 @@ test_that("warnings from different unnamed summaries stay separate", {
   }
 })
 
+# Each caller lambda fits the line `rlang::as_label()` deparses at, and
+# overflows it beside the selection's binding and the namespace the rewrite
+# adds. The first warns in the Grand total set and the second in group `a`.
+test_that("warnings from two long unnamed across lambdas stay separate", {
+  first <- quote(
+    across(v, ~ sum(if (dplyr::n() == 3L) as.integer(c("x", .x)) else 0L))
+  )
+  second <- quote(
+    across(w, ~ max(if (dplyr::n() < 3L) as.integer(.x) else 0L))
+  )
+  for (config in unnamed_summary_renderings()) {
+    warnings <- collect_warnings_rendered(config, summarize_with_margins(
+      unnamed_summary_frame(), !!first, !!second, .grouping = rollup(g)
+    ))
+    expect_length(warnings, 2L)
+    messages <- vapply(warnings, conditionMessage, character(1))
+    expect_match(
+      messages[[1L]],
+      "`across(w, ~max(if (dplyr::n() < 3L) as.integer(.x) else 0L))`",
+      fixed = TRUE
+    )
+    expect_match(
+      messages[[2L]],
+      paste0(
+        "`across(v, ~sum(if (dplyr::n() == 3L) ",
+        "as.integer(c(\"x\", .x)) else 0L))`"
+      ),
+      fixed = TRUE
+    )
+    expect_false(any(grepl("further grouping set", messages, fixed = TRUE)))
+  }
+})
+
+# Each caller lambda overflows that line on its own, so native dplyr quotes
+# both calls as `across(...)`; they are still two arguments, and the warnings
+# they raise in different grouping sets are two.
+test_that("warnings from two overflowing unnamed across calls stay separate", {
+  for (config in unnamed_summary_renderings()) {
+    warnings <- collect_warnings_rendered(config, summarize_with_margins(
+      unnamed_summary_frame(),
+      across(v, ~ sum(
+        if (dplyr::n() == 3L) as.integer(c("x", .x)) else .x, na.rm = TRUE
+      )),
+      across(w, ~ max(
+        if (dplyr::n() < 3L) as.integer(.x) else 0L, na.rm = TRUE, 0L
+      )),
+      .grouping = rollup(g)
+    ))
+    expect_length(warnings, 2L)
+    messages <- vapply(warnings, conditionMessage, character(1))
+    expect_match(messages, "In argument: `across(...)`.", fixed = TRUE)
+    expect_false(any(grepl("further grouping set", messages, fixed = TRUE)))
+  }
+})
+
+# A lambda dplyr inlines is evaluated in the data mask rather than in a
+# function's own frame, which is what `.x` existing there tells apart. Each
+# lambda overflows the label line, as above.
+test_that("an overflowing lambda beside another unnamed across is inlined", {
+  data <- unnamed_summary_frame()
+  dots <- rlang::exprs(
+    across(v, ~ exists(".x", inherits = FALSE) + 0 * sum(.x, 1L, 2L, 3L, 4L)),
+    across(w, ~ exists(".x", inherits = FALSE) + 0 * sum(nchar(.x, "chars")))
+  )
+  native <- dplyr::summarise(data, !!!dots, .by = g)
+  actual <- summarize_with_margins(data, !!!dots, .grouping = rollup(g))
+  expect_identical(actual$v[1:2], native$v)
+  expect_identical(actual$w[1:2], native$w)
+})
+
 test_that("a condition from one of several unnamed across calls quotes it", {
   for (config in unnamed_summary_renderings()) {
     warnings <- collect_warnings_rendered(config, summarize_with_margins(
