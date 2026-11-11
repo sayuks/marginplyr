@@ -2,8 +2,7 @@
 # takes the `UNION ALL` path other than SQLite is otherwise established by a
 # dbplyr simulator, which shows what was rendered and not what a server makes
 # of it. SQL Server is the one such dialect a service container supplies, and
-# it is strict in both places a rendering can go wrong: it has no boolean
-# literal, and it types a set operation by data type precedence.
+# it types a set operation by data type precedence, where SQLite coerces.
 #
 # The first step records the server's answers and fails only when the server
 # is unreachable or a one-set plan, which has no type anchor, differs from the

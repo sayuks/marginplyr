@@ -1,6 +1,7 @@
 # Second-pass hunt over Margin summaries, Grouping specifications and shares
 
 Investigated: 2026-11-11
+Revised: 2026-11-12 — live SQL Server execution by `.github/workflows/mssql-portable.yaml`
 Repository snapshot: `22043a461c5c48662ff54ea0a1238f00ac316059`
 
 The investigation ran against freshly fetched main in one worktree. No package
@@ -298,6 +299,36 @@ when another dimension had a special name. The same name as a fixed key, a
 summary output or `.id`, a set that never omits the dimension, and
 `expand_with_margins()` were correct, as were 27 other generated prefixes in
 five roles on six backends.
+
+## Revisions (2026-11-12)
+
+The section *Zero-row type anchor on generic SQL dialects* drew two
+consequences from rendered text. `.github/workflows/mssql-portable.yaml`,
+added on this branch, ran `tools/mssql-portable-summary.R` against SQL Server
+2022 (16.0.4315.2) through odbc at `3b2ae6b1`, and its recorded answers
+overturn one and confirm the other.
+
+The predicate consequence was wrong for `collect()`. The server did refuse
+`SELECT [year] FROM [#portable_summary] WHERE (0)` with "An expression of
+non-boolean type specified in a context where a condition is expected", and
+it refused the text `dbplyr::sql_render()` returned for every plan with an
+anchor in the same words. `collect()` of those same queries did not send that
+text: the statement the driver reported carried
+`WHERE (cast(0 AS [BIT]) = 1)`, and a character rollup and a typed-missing
+integer rollup returned rows equal to the local result. So on a live SQL
+Server connection the anchor's predicate does not stop a Margin summary, and
+the rendered text differs from the statement that runs. Why the two differ,
+whether native dbplyr shows the same difference for `filter(x, FALSE)`, and
+what `last_sent_queries()` records there were not examined. Nothing was
+learned about `WHERE (FALSE)` on Oracle, Redshift, Snowflake or Teradata.
+
+The arm-type consequence was confirmed. A rollup over an integer dimension
+with the default text label, and the same plan with a fixed key and a Total
+share, failed at `collect()` with "Conversion failed when converting the
+varchar value 'Total' to data type int." A one-set plan, which has no anchor,
+equalled the local result.
+
+#1586 was rewritten to the confirmed symptom.
 
 ## Rejected candidates
 
