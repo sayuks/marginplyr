@@ -21,7 +21,8 @@ for (const [path, workflow] of Object.entries(lifetimes)) {
   assert.notEqual(group('refs/heads/main', 'workflow_dispatch', 1),
     group('refs/heads/main', 'workflow_dispatch', 2));
   const prefix = path === 'altdoc.yaml' ? 'altdoc-build' : workflow.name;
-  const dispatched = ['altdoc.yaml', 'postgres-transactions.yaml', 'release-matrix.yaml'].includes(path);
+  const dispatched = ['altdoc.yaml', 'mssql-portable.yaml', 'postgres-transactions.yaml',
+    'release-matrix.yaml'].includes(path);
   const automatic = dispatched ? `${prefix}-auto` : prefix;
   assert.equal(pr, `${automatic}-refs/pull/42/merge`);
   assert.equal(group('refs/heads/main', 'push'), `${automatic}-refs/heads/main`);

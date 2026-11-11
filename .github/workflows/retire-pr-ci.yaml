@@ -31,7 +31,8 @@ jobs:
             }
             const known = new Set([
               'R-CMD-check.yaml', 'altdoc.yaml', 'document.yaml', 'lint.yaml',
-              'postgres-transactions.yaml', 'release-matrix.yaml', 'test-coverage.yaml'
+              'mssql-portable.yaml', 'postgres-transactions.yaml', 'release-matrix.yaml',
+              'test-coverage.yaml'
             ].map(name => `.github/workflows/${name}`));
             const active = ['queued', 'in_progress', 'waiting', 'pending', 'requested'];
             const errors = [];

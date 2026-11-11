@@ -5,7 +5,8 @@ workflows <- lapply(sort(list.files(".github/workflows", pattern = "[.]yaml$",
     handlers = list("bool#yes" = identity, "bool#no" = identity)))
 names(workflows) <- sort(list.files(".github/workflows", pattern = "[.]yaml$"))
 routine <- c("R-CMD-check.yaml", "altdoc.yaml", "document.yaml", "lint.yaml",
-  "postgres-transactions.yaml", "release-matrix.yaml", "test-coverage.yaml")
+  "mssql-portable.yaml", "postgres-transactions.yaml", "release-matrix.yaml",
+  "test-coverage.yaml")
 for (path in routine) {
   workflow <- workflows[[path]]
   concurrency <- if (path == "altdoc.yaml") workflow$jobs$altdoc$concurrency else workflow$concurrency
