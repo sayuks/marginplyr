@@ -265,11 +265,7 @@ restate_result_refusal <- function(cnd, restatements) {
   }
   first <- cli::ansi_strip(cnd$message[[1L]])
   found <- regmatches(first, regexec(
-    paste0(
-      "^`(.*)`( must (be size .*|be a vector, not .*|",
-      "return compatible vectors across groups\\.))$"
-    ),
-    first
+    "^`(.*)`( must (be size .*|be a vector, not .*))$", first
   ))[[1L]]
   if (length(found) == 0L) {
     return(cnd)
