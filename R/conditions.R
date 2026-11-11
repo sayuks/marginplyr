@@ -220,26 +220,100 @@ with_branch_conditions <- function(expr,
 # An error arrives with its context in addressable fields: `$message` holds the
 # argument bullet, `$body` the grouping-value bullet, and `$call` the internal
 # `dplyr::summarize()` the adapter issued. Generated validation checks add a
-# temporary ownership wrapper; promote only those refusals, or remove the
-# interpolation wrapper around a caller-template error.
+# temporary ownership wrapper; promote only those refusals, remove the
+# interpolation wrapper around a caller-template error, or replace the layer
+# quoting a deferred selection's generated argument with the failure it wraps,
+# blamed as dplyr's own selection would blame it.
 #
 # Errors are not deduplicated, and there is nothing to deduplicate: branches
 # run in sequence, so the first error aborts the operation and no second
 # occurrence is ever raised.
 restate_branch_error <- function(cnd, conditions, restatements) {
+  deferred <- deferred_selection_mark(cnd$parent)
   if (!is.null(cnd$parent) &&
         inherits(cnd$parent$parent, "marginplyr_generated_summary_error")) {
     cnd <- cnd$parent$parent$parent
   } else if (!is.null(cnd$parent) &&
                inherits(cnd$parent$parent, "marginplyr_inner_glue_error")) {
     cnd$parent <- cnd$parent$parent$parent
+  } else if (!is.null(deferred)) {
+    selection <- deferred$parent
+    if (isTRUE(deferred$blamed_on_verb)) {
+      selection$call <- selection_helper_call(cnd$parent$call)
+    }
+    cnd$parent <- selection
   }
   cnd <- restate_condition_arguments(cnd, restatements)
+  cnd$parent <- restate_result_refusal(cnd$parent, restatements)
   cnd <- restate_condition_names(cnd, conditions$keys)
   if (!is.null(conditions$call)) {
     cnd$call <- conditions$call
   }
   cnd
+}
+
+# dplyr's own refusal of a summary's result, which opens by quoting the
+# argument's label as the argument bullet does, restated the same way. Only
+# the sentences dplyr's `summarise()` writes are matched, on a condition
+# blaming no call as dplyr's does, and the span must equal a label the branch
+# handed dplyr; a caller's own condition is otherwise left as it arrived. A
+# restated line is rendered plain, as ADR 0022 decides for the bullet.
+restate_result_refusal <- function(cnd, restatements) {
+  if (is.null(cnd) || !is.null(cnd$call) || !is.character(cnd$message) ||
+        length(cnd$message) == 0L || length(restatements) == 0L) {
+    return(cnd)
+  }
+  first <- cli::ansi_strip(cnd$message[[1L]])
+  # cli quotes a span holding a backtick between doubled ones, padded.
+  found <- regmatches(first, regexec(
+    "^(`` (.*) ``|`(.*)`)( must (be size .*|be a vector, not .*))$", first,
+    perl = TRUE
+  ))[[1L]]
+  if (length(found) == 0L) {
+    return(cnd)
+  }
+  span <- if (nzchar(found[[3L]])) found[[3L]] else found[[4L]]
+  restored <- unname(restatements[span])
+  if (is.na(restored)) {
+    return(cnd)
+  }
+  quoted <- if (grepl("`", restored, fixed = TRUE)) {
+    paste0("`` ", restored, " ``")
+  } else {
+    paste0("`", restored, "`")
+  }
+  cnd$message[[1L]] <- paste0(quoted, found[[5L]])
+  cnd
+}
+
+# The mark `with_deferred_selection()` put beneath `helper`, the layer dplyr
+# blames on the selection helper, or `NULL` where there is none. Every layer
+# between the two quotes a generated argument or a binding
+# `hoist_local_across_arguments()` allocated.
+deferred_selection_mark <- function(helper) {
+  cnd <- helper$parent
+  while (!is.null(cnd)) {
+    if (inherits(cnd, "marginplyr_deferred_selection_error")) {
+      return(cnd)
+    }
+    cnd <- cnd$parent
+  }
+  NULL
+}
+
+# The selection helper a deferred selection failed under, as the call its
+# header names. dplyr blames the helper's call as the rewrite spelled it, which
+# for `if_any()` and `if_all()` carries an inlined `::` that the header cannot
+# name; the header reads only the function, so the arguments are dropped.
+selection_helper_call <- function(call) {
+  head <- call[[1L]]
+  if (is.call(head)) {
+    return(rlang::call2(
+      as.character(head[[3L]]),
+      .ns = as.character(head[[2L]])
+    ))
+  }
+  rlang::call2(head)
 }
 
 # Mark only a generated check's own refusal while upstream context wraps it.
@@ -278,10 +352,15 @@ buffer_branch_warning <- function(cnd, conditions, restatements) {
   # The spelling is restored before the identity is read, so the identity is
   # over the argument the caller wrote: `grouping_bit()` renders as a different
   # constant in every branch, which split one written expression into one
-  # report per branch (ADR 0022).
+  # report per branch (ADR 0022). The identity reads the map's `identities`,
+  # which tell apart two arguments the caller's spelling quotes alike.
+  identities <- attr(restatements, "identities", exact = TRUE) %||%
+    restatements
+  key <- branch_warning_identity(restate_condition_names(
+    restate_condition_arguments(cnd, identities), conditions$keys
+  ))
   cnd <- restate_condition_arguments(cnd, restatements)
   cnd <- restate_condition_names(cnd, conditions$keys)
-  key <- branch_warning_identity(cnd)
 
   buffered <- conditions$warnings
   seen <- buffered[[key]]
@@ -510,6 +589,11 @@ summary_argument_labels <- function(dots) {
 # since the replacement is then the same whichever dot dplyr meant; where they
 # differ the entry is dropped and the quotation stays as dplyr wrote it. An
 # entry no rewrite changed is dropped as well, having nothing to restate.
+#
+# Where two labels the branch handed dplyr would be quoted alike, an
+# `identities` attribute holds the map `buffer_branch_warning()`'s identity
+# reads instead, in which each such quotation also carries its dot's position,
+# which every branch shares.
 branch_argument_map <- function(dots, caller_labels) {
   stopifnot(length(dots) == length(caller_labels))
 
@@ -525,7 +609,19 @@ branch_argument_map <- function(dots, caller_labels) {
     USE.NAMES = FALSE
   )
   keep <- !is.na(restored) & restored != written
-  stats::setNames(restored[keep], written[keep])
+  map <- stats::setNames(restored[keep], written[keep])
+
+  quoted <- ifelse(is.na(restored), written, restored)
+  shared <- quoted %in% quoted[duplicated(quoted)]
+  if (any(shared)) {
+    identities <- ifelse(
+      shared, paste0(quoted, " <dot ", match(written, labels), ">"), quoted
+    )
+    attr(map, "identities") <- stats::setNames(
+      identities[keep | shared], written[keep | shared]
+    )
+  }
+  map
 }
 
 # The argument bullet, restated to quote the expression the caller wrote. The

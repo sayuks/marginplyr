@@ -355,3 +355,33 @@ the caller's expressions in an ungrouped lazy summary, and the grouped query
 uses its resolved select rows. The translation error is still caught at the
 ungrouped build and receives the same Condition context. The caller's naming
 expression is no longer handed to both builds.
+
+## Amendment: each wrapped local summary labels apart
+
+*The identification is a test against marginplyr's own rendering* takes the
+collision to need "two unnamed arguments rendering alike", and *dplyr's
+rendering is reproduced only as far as it is observable* takes a shared label
+to be one the caller's own expressions would have shared. #1572 found both
+false on a local input: ADR 0028's wrapper gave every unnamed summary one
+call head, and `rlang::as_label()` labels a call that deparses onto several
+lines by its head alone, so two unnamed summaries the caller spelled apart
+were quoted as the wrapper and their warnings shared one identity. Two
+unnamed `across()` calls collided the same way through the selection rewrite.
+
+Every dot a local branch wraps now calls a binding of its own position, which
+closes over the wrapper's other arguments, so its label names the position and
+the map restores each one. An unnamed top-level `across()` whose label another
+dot shares keeps its head for dplyr's expansion and has its selection hoisted
+into such a binding, and then its other arguments, longest first, while the
+call still deparses onto several lines. A hoisted lambda is evaluated in the
+frame dplyr evaluates the argument in, so dplyr still inlines it. A call with
+more arguments than fit beside their bindings on one line keeps a shared
+label, and its quotation degrades to dplyr's as above.
+
+Two arguments can also be quoted alike as the caller spelled them: two
+`across()` calls whose own deparse overflows are both `across(...)`, as native
+dplyr quotes them. The quotation stays that, and *The restoration runs before
+the deduplication key is computed* is narrowed by one term: where two labels a
+branch handed dplyr are restored to one quotation, the identity also reads the
+dot's position, which every branch shares, so their warnings remain two
+conditions. The map and the restatement are otherwise as before.

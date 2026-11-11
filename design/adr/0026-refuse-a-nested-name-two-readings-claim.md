@@ -223,6 +223,15 @@ check after a suspended caller call waits for preflight to resume. The binding
 read budget and the ambiguity decision are unchanged. ADR 0008 owns that
 prefix and resume order.
 
+## Amendment: the displaced condition's blamed call (#1573)
+
+*What this changes* above contrasts the refusal with tidyselect's class and
+tidyselect's blamed call. The displaced condition never carried a call
+tidyselect chose: marginplyr's resolver was blamed. Since #1573 it is blamed on
+the Margin verb the caller wrote, as the refusal is, so what the refusal moves
+for such a caller is the class alone. ADR 0008's amendment of the same number
+records the call now carried.
+
 ## Documentation consequences
 
 `CONTEXT.md`'s *Nested specification position* defines the term and names the

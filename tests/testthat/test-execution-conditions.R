@@ -366,12 +366,16 @@ test_that("a share does not shift which argument is restored", {
   expect_false(grepl("all_of", message, fixed = TRUE))
 })
 
-test_that("ambiguous across labels retain dplyr's argument context", {
+test_that("a share beside two unnamed across calls quotes the right one", {
   warnings <- collect_warnings(summarize_share_coercion(ordinary_across = TRUE))
 
   expect_length(warnings, 1L)
   message <- conditionMessage(warnings[[1L]])
-  expect_match(message, "`dplyr::across(...)`", fixed = TRUE)
+  expect_match(
+    message,
+    "`dplyr::across(c(grade), ~sum(as.numeric(.x)))`",
+    fixed = TRUE
+  )
   expect_match(message, "NAs introduced by coercion", fixed = TRUE)
   expect_match(message, "1 further grouping set", fixed = TRUE)
   expect_false(grepl("dplyr::across(c(units, revenue), sum)", message,
@@ -1155,6 +1159,273 @@ test_that("a caller's own text is never restated", {
   )
   # An empty message is neither restated nor rebuilt.
   expect_identical(restated(""), "")
+})
+
+# Several unnamed local summaries, each of which a branch wraps so that a
+# frame expands and a scalar takes dplyr's name (ADR 0028). `w` coerces to
+# `NA` in group `a`, so a coercion raises a warning and arithmetic an error.
+unnamed_summary_frame <- function() {
+  data.frame(g = c("a", "a", "b"), v = 1:3, w = c("1", "x", "4"))
+}
+
+# Widths at which nothing wraps and at which the bullet wraps mid-label.
+unnamed_summary_renderings <- function() {
+  list(
+    default = rendering_config(80L, 1L, FALSE),
+    narrow = rendering_config(24L, 1L, FALSE)
+  )
+}
+
+test_that("a warning from one of several unnamed summaries quotes it", {
+  for (config in unnamed_summary_renderings()) {
+    warnings <- collect_warnings_rendered(config, summarize_with_margins(
+      unnamed_summary_frame(), sum(v), sum(as.numeric(w)),
+      .grouping = rollup(g)
+    ))
+    expect_length(warnings, 1L)
+    message <- conditionMessage(warnings[[1L]])
+    expect_match(message, "In argument: `sum(as.numeric(w))`.", fixed = TRUE)
+    expect_false(grepl("function", message, fixed = TRUE))
+  }
+})
+
+test_that("an error from one of several unnamed summaries quotes it", {
+  for (config in unnamed_summary_renderings()) {
+    rlang::local_options(
+      cli.width = config$width, cli.condition_width = config$width
+    )
+    error <- expect_error(summarize_with_margins(
+      unnamed_summary_frame(), mean(v), max(w + 1), .grouping = rollup(g)
+    ))
+    message <- conditionMessage(error)
+    expect_match(message, "`max(w + 1)`.", fixed = TRUE)
+    expect_false(grepl("function", message, fixed = TRUE))
+  }
+})
+
+# `n()` is 3 only in the Grand total set, so each summary warns in a set of its
+# own: one warning per argument, as the same pair written with names gives.
+test_that("warnings from different unnamed summaries stay separate", {
+  for (config in unnamed_summary_renderings()) {
+    warnings <- collect_warnings_rendered(config, summarize_with_margins(
+      unnamed_summary_frame(),
+      sum(if (dplyr::n() == 3L) as.integer(w) else v),
+      max(if (dplyr::n() < 3L) as.integer(w) else v),
+      .grouping = rollup(g)
+    ))
+    expect_length(warnings, 2L)
+    messages <- vapply(warnings, conditionMessage, character(1))
+    expect_match(
+      messages[[1L]], "`max(if (dplyr::n() < 3L) as.integer(w) else v)`",
+      fixed = TRUE
+    )
+    expect_match(
+      messages[[2L]], "`sum(if (dplyr::n() == 3L) as.integer(w) else v)`",
+      fixed = TRUE
+    )
+    expect_false(any(grepl("further grouping set", messages, fixed = TRUE)))
+  }
+})
+
+# Each caller lambda fits the line `rlang::as_label()` deparses at, and
+# overflows it beside the selection's binding and the namespace the rewrite
+# adds. The first warns in the Grand total set and the second in group `a`.
+test_that("warnings from two long unnamed across lambdas stay separate", {
+  first <- quote(
+    across(v, ~ sum(if (dplyr::n() == 3L) as.integer(c("x", .x)) else 0L))
+  )
+  second <- quote(
+    across(w, ~ max(if (dplyr::n() < 3L) as.integer(.x) else 0L))
+  )
+  for (config in unnamed_summary_renderings()) {
+    warnings <- collect_warnings_rendered(config, summarize_with_margins(
+      unnamed_summary_frame(), !!first, !!second, .grouping = rollup(g)
+    ))
+    expect_length(warnings, 2L)
+    messages <- vapply(warnings, conditionMessage, character(1))
+    expect_match(
+      messages[[1L]],
+      "`across(w, ~max(if (dplyr::n() < 3L) as.integer(.x) else 0L))`",
+      fixed = TRUE
+    )
+    expect_match(
+      messages[[2L]],
+      paste0(
+        "`across(v, ~sum(if (dplyr::n() == 3L) ",
+        "as.integer(c(\"x\", .x)) else 0L))`"
+      ),
+      fixed = TRUE
+    )
+    expect_false(any(grepl("further grouping set", messages, fixed = TRUE)))
+  }
+})
+
+# Each caller lambda overflows that line on its own, so native dplyr quotes
+# both calls as `across(...)`; they are still two arguments, and the warnings
+# they raise in different grouping sets are two.
+test_that("warnings from two overflowing unnamed across calls stay separate", {
+  for (config in unnamed_summary_renderings()) {
+    warnings <- collect_warnings_rendered(config, summarize_with_margins(
+      unnamed_summary_frame(),
+      across(v, ~ sum(
+        if (dplyr::n() == 3L) as.integer(c("x", .x)) else .x, na.rm = TRUE
+      )),
+      across(w, ~ max(
+        if (dplyr::n() < 3L) as.integer(.x) else 0L, na.rm = TRUE, 0L
+      )),
+      .grouping = rollup(g)
+    ))
+    expect_length(warnings, 2L)
+    messages <- vapply(warnings, conditionMessage, character(1))
+    expect_match(messages, "In argument: `across(...)`.", fixed = TRUE)
+    expect_false(any(grepl("further grouping set", messages, fixed = TRUE)))
+  }
+})
+
+# A lambda dplyr inlines is evaluated in the data mask rather than in a
+# function's own frame, which is what `.x` existing there tells apart. Each
+# lambda overflows the label line, as above.
+test_that("an overflowing lambda beside another unnamed across is inlined", {
+  data <- unnamed_summary_frame()
+  dots <- rlang::exprs(
+    across(v, ~ exists(".x", inherits = FALSE) + 0 * sum(.x, 1L, 2L, 3L, 4L)),
+    across(w, ~ exists(".x", inherits = FALSE) + 0 * sum(nchar(.x, "chars")))
+  )
+  native <- dplyr::summarise(data, !!!dots, .by = g)
+  actual <- summarize_with_margins(data, !!!dots, .grouping = rollup(g))
+  expect_identical(actual$v[1:2], native$v)
+  expect_identical(actual$w[1:2], native$w)
+})
+
+test_that("a condition from one of several unnamed across calls quotes it", {
+  for (config in unnamed_summary_renderings()) {
+    warnings <- collect_warnings_rendered(config, summarize_with_margins(
+      unnamed_summary_frame(), across(v, sum),
+      across(w, ~ sum(as.numeric(.x))), .grouping = rollup(g)
+    ))
+    expect_length(warnings, 1L)
+    message <- conditionMessage(warnings[[1L]])
+    expect_match(message, "`across(w, ~sum(as.numeric(.x)))`", fixed = TRUE)
+    expect_false(grepl("(...)", message, fixed = TRUE))
+
+    rlang::local_options(
+      cli.width = config$width, cli.condition_width = config$width
+    )
+    error <- expect_error(summarize_with_margins(
+      unnamed_summary_frame(), across(v, sum), across(w, ~ .x + 1),
+      .grouping = rollup(g)
+    ))
+    message <- conditionMessage(error)
+    expect_match(message, "`across(w, ~.x + 1)`", fixed = TRUE)
+    expect_false(grepl("(...)", message, fixed = TRUE))
+  }
+})
+
+# A caller's own binding spelled like the one a wrapped dot calls is read as the
+# caller's, and the wrapper takes another name.
+test_that("a caller binding spelled like a wrapper keeps its own value", {
+  # Both names are spelled as the bindings for the second and fourth dots.
+  ..marginplyr_summary_2 <- 10L # nolint: object_name_linter.
+  ..marginplyr_4_1 <- "v" # nolint: object_name_linter.
+  data <- unnamed_summary_frame()
+  actual <- summarize_with_margins(
+    data, sum(v), sum(v) + ..marginplyr_summary_2,
+    across(.cols = v, max, .names = "high"),
+    across(all_of(..marginplyr_4_1), min, .names = "low"),
+    .grouping = rollup(g)
+  )
+  expect_identical(actual[["sum(v) + ..marginplyr_summary_2"]],
+                   c(13L, 13L, 16L))
+  expect_identical(actual$high, c(2L, 3L, 3L))
+  expect_identical(actual$low, c(1L, 3L, 1L))
+})
+
+# dplyr's refusal of a result quotes the argument it refused in its own
+# sentence, as the caller spelled it.
+test_that("a refused unnamed result quotes the caller's argument", {
+  data <- data.frame(g = c("a", "a", "b"), v = 1:3, w = 4:6)
+  data[["my var"]] <- 7:9
+  cases <- list(
+    rlang::exprs(dplyr::across(v, function(x) x), dplyr::across(w, sum)),
+    rlang::exprs(dplyr::across(), dplyr::across(w, length)),
+    rlang::exprs(dplyr::across(v, function(x) x), n = dplyr::n()),
+    # A label holding a backtick, which dplyr quotes between doubled ones.
+    rlang::exprs(mean(v), identity(`my var`)),
+    rlang::exprs(identity(`my var`)),
+    rlang::exprs(
+      dplyr::across(v, sum), dplyr::across(w, function(x) x + `my var`)
+    )
+  )
+  for (config in unnamed_summary_renderings()) {
+    rlang::local_options(
+      cli.width = config$width, cli.condition_width = config$width
+    )
+    for (dots in cases) {
+      actual <- expect_error(summarize_with_margins(
+        data, !!!dots, .grouping = rollup(g)
+      ))
+      native <- expect_error(dplyr::summarise(data, !!!dots, .by = g))
+      expect_identical(conditionMessage(actual), conditionMessage(native))
+      expect_identical(
+        lapply(condition_chain(actual), class),
+        lapply(condition_chain(native), class)
+      )
+    }
+  }
+})
+
+# The cause's own line, as native dplyr renders it, names no function the
+# caller did not call, whether one, several, or no summary is unnamed.
+test_that("a local summary's cause names the call native dplyr names", {
+  cases <- list(
+    rlang::exprs(mean(v), max(stop("bad"))),
+    rlang::exprs(max(stop("bad"))),
+    rlang::exprs(x = max(stop("bad"))),
+    rlang::exprs(mean(v), sum(as.integer("x"))),
+    rlang::exprs(sum(as.integer("x"))),
+    rlang::exprs(x = sum(as.integer("x")))
+  )
+  cause_lines <- function(cnd) {
+    lines <- strsplit(conditionMessage(cnd), "\n", fixed = TRUE)[[1L]]
+    grep("^Caused by", lines, value = TRUE)
+  }
+  outcome <- function(expr) {
+    tryCatch(
+      collect_warnings(expr)[[1L]],
+      error = function(cnd) cnd
+    )
+  }
+  for (config in unnamed_summary_renderings()) {
+    rlang::local_options(
+      cli.width = config$width, cli.condition_width = config$width
+    )
+    for (dots in cases) {
+      actual <- outcome(summarize_with_margins(
+        unnamed_summary_frame(), !!!dots, .grouping = rollup(g)
+      ))
+      native <- outcome(dplyr::summarise(
+        unnamed_summary_frame(), !!!dots, .by = g
+      ))
+      expect_identical(class(actual), class(native))
+      expect_identical(cause_lines(actual), cause_lines(native))
+      if (inherits(native, "error")) {
+        expect_identical(conditionMessage(actual), conditionMessage(native))
+      }
+    }
+  }
+})
+
+test_that("one unnamed summary warning in several sets is reported once", {
+  for (config in unnamed_summary_renderings()) {
+    warnings <- collect_warnings_rendered(config, summarize_with_margins(
+      unnamed_summary_frame(), sum(v), sum(as.numeric(w)), max(v),
+      .grouping = cube(g)
+    ))
+    expect_length(warnings, 1L)
+    message <- conditionMessage(warnings[[1L]])
+    expect_match(message, "`sum(as.numeric(w))`", fixed = TRUE)
+    expect_match(message, "1 further grouping set", fixed = TRUE)
+  }
 })
 
 # Two dots can hand dplyr one expression, and the span then says which

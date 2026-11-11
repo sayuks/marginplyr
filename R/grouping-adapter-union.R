@@ -953,6 +953,7 @@ summarize_margin_union <- function(.data,
             type_states = type_states,
             alias_state = alias_state
           )
+          branch_dots <- separate_local_across_labels(branch_dots)
         }
         needs_placeholder <- length(grouping_set) == 0L &&
           (length(branch_dots) == 0L || backend$is_sql)

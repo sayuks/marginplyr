@@ -282,18 +282,138 @@ wrap_assigned_local_summaries <- function(dots, assigned_names, group_vars,
                                           alias_state = NULL) {
   for (i in which(!is.na(assigned_names))) {
     dot <- dots[[i]]
-    expr <- rlang::call2(
-      marginplyr_private_call("local_assigned_summary_value"),
-      rlang::quo_get_expr(dot),
+    dots[[i]] <- local_summary_value_quo(
+      dot, rlang::quo_get_env(dot),
       assigned_names[[i]], group_vars, internal_names, set_id_name,
       set_id_is_internal,
       setdiff(share_sources, source_definitions[[i]]), type_states[[i]],
       alias_state, i
     )
-    dots[[i]] <- rlang::new_quosure(expr, env = rlang::quo_get_env(dot))
     names(dots)[[i]] <- ""
   }
   dots
+}
+
+# The dot wrapped in `local_assigned_summary_value()`, with `env` as the
+# environment its expression is evaluated from and `position` the dot's own.
+# The call's head is a binding of this position's own that closes over the
+# wrapper's other arguments, as ADR 0022's amendment *each wrapped local
+# summary labels apart* decides.
+local_summary_value_quo <- function(dot, env, name, group_vars,
+                                    internal_names, set_id_name,
+                                    set_id_is_internal, protected_sources,
+                                    type_state, alias_state, position) {
+  # The arguments are promises over the caller's loop index, which has moved on
+  # by the time the wrapper runs.
+  rlang::list2(
+    name, group_vars, internal_names, set_id_name, set_id_is_internal,
+    protected_sources, type_state, alias_state, position
+  )
+  wrapper <- function(value) {
+    # `value` is forced in this call's frame, which R blames for a condition
+    # the caller's expression raises. rlang renders a call under this
+    # parenthesised head as no call at all, as native dplyr's mask has none.
+    (local_assigned_summary_value)(
+      value, name, group_vars, internal_names, set_id_name,
+      set_id_is_internal, protected_sources, type_state, alias_state, position
+    )
+  }
+  expr <- rlang::quo_get_expr(dot)
+  bound <- bind_local_position(expr, env, "..marginplyr_summary_", position,
+                               wrapper)
+  rlang::new_quosure(rlang::call2(bound$head, expr), env = bound$env)
+}
+
+# A child of `env` binding `value` to a name spelled from `prefix` and
+# `position` that neither `expr` nor `env` already reads, returned with that
+# name as `head`.
+bind_local_position <- function(expr, env, prefix, position, value) {
+  binding <- paste0(prefix, position)
+  while (binding %in% all.names(expr) ||
+           exists(binding, envir = env, inherits = TRUE)) {
+    binding <- paste0(binding, "_")
+  }
+  env <- rlang::env(env)
+  rlang::env_poke(env, binding, value)
+  list(head = rlang::sym(binding), env = env)
+}
+
+# The local branch dots with every unnamed top-level `across()` that shares its
+# label with another dot respelled by `hoist_local_across_arguments()`, as ADR
+# 0022's amendment *each wrapped local summary labels apart* decides. Such a
+# call keeps its head for dplyr's expansion (ADR 0019).
+separate_local_across_labels <- function(dots) {
+  labels <- summary_argument_labels(dots)
+  across <- vapply(
+    dots,
+    function(dot) {
+      identical(
+        data_frame_valued_summary_kind(rlang::quo_get_expr(dot)), "across"
+      )
+    },
+    logical(1)
+  )
+  shared <- labels %in% labels[duplicated(labels)] &
+    !nzchar(rlang::names2(dots)) & across
+  for (i in which(shared)) {
+    dots[[i]] <- hoist_local_across_arguments(dots[[i]], i)
+  }
+  dots
+}
+
+# The arguments are matched to `across()`'s formals as dplyr matches them,
+# partial names included. The selection is the argument matching `.cols`,
+# which the local selection rewrite has given every such call, and it is always
+# hoisted. Its binding is called inside the selection `across()` makes, so it
+# selects from the same data, and the locations it returns are what tidyselect
+# resolves the selection's own spelling to. The arguments matching `.fns`,
+# `.names` and `.unpack` are hoisted, longest first, while the call still
+# deparses onto several lines; one reaching `...` stays as written. Each such
+# binding evaluates its argument in the frame dplyr calls the binding from,
+# which is the frame the argument itself was evaluated in, so a lambda it
+# returns has the environment dplyr's inlining requires of one written in the
+# call.
+hoist_local_across_arguments <- function(dot, position) {
+  expr <- rlang::quo_get_expr(dot)
+  env <- rlang::quo_get_env(dot)
+  args <- rlang::call_args(expr)
+  parsed <- parse_across_arguments(expr)
+  supplied <- function(index) {
+    index > 0L && !rlang::is_missing(args[[index]])
+  }
+  selection <- if (supplied(parsed$cols_index)) parsed$cols_index else 0L
+  others <- Filter(supplied, c(
+    parsed$fns_index, parsed$names_index, parsed$unpack_index
+  ))
+  widths <- vapply(
+    others, function(k) sum(nchar(deparse(args[[k]]))), numeric(1)
+  )
+  prefix <- paste0("..marginplyr_", position, "_")
+  for (k in c(selection[selection > 0L], others[order(-widths)])) {
+    if (k != selection &&
+          length(deparse(rlang::call2(expr[[1L]], !!!args), 60L)) == 1L) {
+      break
+    }
+    value <- if (k == selection) {
+      local_selection_thunk(rlang::new_quosure(args[[k]], env))
+    } else {
+      local_argument_thunk(args[[k]])
+    }
+    bound <- bind_local_position(expr, env, prefix, k, value)
+    env <- bound$env
+    args[[k]] <- rlang::call2(bound$head)
+  }
+  rlang::new_quosure(rlang::call2(expr[[1L]], !!!args), env = env)
+}
+
+local_selection_thunk <- function(selection) {
+  force(selection)
+  function() tidyselect::eval_select(selection, tidyselect::peek_data())
+}
+
+local_argument_thunk <- function(arg) {
+  force(arg)
+  function() eval(arg, rlang::caller_env())
 }
 
 # Return a frame so dplyr places the output in its mask immediately. An actual
@@ -461,15 +581,13 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
         next
       }
     }
-    expr <- rlang::call2(
-      marginplyr_private_call("local_assigned_summary_value"),
-      expr, auto_names[[i]], group_vars, internal_names,
-      set_id_name,
+    dots[[i]] <- local_summary_value_quo(
+      dot, wrapped_summary_env(dot),
+      auto_names[[i]], group_vars, internal_names, set_id_name,
       set_id_is_internal,
       setdiff(share_sources, source_definitions[[i]]), type_states[[i]],
       alias_state, i
     )
-    dots[[i]] <- rlang::new_quosure(expr, env = wrapped_summary_env(dot))
   }
   dots
 }
@@ -2190,13 +2308,15 @@ local_summary_selection <- function(selection, env, group_vars,
   # Tidyselect applies a predicate before a later exclusion can remove
   # the alias whose value it saw.
   visible_aliases <- intersect(preceding_aliases, names(data))
-  selected <- if (length(visible_aliases) == 0L) {
-    resolve_summary_selection(selection, env = env, data_proxy = data)
-  } else {
-    resolve_share_source_selection(
-      selection, env, data, visible_aliases, state$source_checks[[1L]]
-    )
-  }
+  selected <- with_deferred_selection({
+    if (length(visible_aliases) == 0L) {
+      resolve_summary_selection(selection, env = env, data_proxy = data)
+    } else {
+      resolve_share_source_selection(
+        selection, env, data, visible_aliases, state$source_checks[[1L]]
+      )
+    }
+  })
   if (length(selected) == 0L && !is.null(state) &&
         length(state$source_checks) > 0L) {
     check <- state$source_checks[[1L]]
@@ -2229,6 +2349,32 @@ local_summary_selection <- function(selection, env, group_vars,
     names(source_names) <- names(selected)
   }
   source_names
+}
+
+# Marks a failure of a deferred local selection, which dplyr's own selection
+# evaluates as an argument of the generated `all_of()`. tidyselect wraps such a
+# failure in a layer quoting that generated argument, which the caller did not
+# write; `restate_branch_error()` consumes the mark to remove the layer. A
+# generated check carries its own wrapper and is left to it.
+#
+# `blamed_on_verb` records whether tidyselect blamed the failure on the call
+# `resolve_summary_selection()` hands it, which dplyr's selection blames on the
+# selection helper instead; any other failure, such as a predicate's own error,
+# keeps its call as native dplyr does.
+with_deferred_selection <- function(expr) {
+  tryCatch(expr, error = function(cnd) {
+    if (inherits(cnd, "marginplyr_generated_summary_error")) {
+      stop(cnd)
+    }
+    verb_call <- margin_selection_call()
+    rlang::abort(
+      "Failed to resolve a deferred selection.",
+      class = "marginplyr_deferred_selection_error",
+      parent = cnd,
+      blamed_on_verb = !is.null(verb_call) &&
+        identical(conditionCall(cnd), verb_call)
+    )
+  })
 }
 
 # Resolve a local selector whose proxy includes earlier summary aliases.
@@ -2738,7 +2884,8 @@ resolve_summary_selection <- function(expr, env, data_proxy,
     data = data_proxy,
     strict = TRUE,
     allow_rename = TRUE,
-    allow_predicates = allow_predicates
+    allow_predicates = allow_predicates,
+    error_call = margin_selection_call()
   )
 }
 
