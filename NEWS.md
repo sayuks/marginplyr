@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* Parent and Total shares over a dtplyr step keep fixed `.by` keys named `T`
+  or `F` as their own partitions and values, instead of reading them as
+  logical constants (#1568).
+
 * Margin verbs preserve source variable labels through display conversion,
   grouping-set combination, expansion and nesting, including empty columns and
   direct collection. Calculated labels follow native summaries and agreeing

@@ -5,7 +5,7 @@ logical_name_share_oracle <- function(data, keys, dimensions, sets, parents) {
   grain <- function(by) {
     dplyr::summarise(
       dplyr::group_by(data, dplyr::across(dplyr::all_of(by))),
-      value = sum(v), .groups = "drop"
+      value = sum(.data$v), .groups = "drop"
     )
   }
   rows <- lapply(seq_along(sets), function(index) {
@@ -69,7 +69,8 @@ test_that("dtplyr shares keep fixed keys named T and F as partitions", {
         plan$parents
       )
       for (helper in plan$helpers) {
-        column <- if (identical(helper, "share_of_parent")) "parent" else "total"
+        column <- c(share_of_parent = "parent",
+                    share_of_total = "total")[[helper]]
         for (style in c("direct", "across")) {
           share <- if (identical(style, "direct")) {
             rlang::exprs(share = !!rlang::call2(helper, rlang::sym("value")))
@@ -131,7 +132,8 @@ test_that("dtplyr keeps T and F intact without a share and as dimensions", {
   before <- data.table::copy(input)
   plain <- dplyr::collect(summarize_with_margins(
     dtplyr::lazy_dt(input, immutable = TRUE), value = sum(v),
-    .by = T, .grouping = rollup(F), .margin_label = "(all)", .sort = "last"
+    .by = dplyr::all_of("T"), .grouping = rollup(dplyr::all_of("F")),
+    .margin_label = "(all)", .sort = "last"
   ))
   expect_identical(plain$T, c("a", "a", "a", "b", "b", "b"))
   expect_identical(plain$F, c("x", "y", "(all)", "x", "y", "(all)"))

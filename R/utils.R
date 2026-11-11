@@ -112,9 +112,9 @@ margin_column_pronoun <- function(name) {
 }
 
 # Evaluate a generated expression under names safe for R dot arguments,
-# data.table special variables and dtplyr's logical constants. `read` names source and output columns.
-# `transform` receives their temporary names and returns a result; `reserved`
-# keeps its output names out of the alias set.
+# data.table special variables and dtplyr's logical constants. `read` names
+# source and output columns. `transform` receives their temporary names and
+# returns a result; `reserved` keeps its output names out of the alias set.
 margin_safe_column_reads <- function(.data, read, transform,
                                      reserved = character()) {
   if (is.data.frame(.data)) {
