@@ -282,18 +282,137 @@ wrap_assigned_local_summaries <- function(dots, assigned_names, group_vars,
                                           alias_state = NULL) {
   for (i in which(!is.na(assigned_names))) {
     dot <- dots[[i]]
-    expr <- rlang::call2(
-      marginplyr_private_call("local_assigned_summary_value"),
-      rlang::quo_get_expr(dot),
+    dots[[i]] <- local_summary_value_quo(
+      dot, rlang::quo_get_env(dot),
       assigned_names[[i]], group_vars, internal_names, set_id_name,
       set_id_is_internal,
       setdiff(share_sources, source_definitions[[i]]), type_states[[i]],
       alias_state, i
     )
-    dots[[i]] <- rlang::new_quosure(expr, env = rlang::quo_get_env(dot))
     names(dots)[[i]] <- ""
   }
   dots
+}
+
+# The dot wrapped in `local_assigned_summary_value()`, with `env` as the
+# environment its expression is evaluated from and `position` the dot's own.
+#
+# dplyr quotes an unnamed argument by its label, and `rlang::as_label()` labels
+# a call that deparses onto several lines by its head alone. One shared head
+# would quote every wrapped summary alike, so ADR 0022's map could restore none
+# of them and their warnings would share one identity. The head is therefore a
+# binding of this position's own, in an environment between `env` and dplyr's
+# mask, and the binding closes over the wrapper's other arguments so that the
+# caller's expression is the only one the call carries.
+local_summary_value_quo <- function(dot, env, name, group_vars,
+                                    internal_names, set_id_name,
+                                    set_id_is_internal, protected_sources,
+                                    type_state, alias_state, position) {
+  # The arguments are promises over the caller's loop index, which has moved on
+  # by the time the wrapper runs.
+  rlang::list2(
+    name, group_vars, internal_names, set_id_name, set_id_is_internal,
+    protected_sources, type_state, alias_state, position
+  )
+  wrapper <- function(value) {
+    local_assigned_summary_value(
+      value, name, group_vars, internal_names, set_id_name,
+      set_id_is_internal, protected_sources, type_state, alias_state, position
+    )
+  }
+  expr <- rlang::quo_get_expr(dot)
+  bound <- bind_local_position(expr, env, "..marginplyr_summary_", position,
+                               wrapper)
+  rlang::new_quosure(rlang::call2(bound$head, expr), env = bound$env)
+}
+
+# A child of `env` binding `value` to a name spelled from `prefix` and
+# `position` that neither `expr` nor `env` already reads, returned with that
+# name as `head`.
+bind_local_position <- function(expr, env, prefix, position, value) {
+  binding <- paste0(prefix, position)
+  while (binding %in% all.names(expr) ||
+           exists(binding, envir = env, inherits = TRUE)) {
+    binding <- paste0(binding, "_")
+  }
+  env <- rlang::env(env)
+  rlang::env_poke(env, binding, value)
+  list(head = rlang::sym(binding), env = env)
+}
+
+# The local branch dots with every unnamed top-level `across()` that shares its
+# label with another dot respelled so that it does not.
+#
+# Such a call stays top-level for dplyr's expansion (ADR 0019), so its head
+# cannot carry the position as `local_summary_value_quo()`'s does. What the
+# rewrites put in its arguments deparses onto several lines, which labels it
+# `dplyr::across(...)` whatever it reads, so those arguments are hoisted into
+# bindings of the position's own and the call keeps the caller's as they are.
+# Where the caller's still overflow the line the label stays shared, and ADR
+# 0022's map leaves dplyr's quotation.
+separate_local_across_labels <- function(dots) {
+  labels <- summary_argument_labels(dots)
+  across <- vapply(
+    dots,
+    function(dot) {
+      identical(
+        data_frame_valued_summary_kind(rlang::quo_get_expr(dot)), "across"
+      )
+    },
+    logical(1)
+  )
+  shared <- labels %in% labels[duplicated(labels)] &
+    !nzchar(rlang::names2(dots)) & across
+  for (i in which(shared)) {
+    dots[[i]] <- hoist_local_across_arguments(dots[[i]], i)
+  }
+  dots
+}
+
+# The selection is the call's `.cols`, or else its first unnamed argument: the
+# local selection rewrite has given every such call one, and it is always
+# hoisted. Its binding is called inside the selection `across()` makes, so it
+# selects from the same data, and the locations it returns are what tidyselect
+# resolves the selection's own spelling to. Another argument is hoisted where it
+# deparses onto several lines and is not a formula, which dplyr inlines only
+# while it is written in the call; its binding evaluates it in the frame dplyr
+# calls the binding from, which is the frame the argument itself was evaluated
+# in.
+hoist_local_across_arguments <- function(dot, position) {
+  expr <- rlang::quo_get_expr(dot)
+  env <- rlang::quo_get_env(dot)
+  args <- rlang::call_args(expr)
+  selection <- match(".cols", rlang::names2(args))
+  selection <- if (is.na(selection)) {
+    match("", rlang::names2(args))
+  } else {
+    selection
+  }
+  prefix <- paste0("..marginplyr_", position, "_")
+  for (k in seq_along(args)) {
+    value <- if (k == selection) {
+      local_selection_thunk(rlang::new_quosure(args[[k]], env))
+    } else if (!rlang::is_call(args[[k]], "~") &&
+                 length(deparse(args[[k]], 60L)) > 1L) {
+      local_argument_thunk(args[[k]])
+    }
+    if (!is.null(value)) {
+      bound <- bind_local_position(expr, env, prefix, k, value)
+      env <- bound$env
+      args[[k]] <- rlang::call2(bound$head)
+    }
+  }
+  rlang::new_quosure(rlang::call2(expr[[1L]], !!!args), env = env)
+}
+
+local_selection_thunk <- function(selection) {
+  force(selection)
+  function() tidyselect::eval_select(selection, tidyselect::peek_data())
+}
+
+local_argument_thunk <- function(arg) {
+  force(arg)
+  function() eval(arg, rlang::caller_env())
 }
 
 # Return a frame so dplyr places the output in its mask immediately. An actual
@@ -461,15 +580,13 @@ wrap_local_frame_summaries <- function(dots, group_vars, internal_names,
         next
       }
     }
-    expr <- rlang::call2(
-      marginplyr_private_call("local_assigned_summary_value"),
-      expr, auto_names[[i]], group_vars, internal_names,
-      set_id_name,
+    dots[[i]] <- local_summary_value_quo(
+      dot, wrapped_summary_env(dot),
+      auto_names[[i]], group_vars, internal_names, set_id_name,
       set_id_is_internal,
       setdiff(share_sources, source_definitions[[i]]), type_states[[i]],
       alias_state, i
     )
-    dots[[i]] <- rlang::new_quosure(expr, env = wrapped_summary_env(dot))
   }
   dots
 }

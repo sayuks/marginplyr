@@ -1,5 +1,10 @@
 # marginplyr 0.1.0
 
+* A warning or error raised by one of several unnamed summaries on a local
+  input, including unnamed `across()` calls, quotes that summary as the caller
+  wrote it, and warnings from different unnamed summaries are reported
+  separately (#1572).
+
 * Margin verbs preserve source variable labels through display conversion,
   grouping-set combination, expansion and nesting, including empty columns and
   direct collection. Calculated labels follow native summaries and agreeing
