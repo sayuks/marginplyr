@@ -244,10 +244,41 @@ restate_branch_error <- function(cnd, conditions, restatements) {
     cnd$parent <- selection
   }
   cnd <- restate_condition_arguments(cnd, restatements)
+  cnd$parent <- restate_result_refusal(cnd$parent, restatements)
   cnd <- restate_condition_names(cnd, conditions$keys)
   if (!is.null(conditions$call)) {
     cnd$call <- conditions$call
   }
+  cnd
+}
+
+# dplyr's own refusal of a summary's result, which opens by quoting the
+# argument's label as the argument bullet does, restated the same way. Only
+# the sentences dplyr's `summarise()` writes are matched, on a condition
+# blaming no call as dplyr's does, and the span must equal a label the branch
+# handed dplyr; a caller's own condition is otherwise left as it arrived. A
+# restated line is rendered plain, as ADR 0022 decides for the bullet.
+restate_result_refusal <- function(cnd, restatements) {
+  if (is.null(cnd) || !is.null(cnd$call) || !is.character(cnd$message) ||
+        length(cnd$message) == 0L || length(restatements) == 0L) {
+    return(cnd)
+  }
+  first <- cli::ansi_strip(cnd$message[[1L]])
+  found <- regmatches(first, regexec(
+    paste0(
+      "^`(.*)`( must (be size .*|be a vector, not .*|",
+      "return compatible vectors across groups\\.))$"
+    ),
+    first
+  ))[[1L]]
+  if (length(found) == 0L) {
+    return(cnd)
+  }
+  restored <- unname(restatements[found[[2L]]])
+  if (is.na(restored)) {
+    return(cnd)
+  }
+  cnd$message[[1L]] <- paste0("`", restored, "`", found[[3L]])
   cnd
 }
 

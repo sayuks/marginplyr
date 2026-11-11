@@ -1340,6 +1340,33 @@ test_that("a caller binding spelled like a wrapper keeps its own value", {
   expect_identical(actual$low, c(1L, 3L, 1L))
 })
 
+# dplyr's refusal of a result quotes the argument it refused in its own
+# sentence, as the caller spelled it.
+test_that("a refused unnamed across result quotes the caller's call", {
+  data <- data.frame(g = c("a", "a", "b"), v = 1:3, w = 4:6)
+  cases <- list(
+    rlang::exprs(dplyr::across(v, function(x) x), dplyr::across(w, sum)),
+    rlang::exprs(dplyr::across(), dplyr::across(w, length)),
+    rlang::exprs(dplyr::across(v, function(x) x), n = dplyr::n())
+  )
+  for (config in unnamed_summary_renderings()) {
+    rlang::local_options(
+      cli.width = config$width, cli.condition_width = config$width
+    )
+    for (dots in cases) {
+      actual <- expect_error(summarize_with_margins(
+        data, !!!dots, .grouping = rollup(g)
+      ))
+      native <- expect_error(dplyr::summarise(data, !!!dots, .by = g))
+      expect_identical(conditionMessage(actual), conditionMessage(native))
+      expect_identical(
+        lapply(condition_chain(actual), class),
+        lapply(condition_chain(native), class)
+      )
+    }
+  }
+})
+
 # The cause's own line, as native dplyr renders it, names no function the
 # caller did not call, whether one, several, or no summary is unnamed.
 test_that("a local summary's cause names the call native dplyr names", {
