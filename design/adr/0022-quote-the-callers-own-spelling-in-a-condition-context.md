@@ -375,9 +375,8 @@ dot shares keeps its head for dplyr's expansion and has its selection hoisted
 into such a binding, and then its other arguments, longest first, while the
 call still deparses onto several lines. A hoisted lambda is evaluated in the
 frame dplyr evaluates the argument in, so dplyr still inlines it. An argument
-reaching `across()`'s `...` cannot be hoisted, and a call passing one is a
-call dplyr evaluates rather than expands, so where such a call still
-overflows its head is bound by position as well (#1576). The bound head
+reaching `across()`'s `...` cannot be hoisted, so where a call passing one
+still overflows its head is bound by position as well (#1576). The bound head
 carries the caller's spelling of `across()`, and an error dplyr's `across()`
 raises is blamed on that spelling, as native dplyr blames its own call. A call
 with more arguments than fit beside their bindings on one line keeps a shared

@@ -2136,8 +2136,8 @@ rewrite_summary_selections <- function(expr,
       )
       if (top_level_unnamed && identical(call_name, "across") &&
             !is_parenthesized(rewritten)) {
-        # dplyr evaluates a call passing `...` extras instead of expanding it,
-        # and blames its own failures on the call's head.
+        # dplyr blames its own failures in a call passing `...` extras on the
+        # call's head.
         if (length(parse_across_arguments(rewritten)$additional) > 0L) {
           rewritten[[1L]] <- mark_spelled_head(rewritten[[1L]], spelled)
         }
