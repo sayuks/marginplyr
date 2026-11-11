@@ -397,12 +397,22 @@ grouping_id_sql_expr <- function(vars, con) {
     }
   )
 
-  Reduce(
+  if (length(terms) == 1L) {
+    return(terms[[1L]])
+  }
+  # dbplyr splices this fragment verbatim into the caller's expression, so the
+  # sum carries its own parentheses: unwrapped, `grouping_id() * 10L` binds the
+  # multiplication to the last term alone (#1569). A one-column mask is a single
+  # `GROUPING()` call and needs none.
+  #
+  # Read only from the glue string below, which codetools cannot see.
+  mask <- Reduce( # nolint: object_usage_linter.
     function(x, y) {
       dbplyr::sql_glue2(con, "{.sql x} + {.sql y}")
     },
     terms
   )
+  dbplyr::sql_glue2(con, "({.sql mask})")
 }
 
 # Reads the result expression through parentheses and one-expression blocks.

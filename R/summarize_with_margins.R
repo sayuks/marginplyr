@@ -430,7 +430,11 @@
 #' values stay ascending, because the choice positions margins and not missing
 #' values. Every column in the key carries a missingness term, fixed `.by` keys
 #' included, so missing values come last wherever they appear on every backend,
-#' including those whose own default is the opposite. For a local packed
+#' including those whose own default is the opposite. A local double key
+#' holding both `NaN` and `NA` keeps them apart, as [dplyr::summarize()]
+#' does: its missingness term places `NaN` before `NA`, both after ordinary
+#' values, so each is one contiguous group with its own margin rows. For a
+#' local packed
 #' data-frame or matrix key, the missingness term is per row: the key is wholly
 #' missing only when all its components are missing. Partly missing keys follow
 #' ordinary local `dplyr::arrange()` value order. Local list keys use

@@ -5,6 +5,16 @@
   truncated Arrow sort key name, so wide one-way unions and long `.id` names
   failed in `collect()` (#1570).
 
+* On backends that compute native grouping sets, such as DuckDB and
+  PostgreSQL, arithmetic around a multi-column `grouping_id()` applies to the
+  whole mask. `grouping_id() * 10L`, `3L - grouping_id()` and
+  `-grouping_id()` previously applied the operator to one bit's term and
+  returned wrong values without a diagnostic (#1569).
+
+* A local Margin order over a double key holding both `NaN` and `NA` keeps
+  each as one contiguous group with its own margin rows, `NaN` before `NA`,
+  instead of interleaving them (#1571).
+
 * Margin verbs preserve source variable labels through display conversion,
   grouping-set combination, expansion and nesting, including empty columns and
   direct collection. Calculated labels follow native summaries and agreeing
