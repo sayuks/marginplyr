@@ -1,0 +1,71 @@
+# Executes portable Margin summaries on a live SQL Server. Every dialect that
+# takes the `UNION ALL` path other than SQLite is otherwise established by a
+# dbplyr simulator, which shows what was rendered and not what a server makes
+# of it. SQL Server is the one such dialect a service container supplies, and
+# it is strict in both places a rendering can go wrong: it has no boolean
+# literal, and it types a set operation by data type precedence.
+#
+# The first step records the server's answers and fails only when the server
+# is unreachable or a one-set plan, which has no type anchor, differs from the
+# local result. The second asserts the contract for every case and does not
+# fail the job, because #1586 is open: its repair removes `continue-on-error`.
+name: SQL Server portable summaries
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'workflow_dispatch' && format('manual-{0}', github.run_id) || format('auto-{0}', github.ref) }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
+
+jobs:
+  portable:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    services:
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: Margin1586Anchor
+        ports: [1433:1433]
+    env:
+      MSSQL_SERVER: localhost,1433
+      MSSQL_UID: sa
+      MSSQL_PWD: Margin1586Anchor
+    steps:
+      - uses: actions/checkout@v7
+      # The odbc package reaches SQL Server through Microsoft's driver, which
+      # the runner image does not promise.
+      - name: Install the SQL Server ODBC driver
+        run: |
+          if ! odbcinst -q -d -n "ODBC Driver 18 for SQL Server" >/dev/null 2>&1; then
+            release="$(lsb_release -rs)"
+            curl -fsSL "https://packages.microsoft.com/config/ubuntu/${release}/packages-microsoft-prod.deb" -o "$RUNNER_TEMP/packages-microsoft-prod.deb"
+            sudo dpkg -i "$RUNNER_TEMP/packages-microsoft-prod.deb"
+            sudo apt-get update
+            sudo ACCEPT_EULA=Y apt-get install -y msodbcsql18 unixodbc-dev
+          fi
+          odbcinst -q -d -n "ODBC Driver 18 for SQL Server"
+      - uses: r-lib/actions/setup-r@v2
+      - uses: r-lib/actions/setup-r-dependencies@v2
+        with:
+          dependencies: '"hard"'
+          extra-packages: any::odbc, local::.
+          cache-version: mssql-portable-1
+      - name: Record what SQL Server answers to portable summaries
+        run: Rscript tools/mssql-portable-summary.R mssql-evidence
+      - name: Assert portable summaries equal the local result
+        continue-on-error: true
+        run: Rscript tools/mssql-portable-summary.R mssql-evidence --assert-contract
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: mssql-portable-evidence
+          path: mssql-evidence/
+          retention-days: 7
