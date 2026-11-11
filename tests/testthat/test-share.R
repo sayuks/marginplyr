@@ -3013,7 +3013,9 @@ test_that("a failed share selection keeps the original condition", {
   )
   expect_s3_class(share_error$parent, class(ordinary_error))
   expect_s3_class(share_error$parent$parent, "my_user_error")
-  expect_s3_class(ordinary_error$parent$parent$parent, "my_user_error")
+  # dplyr's own `across()` layer, as native `summarise()` raises it, with no
+  # layer quoting a generated argument between it and the cause (#1573).
+  expect_s3_class(ordinary_error$parent$parent, "my_user_error")
 })
 
 test_that("the share-selection reader answers a chain naming nothing", {
