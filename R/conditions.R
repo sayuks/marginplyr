@@ -264,17 +264,25 @@ restate_result_refusal <- function(cnd, restatements) {
     return(cnd)
   }
   first <- cli::ansi_strip(cnd$message[[1L]])
+  # cli quotes a span holding a backtick between doubled ones, padded.
   found <- regmatches(first, regexec(
-    "^`(.*)`( must (be size .*|be a vector, not .*))$", first
+    "^(`` (.*) ``|`(.*)`)( must (be size .*|be a vector, not .*))$", first,
+    perl = TRUE
   ))[[1L]]
   if (length(found) == 0L) {
     return(cnd)
   }
-  restored <- unname(restatements[found[[2L]]])
+  span <- if (nzchar(found[[3L]])) found[[3L]] else found[[4L]]
+  restored <- unname(restatements[span])
   if (is.na(restored)) {
     return(cnd)
   }
-  cnd$message[[1L]] <- paste0("`", restored, "`", found[[3L]])
+  quoted <- if (grepl("`", restored, fixed = TRUE)) {
+    paste0("`` ", restored, " ``")
+  } else {
+    paste0("`", restored, "`")
+  }
+  cnd$message[[1L]] <- paste0(quoted, found[[5L]])
   cnd
 }
 

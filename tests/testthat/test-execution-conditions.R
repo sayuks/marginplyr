@@ -1342,12 +1342,19 @@ test_that("a caller binding spelled like a wrapper keeps its own value", {
 
 # dplyr's refusal of a result quotes the argument it refused in its own
 # sentence, as the caller spelled it.
-test_that("a refused unnamed across result quotes the caller's call", {
+test_that("a refused unnamed result quotes the caller's argument", {
   data <- data.frame(g = c("a", "a", "b"), v = 1:3, w = 4:6)
+  data[["my var"]] <- 7:9
   cases <- list(
     rlang::exprs(dplyr::across(v, function(x) x), dplyr::across(w, sum)),
     rlang::exprs(dplyr::across(), dplyr::across(w, length)),
-    rlang::exprs(dplyr::across(v, function(x) x), n = dplyr::n())
+    rlang::exprs(dplyr::across(v, function(x) x), n = dplyr::n()),
+    # A label holding a backtick, which dplyr quotes between doubled ones.
+    rlang::exprs(mean(v), identity(`my var`)),
+    rlang::exprs(identity(`my var`)),
+    rlang::exprs(
+      dplyr::across(v, sum), dplyr::across(w, function(x) x + `my var`)
+    )
   )
   for (config in unnamed_summary_renderings()) {
     rlang::local_options(
