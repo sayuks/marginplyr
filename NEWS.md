@@ -5,6 +5,31 @@
   wrote it, and warnings from different unnamed summaries are reported
   separately (#1572).
 
+* A column selection tidyselect refuses in `.by`, `.grouping`, or a summary's
+  `across()`, `pick()`, `if_any()` or `if_all()` keeps tidyselect's class,
+  message and cause and is blamed on the Margin verb or `inspect_grouping()`
+  call the caller wrote, or on the selection helper as native dplyr blames it,
+  rather than on an internal function or a generated argument (#1573).
+
+* A Margin order on an Arrow table, record batch or dataset now collects for
+  every Grouping plan and `.id` name. Distinct Grouping bits could share one
+  truncated Arrow sort key name, so wide one-way unions and long `.id` names
+  failed in `collect()` (#1570).
+
+* On backends that compute native grouping sets, such as DuckDB and
+  PostgreSQL, arithmetic around a multi-column `grouping_id()` applies to the
+  whole mask. `grouping_id() * 10L`, `3L - grouping_id()` and
+  `-grouping_id()` previously applied the operator to one bit's term and
+  returned wrong values without a diagnostic (#1569).
+
+* Parent and Total shares over a dtplyr step keep fixed `.by` keys named `T`
+  or `F` as their own partitions and values, instead of reading them as
+  logical constants (#1568).
+
+* A local Margin order over a double key holding both `NaN` and `NA` keeps
+  each as one contiguous group with its own margin rows, `NaN` before `NA`,
+  instead of interleaving them (#1571).
+
 * Margin verbs preserve source variable labels through display conversion,
   grouping-set combination, expansion and nesting, including empty columns and
   direct collection. Calculated labels follow native summaries and agreeing

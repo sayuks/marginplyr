@@ -3332,7 +3332,8 @@ resolve_column_selection <- function(arg, data_proxy, on_rename) {
   selected <- tidyselect::eval_select(
     arg,
     data = data_proxy,
-    strict = TRUE
+    strict = TRUE,
+    error_call = margin_selection_call()
   )
   selected_names <- names(selected)
   # `tidyselect_data_proxy()` is how tidyselect itself sees the columns the

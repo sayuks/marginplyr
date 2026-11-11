@@ -2307,13 +2307,15 @@ local_summary_selection <- function(selection, env, group_vars,
   # Tidyselect applies a predicate before a later exclusion can remove
   # the alias whose value it saw.
   visible_aliases <- intersect(preceding_aliases, names(data))
-  selected <- if (length(visible_aliases) == 0L) {
-    resolve_summary_selection(selection, env = env, data_proxy = data)
-  } else {
-    resolve_share_source_selection(
-      selection, env, data, visible_aliases, state$source_checks[[1L]]
-    )
-  }
+  selected <- with_deferred_selection({
+    if (length(visible_aliases) == 0L) {
+      resolve_summary_selection(selection, env = env, data_proxy = data)
+    } else {
+      resolve_share_source_selection(
+        selection, env, data, visible_aliases, state$source_checks[[1L]]
+      )
+    }
+  })
   if (length(selected) == 0L && !is.null(state) &&
         length(state$source_checks) > 0L) {
     check <- state$source_checks[[1L]]
@@ -2346,6 +2348,24 @@ local_summary_selection <- function(selection, env, group_vars,
     names(source_names) <- names(selected)
   }
   source_names
+}
+
+# Marks a failure of a deferred local selection, which dplyr's own selection
+# evaluates as an argument of the generated `all_of()`. tidyselect wraps such a
+# failure in a layer quoting that generated argument, which the caller did not
+# write; `restate_branch_error()` consumes the mark to remove the layer. A
+# generated check carries its own wrapper and is left to it.
+with_deferred_selection <- function(expr) {
+  tryCatch(expr, error = function(cnd) {
+    if (inherits(cnd, "marginplyr_generated_summary_error")) {
+      stop(cnd)
+    }
+    rlang::abort(
+      "Failed to resolve a deferred selection.",
+      class = "marginplyr_deferred_selection_error",
+      parent = cnd
+    )
+  })
 }
 
 # Resolve a local selector whose proxy includes earlier summary aliases.
@@ -2855,7 +2875,8 @@ resolve_summary_selection <- function(expr, env, data_proxy,
     data = data_proxy,
     strict = TRUE,
     allow_rename = TRUE,
-    allow_predicates = allow_predicates
+    allow_predicates = allow_predicates,
+    error_call = margin_selection_call()
   )
 }
 
