@@ -414,9 +414,9 @@ hoist_local_across_arguments <- function(dot, position) {
       expr, env, prefix, 0L, get("across", envir = asNamespace("dplyr"))
     )
     env <- bound$env
-    spelled <- attr(head, "marginplyr_spelled_head", exact = TRUE)
-    head <- rlang::call2("(", bound$head)
-    attr(head, "marginplyr_spelled_head") <- spelled
+    head <- mark_spelled_head(
+      rlang::call2("(", bound$head), spelled_head(head)
+    )
   }
   rlang::new_quosure(rlang::call2(head, !!!args), env = env)
 }
@@ -2137,9 +2137,7 @@ rewrite_summary_selections <- function(expr,
         # dplyr evaluates a call passing `...` extras instead of expanding it,
         # and blames its own failures on the call's head.
         if (length(parse_across_arguments(rewritten)$additional) > 0L) {
-          head <- rewritten[[1L]]
-          attr(head, "marginplyr_spelled_head") <- spelled
-          rewritten[[1L]] <- head
+          rewritten[[1L]] <- mark_spelled_head(rewritten[[1L]], spelled)
         }
         return(rewritten)
       }
@@ -2183,9 +2181,23 @@ rewrite_summary_selections <- function(expr,
 # rlang names no call under a head whose operator is a function object.
 isolate_local_selection_call <- function(expr, name, spelled) {
   if (!identical(static_spelling_name(expr, "selection"), name)) return(expr)
-  head <- rlang::call2(base::`::`, rlang::sym("dplyr"), rlang::sym(name))
-  attr(head, "marginplyr_spelled_head") <- spelled
+  head <- mark_spelled_head(
+    rlang::call2(base::`::`, rlang::sym("dplyr"), rlang::sym(name)), spelled
+  )
   rebuild_static_call(expr, static_call_args(expr), head = head)
+}
+
+# `head` carrying `spelled`, the head the caller wrote for the call `head` now
+# leads, which `spelled_head()` reads back.
+mark_spelled_head <- function(head, spelled) {
+  attr(head, "marginplyr_spelled_head") <- spelled
+  head
+}
+
+# The head the caller wrote, where `mark_spelled_head()` marked `head`, or
+# `NULL`.
+spelled_head <- function(head) {
+  attr(head, "marginplyr_spelled_head", exact = TRUE)
 }
 
 # Returns a zero-argument closure for the supplied nested call.

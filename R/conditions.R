@@ -324,8 +324,7 @@ deferred_selection_mark <- function(helper) {
 # spelling is read where the rewrite marked it. The header reads only the
 # function, so the arguments are dropped.
 selection_helper_call <- function(call) {
-  head <- attr(call[[1L]], "marginplyr_spelled_head", exact = TRUE) %||%
-    call[[1L]]
+  head <- spelled_head(call[[1L]]) %||% call[[1L]]
   if (is.call(head)) {
     return(rlang::call2(
       as.character(head[[3L]]),
@@ -342,9 +341,7 @@ restate_selection_layers <- function(cnd) {
   if (is.null(cnd)) {
     return(cnd)
   }
-  spelled <- if (is.call(cnd$call)) {
-    attr(cnd$call[[1L]], "marginplyr_spelled_head", exact = TRUE)
-  }
+  spelled <- if (is.call(cnd$call)) spelled_head(cnd$call[[1L]])
   if (!is.null(spelled)) {
     cnd$call <- rlang::call2(spelled)
   }
