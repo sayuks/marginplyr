@@ -191,6 +191,18 @@ tryCatch({
       failures <- c(failures, case$name)
     }
 
+    # `collect()` and the rendered text are separate questions: the server
+    # is asked the text `sql_render()` returned as well.
+    direct <- observe(DBI::dbGetQuery(con, sql))
+    record(
+      "Rendered text executed directly: ",
+      if (is.null(direct$error)) {
+        paste(nrow(direct$value), "rows")
+      } else {
+        paste("error:", direct$error)
+      }
+    )
+
     # Which of the two anchor symptoms the server objects to: the same text
     # with the constant-false predicate spelled as a comparison.
     if (!is.null(live$error) && grepl("WHERE (0)", sql, fixed = TRUE)) {
