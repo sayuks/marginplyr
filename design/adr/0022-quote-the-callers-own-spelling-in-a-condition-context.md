@@ -355,3 +355,24 @@ the caller's expressions in an ungrouped lazy summary, and the grouped query
 uses its resolved select rows. The translation error is still caught at the
 ungrouped build and receives the same Condition context. The caller's naming
 expression is no longer handed to both builds.
+
+## Amendment: each wrapped local summary labels apart
+
+*The identification is a test against marginplyr's own rendering* takes the
+collision to need "two unnamed arguments rendering alike", and *dplyr's
+rendering is reproduced only as far as it is observable* takes a shared label
+to be one the caller's own expressions would have shared. #1572 found both
+false on a local input: ADR 0028's wrapper gave every unnamed summary one
+call head, and `rlang::as_label()` labels a call that deparses onto several
+lines by its head alone, so two unnamed summaries the caller spelled apart
+were quoted as the wrapper and their warnings shared one identity. Two
+unnamed `across()` calls collided the same way through the selection rewrite.
+
+Every dot a local branch wraps now calls a binding of its own position, which
+closes over the wrapper's other arguments, so its label names the position and
+the map restores each one. An unnamed top-level `across()` whose label another dot
+shares keeps its head for dplyr's expansion and has its selection, and every
+other argument a rewrite spread over several lines, hoisted into such bindings
+instead; where the caller's own arguments still overflow the line its label
+stays shared, and the quotation degrades to dplyr's as above. Nothing else moves: the map, the
+restatement and the identity read the labels as before.
