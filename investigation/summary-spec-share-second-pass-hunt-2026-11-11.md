@@ -48,16 +48,16 @@ is run from the repository root, prints the observed behaviour and exits zero.
 
 | Boundary | Established effect | Script | Issue |
 | --- | --- | --- | --- |
-| Caller parentheses in a lazy SQL summary | The pair was dropped from the rendered SQL, so `a - (b - c)` and `p & (q \| r)` evaluated as `a - b - c` and `p & q \| r`; values, and shares over them, were wrong with no diagnostic. | `sql-caller-parentheses.R` | ISSUE-1 |
-| DuckDB input registered with `duckdb::duckdb_register()` | Every Margin verb refused it as a view whose definition "could hide source work"; the same calls worked before #1524. | `duckdb-registered-data-frame.R` | ISSUE-2 |
-| Local unnamed `across()` with a constant `.names` after an output that reuses an input name | A valid call was refused with a template-count diagnostic describing two outputs where there was one. | `across-constant-names-after-overwrite.R` | ISSUE-3 |
-| `.check_margin_label = TRUE` over an `arrange()`d Arrow or DuckDB input | The check's own query inherited the ordering and failed at construction, where the same summary without the check succeeded. | `arranged-input-label-check.R` | ISSUE-4 |
-| Zero-row type anchor on generic SQL dialects | The anchor rendered `WHERE (0)` or `WHERE (FALSE)` and carried a dimension in its source type beside text-cast arms. Rendered SQL only. | `generic-sql-type-anchor.R` | ISSUE-5 |
-| Grouping helper inside an aggregate on native grouping sets | DuckDB refused `GROUPING()` as an aggregate argument at collection; the four backends that substitute a literal returned the value. | `duckdb-helper-inside-aggregate.R` | ISSUE-6 |
-| Unsorted dtplyr result that keeps a variable label | The result evaluated to a data.table with an invalid `.internal.selfref`; a later `mutate()` warned and `:=` did not update by reference. | `dtplyr-result-selfref.R` | ISSUE-7 |
-| Local Margin order over a complex key | `NaN` and `NA` partitions interleaved, as double keys did before #1571. | `local-complex-nan-na-margin-order.R` | ISSUE-8 |
-| A local summary whose type differs between grouping sets | vctrs' refusal named `marginplyr_column_<i>` in place of the caller's column. | `cross-set-type-internal-column-name.R` | ISSUE-9 |
-| dtplyr dimension named like the first generated alias | A dimension named `..marginplyr_dtplyr_column_1` failed at collection in every set that omits it. | `dtplyr-alias-named-dimension.R` | ISSUE-10 |
+| Caller parentheses in a lazy SQL summary | The pair was dropped from the rendered SQL, so `a - (b - c)` and `p & (q \| r)` evaluated as `a - b - c` and `p & q \| r`; values, and shares over them, were wrong with no diagnostic. | `sql-caller-parentheses.R` | [#1582](https://github.com/sayuks/marginplyr/issues/1582) |
+| DuckDB input registered with `duckdb::duckdb_register()` | Every Margin verb refused it as a view whose definition "could hide source work"; the same calls worked before #1524. | `duckdb-registered-data-frame.R` | [#1583](https://github.com/sayuks/marginplyr/issues/1583) |
+| Local unnamed `across()` with a constant `.names` after an output that reuses an input name | A valid call was refused with a template-count diagnostic describing two outputs where there was one. | `across-constant-names-after-overwrite.R` | [#1584](https://github.com/sayuks/marginplyr/issues/1584) |
+| `.check_margin_label = TRUE` over an `arrange()`d Arrow or DuckDB input | The check's own query inherited the ordering and failed at construction, where the same summary without the check succeeded. | `arranged-input-label-check.R` | [#1585](https://github.com/sayuks/marginplyr/issues/1585) |
+| Zero-row type anchor on generic SQL dialects | The anchor rendered `WHERE (0)` or `WHERE (FALSE)` and carried a dimension in its source type beside text-cast arms. Rendered SQL only. | `generic-sql-type-anchor.R` | [#1586](https://github.com/sayuks/marginplyr/issues/1586) |
+| Grouping helper inside an aggregate on native grouping sets | DuckDB refused `GROUPING()` as an aggregate argument at collection; the four backends that substitute a literal returned the value. | `duckdb-helper-inside-aggregate.R` | [#1587](https://github.com/sayuks/marginplyr/issues/1587) |
+| Unsorted dtplyr result that keeps a variable label | The result evaluated to a data.table with an invalid `.internal.selfref`; a later `mutate()` warned and `:=` did not update by reference. | `dtplyr-result-selfref.R` | [#1588](https://github.com/sayuks/marginplyr/issues/1588) |
+| Local Margin order over a complex key | `NaN` and `NA` partitions interleaved, as double keys did before #1571. | `local-complex-nan-na-margin-order.R` | [#1589](https://github.com/sayuks/marginplyr/issues/1589) |
+| A local summary whose type differs between grouping sets | vctrs' refusal named `marginplyr_column_<i>` in place of the caller's column. | `cross-set-type-internal-column-name.R` | [#1590](https://github.com/sayuks/marginplyr/issues/1590) |
+| dtplyr dimension named like the first generated alias | A dimension named `..marginplyr_dtplyr_column_1` failed at collection in every set that omits it. | `dtplyr-alias-named-dimension.R` | [#1591](https://github.com/sayuks/marginplyr/issues/1591) |
 
 The `to-tickets` workflow published these as ten independent repair slices
 with no blocking edges and no prerequisite prefactoring; splitting had been
