@@ -390,9 +390,12 @@ hoist_local_across_arguments <- function(dot, position) {
     others, function(k) sum(nchar(deparse(args[[k]]))), numeric(1)
   )
   prefix <- paste0("..marginplyr_", position, "_")
+  # Reads `args` as the loop below has left it.
+  overflows <- function() {
+    length(deparse(rlang::call2(expr[[1L]], !!!args), 60L)) > 1L
+  }
   for (k in c(selection[selection > 0L], others[order(-widths)])) {
-    if (k != selection &&
-          length(deparse(rlang::call2(expr[[1L]], !!!args), 60L)) == 1L) {
+    if (k != selection && !overflows()) {
       break
     }
     value <- if (k == selection) {
@@ -405,8 +408,7 @@ hoist_local_across_arguments <- function(dot, position) {
     args[[k]] <- rlang::call2(bound$head)
   }
   head <- expr[[1L]]
-  if (length(parsed$additional) > 0L &&
-        length(deparse(rlang::call2(head, !!!args), 60L)) > 1L) {
+  if (length(parsed$additional) > 0L && overflows()) {
     # dplyr expands no call passing `...` extras, so its head can name the
     # position. The parentheses give that head a call to carry the caller's
     # spelling for the blamed call; a symbol carries no attribute.
