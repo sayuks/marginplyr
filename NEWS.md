@@ -1,5 +1,10 @@
 # marginplyr 0.1.0
 
+* When a summary on a local input returns types that cannot be combined
+  across groups, the refusal's group bullets name each group by the caller's
+  grouping columns, as native `summarise()` does, rather than by an internal
+  key column (#1578).
+
 * An unnamed summary on a local input whose groups return types that cannot
   be combined is refused as native `summarise()` refuses it: the expression
   as the caller wrote it "must return compatible vectors across groups",

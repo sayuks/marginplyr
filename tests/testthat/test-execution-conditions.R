@@ -974,6 +974,37 @@ test_that("ten grouping columns substitute without corrupting a name", {
   }
   # A naive replacement leaves `region0` where the tenth column belongs.
   expect_false(grepl("region0", message, fixed = TRUE))
+
+  # dplyr's combine refusal carries its group bullets in its cause.
+  error <- expect_error(summarize_with_margins(
+    data,
+    x = if (value[[1L]] == 1) 1 else "z",
+    .grouping = grouping_sets(dplyr::all_of(columns))
+  ))
+  message <- gsub("[[:space:]]+", " ", conditionMessage(error))
+  expect_match(message, "must return compatible vectors", fixed = TRUE)
+  expect_false(grepl("marginplyr_key", message, fixed = TRUE))
+  expect_match(message, "`tier = \"y\"`", fixed = TRUE)
+  expect_false(grepl("region0", message, fixed = TRUE))
+})
+
+# Keys are restated in dplyr's own refusal only: a caller's condition that
+# spells an internal key name holds the caller's text.
+test_that("a caller condition naming an internal key is left as raised", {
+  data <- data.frame(g = c("a", "a", "b"), v = 1:3)
+  error <- expect_error(summarize_with_margins(
+    data,
+    x = rlang::abort(
+      "Bad.", body = c(i = "`..marginplyr_key_1` is mine."), call = NULL
+    ),
+    .grouping = rollup(g)
+  ))
+  expect_match(
+    conditionMessage(error$parent), "`..marginplyr_key_1` is mine.",
+    fixed = TRUE
+  )
+  expect_match(conditionMessage(error), "In group 1: `g = \"a\"`",
+               fixed = TRUE)
 })
 
 # What the verb rewrites is the Condition context dplyr built from marginplyr's
@@ -1375,11 +1406,12 @@ test_that("a refused unnamed result quotes the caller's argument", {
 })
 
 # dplyr's refusal of results its groups cannot combine opens by quoting the
-# argument, as its other result refusals do. Its group bullets name the
-# grouping keys, whose restatement this test does not read.
-test_that("an unnamed result incompatible across groups quotes the caller", {
+# argument, as its other result refusals do, and its group bullets name each
+# group by the caller's grouping columns.
+test_that("a result incompatible across groups reads as native dplyr's", {
   data <- data.frame(g = c("a", "a", "b"), v = 1:3)
   cases <- list(
+    rlang::exprs(x = if (v[[1L]] == 1L) 1 else "z"),
     rlang::exprs(if (v[[1L]] == 1L) 1 else "z"),
     rlang::exprs(mean(v), if (v[[1L]] == 1L) 1 else "z"),
     rlang::exprs(n = dplyr::n(), if (v[[1L]] == 1L) 1 else "z")
@@ -1393,9 +1425,7 @@ test_that("an unnamed result incompatible across groups quotes the caller", {
         data, !!!dots, .grouping = rollup(g)
       ))
       native <- expect_error(dplyr::summarise(data, !!!dots, .by = g))
-      expect_identical(actual$message, native$message)
-      expect_identical(actual$body, native$body)
-      expect_identical(actual$parent$message, native$parent$message)
+      expect_identical(conditionMessage(actual), conditionMessage(native))
       expect_identical(
         lapply(condition_chain(actual), class),
         lapply(condition_chain(native), class)

@@ -244,7 +244,9 @@ restate_branch_error <- function(cnd, conditions, restatements) {
     cnd$parent <- selection
   }
   cnd <- restate_condition_arguments(cnd, restatements)
-  cnd$parent <- restate_result_refusal(cnd$parent, restatements)
+  cnd$parent <- restate_result_refusal(
+    cnd$parent, restatements, conditions$keys
+  )
   cnd <- restate_condition_names(cnd, conditions$keys)
   if (!is.null(conditions$call)) {
     cnd$call <- conditions$call
@@ -253,20 +255,21 @@ restate_branch_error <- function(cnd, conditions, restatements) {
 }
 
 # dplyr's own refusal of a summary's result, which opens by quoting the
-# argument's label as the argument bullet does, restated the same way. Only
-# the sentences dplyr's `summarise()` writes are matched, on a condition
-# rlang renders with no call as it renders dplyr's, and the span must equal a
-# label the branch handed dplyr; a caller's own condition is otherwise left as
-# it arrived. A restated line is rendered plain, as ADR 0022 decides for the
-# bullet.
-restate_result_refusal <- function(cnd, restatements) {
+# argument's label as the argument bullet does, restated the same way, and
+# whose `$body` names groups by the `keys` the branch grouped by. Only the
+# sentences dplyr's `summarise()` writes are matched, on a condition rlang
+# renders with no call as it renders dplyr's; a caller's own condition is
+# otherwise left as it arrived. The label is restated only where the span
+# equals one the branch handed dplyr. A restated line is rendered plain, as
+# ADR 0022 decides for the bullet.
+restate_result_refusal <- function(cnd, restatements, keys) {
   # dplyr's combine refusal blames its calling handler, a call whose head is
   # the inlined function, which rlang renders as no call.
   if (is.null(cnd) ||
         (!is.null(cnd$call) &&
            !(is.call(cnd$call) && is.function(cnd$call[[1L]]))) ||
         !is.character(cnd$message) ||
-        length(cnd$message) == 0L || length(restatements) == 0L) {
+        length(cnd$message) == 0L) {
     return(cnd)
   }
   first <- cli::ansi_strip(cnd$message[[1L]])
@@ -280,6 +283,9 @@ restate_result_refusal <- function(cnd, restatements) {
   ))[[1L]]
   if (length(found) == 0L) {
     return(cnd)
+  }
+  if (is.character(cnd$body)) {
+    cnd$body <- restate_margin_keys(cnd$body, keys)
   }
   span <- if (nzchar(found[[3L]])) found[[3L]] else found[[4L]]
   restored <- unname(restatements[span])
