@@ -243,6 +243,7 @@ restate_branch_error <- function(cnd, conditions, restatements) {
     }
     cnd$parent <- selection
   }
+  cnd$parent <- restate_selection_layers(cnd$parent)
   cnd <- restate_condition_arguments(cnd, restatements)
   cnd$parent <- restate_result_refusal(
     cnd$parent, restatements, conditions$keys
@@ -329,6 +330,27 @@ selection_helper_call <- function(call) {
     ))
   }
   rlang::call2(head)
+}
+
+# `cnd` and its causes, each blamed on the head the caller wrote where
+# `isolate_local_selection_call()` bound the head of the call it blames, as
+# dplyr blames the helper's own call. A layer blaming any other call is left as
+# it arrived.
+restate_selection_layers <- function(cnd) {
+  if (is.null(cnd)) {
+    return(cnd)
+  }
+  spelled <- if (is.call(cnd$call)) {
+    attr(cnd$call[[1L]], "marginplyr_spelled_head", exact = TRUE)
+  }
+  if (!is.null(spelled)) {
+    cnd$call <- rlang::call2(spelled)
+  }
+  # Assigning `NULL` would drop a `parent` field the condition holds.
+  if (!is.null(cnd$parent)) {
+    cnd$parent <- restate_selection_layers(cnd$parent)
+  }
+  cnd
 }
 
 # Mark only a generated check's own refusal while upstream context wraps it.

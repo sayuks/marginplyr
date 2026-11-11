@@ -1475,6 +1475,74 @@ test_that("a local summary's cause names the call native dplyr names", {
   }
 })
 
+test_that("a named local across() blames across() as native dplyr does", {
+  data <- data.frame(g = c("a", "a", "b"), v = 1:3)
+  fn <- function(x) stop("boom")
+  # Native dplyr reaches the bare helpers through the caller's scope.
+  across <- dplyr::across
+  if_any <- dplyr::if_any
+  cause_lines <- function(cnd) {
+    lines <- strsplit(conditionMessage(cnd), "\n", fixed = TRUE)[[1L]]
+    grep("^Caused by", lines, value = TRUE)
+  }
+  # dplyr blames the helper as the caller spelled it, qualified or not.
+  named <- list(
+    rlang::exprs(s = across(v, fn)),
+    rlang::exprs(s = dplyr::across(v, fn)),
+    rlang::exprs(n = dplyr::n(), s = across(v, fn)),
+    rlang::exprs(s = (across(v, fn))),
+    rlang::exprs(s = ncol(across(v, fn))),
+    rlang::exprs((across(v, fn))),
+    rlang::exprs(s = any(if_any(v, fn))),
+    rlang::exprs(s = any(dplyr::if_any(v, fn)))
+  )
+  for (config in unnamed_summary_renderings()) {
+    rlang::local_options(
+      cli.width = config$width, cli.condition_width = config$width
+    )
+    for (dots in named) {
+      actual <- expect_error(summarize_with_margins(
+        data, !!!dots, .grouping = rollup(g)
+      ))
+      native <- expect_error(dplyr::summarise(data, !!!dots, .by = g))
+      expect_identical(conditionMessage(actual), conditionMessage(native))
+      expect_identical(
+        lapply(condition_chain(actual), class),
+        lapply(condition_chain(native), class)
+      )
+    }
+    # The unnamed forms already blame `across()`; the inner layer of each is
+    # pinned as it renders today.
+    unnamed <- list(
+      rlang::exprs(across(v, fn)),
+      rlang::exprs(across(v, fn), across(v, fn))
+    )
+    for (dots in unnamed) {
+      actual <- expect_error(summarize_with_margins(
+        data, !!!dots, .grouping = rollup(g)
+      ))
+      expect_identical(
+        cause_lines(actual),
+        c("Caused by error in `across()`:", "Caused by error:")
+      )
+    }
+  }
+})
+
+test_that("a caller's layer blamed on a qualified head is left as raised", {
+  data <- data.frame(g = c("a", "a", "b"), v = 1:3)
+  blamed <- rlang::call2(
+    rlang::call2(base::`::`, quote(otherpkg), quote(helper)), quote(v)
+  )
+  f <- function(x) {
+    rlang::abort("inner", call = blamed)
+  }
+  actual <- expect_error(summarize_with_margins(
+    data, s = f(v), .grouping = rollup(g)
+  ))
+  expect_identical(actual$parent$call, blamed)
+})
+
 test_that("one unnamed summary warning in several sets is reported once", {
   for (config in unnamed_summary_renderings()) {
     warnings <- collect_warnings_rendered(config, summarize_with_margins(

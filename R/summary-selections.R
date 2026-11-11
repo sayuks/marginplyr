@@ -2106,6 +2106,7 @@ rewrite_summary_selections <- function(expr,
   # below inherits it through `rebuild_static_call()` and no branch has to
   # remember. ADR 0019's *Analysis and execution must agree* is authoritative
   # for why a recognized head is qualified at all.
+  spelled <- static_call_head(expr)
   expr <- qualify_static_spelling(expr, "selection", call_name)
 
   if (call_name %in% c("across", "if_any", "if_all")) {
@@ -2120,7 +2121,7 @@ rewrite_summary_selections <- function(expr,
             !is_parenthesized(rewritten)) {
         return(rewritten)
       }
-      return(isolate_local_selection_call(rewritten, call_name))
+      return(isolate_local_selection_call(rewritten, call_name, spelled))
     }
     return(rewrite_across_selection(
       expr,
@@ -2136,7 +2137,7 @@ rewrite_summary_selections <- function(expr,
         expr, group_vars, forbidden_names
       )
       if (expand_local_pick) return(rewritten)
-      return(isolate_local_selection_call(rewritten, call_name))
+      return(isolate_local_selection_call(rewritten, call_name, spelled))
     }
     return(rewrite_pick_selection(expr, env, data_proxy))
   }
@@ -2155,13 +2156,14 @@ rewrite_summary_selections <- function(expr,
 }
 
 # Bind the namespace operator for a rewritten local selection that dplyr
-# evaluates instead of expanding syntactically.
-isolate_local_selection_call <- function(expr, name) {
+# evaluates instead of expanding syntactically. `spelled` is the head the
+# caller wrote, which the bound head carries for `restate_selection_layers()`:
+# rlang names no call under a head whose operator is a function object.
+isolate_local_selection_call <- function(expr, name, spelled) {
   if (!identical(static_spelling_name(expr, "selection"), name)) return(expr)
-  rebuild_static_call(
-    expr, static_call_args(expr),
-    head = rlang::call2(base::`::`, rlang::sym("dplyr"), rlang::sym(name))
-  )
+  head <- rlang::call2(base::`::`, rlang::sym("dplyr"), rlang::sym(name))
+  attr(head, "marginplyr_spelled_head") <- spelled
+  rebuild_static_call(expr, static_call_args(expr), head = head)
 }
 
 # Returns a zero-argument closure for the supplied nested call.
