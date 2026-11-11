@@ -296,14 +296,9 @@ wrap_assigned_local_summaries <- function(dots, assigned_names, group_vars,
 
 # The dot wrapped in `local_assigned_summary_value()`, with `env` as the
 # environment its expression is evaluated from and `position` the dot's own.
-#
-# dplyr quotes an unnamed argument by its label, and `rlang::as_label()` labels
-# a call that deparses onto several lines by its head alone. One shared head
-# would quote every wrapped summary alike, so ADR 0022's map could restore none
-# of them and their warnings would share one identity. The head is therefore a
-# binding of this position's own, in an environment between `env` and dplyr's
-# mask, and the binding closes over the wrapper's other arguments so that the
-# caller's expression is the only one the call carries.
+# The call's head is a binding of this position's own that closes over the
+# wrapper's other arguments, as ADR 0022's amendment *each wrapped local
+# summary labels apart* decides.
 local_summary_value_quo <- function(dot, env, name, group_vars,
                                     internal_names, set_id_name,
                                     set_id_is_internal, protected_sources,
@@ -341,15 +336,9 @@ bind_local_position <- function(expr, env, prefix, position, value) {
 }
 
 # The local branch dots with every unnamed top-level `across()` that shares its
-# label with another dot respelled so that it does not.
-#
-# Such a call stays top-level for dplyr's expansion (ADR 0019), so its head
-# cannot carry the position as `local_summary_value_quo()`'s does. What the
-# rewrites put in its arguments deparses onto several lines, which labels it
-# `dplyr::across(...)` whatever it reads, so those arguments are hoisted into
-# bindings of the position's own and the call keeps the caller's as they are.
-# Where the caller's still overflow the line the label stays shared, and ADR
-# 0022's map leaves dplyr's quotation.
+# label with another dot respelled by `hoist_local_across_arguments()`, as ADR
+# 0022's amendment *each wrapped local summary labels apart* decides. Such a
+# call keeps its head for dplyr's expansion (ADR 0019).
 separate_local_across_labels <- function(dots) {
   labels <- summary_argument_labels(dots)
   across <- vapply(
