@@ -5,6 +5,38 @@
   input's `ORDER BY` in every `UNION ALL` branch, and SQLite no longer sorts
   the input once per branch (#1598).
 
+* A dtplyr summary that is a bare `NA` in some grouping sets and an integer,
+  double or character value in the others now returns the common type a local
+  data frame returns, with `NA` in the sets that produced it, rather than
+  failing at collection with data.table's `Item 2 of x is 'integer' but the
+  corresponding item of y is 'logical'`. Types with no common type, such as
+  character and integer, are refused with a marginplyr error naming the
+  summary (#1612).
+
+* `.check_margin_label = TRUE` no longer fails with Arrow's "Multiple matches
+  for FieldRef" error when an Arrow input's ordering names one column twice,
+  as `arrange(v) |> arrange(w, v)` or `arrange(v, desc(v))` does (#1603).
+
+* `share_of_total()`, `share_of_parent()` and `grouping_bit()` now refuse
+  their one argument under a name other than `x`, as R refuses an unused
+  argument. Before, `share_of_total(y = s)` was computed as though the name
+  were absent (#1610).
+
+* When `share_of_total()` is refused because `.grouping` produces no Grand
+  total set, the advice now fits the specification written. A lone
+  `grouping_set()` is told to sit in `grouping_sets()` beside an empty one or
+  become a `rollup()`, and a `grouping_spec()` product that every factor must
+  produce an empty set. Both were told to add an empty `grouping_set()` to a
+  `grouping_sets()` specification, which in a product leaves the plan
+  unchanged (#1609).
+
+* A local Margin summary that returns `NULL` in some grouping sets and a value
+  in others, such as `if (grouping_bit(g) == 1L) NULL else sum(v)`, now raises
+  a `marginplyr_error` from the calling verb naming the summary and asking for
+  a typed missing value in place of `NULL`, rather than an internal error
+  about union branches. `NULL` in every grouping set still removes the column
+  (#1605).
+
 * `summarize_with_margins()` over an `arrange()`d lazy SQL input no longer
   passes on dbplyr's "ORDER BY is ignored in subqueries without LIMIT"
   warning at `show_query()`, `collect()` or `compute()`. The summary's rows
@@ -17,6 +49,12 @@
   once per group on a data frame or in dtplyr, once per row wherever the
   helper is a query literal, as `sum(1)` does. `sum(v * grouping_id(a, b))`
   and `n() * grouping_id(a, b)` agree everywhere (#1595).
+
+* An `across()` whose `.fns` is a parenthesized `list()` of functions, or on
+  Arrow a parenthesized `c()`, again takes its output names from `.names` on
+  a lazy input and is accepted by dtplyr and Arrow, as on a data frame. Since
+  the change below, DuckDB ignored `.names` for it and dtplyr and Arrow
+  refused it (#1602).
 
 * A summary on a lazy SQL input keeps the grouping the caller's parentheses
   express, as native dbplyr does. Before, the pair was dropped before dbplyr

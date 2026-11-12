@@ -339,6 +339,16 @@ grouping_helper_vars <- function(args, helper, plan) {
   if (identical(helper, "grouping_bit") && length(carried) != 1L) {
     abort_marginplyr("{.fun grouping_bit} requires exactly one column.")
   }
+  # The helper is read here rather than called, so R's matching against its one
+  # formal `x` never runs. `grouping_id()` takes dots, where R accepts any name.
+  if (
+    identical(helper, "grouping_bit") &&
+      !all(rlang::names2(args) %in% c("", "x"))
+  ) {
+    abort_marginplyr(
+      "{.fun grouping_bit} takes its column unnamed or as {.arg x}."
+    )
+  }
   # A call naming no columns falls to the plan's dimensions, in plan order,
   # and not to its `.by` (ADR 0009).
   #
