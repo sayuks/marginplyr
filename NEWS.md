@@ -1,5 +1,11 @@
 # marginplyr 0.1.0
 
+* With `options(marginplyr.audit_sql = TRUE)`, a message a SQL translation
+  raises once per session or regularly (`rlang::inform()` or
+  `cli::cli_inform()` with `.frequency`) now reaches the caller as it does with
+  the audit off. Before, rendering the query for the record consumed the
+  message's frequency state, so the real operation never delivered it (#1623).
+
 * `compute()` of an unsorted `summarize_with_margins()` on a live SQLite
   connection without `.id` or a share now declares the destination's
   source-derived columns, as native `compute()` of `summarise()` does. Before,
