@@ -6,6 +6,11 @@
   construction. Another DuckDB view without stored SQL is still refused, now
   with a diagnostic saying so (#1583).
 
+* An unnamed summary on a local input that returns a non-vector, such as an
+  environment or a function, is refused with native `summarise()`'s
+  diagnostic, rather than with vctrs' scalar-type error and its FAQ pointer
+  (#1581).
+
 * An unnamed `across()` on a local input whose `.names` template is a
   constant now works after an earlier summary whose output reuses an input
   column's name, as in native `summarise()`, rather than being refused for
