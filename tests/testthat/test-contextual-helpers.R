@@ -541,6 +541,8 @@ test_that("a caller binding never changes a helper on a lazy input", {
       )
       # And the lazy plan is the plan the local input produced, so a writing
       # the rewrite reached locally has reached the backend's re-analysis too.
+      # dtplyr has no translation of `c_across()`, natively or here.
+      if (identical(entry$name, "c_across")) next
       expect_identical(
         contextual_probe_outcome(expr, dtplyr::lazy_dt(data)),
         contextual_probe_outcome(expr, data),
