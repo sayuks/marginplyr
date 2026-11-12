@@ -47,14 +47,21 @@ is run from the repository root, prints the observed behaviour and exits zero.
 
 | Boundary | Established effect | Script | Issue |
 | --- | --- | --- | --- |
-| A wrapper forwarding its dots into an unnamed top-level `across()` that dplyr evaluates per group | A call native dplyr answers was refused: "Column `..1` doesn't exist". | `forwarded-across-selection.R` | pending |
-| A share whose output name is an input column's, followed by an unnamed `across()` on a local input | The call was refused over a generated `dplyr::all_of()` the caller did not write, even for `any_of()`. | `across-after-share-named-like-input.R` | pending |
-| `c_across()` given an argument it cannot match, on a local input | A bare `match.call()` error named the private placeholder `.marginplyr_arg_2`, and a call in a branch dplyr never evaluates was refused. | `c-across-unmatched-argument.R` | pending |
-| A Grouping helper call used as the head of another call | rlang's "Can't create call to non-callable object" was raised from an internal call. | `grouping-helper-as-call-head.R` | pending |
-| A SQL input whose ordering holds a raw `sql()` term or a constant | The Margin verb failed at construction with a dbplyr-internal purrr error whenever it reordered columns. | `sql-order-term-input.R` | pending |
-| A frequency-limited message raised while SQL is translated, with `marginplyr.audit_sql = TRUE` | The message never reached the caller; with the audit off, and natively, it was delivered once. | `audit-frequency-limited-message.R` | pending |
-| A data frame carrying a frame-level `tsp` attribute, in both nesting verbs | A base "invalid time series parameters" error where native nesting succeeds and carries the attribute. | `nest-frame-tsp-attribute.R` | pending |
-| `compute()` of a sorted SQLite Margin summary | The returned object had no `remote_name()` and was refused by set operations and in-place row writes. | `sqlite-sorted-compute-not-a-table.R` | pending |
+| A wrapper forwarding its dots into an unnamed top-level `across()` that dplyr evaluates per group | A call native dplyr answers was refused: "Column `..1` doesn't exist". | `forwarded-across-selection.R` | [#1618](https://github.com/sayuks/marginplyr/issues/1618) |
+| A share whose output name is an input column's, followed by an unnamed `across()` on a local input | The call was refused over a generated `dplyr::all_of()` the caller did not write, even for `any_of()`. | `across-after-share-named-like-input.R` | [#1619](https://github.com/sayuks/marginplyr/issues/1619) |
+| `c_across()` given an argument it cannot match, on a local input | A bare `match.call()` error named the private placeholder `.marginplyr_arg_2`, and a call in a branch dplyr never evaluates was refused. | `c-across-unmatched-argument.R` | [#1620](https://github.com/sayuks/marginplyr/issues/1620) |
+| A Grouping helper call used as the head of another call | rlang's "Can't create call to non-callable object" was raised from an internal call. | `grouping-helper-as-call-head.R` | [#1621](https://github.com/sayuks/marginplyr/issues/1621) |
+| A SQL input whose ordering holds a raw `sql()` term or a constant | The Margin verb failed at construction with a dbplyr-internal purrr error whenever it reordered columns. | `sql-order-term-input.R` | [#1622](https://github.com/sayuks/marginplyr/issues/1622) |
+| A frequency-limited message raised while SQL is translated, with `marginplyr.audit_sql = TRUE` | The message never reached the caller; with the audit off, and natively, it was delivered once. | `audit-frequency-limited-message.R` | [#1623](https://github.com/sayuks/marginplyr/issues/1623) |
+| A data frame carrying a frame-level `tsp` attribute, in both nesting verbs | A base "invalid time series parameters" error where native nesting succeeds and carries the attribute. | `nest-frame-tsp-attribute.R` | [#1624](https://github.com/sayuks/marginplyr/issues/1624) |
+| `compute()` of a sorted SQLite Margin summary | The returned object had no `remote_name()` and was refused by set operations and in-place row writes. | `sqlite-sorted-compute-not-a-table.R` | [#1625](https://github.com/sayuks/marginplyr/issues/1625) |
+
+The `to-tickets` workflow published these as eight independent repair slices
+with no prerequisite prefactoring and no blocking edge: each changes a
+different path. Splitting was delegated by the maintainer without a
+confirmation checkpoint. Seven carry `bug` and `ready-for-agent`. #1625 was
+published with `bug` and `ready-for-human`, because whether a computed sorted
+result owes the caller a table reference is a specification choice.
 
 ### A forwarded selection in an unnamed top-level `across()`
 
