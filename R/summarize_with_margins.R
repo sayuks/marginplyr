@@ -888,6 +888,9 @@
 #'   names, SQL keywords, the current database and configured search path.
 #'   Stored views and their dependencies are checked before binding the input;
 #'   opaque macros and calls to `query()` or `query_table()` are refused.
+#'   A data frame registered with `duckdb::duckdb_register()` is admitted, as
+#'   its view reads only that frame; another view without stored SQL is
+#'   refused.
 #'   A direct reader already showing unsafe inference is refused without
 #'   needing a catalog query.
 #'   The catalog query binds no caller relation and reads no source values.
