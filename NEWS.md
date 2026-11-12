@@ -6,6 +6,42 @@
   data frame, rather than failing at `collect()` with the engine's binder
   error: such a summary now takes the portable `UNION ALL` path (#1587).
 
+* When a local summary's type differs between grouping sets, vctrs' refusal
+  now names the caller's column, as `dplyr::bind_rows()` of the grains does,
+  rather than a column name marginplyr generated (#1590).
+
+* An unsorted dtplyr Margin summary that keeps a variable label now
+  evaluates to a valid data.table, as the native dtplyr union does, so a
+  later `mutate()` raises no shallow-copy warning and `:=` on its
+  `as.data.table()` result updates it by reference (#1588).
+
+* `.check_margin_label = TRUE` no longer fails with an Arrow or DuckDB error
+  when the input is an `arrange()`d query. The check reads the same columns
+  whatever the input's ordering, and an ordering beneath `head()` still
+  decides which rows it reads (#1585).
+
+* A data frame registered with `duckdb::duckdb_register()` is accepted by
+  the Margin verbs and typed `inspect_grouping()` again, directly or through
+  `sql()`, a lazy verb, a view or a join, without reading its rows during
+  construction. Another DuckDB view without stored SQL is still refused, now
+  with a diagnostic saying so (#1583).
+
+* An unnamed summary on a local input that returns a non-vector, such as an
+  environment or a function, is refused with native `summarise()`'s
+  diagnostic, rather than with vctrs' scalar-type error and its FAQ pointer
+  (#1581).
+
+* On a generic SQL backend, a Margin summary over a non-character dimension
+  with a text Margin label gives that dimension one text type across every
+  arm of its `UNION ALL` query. SQL Server refused the query, failing to
+  convert the label to the dimension's type, and the set-operation rules
+  Oracle, Redshift and Snowflake document refuse it too (#1586).
+
+* An unnamed `across()` on a local input whose `.names` template is a
+  constant now works after an earlier summary whose output reuses an input
+  column's name, as in native `summarise()`, rather than being refused for
+  producing too few names (#1584).
+
 * A condition raised by one of several unnamed `across()` calls on a local
   input that pass extra arguments through `across()`'s `...` quotes that call
   as the caller wrote it, rather than as `dplyr::across(...)`, and their

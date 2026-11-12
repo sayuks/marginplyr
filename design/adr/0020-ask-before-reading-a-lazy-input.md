@@ -442,6 +442,19 @@ the [view binder][relation-view-binder], and `SetSearchPath` in the
 [relation-keyword-default]: https://github.com/duckdb/duckdb/blob/v1.5.0/src/include/duckdb/parser/keyword_helper.hpp
 [relation-keyword-quoting]: https://github.com/duckdb/duckdb/blob/v1.5.0/src/parser/keyword_helper.cpp
 
+## Amendment (#1583): a registered data frame is not a hidden definition
+
+A view that DuckDB's client API creates stores no SQL, so the #1524 rule above
+cannot follow its definition. A data frame registered with
+`duckdb::duckdb_register()` is such a view, and binding it reads only the R
+frame's column types, never source rows, so preflight admits it. The catalog
+query is unchanged; whether a `temp.main` view without SQL is a registered
+frame is read from the `_registered_df_<name>` attribute the duckdb R package
+keeps on the connection pointer to hold the frame alive. That attribute is
+undocumented, so its absence fails closed. Any other view without stored SQL,
+such as a relation view over `read_csv()`, remains refused before binding,
+with a diagnostic naming the missing definition.
+
 ## Amendment (#640): SQLite typed-order execution follows an explicit request
 
 ADR 0031's live SQLite result builds its typed compound query without executing

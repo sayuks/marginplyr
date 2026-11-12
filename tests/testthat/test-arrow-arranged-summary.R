@@ -67,3 +67,56 @@ test_that("arranged Arrow summaries retain public keys and Margin order", {
     }
   }
 })
+
+test_that("the observed label check reads an arranged Arrow input", {
+  skip_if_suggest_absent("arrow")
+  data <- data.frame(g = c("Total", "a", "b"), v = c(3L, 1L, 2L))
+  sources <- list(
+    table = arrow::arrow_table(data),
+    record_batch = arrow::record_batch(data),
+    dataset = arrow::InMemoryDataset$create(data)
+  )
+  verbs <- list(
+    summarize = function(x, check, label = "Total") {
+      summarize_with_margins(
+        x, s = sum(v), .grouping = rollup(g), .margin_label = label,
+        .check_margin_label = check
+      )
+    },
+    expand = function(x, check, label = "Total") {
+      expand_with_margins(
+        x, .grouping = rollup(g), .margin_label = label,
+        .check_margin_label = check
+      )
+    }
+  )
+  for (shape in names(sources)) {
+    for (key in c("column", "expression")) {
+      arranged <- if (key == "column") {
+        dplyr::arrange(sources[[shape]], v)
+      } else {
+        dplyr::arrange(sources[[shape]], dplyr::desc(v * 2L))
+      }
+      # The first two rows by `v` exclude the one holding the label.
+      selected <- head(dplyr::arrange(sources[[shape]], v), 2L)
+      for (verb in names(verbs)) {
+        info <- paste(shape, key, verb)
+        run <- verbs[[verb]]
+        expect_identical(
+          arrow_partition_bag(dplyr::collect(run(arranged, TRUE, "All"))),
+          arrow_partition_bag(dplyr::collect(run(arranged, FALSE, "All"))),
+          info = info
+        )
+        expect_identical(
+          arrow_partition_bag(dplyr::collect(run(selected, TRUE))),
+          arrow_partition_bag(dplyr::collect(run(selected, FALSE))),
+          info = info
+        )
+        expect_error(
+          run(arranged, TRUE), "already present", class = "marginplyr_error",
+          info = info
+        )
+      }
+    }
+  }
+})

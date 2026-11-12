@@ -6,8 +6,7 @@
 #
 # The first step records the server's answers and fails only when the server
 # is unreachable or a one-set plan, which has no type anchor, differs from the
-# local result. The second asserts the contract for every case and does not
-# fail the job, because #1586 is open: its repair removes `continue-on-error`.
+# local result. The second asserts that every case equals the local result.
 name: SQL Server portable summaries
 on:
   pull_request:
@@ -60,7 +59,6 @@ jobs:
       - name: Record what SQL Server answers to portable summaries
         run: Rscript tools/mssql-portable-summary.R mssql-evidence
       - name: Assert portable summaries equal the local result
-        continue-on-error: true
         run: Rscript tools/mssql-portable-summary.R mssql-evidence --assert-contract
       - uses: actions/upload-artifact@v7
         if: always()

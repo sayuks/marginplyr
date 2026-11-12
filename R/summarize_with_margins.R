@@ -852,6 +852,13 @@
 #' ODBC connections. Simulator coverage verifies SQL generation, not execution
 #' against every database server.
 #'
+#' Continuous integration also executes the portable path on a live Microsoft
+#' SQL Server 2022 and compares each result with the local one: summaries of
+#' one grouping set and of a rollup over a character or an integer dimension,
+#' with a text or a typed-missing Margin label, and a rollup with a fixed key,
+#' a Total share and a Margin order. Other SQL Server plans rest on the
+#' simulator.
+#'
 #' Arrow and dtplyr are also tested lazy backends, but they are not SQL
 #' database connections.
 #'
@@ -888,6 +895,9 @@
 #'   names, SQL keywords, the current database and configured search path.
 #'   Stored views and their dependencies are checked before binding the input;
 #'   opaque macros and calls to `query()` or `query_table()` are refused.
+#'   A data frame registered with `duckdb::duckdb_register()` is admitted, as
+#'   its view reads only that frame; another view without stored SQL is
+#'   refused.
 #'   A direct reader already showing unsafe inference is refused without
 #'   needing a catalog query.
 #'   The catalog query binds no caller relation and reads no source values.
