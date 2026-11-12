@@ -212,15 +212,15 @@ test_that("unnamed summary fields align by name across grouping sets", {
 })
 
 check_summary_presence <- function(convert) {
-  data <- convert(data.frame(g = c("a", "a", "b"), v = 1:3))
+  data <- convert(data.frame(g = c("a", "a", "b"), v = 1:3, w = 4:6))
   key <- rlang::sym("g")
-  expect_absent <- function(object, summary) {
+  # `headline` is the diagnostic's first line as the caller reads it.
+  expect_absent <- function(object, headline) {
     error <- expect_error(object, class = "marginplyr_error")
     expect_identical(rlang::call_name(conditionCall(error)),
                      "summarize_with_margins")
     message <- cli::ansi_strip(conditionMessage(error))
-    expect_match(message, paste0("`", summary, "`"), fixed = TRUE)
-    expect_match(message, "every grouping set", fixed = TRUE)
+    expect_identical(strsplit(message, "\n")[[1L]][[1L]], headline)
     expect_match(message, "in place of `NULL`", fixed = TRUE)
     expect_no_match(message, "branch", fixed = TRUE)
   }
@@ -230,7 +230,7 @@ check_summary_presence <- function(convert) {
       data, val = if (grouping_bit(!!key) == 1L) NULL else sum(.data$v),
       .grouping = rollup("g")
     ),
-    "val"
+    "Summary `val` must be present in every grouping set."
   )
   expect_absent(
     summarize_with_margins(
@@ -239,14 +239,26 @@ check_summary_presence <- function(convert) {
       val = if (grouping_bit(!!key) == 0L) NULL else sum(.data$v),
       .grouping = rollup("g")
     ),
-    "val"
+    "Summary `val` must be present in every grouping set."
+  )
+  expect_absent(
+    summarize_with_margins(
+      data,
+      a = if (grouping_bit(!!key) == 1L) NULL else sum(.data$v),
+      b = if (grouping_bit(!!key) == 1L) NULL else sum(.data$w),
+      .grouping = rollup("g")
+    ),
+    "Summaries `a` and `b` must be present in every grouping set."
   )
   expect_absent(
     summarize_with_margins(
       data, if (grouping_bit(!!key) == 1L) NULL else sum(.data$v),
       .grouping = rollup("g")
     ),
-    "if (grouping_bit(g) == 1L) NULL else sum(.data$v)"
+    paste0(
+      "Summary `if (grouping_bit(g) == 1L) NULL else sum(.data$v)` must be ",
+      "present in every grouping set."
+    )
   )
   expect_absent(
     summarize_with_margins(
@@ -254,7 +266,25 @@ check_summary_presence <- function(convert) {
       dplyr::across("v", ~ if (grouping_bit(!!key) == 1L) NULL else sum(.x)),
       .grouping = rollup("g")
     ),
-    "v"
+    paste0(
+      "Summary `dplyr::across(\"v\", ~if (grouping_bit(g) == 1L) NULL else ",
+      "sum(.x))` must be present in every grouping set."
+    )
+  )
+  # Several outputs of one `across()` are one summary the caller wrote.
+  expect_absent(
+    summarize_with_margins(
+      data,
+      n = dplyr::n(),
+      dplyr::across(
+        c("v", "w"), ~ if (grouping_bit(!!key) == 1L) NULL else sum(.x)
+      ),
+      .grouping = rollup("g")
+    ),
+    paste0(
+      "Summary `dplyr::across(c(\"v\", \"w\"), ~if (grouping_bit(g) == 1L) ",
+      "NULL else sum(.x))` must be present in every grouping set."
+    )
   )
 
   removed <- summarize_with_margins(
@@ -289,6 +319,19 @@ test_that("an unnamed frame against NULL keeps the frame field diagnostic", {
     "consistent field names", class = "marginplyr_error"
   )
   expect_match(conditionMessage(error), "`a`", fixed = TRUE)
+})
+
+test_that("a branch mismatch no caller summary produced stays an invariant", {
+  # The caller's outputs are compared before the union, so what reaches the
+  # union's column check is a column marginplyr built (ADR 0015).
+  error <- expect_error(
+    check_branch_columns(list(
+      data.frame(g = "a", s = 1), data.frame(s = 2)
+    )),
+    "Union branch 2 does not have the columns of branch 1", fixed = TRUE
+  )
+  expect_false(inherits(error, "marginplyr_error"))
+  expect_null(conditionCall(error))
 })
 
 test_that("a later summary evaluation error keeps its original cause", {

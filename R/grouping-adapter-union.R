@@ -354,7 +354,8 @@ check_branch_columns <- function(branches) {
 # unnamed frame fields are reported first; any other output one set produced
 # and another did not is a summary the caller made absent there. Grouping keys
 # and the placeholder are already excluded, so every output is the caller's.
-check_eager_summary_fields <- function(schemas, call) {
+# `summaries` is what `new_summary_arguments()` built for the branches.
+check_eager_summary_fields <- function(schemas, call, summaries) {
   first <- schemas[[1L]]
   for (schema in schemas[-1L]) {
     fields <- union(
@@ -381,8 +382,12 @@ check_eager_summary_fields <- function(schemas, call) {
     if (length(absent) == 0L) {
       next
     }
+    absent <- absent_summary_labels(absent, summaries)
     abort_marginplyr(c(
-      "Summary {.var {absent}} must be present in every grouping set.",
+      paste0(
+        "{cli::qty(length(absent))}Summar{?y/ies} {.var {absent}} must be ",
+        "present in every grouping set."
+      ),
       i = paste0(
         "Return a typed missing value such as {.code NA_real_} in place of ",
         "{.code NULL}."
@@ -390,6 +395,26 @@ check_eager_summary_fields <- function(schemas, call) {
     ), call = call)
   }
   invisible(NULL)
+}
+
+# The summaries the caller wrote that produced the `absent` outputs, given
+# what `new_summary_arguments()` built. A named summary and an unnamed scalar
+# are their output's name, which is how the caller reads what they wrote. An
+# output neither accounts for is a column an unnamed `across()` expanded to:
+# with exactly one such call that call is the summary, and with several the
+# expanded names are the most that identifies them.
+absent_summary_labels <- function(absent, summaries) {
+  dots <- summaries$dots
+  named <- nzchar(rlang::names2(dots))
+  across <- !named & vapply(dots, function(dot) {
+    is_across_call(rlang::quo_get_expr(dot))
+  }, logical(1))
+  written <- ifelse(named, rlang::names2(dots), summaries$frame_state$auto_names)
+  written <- written[!across]
+  if (all(absent %in% written) || sum(across) != 1L) {
+    return(absent)
+  }
+  c(intersect(absent, written), summaries$labels[across])
 }
 
 # A lazy branch list has to be combined two at a time, since no backend here
@@ -1218,7 +1243,7 @@ summarize_margin_union <- function(.data,
     )
 
     if (!is.null(branch_schemas)) {
-      check_eager_summary_fields(branch_schemas, call)
+      check_eager_summary_fields(branch_schemas, call, summaries)
     }
 
     if (
