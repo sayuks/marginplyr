@@ -37,6 +37,12 @@
   helper is a query literal, as `sum(1)` does. `sum(v * grouping_id(a, b))`
   and `n() * grouping_id(a, b)` agree everywhere (#1595).
 
+* An `across()` whose `.fns` is a parenthesized `list()` of functions, or on
+  Arrow a parenthesized `c()`, again takes its output names from `.names` on
+  a lazy input and is accepted by dtplyr and Arrow, as on a data frame. Since
+  the change below, DuckDB ignored `.names` for it and dtplyr and Arrow
+  refused it (#1602).
+
 * A summary on a lazy SQL input keeps the grouping the caller's parentheses
   express, as native dbplyr does. Before, the pair was dropped before dbplyr
   rendered the expression, so `a - (b - c)` ran as `a - b - c` and
