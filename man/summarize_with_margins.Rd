@@ -587,10 +587,11 @@ in, so binding a function of your own
 to one of their names does not change what this verb does with it. They are
 \code{\link[=grouping_bit]{grouping_bit()}} and \code{\link[=grouping_id]{grouping_id()}}; \code{\link[=share_of_parent]{share_of_parent()}} and
 \code{\link[=share_of_total]{share_of_total()}}; \code{\link[dplyr:across]{dplyr::across()}}, \code{\link[dplyr:if_any]{dplyr::if_any()}},
-\code{\link[dplyr:if_all]{dplyr::if_all()}}, and \code{\link[dplyr:pick]{dplyr::pick()}}; \code{\link[tidyselect:where]{tidyselect::where()}}; and the
-branch-local helpers rejected below. A spelling is recognized when the name
-matches and it is written bare or qualified with the package that owns it,
-so \code{dplyr::across()} is the same request as \code{across()} while
+\code{\link[dplyr:if_all]{dplyr::if_all()}}, \code{\link[dplyr:pick]{dplyr::pick()}}, and \code{\link[dplyr:c_across]{dplyr::c_across()}};
+\code{\link[tidyselect:where]{tidyselect::where()}}; and the branch-local helpers rejected below. A
+spelling is recognized when the name matches and it is written bare or
+qualified with the package that owns it, so \code{dplyr::across()} is the same
+request as \code{across()} while
 \code{mypkg::across()} is an ordinary call to another package's function.
 
 Parentheses do not change helper recognition: \code{(pick)(units)} and
@@ -606,10 +607,10 @@ the Grouping specification constructors: a nested \code{rollup(region)} is
 evaluated because of how it is spelled, but what runs is whatever \code{rollup}
 is bound to where you wrote it.
 
-\code{\link[dplyr:across]{dplyr::across()}} and \code{\link[dplyr:pick]{dplyr::pick()}} cannot select any column named in the
-complete Grouping plan. This extends dplyr's grouping-column rule across
-every branch: a dimension remains excluded even in a grouping set from
-which it is omitted.
+\code{\link[dplyr:across]{dplyr::across()}}, \code{\link[dplyr:pick]{dplyr::pick()}}, and \code{\link[dplyr:c_across]{dplyr::c_across()}} cannot select
+any column named in the complete Grouping plan. This extends dplyr's
+grouping-column rule across every branch: a dimension remains excluded even
+in a grouping set from which it is omitted.
 
 On a local data frame, an ordinary selection in a later summary sees
 preceding ordinary outputs when it runs. For example, after

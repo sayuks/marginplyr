@@ -399,7 +399,8 @@ Config/testthat/start-first:
     helper-argument-names,
     across-parenthesized-fns,
     dtplyr-cross-set-types,
-    grouping-helper-refusal-order
+    grouping-helper-refusal-order,
+    local-c-across
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool

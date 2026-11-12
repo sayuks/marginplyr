@@ -532,10 +532,11 @@
 #' to one of their names does not change what this verb does with it. They are
 #' [grouping_bit()] and [grouping_id()]; [share_of_parent()] and
 #' [share_of_total()]; [dplyr::across()], [dplyr::if_any()],
-#' [dplyr::if_all()], and [dplyr::pick()]; [tidyselect::where()]; and the
-#' branch-local helpers rejected below. A spelling is recognized when the name
-#' matches and it is written bare or qualified with the package that owns it,
-#' so `dplyr::across()` is the same request as `across()` while
+#' [dplyr::if_all()], [dplyr::pick()], and [dplyr::c_across()];
+#' [tidyselect::where()]; and the branch-local helpers rejected below. A
+#' spelling is recognized when the name matches and it is written bare or
+#' qualified with the package that owns it, so `dplyr::across()` is the same
+#' request as `across()` while
 #' `mypkg::across()` is an ordinary call to another package's function.
 #'
 #' Parentheses do not change helper recognition: `(pick)(units)` and
@@ -551,10 +552,10 @@
 #' evaluated because of how it is spelled, but what runs is whatever `rollup`
 #' is bound to where you wrote it.
 #'
-#' [dplyr::across()] and [dplyr::pick()] cannot select any column named in the
-#' complete Grouping plan. This extends dplyr's grouping-column rule across
-#' every branch: a dimension remains excluded even in a grouping set from
-#' which it is omitted.
+#' [dplyr::across()], [dplyr::pick()], and [dplyr::c_across()] cannot select
+#' any column named in the complete Grouping plan. This extends dplyr's
+#' grouping-column rule across every branch: a dimension remains excluded even
+#' in a grouping set from which it is omitted.
 #'
 #' On a local data frame, an ordinary selection in a later summary sees
 #' preceding ordinary outputs when it runs. For example, after

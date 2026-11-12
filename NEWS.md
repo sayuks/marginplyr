@@ -4,6 +4,12 @@
   a tibble, as dbplyr's `collect()` of the native summary does and as the same
   call without `.sort` already did, instead of a bare `data.frame` (#1608).
 
+* `dplyr::c_across()` in a local Margin summary selects what it selects in a
+  native grouped `summarise()`: no fixed key, no grouping dimension, and no
+  column marginplyr allocated, in every grouping set. Before, a numeric key was
+  summed into the value and into any share over it, and a non-numeric key
+  turned a valid call into an error that could name a private column (#1599).
+
 * A dtplyr summary that is a bare `NA` in some grouping sets and an integer,
   double or character value in the others now returns the common type a local
   data frame returns, with `NA` in the sets that produced it, rather than
