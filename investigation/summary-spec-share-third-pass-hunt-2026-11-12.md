@@ -286,6 +286,9 @@ the same refusal. `share_of_parent(y = s)` was accepted as
 dtplyr named the outputs of `across(c(v, w), (sum), .names = "s_{.col}")`
 `v, w`, so the DuckDB Margin summary matched its backend and the SQLite and
 dtplyr Margin summaries were the ones that kept the template.
+On that measurement the maintainer closed #1613 the same day as not planned:
+the DuckDB result followed its backend and predated #1582, so it was neither
+a defect of the package nor a regression.
 
 - A dot-prefixed output name one edit from a short option was refused:
   `.y = mean(v)` raised "`.y` is not an argument ... Did you mean `.by`?", as
