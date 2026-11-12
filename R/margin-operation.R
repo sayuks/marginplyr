@@ -533,9 +533,21 @@ order_margin_result <- function(operation, result, execution) {
                                             operation$backend)
   }
 
-  rowwise <- margin_rowwise_sort_columns(result, operation$plan)
-  nan_columns <- margin_nan_sort_columns(result, operation$plan)
-  complex_columns <- margin_complex_sort_columns(result, operation$plan)
+  rowwise <- margin_local_sort_columns(
+    result, operation$plan, function(column) {
+      is.list(column) || is.array(column)
+    }
+  )
+  nan_columns <- margin_local_sort_columns(
+    result, operation$plan, function(column) {
+      is.double(column) && !is.array(column)
+    }
+  )
+  complex_columns <- margin_local_sort_columns(
+    result, operation$plan, function(column) {
+      is.complex(column) && !is.array(column)
+    }
+  )
   result <- margin_safe_column_reads(
     result, c(key_id, operation$plan$by, operation$plan$dimensions),
     function(data, safe_name) {
@@ -658,56 +670,16 @@ margin_dictionary_sort_types <- function(result, backend) {
   )
 }
 
-# Names local double keys whose missingness term ranks `NaN` before `NA`. The
-# caller holds a result containing every fixed key and dimension named by that
-# plan.
-margin_nan_sort_columns <- function(result, plan) {
+# Names the fixed keys and dimensions of a local result whose column satisfies
+# `predicate`, and none for a lazy result. The caller holds a result containing
+# every fixed key and dimension named by that plan.
+margin_local_sort_columns <- function(result, plan, predicate) {
   if (!is.data.frame(result)) {
     return(character())
   }
   columns <- c(plan$by, plan$dimensions)
   columns[vapply(
-    columns,
-    function(name) {
-      column <- result[[name]]
-      is.double(column) && !is.array(column)
-    },
-    logical(1)
-  )]
-}
-
-# Names local complex keys whose value term orders each part as a local
-# double key. The caller holds a result containing every fixed key and
-# dimension named by that plan.
-margin_complex_sort_columns <- function(result, plan) {
-  if (!is.data.frame(result)) {
-    return(character())
-  }
-  columns <- c(plan$by, plan$dimensions)
-  columns[vapply(
-    columns,
-    function(name) {
-      column <- result[[name]]
-      is.complex(column) && !is.array(column)
-    },
-    logical(1)
-  )]
-}
-
-# Names local keys needing row-vector missingness. The caller holds a result
-# containing every fixed key and dimension named by that plan.
-margin_rowwise_sort_columns <- function(result, plan) {
-  if (!is.data.frame(result)) {
-    return(character())
-  }
-  columns <- c(plan$by, plan$dimensions)
-  columns[vapply(
-    columns,
-    function(name) {
-      column <- result[[name]]
-      is.list(column) || is.array(column)
-    },
-    logical(1)
+    columns, function(name) predicate(result[[name]]), logical(1)
   )]
 }
 
@@ -814,9 +786,8 @@ margin_order_terms <- function(plan,
 
 # One column's value terms. A local complex column in `complex_columns` takes
 # its real part and then its imaginary part, each with the rank and value a
-# local double key takes: `is.na()` and `arrange()` tie every missing complex
-# value, while `summarise()` keeps a `NaN` part apart from an `NA` part
-# (ADR 0018). Every other column takes the one term below.
+# local double key takes (ADR 0018). Every other column takes the one term
+# below.
 margin_sort_value_terms <- function(column, value_types, complex_columns) {
   if (!(column %in% complex_columns)) {
     return(list(margin_sort_value_expr(column, value_types)))

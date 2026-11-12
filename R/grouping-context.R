@@ -250,7 +250,7 @@ contains_grouping_helper <- function(expr) {
 # grouping-sets backend.
 grouping_helper_needs_literal <- function(dots, con) {
   translation <- dbplyr::sql_translation(con)
-  scalar_only <- function(expr) {
+  plain_scalar_call <- function(expr) {
     name <- static_call_name(expr)
     !is.null(name) &&
       exists(name, envir = translation$scalar, inherits = FALSE) &&
@@ -260,19 +260,21 @@ grouping_helper_needs_literal <- function(dots, con) {
   any(vapply(
     dots,
     function(quo) {
-      grouping_helper_under_call(rlang::quo_get_expr(quo), scalar_only)
+      grouping_helper_under_call(rlang::quo_get_expr(quo), plain_scalar_call)
     },
     logical(1)
   ))
 }
 
-# Whether a Grouping helper in `expr` sits under a call `scalar_only()`
+# Whether a Grouping helper in `expr` sits under a call `plain_scalar_call()`
 # refuses. The walk is `contains_grouping_helper()`'s, which reads the parts
 # the Grouping rewrite compiles. `across()`, `if_any()`, `if_all()`, a
 # lambda, and the `list()` holding `.fns` are containers: the native adapter
 # hands `across()` to dbplyr unexpanded, so a helper in a lambda body is
 # judged by the calls in that body.
-grouping_helper_under_call <- function(expr, scalar_only, in_fns = FALSE) {
+grouping_helper_under_call <- function(expr,
+                                       plain_scalar_call,
+                                       in_fns = FALSE) {
   if (!contains_grouping_helper(expr) ||
         !is.null(grouping_helper_name(expr))) {
     return(FALSE)
@@ -281,14 +283,14 @@ grouping_helper_under_call <- function(expr, scalar_only, in_fns = FALSE) {
   selection <- isTRUE(selection_name %in% c("across", "if_any", "if_all"))
   container <- selection || rlang::is_call(expr, c("~", "function")) ||
     (in_fns && identical(static_call_name(expr), "list"))
-  if (!container && !scalar_only(expr)) {
+  if (!container && !plain_scalar_call(expr)) {
     return(TRUE)
   }
   any(vapply(
     searched_call_parts(expr),
     grouping_helper_under_call,
     logical(1),
-    scalar_only = scalar_only,
+    plain_scalar_call = plain_scalar_call,
     in_fns = selection
   ))
 }

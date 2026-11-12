@@ -582,9 +582,7 @@ test_that("a direct data.table keeps `NaN` and `NA` partitions contiguous", {
   expect_identical(result$g, rep(c("a", "b", "Total"), 3L))
 })
 
-# A complex key splits the same way, and in either part: `summarise()` keeps a
-# `NaN` part apart from an `NA` part, while `is.na()` and `arrange()` tie every
-# missing complex value.
+# A complex key holding `nan`, `NA` and one non-missing value in each group.
 margin_order_complex_nan_data <- function(nan) {
   data.frame(
     x = c(nan, NA, nan, NA, 1 + 0i, 1 + 0i),

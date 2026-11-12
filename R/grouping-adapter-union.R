@@ -1219,9 +1219,7 @@ summarize_margin_union <- function(.data,
         dplyr::mutate(source_data, !!!anchor_keys),
         branches[[1L]],
         source_columns = c(group_vars, unname(parent_key_names)),
-        source_displays = names(Filter(
-          function(label) !is_missing_margin_label(label), margin_labels
-        ))
+        source_displays = labelled_margin_dimensions(margin_labels)
       )
       branches <- c(list(anchor), branches)
     }
@@ -1520,9 +1518,7 @@ expand_margin_union <- function(.data,
       .data,
       branches[[1L]],
       source_columns = get_col_names(.data, dplyr::everything()),
-      source_displays = names(Filter(
-        function(label) !is_missing_margin_label(label), margin_labels
-      ))
+      source_displays = labelled_margin_dimensions(margin_labels)
     )
     branches <- c(list(anchor), branches)
   }
