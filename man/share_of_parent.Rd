@@ -54,8 +54,9 @@ nothing in the plan says which of them is \emph{the} parent.
 selected, and a plan either contains one or does not. It therefore accepts
 any Grouping specification whose plan contains one. \code{\link[=rollup]{rollup()}} and \code{\link[=cube]{cube()}}
 always produce one; \code{\link[=grouping_sets]{grouping_sets()}} produces one only when it includes an
-empty \code{\link[=grouping_set]{grouping_set()}}, and a specification without one is rejected naming
-that fix.
+empty \code{\link[=grouping_set]{grouping_set()}}, a \code{\link[=grouping_spec]{grouping_spec()}} product only when every factor
+produces an empty set, and a lone \code{\link[=grouping_set]{grouping_set()}} only when it is empty. A
+specification without one is rejected naming the change that gives it one.
 
 Neither helper reaches a level between the two. For a denominator at a
 named ancestor level, move that dimension into \code{.by} and use

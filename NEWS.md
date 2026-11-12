@@ -9,6 +9,14 @@
   argument. Before, `share_of_total(y = s)` was computed as though the name
   were absent (#1610).
 
+* When `share_of_total()` is refused because `.grouping` produces no Grand
+  total set, the advice now fits the specification written. A lone
+  `grouping_set()` is told to sit in `grouping_sets()` beside an empty one or
+  become a `rollup()`, and a `grouping_spec()` product that every factor must
+  produce an empty set. Both were told to add an empty `grouping_set()` to a
+  `grouping_sets()` specification, which in a product leaves the plan
+  unchanged (#1609).
+
 * `summarize_with_margins()` over an `arrange()`d lazy SQL input no longer
   passes on dbplyr's "ORDER BY is ignored in subqueries without LIMIT"
   warning at `show_query()`, `collect()` or `compute()`. The summary's rows
