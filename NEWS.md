@@ -1,5 +1,12 @@
 # marginplyr 0.1.0
 
+* A wrapper forwarding its dots into an unnamed top-level `across()` now works
+  in a local Margin summary wherever dplyr evaluates that `across()` per group:
+  with `.unpack = TRUE` or a glue `.unpack`, with a `...` extra such as
+  `na.rm = TRUE`, or with parentheses around the call. Before, every forwarded
+  selection other than a single literal string was refused with
+  "Column `..1` doesn't exist" (#1618).
+
 * `compute()` of an unsorted `summarize_with_margins()` on a live SQLite
   connection without `.id` or a share now declares the destination's
   source-derived columns, as native `compute()` of `summarise()` does. Before,
