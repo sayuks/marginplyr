@@ -691,6 +691,13 @@ Redshift, Snowflake, Spark SQL, SQLite, and Teradata, plus generic DBI and
 ODBC connections. Simulator coverage verifies SQL generation, not execution
 against every database server.
 
+Continuous integration also executes the portable path on a live Microsoft
+SQL Server 2022 and compares each result with the local one: summaries of
+one grouping set and of a rollup over a character or an integer dimension,
+with a text or a typed-missing Margin label, and a rollup with a fixed key,
+a Total share and a Margin order. Other SQL Server plans rest on the
+simulator.
+
 Arrow and dtplyr are also tested lazy backends, but they are not SQL
 database connections.
 }

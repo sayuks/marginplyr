@@ -21,6 +21,12 @@
   diagnostic, rather than with vctrs' scalar-type error and its FAQ pointer
   (#1581).
 
+* On a generic SQL backend, a Margin summary over a non-character dimension
+  with a text Margin label gives that dimension one text type across every
+  arm of its `UNION ALL` query. SQL Server refused the query, failing to
+  convert the label to the dimension's type, and the set-operation rules
+  Oracle, Redshift and Snowflake document refuse it too (#1586).
+
 * An unnamed `across()` on a local input whose `.names` template is a
   constant now works after an earlier summary whose output reuses an input
   column's name, as in native `summarise()`, rather than being refused for

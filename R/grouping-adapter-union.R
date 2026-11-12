@@ -202,8 +202,11 @@ sql_margin_source_anchor <- function(.data) {
 # zero-row anchor keeps each carried source column in the first SELECT without
 # reading it. Declared output columns use a top-level SQL cast so SQLite
 # assigns their types when `compute()` creates an empty table. Source displays
-# cast the source reference to text to keep its SQLite collation. The query
-# executes only when the caller collects or computes the result (ADR 0020).
+# are dimensions the arms carry as text under a display label; they cast the
+# source reference to text, which keeps its SQLite collation and gives a server
+# that types a set operation strictly one type across the arms (#1586).
+# The query executes only when the caller collects or computes the result
+# (ADR 0020).
 sql_margin_type_anchor <- function(.data, branch, source_columns,
                                    declared_types = character(),
                                    source_displays = character()) {
@@ -1178,7 +1181,10 @@ summarize_margin_union <- function(.data,
       anchor <- sql_margin_type_anchor(
         dplyr::mutate(source_data, !!!anchor_keys),
         branches[[1L]],
-        source_columns = c(group_vars, unname(parent_key_names))
+        source_columns = c(group_vars, unname(parent_key_names)),
+        source_displays = names(Filter(
+          function(label) !is_missing_margin_label(label), margin_labels
+        ))
       )
       branches <- c(list(anchor), branches)
     }
@@ -1476,7 +1482,10 @@ expand_margin_union <- function(.data,
     anchor <- sql_margin_type_anchor(
       .data,
       branches[[1L]],
-      source_columns = get_col_names(.data, dplyr::everything())
+      source_columns = get_col_names(.data, dplyr::everything()),
+      source_displays = names(Filter(
+        function(label) !is_missing_margin_label(label), margin_labels
+      ))
     )
     branches <- c(list(anchor), branches)
   }
