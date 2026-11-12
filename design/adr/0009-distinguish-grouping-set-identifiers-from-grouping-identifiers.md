@@ -119,3 +119,48 @@ a `rollup()` plan still skips identifier 2.
 
 `grouping_bit()` is unchanged. It asks about one named column, so no-argument
 has no reading for it, and it keeps refusing a call that names none.
+
+## Amendment: a Grouping helper inside an aggregate takes the portable adapter
+
+`?grouping_bit` promises that a backend substituting a literal and a backend
+emitting SQL `GROUPING()` return the same flag, and it places no restriction on
+where a helper may appear. SQL does: `GROUPING()` is not allowed as an
+aggregate's argument. A summary such as `sum(v * (1 - grouping_bit(b)))` was
+therefore correct on every literal path and failed at `collect()` on DuckDB
+with the engine's binder error (#1587).
+
+A native summary whose Grouping helper sits inside an aggregate now takes the
+portable `UNION ALL` adapter, where the helper is the branch's literal. This is
+the trade this ADR already made for `.id` under `.duplicates = "keep"`: the
+adapter yields to the semantics rather than the semantics to the adapter, and
+the cost is paid only by the summary that needs it. The switch is silent,
+because the values are the same and the recorded SQL (ADR 0027) shows which
+adapter ran.
+
+Which position counts as inside an aggregate is decided conservatively against
+the connection's own `dbplyr::sql_translation()`. A helper stays native only
+when every call between it and the top of its summary expression is in that
+dialect's scalar table and in neither its aggregate nor its window table, read
+by static spelling as ADR 0019 reads helper names. Anything else — a known
+aggregate or window function, `sql()`, a function the dialect does not
+translate — takes the portable adapter: misjudging that way costs speed, and
+misjudging the other way is the failure being removed. `across()`, `if_any()`,
+`if_all()`, a lambda's `~` or `function`, and the `list()` of `.fns` are
+containers rather than calls around the helper and are not counted, so a
+helper in a lambda body is judged by the calls in that body. The walk covers
+exactly the parts the Grouping rewrite visits, so the decision and the rewrite
+read the same expression.
+
+Two alternatives were rejected. Refusing the position with a Package condition
+on every backend would break a spelling that four backends already compute
+correctly. Computing it natively — expanding the aggregate once per possible
+combination of helper values under a `CASE` on `GROUPING()` — returns the right
+value at the price of a rewriter that multiplies aggregates, for no gain in
+meaning over the portable adapter. Sending every summary that holds any helper
+to the portable adapter would also have been simpler to decide, and was
+rejected because helpers outside an aggregate are correct natively.
+
+What this ADR decides is unaffected. A helper outside every aggregate still
+emits `GROUPING()` on the native path, with the numeric type and the
+parenthesization it has today, and a Grouping identifier is still the same
+value on every adapter.
