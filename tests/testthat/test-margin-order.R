@@ -582,6 +582,84 @@ test_that("a direct data.table keeps `NaN` and `NA` partitions contiguous", {
   expect_identical(result$g, rep(c("a", "b", "Total"), 3L))
 })
 
+# A complex key holding `nan`, `NA` and one non-missing value in each group.
+margin_order_complex_nan_data <- function(nan) {
+  data.frame(
+    x = c(nan, NA, nan, NA, 1 + 0i, 1 + 0i),
+    g = c("a", "a", "b", "b", "a", "b"),
+    v = c(1L, 2L, 4L, 8L, 16L, 32L)
+  )
+}
+
+test_that("a complex fixed key keeps `NaN` and `NA` partitions contiguous", {
+  nans <- list(
+    real = complex(real = NaN, imaginary = 0),
+    imaginary = complex(real = 1, imaginary = NaN)
+  )
+  for (part in names(nans)) {
+    nan <- nans[[part]]
+    expected_x <- rep(c(1 + 0i, nan, NA), each = 3L)
+    inputs <- list(
+      data.frame = margin_order_complex_nan_data(nan),
+      tibble = tibble::as_tibble(margin_order_complex_nan_data(nan))
+    )
+    if (suggest_available("data.table")) {
+      inputs$data.table <- data.table::as.data.table(
+        margin_order_complex_nan_data(nan)
+      )
+    }
+    for (input in names(inputs)) {
+      label <- paste(part, input)
+      last <- summarize_with_margins(
+        inputs[[input]], s = sum(v), .by = x, .grouping = rollup(g),
+        .sort = "last"
+      )
+      expect_identical(last$x, expected_x, label = label)
+      expect_identical(last$g, rep(c("a", "b", "Total"), 3L), label = label)
+      expect_identical(
+        last$s, c(16L, 32L, 48L, 1L, 4L, 5L, 2L, 8L, 10L), label = label
+      )
+
+      first <- summarize_with_margins(
+        inputs[[input]], s = sum(v), .by = x, .grouping = rollup(g),
+        .sort = "first"
+      )
+      expect_identical(first$x, expected_x, label = label)
+      expect_identical(first$g, rep(c("Total", "a", "b"), 3L), label = label)
+      expect_identical(
+        first$s, c(48L, 16L, 32L, 5L, 1L, 4L, 10L, 2L, 8L), label = label
+      )
+    }
+  }
+})
+
+test_that("a complex dimension keeps `NaN` and `NA` groups contiguous", {
+  nan <- complex(real = NaN, imaginary = 0)
+  last <- summarize_with_margins(
+    margin_order_complex_nan_data(nan), s = sum(v), .grouping = rollup(x, g),
+    .margin_label = NULL, .sort = "last"
+  )
+  expect_identical(
+    last$x, c(rep(c(1 + 0i, nan, NA), each = 3L), NA_complex_)
+  )
+  expect_identical(last$g, c(rep(c("a", "b", NA), 3L), NA))
+  expect_identical(
+    last$s, c(16L, 32L, 48L, 1L, 4L, 5L, 2L, 8L, 10L, 63L)
+  )
+
+  first <- summarize_with_margins(
+    margin_order_complex_nan_data(nan), s = sum(v), .grouping = rollup(x, g),
+    .margin_label = NULL, .sort = "first"
+  )
+  expect_identical(
+    first$x, c(NA_complex_, rep(c(1 + 0i, nan, NA), each = 3L))
+  )
+  expect_identical(first$g, c(NA, rep(c(NA, "a", "b"), 3L)))
+  expect_identical(
+    first$s, c(63L, 48L, 16L, 32L, 5L, 1L, 4L, 10L, 2L, 8L)
+  )
+})
+
 test_that("plain-list fixed keys put NULL after NA-valued elements", {
   data <- tibble::tibble(key = list(NA_integer_, NULL), units = 1:2)
   original <- data

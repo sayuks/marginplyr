@@ -444,7 +444,9 @@ local_assigned_summary_value <- function(value, name, group_vars,
                                          protected_sources,
                                          type_state,
                                          alias_state = NULL, position = NULL) {
-  if (is.null(value)) {
+  # dplyr's own result check refuses a non-vector, which vctrs would otherwise
+  # refuse here with its scalar-type error.
+  if (is.null(value) || !vctrs::obj_is_vector(value)) {
     return(value)
   }
   # Types no group can combine are left for dplyr's own combine to refuse,
@@ -1850,8 +1852,10 @@ is_context_only_name_expr <- function(expr, lookup, allow_context = TRUE) {
 # template are literal or already resolved. No caller function or summary
 # expression runs while reserving internal key names from the input name list.
 # Earlier visible mutations invalidate the lexical bindings they replace.
+# An output reusing an input name replaces that column in dplyr's mask, so
+# `available` holds each name once.
 predictable_local_across_names <- function(dots, input_names) {
-  available <- input_names
+  available <- unique(input_names)
   predicted <- character()
   rebound <- character()
   arg_names <- rlang::names2(dots)
@@ -1887,11 +1891,11 @@ predictable_local_across_names <- function(dots, input_names) {
           vctrs_error_subscript_oob = function(cnd) character()
         )
         predicted <- c(predicted, output)
-        available <- c(available, output)
+        available <- union(available, output)
       }
     }
     if (nzchar(name)) {
-      available <- c(available, name)
+      available <- union(available, name)
     }
     rebound <- union(rebound, lookup_rebound_names(
       expr, lookup$env, available, visible_removals = TRUE

@@ -746,3 +746,33 @@ rejected function-value alternative fails a consumer that matches the head by
 name; dplyr's expansion is the only such consumer of a local call, it does not
 read this one, and the binding still runs the function the analysis read. A
 call dplyr expands keeps its qualified head.
+
+## Amendment: a rebuilt call keeps the caller's pair
+
+#1582 shows that the consequence *Rewrites may normalize parentheses outside
+the ordinary `across()` boundary* recorded under *Redundant parentheses are
+read through, in one place* was not confined to a diagnostic echo. dbplyr
+renders an infix operator as text and groups its operands only where a `(`
+node stands, so a summary on a lazy SQL input written `a - (b - c)` ran as
+`a - b - c`, and `p & (q | r)` as `p & q | r`, with no diagnostic. R
+evaluates the rebuilt tree the same either way, which is why no local,
+dtplyr or Arrow result showed it.
+
+A call rebuilt after its head and arguments were read through a pair around
+the whole call keeps one pair around the rebuilt call, on every backend.
+Recognition is unchanged: it still reads through every pair, however many deep,
+and the original number of pairs still need not survive. The boundary the
+*preserve parenthesized across evaluation* amendment draws around an
+`across()` whose whole call is parenthesized is this same pair; the one around
+a parenthesized head is kept beside it.
+
+A pair around a qualified name or a function literal stays dropped: such a
+value has no operands to group, and dbplyr ignores `.names` for an `across()`
+whose `.fns` is parenthesized, so keeping that pair would change the output
+names a lazy `across()` gives today.
+
+Restoring the pair only for a lazy SQL input is rejected: the rebuild does not
+know the backend, and the pair is the caller's own spelling, which every
+consumer already receives from the same expression in a native summary.
+Parenthesizing every infix operand dbplyr renders is rejected because it
+changes text that native dbplyr renders for the same expression.

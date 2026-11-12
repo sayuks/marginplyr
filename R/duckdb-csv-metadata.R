@@ -304,7 +304,19 @@ duckdb_metadata_catalog <- function(con) {
     "system.main.current_setting('search_path')",
     "FROM system.main.duckdb_keywords()"
   ))
-  with_sent_query("relation_catalog", sql, DBI::dbGetQuery(con, sql))
+  catalog <- with_sent_query(
+    "relation_catalog", sql, DBI::dbGetQuery(con, sql)
+  )
+  # duckdb_register() keeps each frame alive as a `_registered_df_<name>`
+  # attribute of the connection pointer; its temp.main view has no SQL.
+  registered <- sub("^_registered_df_", "", grep(
+    "^_registered_df_", names(attributes(con@conn_ref)), value = TRUE
+  ))
+  catalog$registered <- catalog$kind %in% "view" &
+    catalog$database_name %in% "temp" & catalog$schema_name %in% "main" &
+    catalog$relation_name %in% registered &
+    (is.na(catalog$definition) | !nzchar(catalog$definition))
+  catalog
 }
 
 # Resolve one captured multipart name against catalog-only metadata. DuckDB's
@@ -369,6 +381,24 @@ abort_duckdb_view_metadata <- function() {
     i = paste0(
       "Supply established reader metadata directly, or collect the input ",
       "explicitly with {.code dplyr::collect()} ",
+      "and pass the resulting data frame."
+    )
+  ))
+}
+
+# Refuse a client-created view whose definition DuckDB does not store, other
+# than a registered data frame, since only binding it would reveal its source.
+abort_duckdb_unstored_view <- function() {
+  abort_marginplyr(c(
+    "Can't safely determine column metadata for this DuckDB view.",
+    i = paste0(
+      "It has no stored SQL definition, so its source can't be checked ",
+      "without binding it."
+    ),
+    i = paste0(
+      "Create the view with SQL {.code CREATE VIEW ... AS}, register an R ",
+      "data frame with {.code duckdb::duckdb_register()}, or collect the ",
+      "input explicitly with {.code dplyr::collect()} ",
       "and pass the resulting data frame."
     )
   ))
@@ -445,8 +475,10 @@ validate_duckdb_authored_calls <- function(tokens, catalog) {
 validate_duckdb_view_metadata <- function(index, catalog, seen) {
   if (index %in% seen) abort_duckdb_view_metadata()
   view <- catalog()[index, , drop = FALSE]
+  # A registered R data frame binds from the frame alone, reading no source.
+  if (isTRUE(view$registered[1L])) return(invisible(NULL))
   sql <- view$definition[[1L]]
-  if (is.na(sql) || !nzchar(sql)) abort_duckdb_view_metadata()
+  if (is.na(sql) || !nzchar(sql)) abort_duckdb_unstored_view()
   tokens <- duckdb_metadata_tokens(sql)
   quoted <- attr(tokens, "quoted")
   depth <- cumsum((tokens == "(" & !quoted) - (tokens == ")" & !quoted))

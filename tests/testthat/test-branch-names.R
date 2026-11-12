@@ -156,3 +156,55 @@ test_that("dtplyr retains suffix names across Margin verbs and sort modes", {
   skip_if_suggest_absent("dtplyr")
   expect_suffix_margin_results(dtplyr::lazy_dt(suffix_name_data()))
 })
+
+# Each summary's type differs between the `g` set and the empty set, so binding
+# the two branches is refused for the caller's column wherever it sits.
+expect_cross_set_type_names <- function(data) {
+  set_typed <- function(n) if (n > 2L) "a" else 1L
+  expect_combine_names <- function(..., column) {
+    error <- expect_error(
+      summarize_with_margins(data, ..., .grouping = rollup("g")),
+      class = "vctrs_error_incompatible_type"
+    )
+    expect_null(error$parent)
+    expect_identical(
+      conditionMessage(error),
+      paste0(
+        "Can't combine `..1$", column, "` <integer> and `..2$", column,
+        "` <character>."
+      )
+    )
+  }
+  expect_combine_names(x = set_typed(dplyr::n()), column = "x")
+  expect_combine_names(
+    s = sum(.data$v), `x...1` = set_typed(dplyr::n()), column = "x...1"
+  )
+  expect_combine_names(
+    s = sum(.data$v), data.frame(p = set_typed(dplyr::n())), column = "p"
+  )
+  expect_combine_names(
+    f = data.frame(p = set_typed(dplyr::n())), column = "f$p"
+  )
+  expect_combine_names(
+    s = sum(.data$v), dplyr::across("v", ~ set_typed(dplyr::n())), column = "v"
+  )
+}
+
+cross_set_type_data <- function() {
+  data.frame(g = c("a", "a", "b"), v = 1:3)
+}
+
+test_that("data frames name the caller's column for a cross-set type", {
+  expect_cross_set_type_names(cross_set_type_data())
+})
+
+test_that("tibbles name the caller's column for a cross-set type", {
+  expect_cross_set_type_names(dplyr::as_tibble(cross_set_type_data()))
+})
+
+test_that("data tables name the caller's column for a cross-set type", {
+  skip_if_suggest_absent("data.table")
+  expect_cross_set_type_names(
+    data.table::as.data.table(cross_set_type_data())
+  )
+})

@@ -37,10 +37,7 @@ summarize_margin_native <- function(.data,
     set_id_quos <- list()
   }
 
-  labelled_dimensions <- names(Filter(
-    function(label) !is_missing_margin_label(label),
-    margin_labels
-  ))
+  labelled_dimensions <- labelled_margin_dimensions(margin_labels)
   needs_display_flags <- length(labelled_dimensions) > 0L
   if (needs_display_flags) {
     flag_names <- new_margin_internal_names(

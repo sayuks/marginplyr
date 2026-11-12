@@ -197,3 +197,75 @@ test_that("dtplyr identifier handling retains name admission and validation", {
   expect_error(nest_by_with_margins(input, .id = ".rows"),
                "`.rows`", class = "marginplyr_error")
 })
+
+test_that("dtplyr dimensions named like an alias survive an omitting set", {
+  skip_if_suggest_absent("dtplyr")
+  for (name in c("..marginplyr_dtplyr_column_1",
+                 "..marginplyr_dtplyr_column_2")) {
+    local <- rlang::set_names(
+      data.frame(k = c("p", "q", "p"), v = c(1, 2, 4)), c(name, "v")
+    )
+    input <- dtplyr::lazy_dt(local)
+    direct <- tibble::as_tibble(dplyr::collect(summarize_with_margins(
+      input, s = sum(v), .grouping = rollup(dplyr::all_of(name))
+    )))
+    expect_identical(direct[[name]], c("p", "q", "Total"))
+    expect_identical(direct$s, c(5, 2, 7))
+    plans <- list(
+      rollup = rollup(dplyr::all_of(name)),
+      cube = cube(dplyr::all_of(name)),
+      union = grouping_sets(grouping_set(dplyr::all_of(name)), grouping_set())
+    )
+    for (plan in plans) {
+      for (id in list(NULL, "set")) {
+        for (sort in c("none", "last")) {
+          for (label in list("Total", NA_character_)) {
+            call <- function(data) {
+              summarize_with_margins(
+                data, s = sum(v), p = share_of_total(s), .grouping = plan,
+                .id = id, .sort = sort, .margin_label = label
+              )
+            }
+            expect_identical(
+              as.list(tibble::as_tibble(dplyr::collect(call(input)))),
+              as.list(tibble::as_tibble(call(local)))
+            )
+          }
+        }
+      }
+    }
+  }
+})
+
+test_that("dtplyr aliases skip a dimension a special name displaces", {
+  skip_if_suggest_absent("dtplyr")
+  name <- "..marginplyr_dtplyr_column_2"
+  local <- rlang::set_names(
+    data.frame(
+      a = c("x", "x", "y"), b = c("p", "q", "p"), g = c("m", "m", "n"),
+      v = c(1, 2, 4)
+    ),
+    c("T", name, "g", "v")
+  )
+  input <- dtplyr::lazy_dt(local)
+  plans <- list(
+    rollup = rollup(dplyr::all_of(c("T", name))),
+    cube = cube(dplyr::all_of(c("T", name))),
+    union = grouping_sets(grouping_set(dplyr::all_of(c("T", name))),
+                          grouping_set())
+  )
+  for (plan in plans) {
+    for (by in list(NULL, "g")) {
+      call <- function(data) {
+        summarize_with_margins(
+          data, s = sum(v), .by = dplyr::all_of(by), .grouping = plan,
+          .id = "set", .sort = "last"
+        )
+      }
+      expect_identical(
+        as.list(tibble::as_tibble(dplyr::collect(call(input)))),
+        as.list(tibble::as_tibble(call(local)))
+      )
+    }
+  }
+})

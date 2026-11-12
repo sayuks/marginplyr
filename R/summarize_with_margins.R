@@ -433,10 +433,12 @@
 #' including those whose own default is the opposite. A local double key
 #' holding both `NaN` and `NA` keeps them apart, as [dplyr::summarize()]
 #' does: its missingness term places `NaN` before `NA`, both after ordinary
-#' values, so each is one contiguous group with its own margin rows. For a
-#' local packed
-#' data-frame or matrix key, the missingness term is per row: the key is wholly
-#' missing only when all its components are missing. Partly missing keys follow
+#' values, so each is one contiguous group with its own margin rows. A local
+#' complex key orders its missing values by real part and then imaginary part,
+#' each ranked the same way, so a `NaN` in either part stays apart from `NA`.
+#' For a local packed data-frame or matrix key, the missingness term is per
+#' row: the key is wholly missing only when all its components are missing.
+#' Partly missing keys follow
 #' ordinary local `dplyr::arrange()` value order. Local list keys use
 #' dplyr/vctrs row-vector missingness: in a plain list, `NULL` is missing,
 #' while an element containing scalar `NA` is nonmissing. Under
@@ -852,6 +854,13 @@
 #' ODBC connections. Simulator coverage verifies SQL generation, not execution
 #' against every database server.
 #'
+#' Continuous integration also executes the portable path on a live Microsoft
+#' SQL Server 2022 and compares each result with the local one: summaries of
+#' one grouping set and of a rollup over a character or an integer dimension,
+#' with a text or a typed-missing Margin label, and a rollup with a fixed key,
+#' a Total share and a Margin order. Other SQL Server plans rest on the
+#' simulator.
+#'
 #' Arrow and dtplyr are also tested lazy backends, but they are not SQL
 #' database connections.
 #'
@@ -888,6 +897,9 @@
 #'   names, SQL keywords, the current database and configured search path.
 #'   Stored views and their dependencies are checked before binding the input;
 #'   opaque macros and calls to `query()` or `query_table()` are refused.
+#'   A data frame registered with `duckdb::duckdb_register()` is admitted, as
+#'   its view reads only that frame; another view without stored SQL is
+#'   refused.
 #'   A direct reader already showing unsafe inference is refused without
 #'   needing a catalog query.
 #'   The catalog query binds no caller relation and reads no source values.
@@ -1572,10 +1584,11 @@ stage_margin_summaries <- function(operation,
     reserved_names <- c(reserved_names, set_id_name)
   }
 
-  # Which adapter runs stays a function of the duplicate policy and of an
-  # identifier that has to number occurrences. A Margin order needs Grouping
-  # bits rather than occurrences, so the identifier it may add below is
-  # allocated after this decision and never changes it.
+  # Which adapter runs stays a function of the duplicate policy, of an
+  # identifier that has to number occurrences, and of a Grouping helper that
+  # has to be a literal (ADR 0009). A Margin order needs Grouping bits rather
+  # than occurrences, so the identifier it may add below is allocated after
+  # this decision and never changes it.
   use_native <- supports_grouping_sets(
     operation$data,
     plan,
@@ -1583,6 +1596,9 @@ stage_margin_summaries <- function(operation,
   ) && !(
     !is.null(set_id_name) &&
       identical(plan$duplicates, "keep")
+  ) && !grouping_helper_needs_literal(
+    summaries$dots,
+    dbplyr::remote_con(operation$data)
   )
 
   sort_id <- margin_sort_identifier(

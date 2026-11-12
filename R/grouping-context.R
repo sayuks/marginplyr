@@ -83,6 +83,12 @@
 #'   emits SQL `GROUPING()`, so PostgreSQL falls back to the literal whenever
 #'   `.duplicates = "keep"` sends it down the portable path.
 #'
+#'   Native `GROUPING()` is emitted only for a helper outside every aggregate:
+#'   SQL does not allow it as an aggregate's argument. A summary with a helper
+#'   inside an aggregate, such as `sum(v * grouping_bit(b))`, or inside any
+#'   call the SQL dialect of the backend does not translate as a plain scalar,
+#'   takes the portable `UNION ALL` path, where the helper is the literal.
+#'
 #'   A direct output of either helper remains numeric even when a remote Margin
 #'   result has zero rows. This includes a supported literal `across()` lambda
 #'   whose entire result is the helper. Direct `collect()` and supported direct
@@ -234,6 +240,58 @@ contains_grouping_helper <- function(expr) {
     searched_call_parts(expr),
     contains_grouping_helper,
     logical(1)
+  ))
+}
+
+# Whether any summary holds a Grouping helper that native `GROUPING()` cannot
+# replace, because a call between it and the top of its expression is not one
+# `con`'s dialect translates as a plain scalar. Such a summary takes the
+# portable adapter (ADR 0009). The caller holds a connection on a native
+# grouping-sets backend.
+grouping_helper_needs_literal <- function(dots, con) {
+  translation <- dbplyr::sql_translation(con)
+  plain_scalar_call <- function(expr) {
+    name <- static_call_name(expr)
+    !is.null(name) &&
+      exists(name, envir = translation$scalar, inherits = FALSE) &&
+      !exists(name, envir = translation$aggregate, inherits = FALSE) &&
+      !exists(name, envir = translation$window, inherits = FALSE)
+  }
+  any(vapply(
+    dots,
+    function(quo) {
+      grouping_helper_under_call(rlang::quo_get_expr(quo), plain_scalar_call)
+    },
+    logical(1)
+  ))
+}
+
+# Whether a Grouping helper in `expr` sits under a call `plain_scalar_call()`
+# refuses. The walk is `contains_grouping_helper()`'s, which reads the parts
+# the Grouping rewrite compiles. `across()`, `if_any()`, `if_all()`, a
+# lambda, and the `list()` holding `.fns` are containers: the native adapter
+# hands `across()` to dbplyr unexpanded, so a helper in a lambda body is
+# judged by the calls in that body.
+grouping_helper_under_call <- function(expr,
+                                       plain_scalar_call,
+                                       in_fns = FALSE) {
+  if (!contains_grouping_helper(expr) ||
+        !is.null(grouping_helper_name(expr))) {
+    return(FALSE)
+  }
+  selection_name <- static_spelling_name(expr, "selection")
+  selection <- isTRUE(selection_name %in% c("across", "if_any", "if_all"))
+  container <- selection || rlang::is_call(expr, c("~", "function")) ||
+    (in_fns && identical(static_call_name(expr), "list"))
+  if (!container && !plain_scalar_call(expr)) {
+    return(TRUE)
+  }
+  any(vapply(
+    searched_call_parts(expr),
+    grouping_helper_under_call,
+    logical(1),
+    plain_scalar_call = plain_scalar_call,
+    in_fns = selection
   ))
 }
 

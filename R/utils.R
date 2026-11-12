@@ -37,7 +37,8 @@ with_margin_column_aliases <- function(data, read, transform,
     return(transform(data, function(name) name))
   }
   aliases <- stats::setNames(new_margin_internal_names(
-    length(special), c(names(data), reserved), prefix = "..marginplyr_column_"
+    length(special), c(names(data), read, reserved),
+    prefix = "..marginplyr_column_"
   ), special)
   renamed <- names(data)
   renamed[match(special, renamed)] <- unname(aliases)
@@ -115,6 +116,8 @@ margin_column_pronoun <- function(name) {
 # data.table special variables and dtplyr's logical constants. `read` names
 # source and output columns. `transform` receives their temporary names and
 # returns a result; `reserved` keeps its output names out of the alias set.
+# An output target in `read` can be absent from `.data`, so aliases avoid
+# `read` as well as the current columns.
 margin_safe_column_reads <- function(.data, read, transform,
                                      reserved = character()) {
   if (is.data.frame(.data)) {
@@ -136,7 +139,7 @@ margin_safe_column_reads <- function(.data, read, transform,
   data_vars <- margin_col_names(.data)
   aliases <- new_margin_internal_names(
     length(special),
-    used_names = c(data_vars, reserved),
+    used_names = c(data_vars, read, reserved),
     prefix = "..marginplyr_dtplyr_column_"
   )
   names(aliases) <- special
@@ -746,16 +749,18 @@ rebuild_static_call <- function(expr, args, head = static_call_head(expr)) {
   # Argument names live in the call's own pairlist tags rather than in an
   # attribute, so this replaces nothing `call2()` just set.
   attributes(rebuilt) <- attributes(expr)
-  # Inside c(), tidyselect distinguishes a bare exclusion from a parenthesized
-  # selection. Keep the boundary around unary minus and ranges.
-  if ((rlang::is_call(rebuilt, "-", n = 1L) ||
-         rlang::is_call(rebuilt, ":", n = 2L)) && is_parenthesized(expr)) {
+  # The head and arguments were read through a pair around the whole call, and
+  # one pair goes back around the rebuilt call unless it is a qualified name or
+  # a function literal (ADR 0019, *a rebuilt call keeps the caller's pair*).
+  if (!identical(unparenthesized_call(expr), expr) &&
+        !rlang::is_call(rebuilt, c("::", ":::", "function"))) {
     return(rlang::call2("(", rebuilt))
   }
-  # dplyr expands an unnamed top-level across(). Keep a parenthesized call
-  # on its per-group evaluation path even when its head is qualified (ADR 0019).
+  # dplyr expands an unnamed top-level across(). Keep a call whose head is
+  # parenthesized on its per-group evaluation path even when the head is
+  # qualified (ADR 0019).
   if (identical(static_spelling_name(expr, "selection"), "across") &&
-        (is_parenthesized(expr) || is_parenthesized(static_call_head(expr)))) {
+        is_parenthesized(static_call_head(expr))) {
     return(rlang::call2("(", rebuilt))
   }
   rebuilt
