@@ -1,5 +1,10 @@
 # marginplyr 0.1.0
 
+* `.check_margin_label = TRUE` no longer fails with an Arrow or DuckDB error
+  when the input is an `arrange()`d query. The check reads the same columns
+  whatever the input's ordering, and an ordering beneath `head()` still
+  decides which rows it reads (#1585).
+
 * A data frame registered with `duckdb::duckdb_register()` is accepted by
   the Margin verbs and typed `inspect_grouping()` again, directly or through
   `sql()`, a lazy verb, a view or a join, without reading its rows during
