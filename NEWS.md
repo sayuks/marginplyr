@@ -1,5 +1,10 @@
 # marginplyr 0.1.0
 
+* On a grouped input, a grouping column that also appears in `.grouping`, or
+  that `.margin_label` names, is now refused as a fixed grouping column of
+  `.data` rather than as a `.by` column the caller did not write, and the
+  overlap refusal points at `dplyr::ungroup()` (#1615).
+
 * With `options(marginplyr.audit_sql = TRUE)`, a message a SQL translation
   raises once per session or regularly (`rlang::inform()` or
   `cli::cli_inform()` with `.frequency`) now reaches the caller as it does with

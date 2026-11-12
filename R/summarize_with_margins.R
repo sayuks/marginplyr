@@ -1260,7 +1260,8 @@ summarize_with_margins <- function(.data,
     keeps_input_order = FALSE,
     .id = .id,
     validate_grouping = share_grouping_spec_validator(share_kinds),
-    validate_plan_names = function(by, dimensions, data_vars, complete) {
+    validate_plan_names = function(by, dimensions, data_vars, complete,
+                                   by_from_groups) {
       if (
         complete && length(dots) > 0L &&
           !contains_share_helper(rlang::quo_get_expr(dots[[1L]]))

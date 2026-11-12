@@ -275,7 +275,8 @@ nest_margin_pipeline <- function(.data,
     # need source metadata (#421).
     carried_columns = function(data_vars, plan) data_vars,
     .id = set_id_name,
-    validate_plan_names = function(by, dimensions, data_vars, complete) {
+    validate_plan_names = function(by, dimensions, data_vars, complete,
+                                   by_from_groups) {
       check_nest_output_names(c(by, dimensions), set_id_name, .key, rowwise)
     },
     call = call
