@@ -149,3 +149,71 @@ test_that("c_across() refuses a plan key as pick() does", {
     }
   }
 })
+
+test_that("an unmatched c_across() argument fails as native dplyr reports it", {
+  data <- tibble::tibble(g = c("a", "a", "b"), v = c(1, 2, 3), w = c(4, 5, 6))
+  inputs <- list(tibble = data, data_frame = as.data.frame(data))
+  if (suggest_available("data.table")) {
+    inputs$data_table <- data.table::as.data.table(data)
+  }
+  summaries <- list(
+    positional = list(
+      expr = rlang::expr(sum(c_across(v, w))), argument = "(w)"
+    ),
+    named = list(
+      expr = rlang::expr(sum(c_across(cols = v, vars = w))),
+      argument = "(vars = w)"
+    ),
+    lambda = list(
+      expr = rlang::expr(sum(across(v, ~ sum(c_across(v, w))))),
+      argument = "(w)"
+    )
+  )
+  for (input in names(inputs)) {
+    for (form in names(summaries)) {
+      info <- paste(input, form)
+      summary <- rlang::list2(z = summaries[[form]]$expr)
+      cnd <- rlang::catch_cnd(
+        summarize_with_margins(inputs[[input]], !!!summary, .by = g),
+        "error"
+      )
+      expect_s3_class(cnd, "rlang_error")
+      message <- conditionMessage(cnd)
+      expect_match(message, "In argument: `z = ", fixed = TRUE, info = info)
+      expect_match(message, "In group 1: `g = \"a\"`", fixed = TRUE,
+                   info = info)
+      expect_match(message, summaries[[form]]$argument, fixed = TRUE,
+                   info = info)
+      expect_no_match(message, ".marginplyr_", fixed = TRUE)
+      expect_identical(
+        rlang::call_name(conditionCall(cnd)), "summarize_with_margins",
+        info = info
+      )
+    }
+  }
+})
+
+test_that("an unevaluated malformed c_across() call does not fail", {
+  data <- tibble::tibble(g = c("a", "a", "b"), v = c(1, 2, 3), w = c(4, 5, 6))
+  actual <- summarize_with_margins(
+    data, z = if (FALSE) sum(c_across(v, w)) else 1, .by = g
+  )
+  expect_identical(as.data.frame(actual), data.frame(g = c("a", "b"), z = 1))
+})
+
+test_that("forwarded c_across() arguments fail as native dplyr fails", {
+  data <- tibble::tibble(g = c("a", "a", "b"), v = c(1, 2, 3), w = c(4, 5, 6))
+  native <- function(...) {
+    dplyr::summarise(data, z = sum(dplyr::c_across(...)), .by = g)
+  }
+  margin <- function(...) {
+    summarize_with_margins(data, z = sum(dplyr::c_across(...)), .by = g)
+  }
+  expected <- rlang::catch_cnd(native(v, w), "error")
+  actual <- rlang::catch_cnd(margin(v, w), "error")
+  expect_identical(conditionMessage(actual), conditionMessage(expected))
+  expect_identical(
+    as.data.frame(margin(tidyselect::everything())),
+    data.frame(g = c("a", "b"), z = c(12, 9))
+  )
+})
