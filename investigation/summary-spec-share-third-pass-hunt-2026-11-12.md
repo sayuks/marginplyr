@@ -53,18 +53,26 @@ the ADR governing it.
 Each script under `investigation/2026-11-12-summary-spec-share-third-pass/`
 is run from the repository root, prints the observed behaviour and exits zero.
 
-| Boundary | Established effect | Script |
-| --- | --- | --- |
-| `dplyr::c_across()` in a local summary | Its selection reached the grouping keys and marginplyr's private columns, so values, and shares over them, were wrong with no diagnostic, or a valid call was refused naming a private column. | `c-across-reads-keys-and-private-columns.R` |
-| Sorted SQLite summary with a text Margin label, a fixed key, and neither `.id` nor a share | The fixed key lost its declared type: a `DATE` key collected as character, and an empty or all-missing key as logical. | `sqlite-sorted-labelled-fixed-key-type.R` |
-| `compute()` of an unsorted SQLite summary without `.id` or a share | The destination table was created with untyped columns where native `compute()` kept the declaration, so an empty or all-missing column collected as logical. | `sqlite-unsorted-compute-untyped.R` |
-| Parenthesized `list()` as `across()` `.fns` on a lazy input | Since #1582, DuckDB ignored `.names`, and dtplyr and Arrow refused a call that returned rows before it. | `across-parenthesized-fns-list.R` |
-| `.check_margin_label = TRUE` over an Arrow input whose ordering names one column twice | The check's query failed at construction, where the same call with the check off succeeded. | `arrow-repeated-sort-key-label-check.R` |
-| Invalid `grouping_bit()` or `grouping_id()` call with `.check_margin_label = TRUE` on a lazy input | The refusal came only after the label-collision query had read the input, and a collision in the data was reported in its place. | `helper-refusal-after-collision-query.R`, `helper-refusal-reads-input.R` |
-| A local summary that is `NULL` in some grouping sets only | A bare `simpleError` with no call reported "Union branch 2 does not have the columns of branch 1". | `null-summary-in-one-set.R` |
+| Boundary | Established effect | Script | Issue |
+| --- | --- | --- | --- |
+| `dplyr::c_across()` in a local summary | Its selection reached the grouping keys and marginplyr's private columns, so values, and shares over them, were wrong with no diagnostic, or a valid call was refused naming a private column. | `c-across-reads-keys-and-private-columns.R` | [#1599](https://github.com/sayuks/marginplyr/issues/1599) |
+| Sorted SQLite summary with a text Margin label, a fixed key, and neither `.id` nor a share | The fixed key lost its declared type: a `DATE` key collected as character, and an empty or all-missing key as logical. | `sqlite-sorted-labelled-fixed-key-type.R` | [#1600](https://github.com/sayuks/marginplyr/issues/1600) |
+| `compute()` of an unsorted SQLite summary without `.id` or a share | The destination table was created with untyped columns where native `compute()` kept the declaration, so an empty or all-missing column collected as logical. | `sqlite-unsorted-compute-untyped.R` | [#1601](https://github.com/sayuks/marginplyr/issues/1601) |
+| Parenthesized `list()` as `across()` `.fns` on a lazy input | Since #1582, DuckDB ignored `.names`, and dtplyr and Arrow refused a call that returned rows before it. | `across-parenthesized-fns-list.R` | [#1602](https://github.com/sayuks/marginplyr/issues/1602) |
+| `.check_margin_label = TRUE` over an Arrow input whose ordering names one column twice | The check's query failed at construction, where the same call with the check off succeeded. | `arrow-repeated-sort-key-label-check.R` | [#1603](https://github.com/sayuks/marginplyr/issues/1603) |
+| Invalid `grouping_bit()` or `grouping_id()` call with `.check_margin_label = TRUE` on a lazy input | The refusal came only after the label-collision query had read the input, and a collision in the data was reported in its place. | `helper-refusal-after-collision-query.R`, `helper-refusal-reads-input.R` | [#1604](https://github.com/sayuks/marginplyr/issues/1604) |
+| A local summary that is `NULL` in some grouping sets only | A bare `simpleError` with no call reported "Union branch 2 does not have the columns of branch 1". | `null-summary-in-one-set.R` | [#1605](https://github.com/sayuks/marginplyr/issues/1605) |
 
 `sqlite-type-boundary-matrix.R` maps the two SQLite findings across label,
 sort, `.id`, share and plan.
+
+The `to-tickets` workflow published these as seven repair slices with no
+prerequisite prefactoring; splitting had been delegated without a
+confirmation checkpoint. Six carry `bug` and `ready-for-agent` and can start
+independently. #1601 carries `bug` and `ready-for-human`, because whether the
+typed-materialization promise reaches an unsorted result that dbplyr
+materializes is a specification choice, and it is blocked by #1600, which
+repairs the missing fixed-key anchor one of its two shapes shares.
 
 ### `dplyr::c_across()` in a local summary
 
