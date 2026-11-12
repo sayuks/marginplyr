@@ -1,5 +1,11 @@
 # marginplyr 0.1.0
 
+* A dtplyr Margin summary whose dimension is named like an alias marginplyr
+  generates for a data.table special symbol, such as
+  `..marginplyr_dtplyr_column_1`, now returns the local result in a rollup,
+  a cube or a union with the empty set, rather than failing at collection
+  with `x and y must have the same column names` (#1591).
+
 * A local complex key or grouping dimension holding both `NaN` and `NA`, in
   either part, now keeps each group and its margin rows together under
   `.sort = "last"` and `"first"`, rather than interleaving them, as a double

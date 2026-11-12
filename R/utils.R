@@ -37,7 +37,8 @@ with_margin_column_aliases <- function(data, read, transform,
     return(transform(data, function(name) name))
   }
   aliases <- stats::setNames(new_margin_internal_names(
-    length(special), c(names(data), reserved), prefix = "..marginplyr_column_"
+    length(special), c(names(data), read, reserved),
+    prefix = "..marginplyr_column_"
   ), special)
   renamed <- names(data)
   renamed[match(special, renamed)] <- unname(aliases)
@@ -115,6 +116,8 @@ margin_column_pronoun <- function(name) {
 # data.table special variables and dtplyr's logical constants. `read` names
 # source and output columns. `transform` receives their temporary names and
 # returns a result; `reserved` keeps its output names out of the alias set.
+# An output target in `read` can be absent from `.data`, so aliases avoid
+# `read` as well as the current columns.
 margin_safe_column_reads <- function(.data, read, transform,
                                      reserved = character()) {
   if (is.data.frame(.data)) {
@@ -136,7 +139,7 @@ margin_safe_column_reads <- function(.data, read, transform,
   data_vars <- margin_col_names(.data)
   aliases <- new_margin_internal_names(
     length(special),
-    used_names = c(data_vars, reserved),
+    used_names = c(data_vars, read, reserved),
     prefix = "..marginplyr_dtplyr_column_"
   )
   names(aliases) <- special
