@@ -749,16 +749,23 @@ rebuild_static_call <- function(expr, args, head = static_call_head(expr)) {
   # Argument names live in the call's own pairlist tags rather than in an
   # attribute, so this replaces nothing `call2()` just set.
   attributes(rebuilt) <- attributes(expr)
-  # Inside c(), tidyselect distinguishes a bare exclusion from a parenthesized
-  # selection. Keep the boundary around unary minus and ranges.
-  if ((rlang::is_call(rebuilt, "-", n = 1L) ||
-         rlang::is_call(rebuilt, ":", n = 2L)) && is_parenthesized(expr)) {
+  # The head and arguments were read through a pair around the whole call, and
+  # one pair goes back around the rebuilt call. dbplyr renders an infix
+  # operator as text and groups its operands only where a `(` node stands, so
+  # dropping the pair runs `a - (b - c)` as `a - b - c` (ADR 0019). The same
+  # pair is what tidyselect reads inside c() around unary minus and ranges.
+  # A qualified name or a function literal is a value with no operands to
+  # group, and dbplyr ignores `.names` for an `across()` whose `.fns` is
+  # parenthesized, so the pair around one stays dropped.
+  if (!identical(unparenthesized_call(expr), expr) &&
+        !rlang::is_call(rebuilt, c("::", ":::", "function"))) {
     return(rlang::call2("(", rebuilt))
   }
-  # dplyr expands an unnamed top-level across(). Keep a parenthesized call
-  # on its per-group evaluation path even when its head is qualified (ADR 0019).
+  # dplyr expands an unnamed top-level across(). Keep a call whose head is
+  # parenthesized on its per-group evaluation path even when the head is
+  # qualified (ADR 0019).
   if (identical(static_spelling_name(expr, "selection"), "across") &&
-        (is_parenthesized(expr) || is_parenthesized(static_call_head(expr)))) {
+        is_parenthesized(static_call_head(expr))) {
     return(rlang::call2("(", rebuilt))
   }
   rebuilt

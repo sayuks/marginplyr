@@ -1,5 +1,10 @@
 # marginplyr 0.1.0
 
+* A summary on a lazy SQL input keeps the grouping the caller's parentheses
+  express, as native dbplyr does. Before, the pair was dropped before dbplyr
+  rendered the expression, so `a - (b - c)` ran as `a - b - c` and
+  `p & (q | r)` as `p & q | r`, with no diagnostic (#1582).
+
 * A dtplyr Margin summary whose dimension is named like an alias marginplyr
   generates for a data.table special symbol, such as
   `..marginplyr_dtplyr_column_1`, now returns the local result in a rollup,
