@@ -114,15 +114,17 @@ record_sent_query_condition <- function(entry, cnd, phase, handling) {
   invisible(NULL)
 }
 
-# Renders an audited row without consuming rlang or lifecycle warning-frequency
-# state. Diagnostic warnings, messages and severity-free conditions stay local;
-# the real operation owns delivery and warning conversion under caller settings.
+# Renders an audited row without consuming rlang message- or warning-frequency
+# state or lifecycle state. Diagnostic warnings, messages and severity-free
+# conditions stay local; the real operation owns delivery and warning
+# conversion under caller settings.
 render_sent_query_sql <- function(query, entry) {
   # A pending cancellation must see both the saved values and their cleanup;
   # cleanup itself must finish restoring every option before delivery resumes.
   suspendInterrupts({
     old <- options(
-      rlib_warning_verbosity = "quiet", lifecycle_verbosity = "quiet"
+      rlib_warning_verbosity = "quiet", lifecycle_verbosity = "quiet",
+      rlib_message_verbosity = "quiet"
     )
     on.exit(suspendInterrupts(options(old)), add = TRUE)
   })
