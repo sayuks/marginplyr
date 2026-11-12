@@ -181,7 +181,9 @@ union_dtplyr_margin_labels <- function(x, y, final = FALSE) {
     margin_label_consensus(entry$valid, entry$values)
   })
   labels <- labels[!vapply(labels, is.null, logical(1))]
-  restore_margin_variable_labels(result, labels)
+  # The data frame `[[<-` copies the table and leaves a stale self-reference;
+  # reallocating restores the valid data.table the native union returns.
+  data.table::setalloccol(restore_margin_variable_labels(result, labels))
 }
 
 # The balanced native source graph owns sources and locals. Its generated call

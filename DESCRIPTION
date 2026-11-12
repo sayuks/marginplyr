@@ -393,6 +393,7 @@ Config/testthat/start-first:
     dtplyr-logical-name-shares,
     arrow-order-term-names,
     selection-error-call,
+    native-grouping-helper-in-aggregate,
     sql-caller-parentheses
 VignetteBuilder:
     quarto

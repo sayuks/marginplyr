@@ -135,3 +135,99 @@ test_that("qualified and derived captures admit stored views before binding", {
     expect_equal(nrow(last_sent_queries()), 0L)
   }
 })
+
+test_that("registered data frames are admitted like the same rows in a table", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  rows <- data.frame(k = c("p", "p", "q"), a = c("x", "y", "x"),
+                     v = c(1, 2, 4))
+  duckdb::duckdb_register(con, "rows_reg", rows)
+  DBI::dbWriteTable(con, "rows_tab", rows)
+  DBI::dbWriteTable(con, "labels", data.frame(k = c("p", "q"), n = 1:2))
+  DBI::dbExecute(con, "CREATE TEMP VIEW rows_view AS SELECT * FROM rows_reg")
+  labels <- dplyr::tbl(con, "labels")
+  forms <- list(
+    direct = function(name) dplyr::tbl(con, name),
+    sql = function(name) {
+      dplyr::tbl(con, dbplyr::sql(paste("SELECT * FROM", name)))
+    },
+    filtered = function(name) dplyr::filter(dplyr::tbl(con, name), v > 0),
+    joined = function(name) {
+      dplyr::left_join(labels, dplyr::tbl(con, name), by = "k")
+    }
+  )
+  verbs <- list(
+    function(x) {
+      summarize_with_margins(x, s = sum(v, na.rm = TRUE), .by = k,
+                             .grouping = rollup(a))
+    },
+    function(x) summarize_with_margins(x, s = sum(v, na.rm = TRUE), .by = k),
+    function(x) {
+      summarize_with_margins(x, s = sum(v, na.rm = TRUE),
+                             sh = share_of_total(s), .grouping = rollup(a))
+    },
+    function(x) expand_with_margins(x, .by = k, .grouping = rollup(a))
+  )
+  sorted <- function(x) {
+    x <- as.data.frame(dplyr::collect(x))
+    x <- x[do.call(order, unname(as.list(x))), , drop = FALSE]
+    rownames(x) <- NULL
+    x
+  }
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  # The stored view is checked against the table it stands in for.
+  cases <- c(lapply(forms, function(form) {
+    list(form("rows_reg"), form("rows_tab"))
+  }), list(view = list(dplyr::tbl(con, "rows_view"),
+                       dplyr::tbl(con, "rows_tab"))))
+  for (case in cases) {
+    plan <- inspect_grouping(
+      case[[1L]], .grouping = rollup(where(is.character))
+    )
+    expect_identical(plan, inspect_grouping(
+      case[[2L]], .grouping = rollup(where(is.character))
+    ))
+    audit <- last_sent_queries(details = TRUE)
+    expect_identical(audit$purpose, c("relation_catalog", "selection_proxy"))
+    expect_match(audit$sql[[2L]], "LIMIT 0", fixed = TRUE)
+    for (verb in verbs) {
+      expect_identical(sorted(verb(case[[1L]])), sorted(verb(case[[2L]])))
+    }
+  }
+  expect_identical(
+    sort(dplyr::collect(verbs[[1L]](dplyr::tbl(con, "rows_reg")))$s),
+    c(1, 2, 3, 4, 4)
+  )
+})
+
+test_that("other views without stored SQL are refused before binding", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  writeLines(c("k", "101"), path)
+  # A view created through duckdb's relation API, as duckplyr's as_tbl()
+  # does, stores no SQL; duckdb exports no function that creates one.
+  internal <- function(name) utils::getFromNamespace(name, "duckdb")
+  relation <- internal("rel_from_table_function")(
+    con, "read_csv", list(path), list()
+  )
+  internal("rel_to_view")(relation, "main", "reader", TRUE)
+  duckdb::duckdb_register(con, "frame", data.frame(k = 1))
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  for (input in list(
+    dplyr::tbl(con, "reader"),
+    dplyr::left_join(dplyr::tbl(con, "frame"), dplyr::tbl(con, "reader"),
+                     by = "k")
+  )) {
+    expect_error(
+      inspect_grouping(input, .grouping = grouping_set(where(is.numeric))),
+      "no stored SQL definition", fixed = TRUE, class = "marginplyr_error"
+    )
+    expect_duckdb_catalog_only()
+  }
+})
