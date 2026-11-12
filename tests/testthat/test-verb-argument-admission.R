@@ -175,6 +175,30 @@ test_that("a misspelled option names the argument it resembles", {
   )
 })
 
+test_that("a short name beside a short option is refused, unlike summarise()", {
+  # `.by` and `.id` are short enough that one insertion or deletion reaches
+  # names native `summarise()` would return as columns. The refusal is the
+  # documented difference in *Option arguments*, and a dot-prefixed name
+  # further from every option is still a column.
+  for (verb in list(summarize_with_margins, summarise_with_margins)) {
+    for (case in list(c(".y", ".by"), c(".i", ".id"))) {
+      spliced <- stats::setNames(list(quote(mean(v))), case[[1L]])
+      expect_error(
+        verb(admission_data(), !!!spliced, .grouping = rollup(g)),
+        paste0(
+          "Did you mean `\\", case[[2L]], "`\\?\n",
+          "i Rename the summary if the column is intended\\."
+        ),
+        class = "marginplyr_error"
+      )
+    }
+    expect_named(
+      verb(admission_data(), .x = mean(v), .grouping = rollup(g)),
+      c("g", ".x")
+    )
+  }
+})
+
 test_that("a name callers write on purpose is left alone", {
   # `.group` is one character from the removed `.groups`, so the net would read
   # it as a misspelling. It is a column callers produce deliberately, and it is

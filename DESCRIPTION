@@ -396,6 +396,7 @@ Config/testthat/start-first:
     native-grouping-helper-in-aggregate,
     sql-caller-parentheses,
     sql-arranged-summary,
+    helper-argument-names,
     across-parenthesized-fns
 VignetteBuilder:
     quarto
