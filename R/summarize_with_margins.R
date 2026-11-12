@@ -1311,6 +1311,8 @@ summarize_with_margins <- function(.data,
 
 execute_margin_summary <- function(operation, dots, check_share_source) {
   check_margin_operation(operation)
+  # A summary's rows do not depend on an unlimited input ordering (#1596).
+  operation$data <- drop_unlimited_sql_order(operation$data)
   with_margin_error_call(
     {
       plan <- operation$plan

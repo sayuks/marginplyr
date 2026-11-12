@@ -130,21 +130,6 @@ check_arranged_label_collision <- function(con) {
       )
     }
   )
-  bag <- function(query) {
-    # dbplyr warns about the ordering the result query inherits whether or not
-    # the check ran, so the warning says nothing about the check.
-    result <- withCallingHandlers(
-      as.data.frame(dplyr::collect(query)),
-      warning = function(cnd) {
-        if (grepl("ORDER BY is ignored", conditionMessage(cnd), fixed = TRUE)) {
-          invokeRestart("muffleWarning")
-        }
-      }
-    )
-    result <- result[do.call(order, unname(as.list(result))), ]
-    rownames(result) <- NULL
-    result
-  }
   label_query <- function() {
     details <- last_sent_queries(include_result = FALSE)
     details[details$purpose == "observed_label_collision", ]
@@ -171,13 +156,15 @@ check_arranged_label_collision <- function(con) {
         expect_false(grepl("\\bv\\b", sent$sql), info = info)
       }
       expect_identical(
-        bag(checked), bag(run(arranged, FALSE, "All")), info = info
+        collected_row_bag(checked),
+        collected_row_bag(run(arranged, FALSE, "All")), info = info
       )
 
       checked <- run(selected, TRUE)
       expect_equal(nrow(label_query()), 1L, info = info)
       expect_identical(
-        bag(checked), bag(run(selected, FALSE)), info = info
+        collected_row_bag(checked), collected_row_bag(run(selected, FALSE)),
+        info = info
       )
       expect_error(
         run(arranged, TRUE), "already present", class = "marginplyr_error",

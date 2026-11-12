@@ -31,6 +31,16 @@ inside an aggregate, such as \code{sum(v * grouping_bit(b))}, or inside any
 call the SQL dialect of the backend does not translate as a plain scalar,
 takes the portable \verb{UNION ALL} path, where the helper is the literal.
 
+The flag or identifier is the same value on every backend, but an
+aggregate whose argument varies with rows only through a helper, such as
+\code{sum(grouping_id(a, b))}, aggregates a constant and follows its
+backend: it counts the constant once per group on a local data frame and
+in \code{dtplyr}, and once per row wherever the helper is a query literal, as
+plain \code{sum(1)} differs between a data frame and a database table. Combine
+the helper with a column that varies by row, as in
+\code{sum(v * grouping_id(a, b))}, or put it outside the aggregate, as in
+\code{n() * grouping_id(a, b)}, for a value that agrees everywhere.
+
 A direct output of either helper remains numeric even when a remote Margin
 result has zero rows. This includes a supported literal \code{across()} lambda
 whose entire result is the helper. Direct \code{collect()} and supported direct

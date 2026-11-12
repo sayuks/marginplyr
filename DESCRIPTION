@@ -394,7 +394,8 @@ Config/testthat/start-first:
     arrow-order-term-names,
     selection-error-call,
     native-grouping-helper-in-aggregate,
-    sql-caller-parentheses
+    sql-caller-parentheses,
+    sql-arranged-summary
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool

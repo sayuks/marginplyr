@@ -1,5 +1,18 @@
 # marginplyr 0.1.0
 
+* `summarize_with_margins()` over an `arrange()`d lazy SQL input no longer
+  passes on dbplyr's "ORDER BY is ignored in subqueries without LIMIT"
+  warning at `show_query()`, `collect()` or `compute()`. The summary's rows
+  do not depend on that ordering, so it is cleared; one beneath `head()` still
+  decides which rows are read, and the window ordering `arrange()` records is
+  kept (#1596).
+
+* `?grouping_bit` now states that an aggregate over a helper alone, such as
+  `sum(grouping_id(a, b))`, aggregates a constant and so follows its backend:
+  once per group on a data frame or in dtplyr, once per row wherever the
+  helper is a query literal, as `sum(1)` does. `sum(v * grouping_id(a, b))`
+  and `n() * grouping_id(a, b)` agree everywhere (#1595).
+
 * A summary on a lazy SQL input keeps the grouping the caller's parentheses
   express, as native dbplyr does. Before, the pair was dropped before dbplyr
   rendered the expression, so `a - (b - c)` ran as `a - b - c` and

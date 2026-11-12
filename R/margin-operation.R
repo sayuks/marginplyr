@@ -373,6 +373,19 @@ prepare_margin_operation <- function(.data,
   )
 }
 
+# Clear a SQL input's top-level ORDER BY when no LIMIT sits beside it, for a
+# query whose rows that ordering cannot change. A limited ordering decides
+# which rows are read, so it stays. The window ordering `dbplyr::op_sort()`
+# reports is held separately and is untouched.
+drop_unlimited_sql_order <- function(data) {
+  if (inherits(data, "tbl_sql") &&
+        inherits(data$lazy_query, "lazy_select_query") &&
+        is.null(data$lazy_query$limit)) {
+    data$lazy_query$order_by <- NULL
+  }
+  data
+}
+
 validate_margin_operation <- function(operation) {
   check_margin_operation(operation)
   with_margin_error_call(
