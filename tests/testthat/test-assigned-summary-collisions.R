@@ -211,6 +211,86 @@ test_that("unnamed summary fields align by name across grouping sets", {
   expect_identical(result$count, c(1L, 1L, 2L))
 })
 
+check_summary_presence <- function(convert) {
+  data <- convert(data.frame(g = c("a", "a", "b"), v = 1:3))
+  key <- rlang::sym("g")
+  expect_absent <- function(object, summary) {
+    error <- expect_error(object, class = "marginplyr_error")
+    expect_identical(rlang::call_name(conditionCall(error)),
+                     "summarize_with_margins")
+    message <- cli::ansi_strip(conditionMessage(error))
+    expect_match(message, paste0("`", summary, "`"), fixed = TRUE)
+    expect_match(message, "every grouping set", fixed = TRUE)
+    expect_match(message, "in place of `NULL`", fixed = TRUE)
+    expect_no_match(message, "branch", fixed = TRUE)
+  }
+
+  expect_absent(
+    summarize_with_margins(
+      data, val = if (grouping_bit(!!key) == 1L) NULL else sum(.data$v),
+      .grouping = rollup("g")
+    ),
+    "val"
+  )
+  expect_absent(
+    summarize_with_margins(
+      data,
+      n = dplyr::n(),
+      val = if (grouping_bit(!!key) == 0L) NULL else sum(.data$v),
+      .grouping = rollup("g")
+    ),
+    "val"
+  )
+  expect_absent(
+    summarize_with_margins(
+      data, if (grouping_bit(!!key) == 1L) NULL else sum(.data$v),
+      .grouping = rollup("g")
+    ),
+    "if (grouping_bit(g) == 1L) NULL else sum(.data$v)"
+  )
+  expect_absent(
+    summarize_with_margins(
+      data,
+      dplyr::across("v", ~ if (grouping_bit(!!key) == 1L) NULL else sum(.x)),
+      .grouping = rollup("g")
+    ),
+    "v"
+  )
+
+  removed <- summarize_with_margins(
+    data, n = dplyr::n(), val = NULL, .grouping = rollup("g")
+  )
+  expect_identical(names(removed), c("g", "n"))
+  expect_identical(removed$n, c(2L, 1L, 3L))
+}
+
+test_that("plain frames diagnose a summary absent from some grouping sets", {
+  check_summary_presence(identity)
+})
+
+test_that("tibbles diagnose a summary absent from some grouping sets", {
+  check_summary_presence(tibble::as_tibble)
+})
+
+test_that("eager tables diagnose a summary absent from some grouping sets", {
+  skip_if_suggest_absent("data.table")
+  check_summary_presence(data.table::as.data.table)
+})
+
+test_that("an unnamed frame against NULL keeps the frame field diagnostic", {
+  data <- data.frame(g = c("a", "a", "b"), v = 1:3)
+  key <- rlang::sym("g")
+  error <- expect_error(
+    summarize_with_margins(
+      data,
+      if (grouping_bit(!!key) == 1L) NULL else data.frame(a = sum(.data$v)),
+      .grouping = rollup("g")
+    ),
+    "consistent field names", class = "marginplyr_error"
+  )
+  expect_match(conditionMessage(error), "`a`", fixed = TRUE)
+})
+
 test_that("a later summary evaluation error keeps its original cause", {
   data <- data.frame(g = c("a", "b"), h = c("c", "d"), x = 1:2)
   frame <- function(x, id) {

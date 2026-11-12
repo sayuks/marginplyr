@@ -395,7 +395,12 @@ Config/testthat/start-first:
     selection-error-call,
     native-grouping-helper-in-aggregate,
     sql-caller-parentheses,
-    sql-arranged-summary
+    sql-arranged-summary,
+    helper-argument-names,
+    across-parenthesized-fns,
+    dtplyr-cross-set-types,
+    grouping-helper-refusal-order,
+    local-c-across
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool

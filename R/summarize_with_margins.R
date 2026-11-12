@@ -234,6 +234,16 @@
 #' Elsewhere in this package `NULL` is a documented value, and what it means is
 #' stated with the argument that takes it.
 #'
+#' A misspelled option reaches [summarize_with_margins()] through `...`,
+#' where it would otherwise become a summary column while the option has no
+#' effect. A dot-prefixed summary name that is an option name, or one
+#' insertion, deletion or substitution from one, is therefore an error naming
+#' the option it resembles. This differs from [dplyr::summarise()] on purpose:
+#' next to the short options `.by` and `.id`, names such as `.y`, `.b`, `.i`
+#' and `.ids` are refused although `summarise()` would return them as
+#' columns. Rename the summary to keep it; a dot-prefixed name further from
+#' every option, such as `.n` or `.x`, is a column as usual.
+#'
 #' @section Variable labels and dataset attributes:
 #' A source column's variable label (`attr(x, "label")`) is retained across
 #' display conversion, grouping-set combination, expansion and nesting. This
@@ -452,11 +462,13 @@
 #' factor level and never a row: it changes `levels()` and nothing else, so the
 #' two options stay independent and no combination of them is wrong.
 #'
-#' A Margin order promises exactly what [dplyr::arrange()] promises. It is a
-#' property of the object the verb returns: on local data frames and `dtplyr`
-#' steps that is the row order, and on lazy tables it is the outermost query's
-#' `ORDER BY`, which [dplyr::collect()] and [dplyr::compute()] both observe:
-#' a materialized result carries the Margin order rather than losing it.
+#' A Margin order promises exactly what [dplyr::arrange()] promises in the C
+#' locale, which it fixes: `options(dplyr.legacy_locale = TRUE)` does not
+#' redirect it to the session's collation. It is a property of the object the
+#' verb returns: on local data frames and `dtplyr` steps that is the row
+#' order, and on lazy tables it is the outermost query's `ORDER BY`, which
+#' [dplyr::collect()] and [dplyr::compute()] both observe: a materialized
+#' result carries the Margin order rather than losing it.
 #' On live SQLite, direct `compute()` of a dedicated result inserts the public
 #' query into a typed table. A sorted result is read back in Margin order using
 #' an available implicit rowid alias. If its public columns shadow all three
@@ -522,10 +534,11 @@
 #' to one of their names does not change what this verb does with it. They are
 #' [grouping_bit()] and [grouping_id()]; [share_of_parent()] and
 #' [share_of_total()]; [dplyr::across()], [dplyr::if_any()],
-#' [dplyr::if_all()], and [dplyr::pick()]; [tidyselect::where()]; and the
-#' branch-local helpers rejected below. A spelling is recognized when the name
-#' matches and it is written bare or qualified with the package that owns it,
-#' so `dplyr::across()` is the same request as `across()` while
+#' [dplyr::if_all()], [dplyr::pick()], and [dplyr::c_across()];
+#' [tidyselect::where()]; and the branch-local helpers rejected below. A
+#' spelling is recognized when the name matches and it is written bare or
+#' qualified with the package that owns it, so `dplyr::across()` is the same
+#' request as `across()` while
 #' `mypkg::across()` is an ordinary call to another package's function.
 #'
 #' Parentheses do not change helper recognition: `(pick)(units)` and
@@ -541,10 +554,10 @@
 #' evaluated because of how it is spelled, but what runs is whatever `rollup`
 #' is bound to where you wrote it.
 #'
-#' [dplyr::across()] and [dplyr::pick()] cannot select any column named in the
-#' complete Grouping plan. This extends dplyr's grouping-column rule across
-#' every branch: a dimension remains excluded even in a grouping set from
-#' which it is omitted.
+#' [dplyr::across()], [dplyr::pick()], and [dplyr::c_across()] cannot select
+#' any column named in the complete Grouping plan. This extends dplyr's
+#' grouping-column rule across every branch: a dimension remains excluded even
+#' in a grouping set from which it is omitted.
 #'
 #' On a local data frame, an ordinary selection in a later summary sees
 #' preceding ordinary outputs when it runs. For example, after
@@ -1243,6 +1256,8 @@ summarize_with_margins <- function(.data,
     # is not the input's column names narrowed to what the result happens to
     # hold: that name would be rebuilt from the input column's levels.
     carried_columns = function(data_vars, plan) plan$by,
+    # A summary's rows do not depend on an unlimited input ordering (#1596).
+    keeps_input_order = FALSE,
     .id = .id,
     validate_grouping = share_grouping_spec_validator(share_kinds),
     validate_plan_names = function(by, dimensions, data_vars, complete) {
@@ -1305,16 +1320,12 @@ summarize_with_margins <- function(.data,
   }
   finalize_margin_operation(
     operation, execution, type_anchor_columns = final_type_anchor,
-    sql_env_column = sql_env_column,
-    restore_tibble = !existing_anchor_needed &&
-      length(execution$declared_types) > 0L
+    sql_env_column = sql_env_column
   )
 }
 
 execute_margin_summary <- function(operation, dots, check_share_source) {
   check_margin_operation(operation)
-  # A summary's rows do not depend on an unlimited input ordering (#1596).
-  operation$data <- drop_unlimited_sql_order(operation$data)
   with_margin_error_call(
     {
       plan <- operation$plan
@@ -1422,6 +1433,12 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
         stats::setNames("integer", operation$set_id_name)
       }
 
+      # A Grouping helper's refusals are decided by the call and the plan, so
+      # ADR 0005 places them ahead of the label query below; staging rewrites
+      # the same dots again, per branch.
+      rewrite_grouping_dots(
+        dots, plan, grouping_set = plan$sets[[1L]], sql = FALSE
+      )
       validate_margin_operation(operation)
 
       if (

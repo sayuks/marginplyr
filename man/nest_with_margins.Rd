@@ -290,6 +290,16 @@ vocabulary can invalidate.
 
 Elsewhere in this package \code{NULL} is a documented value, and what it means is
 stated with the argument that takes it.
+
+A misspelled option reaches \code{\link[=summarize_with_margins]{summarize_with_margins()}} through \code{...},
+where it would otherwise become a summary column while the option has no
+effect. A dot-prefixed summary name that is an option name, or one
+insertion, deletion or substitution from one, is therefore an error naming
+the option it resembles. This differs from \code{\link[dplyr:summarise]{dplyr::summarise()}} on purpose:
+next to the short options \code{.by} and \code{.id}, names such as \code{.y}, \code{.b}, \code{.i}
+and \code{.ids} are refused although \code{summarise()} would return them as
+columns. Rename the summary to keep it; a dot-prefixed name further from
+every option, such as \code{.n} or \code{.x}, is a column as usual.
 }
 
 \section{Result class and attributes}{
@@ -519,11 +529,13 @@ class and attributes}. \code{.margin_label_position} positions a synthetic
 factor level and never a row: it changes \code{levels()} and nothing else, so the
 two options stay independent and no combination of them is wrong.
 
-A Margin order promises exactly what \code{\link[dplyr:arrange]{dplyr::arrange()}} promises. It is a
-property of the object the verb returns: on local data frames and \code{dtplyr}
-steps that is the row order, and on lazy tables it is the outermost query's
-\verb{ORDER BY}, which \code{\link[dplyr:collect]{dplyr::collect()}} and \code{\link[dplyr:compute]{dplyr::compute()}} both observe:
-a materialized result carries the Margin order rather than losing it.
+A Margin order promises exactly what \code{\link[dplyr:arrange]{dplyr::arrange()}} promises in the C
+locale, which it fixes: \code{options(dplyr.legacy_locale = TRUE)} does not
+redirect it to the session's collation. It is a property of the object the
+verb returns: on local data frames and \code{dtplyr} steps that is the row
+order, and on lazy tables it is the outermost query's \verb{ORDER BY}, which
+\code{\link[dplyr:collect]{dplyr::collect()}} and \code{\link[dplyr:compute]{dplyr::compute()}} both observe: a materialized
+result carries the Margin order rather than losing it.
 On live SQLite, direct \code{compute()} of a dedicated result inserts the public
 query into a typed table. A sorted result is read back in Margin order using
 an available implicit rowid alias. If its public columns shadow all three

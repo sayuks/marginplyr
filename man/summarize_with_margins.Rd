@@ -278,6 +278,16 @@ vocabulary can invalidate.
 
 Elsewhere in this package \code{NULL} is a documented value, and what it means is
 stated with the argument that takes it.
+
+A misspelled option reaches \code{\link[=summarize_with_margins]{summarize_with_margins()}} through \code{...},
+where it would otherwise become a summary column while the option has no
+effect. A dot-prefixed summary name that is an option name, or one
+insertion, deletion or substitution from one, is therefore an error naming
+the option it resembles. This differs from \code{\link[dplyr:summarise]{dplyr::summarise()}} on purpose:
+next to the short options \code{.by} and \code{.id}, names such as \code{.y}, \code{.b}, \code{.i}
+and \code{.ids} are refused although \code{summarise()} would return them as
+columns. Rename the summary to keep it; a dot-prefixed name further from
+every option, such as \code{.n} or \code{.x}, is a column as usual.
 }
 
 \section{Variable labels and dataset attributes}{
@@ -507,11 +517,13 @@ class and attributes}. \code{.margin_label_position} positions a synthetic
 factor level and never a row: it changes \code{levels()} and nothing else, so the
 two options stay independent and no combination of them is wrong.
 
-A Margin order promises exactly what \code{\link[dplyr:arrange]{dplyr::arrange()}} promises. It is a
-property of the object the verb returns: on local data frames and \code{dtplyr}
-steps that is the row order, and on lazy tables it is the outermost query's
-\verb{ORDER BY}, which \code{\link[dplyr:collect]{dplyr::collect()}} and \code{\link[dplyr:compute]{dplyr::compute()}} both observe:
-a materialized result carries the Margin order rather than losing it.
+A Margin order promises exactly what \code{\link[dplyr:arrange]{dplyr::arrange()}} promises in the C
+locale, which it fixes: \code{options(dplyr.legacy_locale = TRUE)} does not
+redirect it to the session's collation. It is a property of the object the
+verb returns: on local data frames and \code{dtplyr} steps that is the row
+order, and on lazy tables it is the outermost query's \verb{ORDER BY}, which
+\code{\link[dplyr:collect]{dplyr::collect()}} and \code{\link[dplyr:compute]{dplyr::compute()}} both observe: a materialized
+result carries the Margin order rather than losing it.
 On live SQLite, direct \code{compute()} of a dedicated result inserts the public
 query into a typed table. A sorted result is read back in Margin order using
 an available implicit rowid alias. If its public columns shadow all three
@@ -577,10 +589,11 @@ in, so binding a function of your own
 to one of their names does not change what this verb does with it. They are
 \code{\link[=grouping_bit]{grouping_bit()}} and \code{\link[=grouping_id]{grouping_id()}}; \code{\link[=share_of_parent]{share_of_parent()}} and
 \code{\link[=share_of_total]{share_of_total()}}; \code{\link[dplyr:across]{dplyr::across()}}, \code{\link[dplyr:if_any]{dplyr::if_any()}},
-\code{\link[dplyr:if_all]{dplyr::if_all()}}, and \code{\link[dplyr:pick]{dplyr::pick()}}; \code{\link[tidyselect:where]{tidyselect::where()}}; and the
-branch-local helpers rejected below. A spelling is recognized when the name
-matches and it is written bare or qualified with the package that owns it,
-so \code{dplyr::across()} is the same request as \code{across()} while
+\code{\link[dplyr:if_all]{dplyr::if_all()}}, \code{\link[dplyr:pick]{dplyr::pick()}}, and \code{\link[dplyr:c_across]{dplyr::c_across()}};
+\code{\link[tidyselect:where]{tidyselect::where()}}; and the branch-local helpers rejected below. A
+spelling is recognized when the name matches and it is written bare or
+qualified with the package that owns it, so \code{dplyr::across()} is the same
+request as \code{across()} while
 \code{mypkg::across()} is an ordinary call to another package's function.
 
 Parentheses do not change helper recognition: \code{(pick)(units)} and
@@ -596,10 +609,10 @@ the Grouping specification constructors: a nested \code{rollup(region)} is
 evaluated because of how it is spelled, but what runs is whatever \code{rollup}
 is bound to where you wrote it.
 
-\code{\link[dplyr:across]{dplyr::across()}} and \code{\link[dplyr:pick]{dplyr::pick()}} cannot select any column named in the
-complete Grouping plan. This extends dplyr's grouping-column rule across
-every branch: a dimension remains excluded even in a grouping set from
-which it is omitted.
+\code{\link[dplyr:across]{dplyr::across()}}, \code{\link[dplyr:pick]{dplyr::pick()}}, and \code{\link[dplyr:c_across]{dplyr::c_across()}} cannot select
+any column named in the complete Grouping plan. This extends dplyr's
+grouping-column rule across every branch: a dimension remains excluded even
+in a grouping set from which it is omitted.
 
 On a local data frame, an ordinary selection in a later summary sees
 preceding ordinary outputs when it runs. For example, after
