@@ -4,6 +4,16 @@
   now names the caller's column, as `dplyr::bind_rows()` of the grains does,
   rather than a column name marginplyr generated (#1590).
 
+* An unsorted dtplyr Margin summary that keeps a variable label now
+  evaluates to a valid data.table, as the native dtplyr union does, so a
+  later `mutate()` raises no shallow-copy warning and `:=` on its
+  `as.data.table()` result updates it by reference (#1588).
+
+* `.check_margin_label = TRUE` no longer fails with an Arrow or DuckDB error
+  when the input is an `arrange()`d query. The check reads the same columns
+  whatever the input's ordering, and an ordering beneath `head()` still
+  decides which rows it reads (#1585).
+
 * A data frame registered with `duckdb::duckdb_register()` is accepted by
   the Margin verbs and typed `inspect_grouping()` again, directly or through
   `sql()`, a lazy verb, a view or a join, without reading its rows during

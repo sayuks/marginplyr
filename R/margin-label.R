@@ -356,6 +356,18 @@ check_observed_label_collision <- function(data,
     }
     selected <- sqlite_boolean_names(read_cols, aliases)
     data <- dplyr::select(.data = data, dplyr::all_of(selected))
+    # The count is a grand summary, which neither backend accepts over an
+    # inherited ordering (#1585). An ordering beneath a row limit decides
+    # which rows are read, so it stays beneath the limit.
+    if (inherits(data, "arrow_dplyr_query")) {
+      # Arrow keeps the ordering below the collapsed projection.
+      data <- dplyr::collapse(data)
+    } else if (inherits(data, "tbl_sql") &&
+                 inherits(data$lazy_query, "lazy_select_query") &&
+                 is.null(data$lazy_query$limit)) {
+      # DuckDB binds an outer ORDER BY against the aggregate's columns.
+      data$lazy_query$order_by <- NULL
+    }
   }
   query <- margin_safe_column_reads(
     data, read_cols, function(source, safe_name) {
