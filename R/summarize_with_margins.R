@@ -1302,17 +1302,24 @@ summarize_with_margins <- function(.data,
   sqlite_env_column <- sql_env_column && live_sqlite_margin_result(operation)
   sqlite_boolean_column <- live_sqlite_margin_result(operation) &&
     length(sqlite_boolean_columns(dplyr::tbl_vars(execution$result))) > 0L
-  # `CREATE TABLE AS` over a compound SELECT drops every declaration. The
-  # ordering wrapper and a text label's typed destination hide a fixed key's.
   anchor_needed <- existing_anchor_needed || (
     sqlite_declared_type_result(operation) &&
-      (length(execution$declared_types) > 0L ||
-         length(operation$plan$sets) > 1L ||
-         (length(operation$plan$by) > 0L &&
-            (margin_sorting(operation) ||
-               length(typed_dimensions) < length(operation$margin_labels))))
+      length(execution$declared_types) > 0L
   ) || sqlite_env_column || sqlite_boolean_column
-  final_type_anchor <- if (anchor_needed) {
+  # The typed result's companion anchors declare these columns where the query
+  # would lose them; the query's own types are already right. `CREATE TABLE AS`
+  # over a compound SELECT drops a typed-missing dimension's declaration, and
+  # the ordering wrapper and a text label's typed destination hide a fixed
+  # key's.
+  compound_typed_dimension <- length(operation$plan$sets) > 1L &&
+    length(typed_dimensions) > 0L
+  hidden_fixed_key <- length(operation$plan$by) > 0L &&
+    (margin_sorting(operation) ||
+       length(typed_dimensions) < length(operation$margin_labels))
+  companion_anchor_needed <- !anchor_needed &&
+    sqlite_declared_type_result(operation) &&
+    (compound_typed_dimension || hidden_fixed_key)
+  final_type_anchor <- if (anchor_needed || companion_anchor_needed) {
     if (live_sqlite_margin_result(operation)) {
       always_present <- Reduce(intersect, operation$plan$sets)
       unique(c(operation$plan$by, typed_dimensions, always_present))
@@ -1324,6 +1331,7 @@ summarize_with_margins <- function(.data,
   }
   finalize_margin_operation(
     operation, execution, type_anchor_columns = final_type_anchor,
+    anchor_query = !companion_anchor_needed,
     sql_env_column = sql_env_column
   )
 }

@@ -429,12 +429,17 @@ validate_margin_operation <- function(operation) {
 
 # Finish the prepared operation. `type_anchor_columns` are input columns whose
 # SQL types the caller needs carried into the final projection.
+# `anchor_query = FALSE` declares that the query already returns those types,
+# so they reach only a typed SQLite result's companion anchors and no zero-row
+# anchor is added to the unsorted query.
 # `sql_env_column` routes a public `.env` column through identifier quoting.
 finalize_margin_operation <- function(operation, execution,
                                       type_anchor_columns = character(),
+                                      anchor_query = TRUE,
                                       sql_env_column = FALSE) {
   check_margin_operation(operation)
   stopifnot(inherits(execution, "marginplyr_margin_execution"))
+  stopifnot(rlang::is_bool(anchor_query))
   sqlite_env_column <- sql_env_column && live_sqlite_margin_result(operation)
   result <- dplyr::ungroup(execution$result)
   factor_info <- execution$factor_info
@@ -461,7 +466,8 @@ finalize_margin_operation <- function(operation, execution,
     # A subclass arrange method can move columns while ordering rows.
     result <- reorder_margin_columns(result, margin_cols)
   }
-  needs_unsorted_anchor <- live_sqlite_margin_result(operation) &&
+  needs_unsorted_anchor <- anchor_query &&
+    live_sqlite_margin_result(operation) &&
     !margin_sorting(operation) &&
     length(type_anchor_columns) > 0L &&
     (length(execution$declared_types) == 0L ||

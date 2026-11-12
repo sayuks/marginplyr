@@ -1214,3 +1214,46 @@ test_that("unsorted SQLite compute without .id inserts once under any alias", {
     DBI::dbRemoveTable(con, "unsorted_alias_out")
   }
 })
+
+test_that("typed SQLite compute adds no anchor to a query that has one", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  DBI::dbExecute(
+    con, "CREATE TABLE anchored (i INTEGER, a TEXT, b TEXT, x REAL)"
+  )
+  source <- dplyr::tbl(con, "anchored")
+  # The union's first SELECT is the zero-row source anchor, rendered by
+  # `filter(FALSE)` as `WHERE (0)`.
+  anchors <- function(query) {
+    sql <- strsplit(as.character(dbplyr::sql_render(query)), "\n")[[1L]]
+    sum(grepl("^\\s*WHERE \\(0\\)$", sql))
+  }
+  queries <- list(
+    summarize_with_margins(
+      source, s = sum(x, na.rm = TRUE),
+      .grouping = grouping_sets(c(a, b), a)
+    ),
+    summarize_with_margins(
+      source, s = sum(x, na.rm = TRUE), .by = i, .grouping = rollup(a)
+    ),
+    summarize_with_margins(
+      source, s = sum(x, na.rm = TRUE), .grouping = rollup(i),
+      .margin_label = NULL
+    )
+  )
+  for (query in queries) {
+    expect_identical(anchors(query), 1L)
+  }
+  declared <- function(name) {
+    info <- DBI::dbGetQuery(
+      con, paste0("PRAGMA table_info(", DBI::dbQuoteIdentifier(con, name), ")")
+    )
+    stats::setNames(info$type, info$name)
+  }
+  dplyr::compute(queries[[2L]], name = "anchored_key")
+  expect_identical(declared("anchored_key")[c("i", "a")],
+                   c(i = "INT", a = "TEXT"))
+  dplyr::compute(queries[[3L]], name = "anchored_dimension")
+  expect_identical(declared("anchored_dimension")[["i"]], "INT")
+})
