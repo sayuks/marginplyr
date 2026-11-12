@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* `collect()` of a sorted live SQLite Margin summary or expansion now returns
+  a tibble, as dbplyr's `collect()` of the native summary does and as the same
+  call without `.sort` already did, instead of a bare `data.frame` (#1608).
+
 * `summarize_with_margins()` over an `arrange()`d lazy SQL input no longer
   passes on dbplyr's "ORDER BY is ignored in subqueries without LIMIT"
   warning at `show_query()`, `collect()` or `compute()`. The summary's rows

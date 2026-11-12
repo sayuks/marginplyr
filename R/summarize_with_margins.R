@@ -1303,9 +1303,7 @@ summarize_with_margins <- function(.data,
   }
   finalize_margin_operation(
     operation, execution, type_anchor_columns = final_type_anchor,
-    sql_env_column = sql_env_column,
-    restore_tibble = !existing_anchor_needed &&
-      length(execution$declared_types) > 0L
+    sql_env_column = sql_env_column
   )
 }
 
