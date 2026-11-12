@@ -423,8 +423,7 @@ validate_margin_operation <- function(operation) {
 # `sql_env_column` routes a public `.env` column through identifier quoting.
 finalize_margin_operation <- function(operation, execution,
                                       type_anchor_columns = character(),
-                                      sql_env_column = FALSE,
-                                      restore_tibble = FALSE) {
+                                      sql_env_column = FALSE) {
   check_margin_operation(operation)
   stopifnot(inherits(execution, "marginplyr_margin_execution"))
   sqlite_env_column <- sql_env_column && live_sqlite_margin_result(operation)
@@ -502,7 +501,7 @@ finalize_margin_operation <- function(operation, execution,
   ) || sqlite_env_column || sqlite_boolean_column) {
     result <- sqlite_typed_result(
       operation, unsorted, result, execution, type_anchor_columns,
-      declared_types, restore_tibble = restore_tibble
+      declared_types
     )
   } else if (length(type_anchor_columns) > 0L && !needs_unsorted_anchor) {
     # Share staging wraps the SQL union's typed first SELECT. Put a zero-row

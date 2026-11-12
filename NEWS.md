@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* `collect()` of a sorted live SQLite Margin summary or expansion now returns
+  a tibble, as dbplyr's `collect()` of the native summary does and as the same
+  call without `.sort` already did, instead of a bare `data.frame` (#1608).
+
 * A dtplyr summary that is a bare `NA` in some grouping sets and an integer,
   double or character value in the others now returns the common type a local
   data frame returns, with `NA` in the sets that produced it, rather than
