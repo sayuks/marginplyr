@@ -202,8 +202,11 @@ sql_margin_source_anchor <- function(.data) {
 # zero-row anchor keeps each carried source column in the first SELECT without
 # reading it. Declared output columns use a top-level SQL cast so SQLite
 # assigns their types when `compute()` creates an empty table. Source displays
-# cast the source reference to text to keep its SQLite collation. The query
-# executes only when the caller collects or computes the result (ADR 0020).
+# are dimensions the arms carry as text under a display label; they cast the
+# source reference to text, which keeps its SQLite collation and gives a server
+# that types a set operation strictly one type across the arms (#1586).
+# The query executes only when the caller collects or computes the result
+# (ADR 0020).
 sql_margin_type_anchor <- function(.data, branch, source_columns,
                                    declared_types = character(),
                                    source_displays = character()) {
@@ -261,13 +264,50 @@ bind_margin_branches <- function(branches) {
     # leaving vector-internal name repair to ordinary vctrs combination.
     rename_margin_branch_columns(branch, public_names, private_names)
   })
-  result <- vctrs::vec_rbind(!!!branches)
+  result <- withCallingHandlers(
+    vctrs::vec_rbind(!!!branches),
+    vctrs_error_incompatible_type = function(cnd) {
+      stop(restore_margin_combine_args(cnd, private_names, public_names))
+    }
+  )
   result <- rename_margin_branch_columns(result, private_names, public_names)
   if (standard_margin_frame(template)) {
     # Native union_all restores dataset metadata after its vector binding.
     result <- dplyr::dplyr_reconstruct(result, template)
   }
   restore_margin_variable_labels(result, labels)
+}
+
+# Restate a vctrs combination refusal in the caller's column names. vctrs
+# writes each argument as `..<branch>$<column>` into `x_arg`, `y_arg` and the
+# already-formatted message, so the private top-level name is replaced in all
+# three; the condition is otherwise re-signalled as raised.
+restore_margin_combine_args <- function(cnd, private_names, public_names) {
+  restore <- function(arg) {
+    if (!is.character(arg) || length(arg) != 1L) {
+      return(arg)
+    }
+    parts <- regmatches(
+      arg, regexec("^(\\.\\.[0-9]+\\$)([^$]+)(.*)$", arg)
+    )[[1L]]
+    index <- match(parts[3L], private_names)
+    if (is.na(index)) {
+      return(arg)
+    }
+    paste0(parts[2L], public_names[[index]], parts[4L])
+  }
+  for (field in c("x_arg", "y_arg")) {
+    private <- cnd[[field]]
+    public <- restore(private)
+    if (!identical(private, public)) {
+      cnd$message <- gsub(
+        paste0("`", private, "`"), paste0("`", public, "`"),
+        cnd$message, fixed = TRUE
+      )
+      cnd[[field]] <- public
+    }
+  }
+  cnd
 }
 
 # Rename a branch's known columns through dplyr so subclass metadata follows.
@@ -1178,7 +1218,10 @@ summarize_margin_union <- function(.data,
       anchor <- sql_margin_type_anchor(
         dplyr::mutate(source_data, !!!anchor_keys),
         branches[[1L]],
-        source_columns = c(group_vars, unname(parent_key_names))
+        source_columns = c(group_vars, unname(parent_key_names)),
+        source_displays = names(Filter(
+          function(label) !is_missing_margin_label(label), margin_labels
+        ))
       )
       branches <- c(list(anchor), branches)
     }
@@ -1476,7 +1519,10 @@ expand_margin_union <- function(.data,
     anchor <- sql_margin_type_anchor(
       .data,
       branches[[1L]],
-      source_columns = get_col_names(.data, dplyr::everything())
+      source_columns = get_col_names(.data, dplyr::everything()),
+      source_displays = names(Filter(
+        function(label) !is_missing_margin_label(label), margin_labels
+      ))
     )
     branches <- c(list(anchor), branches)
   }

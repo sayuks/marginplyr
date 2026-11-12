@@ -535,6 +535,7 @@ order_margin_result <- function(operation, result, execution) {
 
   rowwise <- margin_rowwise_sort_columns(result, operation$plan)
   nan_columns <- margin_nan_sort_columns(result, operation$plan)
+  complex_columns <- margin_complex_sort_columns(result, operation$plan)
   result <- margin_safe_column_reads(
     result, c(key_id, operation$plan$by, operation$plan$dimensions),
     function(data, safe_name) {
@@ -545,6 +546,7 @@ order_margin_result <- function(operation, result, execution) {
         value_types = margin_dictionary_sort_types(data, operation$backend),
         rowwise = rowwise,
         nan_columns = nan_columns,
+        complex_columns = complex_columns,
         safe_name = safe_name,
         helper_namespace = if (operation$backend$kind == "dtplyr") "base"
       )
@@ -674,6 +676,24 @@ margin_nan_sort_columns <- function(result, plan) {
   )]
 }
 
+# Names local complex keys whose value term orders each part as a local
+# double key. The caller holds a result containing every fixed key and
+# dimension named by that plan.
+margin_complex_sort_columns <- function(result, plan) {
+  if (!is.data.frame(result)) {
+    return(character())
+  }
+  columns <- c(plan$by, plan$dimensions)
+  columns[vapply(
+    columns,
+    function(name) {
+      column <- result[[name]]
+      is.complex(column) && !is.array(column)
+    },
+    logical(1)
+  )]
+}
+
 # Names local keys needing row-vector missingness. The caller holds a result
 # containing every fixed key and dimension named by that plan.
 margin_rowwise_sort_columns <- function(result, plan) {
@@ -724,7 +744,8 @@ forget_margin_window_order <- function(result, backend) {
 # Only the value term takes it. The cast reaches the key alone, so the result's
 # own column keeps whatever the executor left in it.
 # `rowwise` and `nan_columns` name the local columns whose missingness term
-# `margin_missing_last_expr()` specializes.
+# `margin_missing_last_expr()` specializes; `complex_columns` those whose value
+# term `margin_sort_value_terms()` splits into parts.
 # `helper_namespace` supplies generated dtplyr helpers without resolving the
 # namespace operator in the caller's lazy root; other translators retain the
 # unqualified calls they recognize.
@@ -734,18 +755,24 @@ margin_order_terms <- function(plan,
                                value_types = list(),
                                rowwise = character(),
                                nan_columns = character(),
+                               complex_columns = character(),
                                safe_name = identity,
                                helper_namespace = NULL) {
   rowwise <- vapply(rowwise, safe_name, character(1), USE.NAMES = FALSE)
   nan_columns <- vapply(
     nan_columns, safe_name, character(1), USE.NAMES = FALSE
   )
+  complex_columns <- vapply(
+    complex_columns, safe_name, character(1), USE.NAMES = FALSE
+  )
   terms <- unlist(
     lapply(plan$by, function(key) {
       key <- safe_name(key)
-      list(
-        margin_missing_last_expr(key, rowwise, nan_columns, helper_namespace),
-        margin_sort_value_expr(key, value_types)
+      c(
+        list(margin_missing_last_expr(
+          key, rowwise, nan_columns, helper_namespace
+        )),
+        margin_sort_value_terms(key, value_types, complex_columns)
       )
     }),
     recursive = FALSE
@@ -771,12 +798,11 @@ margin_order_terms <- function(plan,
     }
     terms <- c(
       terms,
-      list(
-        margin_missing_last_expr(
-          safe_name(dimension), rowwise, nan_columns, helper_namespace
-        ),
-        margin_sort_value_expr(safe_name(dimension), value_types)
-      )
+      list(margin_missing_last_expr(
+        safe_name(dimension), rowwise, nan_columns, helper_namespace
+      )),
+      margin_sort_value_terms(safe_name(dimension), value_types,
+                              complex_columns)
     )
   }
 
@@ -784,6 +810,30 @@ margin_order_terms <- function(plan,
     terms <- c(terms, list(margin_column_pronoun(sort_id)))
   }
   terms
+}
+
+# One column's value terms. A local complex column in `complex_columns` takes
+# its real part and then its imaginary part, each with the rank and value a
+# local double key takes: `is.na()` and `arrange()` tie every missing complex
+# value, while `summarise()` keeps a `NaN` part apart from an `NA` part
+# (ADR 0018). Every other column takes the one term below.
+margin_sort_value_terms <- function(column, value_types, complex_columns) {
+  if (!(column %in% complex_columns)) {
+    return(list(margin_sort_value_expr(column, value_types)))
+  }
+  value <- margin_column_pronoun(column)
+  unlist(
+    lapply(c("Re", "Im"), function(part) {
+      part <- rlang::call2(part, value, .ns = "base")
+      list(
+        rlang::expr(dplyr::if_else(
+          is.na(!!part), dplyr::if_else(is.nan(!!part), 1L, 2L), 0L
+        )),
+        part
+      )
+    }),
+    recursive = FALSE
+  )
 }
 
 # One column's value term. Dictionary columns are cast to their value type;

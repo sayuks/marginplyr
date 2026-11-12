@@ -433,10 +433,12 @@
 #' including those whose own default is the opposite. A local double key
 #' holding both `NaN` and `NA` keeps them apart, as [dplyr::summarize()]
 #' does: its missingness term places `NaN` before `NA`, both after ordinary
-#' values, so each is one contiguous group with its own margin rows. For a
-#' local packed
-#' data-frame or matrix key, the missingness term is per row: the key is wholly
-#' missing only when all its components are missing. Partly missing keys follow
+#' values, so each is one contiguous group with its own margin rows. A local
+#' complex key orders its missing values by real part and then imaginary part,
+#' each ranked the same way, so a `NaN` in either part stays apart from `NA`.
+#' For a local packed data-frame or matrix key, the missingness term is per
+#' row: the key is wholly missing only when all its components are missing.
+#' Partly missing keys follow
 #' ordinary local `dplyr::arrange()` value order. Local list keys use
 #' dplyr/vctrs row-vector missingness: in a plain list, `NULL` is missing,
 #' while an element containing scalar `NA` is nonmissing. Under
@@ -851,6 +853,13 @@
 #' Redshift, Snowflake, Spark SQL, SQLite, and Teradata, plus generic DBI and
 #' ODBC connections. Simulator coverage verifies SQL generation, not execution
 #' against every database server.
+#'
+#' Continuous integration also executes the portable path on a live Microsoft
+#' SQL Server 2022 and compares each result with the local one: summaries of
+#' one grouping set and of a rollup over a character or an integer dimension,
+#' with a text or a typed-missing Margin label, and a rollup with a fixed key,
+#' a Total share and a Margin order. Other SQL Server plans rest on the
+#' simulator.
 #'
 #' Arrow and dtplyr are also tested lazy backends, but they are not SQL
 #' database connections.

@@ -1135,6 +1135,81 @@ test_that("documented SQL dialects use portable Margin label checks", {
   }
 })
 
+# Each zero-row type anchor's projection of `column`, from SQL whose whitespace
+# has been squeezed: what the first arm of a compound query gives that column.
+type_anchor_projections <- function(sql, column, con) {
+  quoted <- as.character(dbplyr::escape(dbplyr::ident(column), con = con))
+  anchors <- regmatches(sql, gregexpr(
+    "SELECT (?:(?!SELECT ).)*? WHERE \\((?:0|FALSE)\\)", sql, perl = TRUE
+  ))[[1L]]
+  vapply(anchors, function(anchor) {
+    projection <- sub("^SELECT (.*?) FROM .*$", "\\1", anchor, perl = TRUE)
+    items <- strsplit(projection, ", ", fixed = TRUE)[[1L]]
+    item <- items[items == quoted | endsWith(items, paste(" AS", quoted))]
+    if (length(item) == 1L) item else NA_character_
+  }, character(1), USE.NAMES = FALSE)
+}
+
+# Every other arm casts a labelled dimension to text, so a server that types a
+# set operation strictly -- SQL Server by precedence, Oracle, PostgreSQL's
+# Redshift and Snowflake by category -- refuses an anchor carrying the source
+# type (#1586). These simulators establish generation, not execution.
+test_that("a type anchor gives a labelled dimension the arms' text type", {
+  data <- data.frame(
+    year = c(2025L, 2026L), month = c(1L, 2L), region = c("n", "s"),
+    v = c(1, 2)
+  )
+  simulators <- c(
+    "simulate_mssql", "simulate_oracle", "simulate_redshift",
+    "simulate_snowflake"
+  )
+  for (simulator in simulators) {
+    con <- getExportedValue("dbplyr", simulator)()
+    remote <- dbplyr::tbl_lazy(data, con = con, name = "d")
+    text_year <- paste(
+      as.character(dbplyr::translate_sql(as.character(year), con = con)),
+      "AS", as.character(dbplyr::escape(dbplyr::ident("year"), con = con))
+    )
+    month <- as.character(dbplyr::escape(dbplyr::ident("month"), con = con))
+    queries <- list(
+      summary = summarize_with_margins(
+        remote, s = sum(v, na.rm = TRUE), .grouping = rollup(year)
+      ),
+      share = summarize_with_margins(
+        remote, s = sum(v, na.rm = TRUE), sh = share_of_total(s),
+        .by = region, .grouping = rollup(year), .sort = "last",
+        .check_share_source = FALSE
+      ),
+      mixed = summarize_with_margins(
+        remote, s = sum(v, na.rm = TRUE), sh = share_of_total(s),
+        .by = region, .grouping = rollup(year, month),
+        .margin_label = list(year = "Total", month = NULL),
+        .check_share_source = FALSE
+      )
+    )
+    for (plan in names(queries)) {
+      sql <- as.character(dbplyr::sql_render(queries[[plan]]))
+      sql <- gsub("\\s+", " ", sql)
+      info <- paste(simulator, plan)
+      years <- type_anchor_projections(sql, "year", con)
+      expect_gt(length(years), 0L)
+      # A result-boundary anchor leaves a labelled dimension untyped.
+      expect_true(
+        all(years %in% c(text_year, sub("^.* AS", "NULL AS", text_year))),
+        info = info
+      )
+      expect_true(any(years == text_year), info = info)
+      if (identical(plan, "mixed")) {
+        # A typed-missing label keeps the source type in every arm.
+        expect_true(
+          all(type_anchor_projections(sql, "month", con) == month),
+          info = info
+        )
+      }
+    }
+  }
+})
+
 reserved_column_data <- function() {
   data <- data.frame(
     group = c("x", "x", "y"),

@@ -6,6 +6,15 @@
   a cube or a union with the empty set, rather than failing at collection
   with `x and y must have the same column names` (#1591).
 
+* A local complex key or grouping dimension holding both `NaN` and `NA`, in
+  either part, now keeps each group and its margin rows together under
+  `.sort = "last"` and `"first"`, rather than interleaving them, as a double
+  key already does (#1589).
+
+* When a local summary's type differs between grouping sets, vctrs' refusal
+  now names the caller's column, as `dplyr::bind_rows()` of the grains does,
+  rather than a column name marginplyr generated (#1590).
+
 * An unsorted dtplyr Margin summary that keeps a variable label now
   evaluates to a valid data.table, as the native dtplyr union does, so a
   later `mutate()` raises no shallow-copy warning and `:=` on its
@@ -26,6 +35,12 @@
   environment or a function, is refused with native `summarise()`'s
   diagnostic, rather than with vctrs' scalar-type error and its FAQ pointer
   (#1581).
+
+* On a generic SQL backend, a Margin summary over a non-character dimension
+  with a text Margin label gives that dimension one text type across every
+  arm of its `UNION ALL` query. SQL Server refused the query, failing to
+  convert the label to the dimension's type, and the set-operation rules
+  Oracle, Redshift and Snowflake document refuse it too (#1586).
 
 * An unnamed `across()` on a local input whose `.names` template is a
   constant now works after an earlier summary whose output reuses an input
