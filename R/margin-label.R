@@ -94,7 +94,9 @@ resolve_margin_labels <- function(.margin_label, dimensions) {
   stats::setNames(labels, dimensions)
 }
 
-validate_margin_label_names <- function(.margin_label, dimensions, by) {
+# `by_from_groups` means `by` is a grouped input's grouping, not `.by`.
+validate_margin_label_names <- function(.margin_label, dimensions, by,
+                                        by_from_groups = FALSE) {
   if (is.null(.margin_label) || is.null(names(.margin_label))) {
     return(invisible(NULL))
   }
@@ -105,6 +107,15 @@ validate_margin_label_names <- function(.margin_label, dimensions, by) {
   # ADR 0023's condition 2: how many of them arrive is the caller's decision.
   fixed_names <- intersect(label_names, by)
   if (length(fixed_names) > 0L) {
+    if (by_from_groups) {
+      abort_marginplyr(c(
+        paste0(
+          "{.arg .margin_label} must not name fixed grouping ",
+          "{cli::qty(length(fixed_names))}column{?s} of {.arg .data}:"
+        ),
+        i = "{.var {fixed_names}}."
+      ))
+    }
     abort_marginplyr(c(
       paste0(
         "{.arg .margin_label} must not name fixed {.arg .by} ",
@@ -179,6 +190,7 @@ validate_margin_label <- function(.data,
                                   omitted,
                                   backend,
                                   by,
+                                  by_from_groups = FALSE,
                                   .margin_label,
                                   margin_labels,
                                   .check_margin_label,
@@ -186,7 +198,8 @@ validate_margin_label <- function(.data,
   validate_margin_label_names(
     .margin_label,
     dimensions = dimensions,
-    by = by
+    by = by,
+    by_from_groups = by_from_groups
   )
 
   if (length(dimensions) == 0L) {
