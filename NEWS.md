@@ -6,6 +6,11 @@
   `na.rm = TRUE`, or with parentheses around the call. Before, every forwarded
   selection other than a single literal string was refused with
   "Column `..1` doesn't exist" (#1618).
+* On a local input, an unnamed `across()` after a share named like an input
+  column selects from the columns its data mask holds, as the same
+  selection does in a named summary: the share and the input it hides are
+  left out. Before, a selection such as `everything()` or `any_of()` was
+  refused with an `all_of()` call the caller never wrote (#1619).
 
 * On a grouped input, a grouping column that also appears in `.grouping`, or
   that `.margin_label` names, is now refused as a fixed grouping column of
