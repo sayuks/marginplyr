@@ -1,5 +1,13 @@
 # marginplyr 0.1.0
 
+* `expand_with_margins()` and `summarize_with_margins()` now build over a SQL
+  input ordered by a raw `sql()` term or a constant, such as
+  `arrange(sql("v DESC NULLS LAST")) |> head(n)`, as native `summarise()` of
+  that input does. Before, construction failed inside dbplyr's `select()`
+  whenever the call set `.id` or `.sort`, reordered columns, or checked
+  a Margin label. Such a term names no result column, so the result carries no
+  window ordering for it (#1622).
+
 * `compute()` of an unsorted `summarize_with_margins()` on a live SQLite
   connection without `.id` or a share now declares the destination's
   source-derived columns, as native `compute()` of `summarise()` does. Before,

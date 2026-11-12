@@ -68,3 +68,17 @@ test_that("SQLite expansion retains Boolean-word input columns", {
     }
   }
 })
+
+test_that("SQLite Margin verbs build over a raw SQL input ordering", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  check_raw_sql_order_inputs(con)
+})
+
+test_that("DuckDB Margin verbs build over a raw SQL input ordering", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  check_raw_sql_order_inputs(con)
+})
