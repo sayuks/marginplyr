@@ -1,5 +1,12 @@
 # marginplyr 0.1.0
 
+* A local Margin summary that returns `NULL` in some grouping sets and a value
+  in others, such as `if (grouping_bit(g) == 1L) NULL else sum(v)`, now raises
+  a `marginplyr_error` from the calling verb naming the summary and asking for
+  a typed missing value in place of `NULL`, rather than an internal error
+  about union branches. `NULL` in every grouping set still removes the column
+  (#1605).
+
 * `summarize_with_margins()` over an `arrange()`d lazy SQL input no longer
   passes on dbplyr's "ORDER BY is ignored in subqueries without LIMIT"
   warning at `show_query()`, `collect()` or `compute()`. The summary's rows
