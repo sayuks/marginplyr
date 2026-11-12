@@ -1,0 +1,30 @@
+# Investigated SHA: 03e3cef502f7332b69e50608740033043d27f2b4
+# Run from the repository root: Rscript <this file>. Prints observed behaviour.
+# A SQL input ordered by a raw sql() term fails at construction whenever the verb reorders columns.
+suppressMessages(pkgload::load_all(".", quiet = TRUE))
+suppressMessages(library(dplyr))
+con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+DBI::dbWriteTable(con, "t", data.frame(g = c("a", "b", "a", "b"), h = c("x", "y", "y", "x"), v = 1:4))
+top <- tbl(con, "t") |> arrange(dbplyr::sql("v DESC NULLS LAST")) |> head(2)
+sym <- tbl(con, "t") |> arrange(desc(v)) |> head(2)
+try_it <- function(expr) tryCatch(
+  paste(nrow(collect(expr)), "rows"),
+  error = function(e) paste0("<", class(e)[1], "> ", gsub("\n", " ", conditionMessage(e)))
+)
+cat("native collect            :", try_it(top), "\n")
+cat("native mutate(id = 1L)    :", try_it(mutate(top, id = 1L)), "\n")
+cat("native summarise by g     :", try_it(summarise(group_by(top, g), n = n())), "\n")
+cat("expand rollup(g)          :", try_it(expand_with_margins(top, .grouping = rollup(g))), "\n")
+cat("expand rollup(g), .id     :", try_it(expand_with_margins(top, .grouping = rollup(g), .id = "id")), "\n")
+cat("expand rollup(g), .sort   :", try_it(expand_with_margins(top, .grouping = rollup(g), .sort = "last")), "\n")
+cat("expand rollup(h)          :", try_it(expand_with_margins(top, .grouping = rollup(h))), "\n")
+cat("expand .by = h, rollup(g) :", try_it(expand_with_margins(top, .by = h, .grouping = rollup(g))), "\n")
+cat("expand one set, .id       :", try_it(expand_with_margins(top, .id = "id")), "\n")
+cat("summarize rollup(g)       :", try_it(summarize_with_margins(top, n = n(), .grouping = rollup(g))), "\n")
+cat("control desc(v): .id      :", try_it(expand_with_margins(sym, .grouping = rollup(g), .id = "id")), "\n")
+cat("control desc(v): rollup(h):", try_it(expand_with_margins(sym, .grouping = rollup(h))), "\n")
+cat("control desc(v): summarize:", try_it(summarize_with_margins(sym, n = n(), .grouping = rollup(g))), "\n")
+cat("upstream: native select   :", try_it(select(top, g, v)), "\n")
+e <- tryCatch(expand_with_margins(top, .grouping = rollup(g), .id = "id"), error = function(e) e)
+cat("is Package condition:", inherits(e, "marginplyr_error"), "\n")
+DBI::dbDisconnect(con)
