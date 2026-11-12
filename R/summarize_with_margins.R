@@ -234,6 +234,16 @@
 #' Elsewhere in this package `NULL` is a documented value, and what it means is
 #' stated with the argument that takes it.
 #'
+#' A misspelled option reaches [summarize_with_margins()] through `...`,
+#' where it would otherwise become a summary column while the option has no
+#' effect. A dot-prefixed summary name that is an option name, or one
+#' insertion, deletion or substitution from one, is therefore an error naming
+#' the option it resembles. This differs from [dplyr::summarise()] on purpose:
+#' next to the short options `.by` and `.id`, names such as `.y`, `.b`, `.i`
+#' and `.ids` are refused although `summarise()` would return them as
+#' columns. Rename the summary to keep it; a dot-prefixed name further from
+#' every option, such as `.n` or `.x`, is a column as usual.
+#'
 #' @section Variable labels and dataset attributes:
 #' A source column's variable label (`attr(x, "label")`) is retained across
 #' display conversion, grouping-set combination, expansion and nesting. This
