@@ -1,6 +1,5 @@
-# A Margin summary over an arranged SQL input (#1596). Its row order is the
-# Margin order, so the input's ordering decides nothing unless a row limit
-# sits beneath it.
+# A Margin summary over an arranged SQL input (#1596). Its rows do not depend
+# on the input's ordering unless a row limit sits beneath it.
 
 arranged_summary_source <- function(con) {
   dplyr::copy_to(

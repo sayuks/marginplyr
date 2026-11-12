@@ -2,10 +2,10 @@
 
 * `summarize_with_margins()` over an `arrange()`d lazy SQL input no longer
   passes on dbplyr's "ORDER BY is ignored in subqueries without LIMIT"
-  warning at `show_query()`, `collect()` or `compute()`. The summary's row
-  order is its Margin order, so the inherited ordering is cleared; one beneath
-  `head()` still decides which rows are read, and the window ordering
-  `arrange()` records is kept (#1596).
+  warning at `show_query()`, `collect()` or `compute()`. The summary's rows
+  do not depend on that ordering, so it is cleared; one beneath `head()` still
+  decides which rows are read, and the window ordering `arrange()` records is
+  kept (#1596).
 
 * `?grouping_bit` now states that an aggregate over a helper alone, such as
   `sum(grouping_id(a, b))`, aggregates a constant and so follows its backend:
