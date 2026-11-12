@@ -138,12 +138,17 @@ test_that("an aggregate over a helper alone follows its backend's sum(1)", {
   # A documented limit rather than an agreement (ADR 0009, #1595): the data
   # frame sums the branch's constant once per group, the portable adapter once
   # per row. Rows (), (x) hold 3 and 2 input rows with masks 3 and 1.
-  local <- ordered_result(summarize_with_margins(
+  margin_rows <- function(query) {
+    result <- dplyr::collect(query)
+    keys <- paste(result$a, result$b)
+    result$s[match(c("Total Total", "x Total"), keys)]
+  }
+  local <- margin_rows(summarize_with_margins(
     aggregate_input(), s = sum(grouping_id(a, b)), .grouping = rollup(a, b)
   ))
-  sql <- ordered_result(summarize_with_margins(
+  sql <- margin_rows(summarize_with_margins(
     source, s = sum(grouping_id(a, b)), .grouping = rollup(a, b)
   ))
-  expect_equal(local$s[1:2], c(3, 1))
-  expect_equal(sql$s[1:2], c(9, 2))
+  expect_equal(local, c(3, 1))
+  expect_equal(sql, c(9, 2))
 })
