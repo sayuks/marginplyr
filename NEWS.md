@@ -1,5 +1,12 @@
 # marginplyr 0.1.0
 
+* With `.check_margin_label = TRUE`, an invalid `grouping_bit()` or
+  `grouping_id()` call -- no column, too many, a non-bare argument, or a
+  column outside `.by` and `.grouping` -- is now refused before the Margin
+  label check reads the input. Before, the check ran first, so a lazy input
+  was queried for a call refused anyway, and a Margin label already in the
+  data was reported in place of the call error (#1604).
+
 * `summarize_with_margins()` over an `arrange()`d lazy SQL input no longer
   passes on dbplyr's "ORDER BY is ignored in subqueries without LIMIT"
   warning at `show_query()`, `collect()` or `compute()`. The summary's rows
