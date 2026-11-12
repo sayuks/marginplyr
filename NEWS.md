@@ -1,5 +1,10 @@
 # marginplyr 0.1.0
 
+* An unsorted dtplyr Margin summary that keeps a variable label now
+  evaluates to a valid data.table, as the native dtplyr union does, so a
+  later `mutate()` raises no shallow-copy warning and `:=` on its
+  `as.data.table()` result updates it by reference (#1588).
+
 * A data frame registered with `duckdb::duckdb_register()` is accepted by
   the Margin verbs and typed `inspect_grouping()` again, directly or through
   `sql()`, a lazy verb, a view or a join, without reading its rows during

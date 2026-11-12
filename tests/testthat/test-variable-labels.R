@@ -334,6 +334,45 @@ test_that("dtplyr keeps captured source labels and native frame metadata", {
   )
 })
 
+test_that("labelled dtplyr unions return data.tables updatable by reference", {
+  skip_if_suggest_absent("dtplyr")
+  source <- data.frame(
+    year = c(1L, 1L, 2L, 2L), region = c("a", "b", "a", "b"), v = 1:4
+  )
+  attr(source$year, "label") <- "Fiscal year"
+  table <- data.table::as.data.table(source)
+  before <- data.table::copy(table)
+  input <- dtplyr::lazy_dt(table)
+  native <- dplyr::union_all(
+    dplyr::summarise(input, tot = sum(v), .by = c(year, region)),
+    dplyr::summarise(input, tot = sum(v), .by = year) |>
+      dplyr::mutate(region = "Total") |>
+      dplyr::select(year, region, tot)
+  )
+  add_flag <- function(x) data.table::set(x, j = "flag", value = TRUE)
+  queries <- list(
+    native = native,
+    summary = summarize_with_margins(
+      input, tot = sum(v), .by = year, .grouping = rollup(region)
+    ),
+    identified = summarize_with_margins(
+      input, tot = sum(v), .by = year, .grouping = rollup(region),
+      .id = "sid", .margin_label = NA_character_
+    ),
+    expanded = expand_with_margins(
+      input, .by = year, .grouping = rollup(region)
+    )
+  )
+  for (query in queries) {
+    expect_no_warning(dplyr::collect(dplyr::mutate(query, z = 1L)))
+    result <- data.table::as.data.table(query)
+    expect_identical(attr(result$year, "label"), "Fiscal year")
+    add_flag(result)
+    expect_true("flag" %in% names(result))
+  }
+  expect_identical(table, before)
+})
+
 test_that("dtplyr summary combination keeps native labels without inference", {
   skip_if_suggest_absent("dtplyr")
   input <- dtplyr::lazy_dt(label_source())
