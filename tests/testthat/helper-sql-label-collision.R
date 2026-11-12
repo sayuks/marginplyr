@@ -148,10 +148,10 @@ check_arranged_label_collision <- function(con) {
       checked <- run(arranged, TRUE, "All")
       sent <- label_query()
       expect_equal(nrow(sent), 1L, info = info)
-      # `sqlite_margin_input()` has already rendered a SQLite input, ordering
-      # included, into an opaque relation, so only other dialects send the
-      # count straight against the caller's query.
-      if (!inherits(con, "SQLiteConnection")) {
+      # `sqlite_margin_input()` has already rendered an expansion's SQLite
+      # input, ordering included, into an opaque relation, so only a summary
+      # or another dialect sends the count straight against the caller's query.
+      if (verb == "summarize" || !inherits(con, "SQLiteConnection")) {
         expect_false(grepl("ORDER BY", sent$sql, fixed = TRUE), info = info)
         expect_false(grepl("\\bv\\b", sent$sql), info = info)
       }
