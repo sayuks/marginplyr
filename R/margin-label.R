@@ -365,8 +365,7 @@ check_observed_label_collision <- function(data,
     selected <- sqlite_boolean_names(read_cols, aliases)
     data <- dplyr::select(.data = data, dplyr::all_of(selected))
     # The count is a grand summary, which neither backend accepts over an
-    # inherited ordering (#1585). An ordering beneath a row limit decides
-    # which rows are read, so it stays beneath the limit.
+    # inherited ordering (#1585).
     if (inherits(data, "arrow_dplyr_query")) {
       # Arrow keeps the ordering below the collapsed projection.
       data <- dplyr::collapse(data)
