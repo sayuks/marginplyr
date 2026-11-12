@@ -165,3 +165,102 @@ test_that("message classes do not mask diagnostic warnings or errors", {
     }
   }
 })
+
+# A fresh `.frequency_id` per run stands in for a fresh session: rlang keeps
+# frequency state per id. Native dbplyr is the count each audit setting matches.
+test_that("SQL auditing preserves frequency-limited translation messages", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  old <- options(
+    marginplyr.audit_sql = FALSE,
+    rlib_warning_verbosity = "default", lifecycle_verbosity = "default"
+  )
+  on.exit(options(old), add = TRUE)
+  methods::setClass(
+    "FrequencyMessageSQLiteConnection", contains = "SQLiteConnection"
+  )
+  on.exit(
+    methods::removeClass("FrequencyMessageSQLiteConnection"), add = TRUE
+  )
+  dplyr::copy_to(
+    con, data.frame(g = c("a", "b"), v = c(1, 2)), "frequency_message_source"
+  )
+  dialect <- dbplyr::sql_dialect(con)
+  variant <- dbplyr::sql_translation(con)
+  frequency <- "once"
+  id <- NULL
+  registerS3method(
+    "sql_dialect", "FrequencyMessageSQLiteConnection",
+    function(con) {
+      structure(dialect, class = c("frequency_message_sqlite", class(dialect)))
+    }, envir = asNamespace("dbplyr")
+  )
+  registerS3method(
+    "sql_translation", "frequency_message_sqlite",
+    function(con) {
+      dbplyr::sql_variant(
+        variant$scalar,
+        dbplyr::sql_translator(
+          .parent = variant$aggregate,
+          sum = function(...) {
+            rlang::inform(
+              "SUM here ignores NULL", .frequency = frequency,
+              .frequency_id = id
+            )
+            variant$aggregate$sum(...)
+          }
+        ),
+        variant$window
+      )
+    }, envir = asNamespace("dbplyr")
+  )
+  on.exit(rm(
+    list = c("sql_dialect.FrequencyMessageSQLiteConnection",
+             "sql_translation.frequency_message_sqlite"),
+    envir = asNamespace("dbplyr")$.__S3MethodsTable__.
+  ), add = TRUE)
+  remote <- dplyr::tbl(
+    methods::new("FrequencyMessageSQLiteConnection", con),
+    "frequency_message_source"
+  )
+  delivered <- function(code) {
+    id <<- basename(tempfile("frequency_message_"))
+    seen <- 0L
+    withCallingHandlers(
+      dplyr::collect(code()),
+      message = function(cnd) {
+        text <- conditionMessage(cnd)
+        if (grepl("SUM here ignores NULL", text, fixed = TRUE)) {
+          seen <<- seen + 1L
+        }
+        invokeRestart("muffleMessage")
+      }
+    )
+    seen
+  }
+  for (frequency in c("once", "regularly")) {
+    native <- delivered(function() {
+      dplyr::summarize(remote, total = sum(.data$v, na.rm = TRUE), .by = "g")
+    })
+    expect_identical(native, 1L)
+    for (check in c(FALSE, TRUE)) {
+      for (audited in c(FALSE, TRUE)) {
+        options(marginplyr.audit_sql = audited)
+        count <- delivered(function() {
+          summarize_with_margins(
+            remote, total = sum(.data$v, na.rm = TRUE),
+            .grouping = rollup(dplyr::all_of("g")), .check_margin_label = check
+          )
+        })
+        expect_identical(count, native, info = paste(frequency, check, audited))
+      }
+      rows <- last_sent_queries(details = TRUE)
+      expect_identical(
+        rows$status, if (check) c("returned", "prepared") else "prepared"
+      )
+      expect_false(anyNA(rows$sql))
+      expect_true(all(vapply(rows$conditions, nrow, integer(1L)) == 0L))
+    }
+  }
+})
