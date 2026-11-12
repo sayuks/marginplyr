@@ -91,3 +91,19 @@ test_that("an arranged input keeps its window ordering on DuckDB", {
     "OVER (ORDER BY g DESC", fixed = TRUE
   )
 })
+
+test_that("an arranged input keeps its window ordering on SQLite", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  query <- summarize_with_margins(
+    dplyr::arrange(arranged_summary_source(con), dplyr::desc(.data$g)),
+    s = sum(.data$v, na.rm = TRUE), .grouping = rollup(dplyr::all_of("g")),
+    .sort = "none"
+  )
+  running <- dplyr::collect(dplyr::mutate(query, r = cumsum(.data$s)))
+  # SQLite's binary collation places "Total" before "a", so descending `g`
+  # accumulates b, a, Total.
+  expect_equal(running$r[match(c("b", "a", "Total"), running$g)],
+               c(5, 10, 20))
+})
