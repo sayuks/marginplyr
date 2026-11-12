@@ -852,6 +852,62 @@ test_that("plain-frame index and sorted attributes remain dataset metadata", {
   }
 })
 
+test_that("frame-level tsp stays only on nested cells of the input's width", {
+  skip_if_suggest_absent("tidyr")
+  skip_if_suggest_absent("dtplyr")
+  source <- data.frame(a = c("x", "x", "y"), b = c("p", "q", "p"), v = 1:3)
+  attr(source, "tsp") <- c(1, 3, 1)
+  attr(source, "note") <- "Dataset note"
+  inputs <- list(
+    data.frame = function() source,
+    tibble = function() {
+      out <- tibble::as_tibble(source)
+      attr(out, "tsp") <- c(1, 3, 1)
+      attr(out, "note") <- "Dataset note"
+      out
+    },
+    dtplyr = function() dtplyr::lazy_dt(source),
+    data.table = function() {
+      out <- data.table::as.data.table(source)
+      attr(out, "tsp") <- c(1, 3, 1)
+      attr(out, "note") <- "Dataset note"
+      out
+    }
+  )
+  # Row-wise nesting carries dataset metadata only to its keyless set.
+  cells_of <- function(result, verb) {
+    result <- dplyr::collect(result)
+    if (verb == "nest_by") result$data[result$a == "Total"] else result$data
+  }
+  verbs <- list(
+    nest = function(input, keep) {
+      nest_with_margins(input, .grouping = rollup(a), .keep = keep)
+    },
+    nest_by = function(input, keep) {
+      nest_by_with_margins(input, .grouping = rollup(a), .keep = keep)
+    }
+  )
+  for (kind in names(inputs)) {
+    for (verb in names(verbs)) {
+      # A direct data.table's tidyr::nest() cells carry no dataset metadata.
+      carries <- verb == "nest_by" || kind != "data.table"
+      for (keep in c(FALSE, TRUE)) {
+        cells <- cells_of(verbs[[verb]](inputs[[kind]](), keep), verb)
+        expect_length(cells, if (verb == "nest_by") 1L else 3L)
+        if (!carries) next
+        for (cell in cells) {
+          info <- paste(kind, verb, keep)
+          expect_identical(attr(cell, "note", exact = TRUE), "Dataset note",
+                           info = info)
+          expected <- if (ncol(cell) == ncol(source)) c(1, 3, 1)
+          expect_identical(attr(cell, "tsp", exact = TRUE), expected,
+                           info = info)
+        }
+      }
+    }
+  }
+})
+
 test_that("native scalar grammar preserves summary metadata and errors", {
   skip_if_suggest_absent("dtplyr")
   source <- tibble::tibble(g = c("a", "a", "b"),

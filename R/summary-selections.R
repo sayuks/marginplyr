@@ -1522,7 +1522,16 @@ cache_local_context_names <- function(dots, selection_proxy, group_vars) {
       env = rlang::quo_get_env(dot), mask = c(available, group_vars),
       columns = available, rebound = rebound
     )
-    if (contains_share_helper(expr)) next
+    if (contains_share_helper(expr)) {
+      # A later selection cannot see a share, and a share's name hides the
+      # input column it reuses. An unnamed share's names are not read here.
+      if (nzchar(name)) {
+        available <- setdiff(available, name)
+      } else {
+        complete <- FALSE
+      }
+      next
+    }
     if (nzchar(name)) {
       rebound <- context_name_rebindings(expr, lookup, selection_proxy)
       available <- unique(c(available, name))
@@ -2247,6 +2256,13 @@ local_summary_selection_expr <- function(selection, group_vars,
 rewrite_local_across_selection <- function(expr, group_vars,
                                            forbidden_names,
                                            capture_forwarded = TRUE) {
+  # `c_across()` takes no `...`, so R refuses an argument its one formal does
+  # not bind before any column is read. Left as written, the call raises that
+  # error in dplyr's own context, and only where dplyr evaluates it.
+  if (identical(static_call_name(expr), "c_across") &&
+        !binds_to_helper_formals(expr)) {
+    return(expr)
+  }
   parsed <- parse_across_arguments(expr)
   call_args <- parsed$call_args
   if (
@@ -2262,13 +2278,59 @@ rewrite_local_across_selection <- function(expr, group_vars,
       !!!call_args
     ))
   }
-  selection <- local_summary_selection_expr(
-    parsed$cols, group_vars, forbidden_names
-  )
+  per_group <- forwarded_cols_per_group(expr, parsed)
+  selection <- if (is.null(per_group)) {
+    local_summary_selection_expr(parsed$cols, group_vars, forbidden_names)
+  } else {
+    rlang::call2(tidyselect::all_of, rlang::call2(
+      local_forwarded_cols_selection,
+      parsed$cols, per_group, rlang::sym(".env"), group_vars, forbidden_names
+    ))
+  }
   call_args <- replace_across_cols(
     call_args, parsed$cols_index, selection, parsed$cols_formal
   )
   rebuild_static_call(expr, call_args)
+}
+
+# For an expanded top-level `across()` whose `.cols` is a forwarded `..n`,
+# answers what tells dplyr's per-group evaluation from its expansion: TRUE when
+# the call's spelling already rules expansion out (parentheses, a `...` extra
+# or a literal non-FALSE `.unpack`), or the `.unpack` expression whose value
+# decides it. `NULL` means expansion, where dplyr reads `..n` as a column name
+# and the selection stays quoted to refuse as dplyr refuses it.
+forwarded_cols_per_group <- function(expr, parsed) {
+  if (!is_numbered_dot_reference(parsed$cols)) {
+    return(NULL)
+  }
+  unpack <- parsed$unpack
+  if (is_parenthesized(expr) || length(parsed$additional) > 0L ||
+        isTRUE(unpack) || rlang::is_string(unpack)) {
+    return(TRUE)
+  }
+  if (is.null(unpack) || isFALSE(unpack)) {
+    return(NULL)
+  }
+  unpack
+}
+
+# Resolves a forwarded `.cols` in dplyr's selection scope. Both of dplyr's
+# paths evaluate `.unpack` before `.cols`, so reading `unpack` here forces no
+# promise dplyr has not already forced. On the per-group path `across()`
+# captures the forwarded promise, so it is captured here too; on expansion the
+# `..n` symbol itself is the selection, as in `dplyr::across()`'s expansion.
+local_forwarded_cols_selection <- function(selection, unpack, env, group_vars,
+                                           forbidden_names) {
+  if (isFALSE(unpack)) {
+    return(local_summary_selection(
+      substitute(selection), env, group_vars, forbidden_names
+    ))
+  }
+  selection <- rlang::enquo0(selection)
+  local_summary_selection(
+    rlang::quo_get_expr(selection), rlang::quo_get_env(selection),
+    group_vars, forbidden_names
+  )
 }
 
 # Captures expanded helper arguments at execution, before matching `.cols`.
@@ -2278,6 +2340,11 @@ local_forwarded_selection <- function(helper, group_vars, forbidden_names) {
     frame <- environment()
     args <- rlang::enquos0(...)
     expr <- rlang::call2(helper, !!!args, .ns = "dplyr")
+    # Forwarded unchanged, the dots let R name an unbound argument as the
+    # caller wrote it.
+    if (identical(helper, "c_across") && !binds_to_helper_formals(expr)) {
+      return(eval(rlang::call2(helper, quote(...), .ns = "dplyr")))
+    }
     cols_index <- parse_across_arguments(expr)$cols_index
     arg_names <- names(args)
     # missing(..i) follows forwarded promises without forcing them and treats
@@ -3349,6 +3416,25 @@ replace_across_cols <- function(args, cols_index, selection,
   }
   args[[cols_index]] <- selection
   args
+}
+
+# Whether a recognized helper call's arguments bind to that dplyr helper's
+# formals as R binds them at evaluation. Nothing is evaluated. Each argument is
+# replaced by a symbol first, because `match.call()` would otherwise expand a
+# forwarded `...` from whatever frame it finds.
+binds_to_helper_formals <- function(expr) {
+  helper <- get(static_call_name(expr), envir = asNamespace("dplyr"))
+  call_args <- static_call_args(expr)
+  markers <- rep(list(as.name("x")), length(call_args))
+  names(markers) <- names(call_args)
+  call <- as.call(c(list(as.name("helper")), markers))
+  tryCatch(
+    {
+      match.call(helper, call, expand.dots = FALSE)
+      TRUE
+    },
+    error = function(e) FALSE
+  )
 }
 
 # The one place that knows an `across()` argument can be empty, so that no

@@ -1010,7 +1010,8 @@ test_that("grouped inputs reject conflicting grouping instructions", {
       value = sum(value),
       .grouping = rollup(year, region)
     ),
-    "both `.by` and `.grouping`"
+    "Fixed grouping column of `.data` cannot also appear in `.grouping`",
+    fixed = TRUE
   )
 })
 
@@ -2211,4 +2212,78 @@ test_that("a printed Grouping specification asks for its kind once", {
     "<marginplyr Grouping specification: >"
   )
   expect_identical(without_name$reads, 1L)
+})
+
+# The fixed keys a grouped input supplies come from its grouping, not from a
+# `.by` the caller wrote, so the refusals they reach name that grouping (#1615).
+test_that("a grouped input's fixed-key refusals name its grouping", {
+  data <- data.frame(
+    year = c(1L, 1L, 2L),
+    region = c("a", "b", "a"),
+    value = 1:3
+  )
+  grouped <- dplyr::group_by(data, year)
+
+  for (name in names(forwarded_verbs)) {
+    error <- expect_error(
+      forwarded_verbs[[name]](grouped, NULL, rollup(year, region))
+    )
+    expect_s3_class(error, "marginplyr_error")
+    expect_identical(
+      conditionMessage(error),
+      paste0(
+        "Fixed grouping column of `.data` cannot also appear in ",
+        "`.grouping`:\n",
+        "i `year`.\n",
+        "i Call `dplyr::ungroup()` first, or remove it from `.grouping`."
+      )
+    )
+    expect_identical(rlang::call_name(conditionCall(error)), name)
+
+    explicit <- expect_error(
+      forwarded_verbs[[name]](data, year, rollup(year, region))
+    )
+    expect_identical(
+      conditionMessage(explicit),
+      "Columns cannot appear in both `.by` and `.grouping`:\ni `year`."
+    )
+  }
+
+  label_verbs <- list(
+    summarize_with_margins = function(data, label) {
+      summarize_with_margins(
+        data, total = sum(value), .grouping = rollup(region),
+        .margin_label = label
+      )
+    },
+    expand_with_margins = function(data, label) {
+      expand_with_margins(
+        data, .grouping = rollup(region), .margin_label = label
+      )
+    },
+    nest_with_margins = function(data, label) {
+      nest_with_margins(
+        data, .grouping = rollup(region), .margin_label = label
+      )
+    },
+    nest_by_with_margins = function(data, label) {
+      nest_by_with_margins(
+        data, .grouping = rollup(region), .margin_label = label
+      )
+    }
+  )
+  for (name in names(label_verbs)) {
+    error <- expect_error(
+      label_verbs[[name]](grouped, c(region = "All", year = "All"))
+    )
+    expect_s3_class(error, "marginplyr_error")
+    expect_identical(
+      conditionMessage(error),
+      paste0(
+        "`.margin_label` must not name fixed grouping column of `.data`:\n",
+        "i `year`."
+      )
+    )
+    expect_identical(rlang::call_name(conditionCall(error)), name)
+  }
 })

@@ -79,9 +79,11 @@ local({
   Sys.chmod(file.path(bin, "jarl"), "0755")
   account <- file.path(workspace, "account")
   dir.create(account)
+  # LANGUAGE keeps base R diagnostics untranslated, so a case may pin their
+  # text whatever the caller's locale.
   env <- c(R_LIBS = paste(c(library, .libPaths()), collapse = .Platform$path.sep),
     PATH = paste(bin, Sys.getenv("PATH"), sep = .Platform$path.sep),
-    TESTTHAT_PARALLEL = "false")
+    TESTTHAT_PARALLEL = "false", LANGUAGE = "en")
   make_repo <- function(name, account_home = account) {
     repo <- file.path(workspace, name)
     dir.create(repo)

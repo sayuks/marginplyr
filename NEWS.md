@@ -8,6 +8,37 @@
   a Margin label. Such a term names no result column, so the result carries no
   window ordering for it (#1622).
 
+* A wrapper forwarding its dots into an unnamed top-level `across()` now works
+  in a local Margin summary wherever dplyr evaluates that `across()` per group:
+  with `.unpack = TRUE` or a glue `.unpack`, with a `...` extra such as
+  `na.rm = TRUE`, or with parentheses around the call. Before, every forwarded
+  selection other than a single literal string was refused with
+  "Column `..1` doesn't exist" (#1618).
+
+* On a local input, an unnamed `across()` after a share named like an input
+  column selects from the columns its data mask holds, as the same
+  selection does in a named summary: the share and the input it hides are
+  left out. Before, a selection such as `everything()` or `any_of()` was
+  refused with an `all_of()` call the caller never wrote (#1619).
+
+* On a grouped input, a grouping column that also appears in `.grouping`, or
+  that `.margin_label` names, is now refused as a fixed grouping column of
+  `.data` rather than as a `.by` column the caller did not write, and the
+  overlap refusal points at `dplyr::ungroup()` (#1615).
+
+* With `options(marginplyr.audit_sql = TRUE)`, a message a SQL translation
+  raises once per session or regularly (`rlang::inform()` or
+  `cli::cli_inform()` with `.frequency`) now reaches the caller as it does with
+  the audit off. Before, rendering the query for the record consumed the
+  message's frequency state, so the real operation never delivered it (#1623).
+
+* `nest_with_margins()` and `nest_by_with_margins()` now nest a data frame
+  carrying a frame-level `tsp` attribute. Before, both stopped with base R's
+  "invalid time series parameters specified". A nested cell keeps `tsp` only
+  when it has the input's columns, as with `.keep = TRUE`; native
+  `tidyr::nest()` and `dplyr::nest_by()` attach it to cells of another width,
+  which base R would refuse (#1624).
+
 * `compute()` of an unsorted `summarize_with_margins()` on a live SQLite
   connection without `.id` or a share now declares the destination's
   source-derived columns, as native `compute()` of `summarise()` does. Before,
@@ -36,6 +67,12 @@
   fails when its query is rendered, now with dbplyr's "No known SQL
   translation" error in place of the database's own unknown-function error
   (#1599).
+
+* A `c_across()` call with an argument its `cols` formal does not take, such
+  as `c_across(v, w)`, now fails in a local Margin summary as in native
+  `summarise()`: in dplyr's argument-and-group context, naming the argument
+  as written. Before, it raised a bare `match.call()` error naming a private
+  placeholder, even in a branch the summary never evaluates (#1620).
 
 * A local Margin order under `.sort = "last"` or `"first"` now stays in the C
   locale when `options(dplyr.legacy_locale = TRUE)` is set, as it already did

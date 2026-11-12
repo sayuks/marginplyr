@@ -43,6 +43,38 @@ test_that("known invalid Margin label names precede DuckDB metadata", {
   expect_identical(last_sent_queries()$purpose, character())
 })
 
+test_that("a grouped lazy input's fixed-key refusals send no query", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  source <- dplyr::copy_to(
+    con, data.frame(fixed = 1L, g = "a", value = 1L), "grouped_preflight"
+  )
+  grouped <- dplyr::group_by(source, fixed)
+  counter <- duckdb_query_counter()
+  on.exit(counter$untrace(), add = TRUE)
+
+  for (verb in list(summarize_with_margins, expand_with_margins)) {
+    expect_error(
+      verb(grouped, .grouping = rollup(fixed, g)),
+      "Fixed grouping column of `.data` cannot also appear in `.grouping`",
+      fixed = TRUE,
+      class = "marginplyr_error"
+    )
+    expect_error(
+      verb(grouped, .grouping = rollup(g),
+           .margin_label = c(g = "All", fixed = "All")),
+      "must not name fixed grouping column of `.data`",
+      fixed = TRUE,
+      class = "marginplyr_error"
+    )
+    expect_identical(counter$queries, 0L)
+    expect_identical(last_sent_queries()$purpose, character())
+  }
+})
+
 test_that("static summary selections precede label names without metadata", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
