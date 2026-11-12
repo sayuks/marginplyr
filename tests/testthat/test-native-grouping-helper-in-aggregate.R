@@ -128,3 +128,22 @@ test_that("a call the dialect does not hold as scalar alone is portable", {
     expect_match(sql, "UNION ALL", fixed = TRUE)
   }
 })
+
+test_that("an aggregate over a helper alone follows its backend's sum(1)", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(con, aggregate_input(), "constant_aggregate")
+
+  # A documented limit rather than an agreement (ADR 0009, #1595): the data
+  # frame sums the branch's constant once per group, the portable adapter once
+  # per row. Rows (), (x) hold 3 and 2 input rows with masks 3 and 1.
+  local <- ordered_result(summarize_with_margins(
+    aggregate_input(), s = sum(grouping_id(a, b)), .grouping = rollup(a, b)
+  ))
+  sql <- ordered_result(summarize_with_margins(
+    source, s = sum(grouping_id(a, b)), .grouping = rollup(a, b)
+  ))
+  expect_equal(local$s[1:2], c(3, 1))
+  expect_equal(sql$s[1:2], c(9, 2))
+})
