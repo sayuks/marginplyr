@@ -1,5 +1,11 @@
 # marginplyr 0.1.0
 
+* On a generic SQL backend, a Margin summary over a non-character dimension
+  with a text Margin label gives that dimension one text type across every
+  arm of its `UNION ALL` query. SQL Server refused the query, failing to
+  convert the label to the dimension's type, and the set-operation rules
+  Oracle, Redshift and Snowflake document refuse it too (#1586).
+
 * A condition raised by one of several unnamed `across()` calls on a local
   input that pass extra arguments through `across()`'s `...` quotes that call
   as the caller wrote it, rather than as `dplyr::across(...)`, and their
