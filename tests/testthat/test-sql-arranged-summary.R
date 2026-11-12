@@ -8,13 +8,6 @@ arranged_summary_source <- function(con) {
   )
 }
 
-arranged_summary_rows <- function(query) {
-  result <- as.data.frame(dplyr::collect(query))
-  result <- result[do.call(order, unname(as.list(result))), ]
-  rownames(result) <- NULL
-  result
-}
-
 test_that("DuckDB summarizes an arranged input without an ordering warning", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
@@ -37,9 +30,9 @@ test_that("DuckDB summarizes an arranged input without an ordering warning", {
                        check)
         )
         expect_no_warning(utils::capture.output(dplyr::show_query(query)))
-        expect_no_warning(rows <- arranged_summary_rows(query))
+        expect_no_warning(rows <- collected_row_bag(query))
         expect_identical(
-          rows, arranged_summary_rows(run(remote, specs[[spec]], sort, check)),
+          rows, collected_row_bag(run(remote, specs[[spec]], sort, check)),
           info = info
         )
       }
@@ -57,7 +50,7 @@ check_limited_arranged_summary <- function(con) {
   )
   # The sum's integer width is the backend's, so compare by value.
   expect_equal(
-    arranged_summary_rows(query),
+    collected_row_bag(query),
     data.frame(g = c("Total", "a", "b"), s = c(3, 2, 1))
   )
 }
