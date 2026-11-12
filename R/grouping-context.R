@@ -172,6 +172,15 @@ rewrite_grouping_dots <- function(dots,
   stats::setNames(rewritten, names(dots))
 }
 
+# Refuses an invalid Grouping helper call in `dots` against the compiled `plan`,
+# and returns nothing. The refusals are those `rewrite_grouping_dots()` raises,
+# and they depend on the call and the plan but not on the grouping set, so one
+# rewrite against the first set decides them and its result is discarded.
+check_grouping_helper_calls <- function(dots, plan) {
+  rewrite_grouping_dots(dots, plan, grouping_set = plan$sets[[1L]], sql = FALSE)
+  invisible(NULL)
+}
+
 rewrite_grouping_expr <- function(expr,
                                   plan,
                                   grouping_set,
