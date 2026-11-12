@@ -365,7 +365,8 @@ check_observed_label_collision <- function(data,
     } else if (inherits(data, "tbl_sql") &&
                  inherits(data$lazy_query, "lazy_select_query") &&
                  is.null(data$lazy_query$limit)) {
-      # DuckDB binds an outer ORDER BY against the aggregate's columns.
+      # Without a limit the ordering changes no count, so it is cleared from
+      # every SQL query rather than from the backends that reject it.
       data$lazy_query$order_by <- NULL
     }
   }
