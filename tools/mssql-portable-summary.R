@@ -7,8 +7,7 @@
 #
 # By default this records what the server answers and fails only when the
 # server cannot be reached or the one-set control differs from the local
-# result. With `--assert-contract` every case must equal the local data frame;
-# #1586 holds why that mode does not pass yet.
+# result. With `--assert-contract` every case must equal the local data frame.
 library(marginplyr)
 
 args <- commandArgs(trailingOnly = TRUE)
