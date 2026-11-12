@@ -505,3 +505,57 @@ test_that("authored namespace outputs retain actual collision protection", {
     }
   }
 })
+
+# A constant `.names` template after an output that reuses an input name sees
+# that column once, as `dplyr::summarise()` does (#1584).
+across_after_overwrite_cases <- list(
+  named = rlang::quos(
+    v = sum(v), dplyr::across(v, ~ .x / 2, .names = "half")
+  ),
+  unnamed = rlang::quos(
+    dplyr::across(v, sum), dplyr::across(v, ~ .x / 2, .names = "half")
+  ),
+  several = rlang::quos(
+    v = sum(v), w = max(w),
+    dplyr::across(v, ~ .x / 2, .names = "half"),
+    dplyr::across(w, ~ .x / 2, .names = "half_w")
+  )
+)
+
+for (input_kind in c("data.frame", "tibble", "data.table")) {
+  test_that(paste("a constant .names follows an overwrite on", input_kind), {
+    if (input_kind == "data.table") skip_if_suggest_absent("data.table")
+    data <- data.frame(g = c("a", "a", "b"), v = 1:3, w = c(4, 6, 5))
+    input <- switch(input_kind,
+      tibble = tibble::as_tibble(data),
+      data.table = data.table::as.data.table(data),
+      data
+    )
+    for (case in names(across_after_overwrite_cases)) {
+      dots <- across_after_overwrite_cases[[case]]
+      by_g <- dplyr::summarise(data, !!!dots, .by = g)
+      total <- dplyr::summarise(data, !!!dots)
+      expected <- dplyr::bind_rows(
+        by_g, dplyr::mutate(total, g = "Total", .before = 1L)
+      )
+      rolled <- summarize_with_margins(input, !!!dots, .grouping = rollup(g))
+      expect_equal(
+        as.data.frame(rolled), as.data.frame(expected), info = case
+      )
+      fixed <- summarize_with_margins(input, !!!dots, .by = g)
+      expect_equal(as.data.frame(fixed), as.data.frame(by_g), info = case)
+    }
+  })
+}
+
+test_that("a constant .names that yields too few names counts real outputs", {
+  data <- data.frame(g = c("a", "a", "b"), v = 1:3, w = c(4, 6, 5))
+  expect_error(
+    summarize_with_margins(
+      data, v = sum(v),
+      dplyr::across(c(v, w), ~ .x / 2, .names = "half"),
+      .grouping = rollup(g)
+    ),
+    "produced 1 for 2 outputs"
+  )
+})
