@@ -25,6 +25,12 @@ query. Only a backend actually running native \verb{GROUP BY GROUPING SETS}
 emits SQL \code{GROUPING()}, so PostgreSQL falls back to the literal whenever
 \code{.duplicates = "keep"} sends it down the portable path.
 
+Native \code{GROUPING()} is emitted only for a helper outside every aggregate:
+SQL does not allow it as an aggregate's argument. A summary with a helper
+inside an aggregate, such as \code{sum(v * grouping_bit(b))}, or inside any
+call the SQL dialect of the backend does not translate as a plain scalar,
+takes the portable \verb{UNION ALL} path, where the helper is the literal.
+
 A direct output of either helper remains numeric even when a remote Margin
 result has zero rows. This includes a supported literal \code{across()} lambda
 whose entire result is the helper. Direct \code{collect()} and supported direct

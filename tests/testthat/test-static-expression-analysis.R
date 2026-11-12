@@ -4361,8 +4361,10 @@ test_that("evaluating a captured helper reaches the rule it always did", {
   )
   expect_identical(compiled$bit, c(0L, 0L, 1L))
 
-  # And on the lazy path the dialect gets its own `GROUPING()` rather than a
-  # call to a helper no backend can run.
+  # And on the lazy path the helper is compiled inside the capture rather than
+  # sent as a call no backend can run. `eval()` is not in the dialect's scalar
+  # table, so the summary takes the portable adapter and its literal
+  # (ADR 0009).
   postgres <- dbplyr::tbl_lazy(data, con = dbplyr::simulate_postgres())
   query <- summarize_with_margins(
     postgres,
@@ -4371,7 +4373,9 @@ test_that("evaluating a captured helper reaches the rule it always did", {
     .grouping = rollup(region)
   )
   sql <- as.character(dbplyr::sql_render(query))
-  expect_match(sql, "eval(quote(GROUPING(", fixed = TRUE)
+  expect_match(sql, "eval(quote(0))", fixed = TRUE)
+  expect_match(sql, "eval(quote(1))", fixed = TRUE)
+  expect_no_match(sql, "GROUPING", fixed = TRUE)
 })
 
 test_that("literal parsed helpers are analyzed without being rewritten", {

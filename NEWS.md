@@ -5,6 +5,12 @@
   `.sort = "last"` and `"first"`, rather than interleaving them, as a double
   key already does (#1589).
 
+* A summary with `grouping_bit()` or `grouping_id()` inside an aggregate,
+  such as `sum(v * (1 - grouping_bit(b)))`, returns the same value on DuckDB
+  and other backends running native `GROUP BY GROUPING SETS` as on a local
+  data frame, rather than failing at `collect()` with the engine's binder
+  error: such a summary now takes the portable `UNION ALL` path (#1587).
+
 * When a local summary's type differs between grouping sets, vctrs' refusal
   now names the caller's column, as `dplyr::bind_rows()` of the grains does,
   rather than a column name marginplyr generated (#1590).
