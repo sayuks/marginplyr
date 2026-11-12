@@ -1,5 +1,10 @@
 # marginplyr 0.1.0
 
+* A local complex key or grouping dimension holding both `NaN` and `NA`, in
+  either part, now keeps each group and its margin rows together under
+  `.sort = "last"` and `"first"`, rather than interleaving them, as a double
+  key already does (#1589).
+
 * `.check_margin_label = TRUE` no longer fails with an Arrow or DuckDB error
   when the input is an `arrange()`d query. The check reads the same columns
   whatever the input's ordering, and an ordering beneath `head()` still

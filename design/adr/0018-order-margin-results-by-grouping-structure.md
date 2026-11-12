@@ -513,3 +513,10 @@ extension of this amendment's promise to lazy backends; SQLite stores `NaN` as
 `NULL` and has one group. A string Margin label converts a dimension to
 character before ordering, which already separates the two. Double keys
 without `NaN`, and packed, matrix, list and factor keys, order as before.
+
+A local complex key, fixed or a grouping dimension, splits the same way in
+either part (#1589). `summarise()` keeps a `NaN` part apart from an `NA` part,
+while `is.na()` and `dplyr::arrange()` tie every missing complex value, so its
+value term is its real part and then its imaginary part, each ranked and
+ordered as a double key is: ordinary value, `NaN`, `NA`. A non-missing complex
+value orders as before, and complex matrix keys order as other matrix keys do.
