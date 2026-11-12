@@ -665,6 +665,15 @@ unwrap_injected_args <- function(args) {
   lapply(args, unwrap_injected_quosure)
 }
 
+# Whether a helper call's `args`, as `static_call_args()` read them, name an
+# argument other than the helper's one formal `x`. The helper is read rather
+# than called, so R's matching never runs: such a name is the unused argument
+# R would refuse. `grouping_bit()`, `share_of_total()` and `share_of_parent()`
+# ask it; `grouping_id()` takes dots, where R accepts any name.
+names_other_than_x <- function(args) {
+  !all(rlang::names2(args) %in% c("", "x"))
+}
+
 # What a diagnostic adds when the part it refuses arrived by injection. What is
 # refused here really is not a bare name -- the case where it is one is accepted
 # above and reaches no diagnostic at all -- so the headline is accurate and the
@@ -750,10 +759,12 @@ rebuild_static_call <- function(expr, args, head = static_call_head(expr)) {
   # attribute, so this replaces nothing `call2()` just set.
   attributes(rebuilt) <- attributes(expr)
   # The head and arguments were read through a pair around the whole call, and
-  # one pair goes back around the rebuilt call unless it is a qualified name or
-  # a function literal (ADR 0019, *a rebuilt call keeps the caller's pair*).
+  # one pair goes back around the rebuilt call unless it is a qualified name, a
+  # function literal or a `list()` or `c()` collection (ADR 0019, *a rebuilt
+  # call keeps the caller's pair*).
   if (!identical(unparenthesized_call(expr), expr) &&
-        !rlang::is_call(rebuilt, c("::", ":::", "function"))) {
+        !rlang::is_call(rebuilt, c("::", ":::", "function")) &&
+        !rlang::is_call(rebuilt, c("list", "c"), ns = c("", "base"))) {
     return(rlang::call2("(", rebuilt))
   }
   # dplyr expands an unnamed top-level across(). Keep a call whose head is

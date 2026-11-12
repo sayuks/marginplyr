@@ -36,8 +36,9 @@
 #' selected, and a plan either contains one or does not. It therefore accepts
 #' any Grouping specification whose plan contains one. [rollup()] and [cube()]
 #' always produce one; [grouping_sets()] produces one only when it includes an
-#' empty [grouping_set()], and a specification without one is rejected naming
-#' that fix.
+#' empty [grouping_set()], a [grouping_spec()] product only when every factor
+#' produces an empty set, and a lone [grouping_set()] only when it is empty. A
+#' specification without one is rejected naming the change that gives it one.
 #'
 #' Neither helper reaches a level between the two. For a denominator at a
 #' named ancestor level, move that dimension into `.by` and use
@@ -609,15 +610,15 @@ preflight_shares <- function(dots) {
 }
 
 abort_share_helper_position <- function(kind, complete) {
-  # The first of four sites in this file that raise from two calls rather than
-  # one, and the shape is the same at each: what varies between the two is a
+  # The first of the sites in this file that raise from several calls rather
+  # than one, and the shape is the same at each: what varies between them is a
   # whole element of the message vector, or a whole clause inside one. The
   # alternatives are both worse. An `if` inside the template is a branch the
   # structural gate never sees, since what it reads is the source expression
   # and this one would be inside a string; a message vector assembled around an
   # `if` is a computed template, which the gate does see and refuses; and an
   # `i` bullet whose content is sometimes empty renders as a bullet marker with
-  # nothing after it. What the shape costs is the element the two calls share,
+  # nothing after it. What the shape costs is the element the calls share,
   # written out in each.
   if (complete) {
     abort_marginplyr(c(
@@ -2115,7 +2116,8 @@ validate_share_direct_syntax <- function(expr, output_name) {
   # records what asking it with `is_name_part()` changed here, and why the
   # alternative was rejected.
   carried <- unwrap_injected_args(args)
-  if (length(carried) != 1L || !is_name_part(carried[[1L]])) {
+  if (length(carried) != 1L || names_other_than_x(args) ||
+        !is_name_part(carried[[1L]])) {
     # `injected_quosure_clause()` is a whole sentence assembled around a
     # deparsed caller expression, so it stays an interpolated value and gains
     # no markup: ADR 0023's injection rule is what makes a caller's braces
@@ -2485,6 +2487,40 @@ check_parent_grouping_kind <- function(plan) {
 check_total_grouping_kind <- function(plan) {
   if (length(grand_total_occurrence_ids(plan)) > 0L) {
     return(invisible(NULL))
+  }
+  # Three calls, in the shape `abort_share_helper_position()` records. Only the
+  # remedy differs, because the change that gives a plan the Grand total set
+  # depends on what the caller wrote (ADR 0017). Only these three kinds reach
+  # here: a `rollup()` or `cube()` plan, and a plan with no `.grouping`, always
+  # contain the set, and so does a lone `grouping_set()` that is empty.
+  if (identical(plan$kind, "set")) {
+    abort_marginplyr(c(
+      paste0(
+        "{.fun share_of_total} requires {.arg .grouping} to produce the Grand ",
+        "total set, in which every grouping dimension is omitted."
+      ),
+      i = "{.fun rollup} and {.fun cube} always produce it.",
+      i = paste0(
+        "Place the {.fun grouping_set} in {.fun grouping_sets} beside an ",
+        "empty {.fun grouping_set}, replace it with {.fun rollup}, or omit ",
+        "the Total share."
+      )
+    ))
+  }
+  if (identical(plan$kind, "product")) {
+    abort_marginplyr(c(
+      paste0(
+        "{.fun share_of_total} requires {.arg .grouping} to produce the Grand ",
+        "total set, in which every grouping dimension is omitted."
+      ),
+      i = "{.fun rollup} and {.fun cube} always produce it.",
+      i = paste0(
+        "Give every factor of the {.fun grouping_spec} an empty set: replace ",
+        "a {.fun grouping_set} factor with {.fun rollup}, add an empty ",
+        "{.fun grouping_set} to a {.fun grouping_sets} factor, or omit the ",
+        "Total share."
+      )
+    ))
   }
   abort_marginplyr(c(
     paste0(

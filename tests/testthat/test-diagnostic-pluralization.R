@@ -118,6 +118,10 @@ pluralizing_coverage <- function() {
       "a name on a constructor's own argument is refused"
     ),
     abort_observed_label_collision = rep("this file, the collision block", 2L),
+    check_eager_summary_fields = pluralizing_test_location(
+      "test-assigned-summary-collisions.R",
+      "plain frames diagnose a summary absent from some grouping sets"
+    ),
     check_summary_context_helpers = pluralizing_test_location(
       "test-contextual-helpers.R",
       "the refusal names the helper and keeps its opening"

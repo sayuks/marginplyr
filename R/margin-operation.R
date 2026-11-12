@@ -266,6 +266,10 @@ check_margin_id_collision <- function(.id, names, where) {
 # its kind, the shape `abort_margin_label_collision()` takes, because the
 # answer is a property of the verb: only a column the result holds can have
 # its factor levels rebuilt after the branch union (#415).
+#
+# `keeps_input_order = FALSE` declares that the verb's rows do not depend on
+# an unlimited input ordering, so that ordering is cleared before
+# `sqlite_margin_input()` can seal it into the input relation (#1596, #1598).
 prepare_margin_operation <- function(.data,
                                      by_quo,
                                      grouping_quo,
@@ -276,6 +280,7 @@ prepare_margin_operation <- function(.data,
                                      .sort,
                                      duplicates_choices,
                                      carried_columns,
+                                     keeps_input_order = TRUE,
                                      .id = NULL,
                                      validate_grouping = NULL,
                                      validate_plan_names = NULL,
@@ -284,6 +289,7 @@ prepare_margin_operation <- function(.data,
   stopifnot(is.null(validate_grouping) || is.function(validate_grouping))
   stopifnot(is.null(validate_plan_names) || is.function(validate_plan_names))
   stopifnot(is.function(carried_columns))
+  stopifnot(rlang::is_bool(keeps_input_order))
 
   with_margin_error_call(
     {
@@ -353,6 +359,9 @@ prepare_margin_operation <- function(.data,
       data <- validate_margin_factor_input(
         data, column_info$factors, backend, plan, margin_labels
       )
+      if (!keeps_input_order) {
+        data <- drop_unlimited_sql_order(data)
+      }
       new_margin_operation(
         data = sqlite_margin_input(data, backend, data_vars),
         backend = backend,
@@ -371,6 +380,18 @@ prepare_margin_operation <- function(.data,
     },
     call = call
   )
+}
+
+# Clear an Arrow query's own ordering. Arrow's `head()` and `tail()` collapse
+# the query they limit, so an ordering that decides which rows are read sits
+# in a nested query and is untouched; one beside a limit stays.
+drop_unlimited_arrow_order <- function(data) {
+  if (inherits(data, "arrow_dplyr_query") &&
+        is.null(data$head) && is.null(data$tail)) {
+    data$arrange_vars <- list()
+    data$arrange_desc <- logical()
+  }
+  data
 }
 
 # Clear a SQL input's top-level ORDER BY when no LIMIT sits beside it, for a
@@ -408,13 +429,17 @@ validate_margin_operation <- function(operation) {
 
 # Finish the prepared operation. `type_anchor_columns` are input columns whose
 # SQL types the caller needs carried into the final projection.
+# `anchor_query = FALSE` declares that the query already returns those types,
+# so they reach only a typed SQLite result's companion anchors and no zero-row
+# anchor is added to the unsorted query.
 # `sql_env_column` routes a public `.env` column through identifier quoting.
 finalize_margin_operation <- function(operation, execution,
                                       type_anchor_columns = character(),
-                                      sql_env_column = FALSE,
-                                      restore_tibble = FALSE) {
+                                      anchor_query = TRUE,
+                                      sql_env_column = FALSE) {
   check_margin_operation(operation)
   stopifnot(inherits(execution, "marginplyr_margin_execution"))
+  stopifnot(rlang::is_bool(anchor_query))
   sqlite_env_column <- sql_env_column && live_sqlite_margin_result(operation)
   result <- dplyr::ungroup(execution$result)
   factor_info <- execution$factor_info
@@ -441,7 +466,8 @@ finalize_margin_operation <- function(operation, execution,
     # A subclass arrange method can move columns while ordering rows.
     result <- reorder_margin_columns(result, margin_cols)
   }
-  needs_unsorted_anchor <- live_sqlite_margin_result(operation) &&
+  needs_unsorted_anchor <- anchor_query &&
+    live_sqlite_margin_result(operation) &&
     !margin_sorting(operation) &&
     length(type_anchor_columns) > 0L &&
     (length(execution$declared_types) == 0L ||
@@ -490,7 +516,7 @@ finalize_margin_operation <- function(operation, execution,
   ) || sqlite_env_column || sqlite_boolean_column) {
     result <- sqlite_typed_result(
       operation, unsorted, result, execution, type_anchor_columns,
-      declared_types, restore_tibble = restore_tibble
+      declared_types
     )
   } else if (length(type_anchor_columns) > 0L && !needs_unsorted_anchor) {
     # Share staging wraps the SQL union's typed first SELECT. Put a zero-row
@@ -579,6 +605,11 @@ order_margin_result <- function(operation, result, execution) {
         data
       } else if (operation$backend$kind == "arrow") {
         arrange_arrow_margin_terms(data, terms, operation$backend)
+      } else if (is.data.frame(data)) {
+        # An explicit locale keeps `options(dplyr.legacy_locale = TRUE)` from
+        # redirecting the order to the session's collation, and is what stops
+        # `arrange()` reading that option and warning about it.
+        dplyr::arrange(data, !!!terms, .locale = "C")
       } else {
         dplyr::arrange(data, !!!terms)
       }

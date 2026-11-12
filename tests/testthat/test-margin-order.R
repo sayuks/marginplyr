@@ -2275,3 +2275,98 @@ test_that("dtplyr special input names survive both Margin orders", {
     }
   }
 })
+
+# Sets a collation under which base R folds case, so that `"a"` sorts before
+# `"B"`, for the rest of the calling test, and skips where none is available.
+local_case_folding_collation <- function(env = parent.frame()) {
+  previous <- Sys.getlocale("LC_COLLATE")
+  for (locale in c("en_US.UTF-8", "en_US.utf8")) {
+    set <- suppressWarnings(Sys.setlocale("LC_COLLATE", locale))
+    folds <- nzchar(set) && identical(order(c("B", "a")), c(2L, 1L))
+    Sys.setlocale("LC_COLLATE", previous)
+    if (folds) {
+      withr::local_collate(locale, .local_envir = env)
+      return(invisible(locale))
+    }
+  }
+  testthat::skip("No case-folding collation is available")
+}
+
+margin_order_case_data <- function() {
+  data.frame(
+    year = c("x", "Y", "x", "Y"),
+    region = c("a", "B", "b", "a"),
+    units = c(1, 2, 4, 8)
+  )
+}
+
+margin_order_verbs <- function(data, sort) {
+  spec <- rollup("region")
+  list(
+    summary = summarize_with_margins(
+      data, units = sum(units), .grouping = spec, .sort = sort
+    ),
+    summary_by = summarize_with_margins(
+      data, units = sum(units), .by = "year", .grouping = spec, .sort = sort
+    ),
+    summary_id = summarize_with_margins(
+      data, units = sum(units), .grouping = spec, .sort = sort, .id = "id"
+    ),
+    expand = expand_with_margins(
+      data, .by = "year", .grouping = spec, .sort = sort
+    ),
+    nest = nest_with_margins(
+      data, .by = "year", .grouping = spec, .sort = sort
+    ),
+    nest_by = nest_by_with_margins(
+      data, .by = "year", .grouping = spec, .sort = sort
+    )
+  )
+}
+
+test_that("a local Margin order stays in C order under dplyr.legacy_locale", {
+  data <- margin_order_case_data()
+  expected <- list(
+    last = margin_order_verbs(data, "last"),
+    first = margin_order_verbs(data, "first")
+  )
+  # The C order, which holds whatever the session's collation is.
+  expect_identical(expected$last$summary$region, c("B", "a", "b", "Total"))
+  expect_identical(expected$first$summary_by$year, rep(c("Y", "x"), each = 3L))
+
+  local_case_folding_collation()
+  withr::local_options(dplyr.legacy_locale = TRUE)
+  for (sort in names(expected)) {
+    actual <- suppressWarnings(margin_order_verbs(data, sort))
+    for (verb in names(actual)) {
+      expect_identical(
+        actual[[verb]], expected[[sort]][[verb]], info = paste(sort, verb)
+      )
+    }
+  }
+})
+
+test_that("a local Margin order raises no deprecation of its own", {
+  data <- margin_order_case_data()
+  local_case_folding_collation()
+  withr::local_options(
+    dplyr.legacy_locale = TRUE, lifecycle_verbosity = "warning"
+  )
+  deprecations <- function(sort) {
+    count <- 0L
+    withCallingHandlers(
+      margin_order_verbs(data, sort),
+      lifecycle_warning_deprecated = function(condition) {
+        count <<- count + 1L
+        invokeRestart("muffleWarning")
+      }
+    )
+    count
+  }
+
+  # Whatever the caller's own option makes the summary itself raise is what an
+  # unordered call raises too.
+  unordered <- deprecations("none")
+  expect_identical(deprecations("last"), unordered)
+  expect_identical(deprecations("first"), unordered)
+})

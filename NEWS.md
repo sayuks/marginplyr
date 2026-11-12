@@ -1,17 +1,99 @@
 # marginplyr 0.1.0
 
+* `compute()` of an unsorted `summarize_with_margins()` on a live SQLite
+  connection without `.id` or a share now declares the destination's
+  source-derived columns, as native `compute()` of `summarise()` does. Before,
+  a dimension of a summary with more than one Grouping set and a missing
+  Margin label, or a fixed `.by` key beside a text Margin label, was created
+  without a declared type, so a zero-row or all-missing column collected
+  from the destination as logical (#1601).
+
+* A sorted `summarize_with_margins()` on a live SQLite connection with a text
+  Margin label keeps each fixed `.by` key's declared type, as native
+  `summarise()` grouped by it does. Before, with neither `.id` nor a share, a
+  `DATE` key under `extended_types = TRUE` collected as character, and a key
+  of a zero-row or all-missing table collected as logical, directly or after
+  `compute()` (#1600).
+
+* `collect()` of a sorted live SQLite Margin summary or expansion now returns
+  a tibble, as dbplyr's `collect()` of the native summary does and as the same
+  call without `.sort` already did, instead of a bare `data.frame` (#1608).
+
+* `dplyr::c_across()` in a local Margin summary selects what it selects in a
+  native grouped `summarise()`: no fixed key, no grouping dimension, and no
+  column marginplyr allocated, in every grouping set. Before, a numeric key was
+  summed into the value and into any share over it, and a non-numeric key
+  turned a valid call into an error that could name a private column. On a
+  lazy SQL input, which has no translation for `c_across()`, the summary still
+  fails when its query is rendered, now with dbplyr's "No known SQL
+  translation" error in place of the database's own unknown-function error
+  (#1599).
+
+* A local Margin order under `.sort = "last"` or `"first"` now stays in the C
+  locale when `options(dplyr.legacy_locale = TRUE)` is set, as it already did
+  on dtplyr and SQLite, rather than following the session's collation, and
+  no longer raises dplyr's deprecation warning for that option itself
+  (#1611).
+
+* A dtplyr summary that is a bare `NA` in some grouping sets and an integer,
+  double or character value in the others now returns the common type a local
+  data frame returns, with `NA` in the sets that produced it, rather than
+  failing at collection with data.table's `Item 2 of x is 'integer' but the
+  corresponding item of y is 'logical'`. Types with no common type, such as
+  character and integer, are refused with a marginplyr error naming the
+  summary (#1612).
+
+* `.check_margin_label = TRUE` no longer fails with Arrow's `Multiple matches
+  for FieldRef` error when an Arrow input's ordering names one column twice,
+  as `arrange(v) |> arrange(w, v)` or `arrange(v, desc(v))` does (#1603).
+
+* `share_of_total()`, `share_of_parent()` and `grouping_bit()` now refuse
+  their one argument under a name other than `x`, as R refuses an unused
+  argument. Before, `share_of_total(y = s)` was computed as though the name
+  were absent (#1610).
+
+* When `share_of_total()` is refused because `.grouping` produces no Grand
+  total set, the advice now fits the specification written. A lone
+  `grouping_set()` is told to sit in `grouping_sets()` beside an empty one or
+  become a `rollup()`, and a `grouping_spec()` product that every factor must
+  produce an empty set. Both were told to add an empty `grouping_set()` to a
+  `grouping_sets()` specification, which in a product leaves the plan
+  unchanged (#1609).
+
+* A local Margin summary that returns `NULL` in some grouping sets and a value
+  in others, such as `if (grouping_bit(g) == 1L) NULL else sum(v)`, now raises
+  a `marginplyr_error` from the calling verb naming the summary and asking for
+  a typed missing value in place of `NULL`, rather than an internal error
+  about union branches. `NULL` in every grouping set still removes the column
+  (#1605).
+
+* With `.check_margin_label = TRUE`, an invalid `grouping_bit()` or
+  `grouping_id()` call -- no column, too many, a non-bare argument, or a
+  column outside `.by` and `.grouping` -- is now refused before the Margin
+  label check reads the input. Before, the check ran first, so a lazy input
+  was queried for a call refused anyway, and a Margin label already in the
+  data was reported in place of the call error (#1604).
+
 * `summarize_with_margins()` over an `arrange()`d lazy SQL input no longer
   passes on dbplyr's "ORDER BY is ignored in subqueries without LIMIT"
   warning at `show_query()`, `collect()` or `compute()`. The summary's rows
   do not depend on that ordering, so it is cleared; one beneath `head()` still
   decides which rows are read, and the window ordering `arrange()` records is
-  kept (#1596).
+  kept. On SQLite the query therefore no longer repeats the input's
+  `ORDER BY` in every `UNION ALL` branch, and SQLite no longer sorts the input
+  once per branch (#1596, #1598).
 
 * `?grouping_bit` now states that an aggregate over a helper alone, such as
   `sum(grouping_id(a, b))`, aggregates a constant and so follows its backend:
   once per group on a data frame or in dtplyr, once per row wherever the
   helper is a query literal, as `sum(1)` does. `sum(v * grouping_id(a, b))`
   and `n() * grouping_id(a, b)` agree everywhere (#1595).
+
+* An `across()` whose `.fns` is a parenthesized `list()` of functions, or on
+  Arrow a parenthesized `c()`, again takes its output names from `.names` on
+  a lazy input and is accepted by dtplyr and Arrow, as on a data frame. Since
+  #1582, DuckDB ignored `.names` for it and dtplyr and Arrow
+  refused it (#1602).
 
 * A summary on a lazy SQL input keeps the grouping the caller's parentheses
   express, as native dbplyr does. Before, the pair was dropped before dbplyr

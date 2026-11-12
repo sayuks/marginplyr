@@ -2311,9 +2311,13 @@ test_that("Total shares require a plan containing a Grand total set", {
       "requires `.grouping` to produce the Grand total set"
     )
     expect_s3_class(error, "marginplyr_error")
+    expect_identical(
+      rlang::call_name(conditionCall(error)),
+      "summarize_with_margins"
+    )
     expect_match(
       conditionMessage(error),
-      "empty `grouping_set()`",
+      "`rollup()` and `cube()` always produce it.",
       fixed = TRUE
     )
   }
@@ -2331,6 +2335,91 @@ test_that("Total shares require a plan containing a Grand total set", {
     ),
     "requires `.grouping` to be one pure `rollup\\(\\)`"
   )
+})
+
+test_that("a refused Total share advises a change the written spec can take", {
+  data <- data.frame(
+    a = c("x", "x", "y"),
+    b = c("p", "q", "q"),
+    g = c("m", "n", "n"),
+    value = 1:3
+  )
+  share_with <- function(spec) {
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      whole = share_of_total(total),
+      .grouping = spec,
+      .margin_label = NULL
+    )
+  }
+  # Each case pairs a refused specification with the advice line it gets and
+  # every specification that follows that advice literally.
+  cases <- list(
+    list(
+      refused = grouping_sets(grouping_set(a), grouping_set(b)),
+      advice = paste(
+        "Add an empty `grouping_set()` to the `grouping_sets()`",
+        "specification, or omit the Total share."
+      ),
+      followed = list(
+        grouping_sets(grouping_set(a), grouping_set(b), grouping_set())
+      )
+    ),
+    list(
+      refused = grouping_set(a),
+      advice = paste(
+        "Place the `grouping_set()` in `grouping_sets()` beside an empty",
+        "`grouping_set()`, replace it with `rollup()`, or omit the Total",
+        "share."
+      ),
+      followed = list(
+        grouping_sets(grouping_set(a), grouping_set()),
+        rollup(a)
+      )
+    ),
+    list(
+      refused = grouping_spec(grouping_set(a), rollup(g)),
+      advice = paste(
+        "Give every factor of the `grouping_spec()` an empty set: replace a",
+        "`grouping_set()` factor with `rollup()`, add an empty",
+        "`grouping_set()` to a `grouping_sets()` factor, or omit the Total",
+        "share."
+      ),
+      followed = list(
+        grouping_spec(rollup(a), rollup(g)),
+        grouping_spec(grouping_sets(grouping_set(a), grouping_set()), rollup(g))
+      )
+    ),
+    list(
+      refused = grouping_spec(
+        grouping_sets(grouping_set(a), grouping_set(b)),
+        grouping_set(g)
+      ),
+      advice = paste(
+        "Give every factor of the `grouping_spec()` an empty set: replace a",
+        "`grouping_set()` factor with `rollup()`, add an empty",
+        "`grouping_set()` to a `grouping_sets()` factor, or omit the Total",
+        "share."
+      ),
+      followed = list(
+        grouping_spec(
+          grouping_sets(grouping_set(a), grouping_set(b), grouping_set()),
+          rollup(g)
+        )
+      )
+    )
+  )
+
+  for (case in cases) {
+    error <- expect_error(share_with(case$refused), class = "marginplyr_error")
+    message <- gsub("\\s+", " ", cli::ansi_strip(conditionMessage(error)))
+    expect_match(message, case$advice, fixed = TRUE)
+    for (spec in case$followed) {
+      result <- share_with(spec)
+      expect_identical(unique(result$total[result$whole == 1]), 6L)
+    }
+  }
 })
 
 test_that("duplicate Grand totals keep one denominator per detail row", {

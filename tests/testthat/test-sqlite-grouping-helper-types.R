@@ -33,22 +33,63 @@ test_that("direct SQLite Grouping helpers stay numeric without rows", {
   }
 })
 
-test_that("existing sorted SQLite summaries keep their collection class", {
+test_that("sorted SQLite Margin results collect to dbplyr's native class", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
   on.exit(DBI::dbDisconnect(con), add = TRUE)
   source <- dplyr::copy_to(
-    con, tibble::tibble(g = "a", v = 1),
+    con, tibble::tibble(g = c("a", "B", "b"), v = c(1, 2, 3)),
     "existing_sorted_class", temporary = TRUE
   )
-  query <- summarize_with_margins(
-    source,
-    total = sum(v, na.rm = TRUE),
-    .grouping = rollup(g), .sort = "last"
+  native <- dplyr::collect(dplyr::arrange(
+    dplyr::summarise(dplyr::group_by(source, g), total = sum(v, na.rm = TRUE)),
+    g
+  ))
+  expect_identical(class(native), c("tbl_df", "tbl", "data.frame"))
+  empty <- dplyr::filter(source, v > 9)
+  queries <- list(
+    plain = summarize_with_margins(
+      source, total = sum(v, na.rm = TRUE),
+      .grouping = rollup(g), .sort = "last"
+    ),
+    id = summarize_with_margins(
+      source, total = sum(v, na.rm = TRUE),
+      .grouping = rollup(g), .id = "id", .sort = "last"
+    ),
+    share = summarize_with_margins(
+      source, total = sum(v, na.rm = TRUE), share = share_of_total(total),
+      .grouping = rollup(g), .sort = "last",
+      .check_share_source = FALSE
+    ),
+    helper = summarize_with_margins(
+      source, mask = grouping_id(),
+      .grouping = rollup(g), .sort = "last"
+    ),
+    zero_rows = summarize_with_margins(
+      empty, total = sum(v, na.rm = TRUE),
+      .grouping = rollup(g), .sort = "last"
+    ),
+    expansion = expand_with_margins(
+      source, .grouping = rollup(g), .sort = "last"
+    ),
+    expansion_id = expand_with_margins(
+      source, .grouping = rollup(g), .id = "id", .sort = "last"
+    ),
+    expansion_zero_rows = expand_with_margins(
+      empty, .grouping = rollup(g), .sort = "last"
+    )
   )
-  result <- dplyr::collect(query)
-  expect_identical(class(result), "data.frame")
-  expect_identical(result$total, c(1, 1))
+  for (name in names(queries)) {
+    expect_identical(
+      class(dplyr::collect(queries[[name]])), class(native), info = name
+    )
+    expect_identical(
+      class(dplyr::collect(queries[[name]], n = 1)), class(native),
+      info = name
+    )
+  }
+  expect_identical(dplyr::collect(queries$plain)$total, c(native$total, 6))
+  expect_identical(nrow(dplyr::collect(queries$zero_rows)), 1L)
 })
 
 test_that("finite zero-row fetch and computed schema retain helper types", {
@@ -246,9 +287,7 @@ test_that("SQLite retains masks, identifiers, shares, and Margin order", {
       expect_identical(result$mask, c(0L, 1L, 3L, 3L)[expected_ids])
       expect_identical(result$share, rep(1, 4L))
       expect_identical(result$total, rep(2, 4L))
-      expect_identical(
-        inherits(result, "tbl_df"), identical(sort, "none")
-      )
+      expect_s3_class(result, "tbl_df")
       computed <- dplyr::collect(dplyr::compute(query))
       expect_identical(computed$sid, expected_ids)
       expect_identical(computed$mask, c(0L, 1L, 3L, 3L)[expected_ids])
