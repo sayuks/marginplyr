@@ -10,6 +10,11 @@
   summed into the value and into any share over it, and a non-numeric key
   turned a valid call into an error that could name a private column (#1599).
 
+* On SQLite, `summarize_with_margins()` over an `arrange()`d input with no row
+  limit now clears that ordering too, so its query no longer repeats the
+  input's `ORDER BY` in every `UNION ALL` branch, and SQLite no longer sorts
+  the input once per branch (#1598).
+
 * A dtplyr summary that is a bare `NA` in some grouping sets and an integer,
   double or character value in the others now returns the common type a local
   data frame returns, with `NA` in the sets that produced it, rather than

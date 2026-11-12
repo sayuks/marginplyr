@@ -1254,6 +1254,8 @@ summarize_with_margins <- function(.data,
     # is not the input's column names narrowed to what the result happens to
     # hold: that name would be rebuilt from the input column's levels.
     carried_columns = function(data_vars, plan) plan$by,
+    # A summary's rows do not depend on an unlimited input ordering (#1596).
+    keeps_input_order = FALSE,
     .id = .id,
     validate_grouping = share_grouping_spec_validator(share_kinds),
     validate_plan_names = function(by, dimensions, data_vars, complete) {
@@ -1320,8 +1322,6 @@ summarize_with_margins <- function(.data,
 
 execute_margin_summary <- function(operation, dots, check_share_source) {
   check_margin_operation(operation)
-  # A summary's rows do not depend on an unlimited input ordering (#1596).
-  operation$data <- drop_unlimited_sql_order(operation$data)
   with_margin_error_call(
     {
       plan <- operation$plan

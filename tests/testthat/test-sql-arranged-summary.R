@@ -46,6 +46,41 @@ test_that("DuckDB summarizes an arranged input without an ordering warning", {
   }
 })
 
+test_that("SQLite renders no ORDER BY from an arranged input's ordering", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  remote <- arranged_summary_source(con)
+  run <- function(x, spec, sort, check) {
+    summarize_with_margins(
+      x, s = sum(.data$v, na.rm = TRUE), .grouping = spec, .sort = sort,
+      .check_margin_label = check
+    )
+  }
+  # A `.sort` other than "none" emits the Margin order's own ORDER BY, which
+  # the unarranged input's query carries too.
+  order_clauses <- function(query) {
+    sql <- as.character(dbplyr::sql_render(query))
+    regmatches(sql, gregexpr("ORDER BY[^\n]*", sql))[[1]]
+  }
+  specs <- list(rollup = rollup(dplyr::all_of("g")),
+                cube = cube(dplyr::all_of("g")))
+  for (spec in names(specs)) {
+    for (sort in c("none", "last", "first")) {
+      for (check in c(TRUE, FALSE)) {
+        info <- paste(spec, sort, check)
+        arranged <- run(dplyr::arrange(remote, .data$v), specs[[spec]], sort,
+                        check)
+        plain <- run(remote, specs[[spec]], sort, check)
+        expect_identical(order_clauses(arranged), order_clauses(plain),
+                         info = info)
+        expect_identical(collected_row_bag(arranged),
+                         collected_row_bag(plain), info = info)
+      }
+    }
+  }
+})
+
 check_limited_arranged_summary <- function(con) {
   remote <- arranged_summary_source(con)
   # The two smallest `v` are one row of each group.
