@@ -1,5 +1,11 @@
 # marginplyr 0.1.0
 
+* A duplicate-set refusal raised before a typed selection such as `where()`
+  is read now names one group of positions it proved equal and says it is an
+  example. Before, it used the wording of the complete duplicate partition
+  while omitting groups or splitting one set's occurrences, because the sets
+  the typed selection produces were not yet known (#1616).
+
 * `compute()` of an unsorted `summarize_with_margins()` on a live SQLite
   connection without `.id` or a share now declares the destination's
   source-derived columns, as native `compute()` of `summarise()` does. Before,

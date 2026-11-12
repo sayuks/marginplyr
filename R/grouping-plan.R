@@ -1384,9 +1384,15 @@ validate_leading_selections <- function(
       preflight, resolve_selection, emit,
       drop_duplicates = identical(.duplicates, "drop"), duplicate = duplicate
     ),
-    needs_typed_selection = function(selected = character()) NULL
+    needs_typed_selection = function(selected = character()) {
+      resolved$stopped <- TRUE
+      NULL
+    }
   )
   validate_grouping_overlap(.by, resolved$dimensions)
+  # Sets from a stopped selection onward are unknown and can join or merge any
+  # group the evidence shows, so a stopped pass names an example (#1616).
+  complete <- !isTRUE(resolved$stopped)
   if (!is.null(emit)) {
     if (!is.null(resolved$witness)) {
       abort_duplicate_witness(resolved$witness, duplicates_choices)
@@ -1394,7 +1400,8 @@ validate_leading_selections <- function(
     if (!is.null(duplicate$witness)) {
       completed <- unlist(resolved$completed, recursive = FALSE)
       keys <- grouping_set_keys(completed, resolved$dimensions)
-      validate_unique_grouping_sets(keys, duplicates_choices)
+      validate_unique_grouping_sets(keys, duplicates_choices,
+                                    complete = complete)
       return(invisible(resolved$dimensions))
     }
     completed <- unlist(resolved$completed, recursive = FALSE)
@@ -1421,7 +1428,8 @@ validate_leading_selections <- function(
     )
     set_ids <- c(seq_along(completed),
                  length(completed) + resolved$offset + pending_ids)
-    validate_unique_grouping_sets(keys, duplicates_choices, set_ids)
+    validate_unique_grouping_sets(keys, duplicates_choices, set_ids,
+                                  complete = complete)
   }
   invisible(resolved$dimensions)
 }
@@ -1976,8 +1984,12 @@ grouping_set_key <- function(set, dimensions) {
 }
 
 # Reject repeated membership keys at the supplied occurrence positions.
+# `complete` says the keys are every occurrence of the plan, so their groups
+# are its whole duplicate partition; otherwise the group holding the earliest
+# position is reported as an example.
 validate_unique_grouping_sets <- function(keys, duplicates_choices,
-                                          set_ids = seq_along(keys)) {
+                                          set_ids = seq_along(keys),
+                                          complete = TRUE) {
   if (length(keys) > duplicate_report_limit) {
     repeated <- anyDuplicated(keys)
     if (repeated > 0L) {
@@ -1995,6 +2007,13 @@ validate_unique_grouping_sets <- function(keys, duplicates_choices,
     return(invisible(NULL))
   }
   groups <- split(set_ids[duplicate_keys], keys[duplicate_keys])
+  if (!complete) {
+    earliest <- which.min(vapply(groups, min, numeric(1)))
+    abort_duplicate_witness(
+      list(family = "the grouping plan", positions = sort(groups[[earliest]])),
+      duplicates_choices
+    )
+  }
   # Each group is already comma-joined. Join groups here to preserve that
   # formatting through cli; codetools cannot see the use in its template.
   # nolint start: object_usage_linter.
