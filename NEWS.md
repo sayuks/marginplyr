@@ -1,5 +1,10 @@
 # marginplyr 0.1.0
 
+* A summary on a lazy SQL input keeps the grouping the caller's parentheses
+  express, as native dbplyr does. Before, the pair was dropped before dbplyr
+  rendered the expression, so `a - (b - c)` ran as `a - b - c` and
+  `p & (q | r)` as `p & q | r`, with no diagnostic (#1582).
+
 * A condition raised by one of several unnamed `across()` calls on a local
   input that pass extra arguments through `across()`'s `...` quotes that call
   as the caller wrote it, rather than as `dplyr::across(...)`, and their
