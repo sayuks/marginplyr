@@ -25,11 +25,6 @@
   summed into the value and into any share over it, and a non-numeric key
   turned a valid call into an error that could name a private column (#1599).
 
-* On SQLite, `summarize_with_margins()` over an `arrange()`d input with no row
-  limit now clears that ordering too, so its query no longer repeats the
-  input's `ORDER BY` in every `UNION ALL` branch, and SQLite no longer sorts
-  the input once per branch (#1598).
-
 * A local Margin order under `.sort = "last"` or `"first"` now stays in the C
   locale when `options(dplyr.legacy_locale = TRUE)` is set, as it already did
   on dtplyr and SQLite, rather than following the session's collation, and
@@ -80,7 +75,9 @@
   warning at `show_query()`, `collect()` or `compute()`. The summary's rows
   do not depend on that ordering, so it is cleared; one beneath `head()` still
   decides which rows are read, and the window ordering `arrange()` records is
-  kept (#1596).
+  kept. On SQLite the query therefore no longer repeats the input's
+  `ORDER BY` in every `UNION ALL` branch, and SQLite no longer sorts the input
+  once per branch (#1596, #1598).
 
 * `?grouping_bit` now states that an aggregate over a helper alone, such as
   `sum(grouping_id(a, b))`, aggregates a constant and so follows its backend:
@@ -91,7 +88,7 @@
 * An `across()` whose `.fns` is a parenthesized `list()` of functions, or on
   Arrow a parenthesized `c()`, again takes its output names from `.names` on
   a lazy input and is accepted by dtplyr and Arrow, as on a data frame. Since
-  the change below, DuckDB ignored `.names` for it and dtplyr and Arrow
+  #1582, DuckDB ignored `.names` for it and dtplyr and Arrow
   refused it (#1602).
 
 * A summary on a lazy SQL input keeps the grouping the caller's parentheses

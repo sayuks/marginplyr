@@ -269,7 +269,7 @@ check_margin_id_collision <- function(.id, names, where) {
 #
 # `keeps_input_order = FALSE` declares that the verb's rows do not depend on
 # an unlimited input ordering, so that ordering is cleared before
-# `sqlite_margin_input()` can seal it into the input relation (#1598).
+# `sqlite_margin_input()` can seal it into the input relation (#1596, #1598).
 prepare_margin_operation <- function(.data,
                                      by_quo,
                                      grouping_quo,

@@ -1256,7 +1256,7 @@ summarize_with_margins <- function(.data,
     # is not the input's column names narrowed to what the result happens to
     # hold: that name would be rebuilt from the input column's levels.
     carried_columns = function(data_vars, plan) plan$by,
-    # A summary's rows do not depend on an unlimited input ordering (#1596).
+    # A summary's rows do not depend on an unlimited input ordering.
     keeps_input_order = FALSE,
     .id = .id,
     validate_grouping = share_grouping_spec_validator(share_kinds),
