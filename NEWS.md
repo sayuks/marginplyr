@@ -1,5 +1,11 @@
 # marginplyr 0.1.0
 
+* A local Margin order under `.sort = "last"` or `"first"` now stays in the C
+  locale when `options(dplyr.legacy_locale = TRUE)` is set, as it already did
+  on dtplyr and SQLite, rather than following the session's collation, and
+  no longer raises dplyr's deprecation warning for that option itself
+  (#1611).
+
 * `summarize_with_margins()` over an `arrange()`d lazy SQL input no longer
   passes on dbplyr's "ORDER BY is ignored in subqueries without LIMIT"
   warning at `show_query()`, `collect()` or `compute()`. The summary's rows

@@ -579,6 +579,11 @@ order_margin_result <- function(operation, result, execution) {
         data
       } else if (operation$backend$kind == "arrow") {
         arrange_arrow_margin_terms(data, terms, operation$backend)
+      } else if (is.data.frame(data)) {
+        # An explicit locale keeps `options(dplyr.legacy_locale = TRUE)` from
+        # redirecting the order to the session's collation, and is what stops
+        # `arrange()` reading that option and warning about it.
+        dplyr::arrange(data, !!!terms, .locale = "C")
       } else {
         dplyr::arrange(data, !!!terms)
       }
