@@ -69,10 +69,13 @@ sort, `.id`, share and plan.
 The `to-tickets` workflow published these as seven repair slices with no
 prerequisite prefactoring; splitting had been delegated without a
 confirmation checkpoint. Six carry `bug` and `ready-for-agent` and can start
-independently. #1601 carries `bug` and `ready-for-human`, because whether the
-typed-materialization promise reaches an unsorted result that dbplyr
-materializes is a specification choice, and it is blocked by #1600, which
-repairs the missing fixed-key anchor one of its two shapes shares.
+independently. #1601 was published with `bug` and `ready-for-human`, because
+whether the typed-materialization promise reaches an unsorted result that
+dbplyr materializes was a specification choice, and blocked by #1600, which
+repairs the missing fixed-key anchor one of its two shapes shares. The
+maintainer decided the same day that the promise reaches those results, and
+#1601 was rewritten as a repair and relabelled `ready-for-agent`; the
+blocking edge stayed.
 
 ### `dplyr::c_across()` in a local summary
 
@@ -267,6 +270,22 @@ covered unnamed frame summaries. dtplyr failed with data.table's own message.
 
 These were observed and are not counted, because the text that would decide
 each one either pins the behaviour or does not exist.
+
+After the maintainer read this list on the same day, seven of the twelve were
+ticketed and `left-for-a-decision-replays.R` replays them beside their
+controls: the dot-prefixed output names
+([#1607](https://github.com/sayuks/marginplyr/issues/1607), `ready-for-human`), the collected class of a sorted SQLite
+summary ([#1608](https://github.com/sayuks/marginplyr/issues/1608)), the no-Grand-total advice ([#1609](https://github.com/sayuks/marginplyr/issues/1609)), the
+share helper's argument name ([#1610](https://github.com/sayuks/marginplyr/issues/1610)), the legacy locale
+([#1611](https://github.com/sayuks/marginplyr/issues/1611)), the dtplyr type mix ([#1612](https://github.com/sayuks/marginplyr/issues/1612)) and the
+parenthesized function with `.names` ([#1613](https://github.com/sayuks/marginplyr/issues/1613), blocked by #1602).
+The replay added three measurements. Following the no-Grand-total advice
+literally, with an empty `grouping_set()` as a further product factor, met
+the same refusal. `share_of_parent(y = s)` was accepted as
+`share_of_total(y = s)` was. Native dbplyr on DuckDB and SQLite and native
+dtplyr named the outputs of `across(c(v, w), (sum), .names = "s_{.col}")`
+`v, w`, so the DuckDB Margin summary matched its backend and the SQLite and
+dtplyr Margin summaries were the ones that kept the template.
 
 - A dot-prefixed output name one edit from a short option was refused:
   `.y = mean(v)` raised "`.y` is not an argument ... Did you mean `.by`?", as
