@@ -1850,8 +1850,10 @@ is_context_only_name_expr <- function(expr, lookup, allow_context = TRUE) {
 # template are literal or already resolved. No caller function or summary
 # expression runs while reserving internal key names from the input name list.
 # Earlier visible mutations invalidate the lexical bindings they replace.
+# An output reusing an input name replaces that column in dplyr's mask, so
+# `available` holds each name once.
 predictable_local_across_names <- function(dots, input_names) {
-  available <- input_names
+  available <- unique(input_names)
   predicted <- character()
   rebound <- character()
   arg_names <- rlang::names2(dots)
@@ -1887,11 +1889,11 @@ predictable_local_across_names <- function(dots, input_names) {
           vctrs_error_subscript_oob = function(cnd) character()
         )
         predicted <- c(predicted, output)
-        available <- c(available, output)
+        available <- union(available, output)
       }
     }
     if (nzchar(name)) {
-      available <- c(available, name)
+      available <- union(available, name)
     }
     rebound <- union(rebound, lookup_rebound_names(
       expr, lookup$env, available, visible_removals = TRUE
