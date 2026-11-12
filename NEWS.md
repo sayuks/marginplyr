@@ -1,5 +1,13 @@
 # marginplyr 0.1.0
 
+* A dtplyr summary that is a bare `NA` in some grouping sets and an integer,
+  double or character value in the others now returns the common type a local
+  data frame returns, with `NA` in the sets that produced it, rather than
+  failing at collection with data.table's `Item 2 of x is 'integer' but the
+  corresponding item of y is 'logical'`. Types with no common type, such as
+  character and integer, are refused with a marginplyr error naming the
+  summary (#1612).
+
 * `.check_margin_label = TRUE` no longer fails with Arrow's "Multiple matches
   for FieldRef" error when an Arrow input's ordering names one column twice,
   as `arrange(v) |> arrange(w, v)` or `arrange(v, desc(v))` does (#1603).

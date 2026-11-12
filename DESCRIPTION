@@ -397,7 +397,8 @@ Config/testthat/start-first:
     sql-caller-parentheses,
     sql-arranged-summary,
     helper-argument-names,
-    across-parenthesized-fns
+    across-parenthesized-fns,
+    dtplyr-cross-set-types
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
