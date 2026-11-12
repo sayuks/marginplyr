@@ -539,7 +539,6 @@
           },
           {
             "name": "Assert portable summaries equal the local result",
-            "continue-on-error": "true",
             "run": "Rscript tools/mssql-portable-summary.R mssql-evidence --assert-contract"
           },
           {
