@@ -5,8 +5,8 @@
   source-derived columns, as native `compute()` of `summarise()` does. Before,
   a dimension of a summary with more than one Grouping set and a missing
   Margin label, or a fixed `.by` key beside a text Margin label, was created
-  untyped, so a zero-row or all-missing column collected from the destination
-  as logical (#1601).
+  without a declared type, so a zero-row or all-missing column collected
+  from the destination as logical (#1601).
 
 * A sorted `summarize_with_margins()` on a live SQLite connection with a text
   Margin label keeps each fixed `.by` key's declared type, as native
@@ -43,8 +43,8 @@
   character and integer, are refused with a marginplyr error naming the
   summary (#1612).
 
-* `.check_margin_label = TRUE` no longer fails with Arrow's "Multiple matches
-  for FieldRef" error when an Arrow input's ordering names one column twice,
+* `.check_margin_label = TRUE` no longer fails with Arrow's `Multiple matches
+  for FieldRef` error when an Arrow input's ordering names one column twice,
   as `arrange(v) |> arrange(w, v)` or `arrange(v, desc(v))` does (#1603).
 
 * `share_of_total()`, `share_of_parent()` and `grouping_bit()` now refuse
