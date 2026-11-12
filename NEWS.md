@@ -1,5 +1,11 @@
 # marginplyr 0.1.0
 
+* A summary with `grouping_bit()` or `grouping_id()` inside an aggregate,
+  such as `sum(v * (1 - grouping_bit(b)))`, returns the same value on DuckDB
+  and other backends running native `GROUP BY GROUPING SETS` as on a local
+  data frame, rather than failing at `collect()` with the engine's binder
+  error: such a summary now takes the portable `UNION ALL` path (#1587).
+
 * A condition raised by one of several unnamed `across()` calls on a local
   input that pass extra arguments through `across()`'s `...` quotes that call
   as the caller wrote it, rather than as `dplyr::across(...)`, and their

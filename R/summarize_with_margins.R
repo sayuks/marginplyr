@@ -1572,10 +1572,11 @@ stage_margin_summaries <- function(operation,
     reserved_names <- c(reserved_names, set_id_name)
   }
 
-  # Which adapter runs stays a function of the duplicate policy and of an
-  # identifier that has to number occurrences. A Margin order needs Grouping
-  # bits rather than occurrences, so the identifier it may add below is
-  # allocated after this decision and never changes it.
+  # Which adapter runs stays a function of the duplicate policy, of an
+  # identifier that has to number occurrences, and of a Grouping helper that
+  # has to be a literal (ADR 0009). A Margin order needs Grouping bits rather
+  # than occurrences, so the identifier it may add below is allocated after
+  # this decision and never changes it.
   use_native <- supports_grouping_sets(
     operation$data,
     plan,
@@ -1583,6 +1584,9 @@ stage_margin_summaries <- function(operation,
   ) && !(
     !is.null(set_id_name) &&
       identical(plan$duplicates, "keep")
+  ) && !grouping_helper_needs_literal(
+    summaries$dots,
+    dbplyr::remote_con(operation$data)
   )
 
   sort_id <- margin_sort_identifier(

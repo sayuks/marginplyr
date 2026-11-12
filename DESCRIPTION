@@ -392,7 +392,8 @@ Config/testthat/start-first:
     native-grouping-id-precedence,
     dtplyr-logical-name-shares,
     arrow-order-term-names,
-    selection-error-call
+    selection-error-call,
+    native-grouping-helper-in-aggregate
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
