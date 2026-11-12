@@ -1,5 +1,10 @@
 # marginplyr 0.1.0
 
+* `.check_margin_label = TRUE` no longer fails with an Arrow or DuckDB error
+  when the input is an `arrange()`d query. The check reads the same columns
+  whatever the input's ordering, and an ordering beneath `head()` still
+  decides which rows it reads (#1585).
+
 * A condition raised by one of several unnamed `across()` calls on a local
   input that pass extra arguments through `across()`'s `...` quotes that call
   as the caller wrote it, rather than as `dplyr::across(...)`, and their

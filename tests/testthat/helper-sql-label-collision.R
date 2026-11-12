@@ -105,3 +105,84 @@ check_sql_label_collision <- function(con) {
   expect_identical(result[[".env"]], "Total")
   expect_equal(result$n, 0)
 }
+
+# The observed label check over an input the caller has arranged, with and
+# without a row limit beneath the ordering (#1585).
+check_arranged_label_collision <- function(con) {
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  remote <- dplyr::copy_to(
+    con, data.frame(g = c("Total", "a", "b"), v = c(3L, 1L, 2L)),
+    "arranged_label_source", temporary = TRUE, overwrite = TRUE
+  )
+  verbs <- list(
+    summarize = function(x, check, label = "Total") {
+      summarize_with_margins(
+        x, s = sum(.data$v, na.rm = TRUE),
+        .grouping = rollup(dplyr::all_of("g")),
+        .margin_label = label, .check_margin_label = check, .id = "set"
+      )
+    },
+    expand = function(x, check, label = "Total") {
+      expand_with_margins(
+        x, .grouping = rollup(dplyr::all_of("g")), .margin_label = label,
+        .check_margin_label = check, .id = "set"
+      )
+    }
+  )
+  bag <- function(query) {
+    # dbplyr warns about the ordering the result query inherits whether or not
+    # the check ran, so the warning says nothing about the check.
+    result <- withCallingHandlers(
+      as.data.frame(dplyr::collect(query)),
+      warning = function(cnd) {
+        if (grepl("ORDER BY is ignored", conditionMessage(cnd), fixed = TRUE)) {
+          invokeRestart("muffleWarning")
+        }
+      }
+    )
+    result <- result[do.call(order, unname(as.list(result))), ]
+    rownames(result) <- NULL
+    result
+  }
+  label_query <- function() {
+    details <- last_sent_queries(include_result = FALSE)
+    details[details$purpose == "observed_label_collision", ]
+  }
+  for (key in c("column", "expression")) {
+    arranged <- if (key == "column") {
+      dplyr::arrange(remote, .data$v)
+    } else {
+      dplyr::arrange(remote, dplyr::desc(.data$v * 2L))
+    }
+    # The first two rows by `v` exclude the one holding the label.
+    selected <- utils::head(dplyr::arrange(remote, .data$v), 2L)
+    for (verb in names(verbs)) {
+      info <- paste(key, verb)
+      run <- verbs[[verb]]
+      checked <- run(arranged, TRUE, "All")
+      sent <- label_query()
+      expect_equal(nrow(sent), 1L, info = info)
+      # `sqlite_margin_input()` has already rendered a SQLite input, ordering
+      # included, into an opaque relation, so only other dialects send the
+      # count straight against the caller's query.
+      if (!inherits(con, "SQLiteConnection")) {
+        expect_false(grepl("ORDER BY", sent$sql, fixed = TRUE), info = info)
+        expect_false(grepl("\\bv\\b", sent$sql), info = info)
+      }
+      expect_identical(
+        bag(checked), bag(run(arranged, FALSE, "All")), info = info
+      )
+
+      checked <- run(selected, TRUE)
+      expect_equal(nrow(label_query()), 1L, info = info)
+      expect_identical(
+        bag(checked), bag(run(selected, FALSE)), info = info
+      )
+      expect_error(
+        run(arranged, TRUE), "already present", class = "marginplyr_error",
+        info = info
+      )
+    }
+  }
+}
