@@ -1,5 +1,11 @@
 # marginplyr 0.1.0
 
+* On a local input, an unnamed `across()` after a share named like an input
+  column selects from the columns its data mask holds, as the same
+  selection does in a named summary: the share and the input it hides are
+  left out. Before, a selection such as `everything()` or `any_of()` was
+  refused with an `all_of()` call the caller never wrote (#1619).
+
 * `compute()` of an unsorted `summarize_with_margins()` on a live SQLite
   connection without `.id` or a share now declares the destination's
   source-derived columns, as native `compute()` of `summarise()` does. Before,

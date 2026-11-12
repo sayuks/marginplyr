@@ -1522,7 +1522,16 @@ cache_local_context_names <- function(dots, selection_proxy, group_vars) {
       env = rlang::quo_get_env(dot), mask = c(available, group_vars),
       columns = available, rebound = rebound
     )
-    if (contains_share_helper(expr)) next
+    if (contains_share_helper(expr)) {
+      # A later selection cannot see a share, and a share's name hides the
+      # input column it reuses. An unnamed share's names are not read here.
+      if (nzchar(name)) {
+        available <- setdiff(available, name)
+      } else {
+        complete <- FALSE
+      }
+      next
+    }
     if (nzchar(name)) {
       rebound <- context_name_rebindings(expr, lookup, selection_proxy)
       available <- unique(c(available, name))
