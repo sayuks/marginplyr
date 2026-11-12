@@ -164,3 +164,20 @@ What this ADR decides is unaffected. A helper outside every aggregate still
 emits `GROUPING()` on the native path, with the numeric type and the
 parenthesization it has today, and a Grouping identifier is still the same
 value on every adapter.
+
+## Amendment: an aggregate over a helper alone aggregates a constant
+
+The promise that a helper returns the same value on every backend covers the
+helper's value, not what an aggregate computes from it. Where an aggregate's
+argument varies with rows only through a helper, as in `sum(grouping_id(a, b))`,
+the argument is a constant, and each backend aggregates it as its own
+`summarise(sum(1))` does: once per group on the local and `dtplyr` paths, once
+per row where the helper is a query literal (#1595). `?grouping_bit` states
+this as a limit and names spellings that agree everywhere; no translation,
+adapter selection, or condition changes.
+
+Two alternatives were rejected. Passing a row-length vector inside aggregates
+on the local path would make it disagree with its own native `summarise()`,
+and that path has no dialect to decide what counts as inside an aggregate.
+Refusing the spelling would need to detect a constant-only aggregate argument,
+which static spelling cannot do reliably.
