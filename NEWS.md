@@ -1,5 +1,10 @@
 # marginplyr 0.1.0
 
+* An unsorted dtplyr Margin summary that keeps a variable label now
+  evaluates to a valid data.table, as the native dtplyr union does, so a
+  later `mutate()` raises no shallow-copy warning and `:=` on its
+  `as.data.table()` result updates it by reference (#1588).
+
 * `.check_margin_label = TRUE` no longer fails with an Arrow or DuckDB error
   when the input is an `arrange()`d query. The check reads the same columns
   whatever the input's ordering, and an ordering beneath `head()` still
