@@ -2256,6 +2256,13 @@ local_summary_selection_expr <- function(selection, group_vars,
 rewrite_local_across_selection <- function(expr, group_vars,
                                            forbidden_names,
                                            capture_forwarded = TRUE) {
+  # `c_across()` takes no `...`, so R refuses an argument its one formal does
+  # not bind before any column is read. Left as written, the call raises that
+  # error in dplyr's own context, and only where dplyr evaluates it.
+  if (identical(static_call_name(expr), "c_across") &&
+        !binds_to_helper_formals(expr)) {
+    return(expr)
+  }
   parsed <- parse_across_arguments(expr)
   call_args <- parsed$call_args
   if (
@@ -2333,6 +2340,11 @@ local_forwarded_selection <- function(helper, group_vars, forbidden_names) {
     frame <- environment()
     args <- rlang::enquos0(...)
     expr <- rlang::call2(helper, !!!args, .ns = "dplyr")
+    # Forwarded unchanged, the dots let R name an unbound argument as the
+    # caller wrote it.
+    if (identical(helper, "c_across") && !binds_to_helper_formals(expr)) {
+      return(eval(rlang::call2(helper, quote(...), .ns = "dplyr")))
+    }
     cols_index <- parse_across_arguments(expr)$cols_index
     arg_names <- names(args)
     # missing(..i) follows forwarded promises without forcing them and treats
@@ -3404,6 +3416,25 @@ replace_across_cols <- function(args, cols_index, selection,
   }
   args[[cols_index]] <- selection
   args
+}
+
+# Whether a recognized helper call's arguments bind to that dplyr helper's
+# formals as R binds them at evaluation. Nothing is evaluated. Each argument is
+# replaced by a symbol first, because `match.call()` would otherwise expand a
+# forwarded `...` from whatever frame it finds.
+binds_to_helper_formals <- function(expr) {
+  helper <- get(static_call_name(expr), envir = asNamespace("dplyr"))
+  call_args <- static_call_args(expr)
+  markers <- rep(list(as.name("x")), length(call_args))
+  names(markers) <- names(call_args)
+  call <- as.call(c(list(as.name("helper")), markers))
+  tryCatch(
+    {
+      match.call(helper, call, expand.dots = FALSE)
+      TRUE
+    },
+    error = function(e) FALSE
+  )
 }
 
 # The one place that knows an `across()` argument can be empty, so that no

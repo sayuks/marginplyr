@@ -60,6 +60,12 @@
   translation" error in place of the database's own unknown-function error
   (#1599).
 
+* A `c_across()` call with an argument its `cols` formal does not take, such
+  as `c_across(v, w)`, now fails in a local Margin summary as in native
+  `summarise()`: in dplyr's argument-and-group context, naming the argument
+  as written. Before, it raised a bare `match.call()` error naming a private
+  placeholder, even in a branch the summary never evaluates (#1620).
+
 * A local Margin order under `.sort = "last"` or `"first"` now stays in the C
   locale when `options(dplyr.legacy_locale = TRUE)` is set, as it already did
   on dtplyr and SQLite, rather than following the session's collation, and
