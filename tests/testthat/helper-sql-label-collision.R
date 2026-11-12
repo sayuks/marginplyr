@@ -131,16 +131,7 @@ check_arranged_label_collision <- function(con) {
     }
   )
   bag <- function(query) {
-    # dbplyr warns about the ordering the result query inherits whether or not
-    # the check ran, so the warning says nothing about the check.
-    result <- withCallingHandlers(
-      as.data.frame(dplyr::collect(query)),
-      warning = function(cnd) {
-        if (grepl("ORDER BY is ignored", conditionMessage(cnd), fixed = TRUE)) {
-          invokeRestart("muffleWarning")
-        }
-      }
-    )
+    result <- as.data.frame(dplyr::collect(query))
     result <- result[do.call(order, unname(as.list(result))), ]
     rownames(result) <- NULL
     result
