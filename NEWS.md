@@ -1,5 +1,10 @@
 # marginplyr 0.1.0
 
+* On SQLite, `summarize_with_margins()` over an `arrange()`d input with no row
+  limit now clears that ordering too, so its query no longer repeats the
+  input's `ORDER BY` in every `UNION ALL` branch, and SQLite no longer sorts
+  the input once per branch (#1598).
+
 * `summarize_with_margins()` over an `arrange()`d lazy SQL input no longer
   passes on dbplyr's "ORDER BY is ignored in subqueries without LIMIT"
   warning at `show_query()`, `collect()` or `compute()`. The summary's rows
