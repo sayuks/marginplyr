@@ -161,9 +161,10 @@ margin_label_evidence <- function(data) {
 # Preserve the native union call and its failure/evaluation order. Intermediate
 # evidence is consumed at the final node and never reaches a returned frame.
 union_dtplyr_margin_labels <- function(x, y, final = FALSE) {
-  result <- data.table::funion(x, y, all = TRUE)
   left <- margin_label_evidence(x)
   right <- margin_label_evidence(y)
+  aligned <- align_dtplyr_union_types(x, y)
+  result <- data.table::funion(aligned$x, aligned$y, all = TRUE)
   state <- lapply(names(left), function(column) {
     list(
       valid = left[[column]]$valid && right[[column]]$valid,
@@ -184,6 +185,43 @@ union_dtplyr_margin_labels <- function(x, y, final = FALSE) {
   # The data frame `[[<-` copies the table and leaves a stale self-reference;
   # reallocating restores the valid data.table the native union returns.
   data.table::setalloccol(restore_margin_variable_labels(result, labels))
+}
+
+# Give two evaluated branches the common type a local data frame's vctrs
+# combination gives, for each column `funion()` would refuse. `funion()`
+# compares the first class, treating factor as character and integer as
+# numeric; columns it accepts reach it unchanged. Branches are fresh summary
+# results, so only a branch with a refused column is copied.
+align_dtplyr_union_types <- function(x, y) {
+  union_class <- function(column) {
+    class <- class(column)[[1L]]
+    switch(class, factor = "character", integer = "numeric", class)
+  }
+  refused <- names(x)[vapply(names(x), function(name) {
+    !identical(union_class(x[[name]]), union_class(y[[name]]))
+  }, logical(1))]
+  if (length(refused) == 0L) {
+    return(list(x = x, y = y))
+  }
+  x <- data.table::copy(x)
+  y <- data.table::copy(y)
+  for (name in refused) {
+    common <- tryCatch(
+      vctrs::vec_ptype2(x[[name]], y[[name]]),
+      vctrs_error_incompatible_type = function(cnd) {
+        abort_marginplyr(c(
+          "Summary {.var {name}} has no common type across grouping sets.",
+          i = paste0(
+            "It is {.cls {vctrs::vec_ptype_full(x[[name]])}} in one grouping ",
+            "set and {.cls {vctrs::vec_ptype_full(y[[name]])}} in another."
+          )
+        ), call = NULL)
+      }
+    )
+    data.table::set(x, j = name, value = vctrs::vec_cast(x[[name]], common))
+    data.table::set(y, j = name, value = vctrs::vec_cast(y[[name]], common))
+  }
+  list(x = x, y = y)
 }
 
 # The balanced native source graph owns sources and locals. Its generated call
