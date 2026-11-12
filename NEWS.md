@@ -1,5 +1,12 @@
 # marginplyr 0.1.0
 
+* A wrapper forwarding its dots into an unnamed top-level `across()` now works
+  in a local Margin summary wherever dplyr evaluates that `across()` per group:
+  with `.unpack = TRUE` or a glue `.unpack`, with a `...` extra such as
+  `na.rm = TRUE`, or with parentheses around the call. Before, every forwarded
+  selection other than a single literal string was refused with
+  "Column `..1` doesn't exist" (#1618).
+
 * On a grouped input, a grouping column that also appears in `.grouping`, or
   that `.margin_label` names, is now refused as a fixed grouping column of
   `.data` rather than as a `.by` column the caller did not write, and the
