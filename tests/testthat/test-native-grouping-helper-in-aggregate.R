@@ -33,6 +33,8 @@ test_that("a helper inside an aggregate returns the literal value on DuckDB", {
     detail_only = sum(v * (1 - grouping_bit(b)), na.rm = TRUE),
     deepest = max(grouping_id(a, b), na.rm = TRUE),
     weighted = sum(v * grouping_id(), na.rm = TRUE),
+    bit_max = max(grouping_bit(b), na.rm = TRUE),
+    id_weighted = sum(v * grouping_id(a, b), na.rm = TRUE),
     .grouping = rollup(a, b)
   )
   # Written out from the plan rather than read from marginplyr: the label sorts
@@ -41,6 +43,22 @@ test_that("a helper inside an aggregate returns the literal value on DuckDB", {
   expect_equal(local$detail_only, c(0, 0, 1, 2, 0, 4))
   expect_equal(local$deepest, c(3, 1, 0, 0, 1, 0))
   expect_equal(local$weighted, c(21, 3, 0, 0, 4, 0))
+  expect_equal(local$bit_max, c(1, 1, 0, 0, 1, 0))
+  expect_equal(local$id_weighted, c(21, 3, 0, 0, 4, 0))
+})
+
+test_that("a helper outside an aggregate returns the same value on DuckDB", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+
+  local <- expect_duckdb_matches_local(
+    con, "outside_aggregate",
+    scaled = sum(v) * grouping_bit(b),
+    .grouping = rollup(a, b)
+  )
+  # Rows as above, with sums 7, 3, 1, 2, 4, 4 and bits of `b` 1, 1, 0, 0, 1, 0.
+  expect_equal(local$scaled, c(7, 3, 0, 0, 4, 0))
 })
 
 test_that("an across() lambda holding a helper inside an aggregate", {
