@@ -344,6 +344,9 @@ prepare_margin_operation <- function(.data,
       data_vars <- grouping$data_vars
       data_proxy <- grouping$data_proxy
       plan <- grouping$plan
+      # Before the verb projects either: dbplyr's `select()` cannot rename them.
+      data <- drop_columnless_window_order(data)
+      data_proxy <- drop_columnless_window_order(data_proxy)
       check_margin_sql_public_names(
         unique(c(plan$by, plan$dimensions,
                  carried_columns(data_vars, plan), set_id_name)),
@@ -409,6 +412,23 @@ drop_unlimited_sql_order <- function(data) {
         is.null(data$lazy_query$limit)) {
     data$lazy_query$order_by <- NULL
   }
+  data
+}
+
+# Drop the window-order terms of a SQL input that name no column: a raw
+# `sql()` string or a constant. dbplyr's `select()` cannot rename such a term
+# and fails in `rename_order()` (#1622), while a Margin result names no
+# column for it either, so it vanishes as `restore_input_window_order()`
+# drops the terms a result cannot name. The ORDER BY clause is untouched.
+drop_columnless_window_order <- function(data) {
+  if (!inherits(data, "tbl_lazy") ||
+        !inherits(data$lazy_query, "lazy_select_query")) {
+    return(data)
+  }
+  data$lazy_query$order_vars <- Filter(
+    function(term) length(all.vars(term)) > 0L,
+    data$lazy_query$order_vars
+  )
   data
 }
 
