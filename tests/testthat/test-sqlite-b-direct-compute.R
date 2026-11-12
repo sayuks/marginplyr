@@ -1093,3 +1093,124 @@ test_that("SQLite generated compute names propagate a failed name probe", {
   expect_identical(catalog$name, character())
   expect_identical(DBI::dbReadTable(con, "facts")$g, c("b", "a"))
 })
+
+test_that("unsorted SQLite compute declares a typed-missing dimension", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  DBI::dbExecute(con, "CREATE TABLE unsorted_zero (i INTEGER, c TEXT, x REAL)")
+  DBI::dbExecute(con, "CREATE TABLE unsorted_na (i INTEGER, c TEXT, x REAL)")
+  DBI::dbExecute(con, "INSERT INTO unsorted_na VALUES (NULL, NULL, 30.0)")
+  declared <- function(name) {
+    info <- DBI::dbGetQuery(
+      con, paste0("PRAGMA table_info(", DBI::dbQuoteIdentifier(con, name), ")")
+    )
+    stats::setNames(info$type, info$name)
+  }
+  k <- 0L
+  for (table in c("unsorted_zero", "unsorted_na")) {
+    for (temporary in c(TRUE, FALSE)) {
+      source <- dplyr::tbl(con, table)
+      query <- summarize_with_margins(
+        source, s = sum(x, na.rm = TRUE), .grouping = rollup(i, c),
+        .margin_label = NULL
+      )
+      k <- k + 1L
+      name <- paste0("unsorted_typed_", k)
+      out <- dplyr::compute(query, name = name, temporary = temporary)
+      expect_identical(declared(name)[c("i", "c")],
+                       c(i = "INT", c = "TEXT"))
+      collected <- dplyr::collect(out)
+      expect_type(collected$i, "integer")
+      expect_type(collected$c, "character")
+      expect_identical(names(collected), c("i", "c", "s"))
+      expect_identical(
+        as.data.frame(collected), as.data.frame(dplyr::collect(query))
+      )
+    }
+  }
+})
+
+test_that("unsorted text-labelled SQLite compute declares a fixed key", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  DBI::dbExecute(con, "CREATE TABLE keyed_zero (k INTEGER, i INTEGER, x REAL)")
+  DBI::dbExecute(con, "CREATE TABLE keyed_na (k INTEGER, i INTEGER, x REAL)")
+  DBI::dbExecute(con, "INSERT INTO keyed_na VALUES (NULL, NULL, 1.0)")
+  declared <- function(name) {
+    info <- DBI::dbGetQuery(
+      con, paste0("PRAGMA table_info(", DBI::dbQuoteIdentifier(con, name), ")")
+    )
+    stats::setNames(info$type, info$name)
+  }
+  k <- 0L
+  for (table in c("keyed_zero", "keyed_na")) {
+    for (grouping in list(rlang::quo(rollup(i)),
+                          rlang::quo(grouping_set(i)))) {
+      for (temporary in c(TRUE, FALSE)) {
+        source <- dplyr::tbl(con, table)
+        query <- summarize_with_margins(
+          source, s = sum(x, na.rm = TRUE), .by = k, .grouping = !!grouping,
+          .margin_label = "Total"
+        )
+        k <- k + 1L
+        name <- paste0("keyed_typed_", k)
+        out <- dplyr::compute(query, name = name, temporary = temporary)
+        expect_identical(declared(name)[c("k", "i")],
+                         c(k = "INT", i = "TEXT"))
+        collected <- dplyr::collect(out)
+        expect_type(collected$k, "integer")
+        expect_type(collected$i, "character")
+        expect_identical(names(collected), c("k", "i", "s"))
+        expect_identical(
+          as.data.frame(collected), as.data.frame(dplyr::collect(query))
+        )
+      }
+    }
+  }
+})
+
+test_that("unsorted SQLite compute without .id inserts once under any alias", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(
+    con, data.frame(k = c(1L, 1L, 2L), g = c("a", "b", "a"), v = c(2, 5, 3)),
+    "unsorted_alias_source", temporary = TRUE
+  )
+  queries <- list(
+    summarize_with_margins(
+      source, rowid = sum(v, na.rm = TRUE), oid = sum(v, na.rm = TRUE) + 1,
+      `_ROWID_` = sum(v, na.rm = TRUE) + 2, .grouping = rollup(g),
+      .margin_label = NULL
+    ),
+    summarize_with_margins(
+      source, rowid = sum(v, na.rm = TRUE), oid = sum(v, na.rm = TRUE) + 1,
+      `_ROWID_` = sum(v, na.rm = TRUE) + 2, .by = k, .grouping = rollup(g)
+    )
+  )
+  capture <- new.env(parent = emptyenv())
+  suppressMessages(trace(
+    "dbExecute", where = asNamespace("DBI"), print = FALSE,
+    tracer = function() {
+      statement <- get("statement", envir = parent.frame())
+      capture$sql <- c(capture$sql, as.character(statement))
+    }
+  ))
+  on.exit(suppressMessages(untrace("dbExecute", where = asNamespace("DBI"))),
+          add = TRUE)
+  for (query in queries) {
+    direct <- as.data.frame(dplyr::collect(query))
+    DBI::dbExecute(con, "CREATE TABLE unsorted_alias_out (old INT)")
+    capture$sql <- character()
+    out <- dplyr::compute(query, name = "unsorted_alias_out",
+                          temporary = FALSE, overwrite = TRUE)
+    expect_identical(sum(grepl("^INSERT INTO", capture$sql)), 1L)
+    expect_false(any(grepl("^CREATE TEMP", capture$sql)))
+    expect_identical(DBI::dbListFields(con, "unsorted_alias_out"),
+                     names(direct))
+    expect_identical(as.data.frame(dplyr::collect(out)), direct)
+    DBI::dbRemoveTable(con, "unsorted_alias_out")
+  }
+})

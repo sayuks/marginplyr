@@ -128,9 +128,12 @@ internal ordering columns at the R boundary. Unsorted collection retains its
 ordinary dbplyr route plus the applicable declared-type repair. Preserve current
 finite-limit validation, truncation, row-count, and warning behavior established
 by #654. Sorted dedicated collection retains its successful fractional positive
-limit truncation; delegated unsorted and materialized collection retain their
-existing dbplyr behavior. The measured ordinary dbplyr version rejects that
+limit truncation; delegated unsorted and materialized collection keep dbplyr's
+handling of that limit. The measured ordinary dbplyr version rejects that
 fractional limit, so no cross-path parity is promised for that argument edge.
+That exception is about the limit alone: direct compute of an unsorted summary,
+with or without an identifier or a share, still creates the typed destination
+described below.
 
 For direct compute, create the typed public destination from the zero-row
 anchor and insert the public query once. For sorted results, that query carries

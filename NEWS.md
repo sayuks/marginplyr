@@ -1,5 +1,13 @@
 # marginplyr 0.1.0
 
+* `compute()` of an unsorted `summarize_with_margins()` on a live SQLite
+  connection without `.id` or a share now declares the destination's
+  source-derived columns, as native `compute()` of `summarise()` does. Before,
+  a dimension of a summary with more than one Grouping set and a missing
+  Margin label, or a fixed `.by` key beside a text Margin label, was created
+  untyped, so a zero-row or all-missing column collected from the destination
+  as logical (#1601).
+
 * A sorted `summarize_with_margins()` on a live SQLite connection with a text
   Margin label keeps each fixed `.by` key's declared type, as native
   `summarise()` grouped by it does. Before, with neither `.id` nor a share, a
