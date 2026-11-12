@@ -480,11 +480,13 @@ class and attributes}. \code{.margin_label_position} positions a synthetic
 factor level and never a row: it changes \code{levels()} and nothing else, so the
 two options stay independent and no combination of them is wrong.
 
-A Margin order promises exactly what \code{\link[dplyr:arrange]{dplyr::arrange()}} promises. It is a
-property of the object the verb returns: on local data frames and \code{dtplyr}
-steps that is the row order, and on lazy tables it is the outermost query's
-\verb{ORDER BY}, which \code{\link[dplyr:collect]{dplyr::collect()}} and \code{\link[dplyr:compute]{dplyr::compute()}} both observe:
-a materialized result carries the Margin order rather than losing it.
+A Margin order promises exactly what \code{\link[dplyr:arrange]{dplyr::arrange()}} promises in the C
+locale, which it fixes: \code{options(dplyr.legacy_locale = TRUE)} does not
+redirect it to the session's collation. It is a property of the object the
+verb returns: on local data frames and \code{dtplyr} steps that is the row
+order, and on lazy tables it is the outermost query's \verb{ORDER BY}, which
+\code{\link[dplyr:collect]{dplyr::collect()}} and \code{\link[dplyr:compute]{dplyr::compute()}} both observe: a materialized
+result carries the Margin order rather than losing it.
 On live SQLite, direct \code{compute()} of a dedicated result inserts the public
 query into a typed table. A sorted result is read back in Margin order using
 an available implicit rowid alias. If its public columns shadow all three

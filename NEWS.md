@@ -15,6 +15,12 @@
   input's `ORDER BY` in every `UNION ALL` branch, and SQLite no longer sorts
   the input once per branch (#1598).
 
+* A local Margin order under `.sort = "last"` or `"first"` now stays in the C
+  locale when `options(dplyr.legacy_locale = TRUE)` is set, as it already did
+  on dtplyr and SQLite, rather than following the session's collation, and
+  no longer raises dplyr's deprecation warning for that option itself
+  (#1611).
+
 * A dtplyr summary that is a bare `NA` in some grouping sets and an integer,
   double or character value in the others now returns the common type a local
   data frame returns, with `NA` in the sets that produced it, rather than
