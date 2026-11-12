@@ -1,5 +1,11 @@
 # marginplyr 0.1.0
 
+* A data frame registered with `duckdb::duckdb_register()` is accepted by
+  the Margin verbs and typed `inspect_grouping()` again, directly or through
+  `sql()`, a lazy verb, a view or a join, without reading its rows during
+  construction. Another DuckDB view without stored SQL is still refused, now
+  with a diagnostic saying so (#1583).
+
 * An unnamed `across()` on a local input whose `.names` template is a
   constant now works after an earlier summary whose output reuses an input
   column's name, as in native `summarise()`, rather than being refused for
