@@ -766,10 +766,14 @@ and the original number of pairs still need not survive. The boundary the
 `across()` whose whole call is parenthesized is this same pair; the one around
 a parenthesized head is kept beside it.
 
-A pair around a qualified name or a function literal stays dropped: such a
-value has no operands to group, and dbplyr ignores `.names` for an `across()`
-whose `.fns` is parenthesized, so keeping that pair would change the output
-names a lazy `across()` gives today.
+A pair around a qualified name, a function literal, or a `list()` or `c()`
+collection stays dropped: such a value has no operands to group, and dbplyr
+ignores `.names` for an `across()` whose `.fns` is parenthesized, while dtplyr
+and Arrow refuse a parenthesized `.fns` collection, so keeping that pair would
+change the output names a lazy `across()` gives or refuse it (#1602). The rule
+reads the rebuilt call's head rather than its position, so the pair around a
+`list()` or `c()` is dropped wherever one is rebuilt; neither is an infix
+operator, so no operand grouping depends on it.
 
 Restoring the pair only for a lazy SQL input is rejected: the rebuild does not
 know the backend, and the pair is the caller's own spelling, which every

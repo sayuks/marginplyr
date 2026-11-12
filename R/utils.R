@@ -750,10 +750,12 @@ rebuild_static_call <- function(expr, args, head = static_call_head(expr)) {
   # attribute, so this replaces nothing `call2()` just set.
   attributes(rebuilt) <- attributes(expr)
   # The head and arguments were read through a pair around the whole call, and
-  # one pair goes back around the rebuilt call unless it is a qualified name or
-  # a function literal (ADR 0019, *a rebuilt call keeps the caller's pair*).
+  # one pair goes back around the rebuilt call unless it is a qualified name, a
+  # function literal or a `list()` or `c()` collection (ADR 0019, *a rebuilt
+  # call keeps the caller's pair*).
   if (!identical(unparenthesized_call(expr), expr) &&
-        !rlang::is_call(rebuilt, c("::", ":::", "function"))) {
+        !rlang::is_call(rebuilt, c("::", ":::", "function")) &&
+        !rlang::is_call(rebuilt, c("list", "c"), ns = c("", "base"))) {
     return(rlang::call2("(", rebuilt))
   }
   # dplyr expands an unnamed top-level across(). Keep a call whose head is

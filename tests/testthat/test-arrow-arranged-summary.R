@@ -120,3 +120,62 @@ test_that("the observed label check reads an arranged Arrow input", {
     }
   }
 })
+
+test_that("the observed label check reads an Arrow input with a repeated key", {
+  skip_if_suggest_absent("arrow")
+  path <- tempfile(fileext = ".parquet")
+  on.exit(unlink(path))
+  data <- data.frame(
+    g = c("Total", "a", "b"), w = c(2L, 1L, 1L), v = c(3L, 1L, 2L)
+  )
+  arrow::write_parquet(data, path)
+  sources <- list(
+    table = arrow::arrow_table(data),
+    in_memory_dataset = arrow::InMemoryDataset$create(data),
+    file_dataset = arrow::open_dataset(path)
+  )
+  shapes <- list(
+    rearranged = function(x) dplyr::arrange(dplyr::arrange(x, v), w, v),
+    reversed = function(x) dplyr::arrange(x, v, dplyr::desc(v)),
+    doubled = function(x) dplyr::arrange(x, v, v)
+  )
+  verbs <- list(
+    summarize = function(x, check, label = "Total") {
+      summarize_with_margins(
+        x, s = sum(v), .grouping = rollup(g), .margin_label = label,
+        .check_margin_label = check
+      )
+    },
+    expand = function(x, check, label = "Total") {
+      expand_with_margins(
+        x, .grouping = rollup(g), .margin_label = label,
+        .check_margin_label = check
+      )
+    }
+  )
+  for (source in names(sources)) {
+    for (shape in names(shapes)) {
+      arranged <- shapes[[shape]](sources[[source]])
+      # The first two rows by `v` exclude the one holding the label.
+      selected <- head(arranged, 2L)
+      for (verb in names(verbs)) {
+        info <- paste(source, shape, verb)
+        run <- verbs[[verb]]
+        expect_identical(
+          arrow_partition_bag(dplyr::collect(run(arranged, TRUE, "All"))),
+          arrow_partition_bag(dplyr::collect(run(arranged, FALSE, "All"))),
+          info = info
+        )
+        expect_identical(
+          arrow_partition_bag(dplyr::collect(run(selected, TRUE))),
+          arrow_partition_bag(dplyr::collect(run(selected, FALSE))),
+          info = info
+        )
+        expect_error(
+          run(arranged, TRUE), "already present", class = "marginplyr_error",
+          info = info
+        )
+      }
+    }
+  }
+})

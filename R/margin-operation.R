@@ -373,6 +373,18 @@ prepare_margin_operation <- function(.data,
   )
 }
 
+# Clear an Arrow query's own ordering. Arrow's `head()` and `tail()` collapse
+# the query they limit, so an ordering that decides which rows are read sits
+# in a nested query and is untouched; one beside a limit stays.
+drop_unlimited_arrow_order <- function(data) {
+  if (inherits(data, "arrow_dplyr_query") &&
+        is.null(data$head) && is.null(data$tail)) {
+    data$arrange_vars <- list()
+    data$arrange_desc <- logical()
+  }
+  data
+}
+
 # Clear a SQL input's top-level ORDER BY when no LIMIT sits beside it, for a
 # query whose rows that ordering cannot change. A limited ordering decides
 # which rows are read, so it stays. The window ordering `dbplyr::op_sort()`

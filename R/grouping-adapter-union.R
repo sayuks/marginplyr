@@ -350,8 +350,10 @@ check_branch_columns <- function(branches) {
   invisible(NULL)
 }
 
-# Compare eager summary schemas before union, reporting only differences
-# attributable to unnamed frame fields. Grouping keys are already excluded.
+# Compare eager summary schemas before union. Differences attributable to
+# unnamed frame fields are reported first; any other output one set produced
+# and another did not is a summary the caller made absent there. Grouping keys
+# and the placeholder are already excluded, so every output is the caller's.
 check_eager_summary_fields <- function(schemas, call) {
   first <- schemas[[1L]]
   for (schema in schemas[-1L]) {
@@ -369,6 +371,22 @@ check_eager_summary_fields <- function(schemas, call) {
       ),
       i = "Differing fields include {.var {fields}}.",
       i = "Use consistent fields or give the summary a name to pack it."
+    ), call = call)
+  }
+  for (schema in schemas[-1L]) {
+    absent <- union(
+      setdiff(first$outputs, schema$outputs),
+      setdiff(schema$outputs, first$outputs)
+    )
+    if (length(absent) == 0L) {
+      next
+    }
+    abort_marginplyr(c(
+      "Summary {.var {absent}} must be present in every grouping set.",
+      i = paste0(
+        "Return a typed missing value such as {.code NA_real_} in place of ",
+        "{.code NULL}."
+      )
     ), call = call)
   }
   invisible(NULL)
@@ -934,8 +952,7 @@ summarize_margin_union <- function(.data,
   unnamed_dots <- which(
     !nzchar(rlang::names2(dots)) | !is.na(summaries$assigned_names)
   )
-  branch_schemas <- if (eager && length(unnamed_dots) > 0L &&
-                          length(plan$sets) > 1L) {
+  branch_schemas <- if (eager && length(plan$sets) > 1L) {
     vector("list", length(plan$sets))
   } else {
     NULL
