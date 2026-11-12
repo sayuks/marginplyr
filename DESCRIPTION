@@ -398,7 +398,8 @@ Config/testthat/start-first:
     sql-arranged-summary,
     helper-argument-names,
     across-parenthesized-fns,
-    dtplyr-cross-set-types
+    dtplyr-cross-set-types,
+    grouping-helper-refusal-order
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool

@@ -1430,6 +1430,12 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
         stats::setNames("integer", operation$set_id_name)
       }
 
+      # A Grouping helper's refusals are decided by the call and the plan, so
+      # ADR 0005 places them ahead of the label query below; staging rewrites
+      # the same dots again, per branch.
+      rewrite_grouping_dots(
+        dots, plan, grouping_set = plan$sets[[1L]], sql = FALSE
+      )
       validate_margin_operation(operation)
 
       if (
