@@ -814,9 +814,8 @@ margin_order_terms <- function(plan,
 
 # One column's value terms. A local complex column in `complex_columns` takes
 # its real part and then its imaginary part, each with the rank and value a
-# local double key takes: `is.na()` and `arrange()` tie every missing complex
-# value, while `summarise()` keeps a `NaN` part apart from an `NA` part
-# (ADR 0018). Every other column takes the one term below.
+# local double key takes (ADR 0018). Every other column takes the one term
+# below.
 margin_sort_value_terms <- function(column, value_types, complex_columns) {
   if (!(column %in% complex_columns)) {
     return(list(margin_sort_value_expr(column, value_types)))
