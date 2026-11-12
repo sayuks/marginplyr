@@ -1,5 +1,23 @@
 # marginplyr 0.1.0
 
+* A wrapper forwarding its dots into an unnamed top-level `across()` now works
+  in a local Margin summary wherever dplyr evaluates that `across()` per group:
+  with `.unpack = TRUE` or a glue `.unpack`, with a `...` extra such as
+  `na.rm = TRUE`, or with parentheses around the call. Before, every forwarded
+  selection other than a single literal string was refused with
+  "Column `..1` doesn't exist" (#1618).
+
+* On a grouped input, a grouping column that also appears in `.grouping`, or
+  that `.margin_label` names, is now refused as a fixed grouping column of
+  `.data` rather than as a `.by` column the caller did not write, and the
+  overlap refusal points at `dplyr::ungroup()` (#1615).
+
+* With `options(marginplyr.audit_sql = TRUE)`, a message a SQL translation
+  raises once per session or regularly (`rlang::inform()` or
+  `cli::cli_inform()` with `.frequency`) now reaches the caller as it does with
+  the audit off. Before, rendering the query for the record consumed the
+  message's frequency state, so the real operation never delivered it (#1623).
+
 * `compute()` of an unsorted `summarize_with_margins()` on a live SQLite
   connection without `.id` or a share now declares the destination's
   source-derived columns, as native `compute()` of `summarise()` does. Before,

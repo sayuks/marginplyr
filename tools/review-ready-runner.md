@@ -186,7 +186,13 @@ result. Eligibility requires the same successful full SHA in `result.rds`,
 exactly one valid pair for every discovered file, and the native eight-worker
 announcement. Each file explicitly marks all-skipped and empty results; neither
 supplies promotion evidence. Failed, cancelled, incomplete or malformed data
-cannot authorize a priority update. Source scope creates no timing evidence.
+cannot authorize a priority update. Every worker must record the same R
+version, platform, OS, locale, time zone, `matprod`, BLAS and LAPACK as every
+other worker, and the same R version, platform, OS, `matprod`, BLAS and LAPACK
+as the measuring parent. Locale and time zone are not compared with the parent:
+R CMD check runs tests with `LC_COLLATE=C`, and the parent runs none. Adoption
+still compares its own session with the parent in all of these, locale and time
+zone included. Source scope creates no timing evidence.
 All timing artifacts share the seven-day policy above; later execution uses
 only the committed priority.
 
