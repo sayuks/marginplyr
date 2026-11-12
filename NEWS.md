@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* When a local summary's type differs between grouping sets, vctrs' refusal
+  now names the caller's column, as `dplyr::bind_rows()` of the grains does,
+  rather than a column name marginplyr generated (#1590).
+
 * An unsorted dtplyr Margin summary that keeps a variable label now
   evaluates to a valid data.table, as the native dtplyr union does, so a
   later `mutate()` raises no shallow-copy warning and `:=` on its
