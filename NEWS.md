@@ -6,6 +6,7 @@
   `na.rm = TRUE`, or with parentheses around the call. Before, every forwarded
   selection other than a single literal string was refused with
   "Column `..1` doesn't exist" (#1618).
+
 * On a local input, an unnamed `across()` after a share named like an input
   column selects from the columns its data mask holds, as the same
   selection does in a named summary: the share and the input it hides are
