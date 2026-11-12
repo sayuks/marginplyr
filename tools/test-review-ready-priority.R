@@ -331,6 +331,33 @@ local({
     saveRDS(x, path)
   }, "worker dependency differs")
 
+  # R CMD check runs workers with LC_COLLATE=C, so only their R/platform/linear-algebra stack is held to the parent's.
+  edit_workers <- function(f, edit, pids = 1:4) {
+    for (pid in pids) {
+      path <- file.path(f$timing, paste0(pid, ".worker.rds"))
+      x <- readRDS(path); x$session <- edit(x$session); saveRDS(x, path)
+    }
+  }
+  collated <- fixture(c("old", "new", "tiny", "skip"), c(old = 5, new = 30, tiny = 0.1, skip = 100), "skip")
+  edit_workers(collated, function(s) {
+    s$locale <- paste0("C/", s$locale); s$time.zone <- "Fixture/Zone"; s
+  })
+  expect(propose(collated)$eligible, "workers that agree may differ from the parent in locale and time zone")
+  for (field in c("R.version", "platform", "running", "locale", "time.zone", "matprod", "BLAS", "LAPACK")) {
+    reject(function(f) edit_workers(f, function(s) { s[[field]] <- "fixture-disagreement"; s }, pids = 1L),
+      paste0("workers disagree on their environment: ", field))
+  }
+  for (field in c("R.version", "platform", "running", "matprod", "BLAS", "LAPACK")) {
+    reject(function(f) edit_workers(f, function(s) { s[[field]] <- "fixture-difference"; s }),
+      paste0("worker environment differs from the measured environment: ", field))
+  }
+  for (field in c("locale", "time.zone")) {
+    reject(function(f) {
+      path <- file.path(f$timing, "manifest.rds")
+      x <- readRDS(path); x$session[[field]] <- "fixture-adoption-change"; saveRDS(x, path)
+    }, "dependency environment changed")
+  }
+
   # Apply and commit only in this fixture, then install an independent clean clone.
   patch <- file.path(proposal$directory, "priority.patch")
   git(f$root, "apply", "--check", patch)
