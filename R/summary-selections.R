@@ -2122,6 +2122,11 @@ rewrite_summary_selections <- function(expr,
   if (is.null(call_name)) {
     return(expr)
   }
+  # Only a local summary mask holds columns `c_across()` must not see. A lazy
+  # backend answers the call as written, as it does natively.
+  if (identical(call_name, "c_across") && !defer_local) {
+    return(expr)
+  }
 
   # The head is qualified before either branch reads the call, so every rebuild
   # below inherits it through `rebuild_static_call()` and no branch has to
@@ -2130,7 +2135,7 @@ rewrite_summary_selections <- function(expr,
   spelled <- static_call_head(expr)
   expr <- qualify_static_spelling(expr, "selection", call_name)
 
-  if (call_name %in% c("across", "if_any", "if_all")) {
+  if (call_name %in% c("across", "if_any", "if_all", "c_across")) {
     if (defer_local) {
       # An unnamed top-level across uses dplyr's expansion path (ADR 0019).
       rewritten <- rewrite_local_across_selection(
@@ -2260,7 +2265,9 @@ rewrite_local_across_selection <- function(expr, group_vars,
   selection <- local_summary_selection_expr(
     parsed$cols, group_vars, forbidden_names
   )
-  call_args <- replace_across_cols(call_args, parsed$cols_index, selection)
+  call_args <- replace_across_cols(
+    call_args, parsed$cols_index, selection, parsed$cols_formal
+  )
   rebuild_static_call(expr, call_args)
 }
 
@@ -3332,11 +3339,13 @@ name_unnamed_by_position <- function(arg_names, prefix) {
   arg_names
 }
 
-# Replaces the parsed `.cols` position without evaluating call arguments.
-# A zero index means `.cols` was omitted and needs a named leading argument.
-replace_across_cols <- function(args, cols_index, selection) {
+# Replaces the parsed selection position without evaluating call arguments.
+# A zero index means the selection was omitted and needs a leading argument
+# named `formal`, the helper's selection formal.
+replace_across_cols <- function(args, cols_index, selection,
+                                formal = ".cols") {
   if (cols_index == 0L) {
-    return(append(list(.cols = selection), args))
+    return(append(rlang::list2(!!formal := selection), args))
   }
   args[[cols_index]] <- selection
   args
@@ -3386,7 +3395,14 @@ parse_across_arguments <- function(expr) {
     }
     match(as.character(argument), marker_names, nomatch = 0L)
   }
-  cols_index <- formal_index(".cols")
+  # `c_across()` names its selection `cols`; the other formals it lacks match
+  # nothing.
+  cols_formal <- if (identical(static_call_name(expr), "c_across")) {
+    "cols"
+  } else {
+    ".cols"
+  }
+  cols_index <- formal_index(cols_formal)
   fns_index <- formal_index(".fns")
   names_index <- formal_index(".names")
   unpack_index <- formal_index(".unpack")
@@ -3400,6 +3416,7 @@ parse_across_arguments <- function(expr) {
 
   list(
     call_args = call_args,
+    cols_formal = cols_formal,
     cols_index = cols_index,
     fns_index = fns_index,
     names_index = names_index,

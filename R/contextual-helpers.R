@@ -46,7 +46,7 @@ static_spelling_rules <- function() {
       list(
         namespaces = "dplyr",
         contextual = TRUE,
-        names = c("across", "if_any", "if_all", "pick")
+        names = c("across", "if_any", "if_all", "pick", "c_across")
       )
     },
     # tidyselect exports `where()` and dplyr re-exports it, so both qualifiers

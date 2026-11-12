@@ -1,5 +1,11 @@
 # marginplyr 0.1.0
 
+* `dplyr::c_across()` in a local Margin summary selects what it selects in a
+  native grouped `summarise()`: no fixed key, no grouping dimension, and no
+  column marginplyr allocated, in every grouping set. Before, a numeric key was
+  summed into the value and into any share over it, and a non-numeric key
+  turned a valid call into an error that could name a private column (#1599).
+
 * `summarize_with_margins()` over an `arrange()`d lazy SQL input no longer
   passes on dbplyr's "ORDER BY is ignored in subqueries without LIMIT"
   warning at `show_query()`, `collect()` or `compute()`. The summary's rows
