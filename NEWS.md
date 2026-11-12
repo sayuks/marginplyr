@@ -1,5 +1,11 @@
 # marginplyr 0.1.0
 
+* `?grouping_bit` now states that an aggregate over a helper alone, such as
+  `sum(grouping_id(a, b))`, aggregates a constant and so follows its backend:
+  once per group on a data frame, once per row on a SQL table, as `sum(1)`
+  does. `sum(v * grouping_id(a, b))` and `n() * grouping_id(a, b)` agree
+  everywhere (#1595).
+
 * A summary on a lazy SQL input keeps the grouping the caller's parentheses
   express, as native dbplyr does. Before, the pair was dropped before dbplyr
   rendered the expression, so `a - (b - c)` ran as `a - b - c` and
