@@ -5,11 +5,21 @@
   later `mutate()` raises no shallow-copy warning and `:=` on its
   `as.data.table()` result updates it by reference (#1588).
 
+* `.check_margin_label = TRUE` no longer fails with an Arrow or DuckDB error
+  when the input is an `arrange()`d query. The check reads the same columns
+  whatever the input's ordering, and an ordering beneath `head()` still
+  decides which rows it reads (#1585).
+
 * A data frame registered with `duckdb::duckdb_register()` is accepted by
   the Margin verbs and typed `inspect_grouping()` again, directly or through
   `sql()`, a lazy verb, a view or a join, without reading its rows during
   construction. Another DuckDB view without stored SQL is still refused, now
   with a diagnostic saying so (#1583).
+
+* An unnamed summary on a local input that returns a non-vector, such as an
+  environment or a function, is refused with native `summarise()`'s
+  diagnostic, rather than with vctrs' scalar-type error and its FAQ pointer
+  (#1581).
 
 * An unnamed `across()` on a local input whose `.names` template is a
   constant now works after an earlier summary whose output reuses an input

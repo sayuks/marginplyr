@@ -21,6 +21,30 @@ test_that("an unnamed local summary refuses mixed frame and scalar values", {
   )
 })
 
+# dplyr refuses a non-vector result itself, so the comparison is with its own
+# rendering, at a width that wraps its sentence and at one that does not. The
+# named case is the rendering the unnamed ones are held to.
+test_that("a local summary refuses a non-vector result as dplyr does", {
+  data <- data.frame(g = c("a", "a", "b"), v = 1:3)
+  cases <- list(
+    rlang::exprs(environment()),
+    rlang::exprs(mean),
+    rlang::exprs(x = environment())
+  )
+  for (width in c(80L, 40L)) {
+    rlang::local_options(width = width)
+    for (dots in cases) {
+      actual <- expect_error(summarize_with_margins(
+        data, !!!dots, .grouping = rollup(g)
+      ))
+      native <- expect_error(dplyr::summarise(data, !!!dots, .by = g))
+      expect_identical(conditionMessage(actual), conditionMessage(native))
+      expect_false(inherits(actual$parent, "vctrs_error_scalar_type"))
+      expect_no_match(conditionMessage(actual), "faq_error_scalar_type")
+    }
+  }
+})
+
 # Exercise the public verb with each input class in a separate test so only
 # the data.table case depends on an optional backend (AGENTS.md).
 check_mixed_local_types <- function(convert) {
