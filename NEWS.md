@@ -4,6 +4,11 @@
   for FieldRef" error when an Arrow input's ordering names one column twice,
   as `arrange(v) |> arrange(w, v)` or `arrange(v, desc(v))` does (#1603).
 
+* `share_of_total()`, `share_of_parent()` and `grouping_bit()` now refuse
+  their one argument under a name other than `x`, as R refuses an unused
+  argument. Before, `share_of_total(y = s)` was computed as though the name
+  were absent (#1610).
+
 * `summarize_with_margins()` over an `arrange()`d lazy SQL input no longer
   passes on dbplyr's "ORDER BY is ignored in subqueries without LIMIT"
   warning at `show_query()`, `collect()` or `compute()`. The summary's rows

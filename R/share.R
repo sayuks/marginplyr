@@ -2115,7 +2115,11 @@ validate_share_direct_syntax <- function(expr, output_name) {
   # records what asking it with `is_name_part()` changed here, and why the
   # alternative was rejected.
   carried <- unwrap_injected_args(args)
-  if (length(carried) != 1L || !is_name_part(carried[[1L]])) {
+  # The helper is read here rather than called, so R's matching against its one
+  # formal `x` never runs: an argument under any other name is the unused
+  # argument R would refuse.
+  misnamed <- !all(rlang::names2(args) %in% c("", "x"))
+  if (length(carried) != 1L || misnamed || !is_name_part(carried[[1L]])) {
     # `injected_quosure_clause()` is a whole sentence assembled around a
     # deparsed caller expression, so it stays an interpolated value and gains
     # no markup: ADR 0023's injection rule is what makes a caller's braces
