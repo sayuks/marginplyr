@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* When a local summary's type differs between grouping sets, vctrs' refusal
+  now names the caller's column, as `dplyr::bind_rows()` of the grains does,
+  rather than a column name marginplyr generated (#1590).
+
 * A data frame registered with `duckdb::duckdb_register()` is accepted by
   the Margin verbs and typed `inspect_grouping()` again, directly or through
   `sql()`, a lazy verb, a view or a join, without reading its rows during

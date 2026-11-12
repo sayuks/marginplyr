@@ -261,13 +261,50 @@ bind_margin_branches <- function(branches) {
     # leaving vector-internal name repair to ordinary vctrs combination.
     rename_margin_branch_columns(branch, public_names, private_names)
   })
-  result <- vctrs::vec_rbind(!!!branches)
+  result <- withCallingHandlers(
+    vctrs::vec_rbind(!!!branches),
+    vctrs_error_incompatible_type = function(cnd) {
+      stop(restore_margin_combine_args(cnd, private_names, public_names))
+    }
+  )
   result <- rename_margin_branch_columns(result, private_names, public_names)
   if (standard_margin_frame(template)) {
     # Native union_all restores dataset metadata after its vector binding.
     result <- dplyr::dplyr_reconstruct(result, template)
   }
   restore_margin_variable_labels(result, labels)
+}
+
+# Restate a vctrs combination refusal in the caller's column names. vctrs
+# writes each argument as `..<branch>$<column>` into `x_arg`, `y_arg` and the
+# already-formatted message, so the private top-level name is replaced in all
+# three; the condition is otherwise re-signalled as raised.
+restore_margin_combine_args <- function(cnd, private_names, public_names) {
+  restore <- function(arg) {
+    if (!is.character(arg) || length(arg) != 1L) {
+      return(arg)
+    }
+    parts <- regmatches(
+      arg, regexec("^(\\.\\.[0-9]+\\$)([^$]+)(.*)$", arg)
+    )[[1L]]
+    index <- match(parts[3L], private_names)
+    if (is.na(index)) {
+      return(arg)
+    }
+    paste0(parts[2L], public_names[[index]], parts[4L])
+  }
+  for (field in c("x_arg", "y_arg")) {
+    private <- cnd[[field]]
+    public <- restore(private)
+    if (!identical(private, public)) {
+      cnd$message <- gsub(
+        paste0("`", private, "`"), paste0("`", public, "`"),
+        cnd$message, fixed = TRUE
+      )
+      cnd[[field]] <- public
+    }
+  }
+  cnd
 }
 
 # Rename a branch's known columns through dplyr so subclass metadata follows.
