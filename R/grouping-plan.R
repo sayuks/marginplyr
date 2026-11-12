@@ -170,6 +170,7 @@ resolve_by_selection <- function(by_quo, data_proxy) {
 # source names before metadata, then canonical names after compilation.
 # `complete` means both keys and dimensions are fully resolved; NULL keys are
 # unresolved, while character() means a selection settled on no columns.
+# `by_from_groups` means the keys are a grouped input's existing grouping.
 prepare_grouping_plan <- function(.data,
                                   by_quo,
                                   grouping_quo,
@@ -215,6 +216,9 @@ prepare_grouping_plan <- function(.data,
 
       input <- normalize_grouping_input(.data, by_quo)
       data <- input$data
+      # `normalize_grouping_input()` refuses a grouped input carrying `.by`, so
+      # existing groups are the only source of the fixed keys when present.
+      by_from_groups <- length(input$groups) > 0L
       backend <- grouping_backend(data)
       mutable_step <- mutable_dtplyr_step(data)
       # A Mutable step is unsafe only for a caller that builds grouping-set
@@ -277,7 +281,8 @@ prepare_grouping_plan <- function(.data,
             .by = if (is.null(by)) character() else by,
             .duplicates = .duplicates,
             duplicates_choices = duplicates_choices,
-            preflight = preflight
+            preflight = preflight,
+            by_from_groups = by_from_groups
           )
           local_dimensions <- local_plan$dimensions
         })
@@ -285,14 +290,15 @@ prepare_grouping_plan <- function(.data,
         preflight_warnings <- with_discarded_selections({
           local_dimensions <- validate_leading_selections(
             preflight, data_vars, .by = by, .duplicates, duplicates_choices,
-            allow_data_peek = allow_data_peek
+            allow_data_peek = allow_data_peek, by_from_groups = by_from_groups
           )
         })
       }
       if (!is.null(validate_plan_names)) {
         validate_plan_names(
           by, local_dimensions, data_vars,
-          complete = preflight$name_only && !is.null(by)
+          complete = preflight$name_only && !is.null(by),
+          by_from_groups = by_from_groups
         )
       }
       # Inspection needs no typed snapshot when names settle both selections.
@@ -312,7 +318,8 @@ prepare_grouping_plan <- function(.data,
           .by = by,
           .duplicates = .duplicates,
           duplicates_choices = duplicates_choices,
-          preflight = preflight
+          preflight = preflight,
+          by_from_groups = by_from_groups
         ), preflight_warnings)
       } else {
         data_proxy <- if (identical(backend$kind, "dtplyr")) {
@@ -333,12 +340,14 @@ prepare_grouping_plan <- function(.data,
           .by = by,
           .duplicates = .duplicates,
           duplicates_choices = duplicates_choices,
-          preflight = preflight
+          preflight = preflight,
+          by_from_groups = by_from_groups
         ), preflight_warnings)
       }
       if (!is.null(validate_plan_names)) {
         validate_plan_names(
-          plan$by, plan$dimensions, data_vars, complete = TRUE
+          plan$by, plan$dimensions, data_vars, complete = TRUE,
+          by_from_groups = by_from_groups
         )
       }
 
@@ -1342,7 +1351,7 @@ selection_methods_absent <- function(
 # `.by` holds the fixed keys already resolved from names, or NULL if unresolved.
 validate_leading_selections <- function(
   preflight, data_vars, .by, .duplicates, duplicates_choices,
-  allow_data_peek = NULL
+  allow_data_peek = NULL, by_from_groups = FALSE
 ) {
   proxy <- grouping_name_proxy(data_vars)
   resolved <- new.env(parent = emptyenv())
@@ -1386,7 +1395,7 @@ validate_leading_selections <- function(
     ),
     needs_typed_selection = function(selected = character()) NULL
   )
-  validate_grouping_overlap(.by, resolved$dimensions)
+  validate_grouping_overlap(.by, resolved$dimensions, by_from_groups)
   if (!is.null(emit)) {
     if (!is.null(resolved$witness)) {
       abort_duplicate_witness(resolved$witness, duplicates_choices)
@@ -1451,17 +1460,32 @@ product_has_private_keys <- function(families) {
 }
 
 # Reject dimensions that are also among the already resolved fixed keys.
-validate_grouping_overlap <- function(.by, dimensions) {
+# `by_from_groups` says the keys are a grouped input's grouping rather than a
+# `.by` the caller wrote, which is what the refusal then names (ADR 0024).
+validate_grouping_overlap <- function(.by, dimensions, by_from_groups = FALSE) {
   overlap <- intersect(.by, dimensions)
-  if (length(overlap) > 0L) {
-    # The columns arrive alone in an `i` bullet, per ADR 0023's condition 2:
-    # how many of them there are is the caller's decision.
+  if (length(overlap) == 0L) {
+    return(invisible(NULL))
+  }
+  # The columns arrive alone in an `i` bullet, per ADR 0023's condition 2:
+  # how many of them there are is the caller's decision.
+  if (by_from_groups) {
     abort_marginplyr(c(
-      "Columns cannot appear in both {.arg .by} and {.arg .grouping}:",
-      i = "{.var {overlap}}."
+      paste0(
+        "{cli::qty(length(overlap))}Fixed grouping column{?s} of {.arg .data} ",
+        "cannot also appear in {.arg .grouping}:"
+      ),
+      i = "{.var {overlap}}.",
+      i = paste0(
+        "Call {.fun dplyr::ungroup} first, or remove ",
+        "{cli::qty(length(overlap))}{?it/them} from {.arg .grouping}."
+      )
     ))
   }
-  invisible(NULL)
+  abort_marginplyr(c(
+    "Columns cannot appear in both {.arg .by} and {.arg .grouping}:",
+    i = "{.var {overlap}}."
+  ))
 }
 
 # The only site that reads a nested argument. It answers with the
@@ -1840,7 +1864,8 @@ compile_grouping_spec <- function(
   .by = character(),
   .duplicates = duplicates_choices,
   duplicates_choices,
-  preflight = preflight_grouping_spec(.grouping, data_vars)
+  preflight = preflight_grouping_spec(.grouping, data_vars),
+  by_from_groups = FALSE
 ) {
   .duplicates <- match_margin_choice(
     .duplicates,
@@ -1858,7 +1883,8 @@ compile_grouping_spec <- function(
     data_proxy = data_proxy,
     .by = .by,
     .duplicates = .duplicates,
-    duplicates_choices = duplicates_choices
+    duplicates_choices = duplicates_choices,
+    by_from_groups = by_from_groups
   )
 }
 
@@ -1869,7 +1895,8 @@ compile_grouping_spec_impl <- function(preflight,
                                        data_proxy,
                                        .by,
                                        .duplicates,
-                                       duplicates_choices) {
+                                       duplicates_choices,
+                                       by_from_groups = FALSE) {
   stopifnot(is.character(.by), !anyNA(.by))
   stopifnot(.duplicates %in% duplicates_choices)
   if (is.null(data_proxy)) {
@@ -1917,7 +1944,7 @@ compile_grouping_spec_impl <- function(preflight,
   ))
   dimensions <- unique(unlist(expanded, use.names = FALSE))
 
-  validate_grouping_overlap(.by, dimensions)
+  validate_grouping_overlap(.by, dimensions, by_from_groups)
   if (!is.null(duplicate$witness)) {
     abort_duplicate_witness(duplicate$witness, duplicates_choices)
   }
@@ -1955,6 +1982,7 @@ compile_grouping_spec_impl <- function(preflight,
       # never `NULL`.
       kind = grouping_kind_name(preflight$spec$type),
       by = unique(.by),
+      by_from_groups = by_from_groups,
       dimensions = dimensions,
       sets = normalized,
       set_ids = seq_along(normalized),

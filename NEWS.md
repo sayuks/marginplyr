@@ -1,5 +1,10 @@
 # marginplyr 0.1.0
 
+* On a grouped input, a grouping column that also appears in `.grouping`, or
+  that `.margin_label` names, is now refused as a fixed grouping column of
+  `.data` rather than as a `.by` column the caller did not write, and the
+  overlap refusal points at `dplyr::ungroup()` (#1615).
+
 * `compute()` of an unsorted `summarize_with_margins()` on a live SQLite
   connection without `.id` or a share now declares the destination's
   source-derived columns, as native `compute()` of `summarise()` does. Before,
