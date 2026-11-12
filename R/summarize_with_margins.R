@@ -285,6 +285,9 @@
 #' metadata describe the actual Margin result, rather than being copied from
 #' the input. Grouping-plan inspection, constructors and query diagnostics do
 #' not inherit source-frame attributes.
+#' A frame-level `tsp` attribute is shape metadata too: base R ties it to the
+#' column count. A nested cell keeps it only with the input's columns, as with
+#' `.keep = TRUE`, and otherwise omits it, unlike the native cells.
 #'
 #' The label and dataset guarantees cover the returned result and direct
 #' [dplyr::collect()]. Lazy results retain source labels captured at

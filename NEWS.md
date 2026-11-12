@@ -1,5 +1,12 @@
 # marginplyr 0.1.0
 
+* `nest_with_margins()` and `nest_by_with_margins()` now nest a data frame
+  carrying a frame-level `tsp` attribute. Before, both stopped with base R's
+  "invalid time series parameters specified". A nested cell keeps `tsp` only
+  when it has the input's columns, as with `.keep = TRUE`; native
+  `tidyr::nest()` and `dplyr::nest_by()` attach it to cells of another width,
+  which base R would refuse (#1624).
+
 * `compute()` of an unsorted `summarize_with_margins()` on a live SQLite
   connection without `.id` or a share now declares the destination's
   source-derived columns, as native `compute()` of `summarise()` does. Before,
