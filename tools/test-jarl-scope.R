@@ -13,11 +13,11 @@ local({
   stopifnot(file.copy("jarl.toml", workspace))
   result <- processx::run(jarl, c("check", "."), wd = workspace, error_on_status = FALSE)
   output <- paste(result$stdout, result$stderr)
-  if (result$status == 0L || !grepl("violation.R", output, fixed = TRUE)) {
+  if (result$status == 0L || !grepl(file.path("R", "violation.R"), output, fixed = TRUE)) {
     cat(output, "\n")
     stop("jarl no longer reports a violation under R/.", call. = FALSE)
   }
-  if (grepl("investigation", output, fixed = TRUE)) {
+  if (grepl(file.path("investigation", "violation.R"), output, fixed = TRUE)) {
     cat(output, "\n")
     stop("jarl checks investigation/, which jarl.toml excludes.", call. = FALSE)
   }

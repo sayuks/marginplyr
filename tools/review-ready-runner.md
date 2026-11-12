@@ -150,10 +150,11 @@ recovery ledger or automatic retry.
 
 Each invocation records one UTC start timestamp and groups all substantial
 runner-owned data in `<worktree-root>/.review-ready/runs/<run-id>/`, outside
-Git's administrative directory. This includes the pinned source, extracted
-without `investigation/` (which `jarl.toml` excludes and no check reads) and
-without keeping its archive, built tarball, check/install work, progress
-events, logs, result, and supported child temporary/cache output. Git and R source builds exclude `.review-ready/`.
+Git's administrative directory. This includes the pinned source, built
+tarball, check/install work, progress events, logs, result, and supported
+child temporary/cache output. The source is extracted without
+`investigation/`, which no check reads, and its archive is deleted once
+extracted. Git and R source builds exclude `.review-ready/`.
 Supported child environment settings direct owned temporary and cache output
 there without a separate renderer capability registry.
 

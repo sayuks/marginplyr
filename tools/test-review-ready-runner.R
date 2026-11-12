@@ -374,10 +374,12 @@ local({
         identical(readLines(file.path(documentation, "man", "fixture.Rd")), "committed help") &&
         !file.exists(file.path(documentation, "man", "added.Rd")),
         "generation failure never repairs or mutates the submitting worktree")
-      content <- switch(mode, changed = c("-committed help", "+regenerated help"),
-        added = "+added help", deleted = "-committed help", character())
-      expect(all(vapply(content, grepl, logical(1), x = rejected, fixed = TRUE)),
-        paste(mode, "output includes an actionable content diff"))
+      content <- switch(mode,
+        changed = c("changed: man/fixture.Rd", "-committed help", "+regenerated help"),
+        added = c("added: man/added.Rd", "+added help"),
+        deleted = c("removed: man/fixture.Rd", "-committed help"))
+      if (!is.null(content)) expect(all(vapply(content, grepl, logical(1), x = rejected, fixed = TRUE)),
+        paste(mode, "output lists the path by kind with an actionable content diff"))
     }
   }
   # Only the dependency's infinite-wait return is replaced; guards use real locks.

@@ -277,7 +277,7 @@ archive_review_ready_source <- function(
   source_root <- file.path(workspace, directory)
   dir.create(source_root, recursive = TRUE)
   archive <- file.path(workspace, paste0(directory, ".tar"))
-  # No check reads the dated notes; `jarl.toml` excludes them from jarl.
+  # No check reads the dated notes under `investigation/`.
   pathspec <- if (is.null(paths)) c(".", ":(exclude)investigation") else paste0(":(literal)", paths)
   result <- runner(
     "git",
@@ -521,6 +521,9 @@ run_review_ready_documentation <- function(source_root, identity, prerequisites,
     paths <- sort(union(names(original), names(generated)))
     paths <- paths[!mapply(identical, original[paths], generated[paths], USE.NAMES = FALSE)]
     committed <- intersect(paths, names(original))
+    status <- ifelse(!paths %in% committed, "added",
+      ifelse(paths %in% names(generated), "changed", "removed"))
+    cat(paste0("  ", status, ": ", paths, "\n"), sep = "")
     workspace <- dirname(source_root)
     before <- if (length(committed)) {
       archive_review_ready_source(identity, workspace, runner = runner,
