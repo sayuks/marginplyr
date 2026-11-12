@@ -35,6 +35,8 @@ test_that("DuckDB summarizes an arranged input without an ordering warning", {
           utils::capture.output(dplyr::show_query(query)), NA, info = info
         )
         expect_warning(rows <- collected_row_bag(query), NA, info = info)
+        expect_warning(computed <- dplyr::compute(query), NA, info = info)
+        expect_identical(collected_row_bag(computed), rows, info = info)
         expect_identical(
           rows, collected_row_bag(run(remote, specs[[spec]], sort, check)),
           info = info
