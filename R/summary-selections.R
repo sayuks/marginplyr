@@ -2122,11 +2122,6 @@ rewrite_summary_selections <- function(expr,
   if (is.null(call_name)) {
     return(expr)
   }
-  # Only a local summary mask holds columns `c_across()` must not see. A lazy
-  # backend answers the call as written, as it does natively.
-  if (identical(call_name, "c_across") && !defer_local) {
-    return(expr)
-  }
 
   # The head is qualified before either branch reads the call, so every rebuild
   # below inherits it through `rebuild_static_call()` and no branch has to
@@ -2134,6 +2129,11 @@ rewrite_summary_selections <- function(expr,
   # for why a recognized head is qualified at all.
   spelled <- static_call_head(expr)
   expr <- qualify_static_spelling(expr, "selection", call_name)
+  # Only a local summary mask holds columns `c_across()` must not see. A lazy
+  # backend answers the qualified call as it answers it natively.
+  if (identical(call_name, "c_across") && !defer_local) {
+    return(expr)
+  }
 
   if (call_name %in% c("across", "if_any", "if_all", "c_across")) {
     if (defer_local) {

@@ -90,6 +90,9 @@ contextual_probes <- function() {
     if_all = summary_probe(function(spell) {
       rlang::expr(sum(!!spell(list(quote(units), quote(~ .x > 1)))))
     }),
+    c_across = summary_probe(function(spell) {
+      rlang::expr(sum(!!spell(list(quote(units)))))
+    }),
     # A selection predicate in a contextual share's `across()` selection, which
     # is the one position the `predicate` family decides. It has to be the full
     # share `across()` grammar -- an explicit `.names`, the helper as `.fns` --
