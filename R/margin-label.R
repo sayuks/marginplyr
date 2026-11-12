@@ -137,6 +137,14 @@ is_missing_margin_label <- function(label) {
   is.null(label) || is.na(label)
 }
 
+# The Margin dimensions whose label is a value rather than either spelling of a
+# missing label, in the order `margin_labels` holds them.
+labelled_margin_dimensions <- function(margin_labels) {
+  names(Filter(
+    function(label) !is_missing_margin_label(label), margin_labels
+  ))
+}
+
 # One column's Margin label, and `NULL` for a column that has none.
 # `factor_info` names the factor columns crossing the branch union while
 # `margin_labels` is keyed to the Margin dimensions alone, so every read that
