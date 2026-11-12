@@ -1,6 +1,7 @@
 # Fourth-pass hunt over the Margin verbs, shares and the Sent query record
 
 Investigated: 2026-11-12
+Revised: 2026-11-12 — the triage replay recorded under *Revisions (2026-11-12)* in this note
 Repository snapshot: `03e3cef502f7332b69e50608740033043d27f2b4`
 
 The investigation ran against freshly fetched main in one worktree. No package
@@ -224,6 +225,31 @@ later verbs "use ordinary dbplyr behavior"; `design/specs/sqlite-b-direct.md`
 says "Return a normal usable lazy table", and #663's criteria named `select`,
 `rename`, `filter`, `mutate` and `arrange` only. Whether a computed result owes
 the caller a table reference is a specification choice.
+
+## Revisions (2026-11-12)
+
+A triage pass the same day replayed three of the findings against candidate
+answers, without editing the checkout, and changed how two of them stand.
+
+- `compute()` of a sorted SQLite Margin summary is not a defect. #663 and
+  `design/specs/sqlite-b-direct.md` chose the returned object: a lazy table
+  "with explicit ORDER BY on an available implicit rowid alias". It rendered
+  as `SELECT * FROM <destination> ORDER BY rowid`, and a native
+  `arrange(tbl, g)` had the same `NULL` `remote_name()` and the same
+  `union_all()` refusal, so the comparison above with native
+  `arrange() |> compute()`, which returns an unordered table and promises no
+  order, was the wrong control. `tbl(con, <name>)` gives the table reference.
+  #1625 was closed as `wontfix`.
+- The Grouping helper used as a call head stands as observed, and #1621 was
+  closed as `wontfix`: the call has no meaning and fails natively too.
+- For the frequency-limited message, adding `rlib_message_verbosity =
+  "quiet"` beside the two options `render_sent_query_sql()` sets delivered
+  the message once with the audit on, and left the warning count at one.
+- For the `tsp` attribute, naming it among the structural fields
+  `margin_frame_metadata()` excludes made every failing call in the script
+  return, with cells that carry no `tsp`. Base refuses `tsp` on a data frame
+  whose column count differs from it, and `as.data.frame()` of a `ts` matrix
+  carried none.
 
 ## Left for a decision
 
