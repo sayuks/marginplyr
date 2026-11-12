@@ -6,6 +6,14 @@
   while omitting groups or splitting one set's occurrences, because the sets
   the typed selection produces were not yet known (#1616).
 
+* `expand_with_margins()` and `summarize_with_margins()` now build over a SQL
+  input ordered by a raw `sql()` term or a constant, such as
+  `arrange(sql("v DESC NULLS LAST")) |> head(n)`, as native `summarise()` of
+  that input does. Before, construction failed inside dbplyr's `select()`
+  whenever the call set `.id` or `.sort`, reordered columns, or checked
+  a Margin label. Such a term names no result column, so the result carries no
+  window ordering for it (#1622).
+
 * A wrapper forwarding its dots into an unnamed top-level `across()` now works
   in a local Margin summary wherever dplyr evaluates that `across()` per group:
   with `.unpack = TRUE` or a glue `.unpack`, with a `...` extra such as
