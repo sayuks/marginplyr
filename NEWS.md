@@ -6,6 +6,11 @@
   convert the label to the dimension's type, and the set-operation rules
   Oracle, Redshift and Snowflake document refuse it too (#1586).
 
+* An unnamed `across()` on a local input whose `.names` template is a
+  constant now works after an earlier summary whose output reuses an input
+  column's name, as in native `summarise()`, rather than being refused for
+  producing too few names (#1584).
+
 * A condition raised by one of several unnamed `across()` calls on a local
   input that pass extra arguments through `across()`'s `...` quotes that call
   as the caller wrote it, rather than as `dplyr::across(...)`, and their
