@@ -409,8 +409,9 @@ absent_summary_labels <- function(absent, summaries) {
   across <- !named & vapply(dots, function(dot) {
     is_across_call(rlang::quo_get_expr(dot))
   }, logical(1))
-  written <- ifelse(named, rlang::names2(dots), summaries$frame_state$auto_names)
-  written <- written[!across]
+  written <- ifelse(
+    named, rlang::names2(dots), summaries$frame_state$auto_names
+  )[!across]
   if (all(absent %in% written) || sum(across) != 1L) {
     return(absent)
   }
