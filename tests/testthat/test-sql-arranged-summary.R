@@ -60,7 +60,7 @@ test_that("SQLite renders no ORDER BY from an arranged input's ordering", {
   # A `.sort` other than "none" emits the Margin order's own ORDER BY, which
   # the unarranged input's query carries too.
   order_clauses <- function(query) {
-    sql <- dbplyr::sql_render(query)
+    sql <- as.character(dbplyr::sql_render(query))
     regmatches(sql, gregexpr("ORDER BY[^\n]*", sql))[[1]]
   }
   specs <- list(rollup = rollup(dplyr::all_of("g")),

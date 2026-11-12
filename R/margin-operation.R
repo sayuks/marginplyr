@@ -266,6 +266,10 @@ check_margin_id_collision <- function(.id, names, where) {
 # its kind, the shape `abort_margin_label_collision()` takes, because the
 # answer is a property of the verb: only a column the result holds can have
 # its factor levels rebuilt after the branch union (#415).
+#
+# `keeps_input_order = FALSE` declares that the verb's rows do not depend on
+# an unlimited input ordering, so that ordering is cleared before
+# `sqlite_margin_input()` can seal it into the input relation (#1598).
 prepare_margin_operation <- function(.data,
                                      by_quo,
                                      grouping_quo,
@@ -276,6 +280,7 @@ prepare_margin_operation <- function(.data,
                                      .sort,
                                      duplicates_choices,
                                      carried_columns,
+                                     keeps_input_order = TRUE,
                                      .id = NULL,
                                      validate_grouping = NULL,
                                      validate_plan_names = NULL,
@@ -284,6 +289,7 @@ prepare_margin_operation <- function(.data,
   stopifnot(is.null(validate_grouping) || is.function(validate_grouping))
   stopifnot(is.null(validate_plan_names) || is.function(validate_plan_names))
   stopifnot(is.function(carried_columns))
+  stopifnot(rlang::is_bool(keeps_input_order))
 
   with_margin_error_call(
     {
@@ -353,6 +359,9 @@ prepare_margin_operation <- function(.data,
       data <- validate_margin_factor_input(
         data, column_info$factors, backend, plan, margin_labels
       )
+      if (!keeps_input_order) {
+        data <- drop_unlimited_sql_order(data)
+      }
       new_margin_operation(
         data = sqlite_margin_input(data, backend, data_vars),
         backend = backend,
