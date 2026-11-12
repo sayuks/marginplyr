@@ -1302,9 +1302,11 @@ summarize_with_margins <- function(.data,
   sqlite_env_column <- sql_env_column && live_sqlite_margin_result(operation)
   sqlite_boolean_column <- live_sqlite_margin_result(operation) &&
     length(sqlite_boolean_columns(dplyr::tbl_vars(execution$result))) > 0L
+  # The ordering wrapper hides a fixed key's declared type from RSQLite.
   anchor_needed <- existing_anchor_needed || (
     sqlite_declared_type_result(operation) &&
-      length(execution$declared_types) > 0L
+      (length(execution$declared_types) > 0L ||
+         (margin_sorting(operation) && length(operation$plan$by) > 0L))
   ) || sqlite_env_column || sqlite_boolean_column
   final_type_anchor <- if (anchor_needed) {
     if (live_sqlite_margin_result(operation)) {

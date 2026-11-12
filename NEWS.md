@@ -1,5 +1,12 @@
 # marginplyr 0.1.0
 
+* A sorted `summarize_with_margins()` on a live SQLite connection with a text
+  Margin label keeps each fixed `.by` key's declared type, as native
+  `summarise()` grouped by it does. Before, with neither `.id` nor a share, a
+  `DATE` key under `extended_types = TRUE` collected as character, and a key
+  of a zero-row or all-missing table collected as logical, directly or after
+  `compute()` (#1600).
+
 * `collect()` of a sorted live SQLite Margin summary or expansion now returns
   a tibble, as dbplyr's `collect()` of the native summary does and as the same
   call without `.sort` already did, instead of a bare `data.frame` (#1608).
