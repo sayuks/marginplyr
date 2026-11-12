@@ -1,5 +1,9 @@
 # marginplyr 0.1.0
 
+* `.check_margin_label = TRUE` no longer fails with Arrow's "Multiple matches
+  for FieldRef" error when an Arrow input's ordering names one column twice,
+  as `arrange(v) |> arrange(w, v)` or `arrange(v, desc(v))` does (#1603).
+
 * `summarize_with_margins()` over an `arrange()`d lazy SQL input no longer
   passes on dbplyr's "ORDER BY is ignored in subqueries without LIMIT"
   warning at `show_query()`, `collect()` or `compute()`. The summary's rows
