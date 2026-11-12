@@ -599,7 +599,7 @@ test_that("Arrow labels do not transfer after ordinary operations", {
   expect_identical(attr(dplyr::collect(twice)$g, "label"), "Dimension")
 })
 
-test_that("label combination retains native dtplyr union failures", {
+test_that("label combination reports a dtplyr union type conflict", {
   skip_if_suggest_absent("dtplyr")
   source <- label_source()
   source$g <- as.character(source$g)
@@ -618,9 +618,9 @@ test_that("label combination retains native dtplyr union failures", {
   result <- tryCatch(dplyr::collect(summarize_with_margins(
     input, z = if (dplyr::n() == 1L) 1L else "two", .grouping = rollup(g)
   )), error = identity)
-  expect_s3_class(native, "error")
-  expect_identical(class(result), class(native))
-  expect_false(inherits(result, "marginplyr_error"))
+  expect_s3_class(native, "dt_join_type_mismatch_error")
+  expect_s3_class(result, "marginplyr_error")
+  expect_match(conditionMessage(result), "`z`", fixed = TRUE)
 })
 
 test_that("nesting applies native inner metadata to original values per set", {
