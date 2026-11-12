@@ -625,3 +625,97 @@ test_that("SQLite typed compute rolls back a failed unique index", {
   ), "UNIQUE constraint failed")
   expect_identical(DBI::dbListTables(con), before)
 })
+
+test_that("SQLite text-labelled Margin order keeps a fixed key's source type", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:", extended_types = TRUE)
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  DBI::dbExecute(
+    con, "CREATE TABLE labelled_fixed (dt DATE, ts TIMESTAMP, tm TIME,
+                                       g TEXT, x REAL)"
+  )
+  DBI::dbExecute(con, paste(
+    "INSERT INTO labelled_fixed VALUES",
+    "('2020-01-01', '2020-01-01 10:00:00', '10:00:00', 'a', 10),",
+    "('2021-06-01', '2021-06-01 12:30:00', '12:30:00', 'b', 20),",
+    "('2020-01-01', '2020-01-01 10:00:00', '10:00:00', 'b', 40)"
+  ))
+  source <- dplyr::tbl(con, "labelled_fixed")
+  plans <- list(rollup = rollup(g), one_set = grouping_sets(grouping_set(g)))
+
+  for (key in c("dt", "ts", "tm")) {
+    native <- dplyr::collect(dplyr::summarise(
+      dplyr::group_by(source, dplyr::across(dplyr::all_of(key))),
+      s = sum(x, na.rm = TRUE)
+    ))[[key]]
+    for (plan in names(plans)) for (sort in c("last", "first")) {
+      query <- summarize_with_margins(
+        source, s = sum(x, na.rm = TRUE), .by = dplyr::all_of(key),
+        .grouping = plans[[plan]], .sort = sort
+      )
+      label <- paste(key, plan, sort)
+      expect_identical(as.character(dplyr::tbl_vars(query)),
+                       c(key, "g", "s"), info = label)
+      result <- dplyr::collect(query)
+      expect_identical(class(result[[key]]), class(native), info = label)
+      expect_identical(unique(result[[key]]), unique(native), info = label)
+    }
+  }
+
+  query <- summarize_with_margins(
+    source, s = sum(x, na.rm = TRUE), .by = dt, .grouping = rollup(g),
+    .sort = "last"
+  )
+  result <- dplyr::collect(query)
+  expect_identical(result$dt, as.Date(c(
+    "2020-01-01", "2020-01-01", "2020-01-01", "2021-06-01", "2021-06-01"
+  )))
+  expect_identical(result$g, c("a", "b", "Total", "b", "Total"))
+  expect_equal(result$s, c(10, 40, 50, 20, 20))
+  first <- dplyr::collect(summarize_with_margins(
+    source, s = sum(x, na.rm = TRUE), .by = dt, .grouping = rollup(g),
+    .sort = "first"
+  ))
+  expect_identical(first$g, c("Total", "a", "b", "Total", "b"))
+})
+
+test_that("SQLite text-labelled Margin order types an empty fixed key", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  for (table in c("labelled_empty", "labelled_missing")) {
+    DBI::dbExecute(con, paste(
+      "CREATE TABLE", table, "(ki INTEGER, kc TEXT, kr REAL, g TEXT, x REAL)"
+    ))
+  }
+  DBI::dbExecute(
+    con, "INSERT INTO labelled_missing VALUES (NULL, NULL, NULL, 'a', 1)"
+  )
+  expected <- list(ki = "integer", kc = "character", kr = "numeric")
+  # The affinity names SQLite's CREATE TABLE AS writes, as native compute().
+  declared <- list(ki = "INT", kc = "TEXT", kr = "REAL")
+
+  for (table in c("labelled_empty", "labelled_missing")) {
+    source <- dplyr::tbl(con, table)
+    for (key in names(expected)) for (sort in c("last", "first")) {
+      query <- summarize_with_margins(
+        source, s = sum(x, na.rm = TRUE), .by = dplyr::all_of(key),
+        .grouping = rollup(g), .sort = sort
+      )
+      label <- paste(table, key, sort)
+      expect_identical(class(dplyr::collect(query)[[key]]),
+                       expected[[key]], info = label)
+      name <- paste(table, key, sort, sep = "_")
+      computed <- dplyr::compute(query, name = name)
+      expect_identical(class(dplyr::collect(computed)[[key]]),
+                       expected[[key]], info = label)
+      expect_identical(
+        DBI::dbGetQuery(con, paste0(
+          "SELECT type FROM pragma_table_info('", name, "') WHERE name = '",
+          key, "'"
+        ))$type,
+        declared[[key]], info = label
+      )
+    }
+  }
+})

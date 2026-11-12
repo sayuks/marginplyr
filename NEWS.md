@@ -1,5 +1,12 @@
 # marginplyr 0.1.0
 
+* A sorted `summarize_with_margins()` on a live SQLite connection with a text
+  Margin label keeps each fixed `.by` key's declared type, as native
+  `summarise()` grouped by it does. Before, with neither `.id` nor a share, a
+  `DATE` key under `extended_types = TRUE` collected as character, and a key
+  of a zero-row or all-missing table collected as logical, directly or after
+  `compute()` (#1600).
+
 * `summarize_with_margins()` over an `arrange()`d lazy SQL input no longer
   passes on dbplyr's "ORDER BY is ignored in subqueries without LIMIT"
   warning at `show_query()`, `collect()` or `compute()`. The summary's rows
