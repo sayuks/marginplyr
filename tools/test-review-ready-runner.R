@@ -143,6 +143,8 @@ local({
     writeLines(review_ready_priority_description(readLines(file.path(repo, "DESCRIPTION")), priority),
       file.path(repo, "DESCRIPTION"))
     writeLines("submitted", file.path(repo, "inst", "revision.txt"))
+    dir.create(file.path(repo, "investigation"))
+    writeLines("note <- TRUE", file.path(repo, "investigation", "note.R"))
     git(repo, "init", "--quiet")
     git(repo, "config", "user.email", "fixture@example.com")
     git(repo, "config", "user.name", "Fixture")
@@ -198,12 +200,13 @@ local({
     }
     output
   }
-  result_record <- function(output) {
+  artifact_directory <- function(output) {
     lines <- strsplit(output, "\n", fixed = TRUE)[[1L]]
     directory <- sub("^Artifacts: ", "", grep("^Artifacts: ", lines, value = TRUE))
     expect(length(directory) == 1L, "command names exactly one artifact directory")
-    readRDS(file.path(directory, "result.rds"))
+    directory
   }
+  result_record <- function(output) readRDS(file.path(artifact_directory(output), "result.rds"))
   source("tools/fixtures/workflow-contract-cases.R", local = TRUE)
   source("tools/fixtures/review-dependency-contract-cases.R", local = TRUE)
   cases <- if ("--dependency-contracts-only" %in% commandArgs(trailingOnly = TRUE)) {
@@ -315,6 +318,12 @@ local({
   expect(all(positions > 0L) && all(diff(positions) > 0L), "six checks run in the required order")
   expect(identical(git(repo, "status", "--porcelain=v1", "--untracked-files=all"), ""),
     "successful generation preserves the submitting worktree")
+  artifacts <- artifact_directory(output)
+  expect(file.exists(file.path(artifacts, "source", "inst", "revision.txt")) &&
+    !file.exists(file.path(artifacts, "source", "investigation")) &&
+    !file.exists(file.path(artifacts, "source.tar")) &&
+    !file.exists(file.path(artifacts, "documentation-before")),
+    "a successful run keeps one extracted tree without investigation/, its archive or a preserved copy")
   json_repo <- make_repo("json-prerequisite")
   description <- readLines(file.path(json_repo, "DESCRIPTION"))
   writeLines(sub("Suggests: testthat, stats, processx",
@@ -365,8 +374,12 @@ local({
         identical(readLines(file.path(documentation, "man", "fixture.Rd")), "committed help") &&
         !file.exists(file.path(documentation, "man", "added.Rd")),
         "generation failure never repairs or mutates the submitting worktree")
-      if (mode == "changed") expect(grepl("-committed help", rejected, fixed = TRUE) &&
-        grepl("+regenerated help", rejected, fixed = TRUE), "changed output includes an actionable content diff")
+      content <- switch(mode,
+        changed = c("changed: man/fixture.Rd", "-committed help", "+regenerated help"),
+        added = c("added: man/added.Rd", "+added help"),
+        deleted = c("removed: man/fixture.Rd", "-committed help"))
+      if (!is.null(content)) expect(all(vapply(content, grepl, logical(1), x = rejected, fixed = TRUE)),
+        paste(mode, "output lists the path by kind with an actionable content diff"))
     }
   }
   # Only the dependency's infinite-wait return is replaced; guards use real locks.

@@ -75,8 +75,10 @@ Rscript tools/review-ready.R --scope full --reason 'Explain why package build/ch
 Both forms run repository contract consistency and the six mandatory checks in
 [local checks](../design/agents/local-checks.md#boundary-and-scope) before any shared-slot request.
 The documentation check runs `roxygen2::roxygenise()` in the pinned source
-copy and refuses any filename/content difference from the preserved
-`documentation-before/` copy, including changes outside `man/` and `NAMESPACE`.
+copy and refuses any filename/content difference from the hashes recorded
+before it, including changes outside `man/` and `NAMESPACE`. Only on a
+difference does it restore the committed versions of the differing paths into
+`documentation-before/` and print each path's diff.
 Generation errors or differences stop before spelling, linters and admission;
 the submitting worktree stays unchanged. Inspect the reported diff, regenerate
 and commit corrections explicitly before a fresh invocation. `roxygen2` is a
@@ -148,9 +150,11 @@ recovery ledger or automatic retry.
 
 Each invocation records one UTC start timestamp and groups all substantial
 runner-owned data in `<worktree-root>/.review-ready/runs/<run-id>/`, outside
-Git's administrative directory. This includes the pinned source and archive,
-built tarball, check/install work, progress events, logs, result, and supported
-child temporary/cache output. Git and R source builds exclude `.review-ready/`.
+Git's administrative directory. This includes the pinned source, built
+tarball, check/install work, progress events, logs, result, and supported
+child temporary/cache output. The source is extracted without
+`investigation/`, which no check reads, and its archive is deleted once
+extracted. Git and R source builds exclude `.review-ready/`.
 Supported child environment settings direct owned temporary and cache output
 there without a separate renderer capability registry.
 

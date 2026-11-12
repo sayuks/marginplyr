@@ -459,6 +459,10 @@
             }
           },
           {
+            "name": "Verify jarl scope",
+            "run": "Rscript tools/test-jarl-scope.R"
+          },
+          {
             "name": "Spell-check package",
             "run": "findings <- spelling::spell_check_package('.', vignettes = TRUE, use_wordlist = TRUE)\nif (nrow(findings)) { print(findings); stop('Package spelling found unknown words.', call. = FALSE) }\n",
             "shell": "Rscript {0}"
