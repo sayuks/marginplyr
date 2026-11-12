@@ -363,15 +363,12 @@ check_observed_label_collision <- function(data,
       data <- sqlite_boolean_input_relation(data, aliases)
     }
     selected <- sqlite_boolean_names(read_cols, aliases)
-    data <- dplyr::select(.data = data, dplyr::all_of(selected))
     # The count is a grand summary, which neither backend accepts over an
-    # inherited ordering (#1585).
-    if (inherits(data, "arrow_dplyr_query")) {
-      # Arrow keeps the ordering below the collapsed projection.
-      data <- dplyr::collapse(data)
-    } else {
-      data <- drop_unlimited_sql_order(data)
-    }
+    # inherited ordering (#1585). Arrow cannot project away a column named
+    # twice among its sort keys, so its ordering goes before the projection.
+    data <- drop_unlimited_arrow_order(data)
+    data <- dplyr::select(.data = data, dplyr::all_of(selected))
+    data <- drop_unlimited_sql_order(data)
   }
   query <- margin_safe_column_reads(
     data, read_cols, function(source, safe_name) {
