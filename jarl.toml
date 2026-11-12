@@ -2,3 +2,7 @@
 # The package-specific rules are high-signal here. `expect_not` catches a
 # testthat anti-pattern without opting into the stylistic TESTTHAT family.
 extend-select = ["DPLYR", "expect_not"]
+# `investigation/` holds dated notes that are not maintained after their date,
+# and lintr already leaves it out; holding them to rules added later would
+# rewrite records. `tools/test-jarl-scope.R` observes this exclusion.
+exclude = ["investigation/"]

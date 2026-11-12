@@ -128,6 +128,9 @@ jobs:
         with:
           version: "0.6.0"
 
+      - name: Verify jarl scope
+        run: Rscript tools/test-jarl-scope.R
+
       - name: Spell-check package
         run: |
           findings <- spelling::spell_check_package('.', vignettes = TRUE, use_wordlist = TRUE)

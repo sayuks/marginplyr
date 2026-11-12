@@ -265,18 +265,23 @@ run_review_ready_step <- function(
   invisible(TRUE)
 }
 
-# Extracts only the submitted committed revision into the run directory.
+# Extracts the submitted committed revision, without `investigation/`, into
+# `workspace/<directory>`; `paths` narrows it to those literal paths instead.
 archive_review_ready_source <- function(
   identity,
   workspace,
-  runner = review_ready_run_system
+  runner = review_ready_run_system,
+  directory = "source",
+  paths = NULL
 ) {
-  source_root <- file.path(workspace, "source")
+  source_root <- file.path(workspace, directory)
   dir.create(source_root, recursive = TRUE)
-  archive <- file.path(workspace, "source.tar")
+  archive <- file.path(workspace, paste0(directory, ".tar"))
+  # No check reads the dated notes; `jarl.toml` excludes them from jarl.
+  pathspec <- if (is.null(paths)) c(".", ":(exclude)investigation") else paste0(":(literal)", paths)
   result <- runner(
     "git",
-    c("archive", "--format=tar", paste0("--output=", archive), identity$sha),
+    c("archive", "--format=tar", paste0("--output=", archive), identity$sha, "--", pathspec),
     directory = identity$root,
     capture = TRUE
   )
@@ -284,6 +289,7 @@ archive_review_ready_source <- function(
     stop("git archive could not create the disposable source tree.", call. = FALSE)
   }
   utils::untar(archive, exdir = source_root)
+  unlink(archive)
   source_root
 }
 
@@ -494,33 +500,40 @@ review_ready_child_runner <- function(environment) {
 }
 
 # Regenerates only the disposable source and refuses any changed source bytes.
-run_review_ready_documentation <- function(source_root, prerequisites, runner) {
-  before <- file.path(dirname(source_root), "documentation-before")
-  if (!dir.create(before)) stop("Cannot preserve source before documentation generation.")
-  files <- list.files(source_root, all.files = TRUE, no.. = TRUE, full.names = TRUE)
-  if (!all(file.copy(files, before, recursive = TRUE))) {
-    stop("Cannot preserve source before documentation generation.")
+# `source_root` holds exactly what `archive_review_ready_source()` extracted
+# for `identity`, so a differing path's committed bytes come from that SHA.
+run_review_ready_documentation <- function(source_root, identity, prerequisites, runner) {
+  # Records every filename and content hash in the tree.
+  manifest <- function(directory) {
+    paths <- list.files(directory, all.files = TRUE, recursive = TRUE, no.. = TRUE)
+    stats::setNames(tools::md5sum(file.path(directory, paths)), paths)
   }
+  original <- manifest(source_root)
   run_review_ready_step("Documentation consistency", list(
     command = prerequisites$rscript,
     args = c("-e", "roxygen2::roxygenise()"),
     env = character()
   ), source_root, runner = runner)
-  # Records every filename and content hash in a preserved or regenerated tree.
-  manifest <- function(directory) {
-    paths <- list.files(directory, all.files = TRUE, recursive = TRUE, no.. = TRUE)
-    stats::setNames(tools::md5sum(file.path(directory, paths)), paths)
-  }
-  original <- manifest(before)
   generated <- manifest(source_root)
   if (anyNA(original) || anyNA(generated)) stop("Cannot compare regenerated source files.")
   if (!identical(original, generated)) {
     cat("Roxygen regeneration differs from the committed submission:\n")
-    difference <- runner("git", c("diff", "--no-index", "--no-ext-diff",
-      "--no-textconv", "--no-renames", "--", before, source_root),
-      directory = dirname(source_root))
-    if (!difference$status %in% c(0L, 1L)) {
-      cat("Cannot display documentation differences; compare documentation-before/ and source/.\n")
+    paths <- sort(union(names(original), names(generated)))
+    paths <- paths[!mapply(identical, original[paths], generated[paths], USE.NAMES = FALSE)]
+    committed <- intersect(paths, names(original))
+    workspace <- dirname(source_root)
+    before <- if (length(committed)) {
+      archive_review_ready_source(identity, workspace, runner = runner,
+        directory = "documentation-before", paths = committed)
+    }
+    for (path in paths) {
+      old <- if (path %in% committed) file.path(before, path) else "/dev/null"
+      new <- if (path %in% names(generated)) file.path(source_root, path) else "/dev/null"
+      difference <- runner("git", c("diff", "--no-index", "--no-ext-diff",
+        "--no-textconv", "--no-renames", "--", old, new), directory = workspace)
+      if (!difference$status %in% c(0L, 1L)) {
+        cat("Cannot display the difference for ", path, ".\n", sep = "")
+      }
     }
     stop("Documentation consistency failed. Regenerate, inspect all source changes, and commit before resubmitting.",
       call. = FALSE)
@@ -530,11 +543,11 @@ run_review_ready_documentation <- function(source_root, prerequisites, runner) {
 }
 
 # Runs the six mandatory source/environment checks without requesting capacity.
-run_review_ready_source <- function(source_root, prerequisites, runner = review_ready_run_system) {
+run_review_ready_source <- function(source_root, identity, prerequisites, runner = review_ready_run_system) {
   verify_review_ready_test_packages(source_root)
   cat("\n==> Required test Suggests\n")
   required <- required_test_suggests(source_root)
-  run_review_ready_documentation(source_root, prerequisites, runner)
+  run_review_ready_documentation(source_root, identity, prerequisites, runner)
   steps <- review_ready_source_steps(prerequisites)
   for (label in names(steps)) {
     run_review_ready_step(label, steps[[label]], source_root, runner = runner)
@@ -642,7 +655,7 @@ review_ready_check_cli <- function(args, expected_root) {
       env = character()), source_root, runner = runner)
     contracts <- "passed"
     prerequisites <- review_ready_prerequisites(read.dcf(file.path(source_root, "DESCRIPTION")))
-    required <- run_review_ready_source(source_root, prerequisites, runner = runner)
+    required <- run_review_ready_source(source_root, identity, prerequisites, runner = runner)
     if (selection$scope == "source") {
       cat("\nSix mandatory checks passed for ", identity$sha, ".\n",
         "Package build/check, the complete suite and snapshots omitted: ",
