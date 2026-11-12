@@ -488,10 +488,12 @@ included, so missing values come last wherever they appear on every backend,
 including those whose own default is the opposite. A local double key
 holding both \code{NaN} and \code{NA} keeps them apart, as \code{\link[dplyr:summarize]{dplyr::summarize()}}
 does: its missingness term places \code{NaN} before \code{NA}, both after ordinary
-values, so each is one contiguous group with its own margin rows. For a
-local packed
-data-frame or matrix key, the missingness term is per row: the key is wholly
-missing only when all its components are missing. Partly missing keys follow
+values, so each is one contiguous group with its own margin rows. A local
+complex key orders its missing values by real part and then imaginary part,
+each ranked the same way, so a \code{NaN} in either part stays apart from \code{NA}.
+For a local packed data-frame or matrix key, the missingness term is per
+row: the key is wholly missing only when all its components are missing.
+Partly missing keys follow
 ordinary local \code{dplyr::arrange()} value order. Local list keys use
 dplyr/vctrs row-vector missingness: in a plain list, \code{NULL} is missing,
 while an element containing scalar \code{NA} is nonmissing. Under

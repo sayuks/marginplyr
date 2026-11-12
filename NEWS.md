@@ -1,5 +1,10 @@
 # marginplyr 0.1.0
 
+* A local complex key or grouping dimension holding both `NaN` and `NA`, in
+  either part, now keeps each group and its margin rows together under
+  `.sort = "last"` and `"first"`, rather than interleaving them, as a double
+  key already does (#1589).
+
 * When a local summary's type differs between grouping sets, vctrs' refusal
   now names the caller's column, as `dplyr::bind_rows()` of the grains does,
   rather than a column name marginplyr generated (#1590).
