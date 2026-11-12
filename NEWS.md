@@ -23,7 +23,11 @@
   native grouped `summarise()`: no fixed key, no grouping dimension, and no
   column marginplyr allocated, in every grouping set. Before, a numeric key was
   summed into the value and into any share over it, and a non-numeric key
-  turned a valid call into an error that could name a private column (#1599).
+  turned a valid call into an error that could name a private column. On a
+  lazy SQL input, which has no translation for `c_across()`, the summary still
+  fails when its query is rendered, now with dbplyr's "No known SQL
+  translation" error in place of the database's own unknown-function error
+  (#1599).
 
 * A local Margin order under `.sort = "last"` or `"first"` now stays in the C
   locale when `options(dplyr.legacy_locale = TRUE)` is set, as it already did
