@@ -444,7 +444,9 @@ local_assigned_summary_value <- function(value, name, group_vars,
                                          protected_sources,
                                          type_state,
                                          alias_state = NULL, position = NULL) {
-  if (is.null(value)) {
+  # dplyr's own result check refuses a non-vector, which vctrs would otherwise
+  # refuse here with its scalar-type error.
+  if (is.null(value) || !vctrs::obj_is_vector(value)) {
     return(value)
   }
   # Types no group can combine are left for dplyr's own combine to refuse,
