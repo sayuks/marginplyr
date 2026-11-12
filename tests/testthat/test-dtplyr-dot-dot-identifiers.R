@@ -200,13 +200,12 @@ test_that("dtplyr identifier handling retains name admission and validation", {
 
 test_that("dtplyr dimensions named like an alias survive an omitting set", {
   skip_if_suggest_absent("dtplyr")
-  skip_if_suggest_absent("data.table")
   for (name in c("..marginplyr_dtplyr_column_1",
                  "..marginplyr_dtplyr_column_2")) {
     local <- rlang::set_names(
       data.frame(k = c("p", "q", "p"), v = c(1, 2, 4)), c(name, "v")
     )
-    input <- dtplyr::lazy_dt(data.table::as.data.table(local))
+    input <- dtplyr::lazy_dt(local)
     direct <- tibble::as_tibble(dplyr::collect(summarize_with_margins(
       input, s = sum(v), .grouping = rollup(dplyr::all_of(name))
     )))
@@ -240,7 +239,6 @@ test_that("dtplyr dimensions named like an alias survive an omitting set", {
 
 test_that("dtplyr aliases skip a dimension a special name displaces", {
   skip_if_suggest_absent("dtplyr")
-  skip_if_suggest_absent("data.table")
   name <- "..marginplyr_dtplyr_column_2"
   local <- rlang::set_names(
     data.frame(
@@ -249,7 +247,7 @@ test_that("dtplyr aliases skip a dimension a special name displaces", {
     ),
     c("T", name, "g", "v")
   )
-  input <- dtplyr::lazy_dt(data.table::as.data.table(local))
+  input <- dtplyr::lazy_dt(local)
   plans <- list(
     rollup = rollup(dplyr::all_of(c("T", name))),
     cube = cube(dplyr::all_of(c("T", name))),
