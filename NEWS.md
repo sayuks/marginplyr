@@ -1,5 +1,22 @@
 # marginplyr 0.1.0
 
+* `.check_margin_label = TRUE` no longer fails with Arrow's "Multiple matches
+  for FieldRef" error when an Arrow input's ordering names one column twice,
+  as `arrange(v) |> arrange(w, v)` or `arrange(v, desc(v))` does (#1603).
+
+* `share_of_total()`, `share_of_parent()` and `grouping_bit()` now refuse
+  their one argument under a name other than `x`, as R refuses an unused
+  argument. Before, `share_of_total(y = s)` was computed as though the name
+  were absent (#1610).
+
+* When `share_of_total()` is refused because `.grouping` produces no Grand
+  total set, the advice now fits the specification written. A lone
+  `grouping_set()` is told to sit in `grouping_sets()` beside an empty one or
+  become a `rollup()`, and a `grouping_spec()` product that every factor must
+  produce an empty set. Both were told to add an empty `grouping_set()` to a
+  `grouping_sets()` specification, which in a product leaves the plan
+  unchanged (#1609).
+
 * A local Margin summary that returns `NULL` in some grouping sets and a value
   in others, such as `if (grouping_bit(g) == 1L) NULL else sum(v)`, now raises
   a `marginplyr_error` from the calling verb naming the summary and asking for
