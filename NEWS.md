@@ -1,5 +1,11 @@
 # marginplyr 0.1.0
 
+* With `options(marginplyr.audit_sql = TRUE)`, a message a SQL translation
+  raises once per session or regularly (`rlang::inform()` or
+  `cli::cli_inform()` with `.frequency`) now reaches the caller as it does with
+  the audit off. Before, rendering the query for the record consumed the
+  message's frequency state, so the real operation never delivered it (#1623).
+
 * `nest_with_margins()` and `nest_by_with_margins()` now nest a data frame
   carrying a frame-level `tsp` attribute. Before, both stopped with base R's
   "invalid time series parameters specified". A nested cell keeps `tsp` only
