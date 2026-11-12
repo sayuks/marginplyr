@@ -46,8 +46,13 @@ repository root, prints the observed behaviour and exits zero.
 
 | Boundary | Established effect | Script | Issue |
 | --- | --- | --- | --- |
-| Duplicate grouping sets proven before typed metadata, when a later argument is a typed selection | The refusal is worded as the complete partition of duplicate positions but omits groups, or splits one set's occurrences into several groups. | `duplicate-positions-typed-suffix.R` | pending |
-| A grouped input whose grouping column also appears in `.grouping` or is named by `.margin_label` | Both refusals name `.by`, which the caller did not write. | `grouped-input-names-by.R` | pending |
+| Duplicate grouping sets proven before typed metadata, when a later argument is a typed selection | The refusal is worded as the complete partition of duplicate positions but omits groups, or splits one set's occurrences into several groups. | `duplicate-positions-typed-suffix.R` | [#1616](https://github.com/sayuks/marginplyr/issues/1616) |
+| A grouped input whose grouping column also appears in `.grouping` or is named by `.margin_label` | Both refusals name `.by`, which the caller did not write. | `grouped-input-names-by.R` | [#1615](https://github.com/sayuks/marginplyr/issues/1615) |
+
+The `to-tickets` workflow published these as two independent repair slices,
+each with `bug` and `ready-for-agent`, no prerequisite prefactoring and no
+blocking edge: they change different diagnostics. Splitting was delegated by
+the maintainer without a confirmation checkpoint.
 
 ### Duplicate positions with a typed selection after them
 
