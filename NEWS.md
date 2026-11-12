@@ -1,5 +1,11 @@
 # marginplyr 0.1.0
 
+* A dtplyr Margin summary whose dimension is named like an alias marginplyr
+  generates for a data.table special symbol, such as
+  `..marginplyr_dtplyr_column_1`, now returns the local result in a rollup,
+  a cube or a union with the empty set, rather than failing at collection
+  with `x and y must have the same column names` (#1591).
+
 * An unsorted dtplyr Margin summary that keeps a variable label now
   evaluates to a valid data.table, as the native dtplyr union does, so a
   later `mutate()` raises no shallow-copy warning and `:=` on its
