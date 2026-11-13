@@ -1444,7 +1444,7 @@ dtplyr_share_binds_measure <- function(expr, measure = ".BY") {
   if (!rlang::is_call(expr)) {
     return(FALSE)
   }
-  if (is_generated_dtplyr_share_call(expr)) {
+  if (is_generated_private_call(expr)) {
     return(any(vapply(static_call_args(expr), dtplyr_share_binds_measure,
                       logical(1), measure = measure)))
   }
@@ -1489,7 +1489,7 @@ rewrite_dtplyr_share_measure <- function(expr, alias, measure = ".BY") {
   if (!rlang::is_call(expr)) {
     return(expr)
   }
-  if (is_generated_dtplyr_share_call(expr)) {
+  if (is_generated_private_call(expr)) {
     if (identical(expr[[1L]], marginplyr_private_call(
       "dtplyr_share_input_name"
     ))) {
@@ -3555,7 +3555,7 @@ dtplyr_share_denominator <- function(value, identifier, target) {
 
 # Whether a translated call carries the package-selected namespace operator.
 # Caller-authored qualified heads retain their ordinary symbolic operator.
-is_generated_dtplyr_share_call <- function(expr) {
+is_generated_private_call <- function(expr) {
   head <- expr[[1L]]
   is.call(head) && length(head) == 3L &&
     identical(head[[1L]], base::`:::`) &&
