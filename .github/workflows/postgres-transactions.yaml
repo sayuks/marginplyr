@@ -55,6 +55,8 @@ jobs:
         run: Rscript tools/postgres-env-label-collision.R
       - name: Verify selected inputs stay inside expansion branches
         run: Rscript tools/postgres-expansion-input.R
+      - name: Verify window-ordered inputs under a typed-missing label
+        run: Rscript tools/postgres-arranged-summary.R
       - uses: actions/upload-artifact@v7
         if: always()
         with:

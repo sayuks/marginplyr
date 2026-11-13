@@ -106,9 +106,9 @@ test_that("SQLite names a parenthesized `.fns` list as the data frame", {
 })
 
 test_that("dtplyr accepts a parenthesized `.fns` list", {
-  skip_if_suggest_absent("dtplyr", "data.table")
+  skip_if_suggest_absent("dtplyr")
   expect_fns_match_local(
-    dtplyr::lazy_dt(data.table::as.data.table(parenthesized_fns_input())),
+    dtplyr::lazy_dt(parenthesized_fns_input()),
     parenthesized_list_cases
   )
 })

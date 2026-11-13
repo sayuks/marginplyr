@@ -552,9 +552,18 @@
 #' - **One DuckDB catalog query per operation at most**, reading table and
 #'   view names, stored view definitions, macro names, and the search path, to
 #'   check that the input hides no source work behind a view or macro before
-#'   its types are read. It binds no table of yours. Opaque macros, `query()`,
-#'   `query_table()`, and views without stored SQL are refused, except a data
-#'   frame registered with `duckdb::duckdb_register()`.
+#'   its types are read. It binds no table of yours. Table macros, macros you
+#'   define, `query()`, `query_table()`, and views without stored SQL are
+#'   refused, except a data frame registered with `duckdb::duckdb_register()`.
+#'   Other table functions, such as `read_parquet()` or `range()`, are
+#'   admitted inside a view as they are when written directly.
+#'   A macro you define is refused however the query reaches it: written in
+#'   SQL, or called from a dplyr verb such as `mutate(y = my_macro(x))`,
+#'   including a function dbplyr translates to that macro's name. Call
+#'   [dplyr::compute()] or [dplyr::collect()] first to use one.
+#'   DuckDB's own scalar macros, such as `nullif()`, are admitted only while
+#'   the database holds no macro you defined, since one could replace a name
+#'   inside their bodies.
 #' - **At most two queries per share request until the SQL dialect answers**,
 #'   referencing none of your tables; see
 #'   *[Contextual shares][summarize_with_margins]*.

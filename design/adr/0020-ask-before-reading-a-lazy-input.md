@@ -383,7 +383,9 @@ from sampling using malformed JSON contents.
 
 A CSV or JSON suffix names a replacement scan only when DuckDB cannot resolve
 the captured relation as a CTE or catalog relation. CTE visibility follows its
-SQL scope, including self-reference under `WITH RECURSIVE`; its definition is
+SQL scope. Under `WITH RECURSIVE` a CTE also sees its own name in its
+recursive term, after the body's top-level `UNION`; in the anchor term, or in
+a body without `UNION`, the name resolves as it would without the CTE (#1649). Its definition is
 still checked for unsafe readers and unresolved filenames. Typed metadata
 preflight may read DuckDB's system catalog names, stored view definitions,
 macro names and configured search path once per operation to distinguish
@@ -401,7 +403,12 @@ definition and nested views in their own catalog/schema search context, without
 inheriting the caller's common table expressions. Existing reader checks apply
 inside those definitions. Cycles, macro calls and table functions whose safety
 is not established are refused before binding, with the option to supply
-established reader metadata directly or collect explicitly. View definitions
+established reader metadata directly or collect explicitly. A table function's
+safety is not established when authored SQL refuses it: `query()` and
+`query_table()`, which bind SQL text given as a value, and a CSV or JSON reader
+that has not disabled inference. Any other table function, such as
+`read_parquet()`, `range()` or `unnest()`, is admitted inside a view as it is
+when written directly (#1651). View definitions
 and macro names belong to the same catalog acquisition, not additional queries.
 After macro admission, stored-view arguments also accept DuckDB's parenthesized
 named arguments, literal Boolean casts and literal `struct_pack` schema form.
@@ -454,6 +461,55 @@ keeps on the connection pointer to hold the frame alive. That attribute is
 undocumented, so its absence fails closed. Any other view without stored SQL,
 such as a relation view over `read_csv()`, remains refused before binding,
 with a diagnostic naming the missing definition.
+
+## Amendment (#1654): DuckDB's own scalar macros, while no caller macro exists
+
+The #1524 rule refused every call whose head the catalog lists as a macro, so
+DuckDB's own scalar macros, such as `nullif()`, `date_add()`, `list_sum()` or
+`current_database()`, were refused in authored SQL, `sql()` fragments and
+stored views although expanding one reads no source. Preflight admits a call
+when its first catalog match is a scalar macro (`macro`, not `table_macro`) in
+database `system` and the operation's catalog snapshot holds no macro or table
+macro outside database `system`. Every other macro call is refused as before.
+
+Both conditions are needed. A system table macro can read source work:
+`histogram_values()` is defined over `query_table()`, and `histogram()` calls
+it. A system macro's body is fixed text whose free names resolve in the
+caller's search path, so one caller macro can redirect it: a caller-defined
+`list_aggr` reading a CSV makes the zero-row type of `list_sum([v])` follow
+the file's data row. The admitted macro's arguments are authored text that the
+relation, reader and call checks still read. A finer rule, admitting unless a
+caller macro's name occurs in the system macro's stored definition, would
+refuse less for callers who define macros; it is not adopted.
+
+## Amendment (#1650): the rendered statement is checked too
+
+The checks above read only the captured lazy query's `sql()` fragments and
+table paths, so a caller macro or a CSV source reached through any other
+dbplyr spelling was bound: a call dbplyr passes through
+(`mutate(y = hidden_first(v))`), a call it translates to a macro's name
+(`tolower(g)` renders `LOWER(g)`, which a caller macro named `lower`
+replaces), and verbatim SQL carried as `DBI::SQL()` or `ident_q()`. A caller
+macro reached by the zero-row metadata statement is refused in every spelling,
+as its authored spelling already was, and the CSV and JSON rules hold for
+verbatim fragments in the same way.
+
+The rendered statement is the only text that shows what a translation emits,
+so the same relation, reader and call checks run over it inside
+`sql_render.marginplyr_duckdb_selection()`, which already receives it on the
+audit and collect paths (ADR 0027); preflight still does not render. A
+refusal there is raised before the statement is sent and leaves no
+`selection_proxy` row, and a translation failure is raised and recorded as
+before, since the render fails before the check runs. The catalog snapshot is
+the operation's one catalog query; a call-shaped head in the rendered
+statement can be what first needs it.
+
+The cost is accepted: `mutate(y = add_one(v))` over a harmless caller macro
+returns no typed metadata, as `mutate(y = sql("add_one(v)"))` did not;
+`compute()` or `collect()` first is the remedy the diagnostic names.
+Narrowing the documented guarantee to authored SQL was rejected, because the
+sampling is marginplyr's own query and passing an unknown function through is
+how dplyr calls a database function.
 
 ## Amendment (#640): SQLite typed-order execution follows an explicit request
 

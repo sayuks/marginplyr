@@ -142,3 +142,11 @@ test_that("an arranged input keeps its window ordering on SQLite", {
   expect_equal(running$r[match(c("b", "a", "Total"), running$g)],
                c(5, 10, 20))
 })
+
+# tools/postgres-arranged-summary.R runs the same acceptance on PostgreSQL.
+test_that("DuckDB sorts a typed-missing summary over a window-ordered input", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  expect_window_ordered_summary(con)
+})

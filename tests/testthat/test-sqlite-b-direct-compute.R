@@ -1257,3 +1257,78 @@ test_that("typed SQLite compute adds no anchor to a query that has one", {
   dplyr::compute(queries[[3L]], name = "anchored_dimension")
   expect_identical(declared("anchored_dimension")[["i"]], "INT")
 })
+
+test_that("SQLite compute keeps a derived query's groups and window order", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  rows <- data.frame(
+    g = c("a", "b", "a", "b", "a", "b"), h = c("x", "y", "y", "x", "x", "y"),
+    v = c(6, 3, 5, 1, 2, 4), true = 1
+  )
+  source <- dplyr::copy_to(con, rows, "boolean_word_source")
+  derived <- dbplyr::window_order(dplyr::group_by(
+    expand_with_margins(source, .grouping = rollup(h)), g
+  ), v)
+
+  computed <- dplyr::compute(derived)
+
+  expect_identical(dplyr::group_vars(computed), "g")
+  expect_identical(dbplyr::op_sort(computed), dbplyr::op_sort(derived))
+  counts <- dplyr::collect(dplyr::arrange(
+    dplyr::summarise(computed, n = dplyr::n()), g
+  ))
+  expect_identical(counts$g, c("a", "b"))
+  expect_identical(as.integer(counts$n), c(6L, 6L))
+})
+
+test_that("SQLite compute keeps only the window order a result records", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(con, data.frame(
+    h = c("x", "y", "y", "x", "x", "y"), v = c(6, 3, 5, 1, 2, 4)
+  ), "window_order_source")
+  ordered <- dbplyr::window_order(source, v)
+
+  unsorted <- expand_with_margins(ordered, .grouping = rollup(h))
+  computed <- dplyr::compute(unsorted)
+  expect_length(dplyr::group_vars(computed), 0L)
+  expect_identical(dbplyr::op_sort(computed), dbplyr::op_sort(unsorted))
+  ranked <- dplyr::collect(dplyr::mutate(
+    computed, r = dplyr::row_number(), .by = h
+  ))
+  expect_equal(as.numeric(ranked$r), stats::ave(ranked$v, ranked$h, FUN = rank))
+
+  sorted <- expand_with_margins(ordered, .grouping = rollup(h), .sort = "last")
+  expect_length(dbplyr::op_sort(dplyr::compute(sorted)), 0L)
+})
+
+test_that("SQLite compute materializes a sorted result over an ordered input", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  source <- dplyr::copy_to(con, data.frame(
+    h = c("x", "y", "y", "x", "x", "y"), v = c(6, 3, 5, 1, 2, 4)
+  ), "expression_order_source")
+  inputs <- list(
+    dplyr::arrange(source, -v),
+    utils::head(dplyr::arrange(source, -v), 5),
+    dplyr::arrange(source, nchar(h))
+  )
+  for (input in inputs) {
+    for (sort in c("last", "first")) {
+      results <- list(
+        expand_with_margins(input, .grouping = rollup(h), .sort = sort),
+        summarize_with_margins(input, s = sum(v, na.rm = TRUE),
+                               .grouping = rollup(h), .sort = sort)
+      )
+      for (result in results) {
+        computed <- dplyr::compute(result)
+        expect_length(dbplyr::op_sort(computed), 0L)
+        expect_identical(as.data.frame(dplyr::collect(computed)),
+                         as.data.frame(dplyr::collect(result)))
+      }
+    }
+  }
+})

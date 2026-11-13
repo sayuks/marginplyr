@@ -101,6 +101,123 @@ test_that("view admission cannot hide source-value CSV inference", {
   }
 })
 
+test_that("views over admitted table functions keep typed metadata (#1651)", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".parquet")
+  on.exit(unlink(path), add = TRUE)
+  quoted <- DBI::dbQuoteString(con, path)
+  DBI::dbExecute(con, paste(
+    "COPY (SELECT * FROM (VALUES ('a', 1), ('b', 2), ('a', 3)) t(g, v)) TO",
+    quoted, "(FORMAT PARQUET)"
+  ))
+  DBI::dbExecute(con, paste0(
+    "CREATE VIEW v_read_parquet AS SELECT * FROM read_parquet(", quoted, ")"
+  ))
+  DBI::dbExecute(con, paste0(
+    "CREATE VIEW v_parquet_scan AS SELECT * FROM parquet_scan(", quoted, ")"
+  ))
+  DBI::dbExecute(con, paste(
+    "CREATE VIEW v_range AS SELECT CASE WHEN range < 2 THEN 'a' ELSE 'b' END",
+    "AS g, range AS v FROM range(4)"
+  ))
+  DBI::dbExecute(con, paste(
+    "CREATE VIEW v_series AS SELECT CASE WHEN generate_series = 2 THEN 'b'",
+    "ELSE 'a' END AS g, generate_series AS v FROM generate_series(1, 3)"
+  ))
+  DBI::dbExecute(con, paste(
+    "CREATE VIEW v_unnest AS SELECT CASE WHEN v = 2 THEN 'b' ELSE 'a' END",
+    "AS g, v FROM unnest([1, 2, 3]) AS u(v)"
+  ))
+  DBI::dbExecute(con, "CREATE VIEW v_nested AS SELECT * FROM v_read_parquet")
+  # Each source holds 1 and 3 under "a" and 2 under "b"; range(4) is 0 to 3.
+  expected <- list(
+    v_read_parquet = c(4, 2, 6), v_parquet_scan = c(4, 2, 6),
+    v_range = c(1, 5, 6), v_series = c(4, 2, 6), v_unnest = c(4, 2, 6),
+    v_nested = c(4, 2, 6), authored = c(4, 2, 6)
+  )
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  for (name in names(expected)) {
+    input <- if (name == "authored") {
+      dplyr::tbl(con, dbplyr::sql("SELECT * FROM v_read_parquet"))
+    } else {
+      dplyr::tbl(con, name)
+    }
+    expect_identical(inspect_grouping(
+      input, .grouping = grouping_set(where(is.character))
+    )$included, "(g)")
+    result <- dplyr::collect(summarize_with_margins(
+      input, s = sum(v, na.rm = TRUE), .grouping = rollup(g), .sort = "last"
+    ))
+    expect_identical(result$g, c("a", "b", "Total"))
+    expect_equal(as.numeric(result$s), expected[[name]])
+    expanded <- dplyr::collect(expand_with_margins(
+      input, .grouping = rollup(g), .margin_label = NULL
+    ))
+    # Rollup over one dimension repeats each source row once for its margin.
+    expect_identical(nrow(expanded), 2L * nrow(dplyr::collect(input)))
+  }
+})
+
+test_that("table functions are judged alike when authored and in a view", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  parquet <- tempfile(fileext = ".parquet")
+  csv <- tempfile(fileext = ".csv")
+  on.exit(unlink(c(parquet, csv)), add = TRUE)
+  writeLines(c("k", "1"), csv)
+  DBI::dbExecute(con, paste(
+    "COPY (SELECT 1 AS k) TO", DBI::dbQuoteString(con, parquet),
+    "(FORMAT PARQUET)"
+  ))
+  DBI::dbWriteTable(con, "src", data.frame(k = 1L))
+  DBI::dbExecute(con, "CREATE MACRO hidden_table() AS TABLE SELECT 1 AS k")
+  csv_reader <- paste0("read_csv(", DBI::dbQuoteString(con, csv))
+  parquet_path <- paste0("(", DBI::dbQuoteString(con, parquet), ")")
+  admitted <- c(
+    "SELECT * FROM range(2) t(k)",
+    "SELECT * FROM generate_series(1, 2) t(k)",
+    "SELECT * FROM unnest([1, 2]) u(k)",
+    paste0("SELECT * FROM read_parquet", parquet_path),
+    paste0("SELECT * FROM parquet_scan", parquet_path),
+    paste0("SELECT * FROM ", csv_reader,
+           ", columns={'k':'INTEGER'}, auto_detect=false, header=true)")
+  )
+  refused <- c(
+    "SELECT * FROM query('SELECT 1 AS k')",
+    "SELECT * FROM query_table('src')",
+    "SELECT * FROM hidden_table()",
+    paste0("SELECT * FROM ", csv_reader, ")"),
+    paste("SELECT * FROM", DBI::dbQuoteString(con, csv))
+  )
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  statements <- c(admitted, refused)
+  for (i in seq_along(statements)) {
+    DBI::dbExecute(con, paste0("CREATE VIEW v", i, " AS ", statements[[i]]))
+    DBI::dbExecute(con, paste0("CREATE VIEW w", i, " AS SELECT * FROM v", i))
+    for (input in list(
+      dplyr::tbl(con, dbplyr::sql(statements[[i]])),
+      dplyr::tbl(con, paste0("v", i)),
+      dplyr::tbl(con, paste0("w", i))
+    )) {
+      typed <- function() {
+        inspect_grouping(input, .grouping = grouping_set(where(is.numeric)))
+      }
+      if (statements[[i]] %in% admitted) {
+        expect_identical(typed()$included, "(k)")
+      } else {
+        expect_error(typed(), class = "marginplyr_error")
+        sent <- last_sent_queries(details = TRUE)
+        expect_false("selection_proxy" %in% sent$purpose)
+      }
+    }
+  }
+})
+
 test_that("view dependencies resolve within their own schema before callers", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
@@ -350,7 +467,9 @@ test_that("reader-like catalog relations and CTEs retain typed inspection", {
         joined, .by = where(is.character),
         .grouping = grouping_set(where(is.numeric))
       )$included, "(k)")
-      expect_identical(last_sent_queries(details = TRUE)$purpose, audit$purpose)
+      # The rendered join's call-shaped heads are looked up in the catalog.
+      expect_identical(last_sent_queries(details = TRUE)$purpose,
+                       c("relation_catalog", "selection_proxy"))
     }
   }
 })
@@ -545,6 +664,216 @@ test_that("CSV replacement guards follow SQL relation positions", {
       "source rows", fixed = TRUE, class = "marginplyr_error"
     )
     expect_duckdb_catalog_only()
+  }
+})
+
+test_that("neighbouring relation and CTE spellings refuse CSV before binding", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  quoted <- DBI::dbQuoteString(con, path)
+  identifier <- DBI::dbQuoteIdentifier(con, path)
+  split <- DBI::dbQuoteString(con, sub("sv$", "", path))
+  DBI::dbWriteTable(con, "by_name_source", data.frame(k = 101L))
+  writeLines(c("k", "101"), path)
+  # The stored definition keeps RECURSIVE and the anchor-term file reference.
+  DBI::dbExecute(con, paste0(
+    "CREATE VIEW anchored AS WITH RECURSIVE ", identifier, "(k) AS ",
+    "(SELECT * FROM ", identifier, " UNION SELECT k FROM ", identifier,
+    " WHERE false) SELECT * FROM ", identifier
+  ))
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  refused <- list(
+    list("SELECT * FROM anchored", "k"),
+    list(paste0("SELECT 'x' AS g WHERE false UNION ALL BY NAME TABLE ",
+                identifier), c("g", "k")),
+    list(paste0("SELECT 'x' AS g WHERE false UNION BY NAME TABLE ",
+                identifier), c("g", "k")),
+    list(paste0("SELECT * FROM (FROM by_name_source UNION ALL BY NAME FROM ",
+                quoted, ")"), "k"),
+    list(paste0("SELECT * FROM (TABLE by_name_source UNION ALL BY NAME FROM ",
+                quoted, ")"), "k"),
+    # DuckDB concatenates string literals separated by a line break.
+    list(paste0("SELECT * FROM ", split, "\n'sv'"), "k"),
+    list(paste0("SELECT * FROM ", split, " -- continued\n  'sv'"), "k"),
+    # A recursive CTE's own name is visible only in its recursive term.
+    list(paste0("WITH RECURSIVE ", identifier, " AS (SELECT * FROM ",
+                identifier, ") SELECT * FROM ", identifier), "k"),
+    list(paste0("WITH RECURSIVE ", identifier, "(k) AS (SELECT * FROM ",
+                identifier, " UNION SELECT k FROM ", identifier,
+                " WHERE false) SELECT * FROM ", identifier), "k"),
+    # USING KEY precedes AS without ending the CTE header.
+    list(paste0("WITH RECURSIVE r(z) USING KEY (z) AS (SELECT 1 AS z UNION ",
+                "SELECT z + 1 FROM r WHERE z < 1) TABLE ", identifier), "k")
+  )
+  for (value in c("101", "source_tail")) {
+    writeLines(c("k", value), path)
+    for (case in refused) {
+      source <- dplyr::tbl(con, dbplyr::sql(case[[1L]]), vars = case[[2L]])
+      expect_error(
+        inspect_grouping(source, .grouping = grouping_set(where(is.numeric))),
+        "source rows", fixed = TRUE, class = "marginplyr_error"
+      )
+      expect_duckdb_catalog_only()
+      expect_error(
+        summarize_with_margins(source, n = dplyr::n(), .grouping = rollup(k)),
+        "DuckDB CSV input", fixed = TRUE, class = "marginplyr_error"
+      )
+      expect_duckdb_catalog_only()
+    }
+  }
+
+  # Tables and explicit-schema readers keep one typed plan by name.
+  explicit <- paste0(
+    "read_csv(", quoted, ", columns = {'k': 'VARCHAR'}, auto_detect = false,",
+    " header = true)"
+  )
+  for (value in c("101", "source_tail")) {
+    writeLines(c("k", value), path)
+    for (operand in c("TABLE by_name_source", paste("FROM", explicit))) {
+      source <- dplyr::tbl(con, dbplyr::sql(paste0(
+        "SELECT * FROM (FROM by_name_source UNION ALL BY NAME ", operand, ")"
+      )), vars = "k")
+      expect_identical(inspect_grouping(
+        source, .grouping = grouping_set(where(is.character))
+      )$included, if (startsWith(operand, "FROM")) "(k)" else "()")
+      expect_identical(last_sent_queries(details = TRUE)$purpose,
+                       c("relation_catalog", "selection_proxy"))
+    }
+  }
+  # A continued literal outside a relation position stays a scalar string,
+  # and a keyed recursion's self-reference in its recursive term is the CTE.
+  for (case in list(
+    list(paste0("SELECT ", split, "\n'sv' AS s, k FROM by_name_source"),
+         c("s", "k")),
+    list(paste0("WITH RECURSIVE ", identifier, "(k) USING KEY (k) AS ",
+                "(SELECT 101 UNION SELECT k + 1 FROM ", identifier,
+                " WHERE k < 102) TABLE ", identifier), "k")
+  )) {
+    source <- dplyr::tbl(con, dbplyr::sql(case[[1L]]), vars = case[[2L]])
+    expect_identical(inspect_grouping(
+      source, .grouping = grouping_set(where(is.numeric))
+    )$included, "(k)")
+    expect_identical(last_sent_queries(details = TRUE)$purpose,
+                     c("relation_catalog", "selection_proxy"))
+  }
+})
+
+test_that("PIVOT synonyms and file statements refuse CSV before binding", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  wide <- function(keyword, source) {
+    dplyr::tbl(con, dbplyr::sql(paste(
+      keyword, source, "ON g IN ('a', 'b') USING first(v) GROUP BY k"
+    )), vars = c("k", "a", "b"))
+  }
+  long <- function(keyword, source) {
+    dplyr::tbl(con, dbplyr::sql(paste(
+      keyword, source, "ON v INTO NAME name VALUE value"
+    )), vars = c("k", "g", "name", "value"))
+  }
+  stem <- sub("[.]csv$", "", path)
+  spellings <- c(
+    DBI::dbQuoteString(con, path), DBI::dbQuoteIdentifier(con, path),
+    DBI::dbQuoteString(con, paste0(stem, ".tsv.gz")),
+    DBI::dbQuoteString(con, paste0(stem, ".csv.zst")),
+    DBI::dbQuoteString(con, file.path(dirname(path), "*.csv")),
+    paste0("$path$", path, "$path$")
+  )
+  writeLines(c("k,g,v", "x,a,1", "x,b,2"), path)
+  for (spelling in spellings) {
+    for (input in list(wide("PIVOT_WIDER", spelling),
+                       long("pivot_longer", spelling))) {
+      expect_error(
+        inspect_grouping(input, .grouping = grouping_set(where(is.numeric))),
+        "DuckDB CSV input", fixed = TRUE, class = "marginplyr_error"
+      )
+      expect_duckdb_catalog_only()
+      expect_error(
+        inspect_grouping(input, .by = where(is.numeric)),
+        "DuckDB CSV input", fixed = TRUE, class = "marginplyr_error"
+      )
+      expect_duckdb_catalog_only()
+      expect_error(
+        summarize_with_margins(input, n = dplyr::n(), .grouping = rollup(k)),
+        "DuckDB CSV input", fixed = TRUE, class = "marginplyr_error"
+      )
+      expect_duckdb_catalog_only()
+      expect_error(
+        expand_with_margins(input, .grouping = rollup(k)),
+        "DuckDB CSV input", fixed = TRUE, class = "marginplyr_error"
+      )
+      expect_duckdb_catalog_only()
+    }
+  }
+  # The JSON family is decided by suffix, as it is for PIVOT.
+  json <- DBI::dbQuoteString(con, paste0(stem, ".json"))
+  for (keyword in c("PIVOT", "PIVOT_WIDER")) {
+    expect_error(
+      inspect_grouping(wide(keyword, json), .by = where(is.numeric)),
+      "DuckDB JSON input", fixed = TRUE, class = "marginplyr_error"
+    )
+    expect_duckdb_catalog_only()
+  }
+  # SUMMARIZE, DESCRIBE and SHOW sniff a CSV file to report its columns,
+  # with or without TABLE before it.
+  for (keyword in c("SUMMARIZE", "DESCRIBE", "SHOW", "SUMMARIZE TABLE",
+                    "DESCRIBE TABLE", "SHOW TABLE")) {
+    for (sql in c(
+      paste0("SELECT column_name, column_type FROM (", keyword, " ",
+             DBI::dbQuoteString(con, path), ")"),
+      paste(keyword, DBI::dbQuoteString(con, path))
+    )) {
+      statement <- dplyr::tbl(con, dbplyr::sql(sql),
+                              vars = c("column_name", "column_type"))
+      expect_error(
+        inspect_grouping(statement, .by = where(is.character)),
+        "DuckDB CSV input", fixed = TRUE, class = "marginplyr_error"
+      )
+      expect_duckdb_catalog_only()
+    }
+  }
+
+  # Established schemas keep one typed plan whatever the file holds.
+  DBI::dbWriteTable(con, "pivot_source", data.frame(
+    k = "x", g = c("a", "b"), v = c("1", "2")
+  ))
+  explicit <- paste0(
+    "read_csv(", DBI::dbQuoteString(con, path),
+    ", columns = {'k': 'VARCHAR', 'g': 'VARCHAR', 'v': 'VARCHAR'},",
+    " auto_detect = false, header = true)"
+  )
+  for (value in c("2", "source_tail")) {
+    writeLines(c("k,g,v", "x,a,1", paste0("x,b,", value)), path)
+    for (source in c("pivot_source", explicit)) {
+      for (keyword in c("PIVOT_WIDER", "PIVOT_LONGER")) {
+        input <- if (keyword == "PIVOT_WIDER") wide(keyword, source) else
+          long(keyword, source)
+        expect_identical(inspect_grouping(
+          input, .grouping = grouping_set(where(is.character))
+        )$included, if (keyword == "PIVOT_WIDER") "(k, a, b)" else
+          "(k, g, name, value)")
+        expect_identical(last_sent_queries(details = TRUE)$purpose,
+                         c("relation_catalog", "selection_proxy"))
+      }
+    }
+  }
+  for (keyword in c("SUMMARIZE", "DESCRIBE", "SHOW", "SUMMARIZE TABLE",
+                    "DESCRIBE TABLE", "SHOW TABLE")) {
+    statement <- dplyr::tbl(con, dbplyr::sql(paste0(
+      "SELECT column_name, column_type FROM (", keyword, " pivot_source)"
+    )), vars = c("column_name", "column_type"))
+    expect_identical(inspect_grouping(
+      statement, .grouping = grouping_set(where(is.character))
+    )$included, "(column_name, column_type)")
   }
 })
 
@@ -1042,4 +1371,102 @@ test_that("CSV preflight preserves a metadata translation failure's record", {
   expect_identical(audit$purpose, "selection_proxy")
   expect_identical(audit$sql, NA_character_)
   expect_identical(audit$status, "errored")
+})
+
+test_that("CSV readers need an applied literal schema under auto_detect", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  quoted <- DBI::dbQuoteString(con, path)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  writeLines(c("k", "101"), path)
+  # DuckDB infers types from rows under union_by_name without a schema. A
+  # repeated option is refused whichever occurrence would apply; DuckDB 2.0
+  # rejects the repetition at bind, so only an earlier version stores the view.
+  stores_repeated <- utils::packageVersion("duckdb") < "2.0.0"
+  for (case in list(
+    list(arguments = paste0("[", quoted, "], auto_detect = false,",
+                            " union_by_name = true"), repeated = FALSE),
+    list(arguments = paste0("[", quoted, "], auto_detect := false,",
+                            " union_by_name := true"), repeated = FALSE),
+    list(arguments = paste0(quoted, ", auto_detect = false,",
+                            " auto_detect = true"), repeated = TRUE),
+    list(arguments = paste0(quoted, ", columns = {'k': 'BIGINT'},",
+                            " auto_detect = false, auto_detect = true"),
+         repeated = TRUE),
+    list(arguments = paste0(quoted, ", auto_detect = true,",
+                            " auto_detect = false, header = true,",
+                            " columns = {'k': 'BIGINT'}"), repeated = TRUE)
+  )) {
+    for (reader in c("read_csv", "read_csv_auto")) {
+      direct <- paste0("SELECT * FROM ", reader, "(", case$arguments, ")")
+      view <- paste("CREATE OR REPLACE VIEW stored_reader AS", direct)
+      spellings <- direct
+      if (case$repeated && !stores_repeated) {
+        expect_error(DBI::dbExecute(con, view), "Duplicate named argument",
+                     fixed = TRUE)
+      } else {
+        DBI::dbExecute(con, view)
+        spellings <- c(direct, "TABLE stored_reader")
+      }
+      for (sql in spellings) {
+        input <- dplyr::tbl(con, dbplyr::sql(sql), vars = "k")
+        for (operation in list(
+          function() {
+            inspect_grouping(input, .grouping = grouping_set(where(is.numeric)))
+          },
+          function() inspect_grouping(input, .by = where(is.numeric)),
+          function() {
+            summarize_with_margins(input, n = dplyr::n(), .grouping = rollup(k))
+          },
+          function() expand_with_margins(input, .grouping = rollup(k))
+        )) {
+          expect_error(
+            operation(), "DuckDB CSV input", fixed = TRUE,
+            class = "marginplyr_error"
+          )
+          # Only a stored view needs the catalog to reach its reader.
+          if (startsWith(sql, "TABLE")) {
+            expect_duckdb_catalog_only()
+          } else {
+            expect_equal(nrow(last_sent_queries()), 0L)
+          }
+        }
+      }
+    }
+  }
+
+  # An applied literal schema keeps one plan whatever the file holds.
+  for (arguments in c(
+    paste0("[", quoted, "], auto_detect = false, union_by_name = true,",
+           " header = true, columns = {'k': 'BIGINT'}"),
+    paste0(quoted, ", auto_detect = false, header = true,",
+           " columns = struct_pack(k := 'BIGINT')"),
+    paste0(quoted, ", auto_detect = false, header = true,",
+           " columns = main.struct_pack(k := 'BIGINT')")
+  )) {
+    for (value in c("101", "source_tail")) {
+      writeLines(c("k", value), path)
+      input <- dplyr::tbl(con, dbplyr::sql(paste0(
+        "SELECT * FROM read_csv(", arguments, ")"
+      )), vars = "k")
+      expect_identical(inspect_grouping(
+        input, .grouping = grouping_set(where(is.numeric))
+      )$included, "(k)")
+      expect_identical(last_sent_queries(details = TRUE)$purpose,
+                       c("relation_catalog", "selection_proxy"))
+    }
+  }
+  DBI::dbExecute(con, "CREATE MACRO struct_pack(k) AS k")
+  input <- dplyr::tbl(con, dbplyr::sql(paste0(
+    "SELECT * FROM read_csv(", quoted, ", auto_detect = false, header = true,",
+    " columns = struct_pack(k := 'BIGINT'))"
+  )), vars = "k")
+  expect_error(inspect_grouping(
+    input, .grouping = grouping_set(where(is.numeric))
+  ), "dplyr::collect()", fixed = TRUE, class = "marginplyr_error")
+  expect_duckdb_catalog_only()
 })

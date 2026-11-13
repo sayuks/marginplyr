@@ -132,7 +132,10 @@ render_sent_query_sql <- function(query, entry) {
     withCallingHandlers(
       as.character(dbplyr::sql_render(query)),
       condition = function(cnd) {
-        if (inherits(cnd, "interrupt")) {
+        if (inherits(cnd, "marginplyr_render_refusal")) {
+          # record_sent_query() removes the row and raises the refusal.
+          NULL
+        } else if (inherits(cnd, "interrupt")) {
           record_sent_query_condition(entry, cnd, "render", "propagated")
         } else if (inherits(cnd, "warning")) {
           record_sent_query_condition(entry, cnd, "render", "suppressed")
@@ -156,7 +159,8 @@ render_sent_query_sql <- function(query, entry) {
 
 # Prepares a lazy query or literal row and returns its private update handle.
 # A site needs neither a backend nor an audit check: inactive/non-SQL calls
-# return NULL. A refused render retains a prepared row with missing SQL.
+# return NULL. A refused render retains a prepared row with missing SQL, unless
+# the refusal is a `marginplyr_render_refusal` the call raises.
 record_sent_query <- function(purpose, query) {
   stopifnot(rlang::is_string(purpose))
   scope <- current_sent_query_scope()
@@ -174,9 +178,24 @@ record_sent_query <- function(purpose, query) {
   sql <- if (literal) {
     as.character(query)
   } else {
-    render_sent_query_sql(query, entry)
+    tryCatch(
+      render_sent_query_sql(query, entry),
+      # A statement its own render refuses is never sent, so it takes no row.
+      marginplyr_render_refusal = function(cnd) {
+        record$rows <- record$rows[-entry$index, ]
+        stop(cnd)
+      }
+    )
   }
   stopifnot(is.character(sql), length(sql) == 1L)
+  # A query the render itself sent, such as the DuckDB catalog read, precedes
+  # this one in the order sent.
+  last <- nrow(record$rows)
+  if (last > entry$index) {
+    order <- c(setdiff(seq_len(last), entry$index), entry$index)
+    record$rows <- record$rows[order, ]
+    entry$index <- last
+  }
   record$rows$sql[[entry$index]] <- sql
   invisible(entry)
 }

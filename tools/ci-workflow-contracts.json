@@ -641,6 +641,10 @@
             "run": "Rscript tools/postgres-expansion-input.R"
           },
           {
+            "name": "Verify window-ordered inputs under a typed-missing label",
+            "run": "Rscript tools/postgres-arranged-summary.R"
+          },
+          {
             "uses": "actions/upload-artifact@v7",
             "if": "always()",
             "with": {

@@ -1,18 +1,37 @@
 # SQL lexical tokens for reader metadata guards, using ASCII identifier keys.
-# Quoted values stay opaque and nested comments are discarded.
+# Quoted values stay opaque and nested comments are discarded. A string
+# continued across a line break, which DuckDB concatenates, is one token.
 duckdb_metadata_tokens <- function(sql) {
+  # Whitespace holding a line break, optionally after a line comment.
+  continue <- "(?:[ \\t\\f]*(?:--[^\\r\\n]*)?[\\r\\n])+[[:space:]]*"
+  escaped <- "'(?:[^'\\\\]|\\\\.|'')*'"
+  plain <- "'(?:[^']|'')*'"
   pattern <- paste0(
     "(?s)",
     "(?<comment>/\\*(?:[^*/]|/(?!\\*)|\\*(?!/)|(?&comment))*\\*/)",
     "|--[^\\r\\n]*",
-    "|[eE]'(?:[^'\\\\]|\\\\.|'')*'",
-    "|'(?:[^']|'')*'",
+    "|[eE]", escaped, "(?:", continue, escaped, ")*",
+    "|", plain, "(?:", continue, plain, ")*",
     "|(?<tag>\\$[A-Za-z_0-9]*\\$).*?\\k<tag>",
     '|"(?:[^"]|"")*"',
     "|[[:alpha:]_][[:alnum:]_$]*|:=|[^[:space:]]"
   )
   tokens <- regmatches(sql, gregexpr(pattern, sql, perl = TRUE))[[1L]]
   tokens <- tokens[!startsWith(tokens, "/*") & !startsWith(tokens, "--")]
+  continued <- grepl("^[eE]?'", tokens) & grepl("[\\r\\n]", tokens, perl = TRUE)
+  tokens[continued] <- vapply(tokens[continued], function(token) {
+    prefix <- if (grepl("^[eE]", token)) "e" else ""
+    piece <- paste0("(?s)^", if (nzchar(prefix)) escaped else plain)
+    rest <- substring(token, nchar(prefix) + 1L)
+    contents <- character()
+    while (nzchar(rest)) {
+      end <- attr(regexpr(piece, rest, perl = TRUE), "match.length")
+      contents <- c(contents, substring(rest, 2L, end - 1L))
+      rest <- sub(paste0("^", continue), "", substring(rest, end + 1L),
+                  perl = TRUE)
+    }
+    paste0(prefix, "'", paste(contents, collapse = ""), "'")
+  }, character(1), USE.NAMES = FALSE)
   quoted <- startsWith(tokens, '"')
   tokens[quoted] <- gsub(
     '""', '"', substring(tokens[quoted], 2L, nchar(tokens[quoted]) - 1L),
@@ -45,25 +64,36 @@ duckdb_stored_reader_arg <- function(arg) {
     if (literal %in% c("false", "'false'", "'f'")) value <- "false"
     if (literal %in% c("true", "'true'", "'t'")) value <- "true"
   }
-  if (arg[[1L]] == "columns") {
-    open <- match("(", value)
-    heads <- list("struct_pack", c("main", ".", "struct_pack"),
-                  c("system", ".", "main", ".", "struct_pack"))
-    if (!is.na(open) && utils::tail(value, 1L) == ")" &&
-          any(vapply(heads, identical, logical(1),
-                     value[seq_len(open - 1L)]))) {
-      entries <- value[seq.int(open + 1L, length(value) - 1L)]
-      entries[entries == ":="] <- ":"
-      value <- c("{", entries, "}")
-    }
+  duckdb_reader_schema_arg(c(arg[1:2], value))
+}
+
+# Rewrite a `columns` argument spelled as a struct_pack() call into the struct
+# literal it builds; leave any other argument unchanged. The caller's scan
+# refuses a macro that replaces struct_pack().
+duckdb_reader_schema_arg <- function(arg) {
+  if (length(arg) < 3L || arg[[1L]] != "columns" ||
+        !arg[[2L]] %in% c("=", ":=")) {
+    return(arg)
+  }
+  value <- arg[-c(1L, 2L)]
+  open <- match("(", value)
+  heads <- list("struct_pack", c("main", ".", "struct_pack"),
+                c("system", ".", "main", ".", "struct_pack"))
+  if (!is.na(open) && utils::tail(value, 1L) == ")" &&
+        any(vapply(heads, identical, logical(1),
+                   value[seq_len(open - 1L)]))) {
+    entries <- value[seq.int(open + 1L, length(value) - 1L)]
+    entries[entries == ":="] <- ":"
+    value <- c("{", entries, "}")
   }
   c(arg[1:2], value)
 }
 
-# Count columns in a literal JSON schema; expressions leave the count unknown.
-# DuckDB's JSON BindReader disables type inference for these columns and also
-# resolves automatic record inference when more than one column is supplied.
-duckdb_json_schema_size <- function(arg) {
+# Count columns in a literal CSV or JSON schema; expressions leave the count
+# unknown. DuckDB's JSON BindReader disables type inference for these columns
+# and also resolves automatic record inference when more than one column is
+# supplied.
+duckdb_reader_schema_size <- function(arg) {
   if (length(arg) < 7L || arg[[1L]] != "columns" ||
         !arg[[2L]] %in% c("=", ":=") || arg[[3L]] != "{" ||
         utils::tail(arg, 1L) != "}") {
@@ -93,6 +123,10 @@ duckdb_metadata_relations <- function(tokens, functions = FALSE) {
   ))
   relations <- integer()
   quoted <- attr(tokens, "quoted")
+  # PIVOT_WIDER and PIVOT_LONGER are DuckDB's synonyms for PIVOT and UNPIVOT.
+  sources <- c("from", "pivot", "pivot_wider", "unpivot", "pivot_longer")
+  # SUMMARIZE, DESCRIBE and SHOW bind their source to report its columns.
+  statements <- c("table", "summarize", "describe", "show")
   for (i in seq_along(tokens)) {
     token <- tokens[[i]]
     n <- length(frames)
@@ -112,6 +146,11 @@ duckdb_metadata_relations <- function(tokens, functions = FALSE) {
     }
     # ONLY/LATERAL prefix a source without supplying the relation itself.
     if (frame$expect && token %in% c("only", "lateral")) next
+    # TABLE after SUMMARIZE, DESCRIBE or SHOW names the same source as
+    # without it.
+    if (frame$expect && token == "table" && i > 1L &&
+          tokens[[i - 1L]] %in% c("summarize", "describe", "show") &&
+          !quoted[[i - 1L]]) next
     if (token == "(") {
       frames[[n]]$expect <- FALSE
       frames[[n + 1L]] <- list(
@@ -126,9 +165,8 @@ duckdb_metadata_relations <- function(tokens, functions = FALSE) {
     if (token == "select" || (token %in% c("with", "values") && frame$start)) {
       frame$query <- TRUE
       frame$table <- frame$expect <- FALSE
-    } else if ((token %in% c("from", "pivot", "unpivot") &&
-                  (frame$query || frame$start)) ||
-                 (token == "table" && frame$start) ||
+    } else if ((token %in% sources && (frame$query || frame$start)) ||
+                 (token %in% statements && frame$start) ||
                  (token == "join" && frame$table)) {
       frame$table <- frame$expect <- TRUE
     } else if (token %in% c(
@@ -144,8 +182,9 @@ duckdb_metadata_relations <- function(tokens, functions = FALSE) {
       relations <- c(relations, i)
       frame$expect <- FALSE
     }
+    # A set operation's quantifier and BY NAME precede its next operand.
     frame$start <- token %in% c("union", "intersect", "except") ||
-      (frame$start && token %in% c("all", "distinct"))
+      (frame$start && token %in% c("all", "distinct", "by", "name"))
     frames[[n]] <- frame
   }
   positions <- relations
@@ -164,7 +203,8 @@ duckdb_metadata_relations <- function(tokens, functions = FALSE) {
 }
 
 # Find each CTE's visible interval within its enclosing SQL scope. A normal
-# CTE becomes visible after its definition; RECURSIVE admits self-reference.
+# CTE becomes visible after its definition; under RECURSIVE it is also
+# visible in its recursive term, after the body's top-level UNION.
 # Retain token positions of main-query starts and CTE column declarations.
 duckdb_metadata_ctes <- function(tokens) {
   quoted <- attr(tokens, "quoted")
@@ -194,6 +234,11 @@ duckdb_metadata_ctes <- function(tokens) {
         column_declarations <- c(column_declarations, position - 1L)
         position <- end_of(position) + 1L
       }
+      # A recursive CTE's USING KEY column list precedes AS.
+      if (position + 2L < scope_end && !any(quoted[position + 0:2]) &&
+            identical(tokens[position + 0:2], c("using", "key", "("))) {
+        position <- end_of(position + 2L) + 1L
+      }
       if (position >= scope_end || tokens[[position]] != "as" ||
             quoted[[position]]) break
       position <- position + 1L
@@ -206,9 +251,11 @@ duckdb_metadata_ctes <- function(tokens) {
       if (position >= scope_end || tokens[[position]] != "(" ||
             quoted[[position]]) break
       end <- end_of(position)
+      unions <- which(tokens == "union" & !quoted & depth == depth[[position]])
+      unions <- unions[unions > position & unions < end]
+      start_at <- if (recursive && length(unions)) unions[[1L]] else end + 1L
       bindings[[length(bindings) + 1L]] <- list(
-        name = name, start = if (recursive) position else end + 1L,
-        end = scope_end - 1L
+        name = name, start = start_at, end = scope_end - 1L
       )
       position <- end + 1L
       if (position >= scope_end || tokens[[position]] != "," ||
@@ -294,7 +341,8 @@ duckdb_metadata_catalog <- function(con) {
     "system.main.current_database(),",
     "system.main.current_setting('search_path')",
     "FROM system.main.duckdb_views() UNION ALL",
-    "SELECT database_name, schema_name, function_name, function_type, NULL,",
+    "SELECT database_name, schema_name, function_name, function_type,",
+    "macro_definition,",
     "system.main.current_database(),",
     "system.main.current_setting('search_path')",
     "FROM system.main.duckdb_functions()",
@@ -340,7 +388,13 @@ duckdb_metadata_catalog_match <- function(parts, catalog, namespace = NULL,
   }) else list()
   view_paths <- if (!is.null(namespace) &&
                       !namespace[[1L]] %in% c("temp", "system")) {
-    list(sql_ascii_lower(namespace), c(sql_ascii_lower(namespace[[1L]]), ""))
+    view_db <- sql_ascii_lower(namespace[[1L]])
+    # Binding a stored view, DuckDB 1.5 and 2.0 resolve a function or table
+    # macro in the view's catalog's main schema after the view's own schema;
+    # a table or view is not resolved there.
+    c(list(sql_ascii_lower(namespace)),
+      if (any(kinds %in% c("macro", "table_macro"))) list(c(view_db, "main")),
+      list(c(view_db, "")))
   } else {
     list()
   }
@@ -372,6 +426,134 @@ duckdb_metadata_catalog_match <- function(parts, catalog, namespace = NULL,
   }
   integer()
 }
+
+# Which rows of a duckdb_metadata_catalog() snapshot are macros or table macros
+# a caller defined, rather than DuckDB's own in database `system`.
+duckdb_caller_macros <- function(catalog) {
+  catalog$kind %in% c("macro", "table_macro") &
+    !catalog$database_name %in% "system"
+}
+
+# Whether catalog row `index`, a call's first macro match, expands without
+# reaching source work: one of DuckDB's own scalar macros while the snapshot
+# holds no caller macro its body could resolve to (ADR 0020). Its arguments
+# are authored text the caller's scan still checks.
+duckdb_inert_macro <- function(index, catalog) {
+  catalog$kind[[index]] == "macro" &&
+    catalog$database_name[[index]] %in% "system" &&
+    !any(duckdb_caller_macros(catalog))
+}
+
+# DuckDB binds an unresolved bare column reference with one of these names
+# as a call to the mapped function, which a caller macro can replace.
+duckdb_value_functions <- c(
+  current_catalog = "current_catalog", current_date = "current_date",
+  current_role = "current_role", current_schema = "current_schema",
+  current_user = "current_user", session_user = "session_user",
+  user = "user", current_time = "get_current_time",
+  current_timestamp = "get_current_timestamp",
+  localtime = "current_localtime", localtimestamp = "current_localtimestamp"
+)
+
+# The name parts that the call head at token `head`, whose `(` follows it, or
+# a bare value-function name there can resolve to as a function.
+duckdb_head_candidates <- function(tokens, head) {
+  quoted <- attr(tokens, "quoted")
+  name <- if (quoted[[head]]) tokens[[head]] else
+    duckdb_reader_relation_path(tokens[[head]])
+  if (duckdb_call_head(tokens, head)) {
+    first <- head
+    while (first > 2L && tokens[[first - 1L]] == "." &&
+             !quoted[[first - 1L]]) first <- first - 2L
+    # DuckDB binds `x.m()` as `m(x)` when `x` names no catalog or schema, so
+    # the bare name is resolved as well as the qualified one.
+    list(duckdb_relation_parts(tokens, first, functions = TRUE), name)
+  } else if (name %in% names(duckdb_value_functions)) {
+    list(duckdb_value_functions[[name]])
+  }
+}
+
+# Whether token `head` is followed by an unquoted `(`.
+duckdb_call_head <- function(tokens, head) {
+  head < length(tokens) && tokens[[head + 1L]] == "(" &&
+    !attr(tokens, "quoted")[[head + 1L]]
+}
+
+# Whether the macro at catalog row `index` may reach source work: TRUE for a
+# caller's macro or any table macro, whose body this does not read, and for one
+# of DuckDB's own scalar macros whose stored definition calls or names a
+# function that reaches one of those. A system macro's free names resolve in
+# the caller's search path and, inside a stored view, the view's `namespace`;
+# every overload sharing the row's name is checked.
+duckdb_macro_reaches_caller <- function(index, catalog, namespace = NULL,
+                                        seen = integer()) {
+  if (duckdb_caller_macros(catalog)[[index]] ||
+        catalog$kind[[index]] != "macro") {
+    return(TRUE)
+  }
+  overloads <- which(
+    catalog$database_name %in% catalog$database_name[[index]] &
+      catalog$schema_name %in% catalog$schema_name[[index]] &
+      catalog$relation_name %in% catalog$relation_name[[index]] &
+      catalog$kind %in% "macro"
+  )
+  seen <- c(seen, overloads)
+  for (overload in overloads) {
+    body <- duckdb_metadata_tokens(catalog$definition[[overload]])
+    calls <- Filter(function(i) duckdb_call_head(body, i), seq_along(body))
+    for (head in c(calls, duckdb_value_function_heads(body))) {
+      for (parts in duckdb_head_candidates(body, head)) {
+        macro <- duckdb_metadata_catalog_match(
+          parts, catalog, namespace, kinds = c("macro", "table_macro")
+        )
+        if (length(macro) && !macro %in% seen &&
+              duckdb_macro_reaches_caller(macro, catalog, namespace, seen)) {
+          return(TRUE)
+        }
+      }
+    }
+  }
+  FALSE
+}
+
+# Whether the call head at token `head` can bind a macro that is not inert,
+# or a bare value-function name there can reach a caller macro, given this
+# operation's catalog snapshot and the stored view `namespace` if any. A
+# column of that name in scope binds instead, which this scan cannot see.
+duckdb_head_reaches_macro <- function(tokens, head, catalog, namespace = NULL) {
+  call <- duckdb_call_head(tokens, head)
+  any(vapply(duckdb_head_candidates(tokens, head), function(parts) {
+    macro <- duckdb_metadata_catalog_match(
+      parts, catalog, namespace, kinds = c("macro", "table_macro")
+    )
+    length(macro) > 0L && if (call) {
+      !duckdb_inert_macro(macro, catalog)
+    } else {
+      duckdb_macro_reaches_caller(macro, catalog, namespace)
+    }
+  }, logical(1)))
+}
+
+# Positions of bare value-function names that DuckDB can bind as calls: not
+# followed by `(`, not qualifying or qualified by `.`, and not an AS alias.
+duckdb_value_function_heads <- function(tokens) {
+  quoted <- attr(tokens, "quoted")
+  unquoted <- function(offset, token) {
+    at <- seq_along(tokens) + offset
+    inside <- at >= 1L & at <= length(tokens)
+    hit <- logical(length(tokens))
+    hit[inside] <- tokens[at[inside]] == token & !quoted[at[inside]]
+    hit
+  }
+  which(tokens %in% names(duckdb_value_functions) &
+          !unquoted(1L, "(") & !unquoted(1L, ".") & !unquoted(-1L, ".") &
+          !unquoted(-1L, "as"))
+}
+
+# Table functions that bind SQL text passed as a value, refused by name in
+# authored SQL and in stored views alike (ADR 0020). Other table functions are
+# admitted; macros and inferring readers are refused by their own checks.
+duckdb_opaque_table_functions <- c("query", "query_table")
 
 # Refuse view work whose safety cannot be established from captured definitions.
 abort_duckdb_view_metadata <- function() {
@@ -454,15 +636,9 @@ validate_duckdb_authored_calls <- function(tokens, catalog) {
   implicit_alias <- heads > 1L & tokens[previous] == ")" & !quoted[previous]
   heads <- heads[!alias & !materialized & !modifier &
                    !implicit_alias & !heads %in% declarations]
-  for (head in heads) {
-    while (head > 2L && tokens[[head - 1L]] == "." &&
-             !quoted[[head - 1L]]) head <- head - 2L
-    parts <- duckdb_relation_parts(tokens, head, functions = TRUE)
-    macro <- duckdb_metadata_catalog_match(
-      parts, catalog(), kinds = c("macro", "table_macro")
-    )
-    if (length(macro) ||
-          utils::tail(parts, 1L) %in% c("query", "query_table")) {
+  for (head in c(heads, duckdb_value_function_heads(tokens))) {
+    if (duckdb_head_reaches_macro(tokens, head, catalog()) ||
+          tokens[[head]] %in% duckdb_opaque_table_functions) {
       abort_duckdb_call_metadata()
     }
   }
@@ -504,14 +680,10 @@ validate_duckdb_view_metadata <- function(index, catalog, seen) {
   syntax <- heads > 1L & body[previous] == "as" &
     !attr(body, "quoted")[previous]
   heads <- heads[!syntax & !heads %in% declarations]
-  for (head in heads) {
-    while (head > 2L && body[[head - 1L]] == "." &&
-             !attr(body, "quoted")[[head - 1L]]) head <- head - 2L
-    parts <- duckdb_relation_parts(body, head, functions = TRUE)
-    macro <- duckdb_metadata_catalog_match(
-      parts, catalog(), namespace, kinds = c("macro", "table_macro")
-    )
-    if (length(macro)) abort_duckdb_view_metadata()
+  for (head in c(heads, duckdb_value_function_heads(body))) {
+    if (duckdb_head_reaches_macro(body, head, catalog(), namespace)) {
+      abort_duckdb_view_metadata()
+    }
   }
   validate_duckdb_csv_metadata(
     body, catalog, namespace = namespace, seen = c(seen, index)
@@ -567,11 +739,9 @@ validate_duckdb_csv_metadata <- function(
     tokens, functions = !is.null(namespace)
   )
   relation_paths <- vapply(relations, paste, character(1), collapse = ".")
-  readers <- c("read_csv", "read_csv_auto", "read_json", "read_json_auto",
-               "read_ndjson", "read_ndjson_auto")
   for (i in seq_along(relations)) {
     if (isTRUE(attr(relations[[i]], "function"))) {
-      if (!utils::tail(relations[[i]], 1L) %in% readers) {
+      if (utils::tail(relations[[i]], 1L) %in% duckdb_opaque_table_functions) {
         abort_duckdb_view_metadata()
       }
       relation_paths[[i]] <- ""
@@ -614,9 +784,17 @@ validate_duckdb_csv_metadata <- function(
       arguments <- lapply(seq_along(starts), function(i) {
         rest[seq.int(starts[[i]], ends[[i]])]
       })
-      if (!is.null(namespace)) {
-        arguments <- lapply(arguments, duckdb_stored_reader_arg)
-      }
+      arguments <- lapply(arguments, if (is.null(namespace)) {
+        duckdb_reader_schema_arg
+      } else {
+        duckdb_stored_reader_arg
+      })
+      # A repeated named option is refused: DuckDB before 2.0 applies its last
+      # occurrence and 2.0 rejects it at bind.
+      option_names <- vapply(arguments, function(arg) {
+        if (length(arg) >= 3L && arg[[2L]] %in% c("=", ":=")) arg[[1L]] else ""
+      }, character(1))
+      repeated <- anyDuplicated(option_names[nzchar(option_names)]) > 0L
       disabled <- vapply(arguments, function(arg) {
         identical(arg, c("auto_detect", "=", "false")) ||
           identical(arg, c("auto_detect", ":=", "false"))
@@ -626,15 +804,24 @@ validate_duckdb_csv_metadata <- function(
           arg[[2L]] %in% c("=", ":=") &&
           arg[[3L]] %in% c("true", "false", "'true'", "'false'")
       }, logical(1))
-      schema_size <- max(vapply(arguments, duckdb_json_schema_size, integer(1)))
-      # JSON record inference samples objects even with one established type.
+      schema_size <- max(vapply(
+        arguments, duckdb_reader_schema_size, integer(1)
+      ))
+      unified <- vapply(arguments, function(arg) {
+        length(arg) >= 3L && identical(arg[[1L]], "union_by_name") &&
+          arg[[2L]] %in% c("=", ":=") &&
+          !(length(arg) == 3L && arg[[3L]] %in% c("false", "'false'"))
+      }, logical(1))
+      # Without a schema, union_by_name infers types from rows even when
+      # auto_detect is false. JSON record inference samples objects even with
+      # one established type.
       safe <- if (family == "JSON") {
-        (any(disabled) || schema_size > 0L) &&
+        (schema_size > 0L || (any(disabled) && !any(unified))) &&
           (any(records) || schema_size > 1L)
       } else {
-        any(disabled)
+        schema_size > 0L && any(disabled)
       }
-      if (safe) {
+      if (safe && !repeated) {
         next
       }
     }
@@ -647,7 +834,8 @@ validate_duckdb_csv_metadata <- function(
 # Check SQL fragments and table paths throughout a captured lazy query,
 # including both join inputs. Leave translation to the owned audit/collect
 # paths so preflight cannot duplicate translation conditions or change their
-# Sent-query outcomes.
+# Sent-query outcomes; sql_render.marginplyr_duckdb_selection() checks the
+# rendered statement there.
 validate_duckdb_csv_query <- function(query, catalog) {
   if (rlang::is_missing(query)) {
     return(invisible(NULL))
