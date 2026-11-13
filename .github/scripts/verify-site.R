@@ -284,7 +284,6 @@ markers <- list(
     "For several measures, use two ordered",
     "Compare a summary with the whole",
     "original pre-margin",
-    "funion(funion(",
     "Total",
     # The guide's rejected-call chunks, by the diagnostics they render. Direct
     # tests own the refusal guarantees; these markers prove the calls still run
