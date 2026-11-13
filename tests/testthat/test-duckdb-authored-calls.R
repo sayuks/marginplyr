@@ -512,14 +512,14 @@ test_that("value-function names reaching no caller macro stay admitted", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
-  names <- c("user", "current_user", "session_user", "current_role",
+  columns <- c("user", "current_user", "session_user", "current_role",
              "current_catalog", "current_schema")
   frame <- data.frame(v = c(1L, 2L))
-  frame[names] <- "a"
+  frame[columns] <- "a"
   DBI::dbWriteTable(con, "t", frame)
   DBI::dbExecute(con, "CREATE MACRO add_one(x) AS x + 1")
   t <- dplyr::tbl(con, "t")
-  for (name in names) {
+  for (name in columns) {
     quoted <- DBI::dbQuoteIdentifier(con, name)
     sql <- paste0("SELECT ", quoted, ", v FROM t")
     view <- paste0("view_", name)

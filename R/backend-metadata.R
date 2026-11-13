@@ -507,9 +507,8 @@ dtplyr_selection_proxy <- function(.data, env = .data[["env"]]) {
 # PIVOT columns. Qualify the built-in so a caller's macro cannot replace it.
 # Keep rendering within the original audit and collect paths (ADR 0027).
 # The rendered statement is checked against the catalog reader the caller
-# attached, since only the render shows what a translated or passed-through
-# call becomes (ADR 0020). Its refusal is classed so that the audit render
-# raises it rather than recording it, and the statement is never sent.
+# attached (ADR 0020). Its refusal is classed so that the audit render raises
+# it rather than recording it, and the statement is never sent.
 #' @exportS3Method dbplyr::sql_render
 #' @noRd
 sql_render.marginplyr_duckdb_selection <- function(query, con = NULL, ...) {

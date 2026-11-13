@@ -93,7 +93,7 @@ duckdb_reader_schema_arg <- function(arg) {
 # unknown. DuckDB's JSON BindReader disables type inference for these columns
 # and also resolves automatic record inference when more than one column is
 # supplied.
-duckdb_json_schema_size <- function(arg) {
+duckdb_reader_schema_size <- function(arg) {
   if (length(arg) < 7L || arg[[1L]] != "columns" ||
         !arg[[2L]] %in% c("=", ":=") || arg[[3L]] != "{" ||
         utils::tail(arg, 1L) != "}") {
@@ -771,11 +771,11 @@ validate_duckdb_csv_metadata <- function(
         duckdb_stored_reader_arg
       })
       # DuckDB applies the last occurrence of a repeated named option.
-      names <- vapply(arguments, function(arg) {
+      option_names <- vapply(arguments, function(arg) {
         if (length(arg) >= 3L && arg[[2L]] %in% c("=", ":=")) arg[[1L]] else ""
       }, character(1))
-      arguments <- arguments[!nzchar(names) |
-                               !duplicated(names, fromLast = TRUE)]
+      arguments <- arguments[!nzchar(option_names) |
+                               !duplicated(option_names, fromLast = TRUE)]
       disabled <- vapply(arguments, function(arg) {
         identical(arg, c("auto_detect", "=", "false")) ||
           identical(arg, c("auto_detect", ":=", "false"))
@@ -785,7 +785,9 @@ validate_duckdb_csv_metadata <- function(
           arg[[2L]] %in% c("=", ":=") &&
           arg[[3L]] %in% c("true", "false", "'true'", "'false'")
       }, logical(1))
-      schema_size <- max(vapply(arguments, duckdb_json_schema_size, integer(1)))
+      schema_size <- max(vapply(
+        arguments, duckdb_reader_schema_size, integer(1)
+      ))
       unified <- vapply(arguments, function(arg) {
         length(arg) >= 3L && identical(arg[[1L]], "union_by_name") &&
           arg[[2L]] %in% c("=", ":=") &&

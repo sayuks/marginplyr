@@ -262,11 +262,17 @@ sql_render.marginplyr_sqlite_typed_result <- function(query, ...,
   dbplyr::sql(paste0(sql, "\nORDER BY ", paste(quoted, collapse = ", ")))
 }
 
-# Answer the SQL options dbplyr's deprecated `cte` argument of `verb` stands
-# for, with dbplyr 2.6.0's deprecation warning. The caller has refused `cte`
-# alongside `sql_options`, as dbplyr's own method does.
-sqlite_deprecated_cte_options <- function(verb, cte,
+# Answer the SQL options a `verb` method's `sql_options` and dbplyr's
+# deprecated `cte` argument stand for, refusing both together as dbplyr's own
+# method does. A supplied `cte` carries dbplyr 2.6.0's deprecation warning.
+# The caller passes its own two formals, either possibly missing.
+sqlite_deprecated_cte_options <- function(verb, sql_options, cte,
+                                          frame = rlang::caller_env(),
                                           user_env = rlang::caller_env(2)) {
+  rlang::check_exclusive(sql_options, cte, .require = FALSE, .frame = frame)
+  if (missing(cte)) {
+    return(sql_options)
+  }
   lifecycle::deprecate_warn(
     "2.4.0", paste0(verb, "(cte)"),
     with = I(paste0(verb, "(sql_options = sql_options(cte = TRUE))")),
@@ -287,10 +293,7 @@ collect.marginplyr_sqlite_typed_result <- function(x, ..., n = Inf,
   if (!sqlite_typed_result_direct(x)) {
     return(NextMethod())
   }
-  rlang::check_exclusive(sql_options, cte, .require = FALSE)
-  if (!missing(cte)) {
-    sql_options <- sqlite_deprecated_cte_options("collect", cte)
-  }
+  sql_options <- sqlite_deprecated_cte_options("collect", sql_options, cte)
   boolean_output <- length(attr(x, "marginplyr_boolean_aliases")) > 0L
   anchor_only <- isTRUE(attr(x, "marginplyr_anchored_source")) &&
     length(attr(x, "marginplyr_order_keys")) == 0L && !boolean_output
@@ -696,10 +699,7 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
   if (!direct && length(sqlite_boolean_columns(public)) == 0L) {
     return(NextMethod())
   }
-  rlang::check_exclusive(sql_options, cte, .require = FALSE)
-  if (!missing(cte)) {
-    sql_options <- sqlite_deprecated_cte_options("compute", cte)
-  }
+  sql_options <- sqlite_deprecated_cte_options("compute", sql_options, cte)
   if (direct) {
     public_query <- attr(x, "marginplyr_public_query")
     anchor <- attr(x, "marginplyr_public_anchor")
