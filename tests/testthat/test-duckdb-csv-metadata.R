@@ -1422,7 +1422,11 @@ test_that("CSV readers need an applied literal schema under auto_detect", {
     paste0("[", quoted, "], auto_detect = false, union_by_name = true,",
            " header = true, columns = {'k': 'BIGINT'}"),
     paste0(quoted, ", auto_detect = true, auto_detect = false,",
-           " header = true, columns = {'k': 'BIGINT'}")
+           " header = true, columns = {'k': 'BIGINT'}"),
+    paste0(quoted, ", auto_detect = false, header = true,",
+           " columns = struct_pack(k := 'BIGINT')"),
+    paste0(quoted, ", auto_detect = false, header = true,",
+           " columns = main.struct_pack(k := 'BIGINT')")
   )) {
     for (value in c("101", "source_tail")) {
       writeLines(c("k", value), path)
@@ -1436,4 +1440,9 @@ test_that("CSV readers need an applied literal schema under auto_detect", {
                        c("relation_catalog", "selection_proxy"))
     }
   }
+  DBI::dbExecute(con, "CREATE MACRO struct_pack(k) AS k")
+  expect_error(inspect_grouping(
+    input, .grouping = grouping_set(where(is.numeric))
+  ), "dplyr::collect()", fixed = TRUE, class = "marginplyr_error")
+  expect_duckdb_catalog_only()
 })

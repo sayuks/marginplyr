@@ -64,17 +64,27 @@ duckdb_stored_reader_arg <- function(arg) {
     if (literal %in% c("false", "'false'", "'f'")) value <- "false"
     if (literal %in% c("true", "'true'", "'t'")) value <- "true"
   }
-  if (arg[[1L]] == "columns") {
-    open <- match("(", value)
-    heads <- list("struct_pack", c("main", ".", "struct_pack"),
-                  c("system", ".", "main", ".", "struct_pack"))
-    if (!is.na(open) && utils::tail(value, 1L) == ")" &&
-          any(vapply(heads, identical, logical(1),
-                     value[seq_len(open - 1L)]))) {
-      entries <- value[seq.int(open + 1L, length(value) - 1L)]
-      entries[entries == ":="] <- ":"
-      value <- c("{", entries, "}")
-    }
+  duckdb_reader_schema_arg(c(arg[1:2], value))
+}
+
+# Rewrite a `columns` argument spelled as a struct_pack() call into the struct
+# literal it builds; leave any other argument unchanged. The caller's scan
+# refuses a macro that replaces struct_pack().
+duckdb_reader_schema_arg <- function(arg) {
+  if (length(arg) < 3L || arg[[1L]] != "columns" ||
+        !arg[[2L]] %in% c("=", ":=")) {
+    return(arg)
+  }
+  value <- arg[-c(1L, 2L)]
+  open <- match("(", value)
+  heads <- list("struct_pack", c("main", ".", "struct_pack"),
+                c("system", ".", "main", ".", "struct_pack"))
+  if (!is.na(open) && utils::tail(value, 1L) == ")" &&
+        any(vapply(heads, identical, logical(1),
+                   value[seq_len(open - 1L)]))) {
+    entries <- value[seq.int(open + 1L, length(value) - 1L)]
+    entries[entries == ":="] <- ":"
+    value <- c("{", entries, "}")
   }
   c(arg[1:2], value)
 }
@@ -751,9 +761,11 @@ validate_duckdb_csv_metadata <- function(
       arguments <- lapply(seq_along(starts), function(i) {
         rest[seq.int(starts[[i]], ends[[i]])]
       })
-      if (!is.null(namespace)) {
-        arguments <- lapply(arguments, duckdb_stored_reader_arg)
-      }
+      arguments <- lapply(arguments, if (is.null(namespace)) {
+        duckdb_reader_schema_arg
+      } else {
+        duckdb_stored_reader_arg
+      })
       # DuckDB applies the last occurrence of a repeated named option.
       names <- vapply(arguments, function(arg) {
         if (length(arg) >= 3L && arg[[2L]] %in% c("=", ":=")) arg[[1L]] else ""
