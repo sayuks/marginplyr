@@ -2282,9 +2282,18 @@ rewrite_local_across_selection <- function(expr, group_vars,
   selection <- if (is.null(per_group)) {
     local_summary_selection_expr(parsed$cols, group_vars, forbidden_names)
   } else {
+    unpack <- new.env(parent = emptyenv())
+    unpack$value <- per_group
+    if (!isTRUE(per_group)) {
+      # The selection reads the value dplyr computes rather than evaluating
+      # the caller's `.unpack` a second time.
+      call_args[[parsed$unpack_index]] <- rlang::call2(
+        record_forwarded_unpack, per_group, unpack
+      )
+    }
     rlang::call2(tidyselect::all_of, rlang::call2(
       local_forwarded_cols_selection,
-      parsed$cols, per_group, rlang::sym(".env"), group_vars, forbidden_names
+      parsed$cols, unpack, rlang::sym(".env"), group_vars, forbidden_names
     ))
   }
   call_args <- replace_across_cols(
@@ -2314,14 +2323,21 @@ forwarded_cols_per_group <- function(expr, parsed) {
   unpack
 }
 
-# Resolves a forwarded `.cols` in dplyr's selection scope. Both of dplyr's
-# paths evaluate `.unpack` before `.cols`, so reading `unpack` here forces no
-# promise dplyr has not already forced. On the per-group path `across()`
-# captures the forwarded promise, so it is captured here too; on expansion the
-# `..n` symbol itself is the selection, as in `dplyr::across()`'s expansion.
+# Returns `value`, the `.unpack` dplyr computed, after storing it in `store`.
+record_forwarded_unpack <- function(value, store) {
+  store$value <- value
+  value
+}
+
+# Resolves a forwarded `.cols` in dplyr's selection scope. `unpack` holds the
+# call's `.unpack` value: fixed by its spelling, or stored by
+# `record_forwarded_unpack()`, since both of dplyr's paths evaluate `.unpack`
+# before `.cols`. On the per-group path `across()` captures the forwarded
+# promise, so it is captured here too; on expansion the `..n` symbol itself is
+# the selection, as in `dplyr::across()`'s expansion.
 local_forwarded_cols_selection <- function(selection, unpack, env, group_vars,
                                            forbidden_names) {
-  if (isFALSE(unpack)) {
+  if (isFALSE(unpack$value)) {
     return(local_summary_selection(
       substitute(selection), env, group_vars, forbidden_names
     ))

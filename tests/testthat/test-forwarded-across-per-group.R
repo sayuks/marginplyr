@@ -178,3 +178,58 @@ test_that("forwarded if_any() and if_all() agree with dplyr per group", {
     as.data.frame(native(data, c(v, w), above))
   )
 })
+
+# The wrapper forwards only the selection, so `.unpack` is a call dplyr
+# evaluates once to decide on expansion and again in each group.
+test_that("a computed `.unpack` is evaluated as often as dplyr evaluates it", {
+  data <- forwarded_across_fixture()
+  calls <- 0L
+  value <- TRUE
+  unpack <- function() {
+    calls <<- calls + 1L
+    value
+  }
+  wrappers <- list(
+    native = function(data, ...) {
+      dplyr::summarise(
+        data, dplyr::across(..1, forwarded_across_range, .unpack = unpack()),
+        .by = "g"
+      )
+    },
+    native_total = function(data, ...) {
+      dplyr::summarise(
+        data, dplyr::across(..1, forwarded_across_range, .unpack = unpack())
+      )
+    },
+    by = function(data, ...) {
+      summarize_with_margins(
+        data, dplyr::across(..1, forwarded_across_range, .unpack = unpack()),
+        .by = "g"
+      )
+    },
+    rollup = function(data, ...) {
+      summarise_with_margins(
+        data, dplyr::across(..1, forwarded_across_range, .unpack = unpack()),
+        .grouping = rollup("g")
+      )
+    }
+  )
+  count <- function(wrapper, data = forwarded_across_fixture()) {
+    calls <<- 0L
+    try(wrapper(data, c(v, w)), silent = TRUE)
+    calls
+  }
+  for (value in c(TRUE, FALSE)) {
+    info <- paste(".unpack evaluating to", value)
+    expect_identical(count(wrappers$by), count(wrappers$native), info = info)
+    # A FALSE `.unpack` refuses the forwarded `..1` in the first branch.
+    total <- if (value) {
+      count(wrappers$native_total, dplyr::select(data, -"g"))
+    } else {
+      0L
+    }
+    expect_identical(
+      count(wrappers$rollup), count(wrappers$native) + total, info = info
+    )
+  }
+})
