@@ -610,6 +610,10 @@ order_margin_result <- function(operation, result, execution) {
       is.complex(column) && !is.array(column)
     }
   )
+  # dbplyr's `arrange()` appends a recorded window ordering to the terms it
+  # is given, and a native summary can still hold the input's, over a column
+  # the result lacks (#1641). Cleared here, the `ORDER BY` holds the key alone.
+  result <- forget_margin_window_order(result, backend = operation$backend)
   result <- margin_safe_column_reads(
     result, c(key_id, operation$plan$by, operation$plan$dimensions),
     function(data, safe_name) {
