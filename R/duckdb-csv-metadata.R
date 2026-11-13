@@ -783,7 +783,8 @@ validate_duckdb_csv_metadata <- function(
       } else {
         duckdb_stored_reader_arg
       })
-      # DuckDB applies the last occurrence of a repeated named option.
+      # DuckDB before 2.0 applies the last occurrence of a repeated named
+      # option; 2.0 rejects the repetition at bind.
       option_names <- vapply(arguments, function(arg) {
         if (length(arg) >= 3L && arg[[2L]] %in% c("=", ":=")) arg[[1L]] else ""
       }, character(1))

@@ -512,7 +512,8 @@ test_that("a system macro's body resolves in a stored view's schema", {
   old <- options(marginplyr.audit_sql = TRUE)
   on.exit(options(old), add = TRUE)
   expect_error(inspect_grouping(
-    dplyr::tbl(con, I("s.vw2")), .grouping = grouping_set(where(is.numeric))
+    dplyr::tbl(con, DBI::Id(schema = "s", table = "vw2")),
+    .grouping = grouping_set(where(is.numeric))
   ), "DuckDB view", fixed = TRUE, class = "marginplyr_error")
   expect_duckdb_catalog_only()
 })

@@ -1383,21 +1383,32 @@ test_that("CSV readers need an applied literal schema under auto_detect", {
   old <- options(marginplyr.audit_sql = TRUE)
   on.exit(options(old), add = TRUE)
   writeLines(c("k", "101"), path)
-  # DuckDB infers types from rows under union_by_name without a schema, and
-  # applies the last occurrence of a repeated option.
-  for (arguments in c(
-    paste0("[", quoted, "], auto_detect = false, union_by_name = true"),
-    paste0("[", quoted, "], auto_detect := false, union_by_name := true"),
-    paste0(quoted, ", auto_detect = false, auto_detect = true"),
-    paste0(quoted, ", columns = {'k': 'BIGINT'}, auto_detect = false,",
-           " auto_detect = true")
+  # DuckDB infers types from rows under union_by_name without a schema. Before
+  # 2.0 it applies the last occurrence of a repeated option; 2.0 rejects the
+  # repetition at bind, so only an earlier version can store such a view.
+  applies_last <- utils::packageVersion("duckdb") < "2.0.0"
+  for (arguments in list(
+    list(paste0("[", quoted, "], auto_detect = false, union_by_name = true"),
+         repeated = FALSE),
+    list(paste0("[", quoted, "], auto_detect := false, union_by_name := true"),
+         repeated = FALSE),
+    list(paste0(quoted, ", auto_detect = false, auto_detect = true"),
+         repeated = TRUE),
+    list(paste0(quoted, ", columns = {'k': 'BIGINT'}, auto_detect = false,",
+                " auto_detect = true"), repeated = TRUE)
   )) {
     for (reader in c("read_csv", "read_csv_auto")) {
-      call <- paste0(reader, "(", arguments, ")")
-      DBI::dbExecute(con, paste(
-        "CREATE OR REPLACE VIEW stored_reader AS SELECT * FROM", call
-      ))
-      for (sql in c(paste("SELECT * FROM", call), "TABLE stored_reader")) {
+      call <- paste0(reader, "(", arguments[[1L]], ")")
+      sqls <- paste("SELECT * FROM", call)
+      view <- paste("CREATE OR REPLACE VIEW stored_reader AS", sqls)
+      if (arguments$repeated && !applies_last) {
+        expect_error(DBI::dbExecute(con, view), "Duplicate named argument",
+                     fixed = TRUE)
+      } else {
+        DBI::dbExecute(con, view)
+        sqls <- c(sqls, "TABLE stored_reader")
+      }
+      for (sql in sqls) {
         input <- dplyr::tbl(con, dbplyr::sql(sql), vars = "k")
         for (operation in list(
           function() {
@@ -1424,25 +1435,31 @@ test_that("CSV readers need an applied literal schema under auto_detect", {
     }
   }
 
-  # An applied literal schema keeps one plan whatever the file holds.
-  for (arguments in c(
-    paste0("[", quoted, "], auto_detect = false, union_by_name = true,",
-           " header = true, columns = {'k': 'BIGINT'}"),
-    paste0(quoted, ", auto_detect = true, auto_detect = false,",
-           " header = true, columns = {'k': 'BIGINT'}"),
-    paste0(quoted, ", auto_detect = false, header = true,",
-           " columns = struct_pack(k := 'BIGINT')"),
-    paste0(quoted, ", auto_detect = false, header = true,",
-           " columns = main.struct_pack(k := 'BIGINT')")
+  # An applied literal schema keeps one plan whatever the file holds. marginplyr
+  # admits the repeated spelling on every version; 2.0 refuses it at bind.
+  for (arguments in list(
+    list(paste0("[", quoted, "], auto_detect = false, union_by_name = true,",
+                " header = true, columns = {'k': 'BIGINT'}"), repeated = FALSE),
+    list(paste0(quoted, ", auto_detect = true, auto_detect = false,",
+                " header = true, columns = {'k': 'BIGINT'}"), repeated = TRUE),
+    list(paste0(quoted, ", auto_detect = false, header = true,",
+                " columns = struct_pack(k := 'BIGINT')"), repeated = FALSE),
+    list(paste0(quoted, ", auto_detect = false, header = true,",
+                " columns = main.struct_pack(k := 'BIGINT')"), repeated = FALSE)
   )) {
     for (value in c("101", "source_tail")) {
       writeLines(c("k", value), path)
       input <- dplyr::tbl(con, dbplyr::sql(paste0(
-        "SELECT * FROM read_csv(", arguments, ")"
+        "SELECT * FROM read_csv(", arguments[[1L]], ")"
       )), vars = "k")
-      expect_identical(inspect_grouping(
-        input, .grouping = grouping_set(where(is.numeric))
-      )$included, "(k)")
+      operation <- function() {
+        inspect_grouping(input, .grouping = grouping_set(where(is.numeric)))
+      }
+      if (arguments$repeated && !applies_last) {
+        expect_error(operation(), "Duplicate named argument", fixed = TRUE)
+      } else {
+        expect_identical(operation()$included, "(k)")
+      }
       expect_identical(last_sent_queries(details = TRUE)$purpose,
                        c("relation_catalog", "selection_proxy"))
     }
