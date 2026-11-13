@@ -350,7 +350,9 @@ test_that("reader-like catalog relations and CTEs retain typed inspection", {
         joined, .by = where(is.character),
         .grouping = grouping_set(where(is.numeric))
       )$included, "(k)")
-      expect_identical(last_sent_queries(details = TRUE)$purpose, audit$purpose)
+      # The rendered join's call-shaped heads are looked up in the catalog.
+      expect_identical(last_sent_queries(details = TRUE)$purpose,
+                       c("relation_catalog", "selection_proxy"))
     }
   }
 })

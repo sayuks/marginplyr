@@ -669,7 +669,8 @@ validate_duckdb_csv_metadata <- function(
 # Check SQL fragments and table paths throughout a captured lazy query,
 # including both join inputs. Leave translation to the owned audit/collect
 # paths so preflight cannot duplicate translation conditions or change their
-# Sent-query outcomes.
+# Sent-query outcomes; sql_render.marginplyr_duckdb_selection() checks the
+# rendered statement there.
 validate_duckdb_csv_query <- function(query, catalog) {
   if (rlang::is_missing(query)) {
     return(invisible(NULL))

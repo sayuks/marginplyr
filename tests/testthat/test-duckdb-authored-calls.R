@@ -358,3 +358,116 @@ test_that("DuckDB's own macros stay refused where they can reach source work", {
     dplyr::tbl(con, "vn"), .grouping = grouping_set(where(is.numeric))
   ), "dplyr::collect()", fixed = TRUE, class = "marginplyr_error")
 })
+
+test_that("a caller macro is refused in every dbplyr spelling", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  writeLines(c("k", "101"), path)
+  reader <- paste0("read_csv_auto(", DBI::dbQuoteString(con, path), ")")
+  DBI::dbWriteTable(con, "t", data.frame(g = c("a", "b"), v = c(1L, 2L)))
+  for (name in c("hidden_first", "lower")) {
+    DBI::dbExecute(con, paste0(
+      "CREATE MACRO ", name, "(x) AS (SELECT first(k) FROM ", reader, ")"
+    ))
+  }
+  t <- dplyr::tbl(con, "t")
+  inputs <- list(
+    dplyr::mutate(t, y = hidden_first(v)),
+    dplyr::summarise(t, y = max(hidden_first(v), na.rm = TRUE), .by = g),
+    dplyr::filter(t, hidden_first(v) > 0),
+    dplyr::arrange(t, hidden_first(v)),
+    dplyr::left_join(t, dplyr::mutate(t, y = hidden_first(v)), by = "g"),
+    dplyr::union_all(
+      dplyr::mutate(t, y = v), dplyr::mutate(t, y = hidden_first(v))
+    ),
+    # dbplyr renders tolower() as LOWER(), which resolves to the caller macro.
+    dplyr::mutate(t, z = tolower(g))
+  )
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  for (value in c("101", "source_tail")) {
+    writeLines(c("k", value), path)
+    for (input in inputs) {
+      before <- serialize(input$lazy_query, NULL)
+      expect_error(inspect_grouping(
+        input, .grouping = grouping_set(where(is.numeric))
+      ), "DuckDB call", fixed = TRUE, class = "marginplyr_error")
+      expect_duckdb_catalog_only()
+      expect_error(inspect_grouping(input, .by = where(is.numeric)),
+                   "DuckDB call", fixed = TRUE, class = "marginplyr_error")
+      expect_duckdb_catalog_only()
+      expect_error(
+        summarize_with_margins(input, n = dplyr::n(), .grouping = rollup(g)),
+        "DuckDB call", fixed = TRUE, class = "marginplyr_error"
+      )
+      expect_duckdb_catalog_only()
+      expect_error(expand_with_margins(input, .grouping = rollup(g)),
+                   "DuckDB call", fixed = TRUE, class = "marginplyr_error")
+      expect_duckdb_catalog_only()
+      expect_identical(serialize(input$lazy_query, NULL), before)
+    }
+  }
+  options(marginplyr.audit_sql = FALSE)
+  expect_error(inspect_grouping(
+    inputs[[1L]], .grouping = grouping_set(where(is.numeric))
+  ), "DuckDB call", fixed = TRUE, class = "marginplyr_error")
+  # Name-only inspection opens nothing.
+  options(marginplyr.audit_sql = TRUE)
+  expect_identical(inspect_grouping(
+    inputs[[1L]], .grouping = grouping_set(v)
+  )$included, "(v)")
+  expect_equal(nrow(last_sent_queries()), 0L)
+})
+
+test_that("verbatim SQL carriers cannot hide a CSV source", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  DBI::dbWriteTable(con, "t", data.frame(g = c("a", "b"), v = c(1L, 2L)))
+  fragment <- paste0("(SELECT max(k) FROM ", DBI::dbQuoteString(con, path), ")")
+  t <- dplyr::tbl(con, "t")
+  inputs <- list(
+    dplyr::mutate(t, y = !!DBI::SQL(fragment)),
+    dplyr::mutate(t, y = !!dbplyr::ident_q(fragment))
+  )
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  for (value in c("101", "source_tail")) {
+    writeLines(c("k", value), path)
+    for (input in inputs) {
+      expect_error(inspect_grouping(
+        input, .grouping = grouping_set(where(is.numeric))
+      ), "DuckDB CSV input", fixed = TRUE, class = "marginplyr_error")
+      expect_duckdb_catalog_only()
+    }
+  }
+})
+
+test_that("translated pipelines without a caller macro keep typed metadata", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  DBI::dbWriteTable(con, "t", data.frame(g = c("a", "b"), v = c(1L, 2L)))
+  t <- dplyr::tbl(con, "t")
+  joined <- dplyr::left_join(
+    t, dplyr::mutate(t, w = v * 2L), by = c("g", "v")
+  )
+  cases <- list(
+    list(dplyr::mutate(t, y = v + 1L, z = tolower(g)), "(v, y)"),
+    list(dplyr::summarise(t, y = mean(v, na.rm = TRUE), .by = g), "(y)"),
+    list(dplyr::mutate(t, y = dplyr::na_if(v, 0L)), "(v, y)"),
+    list(dplyr::filter(
+      dplyr::mutate(joined, r = dplyr::row_number(), .by = g), v > 0L
+    ), "(v, w, r)")
+  )
+  for (case in cases) {
+    expect_identical(inspect_grouping(
+      case[[1L]], .grouping = grouping_set(where(is.numeric))
+    )$included, case[[2L]])
+  }
+})

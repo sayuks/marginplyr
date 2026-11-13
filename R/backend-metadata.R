@@ -506,10 +506,23 @@ dtplyr_selection_proxy <- function(.data, env = .data[["env"]]) {
 # DuckDB's query() refuses the auxiliary statements that discover dynamic
 # PIVOT columns. Qualify the built-in so a caller's macro cannot replace it.
 # Keep rendering within the original audit and collect paths (ADR 0027).
+# The rendered statement is checked against the catalog reader the caller
+# attached, since only the render shows what a translated or passed-through
+# call becomes (ADR 0020). Its refusal is classed so that the audit render
+# raises it rather than recording it, and the statement is never sent.
 #' @exportS3Method dbplyr::sql_render
 #' @noRd
 sql_render.marginplyr_duckdb_selection <- function(query, con = NULL, ...) {
   sql <- NextMethod()
+  tryCatch(
+    validate_duckdb_csv_metadata(
+      sql, attr(query, "marginplyr_duckdb_catalog", exact = TRUE)
+    ),
+    marginplyr_error = function(cnd) {
+      class(cnd) <- c("marginplyr_render_refusal", class(cnd))
+      stop(cnd)
+    }
+  )
   dbplyr::build_sql(
     "SELECT * FROM system.main.query(",
     as.character(sql), ")",
@@ -563,6 +576,7 @@ grouping_selection_proxy <- function(.data,
         catalog
       }
       validate_duckdb_csv_query(query$lazy_query, read_catalog)
+      attr(query, "marginplyr_duckdb_catalog") <- read_catalog
       class(query) <- c("marginplyr_duckdb_selection", class(query))
     }
     proxy <- tryCatch(
