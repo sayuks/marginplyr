@@ -49,32 +49,6 @@ has_sqlite <- marginplyr_suggest_available("DBI") &&
   marginplyr_suggest_available("RSQLite")
 ```
 
-## Why completion is a separate operation
-
-marginplyr does not provide `.complete`, `.fill`, or `.empty` arguments, and it
-does not provide `complete_with_margins()`. A contextual share holds the same
-line: *Value rules* in the [`share_of_parent()`
-reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html) states
-that neither helper ever synthesizes or completes keys, so a denominator with
-no row behind it gives `NA_real_` rather than a number.
-
-Input completion and result completion answer different questions:
-
-- **Pre-summary synthetic facts** participate in every requested grouping set.
-  They can change counts, means, distinct counts, and user-defined summaries.
-- **Post-summary display replacement** changes how an existing result is
-  shown. It does not recalculate subtotals or the grand total.
-
-Sums can often be reconstructed from child sums, but arbitrary summaries
-cannot. A mean needs weights, distinct counts can overlap, and medians cannot
-generally be combined from child medians. Keeping completion outside the
-Margin operation makes the chosen semantics visible in ordinary data
-manipulation code.
-
-Completion also does not belong in a Grouping specification. A Grouping
-specification declares which grouping sets exist; it does not declare the
-valid value domain of each dimension or invent fact values.
-
 ## Complete local facts with `tidyr::complete()`
 
 This small fact table does not contain every product for every observed
@@ -125,23 +99,28 @@ completed_facts |>
     rows = dplyr::n(),
     observed_facts = sum(is_fact),
     units = sum(units),
-    mean_per_completed_key = mean(revenue),
-    mean_per_observed_fact = mean(revenue[is_fact]),
+    mean_per_key = mean(revenue),
+    mean_per_fact = mean(revenue[is_fact]),
     .grouping = rollup(region, store, product),
     .id = "occurrence"
   ) |>
-  arrange(occurrence, region, store, product)
+  arrange(occurrence, region, store, product) |>
+  select(region, store, product, rows, observed_facts, starts_with("mean"))
 ```
 
 `rows` counts completed keys, while `observed_facts` counts only source facts.
 The retained `fact_id` and `is_fact` marker make that distinction explicit.
 The two means show that filling synthetic facts before a summary is a
-substantive modeling choice.
+substantive modeling choice: `mean_per_key` averages the inserted zeros in,
+and `mean_per_fact` leaves them out.
 
-If the intended change is only presentational, summarize the observed facts
-first and replace the finished display value afterwards. A completed key with
-no observed fact averages an empty selection, so the mean it reports is `NaN`,
-which `coalesce()` replaces as it does any missing value:
+If the intended change is only presentational — a row for every key, but no
+synthetic fact in any summary — the rows still come from the completed input,
+because a summary has no row for a key it never saw. What keeps the synthetic
+facts out is the summary expression: `mean(revenue[is_fact])` averages only
+the observed facts, so a completed key with none averages an empty selection
+and reports `NaN`. Replace that afterwards, as `coalesce()` replaces any
+missing value:
 
 ```{r}
 #| eval: !expr has_tidyr
@@ -159,6 +138,53 @@ observed_summary |>
 Three detail rows change; every subtotal and the grand total keep the value
 they were summarized to, because that `mutate()` adds no fact rows and alters
 no existing aggregate.
+
+Completing the finished Margin result instead does not work.
+`tidyr::complete()` takes each Margin label for one more value of its column,
+so it crosses the labels with real values and invents rows that no grouping
+set produced, each filled with a made-up zero:
+
+```{r}
+#| eval: !expr has_tidyr
+
+margin_result <- facts |>
+  summarize_with_margins(
+    mean_revenue = mean(revenue),
+    .grouping = rollup(region, store, product)
+  )
+
+completed_result <- margin_result |>
+  tidyr::complete(
+    tidyr::nesting(region, store),
+    product = product_domain,
+    fill = list(mean_revenue = 0)
+  )
+
+c(summary_rows = nrow(margin_result), completed_rows = nrow(completed_result))
+
+completed_result |>
+  filter(store == "Total", product != "Total")
+```
+
+There is no store called `Total`, and East has no Laptop subtotal across its
+stores: the rollup never asked for one. Complete the input, not the result.
+
+## Why completion is a separate operation
+
+marginplyr has no `.complete`, `.fill`, or `.empty` argument and no
+`complete_with_margins()`. Completing the input and replacing displayed values
+answer different questions — the first adds facts that every grouping set
+summarizes, the second changes how a finished summary is shown — and only the
+caller knows which one is meant. Nor can the first be done afterwards from the
+summary: sums can be rebuilt from child sums, but a mean needs weights,
+distinct counts overlap, and medians do not combine.
+
+A Grouping specification declares which grouping sets exist, not the value
+domain of each dimension. `share_of_parent()` and `share_of_total()` hold the
+same line: *Value rules* in the [`share_of_parent()`
+reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html) states
+that neither ever completes keys, so a denominator with no row behind it gives
+`NA_real_` rather than a number.
 
 ## Union an explicit scaffold with observed keys
 
@@ -195,8 +221,12 @@ other summaries must distinguish those rows.
 
 ## Complete keys on a database connection
 
-Use ordinary lazy relations on the same connection. An existing dimension
-table is the natural source of a reusable key domain:
+Use ordinary lazy relations on the same connection. The domain comes from a
+dimension table and a union rather than from `tidyr::complete()`: dbplyr's
+`complete()` accepts only expressions over the table's own columns, so the
+literal `product = product_domain` used above fails with *Every expression
+must use at least one data column*. An existing dimension table is the
+natural source of a reusable key domain:
 
 ```{r}
 #| message: false
@@ -236,25 +266,29 @@ completed_db <- all_keys_db |>
     revenue = dplyr::coalesce(revenue, 0)
   )
 
-completed_query <- completed_db |>
+completed_db |>
   summarize_with_margins(
-    observed_facts = sum(is_fact),
-    revenue = sum(revenue),
-    .grouping = rollup(region, store, product)
-  )
+    observed_facts = sum(is_fact, na.rm = TRUE),
+    revenue = sum(revenue, na.rm = TRUE),
+    .grouping = rollup(region, store, product),
+    .sort = "last"
+  ) |>
+  collect()
 
-show_query(completed_query)
 DBI::dbDisconnect(con)
 ```
 
-The union, join, completion expressions, and Margin summary remain lazy.
-`show_query()` renders the staged SQL without executing the finished report.
+The union, join, completion expressions, and Margin summary stay lazy until
+`collect()` runs them as one query. The result is the rollup of the facts
+completed against the scaffold in the previous section, computed by the
+database: two synthetic Monitor rows with no observed fact, and subtotals
+that count them.
 
 ## Move local keys only when you ask to
 
 For a small local key table, `dbplyr::copy_inline()` embeds the rows in the
-lazy SQL as a `VALUES` subquery. This avoids creating a persistent table but
-makes the query text grow with the number of keys:
+lazy SQL as a `VALUES` subquery. It creates no table, so it needs no
+permission to write one, but the query text grows with the number of keys:
 
 ```{r}
 #| message: false
@@ -299,8 +333,8 @@ DBI::dbDisconnect(con)
 Read the two renderings side by side. The inline query carries the key rows
 themselves — on SQLite, a zero-row `SELECT` joined by `UNION ALL` to a
 `VALUES` list, wrapped in the casts that give the columns their types — while
-the `copy_to()` query names `requested_keys`, a table that now exists on the
-connection.
+the `copy_to()` query names `requested_keys`, a temporary table that now
+exists on the connection until it closes.
 
 Use explicit `dplyr::copy_to()` for a larger or reusable local key relation.
 It performs data movement at the line where the caller requested it.

@@ -6,8 +6,9 @@
 #' raises conditions: how an error or warning from your expressions is
 #' reported, what an interrupt carries when it competes with an earlier
 #' error, how buffered warnings are replayed, where R's own handler boundary
-#' limits those guarantees, and what a failed SQLite cleanup reports. It
-#' applies to local and lazy inputs alike.
+#' limits those guarantees and how to keep your own warning callback's failure
+#' apart from them, and what a failed SQLite cleanup reports. It applies to
+#' local and lazy inputs alike.
 #'
 #' Which errors are marginplyr's own, and the one class to match them on, is
 #' *[Errors and warnings][marginplyr-package]* in [marginplyr-package].
@@ -67,12 +68,28 @@
 #' including marginplyr's catchers, are unavailable. An error or interrupt
 #' raised there can therefore replace the pending outcome without retaining
 #' it. Other nonlocal transfers, such as invoking your own restart, also
-#' follow R's ordinary behavior. The
-#' *Keep warning-handler failures separate from cancellation* recipe in the
-#' [recipes guide][recipe] shows a caller-owned wrapper that keeps a callback
-#' failure separately from the operation's outcome.
+#' follow R's ordinary behavior.
 #'
-#' [recipe]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
+#' If you own the warning callback, put its catcher inside the callback, as
+#' `guard_warning_callback()` in the examples does. That helper is ordinary
+#' caller code, not a marginplyr function. It returns the operation's value or
+#' condition and the callback's first failure separately, and muffles the
+#' warning whose callback failed and every warning after it. It also catches
+#' an interrupt raised inside the callback. A returning callback leaves
+#' ordinary warning handling intact, including `warn = 2` conversion, and can
+#' still invoke `muffleWarning` itself; the helper changes neither the `warn`
+#' option nor existing caller restarts.
+#'
+#' Without a pending error or interrupt, muffling after a callback failure lets
+#' the summary finish, so inspect `callback_failure` before accepting the
+#' value. The protection covers only the callback you wrapped: if it signals
+#' another condition and an older, unwrapped calling handler fails, that
+#' failure can still bypass the catcher, and a caller restart that exits the
+#' helper takes control as usual.
+#'
+#' `saveRDS()` can keep the captured outcome for later inspection. Catch a
+#' write failure separately so the outcome stays available; deserializing does
+#' not preserve environment reference identity.
 #'
 #' @section SQLite cleanup failure:
 #' Failed SQLite cleanup takes precedence over conditions marginplyr caught.
@@ -86,5 +103,103 @@
 #' @seealso [marginplyr-package] for the `"marginplyr_error"` class, and
 #'   [summarize_with_margins()] for the SQLite materialization these cleanup
 #'   fields describe.
+#' @examples
+#' # Caller code, not a marginplyr function: keeps a failure of `handler`
+#' # apart from the value or condition `expr` ends with.
+#' guard_warning_callback <- function(expr, handler) {
+#'   callback_failure <- NULL
+#'   operation <- tryCatch({
+#'     value <- withCallingHandlers(expr, warning = function(cnd) {
+#'       muffle <- findRestart("muffleWarning")
+#'       if (!is.null(callback_failure)) invokeRestart(muffle)
+#'       failure <- tryCatch({
+#'         handler(cnd)
+#'         NULL
+#'       }, error = identity, interrupt = identity)
+#'       if (!is.null(failure)) {
+#'         callback_failure <<- failure
+#'         invokeRestart(muffle)
+#'       }
+#'     })
+#'     list(value = value)
+#'   }, error = function(cnd) list(condition = cnd),
+#'   interrupt = function(cnd) list(condition = cnd))
+#'   list(operation = operation, callback_failure = callback_failure)
+#' }
+#'
+#' # The store and regional summaries warn differently, and the grand total
+#' # simulates cancellation with `rlang::interrupt()`, which the helper
+#' # catches. The warning logger then fails during replay.
+#' logger_failure <- errorCondition(
+#'   "The warning logger failed",
+#'   parent = simpleError("The logging destination is unavailable")
+#' )
+#' summary_interrupt <- NULL
+#' callback_calls <- 0L
+#' cancelled <- guard_warning_callback(
+#'   summarize_with_margins(
+#'     retail_sales,
+#'     revenue = {
+#'       if (grouping_bit(region) == 1L) {
+#'         withCallingHandlers(rlang::interrupt(), interrupt = function(cnd) {
+#'           summary_interrupt <<- cnd
+#'         })
+#'       }
+#'       warning(if (grouping_bit(store) == 0L) {
+#'         "Check store revenue"
+#'       } else {
+#'         "Check regional revenue"
+#'       })
+#'       sum(revenue)
+#'     },
+#'     .grouping = rollup(region, store)
+#'   ),
+#'   handler = function(cnd) {
+#'     callback_calls <<- callback_calls + 1L
+#'     stop(logger_failure)
+#'   }
+#' )
+#'
+#' # Both outcomes remain available.
+#' c(
+#'   original_interrupt_retained =
+#'     identical(cancelled$operation$condition, summary_interrupt),
+#'   logger_failure_retained =
+#'     identical(cancelled$callback_failure, logger_failure),
+#'   callback_ran_once = callback_calls == 1L
+#' )
+#' \dontshow{
+#' stopifnot(
+#'   inherits(summary_interrupt, "interrupt"),
+#'   identical(cancelled$operation$condition, summary_interrupt),
+#'   identical(cancelled$callback_failure, logger_failure),
+#'   callback_calls == 1L
+#' )
+#' }
+#'
+#' # With nothing pending, the summary finishes despite the failed callback.
+#' completed <- guard_warning_callback(
+#'   summarize_with_margins(
+#'     retail_sales,
+#'     revenue = {
+#'       warning("Check the revenue source")
+#'       sum(revenue)
+#'     },
+#'     .grouping = rollup(region)
+#'   ),
+#'   handler = function(cnd) stop(logger_failure)
+#' )
+#'
+#' c(
+#'   returned_summary = is.data.frame(completed$operation$value),
+#'   logger_failure_retained =
+#'     identical(completed$callback_failure, logger_failure)
+#' )
+#' \dontshow{
+#' stopifnot(
+#'   is.data.frame(completed$operation$value),
+#'   identical(completed$callback_failure, logger_failure)
+#' )
+#' }
 #' @name marginplyr_conditions
 NULL

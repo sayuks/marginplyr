@@ -324,7 +324,8 @@ markers <- list(
     "Name the grouping set on every row",
     "The same join against a lazy table",
     "Compute what the summary pass cannot express",
-    "Keep warning-handler failures separate from cancellation",
+    "Lay the report out wide",
+    "Recipes elsewhere",
     "share_of_total",
     "expand_with_margins",
     # The guide's rejected-call chunks, by the diagnostics they render. Prose
@@ -468,7 +469,9 @@ markers <- list(
   "docs/man/marginplyr_conditions.html" = c(
     "handler boundary.",
     "$replay_error",
-    "$cleanup"
+    "$cleanup",
+    # The caller-owned callback guard the boundary section describes.
+    "put its catcher inside the callback"
   ),
   "docs/man/inspect_grouping.html" = c(
     "Formats and ordinary tibble behavior",
