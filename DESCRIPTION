@@ -405,7 +405,9 @@ Config/testthat/start-first:
     local-c-across,
     forwarded-across-per-group,
     grouping-bare-column,
-    dtplyr-readable-query
+    dtplyr-readable-query,
+    sql-generic-limited-input,
+    sqlite-deprecated-cte
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
