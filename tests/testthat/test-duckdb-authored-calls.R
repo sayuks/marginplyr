@@ -422,6 +422,86 @@ test_that("a caller macro is refused in every dbplyr spelling", {
   expect_equal(nrow(last_sent_queries()), 0L)
 })
 
+test_that("chained and parenthesis-less macro calls are checked (#1647)", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  writeLines(c("k", "101"), path)
+  reader <- paste0("read_csv_auto(", DBI::dbQuoteString(con, path), ")")
+  DBI::dbWriteTable(con, "t", data.frame(g = c("a", "b"), v = c(1L, 2L)))
+  # DuckDB binds a bare current_timestamp as get_current_timestamp().
+  for (name in c("hidden_first", "current_user", "get_current_timestamp")) {
+    DBI::dbExecute(con, paste0(
+      "CREATE MACRO ", name, "(x := 0) AS (SELECT first(k) FROM ", reader, ")"
+    ))
+  }
+  calls <- c("v.hidden_first()", "t.v.hidden_first()", "(v).hidden_first()",
+             'v."hidden_first"()', "current_user", "CURRENT_USER",
+             '"current_user"', "current_timestamp")
+  t <- dplyr::tbl(con, "t")
+  inputs <- list()
+  for (i in seq_along(calls)) {
+    sql <- paste0("SELECT g, v, ", calls[[i]], " AS y FROM t")
+    view <- paste0("chained_view", i)
+    DBI::dbExecute(con, paste("CREATE VIEW", view, "AS", sql))
+    inputs <- c(inputs, list(
+      list(dplyr::tbl(con, dbplyr::sql(sql), vars = c("g", "v", "y")),
+           "DuckDB call"),
+      list(dplyr::mutate(t, y = dbplyr::sql(calls[[i]])), "DuckDB call"),
+      list(dplyr::tbl(con, view), "DuckDB view")
+    ))
+  }
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  for (value in c("101", "source_tail")) {
+    writeLines(c("k", value), path)
+    for (case in inputs) {
+      expect_error(inspect_grouping(
+        case[[1L]], .grouping = grouping_set(where(is.numeric))
+      ), case[[2L]], fixed = TRUE, class = "marginplyr_error")
+      expect_duckdb_catalog_only()
+      expect_error(
+        summarize_with_margins(
+          case[[1L]], n = dplyr::n(), .grouping = rollup(g)
+        ),
+        case[[2L]], fixed = TRUE, class = "marginplyr_error"
+      )
+      expect_duckdb_catalog_only()
+    }
+  }
+  # Qualified and chained calls to ordinary functions stay admitted.
+  admitted <- c("main.lower(g)", "system.main.lower(g)", "g.lower()",
+                "(g).upper()", "t.g.lower()")
+  for (call in admitted) {
+    sql <- paste0("SELECT g, v, ", call, " AS y FROM t")
+    for (input in list(dplyr::tbl(con, dbplyr::sql(sql)),
+                       dplyr::mutate(t, y = dbplyr::sql(call)))) {
+      expect_identical(inspect_grouping(
+        input, .grouping = grouping_set(where(is.numeric))
+      )$included, "(v)")
+      sent <- last_sent_queries(details = TRUE)
+      expect_identical(sum(sent$purpose == "selection_proxy"), 1L)
+    }
+  }
+})
+
+test_that("DuckDB's own parenthesis-less functions keep typed metadata", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  DBI::dbWriteTable(con, "t", data.frame(g = c("a", "b"), v = c(1L, 2L)))
+  for (call in c("current_user", "user", "current_timestamp")) {
+    input <- dplyr::tbl(con, dbplyr::sql(
+      paste0("SELECT g, v, ", call, " AS y FROM t")
+    ))
+    expect_identical(inspect_grouping(
+      input, .grouping = grouping_set(where(is.numeric))
+    )$included, "(v)")
+  }
+})
+
 test_that("verbatim SQL carriers cannot hide a CSV source", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()

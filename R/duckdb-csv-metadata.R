@@ -421,6 +421,59 @@ duckdb_inert_macro <- function(index, catalog) {
     !any(duckdb_caller_macros(catalog))
 }
 
+# DuckDB binds an unresolved bare column reference with one of these names
+# as a call to the mapped function, which a caller macro can replace.
+duckdb_value_functions <- c(
+  current_catalog = "current_catalog", current_date = "current_date",
+  current_role = "current_role", current_schema = "current_schema",
+  current_user = "current_user", session_user = "session_user",
+  user = "user", current_time = "get_current_time",
+  current_timestamp = "get_current_timestamp",
+  localtime = "current_localtime", localtimestamp = "current_localtimestamp"
+)
+
+# Whether the call head at token `head`, whose `(` follows it, or a bare
+# value-function name there, can bind a macro that is not inert, given this
+# operation's catalog snapshot and the stored view `namespace` if any.
+duckdb_head_reaches_macro <- function(tokens, head, catalog, namespace = NULL) {
+  quoted <- attr(tokens, "quoted")
+  name <- if (quoted[[head]]) tokens[[head]] else
+    duckdb_reader_relation_path(tokens[[head]])
+  candidates <- if (head < length(tokens) && tokens[[head + 1L]] == "(" &&
+                      !quoted[[head + 1L]]) {
+    first <- head
+    while (first > 2L && tokens[[first - 1L]] == "." &&
+             !quoted[[first - 1L]]) first <- first - 2L
+    # DuckDB binds `x.m()` as `m(x)` when `x` names no catalog or schema, so
+    # the bare name is resolved as well as the qualified one.
+    list(duckdb_relation_parts(tokens, first, functions = TRUE), name)
+  } else if (name %in% names(duckdb_value_functions)) {
+    list(duckdb_value_functions[[name]])
+  }
+  any(vapply(candidates, function(parts) {
+    macro <- duckdb_metadata_catalog_match(
+      parts, catalog, namespace, kinds = c("macro", "table_macro")
+    )
+    length(macro) > 0L && !duckdb_inert_macro(macro, catalog)
+  }, logical(1)))
+}
+
+# Positions of bare value-function names that DuckDB can bind as calls: not
+# followed by `(`, not qualifying or qualified by `.`, and not an AS alias.
+duckdb_value_function_heads <- function(tokens) {
+  quoted <- attr(tokens, "quoted")
+  unquoted <- function(offset, token) {
+    at <- seq_along(tokens) + offset
+    inside <- at >= 1L & at <= length(tokens)
+    hit <- logical(length(tokens))
+    hit[inside] <- tokens[at[inside]] == token & !quoted[at[inside]]
+    hit
+  }
+  which(tokens %in% names(duckdb_value_functions) &
+          !unquoted(1L, "(") & !unquoted(1L, ".") & !unquoted(-1L, ".") &
+          !unquoted(-1L, "as"))
+}
+
 # Refuse view work whose safety cannot be established from captured definitions.
 abort_duckdb_view_metadata <- function() {
   abort_marginplyr(c(
@@ -502,15 +555,9 @@ validate_duckdb_authored_calls <- function(tokens, catalog) {
   implicit_alias <- heads > 1L & tokens[previous] == ")" & !quoted[previous]
   heads <- heads[!alias & !materialized & !modifier &
                    !implicit_alias & !heads %in% declarations]
-  for (head in heads) {
-    while (head > 2L && tokens[[head - 1L]] == "." &&
-             !quoted[[head - 1L]]) head <- head - 2L
-    parts <- duckdb_relation_parts(tokens, head, functions = TRUE)
-    macro <- duckdb_metadata_catalog_match(
-      parts, catalog(), kinds = c("macro", "table_macro")
-    )
-    if ((length(macro) && !duckdb_inert_macro(macro, catalog())) ||
-          utils::tail(parts, 1L) %in% c("query", "query_table")) {
+  for (head in c(heads, duckdb_value_function_heads(tokens))) {
+    if (duckdb_head_reaches_macro(tokens, head, catalog()) ||
+          tokens[[head]] %in% c("query", "query_table")) {
       abort_duckdb_call_metadata()
     }
   }
@@ -552,14 +599,8 @@ validate_duckdb_view_metadata <- function(index, catalog, seen) {
   syntax <- heads > 1L & body[previous] == "as" &
     !attr(body, "quoted")[previous]
   heads <- heads[!syntax & !heads %in% declarations]
-  for (head in heads) {
-    while (head > 2L && body[[head - 1L]] == "." &&
-             !attr(body, "quoted")[[head - 1L]]) head <- head - 2L
-    parts <- duckdb_relation_parts(body, head, functions = TRUE)
-    macro <- duckdb_metadata_catalog_match(
-      parts, catalog(), namespace, kinds = c("macro", "table_macro")
-    )
-    if (length(macro) && !duckdb_inert_macro(macro, catalog())) {
+  for (head in c(heads, duckdb_value_function_heads(body))) {
+    if (duckdb_head_reaches_macro(body, head, catalog(), namespace)) {
       abort_duckdb_view_metadata()
     }
   }
