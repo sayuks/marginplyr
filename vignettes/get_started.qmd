@@ -956,7 +956,7 @@ company_total$data[[1]] |>
 ```
 
 A dtplyr input performs the expansion and nesting lazily until `collect()`.
-`show_query()` displays the generated data.table expression:
+The result is still a dtplyr query; `collect()` runs it:
 
 ```{r}
 #| eval: !expr has_dtplyr
@@ -967,7 +967,7 @@ nested_dt <- january_sales |>
     .grouping = rollup(region, store)
   )
 
-show_query(nested_dt)
+class(nested_dt)
 collect(nested_dt)
 ```
 

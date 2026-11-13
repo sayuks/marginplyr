@@ -830,25 +830,19 @@ nrow(nest_by_with_margins(.data = empty_sales))
 # failing inside it.
 source(system.file("suggests", "guard.R", package = "marginplyr"))
 if (marginplyr_suggest_available("dtplyr")) {
-  lazy_nested <- january_sales |>
-    dtplyr::lazy_dt() |>
-    nest_with_margins(
-      .grouping = rollup(region, store)
-    )
-
-  # Inspect the data.table expression before the row-wise collection.
-  print(dplyr::show_query(lazy_nested))
-
   nested_by_dt <- january_sales |>
     dtplyr::lazy_dt() |>
     nest_by_with_margins(
       .grouping = rollup(region, store)
     )
-  nested_by_dt |>
+  print(class(nested_by_dt))
+  print(
     dplyr::mutate(
+      nested_by_dt,
       records = nrow(data),
       revenue = sum(data$revenue)
     )
+  )
   nested_by_dt$data[[1]]
 }
 }
