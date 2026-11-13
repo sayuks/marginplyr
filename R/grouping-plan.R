@@ -2018,15 +2018,17 @@ grouping_set_key <- function(set, dimensions) {
 validate_unique_grouping_sets <- function(keys, duplicates_choices,
                                           set_ids = seq_along(keys),
                                           complete = TRUE) {
+  abort_plan_witness <- function(positions) {
+    abort_duplicate_witness(
+      list(family = "the grouping plan", positions = positions),
+      duplicates_choices
+    )
+  }
   if (length(keys) > duplicate_report_limit) {
     repeated <- anyDuplicated(keys)
     if (repeated > 0L) {
       original <- match(keys[[repeated]], keys)
-      abort_duplicate_witness(
-        list(family = "the grouping plan",
-             positions = set_ids[c(original, repeated)]),
-        duplicates_choices
-      )
+      abort_plan_witness(set_ids[c(original, repeated)])
     }
     return(invisible(NULL))
   }
@@ -2037,10 +2039,7 @@ validate_unique_grouping_sets <- function(keys, duplicates_choices,
   groups <- split(set_ids[duplicate_keys], keys[duplicate_keys])
   if (!complete) {
     earliest <- which.min(vapply(groups, min, numeric(1)))
-    abort_duplicate_witness(
-      list(family = "the grouping plan", positions = sort(groups[[earliest]])),
-      duplicates_choices
-    )
+    abort_plan_witness(sort(groups[[earliest]]))
   }
   # Each group is already comma-joined. Join groups here to preserve that
   # formatting through cli; codetools cannot see the use in its template.
