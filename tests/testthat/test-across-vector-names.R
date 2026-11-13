@@ -511,3 +511,146 @@ test_that("plain summary prefixes retain complete-name source proofs", {
     expect_identical(actual$p, 1)
   }
 })
+
+# A share of a later vector-template name is admitted only once its name is
+# proven before execution; an unproven name is refused as not yet summarized.
+# Bare expressions in `dots` evaluate in `env`.
+expect_vector_name_withheld <- function(data, dots, target, info,
+                                        env = parent.frame()) {
+  dots <- lapply(dots, function(dot) {
+    if (rlang::is_quosure(dot)) dot else rlang::new_quosure(dot, env)
+  })
+  expect_true(target %in% names(dplyr::summarise(data, !!!dots)), info = info)
+  share <- rlang::call2("share_of_total", rlang::sym(target))
+  expect_error(
+    summarize_with_margins(data, !!!dots, p = !!share),
+    paste0("unknown preceding ordinary summary `", target, "`"),
+    class = "marginplyr_error", info = info
+  )
+}
+
+test_that("a bare n() prefix keeps the proof only while it is dplyr's", {
+  data <- data.frame(x = 1:3, y = 5:7)
+  dots <- rlang::exprs(
+    prior = n(),
+    dplyr::across(y, sum, .names = "{.col}_{seq_along(.col)}")
+  )
+  n <- dplyr::n
+  actual <- summarize_with_margins(data, !!!dots, p = share_of_total(y_1))
+  expect_identical(actual[c("prior", "y_1")], dplyr::summarise(data, !!!dots))
+  expect_identical(actual$p, 1)
+
+  n <- function() 3L
+  expect_vector_name_withheld(data, dots, "y_1", "rebound n")
+})
+
+test_that("unproven prefixes withhold later vector names from shares", {
+  data <- data.frame(x = 1L, y = 5L)
+  unpack <- FALSE
+  prefixes <- list(
+    unpack_binding = rlang::exprs(dplyr::across(
+      x, sum, .names = "{.col}_first", .unpack = unpack
+    )),
+    rebound_dollar = rlang::exprs(prior = {
+      `$` <- function(x, name) -1L
+      1L
+    }, q = .data$x)
+  )
+  later <- quote(dplyr::across(y, sum, .names = "{.col}_{seq_along(.col)}"))
+  for (kind in names(prefixes)) {
+    expect_vector_name_withheld(
+      data, c(prefixes[[kind]], list(later)), "y_1", kind
+    )
+  }
+})
+
+test_that("injected and parenthesized spellings keep vector-name proofs", {
+  data <- data.frame(x = 1:3, y = 5:7)
+  template <- "{.col}_{seq_along(.col)}"
+  spellings <- list(
+    names_quosure = rlang::expr(dplyr::across(
+      y, sum, .names = !!rlang::quo("{.col}_{seq_along(.col)}")
+    )),
+    names_parenthesized = quote(dplyr::across(
+      y, sum, .names = ("{.col}_{seq_along(.col)}")
+    )),
+    cols_quosure = rlang::expr(dplyr::across(
+      !!rlang::quo(y), sum, .names = !!template
+    ))
+  )
+  for (kind in names(spellings)) {
+    dots <- rlang::exprs(prior = sum(x), !!spellings[[kind]])
+    actual <- summarize_with_margins(data, !!!dots, p = share_of_total(y_1))
+    ordinary <- dplyr::summarise(data, !!!dots)
+    expect_identical(actual[names(ordinary)], ordinary, info = kind)
+    expect_identical(actual$p, 1, info = kind)
+  }
+})
+
+test_that("spellings outside the name proof withhold vector names", {
+  data <- data.frame(x = 1:3, y = 5:7)
+  glued <- glue::glue("{{.col}}_{{seq_along(.col)}}")
+  template <- "{.col}_{seq_along(.col)}"
+  spellings <- list(
+    classed_template = list(
+      quote(dplyr::across(y, sum, .names = glued)), "y_1"
+    ),
+    empty_selection_argument = list(
+      # jarl-ignore missing_argument: The empty argument is syntax under test.
+      rlang::expr(dplyr::across(c(y, ), sum, .names = !!template)), "y_1"
+    ),
+    parenthesized_selection_head = list(
+      rlang::expr(dplyr::across((c)("y"), sum, .names = !!template)), "y_1"
+    ),
+    computed_selection_head = list(
+      rlang::expr(dplyr::across(identity(c)("y"), sum, .names = !!template)),
+      "y_1"
+    ),
+    empty_helper_argument = list(rlang::expr(dplyr::across(
+      # jarl-ignore missing_argument: The empty argument is syntax under test.
+      dplyr::starts_with("y", ), sum, .names = !!template
+    )), "y_1"),
+    parenthesized_template_head = list(
+      quote(dplyr::across(y, sum, .names = "{.col}_{(toupper)(.col)}")), "y_Y"
+    )
+  )
+  for (kind in names(spellings)) {
+    dots <- rlang::exprs(prior = sum(x), !!spellings[[kind]][[1L]])
+    expect_vector_name_withheld(data, dots, spellings[[kind]][[2L]], kind)
+  }
+})
+
+test_that("calls the name proof declines keep dplyr's own diagnostic", {
+  data <- data.frame(x = 1:3, y = 5:7)
+  pair <- c("first", "second")
+  root <- function(cnd) {
+    while (!is.null(cnd$parent)) cnd <- cnd$parent
+    conditionMessage(cnd)
+  }
+  later <- quote(dplyr::across(y, sum, .names = "{.col}_{seq_along(.col)}"))
+  for (across_calls in list(
+    rlang::exprs(dplyr::across(c(x, y), sum, .names = pair)),
+    rlang::exprs(dplyr::across(y, sum, .names = "{.col}_{dplyr::rev(.col)}")),
+    rlang::exprs(
+      dplyr::across(x, list(a = sum, b = NULL), .names = "{.col}_{.fn}"),
+      !!later
+    )
+  )) {
+    dots <- rlang::exprs(prior = sum(x), !!!across_calls)
+    ordinary <- expect_error(dplyr::summarise(data, !!!dots))
+    actual <- expect_error(
+      summarize_with_margins(data, !!!dots, p = share_of_total(prior))
+    )
+    expect_identical(root(actual), root(ordinary))
+  }
+
+  # An injected empty template reaches dplyr's across setup, not the proof.
+  dots <- rlang::exprs(
+    prior = sum(x), dplyr::across(y, sum, .names = !!rlang::quo())
+  )
+  expect_error(dplyr::summarise(data, !!!dots))
+  actual <- expect_error(
+    summarize_with_margins(data, !!!dots, p = share_of_total(prior))
+  )
+  expect_false(inherits(actual, "marginplyr_error"))
+})
