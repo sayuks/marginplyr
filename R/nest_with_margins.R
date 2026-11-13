@@ -1,19 +1,65 @@
 #' Nest data with SQL-style grouping margins
 #'
 #' [nest_with_margins()] creates one nested data frame for every group in every
-#' grouping set. It works with local data frames and `dtplyr` steps.
+#' grouping set. It is a margin-aware counterpart of [tidyr::nest()] with
+#' `.by`, and works with local data frames and `dtplyr` steps.
+#'
+#' @section Differences from nest():
+#' - The result is always ungrouped, whatever groups the input had; see
+#'   *Grouped and row-wise inputs*.
+#' - Row order is unspecified. Use `.sort` for margins next to the rows they
+#'   cover, or [dplyr::arrange()] for any other order.
+#' - A character `.margin_label` changes a non-factor grouping dimension to
+#'   character in the outer columns; see Value. Use `.margin_label = NULL` or
+#'   `NA_character_` to keep its type.
+#' - Every non-key column goes into one list column. The full `...` column
+#'   specification, several list columns, and `.names_sep` are not
+#'   implemented.
+#' - `.keep = TRUE` also puts the original keys in each nested data frame,
+#'   which [tidyr::nest()] does when the keys are selected, as in
+#'   `nest(data = everything(), .by = region)`. It is a logical argument
+#'   because the Margin dimensions must stay outside to identify detail,
+#'   subtotal, and total rows.
+#' - An empty ungrouped input returns zero outer rows, as [tidyr::nest()]
+#'   does.
+#'
+#' @section Nested data frames:
+#' The list column is a list of data frames holding the input's non-key
+#' columns; its exact `vctrs_list_of` subclass is not part of the API, and
+#' neither is the class of its elements, which is a tibble for a local input
+#' and a data table under `dtplyr`. Call `lapply(result$data,
+#' tibble::as_tibble)` when one element class is needed across backends.
+#'
+#' Each nested data frame has one row per source row it stands for, even when
+#' every input column is a key and `.keep` does not put them back; such a
+#' cell is a zero-column tibble on both backends. A `dtplyr` input cannot
+#' carry rows without columns at all: `dtplyr::lazy_dt(data.frame(row.names =
+#' 1:3))` is already empty, so nest such an input locally.
+#'
+#' Columns inside the nested data frames keep their original values,
+#' variable labels, and classes, `.keep = TRUE` keys included. `.id` is an
+#' outer key and is not included inside the nested data.
+#'
+#' No input column name is reserved for internal bookkeeping. Temporary
+#' grouping-set and `.keep` columns are generated collision-free and removed
+#' before the result is returned.
+#'
+#' @section When marginplyr queries your data:
+#' On a `dtplyr` step, [nest_with_margins()] builds a lazy step and returns
+#' it unexecuted; no row is processed until you collect it. To recover the
+#' types and factor levels of the step's columns, marginplyr may evaluate a
+#' zero-row version of its sources. A derived step whose types cannot be found
+#' that way is refused; call [dplyr::collect()] on it explicitly and pass the
+#' data frame.
 #'
 #' @inheritParams summarize_with_margins
 #' @inheritSection summarize_with_margins Fixed columns and grouping dimensions
 #' @inheritSection summarize_with_margins Grouped and row-wise inputs
 #' @inheritSection summarize_with_margins Option arguments
-#' @inheritSection summarize_with_margins Result class and attributes
-#' @inheritSection summarize_with_margins Variable labels and dataset attributes
-#' @inheritSection summarize_with_margins Column-vector element names
+#' @inheritSection summarize_with_margins Result metadata
 #' @inheritSection summarize_with_margins Grouping set identifiers
 #' @inheritSection summarize_with_margins Margin order
 #' @inheritSection summarize_with_margins Display labels and grouping identity
-#' @inheritSection summarize_with_margins When marginplyr queries your data
 #' @param .data A local data frame or a `dtplyr` step. Other lazy tables are
 #'   not supported because nesting creates list columns.
 #' @param .key A string naming the list column. As in [tidyr::nest()],
@@ -22,73 +68,25 @@
 #'   inside each nested data frame? If `TRUE`, the nested columns contain their
 #'   original, pre-margin values rather than `.margin_label`.
 #' @param .duplicates `"error"` or `"drop"`, and nothing else; see *Option
-#'   arguments*. Nesting does not support the `"keep"` policy available in
-#'   [summarize_with_margins()] and [expand_with_margins()].
+#'   arguments*. A duplicate is a grouping set whose columns are the same as an
+#'   earlier set's once the Grouping specification is expanded, as in
+#'   `grouping_sets(region, store, region)`. `"error"` (the default) refuses
+#'   the call and names the positions; `"drop"` keeps the first occurrence of
+#'   each set and removes the rest. Nesting does not support the `"keep"`
+#'   policy available in [summarize_with_margins()] and
+#'   [expand_with_margins()].
 #'
-#' @section Relationship to tidyr and dplyr:
-#' These functions are margin-aware counterparts, not drop-in replacements,
-#' and do not implement every upstream feature. [nest_with_margins()] resembles
-#' [tidyr::nest()] with `.by`: it supports `.key`, returns an ungrouped data
-#' frame, and puts all non-key columns into one list column. Setting
-#' `.keep = TRUE` also puts the original grouping keys in that inner data
-#' frame. This corresponds to selecting those keys in [tidyr::nest()] (for
-#' example, `nest(data = everything(), .by = region)`), but uses a logical
-#' argument because Margin dimensions must remain visible outside to identify
-#' detail, subtotal, and total rows.
+#' @return For a local input, an ungrouped data frame with one row per group
+#'   per grouping set. Its columns are the fixed `.by` keys, then the grouping
+#'   dimensions, then `.id` when supplied, then the list column named by
+#'   `.key`. Its outer class follows [tidyr::nest()], so a plain data frame
+#'   nests to a tibble; see *Result metadata*. A `dtplyr` input returns a lazy
+#'   `dtplyr` step until collected.
 #'
-#' [nest_with_margins()] does not implement the full `...` column
-#' specification, multiple list columns, or `.names_sep`. Existing grouping
-#' columns become implicit fixed keys, as they do for [tidyr::nest()], but
-#' [nest_with_margins()] returns an ungrouped result instead of preserving the
-#' input grouping.
-#'
-#' [nest_by_with_margins()] resembles [dplyr::nest_by()] and, like it, provides
-#' `.key` and `.keep`, but selects fixed keys with `.by` rather than `...`.
-#' With `.keep = TRUE`, the nested data contains the original, pre-margin
-#' values of every outer key. Thus an outer `East / Total` subtotal retains
-#' the original store values inside the nested data instead of replacing them
-#' with `"Total"`. This is the closest margin-aware analogue of dplyr's rule
-#' that `.keep` retains grouping columns.
-#'
-#' The list column is a regular list of data frames; its exact `vctrs_list_of`
-#' subclass is not part of the API. Neither is the class of its elements,
-#' which follows whichever backend produced them: tibbles for a local input,
-#' and data tables under `dtplyr`. Only their being data frames holding the
-#' input's non-key columns is promised. Call
-#' `lapply(result$data, tibble::as_tibble)` when one element class is needed
-#' across backends. [nest_with_margins()] follows
-#' [tidyr::nest()] for an empty ungrouped input and returns zero outer rows.
-#' [nest_by_with_margins()] follows [dplyr::nest_by()] and returns one row
-#' containing the empty input when there are no grouping keys.
-#'
-#' When nesting leaves no payload column — every input column is a fixed key or
-#' a grouping dimension, and `.keep` does not put them back — each nested data
-#' frame still has one row per source row it stands for, as [dplyr::nest_by()]
-#' does. That row count is promised. The class of such a cell is described
-#' rather than promised, as every element class is: on both backends it is what
-#' [dplyr::tibble()] produced, because a `data.table` cannot hold rows without
-#' columns at all.
-#'
-#' That last point is also a limit on what an input can carry into `dtplyr`,
-#' rather than anything nesting does: a data frame with rows and no columns
-#' loses its rows on the way in, so `dtplyr::lazy_dt(data.frame(row.names =
-#' 1:3))` is already empty before marginplyr reads it and no behavior here can
-#' restore the three rows. Nest an input that has rows and no columns locally
-#' when its row count matters. This is the whole of the difference: a
-#' column-less input that reaches the backend with the rows it had -- one with
-#' no rows either -- nests to the same result on both backends.
-#'
-#' No input column name is reserved for internal bookkeeping. Temporary
-#' grouping-set and `.keep` columns are generated collision-free and removed
-#' before the result is returned.
-#'
-#' @return For a local input, an ungrouped data frame with one list column,
-#'   whose outer class follows [tidyr::nest()]; see *Result class
-#'   and attributes* and *Variable labels and dataset attributes*.
-#'   A `dtplyr` input returns a lazy `dtplyr` step until
-#'   collected. Result row order is unspecified unless `.sort` asks for a
-#'   Margin order; see *Margin order*, or use [dplyr::arrange()] for any other
-#'   presentation order.
+#'   With a character `.margin_label`, the default, an outer grouping
+#'   dimension that is not a factor becomes character so that it can hold the
+#'   label, while the nested columns keep their original types. A factor
+#'   dimension instead gains the label as a new level.
 #' @family summarize and expand data with margins
 #' @export
 #' @examples
@@ -103,11 +101,8 @@
 #'   .data = january_sales,
 #'   .grouping = rollup(region, store)
 #' )
-#' # Nesting a plain data frame returns a tibble, which prints each nested
-#' # table as its dimensions.
-#' nested |>
-#'   dplyr::as_tibble() |>
-#'   head()
+#' # The result is a tibble, which prints each nested table as its dimensions.
+#' head(nested)
 #' nested$data[[1]]
 #'
 #' # Keep original region and store values inside each nested table as well.
@@ -141,10 +136,8 @@
 #'   )
 #' dplyr::group_vars(grouped_nested)
 #'
-#' # The same operation stays lazy for a dtplyr input until collect(). The
-#' # guard shipped with marginplyr reports dtplyr usable only at the version
-#' # DESCRIPTION requires, so an older one withholds this rather than failing
-#' # inside it.
+#' # The same operation stays lazy for a dtplyr input until collect().
+#' # Runs only when a recent enough dtplyr is installed.
 #' source(system.file("suggests", "guard.R", package = "marginplyr"))
 #' if (marginplyr_suggest_available("dtplyr")) {
 #'   nested_dt <- january_sales |>

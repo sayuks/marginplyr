@@ -359,8 +359,8 @@ DBI::dbDisconnect(con)
 ```
 
 Arrow is different. A factor grouping dimension there returns as character,
-so Arrow does not expose its declared levels to this check; see *Result class
-and attributes* in the [`summarize_with_margins()`
+so Arrow does not expose its declared levels to this check; see *Arrow
+inputs* in the [`summarize_with_margins()`
 reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html).
 An unused declared level therefore does not make two result rows look alike.
 An observed collision still does, and `.check_margin_label = TRUE` rejects it.

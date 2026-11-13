@@ -123,6 +123,74 @@ test_that("the Grouping-identity comparison has exactly one canonical home", {
   expect_equal(names(topics)[carries_table], "grouping_bit.Rd")
 })
 
+margin_verb_pages <- c(
+  "summarize_with_margins.Rd", "expand_with_margins.Rd",
+  "nest_with_margins.Rd", "nest_by_with_margins.Rd"
+)
+
+test_that("the SQLite compute() contract has exactly one canonical home", {
+  topics <- rd_topics()
+  skip_if(is.null(topics), "No Rd sources available")
+
+  # The rowid aliases are what only that contract describes, so a copy
+  # inherited into another page is detected whatever its section is called.
+  carries_contract <- vapply(
+    topics,
+    function(text) grepl("rowid", text, fixed = TRUE),
+    logical(1)
+  )
+
+  expect_equal(names(topics)[carries_contract], "summarize_with_margins.Rd")
+  expect_true(
+    "SQLite materialization" %in%
+      rd_section_titles(topics[["summarize_with_margins.Rd"]])
+  )
+})
+
+test_that("Margin verb pages describe only backends their verb accepts", {
+  topics <- rd_topics()
+  skip_if(is.null(topics), "No Rd sources available")
+
+  # The nesting verbs accept local data frames and `dtplyr` steps alone.
+  nesting <- c("nest_with_margins.Rd", "nest_by_with_margins.Rd")
+  named <- unlist(lapply(nesting, function(page) {
+    found <- c("DuckDB", "SQLite", "PostgreSQL", "GROUPING SETS")
+    found <- found[vapply(found, grepl, logical(1), x = topics[[page]],
+                          fixed = TRUE)]
+    if (length(found) == 0L) NULL else paste0(page, ": ", found)
+  }))
+
+  expect_equal(named, NULL)
+})
+
+test_that("Margin verb pages cite no design record a reader cannot reach", {
+  topics <- rd_topics()
+  skip_if(is.null(topics), "No Rd sources available")
+
+  cites_adr <- vapply(
+    topics[margin_verb_pages],
+    function(text) grepl("ADR [0-9]{4}", text),
+    logical(1)
+  )
+
+  expect_equal(names(cites_adr)[cites_adr], character())
+})
+
+test_that("each Margin verb page lists its differences from dplyr", {
+  topics <- rd_topics()
+  skip_if(is.null(topics), "No Rd sources available")
+
+  # The section has to come first, directly after Value, so a reader meets
+  # it before the per-argument contracts.
+  first_section <- vapply(
+    topics[margin_verb_pages],
+    function(text) rd_section_titles(text)[[1L]],
+    character(1)
+  )
+
+  expect_true(all(startsWith(first_section, "Differences from")))
+})
+
 # The `\description{}` block of one Rd topic, or `""` where the topic has none
 # -- which fails whatever reads the block rather than passing it an empty page.
 #
