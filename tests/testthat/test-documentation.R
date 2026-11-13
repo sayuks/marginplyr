@@ -107,6 +107,22 @@ test_that("every documented user-facing topic offers related-topic links", {
   expect_equal(names(navigable)[!navigable], character())
 })
 
+# `?marginplyr` is the page a new user lands on, so what orients them comes
+# before any contract, and the condition contract lives on a topic of its own
+# that this page links to (#1634).
+test_that("the package page orients before it specifies", {
+  topics <- rd_topics()
+  skip_if(is.null(topics), "No Rd sources available")
+
+  package <- topics[["marginplyr-package.Rd"]]
+  expect_identical(
+    utils::head(rd_section_titles(package), 2L),
+    c("Get started", "Guides")
+  )
+  expect_true("marginplyr_conditions.Rd" %in% names(topics))
+  expect_match(package, "\\link{marginplyr_conditions}", fixed = TRUE)
+})
+
 test_that("the Grouping-identity comparison has exactly one canonical home", {
   topics <- rd_topics()
   skip_if(is.null(topics), "No Rd sources available")

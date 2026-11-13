@@ -510,8 +510,8 @@ propagates with an earlier execution error retained as \verb{$parent}. Failed
 cleanup takes precedence: its error retains the failed step's condition in
 \verb{$cleanup} and the triggering error or interrupt outcome in \verb{$parent}.
 Further caught interrupts do not retry cleanup or replace its failure.
-\emph{\link[=marginplyr-package]{Errors and warnings}} describes these fields and the
-native R boundary for conditions raised inside your calling handlers.
+\link{marginplyr_conditions} describes these fields and the native R boundary
+for conditions raised inside your calling handlers.
 Successful release ends restoration responsibility even if an interrupt
 prevents the R value reaching the caller. Outermost release persists the
 result; inner release leaves it under the caller's commit or rollback.
