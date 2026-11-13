@@ -420,11 +420,14 @@ if (marginplyr_suggest_available("dtplyr")) {
     nest_by_with_margins(
       .grouping = rollup(region, store)
     )
-  nested_by_dt |>
+  print(class(nested_by_dt))
+  print(
     dplyr::mutate(
+      nested_by_dt,
       records = nrow(data),
       revenue = sum(data$revenue)
     )
+  )
   nested_by_dt$data[[1]]
 }
 }

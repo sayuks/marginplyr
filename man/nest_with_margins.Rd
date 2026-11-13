@@ -418,7 +418,7 @@ if (marginplyr_suggest_available("dtplyr")) {
     nest_with_margins(
       .grouping = rollup(region, store)
     )
-  print(dplyr::show_query(nested_dt))
+  print(class(nested_dt))
   dplyr::collect(nested_dt)
 }
 }

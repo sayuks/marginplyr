@@ -396,8 +396,8 @@ dt_call.marginplyr_native_scalars <- function(x, needs_copy = x$needs_copy) {
   )
   native <- rlang::call2(
     base::`{`,
-    rlang::call2(base::`<-`, state, rlang::call2(
-      base::new.env, parent = rlang::call2(base::emptyenv)
+    rlang::call2(base::`<-`, state, deferred_export_call(
+      "base", "new.env", parent = deferred_export_call("base", "emptyenv")
     )),
     native
   )
@@ -408,7 +408,7 @@ dt_call.marginplyr_native_scalars <- function(x, needs_copy = x$needs_copy) {
       margin_metadata_literal(x[["marginplyr_scalar_proofs"]]),
       margin_metadata_literal(x$env)
     ),
-    rlang::call2(base::`>`, rlang::call2(base::nrow, source), 0L)
+    rlang::call2(base::`>`, deferred_export_call("base", "nrow", source), 0L)
   )
   rlang::call2(
     base::`{`, rlang::call2(base::`<-`, source, parent),

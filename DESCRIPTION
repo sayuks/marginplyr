@@ -404,7 +404,8 @@ Config/testthat/start-first:
     grouping-helper-refusal-order,
     local-c-across,
     forwarded-across-per-group,
-    grouping-bare-column
+    grouping-bare-column,
+    dtplyr-readable-query
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool

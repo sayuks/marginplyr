@@ -145,7 +145,7 @@
 #'     nest_with_margins(
 #'       .grouping = rollup(region, store)
 #'     )
-#'   print(dplyr::show_query(nested_dt))
+#'   print(class(nested_dt))
 #'   dplyr::collect(nested_dt)
 #' }
 nest_with_margins <- function(.data,
@@ -614,7 +614,7 @@ nest_cell_expr <- function(cell_cols) {
   names(columns)[match(special, names(columns))] <- aliases
   # The stock list method keeps generated conversion out of caller S3 lookup.
   converter <- rlang::call2(
-    utils::getFromNamespace, "as.data.table.list", "data.table"
+    base::`:::`, rlang::sym("data.table"), rlang::sym("as.data.table.list")
   )
   cell <- rlang::call2(
     converter, deferred_export_call("base", "list", !!!columns)
