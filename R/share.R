@@ -5484,12 +5484,6 @@ scope_factory_result <- function(expr, scope, lookup, read_value,
 # Retain factory frames closed over by a returned member. Closures from the
 # live stack only need their offsets moved past the departing frames.
 scope_rebase_factory_closure <- function(closure, result) {
-  if (!is.null(closure$alternatives)) {
-    closure$alternatives <- lapply(
-      closure$alternatives, scope_rebase_factory_closure, result = result
-    )
-    return(closure)
-  }
   if (closure$enclosing <= result$factory_frames) {
     frames <- result$scope[seq.int(closure$enclosing, result$factory_frames)]
     frames <- lapply(frames, function(frame) {
