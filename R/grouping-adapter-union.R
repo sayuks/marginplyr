@@ -211,6 +211,12 @@ sql_margin_type_anchor <- function(.data, branch, source_columns,
                                    declared_types = character(),
                                    source_displays = character()) {
   .data <- sql_margin_source_anchor(.data) %||% .data
+  if (inherits(.data$lazy_query, "lazy_select_query")) {
+    # The anchor is the first compound operand, which cannot carry an ORDER BY
+    # or row limit, and over zero rows neither changes a column (#1643).
+    .data$lazy_query$limit <- NULL
+    .data$lazy_query$order_by <- NULL
+  }
   branch_columns <- get_col_names(branch, dplyr::everything())
   source_columns <- intersect(
     setdiff(source_columns, names(declared_types)), branch_columns
