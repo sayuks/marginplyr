@@ -326,7 +326,8 @@ duckdb_metadata_catalog <- function(con) {
     "system.main.current_database(),",
     "system.main.current_setting('search_path')",
     "FROM system.main.duckdb_views() UNION ALL",
-    "SELECT database_name, schema_name, function_name, function_type, NULL,",
+    "SELECT database_name, schema_name, function_name, function_type,",
+    "macro_definition,",
     "system.main.current_database(),",
     "system.main.current_setting('search_path')",
     "FROM system.main.duckdb_functions()",
@@ -433,15 +434,13 @@ duckdb_value_functions <- c(
   localtime = "current_localtime", localtimestamp = "current_localtimestamp"
 )
 
-# Whether the call head at token `head`, whose `(` follows it, or a bare
-# value-function name there, can bind a macro that is not inert, given this
-# operation's catalog snapshot and the stored view `namespace` if any.
-duckdb_head_reaches_macro <- function(tokens, head, catalog, namespace = NULL) {
+# The name parts that the call head at token `head`, whose `(` follows it, or
+# a bare value-function name there can resolve to as a function.
+duckdb_head_candidates <- function(tokens, head) {
   quoted <- attr(tokens, "quoted")
   name <- if (quoted[[head]]) tokens[[head]] else
     duckdb_reader_relation_path(tokens[[head]])
-  candidates <- if (head < length(tokens) && tokens[[head + 1L]] == "(" &&
-                      !quoted[[head + 1L]]) {
+  if (duckdb_call_head(tokens, head)) {
     first <- head
     while (first > 2L && tokens[[first - 1L]] == "." &&
              !quoted[[first - 1L]]) first <- first - 2L
@@ -451,11 +450,54 @@ duckdb_head_reaches_macro <- function(tokens, head, catalog, namespace = NULL) {
   } else if (name %in% names(duckdb_value_functions)) {
     list(duckdb_value_functions[[name]])
   }
-  any(vapply(candidates, function(parts) {
+}
+
+# Whether token `head` is followed by an unquoted `(`.
+duckdb_call_head <- function(tokens, head) {
+  head < length(tokens) && tokens[[head + 1L]] == "(" &&
+    !attr(tokens, "quoted")[[head + 1L]]
+}
+
+# Whether the macro at catalog row `index` is a caller's, or one of DuckDB's
+# own scalar macros whose stored definition calls or names a function that
+# reaches one. A system macro's free names resolve in the caller's search path.
+duckdb_macro_reaches_caller <- function(index, catalog, seen = integer()) {
+  if (duckdb_caller_macros(catalog)[[index]] ||
+        catalog$kind[[index]] != "macro") {
+    return(TRUE)
+  }
+  body <- duckdb_metadata_tokens(catalog$definition[[index]])
+  calls <- Filter(function(i) duckdb_call_head(body, i), seq_along(body))
+  seen <- c(seen, index)
+  for (head in c(calls, duckdb_value_function_heads(body))) {
+    for (parts in duckdb_head_candidates(body, head)) {
+      macro <- duckdb_metadata_catalog_match(
+        parts, catalog, kinds = c("macro", "table_macro")
+      )
+      if (length(macro) && !macro %in% seen &&
+            duckdb_macro_reaches_caller(macro, catalog, seen)) {
+        return(TRUE)
+      }
+    }
+  }
+  FALSE
+}
+
+# Whether the call head at token `head` can bind a macro that is not inert,
+# or a bare value-function name there can reach a caller macro, given this
+# operation's catalog snapshot and the stored view `namespace` if any. A
+# column of that name in scope binds instead, which this scan cannot see.
+duckdb_head_reaches_macro <- function(tokens, head, catalog, namespace = NULL) {
+  call <- duckdb_call_head(tokens, head)
+  any(vapply(duckdb_head_candidates(tokens, head), function(parts) {
     macro <- duckdb_metadata_catalog_match(
       parts, catalog, namespace, kinds = c("macro", "table_macro")
     )
-    length(macro) > 0L && !duckdb_inert_macro(macro, catalog)
+    length(macro) > 0L && if (call) {
+      !duckdb_inert_macro(macro, catalog)
+    } else {
+      duckdb_macro_reaches_caller(macro, catalog)
+    }
   }, logical(1)))
 }
 

@@ -433,15 +433,19 @@ test_that("chained and parenthesis-less macro calls are checked (#1647)", {
   writeLines(c("k", "101"), path)
   reader <- paste0("read_csv_auto(", DBI::dbQuoteString(con, path), ")")
   DBI::dbWriteTable(con, "t", data.frame(g = c("a", "b"), v = c(1L, 2L)))
-  # DuckDB binds a bare current_timestamp as get_current_timestamp().
-  for (name in c("hidden_first", "current_user", "get_current_timestamp")) {
+  # DuckDB binds a bare current_timestamp as get_current_timestamp(). Its own
+  # `user` and `current_catalog` macros call current_user and
+  # current_database() by unqualified or schema-qualified name.
+  for (name in c("hidden_first", "get_current_timestamp", "current_user",
+                 "current_database")) {
     DBI::dbExecute(con, paste0(
       "CREATE MACRO ", name, "(x := 0) AS (SELECT first(k) FROM ", reader, ")"
     ))
   }
   calls <- c("v.hidden_first()", "t.v.hidden_first()", "(v).hidden_first()",
              'v."hidden_first"()', "current_user", "CURRENT_USER",
-             '"current_user"', "current_timestamp")
+             '"current_user"', "current_timestamp", "user",
+             "current_catalog")
   t <- dplyr::tbl(con, "t")
   inputs <- list()
   for (i in seq_along(calls)) {
@@ -501,6 +505,36 @@ test_that("DuckDB's own parenthesis-less functions keep typed metadata", {
     expect_identical(inspect_grouping(
       input, .grouping = grouping_set(where(is.numeric))
     )$included, "(v)")
+  }
+})
+
+test_that("value-function names reaching no caller macro stay admitted", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  names <- c("user", "current_user", "session_user", "current_role",
+             "current_catalog", "current_schema")
+  frame <- data.frame(v = c(1L, 2L))
+  frame[names] <- "a"
+  DBI::dbWriteTable(con, "t", frame)
+  DBI::dbExecute(con, "CREATE MACRO add_one(x) AS x + 1")
+  t <- dplyr::tbl(con, "t")
+  for (name in names) {
+    quoted <- DBI::dbQuoteIdentifier(con, name)
+    sql <- paste0("SELECT ", quoted, ", v FROM t")
+    view <- paste0("view_", name)
+    DBI::dbExecute(con, paste("CREATE VIEW", view, "AS", sql))
+    inputs <- list(
+      dplyr::select(t, dplyr::all_of(c(name, "v"))),
+      dplyr::tbl(con, dbplyr::sql(sql)),
+      dplyr::tbl(con, view),
+      dplyr::tbl(con, dbplyr::sql(paste0("SELECT v, ", name, " AS y FROM t")))
+    )
+    for (input in inputs) {
+      expect_identical(inspect_grouping(
+        input, .grouping = grouping_set(where(is.numeric))
+      )$included, "(v)")
+    }
   }
 })
 
