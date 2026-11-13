@@ -1448,6 +1448,10 @@ test_that("CSV readers need an applied literal schema under auto_detect", {
     }
   }
   DBI::dbExecute(con, "CREATE MACRO struct_pack(k) AS k")
+  input <- dplyr::tbl(con, dbplyr::sql(paste0(
+    "SELECT * FROM read_csv(", quoted, ", auto_detect = false, header = true,",
+    " columns = struct_pack(k := 'BIGINT'))"
+  )), vars = "k")
   expect_error(inspect_grouping(
     input, .grouping = grouping_set(where(is.numeric))
   ), "dplyr::collect()", fixed = TRUE, class = "marginplyr_error")
