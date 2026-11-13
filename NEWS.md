@@ -1,5 +1,11 @@
 # marginplyr 0.1.0
 
+* A duplicate-set refusal raised before a typed selection such as `where()`
+  is read now names one group of positions it proved equal and says it is an
+  example. Before, it used the wording of the complete duplicate partition
+  while omitting groups or splitting one set's occurrences, because the sets
+  the typed selection produces were not yet known (#1616).
+
 * `expand_with_margins()` and `summarize_with_margins()` now build over a SQL
   input ordered by a raw `sql()` term or a constant, such as
   `arrange(sql("v DESC NULLS LAST")) |> head(n)`, as native `summarise()` of
