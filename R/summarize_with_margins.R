@@ -525,11 +525,9 @@
 #' released, marginplyr restores an overwritten destination's data, schema,
 #' indexes, and affected statistics, or removes a new destination, then
 #' releases the savepoint; source tables and earlier caller work are kept.
-#' This requires a surviving connection and successful cleanup. An interrupt
-#' caught during cleanup waits for it, and then propagates with any earlier
-#' execution error as `$parent`. A failed cleanup takes precedence: its error
-#' holds the failed step's condition in `$cleanup` and the triggering error
-#' or interrupt in `$parent`; [marginplyr_conditions] describes both fields.
+#' This requires a surviving connection and successful cleanup;
+#' [marginplyr_conditions] describes what an interrupt or a failed cleanup
+#' reports.
 #' Once the savepoint is released, the outermost release persists the result
 #' and an inner one leaves it to the caller's commit or rollback.
 #'
