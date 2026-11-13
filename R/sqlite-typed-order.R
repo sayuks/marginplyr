@@ -266,9 +266,9 @@ sql_render.marginplyr_sqlite_typed_result <- function(query, ...,
 # deprecated `cte` argument stand for, refusing both together as dbplyr's own
 # method does. A supplied `cte` carries dbplyr 2.6.0's deprecation warning.
 # The caller passes its own two formals, either possibly missing.
-sqlite_deprecated_cte_options <- function(verb, sql_options, cte,
-                                          frame = rlang::caller_env(),
-                                          user_env = rlang::caller_env(2)) {
+sqlite_resolve_sql_options <- function(verb, sql_options, cte,
+                                       frame = rlang::caller_env(),
+                                       user_env = rlang::caller_env(2)) {
   rlang::check_exclusive(sql_options, cte, .require = FALSE, .frame = frame)
   if (missing(cte)) {
     return(sql_options)
@@ -293,7 +293,7 @@ collect.marginplyr_sqlite_typed_result <- function(x, ..., n = Inf,
   if (!sqlite_typed_result_direct(x)) {
     return(NextMethod())
   }
-  sql_options <- sqlite_deprecated_cte_options("collect", sql_options, cte)
+  sql_options <- sqlite_resolve_sql_options("collect", sql_options, cte)
   boolean_output <- length(attr(x, "marginplyr_boolean_aliases")) > 0L
   anchor_only <- isTRUE(attr(x, "marginplyr_anchored_source")) &&
     length(attr(x, "marginplyr_order_keys")) == 0L && !boolean_output
@@ -699,7 +699,7 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
   if (!direct && length(sqlite_boolean_columns(public)) == 0L) {
     return(NextMethod())
   }
-  sql_options <- sqlite_deprecated_cte_options("compute", sql_options, cte)
+  sql_options <- sqlite_resolve_sql_options("compute", sql_options, cte)
   if (direct) {
     public_query <- attr(x, "marginplyr_public_query")
     anchor <- attr(x, "marginplyr_public_anchor")
