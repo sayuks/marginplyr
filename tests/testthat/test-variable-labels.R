@@ -852,6 +852,73 @@ test_that("plain-frame index and sorted attributes remain dataset metadata", {
   }
 })
 
+test_that("nested cells carry native cells' metadata, tsp at full width", {
+  skip_if_suggest_absent("tidyr")
+  skip_if_suggest_absent("dtplyr")
+  source <- data.frame(a = c("x", "x", "y"), b = c("p", "q", "p"), v = 1:3)
+  attr(source, "tsp") <- c(1, 3, 1)
+  attr(source, "note") <- "Dataset note"
+  inputs <- list(
+    data.frame = function() source,
+    tibble = function() {
+      out <- tibble::as_tibble(source)
+      attr(out, "tsp") <- c(1, 3, 1)
+      attr(out, "note") <- "Dataset note"
+      out
+    },
+    dtplyr = function() dtplyr::lazy_dt(source),
+    data.table = function() {
+      out <- data.table::as.data.table(source)
+      attr(out, "tsp") <- c(1, 3, 1)
+      attr(out, "note") <- "Dataset note"
+      out
+    }
+  )
+  # The native reference cell of each grouping set: `tidyr::nest()` for
+  # nesting and local `dplyr::nest_by()` for row-wise nesting.
+  native_cells <- function(input, verb) {
+    if (verb == "nest") {
+      detail <- dplyr::collect(tidyr::nest(input, data = -a))
+      total <- dplyr::collect(tidyr::nest(input, data = dplyr::everything()))
+    } else {
+      input <- dplyr::collect(input)
+      detail <- dplyr::nest_by(input, a)
+      total <- dplyr::nest_by(input)
+    }
+    c(stats::setNames(detail$data, detail$a), list(Total = total$data[[1L]]))
+  }
+  sorted_metadata <- function(cell) {
+    metadata <- frame_metadata(cell)
+    metadata[sort(names(metadata))]
+  }
+  verbs <- list(
+    nest = function(input, keep) {
+      nest_with_margins(input, .grouping = rollup(a), .keep = keep)
+    },
+    nest_by = function(input, keep) {
+      nest_by_with_margins(input, .grouping = rollup(a), .keep = keep)
+    }
+  )
+  for (kind in names(inputs)) {
+    for (verb in names(verbs)) {
+      native <- native_cells(inputs[[kind]](), verb)
+      for (keep in c(FALSE, TRUE)) {
+        result <- dplyr::collect(verbs[[verb]](inputs[[kind]](), keep))
+        expect_identical(result$a, c("x", "y", "Total"))
+        for (i in seq_along(result$data)) {
+          cell <- result$data[[i]]
+          info <- paste(kind, verb, keep, result$a[[i]])
+          expected <- sorted_metadata(native[[result$a[[i]]]])
+          # The documented difference: a cell narrower than the input omits
+          # the `tsp` its native cell carries.
+          if (ncol(cell) != ncol(source)) expected$tsp <- NULL
+          expect_identical(sorted_metadata(cell), expected, info = info)
+        }
+      }
+    }
+  }
+})
+
 test_that("native scalar grammar preserves summary metadata and errors", {
   skip_if_suggest_absent("dtplyr")
   source <- tibble::tibble(g = c("a", "a", "b"),

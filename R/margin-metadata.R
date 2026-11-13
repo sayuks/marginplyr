@@ -89,7 +89,15 @@ margin_frame_metadata <- function(data) {
 }
 
 # Apply native inner-frame metadata to a generated cell, never its structure.
+# Base R validates a frame-level `tsp` against the column count it encodes, the
+# input's, so a cell of another width is a differently shaped result (ADR 0042)
+# and takes no `tsp`, where native nesting builds one base would refuse.
 restore_margin_frame_metadata <- function(data, metadata) {
+  tsp <- metadata[["tsp"]]
+  if (!is.null(tsp) &&
+        length(data) != round((tsp[[2L]] - tsp[[1L]]) * tsp[[3L]]) + 1L) {
+    metadata[["tsp"]] <- NULL
+  }
   for (name in names(metadata)) attr(data, name) <- metadata[[name]]
   data
 }

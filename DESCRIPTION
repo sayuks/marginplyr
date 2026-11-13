@@ -400,7 +400,8 @@ Config/testthat/start-first:
     across-parenthesized-fns,
     dtplyr-cross-set-types,
     grouping-helper-refusal-order,
-    local-c-across
+    local-c-across,
+    forwarded-across-per-group
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool

@@ -317,12 +317,12 @@ prepare_margin_operation <- function(.data,
         duplicates_choices = duplicates_choices,
         builds_margin_branches = TRUE,
         validate_grouping = validate_grouping,
-        validate_plan_names = function(by, dimensions, data_vars, complete) {
+        validate_plan_names = function(fixed, dimensions, data_vars, complete) {
           if (!is.null(validate_plan_names)) {
-            validate_plan_names(by, dimensions, data_vars, complete)
+            validate_plan_names(fixed, dimensions, data_vars, complete)
           }
           if (complete) {
-            validate_margin_label_names(.margin_label, dimensions, by)
+            validate_margin_label_names(.margin_label, dimensions, fixed)
           }
         },
         validate_names = function(data_vars) {
@@ -339,6 +339,9 @@ prepare_margin_operation <- function(.data,
       data_vars <- grouping$data_vars
       data_proxy <- grouping$data_proxy
       plan <- grouping$plan
+      # Before the verb projects either: dbplyr's `select()` cannot rename them.
+      data <- drop_columnless_window_order(data)
+      data_proxy <- drop_columnless_window_order(data_proxy)
       check_margin_sql_public_names(
         unique(c(plan$by, plan$dimensions,
                  carried_columns(data_vars, plan), set_id_name)),
@@ -407,6 +410,22 @@ drop_unlimited_sql_order <- function(data) {
   data
 }
 
+# Drop the window-order terms of a SQL input that name no column: a raw
+# `sql()` string or a constant. dbplyr's `select()` cannot rename such a term
+# and fails in `rename_order()` (#1622), while a Margin result names no
+# column for it either. The ORDER BY clause is untouched.
+drop_columnless_window_order <- function(data) {
+  if (!inherits(data, "tbl_lazy") ||
+        !inherits(data$lazy_query, "lazy_select_query")) {
+    return(data)
+  }
+  data$lazy_query$order_vars <- Filter(
+    function(term) length(all.vars(term)) > 0L,
+    data$lazy_query$order_vars
+  )
+  data
+}
+
 validate_margin_operation <- function(operation) {
   check_margin_operation(operation)
   with_margin_error_call(
@@ -417,7 +436,9 @@ validate_margin_operation <- function(operation) {
         colSums(operation$plan$grouping_masks) > 0L
       ],
       backend = operation$backend,
-      by = operation$plan$by,
+      fixed = fixed_keys(
+        operation$plan$by, operation$plan$by_from_groups
+      ),
       .margin_label = operation$margin_label,
       margin_labels = operation$margin_labels,
       .check_margin_label = operation$check_margin_label,

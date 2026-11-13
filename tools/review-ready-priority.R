@@ -165,10 +165,24 @@ review_ready_priority_evidence <- function(root, run) {
       !identical(session[environment_fields], manifest$session[environment_fields])) {
     stop("dependency environment changed; defer to the next ordinary full check")
   }
-  for (pid in unique(evidence$observations$pid)) {
-    worker <- readRDS(file.path(directory, paste0(pid, ".worker.rds")))
-    if (!identical(worker$session[environment_fields], manifest$session[environment_fields])) {
-      stop("worker environment differs from the measured environment")
+  workers <- lapply(unique(evidence$observations$pid), function(pid) {
+    readRDS(file.path(directory, paste0(pid, ".worker.rds")))
+  })
+  # Locale and time zone are held only to the other workers; why is in
+  # tools/review-ready-runner.md, "File timing evidence".
+  parent_fields <- setdiff(environment_fields, c("locale", "time.zone"))
+  for (worker in workers) {
+    for (field in environment_fields) {
+      if (!identical(worker$session[[field]], workers[[1L]]$session[[field]])) {
+        stop("workers disagree on their environment: ", field)
+      }
+    }
+  }
+  for (worker in workers) {
+    for (field in parent_fields) {
+      if (!identical(worker$session[[field]], manifest$session[[field]])) {
+        stop("worker environment differs from the measured environment: ", field)
+      }
     }
     own_package <- read.dcf(file.path(root, "DESCRIPTION"))[[1L, "Package"]]
     packages <- c(worker$session$otherPkgs, worker$session$loadedOnly)

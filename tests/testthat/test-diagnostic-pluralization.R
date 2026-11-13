@@ -142,8 +142,10 @@ pluralizing_coverage <- function() {
       "a warning is one report where only a branch constant differed",
       "a warning repeated across grouping sets is reported once"
     ),
+    validate_grouping_overlap = "this file, the grouped-input overlap block",
     validate_margin_label = "this file, the NA-level block",
     validate_margin_label_names = c(
+      "this file, the grouped-input fixed label block",
       "this file, the fixed `.by` label block",
       "this file, the unknown label dimension block"
     ),
@@ -293,7 +295,7 @@ test_that("the unknown `.by` invariant pluralizes its column noun", {
     compile_grouping_spec(
       rollup(region),
       "region",
-      .by = by,
+      fixed = fixed_keys(by),
       duplicates_choices = margin_duplicates_choices
     )
   }
@@ -310,6 +312,67 @@ test_that("the unknown `.by` invariant pluralizes its column noun", {
   expect_identical(
     conditionMessage(plural),
     "Unknown `.by` columns `nope`, `nor`."
+  )
+})
+
+test_that("the grouped-input overlap refusal pluralizes its column noun", {
+  data <- data.frame(region = "E", grade = "A", n = 1)
+
+  singular <- expect_error(expand_with_margins(
+    dplyr::group_by(data, region),
+    .grouping = rollup(region, grade)
+  ))
+  expect_identical(
+    conditionMessage(singular),
+    paste0(
+      "Fixed grouping column of `.data` cannot also appear in `.grouping`:\n",
+      "i `region`.\n",
+      "i Call `dplyr::ungroup()` first, or remove it from `.grouping`."
+    )
+  )
+
+  plural <- expect_error(expand_with_margins(
+    dplyr::group_by(data, region, grade),
+    .grouping = rollup(region, grade, n)
+  ))
+  expect_identical(
+    conditionMessage(plural),
+    paste0(
+      "Fixed grouping columns of `.data` cannot also appear in ",
+      "`.grouping`:\n",
+      "i `region` and `grade`.\n",
+      "i Call `dplyr::ungroup()` first, or remove them from `.grouping`."
+    )
+  )
+})
+
+test_that("the grouped-input fixed label refusal pluralizes its column noun", {
+  data <- data.frame(region = "E", grade = "A", n = 1)
+
+  singular <- expect_error(expand_with_margins(
+    dplyr::group_by(data, region),
+    .grouping = rollup(grade),
+    .margin_label = c(region = "A", grade = "A")
+  ))
+  expect_identical(
+    conditionMessage(singular),
+    paste0(
+      "`.margin_label` must not name fixed grouping column of `.data`:\n",
+      "i `region`."
+    )
+  )
+
+  plural <- expect_error(expand_with_margins(
+    dplyr::group_by(data, region, grade),
+    .grouping = rollup(n),
+    .margin_label = c(region = "A", grade = "A", n = "A")
+  ))
+  expect_identical(
+    conditionMessage(plural),
+    paste0(
+      "`.margin_label` must not name fixed grouping columns of `.data`:\n",
+      "i `region` and `grade`."
+    )
   )
 })
 

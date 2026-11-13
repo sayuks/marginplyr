@@ -927,6 +927,67 @@ test_that("a later share name does not hide an input from earlier selections", {
   expect_identical(actual$selected, rep("share,value,total", 3L))
 })
 
+test_that("a share named like an input hides it from a later unnamed across", {
+  data <- data.frame(
+    a = c("a1", "a1", "a2", "a2", "a3"),
+    v = c(1L, 2L, 3L, 4L, 6L), w = c(10, 20, 30, 40, 50)
+  )
+  inputs <- list(tibble = tibble::as_tibble(data))
+  if (suggest_available("data.table")) {
+    inputs$data.table <- data.table::as.data.table(data)
+  }
+  shares <- list(
+    total = function(name) rlang::quos(!!name := share_of_total(s)),
+    parent = function(name) rlang::quos(!!name := share_of_parent(s)),
+    across = function(name) {
+      rlang::quos(dplyr::across(s, share_of_total, .names = !!name))
+    }
+  )
+  summarize_after <- function(input, share, name, selection) {
+    summarize_with_margins(
+      inputs[[input]], s = sum(v), !!!shares[[share]](name),
+      dplyr::across(!!selection, max, .names = "mx_{.col}"),
+      .grouping = rollup(a)
+    )
+  }
+  # Each selection reads the mask `v, s`: the share `w` hides input `w`.
+  selections <- list(
+    list(quote(dplyr::everything()), c("mx_v", "mx_s")),
+    list(quote(v:s), c("mx_v", "mx_s")),
+    list(quote(!s), "mx_v"),
+    list(quote(-v), "mx_s"),
+    list(2, "mx_s"),
+    list(quote(dplyr::any_of("w")), character()),
+    list(quote(dplyr::starts_with("w")), character())
+  )
+  expected <- list(mx_v = c(2L, 4L, 6L, 6L), mx_s = c(3L, 7L, 6L, 16L))
+  # Naming the share is answered as it is for a share named `z`, which reuses
+  # no input.
+  named <- list(
+    list(quote(w), quote(z)),
+    list(quote(dplyr::all_of("w")), quote(dplyr::all_of("z")))
+  )
+  for (input in names(inputs)) {
+    for (share in names(shares)) {
+      for (case in selections) {
+        label <- paste(input, share, rlang::expr_deparse(case[[1L]]))
+        actual <- summarize_after(input, share, "w", case[[1L]])
+        expect_identical(names(actual), c("a", "s", "w", case[[2L]]),
+                         label = label)
+        expect_identical(as.list(actual[case[[2L]]]), expected[case[[2L]]],
+                         label = label)
+      }
+      for (case in named) {
+        label <- paste(input, share, rlang::expr_deparse(case[[1L]]))
+        error <- expect_error(summarize_after(input, share, "w", case[[1L]]))
+        control <- expect_error(summarize_after(input, share, "z", case[[2L]]))
+        expect_identical(class(error), class(control), label = label)
+        expect_no_match(rlang::cnd_message(error), "all_of(c(", fixed = TRUE)
+      }
+    }
+  }
+})
+
 test_that("lazy summary selections keep their backend limitation", {
   data <- data.frame(group = c("a", "b"), value = c(1, 2))
   remote <- dbplyr::tbl_lazy(data, con = dbplyr::simulate_dbi())

@@ -94,7 +94,8 @@ resolve_margin_labels <- function(.margin_label, dimensions) {
   stats::setNames(labels, dimensions)
 }
 
-validate_margin_label_names <- function(.margin_label, dimensions, by) {
+# `fixed` is the plan's `fixed_keys()` record.
+validate_margin_label_names <- function(.margin_label, dimensions, fixed) {
   if (is.null(.margin_label) || is.null(names(.margin_label))) {
     return(invisible(NULL))
   }
@@ -103,8 +104,17 @@ validate_margin_label_names <- function(.margin_label, dimensions, by) {
   # Each refusal below names whichever names it is refusing, and each carries
   # them in an `i` bullet rather than in its main line, per
   # ADR 0023's condition 2: how many of them arrive is the caller's decision.
-  fixed_names <- intersect(label_names, by)
+  fixed_names <- intersect(label_names, fixed$columns)
   if (length(fixed_names) > 0L) {
+    if (fixed$from_groups) {
+      abort_marginplyr(c(
+        paste0(
+          "{.arg .margin_label} must not name fixed grouping ",
+          "{cli::qty(length(fixed_names))}column{?s} of {.arg .data}:"
+        ),
+        i = "{.var {fixed_names}}."
+      ))
+    }
     abort_marginplyr(c(
       paste0(
         "{.arg .margin_label} must not name fixed {.arg .by} ",
@@ -178,7 +188,7 @@ validate_margin_label <- function(.data,
                                   dimensions,
                                   omitted,
                                   backend,
-                                  by,
+                                  fixed,
                                   .margin_label,
                                   margin_labels,
                                   .check_margin_label,
@@ -186,7 +196,7 @@ validate_margin_label <- function(.data,
   validate_margin_label_names(
     .margin_label,
     dimensions = dimensions,
-    by = by
+    fixed = fixed
   )
 
   if (length(dimensions) == 0L) {

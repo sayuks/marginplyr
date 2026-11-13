@@ -79,9 +79,18 @@ test_that("cancelled option transitions restore subsequent warnings", {
 
 test_that("cancellation during option restoration finishes cleanup", {
   cases <- list(
-    list(rlib_warning_verbosity = NULL, lifecycle_verbosity = NULL),
-    list(rlib_warning_verbosity = "verbose", lifecycle_verbosity = "warning"),
-    list(rlib_warning_verbosity = "quiet", lifecycle_verbosity = "error")
+    list(
+      rlib_warning_verbosity = NULL, lifecycle_verbosity = NULL,
+      rlib_message_verbosity = NULL
+    ),
+    list(
+      rlib_warning_verbosity = "verbose", lifecycle_verbosity = "warning",
+      rlib_message_verbosity = "verbose"
+    ),
+    list(
+      rlib_warning_verbosity = "quiet", lifecycle_verbosity = "error",
+      rlib_message_verbosity = "quiet"
+    )
   )
   for (settings in cases) {
     for (transition in c("quiet", "restore")) {

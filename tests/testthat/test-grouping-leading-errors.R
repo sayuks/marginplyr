@@ -9,6 +9,24 @@ leading_error_specs <- function(first, later) {
   )
 }
 
+# A pass stopped at a typed selection names one proved group as an example
+# (#1616). `positions` is that whole group, as the message spells it.
+duplicate_example_lines <- function(positions) {
+  c(paste0("Duplicate grouping sets were produced. For example, ",
+           "these positions in the grouping plan have the same set:"),
+    paste0("i ", positions, "."))
+}
+
+expect_duplicate_example <- function(cnd, positions, original = NULL) {
+  lines <- function(cnd) {
+    strsplit(conditionMessage(cnd), "\n", fixed = TRUE)[[1L]]
+  }
+  expect_identical(lines(cnd)[1:2], duplicate_example_lines(positions))
+  if (!is.null(original)) {
+    expect_identical(lines(cnd)[-(1:2)], lines(original)[-(1:2)])
+  }
+}
+
 test_that("known fixed-key overlaps precede unsafe dtplyr metadata", {
   skip_if_suggest_absent("dtplyr")
   data <- data.frame("fixed  key" = 1L, value = 2L, check.names = FALSE)
@@ -24,16 +42,18 @@ test_that("known fixed-key overlaps precede unsafe dtplyr metadata", {
       original <- expect_error(verb(data, !!first, grouping_set(!!first)))
       expect_match(conditionMessage(original), "Columns cannot appear in both")
       expect_match(conditionMessage(original), "`fixed  key`", fixed = TRUE)
+      grouped <- expect_error(
+        verb(dplyr::group_by(data, !!first), NULL, grouping_set(!!first))
+      )
+      expect_match(conditionMessage(grouped), "Fixed grouping column")
       for (input in list(data, step, dplyr::group_by(step, !!first))) {
-        by <- if (length(dplyr::group_vars(input)) > 0L) {
-          NULL
-        } else {
-          first
-        }
+        is_grouped <- length(dplyr::group_vars(input)) > 0L
+        by <- if (is_grouped) NULL else first
+        expected <- if (is_grouped) grouped else original
         mixed <- expect_error(
           verb(input, !!by, spec), class = "marginplyr_error"
         )
-        expect_identical(conditionMessage(mixed), conditionMessage(original))
+        expect_identical(conditionMessage(mixed), conditionMessage(expected))
       }
     }
   }
@@ -454,7 +474,7 @@ test_that("DuckDB leading selection failures invoke no metadata query", {
       mixed <- expect_error(
         verb(remote, NULL, spec), class = "marginplyr_error"
       )
-      expect_identical(conditionMessage(mixed), conditionMessage(original))
+      expect_duplicate_example(mixed, "1, 2", original)
     }
   }
   expect_identical(counter$queries, 0L)
@@ -655,15 +675,15 @@ test_that("known duplicate occurrences precede unsafe dtplyr metadata", {
                              class = "marginplyr_error")
     for (spec in specs) {
       mixed <- expect_error(verb(step, NULL, spec), class = "marginplyr_error")
-      expect_identical(conditionMessage(mixed), conditionMessage(original))
+      expect_duplicate_example(mixed, "1, 2", original)
     }
   }
-  expect_error(
+  expect_duplicate_example(expect_error(
     inspect_grouping(step, .grouping = grouping_spec(
       grouping_sets(x, x), grouping_sets(x, where(numeric_column))
     )),
-    "1, 3; 2, 4.", fixed = TRUE, class = "marginplyr_error"
-  )
+    class = "marginplyr_error"
+  ), "1, 3")
   expect_identical(predicates, 0L)
 })
 
@@ -698,8 +718,7 @@ test_that("duplicate product prefixes precede multi-set typed suffixes", {
   )]) {
     cnd <- expect_error(verb(data, NULL, spec), "Duplicate grouping sets",
                         class = "marginplyr_error")
-    expect_match(conditionMessage(cnd), "1, 3", fixed = TRUE)
-    expect_match(conditionMessage(cnd), "2, 4", fixed = TRUE)
+    expect_duplicate_example(cnd, "1, 3")
   }
   expect_identical(predicates, 0L)
 })
@@ -713,23 +732,17 @@ test_that("multi-set product duplicate positions survive outer families", {
   spec <- grouping_spec(!!partial, grouping_sets(c, grouping_set()))
   cnd <- expect_error(inspect_grouping(data, .grouping = spec),
                       "Duplicate grouping sets", class = "marginplyr_error")
-  for (positions in c("1, 5", "4, 8")) {
-    expect_match(conditionMessage(cnd), positions, fixed = TRUE)
-  }
+  expect_duplicate_example(cnd, "1, 5")
   cnd <- expect_error(inspect_grouping(
     data, .grouping = grouping_sets(c, !!spec)
   ), "Duplicate grouping sets", class = "marginplyr_error")
-  for (positions in c("2, 6", "5, 9")) {
-    expect_match(conditionMessage(cnd), positions, fixed = TRUE)
-  }
+  expect_duplicate_example(cnd, "2, 6")
   cnd <- expect_error(inspect_grouping(
     data, .grouping = grouping_spec(
       grouping_sets(c, !!partial), grouping_sets(d, grouping_set())
     )
   ), "Duplicate grouping sets", class = "marginplyr_error")
-  for (positions in c("3, 7", "6, 10")) {
-    expect_match(conditionMessage(cnd), positions, fixed = TRUE)
-  }
+  expect_duplicate_example(cnd, "3, 7")
 })
 
 test_that("duplicate product prefixes avoid unsafe dtplyr suffix metadata", {
@@ -752,8 +765,7 @@ test_that("duplicate product prefixes avoid unsafe dtplyr suffix metadata", {
   )]) {
     cnd <- expect_error(verb(step, NULL, spec), "Duplicate grouping sets",
                         class = "marginplyr_error")
-    expect_match(conditionMessage(cnd), "1, 3", fixed = TRUE)
-    expect_match(conditionMessage(cnd), "2, 4", fixed = TRUE)
+    expect_duplicate_example(cnd, "1, 3")
   }
   expect_identical(callbacks, 0L)
   expect_identical(counter$n, 0L)
@@ -831,10 +843,9 @@ test_that("completed duplicate groups precede incomplete product groups", {
   spec <- grouping_sets(
     x, y, y, grouping_spec(grouping_sets(x, x), where(is.character))
   )
-  expect_error(
-    inspect_grouping(data, .grouping = spec),
-    "2, 3; 4, 5.", fixed = TRUE, class = "marginplyr_error"
-  )
+  expect_duplicate_example(expect_error(
+    inspect_grouping(data, .grouping = spec), class = "marginplyr_error"
+  ), "2, 3")
 })
 
 test_that("partial product factors refuse known duplicates before predicates", {
@@ -993,5 +1004,50 @@ test_that("partial products preserve typed decisions and duplicate policies", {
       grouping_sets(x, x, where(is.numeric) & value), value
     ), .duplicates = "drop")
     expect_identical(actual, expected)
+  }
+})
+
+# Before typed metadata, the sets a typed selection will produce are unknown,
+# so they can join any listed group or form a new one. Such a refusal names
+# one group it has proved and says it is an example (#1616); the name
+# spellings, resolved in full, keep the complete partition.
+test_that("duplicates proved before typed selection are an example", {
+  data <- data.frame(a = "x", n = 1L, value = 1)
+  cases <- list(
+    list(
+      names = grouping_sets(a, n, a, n),
+      typed = grouping_sets(a, n, a, where(is.integer)),
+      partition = "2, 4; 1, 3",
+      example = "1, 3"
+    ),
+    list(
+      names = grouping_spec(cube(a, n), cube(a), n),
+      typed = grouping_spec(cube(a, n), cube(a), where(is.integer)),
+      partition = "6, 8; 1, 2, 3, 4, 5, 7",
+      example = "1, 2, 5"
+    )
+  )
+  inputs <- list(local = data)
+  if (suggest_available("dtplyr")) {
+    inputs$dtplyr <- dtplyr::lazy_dt(data)
+  }
+  diagnostic <- function(verb, input, spec) {
+    cnd <- expect_error(verb(input, NULL, !!spec), class = "marginplyr_error")
+    strsplit(conditionMessage(cnd), "\n", fixed = TRUE)[[1L]][1:2]
+  }
+  for (input in inputs) {
+    for (verb in forwarded_verbs) {
+      for (case in cases) {
+        expect_identical(
+          diagnostic(verb, input, case$names),
+          c("Duplicate grouping sets were produced at position groups:",
+            paste0("i ", case$partition, "."))
+        )
+        expect_identical(
+          diagnostic(verb, input, case$typed),
+          duplicate_example_lines(case$example)
+        )
+      }
+    }
   }
 })

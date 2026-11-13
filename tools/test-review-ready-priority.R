@@ -331,6 +331,33 @@ local({
     saveRDS(x, path)
   }, "worker dependency differs")
 
+  # Only the workers' R/platform/linear-algebra stack is held to the parent's; see review-ready-runner.md, "File timing evidence".
+  edit_workers <- function(f, edit, pids = 1:4) {
+    for (pid in pids) {
+      path <- file.path(f$timing, paste0(pid, ".worker.rds"))
+      x <- readRDS(path); x$session <- edit(x$session); saveRDS(x, path)
+    }
+  }
+  collated <- fixture(c("old", "new", "tiny", "skip"), c(old = 5, new = 30, tiny = 0.1, skip = 100), "skip")
+  edit_workers(collated, function(s) {
+    s$locale <- paste0("C/", s$locale); s$time.zone <- "Fixture/Zone"; s
+  })
+  expect(propose(collated)$eligible, "workers that agree may differ from the parent in locale and time zone")
+  for (field in c("R.version", "platform", "running", "locale", "time.zone", "matprod", "BLAS", "LAPACK")) {
+    reject(function(f) edit_workers(f, function(s) { s[[field]] <- "fixture-disagreement"; s }, pids = 1L),
+      paste0("workers disagree on their environment: ", field))
+  }
+  for (field in c("R.version", "platform", "running", "matprod", "BLAS", "LAPACK")) {
+    reject(function(f) edit_workers(f, function(s) { s[[field]] <- "fixture-difference"; s }),
+      paste0("worker environment differs from the measured environment: ", field))
+  }
+  for (field in c("locale", "time.zone")) {
+    reject(function(f) {
+      path <- file.path(f$timing, "manifest.rds")
+      x <- readRDS(path); x$session[[field]] <- "fixture-adoption-change"; saveRDS(x, path)
+    }, "dependency environment changed")
+  }
+
   # Apply and commit only in this fixture, then install an independent clean clone.
   patch <- file.path(proposal$directory, "priority.patch")
   git(f$root, "apply", "--check", patch)
@@ -351,8 +378,11 @@ local({
     'trace("queue_setup", where=asNamespace("testthat"), print=FALSE, tracer=quote(writeLines(test_paths, Sys.getenv("FIXTURE_DISPATCH"))))',
     'test_check("fixture")'
   ), script)
+  # A named processx env replaces the child's whole environment, so the child R
+  # needs TMPDIR to place its session temporary directory where this one can.
   command(file.path(R.home("bin"), "Rscript"), script, file.path(clone, "tests"),
     c(R_LIBS = paste(c(library, .libPaths()), collapse = .Platform$path.sep),
+      TMPDIR = tempdir(),
       TESTTHAT_PARALLEL = "true", TESTTHAT_CPUS = "8", FIXTURE_DISPATCH = dispatch,
       FIXTURE_COMPLETIONS = completions, MARGINPLYR_REVIEW_TIMING = "", MARGINPLYR_REVIEW_TIMING_HELPER = ""))
   expect(identical(readLines(dispatch), paste0("test-", c("new", "old", letters[1:7], "tiny", "skip"), ".R")),
