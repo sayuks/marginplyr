@@ -128,11 +128,9 @@ in full. An abbreviation is not shorthand for the value it begins, and
 \code{NULL} is not shorthand for the default: both are errors naming the values
 the argument accepts.
 
-There are two ways to ask for the default, and a \code{NULL} is neither of them.
-One is to leave the argument out. The other is to pass the whole vocabulary
-as the signature spells it, which is what leaving the argument out already
-does — the default \emph{is} that vector — and what lets a function of your own
-repeat the signature and hand the argument on:
+To ask for the default, leave the argument out, or pass the whole
+vocabulary exactly as the signature spells it. The second form lets a
+function of your own repeat the signature and hand the argument on:
 
 \if{html}{\out{<div class="sourceCode r">}}\preformatted{my_report <- function(data, .sort = c("none", "last", "first")) \{
   summarize_with_margins(
@@ -142,31 +140,9 @@ repeat the signature and hand the argument on:
 \}
 }\if{html}{\out{</div>}}
 
-Called without \code{.sort}, that function forwards the vector its own formal
-holds and the Margin verb reads it as the default, so the wrapper needs no
-matching call of its own. Only the spelling the signature gives is read this
-way: any other vector of more than one value is an error, a reordering of
-the vocabulary included.
-
-What such a wrapper does hold is a copy of this vocabulary, read by exact
-match, so a change to the vocabulary refuses the wrapper's own default while
-leaving a value passed through it alone. A wrapper that
-would rather not track this signature resolves the value itself and passes
-the one string it chose, which no later widening or reordering of the
-vocabulary can invalidate.
-
-Elsewhere in this package \code{NULL} is a documented value, and what it means is
-stated with the argument that takes it.
-
-A misspelled option reaches \code{\link[=summarize_with_margins]{summarize_with_margins()}} through \code{...},
-where it would otherwise become a summary column while the option has no
-effect. A dot-prefixed summary name that is an option name, or one
-insertion, deletion or substitution from one, is therefore an error naming
-the option it resembles. This differs from \code{\link[dplyr:summarise]{dplyr::summarise()}} on purpose:
-next to the short options \code{.by} and \code{.id}, names such as \code{.y}, \code{.b}, \code{.i}
-and \code{.ids} are refused although \code{summarise()} would return them as
-columns. Rename the summary to keep it; a dot-prefixed name further from
-every option, such as \code{.n} or \code{.x}, is a column as usual.
+Any other vector of more than one value is an error, a reordering of the
+vocabulary included. A wrapper that would rather not track the signature
+resolves the value itself and passes one string.
 }
 
 \section{Arrow inputs}{
@@ -189,31 +165,22 @@ generated Margin label transformation Arrow cannot translate, a \code{Table} and
 refuses it before a row is read. Collect the input first to perform that
 operation locally, selecting the columns you need before collecting. A
 \code{Dataset} and a query built on one instead keep Arrow's own
-unsupported-expression error. Thus an \code{arrow_dplyr_query} is described by
-its complete source graph, not by its query class alone.
+unsupported-expression error.
 
 A \code{RecordBatchReader} is one-pass, while a Margin operation may build one
-branch per grouping set. \code{\link[=summarize_with_margins]{summarize_with_margins()}} and
-\code{\link[=expand_with_margins]{expand_with_margins()}} therefore refuse both the reader and any query whose
-source graph contains one. \code{\link[arrow:as_arrow_table]{arrow::as_arrow_table()}} consumes every batch
+branch per grouping set, so a reader and any query whose source graph
+contains one are refused. \code{\link[arrow:as_arrow_table]{arrow::as_arrow_table()}} consumes every batch
 once and materializes the reusable \code{Table} those branches require.
-\code{inspect_grouping()} executes no branch, so it accepts both a direct reader
-and a reader-backed query without consuming either. It normalizes a direct
-reader to an unexecuted Arrow query internally.
+\code{\link[=inspect_grouping]{inspect_grouping()}} executes no branch, so it accepts both without
+consuming either. Other Arrow objects, such as a \code{Scanner} or an \code{Array},
+are not dplyr inputs; a Scanner materializes with \verb{$ToTable()}.
 
-A \code{Scanner}, \code{Scalar}, \code{Array}, \code{ChunkedArray}, \code{Schema}, \code{Field},
-\code{DataType}, and other non-tabular Arrow objects are not dplyr inputs.
-Materialize a Scanner with \verb{$ToTable()} or choose its
-\verb{$ToRecordBatchReader()} stream first; convert any other object to a data
-frame or lazy dplyr table appropriate to the data it represents.
-
-The nesting verbs accept neither Arrow input category, because their result
-contains a list column. \code{\link[=nest_with_margins]{nest_with_margins()}} and
-\code{\link[=nest_by_with_margins]{nest_by_with_margins()}} therefore ask you to collect first. Contextual
-shares are rejected for every accepted Arrow input before a summary query is
-constructed; collect first when local share execution is appropriate. In
-either rewrite, collection changes \code{.check_margin_label}'s default from
-\code{FALSE} to \code{TRUE}, so choose that policy explicitly on the re-run.
+Arrow does not hold factor levels in the schema marginplyr reads, so a
+non-missing \code{.margin_label} converts a factor dimension to character, its
+levels and ordered status are lost, and a Margin order sorts it by value.
+For the same reason, a label equal to an unused declared level is allowed,
+and an observed collision is refused only when
+\code{.check_margin_label = TRUE}. \code{NA_character_} and \code{NULL} convert nothing.
 }
 
 \examples{

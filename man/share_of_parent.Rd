@@ -323,12 +323,8 @@ unsupported window when rendering or executing the query. Explicitly
 collect that input first to calculate shares locally.
 On live SQLite, direct \code{\link[dplyr:collect]{dplyr::collect()}} keeps a declared double share
 when the result is empty or a finite prefix contains only missing shares.
-Direct \code{\link[dplyr:compute]{dplyr::compute()}} writes a typed table containing only public
-columns, and a sorted result
-reads back in Margin order. A sorted compute refuses before writing when
-public columns shadow all SQLite rowid aliases. Later dplyr verbs use
-ordinary dbplyr behavior, including its ordering rules. See
-\code{\link[=summarize_with_margins]{summarize_with_margins()}} for destination and transaction details.
+For direct \code{\link[dplyr:compute]{dplyr::compute()}}, see
+\emph{\link[=summarize_with_margins]{SQLite materialization}}.
 
 Syntax, source-name, written-order, and \code{across()} errors are always
 reported locally, before execution, on every backend. The eligible-type

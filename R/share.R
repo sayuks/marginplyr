@@ -311,12 +311,8 @@
 #' collect that input first to calculate shares locally.
 #' On live SQLite, direct [dplyr::collect()] keeps a declared double share
 #' when the result is empty or a finite prefix contains only missing shares.
-#' Direct [dplyr::compute()] writes a typed table containing only public
-#' columns, and a sorted result
-#' reads back in Margin order. A sorted compute refuses before writing when
-#' public columns shadow all SQLite rowid aliases. Later dplyr verbs use
-#' ordinary dbplyr behavior, including its ordering rules. See
-#' [summarize_with_margins()] for destination and transaction details.
+#' For direct [dplyr::compute()], see
+#' *[SQLite materialization][summarize_with_margins]*.
 #'
 #' Syntax, source-name, written-order, and `across()` errors are always
 #' reported locally, before execution, on every backend. The eligible-type

@@ -1029,10 +1029,12 @@ every non-key column and does not implement `...`, multiple list columns, or
 it row-wise, because a row-wise data frame is a local object.
 
 Sharing a result shape is not upstream compatibility; the differences are part
-of the margin-aware API. *Relationship to tidyr and dplyr* in the
+of the margin-aware API. The first section of the
 [`nest_with_margins()`
-reference](https://sayuks.github.io/marginplyr/man/nest_with_margins.html)
-states both contracts in full.
+reference](https://sayuks.github.io/marginplyr/man/nest_with_margins.html) and
+of the [`nest_by_with_margins()`
+reference](https://sayuks.github.io/marginplyr/man/nest_by_with_margins.html)
+lists each verb's differences.
 
 For grouped input, existing grouping columns become fixed keys as though they
 had been supplied through `.by`. Unlike `tidyr::nest()`, `nest_with_margins()`

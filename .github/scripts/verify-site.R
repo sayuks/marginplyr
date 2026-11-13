@@ -427,6 +427,10 @@ markers <- list(
     "before a row is read, and names the two rewrites that compute it",
     "Database backend coverage",
     "Microsoft SQL Server",
+    # The single home of the SQLite `compute()` contract, by its anchor: the
+    # database guide links it with this fragment, so a heading change that
+    # moved the id would leave that link landing at the top of the page.
+    "id=\"sqlite-materialization\"",
     "NA is already a factor level",
     "cannot select any column named in the complete Grouping plan",
     "cur_group_id"
@@ -487,7 +491,7 @@ markers <- list(
     "at most two queries"
   ),
   "docs/man/nest_with_margins.html" = c(
-    "Relationship to tidyr and dplyr",
+    "Differences from nest()",
     "original, pre-margin values",
     "Nesting does not support",
     "No input column name is reserved"
