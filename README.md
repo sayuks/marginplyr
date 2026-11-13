@@ -441,8 +441,11 @@ than an immediate summary.
 
 These are margin-aware counterparts, not drop-in replacements for
 `tidyr::nest()` and `dplyr::nest_by()`. Their precise grouping, `.keep`,
-empty-input, and lazy-backend contracts are documented in the function
-reference and the [Get
+empty-input, and lazy-backend contracts are documented in the
+[`nest_with_margins()`](https://sayuks.github.io/marginplyr/man/nest_with_margins.html)
+and
+[`nest_by_with_margins()`](https://sayuks.github.io/marginplyr/man/nest_by_with_margins.html)
+references and the [Get
 started](https://sayuks.github.io/marginplyr/vignettes/get_started.html)
 guide.
 
