@@ -388,7 +388,13 @@ duckdb_metadata_catalog_match <- function(parts, catalog, namespace = NULL,
   }) else list()
   view_paths <- if (!is.null(namespace) &&
                       !namespace[[1L]] %in% c("temp", "system")) {
-    list(sql_ascii_lower(namespace), c(sql_ascii_lower(namespace[[1L]]), ""))
+    view_db <- sql_ascii_lower(namespace[[1L]])
+    # Binding a stored view, DuckDB 1.5 and 2.0 resolve a function or table
+    # macro in the view's catalog's main schema after the view's own schema;
+    # a table or view is not resolved there.
+    c(list(sql_ascii_lower(namespace)),
+      if (any(kinds %in% c("macro", "table_macro"))) list(c(view_db, "main")),
+      list(c(view_db, "")))
   } else {
     list()
   }

@@ -518,6 +518,57 @@ test_that("a system macro's body resolves in a stored view's schema", {
   expect_duckdb_catalog_only()
 })
 
+test_that("a view's functions also resolve in its catalog's main schema", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  writeLines(c("k", "101"), path)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  # Each case names where its caller macro lives and the view body reaching
+  # it; `NA` defines none, and `db3.main` is outside the view's search path.
+  cases <- list(
+    list(macro = "db2.main.current_user()", body = "user AS u, v",
+         refused = TRUE),
+    list(macro = "db2.main.hf(x)", body = "hf(v) AS u, v", refused = TRUE),
+    list(macro = "db3.main.current_user()", body = "user AS u, v",
+         refused = FALSE),
+    list(macro = NA, body = "user AS u, v", refused = FALSE)
+  )
+  for (case in cases) {
+    con <- duckdb_test_connection()
+    DBI::dbExecute(con, "ATTACH ':memory:' AS db2")
+    DBI::dbExecute(con, "ATTACH ':memory:' AS db3")
+    DBI::dbExecute(con, "CREATE SCHEMA db2.s2")
+    DBI::dbExecute(con, "CREATE TABLE db2.main.t AS SELECT 'a' AS g, 1 AS v")
+    if (!is.na(case$macro)) {
+      DBI::dbExecute(con, paste0(
+        "CREATE MACRO ", case$macro, " AS ",
+        "(SELECT first(k) FROM read_csv_auto(",
+        DBI::dbQuoteString(con, path), "))"
+      ))
+    }
+    DBI::dbExecute(con, paste(
+      "CREATE VIEW db2.s2.vw AS SELECT", case$body, "FROM db2.main.t"
+    ))
+    input <- dplyr::tbl(con, DBI::Id(catalog = "db2", schema = "s2",
+                                     table = "vw"))
+    if (case$refused) {
+      expect_error(inspect_grouping(
+        input, .grouping = grouping_set(where(is.numeric))
+      ), "DuckDB view", fixed = TRUE, class = "marginplyr_error")
+      expect_duckdb_catalog_only()
+    } else {
+      expect_identical(inspect_grouping(
+        input, .grouping = grouping_set(where(is.numeric))
+      )$included, "(v)")
+      expect_identical(last_sent_queries(details = TRUE)$purpose,
+                       c("relation_catalog", "selection_proxy"))
+    }
+    DBI::dbDisconnect(con, shutdown = TRUE)
+  }
+})
+
 test_that("DuckDB's own parenthesis-less functions keep typed metadata", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
