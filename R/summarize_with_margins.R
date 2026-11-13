@@ -555,6 +555,9 @@
 #'   its types are read. It binds no table of yours. Opaque macros, `query()`,
 #'   `query_table()`, and views without stored SQL are refused, except a data
 #'   frame registered with `duckdb::duckdb_register()`.
+#' - **At most two queries per share request until the SQL dialect answers**,
+#'   referencing none of your tables; see
+#'   *[Contextual shares][summarize_with_margins]*.
 #'
 #' A query is not safe merely because it returns no rows: some services bill
 #' by the bytes a query scans, and `LIMIT 0` is not exempt. marginplyr cannot

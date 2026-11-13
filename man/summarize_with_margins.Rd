@@ -623,6 +623,9 @@ check that the input hides no source work behind a view or macro before
 its types are read. It binds no table of yours. Opaque macros, \code{query()},
 \code{query_table()}, and views without stored SQL are refused, except a data
 frame registered with \code{duckdb::duckdb_register()}.
+\item \strong{At most two queries per share request until the SQL dialect answers},
+referencing none of your tables; see
+\emph{\link[=summarize_with_margins]{Contextual shares}}.
 }
 
 A query is not safe merely because it returns no rows: some services bill
