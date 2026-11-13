@@ -262,6 +262,19 @@ sql_render.marginplyr_sqlite_typed_result <- function(query, ...,
   dbplyr::sql(paste0(sql, "\nORDER BY ", paste(quoted, collapse = ", ")))
 }
 
+# Answer the SQL options dbplyr's deprecated `cte` argument of `verb` stands
+# for, with dbplyr 2.6.0's deprecation warning. The caller has refused `cte`
+# alongside `sql_options`, as dbplyr's own method does.
+sqlite_deprecated_cte_options <- function(verb, cte,
+                                          user_env = rlang::caller_env(2)) {
+  lifecycle::deprecate_warn(
+    "2.4.0", paste0(verb, "(cte)"),
+    with = I(paste0(verb, "(sql_options = sql_options(cte = TRUE))")),
+    env = asNamespace("dbplyr"), user_env = user_env
+  )
+  dbplyr::sql_options(cte = cte)
+}
+
 # Direct collection keeps a source anchor outermost and drops internal
 # sort columns after reading. Boolean-word outputs also avoid a finite
 # collection subquery. Other unsorted results delegate to dbplyr. All paths
@@ -270,9 +283,13 @@ sql_render.marginplyr_sqlite_typed_result <- function(query, ...,
 #' @noRd
 collect.marginplyr_sqlite_typed_result <- function(x, ..., n = Inf,
                                                    warn_incomplete = TRUE,
-                                                   sql_options = NULL) {
+                                                   sql_options = NULL, cte) {
   if (!sqlite_typed_result_direct(x)) {
     return(NextMethod())
+  }
+  rlang::check_exclusive(sql_options, cte, .require = FALSE)
+  if (!missing(cte)) {
+    sql_options <- sqlite_deprecated_cte_options("collect", cte)
   }
   boolean_output <- length(attr(x, "marginplyr_boolean_aliases")) > 0L
   anchor_only <- isTRUE(attr(x, "marginplyr_anchored_source")) &&
@@ -671,13 +688,17 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
                                                    unique_indexes = list(),
                                                    indexes = list(),
                                                    analyze = TRUE, ...,
-                                                   sql_options = NULL,
+                                                   sql_options = NULL, cte,
                                                    in_transaction = FALSE) {
   direct <- sqlite_typed_result_direct(x)
   public <- if (direct) attr(x, "marginplyr_public_columns") else
     as.character(dplyr::tbl_vars(x))
   if (!direct && length(sqlite_boolean_columns(public)) == 0L) {
     return(NextMethod())
+  }
+  rlang::check_exclusive(sql_options, cte, .require = FALSE)
+  if (!missing(cte)) {
+    sql_options <- sqlite_deprecated_cte_options("compute", cte)
   }
   if (direct) {
     public_query <- attr(x, "marginplyr_public_query")
@@ -715,7 +736,6 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
     abort_marginplyr("`in_transaction` must be TRUE or FALSE.",
                      call = rlang::caller_call())
   }
-  sql_options_given <- !missing(sql_options)
   con <- x$con
   pronoun_output <- any(c(".data", ".env") %in% public)
   if (pronoun_output && is.null(name) && !temporary) {
@@ -778,42 +798,20 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
     if (pronoun_output) {
       # dbplyr's compute() selects every column by symbol before creating the
       # table; tidyselect reads generated `.data` and `.env` as pronouns.
-      dots <- rlang::list2(...)
-      anchor_options <- sql_options
-      if ("cte" %in% names(dots)) {
-        if (sql_options_given) {
-          rlang::abort(
-            "Exactly one of `sql_options` and `cte` may be supplied."
-          )
-        }
-        anchor_options <- dbplyr::sql_options(cte = dots[["cte"]])
-        dots[["cte"]] <- NULL
-        rlang::warn("The `cte` argument is deprecated; use `sql_options`.")
-      }
       if (is.null(destination)) {
         destination <- dbplyr::as_table_path(
           basename(tempfile(pattern = "marginplyr_result_")), con
         )
       }
-      anchor_sql <- dbplyr::sql_render(anchor, sql_options = anchor_options)
-      created <- rlang::exec(
-        dbplyr::db_compute,
+      anchor_sql <- dbplyr::sql_render(anchor, sql_options = sql_options)
+      created <- dbplyr::db_compute(
         con, destination, anchor_sql, temporary = create_temporary,
         overwrite = overwrite && !publish,
         unique_indexes = create_unique_indexes,
-        indexes = create_indexes, analyze = FALSE, !!!dots,
+        indexes = create_indexes, analyze = FALSE, ...,
         in_transaction = FALSE
       )
       result <- dplyr::tbl(con, created, vars = public)
-    } else if (is.null(sql_options)) {
-      # Leave an absent sql_options argument absent: dbplyr's deprecated cte
-      # option in ... is exclusive with a supplied sql_options, even NULL.
-      result <- dplyr::compute(
-        anchor, name = destination, temporary = create_temporary,
-        overwrite = overwrite && !publish,
-        unique_indexes = create_unique_indexes,
-        indexes = create_indexes, analyze = FALSE, ..., in_transaction = FALSE
-      )
     } else {
       result <- dplyr::compute(
         anchor, name = destination, temporary = create_temporary,
