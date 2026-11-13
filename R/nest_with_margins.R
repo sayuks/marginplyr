@@ -613,11 +613,9 @@ nest_cell_expr <- function(cell_cols) {
   )
   names(columns)[match(special, names(columns))] <- aliases
   # The stock list method keeps generated conversion out of caller S3 lookup.
-  converter <- rlang::call2(
-    base::`:::`, rlang::sym("data.table"), rlang::sym("as.data.table.list")
-  )
-  cell <- rlang::call2(
-    converter, deferred_export_call("base", "list", !!!columns)
+  cell <- deferred_private_call(
+    "data.table", "as.data.table.list",
+    deferred_export_call("base", "list", !!!columns)
   )
   if (length(special) > 0L) {
     cell <- deferred_export_call(
