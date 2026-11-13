@@ -717,9 +717,12 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
     # This projection returns no rows. Public ORDER BY aliases are no longer
     # available after its columns become private; only the INSERT needs order.
     anchor$lazy_query$order_by <- NULL
-    anchor$lazy_query$order_vars <- list()
     sorted <- FALSE
   }
+  # The zero-row anchor only creates the table. A direct anchor still carries
+  # the input's window ordering, which dbplyr's compute() would replay; the
+  # result's own grouping and window ordering are restored after the INSERT.
+  anchor$lazy_query$order_vars <- list()
   if (!rlang::is_bool(temporary)) {
     abort_marginplyr("`temporary` must be TRUE or FALSE.",
                      call = rlang::caller_call())
@@ -858,10 +861,13 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
       DBI::dbExecute(con, paste("ANALYZE", table_sql))
     }
     result <- dplyr::tbl(con, destination, vars = public)
+    result <- dplyr::group_by(result, !!!rlang::syms(dplyr::group_vars(x)))
     if (sorted) {
       result <- dbplyr::window_order(
         dplyr::arrange(result, !!dbplyr::sql(rowid_alias[[1L]]))
       )
+    } else {
+      result <- dbplyr::window_order(result, !!!dbplyr::op_sort(x))
     }
     result
   })
