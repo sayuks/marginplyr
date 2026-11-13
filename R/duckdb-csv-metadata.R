@@ -1,18 +1,37 @@
 # SQL lexical tokens for reader metadata guards, using ASCII identifier keys.
-# Quoted values stay opaque and nested comments are discarded.
+# Quoted values stay opaque and nested comments are discarded. A string
+# continued across a line break, which DuckDB concatenates, is one token.
 duckdb_metadata_tokens <- function(sql) {
+  # Whitespace holding a line break, optionally after a line comment.
+  continue <- "(?:[ \\t\\f]*(?:--[^\\r\\n]*)?[\\r\\n])+[[:space:]]*"
+  escaped <- "'(?:[^'\\\\]|\\\\.|'')*'"
+  plain <- "'(?:[^']|'')*'"
   pattern <- paste0(
     "(?s)",
     "(?<comment>/\\*(?:[^*/]|/(?!\\*)|\\*(?!/)|(?&comment))*\\*/)",
     "|--[^\\r\\n]*",
-    "|[eE]'(?:[^'\\\\]|\\\\.|'')*'",
-    "|'(?:[^']|'')*'",
+    "|[eE]", escaped, "(?:", continue, escaped, ")*",
+    "|", plain, "(?:", continue, plain, ")*",
     "|(?<tag>\\$[A-Za-z_0-9]*\\$).*?\\k<tag>",
     '|"(?:[^"]|"")*"',
     "|[[:alpha:]_][[:alnum:]_$]*|:=|[^[:space:]]"
   )
   tokens <- regmatches(sql, gregexpr(pattern, sql, perl = TRUE))[[1L]]
   tokens <- tokens[!startsWith(tokens, "/*") & !startsWith(tokens, "--")]
+  continued <- grepl("^[eE]?'", tokens) & grepl("[\\r\\n]", tokens, perl = TRUE)
+  tokens[continued] <- vapply(tokens[continued], function(token) {
+    prefix <- if (grepl("^[eE]", token)) "e" else ""
+    piece <- paste0("(?s)^", if (nzchar(prefix)) escaped else plain)
+    rest <- substring(token, nchar(prefix) + 1L)
+    contents <- character()
+    while (nzchar(rest)) {
+      end <- attr(regexpr(piece, rest, perl = TRUE), "match.length")
+      contents <- c(contents, substring(rest, 2L, end - 1L))
+      rest <- sub(paste0("^", continue), "", substring(rest, end + 1L),
+                  perl = TRUE)
+    }
+    paste0(prefix, "'", paste(contents, collapse = ""), "'")
+  }, character(1), USE.NAMES = FALSE)
   quoted <- startsWith(tokens, '"')
   tokens[quoted] <- gsub(
     '""', '"', substring(tokens[quoted], 2L, nchar(tokens[quoted]) - 1L),
@@ -147,8 +166,9 @@ duckdb_metadata_relations <- function(tokens, functions = FALSE) {
       relations <- c(relations, i)
       frame$expect <- FALSE
     }
+    # A set operation's quantifier and BY NAME precede its next operand.
     frame$start <- token %in% c("union", "intersect", "except") ||
-      (frame$start && token %in% c("all", "distinct"))
+      (frame$start && token %in% c("all", "distinct", "by", "name"))
     frames[[n]] <- frame
   }
   positions <- relations
@@ -167,7 +187,8 @@ duckdb_metadata_relations <- function(tokens, functions = FALSE) {
 }
 
 # Find each CTE's visible interval within its enclosing SQL scope. A normal
-# CTE becomes visible after its definition; RECURSIVE admits self-reference.
+# CTE becomes visible after its definition; under RECURSIVE it is also
+# visible in its recursive term, after the body's top-level UNION.
 # Retain token positions of main-query starts and CTE column declarations.
 duckdb_metadata_ctes <- function(tokens) {
   quoted <- attr(tokens, "quoted")
@@ -197,6 +218,11 @@ duckdb_metadata_ctes <- function(tokens) {
         column_declarations <- c(column_declarations, position - 1L)
         position <- end_of(position) + 1L
       }
+      # A recursive CTE's USING KEY column list precedes AS.
+      if (position + 2L < scope_end && !any(quoted[position + 0:2]) &&
+            identical(tokens[position + 0:2], c("using", "key", "("))) {
+        position <- end_of(position + 2L) + 1L
+      }
       if (position >= scope_end || tokens[[position]] != "as" ||
             quoted[[position]]) break
       position <- position + 1L
@@ -209,9 +235,11 @@ duckdb_metadata_ctes <- function(tokens) {
       if (position >= scope_end || tokens[[position]] != "(" ||
             quoted[[position]]) break
       end <- end_of(position)
+      unions <- which(tokens == "union" & !quoted & depth == depth[[position]])
+      unions <- unions[unions > position & unions < end]
+      start_at <- if (recursive && length(unions)) unions[[1L]] else end + 1L
       bindings[[length(bindings) + 1L]] <- list(
-        name = name, start = if (recursive) position else end + 1L,
-        end = scope_end - 1L
+        name = name, start = start_at, end = scope_end - 1L
       )
       position <- end + 1L
       if (position >= scope_end || tokens[[position]] != "," ||

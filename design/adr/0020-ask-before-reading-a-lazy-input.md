@@ -383,7 +383,9 @@ from sampling using malformed JSON contents.
 
 A CSV or JSON suffix names a replacement scan only when DuckDB cannot resolve
 the captured relation as a CTE or catalog relation. CTE visibility follows its
-SQL scope, including self-reference under `WITH RECURSIVE`; its definition is
+SQL scope. Under `WITH RECURSIVE` a CTE also sees its own name in its
+recursive term, after the body's top-level `UNION`; in the anchor term, or in
+a body without `UNION`, the name resolves as it would without the CTE (#1649). Its definition is
 still checked for unsafe readers and unresolved filenames. Typed metadata
 preflight may read DuckDB's system catalog names, stored view definitions,
 macro names and configured search path once per operation to distinguish

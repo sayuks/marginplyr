@@ -548,6 +548,101 @@ test_that("CSV replacement guards follow SQL relation positions", {
   }
 })
 
+test_that("neighbouring relation and CTE spellings refuse CSV before binding", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  quoted <- DBI::dbQuoteString(con, path)
+  identifier <- DBI::dbQuoteIdentifier(con, path)
+  split <- DBI::dbQuoteString(con, sub("sv$", "", path))
+  DBI::dbWriteTable(con, "by_name_source", data.frame(k = 101L))
+  writeLines(c("k", "101"), path)
+  # The stored definition keeps RECURSIVE and the anchor-term file reference.
+  DBI::dbExecute(con, paste0(
+    "CREATE VIEW anchored AS WITH RECURSIVE ", identifier, "(k) AS ",
+    "(SELECT * FROM ", identifier, " UNION SELECT k FROM ", identifier,
+    " WHERE false) SELECT * FROM ", identifier
+  ))
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  refused <- list(
+    list("SELECT * FROM anchored", "k"),
+    list(paste0("SELECT 'x' AS g WHERE false UNION ALL BY NAME TABLE ",
+                identifier), c("g", "k")),
+    list(paste0("SELECT 'x' AS g WHERE false UNION BY NAME TABLE ",
+                identifier), c("g", "k")),
+    list(paste0("SELECT * FROM (FROM by_name_source UNION ALL BY NAME FROM ",
+                quoted, ")"), "k"),
+    list(paste0("SELECT * FROM (TABLE by_name_source UNION ALL BY NAME FROM ",
+                quoted, ")"), "k"),
+    # DuckDB concatenates string literals separated by a line break.
+    list(paste0("SELECT * FROM ", split, "\n'sv'"), "k"),
+    list(paste0("SELECT * FROM ", split, " -- continued\n  'sv'"), "k"),
+    # A recursive CTE's own name is visible only in its recursive term.
+    list(paste0("WITH RECURSIVE ", identifier, " AS (SELECT * FROM ",
+                identifier, ") SELECT * FROM ", identifier), "k"),
+    list(paste0("WITH RECURSIVE ", identifier, "(k) AS (SELECT * FROM ",
+                identifier, " UNION SELECT k FROM ", identifier,
+                " WHERE false) SELECT * FROM ", identifier), "k"),
+    # USING KEY precedes AS without ending the CTE header.
+    list(paste0("WITH RECURSIVE r(z) USING KEY (z) AS (SELECT 1 AS z UNION ",
+                "SELECT z + 1 FROM r WHERE z < 1) TABLE ", identifier), "k")
+  )
+  for (value in c("101", "source_tail")) {
+    writeLines(c("k", value), path)
+    for (case in refused) {
+      source <- dplyr::tbl(con, dbplyr::sql(case[[1L]]), vars = case[[2L]])
+      expect_error(
+        inspect_grouping(source, .grouping = grouping_set(where(is.numeric))),
+        "source rows", fixed = TRUE, class = "marginplyr_error"
+      )
+      expect_duckdb_catalog_only()
+      expect_error(
+        summarize_with_margins(source, n = dplyr::n(), .grouping = rollup(k)),
+        "DuckDB CSV input", fixed = TRUE, class = "marginplyr_error"
+      )
+      expect_duckdb_catalog_only()
+    }
+  }
+
+  # Tables and explicit-schema readers keep one typed plan by name.
+  explicit <- paste0(
+    "read_csv(", quoted, ", columns = {'k': 'VARCHAR'}, auto_detect = false,",
+    " header = true)"
+  )
+  for (value in c("101", "source_tail")) {
+    writeLines(c("k", value), path)
+    for (operand in c("TABLE by_name_source", paste("FROM", explicit))) {
+      source <- dplyr::tbl(con, dbplyr::sql(paste0(
+        "SELECT * FROM (FROM by_name_source UNION ALL BY NAME ", operand, ")"
+      )), vars = "k")
+      expect_identical(inspect_grouping(
+        source, .grouping = grouping_set(where(is.character))
+      )$included, if (startsWith(operand, "FROM")) "(k)" else "()")
+      expect_identical(last_sent_queries(details = TRUE)$purpose,
+                       c("relation_catalog", "selection_proxy"))
+    }
+  }
+  # A continued literal outside a relation position stays a scalar string,
+  # and a keyed recursion's self-reference in its recursive term is the CTE.
+  for (case in list(
+    list(paste0("SELECT ", split, "\n'sv' AS s, k FROM by_name_source"),
+         c("s", "k")),
+    list(paste0("WITH RECURSIVE ", identifier, "(k) USING KEY (k) AS ",
+                "(SELECT 101 UNION SELECT k + 1 FROM ", identifier,
+                " WHERE k < 102) TABLE ", identifier), "k")
+  )) {
+    source <- dplyr::tbl(con, dbplyr::sql(case[[1L]]), vars = case[[2L]])
+    expect_identical(inspect_grouping(
+      source, .grouping = grouping_set(where(is.numeric))
+    )$included, "(k)")
+    expect_identical(last_sent_queries(details = TRUE)$purpose,
+                     c("relation_catalog", "selection_proxy"))
+  }
+})
+
 test_that("PIVOT synonyms and file statements refuse CSV before binding", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
