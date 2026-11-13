@@ -430,7 +430,10 @@ test_that("JSON preflight follows joins and ignores SQL values and comments", {
     " /* auto_detect=false, records=true */",
     ", auto_detect=false, columns={'k':'INTEGER'} /* records=true */",
     ", auto_detect=false, columns={'k':'INTEGER'}, records='auto'",
-    ", columns={'k':'INTEGER'}, dateformat='records=true'"
+    ", columns={'k':'INTEGER'}, dateformat='records=true'",
+    # DuckDB applies the last occurrence of a repeated option.
+    ", columns={'k':'INTEGER'}, records=true, records='auto'",
+    ", auto_detect=false, records=true, union_by_name=true"
   )) {
     source <- dplyr::tbl(con, dbplyr::sql(paste0(
       'SELECT * FROM "read_json" /* outer /* nested */ comment */ (',
