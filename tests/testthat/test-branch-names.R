@@ -208,3 +208,28 @@ test_that("data tables name the caller's column for a cross-set type", {
     data.table::as.data.table(cross_set_type_data())
   )
 })
+
+# A class's own `vec_ptype2()` method may refuse with the incompatible-type
+# class but none of the argument names vctrs records. The class is the test's
+# own, so the method reaches no other test.
+test_that("a combine refusal without argument names reaches the caller", {
+  registerS3method(
+    "vec_ptype2", "marginplyr_test_refusing.marginplyr_test_refusing",
+    function(x, y, ...) {
+      rlang::abort("These units do not combine.",
+                   class = "vctrs_error_incompatible_type")
+    },
+    envir = asNamespace("vctrs")
+  )
+  data <- tibble::tibble(
+    g = c("a", "b"),
+    v = vctrs::new_vctr(c(1, 2), class = "marginplyr_test_refusing")
+  )
+  error <- expect_error(
+    expand_with_margins(data, .grouping = rollup(g)),
+    class = "vctrs_error_incompatible_type"
+  )
+  expect_identical(conditionMessage(error), "These units do not combine.")
+  expect_null(error$x_arg)
+  expect_null(error$y_arg)
+})
