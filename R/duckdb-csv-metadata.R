@@ -93,6 +93,10 @@ duckdb_metadata_relations <- function(tokens, functions = FALSE) {
   ))
   relations <- integer()
   quoted <- attr(tokens, "quoted")
+  # PIVOT_WIDER and PIVOT_LONGER are DuckDB's synonyms for PIVOT and UNPIVOT.
+  sources <- c("from", "pivot", "pivot_wider", "unpivot", "pivot_longer")
+  # SUMMARIZE, DESCRIBE and SHOW bind their source to report its columns.
+  statements <- c("table", "summarize", "describe", "show")
   for (i in seq_along(tokens)) {
     token <- tokens[[i]]
     n <- length(frames)
@@ -126,9 +130,8 @@ duckdb_metadata_relations <- function(tokens, functions = FALSE) {
     if (token == "select" || (token %in% c("with", "values") && frame$start)) {
       frame$query <- TRUE
       frame$table <- frame$expect <- FALSE
-    } else if ((token %in% c("from", "pivot", "unpivot") &&
-                  (frame$query || frame$start)) ||
-                 (token == "table" && frame$start) ||
+    } else if ((token %in% sources && (frame$query || frame$start)) ||
+                 (token %in% statements && frame$start) ||
                  (token == "join" && frame$table)) {
       frame$table <- frame$expect <- TRUE
     } else if (token %in% c(
