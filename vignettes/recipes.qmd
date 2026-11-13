@@ -16,8 +16,9 @@ date: last-modified
 The other guides are organized by concept. This one is organized by task: each
 section states a reporting question, answers it with one worked pipeline, and
 stops. Read them in any order and skip the rest — no recipe uses a value
-another recipe defined, so every one starts from `retail_sales` or from its
-own lazy table.
+another recipe defined, so every one starts from
+[`retail_sales`](https://sayuks.github.io/marginplyr/man/retail_sales.html),
+the package's 24-row example sales table, or from its own lazy table.
 
 Read [Get
 started](https://sayuks.github.io/marginplyr/vignettes/get_started.html) first
@@ -34,8 +35,9 @@ Install marginplyr from GitHub:
 install.packages("pak")
 pak::pkg_install("sayuks/marginplyr")
 
-# Used for the sections of this guide that execute against a database.
-install.packages(c("DBI", "duckdb"))
+# Used for the sections of this guide that execute against a database, and
+# for the one that lays a report out wide.
+install.packages(c("DBI", "duckdb", "tidyr"))
 ```
 
 ```{r setup}
@@ -45,9 +47,10 @@ library(marginplyr)
 library(dplyr)
 ```
 
-Nothing beyond marginplyr's own dependencies is required. Four recipes execute
-against DuckDB, so their chunks evaluate only when DuckDB is installed at the
-version marginplyr asks for. Where a package is missing or too old the code is
+Nothing beyond marginplyr's own dependencies is required. Five recipes execute
+against DuckDB and one reshapes its result with tidyr, so those chunks evaluate
+only when the package they need is installed at the version marginplyr asks
+for. Where a package is missing or too old the code is
 still shown, but its output is absent. Everything else runs either locally or
 against `dbplyr::simulate_postgres()`, which needs no database and no optional
 package.
@@ -62,6 +65,7 @@ source(system.file("suggests", "guard.R", package = "marginplyr"))
 
 has_duckdb <- marginplyr_suggest_available("DBI") &&
   marginplyr_suggest_available("duckdb")
+has_tidyr <- marginplyr_suggest_available("tidyr")
 ```
 
 ## Put each subtotal with the rows it summarizes
@@ -103,15 +107,59 @@ competing with one.
 **A Margin order belongs to the object the verb returned, not to anything
 derived from it.** Any later verb is free to reorder, and on a lazy backend
 one usually does — see [Name the grouping set on every
-row](#name-the-grouping-set-on-every-row) for a join that drops it silently.
+row](#name-the-grouping-set-on-every-row) for a join that drops it, and the
+warning dbplyr gives when it does.
 When some other presentation order is what you want, write the key yourself:
 [Write the sort key yourself](#write-the-sort-key-yourself) shows it as an
 `arrange()` you control.
+
+**A dimension with a label sorts as text.** A non-missing `.margin_label` turns
+the dimension into character, and the Margin order sorts the values the result
+holds, so a numeric dimension comes back in text order ([ADR 0018][adr18]):
+
+```{r}
+months <- tibble(month = c(2L, 9L, 10L), revenue = c(100, 200, 300))
+
+months |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    .grouping = rollup(month),
+    .sort = "last"
+  )
+```
+
+`"10"` sorts before `"2"`. Make the column a factor first, which keeps its
+levels in numeric order and adds the label as a last level:
+
+```{r}
+months |>
+  mutate(month = factor(month)) |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    .grouping = rollup(month),
+    .sort = "last"
+  )
+```
+
+Or keep the column numeric with `.margin_label = NULL`, which shows each
+margin as `NA` instead of a label:
+
+```{r}
+months |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    .grouping = rollup(month),
+    .margin_label = NULL,
+    .sort = "last"
+  )
+```
 
 [Grouping
 identity](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html)
 explains why Grouping-plan order and a Margin order answer different
 questions.
+
+[adr18]: https://github.com/sayuks/marginplyr/blob/main/design/adr/0018-order-margin-results-by-grouping-structure.md
 
 ## Write the sort key yourself
 
@@ -133,7 +181,11 @@ retail_sales |>
 ```
 
 2026 sits above 2025 and each subtotal is still under its own rows, because
-everything ahead of the reversed term is what it was.
+everything ahead of the reversed term is what it was. `desc(year)` gets the
+years right only because the label has made `year` text and every year has
+four digits; for a numeric dimension whose values differ in length, give the
+key a factor or use `.margin_label = NULL`, as in [Put each subtotal with the
+rows it summarizes](#put-each-subtotal-with-the-rows-it-summarizes).
 
 An order no sort key can express is written the same way, with one more
 column. Ordering regions by revenue, and the stores inside each region by
@@ -248,6 +300,75 @@ The [`summarize_with_margins()`
 reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html)
 states the whole key under *Margin order*.
 
+## Lay the report out wide
+
+A cross-tabulation puts one dimension down the side, another across the top,
+and a total on both edges: regions as rows, channels as columns, a `Total`
+column on the right and a `Total` row at the bottom. `cube()` produces every
+cell of that table, including both sets of totals and their corner, and
+`tidyr::pivot_wider()` lays it out:
+
+```{r}
+#| eval: !expr has_tidyr
+
+retail_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    .grouping = cube(region, channel),
+    .sort = "last"
+  ) |>
+  tidyr::pivot_wider(names_from = channel, values_from = revenue)
+```
+
+**The column order is the row order.** `pivot_wider()` creates a column for
+each channel in the order it first meets that channel in the rows, so the
+`.sort = "last"` that puts the `Total` row at the bottom is also what puts the
+`Total` column on the right. Without a Margin order the columns come in
+whatever order the summary returned its rows.
+
+**Pivot after collecting.** On a lazy table `pivot_wider()` builds the wide
+table in SQL. That query reads the sorted summary as a subquery, so dbplyr
+drops the Margin order and warns, as in [Name the grouping set on every
+row](#name-the-grouping-set-on-every-row). The columns and rows then come in
+whatever order the database produces them, so neither `Total` has to land on
+its edge:
+
+```{r}
+#| eval: !expr has_duckdb && has_tidyr
+
+con <- DBI::dbConnect(duckdb::duckdb(shared_home = FALSE))
+duckdb_sales <- dplyr::copy_to(con, retail_sales, "retail_sales")
+
+duckdb_crosstab <- duckdb_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    .grouping = cube(region, channel),
+    .sort = "last"
+  )
+
+duckdb_crosstab |>
+  tidyr::pivot_wider(names_from = channel, values_from = revenue) |>
+  collect()
+```
+
+The summary is one row per cell, so collecting it first costs little, and the
+local pivot then reads the rows in Margin order:
+
+```{r}
+#| eval: !expr has_duckdb && has_tidyr
+
+duckdb_crosstab |>
+  collect() |>
+  tidyr::pivot_wider(names_from = channel, values_from = revenue)
+```
+
+```{r}
+#| include: false
+#| eval: !expr has_duckdb && has_tidyr
+
+DBI::dbDisconnect(con, shutdown = TRUE)
+```
+
 ## Compare each row with the right total
 
 `share_of_total()` divides a summary by the same summary on the Grand total
@@ -329,11 +450,14 @@ so no grouping set of the plan pools regions and the result has no all-regions
 row. When a report needs both — a share against an ancestor level *and* the
 levels above it — read the ancestor level out of the result and join it back.
 
-The example below adds `product`, so that the level being measured against is
-genuinely intermediate: in `rollup(region, store, product, channel)` the
-parent of a channel row is its product, and the store level `(region, store)`
-is two levels further up. Select that level and keep the revenue under a name
-of its own:
+The example below measures against the store level rather than the region,
+because `store` is the dimension with a missing source value, and the join key
+has to tell that value apart from a margin. It adds `product` so that the
+store is not the channel row's parent, which `share_of_parent()` would
+already answer: in `rollup(region, store, product, channel)` the parent of a
+channel row is its product, and the store level `(region, store)` is two
+levels further up. Select that level and keep the revenue under a name of its
+own:
 
 ```{r}
 store_totals <- retail_sales |>
@@ -503,9 +627,10 @@ DBI::dbDisconnect(con, shutdown = TRUE)
 ```
 
 The unnamed store keeps its share in the first and loses it in the second, and
-the two calls differ by one argument. As in [Name the grouping set on every
-row](#name-the-grouping-set-on-every-row), the Margin order does not survive
-the join — `arrange()` after it, or collect first.
+the two calls differ by one argument. Neither DuckDB summary asks for `.sort`:
+as [Name the grouping set on every row](#name-the-grouping-set-on-every-row)
+shows, dbplyr drops a Margin order a join reads, so `arrange()` after the join,
+or collect first.
 
 Reaching an ancestor level is not part of the helpers' API.
 [ADR 0010][adr10] records why.
@@ -514,9 +639,10 @@ Reaching an ancestor level is not part of the helpers' API.
 
 ## Keep only one grouping set
 
-Filtering on a Margin label is unsafe: a source value can equal the label, and
-the label can be changed or set to `NULL`. Filter on Grouping identity
-instead. The obstacle is knowing which value to ask for — and guessing the bit
+To show only the region subtotals of a cube — every region, with the channels
+pooled — keep the rows of that one grouping set. Filter on Grouping identity
+rather than on a Margin label: a source value can equal the label, and the
+label can be changed or set to `NULL`. The obstacle is knowing which value to ask for — and guessing the bit
 order is easy to get backwards.
 
 Do not guess. `inspect_grouping()` prints the answer for every set in the plan
@@ -675,13 +801,16 @@ postgres_report |>
   left_join(sales_levels, by = c(set = "set_id"), copy = "inline")
 ```
 
-Two conditions come with that route, and neither announces itself.
+Two conditions come with that route.
 
 **The Margin order does not survive the join.** As [Put each subtotal with the
 rows it summarizes](#put-each-subtotal-with-the-rows-it-summarizes) put it, a
 Margin order is a property of the object the verb returned, not of anything
-derived from it. A simulated connection renders SQL without running it, so
-seeing this needs a live database:
+derived from it. Here dbplyr removes it: the joined query reads the sorted
+summary as a subquery, and dbplyr leaves out an `ORDER BY` in a subquery that
+has no `LIMIT` — the warning printed under the inline join above is dbplyr
+saying so. Run against a live database, the rows come back in whatever
+order the database produces:
 
 ```{r}
 #| eval: !expr has_duckdb
@@ -703,17 +832,17 @@ duckdb_report |>
   collect()
 ```
 
-The subtotals are scattered and the years interleave. A database is entitled
-to ignore an `ORDER BY` buried in a subquery, and this one does; the only
-warning is dbplyr's generic *ORDER BY is ignored in subqueries without LIMIT*,
-which names nothing in marginplyr, while `show_query()` goes on printing an
-`# Ordered by:` line for an order that is no longer honored. `.sort` is an
-argument of the Margin verb, so it cannot be applied again afterwards — order
-with `arrange()` after the join, or collect first as below.
+The subtotals are scattered and the years interleave. The signal is dbplyr's
+warning, *ORDER BY is ignored in subqueries without LIMIT*: it names nothing in
+marginplyr, but it is raised whenever the query is built, so `show_query()` and
+`collect()` both give it. `.sort` is an argument of the Margin verb, so it
+cannot be applied again afterwards. Leave it off a lazy summary you are about
+to join, and order with `arrange()` after the join, or collect first as below.
 
 **The plan has to be in the default `.format = "text"`.** The list columns of
 `.format = "list"` have no SQL type, and the failure surfaces while dbplyr
-renders the query, without naming `.format`:
+renders the query, without naming `.format`. The same `ORDER BY` warning comes
+first, because `postgres_report` is sorted:
 
 ```{r}
 list_levels <- inspect_grouping(
@@ -774,7 +903,8 @@ revenue coming from rows above their own set's mean:
 retail_sales |>
   summarize_with_margins(
     above_mean_share =
-      sum(revenue[revenue > mean(revenue)]) / sum(revenue),
+      sum(revenue[revenue > mean(revenue, na.rm = TRUE)], na.rm = TRUE) /
+      sum(revenue, na.rm = TRUE),
     .by = year,
     .grouping = rollup(region, store),
     .sort = "last"
@@ -802,7 +932,8 @@ duckdb_sales <- dplyr::copy_to(con, retail_sales, "retail_sales")
 duckdb_sales |>
   summarize_with_margins(
     above_mean_share =
-      sum(revenue[revenue > mean(revenue)]) / sum(revenue),
+      sum(revenue[revenue > mean(revenue, na.rm = TRUE)], na.rm = TRUE) /
+      sum(revenue, na.rm = TRUE),
     .by = year,
     .grouping = rollup(region, store)
   ) |>
@@ -875,160 +1006,18 @@ backends](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
 shows the SQL `expand_with_margins()` generates on native and fallback
 backends.
 
-## Keep warning-handler failures separate from cancellation
+## Recipes elsewhere
 
-A warning logger can fail while a summary is already stopping. R runs a
-calling warning handler registered around the summary with newer condition
-handlers unavailable, so that failure can replace the summary's pending error
-or interrupt. The package
-reference's [Errors and warnings][conditions] explains that boundary and the
-conditions marginplyr retains when its handlers remain available.
+Three more tasks have their recipe on another page:
 
-If you own the warning callback, put its catcher inside the callback. This
-helper returns the operation's value or condition and the callback's first
-failure separately. It muffles the warning whose callback failed and subsequent
-warnings, leaving the caller to decide how to handle the two outcomes. It is
-ordinary caller code, not a marginplyr function.
-
-```{r}
-#| label: warning-handler-guard
-
-guard_warning_callback <- function(expr, handler) {
-  callback_failure <- NULL
-  operation <- tryCatch({
-    value <- withCallingHandlers(expr, warning = function(cnd) {
-      muffle <- findRestart("muffleWarning")
-      if (!is.null(callback_failure)) invokeRestart(muffle)
-      failure <- tryCatch({
-        handler(cnd)
-        NULL
-      }, error = identity, interrupt = identity)
-      if (!is.null(failure)) {
-        callback_failure <<- failure
-        invokeRestart(muffle)
-      }
-    })
-    list(value = value)
-  }, error = function(cnd) list(condition = cnd),
-  interrupt = function(cnd) list(condition = cnd))
-  list(operation = operation, callback_failure = callback_failure)
-}
-```
-
-Here the store and regional summaries produce different warnings, and the
-grand total simulates cancellation with `rlang::interrupt()`. The helper catches
-that interruption;
-the example does not interrupt the surrounding session. The warning logger
-then fails during replay, and both outcomes remain available:
-
-```{r}
-#| label: warning-handler-cancellation
-
-logger_failure <- errorCondition(
-  "The warning logger failed",
-  parent = simpleError("The logging destination is unavailable"),
-  payload = new.env(parent = emptyenv())
-)
-summary_interrupt <- NULL
-callback_calls <- 0L
-warnings_produced <- character()
-cancelled <- guard_warning_callback(
-  summarize_with_margins(
-    retail_sales,
-    revenue = {
-      if (grouping_bit(region) == 1L) {
-        withCallingHandlers(rlang::interrupt(), interrupt = function(cnd) {
-          summary_interrupt <<- cnd
-        })
-      }
-      diagnostic <- if (grouping_bit(store) == 0L) {
-        "Check store revenue"
-      } else {
-        "Check regional revenue"
-      }
-      warnings_produced <<- c(warnings_produced, diagnostic)
-      warning(diagnostic)
-      sum(revenue)
-    },
-    .grouping = rollup(region, store)
-  ),
-  handler = function(cnd) {
-    callback_calls <<- callback_calls + 1L
-    stop(logger_failure)
-  }
-)
-
-c(
-  original_interrupt_retained =
-    identical(cancelled$operation$condition, summary_interrupt),
-  logger_failure_retained =
-    identical(cancelled$callback_failure, logger_failure),
-  callback_ran_once = callback_calls == 1L
-)
-```
-
-```{r}
-#| include: false
-
-stopifnot(
-  inherits(summary_interrupt, "interrupt"),
-  identical(cancelled$operation$condition, summary_interrupt),
-  identical(cancelled$callback_failure, logger_failure),
-  identical(cancelled$callback_failure$parent, logger_failure$parent),
-  identical(cancelled$callback_failure$payload, logger_failure$payload),
-  length(unique(warnings_produced)) == 2L,
-  callback_calls == 1L
-)
-```
-
-The same helper also catches an interrupt raised inside the callback. A
-returning callback leaves ordinary warning handling, including `warn = 2`
-conversion, intact; a callback can still invoke `muffleWarning` itself. The
-helper changes neither the `warn` option nor existing caller restarts.
-
-Without a pending error or interrupt, muffling after a callback failure allows
-the summary to finish. Inspect `callback_failure` before accepting the value:
-
-```{r}
-#| label: warning-handler-value
-
-completed <- guard_warning_callback(
-  summarize_with_margins(
-    retail_sales,
-    revenue = {
-      warning("Check the revenue source")
-      sum(revenue)
-    },
-    .grouping = rollup(region)
-  ),
-  handler = function(cnd) stop(logger_failure)
-)
-
-c(
-  returned_summary = is.data.frame(completed$operation$value),
-  logger_failure_retained =
-    identical(completed$callback_failure, logger_failure)
-)
-```
-
-```{r}
-#| include: false
-
-stopifnot(
-  is.data.frame(completed$operation$value),
-  identical(completed$callback_failure, logger_failure)
-)
-```
-
-This protection covers the callback you wrapped. If it signals another condition
-and an older, unwrapped calling handler fails, that failure can still bypass the
-callback's catcher. A caller restart that exits the helper also takes control
-normally. Wrap each callback whose failures you need to retain; this helper
-does not turn arbitrary caller handlers into package-controlled code.
-
-After capture, `saveRDS(cancelled, "summary-outcome.rds")` can preserve the
-diagnostic values for later inspection. Catch a write failure separately so
-`cancelled` remains available; writing may itself fail or be interrupted, and
-deserializing does not preserve environment reference identity.
-
-[conditions]: https://sayuks.github.io/marginplyr/man/marginplyr-package.html#errors-and-warnings
+- Giving each kind of total row its own label, with a named `.margin_label`:
+  [Labels and column
+  types](https://sayuks.github.io/marginplyr/vignettes/get_started.html#labels-and-column-types)
+  in Get started.
+- Dividing each row by the level directly above it: [Compare a summary with
+  its rollup
+  parent](https://sayuks.github.io/marginplyr/vignettes/get_started.html#compare-a-summary-with-its-rollup-parent)
+  in Get started.
+- Keeping a failure of your own warning callback separate from the summary's
+  error or cancellation: *R's handler boundary* in the [condition
+  contract](https://sayuks.github.io/marginplyr/man/marginplyr_conditions.html).
