@@ -92,11 +92,11 @@ test_that("a generic SQL connection collects a summary over a limited input", {
       marginplyr::grouping_set(a), marginplyr::grouping_set()
     )
   )
-  summarize_both <- function(data, spec, by, sort, share) {
+  summarize_both <- function(data, spec, by, sort, share, id) {
     shares <- if (share) rlang::exprs(s = share_of_parent(n)) else list()
     summarize_with_margins(
       data, n = sum(v, na.rm = TRUE), !!!shares,
-      .by = dplyr::all_of(by), .grouping = spec, .sort = sort, .id = "set"
+      .by = dplyr::all_of(by), .grouping = spec, .sort = sort, .id = id
     )
   }
   for (input in limited_generic_inputs(source)) {
@@ -105,19 +105,24 @@ test_that("a generic SQL connection collects a summary over a limited input", {
       # A Parent share is defined for a pure rollup() only.
       for (share in c(FALSE, if (spec == "rollup") TRUE)) {
         for (by in list(NULL, "k")) {
-          for (sort in c("none", "last", "first")) {
-            expected <- summarize_both(local, specs[[spec]], by, sort, share)
-            result <- dplyr::collect(
-              summarize_both(input, specs[[spec]], by, sort, share)
-            )
-            key <- intersect(c(by, "a", "b", "set"), names(expected))
-            expect_equal(
-              as.data.frame(dplyr::arrange(result, dplyr::across(all_of(key)))),
-              as.data.frame(
-                dplyr::arrange(expected, dplyr::across(all_of(key)))
-              ),
-              ignore_attr = TRUE, info = paste(spec, share, sort)
-            )
+          for (id in list(NULL, "set")) {
+            for (sort in c("none", "last", "first")) {
+              run <- function(data) {
+                summarize_both(data, specs[[spec]], by, sort, share, id)
+              }
+              expected <- run(local)
+              result <- dplyr::collect(run(input))
+              key <- intersect(c(by, "a", "b", id), names(expected))
+              expect_equal(
+                as.data.frame(
+                  dplyr::arrange(result, dplyr::across(all_of(key)))
+                ),
+                as.data.frame(
+                  dplyr::arrange(expected, dplyr::across(all_of(key)))
+                ),
+                ignore_attr = TRUE, info = paste(spec, share, sort, id)
+              )
+            }
           }
         }
       }
