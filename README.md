@@ -395,10 +395,10 @@ postgres_sales |>
 #> ) AS "q01"
 ```
 
-DuckDB and PostgreSQL use native grouping sets. Backends without
-confirmed native support use a `UNION ALL` translation with the same
-Grouping plan. Simulation verifies generated SQL but does not claim live
-execution against every database server. The [database
+Summaries on DuckDB and PostgreSQL use native grouping sets; other
+database backends, and every expansion, use a `UNION ALL` fallback.
+Simulation verifies generated SQL but does not claim live execution
+against every database server. The [database
 guide](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
 shows native SQL, fallback SQL, live DuckDB execution, and `collect()`.
 

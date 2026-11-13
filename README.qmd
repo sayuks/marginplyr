@@ -288,8 +288,8 @@ postgres_sales |>
   dplyr::show_query()
 ```
 
-DuckDB and PostgreSQL use native grouping sets. Backends without confirmed
-native support use a `UNION ALL` translation with the same Grouping plan.
+Summaries on DuckDB and PostgreSQL use native grouping sets; other database
+backends, and every expansion, use a `UNION ALL` fallback.
 Simulation verifies generated SQL but does not claim live execution against
 every database server. The [database
 guide](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
