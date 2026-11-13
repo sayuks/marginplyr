@@ -5707,7 +5707,6 @@ scope_singleton_callback_list <- function(expr, scope, lookup) {
     Map = list(callback = "f", value = "", stock = "identity"),
     Reduce = list(callback = "f", value = "x", stock = "identity")
   )
-  if (is.null(rule)) return(NULL)
   transfer_lookup <- lookup
   transfer_lookup$rebound <- lookup$function_rebound %||% lookup$rebound
   if (!is_known_base_frame_call(expr, operator, scope, transfer_lookup)) {
