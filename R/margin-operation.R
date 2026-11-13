@@ -418,8 +418,7 @@ drop_unlimited_sql_order <- function(data) {
 # Drop the window-order terms of a SQL input that name no column: a raw
 # `sql()` string or a constant. dbplyr's `select()` cannot rename such a term
 # and fails in `rename_order()` (#1622), while a Margin result names no
-# column for it either, so it vanishes as `restore_input_window_order()`
-# drops the terms a result cannot name. The ORDER BY clause is untouched.
+# column for it either. The ORDER BY clause is untouched.
 drop_columnless_window_order <- function(data) {
   if (!inherits(data, "tbl_lazy") ||
         !inherits(data$lazy_query, "lazy_select_query")) {
