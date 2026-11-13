@@ -1003,8 +1003,8 @@ writing a summary.
 
 [Database and lazy
 backends](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
-shows the SQL `expand_with_margins()` generates on native and fallback
-backends.
+shows the SQL `expand_with_margins()` generates, which is the portable
+`UNION ALL` form on every backend.
 
 ## Recipes elsewhere
 
