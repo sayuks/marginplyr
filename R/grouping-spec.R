@@ -3,7 +3,7 @@
 #' These constructors describe SQL-style grouping operations for the
 #' `.grouping` argument of [summarize_with_margins()] and related verbs.
 #' Start with [rollup()] when the report follows a hierarchy such as
-#' store to region to company. Use [grouping_sets()] for an exact selection of
+#' company to region to store. Use [grouping_sets()] for an exact selection of
 #' levels, and [cube()] only when every combination is useful.
 #'
 #' - [grouping_set()] creates one grouping set. With no columns it represents
@@ -15,8 +15,35 @@
 #'   grouping set of one combined with every grouping set of the next — like
 #'   comma-separated SQL `GROUP BY` items.
 #'
+#' [rollup()] reads its arguments in order, so list levels coarsest first:
+#' `rollup(region, store)` gives (region, store), (region), and (). Written
+#' the other way round, `rollup(store, region)` gives store totals and no
+#' region subtotal.
+#'
 #' A [grouping_set()] nested directly inside [rollup()] or [cube()] is a
 #' composite dimension. Its columns are added or removed together.
+#'
+#' Each form expands to these grouping sets. A [rollup()] of n dimensions
+#' gives n + 1 sets, a [cube()] gives 2^n, and a [grouping_spec()] the
+#' product of its arguments' counts:
+#'
+#' | Form | Expands to |
+#' |---|---|
+#' | `rollup(a, b)` | (a, b), (a), () |
+#' | `cube(a, b)` | (a, b), (a), (b), () |
+#' | `grouping_sets(a, b)` | (a), (b): each argument is one set |
+#' | `grouping_sets(c(a, b))` | (a, b) |
+#' | `grouping_spec(rollup(a), b)` | (a, b), (b) |
+#' | `cube(grouping_set(a, b), c)` | (a, b, c), (a, b), (c), () |
+#'
+#' [inspect_grouping()] lists the sets any specification expands to, and
+#' *Choose the grouping operation* in the [Get started guide][start] works
+#' through each form.
+#'
+#' A column that belongs in every grouping set, such as a reporting month, is
+#' best passed as the Margin verb's `.by`. Written inside [grouping_spec()]
+#' it is a grouping dimension instead, so the plan has no Grand total set and
+#' [share_of_total()] and [share_of_parent()] are refused.
 #'
 #' A resolved Grouping plan can be read back in four ways: `.id`,
 #' [inspect_grouping()]`$set_id`, [grouping_bit()], and [grouping_id()].
@@ -24,6 +51,7 @@
 #' through the same values with executable examples.
 #'
 #' [guide]: https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html
+#' [start]: https://sayuks.github.io/marginplyr/vignettes/get_started.html
 #'
 #' @param ... <[`tidy-select`][dplyr::dplyr_tidy_select]> Column selections
 #'   and, where supported, nested Grouping specifications. In
@@ -58,17 +86,11 @@
 #' unless the input has a column named `s`, when the selection takes that
 #' column, as any selection does with a name the data holds.
 #'
-#' A recognized constructor call runs the function in your captured environment,
-#' once per argument occurrence and public call, and keeps its first answer.
-#' Bare and explicitly qualified calls use the same selection context:
-#' local data exposes its actual columns; supported lazy inputs expose their
-#' schema or isolated zero-row columns. A call proven to need only column names
-#' runs before typed metadata is acquired. Other calls wait for that metadata,
-#' along with later arguments; earlier settled selection errors can therefore
-#' take precedence over their conditions or side effects. If a faithful typed
-#' context cannot be obtained safely, the call is refused before your function
-#' runs, even if it would return a name-only specification. Collect the input
-#' explicitly and pass the resulting data frame in that case.
+#' A recognized constructor call runs once per argument occurrence, in your
+#' environment, against the input's columns: a data frame's own columns, or a
+#' lazy input's schema. If a lazy input cannot supply its column types safely,
+#' a call that needs them is refused before it runs; collect the input and
+#' pass the resulting data frame instead.
 #'
 #' An argument left empty gets neither reading, and is refused naming the
 #' constructor and the position: `grouping_sets(, region)` reports that its
@@ -152,6 +174,8 @@
 #'   ),
 #'   .duplicates = "drop"
 #' )
+#' # Dropping the duplicate leaves one grand total row.
+#' dplyr::filter(independent_totals, year == "Total", region == "Total")
 #'
 #' # Keeping duplicates intentionally returns the grand total once per
 #' # occurrence of the empty set.
@@ -187,6 +211,9 @@
 #'   revenue = sum(revenue),
 #'   .grouping = combined_specification
 #' )
+#' # With month and store removed, four of the nine sets remain: year by
+#' # region, year, region, and the grand total.
+#' dplyr::filter(combined_totals, month == "Total", store == "Total")
 #'
 #' # A nested grouping_set() is a composite dimension: region and store are
 #' # included or removed together. Tidy-select expressions are also accepted.

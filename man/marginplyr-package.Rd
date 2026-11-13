@@ -121,9 +121,8 @@ representation does not prove database receipt or completion.
 internal operations can run. Copy or export the record before the next call
 replaces it; a failed call leaves its own partial record readable.
 
-What the record holds, which calls keep one, and the four answers it gives
--- three of them could otherwise look alike -- are stated in
-\code{\link[=last_sent_queries]{last_sent_queries()}}'s own reference.
+What the record holds, which calls keep one, and what an empty or incomplete
+read means are stated in \code{\link[=last_sent_queries]{last_sent_queries()}}'s own reference.
 }
 
 \examples{

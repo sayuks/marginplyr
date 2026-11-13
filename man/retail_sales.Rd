@@ -7,11 +7,14 @@
 \format{
 A data frame with 24 rows and 8 variables:
 \describe{
-\item{year}{Calendar year.}
-\item{month}{Three-letter month abbreviation.}
+\item{year}{Calendar year, an integer: \code{2025} or \code{2026}.}
+\item{month}{Month abbreviation, a character: \code{"Jan"} or \code{"Feb"}. As
+text, \code{"Feb"} sorts before \code{"Jan"}.}
 \item{region}{Sales region: \code{"East"} or \code{"West"}.}
-\item{store}{Store name, or \code{NA} for an online-direct record.}
-\item{product}{Product category.}
+\item{store}{Store name, or \code{NA} for an online-direct record. The four
+\code{NA} rows are all East, Headphones, Online: one per month.}
+\item{product}{Product category: \code{"Headphones"}, \code{"Laptop"}, or
+\code{"Monitor"}.}
 \item{channel}{Sales channel: \code{"Online"} or \code{"Store"}.}
 \item{units}{Number of units sold.}
 \item{revenue}{Revenue in US dollars.}
@@ -25,9 +28,9 @@ retail_sales
 }
 \description{
 A small synthetic data set used throughout the package documentation.
-Each row records sales for one product, channel, and store combination.
-Online-direct records have a missing \code{store}, which makes it possible to
-distinguish a source missing value from a subtotal produced by a grouping
+Each row records one month's sales of one product, through one channel and
+store. Online-direct records have a missing \code{store}, which makes it possible
+to distinguish a source missing value from a subtotal produced by a grouping
 operation.
 }
 \seealso{
