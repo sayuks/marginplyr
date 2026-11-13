@@ -101,6 +101,123 @@ test_that("view admission cannot hide source-value CSV inference", {
   }
 })
 
+test_that("views over admitted table functions keep typed metadata (#1651)", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".parquet")
+  on.exit(unlink(path), add = TRUE)
+  quoted <- DBI::dbQuoteString(con, path)
+  DBI::dbExecute(con, paste(
+    "COPY (SELECT * FROM (VALUES ('a', 1), ('b', 2), ('a', 3)) t(g, v)) TO",
+    quoted, "(FORMAT PARQUET)"
+  ))
+  DBI::dbExecute(con, paste0(
+    "CREATE VIEW v_read_parquet AS SELECT * FROM read_parquet(", quoted, ")"
+  ))
+  DBI::dbExecute(con, paste0(
+    "CREATE VIEW v_parquet_scan AS SELECT * FROM parquet_scan(", quoted, ")"
+  ))
+  DBI::dbExecute(con, paste(
+    "CREATE VIEW v_range AS SELECT CASE WHEN range < 2 THEN 'a' ELSE 'b' END",
+    "AS g, range AS v FROM range(4)"
+  ))
+  DBI::dbExecute(con, paste(
+    "CREATE VIEW v_series AS SELECT CASE WHEN generate_series = 2 THEN 'b'",
+    "ELSE 'a' END AS g, generate_series AS v FROM generate_series(1, 3)"
+  ))
+  DBI::dbExecute(con, paste(
+    "CREATE VIEW v_unnest AS SELECT CASE WHEN v = 2 THEN 'b' ELSE 'a' END",
+    "AS g, v FROM unnest([1, 2, 3]) AS u(v)"
+  ))
+  DBI::dbExecute(con, "CREATE VIEW v_nested AS SELECT * FROM v_read_parquet")
+  # Each source holds 1 and 3 under "a" and 2 under "b"; range(4) is 0 to 3.
+  expected <- list(
+    v_read_parquet = c(4, 2, 6), v_parquet_scan = c(4, 2, 6),
+    v_range = c(1, 5, 6), v_series = c(4, 2, 6), v_unnest = c(4, 2, 6),
+    v_nested = c(4, 2, 6), authored = c(4, 2, 6)
+  )
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  for (name in names(expected)) {
+    input <- if (name == "authored") {
+      dplyr::tbl(con, dbplyr::sql("SELECT * FROM v_read_parquet"))
+    } else {
+      dplyr::tbl(con, name)
+    }
+    expect_identical(inspect_grouping(
+      input, .grouping = grouping_set(where(is.character))
+    )$included, "(g)")
+    result <- dplyr::collect(summarize_with_margins(
+      input, s = sum(v, na.rm = TRUE), .grouping = rollup(g), .sort = "last"
+    ))
+    expect_identical(result$g, c("a", "b", "Total"))
+    expect_equal(as.numeric(result$s), expected[[name]])
+    expanded <- dplyr::collect(expand_with_margins(
+      input, .grouping = rollup(g), .margin_label = NULL
+    ))
+    # Rollup over one dimension repeats each source row once for its margin.
+    expect_identical(nrow(expanded), 2L * nrow(dplyr::collect(input)))
+  }
+})
+
+test_that("table functions are judged alike when authored and in a view", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  parquet <- tempfile(fileext = ".parquet")
+  csv <- tempfile(fileext = ".csv")
+  on.exit(unlink(c(parquet, csv)), add = TRUE)
+  writeLines(c("k", "1"), csv)
+  DBI::dbExecute(con, paste(
+    "COPY (SELECT 1 AS k) TO", DBI::dbQuoteString(con, parquet),
+    "(FORMAT PARQUET)"
+  ))
+  DBI::dbWriteTable(con, "src", data.frame(k = 1L))
+  DBI::dbExecute(con, "CREATE MACRO hidden_table() AS TABLE SELECT 1 AS k")
+  csv_reader <- paste0("read_csv(", DBI::dbQuoteString(con, csv))
+  parquet_path <- paste0("(", DBI::dbQuoteString(con, parquet), ")")
+  admitted <- c(
+    "SELECT * FROM range(2) t(k)",
+    "SELECT * FROM generate_series(1, 2) t(k)",
+    "SELECT * FROM unnest([1, 2]) u(k)",
+    paste0("SELECT * FROM read_parquet", parquet_path),
+    paste0("SELECT * FROM parquet_scan", parquet_path),
+    paste0("SELECT * FROM ", csv_reader,
+           ", columns={'k':'INTEGER'}, auto_detect=false, header=true)")
+  )
+  refused <- c(
+    "SELECT * FROM query('SELECT 1 AS k')",
+    "SELECT * FROM query_table('src')",
+    "SELECT * FROM hidden_table()",
+    paste0("SELECT * FROM ", csv_reader, ")"),
+    paste("SELECT * FROM", DBI::dbQuoteString(con, csv))
+  )
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  statements <- c(admitted, refused)
+  for (i in seq_along(statements)) {
+    DBI::dbExecute(con, paste0("CREATE VIEW v", i, " AS ", statements[[i]]))
+    DBI::dbExecute(con, paste0("CREATE VIEW w", i, " AS SELECT * FROM v", i))
+    for (input in list(
+      dplyr::tbl(con, dbplyr::sql(statements[[i]])),
+      dplyr::tbl(con, paste0("v", i)),
+      dplyr::tbl(con, paste0("w", i))
+    )) {
+      typed <- function() {
+        inspect_grouping(input, .grouping = grouping_set(where(is.numeric)))
+      }
+      if (statements[[i]] %in% admitted) {
+        expect_identical(typed()$included, "(k)")
+      } else {
+        expect_error(typed(), class = "marginplyr_error")
+        sent <- last_sent_queries(details = TRUE)
+        expect_false("selection_proxy" %in% sent$purpose)
+      }
+    }
+  }
+})
+
 test_that("view dependencies resolve within their own schema before callers", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()

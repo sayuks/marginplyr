@@ -418,6 +418,8 @@ check that the input hides no source work behind a view or macro before
 its types are read. It binds no table of yours. Table macros, macros you
 define, \code{query()}, \code{query_table()}, and views without stored SQL are
 refused, except a data frame registered with \code{duckdb::duckdb_register()}.
+Other table functions, such as \code{read_parquet()} or \code{range()}, are
+admitted inside a view as they are when written directly.
 A macro you define is refused however the query reaches it: written in
 SQL, or called from a dplyr verb such as \code{mutate(y = my_macro(x))},
 including a function dbplyr translates to that macro's name. Call

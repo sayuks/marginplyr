@@ -555,6 +555,8 @@
 #'   its types are read. It binds no table of yours. Table macros, macros you
 #'   define, `query()`, `query_table()`, and views without stored SQL are
 #'   refused, except a data frame registered with `duckdb::duckdb_register()`.
+#'   Other table functions, such as `read_parquet()` or `range()`, are
+#'   admitted inside a view as they are when written directly.
 #'   A macro you define is refused however the query reaches it: written in
 #'   SQL, or called from a dplyr verb such as `mutate(y = my_macro(x))`,
 #'   including a function dbplyr translates to that macro's name. Call
