@@ -269,3 +269,92 @@ test_that("relation indirection cannot hide source-value inference", {
     ), class = "marginplyr_error")
   }
 })
+
+test_that("DuckDB's own scalar macros are admitted without a caller macro", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  DBI::dbWriteTable(con, "t", data.frame(
+    g = c("a", "b"), v = c(1L, 2L), d = as.Date(c("2026-01-01", "2026-01-02"))
+  ))
+  calls <- c(
+    "nullif(v, 0)", "date_add(d, INTERVAL 1 DAY)", "list_sum([v, v])",
+    "array_to_string([g, g], '-')", "current_database()"
+  )
+  # The typed selection follows each macro's native result type.
+  character_columns <- c("(g)", "(g)", "(g)", "(g, y)", "(g, y)")
+  t <- dplyr::tbl(con, "t")
+  for (i in seq_along(calls)) {
+    view <- paste0("v", i)
+    sql <- paste0("SELECT g, v, ", calls[[i]], " AS y FROM t")
+    DBI::dbExecute(con, paste("CREATE VIEW", view, "AS", sql))
+    inputs <- list(
+      dplyr::tbl(con, dbplyr::sql(sql)),
+      dplyr::mutate(t, y = dbplyr::sql(calls[[i]])),
+      dplyr::tbl(con, view)
+    )
+    for (input in inputs) {
+      expect_identical(inspect_grouping(
+        input, .grouping = grouping_set(where(is.character))
+      )$included, character_columns[[i]])
+      summary <- dplyr::collect(summarize_with_margins(
+        input, n = dplyr::n(), .grouping = grouping_set(g)
+      ))
+      expect_identical(as.integer(summary$n), c(1L, 1L))
+      expanded <- dplyr::collect(expand_with_margins(
+        input, .grouping = grouping_set(g)
+      ))
+      expect_identical(nrow(expanded), 2L)
+    }
+  }
+})
+
+test_that("DuckDB's own macros stay refused where they can reach source work", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  writeLines(c("k", "101"), path)
+  quoted <- DBI::dbQuoteString(con, path)
+  DBI::dbWriteTable(con, "t", data.frame(v = c(1L, 2L)))
+  refused <- function(input) {
+    expect_error(inspect_grouping(
+      input, .grouping = grouping_set(where(is.numeric))
+    ), "dplyr::collect()", fixed = TRUE, class = "marginplyr_error")
+  }
+  authored <- function(sql, vars) {
+    dplyr::tbl(con, dbplyr::sql(sql), vars = vars)
+  }
+  refused(authored(
+    paste0("SELECT * FROM histogram_values(", quoted, ", k)"),
+    c("bin", "count")
+  ))
+  refused(authored(
+    paste0("SELECT * FROM histogram(", quoted, ", k)"),
+    c("bin", "count", "bar")
+  ))
+  refused(authored("SELECT * FROM query('SELECT * FROM t')", "v"))
+  refused(authored(paste0(
+    "SELECT nullif((SELECT k FROM read_csv_auto(", quoted, ")), 0) AS k"
+  ), "k"))
+  # Once a caller macro exists, a system macro's body can resolve to it.
+  DBI::dbExecute(con, paste0(
+    "CREATE MACRO list_aggr(l, f) AS (SELECT k FROM read_csv_auto(",
+    quoted, ") LIMIT 1)"
+  ))
+  sql <- "SELECT list_sum([v]) AS s FROM t"
+  for (value in c("101", "source_tail")) {
+    writeLines(c("k", value), path)
+    expect_identical(
+      is.numeric(DBI::dbGetQuery(con, paste(sql, "LIMIT 0"))$s),
+      identical(value, "101")
+    )
+    refused(authored(sql, "s"))
+  }
+  refused(authored("SELECT nullif(v, 0) AS v FROM t", "v"))
+  DBI::dbExecute(con, "CREATE VIEW vn AS SELECT nullif(v, 0) AS v FROM t")
+  expect_error(inspect_grouping(
+    dplyr::tbl(con, "vn"), .grouping = grouping_set(where(is.numeric))
+  ), "dplyr::collect()", fixed = TRUE, class = "marginplyr_error")
+})
