@@ -77,11 +77,9 @@ standard_margin_frame <- function(data) {
 }
 
 # Dataset metadata excludes fields describing the actual frame structure.
+# The caller holds a frame `standard_margin_frame()` accepts.
 margin_frame_metadata <- function(data) {
   structural <- c("names", "row.names", "class")
-  if (inherits(data, c("grouped_df", "rowwise_df"))) {
-    structural <- c(structural, "groups")
-  }
   if (inherits(data, "data.table")) {
     structural <- c(structural, ".internal.selfref", "sorted", "index")
   }
@@ -316,10 +314,9 @@ native_margin_scalar_bindings <- function(proofs, env) {
 
 # Retain checked/native alternatives on the same grouped query node. Native
 # optimization precedes validation; both paths evaluate the parent only once.
-native_margin_scalar_step <- function(step, schema, share_outputs) {
-  if (is.null(schema)) return(step)
+native_margin_scalar_step <- function(step, share_outputs) {
   if (inherits(step, "dtplyr_step_group")) {
-    step$parent <- native_margin_scalar_step(step$parent, schema, share_outputs)
+    step$parent <- native_margin_scalar_step(step$parent, share_outputs)
     return(step)
   }
   if (!inherits(step, "dtplyr_step_subset") || !rlang::is_call(step$j) ||
@@ -358,21 +355,16 @@ native_margin_scalar_step <- function(step, schema, share_outputs) {
     step$j[[1L]], !!!expressions[keep]
   )
   step[["marginplyr_scalar_proofs"]] <- proofs
-  step[["marginplyr_checked_scalar"]] <- list(
-    j = step$j, vars = step$vars, groups = step$groups
-  )
   class(step) <- c("marginplyr_native_scalars", class(step))
   step
 }
 
-# Preserve the native query node's ownership boundary after ordinary edits.
+# Choose at execution between the native and the checked call for one node.
+# dtplyr verbs build a new step rather than editing an existing one, so its j,
+# vars and groups are still the ones `native_margin_scalar_step()` read.
 #' @exportS3Method dtplyr::dt_call
 #' @noRd
 dt_call.marginplyr_native_scalars <- function(x, needs_copy = x$needs_copy) {
-  boundary <- list(j = x$j, vars = x$vars, groups = x$groups)
-  if (!identical(boundary, x[["marginplyr_checked_scalar"]])) {
-    return(NextMethod())
-  }
   checked <- NextMethod()
   native <- checked
   native[[1L]] <- rlang::call2(

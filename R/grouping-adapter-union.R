@@ -671,7 +671,6 @@ summarize_margin_branch <- function(.data,
                                     .by,
                                     caller_labels,
                                     placeholder_name = NULL,
-                                    label_schema = NULL,
                                     native_share_outputs = character()) {
   dots <- rlang::enquos(...)
 
@@ -713,9 +712,7 @@ summarize_margin_branch <- function(.data,
 
   if (inherits(result, "dtplyr_step")) {
     result <- protect_dtplyr_share_measure(result)
-    result <- native_margin_scalar_step(
-      result, label_schema, native_share_outputs
-    )
+    result <- native_margin_scalar_step(result, native_share_outputs)
   }
 
   # A lazy input whose branch came back local was read, and both arms of this
@@ -1065,7 +1062,6 @@ summarize_margin_union <- function(.data,
             .by = unname(key_names[grouping_set]),
             caller_labels = summaries$labels,
             placeholder_name = placeholder,
-            label_schema = summaries$label_schema,
             native_share_outputs = summaries$native_share_outputs
           ),
           conditions = conditions,
