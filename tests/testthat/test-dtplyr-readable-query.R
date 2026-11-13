@@ -1,6 +1,6 @@
 # A deparsed closure or a base accessor's `.Internal()` body in a generated
 # head is what makes a dtplyr Margin query unreadable.
-expect_no_inlined_function_body <- function(text) {
+expect_no_function_body <- function(text) {
   text <- paste(text, collapse = "\n")
   expect_false(grepl("function (x, ns", text, fixed = TRUE))
   expect_false(grepl(".Internal(", text, fixed = TRUE))
@@ -18,7 +18,7 @@ test_that("show_query() of a dtplyr Margin summary names its helpers", {
     .grouping = rollup(g)
   )
   text <- utils::capture.output(print(dplyr::show_query(query)))
-  expect_no_inlined_function_body(text)
+  expect_no_function_body(text)
   expect_true(any(grepl("union_dtplyr_margin_labels", text, fixed = TRUE)))
 })
 
@@ -29,7 +29,7 @@ test_that("show_query() of a dtplyr Margin nest names its helpers", {
     .grouping = rollup(g)
   )
   text <- utils::capture.output(print(dplyr::show_query(query)))
-  expect_no_inlined_function_body(text)
+  expect_no_function_body(text)
 })
 
 test_that("a dtplyr Margin refusal's backtrace carries no function bodies", {
@@ -44,5 +44,5 @@ test_that("a dtplyr Margin refusal's backtrace carries no function bodies", {
   calls <- vapply(cnd$trace$call, function(call) {
     paste(deparse(call), collapse = "\n")
   }, character(1))
-  expect_no_inlined_function_body(calls)
+  expect_no_function_body(calls)
 })
