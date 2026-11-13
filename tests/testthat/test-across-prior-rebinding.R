@@ -272,7 +272,7 @@ test_that("visible removal exposes inherited across functions", {
       )
     )
     if (!margin) return(dplyr::summarise(data, !!!dots))
-    if (name == "other") {
+    if (identical(name, "other")) {
       expect_error(
         summarize_with_margins(data, !!!dots, .id = "answer_1"),
         "conflicts with a summary output", class = "marginplyr_error"
@@ -288,5 +288,8 @@ test_that("visible removal exposes inherited across functions", {
   )
   expect_identical(run("fns", margin = FALSE), expected[-1L])
   expect_identical(run("fns", margin = TRUE), expected)
+  # A literal c() spells the same finite removal.
+  expect_identical(run(quote(c("fns")), margin = FALSE), expected[-1L])
+  expect_identical(run(quote(c("fns")), margin = TRUE), expected)
   run("other", margin = TRUE)
 })

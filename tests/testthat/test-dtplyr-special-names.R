@@ -685,6 +685,7 @@ test_that("dtplyr reads a special key before binding a local loop index", {
 test_that("dtplyr key reads retain lexical effects of base control calls", {
   skip_if_suggest_absent("dtplyr")
   source <- dtplyr::lazy_dt(tibble::tibble(.N = c(10L, 10L, 20L)))
+  holder <- new.env()
   query <- summarize_with_margins(
     source,
     selected = base::local({
@@ -707,10 +708,68 @@ test_that("dtplyr key reads retain lexical effects of base control calls", {
       FALSE && is.null(rm(.N))
       .N
     }),
+    removed = base::local({
+      # Removing the local binding exposes the special column again.
+      .N <- 9L # nolint: object_name_linter.
+      rm(.N)
+      sum(.N)
+    }),
+    listed = base::local({
+      .N <- 9L # nolint: object_name_linter.
+      rm(list = c(".N"))
+      sum(.N)
+    }),
+    external = base::local({
+      # A removal from another known environment keeps this binding.
+      .N <- 5L # nolint: object_name_linter.
+      rm(list = character(), envir = holder)
+      .N
+    }),
+    child = base::local({
+      # The shadowing binding survives a removal in a child scope.
+      .N <- 6L # nolint: object_name_linter.
+      local({
+        .N <- 1L # nolint: object_name_linter.
+        rm(.N)
+      })
+      .N
+    }),
     .grouping = rollup(.N), .margin_label = NULL, .sort = "last"
   )
   expect_identical(dplyr::collect(query), tibble::tibble(
     .N = c(10L, 20L, NA_integer_), selected = rep(7L, 3L),
-    forced = rep(8L, 3L), retained = rep(9L, 3L)
+    forced = rep(8L, 3L), retained = rep(9L, 3L),
+    removed = c(20L, 20L, 40L), listed = c(20L, 20L, 40L),
+    external = rep(5L, 3L), child = rep(6L, 3L)
   ))
+})
+
+test_that("dtplyr key reads resolve a nested quosure in its own scope", {
+  skip_if_suggest_absent("dtplyr")
+  input <- tibble::tibble(.N = c(10L, 10L, 20L))
+  run <- function(data, key) {
+    # The removal is written where `rm` is base R's.
+    removal <- rlang::new_quosure(rlang::expr(rm(!!key)), environment())
+    caller <- function() {
+      # The summary's own scope holds an inert `rm`.
+      rm <- function(...) NULL
+      expr <- rlang::expr(base::local({
+        !!key <- 9L
+        !!removal
+        sum(!!key)
+      }))
+      summarize_with_margins(
+        data, kept = !!expr,
+        .grouping = rollup(dplyr::all_of(as.character(key))),
+        .margin_label = NULL, .sort = "last"
+      )
+    }
+    caller()
+  }
+  query <- run(dtplyr::lazy_dt(input), quote(.N))
+  expect_s3_class(query, "dtplyr_step")
+  safe <- dtplyr::lazy_dt(dplyr::rename(input, key = .N))
+  renamed <- dplyr::collect(run(safe, quote(key)))
+  expect_identical(renamed$kept, c(20L, 20L, 40L))
+  expect_identical(dplyr::collect(query)$kept, renamed$kept)
 })
