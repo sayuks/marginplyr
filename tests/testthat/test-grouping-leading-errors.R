@@ -42,16 +42,18 @@ test_that("known fixed-key overlaps precede unsafe dtplyr metadata", {
       original <- expect_error(verb(data, !!first, grouping_set(!!first)))
       expect_match(conditionMessage(original), "Columns cannot appear in both")
       expect_match(conditionMessage(original), "`fixed  key`", fixed = TRUE)
+      grouped <- expect_error(
+        verb(dplyr::group_by(data, !!first), NULL, grouping_set(!!first))
+      )
+      expect_match(conditionMessage(grouped), "Fixed grouping column")
       for (input in list(data, step, dplyr::group_by(step, !!first))) {
-        by <- if (length(dplyr::group_vars(input)) > 0L) {
-          NULL
-        } else {
-          first
-        }
+        is_grouped <- length(dplyr::group_vars(input)) > 0L
+        by <- if (is_grouped) NULL else first
+        expected <- if (is_grouped) grouped else original
         mixed <- expect_error(
           verb(input, !!by, spec), class = "marginplyr_error"
         )
-        expect_identical(conditionMessage(mixed), conditionMessage(original))
+        expect_identical(conditionMessage(mixed), conditionMessage(expected))
       }
     }
   }
