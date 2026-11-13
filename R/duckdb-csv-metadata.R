@@ -474,23 +474,34 @@ duckdb_call_head <- function(tokens, head) {
 
 # Whether the macro at catalog row `index` is a caller's, or one of DuckDB's
 # own scalar macros whose stored definition calls or names a function that
-# reaches one. A system macro's free names resolve in the caller's search path.
-duckdb_macro_reaches_caller <- function(index, catalog, seen = integer()) {
+# reaches one. A system macro's free names resolve in the caller's search path
+# and, inside a stored view, the view's `namespace`; every overload sharing the
+# row's name is checked.
+duckdb_macro_reaches_caller <- function(index, catalog, namespace = NULL,
+                                        seen = integer()) {
   if (duckdb_caller_macros(catalog)[[index]] ||
         catalog$kind[[index]] != "macro") {
     return(TRUE)
   }
-  body <- duckdb_metadata_tokens(catalog$definition[[index]])
-  calls <- Filter(function(i) duckdb_call_head(body, i), seq_along(body))
-  seen <- c(seen, index)
-  for (head in c(calls, duckdb_value_function_heads(body))) {
-    for (parts in duckdb_head_candidates(body, head)) {
-      macro <- duckdb_metadata_catalog_match(
-        parts, catalog, kinds = c("macro", "table_macro")
-      )
-      if (length(macro) && !macro %in% seen &&
-            duckdb_macro_reaches_caller(macro, catalog, seen)) {
-        return(TRUE)
+  overloads <- which(
+    catalog$database_name %in% catalog$database_name[[index]] &
+      catalog$schema_name %in% catalog$schema_name[[index]] &
+      catalog$relation_name %in% catalog$relation_name[[index]] &
+      catalog$kind %in% "macro"
+  )
+  seen <- c(seen, overloads)
+  for (overload in overloads) {
+    body <- duckdb_metadata_tokens(catalog$definition[[overload]])
+    calls <- Filter(function(i) duckdb_call_head(body, i), seq_along(body))
+    for (head in c(calls, duckdb_value_function_heads(body))) {
+      for (parts in duckdb_head_candidates(body, head)) {
+        macro <- duckdb_metadata_catalog_match(
+          parts, catalog, namespace, kinds = c("macro", "table_macro")
+        )
+        if (length(macro) && !macro %in% seen &&
+              duckdb_macro_reaches_caller(macro, catalog, namespace, seen)) {
+          return(TRUE)
+        }
       }
     }
   }
@@ -510,7 +521,7 @@ duckdb_head_reaches_macro <- function(tokens, head, catalog, namespace = NULL) {
     length(macro) > 0L && if (call) {
       !duckdb_inert_macro(macro, catalog)
     } else {
-      duckdb_macro_reaches_caller(macro, catalog)
+      duckdb_macro_reaches_caller(macro, catalog, namespace)
     }
   }, logical(1)))
 }

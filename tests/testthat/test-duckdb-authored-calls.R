@@ -493,6 +493,30 @@ test_that("chained and parenthesis-less macro calls are checked (#1647)", {
   }
 })
 
+test_that("a system macro's body resolves in a stored view's schema", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  writeLines(c("k", "101"), path)
+  DBI::dbWriteTable(con, "t", data.frame(g = c("a", "b"), v = c(1L, 2L)))
+  DBI::dbExecute(con, "CREATE SCHEMA s")
+  # DuckDB's own `user` macro calls current_user, which the view's schema
+  # supplies when the view binds.
+  DBI::dbExecute(con, paste0(
+    "CREATE MACRO s.current_user() AS (SELECT first(k) FROM read_csv_auto(",
+    DBI::dbQuoteString(con, path), "))"
+  ))
+  DBI::dbExecute(con, "CREATE VIEW s.vw2 AS SELECT user AS u, v FROM main.t")
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  expect_error(inspect_grouping(
+    dplyr::tbl(con, I("s.vw2")), .grouping = grouping_set(where(is.numeric))
+  ), "DuckDB view", fixed = TRUE, class = "marginplyr_error")
+  expect_duckdb_catalog_only()
+})
+
 test_that("DuckDB's own parenthesis-less functions keep typed metadata", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
