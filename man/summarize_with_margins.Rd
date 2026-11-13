@@ -620,9 +620,12 @@ explicitly and pass the data frame.
 \item \strong{One DuckDB catalog query per operation at most}, reading table and
 view names, stored view definitions, macro names, and the search path, to
 check that the input hides no source work behind a view or macro before
-its types are read. It binds no table of yours. Opaque macros, \code{query()},
-\code{query_table()}, and views without stored SQL are refused, except a data
-frame registered with \code{duckdb::duckdb_register()}.
+its types are read. It binds no table of yours. Table macros, macros you
+define, \code{query()}, \code{query_table()}, and views without stored SQL are
+refused, except a data frame registered with \code{duckdb::duckdb_register()}.
+DuckDB's own scalar macros, such as \code{nullif()}, are admitted only while
+the database holds no macro you defined, since one could replace a name
+inside their bodies.
 \item \strong{At most two queries per share request until the SQL dialect answers},
 referencing none of your tables; see
 \emph{\link[=summarize_with_margins]{Contextual shares}}.

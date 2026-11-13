@@ -376,6 +376,23 @@ duckdb_metadata_catalog_match <- function(parts, catalog, namespace = NULL,
   integer()
 }
 
+# Which rows of a duckdb_metadata_catalog() snapshot are macros or table macros
+# a caller defined, rather than DuckDB's own in database `system`.
+duckdb_caller_macros <- function(catalog) {
+  catalog$kind %in% c("macro", "table_macro") &
+    !catalog$database_name %in% "system"
+}
+
+# Whether catalog row `index`, a call's first macro match, expands without
+# reaching source work: one of DuckDB's own scalar macros while the snapshot
+# holds no caller macro its body could resolve to (ADR 0020). Its arguments
+# are authored text the caller's scan still checks.
+duckdb_inert_macro <- function(index, catalog) {
+  catalog$kind[[index]] == "macro" &&
+    catalog$database_name[[index]] %in% "system" &&
+    !any(duckdb_caller_macros(catalog))
+}
+
 # Refuse view work whose safety cannot be established from captured definitions.
 abort_duckdb_view_metadata <- function() {
   abort_marginplyr(c(
@@ -464,7 +481,7 @@ validate_duckdb_authored_calls <- function(tokens, catalog) {
     macro <- duckdb_metadata_catalog_match(
       parts, catalog(), kinds = c("macro", "table_macro")
     )
-    if (length(macro) ||
+    if ((length(macro) && !duckdb_inert_macro(macro, catalog())) ||
           utils::tail(parts, 1L) %in% c("query", "query_table")) {
       abort_duckdb_call_metadata()
     }
@@ -514,7 +531,9 @@ validate_duckdb_view_metadata <- function(index, catalog, seen) {
     macro <- duckdb_metadata_catalog_match(
       parts, catalog(), namespace, kinds = c("macro", "table_macro")
     )
-    if (length(macro)) abort_duckdb_view_metadata()
+    if (length(macro) && !duckdb_inert_macro(macro, catalog())) {
+      abort_duckdb_view_metadata()
+    }
   }
   validate_duckdb_csv_metadata(
     body, catalog, namespace = namespace, seen = c(seen, index)

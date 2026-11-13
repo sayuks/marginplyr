@@ -455,6 +455,26 @@ undocumented, so its absence fails closed. Any other view without stored SQL,
 such as a relation view over `read_csv()`, remains refused before binding,
 with a diagnostic naming the missing definition.
 
+## Amendment (#1654): DuckDB's own scalar macros, while no caller macro exists
+
+The #1524 rule refused every call whose head the catalog lists as a macro, so
+DuckDB's own scalar macros, such as `nullif()`, `date_add()`, `list_sum()` or
+`current_database()`, were refused in authored SQL, `sql()` fragments and
+stored views although expanding one reads no source. Preflight admits a call
+when its first catalog match is a scalar macro (`macro`, not `table_macro`) in
+database `system` and the operation's catalog snapshot holds no macro or table
+macro outside database `system`. Every other macro call is refused as before.
+
+Both conditions are needed. A system table macro can read source work:
+`histogram_values()` is defined over `query_table()`, and `histogram()` calls
+it. A system macro's body is fixed text whose free names resolve in the
+caller's search path, so one caller macro can redirect it: a caller-defined
+`list_aggr` reading a CSV makes the zero-row type of `list_sum([v])` follow
+the file's data row. The admitted macro's arguments are authored text that the
+relation, reader and call checks still read. A finer rule, admitting unless a
+caller macro's name occurs in the system macro's stored definition, would
+refuse less for callers who define macros; it is not adopted.
+
 ## Amendment (#640): SQLite typed-order execution follows an explicit request
 
 ADR 0031's live SQLite result builds its typed compound query without executing
