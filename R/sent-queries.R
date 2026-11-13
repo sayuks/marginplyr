@@ -392,7 +392,6 @@ with_sent_query <- function(purpose, query, expr,
 #' input fails first, the outer call starts no record. Other arguments do
 #' not gain this early evaluation, and recording does not restore user options.
 #'
-
 #' @section Reading an empty or incomplete record:
 #' - Nothing has been recorded in this session -- none of the calls the
 #'   description above lists has begun -- and the call is refused with a
