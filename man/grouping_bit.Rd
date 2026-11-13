@@ -16,37 +16,11 @@ grouping_id(...)
 column of the resolved plan.}
 }
 \value{
-A grouping flag or identifier when used inside
-\code{\link[=summarize_with_margins]{summarize_with_margins()}}. Local data frames and \code{dtplyr} steps return R
-integers, because the value is known for each grouping-set branch and is
-substituted before execution. Arrow and every backend taking the portable
-\verb{UNION ALL} path receive that same constant as a literal in their own
-query. Only a backend actually running native \verb{GROUP BY GROUPING SETS}
-emits SQL \code{GROUPING()}, so PostgreSQL falls back to the literal whenever
-\code{.duplicates = "keep"} sends it down the portable path.
-
-Native \code{GROUPING()} is emitted only for a helper outside every aggregate:
-SQL does not allow it as an aggregate's argument. A summary with a helper
-inside an aggregate, such as \code{sum(v * grouping_bit(b))}, or inside any
-call the SQL dialect of the backend does not translate as a plain scalar,
-takes the portable \verb{UNION ALL} path, where the helper is the literal.
-
-The flag or identifier is the same value on every backend, but an
-aggregate whose argument varies with rows only through a helper, such as
-\code{sum(grouping_id(a, b))}, aggregates a constant and follows its
-backend: it counts the constant once per group on a local data frame and
-in \code{dtplyr}, and once per row wherever the helper is a query literal, as
-plain \code{sum(1)} differs between a data frame and a database table. Combine
-the helper with a column that varies by row, as in
-\code{sum(v * grouping_id(a, b))}, or put it outside the aggregate, as in
-\code{n() * grouping_id(a, b)}, for a value that agrees everywhere.
-
-A direct output of either helper remains numeric even when a remote Margin
-result has zero rows. This includes a supported literal \code{across()} lambda
-whose entire result is the helper. Direct \code{collect()} and supported direct
-\code{compute()} retain the type; backends may return integer or double.
-Expressions around a helper, ordinary summaries, and later lazy dplyr
-transformations follow the type rules of their backend.
+Used inside \code{\link[=summarize_with_margins]{summarize_with_margins()}}, one value per result row.
+\code{\link[=grouping_bit]{grouping_bit()}} gives an integer flag: \code{1L} where the column is absent
+from the row's grouping set, \code{0L} where it is present. \code{\link[=grouping_id]{grouping_id()}}
+gives an integer bit mask of those flags. A database may return either
+as a double; \emph{How the value is computed} says where.
 }
 \description{
 \code{\link[=grouping_bit]{grouping_bit()}} and \code{\link[=grouping_id]{grouping_id()}} are contextual summary helpers for
@@ -104,9 +78,9 @@ presentation order matters.
 Displayed Margin labels are not identity. A source value can equal its
 Margin label, and a source missing value can print exactly like a
 typed-missing Margin value, so retain one of these helpers or \code{.id} when
-structural identity matters. See
-\emph{\link[=summarize_with_margins]{Display labels and grouping identity}} for the
-complete label, factor, and missing-value contract.
+structural identity matters. The complete label, factor, and missing-value
+contract is \emph{\link[=summarize_with_margins]{Display labels and grouping identity}}
+in \code{\link[=summarize_with_margins]{summarize_with_margins()}}.
 
 The \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide} works through these values with
 executable examples.
@@ -120,22 +94,57 @@ anything but a name is refused exactly where writing that expression out
 would be.
 }
 
+\section{How the value is computed}{
+
+Local data frames and \code{dtplyr} steps return R
+integers, because the value is known for each grouping-set branch and is
+substituted before execution. Arrow and every backend taking the portable
+\verb{UNION ALL} path receive that same constant as a literal in their own
+query. Only a backend actually running native \verb{GROUP BY GROUPING SETS}
+emits SQL \code{GROUPING()}, so PostgreSQL falls back to the literal whenever
+\code{.duplicates = "keep"} sends it down the portable path.
+
+Native \code{GROUPING()} is emitted only for a helper outside every aggregate:
+SQL does not allow it as an aggregate's argument. A summary with a helper
+inside an aggregate, such as \code{sum(v * grouping_bit(b))}, or inside any
+call the SQL dialect of the backend does not translate as a plain scalar,
+takes the portable \verb{UNION ALL} path, where the helper is the literal.
+
+The flag or identifier is the same value on every backend, but an
+aggregate whose argument varies with rows only through a helper, such as
+\code{sum(grouping_id(a, b))}, aggregates a constant and follows its
+backend: it counts the constant once per group on a local data frame and
+in \code{dtplyr}, and once per row wherever the helper is a query literal, as
+plain \code{sum(1)} differs between a data frame and a database table. Combine
+the helper with a column that varies by row, as in
+\code{sum(v * grouping_id(a, b))}, or put it outside the aggregate, as in
+\code{n() * grouping_id(a, b)}, for a value that agrees everywhere.
+
+A direct output of either helper remains numeric even when a remote Margin
+result has zero rows. This includes a supported literal \code{across()} lambda
+whose entire result is the helper. Direct \code{collect()} and supported direct
+\code{compute()} retain the type; backends may return integer or double.
+Expressions around a helper, ordinary summaries, and later lazy dplyr
+transformations follow the type rules of their backend.
+}
+
 \examples{
 # Online-direct sales have a source NA store. grouping_bit(store) is 0 for
 # that detail row but 1 when ROLLUP removes store to create a subtotal.
 summarize_with_margins(
   .data = dplyr::filter(retail_sales, year == 2026L, month == "Jan"),
   revenue = sum(revenue),
-  year_is_fixed = grouping_bit(year),
+  # Always 0 for a `.by` column, which no grouping set removes.
+  year_absent = grouping_bit(year),
   store_is_total = grouping_bit(store),
   level = grouping_id(region, store),
   .by = year,
   .grouping = rollup(region, store)
 )
 
-# Keeping typed missing values makes the Grouping bits essential: source
-# missing values, factor NA levels, and generated margins may all print as
-# NA even though their structural identities differ.
+# Keeping typed missing values makes the Grouping bits essential: a source
+# missing store and a generated store margin both print as NA even though
+# their structural identities differ.
 summarize_with_margins(
   .data = dplyr::filter(retail_sales, year == 2026L, month == "Jan"),
   revenue = sum(revenue),

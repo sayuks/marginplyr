@@ -453,9 +453,6 @@ markers <- list(
     # cross-reference.
     "Errors and warnings",
     "is the only package-specific class marginplyr promises",
-    "handler boundary.",
-    "$replay_error",
-    "$cleanup",
     "Recording the SQL marginplyr prepares",
     "switches the record on",
     # The Guides list, by its heading and by one entry's href. No entry's text
@@ -465,6 +462,13 @@ markers <- list(
     # sidebar links the same vignette relatively.
     "Guides",
     "https://sayuks.github.io/marginplyr/vignettes/completing_keys.html"
+  ),
+  # The condition contract `?marginplyr` links to. Each field is quoted by
+  # the section stating it, and the boundary by the sentence naming it.
+  "docs/man/marginplyr_conditions.html" = c(
+    "handler boundary.",
+    "$replay_error",
+    "$cleanup"
   ),
   "docs/man/inspect_grouping.html" = c(
     "Formats and ordinary tibble behavior",

@@ -1,0 +1,90 @@
+#' Conditions a Margin operation reports, replays, and leaves to you
+#'
+#' A Margin operation can summarize your expression once per grouping set,
+#' buffers the warnings that raises, and on SQLite may roll back a write it
+#' started. This topic states what reaches your handlers when that work
+#' raises conditions: how an error or warning from your expressions is
+#' reported, what an interrupt carries when it competes with an earlier
+#' error, how buffered warnings are replayed, where R's own handler boundary
+#' limits those guarantees, and what a failed SQLite cleanup reports. It
+#' applies to local and lazy inputs alike.
+#'
+#' Which errors are marginplyr's own, and the one class to match them on, is
+#' *[Errors and warnings][marginplyr-package]* in [marginplyr-package].
+#'
+#' @section How your conditions are reported:
+#' The wording is marginplyr's to change; the columns, values, and arguments a
+#' message quotes are yours, and a marginplyr error spells them as you spelled
+#' them. Two spellings it cannot keep: a line break and a no-break space inside
+#' a name are both shown as an ordinary space. This says nothing about the
+#' errors marginplyr does not write.
+#'
+#' What a Margin verb does adjust, for an error and a warning alike, is the
+#' context reported around one, because a Margin operation may summarize
+#' your expression once per grouping set. Such a condition reports its grouping
+#' values under the columns you named rather than under internal ones, quotes
+#' the argument as you spelled it rather than as marginplyr rewrote it to
+#' compute the grouping sets, and an error blames the Margin verb you wrote
+#' rather than the internal summary that ran it. A warning still names that
+#' internal summary, because the name is part of a sentence dplyr renders
+#' before marginplyr sees the warning at all. Where the expression dplyr quoted
+#' cannot be matched -- a long one dplyr shortens to `+...`, or a diagnostic a
+#' later dplyr lays out differently -- the quotation stays as dplyr wrote it.
+#'
+#' A warning that every grouping set raises is reported once, saying how many
+#' further grouping sets raised it; warnings that differ from each other are
+#' reported one by one. A lazy input is outside this, and visibly so: its
+#' summary expressions run when you collect the result rather than while the
+#' verb runs, so what they raise is the collecting call's to report.
+#'
+#' @section Interrupts and earlier errors:
+#' When marginplyr catches competing conditions, successful cleanup is followed
+#' by the first interrupt, retaining any earlier execution error. An enriched
+#' interrupt inherits `"interrupt"` and `"condition"`, not `"error"` or
+#' `"marginplyr_error"`. Its `$interrupt` holds the original interrupt and its
+#' `$parent` holds the earlier execution error, including that error's own
+#' cause chain. A lone interrupt needs no wrapper. Absent information may be
+#' `NULL` or absent.
+#'
+#' With no exiting interrupt handler, interruption retains native R recovery
+#' and interruption hooks. A returning calling handler first receives the
+#' enriched condition, when one is needed, and may then receive a bare native
+#' notification for the same cancellation.
+#'
+#' @section Warning replay:
+#' Buffered warnings are replayed in first-occurrence order during exit.
+#' Calling warning handlers can observe and muffle them normally. A caught
+#' replay error or further interrupt ends replay; remaining warnings need not
+#' be delivered. During cancellation, `$replay_error` retains a caught replay
+#' error separately from the execution-error parent. Further caught interrupts
+#' keep the first interrupt. Without interruption, an earlier execution error
+#' takes precedence over a caught replay error. Warning-only work still fails
+#' under `options(warn = 2)`; marginplyr does not change that option.
+#'
+#' @section R's handler boundary:
+#' These guarantees follow R's handler boundary. While R invokes a calling
+#' warning handler registered outside the Margin operation, newer handlers,
+#' including marginplyr's catchers, are unavailable. An error or interrupt
+#' raised there can therefore replace the pending outcome without retaining
+#' it. Other nonlocal transfers, such as invoking your own restart, also
+#' follow R's ordinary behavior. The
+#' *Keep warning-handler failures separate from cancellation* recipe in the
+#' [recipes guide][recipe] shows a caller-owned wrapper that keeps a callback
+#' failure separately from the operation's outcome.
+#'
+#' [recipe]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
+#'
+#' @section SQLite cleanup failure:
+#' Failed SQLite cleanup takes precedence over conditions marginplyr caught.
+#' It is an error outside `"marginplyr_error"`, identifying the failed rollback
+#' or release step. Its `$cleanup` holds that step's condition, and `$parent`
+#' holds the triggering execution error or interrupt outcome above. Further
+#' caught interrupts do not replace a cleanup failure already observed. See
+#' [summarize_with_margins()] for the materialization boundary and recovery
+#' limits.
+#'
+#' @seealso [marginplyr-package] for the `"marginplyr_error"` class, and
+#'   [summarize_with_margins()] for the SQLite materialization these cleanup
+#'   fields describe.
+#' @name marginplyr_conditions
+NULL

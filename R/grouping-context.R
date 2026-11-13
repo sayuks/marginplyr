@@ -53,9 +53,9 @@
 #' Displayed Margin labels are not identity. A source value can equal its
 #' Margin label, and a source missing value can print exactly like a
 #' typed-missing Margin value, so retain one of these helpers or `.id` when
-#' structural identity matters. See
-#' *[Display labels and grouping identity][summarize_with_margins]* for the
-#' complete label, factor, and missing-value contract.
+#' structural identity matters. The complete label, factor, and missing-value
+#' contract is *[Display labels and grouping identity][summarize_with_margins]*
+#' in [summarize_with_margins()].
 #'
 #' The [grouping identity guide][guide] works through these values with
 #' executable examples.
@@ -74,37 +74,43 @@
 #' @param ... Bare grouping columns. Passing none reads every `.grouping`
 #'   column of the resolved plan.
 #'
-#' @return A grouping flag or identifier when used inside
-#'   [summarize_with_margins()]. Local data frames and `dtplyr` steps return R
-#'   integers, because the value is known for each grouping-set branch and is
-#'   substituted before execution. Arrow and every backend taking the portable
-#'   `UNION ALL` path receive that same constant as a literal in their own
-#'   query. Only a backend actually running native `GROUP BY GROUPING SETS`
-#'   emits SQL `GROUPING()`, so PostgreSQL falls back to the literal whenever
-#'   `.duplicates = "keep"` sends it down the portable path.
+#' @return Used inside [summarize_with_margins()], one value per result row.
+#'   [grouping_bit()] gives an integer flag: `1L` where the column is absent
+#'   from the row's grouping set, `0L` where it is present. [grouping_id()]
+#'   gives an integer bit mask of those flags. A database may return either
+#'   as a double; *How the value is computed* says where.
 #'
-#'   Native `GROUPING()` is emitted only for a helper outside every aggregate:
-#'   SQL does not allow it as an aggregate's argument. A summary with a helper
-#'   inside an aggregate, such as `sum(v * grouping_bit(b))`, or inside any
-#'   call the SQL dialect of the backend does not translate as a plain scalar,
-#'   takes the portable `UNION ALL` path, where the helper is the literal.
+#' @section How the value is computed:
+#' Local data frames and `dtplyr` steps return R
+#' integers, because the value is known for each grouping-set branch and is
+#' substituted before execution. Arrow and every backend taking the portable
+#' `UNION ALL` path receive that same constant as a literal in their own
+#' query. Only a backend actually running native `GROUP BY GROUPING SETS`
+#' emits SQL `GROUPING()`, so PostgreSQL falls back to the literal whenever
+#' `.duplicates = "keep"` sends it down the portable path.
 #'
-#'   The flag or identifier is the same value on every backend, but an
-#'   aggregate whose argument varies with rows only through a helper, such as
-#'   `sum(grouping_id(a, b))`, aggregates a constant and follows its
-#'   backend: it counts the constant once per group on a local data frame and
-#'   in `dtplyr`, and once per row wherever the helper is a query literal, as
-#'   plain `sum(1)` differs between a data frame and a database table. Combine
-#'   the helper with a column that varies by row, as in
-#'   `sum(v * grouping_id(a, b))`, or put it outside the aggregate, as in
-#'   `n() * grouping_id(a, b)`, for a value that agrees everywhere.
+#' Native `GROUPING()` is emitted only for a helper outside every aggregate:
+#' SQL does not allow it as an aggregate's argument. A summary with a helper
+#' inside an aggregate, such as `sum(v * grouping_bit(b))`, or inside any
+#' call the SQL dialect of the backend does not translate as a plain scalar,
+#' takes the portable `UNION ALL` path, where the helper is the literal.
 #'
-#'   A direct output of either helper remains numeric even when a remote Margin
-#'   result has zero rows. This includes a supported literal `across()` lambda
-#'   whose entire result is the helper. Direct `collect()` and supported direct
-#'   `compute()` retain the type; backends may return integer or double.
-#'   Expressions around a helper, ordinary summaries, and later lazy dplyr
-#'   transformations follow the type rules of their backend.
+#' The flag or identifier is the same value on every backend, but an
+#' aggregate whose argument varies with rows only through a helper, such as
+#' `sum(grouping_id(a, b))`, aggregates a constant and follows its
+#' backend: it counts the constant once per group on a local data frame and
+#' in `dtplyr`, and once per row wherever the helper is a query literal, as
+#' plain `sum(1)` differs between a data frame and a database table. Combine
+#' the helper with a column that varies by row, as in
+#' `sum(v * grouping_id(a, b))`, or put it outside the aggregate, as in
+#' `n() * grouping_id(a, b)`, for a value that agrees everywhere.
+#'
+#' A direct output of either helper remains numeric even when a remote Margin
+#' result has zero rows. This includes a supported literal `across()` lambda
+#' whose entire result is the helper. Direct `collect()` and supported direct
+#' `compute()` retain the type; backends may return integer or double.
+#' Expressions around a helper, ordinary summaries, and later lazy dplyr
+#' transformations follow the type rules of their backend.
 #' @family grouping plans and grouping identity
 #' @family contextual summary helpers
 #' @export
@@ -114,16 +120,17 @@
 #' summarize_with_margins(
 #'   .data = dplyr::filter(retail_sales, year == 2026L, month == "Jan"),
 #'   revenue = sum(revenue),
-#'   year_is_fixed = grouping_bit(year),
+#'   # Always 0 for a `.by` column, which no grouping set removes.
+#'   year_absent = grouping_bit(year),
 #'   store_is_total = grouping_bit(store),
 #'   level = grouping_id(region, store),
 #'   .by = year,
 #'   .grouping = rollup(region, store)
 #' )
 #'
-#' # Keeping typed missing values makes the Grouping bits essential: source
-#' # missing values, factor NA levels, and generated margins may all print as
-#' # NA even though their structural identities differ.
+#' # Keeping typed missing values makes the Grouping bits essential: a source
+#' # missing store and a generated store margin both print as NA even though
+#' # their structural identities differ.
 #' summarize_with_margins(
 #'   .data = dplyr::filter(retail_sales, year == 2026L, month == "Jan"),
 #'   revenue = sum(revenue),

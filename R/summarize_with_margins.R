@@ -529,10 +529,9 @@
 #' caught during cleanup waits for it, and then propagates with any earlier
 #' execution error as `$parent`. A failed cleanup takes precedence: its error
 #' holds the failed step's condition in `$cleanup` and the triggering error
-#' or interrupt in `$parent`; *[Errors and warnings][marginplyr-package]*
-#' describes both fields. Once the savepoint is released, the outermost
-#' release persists the result and an inner one leaves it to the caller's
-#' commit or rollback.
+#' or interrupt in `$parent`; [marginplyr_conditions] describes both fields.
+#' Once the savepoint is released, the outermost release persists the result
+#' and an inner one leaves it to the caller's commit or rollback.
 #'
 #' There is no recovery guarantee for native SQLite cancellation, which can
 #' abort the whole transaction, nor for invalid connections, process
