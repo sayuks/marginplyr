@@ -719,9 +719,7 @@ verification levels, and practical guidance for inspecting a query.
 
 `expand_with_margins()` emits one copy of each source row for every grouping
 set. It is useful when downstream work needs the rows rather than an
-immediate summary. The public name describes the result; SQL `UNION ALL` is
-only the portable implementation strategy and this function is unrelated to
-`dplyr::union_all()`:
+immediate summary:
 
 ```{r}
 january_sales <- retail_sales |>
