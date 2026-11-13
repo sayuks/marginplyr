@@ -1179,7 +1179,7 @@ wrap_share_sources <- function(dots,
       check <- checks[[1L]]
       is_dtplyr <- identical(backend_kind, "dtplyr")
       validator <- if (is_dtplyr) {
-        dtplyr_share_private_call("check_dtplyr_share_source")
+        marginplyr_private_call("check_dtplyr_share_source")
       } else {
         marginplyr_private_call("check_share_scalar")
       }
@@ -1208,7 +1208,7 @@ wrap_dtplyr_share_ordinary <- function(dots, checks, call) {
     quo <- dots[[position]]
     expr <- rlang::quo_get_expr(quo)
     wrapped <- rlang::call2(
-      dtplyr_share_private_call("check_dtplyr_share_ordinary"),
+      marginplyr_private_call("check_dtplyr_share_ordinary"),
       expr,
       summary = check$summary,
       share_output = check$share_output,
@@ -1382,18 +1382,18 @@ wrap_dtplyr_share_function <- function(fn, mapping, forwarded_args, call) {
     )
   }
   input <- rlang::call2(
-    dtplyr_share_private_call("dtplyr_share_input_name"),
+    marginplyr_private_call("dtplyr_share_input_name"),
     dtplyr_lambda_pronoun()
   )
   mapping_expr <- rlang::call2(
-    dtplyr_share_private_call("new_share_validation_mapping"),
+    marginplyr_private_call("new_share_validation_mapping"),
     inputs = mapping$inputs,
     share_outputs = mapping$share_outputs,
     source_summaries = mapping$source_summaries,
     share_kinds = mapping$share_kinds
   )
   validator <- rlang::call2(
-    dtplyr_share_private_call("check_dtplyr_share_scalar"),
+    marginplyr_private_call("check_dtplyr_share_scalar"),
     value,
     input = input,
     mapping = mapping_expr,
@@ -1490,7 +1490,7 @@ rewrite_dtplyr_share_measure <- function(expr, alias, measure = ".BY") {
     return(expr)
   }
   if (is_generated_dtplyr_share_call(expr)) {
-    if (identical(expr[[1L]], dtplyr_share_private_call(
+    if (identical(expr[[1L]], marginplyr_private_call(
       "dtplyr_share_input_name"
     ))) {
       return(deparse(expr[[2L]]))
@@ -2761,7 +2761,7 @@ guard_dtplyr_grouped_result <- function(result, plan, set_id_name,
         margin_column_pronoun(safe_name(name))
       })
       check <- rlang::call2(
-        dtplyr_share_private_call("assert_dtplyr_grouped_keys"),
+        marginplyr_private_call("assert_dtplyr_grouped_keys"),
         !!!key_exprs,
         share_output = pair$output,
         share_kind = pair$kind,
@@ -3511,7 +3511,7 @@ apply_windowed_shares <- function(result, requests, plan, set_id_name, kind,
             ), na.rm = TRUE))
           } else {
             rlang::call2(
-              dtplyr_share_private_call("dtplyr_share_denominator"),
+              marginplyr_private_call("dtplyr_share_denominator"),
               value, identifier, target
             )
           }
@@ -3551,12 +3551,6 @@ apply_windowed_shares <- function(result, requests, plan, set_id_name, kind,
 # Grouped-result validation has already established one row per occurrence.
 dtplyr_share_denominator <- function(value, identifier, target) {
   value[match(target, identifier)]
-}
-
-# Bind the namespace operator of a generated deferred share call. dtplyr
-# preserves this computed head while translating its data-column arguments.
-dtplyr_share_private_call <- function(name) {
-  rlang::call2(base::`:::`, rlang::sym("marginplyr"), rlang::sym(name))
 }
 
 # Whether a translated call carries the package-selected namespace operator.

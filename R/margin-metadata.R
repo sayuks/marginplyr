@@ -327,7 +327,7 @@ native_margin_scalar_step <- function(step, schema, share_outputs) {
   validators <- lapply(c(
     "check_dtplyr_share_source", "check_dtplyr_share_scalar",
     "check_dtplyr_share_ordinary"
-  ), dtplyr_share_private_call)
+  ), marginplyr_private_call)
   expressions <- as.list(step$j)[-1L]
   checks <- vector("list", length(expressions))
   guarded <- rep(FALSE, length(expressions))
@@ -542,7 +542,7 @@ guard_native_margin_j <- function(j, checks) {
 # Only cardinality failures use a plain witness; type checks use actual columns.
 validate_native_margin_value <- function(value, size, check) {
   if (is.null(check)) return(invisible(NULL))
-  ordinary <- identical(check[[1L]], dtplyr_share_private_call(
+  ordinary <- identical(check[[1L]], marginplyr_private_call(
     "check_dtplyr_share_ordinary"
   ))
   if (size != 1L) {
@@ -552,7 +552,7 @@ validate_native_margin_value <- function(value, size, check) {
   }
   if (!ordinary) {
     check[[1L]] <- marginplyr_private_call(if (identical(
-      check[[1L]], dtplyr_share_private_call("check_dtplyr_share_source")
+      check[[1L]], marginplyr_private_call("check_dtplyr_share_source")
     )) "check_native_margin_source" else "check_native_margin_scalar")
     check[[2L]] <- rlang::call2(base::quote, value)
     rlang::eval_bare(check, baseenv())
