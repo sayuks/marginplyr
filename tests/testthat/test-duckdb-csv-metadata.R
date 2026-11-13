@@ -1248,3 +1248,75 @@ test_that("CSV preflight preserves a metadata translation failure's record", {
   expect_identical(audit$sql, NA_character_)
   expect_identical(audit$status, "errored")
 })
+
+test_that("CSV readers need an applied literal schema under auto_detect", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  quoted <- DBI::dbQuoteString(con, path)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  writeLines(c("k", "101"), path)
+  # DuckDB infers types from rows under union_by_name without a schema, and
+  # applies the last occurrence of a repeated option.
+  for (arguments in c(
+    paste0("[", quoted, "], auto_detect = false, union_by_name = true"),
+    paste0("[", quoted, "], auto_detect := false, union_by_name := true"),
+    paste0(quoted, ", auto_detect = false, auto_detect = true"),
+    paste0(quoted, ", columns = {'k': 'BIGINT'}, auto_detect = false,",
+           " auto_detect = true")
+  )) {
+    for (reader in c("read_csv", "read_csv_auto")) {
+      call <- paste0(reader, "(", arguments, ")")
+      DBI::dbExecute(con, paste(
+        "CREATE OR REPLACE VIEW stored_reader AS SELECT * FROM", call
+      ))
+      for (sql in c(paste("SELECT * FROM", call), "TABLE stored_reader")) {
+        input <- dplyr::tbl(con, dbplyr::sql(sql), vars = "k")
+        for (operation in list(
+          function() {
+            inspect_grouping(input, .grouping = grouping_set(where(is.numeric)))
+          },
+          function() inspect_grouping(input, .by = where(is.numeric)),
+          function() {
+            summarize_with_margins(input, n = dplyr::n(), .grouping = rollup(k))
+          },
+          function() expand_with_margins(input, .grouping = rollup(k))
+        )) {
+          expect_error(
+            operation(), "DuckDB CSV input", fixed = TRUE,
+            class = "marginplyr_error"
+          )
+          # Only a stored view needs the catalog to reach its reader.
+          if (startsWith(sql, "TABLE")) {
+            expect_duckdb_catalog_only()
+          } else {
+            expect_equal(nrow(last_sent_queries()), 0L)
+          }
+        }
+      }
+    }
+  }
+
+  # An applied literal schema keeps one plan whatever the file holds.
+  for (arguments in c(
+    paste0("[", quoted, "], auto_detect = false, union_by_name = true,",
+           " header = true, columns = {'k': 'BIGINT'}"),
+    paste0(quoted, ", auto_detect = true, auto_detect = false,",
+           " header = true, columns = {'k': 'BIGINT'}")
+  )) {
+    for (value in c("101", "source_tail")) {
+      writeLines(c("k", value), path)
+      input <- dplyr::tbl(con, dbplyr::sql(paste0(
+        "SELECT * FROM read_csv(", arguments, ")"
+      )), vars = "k")
+      expect_identical(inspect_grouping(
+        input, .grouping = grouping_set(where(is.numeric))
+      )$included, "(k)")
+      expect_identical(last_sent_queries(details = TRUE)$purpose,
+                       c("relation_catalog", "selection_proxy"))
+    }
+  }
+})

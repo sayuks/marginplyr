@@ -79,9 +79,10 @@ duckdb_stored_reader_arg <- function(arg) {
   c(arg[1:2], value)
 }
 
-# Count columns in a literal JSON schema; expressions leave the count unknown.
-# DuckDB's JSON BindReader disables type inference for these columns and also
-# resolves automatic record inference when more than one column is supplied.
+# Count columns in a literal CSV or JSON schema; expressions leave the count
+# unknown. DuckDB's JSON BindReader disables type inference for these columns
+# and also resolves automatic record inference when more than one column is
+# supplied.
 duckdb_json_schema_size <- function(arg) {
   if (length(arg) < 7L || arg[[1L]] != "columns" ||
         !arg[[2L]] %in% c("=", ":=") || arg[[3L]] != "{" ||
@@ -708,6 +709,12 @@ validate_duckdb_csv_metadata <- function(
       if (!is.null(namespace)) {
         arguments <- lapply(arguments, duckdb_stored_reader_arg)
       }
+      # DuckDB applies the last occurrence of a repeated named option.
+      names <- vapply(arguments, function(arg) {
+        if (length(arg) >= 3L && arg[[2L]] %in% c("=", ":=")) arg[[1L]] else ""
+      }, character(1))
+      arguments <- arguments[!nzchar(names) |
+                               !duplicated(names, fromLast = TRUE)]
       disabled <- vapply(arguments, function(arg) {
         identical(arg, c("auto_detect", "=", "false")) ||
           identical(arg, c("auto_detect", ":=", "false"))
@@ -718,10 +725,11 @@ validate_duckdb_csv_metadata <- function(
           arg[[3L]] %in% c("true", "false", "'true'", "'false'")
       }, logical(1))
       schema_size <- max(vapply(arguments, duckdb_json_schema_size, integer(1)))
-      # JSON record inference samples objects even with one established type.
-      safe <- if (family == "JSON") {
-        (any(disabled) || schema_size > 0L) &&
-          (any(records) || schema_size > 1L)
+      # Without a schema, union_by_name infers types from rows even when
+      # auto_detect is false. JSON record inference samples objects even with
+      # one established type.
+      safe <- schema_size > 0L && if (family == "JSON") {
+        any(records) || schema_size > 1L
       } else {
         any(disabled)
       }
