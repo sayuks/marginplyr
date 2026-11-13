@@ -31,6 +31,22 @@ table.
 [![lint.yaml](https://github.com/sayuks/marginplyr/actions/workflows/lint.yaml/badge.svg)](https://github.com/sayuks/marginplyr/actions/workflows/lint.yaml)
 <!-- badges: end -->
 
+## Installation
+
+`marginplyr` is not on CRAN yet. Install it from
+[GitHub](https://github.com/sayuks/marginplyr) with:
+
+``` r
+install.packages("pak")
+pak::pkg_install("sayuks/marginplyr")
+```
+
+## A first report
+
+The examples use `retail_sales`, a small synthetic data set of monthly sales
+that ships with the package. This call reports January 2026 revenue by store,
+by region, and for the whole company:
+
 ```{r}
 library(marginplyr)
 
@@ -70,10 +86,11 @@ summarizes](https://sayuks.github.io/marginplyr/vignettes/recipes.html#put-each-
 
 - Distinguishes a source `NA` from a dimension removed to create a total.
 
-- Exposes Grouping set identifiers and SQL-compatible absence masks without
-  relying on display labels.
+- Flags totals with `grouping_bit()` and `grouping_id()`, the counterparts of
+  SQL `GROUPING()`, so identifying a total never depends on its display label.
 
-- Calculates each scalar summary's share of its immediate rollup parent.
+- Calculates each summary's share of its rollup parent with
+  `share_of_parent()`, or of the grand total with `share_of_total()`.
 
 - Can expand the source rows behind every subtotal, or nest them for local and
   `dtplyr` inputs.
@@ -88,16 +105,6 @@ Need absent dimension keys? See [Complete absent keys before
 margins](https://sayuks.github.io/marginplyr/vignettes/completing_keys.html).
 Already working with remote data? See [Database and lazy
 backends](https://sayuks.github.io/marginplyr/vignettes/database_backends.html).
-
-## Installation
-
-`marginplyr` is not on CRAN yet. Install it from
-[GitHub](https://github.com/sayuks/marginplyr) with:
-
-``` r
-install.packages("pak")
-pak::pkg_install("sayuks/marginplyr")
-```
 
 ## Grouping sets in plain language
 
@@ -190,7 +197,8 @@ parent_report <- january_sales |>
   summarize_with_margins(
     revenue = sum(revenue),
     revenue_share = share_of_parent(revenue),
-    .grouping = rollup(region, store)
+    .grouping = rollup(region, store),
+    .sort = "last"
   )
 
 parent_report
@@ -208,7 +216,8 @@ january_sales |>
       share_of_parent,
       .names = "{.col}_share"
     ),
-    .grouping = rollup(region, store)
+    .grouping = rollup(region, store),
+    .sort = "last"
   )
 ```
 
@@ -226,8 +235,8 @@ Parent matching is structural, so display labels never choose the parent.
 
 ## Compare each summary with the whole
 
-`share_of_total()` is the same helper with a different denominator: the grand
-total of the same report, within each fixed `.by` group. There is never a
+`share_of_total()` is its sibling with a different denominator: the grand total
+of the same report, within each fixed `.by` group. There is never a
 question of *which* row that is, so it accepts any Grouping specification that
 produces one — including the `cube()` that `share_of_parent()` rejects:
 
@@ -236,7 +245,8 @@ january_sales |>
   summarize_with_margins(
     revenue = sum(revenue),
     revenue_of_total = share_of_total(revenue),
-    .grouping = cube(region, store)
+    .grouping = cube(region, store),
+    .sort = "last"
   )
 ```
 
@@ -249,7 +259,8 @@ january_sales |>
     revenue = sum(revenue),
     revenue_share = share_of_parent(revenue),
     revenue_of_total = share_of_total(revenue),
-    .grouping = rollup(region, store)
+    .grouping = rollup(region, store),
+    .sort = "last"
   )
 ```
 
@@ -282,10 +293,7 @@ native support use a `UNION ALL` translation with the same Grouping plan.
 Simulation verifies generated SQL but does not claim live execution against
 every database server. The [database
 guide](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
-shows native SQL, fallback SQL, live DuckDB execution, and `collect()`. On live
-SQLite, direct `compute()` of a Margin result can retain its declared types and
-Margin order in a table containing only public columns; the guide explains
-destination safety and later dplyr operations.
+shows native SQL, fallback SQL, live DuckDB execution, and `collect()`.
 
 ## Keep the rows behind each total
 
@@ -299,7 +307,6 @@ nested_sections <- january_sales |>
   )
 
 nested_sections |>
-  dplyr::as_tibble() |>
   head()
 
 nested_sections$data[[1]]
@@ -313,7 +320,9 @@ downstream work needs expanded rows rather than an immediate summary.
 These are margin-aware counterparts, not drop-in replacements for
 `tidyr::nest()` and `dplyr::nest_by()`. Their precise grouping, `.keep`,
 empty-input, and lazy-backend contracts are documented in the function
-reference and Get Started guide.
+reference and the [Get
+started](https://sayuks.github.io/marginplyr/vignettes/get_started.html)
+guide.
 
 ## Choose the tool for the job
 
