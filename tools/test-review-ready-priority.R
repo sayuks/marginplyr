@@ -331,7 +331,7 @@ local({
     saveRDS(x, path)
   }, "worker dependency differs")
 
-  # R CMD check runs workers with LC_COLLATE=C, so only their R/platform/linear-algebra stack is held to the parent's.
+  # Only the workers' R/platform/linear-algebra stack is held to the parent's; see review-ready-runner.md, "File timing evidence".
   edit_workers <- function(f, edit, pids = 1:4) {
     for (pid in pids) {
       path <- file.path(f$timing, paste0(pid, ".worker.rds"))
