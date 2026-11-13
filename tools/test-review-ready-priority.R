@@ -378,8 +378,11 @@ local({
     'trace("queue_setup", where=asNamespace("testthat"), print=FALSE, tracer=quote(writeLines(test_paths, Sys.getenv("FIXTURE_DISPATCH"))))',
     'test_check("fixture")'
   ), script)
+  # A named processx env replaces the child's whole environment, so the child R
+  # needs TMPDIR to place its session temporary directory where this one can.
   command(file.path(R.home("bin"), "Rscript"), script, file.path(clone, "tests"),
     c(R_LIBS = paste(c(library, .libPaths()), collapse = .Platform$path.sep),
+      TMPDIR = tempdir(),
       TESTTHAT_PARALLEL = "true", TESTTHAT_CPUS = "8", FIXTURE_DISPATCH = dispatch,
       FIXTURE_COMPLETIONS = completions, MARGINPLYR_REVIEW_TIMING = "", MARGINPLYR_REVIEW_TIMING_HELPER = ""))
   expect(identical(readLines(dispatch), paste0("test-", c("new", "old", letters[1:7], "tiny", "skip"), ".R")),
