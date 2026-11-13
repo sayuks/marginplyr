@@ -29,6 +29,78 @@ validate_grouping_spec_early <- function(grouping_spec) {
   invisible(NULL)
 }
 
+# The value of a nonempty `.grouping`. A failed evaluation of a column written
+# where a specification belongs -- `region`, or `c(region, store)` -- is
+# answered with the constructor remedy; every other failure, including one
+# raised inside a caller's own specification builder, propagates untouched,
+# which is why the handler is a calling one. It runs only after evaluation has
+# failed, so a specification bound to a name that is also a column still
+# reaches the caller's value.
+eval_grouping_argument <- function(grouping_quo, .data) {
+  withCallingHandlers(
+    rlang::eval_tidy(grouping_quo),
+    error = function(cnd) {
+      columns <- written_grouping_columns(grouping_quo, .data)
+      if (!is.null(columns)) {
+        abort_grouping_columns(columns, cnd)
+      }
+    }
+  )
+}
+
+# The columns a `.grouping` expression names when it is a bare name or a `c()`
+# of bare names that are all columns of `.data`, as the caller wrote them, and
+# `NULL` otherwise. The names are read as the plan reads them below, from the
+# input's metadata, so this sends no query (ADR 0020); an input they cannot be
+# read from is left to the refusal that already owns it.
+written_grouping_columns <- function(grouping_quo, .data) {
+  expr <- rlang::quo_get_expr(grouping_quo)
+  while (rlang::is_quosure(expr)) {
+    expr <- rlang::quo_get_expr(expr)
+  }
+  symbols <- if (rlang::is_symbol(expr)) {
+    list(expr)
+  } else if (rlang::is_call(expr, "c") && length(expr) > 1L &&
+               !any(nzchar(rlang::names2(expr[-1L])))) {
+    as.list(expr[-1L])
+  }
+  if (length(symbols) == 0L ||
+        !all(vapply(symbols, rlang::is_symbol, logical(1)))) {
+    return(NULL)
+  }
+  columns <- vapply(symbols, rlang::as_string, character(1))
+  data_vars <- tryCatch(
+    get_col_names(.data, dplyr::everything()),
+    error = function(cnd) NULL
+  )
+  if (is.null(data_vars) || !all(columns %in% data_vars)) {
+    return(NULL)
+  }
+  columns
+}
+
+abort_grouping_columns <- function(columns, parent) {
+  # Read only from the cli template below, which codetools cannot see.
+  written <- paste( # nolint: object_usage_linter.
+    vapply(lapply(columns, as.name), rlang::as_label, character(1)),
+    collapse = ", "
+  )
+  abort_marginplyr(
+    c(
+      paste0(
+        "{.arg .grouping} must be created with ",
+        "{.or {.fun {grouping_constructor_names()}}}."
+      ),
+      "i" = paste0(
+        "{cli::qty(length(columns))}Column{?s} {.var {columns}} must be ",
+        "wrapped in a constructor, for example {.code rollup({written})} or ",
+        "{.code grouping_sets({written})}."
+      )
+    ),
+    parent = parent
+  )
+}
+
 abort_invalid_grouping_spec <- function() {
   abort_marginplyr("Invalid Grouping specification.")
 }
@@ -213,7 +285,7 @@ prepare_grouping_plan <- function(.data,
       grouping_spec <- if (is_empty_argument(grouping_quo)) {
         NULL
       } else {
-        rlang::eval_tidy(grouping_quo)
+        eval_grouping_argument(grouping_quo, .data)
       }
       validate_grouping_spec_early(grouping_spec)
       if (!is.null(validate_grouping)) {
