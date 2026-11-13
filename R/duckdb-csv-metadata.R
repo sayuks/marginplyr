@@ -146,6 +146,10 @@ duckdb_metadata_relations <- function(tokens, functions = FALSE) {
     }
     # ONLY/LATERAL prefix a source without supplying the relation itself.
     if (frame$expect && token %in% c("only", "lateral")) next
+    # SUMMARIZE TABLE and DESCRIBE TABLE name the same source as without it.
+    if (frame$expect && token == "table" && i > 1L &&
+          tokens[[i - 1L]] %in% c("summarize", "describe") &&
+          !quoted[[i - 1L]]) next
     if (token == "(") {
       frames[[n]]$expect <- FALSE
       frames[[n + 1L]] <- list(

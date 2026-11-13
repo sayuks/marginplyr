@@ -823,8 +823,10 @@ test_that("PIVOT synonyms and file statements refuse CSV before binding", {
     )
     expect_duckdb_catalog_only()
   }
-  # SUMMARIZE, DESCRIBE and SHOW sniff a CSV file to report its columns.
-  for (keyword in c("SUMMARIZE", "DESCRIBE", "SHOW")) {
+  # SUMMARIZE, DESCRIBE and SHOW sniff a CSV file to report its columns,
+  # with or without TABLE before it.
+  for (keyword in c("SUMMARIZE", "DESCRIBE", "SHOW", "SUMMARIZE TABLE",
+                    "DESCRIBE TABLE")) {
     statement <- dplyr::tbl(con, dbplyr::sql(paste0(
       "SELECT column_name, column_type FROM (", keyword, " ",
       DBI::dbQuoteString(con, path), ")"
@@ -860,7 +862,8 @@ test_that("PIVOT synonyms and file statements refuse CSV before binding", {
       }
     }
   }
-  for (keyword in c("SUMMARIZE", "DESCRIBE", "SHOW")) {
+  for (keyword in c("SUMMARIZE", "DESCRIBE", "SHOW", "SUMMARIZE TABLE",
+                    "DESCRIBE TABLE")) {
     statement <- dplyr::tbl(con, dbplyr::sql(paste0(
       "SELECT column_name, column_type FROM (", keyword, " pivot_source)"
     )), vars = c("column_name", "column_type"))
