@@ -80,9 +80,10 @@ summarizes](https://sayuks.github.io/marginplyr/vignettes/recipes.html#put-each-
 
 - Works with local data frames and lazy `dbplyr` tables.
 
-- Uses native `GROUP BY GROUPING SETS` on DuckDB and PostgreSQL.
+- Summarizes with native `GROUP BY GROUPING SETS` on DuckDB and PostgreSQL.
 
-- Uses a portable `UNION ALL` fallback for other SQL dialects.
+- Uses a portable `UNION ALL` fallback for other SQL dialects and for every
+  row expansion.
 
 - Distinguishes a source `NA` from a dimension removed to create a total.
 

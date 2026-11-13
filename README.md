@@ -78,9 +78,11 @@ shows `.sort` at work and what it does not promise.
 
 - Works with local data frames and lazy `dbplyr` tables.
 
-- Uses native `GROUP BY GROUPING SETS` on DuckDB and PostgreSQL.
+- Summarizes with native `GROUP BY GROUPING SETS` on DuckDB and
+  PostgreSQL.
 
-- Uses a portable `UNION ALL` fallback for other SQL dialects.
+- Uses a portable `UNION ALL` fallback for other SQL dialects and for
+  every row expansion.
 
 - Distinguishes a source `NA` from a dimension removed to create a
   total.
