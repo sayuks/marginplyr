@@ -475,6 +475,11 @@ duckdb_value_function_heads <- function(tokens) {
           !unquoted(-1L, "as"))
 }
 
+# Table functions that bind SQL text passed as a value, refused by name in
+# authored SQL and in stored views alike (ADR 0020). Other table functions are
+# admitted; macros and inferring readers are refused by their own checks.
+duckdb_opaque_table_functions <- c("query", "query_table")
+
 # Refuse view work whose safety cannot be established from captured definitions.
 abort_duckdb_view_metadata <- function() {
   abort_marginplyr(c(
@@ -558,7 +563,7 @@ validate_duckdb_authored_calls <- function(tokens, catalog) {
                    !implicit_alias & !heads %in% declarations]
   for (head in c(heads, duckdb_value_function_heads(tokens))) {
     if (duckdb_head_reaches_macro(tokens, head, catalog()) ||
-          tokens[[head]] %in% c("query", "query_table")) {
+          tokens[[head]] %in% duckdb_opaque_table_functions) {
       abort_duckdb_call_metadata()
     }
   }
@@ -659,11 +664,9 @@ validate_duckdb_csv_metadata <- function(
     tokens, functions = !is.null(namespace)
   )
   relation_paths <- vapply(relations, paste, character(1), collapse = ".")
-  readers <- c("read_csv", "read_csv_auto", "read_json", "read_json_auto",
-               "read_ndjson", "read_ndjson_auto")
   for (i in seq_along(relations)) {
     if (isTRUE(attr(relations[[i]], "function"))) {
-      if (!utils::tail(relations[[i]], 1L) %in% readers) {
+      if (utils::tail(relations[[i]], 1L) %in% duckdb_opaque_table_functions) {
         abort_duckdb_view_metadata()
       }
       relation_paths[[i]] <- ""
