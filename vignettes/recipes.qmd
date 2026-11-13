@@ -834,7 +834,7 @@ duckdb_report |>
 
 The subtotals are scattered and the years interleave. The signal is dbplyr's
 warning, *ORDER BY is ignored in subqueries without LIMIT*: it names nothing in
-marginplyr, but it is raised whenever the query is built, so `show_query()` and
+marginplyr, but it is raised whenever the query is rendered, so `show_query()` and
 `collect()` both give it. `.sort` is an argument of the Margin verb, so it
 cannot be applied again afterwards. Leave it off a lazy summary you are about
 to join, and order with `arrange()` after the join, or collect first as below.
