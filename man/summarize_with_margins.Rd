@@ -623,6 +623,10 @@ check that the input hides no source work behind a view or macro before
 its types are read. It binds no table of yours. Table macros, macros you
 define, \code{query()}, \code{query_table()}, and views without stored SQL are
 refused, except a data frame registered with \code{duckdb::duckdb_register()}.
+A macro you define is refused however the query reaches it: written in
+SQL, or called from a dplyr verb such as \code{mutate(y = my_macro(x))},
+including a function dbplyr translates to that macro's name. Call
+\code{\link[dplyr:compute]{dplyr::compute()}} or \code{\link[dplyr:collect]{dplyr::collect()}} first to use one.
 DuckDB's own scalar macros, such as \code{nullif()}, are admitted only while
 the database holds no macro you defined, since one could replace a name
 inside their bodies.

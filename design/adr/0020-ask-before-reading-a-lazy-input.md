@@ -477,6 +477,35 @@ relation, reader and call checks still read. A finer rule, admitting unless a
 caller macro's name occurs in the system macro's stored definition, would
 refuse less for callers who define macros; it is not adopted.
 
+## Amendment (#1650): the rendered statement is checked too
+
+The checks above read only the captured lazy query's `sql()` fragments and
+table paths, so a caller macro or a CSV source reached through any other
+dbplyr spelling was bound: a call dbplyr passes through
+(`mutate(y = hidden_first(v))`), a call it translates to a macro's name
+(`tolower(g)` renders `LOWER(g)`, which a caller macro named `lower`
+replaces), and verbatim SQL carried as `DBI::SQL()` or `ident_q()`. A caller
+macro reached by the zero-row metadata statement is refused in every spelling,
+as its authored spelling already was, and the CSV and JSON rules hold for
+verbatim fragments in the same way.
+
+The rendered statement is the only text that shows what a translation emits,
+so the same relation, reader and call checks run over it inside
+`sql_render.marginplyr_duckdb_selection()`, which already receives it on the
+audit and collect paths (ADR 0027); preflight still does not render. A
+refusal there is raised before the statement is sent and leaves no
+`selection_proxy` row, and a translation failure is raised and recorded as
+before, since the render fails before the check runs. The catalog snapshot is
+the operation's one catalog query; a call-shaped head in the rendered
+statement can be what first needs it.
+
+The cost is accepted: `mutate(y = add_one(v))` over a harmless caller macro
+returns no typed metadata, as `mutate(y = sql("add_one(v)"))` did not;
+`compute()` or `collect()` first is the remedy the diagnostic names.
+Narrowing the documented guarantee to authored SQL was rejected, because the
+sampling is marginplyr's own query and passing an unknown function through is
+how dplyr calls a database function.
+
 ## Amendment (#640): SQLite typed-order execution follows an explicit request
 
 ADR 0031's live SQLite result builds its typed compound query without executing
