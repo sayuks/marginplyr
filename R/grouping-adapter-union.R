@@ -1518,26 +1518,21 @@ expand_margin_union <- function(.data,
         setdiff(plan$dimensions, grouping_set)
       )
       if (length(omitted_identity) > 0L) {
-        # dtplyr translates `n()` to `.N`, which cannot be evaluated beside a
-        # source column of that name. An existing column supplies branch size.
-        size_col <- if (identical(backend$kind, "dtplyr")) {
-          margin_col_names(result)[[1L]]
-        } else {
-          NULL
-        }
+        # Only nesting supplies identity columns, and it expands through this
+        # adapter only for a dtplyr step. dtplyr translates `n()` to `.N`,
+        # which cannot be evaluated beside a source column of that name, so an
+        # existing column supplies branch size.
+        size_col <- margin_col_names(result)[[1L]]
         result <- margin_safe_column_reads(
           result, size_col,
           function(source, safe_name) {
             missing_exprs <- lapply(omitted_identity, function(col) {
-              value <- identity_missing[[col]]
-              if (!is.null(size_col)) {
-                size <- deferred_export_call(
-                  "base", "length", margin_column_pronoun(safe_name(size_col))
-                )
-                deferred_export_call("vctrs", "vec_rep", value, size)
-              } else {
-                value
-              }
+              size <- deferred_export_call(
+                "base", "length", margin_column_pronoun(safe_name(size_col))
+              )
+              deferred_export_call(
+                "vctrs", "vec_rep", identity_missing[[col]], size
+              )
             })
             names(missing_exprs) <- unname(identity_cols[omitted_identity])
             dplyr::mutate(source, !!!missing_exprs)
