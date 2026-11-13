@@ -80,12 +80,11 @@ written_grouping_columns <- function(grouping_quo, .data) {
 }
 
 abort_grouping_columns <- function(columns, parent) {
-  written <- paste(
+  # Read only from the cli template below, which codetools cannot see.
+  written <- paste( # nolint: object_usage_linter.
     vapply(lapply(columns, as.name), rlang::as_label, character(1)),
     collapse = ", "
   )
-  rollup_example <- paste0("rollup(", written, ")")
-  sets_example <- paste0("grouping_sets(", written, ")")
   abort_marginplyr(
     c(
       paste0(
@@ -94,8 +93,8 @@ abort_grouping_columns <- function(columns, parent) {
       ),
       "i" = paste0(
         "{cli::qty(length(columns))}Column{?s} {.var {columns}} must be ",
-        "wrapped in a constructor, for example {.code {rollup_example}} or ",
-        "{.code {sets_example}}."
+        "wrapped in a constructor, for example {.code rollup({written})} or ",
+        "{.code grouping_sets({written})}."
       )
     ),
     parent = parent
