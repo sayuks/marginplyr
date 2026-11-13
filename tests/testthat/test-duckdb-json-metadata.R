@@ -433,6 +433,7 @@ test_that("JSON preflight follows joins and ignores SQL values and comments", {
     ", columns={'k':'INTEGER'}, dateformat='records=true'",
     # DuckDB applies the last occurrence of a repeated option.
     ", columns={'k':'INTEGER'}, records=true, records='auto'",
+    ", auto_detect=false, records=true, auto_detect=true",
     ", auto_detect=false, records=true, union_by_name=true"
   )) {
     source <- dplyr::tbl(con, dbplyr::sql(paste0(
@@ -479,6 +480,29 @@ test_that("JSON preflight follows joins and ignores SQL values and comments", {
     ))$included,
     "(k, label)"
   )
+})
+
+test_that("JSON readers disabling inference pass the guard without a schema", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- DBI::dbQuoteString(con, tempfile(fileext = ".json"))
+  for (arguments in c(
+    ", auto_detect = false, records = true",
+    ", auto_detect := false, records := false",
+    ", auto_detect = true, records = true, auto_detect = false",
+    ", auto_detect = false, records = true, union_by_name = false"
+  )) {
+    source <- dplyr::tbl(con, dbplyr::sql(paste0(
+      "SELECT * FROM read_json(", path, arguments, ")"
+    )), vars = "k")
+    # Whatever binding then reports, the guard itself raises nothing.
+    refusal <- tryCatch(
+      inspect_grouping(source, .grouping = grouping_set(where(is.numeric))),
+      error = conditionMessage
+    )
+    expect_false(any(grepl("DuckDB JSON input", refusal, fixed = TRUE)))
+  }
 })
 
 test_that("static pivots cannot hide JSON replacement inference", {

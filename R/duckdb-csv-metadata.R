@@ -786,13 +786,19 @@ validate_duckdb_csv_metadata <- function(
           arg[[3L]] %in% c("true", "false", "'true'", "'false'")
       }, logical(1))
       schema_size <- max(vapply(arguments, duckdb_json_schema_size, integer(1)))
+      unified <- vapply(arguments, function(arg) {
+        length(arg) >= 3L && identical(arg[[1L]], "union_by_name") &&
+          arg[[2L]] %in% c("=", ":=") &&
+          !(length(arg) == 3L && arg[[3L]] %in% c("false", "'false'"))
+      }, logical(1))
       # Without a schema, union_by_name infers types from rows even when
       # auto_detect is false. JSON record inference samples objects even with
       # one established type.
-      safe <- schema_size > 0L && if (family == "JSON") {
-        any(records) || schema_size > 1L
+      safe <- if (family == "JSON") {
+        (schema_size > 0L || (any(disabled) && !any(unified))) &&
+          (any(records) || schema_size > 1L)
       } else {
-        any(disabled)
+        schema_size > 0L && any(disabled)
       }
       if (safe) {
         next
