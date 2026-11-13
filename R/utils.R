@@ -1270,12 +1270,12 @@ function_naming_formal <- function(call_name) {
 # the lexical scope, so it does not reach the mask -- measured, not assumed.
 #
 # One of these reached as a *value* rather than as a callee is out of reach of
-# any static walk, and is safe for the same measured reason: in
+# any static walk. Which function a value holds is undecidable in general --
+# `f <- get` is the smallest case -- so a walk answering it would have to
+# over-report every call it cannot name, and that is nearly all of them. In
 # `sapply(c("share"), get)` the environment `get()` searches from is the frame
-# that called it, inside `sapply()`, so the call raises rather than reading a
-# column. Which function a value holds is undecidable in general -- `f <- get`
-# is the smallest case -- so a walk answering it would have to over-report
-# every call it cannot name, and that is nearly all of them.
+# that called it, inside `sapply()`, so that call raises rather than reading a
+# column.
 is_reflective_lookup <- function(callee_name) {
   !is.null(callee_name) &&
     callee_name %in% c("get", "get0", "mget", "exists")

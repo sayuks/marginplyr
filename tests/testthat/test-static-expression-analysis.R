@@ -3607,10 +3607,9 @@ test_that("`do.call()` of a reflective primitive is an unresolved lookup", {
 test_that("a primitive reached as a value is out of the walk's reach", {
   # `sapply(c("share"), get)` hands the primitive on as a value, and the
   # environment it then searches from is the frame inside `sapply()` rather
-  # than the mask -- so it raises instead of reading the placeholder, and the
-  # walk owes it nothing. This is asserted rather than assumed because the
-  # comment at `is_reflective_lookup()` rests on it: were it to reach the
-  # mask, the shape would be a silent miss of exactly the kind #173 removes.
+  # than the mask -- so it raises instead of reading the placeholder. This is
+  # asserted rather than assumed because the comment at
+  # `is_reflective_lookup()` states it.
   data <- data.frame(
     region = c("East", "East", "West"),
     value = c(1, 3, 6)
