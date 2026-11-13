@@ -1,36 +1,59 @@
 #' Nest by SQL-style grouping margins
 #'
-#' This is the row-wise counterpart of [nest_with_margins()].
+#' [nest_by_with_margins()] creates one row-wise nested data frame for every
+#' group in every grouping set. It is a margin-aware counterpart of
+#' [dplyr::nest_by()], and the row-wise counterpart of [nest_with_margins()];
+#' it works with local data frames and `dtplyr` steps.
+#'
+#' @section Differences from nest_by():
+#' - Fixed keys are selected with `.by` rather than `...`, and `.grouping`
+#'   adds the Margin dimensions; the result is row-wise over all of them and
+#'   `.id` when supplied.
+#' - Row order is unspecified. Use `.sort` for margins next to the rows they
+#'   cover, or [dplyr::arrange()] for any other order.
+#' - A character `.margin_label` changes a non-factor grouping dimension to
+#'   character in the outer columns; see Value. Use `.margin_label = NULL` or
+#'   `NA_character_` to keep its type.
+#' - With `.keep = TRUE`, the nested data holds the original, pre-margin
+#'   values of every outer key, so an outer `East / Total` subtotal keeps the
+#'   original store values inside instead of `"Total"`. This is the closest
+#'   margin-aware analogue of dplyr's rule that `.keep` retains grouping
+#'   columns.
+#' - With no grouping keys, an empty input returns one row holding the empty
+#'   input, as [dplyr::nest_by()] does.
+#'
+#' @section When marginplyr queries your data:
+#' A row-wise data frame exists only locally, so a `dtplyr` input is expanded
+#' and nested lazily and then collected before it is made row-wise: unlike
+#' the other Margin verbs, [nest_by_with_margins()] processes a `dtplyr`
+#' step's rows when called. Use [nest_with_margins()] to keep the result lazy.
 #'
 #' @inheritParams nest_with_margins
+#' @inheritSection nest_with_margins Nested data frames
 #' @inheritSection summarize_with_margins Fixed columns and grouping dimensions
 #' @inheritSection summarize_with_margins Grouped and row-wise inputs
 #' @inheritSection summarize_with_margins Option arguments
-#' @inheritSection summarize_with_margins Result class and attributes
-#' @inheritSection summarize_with_margins Variable labels and dataset attributes
-#' @inheritSection summarize_with_margins Column-vector element names
+#' @inheritSection summarize_with_margins Result metadata
 #' @inheritSection summarize_with_margins Grouping set identifiers
 #' @inheritSection summarize_with_margins Margin order
 #' @inheritSection summarize_with_margins Display labels and grouping identity
-#' @inheritSection summarize_with_margins When marginplyr queries your data
-#' @inheritSection nest_with_margins Relationship to tidyr and dplyr
 #' @param .key A non-missing string naming the list column. Unlike
 #'   [nest_with_margins()] and [tidyr::nest()], `NULL` is not converted to
 #'   `"data"`; this follows [dplyr::nest_by()].
-#' @details A `dtplyr` result is collected before it is made row-wise because
-#'   row-wise data frames are local objects.
-#'
-#'   dplyr reserves `.rows` in row-wise grouping metadata. A fixed `.by` key,
-#'   grouping dimension, or `.id` named `.rows` is therefore refused before
-#'   nesting. Rename that outer key or use [nest_with_margins()] for an
+#' @details dplyr reserves `.rows` in row-wise grouping metadata. A fixed `.by`
+#'   key, grouping dimension, or `.id` named `.rows` is therefore refused
+#'   before nesting. Rename that outer key or use [nest_with_margins()] for an
 #'   ungrouped result. A payload column or `.key` named `.rows` is supported.
-#' @return A row-wise data frame grouped by the visible grouping columns and
-#'   `.id` when supplied. This is the return shape whatever the class of
-#'   `.data`, because a row-wise data frame is always a tibble subclass; see
-#'   *Result class and attributes*.
-#'   Result row order is unspecified unless `.sort` asks for a Margin order;
-#'   see *Margin order*, or use [dplyr::arrange()] for any other presentation
-#'   order.
+#' @return A row-wise data frame, a tibble subclass whatever the class of
+#'   `.data`, with one row per group per grouping set. Its columns are the
+#'   fixed `.by` keys, then the grouping dimensions, then `.id` when supplied,
+#'   then the list column named by `.key`; it is grouped row-wise by all but
+#'   the list column. See *Result metadata*.
+#'
+#'   With a character `.margin_label`, the default, an outer grouping
+#'   dimension that is not a factor becomes character so that it can hold the
+#'   label, while the nested columns keep their original types. A factor
+#'   dimension instead gains the label as a new level.
 #' @family summarize and expand data with margins
 #' @export
 #' @examples
@@ -79,32 +102,23 @@
 #' empty_sales <- january_sales[0, ]
 #' nrow(nest_by_with_margins(.data = empty_sales))
 #'
-#' # dtplyr performs the expansion and nesting lazily, then
-#' # nest_by_with_margins() collects it to create a local row-wise data frame.
-#' # The guard shipped with marginplyr reports dtplyr usable only at the
-#' # version DESCRIPTION requires, so an older one withholds this rather than
-#' # failing inside it.
+#' # A dtplyr input is nested lazily, then collected to make the local
+#' # row-wise result. Runs only when a recent enough dtplyr is installed.
 #' source(system.file("suggests", "guard.R", package = "marginplyr"))
 #' if (marginplyr_suggest_available("dtplyr")) {
-#'   lazy_nested <- january_sales |>
-#'     dtplyr::lazy_dt() |>
-#'     nest_with_margins(
-#'       .grouping = rollup(region, store)
-#'     )
-#'
-#'   # Inspect the data.table expression before the row-wise collection.
-#'   print(dplyr::show_query(lazy_nested))
-#'
 #'   nested_by_dt <- january_sales |>
 #'     dtplyr::lazy_dt() |>
 #'     nest_by_with_margins(
 #'       .grouping = rollup(region, store)
 #'     )
-#'   nested_by_dt |>
+#'   print(class(nested_by_dt))
+#'   print(
 #'     dplyr::mutate(
+#'       nested_by_dt,
 #'       records = nrow(data),
 #'       revenue = sum(data$revenue)
 #'     )
+#'   )
 #'   nested_by_dt$data[[1]]
 #' }
 nest_by_with_margins <- function(.data,

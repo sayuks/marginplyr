@@ -163,13 +163,9 @@ margin_safe_column_reads <- function(.data, read, transform,
 }
 
 # How an internal function is spelled as the head of an expression a backend
-# defers. `name` is that function's name in this namespace.
-#
-# Embed the private namespace accessor so dtplyr cannot resolve either the
-# helper or its namespace operator in the caller's lazy root. Lookup remains
-# deferred until the backend evaluates the expression.
+# defers: the head of `deferred_private_call()` for this namespace.
 marginplyr_private_call <- function(name) {
-  rlang::call2(utils::getFromNamespace, name, "marginplyr")
+  deferred_private_call("marginplyr", name)[[1L]]
 }
 
 # Return the evaluation environment after staging a call around a summary.
@@ -1545,8 +1541,19 @@ static_character_value <- function(expr, is_concat = NULL) {
 utils::globalVariables(".data")
 
 # Build a generated call whose export lookup runs at collection. Bind the
-# accessor so the lazy root cannot replace it or the namespace operator.
+# `::` operator object so the lazy root cannot replace it; its symbol arguments
+# print as one call by name, as in `deferred_private_call()`.
 deferred_export_call <- function(namespace, name, ...) {
-  helper <- rlang::call2(base::getExportedValue, namespace, name)
+  helper <- rlang::call2(base::`::`, rlang::sym(namespace), rlang::sym(name))
+  rlang::call2(helper, ...)
+}
+
+# Build a generated call to `namespace`'s internal `name`, looked up when the
+# backend evaluates the expression. Embed the `:::` operator object so dtplyr
+# cannot resolve either the helper or its namespace operator in the caller's
+# lazy root. The operator's symbol arguments keep a printed query, such as
+# dtplyr's `show_query()`, to one call by name.
+deferred_private_call <- function(namespace, name, ...) {
+  helper <- rlang::call2(base::`:::`, rlang::sym(namespace), rlang::sym(name))
   rlang::call2(helper, ...)
 }

@@ -119,9 +119,21 @@ Use `show_query()` during interactive analysis. Use
 `dbplyr::sql_render()` when code needs the rendered SQL value for logging,
 testing, or another programmatic purpose.
 
+Building a Margin query never reads your table's rows. Rows are read when you
+execute the query, with `collect()`, `compute()`, or a printed preview, and
+when you ask marginplyr to look for an observed label with
+`.check_margin_label = TRUE`. Building the query may still send internal
+queries that read no source values; *When marginplyr queries your data* in the
+[`summarize_with_margins()`
+reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html)
+enumerates them, and *Record the SQL marginplyr prepares* below shows how to
+see them. The one exception is `nest_by_with_margins()` on dtplyr, described
+under *Other lazy backends*.
+
 ## Native grouping sets
 
-DuckDB and PostgreSQL use marginplyr's native path. The generated query
+Summaries on DuckDB and PostgreSQL use marginplyr's native path; *Portable
+fallback SQL* below states what uses the other one. The generated query
 contains one `GROUP BY GROUPING SETS` operation. The requested rollup:
 
 ```text
@@ -228,56 +240,6 @@ Use `compute()` instead of `collect()` when the next stage should remain in the
 database. It executes the query and stores the result there as a remote table,
 so what reads it afterwards is still a lazy query against the connection:
 
-On SQLite, direct `compute()` of a dedicated Margin result creates a typed table
-with public columns only. A sorted result keeps its Margin order when collected
-directly from the returned lazy table. Subsequent `select()`, `rename()`,
-`filter()`, `mutate()`, and `arrange()` use ordinary dbplyr behavior and may
-change that order. `collect(query, n = ...)` limits the direct result; a
-materialized table can be collected with ordinary dbplyr limits. For a direct
-Margin result, an empty SQLite expansion keeps its integer `.id`, and a finite
-prefix of missing contextual shares keeps double share columns.
-Direct `grouping_bit()` and `grouping_id()` outputs also stay numeric when a
-SQLite result has zero rows, including outputs from supported literal
-`across()` lambdas. Other remote backends may represent the same values as
-integer or double. The guarantee ends at direct collection or supported direct
-materialization; later lazy verbs follow ordinary backend type rules.
-
-SQLite refuses a bare persistent destination shadowed by a temporary table,
-or a bare temporary overwrite that would find a table in `main`. Supply an
-explicit schema or another name. If an existing temporary destination cannot
-be separated safely from the input, choose a different destination name.
-Sorted compute also refuses when public columns shadow all three implicit
-rowid aliases. Direct collection still works.
-Compute uses a private savepoint, so an existing caller transaction remains
-under the caller's commit or rollback control. Ordinary dbplyr may reject
-indexes on qualified destinations; such a failed compute restores the target.
-
-For dedicated summary and expansion results, both `in_transaction` values
-restore an overwritten destination's data, schema, indexes, and affected
-statistics, or remove a new destination, on an ordinary error or catchable R
-user interrupt before successful savepoint release. Cleanup releases that
-savepoint, preserves source tables and earlier caller work, and leaves an outer
-caller transaction open. This requires the connection and transaction to
-survive and cleanup SQL to succeed. An interrupt caught during cleanup waits
-for the rollback and release attempt. After successful cleanup, the first
-interrupt escapes with an earlier execution error retained in `$parent`.
-If cleanup fails, its error takes precedence: `$cleanup` holds the failed
-rollback or release condition, and `$parent` holds the triggering error or
-interrupt outcome. Further caught interrupts neither retry cleanup nor replace
-an observed cleanup failure. The fields and the boundary for conditions raised
-inside your calling handlers are described under *Errors and warnings* in the
-[package reference](https://sayuks.github.io/marginplyr/man/marginplyr-package.html).
-
-Successful release ends restoration responsibility, even if an interrupt
-prevents the R value reaching you. Outermost release persists the completed
-result; inner release leaves it and earlier work under your commit or rollback.
-Native SQLite cancellation can abort an entire transaction, including earlier
-caller work a savepoint cannot restore. Native-statement cancellation and
-native timeouts have not been verified for this path. Invalid connections,
-failed cleanup, process termination, and fatal signals have no recovery or
-automatic connection-repair guarantee. A timeout receives recovery only when
-it unwinds through R with usable backend state.
-
 ```{r}
 #| eval: !expr has_duckdb
 
@@ -288,6 +250,11 @@ duckdb_stage |>
   filter(level == 1L) |>
   collect()
 ```
+
+On SQLite, direct `compute()` of a Margin result has a contract of its own,
+stated under [*SQLite
+materialization*](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html#sqlite-materialization)
+in the `summarize_with_margins()` reference.
 
 ```{r}
 #| eval: !expr has_duckdb
@@ -310,7 +277,7 @@ row for that value and one row for the margin, and neither the row itself nor
 code reading the result afterward can tell which is which. *When marginplyr
 queries your data* in the [`summarize_with_margins()`
 reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html)
-states the rule this default follows and its two exemptions.
+states the rule this default follows.
 
 Two protections hold at no added query. The first applies wherever marginplyr
 holds factor-level metadata.
@@ -359,8 +326,8 @@ DBI::dbDisconnect(con)
 ```
 
 Arrow is different. A factor grouping dimension there returns as character,
-so Arrow does not expose its declared levels to this check; see *Result class
-and attributes* in the [`summarize_with_margins()`
+so Arrow does not expose its declared levels to this check; see *Arrow
+inputs* in the [`summarize_with_margins()`
 reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html).
 An unused declared level therefore does not make two result rows look alike.
 An observed collision still does, and `.check_margin_label = TRUE` rejects it.
@@ -370,14 +337,32 @@ protection: either identifies every margin row structurally, so a source row
 and a margin row that print alike still differ in a column you can read,
 whatever `.check_margin_label` finds or misses.
 
-Opt into `.check_margin_label = TRUE` when the extra scan for an observed
-collision is worth the query for your backend and workload.
+Opt into `.check_margin_label = TRUE` when that query is worth its cost for
+your backend and workload: it scans every input row of the checked columns.
 
 ## Portable fallback SQL
 
-marginplyr does not assume that every SQL dialect supports native grouping
-sets. For an unconfirmed backend, it expands the plan into one query branch
-per grouping set and joins those branches with `UNION ALL`.
+marginplyr emits native `GROUPING SETS` only for summaries on the DuckDB and
+PostgreSQL dialects. Everything else uses a portable query that joins one
+branch per grouping set with `UNION ALL`:
+
+- every other SQL dialect, even where the database itself supports
+  `GROUPING SETS`; Redshift, Snowflake, SQL Server, Oracle, Spark SQL, and
+  MySQL all receive the portable query;
+- a `.duplicates = "keep"` summary on PostgreSQL, and on DuckDB when it also
+  names `.id` or computes a share, since each occurrence then has to be
+  numbered;
+- a summary that places a Grouping helper inside an aggregate, such as
+  `sum(grouping_bit(region) * revenue)`, or inside a function dbplyr passes
+  to the database untranslated;
+- every `expand_with_margins()` call, DuckDB and PostgreSQL included.
+
+The portable query begins with a branch that returns zero rows, `WHERE (0)` on
+SQLite below, that exists only to fix the result's column types. Each
+grouping-set branch then reads the source again, so the three-set rollup below
+names `` `df` `` four times: once per set and once in the zero-row branch.
+Inspect the database's query plan for large workloads; marginplyr
+does not claim that either translation is universally faster.
 
 ```{r}
 #| eval: !expr has_sqlite_simulator
@@ -398,11 +383,11 @@ show_query(sqlite_query)
 ```
 
 This SQL is longer than the native form, but it preserves the same requested
-grouping levels and Margin labels. Native versus fallback translation is
-selected by the backend adapter; analysis code does not need a different
-Grouping specification.
+grouping levels and Margin labels. Which of the two translations runs is
+chosen from the connection's SQL dialect; analysis code does not need a
+different Grouping specification.
 
-`expand_with_margins()` also stays lazy. On a fallback backend, its SQL makes
+`expand_with_margins()` also stays lazy, and on every backend its SQL makes
 the row-expansion branches explicit:
 
 ```{r}
@@ -413,6 +398,191 @@ sqlite_sales |>
     .grouping = rollup(region, store)
   ) |>
   show_query()
+```
+
+## Record the SQL marginplyr prepares
+
+`show_query()` displays the result query. To inspect auxiliary SQL, enable
+recording **before** the Margin construction or Grouping-plan inspection call.
+`last_sent_queries(include_result = FALSE)` then reads its internal rows:
+
+```{r}
+#| eval: !expr has_duckdb
+
+old <- options(marginplyr.audit_sql = TRUE)
+
+audit_con <- DBI::dbConnect(duckdb::duckdb(shared_home = FALSE))
+audit_sales <- copy_to(
+  audit_con,
+  january_sales,
+  name = "january_sales",
+  temporary = TRUE,
+  overwrite = TRUE
+)
+
+audit_query <- audit_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    .grouping = rollup(region, store),
+    .check_margin_label = TRUE
+  )
+
+internal <- last_sent_queries(include_result = FALSE)
+internal$purpose
+writeLines(internal$sql[!is.na(internal$sql)])
+```
+
+These are prepared SQL representations in recording order. The first row is
+DuckDB's catalog query, and the last is the observed Margin label check: it
+scans every input row of the checked columns and retrieves one row, with one
+collision count per checked column. Recording does not request the label check;
+`.check_margin_label = TRUE` does, and recording sends no query of its own.
+
+Each `purpose` names why a row was sent. Only `"result"` is stable; the other
+names describe today's internal work and may change:
+
+- `"result"`: the query the verb returns, rendered but not executed.
+- `"relation_catalog"`: DuckDB's catalog query, checking that the input hides
+  no source work behind a view or macro.
+- `"selection_proxy"`: the zero-row read of the input that recovers column
+  types and factor levels.
+- `"observed_label_collision"`: the label check `.check_margin_label = TRUE`
+  requests.
+- `"share_dialect"`: a contextual share's table-free question, whether the
+  dialect refuses a summary that is not a number.
+- `"share_dialect_control"`: the numeric query sent after that question
+  raised, confirming the connection could be asked at all.
+- `"share_dialect_transaction"`: on RPostgres within a caller's transaction,
+  a savepoint statement isolating those two questions.
+
+The default view retains both character columns, `purpose` and `sql`, and
+includes the prepared, unexecuted result SQL:
+
+```{r}
+#| eval: !expr has_duckdb
+
+sent <- last_sent_queries()
+writeLines(sent$sql[sent$purpose == "result"])
+collect(audit_query)
+```
+
+The result row is a render of `audit_query`; your `collect()` executes it.
+An internal row is recorded before invoking its backend operation, so its
+presence proves neither database receipt nor completion. `NA` SQL means the
+diagnostic render failed. Such rows remain in the internal view, even though
+`writeLines()` above selects only nonmissing text. Reading either view performs
+no rendering, query, fetch, or EXPLAIN and leaves the saved rows intact.
+
+Add `details = TRUE` to read the outcomes and conditions captured during the
+same call, even after reading the default view:
+
+```{r}
+#| eval: !expr has_duckdb
+
+detailed <- last_sent_queries(include_result = FALSE, details = TRUE)
+detailed[c("purpose", "source", "status")]
+detailed$conditions
+```
+
+The zero-row metadata and label-count collections normally have status
+`"returned"`. Each condition summary has `classes`, `message`, `phase`, and
+`handling`; an operation with no observed conditions holds a typed empty tibble.
+The accessor reference defines all statuses and the condition-summary schema.
+`source = "render"` describes how SQL was obtained, independently of whether
+rendering or the backend invocation succeeded. The compatibility result row
+stays `"prepared"`.
+
+Copy or export the record before another tracked call replaces it. A tibble
+you already hold survives that replacement unchanged:
+
+```{r}
+#| eval: !expr has_duckdb
+
+record_path <- tempfile(fileext = ".rds")
+saveRDS(internal, record_path)
+```
+
+A failed call leaves its own partial record readable. Here the transformed
+input contains the label `"Total"`, so the observed check refuses the call:
+
+```{r}
+#| eval: !expr has_duckdb
+#| error: true
+#| purl: false
+
+audit_sales |>
+  mutate(region = "Total") |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    .grouping = rollup(region),
+    .check_margin_label = TRUE
+  )
+```
+
+Read the failed call's record at the next prompt, or inside an error handler,
+before another tracked call starts:
+
+```{r}
+#| eval: !expr has_duckdb
+
+failed_internal <- last_sent_queries(include_result = FALSE, details = TRUE)
+failed_internal[c("purpose", "status")]
+failed_internal$conditions
+identical(readRDS(record_path), internal)
+```
+
+The label-count SQL returned before the collision refusal. Its row remains
+`"returned"`, with no condition for that later public validation error. An
+internal operation's status never reports the outcome of the entire public
+call or guarantees server completion.
+
+A contextual share (see *Parent shares use a staged lazy query* below) can
+also ask the dialect a question. This is the guide's first share request on
+DuckDB, so the question is sent: DuckDB rejects the string aggregate,
+marginplyr handles that error, and a separate numeric control follows:
+
+```{r}
+#| eval: !expr has_duckdb
+
+summarize_with_margins(
+  audit_sales, revenue = sum(revenue, na.rm = TRUE),
+  share = share_of_total(revenue), .grouping = rollup(region)
+)
+probe_details <- last_sent_queries(include_result = FALSE, details = TRUE)
+probe_details[c("purpose", "status")]
+probe <- probe_details$purpose == "share_dialect"
+probe_details$conditions[probe][[1]][c("phase", "handling", "message")]
+```
+
+The answer is kept for the rest of the R session under the connection's SQL
+dialect, so a later share request on any DuckDB connection records no
+`share_dialect` or `share_dialect_control` row. The probe's error has phase
+`"invocation"` and handling `"handled"`; a warning the probe raises is muffled
+and recorded with handling `"suppressed"`. A condition from any other internal
+query reaches you as it would without recording, and reading the record never
+signals it again.
+
+The record is process-local and belongs to the latest call's construction.
+Enabling the option afterwards cannot recover earlier SQL. Nested calls own
+the record while active, then restore their parent's record. A later
+`collect()`, `pull()`, or `compute()` does not append execution SQL; computing
+an older query leaves the newer call's record unchanged. This is an in-memory
+diagnostic for marginplyr's own work, with caller-controlled export.
+
+The [`last_sent_queries()` reference][sent-queries] states the no-record and
+unaudited-call refusals, typed empty views, and nested-call ownership.
+*When marginplyr queries your data* in the [`summarize_with_margins()`
+reference][summary-reference] enumerates the operations and applicable backends.
+
+[sent-queries]: https://sayuks.github.io/marginplyr/man/last_sent_queries.html
+[summary-reference]: https://sayuks.github.io/marginplyr/man/summarize_with_margins.html
+
+```{r}
+#| eval: !expr has_duckdb
+
+unlink(record_path)
+DBI::dbDisconnect(audit_con)
+options(old)
 ```
 
 ## Parent shares use a staged lazy query
@@ -485,9 +655,9 @@ from sources you have established yourself, on the one call it is written in.
 
 A refusing dialect is therefore shown against a live DuckDB table rather than
 the simulator used above. The diagnostic is DuckDB's own, and the column it
-names carries the name of the summary to rewrite. The error is the database's
-and not marginplyr's, so the chunk below accepts any error rather than naming
-one:
+names carries the name of the summary to rewrite. The remedy is an explicit
+conversion to a number in that ordinary summary, which makes it an eligible
+share source:
 
 ```{r}
 #| eval: !expr has_duckdb
@@ -510,7 +680,7 @@ sample_sales <- copy_to(
 
 sample_sales |>
   summarize_with_margins(
-    last_channel = max(channel),
+    last_channel = max(channel, na.rm = TRUE),
     last_channel_share = share_of_parent(last_channel),
     .grouping = rollup(region, store)
   ) |>
@@ -619,11 +789,13 @@ postgres_sales |>
   )
 ```
 
-`nest_by_with_margins()` is the row-wise counterpart, and it is the one Margin
-verb that collects a lazy input without being asked: a row-wise data frame is a
-local object, so it has nothing lazy to return. *When marginplyr queries your
-data* names it as its one exemption. Its detail tables are the ones dtplyr
-built, so each cell is a `data.table`:
+`nest_by_with_margins()` is the row-wise counterpart. On dtplyr it is the one
+Margin verb that collects a lazy input without being asked: a row-wise data
+frame is a local object, so it has nothing lazy to return. Its own *When
+marginplyr queries your data* section in the [`nest_by_with_margins()`
+reference](https://sayuks.github.io/marginplyr/man/nest_by_with_margins.html)
+states this. Its detail tables are the ones dtplyr built, so each cell is a
+`data.table`:
 
 ```{r}
 #| eval: !expr has_dtplyr
@@ -660,6 +832,68 @@ january_sales |>
 Arrow summaries and expansions are supported and lazy wherever Arrow can
 evaluate the summary itself. Two things are refused instead, for two unrelated
 reasons.
+
+The first is a summary Arrow's own engine cannot evaluate. Arrow answers one of
+those by reading the whole input — every column, not just the ones the summary
+names — and computing it in R, so marginplyr refuses it before a row is read:
+
+```{r}
+#| label: arrow-absorbed-summary
+#| eval: !expr has_arrow
+#| error: true
+#| purl: false
+
+arrow::arrow_table(january_sales) |>
+  summarize_with_margins(
+    channels = paste(sort(unique(channel)), collapse = "/"),
+    .grouping = rollup(region, store)
+  )
+```
+
+Selecting the columns the summary needs before collecting is the rewrite
+Arrow's own route cannot take for you. Which expressions this reaches is
+Arrow's to decide and changes with its version, so the shapes are described in
+one place rather than repeated here — see the [`summarize_with_margins()`
+reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html).
+An Arrow dataset answers the same expressions with Arrow's own error rather
+than this one, because a dataset never reads itself into R.
+
+The second is contextual shares. `share_of_parent()` and `share_of_total()` are
+both rejected outright, before any Arrow query is constructed: marginplyr
+cannot check that a share's source is a numeric scalar before Arrow builds the
+query. Collect the input first, or drop the share.
+
+```{r}
+#| label: arrow-parent-share
+#| eval: !expr has_arrow
+#| error: true
+#| purl: false
+
+arrow::arrow_table(january_sales) |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    revenue_share = share_of_parent(revenue),
+    .grouping = rollup(region, store)
+  )
+```
+
+```{r}
+#| label: arrow-total-share
+#| eval: !expr has_arrow
+#| error: true
+#| purl: false
+
+arrow::arrow_table(january_sales) |>
+  summarize_with_margins(
+    revenue = sum(revenue, na.rm = TRUE),
+    revenue_of_total = share_of_total(revenue),
+    .grouping = rollup(region, store)
+  )
+```
+
+The
+[`share_of_parent()` reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
+states where each backend reports these errors.
 
 ### Which Arrow inputs are supported
 
@@ -700,237 +934,6 @@ choose `$ToTable()` or `$ToRecordBatchReader()` first. Neither are `Scalar`, `Ar
 objects. Convert those to a data frame or lazy dplyr table appropriate to the
 data they represent.
 
-The first is a summary Arrow's own engine cannot evaluate. Arrow answers one of
-those by reading the whole input — every column, not just the ones the summary
-names — and computing it in R, so marginplyr refuses it before a row is read:
-
-```{r}
-#| label: arrow-absorbed-summary
-#| eval: !expr has_arrow
-#| error: true
-#| purl: false
-
-arrow::arrow_table(january_sales) |>
-  summarize_with_margins(
-    channels = paste(sort(unique(channel)), collapse = "/"),
-    .grouping = rollup(region, store)
-  )
-```
-
-Selecting the columns the summary needs before collecting is the rewrite
-Arrow's own route cannot take for you. Which expressions this reaches is
-Arrow's to decide and changes with its version, so the shapes are described in
-one place rather than repeated here — see the [`summarize_with_margins()`
-reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html).
-An Arrow dataset answers the same expressions with Arrow's own error rather
-than this one, because a dataset never reads itself into R.
-
-The second is contextual shares. `share_of_parent()` and `share_of_total()` are
-both rejected outright, before any Arrow query is constructed: the reason is the
-source summary they share. The local result uses a different default collision
-policy from the Arrow query: the local re-run's `.check_margin_label` is an
-explicit caller choice about whether observed Margin label collisions are
-checked.
-
-```{r}
-#| label: arrow-parent-share
-#| eval: !expr has_arrow
-#| error: true
-#| purl: false
-
-arrow::arrow_table(january_sales) |>
-  summarize_with_margins(
-    revenue = sum(revenue, na.rm = TRUE),
-    revenue_share = share_of_parent(revenue),
-    .grouping = rollup(region, store)
-  )
-```
-
-```{r}
-#| label: arrow-total-share
-#| eval: !expr has_arrow
-#| error: true
-#| purl: false
-
-arrow::arrow_table(january_sales) |>
-  summarize_with_margins(
-    revenue = sum(revenue, na.rm = TRUE),
-    revenue_of_total = share_of_total(revenue),
-    .grouping = rollup(region, store)
-  )
-```
-
-The
-[`share_of_parent()` reference](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
-states where each backend reports these errors.
-
-## Record the SQL marginplyr prepares
-
-`show_query()` displays the result query. To inspect auxiliary SQL, enable
-recording **before** the Margin construction or Grouping-plan inspection call.
-`last_sent_queries(include_result = FALSE)` then reads its internal rows:
-
-```{r}
-#| eval: !expr has_duckdb
-
-old <- options(marginplyr.audit_sql = TRUE)
-
-audit_con <- DBI::dbConnect(duckdb::duckdb(shared_home = FALSE))
-audit_sales <- copy_to(
-  audit_con,
-  january_sales,
-  name = "january_sales",
-  temporary = TRUE,
-  overwrite = TRUE
-)
-
-audit_query <- audit_sales |>
-  summarize_with_margins(
-    revenue = sum(revenue, na.rm = TRUE),
-    .grouping = rollup(region, store),
-    .check_margin_label = TRUE
-  )
-
-internal <- last_sent_queries(include_result = FALSE)
-internal$purpose
-writeLines(internal$sql[!is.na(internal$sql)])
-```
-
-These are prepared SQL representations in recording order. The observed Margin
-label check aggregates collision counts and retrieves one row, with one count
-per checked column; it does not retrieve all unique values. DuckDB's zero-row
-metadata query is a separate internal operation. Recording does not request the
-label check: `.check_margin_label = TRUE` does. A cache hit or a label check
-with no columns adds no artificial query, and recording repeats no cached work.
-
-The default view retains both character columns, `purpose` and `sql`, and
-includes the prepared, unexecuted result SQL:
-
-```{r}
-#| eval: !expr has_duckdb
-
-sent <- last_sent_queries()
-writeLines(sent$sql[sent$purpose == "result"])
-collect(audit_query)
-```
-
-Only `"result"` is a stable public purpose; the internal names are descriptive.
-The result row is a render of `audit_query`; your `collect()` executes it.
-An internal row is recorded before invoking its backend operation, so its
-presence proves neither database receipt nor completion. `NA` SQL means the
-diagnostic render failed. Such rows remain in the internal view, even though
-`writeLines()` above selects only nonmissing text. Reading either view performs
-no rendering, query, fetch, or EXPLAIN and leaves the saved rows intact.
-
-Add `details = TRUE` to read the outcomes and conditions captured during the
-same call, even after reading the default view:
-
-```{r}
-#| eval: !expr has_duckdb
-
-detailed <- last_sent_queries(include_result = FALSE, details = TRUE)
-detailed[c("purpose", "source", "status")]
-detailed$conditions
-```
-
-The zero-row metadata and label-count collections normally have status
-`"returned"`. Each condition summary has `classes`, `message`, `phase`, and
-`handling`; an operation with no observed conditions holds a typed empty tibble.
-The accessor reference defines all statuses and the condition-summary schema.
-`source = "render"` describes how SQL was obtained, independently of whether
-rendering or the backend invocation succeeded. The compatibility result row
-stays `"prepared"`.
-
-Copy or export the record before another tracked call replaces it. A tibble
-you already hold survives that replacement unchanged:
-
-```{r}
-#| eval: !expr has_duckdb
-
-record_path <- tempfile(fileext = ".rds")
-saveRDS(internal, record_path)
-```
-
-A failed call leaves its own partial record readable. Here the transformed
-input contains the label `"Total"`, so the observed check refuses the call:
-
-```{r}
-#| eval: !expr has_duckdb
-#| error: true
-#| purl: false
-
-audit_sales |>
-  mutate(region = "Total") |>
-  summarize_with_margins(
-    revenue = sum(revenue, na.rm = TRUE),
-    .grouping = rollup(region),
-    .check_margin_label = TRUE
-  )
-```
-
-Read the failed call's record at the next prompt, or inside an error handler,
-before another tracked call starts:
-
-```{r}
-#| eval: !expr has_duckdb
-
-failed_internal <- last_sent_queries(include_result = FALSE, details = TRUE)
-failed_internal[c("purpose", "status")]
-failed_internal$conditions
-identical(readRDS(record_path), internal)
-```
-
-The label-count SQL returned before the collision refusal. Its row remains
-`"returned"`, with no condition for that later public validation error. An
-internal operation's status never reports the outcome of the entire public
-call or guarantees server completion.
-
-A contextual share can also run a dialect question. In a fresh R session,
-DuckDB rejects the string aggregate; marginplyr handles that error and runs a
-separate numeric control. This example displays that handled error when the
-dialect has not already been cached:
-
-```{r}
-#| eval: !expr has_duckdb
-
-summarize_with_margins(
-  audit_sales, revenue = sum(revenue, na.rm = TRUE),
-  share = share_of_total(revenue), .grouping = rollup(region)
-)
-probe_details <- last_sent_queries(include_result = FALSE, details = TRUE)
-probe_details[c("purpose", "status")]
-probe_details$conditions[probe_details$status == "errored"]
-```
-
-A cached answer adds no probe or control row. Run the example in a fresh
-session to see the first question. An observed probe error has phase
-`"invocation"` and handling `"handled"`; warnings suppressed by existing probe
-logic remain suppressed. Ordinary invocation conditions propagate as before,
-and reading the record never replays them.
-
-The record is process-local and belongs to the latest call's construction.
-Enabling the option afterwards cannot recover earlier SQL. Nested calls own
-the record while active, then restore their parent's record. A later
-`collect()`, `pull()`, or `compute()` does not append execution SQL; computing
-an older query leaves the newer call's record unchanged. This is an in-memory
-diagnostic for marginplyr's own work, with caller-controlled export.
-
-The [`last_sent_queries()` reference][sent-queries] states the no-record and
-unaudited-call refusals, typed empty views, and nested-call ownership.
-*When marginplyr queries your data* in the [`summarize_with_margins()`
-reference][summary-reference] enumerates the operations and applicable backends.
-
-[sent-queries]: https://sayuks.github.io/marginplyr/man/last_sent_queries.html
-[summary-reference]: https://sayuks.github.io/marginplyr/man/summarize_with_margins.html
-
-```{r}
-#| eval: !expr has_duckdb
-
-unlink(record_path)
-DBI::dbDisconnect(audit_con)
-options(old)
-```
-
 ## Backend verification levels
 
 Support is not one status. SQL simulation is useful evidence about rendering,
@@ -964,6 +967,5 @@ reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html).
 - A contextual share may need `.check_share_source = FALSE`; see *Parent
   shares use a staged lazy query* above.
 
-- A fallback query may repeat the source relation once per grouping set.
-  Inspect the generated SQL and the database query plan for large workloads;
-  marginplyr does not claim that one translation is universally faster.
+- A portable `UNION ALL` query reads the source once per grouping set; see
+  *Portable fallback SQL* above.

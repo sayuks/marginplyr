@@ -278,27 +278,15 @@ with_sent_query <- function(purpose, query, expr,
 #' or [inspect_grouping()] -- and this function reads it back. The record is
 #' started afresh for every call, so what it holds belongs to that call
 #' alone. Piping one Margin verb into another is two calls, and the outer one
-#' is the most recent: its input runs first and its rows are then emptied,
-#' leaving the outer call's own.
-#'
-#' When user code inside a tracked call A invokes another tracked call B,
-#' the record belongs to B while B runs, then to A again as soon as B exits.
-#' A keeps its earlier rows and its own audit setting, including when it
-#' catches B's error. After A returns or fails, its own complete or partial
-#' record remains readable; B's rows are not appended or retained separately.
-#' An error handler running while B is still active can read B's partial
-#' record. This applies to inspection as well as Margin verbs.
-#'
-#' The input `.data` is evaluated before that call starts recording. If the
-#' input fails first, the outer call starts no record. Other arguments do
-#' not gain this early evaluation, and recording does not restore user options.
+#' is the most recent: the inner call is its input and records first, and the
+#' outer call then starts a fresh record holding only its own SQL.
 #'
 #' @param include_result One nonmissing logical value. `TRUE` (the default)
 #'   includes the prepared, unexecuted result SQL. `FALSE` selects internal
-#'   rows only, without needing their descriptive purpose names.
+#'   rows only, whatever their purpose names.
 #' @param details One nonmissing logical value. `FALSE` (the default) returns
-#'   the original two columns. `TRUE` selects the stored diagnostic details;
-#'   it does not enable capture or repeat work.
+#'   the two columns `purpose` and `sql`. `TRUE` selects the stored
+#'   diagnostic details; it does not enable capture or repeat work.
 #' @return A tibble in recording order. By default its two character columns
 #'   are `purpose` and `sql`. With `details = TRUE` the columns are `purpose`,
 #'   `sql`, `source`, `status`, and `conditions`, in that order. The first four
@@ -314,9 +302,11 @@ with_sent_query <- function(purpose, query, expr,
 #' `source` is `"render"` for an attempted diagnostic render or `"literal"`
 #' for SQL supplied by the package. Neither proves database receipt.
 #'
-#' `status` describes only the owned internal backend operation:
+#' `status` describes only the database operation marginplyr itself ran for
+#' the row:
 #' - `"prepared"`: a row exists but no invocation was observed. The
-#'   compatibility `"result"` row stays in this state.
+#'   `"result"` row, which records the query returned to you rather than one
+#'   marginplyr ran, stays in this state.
 #' - `"invoking"`: control reached the boundary immediately before the
 #'   backend call, with no terminal observation yet. This can be read while
 #'   the operation is active; it does not prove that the driver body ran.
@@ -340,7 +330,8 @@ with_sent_query <- function(purpose, query, expr,
 #' Render failures retain their summaries independently of invocation status:
 #' missing SQL and a `"returned"` operation can coexist. A failed dialect
 #' question can have a handled error followed by a distinct, successful numeric
-#' control. The probe's existing warning suppression is preserved. Savepoint,
+#' control. A warning the dialect question raises is muffled, as it is when
+#' recording is off, and summarized with handling `"suppressed"`. Savepoint,
 #' rollback, and release controls each have their own row.
 #'
 #' A label-count query can be `"returned"` before validation refuses a Margin
@@ -367,9 +358,10 @@ with_sent_query <- function(purpose, query, expr,
 #'
 #' With `.check_margin_label = TRUE`, an observed label check aggregates
 #' collision counts in the database and retrieves one row, with one count per
-#' checked column. It does not retrieve all unique values. Zero-row SQL
-#' metadata on DuckDB and its preceding catalog-only admission are separate
-#' internal operations. Recording requests none of this work: a cache hit or a
+#' checked column. It does not retrieve all unique values. On DuckDB, the
+#' zero-row read of the input's column types and the system-catalog query
+#' that first checks the input is safe to bind are separate internal
+#' operations. Recording requests none of this work: a cache hit or a
 #' label check with no columns adds no query.
 #'
 #' An internal query is recorded before invoking the backend operation.
@@ -387,7 +379,20 @@ with_sent_query <- function(purpose, query, expr,
 #' PSOCK, and callr workers, so a read after a parallel run reports the last
 #' call made in this process and not one made in a worker.
 #'
-#' @section Four answers:
+#' @section Nested calls and evaluation order:
+#' When user code inside a tracked call A invokes another tracked call B,
+#' the record belongs to B while B runs, then to A again as soon as B exits.
+#' A keeps its earlier rows and its own audit setting, including when it
+#' catches B's error. After A returns or fails, its own complete or partial
+#' record remains readable; B's rows are not appended or retained separately.
+#' An error handler running while B is still active can read B's partial
+#' record. This applies to inspection as well as Margin verbs.
+#'
+#' The input `.data` is evaluated before that call starts recording. If the
+#' input fails first, the outer call starts no record. Other arguments do
+#' not gain this early evaluation, and recording does not restore user options.
+#'
+#' @section Reading an empty or incomplete record:
 #' - Nothing has been recorded in this session -- none of the calls the
 #'   description above lists has begun -- and the call is refused with a
 #'   `"marginplyr_error"`. A call that began and then refused your arguments
@@ -421,7 +426,9 @@ with_sent_query <- function(purpose, query, expr,
 #'   summarize_with_margins(sales_db, revenue = sum(revenue), .grouping = spec)
 #'   last_sent_queries()
 #' })
-#' utils::write.csv(do.call(rbind, records), path)
+#' # `call` holds each record's name in `specs`, or its position there.
+#' all_calls <- dplyr::bind_rows(records, .id = "call")
+#' utils::write.csv(all_calls, path, row.names = FALSE)
 #' ```
 #'
 #' @seealso *[When marginplyr queries your data][summarize_with_margins]* for
@@ -461,7 +468,7 @@ with_sent_query <- function(purpose, query, expr,
 #'   )
 #'
 #'   internal <- last_sent_queries(include_result = FALSE, details = TRUE)
-#'   internal[c("purpose", "status")]
+#'   print(internal[c("purpose", "status")])
 #'   writeLines(internal$sql[!is.na(internal$sql)])
 #'   sent <- last_sent_queries()
 #'   writeLines(sent$sql[sent$purpose == "result"])
@@ -478,11 +485,12 @@ with_sent_query <- function(purpose, query, expr,
 #'     ),
 #'     marginplyr_error = function(cnd) {
 #'       # The label-count query returned before validation refused the call.
-#'       print(last_sent_queries(include_result = FALSE, details = TRUE))
+#'       failed <- last_sent_queries(include_result = FALSE, details = TRUE)
+#'       print(failed[c("purpose", "status")])
 #'     }
 #'   )
 #'   # `internal` and its exported copy still describe the first call.
-#'   identical(readRDS(path), internal)
+#'   print(identical(readRDS(path), internal))
 #'   unlink(path)
 #'
 #'   # A cold DuckDB dialect question errors and the numeric control returns.
@@ -492,11 +500,12 @@ with_sent_query <- function(purpose, query, expr,
 #'     share = share_of_total(revenue), .grouping = rollup(region)
 #'   )
 #'   details <- last_sent_queries(include_result = FALSE, details = TRUE)
-#'   details$conditions[details$status == "errored"]
+#'   print(details[c("purpose", "status")])
 #'   DBI::dbDisconnect(con)
 #'   options(old)
 #'   # The last call remains readable under its saved entry-time setting.
-#'   last_sent_queries(include_result = FALSE, details = TRUE)
+#'   last <- last_sent_queries(include_result = FALSE, details = TRUE)
+#'   print(last[c("purpose", "status")])
 #' }
 last_sent_queries <- function(include_result = TRUE, details = FALSE) {
   if (!rlang::is_bool(include_result)) {

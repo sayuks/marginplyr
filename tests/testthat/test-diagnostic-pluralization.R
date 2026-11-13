@@ -109,6 +109,10 @@ pluralizing_coverage <- function() {
       "a renaming .by selection is refused"
     ),
     abort_declared_label_collision = rep("this file, the collision block", 2L),
+    abort_grouping_columns = pluralizing_test_location(
+      "test-grouping-bare-column.R",
+      "a bare column as .grouping is refused on every entry point"
+    ),
     abort_grouping_rename = pluralizing_test_location(
       "test-grouping-plan.R",
       "a renaming grouping selection is refused by every constructor"

@@ -22,6 +22,16 @@ Record changes that affect how people use or understand marginplyr in the
 current version section of `NEWS.md`. Purely internal changes and minor edits
 may omit a bullet.
 
+Before the first release — while `DESCRIPTION`'s
+`Config/marginplyr/cran-status` reads `unpublished` — that section is instead
+a short summary of what the first release offers, written for a reader who
+has never used the package. A change edits the summary bullet whose
+statement it alters, or adds a grouped bullet for a capability the summary
+does not yet cover; it adds no bullet describing behaviour before the change.
+Development history stays in git and the issue tracker. Per-change bullets
+begin with the development section `tools/cran-release.md` adds after
+publication.
+
 Credit PR authors absent from `DESCRIPTION`'s `Authors@R` with `(@handle, #PR)`
 before the final period. Listed authors may omit their handle; keep the
 related issue or PR number. Additional reporter or reviewer credit is optional.

@@ -3,9 +3,10 @@
 #' marginplyr extends [dplyr::summarize()] with SQL-style `GROUPING SETS`,
 #' `ROLLUP`, and `CUBE` summaries: totals, subtotals, and arbitrary grouping
 #' combinations, with Grouping identifiers to tell the resulting grains
-#' apart. Local data frames and lazy tables are supported. Confirmed
-#' database backends use native grouping sets; other lazy backends use a
-#' `UNION ALL` fallback with the same semantics.
+#' apart. Local data frames and lazy tables are supported. Most summaries on
+#' DuckDB and PostgreSQL use native grouping sets; other database backends,
+#' and every expansion, use a `UNION ALL` fallback. The *Database and lazy
+#' backends* guide lists the summaries that also take the fallback.
 #'
 #' @section Get started:
 #' Store detail, region subtotals, and a company total from one call:
@@ -19,6 +20,19 @@
 #'   .grouping = rollup(region, store)
 #' )
 #' ```
+#'
+#' @section Guides:
+#' - [Get started][g1]
+#' - [Recipes for common reporting tasks][g5]
+#' - [Database and lazy backends][g2]
+#' - [Grouping identity][g3]
+#' - [Complete absent keys before margins][g4]
+#'
+#' [g1]: https://sayuks.github.io/marginplyr/vignettes/get_started.html
+#' [g2]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html
+#' [g3]: https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html
+#' [g4]: https://sayuks.github.io/marginplyr/vignettes/completing_keys.html
+#' [g5]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
 #'
 #' @section Next steps:
 #' - **Grouping specifications**: [grouping_set()], [grouping_sets()],
@@ -55,12 +69,6 @@
 #' that can change without a deprecation cycle, so match on the class rather
 #' than on message text.
 #'
-#' The wording is marginplyr's to change; the columns, values, and arguments a
-#' message quotes are yours, and a marginplyr error spells them as you spelled
-#' them. Two spellings it cannot keep: a line break and a no-break space inside
-#' a name are both shown as an ordinary space. This says nothing about the
-#' errors below, which marginplyr does not write.
-#'
 #' Other errors deliberately fall outside the class. Errors raised by
 #' your own summary expressions, by tidyselect, by dplyr, or by a database
 #' backend propagate with their original class, diagnostic, and cause intact.
@@ -69,65 +77,9 @@
 #' <https://github.com/sayuks/marginplyr/issues>.
 #'
 #' marginplyr itself raises no warning: it states what it will not do by
-#' refusing. What a Margin verb does adjust, for an error and a warning alike,
-#' is the context reported around one, because a Margin operation may summarize
-#' your expression once per grouping set. Such a condition reports its grouping
-#' values under the columns you named rather than under internal ones, quotes
-#' the argument as you spelled it rather than as marginplyr rewrote it to
-#' compute the grouping sets, and an error blames the Margin verb you wrote
-#' rather than the internal summary that ran it. A warning still names that
-#' internal summary, because the name is part of a sentence dplyr renders
-#' before marginplyr sees the warning at all. Where the expression dplyr quoted
-#' cannot be matched -- a long one dplyr shortens to `+...`, or a diagnostic a
-#' later dplyr lays out differently -- the quotation stays as dplyr wrote it.
-#'
-#' A warning that every grouping set raises is reported once, saying how many
-#' further grouping sets raised it; warnings that differ from each other are
-#' reported one by one. A lazy input is outside this, and visibly so: its
-#' summary expressions run when you collect the result rather than while the
-#' verb runs, so what they raise is the collecting call's to report.
-#'
-#' When marginplyr catches competing conditions, successful cleanup is followed
-#' by the first interrupt, retaining any earlier execution error. An enriched
-#' interrupt inherits `"interrupt"` and `"condition"`, not `"error"` or
-#' `"marginplyr_error"`. Its `$interrupt` holds the original interrupt and its
-#' `$parent` holds the earlier execution error, including that error's own
-#' cause chain. A lone interrupt needs no wrapper. Absent information may be
-#' `NULL` or absent.
-#'
-#' Buffered warnings are replayed in first-occurrence order during exit.
-#' Calling warning handlers can observe and muffle them normally. A caught
-#' replay error or further interrupt ends replay; remaining warnings need not
-#' be delivered. During cancellation, `$replay_error` retains a caught replay
-#' error separately from the execution-error parent. Further caught interrupts
-#' keep the first interrupt. Without interruption, an earlier execution error
-#' takes precedence over a caught replay error. Warning-only work still fails
-#' under `options(warn = 2)`; marginplyr does not change that option.
-#'
-#' These guarantees follow R's handler boundary. While R invokes a calling
-#' warning handler registered outside the Margin operation, newer handlers,
-#' including marginplyr's catchers, are unavailable. An error or interrupt
-#' raised there can therefore replace the pending outcome without retaining
-#' it. Other nonlocal transfers, such as
-#' invoking your own restart, also follow R's ordinary behavior. The
-#' *Keep warning-handler failures separate from cancellation* recipe in the
-#' [recipes guide][recipe] shows a caller-owned wrapper that keeps a callback
-#' failure separately from the operation's outcome.
-#'
-#' Failed SQLite cleanup takes precedence over conditions marginplyr caught.
-#' It is an error outside `"marginplyr_error"`, identifying the failed rollback
-#' or release step. Its `$cleanup` holds that step's condition, and `$parent`
-#' holds the triggering execution error or interrupt outcome above. Further
-#' caught interrupts do not replace a cleanup failure already observed. See
-#' [summarize_with_margins()] for the materialization boundary and recovery
-#' limits.
-#'
-#' With no exiting interrupt handler, interruption retains native R recovery
-#' and interruption hooks. A returning calling handler first receives the
-#' enriched condition, when one is needed, and may then receive a bare native
-#' notification for the same cancellation.
-#'
-#' [recipe]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
+#' refusing. How a Margin operation reports the conditions your expressions
+#' raise, and what an interrupt, a warning handler, or a failed SQLite cleanup
+#' leaves you to catch, are stated in [marginplyr_conditions].
 #'
 #' @section Recording the SQL marginplyr prepares:
 #' marginplyr records prepared SQL representations only when you ask for them.
@@ -160,22 +112,8 @@
 #' internal operations can run. Copy or export the record before the next call
 #' replaces it; a failed call leaves its own partial record readable.
 #'
-#' What the record holds, which calls keep one, and the four answers it gives
-#' -- three of them could otherwise look alike -- are stated in
-#' [last_sent_queries()]'s own reference.
-#'
-#' @section Guides:
-#' - [Get started][g1]
-#' - [Recipes for common reporting tasks][g5]
-#' - [Database and lazy backends][g2]
-#' - [Grouping identity][g3]
-#' - [Complete absent keys before margins][g4]
-#'
-#' [g1]: https://sayuks.github.io/marginplyr/vignettes/get_started.html
-#' [g2]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html
-#' [g3]: https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html
-#' [g4]: https://sayuks.github.io/marginplyr/vignettes/completing_keys.html
-#' [g5]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
+#' What the record holds, which calls keep one, and what an empty or incomplete
+#' read means are stated in [last_sent_queries()]'s own reference.
 #'
 #' @examples
 #' summarize_with_margins(

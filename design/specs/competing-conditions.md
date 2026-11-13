@@ -208,7 +208,7 @@ environment, not integrated operation cleanup, actual SIGINT, or other versions.
 Use it as reproducible prior art rather than a required handler design.
 
 Publish implemented outcomes and structured fields in
-`R/marginplyr-package.R`'s *Errors and warnings*. Keep the materialization
+`R/marginplyr-conditions.R` (`?marginplyr_conditions`). Keep the materialization
 contract in `R/summarize_with_margins.R` and SQLite guidance in
 `vignettes/database_backends.qmd` aligned with ADR 0031. Regenerate affected
 help and run applicable documentation/site verifiers. Public guidance must not

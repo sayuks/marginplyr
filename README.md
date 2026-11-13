@@ -19,6 +19,22 @@ coverage](https://codecov.io/gh/sayuks/marginplyr/graph/badge.svg)](https://app.
 [![lint.yaml](https://github.com/sayuks/marginplyr/actions/workflows/lint.yaml/badge.svg)](https://github.com/sayuks/marginplyr/actions/workflows/lint.yaml)
 <!-- badges: end -->
 
+## Installation
+
+`marginplyr` is not on CRAN yet. Install it from
+[GitHub](https://github.com/sayuks/marginplyr) with:
+
+``` r
+install.packages("pak")
+pak::pkg_install("sayuks/marginplyr")
+```
+
+## A first report
+
+The examples use `retail_sales`, a small synthetic data set of monthly
+sales that ships with the package. This call reports January 2026
+revenue by store, by region, and for the whole company:
+
 ``` r
 library(marginplyr)
 
@@ -62,17 +78,21 @@ shows `.sort` at work and what it does not promise.
 
 - Works with local data frames and lazy `dbplyr` tables.
 
-- Uses native `GROUP BY GROUPING SETS` on DuckDB and PostgreSQL.
+- Runs most summaries on DuckDB and PostgreSQL as native
+  `GROUP BY GROUPING SETS`.
 
-- Uses a portable `UNION ALL` fallback for other SQL dialects.
+- Uses a portable `UNION ALL` fallback for other SQL dialects and for
+  every row expansion.
 
 - Distinguishes a source `NA` from a dimension removed to create a
   total.
 
-- Exposes Grouping set identifiers and SQL-compatible absence masks
-  without relying on display labels.
+- Flags totals with `grouping_bit()` and `grouping_id()`, the
+  counterparts of SQL `GROUPING()`, so identifying a total never depends
+  on its display label.
 
-- Calculates each scalar summary’s share of its immediate rollup parent.
+- Calculates each summary’s share of its rollup parent with
+  `share_of_parent()`, or of the grand total with `share_of_total()`.
 
 - Can expand the source rows behind every subtotal, or nest them for
   local and `dtplyr` inputs.
@@ -87,16 +107,6 @@ Need absent dimension keys? See [Complete absent keys before
 margins](https://sayuks.github.io/marginplyr/vignettes/completing_keys.html).
 Already working with remote data? See [Database and lazy
 backends](https://sayuks.github.io/marginplyr/vignettes/database_backends.html).
-
-## Installation
-
-`marginplyr` is not on CRAN yet. Install it from
-[GitHub](https://github.com/sayuks/marginplyr) with:
-
-``` r
-install.packages("pak")
-pak::pkg_install("sayuks/marginplyr")
-```
 
 ## Grouping sets in plain language
 
@@ -230,7 +240,8 @@ parent_report <- january_sales |>
   summarize_with_margins(
     revenue = sum(revenue),
     revenue_share = share_of_parent(revenue),
-    .grouping = rollup(region, store)
+    .grouping = rollup(region, store),
+    .sort = "last"
   )
 
 parent_report
@@ -238,9 +249,9 @@ parent_report
 #> 1   East        Boston    6000     0.5357143
 #> 2   East      New York    3000     0.2678571
 #> 3   East          <NA>    2200     0.1964286
-#> 4   West San Francisco    7200     0.5950413
-#> 5   West       Seattle    4900     0.4049587
-#> 6   East         Total   11200     0.4806867
+#> 4   East         Total   11200     0.4806867
+#> 5   West San Francisco    7200     0.5950413
+#> 6   West       Seattle    4900     0.4049587
 #> 7   West         Total   12100     0.5193133
 #> 8  Total         Total   23300     1.0000000
 ```
@@ -257,15 +268,16 @@ january_sales |>
       share_of_parent,
       .names = "{.col}_share"
     ),
-    .grouping = rollup(region, store)
+    .grouping = rollup(region, store),
+    .sort = "last"
   )
 #>   region         store units revenue units_share revenue_share
 #> 1   East        Boston     5    6000   0.1351351     0.5357143
 #> 2   East      New York    10    3000   0.2702703     0.2678571
 #> 3   East          <NA>    22    2200   0.5945946     0.1964286
-#> 4   West San Francisco     6    7200   0.1818182     0.5950413
-#> 5   West       Seattle    27    4900   0.8181818     0.4049587
-#> 6   East         Total    37   11200   0.5285714     0.4806867
+#> 4   East         Total    37   11200   0.5285714     0.4806867
+#> 5   West San Francisco     6    7200   0.1818182     0.5950413
+#> 6   West       Seattle    27    4900   0.8181818     0.4049587
 #> 7   West         Total    33   12100   0.4714286     0.5193133
 #> 8  Total         Total    70   23300   1.0000000     1.0000000
 ```
@@ -280,9 +292,9 @@ parent_report |>
 #> 1   East        Boston    6000     0.5357143        53.57143
 #> 2   East      New York    3000     0.2678571        26.78571
 #> 3   East          <NA>    2200     0.1964286        19.64286
-#> 4   West San Francisco    7200     0.5950413        59.50413
-#> 5   West       Seattle    4900     0.4049587        40.49587
-#> 6   East         Total   11200     0.4806867        48.06867
+#> 4   East         Total   11200     0.4806867        48.06867
+#> 5   West San Francisco    7200     0.5950413        59.50413
+#> 6   West       Seattle    4900     0.4049587        40.49587
 #> 7   West         Total   12100     0.5193133        51.93133
 #> 8  Total         Total   23300     1.0000000       100.00000
 ```
@@ -293,7 +305,7 @@ labels never choose the parent.
 
 ## Compare each summary with the whole
 
-`share_of_total()` is the same helper with a different denominator: the
+`share_of_total()` is its sibling with a different denominator: the
 grand total of the same report, within each fixed `.by` group. There is
 never a question of *which* row that is, so it accepts any Grouping
 specification that produces one — including the `cube()` that
@@ -304,21 +316,22 @@ january_sales |>
   summarize_with_margins(
     revenue = sum(revenue),
     revenue_of_total = share_of_total(revenue),
-    .grouping = cube(region, store)
+    .grouping = cube(region, store),
+    .sort = "last"
   )
 #>    region         store revenue revenue_of_total
 #> 1    East        Boston    6000        0.2575107
 #> 2    East      New York    3000        0.1287554
 #> 3    East          <NA>    2200        0.0944206
-#> 4    West San Francisco    7200        0.3090129
-#> 5    West       Seattle    4900        0.2103004
-#> 6    East         Total   11200        0.4806867
+#> 4    East         Total   11200        0.4806867
+#> 5    West San Francisco    7200        0.3090129
+#> 6    West       Seattle    4900        0.2103004
 #> 7    West         Total   12100        0.5193133
 #> 8   Total        Boston    6000        0.2575107
 #> 9   Total      New York    3000        0.1287554
-#> 10  Total          <NA>    2200        0.0944206
-#> 11  Total San Francisco    7200        0.3090129
-#> 12  Total       Seattle    4900        0.2103004
+#> 10  Total San Francisco    7200        0.3090129
+#> 11  Total       Seattle    4900        0.2103004
+#> 12  Total          <NA>    2200        0.0944206
 #> 13  Total         Total   23300        1.0000000
 ```
 
@@ -331,15 +344,16 @@ january_sales |>
     revenue = sum(revenue),
     revenue_share = share_of_parent(revenue),
     revenue_of_total = share_of_total(revenue),
-    .grouping = rollup(region, store)
+    .grouping = rollup(region, store),
+    .sort = "last"
   )
 #>   region         store revenue revenue_share revenue_of_total
 #> 1   East        Boston    6000     0.5357143        0.2575107
 #> 2   East      New York    3000     0.2678571        0.1287554
 #> 3   East          <NA>    2200     0.1964286        0.0944206
-#> 4   West San Francisco    7200     0.5950413        0.3090129
-#> 5   West       Seattle    4900     0.4049587        0.2103004
-#> 6   East         Total   11200     0.4806867        0.4806867
+#> 4   East         Total   11200     0.4806867        0.4806867
+#> 5   West San Francisco    7200     0.5950413        0.3090129
+#> 6   West       Seattle    4900     0.4049587        0.2103004
 #> 7   West         Total   12100     0.5193133        0.5193133
 #> 8  Total         Total   23300     1.0000000        1.0000000
 ```
@@ -383,16 +397,11 @@ postgres_sales |>
 #> ) AS "q01"
 ```
 
-DuckDB and PostgreSQL use native grouping sets. Backends without
-confirmed native support use a `UNION ALL` translation with the same
-Grouping plan. Simulation verifies generated SQL but does not claim live
-execution against every database server. The [database
+Simulation verifies generated SQL but does not claim live execution
+against every database server. The [database
 guide](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
-shows native SQL, fallback SQL, live DuckDB execution, and `collect()`.
-On live SQLite, direct `compute()` of a Margin result can retain its
-declared types and Margin order in a table containing only public
-columns; the guide explains destination safety and later dplyr
-operations.
+shows native SQL, which queries take the fallback, live DuckDB
+execution, and `collect()`.
 
 ## Keep the rows behind each total
 
@@ -407,7 +416,6 @@ nested_sections <- january_sales |>
   )
 
 nested_sections |>
-  dplyr::as_tibble() |>
   head()
 #> # A tibble: 6 × 3
 #>   region store         data            
@@ -434,8 +442,13 @@ than an immediate summary.
 
 These are margin-aware counterparts, not drop-in replacements for
 `tidyr::nest()` and `dplyr::nest_by()`. Their precise grouping, `.keep`,
-empty-input, and lazy-backend contracts are documented in the function
-reference and Get Started guide.
+empty-input, and lazy-backend contracts are documented in the
+[`nest_with_margins()`](https://sayuks.github.io/marginplyr/man/nest_with_margins.html)
+and
+[`nest_by_with_margins()`](https://sayuks.github.io/marginplyr/man/nest_by_with_margins.html)
+references and the [Get
+started](https://sayuks.github.io/marginplyr/vignettes/get_started.html)
+guide.
 
 ## Choose the tool for the job
 

@@ -53,15 +53,12 @@
 #'   check after collecting a lazy input therefore defaults to `TRUE` instead
 #'   of `FALSE`; set `.check_margin_label` explicitly when following a
 #'   collect-first remediation.
-#'   equal to a declared factor *level* is rejected wherever marginplyr holds
-#'   the levels, whatever this argument says, because finding it sends no
-#'   query. Arrow does not hold or restore factor levels; it checks an observed
-#'   collision only when this argument is `TRUE`. See *Result class and
-#'   attributes* for Arrow's character result. Left unchecked, a colliding
-#'   value gives the result a margin row and a source row that no grouping
-#'   column tells apart; keeping [grouping_bit()] or [grouping_id()] in the
-#'   result distinguishes them at no added cost. See *Display labels and
-#'   grouping identity* for the factor missing-value contract.
+#'   A label equal to a declared factor *level* is rejected wherever
+#'   marginplyr holds the levels, whatever this argument says, because finding
+#'   it sends no query. Left unchecked, a colliding value gives the result a
+#'   margin row and a source row that no grouping column tells apart; keeping
+#'   `.id` in the result distinguishes them at no added cost. See *Display
+#'   labels and grouping identity* for the factor missing-value contract.
 #' @param .check_share_source A logical scalar, `TRUE` by default on every
 #'   backend, including lazy ones: establishing that a share's source summary
 #'   is an eligible type reads none of your data. `FALSE` calculates a
@@ -75,32 +72,36 @@
 #'   there is no session default and no connection default that records the
 #'   answer once. See *Contextual shares*.
 #' @param .duplicates One of `"error"`, `"drop"`, or `"keep"`, and nothing
-#'   else, controlling duplicate grouping sets after expansion; see *Option
-#'   arguments*.
+#'   else; see *Option arguments*. A duplicate is a grouping set whose columns
+#'   are the same as an earlier set's once the Grouping specification is
+#'   expanded, as in `grouping_sets(region, store, region)`. `"error"` (the
+#'   default) refuses the call and names the positions. `"drop"` keeps the
+#'   first occurrence of each set and removes the rest. `"keep"` returns the
+#'   rows of every occurrence, so a duplicated set's rows appear once per
+#'   occurrence; `.id` tells the copies apart.
 #' @param .sort One of `"none"` (the default), `"last"`, or `"first"`, and
-#'   nothing else; see *Option arguments*. `"none"`
-#'   leaves row order unspecified. The other two order the result by the
-#'   structure of its Grouping plan: within each fixed `.by` key, every grouping
-#'   dimension contributes its Grouping bit and its missingness before its own
-#'   value, so a margin row sits with the rows it summarizes rather than
-#'   wherever `.margin_label` falls among that dimension's values, and missing
-#'   values come last wherever they appear. `"last"`
-#'   places margins after the rows they summarize and `"first"` before them.
-#'   The order is a property of the returned object, as with
-#'   [dplyr::arrange()], and may not survive further verbs applied to a lazy
-#'   result. See *Margin order*.
+#'   nothing else; see *Option arguments*. `"none"` leaves row order
+#'   unspecified. `"last"` places each margin row after the rows it
+#'   summarizes and `"first"` before them, within each fixed `.by` key, with
+#'   missing values last. See *Margin order*.
 #' @param .id `NULL`, or one non-missing, non-empty character string naming an
 #'   integer output column of one-based Grouping set identifiers. Each value
 #'   identifies one occurrence in the resolved Grouping plan. The name must not
-#'   collide with source columns, grouping keys, summary outputs, or a nesting
-#'   `.key`.
+#'   collide with source columns, grouping keys, or other output columns. See
+#'   *Grouping set identifiers*.
 #'
-#' @return An ungrouped data frame, or a lazy table when `.data` is lazy. Its
-#'   class follows [dplyr::summarize()]; see *Result class and
-#'   attributes* and *Variable labels and dataset attributes*.
-#'   Result row order is unspecified unless `.sort` asks for a Margin order;
-#'   see *Margin order*, or use [dplyr::arrange()] for any other presentation
-#'   order.
+#' @return An ungrouped data frame, or a lazy table when `.data` is lazy,
+#'   with one row per group per grouping set. Its columns are the fixed `.by`
+#'   keys, then the grouping dimensions, then `.id` when supplied, then the
+#'   summaries in the order written. Its class follows [dplyr::summarize()];
+#'   see *Result metadata*.
+#'
+#'   With a character `.margin_label`, the default, a grouping dimension that
+#'   is not a factor becomes character so that it can hold the label:
+#'   `.grouping = rollup(year)` over an integer `year` returns `year` as
+#'   character, with `"Total"` on the margin row. A factor dimension instead
+#'   gains the label as a new level. `.margin_label = NULL` or `NA_character_`
+#'   keeps every dimension's type and marks margin rows with a missing value.
 #'
 #' @details
 #' [grouping_sets()] forms a union of grouping families. [grouping_spec()]
@@ -110,88 +111,71 @@
 #'
 #' Grouping specifications accept column selections, not arbitrary SQL
 #' expressions. Create computed grouping columns with [dplyr::mutate()] first.
-#' On a derived dtplyr step, that computation must have metadata marginplyr
-#' can determine without processing source rows; see *When marginplyr queries
-#' your data*.
 #'
-#' Confirmed SQL backends use one `GROUP BY GROUPING SETS` query. Other lazy
-#' backends use a portable `UNION ALL` adapter with the same semantics.
 #' [summarize_with_margins()] and [summarise_with_margins()] are synonyms,
 #' following [dplyr::summarize()] and [dplyr::summarise()].
+#'
+#' @section Differences from summarize():
+#' - The result is always ungrouped, whatever groups the input had; see
+#'   *Grouped and row-wise inputs*.
+#' - Row order is unspecified. Use `.sort` for margins next to the rows they
+#'   summarize, or [dplyr::arrange()] for any other order.
+#' - A character `.margin_label` changes a non-factor grouping dimension to
+#'   character; see Value. Use `.margin_label = NULL` or `NA_character_` to
+#'   keep its type.
+#' - A summary cannot overwrite a fixed key or grouping dimension. Give it a
+#'   new name.
+#' - [dplyr::cur_group()], [dplyr::cur_group_id()], and
+#'   [dplyr::cur_group_rows()] are refused, because a result combining several
+#'   grouping sets has no single group for them to describe. Use
+#'   [grouping_bit()] or [grouping_id()] to identify margin rows.
 #'
 #' @section Fixed columns and grouping dimensions:
 #' `.by` marks columns that are present in every grouping set, while
 #' `.grouping` describes dimensions that can be omitted to form margins.
-#' Columns in `.by` retain their input types, never receive `.margin_label`,
-#' and return `0` from [grouping_bit()].
+#' Columns in `.by` retain their input types and never receive
+#' `.margin_label`.
 #'
-#' At the grouping-set level, `.grouping` alone can reproduce structures that
-#' use `.by`. For example, `.by = year` is structurally equivalent to
-#' `.grouping = grouping_set(year)`. Similarly, `.by = year` together with
-#' `.grouping = rollup(region, store)` produces the same grouping sets as
-#' `.grouping = grouping_spec(grouping_set(year), rollup(region, store))`.
+#' `.by = year` with `.grouping = rollup(region, store)` produces the same
+#' grouping sets as
+#' `.grouping = grouping_spec(grouping_set(year), rollup(region, store))`, but
+#' the two are not interchangeable: a column supplied through `.grouping` is a
+#' Margin dimension even when every grouping set contains it, so it takes part
+#' in `.margin_label` type conversion and collision checks. Use `.by` for
+#' columns that must always remain fixed.
 #'
-#' These forms are not completely interchangeable in the current
-#' implementation. A column supplied through `.grouping` is treated as a
-#' Margin dimension even when every expanded grouping set contains it.
-#' Consequently, it participates in `.margin_label` type conversion and
-#' collision checks. Use `.by` for columns that must always remain fixed, and
-#' use `.grouping` for dimensions that may become totals.
-#'
-#' Both accept selection predicates through [tidyselect::where()]. On local
-#' data frames, a predicate receives the actual columns and can inspect their
-#' values. On lazy inputs with available typed metadata, it receives columns
-#' derived from the schema or a zero-row proxy, not the source values. Use
-#' predicates that depend only on that available metadata, such as
-#' `where(is.character)` to select character columns.
-#'
-#' A value-dependent predicate such as `where(~ any(.x == "x"))` cannot find
-#' source values in a zero-row proxy. For example, with a character column
-#' `a = c("x", "y")`, it selects `a` locally but selects no column on a dtplyr
-#' or Arrow input. In `.by`, this changes a summary with two fixed partitions
-#' into one unpartitioned summary; in `grouping_set()`, it leaves an empty
-#' grouping set instead of the dimension `a`. Such predicates can silently
-#' select different columns on lazy inputs; marginplyr does not detect
-#' arbitrary value-dependent predicates or collect source rows for them.
-#'
-#' For selection based on source values, call [dplyr::collect()] explicitly
-#' and pass the resulting data frame to the Margin verb or [inspect_grouping()].
-#' A Margin operation on collected data defaults `.check_margin_label` to
-#' `TRUE` rather than the lazy-input default `FALSE`, so set it explicitly.
-#'
-#' Some lazy backends cannot supply readable typed metadata under the query
-#' policy in *When marginplyr queries your data*. A predicate written against
-#' one of them is refused. Select the columns by name, or collect the input
-#' first.
+#' Both accept selection predicates through [tidyselect::where()]. On a lazy
+#' input, a predicate receives columns derived from the schema or a zero-row
+#' proxy rather than the source values, so use one that depends only on the
+#' column type, such as `where(is.character)`. A value-dependent predicate
+#' such as `where(~ any(.x == "x"))` can silently select different columns on
+#' a lazy input than on a local one; marginplyr does not detect it. To select
+#' on values, call [dplyr::collect()] first, and set `.check_margin_label`
+#' explicitly, since its default changes to `TRUE` for the collected data.
+#' Where a lazy backend cannot supply typed metadata without reading data, a
+#' predicate is refused; select the columns by name, or collect first.
 #'
 #' @section Grouped and row-wise inputs:
 #' When `.data` has been grouped with [dplyr::group_by()] and `.by` is `NULL`,
-#' its grouping columns become implicit fixed keys. For example,
-#' `group_by(year)` followed by `.grouping = rollup(region)` is computationally
-#' equivalent to using `.by = year` on the ungrouped data. This rule is the
-#' same for local data frames and lazy tables.
+#' its grouping columns become implicit fixed keys: `group_by(year)` followed
+#' by `.grouping = rollup(region)` computes what `.by = year` does on the
+#' ungrouped data.
 #'
 #' As with [dplyr::summarize()] and [tidyr::nest()], a grouped input cannot
 #' also supply `.by`; call [dplyr::ungroup()] first when replacing the existing
 #' groups. A grouping column also cannot appear in `.grouping`, because one
 #' column cannot be both a fixed key and a dimension that can be rolled up.
-#' Grouped local data created with `.drop = FALSE` is rejected because
-#' marginplyr cannot preserve empty groups across local and lazy backends.
-#' [dplyr::ungroup()] discards empty groups, which is appropriate when they do
-#' not belong in the result. To retain empty keys, complete the input before
-#' the Margin operation; [Complete absent keys before margins][keys]
-#' guide follows the ADR 0011 workflow.
+#' Grouped local data created with `.drop = FALSE` is rejected because empty
+#' groups cannot be preserved on every backend. To retain empty keys, complete
+#' the input before the Margin operation, as the [Complete absent keys before
+#' margins][keys] guide shows.
 #'
-#' Unlike the default output of [dplyr::summarize()] on grouped data,
 #' [summarize_with_margins()], [expand_with_margins()], and
-#' [nest_with_margins()] always return ungrouped results. Arbitrary grouping
-#' sets contain multiple grains, so there is no single meaningful grouping
-#' hierarchy to retain.
-#' [nest_by_with_margins()] instead returns a row-wise data frame grouped by
-#' all visible fixed keys, grouping dimensions, and `.id` when supplied.
-#' Row-wise input is rejected. [dplyr::ungroup()] discards row-wise grouping;
-#' when named row-wise identifiers should remain fixed keys, ungroup first and
-#' select them with `.by`.
+#' [nest_with_margins()] always return ungrouped results, because a result
+#' combining several grouping sets has no single grouping to retain.
+#' [nest_by_with_margins()] instead returns a row-wise data frame. Row-wise
+#' input is rejected; to keep row-wise identifiers as fixed keys, ungroup
+#' first and select them with `.by`.
 #'
 #' [keys]: https://sayuks.github.io/marginplyr/vignettes/completing_keys.html
 #'
@@ -203,11 +187,9 @@
 #' `NULL` is not shorthand for the default: both are errors naming the values
 #' the argument accepts.
 #'
-#' There are two ways to ask for the default, and a `NULL` is neither of them.
-#' One is to leave the argument out. The other is to pass the whole vocabulary
-#' as the signature spells it, which is what leaving the argument out already
-#' does — the default *is* that vector — and what lets a function of your own
-#' repeat the signature and hand the argument on:
+#' To ask for the default, leave the argument out, or pass the whole
+#' vocabulary exactly as the signature spells it. The second form lets a
+#' function of your own repeat the signature and hand the argument on:
 #'
 #' ```r
 #' my_report <- function(data, .sort = c("none", "last", "first")) {
@@ -218,206 +200,41 @@
 #' }
 #' ```
 #'
-#' Called without `.sort`, that function forwards the vector its own formal
-#' holds and the Margin verb reads it as the default, so the wrapper needs no
-#' matching call of its own. Only the spelling the signature gives is read this
-#' way: any other vector of more than one value is an error, a reordering of
-#' the vocabulary included.
+#' Any other vector of more than one value is an error, a reordering of the
+#' vocabulary included. A wrapper that would rather not track the signature
+#' resolves the value itself and passes one string.
 #'
-#' What such a wrapper does hold is a copy of this vocabulary, read by exact
-#' match, so a change to the vocabulary refuses the wrapper's own default while
-#' leaving a value passed through it alone. A wrapper that
-#' would rather not track this signature resolves the value itself and passes
-#' the one string it chose, which no later widening or reordering of the
-#' vocabulary can invalidate.
+#' @section Result metadata:
+#' The result's class, its dataset-wide attributes, and the attributes of
+#' each column follow the native dplyr or tidyr operation the verb
+#' corresponds to on the same backend, applied per grouping set and combined
+#' in Grouping-plan order. marginplyr adds the following:
 #'
-#' Elsewhere in this package `NULL` is a documented value, and what it means is
-#' stated with the argument that takes it.
+#' - A source column's variable label (`attr(x, "label")`) is kept wherever
+#'   that column appears in the result, including on zero rows. Calculated
+#'   summaries and generated columns such as `.id` gain no label.
+#' - Factor and ordered-factor dimensions keep their levels and ordered
+#'   status; see *Display labels and grouping identity*. Classed columns such
+#'   as [Date] and [POSIXct], including its `tzone`, are carried unchanged.
+#' - A dimension's margin rows hold the label, or a typed missing value,
+#'   without element names; its other rows keep the names the native
+#'   operation keeps.
 #'
-#' A misspelled option reaches [summarize_with_margins()] through `...`,
-#' where it would otherwise become a summary column while the option has no
-#' effect. A dot-prefixed summary name that is an option name, or one
-#' insertion, deletion or substitution from one, is therefore an error naming
-#' the option it resembles. This differs from [dplyr::summarise()] on purpose:
-#' next to the short options `.by` and `.id`, names such as `.y`, `.b`, `.i`
-#' and `.ids` are refused although `summarise()` would return them as
-#' columns. Rename the summary to keep it; a dot-prefixed name further from
-#' every option, such as `.n` or `.x`, is a column as usual.
-#'
-#' @section Variable labels and dataset attributes:
-#' A source column's variable label (`attr(x, "label")`) is retained across
-#' display conversion, grouping-set combination, expansion and nesting. This
-#' includes fixed keys, displayed grouping dimensions, expanded payloads and
-#' original columns inside nested cells, including `.keep = TRUE` keys.
-#' A standard label is one character value, including `NA_character_` or
-#' `""`; `NULL` means absent. Other representations gain no extra guarantee
-#' and no new validation error. Zero-row source columns retain their labels.
-#'
-#' Calculated summaries follow native [dplyr::summarise()]
-#' evaluation for their backend. Neither an expression nor a reused output
-#' name implies a source label. Across grouping-set results, agreeing
-#' non-missing labels survive absent or missing labels; an empty string counts
-#' as a label. With only
-#' absent or missing labels, `NA_character_` survives if present. Conflicting
-#' non-missing labels follow native combination without a new Package condition.
-#' Value-label dictionaries, missing-value declarations and other column
-#' attributes follow their native backend and vector classes. Factor guarantees
-#' below continue to apply. Generated identifiers and shares gain no inferred
-#' source label.
-#'
-#' Dataset-wide attributes, including a frame-level `label`, follow these
-#' concrete native references, separately from column labels:
-#'
-#' * Summary: the corresponding native [dplyr::summarise()] method.
-#' * Expansion: native [dplyr::mutate()] per grouping set, then native
-#'   [dplyr::union_all()] in Grouping-plan order.
-#' * Nesting: supported native [tidyr::nest()] per grouping set, using the
-#'   original source values, the same fixed/included keys and payload selection.
-#'   Outer and inner frames are separate metadata locations. `.keep` decides
-#'   inner keys; Margin display values affect outer keys only.
-#' * Row-wise nesting: local [dplyr::nest_by()]; for `dtplyr`, the metadata
-#'   reference collects the input and then applies local `nest_by()`.
-#'
-#' These dataset references cover plain data frames, tibbles, direct data.table
-#' inputs and supported lazy backends. Extra frame classes retain their existing
-#' S3/vctrs behavior without a complete native-equivalence guarantee. Classed
-#' columns remain within scope. Structural names, row names, class and grouping
-#' metadata describe the actual Margin result, rather than being copied from
-#' the input. Grouping-plan inspection, constructors and query diagnostics do
-#' not inherit source-frame attributes.
-#' A frame-level `tsp` attribute is shape metadata too: base R ties it to the
-#' column count. A nested cell keeps it only with the input's columns, as with
-#' `.keep = TRUE`, and otherwise omits it, unlike the native cells.
-#'
-#' The label and dataset guarantees cover the returned result and direct
-#' [dplyr::collect()]. Lazy results retain source labels captured at
-#' construction; rebuild after changing those labels.
-#' Metadata handling adds no source-row
-#' read. Persistence through [dplyr::compute()] and later ordinary dplyr
-#' operations follows native backend rules.
-#'
-#' @section Result class and attributes:
-#' For plain data frames, tibbles, direct data.table inputs and supported lazy
-#' backends, result classes follow the corresponding native operation:
-#' [dplyr::summarise()] for summaries, [dplyr::mutate()] per grouping set
-#' followed by [dplyr::union_all()] for expansion, and [tidyr::nest()] for
-#' ordinary nesting. Row-wise nesting follows local [dplyr::nest_by()]; its
-#' dtplyr reference first collects the input. Plain data frames therefore nest
-#' to tibbles; ordinary nesting of direct data.table inputs returns data.table.
-#' These comparisons use the same grouping keys and payload selection, subject
-#' to the documented grouping, row-count and column-structure contracts.
-#' A live SQLite result uses a lazy subclass when source-column anchors or
-#' package-declared output types require it. Direct collection preserves source
-#' types and restores package-declared types in empty or all-missing columns.
-#' Direct [grouping_bit()] and [grouping_id()] summary outputs, including
-#' supported literal `across()` lambdas, remain numeric with zero rows.
-#' Sorted direct collection hides internal ordering columns from returned
-#' data, while [dbplyr::sql_render()] shows them in the SQL result.
-#' Direct materialization creates a typed table with public columns only.
-#' Later dplyr verbs use ordinary dbplyr behavior.
-#'
-#' Source-derived column classes and their class-owned structural state follow
-#' those references for compatible uses. This covers fixed keys, expanded
-#' payloads, original nested columns and objects transported in list-column
-#' cells, including original custom frame objects. With `.keep = TRUE`, inner
-#' keys retain their original values. Carrying, grouping, ordering and summary
-#' evaluation are separate capabilities; support for one does not establish
-#' support for another. There is no fixed list of compatible column or cell
-#' classes and no blanket exclusion of S3, S4 or S7 objects.
-#'
-#' Margin-label display conversion still applies: a string label may convert
-#' an ordinary dimension to character, while typed-missing labels follow its
-#' supported prototype. Calculated summaries follow native evaluation and
-#' common-type combination, without inheriting a class from a reused input
-#' column name. A class the reference transforms or drops is not restored.
-#' Arbitrary extra classes on the input frame require individual support
-#' decisions; acceptance alone does not promise their complete native-method
-#' equivalence. This adds no arbitrary-attribute copying or independent repair
-#' of defects in class methods. Variable labels, dataset attributes and vector
-#' element names have their separate policies.
-#'
-#' Generated nesting columns are lists of data frames with the promised
-#' contents and row counts, including zero-column cells. Their exact list and
-#' inner-frame subclasses are not promised; original columns and cell objects
-#' inside them remain covered. The class guarantee covers returned results and
-#' direct `collect()`, without extending to subsequent ordinary operations,
-#' `compute()`, persistence or re-reading. Classes already lost before input
-#' reaches marginplyr are outside it. Empty results retain the native behavior
-#' alongside separately declared package output types.
-#'
-#' Factor and ordered-factor columns retain their existing guarantees on
-#' backends whose factors marginplyr can rebuild: local data frames, `dtplyr`,
-#' and DuckDB. There it decomposes them to insert `.margin_label` and rebuilds
-#' them itself, so their levels and ordering are preserved; see *Display
-#' labels and grouping identity*. On DuckDB it is the levels alone: an `ENUM`
-#' carries no ordered flag, so an ordered factor is already unordered when
-#' marginplyr reads the column and unordered is what it rebuilds.
-#'
-#' Arrow is the one backend that can hold a factor without marginplyr being
-#' able to rebuild one, because the schema a dimension's prototype is read
-#' from carries a dictionary column with no levels in it. A non-missing
-#' `.margin_label` there converts the dimension to character as it does any
-#' ordinary dimension, so the levels and the ordered status are gone and a
-#' Margin order sorts the dimension by its values; plain
-#' [dplyr::summarize()] over the same table keeps the dictionary type, so
-#' this is marginplyr's loss rather than Arrow's. `NA_character_` and `NULL`
-#' insert no label and so convert nothing. A SQL backend other than DuckDB
-#' reaches none of this, storing a factor as text before marginplyr sees it.
-#'
-#' Classed columns such as [Date] and [POSIXct], including its `tzone`, are
-#' carried through by dplyr and vctrs unchanged.
-#'
-#' @section Column-vector element names:
-#' Names on individual vector elements (`names(data[[column]])`) follow the
-#' corresponding native operations on the same backend: [dplyr::summarise()]
-#' for summaries and the spelling alias, [dplyr::mutate()] per grouping set
-#' followed by [dplyr::union_all()] for expansion, and supported [tidyr::nest()]
-#' for nesting. Row-wise nesting follows local [dplyr::nest_by()]; for a
-#' `dtplyr` input, its reference collects the input before local nesting.
-#' Partial results combine in Grouping-plan order. Outer keys and original
-#' nested columns, including keys kept by `.keep = TRUE`, are separate
-#' metadata locations.
-#'
-#' Package processing retains names the native reference retains. A dimension
-#' omitted from a set receives an unnamed Margin-label replacement, including
-#' a typed missing value; its original element names are not restored.
-#' Calculated summaries receive no names inferred from a source expression or
-#' a reused output name. Repeated, empty and missing names, absent names and
-#' empty results follow native behavior, including the distinction between
-#' `NULL` and `character()`. Ordering follows native element-name rules.
-#'
-#' This covers plain data frames, tibbles, direct `data.table` inputs and
-#' supported lazy inputs, through the returned result and direct `collect()`.
-#' Names lost before the input reaches marginplyr are outside this guarantee.
-#' Additional frame classes retain their existing S3 and vctrs behavior;
-#' complete equivalence to their native methods is not promised. `compute()`
-#' persistence and subsequent ordinary operations follow native backend rules.
-#' No independent source-element snapshot or additional source-row read is
-#' used to preserve names.
-#'
-#' Arrow's native R metadata can restore element names that no longer track
-#' the corresponding source elements. marginplyr follows that behavior and
-#' adds no tracking, correction or verification of row correspondence.
-#' Element names are not row identifiers. Native warnings and errors retain
-#' their usual External condition treatment.
+#' These guarantees cover the returned result and direct [dplyr::collect()].
+#' Later verbs and [dplyr::compute()] follow native backend rules. A lazy
+#' result uses the input schema captured when it was built, so rebuild it
+#' after changing column types, factor definitions, or labels.
 #'
 #' @section Grouping set identifiers:
 #' When `.id` names an output column, each result row receives the one-based
 #' position of its grouping set occurrence after applying `.duplicates`.
-#' `"drop"` renumbers retained occurrences, while supported `"keep"` paths give
-#' identical duplicate sets distinct identifiers. One grouping set has
+#' `"drop"` renumbers the occurrences it keeps. One grouping set has
 #' identifier `1L`, and a zero-row result retains an integer `.id` column.
-#'
-#' Output columns are ordered as fixed keys, variable dimensions, `.id`, then
-#' ordinary output columns. For [nest_with_margins()], `.id` is an outer key
-#' and is not included inside the nested data. For
-#' [nest_by_with_margins()], it is also a row-wise grouping key.
 #'
 #' `.id` records plan occurrence, not physical result order, and is not a
 #' durable business key: reordering or deduplicating the Grouping
-#' specification changes it. Use [dplyr::arrange()] when order matters.
-#' [grouping_bit()] documents how `.id` compares with
-#' [inspect_grouping()]`$set_id`, [grouping_bit()], and [grouping_id()].
+#' specification changes it. [grouping_bit()] documents how `.id` compares
+#' with [inspect_grouping()]`$set_id`, [grouping_bit()], and [grouping_id()].
 #'
 #' @section Margin order:
 #' `.sort` orders a result by the structure of its Grouping plan rather than by
@@ -430,212 +247,131 @@
 #' ```
 #'
 #' A margin row therefore sits with the rows it summarizes instead of wherever
-#' its `.margin_label` falls among that dimension's values, which is what keeps
-#' the order independent of the label and of the locale. Two rules follow from
-#' the key rather than being separate: fixed `.by` keys sort first because they
-#' come first, so each partition is one contiguous block whose internal order
-#' does not depend on any other partition; and `.id` breaks the remaining ties
-#' when it names a column, which puts duplicate occurrences of one grouping set
-#' next to each other and in Grouping plan order. A composite dimension needs no
-#' rule of its own, because its columns share one Grouping bit.
+#' its `.margin_label` falls among that dimension's values, so the order does
+#' not depend on the label or the locale. Fixed `.by` keys sort first, so each
+#' partition is one contiguous block, and `.id`, when it names a column, breaks
+#' the remaining ties. `"first"` reverses the Grouping bits alone: missing
+#' values come last wherever they appear, on every backend. Factor dimensions
+#' sort by their levels. `.margin_label_position` positions a synthetic factor
+#' level and never a row.
 #'
-#' `"first"` reverses the Grouping bits alone. Missing values and ordinary
-#' values stay ascending, because the choice positions margins and not missing
-#' values. Every column in the key carries a missingness term, fixed `.by` keys
-#' included, so missing values come last wherever they appear on every backend,
-#' including those whose own default is the opposite. A local double key
-#' holding both `NaN` and `NA` keeps them apart, as [dplyr::summarize()]
-#' does: its missingness term places `NaN` before `NA`, both after ordinary
-#' values, so each is one contiguous group with its own margin rows. A local
-#' complex key orders its missing values by real part and then imaginary part,
-#' each ranked the same way, so a `NaN` in either part stays apart from `NA`.
-#' For a local packed data-frame or matrix key, the missingness term is per
-#' row: the key is wholly missing only when all its components are missing.
-#' Partly missing keys follow
-#' ordinary local `dplyr::arrange()` value order. Local list keys use
-#' dplyr/vctrs row-vector missingness: in a plain list, `NULL` is missing,
-#' while an element containing scalar `NA` is nonmissing. Under
-#' `.margin_label = NULL` a source missing value and a margin still display
-#' alike, but they are separated by position, because their Grouping bits
-#' differ.
+#' A Margin order promises what [dplyr::arrange()] promises in the C locale,
+#' which it fixes: `options(dplyr.legacy_locale = TRUE)` does not redirect it.
+#' It is a property of the object the verb returns: the row order of a local
+#' data frame, or the ordering of a lazy result that [dplyr::collect()]
+#' observes. Later verbs can change it. It composes with every `.duplicates`
+#' policy the verb accepts.
 #'
-#' Factor and ordered-factor dimensions sort by their restored levels rather
-#' than by their rendering, on the backends that restore them; see *Result
-#' class and attributes*. `.margin_label_position` positions a synthetic
-#' factor level and never a row: it changes `levels()` and nothing else, so the
-#' two options stay independent and no combination of them is wrong.
-#'
-#' A Margin order promises exactly what [dplyr::arrange()] promises in the C
-#' locale, which it fixes: `options(dplyr.legacy_locale = TRUE)` does not
-#' redirect it to the session's collation. It is a property of the object the
-#' verb returns: on local data frames and `dtplyr` steps that is the row
-#' order, and on lazy tables it is the outermost query's `ORDER BY`, which
-#' [dplyr::collect()] and [dplyr::compute()] both observe: a materialized
-#' result carries the Margin order rather than losing it.
-#' On live SQLite, direct `compute()` of a dedicated result inserts the public
-#' query into a typed table. A sorted result is read back in Margin order using
-#' an available implicit rowid alias. If its public columns shadow all three
-#' aliases (`rowid`, `oid`, and `_rowid_`), sorted compute refuses before
-#' writes. Direct collection remains available. Unsafe unqualified names that
-#' could address a different SQLite schema are refused before writes. Use an
-#' explicit schema or another name to resolve such a destination. An existing
-#' caller transaction retains commit and rollback ownership; compute uses its
-#' own savepoint, with either `in_transaction` value. Before successful
-#' savepoint release, an ordinary error or catchable R user interrupt restores
-#' the previous destination's data, schema, indexes, and affected statistics,
-#' or removes a newly created destination, then releases the savepoint. This
-#' requires a surviving connection and transaction and successful cleanup.
-#' Source tables and earlier caller work remain intact; the caller's outer
-#' transaction stays open. An interrupt caught during cleanup waits for the
-#' rollback and release attempt. After successful cleanup, the first interrupt
-#' propagates with an earlier execution error retained as `$parent`. Failed
-#' cleanup takes precedence: its error retains the failed step's condition in
-#' `$cleanup` and the triggering error or interrupt outcome in `$parent`.
-#' Further caught interrupts do not retry cleanup or replace its failure.
-#' *[Errors and warnings][marginplyr-package]* describes these fields and the
-#' native R boundary for conditions raised inside your calling handlers.
-#' Successful release ends restoration responsibility even if an interrupt
-#' prevents the R value reaching the caller. Outermost release persists the
-#' result; inner release leaves it under the caller's commit or rollback.
-#' Native SQLite cancellation can abort a whole transaction, losing caller
-#' work a savepoint cannot restore. Invalid connections, failed cleanup,
-#' process termination, and fatal signals have no recovery or connection-repair
-#' guarantee. A timeout receives recovery only if it unwinds through R with
-#' usable backend state; native-statement cancellation and native timeouts
-#' are unverified. Ordinary later verbs can change the result's order.
-#' Whether the order survives further verbs applied to a lazy result is not
-#' promised, because that depends on dbplyr's query flattening, which
-#' marginplyr does not own and which changes between releases.
-#'
-#' What a lazy result does not carry is a dbplyr window ordering. The key reads
-#' Grouping bits from a column the result does not expose, so no ordering over
-#' the returned columns alone reproduces it, and marginplyr leaves none
-#' recorded rather than record a truncated one. A window function written over
-#' a sorted lazy result therefore needs [dbplyr::window_order()], exactly as it
-#' would over an unsorted one, and asking for a Margin order discards any
-#' window ordering the input carried. `.sort = "none"` records no order and
-#' clears none.
-#'
-#' Asking for a Margin order never costs a native `GROUP BY GROUPING SETS`
-#' plan, and never changes which adapter runs. It composes with every
-#' `.duplicates` policy the verb accepts with no diagnostic, and lazy inputs
-#' stay lazy.
-#'
-#' The [recipes guide][recipes] shows a Margin order before and after, shows
-#' the key written as an `arrange()` you control, and shows a join dropping a
-#' Margin order from a lazy result with no diagnostic naming this package.
+#' The [recipes guide][recipes] shows a Margin order before and after, and
+#' shows the key written as an `arrange()` you control.
 #'
 #' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
 #'
+#' @section Display labels and grouping identity:
+#' `.margin_label` is a display value, not the identity of a grouping set. An
+#' unnamed scalar labels every resolved Margin dimension. A named vector
+#' provides column-specific labels and must cover the resolved dimensions
+#' exactly once; missing, unknown, duplicate, and empty names are rejected, as
+#' are names from `.by`.
+#'
+#' Non-missing labels convert ordinary grouping dimensions to character. A
+#' factor or ordered factor is rebuilt instead, preserving ordered status and
+#' placing a new synthetic level last by default or first when
+#' `.margin_label_position = "first"`. A label equal to any declared level,
+#' used or unused, is rejected before any grouping set is built, whatever
+#' `.check_margin_label` says. Rebuilding preserves the distinction between an
+#' observation that uses a factor NA level and an actually missing factor
+#' code.
+#'
+#' `NA_character_` and `NULL` both create a typed missing Margin value and do
+#' not create a synthetic factor level, so `.margin_label_position` has no
+#' effect for either, and neither takes part in the observed half of collision
+#' validation. What separates them is a factor NA level: it conflicts with
+#' `NA_character_` even when `.check_margin_label = FALSE`, while `NULL`
+#' preserves it.
+#'
+#' A local packed data-frame, matrix, or array grouping dimension accepts only
+#' `NULL` or `NA_character_` as its Margin label, because no scalar string can
+#' represent such a key; split it into separate columns if it needs display
+#' text.
+#'
+#' Factor columns follow this contract:
+#'
+#' | Margin label | NA level | Missing value | Result |
+#' |---|---:|---:|---|
+#' | `NA_character_` | yes | yes | Error: NA is already a factor level |
+#' | `NA_character_` | yes | no | Error: NA is already a factor level |
+#' | `NA_character_` | no | yes | Allowed; source missing values and margins require structural identity | # nolint: line_length_linter
+#' | `NA_character_` | no | no | Allowed; use typed missing |
+#' | `NULL` | yes | yes | Allowed; source missing values and margins require structural identity | # nolint: line_length_linter
+#' | `NULL` | yes | no | Allowed; preserve the NA level and use typed missing |
+#' | `NULL` | no | yes | Allowed; source missing values and margins require structural identity | # nolint: line_length_linter
+#' | `NULL` | no | no | Allowed; use typed missing |
+#'
+#' A factor observation that uses an NA level can print as `<NA>` while
+#' `is.na()` is false. A missing factor code has `is.na()` equal to true.
+#' Source missing values and typed-missing Margin values may display
+#' identically, so keep `.id` in the result when the difference matters.
+#' Every row above is decided whatever `.check_margin_label` says.
+#'
 #' @section Relationship to dplyr summaries:
 #' The `...` expressions use [dplyr::summarize()] data-masking semantics.
+#' Source missing values and margin rows that display alike are told apart
+#' by [grouping_bit()] or [grouping_id()] written as summaries.
 #'
-#' In expressions marginplyr can rewrite, a few spellings mean something only
-#' because it rewrites them before anything runs. Those are recognized by
-#' spelling and are never looked up in the environment the call was written
-#' in, so binding a function of your own
-#' to one of their names does not change what this verb does with it. They are
-#' [grouping_bit()] and [grouping_id()]; [share_of_parent()] and
-#' [share_of_total()]; [dplyr::across()], [dplyr::if_any()],
-#' [dplyr::if_all()], [dplyr::pick()], and [dplyr::c_across()];
-#' [tidyselect::where()]; and the branch-local helpers rejected below. A
-#' spelling is recognized when the name matches and it is written bare or
-#' qualified with the package that owns it, so `dplyr::across()` is the same
-#' request as `across()` while
-#' `mypkg::across()` is an ordinary call to another package's function.
-#'
-#' Parentheses do not change helper recognition: `(pick)(units)` and
-#' `(pick(units))` still name `pick()`. They can change dplyr's evaluation
-#' context. An ordinary `across()` with parentheses around its head or whole
-#' call retains per-group evaluation, including a function factory in `.fns`,
-#' rather than taking the expansion path of an unnamed top-level `across()`.
-#' A head that has to be evaluated to know what it calls is not a spelling at
-#' all, so `get("pick")(units)` is an ordinary call.
-#'
-#' Every other name follows ordinary lookup, [dplyr::n()] included, and so do
-#' the Grouping specification constructors: a nested `rollup(region)` is
-#' evaluated because of how it is spelled, but what runs is whatever `rollup`
-#' is bound to where you wrote it.
+#' A few spellings mean something only because marginplyr rewrites them before
+#' anything runs: [grouping_bit()], [grouping_id()], [share_of_parent()],
+#' [share_of_total()], [dplyr::across()], [dplyr::if_any()], [dplyr::if_all()],
+#' [dplyr::pick()], [dplyr::c_across()], and [tidyselect::where()]. They are
+#' recognized by name, written bare or qualified with the package that owns
+#' them, and never looked up where the call was written, so binding a function
+#' of your own to one of those names does not change what this verb does.
+#' `mypkg::across()` is an ordinary call. Every other name follows ordinary
+#' lookup, [dplyr::n()] included.
 #'
 #' [dplyr::across()], [dplyr::pick()], and [dplyr::c_across()] cannot select
 #' any column named in the complete Grouping plan. This extends dplyr's
 #' grouping-column rule across every branch: a dimension remains excluded even
 #' in a grouping set from which it is omitted.
 #'
-#' On a local data frame, an ordinary selection in a later summary sees
-#' preceding ordinary outputs when it runs. For example, after
-#' `total = sum(value)`, `across(total, ~ .x * 2)` selects `total`, and
-#' `starts_with("tot")`, `everything()`, `where(is.numeric)`, and `pick()` use
-#' the columns and types then in the local data mask. They also see a changed
-#' type when an earlier summary overwrote an ordinary input column. The output
-#' order follows local dplyr summary order. A lazy input retains the alias
-#' limitations of its backend. marginplyr does not execute it locally to
-#' provide this behavior. Contextual shares keep their own source-selection
-#' rules below.
+#' On a local data frame, a selection in a later summary sees earlier
+#' summaries, as in dplyr: after `total = sum(value)`,
+#' `across(total, ~ .x * 2)` selects `total`. A lazy input retains the alias
+#' limitations of its backend.
 #'
-#' A selection predicate here is refused against the same inputs it is refused
-#' against in `.by` and `.grouping`, for the same reason and with the same
-#' remedy: see *Fixed columns and grouping dimensions*.
-#'
-#' Where an unnamed summary's value is a data frame, a local input expands its
-#' columns into the result, exactly as [dplyr::summarize()] does, and a name
-#' marginplyr assigned such a summary does not appear. Writing a name of your
-#' own packs those columns into a single column under it, again as dplyr does.
-#' A lazy input gives whatever shape its own backend gives.
+#' An unnamed summary whose value is a data frame is unpacked into the result
+#' on a local input, and a named one is packed into one column, as
+#' [dplyr::summarize()] does. A lazy input gives whatever shape its backend
+#' gives.
 #'
 #' Summary results may not overwrite a fixed key or grouping dimension,
-#' including through an unnamed data-frame-valued summary, whose columns dplyr
-#' unpacks to the top level. One you named is checked by that name alone,
-#' because dplyr packs its columns into the single column the name gives.
-#' The local dplyr backend can overwrite an existing variable and reuse a newly
-#' created summary in a later expression, but other backends may not.
-#' marginplyr rejects grouping key overwrites so that grouping identity and
-#' behavior stay portable.
-#' Use a new summary name, or rename the grouping column before this call.
+#' including through an unnamed data-frame-valued summary. Local dplyr allows
+#' it but other backends may not, so marginplyr refuses it everywhere. Use a
+#' new summary name, or rename the grouping column before this call.
 #'
 #' [dplyr::cur_group()], [dplyr::cur_group_id()],
 #' [dplyr::cur_group_rows()], and the deprecated `cur_data*()` helpers are
-#' rejected. They describe one branch-local grouping or data mask, whereas a
-#' margin result combines several grouping sets and their identifiers, row
-#' positions, or columns would not have one global meaning. Use
-#' [grouping_bit()] and [grouping_id()] to identify margin levels. They are
-#' rejected by spelling like the rest, which is stricter than
-#' [dplyr::summarize()]: a caller who has bound `cur_group_id` to a function
-#' of their own still gets the refusal, because reading that binding would
-#' mean resolving a call head against the calling environment.
+#' rejected: each describes one branch's group or data mask, which has no
+#' meaning across the grouping sets the result combines. They are rejected by
+#' name, even when you have bound one to a function of your own.
 #'
-#' marginplyr distinguishes code the data mask evaluates from language data.
-#' An expression captured as language data — the argument of a plainly written
-#' [base::quote()], [base::substitute()], [base::expression()],
-#' [base::bquote()], `rlang::expr()`, or `rlang::quo()` — is a value
-#' the summary carries, so marginplyr neither analyzes nor rewrites what is
-#' inside it: a captured helper name requests nothing, creates no dependency on
-#' an earlier summary, and reaches the backend as written. Evaluating one with
-#' [base::eval()], [rlang::eval_tidy()], or [rlang::eval_bare()] runs it in the
-#' data mask. When the capture is written visibly there, its helper calls are
-#' analyzed and rewritten as the code they become.
+#' An expression captured as language -- the argument of [base::quote()],
+#' [base::substitute()], [base::expression()], `base::bquote()`,
+#' `rlang::expr()`, or `rlang::quo()` -- is a value the summary carries, and
+#' marginplyr does not analyze or rewrite what is inside it. Evaluating it
+#' with [base::eval()] or [rlang::eval_tidy()] runs it in the data mask, where
+#' a visibly written capture is analyzed as the code it becomes. Text parsed
+#' at run time, as by [base::str2lang()], is searched but not rewritten, so a
+#' parsed `grouping_bit()` reaches the helper's own context guard.
 #'
-#' In `bquote()`, the operand of `.()` is evaluated and follows those rules;
-#' the surrounding language stays literal. Splicing with `..()` is refused
-#' when `splice` is enabled or cannot be determined statically. Build that
-#' language outside the Margin verb instead.
-#'
-#' Capture recognition, analysis, and rewriting are static.
-#' `quote()`, `substitute()`, and `expression()` name their primitive plainly,
-#' qualified with `base::` or not. The additional captures require their
-#' qualifier: `base::bquote()`, `rlang::expr()`, and `rlang::quo()`.
-#' Qualified `bquote()`,
-#' `expr()`, and `quo()` also allow parentheses around the head.
-#' Any other spelling — another namespace, or a head computed
-#' at run time — is analyzed as ordinary code, which can refuse a call that
-#' only carries language. Static searches and dependency analysis also follow
-#' evaluated text parsed from a literal by `str2lang()`, `str2expression()`, or
-#' `parse(text = ...)`. Parsed helper calls are not rewritten: for example,
-#' `eval(quote(grouping_bit(region)))` returns the Grouping bit, while
-#' `eval(str2lang("grouping_bit(region)"))` reaches the helper's runtime
-#' context guard, or a caller's own `grouping_bit` binding under ordinary
-#' lookup. A parsed `cur_group_id()` is still found and refused statically.
-#' Language assembled from values unknown statically is not followed.
+#' A misspelled option such as `.margin_lable` reaches this verb through
+#' `...`, where it would become a summary column. A dot-prefixed summary name
+#' that is an option name, or one insertion, deletion, or substitution from
+#' one, is therefore an error naming the option it resembles: `.ids = "set"`
+#' and `.y = mean(v)` are refused, although [dplyr::summarise()] would return
+#' them as columns. A name further away, such as `.margin_lable` or
+#' `.sotr = "last"`, is not caught and becomes a summary column; check option
+#' names when a result has an unexpected column.
 #'
 #' @section Summaries a lazy backend cannot carry:
 #' Two lazy inputs cannot carry back a summary with no columns in it: asked
@@ -666,6 +402,47 @@
 #' the same expressions instead, because a dataset never reads itself into R;
 #' they are otherwise unaffected.
 #'
+#' @section Contextual shares:
+#' [share_of_parent()] and [share_of_total()] calculate a preceding named
+#' numeric scalar summary's ratio to the same summary on another row of the
+#' result, for local data and supported lazy dbplyr and dtplyr inputs. Both
+#' support direct named expressions and a constrained [dplyr::across()] form
+#' for multiple preceding summaries, and both partition the calculation by the
+#' fixed `.by` keys.
+#'
+#' They differ only in the denominator. [share_of_parent()] divides by the
+#' immediate less detailed [rollup()] level, so it requires one pure
+#' [rollup()]; composite dimensions move together, and duplicate occurrences
+#' skip identical sets when choosing the parent. [share_of_total()] divides by
+#' the Grand total set, so it accepts any Grouping specification whose plan
+#' contains one, including [cube()].
+#'
+#' Arrow inputs reject both before a summary query is built; collect the
+#' input first when local share execution is appropriate, and set
+#' `.check_margin_label` explicitly on the re-run.
+#'
+#' A row that is its own denominator receives `1.0`. Missing numerators or
+#' denominators and zero denominators receive `NA_real_`; other finite ratios
+#' are not clamped. Matching is structural, so `.id`, missing grouping values,
+#' and displayed Margin labels do not determine the denominator.
+#'
+#' The source must be a unique, preceding, self-contained integer or double
+#' scalar summary. Local data frames reject an ineligible source before any
+#' share is calculated, and `dtplyr` steps when executed. A dbplyr backend is
+#' asked, without reading your data, whether its SQL dialect converts a value
+#' of another type to a number rather than refusing it; where it converts, or
+#' cannot be asked, the share is refused unless `.check_share_source = FALSE`.
+#' Asking takes at most two queries that reference none of your tables, sent
+#' once per dialect that answers and again on the next share request where it
+#' could not answer. A connection built with a `dbplyr::simulate_*()`
+#' constructor executes nothing and so cannot be asked. Within a transaction
+#' begun through DBI with RPostgres, up to four savepoint statements isolate
+#' these questions, leaving commit or rollback to you.
+#'
+#' [share_of_parent()] is the canonical reference for the complete
+#' direct-expression, source, ordering, value, empty-input, and `across()`
+#' contracts of both helpers.
+#'
 #' @section Arrow inputs:
 #' Arrow's tabular dplyr inputs are a `Table`, `RecordBatch`, `Dataset`,
 #' `RecordBatchReader`, or an `arrow_dplyr_query` built from them. marginplyr's
@@ -685,297 +462,119 @@
 #' refuses it before a row is read. Collect the input first to perform that
 #' operation locally, selecting the columns you need before collecting. A
 #' `Dataset` and a query built on one instead keep Arrow's own
-#' unsupported-expression error. Thus an `arrow_dplyr_query` is described by
-#' its complete source graph, not by its query class alone.
+#' unsupported-expression error.
 #'
 #' A `RecordBatchReader` is one-pass, while a Margin operation may build one
-#' branch per grouping set. [summarize_with_margins()] and
-#' [expand_with_margins()] therefore refuse both the reader and any query whose
-#' source graph contains one. [arrow::as_arrow_table()] consumes every batch
+#' branch per grouping set, so a reader and any query whose source graph
+#' contains one are refused. [arrow::as_arrow_table()] consumes every batch
 #' once and materializes the reusable `Table` those branches require.
-#' `inspect_grouping()` executes no branch, so it accepts both a direct reader
-#' and a reader-backed query without consuming either. It normalizes a direct
-#' reader to an unexecuted Arrow query internally.
+#' [inspect_grouping()] executes no branch, so it accepts both without
+#' consuming either. Other Arrow objects, such as a `Scanner` or an `Array`,
+#' are not dplyr inputs; a Scanner materializes with `$ToTable()`.
 #'
-#' A `Scanner`, `Scalar`, `Array`, `ChunkedArray`, `Schema`, `Field`,
-#' `DataType`, and other non-tabular Arrow objects are not dplyr inputs.
-#' Materialize a Scanner with `$ToTable()` or choose its
-#' `$ToRecordBatchReader()` stream first; convert any other object to a data
-#' frame or lazy dplyr table appropriate to the data it represents.
-#'
-#' The nesting verbs accept neither Arrow input category, because their result
-#' contains a list column. [nest_with_margins()] and
-#' [nest_by_with_margins()] therefore ask you to collect first. Contextual
-#' shares are rejected for every accepted Arrow input before a summary query is
-#' constructed; collect first when local share execution is appropriate. In
-#' either rewrite, collection changes `.check_margin_label`'s default from
-#' `FALSE` to `TRUE`, so choose that policy explicitly on the re-run.
-#'
-#' @section Contextual shares:
-#' [share_of_parent()] and [share_of_total()] calculate a preceding named
-#' numeric scalar summary's ratio to the same summary on another row of the
-#' result, for local data and supported lazy dbplyr and dtplyr inputs. Both
-#' support direct named expressions and a constrained [dplyr::across()] form
-#' for multiple preceding summaries, and both partition the calculation by the
-#' fixed `.by` keys.
-#'
-#' They differ only in the denominator. [share_of_parent()] divides by the
-#' immediate less detailed [rollup()] level, so it requires one pure
-#' [rollup()]; composite dimensions move together, and duplicate occurrences
-#' skip identical sets when choosing the parent. [share_of_total()] divides by
-#' the Grand total set, so it accepts any Grouping specification whose plan
-#' contains one, including [cube()].
-#'
-#' Arrow inputs reject both after expression planning and common
-#' Margin-operation validation but before constructing a summary query. Other
-#' Arrow Margin operations remain supported and lazy, apart from expressions
-#' Arrow's own engine cannot evaluate, which are refused before any row is read.
-#' Explicitly collect an Arrow input first when local
-#' share execution is appropriate.
-#'
-#' A row that is its own denominator receives `1.0`. Missing numerators or
-#' denominators and zero denominators receive `NA_real_`; other finite ratios
-#' are not clamped. Matching is structural, so `.id`, missing grouping values,
-#' and displayed Margin labels do not determine the denominator.
-#'
-#' The source must be a unique, preceding, self-contained integer or double
-#' scalar summary. Lazy execution preserves collision-safe grouping set
-#' metadata through ordinary aggregation, calculates the requested shares
-#' through one shared mapping per denominator kind, and then removes the
-#' metadata before returning the requested column order.
-#'
-#' Local data frames reject an ineligible source before any share is
-#' calculated. `dtplyr` steps stay lazy and report the same conditions during
-#' explicit execution, before an invalid grouping row is emitted. General
-#' dbplyr backends read none of your data to apply the rule: the dialect is
-#' asked whether it converts a value of another type to a number rather than
-#' refusing it — once, where it answers, and again on the next share request
-#' where the question could not be answered — and where it converts, the
-#' share is refused unless
-#' `.check_share_source = FALSE` asks for it anyway. Cardinality remains a
-#' local-and-`dtplyr` rule, because a SQL aggregate returns one value per
-#' grouping row by construction.
-#'
-#' [share_of_parent()] is the canonical reference for the complete
-#' direct-expression, source, ordering, value, empty-input, and `across()`
-#' contracts of both helpers.
-#'
-#' @section Display labels and grouping identity:
-#' `.margin_label` is a display value, not the identity of a grouping set. An
-#' unnamed scalar labels every resolved Margin dimension. A named vector
-#' provides column-specific labels and must cover the resolved dimensions
-#' exactly once; missing, unknown, duplicate, and empty names are rejected, as
-#' are names from `.by`.
-#'
-#' Non-missing labels convert ordinary grouping dimensions to character. A
-#' factor or ordered factor is reconstructed after the Margin operation where
-#' the backend allows it -- see *Result class and attributes*, which owns that
-#' condition -- preserving ordered status and placing a new synthetic level
-#' last by default or first when `.margin_label_position = "first"`. A label
-#' equal to any declared level, used or unused, is rejected before any
-#' grouping set is built wherever marginplyr holds factor-level metadata,
-#' whatever `.check_margin_label` says. Arrow does not retain or restore those
-#' levels: a factor dimension with a non-missing label returns as character, so
-#' an unused declared level is allowed. On Arrow, an observed collision is
-#' refused only when `.check_margin_label = TRUE`: see that argument above.
-#' Reconstruction preserves the distinction between an observation that uses a
-#' factor NA level and an actually missing factor code.
-#'
-#' A lazy Margin result uses the input schema captured when it was built.
-#' Rebuild it after changing column types or factor definitions. Value changes
-#' within the same schema follow ordinary backend execution behavior.
-#' Before local or dtplyr factor processing, marginplyr rejects changed stored
-#' levels, their order, or ordered status for captured keys and carried columns,
-#' including empty factors. This check uses values already being processed;
-#' it adds no schema query and does not promise complete schema-change detection
-#' across backends. SQL retains its ordinary execution errors, and Arrow does
-#' not gain factor-level restoration.
-#'
-#' `NA_character_` and `NULL` both create a typed missing Margin value and do
-#' not create a synthetic factor level. Position is therefore a no-op for
-#' either value, and neither participates in the observed half of collision
-#' validation. What separates them is the declared half: a factor NA level is
-#' a structural conflict for `NA_character_` even when
-#' `.check_margin_label = FALSE`, while `NULL` preserves that level.
-#'
-#' On local data frames, a packed data-frame grouping dimension accepts only
-#' `NULL` or `NA_character_` as its Margin label. Omitting that dimension writes
-#' one row of typed missing inner values, keeping their names and types through
-#' dplyr and vctrs. A non-missing string label is refused; unpack the dimension
-#' into separate columns if it needs display text. As with other columns, this
-#' does not add an attribute-restoration guarantee; see *Result class and
-#' attributes* and ADR 0016.
-#'
-#' A local matrix or higher-dimensional array grouping dimension likewise
-#' accepts only `NULL` or `NA_character_` as its Margin label, including on
-#' empty input. Its omitted rows retain the shape and typed missing components.
-#' A non-missing scalar label cannot represent the key; split it into separate
-#' columns if it needs display text. A matrix or array used only as a fixed
-#' `.by` key needs no Margin label.
-#'
-#' Factor columns follow this contract:
-#'
-#' | Margin label | NA level | Missing value | Result |
-#' |---|---:|---:|---|
-#' | `NA_character_` | yes | yes | Error: NA is already a factor level |
-#' | `NA_character_` | yes | no | Error: NA is already a factor level |
-#' | `NA_character_` | no | yes | Allowed; source missing values and margins require structural identity | # nolint: line_length_linter
-#' | `NA_character_` | no | no | Allowed; use typed missing |
-#' | `NULL` | yes | yes | Allowed; source missing values and margins require structural identity | # nolint: line_length_linter
-#' | `NULL` | yes | no | Allowed; preserve the NA level and use typed missing |
-#' | `NULL` | no | yes | Allowed; source missing values and margins require structural identity | # nolint: line_length_linter
-#' | `NULL` | no | no | Allowed; use typed missing |
-#'
-#' A factor observation that uses an NA level can print as `<NA>` while
-#' `is.na()` is false. A missing factor code has `is.na()` equal to true.
-#' Source missing values and typed-missing Margin values may display
-#' identically, so keep a structural identity column when the difference
-#' matters: `.id` is available from every Margin verb, and
-#' [summarize_with_margins()] can additionally write [grouping_bit()] or
-#' [grouping_id()] as summaries. `.check_margin_label` controls the observed
-#' half of the check, which no row of this table reaches: a typed-missing
-#' label is not a collision, and a label equal to a declared level is refused
-#' by the declared half. Every row above is therefore decided whatever this
-#' argument says. See `.check_margin_label` above for its default and *When
-#' marginplyr queries your data* for why the two halves differ.
+#' Arrow does not hold factor levels in the schema marginplyr reads, so a
+#' non-missing `.margin_label` converts a factor dimension to character, its
+#' levels and ordered status are lost, and a Margin order sorts it by value.
+#' For the same reason, a label equal to an unused declared level is allowed,
+#' and an observed collision is refused only when
+#' `.check_margin_label = TRUE`. `NA_character_` and `NULL` convert nothing.
 #'
 #' @section Database backend coverage:
-#' On live SQLite and DuckDB, identifiers differing only in ASCII letter case
-#' name the same SQL column. A Margin result refuses two public columns that
-#' would coexist under that rule, naming both spellings and asking you to
-#' rename one. This includes fixed keys, dimensions, summary and share outputs,
-#' `.id`, and carried expansion columns. A summary can still replace an unused
-#' source column. Internal SQL aliases are allocated away from equivalent
-#' caller names. Other backends retain their own name rules.
+#' Summaries on DuckDB and PostgreSQL use one native `GROUP BY GROUPING SETS`
+#' query. Other database backends, and every expansion, use a portable
+#' `UNION ALL` query with one branch per grouping set and the same result.
+#' Asking for a Margin order never changes which of the two runs.
 #'
-#' DuckDB and PostgreSQL use native `GROUP BY GROUPING SETS` SQL. Automated
-#' tests execute DuckDB queries against a live in-memory database and verify
-#' PostgreSQL SQL with dbplyr's simulator.
+#' Results are executed and compared with local ones on DuckDB, SQLite, and
+#' Microsoft SQL Server. SQL generation, not execution, is verified for
+#' PostgreSQL, Access, SAP HANA, Hive, Impala, MariaDB, MySQL, Oracle, Amazon
+#' Redshift, Snowflake, Spark SQL, and Teradata, and for generic DBI and ODBC
+#' connections. Arrow and `dtplyr` are also supported lazy backends.
 #'
-#' SQLite is the other live database. It runs the portable `UNION ALL` path
-#' end to end: Parent shares under `summarize_with_margins()`'s
-#' `.check_share_source = FALSE`, a Margin order through direct
-#' [dplyr::collect()], including the missing-value
-#' placement its own ordering would not produce, the observed half of the
-#' Margin label collision check, and the queries [last_sent_queries()]
-#' records. The refusal that argument's default raises on the dialect is
-#' covered there too, and outside that list: it lands before a portable query
-#' is built. Tests that compare rendered SQL also run against that database;
-#' what those establish is what was rendered, which is what a simulator
-#' establishes.
+#' On SQLite and DuckDB, identifiers differing only in ASCII letter case name
+#' the same column, so a result refuses two public columns that would collide
+#' under that rule and names both spellings.
 #'
-#' The portable path is also verified with dbplyr simulators for Access, SAP
-#' HANA, Hive, Impala, MariaDB, Microsoft SQL Server, MySQL, Oracle, Amazon
-#' Redshift, Snowflake, Spark SQL, SQLite, and Teradata, plus generic DBI and
-#' ODBC connections. Simulator coverage verifies SQL generation, not execution
-#' against every database server.
+#' DuckDB stores a factor as an `ENUM`, which marginplyr rebuilds with its
+#' levels; an `ENUM` carries no ordered flag, so an ordered factor returns
+#' unordered. Other SQL backends store a factor as text before marginplyr
+#' reads it.
 #'
-#' Continuous integration also executes the portable path on a live Microsoft
-#' SQL Server 2022 and compares each result with the local one: summaries of
-#' one grouping set and of a rollup over a character or an integer dimension,
-#' with a text or a typed-missing Margin label, and a rollup with a fixed key,
-#' a Total share and a Margin order. Other SQL Server plans rest on the
-#' simulator.
+#' A lazy result's Margin order is the outermost query's `ORDER BY`, which
+#' [dplyr::collect()] and [dplyr::compute()] observe. Whether it survives
+#' later verbs depends on dbplyr's query flattening and is not promised. It is
+#' not a window ordering, so a window function over a sorted result still
+#' needs [dbplyr::window_order()]. For direct [dplyr::compute()] on SQLite,
+#' see *[SQLite materialization][summarize_with_margins]*.
 #'
-#' Arrow and dtplyr are also tested lazy backends, but they are not SQL
-#' database connections.
+#' @section SQLite materialization:
+#' On a live SQLite connection, direct [dplyr::compute()] of a result
+#' returned by [summarize_with_margins()] or [expand_with_margins()] writes a
+#' typed table holding only the public columns, and later dplyr verbs on it
+#' use ordinary dbplyr behavior. A sorted result is read back in Margin order
+#' through an implicit rowid alias, so sorted compute refuses before writing
+#' when the public columns shadow all three of `rowid`, `oid`, and `_rowid_`;
+#' direct collection still works. An unqualified destination name that could
+#' address a different schema, such as a bare persistent name shadowed by a
+#' temporary table, is refused before writing; give an explicit schema or
+#' another name.
+#'
+#' Compute runs inside its own savepoint, so an existing caller transaction
+#' keeps its commit and rollback, whatever `in_transaction` says. If an
+#' ordinary error or a catchable R interrupt arrives before the savepoint is
+#' released, marginplyr restores an overwritten destination's data, schema,
+#' indexes, and affected statistics, or removes a new destination, then
+#' releases the savepoint; source tables and earlier caller work are kept.
+#' This requires a surviving connection and successful cleanup;
+#' [marginplyr_conditions] describes what an interrupt or a failed cleanup
+#' reports.
+#' Once the savepoint is released, the outermost release persists the result
+#' and an inner one leaves it to the caller's commit or rollback.
+#'
+#' There is no recovery guarantee for native SQLite cancellation, which can
+#' abort the whole transaction, nor for invalid connections, process
+#' termination, fatal signals, or a timeout that does not unwind through R.
 #'
 #' @section When marginplyr queries your data:
-#' A successful Margin verb applied to a lazy input builds a query and returns
-#' it unexecuted. [dplyr::show_query()] runs nothing, and no row is read until
-#' you execute the query yourself -- [nest_by_with_margins()] excepted,
-#' because its row-wise return shape exists only locally; see its own
-#' documentation for when it collects.
+#' A Margin verb applied to a lazy input builds a query and returns it
+#' unexecuted. [dplyr::show_query()] runs nothing, and no row is read until
+#' you execute the query yourself.
 #'
-#' The following internal work can reach your connection without being asked
-#' for, without reading source values. This is the rule for every Margin verb,
-#' so each is described against the inputs that can produce it: a verb
-#' accepting no lazy table, or no contextual share, never reaches the one that
-#' depends on it.
+#' Building it can still send internal queries that read no source values:
 #'
 #' - **A zero-row read of the input**, sent only to a backend whose factor
 #'   columns marginplyr must decompose and later restore -- currently
-#'   `dtplyr` and DuckDB -- to recover the levels and column prototypes that
-#'   decomposition loses. It references your table but reads none of it, and
-#'   it is not a shape marginplyr introduced: [dplyr::tbl()] already sends an
-#'   equivalent zero-row read for any table reference, on any dbplyr backend.
-#'   For a derived dtplyr step, marginplyr evaluates isolated zero-row sources
-#'   only when that preserves the step's actual column types and factor levels.
-#'   Otherwise it refuses before processing source rows. To run the upstream
-#'   operations now, call [dplyr::collect()] on the step explicitly and pass
-#'   the resulting data frame.
-#' - **DuckDB catalog-only admission before typed metadata**, when captured
-#'   table names or parsed SQL base relations need resolution, or authored SQL
-#'   function calls need checking for macros that could hide source work.
-#'   This includes ordinary relation names, native function calls and readers
-#'   whose arguments establish their metadata. One query per operation at most
-#'   reads system-catalog table and view names, stored view definitions, macro
-#'   names, SQL keywords, the current database and configured search path.
-#'   Stored views and their dependencies are checked before binding the input;
-#'   opaque macros and calls to `query()` or `query_table()` are refused.
-#'   A data frame registered with `duckdb::duckdb_register()` is admitted, as
-#'   its view reads only that frame; another view without stored SQL is
-#'   refused.
-#'   A direct reader already showing unsafe inference is refused without
-#'   needing a catalog query.
-#'   The catalog query binds no caller relation and reads no source values.
-#'   It is separate from the single zero-row typed snapshot, which follows
-#'   successful admission. Name-only [inspect_grouping()] needs neither query.
+#'   `dtplyr` and DuckDB -- to recover their levels and column prototypes. It
+#'   references your table but reads none of it, as the zero-row read
+#'   [dplyr::tbl()] already sends does. A derived `dtplyr` step whose types
+#'   cannot be found that way is refused; call [dplyr::collect()] on it
+#'   explicitly and pass the data frame.
+#' - **One DuckDB catalog query per operation at most**, reading table and
+#'   view names, stored view definitions, macro names, and the search path, to
+#'   check that the input hides no source work behind a view or macro before
+#'   its types are read. It binds no table of yours. Opaque macros, `query()`,
+#'   `query_table()`, and views without stored SQL are refused, except a data
+#'   frame registered with `duckdb::duckdb_register()`.
 #' - **At most two queries per share request until the SQL dialect answers**,
-#'   sent when a share is requested there with `.check_share_source` at its
-#'   default of `TRUE`, asking whether the dialect converts a
-#'   non-numeric value to a number rather than refusing it. Neither references
-#'   any of your tables, so reading them touches none of your data. The second
-#'   is a control, sent only when the first is rejected, and it distinguishes
-#'   a dialect that refuses from one that could not be asked at all. An
-#'   answer is a property of the dialect, reused for every later connection
-#'   that shares it, so a dialect that answers is asked once and never again.
-#'   A question that could not be answered established nothing about the
-#'   dialect, so nothing is remembered and the next share request there asks
-#'   again: one dropped connection does not refuse your shares for the rest of
-#'   the session. What pays for asking again is a request that is refused
-#'   anyway, since an unanswered question refuses the share. A
-#'   connection that cannot be asked -- one built with a
-#'   `dbplyr::simulate_*()` constructor, which executes nothing -- is treated
-#'   as unable to answer, which refuses the share by default the same way a
-#'   dialect known to convert does; see `.check_share_source` on
-#'   [summarize_with_margins()].
-#'   A transaction begun through DBI with RPostgres adds at most four savepoint
-#'   control statements to isolate these questions, preserving your earlier
-#'   work and leaving commit or rollback to you. They read none of your tables.
+#'   referencing none of your tables; see
+#'   *[Contextual shares][summarize_with_margins]*.
 #'
-#' A query is not safe merely because it returns no rows. A read bounded in
-#' rows is not bounded in what it costs: BigQuery states plainly that a
-#' `LIMIT` does not reduce the bytes billed for a non-clustered table, and no
-#' vendor documentation exempts `LIMIT 0` from that rule.
+#' A query is not safe merely because it returns no rows: some services bill
+#' by the bytes a query scans, and `LIMIT 0` is not exempt. marginplyr cannot
+#' tell a billed connection from a free one, so `.check_margin_label` defaults
+#' to `is.data.frame(.data)` and a lazy input is checked only when asked. The
+#' observed check scans every input row of the checked columns and retrieves
+#' one row of collision counts.
 #'
-#' marginplyr does not try to tell whether a backend bills for a query,
-#' because nothing it can read distinguishes a free connection from a billed
-#' one of the same kind -- a local DuckDB file from a hosted DuckDB service,
-#' or RDS PostgreSQL from Aurora Standard. `.check_margin_label` defaults to
-#' `is.data.frame(.data)`: local data frames are checked by default; lazy
-#' inputs are checked only when asked. That predicate sets a default and does
-#' not classify connection cost. The observed check aggregates collision
-#' counts and retrieves one row, with one count per checked column, rather
-#' than all unique values. A check with no columns sends no query.
-#' [summarize_with_margins()]'s `.check_share_source` reads nothing on any
-#' backend, so it defaults to `TRUE` there.
-#'
-#' With recording enabled before the call,
-#' [last_sent_queries(include_result = FALSE)][last_sent_queries] reads the
-#' SQL prepared for internal work in recording order. Recording adds no query
-#' and does not repeat cached work. These are prepared representations, not
-#' proof of database receipt or completion; missing SQL denotes a failed
-#' diagnostic render. The default view also includes the unexecuted result
-#' SQL, whereas [dplyr::show_query()] shows only the result query. Add
-#' `details = TRUE` to read stored internal outcomes and condition summaries;
-#' an operation's status does not describe the whole public call.
+#' With recording enabled before the call, [last_sent_queries()] lists the
+#' SQL prepared for these internal queries in the order sent.
 #'
 #' @family summarize and expand data with margins
 #' @export
 #' @examples
 #' # Build one monthly management report with store detail, region subtotals,
-#' # and a company total.
+#' # and a company total. `set` numbers the grouping sets: 1 is store detail,
+#' # 2 is the region subtotal, and 3 is the company total for each month.
 #' summarize_with_margins(
 #'   .data = retail_sales,
 #'   units = sum(units),
@@ -985,8 +584,8 @@
 #'   .id = "set"
 #' )
 #'
-#' # `.sort` puts each subtotal with the rows it summarizes and the company
-#' # total last, whatever the Margin label sorts as.
+#' # `.sort` puts each subtotal after the stores it summarizes, and each
+#' # year's company total last within that year.
 #' summarize_with_margins(
 #'   .data = retail_sales,
 #'   revenue = sum(revenue),
@@ -1037,9 +636,8 @@
 #'   .grouping = rollup(region, store),
 #'   .margin_label = c(region = "All regions", store = "All stores")
 #' )
-#' # The retained type is the point of `NULL`, and a plain data frame prints
-#' # the margin row as a bare `NA` whatever `year` now holds. A tibble's type
-#' # header is what shows that `year` is still <int> rather than character.
+#' # With `NULL`, `year` stays an integer and the margin row holds `NA`; a
+#' # tibble's type header shows it.
 #' summarize_with_margins(
 #'   .data = retail_sales,
 #'   revenue = sum(revenue),
@@ -1050,8 +648,8 @@
 #'   dplyr::as_tibble()
 #'
 #' # Ordered factors remain ordered, and a new label is placed by
-#' # `.margin_label_position`. An existing level -- used or unused -- is never
-#' # available for reuse: it is rejected whatever `.check_margin_label` says.
+#' # `.margin_label_position`. An existing level -- used or unused -- is
+#' # rejected as a label.
 #' priority_data <- data.frame(
 #'   priority = ordered(
 #'     c("standard", "premium"),
@@ -1063,8 +661,7 @@
 #'   .data = priority_data,
 #'   total = sum(value),
 #'   .grouping = rollup(priority),
-#'   .margin_label = "unused",
-#'   .check_margin_label = FALSE
+#'   .margin_label = "unused"
 #' ))
 #' priority_result <- summarize_with_margins(
 #'   .data = priority_data,
@@ -1076,10 +673,9 @@
 #' is.ordered(priority_result$priority)
 #' levels(priority_result$priority)
 #'
-#' # A typed-missing Margin label displays as missing wherever the column
-#' # already does, so the margin row and a real missing-value row print alike;
-#' # `grouping_bit()` tells them apart. A named list chooses per dimension,
-#' # which is the only spelling that can label one and leave another missing.
+#' # A typed-missing Margin label prints like a real missing value, and
+#' # `grouping_bit()` tells them apart. A named list can label one dimension
+#' # and leave another missing.
 #' status_data <- data.frame(
 #'   region = c("east", "east", "west"),
 #'   status = factor(c("active", NA, "active"), levels = c("active", "idle")),
@@ -1116,9 +712,8 @@
 #'   revenue_percent = 100 * revenue_share
 #' )
 #'
-#' # Empty unpartitioned input has one Grand total set row, whose share is
-#' # one; fixed `.by` input has no partitions. Both retain a double
-#' # Parent-share column.
+#' # Empty input without `.by` still has one Grand total row, whose share is
+#' # one; with `.by` it has no rows. Both keep a double share column.
 #' empty_sales <- retail_sales[0, ]
 #' empty_grand_total <- summarize_with_margins(
 #'   .data = empty_sales,
@@ -1156,15 +751,12 @@
 #'     collapse = ", "
 #'   ),
 #'   .by = year,
-#'   .grouping = rollup(region)
-#' ) |>
-#'   dplyr::arrange(year, region)
+#'   .grouping = rollup(region),
+#'   .sort = "last"
+#' )
 #'
-#' # DuckDB executes a native GROUP BY GROUPING SETS query. The guard shipped
-#' # with marginplyr keeps this example runnable without DuckDB, and withholds
-#' # it just the same when the installed DuckDB is older than the version
-#' # DESCRIPTION requires -- `shared_home` below is an error there, not a
-#' # degraded result.
+#' # DuckDB executes a native GROUP BY GROUPING SETS query.
+#' # Runs only when a recent enough DuckDB is installed.
 #' source(system.file("suggests", "guard.R", package = "marginplyr"))
 #' if (
 #'   marginplyr_suggest_available("DBI") &&
@@ -1186,9 +778,9 @@
 #'     revenue = sum(revenue, na.rm = TRUE),
 #'     level = grouping_id(region, store),
 #'     .by = c(year, month),
-#'     .grouping = rollup(region, store)
-#'   ) |>
-#'     dplyr::arrange(year, month, region, store)
+#'     .grouping = rollup(region, store),
+#'     .sort = "last"
+#'   )
 #'
 #'   dplyr::show_query(query)
 #'   result <- dplyr::collect(query)
