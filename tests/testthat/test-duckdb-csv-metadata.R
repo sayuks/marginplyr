@@ -548,6 +548,114 @@ test_that("CSV replacement guards follow SQL relation positions", {
   }
 })
 
+test_that("PIVOT synonyms and file statements refuse CSV before binding", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  wide <- function(keyword, source) {
+    dplyr::tbl(con, dbplyr::sql(paste(
+      keyword, source, "ON g IN ('a', 'b') USING first(v) GROUP BY k"
+    )), vars = c("k", "a", "b"))
+  }
+  long <- function(keyword, source) {
+    dplyr::tbl(con, dbplyr::sql(paste(
+      keyword, source, "ON v INTO NAME name VALUE value"
+    )), vars = c("k", "g", "name", "value"))
+  }
+  stem <- sub("[.]csv$", "", path)
+  spellings <- c(
+    DBI::dbQuoteString(con, path), DBI::dbQuoteIdentifier(con, path),
+    DBI::dbQuoteString(con, paste0(stem, ".tsv.gz")),
+    DBI::dbQuoteString(con, paste0(stem, ".csv.zst")),
+    DBI::dbQuoteString(con, file.path(dirname(path), "*.csv")),
+    paste0("$path$", path, "$path$")
+  )
+  writeLines(c("k,g,v", "x,a,1", "x,b,2"), path)
+  for (spelling in spellings) {
+    for (input in list(wide("PIVOT_WIDER", spelling),
+                       long("pivot_longer", spelling))) {
+      expect_error(
+        inspect_grouping(input, .grouping = grouping_set(where(is.numeric))),
+        "DuckDB CSV input", fixed = TRUE, class = "marginplyr_error"
+      )
+      expect_duckdb_catalog_only()
+      expect_error(
+        inspect_grouping(input, .by = where(is.numeric)),
+        "DuckDB CSV input", fixed = TRUE, class = "marginplyr_error"
+      )
+      expect_duckdb_catalog_only()
+      expect_error(
+        summarize_with_margins(input, n = dplyr::n(), .grouping = rollup(k)),
+        "DuckDB CSV input", fixed = TRUE, class = "marginplyr_error"
+      )
+      expect_duckdb_catalog_only()
+      expect_error(
+        expand_with_margins(input, .grouping = rollup(k)),
+        "DuckDB CSV input", fixed = TRUE, class = "marginplyr_error"
+      )
+      expect_duckdb_catalog_only()
+    }
+  }
+  # The JSON family is decided by suffix, as it is for PIVOT.
+  json <- DBI::dbQuoteString(con, paste0(stem, ".json"))
+  for (keyword in c("PIVOT", "PIVOT_WIDER")) {
+    expect_error(
+      inspect_grouping(wide(keyword, json), .by = where(is.numeric)),
+      "DuckDB JSON input", fixed = TRUE, class = "marginplyr_error"
+    )
+    expect_duckdb_catalog_only()
+  }
+  # SUMMARIZE, DESCRIBE and SHOW sniff a CSV file to report its columns.
+  for (keyword in c("SUMMARIZE", "DESCRIBE", "SHOW")) {
+    statement <- dplyr::tbl(con, dbplyr::sql(paste0(
+      "SELECT column_name, column_type FROM (", keyword, " ",
+      DBI::dbQuoteString(con, path), ")"
+    )), vars = c("column_name", "column_type"))
+    expect_error(
+      inspect_grouping(statement, .by = where(is.character)),
+      "DuckDB CSV input", fixed = TRUE, class = "marginplyr_error"
+    )
+    expect_duckdb_catalog_only()
+  }
+
+  # Established schemas keep one typed plan whatever the file holds.
+  DBI::dbWriteTable(con, "pivot_source", data.frame(
+    k = "x", g = c("a", "b"), v = c("1", "2")
+  ))
+  explicit <- paste0(
+    "read_csv(", DBI::dbQuoteString(con, path),
+    ", columns = {'k': 'VARCHAR', 'g': 'VARCHAR', 'v': 'VARCHAR'},",
+    " auto_detect = false, header = true)"
+  )
+  for (value in c("2", "source_tail")) {
+    writeLines(c("k,g,v", "x,a,1", paste0("x,b,", value)), path)
+    for (source in c("pivot_source", explicit)) {
+      for (keyword in c("PIVOT_WIDER", "PIVOT_LONGER")) {
+        input <- if (keyword == "PIVOT_WIDER") wide(keyword, source) else
+          long(keyword, source)
+        expect_identical(inspect_grouping(
+          input, .grouping = grouping_set(where(is.character))
+        )$included, if (keyword == "PIVOT_WIDER") "(k, a, b)" else
+          "(k, g, name, value)")
+        expect_identical(last_sent_queries(details = TRUE)$purpose,
+                         c("relation_catalog", "selection_proxy"))
+      }
+    }
+  }
+  for (keyword in c("SUMMARIZE", "DESCRIBE", "SHOW")) {
+    statement <- dplyr::tbl(con, dbplyr::sql(paste0(
+      "SELECT column_name, column_type FROM (", keyword, " pivot_source)"
+    )), vars = c("column_name", "column_type"))
+    expect_identical(inspect_grouping(
+      statement, .grouping = grouping_set(where(is.character))
+    )$included, "(column_name, column_type)")
+  }
+})
+
 test_that("CSV replacement guards preserve ordinary values and non-CSV files", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
