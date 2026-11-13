@@ -562,6 +562,28 @@ test_that("value-function names reaching no caller macro stay admitted", {
   }
 })
 
+test_that("a system macro reaches a caller macro through any overload", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  DBI::dbExecute(con, "CREATE MACRO hidden_first() AS 1")
+  catalog <- duckdb_metadata_catalog(con)
+  # No overloaded system macro is reachable from a value-function name, so a
+  # second overload of current_user's macro is appended after the real one,
+  # whose stored definition calls nothing.
+  first <- duckdb_metadata_catalog_match(
+    "current_user", catalog, kinds = c("macro", "table_macro")
+  )
+  expect_false(duckdb_macro_reaches_caller(first, catalog))
+  overload <- function(definition) {
+    row <- catalog[first, ]
+    row$definition <- definition
+    rbind(catalog, row)
+  }
+  expect_true(duckdb_macro_reaches_caller(first, overload("hidden_first()")))
+  expect_false(duckdb_macro_reaches_caller(first, overload("lower('a')")))
+})
+
 test_that("verbatim SQL carriers cannot hide a CSV source", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
