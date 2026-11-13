@@ -852,7 +852,7 @@ test_that("plain-frame index and sorted attributes remain dataset metadata", {
   }
 })
 
-test_that("frame-level tsp stays only on nested cells of the input's width", {
+test_that("nested cells carry native cells' metadata, tsp at full width", {
   skip_if_suggest_absent("tidyr")
   skip_if_suggest_absent("dtplyr")
   source <- data.frame(a = c("x", "x", "y"), b = c("p", "q", "p"), v = 1:3)
@@ -874,10 +874,22 @@ test_that("frame-level tsp stays only on nested cells of the input's width", {
       out
     }
   )
-  # Row-wise nesting carries dataset metadata only to its keyless set.
-  cells_of <- function(result, verb) {
-    result <- dplyr::collect(result)
-    if (verb == "nest_by") result$data[result$a == "Total"] else result$data
+  # The native reference cell of each grouping set: `tidyr::nest()` for
+  # nesting and local `dplyr::nest_by()` for row-wise nesting.
+  native_cells <- function(input, verb) {
+    if (verb == "nest") {
+      detail <- dplyr::collect(tidyr::nest(input, data = -a))
+      total <- dplyr::collect(tidyr::nest(input, data = dplyr::everything()))
+    } else {
+      input <- dplyr::collect(input)
+      detail <- dplyr::nest_by(input, a)
+      total <- dplyr::nest_by(input)
+    }
+    c(stats::setNames(detail$data, detail$a), list(Total = total$data[[1L]]))
+  }
+  sorted_metadata <- function(cell) {
+    metadata <- frame_metadata(cell)
+    metadata[sort(names(metadata))]
   }
   verbs <- list(
     nest = function(input, keep) {
@@ -889,19 +901,18 @@ test_that("frame-level tsp stays only on nested cells of the input's width", {
   )
   for (kind in names(inputs)) {
     for (verb in names(verbs)) {
-      # A direct data.table's tidyr::nest() cells carry no dataset metadata.
-      carries <- verb == "nest_by" || kind != "data.table"
+      native <- native_cells(inputs[[kind]](), verb)
       for (keep in c(FALSE, TRUE)) {
-        cells <- cells_of(verbs[[verb]](inputs[[kind]](), keep), verb)
-        expect_length(cells, if (verb == "nest_by") 1L else 3L)
-        if (!carries) next
-        for (cell in cells) {
-          info <- paste(kind, verb, keep)
-          expect_identical(attr(cell, "note", exact = TRUE), "Dataset note",
-                           info = info)
-          expected <- if (ncol(cell) == ncol(source)) c(1, 3, 1)
-          expect_identical(attr(cell, "tsp", exact = TRUE), expected,
-                           info = info)
+        result <- dplyr::collect(verbs[[verb]](inputs[[kind]](), keep))
+        expect_identical(result$a, c("x", "y", "Total"))
+        for (i in seq_along(result$data)) {
+          cell <- result$data[[i]]
+          info <- paste(kind, verb, keep, result$a[[i]])
+          expected <- sorted_metadata(native[[result$a[[i]]]])
+          # The documented difference: a cell narrower than the input omits
+          # the `tsp` its native cell carries.
+          if (ncol(cell) != ncol(source)) expected$tsp <- NULL
+          expect_identical(sorted_metadata(cell), expected, info = info)
         }
       }
     }
