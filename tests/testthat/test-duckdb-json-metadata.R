@@ -431,9 +431,11 @@ test_that("JSON preflight follows joins and ignores SQL values and comments", {
     ", auto_detect=false, columns={'k':'INTEGER'} /* records=true */",
     ", auto_detect=false, columns={'k':'INTEGER'}, records='auto'",
     ", columns={'k':'INTEGER'}, dateformat='records=true'",
-    # DuckDB before 2.0 applies the last occurrence of a repeated option.
+    # A repeated option is refused whichever occurrence would apply.
     ", columns={'k':'INTEGER'}, records=true, records='auto'",
+    ", columns={'k':'INTEGER'}, records='auto', records=true",
     ", auto_detect=false, records=true, auto_detect=true",
+    ", auto_detect=true, records=true, auto_detect=false",
     ", auto_detect=false, records=true, union_by_name=true"
   )) {
     source <- dplyr::tbl(con, dbplyr::sql(paste0(
@@ -490,7 +492,6 @@ test_that("JSON readers disabling inference pass the guard without a schema", {
   for (arguments in c(
     ", auto_detect = false, records = true",
     ", auto_detect := false, records := false",
-    ", auto_detect = true, records = true, auto_detect = false",
     ", auto_detect = false, records = true, union_by_name = false"
   )) {
     source <- dplyr::tbl(con, dbplyr::sql(paste0(
