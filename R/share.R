@@ -7331,7 +7331,7 @@ scope_caller_frame <- function(depth, scope) {
     index <- index + (frame$caller %||% 1L)
     depth <- depth - 1L
   }
-  if (depth == 0L && index <= length(scope)) index else NULL
+  index
 }
 
 # Positive literal depth for a recognized base `parent.frame()` or
