@@ -265,8 +265,8 @@ If cleanup fails, its error takes precedence: `$cleanup` holds the failed
 rollback or release condition, and `$parent` holds the triggering error or
 interrupt outcome. Further caught interrupts neither retry cleanup nor replace
 an observed cleanup failure. The fields and the boundary for conditions raised
-inside your calling handlers are described under *Errors and warnings* in the
-[package reference](https://sayuks.github.io/marginplyr/man/marginplyr-package.html).
+inside your calling handlers are described in the
+[condition reference](https://sayuks.github.io/marginplyr/man/marginplyr_conditions.html).
 
 Successful release ends restoration responsibility, even if an interrupt
 prevents the R value reaching you. Outermost release persists the completed

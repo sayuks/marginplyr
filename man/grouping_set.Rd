@@ -42,7 +42,7 @@ A Grouping specification for use in \code{.grouping}.
 These constructors describe SQL-style grouping operations for the
 \code{.grouping} argument of \code{\link[=summarize_with_margins]{summarize_with_margins()}} and related verbs.
 Start with \code{\link[=rollup]{rollup()}} when the report follows a hierarchy such as
-store to region to company. Use \code{\link[=grouping_sets]{grouping_sets()}} for an exact selection of
+company to region to store. Use \code{\link[=grouping_sets]{grouping_sets()}} for an exact selection of
 levels, and \code{\link[=cube]{cube()}} only when every combination is useful.
 }
 \details{
@@ -57,8 +57,35 @@ grouping set of one combined with every grouping set of the next — like
 comma-separated SQL \verb{GROUP BY} items.
 }
 
+\code{\link[=rollup]{rollup()}} reads its arguments in order, so list levels coarsest first:
+\code{rollup(region, store)} gives (region, store), (region), and (). Written
+the other way round, \code{rollup(store, region)} gives store totals and no
+region subtotal.
+
 A \code{\link[=grouping_set]{grouping_set()}} nested directly inside \code{\link[=rollup]{rollup()}} or \code{\link[=cube]{cube()}} is a
 composite dimension. Its columns are added or removed together.
+
+Each form expands to these grouping sets. A \code{\link[=rollup]{rollup()}} of n dimensions
+gives n + 1 sets, a \code{\link[=cube]{cube()}} gives 2^n, and a \code{\link[=grouping_spec]{grouping_spec()}} the
+product of its arguments' counts:\tabular{ll}{
+   Form \tab Expands to \cr
+   \code{rollup(a, b)} \tab (a, b), (a), () \cr
+   \code{cube(a, b)} \tab (a, b), (a), (b), () \cr
+   \code{grouping_sets(a, b)} \tab (a), (b): each argument is one set \cr
+   \code{grouping_sets(c(a, b))} \tab (a, b) \cr
+   \code{grouping_spec(rollup(a), b)} \tab (a, b), (b) \cr
+   \code{cube(grouping_set(a, b), c)} \tab (a, b, c), (a, b), (c), () \cr
+}
+
+
+\code{\link[=inspect_grouping]{inspect_grouping()}} lists the sets any specification expands to, and
+\emph{Choose the grouping operation} in the \href{https://sayuks.github.io/marginplyr/vignettes/get_started.html}{Get started guide} works
+through each form.
+
+A column that belongs in every grouping set, such as a reporting month, is
+best passed as the Margin verb's \code{.by}. Written inside \code{\link[=grouping_spec]{grouping_spec()}}
+it is a grouping dimension instead, so the plan has no Grand total set and
+\code{\link[=share_of_total]{share_of_total()}} and \code{\link[=share_of_parent]{share_of_parent()}} are refused.
 
 A resolved Grouping plan can be read back in four ways: \code{.id},
 \code{\link[=inspect_grouping]{inspect_grouping()}}\verb{$set_id}, \code{\link[=grouping_bit]{grouping_bit()}}, and \code{\link[=grouping_id]{grouping_id()}}.
@@ -81,17 +108,11 @@ selection containing something it cannot select, and is refused as one —
 unless the input has a column named \code{s}, when the selection takes that
 column, as any selection does with a name the data holds.
 
-A recognized constructor call runs the function in your captured environment,
-once per argument occurrence and public call, and keeps its first answer.
-Bare and explicitly qualified calls use the same selection context:
-local data exposes its actual columns; supported lazy inputs expose their
-schema or isolated zero-row columns. A call proven to need only column names
-runs before typed metadata is acquired. Other calls wait for that metadata,
-along with later arguments; earlier settled selection errors can therefore
-take precedence over their conditions or side effects. If a faithful typed
-context cannot be obtained safely, the call is refused before your function
-runs, even if it would return a name-only specification. Collect the input
-explicitly and pass the resulting data frame in that case.
+A recognized constructor call runs once per argument occurrence, in your
+environment, against the input's columns: a data frame's own columns, or a
+lazy input's schema. If a lazy input cannot supply its column types safely,
+a call that needs them is refused before it runs; collect the input and
+pass the resulting data frame instead.
 
 An argument left empty gets neither reading, and is refused naming the
 constructor and the position: \code{grouping_sets(, region)} reports that its
@@ -171,6 +192,8 @@ independent_totals <- summarize_with_margins(
   ),
   .duplicates = "drop"
 )
+# Dropping the duplicate leaves one grand total row.
+dplyr::filter(independent_totals, year == "Total", region == "Total")
 
 # Keeping duplicates intentionally returns the grand total once per
 # occurrence of the empty set.
@@ -206,6 +229,9 @@ combined_totals <- summarize_with_margins(
   revenue = sum(revenue),
   .grouping = combined_specification
 )
+# With month and store removed, four of the nine sets remain: year by
+# region, year, region, and the grand total.
+dplyr::filter(combined_totals, month == "Total", store == "Total")
 
 # A nested grouping_set() is a composite dimension: region and store are
 # included or removed together. Tidy-select expressions are also accepted.

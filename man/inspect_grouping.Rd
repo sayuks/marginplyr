@@ -48,6 +48,17 @@ A local, ungrouped tibble with columns \code{set_id}, \code{fixed},
 \code{.by}, and \code{.grouping} without executing a Margin operation. The result is
 always a local, ungrouped, ordinary tibble, including for lazy inputs.
 }
+\section{Option arguments}{
+
+\code{.duplicates} and \code{.format} each take one of their listed strings, spelled
+in full. An abbreviation is not shorthand for the value it begins, and
+\code{NULL} is not shorthand for the default: both are errors naming the values
+the argument accepts. For the default, leave the argument out or pass the
+whole vocabulary as the signature spells it, such as
+\code{.format = c("text", "list")}; any other vector of more than one value is
+an error.
+}
+
 \section{Grouping identity}{
 
 \code{set_id} is the one-based Grouping set identifier exposed by \code{.id} for the
@@ -77,6 +88,9 @@ has no custom printer, and works with normal dplyr, export, and
 snapshot-testing workflows. Its rows are always in Grouping-plan order.
 That inspection guarantee does not imply physical result order for a Margin
 operation.
+}
+
+\section{Lazy inputs}{
 
 A lazy \code{.data} still returns a local tibble without reading source rows:
 inspection uses captured column metadata and the backend-independent
@@ -98,12 +112,12 @@ scans such as \verb{FROM 'path.csv'}. Supply an explicit CSV schema with
 The Grouping plan is deliberately separate
 from a SQL execution plan. Use \code{\link[dplyr:show_query]{dplyr::show_query()}} for generated SQL and
 backend-native tools for an optimizer plan. With recording enabled before
-inspection, \link[=last_sent_queries]{last_sent_queries(include_result = FALSE)}
-shows its prepared internal SQL, such as DuckDB's catalog-only admission and
+inspection, \code{\link[=last_sent_queries]{last_sent_queries(include_result = FALSE)}}
+shows its prepared internal SQL, such as DuckDB's system-catalog check and
 zero-row metadata read, in recording order. It performs no query on access;
 missing SQL denotes a failed diagnostic render, not proof of database
 receipt or completion. Add
-\code{details = TRUE} for each owned internal operation's outcome and conditions.
+\code{details = TRUE} for each internal operation's outcome and conditions.
 
 Because inspection builds no grouping-set branch, it also accepts a dtplyr
 step with an input rooted at \code{dtplyr::lazy_dt(immutable = FALSE)} and leaves
@@ -117,32 +131,6 @@ plan to choose which grouping set to keep, and joins one against \code{.id} to
 name the set behind every row. Because the plan is local, that join needs a
 \code{copy} argument when the Margin result is lazy, and it does not preserve a
 Margin order.
-}
-
-\section{Option arguments}{
-
-An argument documented as taking one of a listed set of strings —
-\code{.duplicates}, \code{.margin_label_position}, and \code{.sort} on the Margin verbs,
-and \code{.format} on \code{\link[=inspect_grouping]{inspect_grouping()}} — takes one of those strings, spelled
-in full. An abbreviation is not shorthand for the value it begins, and
-\code{NULL} is not shorthand for the default: both are errors naming the values
-the argument accepts.
-
-To ask for the default, leave the argument out, or pass the whole
-vocabulary exactly as the signature spells it. The second form lets a
-function of your own repeat the signature and hand the argument on:
-
-\if{html}{\out{<div class="sourceCode r">}}\preformatted{my_report <- function(data, .sort = c("none", "last", "first")) \{
-  summarize_with_margins(
-    data, revenue = sum(revenue),
-    .grouping = rollup(region), .sort = .sort
-  )
-\}
-}\if{html}{\out{</div>}}
-
-Any other vector of more than one value is an error, a reordering of the
-vocabulary included. A wrapper that would rather not track the signature
-resolves the value itself and passes one string.
 }
 
 \section{Arrow inputs}{
