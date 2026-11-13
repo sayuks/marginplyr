@@ -3,7 +3,8 @@
 #' `share_of_parent()` and `share_of_total()` are contextual summary helpers
 #' for [summarize_with_margins()]. Each divides one preceding named numeric
 #' scalar summary by the same summary on another row of the same result. Only
-#' the denominator differs:
+#' the denominator differs: `share_of_parent()` divides by the row's
+#' immediate rollup parent, and `share_of_total()` by the grand total.
 #'
 #' | Helper | Denominator | Accepted `.grouping` |
 #' |---|---|---|
@@ -282,6 +283,12 @@
 #' result but are skipped while finding the next coarser parent, because a
 #' parent must be strictly less detailed.
 #'
+#' For `rollup(region, store)`, a store's parent is its region subtotal, a
+#' region subtotal's parent is the grand total, and the grand total's Parent
+#' share is `1.0` in each `.by` partition. In the first example below, Boston
+#' in January 2025 has `3600 / 7500 = 0.48`: its revenue over the East
+#' subtotal for that month.
+#'
 #' A Total share's denominator is the Grand total set. Every row of it,
 #' duplicate occurrences included, has a Total share of `1.0`, even when its
 #' source is zero or missing. Which grand total occurrence supplies the
@@ -302,21 +309,30 @@
 #' [keys]: https://sayuks.github.io/marginplyr/vignettes/completing_keys.html
 #'
 #' @section Lazy execution boundaries:
-#' Share execution supports local data frames and lazy dbplyr and dtplyr
-#' inputs, including composite dimensions. Lazy results remain lazy. Each
+#' On a dbplyr input, what decides whether a share runs is how the SQL dialect
+#' treats a source summary of the wrong type:
+#'
+#' - A dialect that refuses one itself, such as DuckDB, computes the share.
+#'   An ineligible source reaches you as the database's own error.
+#' - A dialect that converts one to a number instead, such as SQLite, and a
+#'   connection that executes nothing, such as a `dbplyr::simulate_*()`
+#'   connection used for [dplyr::show_query()], refuse the share by default.
+#'   `.check_share_source = FALSE` calculates it from sources you have
+#'   established yourself.
+#'
+#' The rest of this section says how that is established. Local data frames
+#' and dtplyr steps need neither, and composite dimensions are supported
+#' everywhere shares are. Lazy results remain lazy. Each
 #' share uses the source value displayed on its denominator row, including
 #' when the source summary is stateful or nondeterministic. SQL shares require
 #' window-function support. A dialect without it, such as Access, reports an
 #' unsupported window when rendering or executing the query. Explicitly
 #' collect that input first to calculate shares locally.
-#' On live SQLite, direct [dplyr::collect()] keeps a declared double share
-#' when the result is empty or a finite prefix contains only missing shares.
-#' Direct [dplyr::compute()] writes a typed table containing only public
-#' columns, and a sorted result
-#' reads back in Margin order. A sorted compute refuses before writing when
-#' public columns shadow all SQLite rowid aliases. Later dplyr verbs use
-#' ordinary dbplyr behavior, including its ordering rules. See
-#' [summarize_with_margins()] for destination and transaction details.
+#' With `.check_share_source = FALSE` on live SQLite, direct
+#' [dplyr::collect()] keeps a declared double share when the result is
+#' empty or a finite prefix contains only missing shares.
+#' For direct [dplyr::compute()], see
+#' *[SQLite materialization][summarize_with_margins]*.
 #'
 #' Syntax, source-name, written-order, and `across()` errors are always
 #' reported locally, before execution, on every backend. The eligible-type
@@ -428,6 +444,7 @@
 #' @export
 #' @examples
 #' # Both denominators in one call: the parent level, and the whole.
+#' # Boston in January 2025 has a Parent share of 0.48 = 3600 / East 7500.
 #' summarize_with_margins(
 #'   .data = retail_sales,
 #'   revenue = sum(revenue),

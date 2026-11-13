@@ -178,8 +178,8 @@ test_that("a misspelled option names the argument it resembles", {
 test_that("a short name beside a short option is refused, unlike summarise()", {
   # `.by` and `.id` are short enough that one insertion or deletion reaches
   # names native `summarise()` would return as columns. The refusal is the
-  # documented difference in *Option arguments*, and a dot-prefixed name
-  # further from every option is still a column.
+  # documented difference in *Relationship to dplyr summaries*, and a
+  # dot-prefixed name further from every option is still a column.
   for (verb in list(summarize_with_margins, summarise_with_margins)) {
     for (case in list(c(".y", ".by"), c(".i", ".id"))) {
       spliced <- stats::setNames(list(quote(mean(v))), case[[1L]])

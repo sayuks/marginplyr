@@ -365,6 +365,13 @@ markers <- list(
     "share_of_total",
     "Completion stays in the lazy input pipeline",
     "Record the SQL marginplyr prepares",
+    # The dialect question's row and its handled condition, from the record
+    # chunk's printed tibbles. Both appear only when that chunk is the page's
+    # first DuckDB share request, since a cached answer records neither, so a
+    # chunk moved after another share request fails here rather than rendering
+    # an empty record.
+    "share_dialect         errored",
+    "1 invocation handled",
     # The verification section, which states no scope of its own: the
     # `summarize_with_margins()` reference owns that, so a marker naming a
     # backend here would pin a restatement this section does not carry.
@@ -427,6 +434,10 @@ markers <- list(
     "before a row is read, and names the two rewrites that compute it",
     "Database backend coverage",
     "Microsoft SQL Server",
+    # The single home of the SQLite `compute()` contract, by its anchor: the
+    # database guide links it with this fragment, so a heading change that
+    # moved the id would leave that link landing at the top of the page.
+    "id=\"sqlite-materialization\"",
     "NA is already a factor level",
     "cannot select any column named in the complete Grouping plan",
     "cur_group_id"
@@ -442,9 +453,6 @@ markers <- list(
     # cross-reference.
     "Errors and warnings",
     "is the only package-specific class marginplyr promises",
-    "handler boundary.",
-    "$replay_error",
-    "$cleanup",
     "Recording the SQL marginplyr prepares",
     "switches the record on",
     # The Guides list, by its heading and by one entry's href. No entry's text
@@ -454,6 +462,13 @@ markers <- list(
     # sidebar links the same vignette relatively.
     "Guides",
     "https://sayuks.github.io/marginplyr/vignettes/completing_keys.html"
+  ),
+  # The condition contract `?marginplyr` links to. Each field is quoted by
+  # the section stating it, and the boundary by the sentence naming it.
+  "docs/man/marginplyr_conditions.html" = c(
+    "handler boundary.",
+    "$replay_error",
+    "$cleanup"
   ),
   "docs/man/inspect_grouping.html" = c(
     "Formats and ordinary tibble behavior",
@@ -487,7 +502,7 @@ markers <- list(
     "at most two queries"
   ),
   "docs/man/nest_with_margins.html" = c(
-    "Relationship to tidyr and dplyr",
+    "Differences from nest()",
     "original, pre-margin values",
     "Nesting does not support",
     "No input column name is reserved"

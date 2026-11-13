@@ -29,7 +29,14 @@
 #' @return A local, ungrouped tibble with columns `set_id`, `fixed`,
 #'   `included`, `omitted`, `grouping_bits`, and `grouping_id`.
 #'
-#' @inheritSection summarize_with_margins Option arguments
+#' @section Option arguments:
+#' `.duplicates` and `.format` each take one of their listed strings, spelled
+#' in full. An abbreviation is not shorthand for the value it begins, and
+#' `NULL` is not shorthand for the default: both are errors naming the values
+#' the argument accepts. For the default, leave the argument out or pass the
+#' whole vocabulary as the signature spells it, such as
+#' `.format = c("text", "list")`; any other vector of more than one value is
+#' an error.
 #'
 #' @section Grouping identity:
 #' `set_id` is the one-based Grouping set identifier exposed by `.id` for the
@@ -58,6 +65,7 @@
 #' That inspection guarantee does not imply physical result order for a Margin
 #' operation.
 #'
+#' @section Lazy inputs:
 #' A lazy `.data` still returns a local tibble without reading source rows:
 #' inspection uses captured column metadata and the backend-independent
 #' Grouping plan. Predicates in `.by` and `.grouping` use that metadata, not
@@ -78,12 +86,12 @@
 #' The Grouping plan is deliberately separate
 #' from a SQL execution plan. Use [dplyr::show_query()] for generated SQL and
 #' backend-native tools for an optimizer plan. With recording enabled before
-#' inspection, [last_sent_queries(include_result = FALSE)][last_sent_queries]
-#' shows its prepared internal SQL, such as DuckDB's catalog-only admission and
+#' inspection, [`last_sent_queries(include_result = FALSE)`][last_sent_queries]
+#' shows its prepared internal SQL, such as DuckDB's system-catalog check and
 #' zero-row metadata read, in recording order. It performs no query on access;
 #' missing SQL denotes a failed diagnostic render, not proof of database
 #' receipt or completion. Add
-#' `details = TRUE` for each owned internal operation's outcome and conditions.
+#' `details = TRUE` for each internal operation's outcome and conditions.
 #'
 #' Because inspection builds no grouping-set branch, it also accepts a dtplyr
 #' step with an input rooted at `dtplyr::lazy_dt(immutable = FALSE)` and leaves
