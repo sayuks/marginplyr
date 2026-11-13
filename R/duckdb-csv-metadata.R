@@ -473,11 +473,12 @@ duckdb_call_head <- function(tokens, head) {
     !attr(tokens, "quoted")[[head + 1L]]
 }
 
-# Whether the macro at catalog row `index` is a caller's, or one of DuckDB's
-# own scalar macros whose stored definition calls or names a function that
-# reaches one. A system macro's free names resolve in the caller's search path
-# and, inside a stored view, the view's `namespace`; every overload sharing the
-# row's name is checked.
+# Whether the macro at catalog row `index` may reach source work: TRUE for a
+# caller's macro or any table macro, whose body this does not read, and for one
+# of DuckDB's own scalar macros whose stored definition calls or names a
+# function that reaches one of those. A system macro's free names resolve in
+# the caller's search path and, inside a stored view, the view's `namespace`;
+# every overload sharing the row's name is checked.
 duckdb_macro_reaches_caller <- function(index, catalog, namespace = NULL,
                                         seen = integer()) {
   if (duckdb_caller_macros(catalog)[[index]] ||
