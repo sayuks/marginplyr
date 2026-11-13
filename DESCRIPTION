@@ -7,8 +7,8 @@ Authors@R:
 Description: Provides 'dplyr'-compatible tools for 'SQL'-style 'GROUPING SETS',
     'ROLLUP', and 'CUBE' summaries, including arbitrary grouping sets, totals,
     subtotals, Grouping identifiers, and Parent and Total shares.
-    Rows can also be expanded or nested once per grouping set. Summaries on
-    'DuckDB' and 'PostgreSQL' use native grouping sets; other database
+    Rows can also be expanded or nested once per grouping set. Most summaries
+    on 'DuckDB' and 'PostgreSQL' use native grouping sets; other database
     backends, and every expansion, use a 'UNION ALL' fallback. Local data
     frames and lazy tables are supported.
 License: MIT + file LICENSE

@@ -3,9 +3,10 @@
 #' marginplyr extends [dplyr::summarize()] with SQL-style `GROUPING SETS`,
 #' `ROLLUP`, and `CUBE` summaries: totals, subtotals, and arbitrary grouping
 #' combinations, with Grouping identifiers to tell the resulting grains
-#' apart. Local data frames and lazy tables are supported. Summaries on
+#' apart. Local data frames and lazy tables are supported. Most summaries on
 #' DuckDB and PostgreSQL use native grouping sets; other database backends,
-#' and every expansion, use a `UNION ALL` fallback.
+#' and every expansion, use a `UNION ALL` fallback. The *Database and lazy
+#' backends* guide lists the summaries that also take the fallback.
 #'
 #' @section Get started:
 #' Store detail, region subtotals, and a company total from one call:

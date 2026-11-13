@@ -78,8 +78,8 @@ shows `.sort` at work and what it does not promise.
 
 - Works with local data frames and lazy `dbplyr` tables.
 
-- Summarizes with native `GROUP BY GROUPING SETS` on DuckDB and
-  PostgreSQL.
+- Runs most summaries on DuckDB and PostgreSQL as native
+  `GROUP BY GROUPING SETS`.
 
 - Uses a portable `UNION ALL` fallback for other SQL dialects and for
   every row expansion.
@@ -397,12 +397,11 @@ postgres_sales |>
 #> ) AS "q01"
 ```
 
-Summaries on DuckDB and PostgreSQL use native grouping sets; other
-database backends, and every expansion, use a `UNION ALL` fallback.
 Simulation verifies generated SQL but does not claim live execution
 against every database server. The [database
 guide](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
-shows native SQL, fallback SQL, live DuckDB execution, and `collect()`.
+shows native SQL, which queries take the fallback, live DuckDB
+execution, and `collect()`.
 
 ## Keep the rows behind each total
 

@@ -349,7 +349,11 @@ branch per grouping set with `UNION ALL`:
 - every other SQL dialect, even where the database itself supports
   `GROUPING SETS`; Redshift, Snowflake, SQL Server, Oracle, Spark SQL, and
   MySQL all receive the portable query;
-- a PostgreSQL summary with `.duplicates = "keep"`, which DuckDB keeps native;
+- a `.duplicates = "keep"` summary on PostgreSQL, and on DuckDB when it also
+  names `.id` or computes a share, since each occurrence then has to be
+  numbered;
+- a summary that places a Grouping helper inside an aggregate or window
+  function, such as `sum(grouping_bit(region) * revenue)`;
 - every `expand_with_margins()` call, DuckDB and PostgreSQL included.
 
 The portable query begins with a branch that returns zero rows, `WHERE (0)` on
