@@ -1,6 +1,7 @@
 # Eight-lane workflow hunt: generated cases, recent fixes, PostgreSQL, types, contracts, dialects, composition and mutants
 
 Investigated: 2026-11-13
+Revised: 2026-11-13 — the triage decisions and replays recorded under *Revisions (2026-11-13)* in this note
 Repository snapshot: `6165f4768400a28520cc8977e056da0db49a32ed`
 
 The investigation ran against freshly fetched main in one worktree. No package
@@ -314,6 +315,69 @@ restate "it leaves as it found it". The default-check rendering was
 byte-identical to native dplyr running the same check, apart from the call. No
 installed class tried — hilo, interval, period, hms, integer64, blob,
 `numeric_version`, POSIXlt, `list_of` — lacks a character form.
+
+## Revisions (2026-11-13)
+
+A triage pass the same day decided the four tickets above, as the maintainer
+then delegated, and replayed candidate answers in memory without editing the
+checkout. Each decision lives on its ticket; this section holds what the
+replays established and what changed.
+
+- **A stored view over a table function.** #1651 was decided as a repair: a
+  view's definition is held to the rule the same SQL meets when authored. With
+  the one stored-view condition changed in memory to refuse a function relation
+  only when it is `query` or `query_table`, views over `read_parquet()`,
+  `range()` and `unnest()`, and a view over such a view, returned the
+  hand-computed rows; views over `query('SELECT * FROM <csv>')`,
+  `read_csv_auto()`, a CSV replacement scan, a table macro and a scalar macro
+  stayed refused. The ticket carries `ready-for-agent`.
+- **A translated macro call.** #1650 was decided as a repair: a caller-defined
+  macro reached by the metadata statement is refused in every spelling. A check
+  of R call heads refused `mutate(y = hidden_first(v))` but cannot see what a
+  translation emits: with a caller macro named `lower`, `tolower(g)` rendered
+  `LOWER(g)` and reached it. `sql_render.marginplyr_duckdb_selection()` holds
+  the rendered zero-row statement once, inside the collect path; scanning that
+  text there refused the translated call, the same call in a join's y input,
+  `tolower()` under the caller macro and a `DBI::SQL()` CSV subquery, and kept
+  the typed plans of ordinary translated, joined and windowed pipelines. The
+  ticket carries `ready-for-agent`, is blocked by #1654, and took over #1648,
+  which was closed as its duplicate.
+- **DuckDB's own macros, found by that replay.** The same scan refused
+  `na_if()`, which dbplyr renders as `NULLIF()`, and the reason held for
+  authored SQL at the snapshot: `SELECT g, nullif(v, 0) AS v FROM t`, a view
+  over it, and `date_add()`, `list_sum()`, `array_to_string()` and
+  `current_database()` were refused as macro calls in a database holding no
+  caller macro, while the `CASE` spelling and `coalesce()` returned `(v)`.
+  `duckdb_functions()` listed 114 scalar and 4 table macro names, all in
+  database `system`, and `duckdb_metadata_catalog()` reads them without
+  distinction. A refuter on claude-opus-5-5 at high effort overturned the
+  coordinator's premise that such a macro cannot hide source work, with two
+  cases the coordinator then replayed: `histogram_values('<csv>', k)` is
+  defined over `query_table()` and its zero-row type followed a data row, and a
+  caller macro named `list_aggr` made the zero-row type of `list_sum([v])`
+  follow one, because a system macro's body resolves its names in the caller's
+  search path. What survived is the refusal when the catalog holds no caller
+  macro. It was filed as
+  [#1654](https://github.com/sayuks/marginplyr/issues/1654) with `bug` and
+  `ready-for-agent`; its script is `duckdb-built-in-macro-refusal.R`. Only the
+  statically linked extensions were loaded.
+- **A macro called without parentheses.** The same refuter reported, and the
+  coordinator replayed, that with a caller macro named `current_user`,
+  `SELECT current_user AS u, v FROM t` gave `(u, v)` then `(v)`, where
+  `current_user()` was refused. It was added to #1647, whose scan it escapes.
+- **A share's name reached through a function value.** The behaviour stands:
+  the header of `is_reflective_lookup()` already declines to follow a function
+  held as a value, ADR 0010 promises the "statically detectable" errors, and a
+  caller-level alias is invisible to any static walk. What is wrong is the
+  header's sentence that such a value "is safe", measured for
+  `sapply(c("share"), get)` only. #1652 was narrowed to removing that claim
+  and carries `documentation` and `ready-for-agent`.
+- **The blamed call of a failed label conversion.** #1653 was closed as
+  `wontfix`. The refusal is native and correct; ADR 0021 scopes the
+  restatement to the caller's own expressions and `CONTEXT.md` leaves a
+  context that cannot be restated as it was found; moving the call alone would
+  pair the Margin verb with an argument line the caller did not write; and the
+  message names the dimension and the cause, the standard #454 was closed on.
 
 ## Rejected candidates
 
