@@ -140,9 +140,11 @@ test_that("nested scalar and query calls are checked in authored spellings", {
   DBI::dbExecute(con, paste(
     "CREATE MACRO hidden_scalar() AS (SELECT k FROM (", reader_sql, "))"
   ))
+  # The literal schema admits the reader spelling, so only the catalog read
+  # can show that read_csv is this macro.
   DBI::dbExecute(con, paste(
-    "CREATE MACRO read_csv(filename, auto_detect := false) AS TABLE",
-    reader_sql
+    "CREATE MACRO read_csv(filename, auto_detect := false, columns := NULL)",
+    "AS TABLE", reader_sql
   ))
   statements <- c(
     "SELECT * FROM nested_reader()",
@@ -155,7 +157,7 @@ test_that("nested scalar and query calls are checked in authored spellings", {
     'SELECT main."hidden_scalar"() AS k',
     "SELECT * FROM over()", "SELECT * FROM filter()",
     paste0("SELECT * FROM read_csv(", DBI::dbQuoteString(con, path),
-           ", auto_detect=false)"),
+           ", auto_detect=false, columns={'k': 'INTEGER'})"),
     paste0("SELECT * FROM query(", DBI::dbQuoteString(con, reader_sql), ")"),
     paste0('SELECT * FROM system.main."query"(',
            DBI::dbQuoteString(con, reader_sql), ")")
