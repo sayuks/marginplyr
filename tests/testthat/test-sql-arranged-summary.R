@@ -148,6 +148,5 @@ test_that("DuckDB sorts a typed-missing summary over a window-ordered input", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
-  expect_window_ordered_typed_missing_summary(con)
+  expect_window_ordered_summary(con)
 })
-

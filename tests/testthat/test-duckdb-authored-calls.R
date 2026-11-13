@@ -513,7 +513,7 @@ test_that("value-function names reaching no caller macro stay admitted", {
   con <- duckdb_test_connection()
   on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
   columns <- c("user", "current_user", "session_user", "current_role",
-             "current_catalog", "current_schema")
+               "current_catalog", "current_schema")
   frame <- data.frame(v = c(1L, 2L))
   frame[columns] <- "a"
   DBI::dbWriteTable(con, "t", frame)

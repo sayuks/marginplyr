@@ -7,7 +7,7 @@ library(testthat)
 source("tests/testthat/helper-sql-arranged-summary.R")
 con <- DBI::dbConnect(RPostgres::Postgres())
 tryCatch(
-  expect_window_ordered_typed_missing_summary(con),
+  expect_window_ordered_summary(con),
   finally = DBI::dbDisconnect(con)
 )
 cat("PostgreSQL typed-missing summary over a window-ordered input: passed\n")

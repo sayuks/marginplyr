@@ -2,7 +2,7 @@
 # typed-missing Margin label keeps the input's window ordering in the native
 # summary up to the Margin order, where a term over a column the result lacks
 # would reach its ORDER BY (#1641).
-expect_window_ordered_typed_missing_summary <- function(con) {
+expect_window_ordered_summary <- function(con) {
   remote <- dplyr::copy_to(
     con,
     data.frame(f = c("p", "p", "q", "q", "p"), a = c("x", "x", "y", "y", "x"),
