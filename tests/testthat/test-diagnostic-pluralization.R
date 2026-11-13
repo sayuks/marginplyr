@@ -295,7 +295,7 @@ test_that("the unknown `.by` invariant pluralizes its column noun", {
     compile_grouping_spec(
       rollup(region),
       "region",
-      .by = by,
+      fixed = fixed_keys(by),
       duplicates_choices = margin_duplicates_choices
     )
   }

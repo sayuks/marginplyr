@@ -1989,7 +1989,7 @@ test_that("selectors and fixed .by columns are resolved once", {
   plan <- compile_grouping_spec(
     rollup(tidyselect::all_of(selected)),
     data_vars = c("year", "a", "b", "value"),
-    .by = "year",
+    fixed = fixed_keys("year"),
     duplicates_choices = margin_duplicates_choices
   )
 
@@ -2629,7 +2629,7 @@ test_that("invalid or ambiguous specifications fail early", {
     compile_grouping_spec(
       rollup(a),
       "a",
-      .by = "a",
+      fixed = fixed_keys("a"),
       duplicates_choices = margin_duplicates_choices
     ),
     "both `.by` and `.grouping`"
@@ -2681,7 +2681,7 @@ test_that("an unknown `.by` column fails outside the public contract", {
     compile_grouping_spec(
       rollup(region),
       "region",
-      .by = "nope",
+      fixed = fixed_keys("nope"),
       duplicates_choices = margin_duplicates_choices
     )
   )

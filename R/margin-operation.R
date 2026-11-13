@@ -317,17 +317,12 @@ prepare_margin_operation <- function(.data,
         duplicates_choices = duplicates_choices,
         builds_margin_branches = TRUE,
         validate_grouping = validate_grouping,
-        validate_plan_names = function(by, dimensions, data_vars, complete,
-                                       by_from_groups) {
+        validate_plan_names = function(fixed, dimensions, data_vars, complete) {
           if (!is.null(validate_plan_names)) {
-            validate_plan_names(
-              by, dimensions, data_vars, complete, by_from_groups
-            )
+            validate_plan_names(fixed, dimensions, data_vars, complete)
           }
           if (complete) {
-            validate_margin_label_names(
-              .margin_label, dimensions, by, by_from_groups
-            )
+            validate_margin_label_names(.margin_label, dimensions, fixed)
           }
         },
         validate_names = function(data_vars) {
@@ -441,8 +436,9 @@ validate_margin_operation <- function(operation) {
         colSums(operation$plan$grouping_masks) > 0L
       ],
       backend = operation$backend,
-      by = operation$plan$by,
-      by_from_groups = operation$plan$by_from_groups,
+      fixed = fixed_keys(
+        operation$plan$by, operation$plan$by_from_groups
+      ),
       .margin_label = operation$margin_label,
       margin_labels = operation$margin_labels,
       .check_margin_label = operation$check_margin_label,
