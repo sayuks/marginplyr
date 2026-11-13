@@ -826,16 +826,20 @@ test_that("PIVOT synonyms and file statements refuse CSV before binding", {
   # SUMMARIZE, DESCRIBE and SHOW sniff a CSV file to report its columns,
   # with or without TABLE before it.
   for (keyword in c("SUMMARIZE", "DESCRIBE", "SHOW", "SUMMARIZE TABLE",
-                    "DESCRIBE TABLE")) {
-    statement <- dplyr::tbl(con, dbplyr::sql(paste0(
-      "SELECT column_name, column_type FROM (", keyword, " ",
-      DBI::dbQuoteString(con, path), ")"
-    )), vars = c("column_name", "column_type"))
-    expect_error(
-      inspect_grouping(statement, .by = where(is.character)),
-      "DuckDB CSV input", fixed = TRUE, class = "marginplyr_error"
-    )
-    expect_duckdb_catalog_only()
+                    "DESCRIBE TABLE", "SHOW TABLE")) {
+    for (sql in c(
+      paste0("SELECT column_name, column_type FROM (", keyword, " ",
+             DBI::dbQuoteString(con, path), ")"),
+      paste(keyword, DBI::dbQuoteString(con, path))
+    )) {
+      statement <- dplyr::tbl(con, dbplyr::sql(sql),
+                              vars = c("column_name", "column_type"))
+      expect_error(
+        inspect_grouping(statement, .by = where(is.character)),
+        "DuckDB CSV input", fixed = TRUE, class = "marginplyr_error"
+      )
+      expect_duckdb_catalog_only()
+    }
   }
 
   # Established schemas keep one typed plan whatever the file holds.
@@ -863,7 +867,7 @@ test_that("PIVOT synonyms and file statements refuse CSV before binding", {
     }
   }
   for (keyword in c("SUMMARIZE", "DESCRIBE", "SHOW", "SUMMARIZE TABLE",
-                    "DESCRIBE TABLE")) {
+                    "DESCRIBE TABLE", "SHOW TABLE")) {
     statement <- dplyr::tbl(con, dbplyr::sql(paste0(
       "SELECT column_name, column_type FROM (", keyword, " pivot_source)"
     )), vars = c("column_name", "column_type"))
