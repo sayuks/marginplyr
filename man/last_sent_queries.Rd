@@ -12,8 +12,8 @@ includes the prepared, unexecuted result SQL. \code{FALSE} selects internal
 rows only, whatever their purpose names.}
 
 \item{details}{One nonmissing logical value. \code{FALSE} (the default) returns
-the two columns \code{purpose} and \code{sql}. \code{TRUE} selects the stored diagnostic details;
-it does not enable capture or repeat work.}
+the two columns \code{purpose} and \code{sql}. \code{TRUE} selects the stored
+diagnostic details; it does not enable capture or repeat work.}
 }
 \value{
 A tibble in recording order. By default its two character columns

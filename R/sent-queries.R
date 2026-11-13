@@ -285,8 +285,8 @@ with_sent_query <- function(purpose, query, expr,
 #'   includes the prepared, unexecuted result SQL. `FALSE` selects internal
 #'   rows only, whatever their purpose names.
 #' @param details One nonmissing logical value. `FALSE` (the default) returns
-#'   the two columns `purpose` and `sql`. `TRUE` selects the stored diagnostic details;
-#'   it does not enable capture or repeat work.
+#'   the two columns `purpose` and `sql`. `TRUE` selects the stored
+#'   diagnostic details; it does not enable capture or repeat work.
 #' @return A tibble in recording order. By default its two character columns
 #'   are `purpose` and `sql`. With `details = TRUE` the columns are `purpose`,
 #'   `sql`, `source`, `status`, and `conditions`, in that order. The first four
