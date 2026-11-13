@@ -153,6 +153,31 @@ check_raw_sql_order_inputs <- function(con) {
     dplyr::arrange(source, dbplyr::sql("random()")),
     dplyr::arrange(source, dbplyr::sql("v DESC"))
   )
+  # A join keeps its x side's window order on a query that is not a select
+  # query (#1640). The lookup matches one key, so each join kind returns
+  # different rows.
+  lookup <- dplyr::copy_to(
+    con, data.frame(g = "a", lab = "A"), "raw_order_lookup"
+  )
+  ordered_x <- list(
+    head(dplyr::arrange(source, dbplyr::sql("v DESC NULLS LAST")), 3L),
+    head(dplyr::arrange(source, 1L), 3L),
+    dplyr::arrange(source, dbplyr::sql("v DESC"))
+  )
+  joins <- list(
+    dplyr::left_join, dplyr::inner_join, dplyr::right_join,
+    dplyr::full_join, dplyr::semi_join, dplyr::anti_join
+  )
+  for (join in joins) {
+    for (x in ordered_x) {
+      inputs <- c(inputs, list(join(x, lookup, by = "g")))
+    }
+  }
+  joined <- dplyr::left_join(ordered_x[[1L]], lookup, by = "g")
+  inputs <- c(inputs, list(
+    dplyr::filter(joined, .data$v > 1L),
+    dplyr::group_by(joined, .data$lab)
+  ))
   calls <- list(
     list(.grouping = rollup("g"), .id = "set", .sort = "none"),
     list(.grouping = rollup("g"), .id = "set", .sort = "first"),
@@ -174,10 +199,19 @@ check_raw_sql_order_inputs <- function(con) {
     data <- as.data.frame(data)
     dplyr::arrange(data, !!!rlang::syms(names(data)))
   }
-  for (input in inputs) {
+  # dbplyr warns that a join's unlimited x-side ORDER BY is ignored, as the
+  # native collect() of the same input does.
+  muffle_ignored_order <- function(w) {
+    if (grepl("ORDER BY is ignored", conditionMessage(w), fixed = TRUE)) {
+      invokeRestart("muffleWarning")
+    }
+  }
+  for (input in inputs) withCallingHandlers({
     local <- dplyr::collect(input)
     for (verb in names(verbs)) {
       for (args in calls) {
+        # A grouped input's groups are its `.by`, which refuses a second one.
+        if (dplyr::is_grouped_df(local) && !is.null(args$.by)) next
         info <- paste(verb, deparse1(args))
         build <- function() verbs[[verb]](input, args)
         # ADR 0020 permits DuckDB's zero-row selection proxy.
@@ -210,5 +244,5 @@ check_raw_sql_order_inputs <- function(con) {
         class = "marginplyr_error"
       )
     }
-  }
+  }, warning = muffle_ignored_order)
 }

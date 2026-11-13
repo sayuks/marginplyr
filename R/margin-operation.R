@@ -413,10 +413,12 @@ drop_unlimited_sql_order <- function(data) {
 # Drop the window-order terms of a SQL input that name no column: a raw
 # `sql()` string or a constant. dbplyr's `select()` cannot rename such a term
 # and fails in `rename_order()` (#1622), while a Margin result names no
-# column for it either. The ORDER BY clause is untouched.
+# column for it either. The ORDER BY clause is untouched. A join query holds
+# its x side's window order as a select query does, so the top node's class
+# does not decide (#1640).
 drop_columnless_window_order <- function(data) {
   if (!inherits(data, "tbl_lazy") ||
-        !inherits(data$lazy_query, "lazy_select_query")) {
+        is.null(data$lazy_query$order_vars)) {
     return(data)
   }
   data$lazy_query$order_vars <- Filter(
