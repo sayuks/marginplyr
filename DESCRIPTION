@@ -6,8 +6,10 @@ Authors@R:
            role = c("aut", "cre", "cph"))
 Description: Provides 'dplyr'-compatible tools for 'SQL'-style 'GROUPING SETS',
     'ROLLUP', and 'CUBE' summaries, including arbitrary grouping sets, totals,
-    subtotals, and Grouping identifiers. Confirmed database backends use native
-    grouping sets; other lazy backends use a 'UNION ALL' fallback. Local data
+    subtotals, Grouping identifiers, and Parent and Total shares.
+    Rows can also be expanded or nested once per grouping set. Summaries on
+    'DuckDB' and 'PostgreSQL' use native grouping sets; other database
+    backends, and every expansion, use a 'UNION ALL' fallback. Local data
     frames and lazy tables are supported.
 License: MIT + file LICENSE
 URL: https://sayuks.github.io/marginplyr/, https://github.com/sayuks/marginplyr

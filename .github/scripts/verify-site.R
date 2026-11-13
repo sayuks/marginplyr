@@ -365,6 +365,13 @@ markers <- list(
     "share_of_total",
     "Completion stays in the lazy input pipeline",
     "Record the SQL marginplyr prepares",
+    # The dialect question's row and its handled condition, from the record
+    # chunk's printed tibbles. Both appear only when that chunk is the page's
+    # first DuckDB share request, since a cached answer records neither, so a
+    # chunk moved after another share request fails here rather than rendering
+    # an empty record.
+    "share_dialect         errored",
+    "1 invocation handled",
     # The verification section, which states no scope of its own: the
     # `summarize_with_margins()` reference owns that, so a marker naming a
     # backend here would pin a restatement this section does not carry.
