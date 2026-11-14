@@ -14,7 +14,7 @@ jobs:
     steps:
       # github-script supplies authenticated Octokit without installing R or
       # dependencies in this privileged, checkout-free control workflow.
-      - uses: actions/github-script@v8
+      - uses: actions/github-script@v9
         with:
           retries: 0
           script: |
