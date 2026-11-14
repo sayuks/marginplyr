@@ -5532,7 +5532,7 @@ scope_carried_closures <- function(parts, scope, lookup) {
 # Whether every definition the call may run -- a local closure, a caller
 # function read without forcing a binding, or the function a caller `::`
 # returns -- is visible, passes definition_returns_fresh(), and calls only
-# base functions where it runs.
+# base functions where it runs, none of which the expression rebinds.
 scope_callee_returns_fresh <- function(expr, scope, lookup) {
   closure <- scope_call_closure(expr, scope, lookup)
   head <- static_call_head(expr)
@@ -5542,7 +5542,6 @@ scope_callee_returns_fresh <- function(expr, scope, lookup) {
     list(caller_callee_definition(head, scope, lookup))
   }
   calls_base <- function(names) {
-    # A qualified head names a package, which base does not bind.
     if (!all(vapply(names, exists, logical(1), envir = baseenv(),
                     inherits = FALSE))) {
       return(FALSE)
@@ -5575,10 +5574,13 @@ caller_callee_definition <- function(head, scope, lookup) {
 }
 
 # Whether each name resolves to its base function from the environment the
-# caller function a call head names runs its body in. The frame of a
-# qualified head's operator is read only when the operator's whole body is
-# the function literal, so that its formals are the frame's only bindings.
+# caller function a call head names runs its body in, and the expression
+# rebinds none of the names. The frame of a qualified head's operator is read
+# only when the operator's whole body is the function literal, so that its
+# formals are the frame's only bindings.
 caller_callee_calls_base <- function(head, names, scope, lookup) {
+  rebound <- lookup$function_rebound %||% lookup$rebound
+  if (any(c(names, unresolved_lookup_name()) %in% rebound)) return(FALSE)
   head <- unparenthesized_value(head)
   if (rlang::is_call(head, c("::", ":::"))) {
     fn <- caller_function(rlang::as_string(head[[1L]]), scope, lookup)
@@ -5681,14 +5683,15 @@ definition_returns_fresh <- function(definition) {
 }
 
 # Whether evaluating an expression runs no code and names nothing: a
-# constant, a function literal whose formals and body name nothing, or a
-# `list()` or `c()` of such values.
+# constant, a function literal whose formals and body name nothing, or an
+# unqualified `list()` or `c()` of such values.
 is_inert_value <- function(expr) {
   expr <- unparenthesized_value(expr)
   if (!is.call(expr)) return(!is.name(expr))
   if (is_closed_function_literal(expr)) return(TRUE)
   name <- static_call_name(expr)
-  !is.null(name) && name %in% c("list", "c") &&
+  !is.null(name) && is.null(static_call_ns(expr)) &&
+    name %in% c("list", "c") &&
     all(vapply(static_call_args(expr), is_inert_value, logical(1)))
 }
 

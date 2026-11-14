@@ -2012,3 +2012,65 @@ test_that("a caller function returns a fresh value only as one literal", {
     data, list(rlang::new_quosure(qualified, braced)), 7
   )
 })
+
+test_that("a caller function's callees rebound by the expression refuse", {
+  data <- known_closure_transfer_data()
+  withr::defer(
+    rm(list = intersect("list", ls(globalenv())), envir = globalenv())
+  )
+  rebinding <- quote(function(...) {
+    .Primitive("list")(get("x", envir = parent.frame()))
+  })
+  writes <- list(
+    bquote(assign("list", .(rebinding), envir = environment(CALL))),
+    bquote(assign("list", .(rebinding), envir = globalenv())),
+    bquote(assign("list", .(rebinding), pos = 1))
+  )
+  forms <- lapply(writes, function(write) {
+    bquote((function(prior) {
+      f <- function() sum(prior)
+      .(write)
+      h <- CALL(f)[[1]]
+      rm(prior)
+      h()
+    })(11))
+  })
+  expressions <- lapply(forms, function(form) {
+    rlang::new_quosure(form, rlang::env(
+      rlang::global_env(), CALL = function(x) list(function() 7)
+    ))
+  })
+  # The call is built so that no undeclared package name is spelled in source.
+  qualified_head <- call("::", as.name("pkg"), as.name("fresh"))
+  qualified <- bquote((function(prior) {
+    f <- function() sum(prior)
+    assign("list", .(rebinding), envir = environment(`::`))
+    h <- .(qualified_head)(f)[[1]]
+    rm(prior)
+    h()
+  })(11))
+  expressions <- c(expressions, list(rlang::new_quosure(qualified, rlang::env(
+    `::` = function(package, name) function(x) list(function() 7)
+  ))))
+  expect_transfer_dependencies(data, expressions)
+})
+
+test_that("a qualified list or c in a caller function's literal refuses", {
+  data <- known_closure_transfer_data()
+  # The call is built so that no undeclared package name is spelled in source,
+  # and refusing it needs no package installed.
+  qualified_c <- call("::", as.name("class"), as.name("c"))
+  caller <- rlang::env(rlang::global_env())
+  caller$CALL <- rlang::new_function(
+    alist(x = ), rlang::call2(qualified_c, quote(function() 7)), caller
+  )
+  expect_transfer_dependencies(data, list(rlang::new_quosure(
+    quote((function(prior) {
+      f <- function() sum(prior)
+      h <- CALL(f)[[1]]
+      rm(prior)
+      h()
+    })(11)),
+    caller
+  )))
+})
