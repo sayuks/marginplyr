@@ -1,4 +1,4 @@
-test_that("only a literal positional removal keeps a special input measure", {
+test_that("a literal removal keeps a special input measure", {
   skip_if_suggest_absent("dtplyr")
   # dtplyr imports data.table; only one optional backend is required.
   input <- data.table::data.table(f = c("P", "P"), g = c("a", "b"),
@@ -17,11 +17,12 @@ test_that("only a literal positional removal keeps a special input measure", {
   })())))
   expect_identical(kept$observed, c(1, 3, 2))
   expect_identical(kept$fraction, c(0.25, 0.75, 1))
-  # Named arguments and computed names can remove the measure itself.
+  # A name computed at run time can remove the measure itself.
   for (read in alist(
     (function() {
       other <- 1
-      rm(list = "other")
+      name <- "other"
+      rm(list = name)
       mean(.BY)
     })(),
     (function() {
