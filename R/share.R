@@ -4724,6 +4724,9 @@ call_part_symbols <- function(expr, scope, lookup) {
     reads <- scope_promise_symbols(name, scope, lookup, function_lookup = TRUE)
     scope <- scope_after_promise(name, scope, lookup, function_lookup = TRUE)
   }
+  if (is.null(closure) && is_unresolved_local_callee(call_head, scope)) {
+    reads <- c(reads, scope_removed_names(scope))
+  }
   local <- implicit_local_parts(expr, call_name, scope, lookup)
   if (!is.null(local)) {
     return(unique(c(
@@ -4747,6 +4750,53 @@ call_part_symbols <- function(expr, scope, lookup) {
     scope <- scope_after_possible_removals(parts[[index]], scope, lookup)
   }
   unique(reads)
+}
+
+# Whether a call with no resolved closure invokes, or selects from, a local
+# binding marked opaque by `scope_bind_local()`. The closure it may hold reads
+# names removed from its frame through the mask, and which closure runs is
+# unknown, so the invocation is answered with every removed name (#130,
+# #1666). A computed head is followed to the object it indexes.
+is_unresolved_local_callee <- function(head, scope) {
+  head <- unparenthesized_value(head)
+  while (rlang::is_call(head, c("$", "[[", "@", ".subset2", "getElement")) &&
+           length(head) >= 2L) {
+    head <- unparenthesized_value(head[[2L]])
+  }
+  if (!is_name_part(head)) return(FALSE)
+  name <- rlang::as_name(head)
+  for (index in scope_visible_frames(scope)) {
+    frame <- scope[[index]]
+    if (name %in% frame$bound) return(name %in% frame$opaque)
+  }
+  FALSE
+}
+
+# Whether a value expression can carry a closure value the walk does not
+# resolve: it holds function syntax or names a binding with a tracked closure
+# or closure list.
+scope_mentions_closure <- function(value, scope) {
+  if (!is.language(value)) return(FALSE)
+  if ("function" %in% all.names(value)) return(TRUE)
+  for (name in all.names(value)) {
+    for (index in scope_visible_frames(scope)) {
+      frame <- scope[[index]]
+      if (!name %in% frame$bound) next
+      if (!is.null(frame$closures[[name]]) ||
+            !is.null(frame$closure_lists[[name]]) ||
+            name %in% frame$opaque) {
+        return(TRUE)
+      }
+      break
+    }
+  }
+  FALSE
+}
+
+# Names a visible base removal took from any frame of the walk; the lookup
+# marker stands for a removal whose names are unknown.
+scope_removed_names <- function(scope) {
+  unique(as.character(unlist(lapply(scope, `[[`, "removed"))))
 }
 
 # Read evaluated leaves of a deferred selector in the caller's scope.
@@ -6403,6 +6453,15 @@ scope_bind_local <- function(scope, name, value = NULL, lookup = NULL,
     static_environment_frame(value, value_scope, lookup)
   )
   scope[[1L]]$bound <- union(scope[[1L]]$bound, name)
+  scope[[1L]]$removed <- setdiff(scope[[1L]]$removed, name)
+  # A closure carried through an unresolved transfer is invoked unseen.
+  opaque <- is.null(closure) && is.null(elements) && !missing(value) &&
+    scope_mentions_closure(value, value_scope)
+  scope[[1L]]$opaque <- if (opaque) {
+    union(scope[[1L]]$opaque, name)
+  } else {
+    setdiff(scope[[1L]]$opaque, name)
+  }
   scope[[1L]]$defaults[name] <- NULL
   scope[[1L]]$arguments[name] <- NULL
   scope[[1L]]$kinds[[name]] <- if (!is.null(closure)) {
@@ -6511,7 +6570,12 @@ scope_after_carrier_write <- function(scope, target, value, lookup,
     if (rlang::is_zap(elements)) return(scope)
     carrier_changed <- !identical(elements, parent)
   }
-  if (is.null(elements)) return(scope_bind_local(scope, name))
+  if (is.null(elements)) {
+    # An unproven setter result may still carry the list's closures.
+    scope <- scope_bind_local(scope, name)
+    scope[[1L]]$opaque <- union(scope[[1L]]$opaque, name)
+    return(scope)
+  }
   scope_bind_closure_list(scope, name, elements)
 }
 
@@ -7203,6 +7267,8 @@ scope_possible_losses <- function(scope, after) {
   Map(function(before, reached) {
     bound <- intersect(before$bound, reached$bound)
     frame <- retain_scope_bindings(before, bound)
+    frame$removed <- union(before$removed, reached$removed)
+    frame$opaque <- intersect(union(before$opaque, reached$opaque), bound)
     stable <- vapply(names(frame$kinds), function(name) {
       identical(frame$kinds[[name]], reached$kinds[[name]])
     }, logical(1))
@@ -7293,6 +7359,11 @@ scope_after_removal_call <- function(expr, scope, lookup) {
     bound <- scope[[index]]$bound
     retained <- if (is.null(removed)) character() else setdiff(bound, removed)
     scope[[index]] <- retain_scope_bindings(scope[[index]], retained)
+    scope[[index]]$removed <- union(
+      scope[[index]]$removed,
+      if (is.null(removed)) unresolved_lookup_name() else
+        setdiff(bound, retained)
+    )
     if (!is.null(removed)) {
       removed <- setdiff(removed, bound)
     }

@@ -1348,3 +1348,112 @@ test_that("dtplyr additional return construction stays lazy", {
   }
   expect_identical(serialize(data, NULL), before)
 })
+
+# Each form binds a closure reading `prior`, removes the formal, and invokes
+# the closure through a transfer or setter the walk does not resolve (#1666).
+unresolved_closure_transfers <- function(retain = FALSE) {
+  forms <- alist(
+    (function(prior) {
+      l <- list(f = function() sum(prior))
+      g <- .subset2(l, exact = TRUE, "f")
+      rm(prior)
+      g()
+    })(11),
+    (function(prior) {
+      f <- local(function() sum(prior), envir = new.env())
+      rm(prior)
+      f()
+    })(11),
+    (function(prior) {
+      l <- list(f = function() sum(prior))
+      g <- l[["f", exact = NA]]
+      rm(prior)
+      g()
+    })(11),
+    (function(prior) {
+      l <- list(function() 7, function() sum(prior))
+      g <- l[[3 - 1]]
+      rm(prior)
+      g()
+    })(11),
+    (function(prior) {
+      l <- list(a = list(f = function() sum(prior)))
+      g <- l[[c("a", "f", recursive = TRUE)]]
+      rm(prior)
+      g()
+    })(11),
+    (function(prior) {
+      l <- Filter(is.function, list(function() sum(prior), function() 7))
+      g <- l[[1]]
+      rm(prior)
+      g()
+    })(11),
+    (function(prior) {
+      l <- list(f = function() sum(prior))
+      # `ident` is bound in the quosure environment.
+      l <- ident(l) # nolint: object_usage_linter.
+      rm(prior)
+      l$f()
+    })(11),
+    (function(prior) {
+      f <- function() sum(prior)
+      # `ident` is bound in the quosure environment.
+      f <- ident(f) # nolint: object_usage_linter.
+      rm(prior)
+      f()
+    })(11),
+    (function(prior, k) {
+      e <- new.env()
+      # A local `$<-` makes codetools read these fields as globals.
+      e$s <- function(x, name, value) x # nolint: object_usage_linter.
+      if (k) e$s <- function(x, name, value) { # nolint: object_usage_linter.
+        x
+      }
+      `$<-` <- e$s
+      l <- list(f = function() sum(prior))
+      # The local `$<-` makes codetools read the field as a global.
+      l$g <- 1 # nolint: object_usage_linter.
+      rm(prior)
+      l$f()
+    })(11, TRUE),
+    (function(prior) {
+      `$<-` <- function(x, name, value, `{` = 1) {
+        x
+      }
+      l <- list(f = function() sum(prior))
+      # The local `$<-` makes codetools read the field as a global.
+      l$g <- 1 # nolint: object_usage_linter.
+      rm(prior)
+      l$f()
+    })(11)
+  )
+  if (retain) {
+    forms <- lapply(forms, remove_rm_statements)
+  }
+  caller <- rlang::env(rlang::global_env(), ident = function(x) x)
+  lapply(forms, rlang::new_quosure, env = caller)
+}
+
+# The same form with its `rm(prior)` statement dropped, so the closure reads
+# the formal rather than the mask.
+remove_rm_statements <- function(expr) {
+  if (!is.call(expr)) return(expr)
+  if (identical(expr[[1L]], quote(`{`))) {
+    keep <- !vapply(as.list(expr)[-1L], function(statement) {
+      rlang::is_call(statement, "rm")
+    }, logical(1))
+    expr <- as.call(c(list(expr[[1L]]), as.list(expr)[-1L][keep]))
+  }
+  as.call(lapply(as.list(expr), remove_rm_statements))
+}
+
+test_that("an unresolved closure invocation after a removal refuses", {
+  data <- known_closure_transfer_data()
+  expect_transfer_dependencies(data, unresolved_closure_transfers())
+  expect_converter_values(data, unresolved_closure_transfers(retain = TRUE), 11)
+  for (expr in unresolved_closure_transfers()) {
+    expect_equal(
+      dplyr::summarize(data, prior = sum(.data$x), value = !!expr)$value, 4
+    )
+  }
+})
