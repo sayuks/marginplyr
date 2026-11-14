@@ -5450,9 +5450,7 @@ scope_value_possible <- function(expr, scope, lookup) {
   if (identical(operator, "function")) return(NULL)
   transfer_lookup <- lookup
   transfer_lookup$rebound <- lookup$function_rebound %||% lookup$rebound
-  if (is.null(operator) || is_parenthesized(static_call_head(expr)) ||
-        !exists(operator, envir = baseenv(), inherits = FALSE) ||
-        !is_known_base_frame_call(expr, operator, scope, transfer_lookup)) {
+  if (!is_known_base_head(expr, operator, scope, transfer_lookup)) {
     return(scope_unread_return_possible(expr, scope, lookup))
   }
   if (length(expr) < 2L ||
@@ -5667,15 +5665,21 @@ is_fresh_result <- function(expr, earlier, formals) {
                                  earlier = earlier, formals = formals))
 }
 
+# Whether a call's unparenthesized head `name` is a base function this scope
+# and lookup leave unrebound.
+is_known_base_head <- function(expr, name, scope, lookup) {
+  !is.null(name) && !is_parenthesized(static_call_head(expr)) &&
+    exists(name, envir = baseenv(), inherits = FALSE) &&
+    is_known_base_frame_call(expr, name, scope, lookup)
+}
+
 # Whether an expression calls only base functions, so no caller code decides
 # its value. Names and constants qualify; function syntax does not.
 is_base_only_syntax <- function(expr, scope, lookup) {
   if (!rlang::is_call(expr)) return(TRUE)
   name <- static_call_name(expr)
-  !is.null(name) && !identical(name, "function") &&
-    !is_parenthesized(static_call_head(expr)) &&
-    exists(name, envir = baseenv(), inherits = FALSE) &&
-    is_known_base_frame_call(expr, name, scope, lookup) &&
+  !identical(name, "function") &&
+    is_known_base_head(expr, name, scope, lookup) &&
     all(vapply(as.list(expr)[-1L], is_base_only_syntax, logical(1),
                scope = scope, lookup = lookup))
 }
