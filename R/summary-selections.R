@@ -1616,7 +1616,8 @@ context_summary_bindings_safe <- function(expr, lookup, proxy) {
     if (!is.null(parsed$unpack) && !isFALSE(parsed$unpack)) return(FALSE)
     if (!all(vapply(parsed$additional_args, context_summary_bindings_safe,
                     logical(1), lookup = lookup, proxy = proxy))) return(FALSE)
-    # Freezing the names also froze the selection as `all_of(<character>)`.
+    # cache_local_context_names() and rewrite_across_selection() attach these
+    # names only after writing the selection as `all_of(<character>)`.
     selected <- static_character_value(static_call_args(parsed$cols)[[1L]])
     fns <- if (is_known_function_list_call(parsed$fns, lookup$env)) {
       static_call_args(parsed$fns)
