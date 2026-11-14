@@ -470,7 +470,8 @@ test_that("selectors can use other columns and names from peek_data", {
     ignore_default(),
     ignore_argument(tidyselect::peek_data()$prior),
     choose_chained(a = 20),
-    choose_chained(b = 20)
+    choose_chained(b = 20),
+    base::do.call(base::paste0, list("val", "ue"))
   )) {
     result <- summarize_with_margins(
       data, prior = sum(other),
@@ -490,11 +491,12 @@ test_that("checked share sources preserve ordinary selector errors", {
     quote(dplyr::all_of("absent")),
     quote(`$`(.data, tidyselect::peek_data()$prior)),
     quote(~tidyselect::peek_data()$prior),
-    quote(value && tidyselect::peek_data()$prior)
+    quote(value && tidyselect::peek_data()$prior),
+    quote(dplyr::all_of(base::do.call(args = list())))
   )
   diagnostics <- c(
     "Element `absent` doesn't exist", "must be a symbol",
-    "Formula shorthand", "Can't use scalar `&&`"
+    "Formula shorthand", "Can't use scalar `&&`", "\"what\" is missing"
   )
   for (i in seq_along(selections)) {
     ordinary <- rlang::quos(
@@ -642,33 +644,53 @@ test_that("proxy reads through a taken arm or an empty index stay visible", {
   }
 })
 
-test_that("unresolved proxy dispatch leaves input-only sources shareable", {
+test_that("unresolved proxy dispatch refuses every share source it reaches", {
   data <- data.frame(g = c("a", "b"), x = c(1, 3), z = c(7, 9))
   arguments <- list()
   namespace <- asNamespace("tidyselect")
-  for (proxy in rlang::exprs(
+  dispatch <- rlang::exprs(
     base::do.call(tidyselect::peek_data, list(), quote = 1),
     base::do.call(tidyselect::peek_data, arguments),
     base::do.call(tidyselect::peek_data, list(fn = 1)),
     base::do.call("peek_data", list(), envir = namespace),
     base::do.call("peek_data", list(), envir = getNamespace("tidyselect")),
     base::do.call("peek_data", list(), envir = asNamespace(c("tidyselect"))),
-    list(tidyselect::peek_data)[[1L]]()
-  )) {
-    source <- rlang::expr(sum(dplyr::pick(c(dplyr::all_of(
-      if ((!!proxy)$z[[1L]] > 5) "x" else "z"
-    ), -prior))))
-    control <- summarize_with_margins(
-      data, prior = sum(x), value = !!source, .grouping = rollup(g)
+    list(tidyselect::peek_data)[[1L]](),
+    base::do.call(list(tidyselect::peek_data)[[1L]], list())
+  )
+  sources <- function(column) {
+    rlang::exprs(
+      sum(dplyr::pick(c(dplyr::all_of(!!column), -prior))),
+      sum(dplyr::across(c(dplyr::all_of(!!column), -prior), identity))
     )
-    result <- summarize_with_margins(
-      data, prior = sum(x), value = !!source,
-      parent = share_of_parent(value), total = share_of_total(value),
-      .grouping = rollup(g)
+  }
+  for (proxy in dispatch) {
+    # The planning cannot tell a read of `prior` from one of the input `z`
+    # through a dispatch it does not resolve, so both are refused (#1663).
+    reads <- list(
+      list(
+        column = rlang::expr(if ((!!proxy)$prior[[1L]] < 2) "z" else "x"),
+        value = c(7, 9, 4)
+      ),
+      list(
+        column = rlang::expr(if ((!!proxy)$z[[1L]] > 5) "x" else "z"),
+        value = c(1, 3, 4)
+      )
     )
-    expect_identical(result$value, control$value)
-    expect_identical(result$value, c(1, 3, 4))
-    expect_identical(result$parent, c(0.25, 0.75, 1))
-    expect_identical(result$total, c(0.25, 0.75, 1))
+    for (read in reads) {
+      for (source in sources(read$column)) {
+        control <- summarize_with_margins(
+          data, prior = sum(x), value = !!source, .grouping = rollup(g)
+        )
+        expect_identical(control$value, read$value)
+        for (helper in rlang::syms(c("share_of_parent", "share_of_total"))) {
+          expect_error(summarize_with_margins(
+            data, prior = sum(x), value = !!source,
+            ratio = (!!helper)(value), .grouping = rollup(g)
+          ), "depends on earlier summary alias `prior`",
+          class = "marginplyr_error")
+        }
+      }
+    }
   }
 })
