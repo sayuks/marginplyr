@@ -810,6 +810,9 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
         in_transaction = FALSE
       )
     } else {
+      # `destination` is still NULL only with `temporary = FALSE`, which
+      # dbplyr's compute() refuses before creating a table, so a destination
+      # is set for the path read below.
       dplyr::compute(
         anchor, name = destination, temporary = create_temporary,
         overwrite = overwrite && !publish,
