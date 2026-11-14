@@ -5616,10 +5616,25 @@ caller_function <- function(name, scope, lookup) {
   fn
 }
 
-# caller_function() as function syntax.
+# caller_function() as function syntax, or NULL when the function's
+# enclosure binds `function` to anything but base's, so a literal in its body
+# would call that binding. The binding is not forced: an active or lazy one
+# also counts as unknown.
 caller_function_syntax <- function(name, scope, lookup) {
   fn <- caller_function(name, scope, lookup)
-  if (!is.null(fn)) rlang::call2("function", formals(fn), body(fn))
+  if (is.null(fn)) return(NULL)
+  env <- environment(fn)
+  while (!identical(env, emptyenv())) {
+    if (exists("function", envir = env, inherits = FALSE) &&
+          (bindingIsActive("function", env) ||
+             rlang::env_binding_are_lazy(env, "function") ||
+             !identical(get("function", envir = env, inherits = FALSE),
+                        get("function", envir = baseenv())))) {
+      return(NULL)
+    }
+    env <- parent.env(env)
+  }
+  rlang::call2("function", formals(fn), body(fn))
 }
 
 # The expression a definition's body returns, through trailing blocks.
@@ -5634,8 +5649,8 @@ definition_result <- function(definition) {
 # Whether a definition visibly returns a new value: no formal has a computed
 # default or is named `function`, and the body is exactly an atomic constant
 # or a function literal per is_closed_function_literal(), so it calls no
-# function but base `function`. Anything else may return what an argument
-# carried (#130, #1670).
+# function but `function` (caller_function_syntax() checks a caller's is
+# base's). Anything else may return what an argument carried (#130, #1670).
 definition_returns_fresh <- function(definition) {
   if (is.null(definition)) return(FALSE)
   formals <- as.list(definition[[2L]])

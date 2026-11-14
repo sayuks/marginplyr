@@ -2103,7 +2103,10 @@ test_that("a `function` formal or a reference body is not fresh", {
   expect_transfer_dependencies(
     data, lapply(forms, rlang::new_quosure, env = caller)
   )
-  shadowing <- function(package, name, `function`) function(x) function() 7
+  shadowing <- function(package, name,
+                        `function` = function(...) function(x) x) {
+    function(x) function() 7
+  }
   qualified_head <- call("::", as.name("pkg"), as.name("fresh"))
   qualified <- bquote((function(prior) {
     f <- function() sum(prior)
@@ -2113,6 +2116,55 @@ test_that("a `function` formal or a reference body is not fresh", {
   })(11))
   expect_transfer_dependencies(data, list(rlang::new_quosure(
     qualified, rlang::env(`::` = shadowing)
+  )))
+  # An enclosure binding `function`, at any depth, rebinds the literal too.
+  rebinding <- rlang::env(
+    rlang::global_env(),
+    `function` = function(...) get("x", envir = parent.frame())
+  )
+  nested <- rlang::env(rebinding)
+  enclosed <- rlang::env(
+    rlang::global_env(),
+    fresh = rlang::new_function(
+      alist(x = ), quote(function() 7), env = rebinding
+    ),
+    deep = rlang::new_function(alist(x = ), quote(function() 7), env = nested),
+    callback = rlang::new_function(
+      alist(i = ), quote(function() 7), env = rebinding
+    )
+  )
+  enclosed_forms <- alist(
+    (function(prior) {
+      f <- function() sum(prior)
+      # `fresh` is bound in the quosure environment.
+      h <- fresh(f) # nolint: object_usage_linter.
+      rm(prior)
+      h()
+    })(11),
+    (function(prior) {
+      f <- function() sum(prior)
+      # `deep` is bound in the quosure environment.
+      h <- deep(f) # nolint: object_usage_linter.
+      rm(prior)
+      h()
+    })(11),
+    (function(prior) {
+      f <- function() sum(prior)
+      # `callback` is bound in the quosure environment.
+      h <- lapply(list(f), callback) # nolint: object_usage_linter.
+      rm(prior)
+      h[[1L]]()
+    })(11)
+  )
+  expect_transfer_dependencies(
+    data, lapply(enclosed_forms, rlang::new_quosure, env = enclosed)
+  )
+  operator <- rlang::new_function(
+    alist(package = , name = ), quote(function(x) function() 7),
+    env = rebinding
+  )
+  expect_transfer_dependencies(data, list(rlang::new_quosure(
+    qualified, rlang::env(`::` = operator)
   )))
 })
 
