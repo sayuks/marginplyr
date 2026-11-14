@@ -1444,10 +1444,6 @@ dtplyr_share_binds_measure <- function(expr, measure = ".BY") {
   if (!rlang::is_call(expr)) {
     return(FALSE)
   }
-  if (is_generated_private_call(expr)) {
-    return(any(vapply(static_call_args(expr), dtplyr_share_binds_measure,
-                      logical(1), measure = measure)))
-  }
   name <- static_call_name(expr)
   if (identical(name, "function")) {
     return(FALSE)
@@ -5488,12 +5484,6 @@ scope_factory_result <- function(expr, scope, lookup, read_value,
 # Retain factory frames closed over by a returned member. Closures from the
 # live stack only need their offsets moved past the departing frames.
 scope_rebase_factory_closure <- function(closure, result) {
-  if (!is.null(closure$alternatives)) {
-    closure$alternatives <- lapply(
-      closure$alternatives, scope_rebase_factory_closure, result = result
-    )
-    return(closure)
-  }
   if (closure$enclosing <= result$factory_frames) {
     frames <- result$scope[seq.int(closure$enclosing, result$factory_frames)]
     frames <- lapply(frames, function(frame) {
@@ -5717,7 +5707,6 @@ scope_singleton_callback_list <- function(expr, scope, lookup) {
     Map = list(callback = "f", value = "", stock = "identity"),
     Reduce = list(callback = "f", value = "x", stock = "identity")
   )
-  if (is.null(rule)) return(NULL)
   transfer_lookup <- lookup
   transfer_lookup$rebound <- lookup$function_rebound %||% lookup$rebound
   if (!is_known_base_frame_call(expr, operator, scope, transfer_lookup)) {
@@ -7342,7 +7331,7 @@ scope_caller_frame <- function(depth, scope) {
     index <- index + (frame$caller %||% 1L)
     depth <- depth - 1L
   }
-  if (depth == 0L && index <= length(scope)) index else NULL
+  index
 }
 
 # Positive literal depth for a recognized base `parent.frame()` or
