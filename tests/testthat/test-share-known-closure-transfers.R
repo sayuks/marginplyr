@@ -1404,6 +1404,26 @@ unresolved_closure_transfers <- function(retain = FALSE) {
       rm(prior)
       f()
     })(11),
+    (function(prior) {
+      f <- function() sum(prior)
+      rm(prior)
+      # `ident` is bound in the quosure environment.
+      ident(f)() # nolint: object_usage_linter.
+    })(11),
+    (function(prior) {
+      l <- list(f = function() sum(prior))
+      # `ids` is bound in the quosure environment.
+      copied <- ids$f(l) # nolint: object_usage_linter.
+      rm(prior)
+      copied$f()
+    })(11),
+    (function(prior) {
+      l <- list(f = function() sum(prior))
+      # `touch` is bound in the quosure environment.
+      copied <- touch(l) # nolint: object_usage_linter.
+      rm(prior)
+      copied$f()
+    })(11),
     (function(prior, k) {
       e <- new.env()
       # A local `$<-` makes codetools read these fields as globals.
@@ -1432,7 +1452,13 @@ unresolved_closure_transfers <- function(retain = FALSE) {
   if (retain) {
     forms <- lapply(forms, remove_rm_statements)
   }
-  caller <- rlang::env(rlang::global_env(), ident = function(x) x)
+  caller <- rlang::env(
+    rlang::global_env(), ident = function(x) x,
+    ids = list(f = function(x) x), touch = function(x) {
+      force(x)
+      x
+    }
+  )
   lapply(forms, rlang::new_quosure, env = caller)
 }
 
