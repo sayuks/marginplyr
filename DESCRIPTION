@@ -407,7 +407,15 @@ Config/testthat/start-first:
     grouping-bare-column,
     dtplyr-readable-query,
     sql-generic-limited-input,
-    sqlite-deprecated-cte
+    sqlite-deprecated-cte,
+    dtplyr-share-measure-removals,
+    grouping-capture-name-only,
+    grouping-deferred-preflight,
+    grouping-other-backend,
+    share-unreadable-definitions,
+    share-unreadable-list-syntax,
+    share-unrecognised-backend,
+    share-unresolved-frames
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool

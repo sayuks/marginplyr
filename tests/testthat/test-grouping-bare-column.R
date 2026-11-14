@@ -102,6 +102,18 @@ test_that("a specification bound to a column's name is still read", {
   )
 })
 
+test_that("a column passed as a quosure is refused the same way", {
+  data <- bare_column_data()
+  column <- rlang::quo(region)
+  # A quosure handed to `.grouping` as a value, and one wrapped in another.
+  for (grouping in list(column, rlang::new_quosure(column))) {
+    expect_bare_column_refusal(
+      rlang::inject(inspect_grouping(data, .grouping = !!grouping)),
+      "Column `region`", "region", "region"
+    )
+  }
+})
+
 test_that("other failures in .grouping propagate unchanged", {
   data <- bare_column_data()
   build <- function() stop("builder failed")

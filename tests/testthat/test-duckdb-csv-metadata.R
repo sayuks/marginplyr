@@ -423,6 +423,42 @@ test_that("stored explicit CSV reader metadata survives view normalization", {
   expect_duckdb_catalog_only()
 })
 
+test_that("stored reader options cast from boolean strings stay literal", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  writeLines(c("k", "101"), path)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  # DuckDB 1.5 stores every boolean option in this form; 2.0 keeps the
+  # caller's spelling, so the cast is written here.
+  for (spelling in c("f", "false")) {
+    DBI::dbExecute(con, paste0(
+      "CREATE OR REPLACE VIEW stored_reader AS SELECT * FROM read_csv(",
+      DBI::dbQuoteString(con, path), ", columns = {'k': 'BIGINT'},",
+      " auto_detect = CAST('", spelling, "' AS BOOLEAN),",
+      " header = CAST('t' AS BOOLEAN))"
+    ))
+    input <- dplyr::tbl(con, dbplyr::sql("TABLE stored_reader"), vars = "k")
+    expect_identical(inspect_grouping(
+      input, .grouping = grouping_set(where(is.numeric))
+    )$included, "(k)")
+  }
+  # A cast to true leaves auto-detection on.
+  DBI::dbExecute(con, paste0(
+    "CREATE OR REPLACE VIEW stored_reader AS SELECT * FROM read_csv(",
+    DBI::dbQuoteString(con, path), ", columns = {'k': 'BIGINT'},",
+    " auto_detect = CAST('true' AS BOOLEAN), header = true)"
+  ))
+  input <- dplyr::tbl(con, dbplyr::sql("TABLE stored_reader"), vars = "k")
+  expect_error(inspect_grouping(
+    input, .grouping = grouping_set(where(is.numeric))
+  ), "DuckDB CSV input", fixed = TRUE, class = "marginplyr_error")
+  expect_duckdb_catalog_only()
+})
+
 test_that("reader-like catalog relations and CTEs retain typed inspection", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()
@@ -1469,4 +1505,156 @@ test_that("CSV readers need an applied literal schema under auto_detect", {
     input, .grouping = grouping_set(where(is.numeric))
   ), "dplyr::collect()", fixed = TRUE, class = "marginplyr_error")
   expect_duckdb_catalog_only()
+})
+
+test_that("CSV schemas that are not string-typed struct literals refuse", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  writeLines(c("k", "101"), path)
+  quoted <- DBI::dbQuoteString(con, path)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  # An expression type and a non-string type leave the schema unknown.
+  for (columns in c("{'k': 'BIG' || 'INT'}", "{'k': 'BIGINT', 'j': 1}")) {
+    input <- dplyr::tbl(con, dbplyr::sql(paste0(
+      "SELECT * FROM read_csv(", quoted, ", auto_detect = false,",
+      " header = true, columns = ", columns, ")"
+    )), vars = "k")
+    expect_error(inspect_grouping(
+      input, .grouping = grouping_set(where(is.numeric))
+    ), "DuckDB CSV input", fixed = TRUE, class = "marginplyr_error")
+    expect_equal(nrow(last_sent_queries()), 0L)
+  }
+})
+
+test_that("a stored reader path over parenthesized operands stays typed", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  writeLines(c("k", "101"), path)
+  # DuckDB stores this path as `((struct).a || COALESCE(''))`, whose inner
+  # parentheses do not enclose the whole argument.
+  DBI::dbExecute(con, paste0(
+    "CREATE VIEW stored_reader AS SELECT * FROM read_csv(",
+    "({'a': ", DBI::dbQuoteString(con, path), "}).a || coalesce(''),",
+    " auto_detect = false, header = true, columns = {'k': 'BIGINT'})"
+  ))
+  input <- dplyr::tbl(con, dbplyr::sql("TABLE stored_reader"), vars = "k")
+  expect_identical(inspect_grouping(
+    input, .grouping = grouping_set(where(is.numeric))
+  )$included, "(k)")
+})
+
+test_that("WITH ORDINALITY declares no common table expression", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  for (sql in c(
+    "SELECT * FROM range(2) WITH ORDINALITY",
+    "SELECT * FROM range(2) WITH ORDINALITY AS t(k, n)"
+  )) {
+    native <- names(DBI::dbGetQuery(con, paste(sql, "LIMIT 0")))
+    input <- dplyr::tbl(con, dbplyr::sql(sql), vars = native)
+    expect_identical(inspect_grouping(
+      input, .grouping = grouping_set(where(is.numeric))
+    )$included, paste0("(", paste(native, collapse = ", "), ")"))
+  }
+})
+
+test_that("escaped relation names match the catalog relation they spell", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  escapes <- c(n = "\n", r = "\r", t = "\t", b = "\b", f = "\f")
+  # DuckDB 2.0 no longer accepts an escape string as a relation.
+  relation_strings <- utils::packageVersion("duckdb") < "2.0.0"
+  for (escape in names(escapes)) {
+    # A CSV-like table name resolves to the table, not to a file, so the
+    # spelling is no CSV input and the guard leaves it to DuckDB.
+    name <- paste0("a", escapes[[escape]], "b.csv")
+    DBI::dbWriteTable(con, name, data.frame(k = 1L))
+    sql <- paste0("SELECT * FROM E'a\\", escape, "b.csv'")
+    input <- dplyr::tbl(con, dbplyr::sql(sql), vars = "k")
+    outcome <- tryCatch(inspect_grouping(
+      input, .grouping = grouping_set(where(is.numeric))
+    ), error = identity)
+    if (relation_strings) {
+      expect_identical(DBI::dbGetQuery(con, sql)$k, 1L)
+      expect_identical(outcome$included, "(k)")
+    } else {
+      expect_false(inherits(outcome, "marginplyr_error"))
+      expect_match(conditionMessage(outcome), "Parser Error", fixed = TRUE)
+    }
+  }
+})
+
+test_that("CSV-like names resolve through search paths and attachments", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  DBI::dbExecute(con, "CREATE SCHEMA s")
+  DBI::dbExecute(con, 'CREATE TABLE s."x.csv" AS SELECT 1 AS k')
+  # A qualified search-path entry names its own catalog.
+  DBI::dbExecute(con, "SET search_path = 'memory.s'")
+  input <- dplyr::tbl(con, dbplyr::sql('SELECT * FROM "x.csv"'), vars = "k")
+  expect_identical(inspect_grouping(
+    input, .grouping = grouping_set(where(is.numeric))
+  )$included, "(k)")
+  DBI::dbExecute(con, "RESET search_path")
+  # An attached catalog outside the search path still qualifies a name.
+  DBI::dbExecute(con, "ATTACH ':memory:' AS other")
+  DBI::dbExecute(con, 'CREATE TABLE other.main."t.csv" AS SELECT 1 AS k')
+  input <- dplyr::tbl(
+    con, dbplyr::sql('SELECT * FROM other."t.csv"'), vars = "k"
+  )
+  expect_identical(inspect_grouping(
+    input, .grouping = grouping_set(where(is.numeric))
+  )$included, "(k)")
+  # A four-part name matches no catalog relation and keeps the CSV refusal.
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  input <- dplyr::tbl(
+    con, dbplyr::sql('SELECT * FROM a.b.c."d.csv"'), vars = "k"
+  )
+  expect_error(inspect_grouping(
+    input, .grouping = grouping_set(where(is.numeric))
+  ), "DuckDB CSV input", fixed = TRUE, class = "marginplyr_error")
+  expect_duckdb_catalog_only()
+})
+
+test_that("cyclic stored views refuse before binding", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  DBI::dbExecute(con, "CREATE VIEW b AS SELECT 1 AS k")
+  DBI::dbExecute(con, "CREATE VIEW a AS SELECT * FROM b")
+  DBI::dbExecute(con, "CREATE OR REPLACE VIEW b AS SELECT * FROM a")
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  input <- dplyr::tbl(con, dbplyr::sql("TABLE a"), vars = "k")
+  expect_error(inspect_grouping(
+    input, .grouping = grouping_set(where(is.numeric))
+  ), "DuckDB view", fixed = TRUE, class = "marginplyr_error")
+  expect_duckdb_catalog_only()
+})
+
+test_that("malformed relation SQL is left to DuckDB's parser", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  DBI::dbWriteTable(con, "facts", data.frame(k = 1L))
+  # An unclosed CTE body and a non-identifier name part.
+  for (sql in c("WITH t AS (SELECT 1 AS k", "SELECT * FROM facts.1")) {
+    input <- dplyr::tbl(con, dbplyr::sql(sql), vars = "k")
+    error <- tryCatch(inspect_grouping(
+      input, .grouping = grouping_set(where(is.numeric))
+    ), error = identity)
+    expect_false(inherits(error, "marginplyr_error"))
+    expect_match(conditionMessage(error), "Parser Error", fixed = TRUE)
+  }
 })

@@ -5487,13 +5487,8 @@ scope_factory_result <- function(expr, scope, lookup, read_value,
 
 # Retain factory frames closed over by a returned member. Closures from the
 # live stack only need their offsets moved past the departing frames.
+# The caller passes a definition-bearing closure, which has no alternatives.
 scope_rebase_factory_closure <- function(closure, result) {
-  if (!is.null(closure$alternatives)) {
-    closure$alternatives <- lapply(
-      closure$alternatives, scope_rebase_factory_closure, result = result
-    )
-    return(closure)
-  }
   if (closure$enclosing <= result$factory_frames) {
     frames <- result$scope[seq.int(closure$enclosing, result$factory_frames)]
     frames <- lapply(frames, function(frame) {
@@ -5709,6 +5704,7 @@ scope_closure_list <- function(expr, scope, lookup) {
 
 # Preserve a singleton callable through stock predicates and identity callbacks.
 # Neither the callback nor a caller-supplied collection is executed here.
+# The caller passes only a Filter, lapply, Map or Reduce call.
 scope_singleton_callback_list <- function(expr, scope, lookup) {
   operator <- static_call_name(expr)
   rule <- switch(operator,
@@ -5717,7 +5713,6 @@ scope_singleton_callback_list <- function(expr, scope, lookup) {
     Map = list(callback = "f", value = "", stock = "identity"),
     Reduce = list(callback = "f", value = "x", stock = "identity")
   )
-  if (is.null(rule)) return(NULL)
   transfer_lookup <- lookup
   transfer_lookup$rebound <- lookup$function_rebound %||% lookup$rebound
   if (!is_known_base_frame_call(expr, operator, scope, transfer_lookup)) {
@@ -7331,10 +7326,12 @@ static_parent_frame_depth <- function(expr, scope, lookup) {
 }
 
 # Resolve a known caller depth through active calls, skipping retained lexical
-# frames of a factory that has already returned.
+# frames of a factory that has already returned. The caller's scope ends in an
+# uninvoked frame and places every invoked frame before the frames its caller
+# offset reaches, so the walk returns before stepping past its end.
 scope_caller_frame <- function(depth, scope) {
   index <- 1L
-  while (depth > 0L && index <= length(scope)) {
+  while (depth > 0L) {
     frame <- scope[[index]]
     if (!isTRUE(frame$invoked)) {
       return(NULL)
@@ -7342,7 +7339,7 @@ scope_caller_frame <- function(depth, scope) {
     index <- index + (frame$caller %||% 1L)
     depth <- depth - 1L
   }
-  if (depth == 0L && index <= length(scope)) index else NULL
+  index
 }
 
 # Positive literal depth for a recognized base `parent.frame()` or

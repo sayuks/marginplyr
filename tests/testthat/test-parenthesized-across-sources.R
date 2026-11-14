@@ -138,3 +138,15 @@ test_that("parenthesized across sources keep eligibility checks", {
     )), "exactly one value per grouping row", class = "marginplyr_error")
   }
 })
+
+test_that("a planned first selection's warning survives a refused share", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3))
+  expect_warning(
+    expect_error(summarize_with_margins(
+      data, (dplyr::across)(dplyr::one_of(c("x", "absent")), sum),
+      share = share_of_total(missing), .grouping = rollup(g)
+    ), "unknown preceding ordinary summary `missing`",
+    class = "marginplyr_error"),
+    "absent"
+  )
+})

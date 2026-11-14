@@ -1161,3 +1161,80 @@ test_that("native source refusal precedes later primitive evaluation", {
   expect_s3_class(actual, "marginplyr_error")
   expect_identical(calls, 0L)
 })
+
+test_that("unusual summary labels keep the native combination", {
+  source <- label_source()
+  count <- 0L
+  labels <- list(1L, "Description")
+  statistic <- function(x) {
+    count <<- count + 1L
+    structure(sum(x), label = labels[[count]])
+  }
+  result <- summarize_with_margins(
+    source, z = statistic(x),
+    .grouping = grouping_sets(grouping_set(), grouping_set()),
+    .duplicates = "keep"
+  )
+  # An integer label is no standard label, so no consensus replaces what
+  # vctrs gives the combined column.
+  expect_identical(
+    attr(result$z, "label"),
+    attr(vctrs::vec_c(structure(6, label = 1L),
+                      structure(6, label = "Description")), "label")
+  )
+  expect_identical(unname(as.vector(result$z)), c(6, 6))
+})
+
+test_that("native optimization leaves non-source across outputs unchecked", {
+  skip_if_suggest_absent("dtplyr")
+  withr::local_options(list(datatable.optimize = 2L))
+  source <- tibble::tibble(
+    g = c("a", "a", "b"), x = c(1, 2, 4), y = c("p", "q", "r")
+  )
+  run <- function(data) {
+    summarize_with_margins(
+      data, dplyr::across(c(x, y), max), share = share_of_total(x),
+      .grouping = rollup(g)
+    )
+  }
+  expected <- run(source)
+  # The character output is no share source and is not refused as one.
+  expect_identical(expected$y, c("q", "r", "r"))
+  expect_identical(dplyr::collect(run(dtplyr::lazy_dt(source))), expected)
+})
+
+test_that("native optimization reads a qualified foreign scalar as written", {
+  skip_if_suggest_absent("dtplyr")
+  withr::local_options(list(datatable.optimize = 2L))
+  source <- tibble::tibble(g = c("a", "a", "b"), x = c(1, 2, 4))
+  for (fun in c("first", "last")) {
+    # dplyr's spelling is not data.table's optimized first() or last().
+    value <- rlang::call2(fun, quote(x), .ns = "dplyr")
+    run <- function(data) {
+      summarize_with_margins(
+        data, s = !!value, share = share_of_total(s), .grouping = rollup(g)
+      )
+    }
+    expected <- run(source)
+    expect_identical(dplyr::collect(run(dtplyr::lazy_dt(source))), expected)
+  }
+})
+
+test_that("a visible numeric mean method keeps the checked share source", {
+  skip_if_suggest_absent("dtplyr")
+  withr::local_options(list(datatable.optimize = 2L))
+  input <- dtplyr::lazy_dt(
+    tibble::tibble(g = c("a", "a", "b"), x = c(1, 2, 4))
+  )
+  input$env <- rlang::env(
+    input$env, mean.numeric = function(x, ...) "refused"
+  )
+  # GForce's optimized mean would never dispatch to the method.
+  result <- summarize_with_margins(
+    input, avg = mean(x), share = share_of_total(avg), .grouping = rollup(g)
+  )
+  error <- tryCatch(dplyr::collect(result), error = identity)
+  expect_s3_class(error, "marginplyr_error")
+  expect_match(conditionMessage(error), "Detected type character",
+               fixed = TRUE)
+})
