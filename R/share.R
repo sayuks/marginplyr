@@ -5544,7 +5544,8 @@ scope_callee_returns_fresh <- function(expr, scope, lookup) {
 }
 
 # The definition of a caller function named by a call head, as function
-# syntax, or NULL when the head is not such a function.
+# syntax, or NULL when the head is not such a function or its enclosure
+# rebinds `function` (caller_function_syntax()).
 caller_callee_definition <- function(head, scope, lookup) {
   head <- unparenthesized_value(head)
   if (rlang::is_call(head, c("::", ":::"))) {
@@ -5628,8 +5629,8 @@ caller_function_syntax <- function(name, scope, lookup) {
     if (exists("function", envir = env, inherits = FALSE) &&
           (bindingIsActive("function", env) ||
              rlang::env_binding_are_lazy(env, "function") ||
-             !identical(get("function", envir = env, inherits = FALSE),
-                        get("function", envir = baseenv())))) {
+             # `[[` reads a missing formal's binding without an error.
+             !identical(env[["function"]], baseenv()[["function"]]))) {
       return(NULL)
     }
     env <- parent.env(env)

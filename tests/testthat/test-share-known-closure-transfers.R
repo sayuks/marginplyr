@@ -2103,10 +2103,19 @@ test_that("a `function` formal or a reference body is not fresh", {
   expect_transfer_dependencies(
     data, lapply(forms, rlang::new_quosure, env = caller)
   )
-  shadowing <- function(package, name,
-                        `function` = function(...) function(x) x) {
-    function(x) function() 7
+  # A `function` that returns the calling frame's `x` when it has one, and
+  # otherwise builds the closure base `function` would.
+  rebinder <- function(formals, body, ...) {
+    frame <- parent.frame()
+    if (exists("x", envir = frame, inherits = FALSE)) {
+      return(get("x", envir = frame))
+    }
+    eval(rlang::call2(base::`function`, formals, substitute(body)), frame)
   }
+  shadowing <- rlang::new_function(
+    rlang::pairlist2(package = , name = , `function` = rebinder),
+    quote(function(x) function() 7)
+  )
   qualified_head <- call("::", as.name("pkg"), as.name("fresh"))
   qualified <- bquote((function(prior) {
     f <- function() sum(prior)
@@ -2118,19 +2127,24 @@ test_that("a `function` formal or a reference body is not fresh", {
     qualified, rlang::env(`::` = shadowing)
   )))
   # An enclosure binding `function`, at any depth, rebinds the literal too.
-  rebinding <- rlang::env(
-    rlang::global_env(),
-    `function` = function(...) get("x", envir = parent.frame())
-  )
+  rebinding <- rlang::env(rlang::global_env(), `function` = rebinder)
   nested <- rlang::env(rebinding)
+  active <- rlang::env(rlang::global_env())
+  makeActiveBinding("function", function() rebinder, active)
+  lazy <- rlang::env(rlang::global_env())
+  delayedAssign("function", rebinder, assign.env = lazy)
   enclosed <- rlang::env(
     rlang::global_env(),
     fresh = rlang::new_function(
       alist(x = ), quote(function() 7), env = rebinding
     ),
     deep = rlang::new_function(alist(x = ), quote(function() 7), env = nested),
+    on_active = rlang::new_function(
+      alist(x = ), quote(function() 7), env = active
+    ),
+    on_lazy = rlang::new_function(alist(x = ), quote(function() 7), env = lazy),
     callback = rlang::new_function(
-      alist(i = ), quote(function() 7), env = rebinding
+      alist(x = ), quote(function() 7), env = rebinding
     )
   )
   enclosed_forms <- alist(
@@ -2145,6 +2159,20 @@ test_that("a `function` formal or a reference body is not fresh", {
       f <- function() sum(prior)
       # `deep` is bound in the quosure environment.
       h <- deep(f) # nolint: object_usage_linter.
+      rm(prior)
+      h()
+    })(11),
+    (function(prior) {
+      f <- function() sum(prior)
+      # `on_active` is bound in the quosure environment.
+      h <- on_active(f) # nolint: object_usage_linter.
+      rm(prior)
+      h()
+    })(11),
+    (function(prior) {
+      f <- function() sum(prior)
+      # `on_lazy` is bound in the quosure environment.
+      h <- on_lazy(f) # nolint: object_usage_linter.
       rm(prior)
       h()
     })(11),
@@ -2166,6 +2194,21 @@ test_that("a `function` formal or a reference body is not fresh", {
   expect_transfer_dependencies(data, list(rlang::new_quosure(
     qualified, rlang::env(`::` = operator)
   )))
+  # A missing `function` formal in an enclosure is read without forcing it,
+  # and an ordinary source through such a caller stays shareable.
+  missing_formal <- (function(`function`) environment())()
+  twice <- rlang::env(
+    rlang::global_env(),
+    twice = rlang::new_function(alist(x = ), quote(list(x)), missing_formal)
+  )
+  expect_converter_values(data, list(rlang::new_quosure(quote(
+    (function(prior) {
+      f <- function() 7
+      # `twice` is bound in the quosure environment.
+      h <- twice(f) # nolint: object_usage_linter.
+      h[[1L]]()
+    })(11)
+  ), twice)), 7)
 })
 
 test_that("a caller function's callees rebound by the expression refuse", {
