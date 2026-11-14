@@ -222,3 +222,36 @@ test_that("an injected empty `.names` keeps dplyr's condition before a share", {
     expect_identical(conditionMessage(actual), conditionMessage(baseline))
   }
 })
+
+test_that("an injected empty `.names` over earlier outputs keeps dplyr's condition", {
+  # The selection reaches earlier summary outputs, which the same call without
+  # the share also selects before dplyr evaluates `.names` (#1664).
+  data <- data.frame(g = c("a", "b"), y = c(1, 3))
+  earlier <- rlang::quos(
+    s0 = sum(y), sum(y), dplyr::across(y, sum, .names = "t"),
+    data.frame(u = sum(y))
+  )
+  across <- rlang::quo(dplyr::across(
+    c(s0, `sum(y)`, t, u), sum, .names = !!rlang::quo()
+  ))
+  baseline <- expect_error(summarize_with_margins(
+    data, !!!earlier, !!across, .grouping = rollup(g)
+  ))
+  for (share in rlang::quos(share_of_total(s0), share_of_parent(s0))) {
+    actual <- expect_error(summarize_with_margins(
+      data, !!!earlier, s = !!share, !!across, .grouping = rollup(g)
+    ))
+    expect_identical(class(actual), class(baseline))
+    expect_identical(conditionMessage(actual), conditionMessage(baseline))
+  }
+  # An unpacked `across()` names its outputs only once it runs, so the
+  # planning path answers; dplyr still refuses the empty `.names` there.
+  unpacked <- expect_error(summarize_with_margins(
+    data, s0 = sum(y),
+    dplyr::across(y, function(v) data.frame(t = sum(v)), .unpack = TRUE),
+    s = share_of_total(s0),
+    dplyr::across(y_t, sum, .names = !!rlang::quo()), .grouping = rollup(g)
+  ))
+  expect_identical(class(unpacked), class(baseline))
+  expect_match(conditionMessage(unpacked), "dplyr::across(y_t", fixed = TRUE)
+})

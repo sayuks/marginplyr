@@ -884,13 +884,41 @@ refuse_empty_across_names <- function(dots, data_proxy, data_vars,
     expr <- rlang::quo_get_expr(dots[[i]])
     if (is_across_call(expr) && !contains_share_helper(expr) &&
           is_injected_empty_argument(parse_across_arguments(expr)$names)) {
-      selection_proxy <- summary_selection_proxy(
-        data_proxy, data_vars = data_vars, group_vars = group_vars
+      selection_proxy <- empty_summary_outputs_proxy(
+        dots[seq_len(i - 1L)], summary_selection_proxy(
+          data_proxy, data_vars = data_vars, group_vars = group_vars
+        )
       )
-      dplyr::summarise(vctrs::vec_slice(selection_proxy, 0L), !!!dots[i])
+      if (is.null(selection_proxy)) return(invisible(NULL))
+      dplyr::summarise(selection_proxy, !!!dots[i])
     }
   }
   invisible(NULL)
+}
+
+# A 0-row selection proxy that also holds the outputs of `earlier` summary
+# dots, which a later selection may name; an unnamed data frame constructor
+# contributes its argument names. NULL when an unnamed `across()` or `pick()`
+# has no statically known outputs; the planning path then owns the call.
+empty_summary_outputs_proxy <- function(earlier, selection_proxy) {
+  selection_proxy <- vctrs::vec_slice(selection_proxy, 0L)
+  for (j in seq_along(earlier)) {
+    expr <- rlang::quo_get_expr(earlier[[j]])
+    env <- rlang::quo_get_env(earlier[[j]])
+    kind <- data_frame_valued_summary_kind(expr)
+    outputs <- if (nzchar(rlang::names2(earlier)[[j]])) {
+      rlang::names2(earlier)[[j]]
+    } else if (is.null(kind)) {
+      rlang::as_label(expr)
+    } else if (identical(kind, "frame")) {
+      frame_argument_candidates(expr, env)
+    } else {
+      known_data_frame_output_names(expr, env, selection_proxy)
+    }
+    if (length(outputs) == 0L && !identical(kind, "frame")) return(NULL)
+    selection_proxy[outputs] <- list(logical())
+  }
+  selection_proxy
 }
 
 plan_summary_expressions <- function(dots,
