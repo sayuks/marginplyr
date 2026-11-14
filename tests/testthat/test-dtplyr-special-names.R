@@ -715,6 +715,7 @@ test_that("dtplyr key reads retain lexical effects of base control calls", {
       sum(.N)
     }),
     listed = base::local({
+      # A literal list removal of this binding exposes the special column.
       .N <- 9L # nolint: object_name_linter.
       rm(list = c(".N"))
       sum(.N)
@@ -729,6 +730,7 @@ test_that("dtplyr key reads retain lexical effects of base control calls", {
       # The shadowing binding survives a removal in a child scope.
       .N <- 6L # nolint: object_name_linter.
       local({
+        # The child's own binding of the spelling is what its removal drops.
         .N <- 1L # nolint: object_name_linter.
         rm(.N)
       })
