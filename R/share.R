@@ -5717,7 +5717,7 @@ scope_binding_possible <- function(name, scope) {
   for (index in scope_visible_frames(scope)) {
     frame <- scope[[index]]
     if (!name %in% frame$bound) next
-    possible <- frame$possible[[name]]
+    possible <- frame$possible_closures[[name]]
     if (is.null(possible)) return(NULL)
     return(scope_shift_closure_elements(list(possible), index)[[1L]])
   }
@@ -6727,8 +6727,10 @@ scope_fresh_env_fields <- function(expr, scope, lookup) {
 # A definite local binding replaces any promise in this frame. Literal
 # values establish whether function lookup stops or skips the binding.
 # value_scope holds bindings before the value expression evaluates.
+# `possible_closures` records what a binding without a readable value may
+# hold, in offsets relative to the current frame.
 scope_bind_local <- function(scope, name, value = NULL, lookup = NULL,
-                             value_scope = scope) {
+                             value_scope = scope, possible_closures = NULL) {
   # A visible caller function returning its argument binds that argument.
   returned <- if (!missing(value)) {
     caller_identity_argument(value, value_scope, lookup)
@@ -6740,8 +6742,8 @@ scope_bind_local <- function(scope, name, value = NULL, lookup = NULL,
   } else if (!missing(value)) {
     scope_closure_list(value, value_scope, lookup)
   }
-  possible <- if (is.null(closure) && is.null(elements) && !missing(value)) {
-    scope_value_possible(value, value_scope, lookup)
+  if (is.null(closure) && is.null(elements) && !missing(value)) {
+    possible_closures <- scope_value_possible(value, value_scope, lookup)
   }
   fields <- scope_fresh_env_fields(value, value_scope, lookup)
   carrier <- scope_fresh_env_binding(value, value_scope)
@@ -6785,8 +6787,8 @@ scope_bind_local <- function(scope, name, value = NULL, lookup = NULL,
   scope[[1L]]$closure_lists[[name]] <- if (!is.null(elements)) {
     scope_shift_closure_elements(elements, -1L)
   }
-  scope[[1L]]$possible[[name]] <- if (!is.null(possible)) {
-    scope_shift_closure_elements(list(possible), -1L)[[1L]]
+  scope[[1L]]$possible_closures[[name]] <- if (!is.null(possible_closures)) {
+    scope_shift_closure_elements(list(possible_closures), -1L)[[1L]]
   }
   scope[[1L]]$closure_environments[[name]] <- if (!is.null(fields)) {
     scope_shift_closure_elements(fields, -1L)
@@ -6891,13 +6893,7 @@ scope_after_carrier_write <- function(scope, target, value, lookup,
     possible <- if (unproven) scope_join_members(scope_carried_closures(
       list(carrier, value), value_scope, lookup
     ))
-    scope <- scope_bind_local(scope, name)
-    if (!is.null(possible)) {
-      scope[[1L]]$possible[[name]] <- scope_shift_closure_elements(
-        list(possible), -1L
-      )[[1L]]
-    }
-    return(scope)
+    return(scope_bind_local(scope, name, possible_closures = possible))
   }
   scope_bind_closure_list(scope, name, elements)
 }
@@ -7599,10 +7595,10 @@ scope_possible_losses <- function(scope, after) {
   Map(function(before, reached) {
     bound <- intersect(before$bound, reached$bound)
     frame <- retain_scope_bindings(before, bound)
-    for (name in intersect(names(reached$possible), bound)) {
-      frame$possible[[name]] <- scope_join_members(
-        list(frame$possible[[name]], reached$possible[[name]])
-      )
+    for (name in intersect(names(reached$possible_closures), bound)) {
+      frame$possible_closures[[name]] <- scope_join_members(list(
+        frame$possible_closures[[name]], reached$possible_closures[[name]]
+      ))
     }
     stable <- vapply(names(frame$kinds), function(name) {
       identical(frame$kinds[[name]], reached$kinds[[name]])
@@ -7813,7 +7809,9 @@ retain_scope_bindings <- function(frame, bound) {
     names(frame$closure_environment_ids) %in% bound
   ]
   frame$environments <- frame$environments[names(frame$environments) %in% bound]
-  frame$possible <- frame$possible[names(frame$possible) %in% bound]
+  frame$possible_closures <- frame$possible_closures[
+    names(frame$possible_closures) %in% bound
+  ]
   frame
 }
 
