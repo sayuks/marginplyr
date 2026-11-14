@@ -5619,10 +5619,10 @@ definition_result <- function(definition) {
 }
 
 # Whether a definition visibly returns a new value naming none of its
-# formals: function syntax, a constant, a `list()`, `c()` or `if` whose
-# values are themselves fresh, or a local its body binds only to fresh
-# values. Any other result may return an argument through a lookup this walk
-# does not read, such as `get("x")` (#1666).
+# formals: function syntax naming nothing, a constant, a `list()`, `c()` or
+# `if` whose values are themselves fresh, or a local its body binds only to
+# inert values. Any other result may return an argument through a lookup
+# this walk does not read, such as `get("x")` (#1666).
 definition_returns_fresh <- function(definition) {
   if (is.null(definition)) return(FALSE)
   formals <- names(definition[[2L]])
@@ -5673,7 +5673,7 @@ is_fresh_result <- function(expr, earlier, formals) {
   }
   if (!rlang::is_call(expr)) return(TRUE)
   name <- static_call_name(expr)
-  if (identical(name, "function")) return(TRUE)
+  if (identical(name, "function")) return(is_closed_function_literal(expr))
   values <- if (identical(name, "if")) {
     as.list(expr)[-(1:2)]
   } else if (!is.null(name) && name %in% c("list", "c")) {

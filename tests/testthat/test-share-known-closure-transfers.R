@@ -1720,3 +1720,75 @@ test_that("a caller decorator returning a closure over its argument refuses", {
   })(11)), caller)
   expect_converter_values(data, list(fresh, fresh_list), 7)
 })
+
+# A returned function literal is fresh only when it names nothing: one whose
+# body reaches the argument through get() or a local alias returns what the
+# argument carried, through a caller function or an lapply() or Map()
+# callback alike (#1670).
+test_that("a returned closure reaching its argument indirectly refuses", {
+  data <- known_closure_transfer_data()
+  caller <- rlang::env(
+    rlang::global_env(),
+    via_get = function(x) function() get("x")(),
+    via_list = function(x) list(f = function() get("x")()),
+    via_alias = function(x) {
+      g <- x
+      function() g()
+    }
+  )
+  forms <- c(
+    lapply(rlang::syms(c("via_get", "via_alias")), function(call) {
+      rlang::expr((function(prior) {
+        f <- function() sum(prior)
+        h <- (!!call)(f)
+        rm(prior)
+        h()
+      })(11))
+    }),
+    alist(
+      (function(prior) {
+        f <- function() sum(prior)
+        # `via_list` is bound in the quosure environment.
+        h <- via_list(f) # nolint: object_usage_linter.
+        rm(prior)
+        h$f()
+      })(11),
+      (function(prior) {
+        f <- function() sum(prior)
+        h <- lapply(list(f), function(x) {
+          g <- x
+          function() g()
+        })
+        rm(prior)
+        h[[1L]]()
+      })(11),
+      (function(prior) {
+        f <- function() sum(prior)
+        h <- Map(function(x) {
+          g <- x
+          function() g()
+        }, list(f))
+        rm(prior)
+        h[[1L]]()
+      })(11)
+    )
+  )
+  expect_transfer_dependencies(
+    data, lapply(forms, rlang::new_quosure, env = caller)
+  )
+  fresh <- alist(
+    (function(prior) {
+      f <- function() sum(prior)
+      h <- lapply(list(f), function(x) function() 7)
+      rm(prior)
+      h[[1L]]()
+    })(11),
+    (function(prior) {
+      f <- function() sum(prior)
+      h <- Map(function(x) function() 7, list(f))
+      rm(prior)
+      h[[1L]]()
+    })(11)
+  )
+  expect_converter_values(data, fresh, 7)
+})
