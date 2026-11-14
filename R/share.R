@@ -7326,10 +7326,12 @@ static_parent_frame_depth <- function(expr, scope, lookup) {
 }
 
 # Resolve a known caller depth through active calls, skipping retained lexical
-# frames of a factory that has already returned.
+# frames of a factory that has already returned. The caller's scope ends in an
+# uninvoked frame and places every invoked frame before the frames its caller
+# offset reaches, so the walk returns before stepping past its end.
 scope_caller_frame <- function(depth, scope) {
   index <- 1L
-  while (depth > 0L && index <= length(scope)) {
+  while (depth > 0L) {
     frame <- scope[[index]]
     if (!isTRUE(frame$invoked)) {
       return(NULL)
