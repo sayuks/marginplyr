@@ -5531,32 +5531,16 @@ scope_carried_closures <- function(parts, scope, lookup) {
 
 # Whether every definition the call may run -- a local closure, a caller
 # function read without forcing a binding, or the function a caller `::`
-# returns -- is visible, passes definition_returns_fresh(), and calls only
-# base functions where it runs, none of which the expression rebinds.
+# returns -- is visible and passes definition_returns_fresh().
 scope_callee_returns_fresh <- function(expr, scope, lookup) {
   closure <- scope_call_closure(expr, scope, lookup)
-  head <- static_call_head(expr)
   definitions <- if (!is.null(closure)) {
     lapply(scope_closure_variants(closure), `[[`, "definition")
   } else {
-    list(caller_callee_definition(head, scope, lookup))
+    list(caller_callee_definition(static_call_head(expr), scope, lookup))
   }
-  calls_base <- function(names) {
-    if (!all(vapply(names, exists, logical(1), envir = baseenv(),
-                    inherits = FALSE))) {
-      return(FALSE)
-    }
-    if (is.null(closure)) {
-      return(caller_callee_calls_base(head, names, scope, lookup))
-    }
-    all(vapply(names, function(name) {
-      is_known_base_frame_call(rlang::call2(name), name, scope, lookup)
-    }, logical(1)))
-  }
-  length(definitions) > 0L && all(vapply(definitions, function(definition) {
-    definition_returns_fresh(definition) &&
-      calls_base(unique(all.names(definition[[3L]])))
-  }, logical(1)))
+  length(definitions) > 0L &&
+    all(vapply(definitions, definition_returns_fresh, logical(1)))
 }
 
 # The definition of a caller function named by a call head, as function
@@ -5567,36 +5551,14 @@ caller_callee_definition <- function(head, scope, lookup) {
     operator <- caller_function_syntax(rlang::as_string(head[[1L]]), scope,
                                        lookup)
     if (is.null(operator)) return(NULL)
-    return(literal_function_definition(definition_result(operator)))
+    result <- operator[[3L]]
+    if (!rlang::is_call(result, "function") || length(result) < 3L) {
+      return(NULL)
+    }
+    return(result)
   }
   if (!is_name_part(head)) return(NULL)
   caller_function_syntax(rlang::as_name(head), scope, lookup)
-}
-
-# Whether each name resolves to its base function from the environment the
-# caller function a call head names runs its body in, and the expression
-# rebinds none of the names. The frame of a qualified head's operator is read
-# only when the operator's whole body is the function literal, so that its
-# formals are the frame's only bindings.
-caller_callee_calls_base <- function(head, names, scope, lookup) {
-  rebound <- lookup$function_rebound %||% lookup$rebound
-  if (any(c(names, unresolved_lookup_name()) %in% rebound)) return(FALSE)
-  head <- unparenthesized_value(head)
-  if (rlang::is_call(head, c("::", ":::"))) {
-    fn <- caller_function(rlang::as_string(head[[1L]]), scope, lookup)
-    body <- unparenthesized_value(body(fn))
-    if (rlang::is_call(body, "{", n = 1L)) {
-      body <- unparenthesized_value(body[[2L]])
-    }
-    if (!rlang::is_call(body, "function") ||
-          any(names %in% names(formals(fn)))) return(FALSE)
-  } else {
-    fn <- caller_function(rlang::as_name(head), scope, lookup)
-  }
-  all(vapply(names, function(name) {
-    identical(ordinary_function_binding(name, environment(fn)),
-              get(name, envir = baseenv()))
-  }, logical(1)))
 }
 
 # The argument a visible caller function returns unchanged: its body ends in
@@ -5666,43 +5628,25 @@ definition_result <- function(definition) {
 }
 
 # Whether a definition visibly returns a new value: no formal has a computed
-# default or shares a name with a function the body calls, and the body is
-# one expression, alone or inside `{`, that is a fresh value per
-# is_inert_value(). Anything else may return what an argument carried
-# through a lookup or a frame write this walk does not read (#1666, #1670).
+# default, and the body is exactly a constant or a function literal per
+# is_closed_function_literal(), so it calls no function but `function`.
+# Anything else may return what an argument carried (#130, #1670).
 definition_returns_fresh <- function(definition) {
   if (is.null(definition)) return(FALSE)
-  defaults <- as.list(definition[[2L]])
-  body <- unparenthesized_value(definition[[3L]])
-  if (rlang::is_call(body, "{", n = 1L)) body <- body[[2L]]
-  computed <- vapply(defaults, function(default) {
+  computed <- vapply(as.list(definition[[2L]]), function(default) {
     is.language(default) && !rlang::is_missing(default)
   }, logical(1))
-  !any(computed) && is_inert_value(body) &&
-    !any(all.names(definition[[3L]]) %in% names(definition[[2L]]))
+  body <- definition[[3L]]
+  !any(computed) && (!is.language(body) || is_closed_function_literal(body))
 }
 
-# Whether evaluating an expression runs no code and names nothing: a
-# constant, a function literal whose formals and body name nothing, or an
-# unqualified `list()` or `c()` of such values.
-is_inert_value <- function(expr) {
-  expr <- unparenthesized_value(expr)
-  if (!is.call(expr)) return(!is.name(expr))
-  if (is_closed_function_literal(expr)) return(TRUE)
-  name <- static_call_name(expr)
-  !is.null(name) && is.null(static_call_ns(expr)) &&
-    name %in% c("list", "c") &&
-    all(vapply(static_call_args(expr), is_inert_value, logical(1)))
-}
-
-# Whether an expression is function syntax whose formals' defaults and body
-# name nothing, so its closure cannot reach the frame that creates it.
+# Whether an expression is, without parentheses, function syntax whose
+# formals' defaults and body name nothing, so calling its closure calls no
+# function.
 is_closed_function_literal <- function(expr) {
-  definition <- literal_function_definition(expr)
-  if (is.null(definition)) return(FALSE)
-  parts <- c(as.list(definition[[2L]]), list(definition[[3L]]))
-  names <- unlist(lapply(parts, all.names))
-  all(names %in% c("", "function"))
+  if (!rlang::is_call(expr, "function") || length(expr) < 3L) return(FALSE)
+  parts <- c(as.list(expr[[2L]]), list(expr[[3L]]))
+  all(unlist(lapply(parts, all.names)) == "")
 }
 
 # Whether a call's unparenthesized head `name` is a base function this scope
