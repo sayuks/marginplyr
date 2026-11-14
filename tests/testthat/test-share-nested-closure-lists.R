@@ -119,7 +119,7 @@ test_that("nested list planning never invokes or forces caller code", {
   expect_identical(serialize(data, NULL), before)
 })
 
-test_that("unknown nested-list returns and unselected closures remain legal", {
+test_that("fresh nested-list returns and unselected closures remain legal", {
   probe <- rlang::env(calls = 0L)
   unknown <- function(x) {
     probe$calls <- probe$calls + 1L
@@ -130,8 +130,12 @@ test_that("unknown nested-list returns and unselected closures remain legal", {
     rm(prior)
     carrier$outer$read()
   })(1))
+  # A function body with more than one statement may return its argument
+  # (#1670), so the share refuses without calling it.
+  expect_share_dependencies(nested_closure_list_data(), list(read))
+  expect_identical(probe$calls, 0L)
+  unknown <- function(x) list(outer = list(read = function() 7))
   expect_share_dependency_values(nested_closure_list_data(), list(read), 7)
-  expect_identical(probe$calls, 12L)
   reads <- alist(
     (function(prior) {
       carrier <- list(outer = list(

@@ -89,8 +89,12 @@ test_that("list value transfers preserve ordinary caller function lookup", {
       functions[[1L]]()
     })(1), list(transfer = rlang::call2(callee, quote(original))))
     read <- rlang::new_quosure(read, caller)
+    # A replacement body with more than one statement may return its
+    # argument (#1670), so the share refuses without calling it.
+    expect_share_dependencies(data, list(read))
+    expect_identical(probe$calls, 0L)
+    caller[[callee]] <- function(x) list(function() 7)
     expect_share_dependency_values(data, list(read), expected = 7)
-    expect_identical(probe$calls, 12L)
     expect_error(
       summarize_with_margins(
         data, value = sum(.data$x), prior = share_of_total(value),
@@ -98,7 +102,6 @@ test_that("list value transfers preserve ordinary caller function lookup", {
       ),
       "Ordinary summaries cannot use an earlier", class = "marginplyr_error"
     )
-    expect_identical(probe$calls, 12L)
 
     read <- substitute((function(prior) {
       binding <- 0
