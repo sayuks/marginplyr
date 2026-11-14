@@ -155,13 +155,15 @@ test_that("recursive list paths preserve ordinary caller function lookup", {
     probe$calls <- probe$calls + 1L
     base::c(1L, 2L)
   }
+  # The caller's `c` computes the path, which may select the alias-reading
+  # member, so the carrier's closures stay possible (#1666).
   read <- rlang::quo((function(prior) {
     carrier <- list(list(function() sum(prior), function() 7))
     rm(prior)
     carrier[[c(1L, 1L)]]()
   })(1))
-  expect_share_dependency_values(nested_closure_list_data(), list(read), 7)
-  expect_identical(probe$calls, 12L)
+  expect_share_dependencies(nested_closure_list_data(), list(read))
+  expect_identical(probe$calls, 0L)
 })
 
 test_that("empty literal names do not select unnamed nested closures", {
