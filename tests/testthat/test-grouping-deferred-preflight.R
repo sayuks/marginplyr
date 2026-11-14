@@ -8,9 +8,8 @@ deferred_input <- function() {
   data.frame(a = c("x", "y"), b = 1:2, c = c(TRUE, FALSE))
 }
 
-# The nested constructor arrives as a quosure, so its injection reaches the
-# preflight unprocessed; written inline, the outer constructor's capture would
-# already have run it.
+# A quosure, for the reason `inspect_nested()` in
+# test-grouping-capture-name-only.R gives.
 deferred_set <- function() {
   # Read only by the quoted injection below, which codetools cannot see.
   pick <- function() quote(c) # nolint: object_usage_linter.
