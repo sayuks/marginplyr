@@ -1835,6 +1835,11 @@ test_that("a returned closure reaching its argument indirectly refuses", {
 # result through code the walk does not read (#1666, #1670).
 test_that("a caller function returns a fresh value only as one literal", {
   data <- known_closure_transfer_data()
+  bind_default <- function(x, z = (y <- x)) {
+    y <- function() 7
+    z
+    y
+  }
   caller <- rlang::env(
     rlang::global_env(),
     src = function(x) {
@@ -1858,17 +1863,13 @@ test_that("a caller function returns a fresh value only as one literal", {
       z
       y
     },
-    bind_default = function(x, z = (y <- x)) {
-      y <- function() 7
-      z
-      y
-    },
+    bind_default = bind_default,
     condition = function(x) {
       y <- 1
       if (is.null(assign("y", get("x")))) y else y
     },
     default_only = function(x, z = assign("y", x)) function() 7,
-    branch_only = function(x) if (TRUE) function() 7 else function() 7,
+    branch_only = function(x, flag = TRUE) if (flag) function() 7 else 8,
     formal_list = function(x, list) list(function() 7)
   )
   rebound <- rlang::env(
