@@ -868,6 +868,31 @@ has_nested_summary_selection <- function(expr) {
   ))
 }
 
+# Has dplyr answer an `across()` whose `.names` is an injected empty quosure
+# before share planning reads that `.names`. The quosure is supplied (#350)
+# but carries R's empty argument, so no output names can be read from it,
+# and dplyr refuses it in the `across()` argument -- the condition the same
+# call raises without a share, where dplyr already answers it (#1664).
+refuse_empty_across_names <- function(dots, data_proxy, data_vars,
+                                      group_vars) {
+  if (!any(vapply(dots, function(dot) {
+    contains_share_helper(rlang::quo_get_expr(dot))
+  }, logical(1)))) {
+    return(invisible(NULL))
+  }
+  for (i in seq_along(dots)) {
+    expr <- rlang::quo_get_expr(dots[[i]])
+    if (is_across_call(expr) && !contains_share_helper(expr) &&
+          is_injected_empty_argument(parse_across_arguments(expr)$names)) {
+      selection_proxy <- summary_selection_proxy(
+        data_proxy, data_vars = data_vars, group_vars = group_vars
+      )
+      dplyr::summarise(vctrs::vec_slice(selection_proxy, 0L), !!!dots[i])
+    }
+  }
+  invisible(NULL)
+}
+
 plan_summary_expressions <- function(dots,
                                      data_proxy,
                                      data_vars,
@@ -878,6 +903,7 @@ plan_summary_expressions <- function(dots,
                                      local_data = NULL) {
   stopifnot(inherits(plan, "margin_grouping_plan"))
   group_vars <- c(plan$by, plan$dimensions)
+  refuse_empty_across_names(dots, data_proxy, data_vars, group_vars)
   if (!is.null(local_data) && first_across_needs_planning(dots)) {
     return(plan_first_local_across(
       dots, local_data, data_vars, group_vars, plan, call,
@@ -3449,6 +3475,14 @@ binds_to_helper_formals <- function(expr) {
     },
     error = function(e) FALSE
   )
+}
+
+# Whether an argument is a quosure carrying R's empty argument: what a
+# caller forwarding an argument their own caller omitted injects. It is
+# supplied, as `parse_across_arguments()` reads it (#350), yet evaluating it
+# yields the empty argument.
+is_injected_empty_argument <- function(arg) {
+  rlang::is_quosure(arg) && rlang::quo_is_missing(arg)
 }
 
 # The one place that knows an `across()` argument can be empty, so that no
