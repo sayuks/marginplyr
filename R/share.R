@@ -7415,13 +7415,11 @@ retain_scope_bindings <- function(frame, bound) {
   frame
 }
 
-# Translated dtplyr syntax has no frame information for named arguments.
+# Translated dtplyr syntax has no frame information for a removal target, so a
+# named target leaves the removal unreadable. Without lexical scope, a `c()` in
+# `list` is read by its spelling, as `lookup_assignment_names()` reads names.
 removal_retained_bound <- function(expr, bound) {
-  args <- static_call_args(expr)
-  if (any(nzchar(argument_names(args)))) {
-    return(character())
-  }
-  removed <- literal_removal_names(args)
+  removed <- literal_removal_names(static_call_args(expr), is_concat = NULL)
   if (is.null(removed)) character() else setdiff(bound, removed)
 }
 
