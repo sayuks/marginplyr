@@ -304,3 +304,30 @@ test_that("dtplyr shares select their displayed denominator without dispatch", {
   expect_identical(result$value, c(1, 3, 4))
   expect_identical(result$ratio, c(0.25, 0.75, 1))
 })
+
+test_that("a caller call with the generated head keeps its .BY input read", {
+  skip_if_suggest_absent("dtplyr")
+  # dtplyr imports data.table; only one optional backend is required.
+  input <- data.frame(f = c("P", "P"), g = c("a", "b"), .BY = c(1, 3))
+  # The primitive `:::` head is what translated private calls carry; a parsed
+  # `marginplyr:::` call has the symbol instead.
+  generated <- rlang::call2(
+    rlang::call2(base::`:::`, quote(marginplyr), quote(standard_margin_frame)),
+    quote(g)
+  )
+  summarize <- function(source) {
+    dplyr::collect(summarize_with_margins(
+      source, value = sum(.BY), fraction = share_of_parent(value),
+      observed = local({
+        !!generated
+        mean(.BY)
+      }),
+      .by = f, .grouping = rollup(g)
+    ))
+  }
+  expected <- summarize(input)
+  expect_identical(expected$observed, c(1, 3, 2))
+  actual <- summarize(dtplyr::lazy_dt(data.table::as.data.table(input)))
+  expect_identical(actual$observed, expected$observed)
+  expect_identical(actual$fraction, expected$fraction)
+})

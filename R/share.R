@@ -1444,6 +1444,10 @@ dtplyr_share_binds_measure <- function(expr, measure = ".BY") {
   if (!rlang::is_call(expr)) {
     return(FALSE)
   }
+  if (is_generated_private_call(expr)) {
+    return(any(vapply(static_call_args(expr), dtplyr_share_binds_measure,
+                      logical(1), measure = measure)))
+  }
   name <- static_call_name(expr)
   if (identical(name, "function")) {
     return(FALSE)
