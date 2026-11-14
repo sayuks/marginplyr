@@ -1424,6 +1424,22 @@ test_that("an unresolved closure invocation after a removal refuses", {
   data <- known_closure_transfer_data()
   expect_transfer_dependencies(data, unresolved_closure_transfers())
   expect_converter_values(data, unresolved_closure_transfers(retain = TRUE), 11)
+  # A local() value that is not function syntax carries no closure, and a
+  # getElement() field of a fresh environment is not read as a list member.
+  expect_converter_values(data, alist(
+    (function(prior) {
+      held <- local(7)
+      rm(prior)
+      held
+    })(11),
+    (function(prior) {
+      fields <- new.env()
+      fields$read <- function() 7
+      held <- getElement(fields, "read")
+      rm(prior)
+      held()
+    })(11)
+  ), 7)
   for (expr in unresolved_closure_transfers()) {
     expect_equal(
       dplyr::summarize(data, prior = sum(.data$x), value = !!expr)$value, 4

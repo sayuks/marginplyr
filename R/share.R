@@ -5443,7 +5443,8 @@ scope_value_possible <- function(expr, scope, lookup) {
   expr <- unparenthesized_value(expr)
   if (is_name_part(expr)) return(scope_binding_possible(expr, scope))
   operator <- static_call_name(expr)
-  if (is.null(operator) || is_parenthesized(static_call_head(expr))) {
+  if (is.null(operator) || length(expr) < 2L ||
+        is_parenthesized(static_call_head(expr))) {
     return(NULL)
   }
   transfer_lookup <- lookup
@@ -5469,7 +5470,6 @@ scope_value_possible <- function(expr, scope, lookup) {
     })
     return(scope_join_members(unlist(members, recursive = FALSE)))
   }
-  if (length(expr) < 3L) return(NULL)
   possible <- scope_value_possible(expr[[2L]], scope, lookup)
   if (!is.null(possible) ||
         !is.null(scope_closure_carrier_path(expr, scope, lookup))) {
@@ -6900,9 +6900,7 @@ scope_replace_list_member <- function(elements, path, member, delete) {
 scope_replacement_keeps_input <- function(replacement, target, scope, lookup) {
   closure <- scope_call_closure(replacement, scope, lookup)
   variants <- scope_closure_variants(closure)
-  if (length(variants) == 0L ||
-        length(closure$unknown_definition_parts) > 0L) return(FALSE)
-  all(vapply(variants, function(variant) {
+  length(variants) > 0L && all(vapply(variants, function(variant) {
     scope_variant_keeps_input(variant, replacement, target, scope, lookup)
   }, logical(1)))
 }
@@ -6911,16 +6909,11 @@ scope_replacement_keeps_input <- function(replacement, target, scope, lookup) {
 # literal non-function defaults are skipped by function lookup in its body.
 scope_variant_keeps_input <- function(variant, replacement, target, scope,
                                       lookup) {
-  if (length(variant$unknown_definition_parts) > 0L) return(FALSE)
   definition <- variant$definition
   result <- unparenthesized_value(definition[[3L]])
   if (rlang::is_call(result, "{", n = 1L)) {
     frame <- function_scope_frame(definition[[2L]], NULL)
-    frame$enclosing <- if (length(variant$frames) > 0L) {
-      1L
-    } else {
-      variant$enclosing
-    }
+    frame$enclosing <- if (length(variant$frames)) 1L else variant$enclosing
     inner <- c(list(frame), scope_closure_scope(variant, scope))
     if (!is_known_base_frame_call(result, "{", inner, lookup)) return(FALSE)
     result <- unparenthesized_value(result[[2L]])
@@ -6935,7 +6928,8 @@ scope_variant_keeps_input <- function(variant, replacement, target, scope,
     call, rlang::new_function(definition[[2L]], NULL, emptyenv()),
     expand_dots = FALSE
   )
-  identical(matched[[rlang::as_name(result)]], input)
+  length(variant$unknown_definition_parts) == 0L &&
+    identical(matched[[rlang::as_name(result)]], input)
 }
 
 # Update a tracked plain list's literal names for a known base setter.
