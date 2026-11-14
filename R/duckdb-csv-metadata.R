@@ -836,7 +836,8 @@ validate_duckdb_csv_metadata <- function(
 # including both join inputs. Leave translation to the owned audit/collect
 # paths so preflight cannot duplicate translation conditions or change their
 # Sent-query outcomes; sql_render.marginplyr_duckdb_selection() checks the
-# rendered statement there.
+# rendered statement there. The caller passes a dbplyr lazy query or a part of
+# one, which never holds a missing argument or a quosure.
 validate_duckdb_csv_query <- function(query, catalog) {
   if (inherits(query, "dbplyr_table_path")) {
     # dbplyr captures table paths as already quoted multipart SQL identifiers.

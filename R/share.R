@@ -5487,6 +5487,7 @@ scope_factory_result <- function(expr, scope, lookup, read_value,
 
 # Retain factory frames closed over by a returned member. Closures from the
 # live stack only need their offsets moved past the departing frames.
+# The caller passes a definition-bearing closure, which has no alternatives.
 scope_rebase_factory_closure <- function(closure, result) {
   if (closure$enclosing <= result$factory_frames) {
     frames <- result$scope[seq.int(closure$enclosing, result$factory_frames)]
@@ -5703,6 +5704,7 @@ scope_closure_list <- function(expr, scope, lookup) {
 
 # Preserve a singleton callable through stock predicates and identity callbacks.
 # Neither the callback nor a caller-supplied collection is executed here.
+# The caller passes only a Filter, lapply, Map or Reduce call.
 scope_singleton_callback_list <- function(expr, scope, lookup) {
   operator <- static_call_name(expr)
   rule <- switch(operator,
