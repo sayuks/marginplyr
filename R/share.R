@@ -5466,7 +5466,17 @@ scope_value_possible <- function(expr, scope, lookup) {
     return(list(definition = definition, enclosing = 1L))
   }
   if (operator %in% c("Filter", "lapply", "Map", "Reduce")) {
-    # Whatever the callback, the result may hold any closure the call carries.
+    # lapply() and Map() return only what their callback returns. Filter()
+    # and Reduce() can return the collection's own elements, and any other
+    # callback may return a closure the call carries.
+    formal <- if (identical(operator, "lapply")) "FUN" else "f"
+    callback <- static_matched_arguments(
+      expr, get(operator, envir = baseenv())
+    )[[formal]]
+    if (operator %in% c("lapply", "Map") && !is.null(callback) &&
+          scope_callee_returns_fresh(rlang::call2(callback), scope, lookup)) {
+      return(NULL)
+    }
     return(scope_join_members(
       scope_carried_closures(static_call_args(expr), scope, lookup)
     ))
