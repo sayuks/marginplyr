@@ -38,6 +38,9 @@ test_that("local replacements can retain the original list member", {
   )
 })
 
+# The walk cannot prove these setters return their input, so after the
+# removal the carrier may still hold the closure reading the earlier alias
+# and the source refuses (#1666).
 test_that("an unknown replacement leaves list dependencies unproven", {
   data <- list_replacement_data()
   probe <- rlang::env(calls = 0L)
@@ -51,15 +54,15 @@ test_that("an unknown replacement leaves list dependencies unproven", {
     rm(prior)
     carrier$read()
   })(1))
-  expect_share_dependency_values(data, list(read), expected = 7)
-  expect_identical(probe$calls, 12L)
-  expect_share_dependency_values(data, alist((function(prior) {
+  expect_share_dependencies(data, list(read))
+  expect_identical(probe$calls, 0L)
+  expect_share_dependencies(data, alist((function(prior) {
     `[[<-` <- function(x, i, value) i
     carrier <- list(read = function() sum(prior))
     carrier[[i = list(read = function() 7)]] <- function() sum(prior)
     rm(prior)
     carrier$read()
-  })(1)), expected = 7)
+  })(1)))
 })
 
 test_that("base list replacements follow function and namespace lookup", {
@@ -81,7 +84,9 @@ test_that("base list replacements follow function and namespace lookup", {
   ))
 })
 
-test_that("unproven member and name setters invalidate the original member", {
+# Neither setter is proven to return its input, so the original member may
+# survive the removal and the source refuses (#1666).
+test_that("unproven member and name setters may keep the original member", {
   reads <- alist(
     (function(prior) {
       `[<-` <- function(x, i, ..., value) base::`[<-`(x, i, value = value)
@@ -98,5 +103,5 @@ test_that("unproven member and name setters invalidate the original member", {
       carrier$read()
     })(1)
   )
-  expect_share_dependency_values(list_replacement_data(), reads, expected = 7)
+  expect_share_dependencies(list_replacement_data(), reads)
 })
