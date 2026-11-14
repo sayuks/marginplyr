@@ -5646,11 +5646,11 @@ is_fresh_result <- function(expr, earlier, formals) {
         identical(rlang::as_name(statement[[2L]]), name)
     }, logical(1))
     others <- c(earlier[!binds], lapply(earlier[binds], `[[`, 3L))
-    return(!name %in% formals && any(binds) &&
-             !name %in% all.names(as.call(c(quote(list), others))) &&
-             all(vapply(earlier[binds], function(statement) {
-               is_fresh_result(statement[[3L]], list(), formals)
-             }, logical(1))))
+    fresh <- vapply(earlier[binds], function(statement) {
+      is_fresh_result(statement[[3L]], list(), formals)
+    }, logical(1))
+    return(!name %in% formals && any(binds) && all(fresh) &&
+             !name %in% all.names(as.call(c(quote(list), others))))
   }
   if (!rlang::is_call(expr)) return(TRUE)
   name <- static_call_name(expr)

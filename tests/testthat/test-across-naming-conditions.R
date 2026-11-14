@@ -223,7 +223,7 @@ test_that("an injected empty `.names` keeps dplyr's condition before a share", {
   }
 })
 
-test_that("an injected empty `.names` over earlier outputs keeps dplyr's condition", {
+test_that("an empty `.names` over earlier outputs keeps dplyr's condition", {
   # The selection reaches earlier summary outputs, which the same call without
   # the share also selects before dplyr evaluates `.names` (#1664).
   data <- data.frame(g = c("a", "b"), y = c(1, 3))
