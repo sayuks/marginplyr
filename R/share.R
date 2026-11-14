@@ -1450,8 +1450,7 @@ protect_dtplyr_share_measure <- function(step) {
 # `is_concat` decides whether a `c()` call in a literal name list concatenates;
 # without `assignments`, only a removal or an unnamed callee counts.
 dtplyr_share_binds_measure <- function(expr, measure = ".BY",
-                                       is_concat = function(part) FALSE,
-                                       assignments = TRUE) {
+                                       is_concat, assignments = TRUE) {
   expr <- unparenthesized_value(expr)
   if (!rlang::is_call(expr)) {
     return(FALSE)
@@ -1533,7 +1532,7 @@ dtplyr_expression_rebinds <- function(expr, name) {
 # Freeze the generated across input-name read before aliasing so its
 # validation mapping continues to name the caller's selected column.
 rewrite_dtplyr_share_measure <- function(expr, alias, measure = ".BY",
-                                         is_concat = function(part) FALSE) {
+                                         is_concat) {
   if (rlang::is_symbol(expr, measure)) {
     return(rlang::sym(alias))
   }
