@@ -1501,3 +1501,62 @@ test_that("an unresolved closure invocation after a removal refuses", {
     )
   }
 })
+
+# A caller function whose result does not spell a formal may still return its
+# argument through a lookup the walk does not read, so only a visibly fresh
+# result clears the closures its arguments carry (#1666).
+test_that("a caller function returning its argument indirectly refuses", {
+  data <- known_closure_transfer_data()
+  caller <- rlang::env(
+    rlang::global_env(),
+    via_get = function(x) get("x"),
+    via_env = function(x) as.list(environment())[[1L]],
+    fresh = function(x) function() 7,
+    fresh_list = function(x) list(f = function() 7, n = 1L)
+  )
+  forms <- alist(
+    (function(prior) {
+      f <- function() sum(prior)
+      # `via_get` is bound in the quosure environment.
+      f <- via_get(f) # nolint: object_usage_linter.
+      rm(prior)
+      f()
+    })(11),
+    (function(prior) {
+      l <- list(f = function() sum(prior))
+      # `via_get` is bound in the quosure environment.
+      l <- via_get(l) # nolint: object_usage_linter.
+      rm(prior)
+      l$f()
+    })(11),
+    (function(prior) {
+      f <- function() sum(prior)
+      # `via_env` is bound in the quosure environment.
+      f <- via_env(f) # nolint: object_usage_linter.
+      rm(prior)
+      f()
+    })(11)
+  )
+  expect_transfer_dependencies(
+    data, lapply(forms, rlang::new_quosure, env = caller)
+  )
+  fresh <- alist(
+    (function(prior) {
+      f <- function() sum(prior)
+      # `fresh` is bound in the quosure environment.
+      f <- fresh(f) # nolint: object_usage_linter.
+      rm(prior)
+      f()
+    })(11),
+    (function(prior) {
+      l <- list(f = function() sum(prior))
+      # `fresh_list` is bound in the quosure environment.
+      l <- fresh_list(l) # nolint: object_usage_linter.
+      rm(prior)
+      l$f()
+    })(11)
+  )
+  expect_converter_values(
+    data, lapply(fresh, rlang::new_quosure, env = caller), 7
+  )
+})

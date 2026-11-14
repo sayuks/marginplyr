@@ -5612,12 +5612,61 @@ definition_result <- function(definition) {
   result
 }
 
-# Whether a definition returns an expression naming none of its formals.
+# Whether a definition visibly returns a new value naming none of its
+# formals: function syntax, a constant, a `list()`, `c()` or `if` whose
+# values are themselves fresh, or a local its body binds only to fresh
+# values. Any other result may return an argument through a lookup this walk
+# does not read, such as `get("x")` (#1666).
 definition_returns_fresh <- function(definition) {
   if (is.null(definition)) return(FALSE)
-  result <- definition_result(definition)
-  !is_name_part(result) &&
-    !any(names(definition[[2L]]) %in% all.names(result))
+  formals <- names(definition[[2L]])
+  earlier <- list()
+  result <- unparenthesized_value(definition[[3L]])
+  while (rlang::is_call(result, "{") && length(result) > 1L) {
+    earlier <- c(earlier, as.list(result)[-c(1L, length(result))])
+    result <- unparenthesized_value(result[[length(result)]])
+  }
+  targets <- unlist(lapply(earlier, function(statement) {
+    if (is_local_assignment(statement)) rlang::as_name(statement[[2L]])
+  }))
+  if (any(c("list", "c", "if") %in% targets)) return(FALSE)
+  !any(formals %in% all.names(result)) &&
+    is_fresh_result(result, earlier, formals)
+}
+
+# Whether `<-` or `=` binds a plain name.
+is_local_assignment <- function(statement) {
+  rlang::is_call(statement, c("<-", "="), n = 2L) &&
+    is_name_part(statement[[2L]])
+}
+
+# Whether a returned expression is a new value, given the statements before
+# it in the definition's body.
+is_fresh_result <- function(expr, earlier, formals) {
+  expr <- unparenthesized_value(expr)
+  if (is_name_part(expr)) {
+    name <- rlang::as_name(expr)
+    binds <- vapply(earlier, function(statement) {
+      is_local_assignment(statement) &&
+        identical(rlang::as_name(statement[[2L]]), name)
+    }, logical(1))
+    others <- c(earlier[!binds], lapply(earlier[binds], `[[`, 3L))
+    return(!name %in% formals && any(binds) &&
+             !name %in% all.names(as.call(c(quote(list), others))) &&
+             all(vapply(earlier[binds], function(statement) {
+               is_fresh_result(statement[[3L]], list(), formals)
+             }, logical(1))))
+  }
+  if (!rlang::is_call(expr)) return(TRUE)
+  name <- static_call_name(expr)
+  if (identical(name, "function")) return(TRUE)
+  values <- if (identical(name, "if")) {
+    as.list(expr)[-(1:2)]
+  } else if (!is.null(name) && name %in% c("list", "c")) {
+    static_call_args(expr)
+  }
+  !is.null(values) && all(vapply(values, is_fresh_result, logical(1),
+                                 earlier = earlier, formals = formals))
 }
 
 # Whether an expression calls only base functions, so no caller code decides
