@@ -287,8 +287,10 @@ assignment_target_names <- function(expr) {
 }
 
 # Names assigned by this call itself, or the unresolved marker when a reflective
-# assignment's target is not statically known. The caller supplies a call.
-lookup_assignment_names <- function(expr, replacement = TRUE) {
+# assignment's target is not statically known. The caller supplies a call, and
+# a concatenation check as `static_character_value()` takes one.
+lookup_assignment_names <- function(expr, replacement = TRUE,
+                                    is_concat = NULL) {
   name <- resolved_callee_name(expr)
   assigned <- if (!is.null(name) && name %in% c("<-", "=", "<<-", "for") &&
                     length(expr) >= 3L &&
@@ -302,7 +304,8 @@ lookup_assignment_names <- function(expr, replacement = TRUE) {
         name %in% c("assign", "delayedAssign", "makeActiveBinding")) {
     formal <- if (name == "makeActiveBinding") "sym" else "x"
     assigned <- unlist(lapply(
-      call_formal_argument(expr, formal), static_character_value
+      call_formal_argument(expr, formal), static_character_value,
+      is_concat = is_concat
     ), use.names = FALSE)
     if (is.null(assigned)) {
       assigned <- unresolved_lookup_name()
