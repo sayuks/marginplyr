@@ -2130,7 +2130,11 @@ test_that("a `function` formal or a reference body is not fresh", {
   rebinding <- rlang::env(rlang::global_env(), `function` = rebinder)
   nested <- rlang::env(rebinding)
   active <- rlang::env(rlang::global_env())
-  makeActiveBinding("function", function() rebinder, active)
+  active_reads <- 0L
+  makeActiveBinding("function", function() {
+    active_reads <<- active_reads + 1L
+    rebinder
+  }, active)
   lazy <- rlang::env(rlang::global_env())
   delayedAssign("function", rebinder, assign.env = lazy)
   enclosed <- rlang::env(
@@ -2187,6 +2191,30 @@ test_that("a `function` formal or a reference body is not fresh", {
   expect_transfer_dependencies(
     data, lapply(enclosed_forms, rlang::new_quosure, env = enclosed)
   )
+  # Planning reads neither binding's value.
+  expect_identical(active_reads, 0L)
+  expect_true(rlang::env_binding_are_lazy(lazy, "function"))
+  # A classed enclosure's `[[` method cannot hide its binding.
+  assign("[[.marginplyr_trick_env", function(x, i, ...) base::`function`,
+         envir = globalenv())
+  withr::defer(rm("[[.marginplyr_trick_env", envir = globalenv()))
+  classed <- rlang::env(rlang::global_env(), `function` = rebinder)
+  class(classed) <- "marginplyr_trick_env"
+  on_classed <- rlang::env(
+    rlang::global_env(),
+    on_classed = rlang::new_function(
+      alist(x = ), quote(function() 7), env = classed
+    )
+  )
+  expect_transfer_dependencies(data, list(rlang::new_quosure(quote(
+    (function(prior) {
+      f <- function() sum(prior)
+      # `on_classed` is bound in the quosure environment.
+      h <- on_classed(f) # nolint: object_usage_linter.
+      rm(prior)
+      h()
+    })(11)
+  ), on_classed)))
   operator <- rlang::new_function(
     alist(package = , name = ), quote(function(x) function() 7),
     env = rebinding
