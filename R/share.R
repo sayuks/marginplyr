@@ -5529,10 +5529,9 @@ scope_carried_closures <- function(parts, scope, lookup) {
   }), recursive = FALSE)
 }
 
-# Whether every definition the call may run is visible -- a local closure, a
-# caller function read without forcing a binding, or the function a caller
-# `::` returns -- and returns an expression naming none of its formals, so the
-# result cannot be an input closure.
+# Whether every definition the call may run -- a local closure, a caller
+# function read without forcing a binding, or the function a caller `::`
+# returns -- is visible and passes definition_returns_fresh().
 scope_callee_returns_fresh <- function(expr, scope, lookup) {
   closure <- scope_call_closure(expr, scope, lookup)
   definitions <- if (!is.null(closure)) {
