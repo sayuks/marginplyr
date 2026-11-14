@@ -1560,3 +1560,103 @@ test_that("a caller function returning its argument indirectly refuses", {
     data, lapply(fresh, rlang::new_quosure, env = caller), 7
   )
 })
+
+test_that("caller calls R refuses or defaults stay with their caller", {
+  data <- known_closure_transfer_data()
+  caller <- rlang::env(
+    rlang::global_env(), held = 1, ident = function(x = function() 7) x
+  )
+  # A default stands in for an omitted or empty argument, so no input
+  # closure passes through the call.
+  omitted <- alist(
+    (function(prior) {
+      # `ident` is bound in the quosure environment.
+      g <- ident() # nolint: object_usage_linter.
+      rm(prior)
+      g()
+    })(11),
+    (function(prior) {
+      # `ident` is bound in the quosure environment.
+      g <- ident(x = ) # nolint: object_usage_linter.
+      rm(prior)
+      g()
+    })(11)
+  )
+  expect_converter_values(
+    data, lapply(omitted, rlang::new_quosure, env = caller), 7
+  )
+  # R refuses to call a caller value that is not a function, so the call
+  # carries no closure and the share keeps the ordinary condition.
+  applied <- rlang::new_quosure(quote((function(prior) {
+    f <- function() sum(prior)
+    # `held` is bound in the quosure environment.
+    g <- (held)(f) # nolint: object_usage_linter.
+    rm(prior)
+    g()
+  })(11)), caller)
+  ordinary <- expect_error(summarize_with_margins(
+    data, prior = sum(.data$x), value = !!applied, .grouping = rollup("group")
+  ))
+  for (helper in rlang::syms(c("share_of_parent", "share_of_total"))) {
+    actual <- expect_error(summarize_with_margins(
+      data, prior = sum(.data$x), value = !!applied,
+      ratio = (!!helper)(value), .grouping = rollup("group")
+    ))
+    expect_identical(class(actual), class(ordinary))
+    expect_identical(conditionMessage(actual), conditionMessage(ordinary))
+  }
+})
+
+# A selector or callback that caller code computes may pick any closure its
+# carrier holds, as may a function literal passed through a caller function
+# or a caller function that rebinds a constructor (#1666).
+carried_closure_transfers <- function(retain = FALSE) {
+  forms <- alist(
+    (function(prior) {
+      l <- list(f = function() sum(prior))
+      # `key` is bound in the quosure environment.
+      g <- l[[key()]] # nolint: object_usage_linter.
+      rm(prior)
+      g()
+    })(11),
+    (function(prior) {
+      l <- Filter(function(f) is.function(f), list(function() sum(prior)))
+      rm(prior)
+      l[[1]]()
+    })(11),
+    (function(prior) {
+      # `touch` is bound in the quosure environment.
+      g <- touch(function() sum(prior)) # nolint: object_usage_linter.
+      rm(prior)
+      g()
+    })(11),
+    (function(prior) {
+      l <- list(f = function() sum(prior))
+      # `shadow` is bound in the quosure environment.
+      l <- shadow(l) # nolint: object_usage_linter.
+      rm(prior)
+      l$f()
+    })(11)
+  )
+  if (retain) {
+    forms <- lapply(forms, remove_rm_statements)
+  }
+  caller <- rlang::env(
+    rlang::global_env(), key = function() "f",
+    touch = function(x) {
+      force(x)
+      x
+    },
+    shadow = function(x) {
+      list <- function(...) x
+      list(f = function() 7)
+    }
+  )
+  lapply(forms, rlang::new_quosure, env = caller)
+}
+
+test_that("computed selectors and callbacks keep the carrier's closures", {
+  data <- known_closure_transfer_data()
+  expect_transfer_dependencies(data, carried_closure_transfers())
+  expect_converter_values(data, carried_closure_transfers(retain = TRUE), 11)
+})

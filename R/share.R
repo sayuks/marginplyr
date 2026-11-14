@@ -5433,12 +5433,12 @@ scope_closure_carrier_path <- function(head, scope, lookup) {
 }
 
 # Every closure a value may hold when it passes through a transfer the walk
-# cannot read: a base member selector, explicit local() environment or stock
-# callback spelled outside what the walk resolves, or a function whose
-# definition is not visible as returning a fresh value. Invoking it walks each
-# one, so a closure reading an earlier alias is refused while one that reads
-# none stays shareable (#130, #1666). Offsets are stack-relative; NULL means
-# no such possibility.
+# cannot read: a base member selector, explicit local() environment or
+# collection callback spelled outside what the walk resolves, or a function
+# whose definition is not visible as returning a fresh value. Invoking it walks
+# each one, so a closure reading an earlier alias is refused while one that
+# reads none stays shareable (#130, #1666). Offsets are stack-relative; NULL
+# means no such possibility.
 scope_value_possible <- function(expr, scope, lookup) {
   expr <- unparenthesized_value(expr)
   if (is_name_part(expr)) return(scope_binding_possible(expr, scope))
@@ -5466,7 +5466,7 @@ scope_value_possible <- function(expr, scope, lookup) {
     return(list(definition = definition, enclosing = 1L))
   }
   if (operator %in% c("Filter", "lapply", "Map", "Reduce")) {
-    if (!is_stock_callback_call(expr, scope, lookup)) return(NULL)
+    # Whatever the callback, the result may hold any closure the call carries.
     return(scope_join_members(
       scope_carried_closures(static_call_args(expr), scope, lookup)
     ))
@@ -5477,15 +5477,14 @@ scope_value_possible <- function(expr, scope, lookup) {
     return(possible)
   }
   # `$` takes its member name unevaluated, so any other spelling fails in R,
-  # and a list returns NULL for a missing-value key. A selector computed by
-  # caller code is left to execution.
+  # and a list returns NULL for a missing-value key. Any other selector,
+  # including one caller code computes, may pick any closure the carrier
+  # holds.
   selectors <- lapply(as.list(expr)[-(1:2)], unparenthesized_value)
   key <- selectors[!rlang::names2(selectors) %in% c("exact", "drop")]
   missing_key <- length(key) == 1L && is.atomic(key[[1L]]) &&
     !is.object(key[[1L]]) && length(key[[1L]]) == 1L && is.na(key[[1L]])
-  base_only <- vapply(selectors, is_base_only_syntax, logical(1),
-                      scope = scope, lookup = lookup)
-  if (identical(operator, "$") || missing_key || !all(base_only)) {
+  if (identical(operator, "$") || missing_key) {
     return(NULL)
   }
   scope_join_members(scope_list_closures(
@@ -5509,8 +5508,10 @@ scope_unread_return_possible <- function(expr, scope, lookup) {
                                             lookup))
 }
 
-# Every closure variant the given expressions hold or may hold.
+# Every closure variant the given expressions hold or may hold. An empty
+# argument holds none.
 scope_carried_closures <- function(parts, scope, lookup) {
+  parts <- parts[!vapply(parts, rlang::is_missing, logical(1))]
   unlist(lapply(parts, function(part) {
     c(scope_closure_variants(scope_value_closure(part, scope, lookup)),
       scope_list_closures(scope_closure_list(part, scope, lookup)),
@@ -5670,37 +5671,6 @@ is_known_base_head <- function(expr, name, scope, lookup) {
   !is.null(name) && !is_parenthesized(static_call_head(expr)) &&
     exists(name, envir = baseenv(), inherits = FALSE) &&
     is_known_base_frame_call(expr, name, scope, lookup)
-}
-
-# Whether an expression calls only base functions, so no caller code decides
-# its value. Names and constants qualify; function syntax does not.
-is_base_only_syntax <- function(expr, scope, lookup) {
-  if (!rlang::is_call(expr)) return(TRUE)
-  name <- static_call_name(expr)
-  !identical(name, "function") &&
-    is_known_base_head(expr, name, scope, lookup) &&
-    all(vapply(as.list(expr)[-1L], is_base_only_syntax, logical(1),
-               scope = scope, lookup = lookup))
-}
-
-# Whether a base Filter, lapply, Map or Reduce call passes its stock callback,
-# `is.function` or `identity`, which returns closures from its collection.
-is_stock_callback_call <- function(expr, scope, lookup) {
-  operator <- static_call_name(expr)
-  formal <- if (identical(operator, "lapply")) "FUN" else "f"
-  parts <- static_matched_arguments(expr, get(operator, envir = baseenv()))
-  callback <- if (formal %in% names(parts)) {
-    unparenthesized_value(parts[[formal]])
-  }
-  if (!is_name_part(callback)) return(FALSE)
-  name <- rlang::as_name(callback)
-  stock <- if (identical(operator, "Filter")) "is.function" else "identity"
-  callback_lookup <- lookup
-  callback_lookup$function_rebound <- lookup$rebound
-  identical(name, stock) &&
-    !name %in% scope_bound_names(scope[scope_visible_frames(scope)]) &&
-    is_known_base_frame_call(rlang::call2(callback), stock, scope,
-                             callback_lookup)
 }
 
 # Every closure variant in a tracked list, through nested members.
