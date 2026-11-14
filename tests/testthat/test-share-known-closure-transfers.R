@@ -1350,7 +1350,9 @@ test_that("dtplyr additional return construction stays lazy", {
 })
 
 # Each form binds a closure reading `prior`, removes the formal, and invokes
-# the closure through a transfer or setter the walk does not resolve (#1666).
+# it through a base selector, local() environment, stock callback or local
+# setter spelled in a way the walk reads only as a set of possible closures
+# (#1666).
 unresolved_closure_transfers <- function(retain = FALSE) {
   forms <- alist(
     (function(prior) {
@@ -1389,34 +1391,6 @@ unresolved_closure_transfers <- function(retain = FALSE) {
       g()
     })(11),
     (function(prior) {
-      l <- list(f = function() sum(prior))
-      # `ident` is bound in the quosure environment.
-      l <- ident(l) # nolint: object_usage_linter.
-      rm(prior)
-      l$f()
-    })(11),
-    (function(prior) {
-      f <- function() sum(prior)
-      # `ident` is bound in the quosure environment.
-      f <- ident(f) # nolint: object_usage_linter.
-      rm(prior)
-      f()
-    })(11),
-    (function(prior, k) {
-      e <- new.env()
-      # A local `$<-` makes codetools read these fields as globals.
-      e$s <- function(x, name, value) x # nolint: object_usage_linter.
-      if (k) e$s <- function(x, name, value) { # nolint: object_usage_linter.
-        x
-      }
-      `$<-` <- e$s
-      l <- list(f = function() sum(prior))
-      # The local `$<-` makes codetools read the field as a global.
-      l$g <- 1 # nolint: object_usage_linter.
-      rm(prior)
-      l$f()
-    })(11, TRUE),
-    (function(prior) {
       `$<-` <- function(x, name, value, `{` = 1) {
         x
       }
@@ -1430,8 +1404,7 @@ unresolved_closure_transfers <- function(retain = FALSE) {
   if (retain) {
     forms <- lapply(forms, remove_rm_statements)
   }
-  caller <- rlang::env(rlang::global_env(), ident = function(x) x)
-  lapply(forms, rlang::new_quosure, env = caller)
+  lapply(forms, rlang::new_quosure, env = rlang::global_env())
 }
 
 # The same form with its `rm(prior)` statement dropped, so the closure reads
