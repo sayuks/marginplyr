@@ -5470,11 +5470,9 @@ scope_value_possible <- function(expr, scope, lookup) {
   }
   if (operator %in% c("Filter", "lapply", "Map", "Reduce")) {
     if (!is_stock_callback_call(expr, scope, lookup)) return(NULL)
-    members <- lapply(static_call_args(expr), function(part) {
-      c(scope_closure_variants(scope_value_closure(part, scope, lookup)),
-        scope_list_closures(scope_closure_list(part, scope, lookup)))
-    })
-    return(scope_join_members(unlist(members, recursive = FALSE)))
+    return(scope_join_members(
+      scope_carried_closures(static_call_args(expr), scope, lookup)
+    ))
   }
   possible <- scope_value_possible(expr[[2L]], scope, lookup)
   if (!is.null(possible) ||
