@@ -620,3 +620,55 @@ test_that("literal proxy dispatch cannot read earlier share source aliases", {
     }
   }
 })
+
+test_that("proxy reads through a taken arm or an empty index stay visible", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), z = c(7, 9))
+  for (proxy in rlang::exprs(
+    # jarl-ignore if_always_true: The literal condition is syntax under test.
+    if (TRUE) tidyselect::peek_data(),
+    tidyselect::peek_data()
+  )) {
+    source <- rlang::expr(sum(dplyr::pick(c(dplyr::all_of(
+      if ((!!proxy)$prior[][[1L]] < 2) "z" else "x"
+    ), -prior))))
+    control <- summarize_with_margins(
+      data, prior = sum(x), value = !!source, .grouping = rollup(g)
+    )
+    expect_identical(control$value, c(7, 9, 4))
+    expect_error(summarize_with_margins(
+      data, prior = sum(x), value = !!source,
+      ratio = share_of_total(value), .grouping = rollup(g)
+    ), "depends on earlier summary alias `prior`", class = "marginplyr_error")
+  }
+})
+
+test_that("unresolved proxy dispatch leaves input-only sources shareable", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), z = c(7, 9))
+  arguments <- list()
+  namespace <- asNamespace("tidyselect")
+  for (proxy in rlang::exprs(
+    base::do.call(tidyselect::peek_data, list(), quote = 1),
+    base::do.call(tidyselect::peek_data, arguments),
+    base::do.call(tidyselect::peek_data, list(fn = 1)),
+    base::do.call("peek_data", list(), envir = namespace),
+    base::do.call("peek_data", list(), envir = getNamespace("tidyselect")),
+    base::do.call("peek_data", list(), envir = asNamespace(c("tidyselect"))),
+    list(tidyselect::peek_data)[[1L]]()
+  )) {
+    source <- rlang::expr(sum(dplyr::pick(c(dplyr::all_of(
+      if ((!!proxy)$z[[1L]] > 5) "x" else "z"
+    ), -prior))))
+    control <- summarize_with_margins(
+      data, prior = sum(x), value = !!source, .grouping = rollup(g)
+    )
+    result <- summarize_with_margins(
+      data, prior = sum(x), value = !!source,
+      parent = share_of_parent(value), total = share_of_total(value),
+      .grouping = rollup(g)
+    )
+    expect_identical(result$value, control$value)
+    expect_identical(result$value, c(1, 3, 4))
+    expect_identical(result$parent, c(0.25, 0.75, 1))
+    expect_identical(result$total, c(0.25, 0.75, 1))
+  }
+})

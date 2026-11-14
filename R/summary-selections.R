@@ -1246,7 +1246,6 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
   selection_data <- input[columns]
   carrier <- vctrs::vec_slice(input, integer())
   state <- new.env(parent = emptyenv())
-  state$planning <- TRUE
   state$warnings <- list()
   state$fns_warnings <- list()
   state$names_warnings <- list()
@@ -1258,7 +1257,6 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
   capture_fns <- function(value) {
     state$fns_env <- parent.frame()
     state$fns <- list(withCallingHandlers(value, warning = function(cnd) {
-      if (!state$planning) return()
       state$fns_warnings <- c(state$fns_warnings, list(cnd))
       invokeRestart("muffleWarning")
     }))
@@ -1365,7 +1363,6 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
   for (cnd in state$planning_warnings) warning(cnd)
   result <- state$result
   state$result <- NULL
-  state$planning <- FALSE
   # Captured closures now use the first dot's live selection state.
   parent.env(nested_state) <- result$summaries$selection_state$by_dot[[1L]]
   rlang::env_unbind(nested_state, ls(nested_state, all.names = TRUE))
@@ -1403,7 +1400,6 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
     forbidden_names = result$summaries$selection_state
   )[[1L]]
   if (length(state$names_warnings) > 0L) {
-    prepare <- result$summaries$prepare_first_across
     result$summaries$prepare_first_across <- function(grouping_set, set_id,
                                                       conditions) {
       if (set_id == 1L) {
@@ -1416,7 +1412,6 @@ plan_first_local_across <- function(dots, data, data_vars, group_vars,
           )
         )
       }
-      if (!is.null(prepare)) prepare(grouping_set, set_id, conditions)
       invisible(NULL)
     }
   }
@@ -1433,13 +1428,10 @@ replay_local_name_warnings <- function(state) {
 }
 
 # Replace the first planned across function argument after source analysis.
-# A source check may wrap the call; its original syntax remains the planner's
-# evidence for source eligibility rather than the cached function value.
+# A local across source is checked by a separate dot, so the planned first dot
+# is still the across call; its original syntax remains the planner's evidence
+# for source eligibility rather than the cached function value.
 cache_first_across_fns <- function(expr, state) {
-  if (!is_across_call(expr)) {
-    expr[[2L]] <- cache_first_across_fns(expr[[2L]], state)
-    return(expr)
-  }
   parsed <- parse_across_arguments(expr)
   args <- parsed$call_args
   args[[parsed$fns_index]] <- rlang::call2(
@@ -1627,10 +1619,8 @@ context_summary_bindings_safe <- function(expr, lookup, proxy) {
     if (!is.null(parsed$unpack) && !isFALSE(parsed$unpack)) return(FALSE)
     if (!all(vapply(parsed$additional_args, context_summary_bindings_safe,
                     logical(1), lookup = lookup, proxy = proxy))) return(FALSE)
-    cols <- static_call_args(parsed$cols)
-    if (length(cols) != 1L) return(FALSE)
-    selected <- static_character_value(cols[[1L]])
-    if (is.null(selected)) return(FALSE)
+    # Freezing the names also froze the selection as `all_of(<character>)`.
+    selected <- static_character_value(static_call_args(parsed$cols)[[1L]])
     fns <- if (is_known_function_list_call(parsed$fns, lookup$env)) {
       static_call_args(parsed$fns)
     } else {
