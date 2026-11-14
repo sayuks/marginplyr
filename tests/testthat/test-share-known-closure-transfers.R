@@ -1987,9 +1987,11 @@ test_that("a caller function returns a fresh value only as one literal", {
   )
   # A caller `::` is read only when its whole body is the function literal,
   # so that its formals are the only bindings around the returned function.
-  qualified <- quote((function(prior) {
+  # The call is built so that no undeclared package name is spelled in source.
+  qualified_head <- call("::", as.name("pkg"), as.name("fresh"))
+  qualified <- bquote((function(prior) {
     f <- function() sum(prior)
-    h <- pkg::fresh(f)
+    h <- .(qualified_head)(f)
     rm(prior)
     h()
   })(11))
