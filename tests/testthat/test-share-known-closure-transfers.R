@@ -1660,3 +1660,63 @@ test_that("computed selectors and callbacks keep the carrier's closures", {
   expect_transfer_dependencies(data, carried_closure_transfers())
   expect_converter_values(data, carried_closure_transfers(retain = TRUE), 11)
 })
+
+# A local a caller function returns is fresh only when every statement before
+# it binds a value naming nothing: a closure bound over the argument, or an
+# assign() the walk cannot read, returns what the argument carried (#1670).
+test_that("a caller decorator returning a closure over its argument refuses", {
+  data <- known_closure_transfer_data()
+  caller <- rlang::env(
+    rlang::global_env(),
+    logged = function(f) {
+      force(f)
+      g <- function(...) f(...)
+      g
+    },
+    wrapped = function(x) {
+      y <- function() x()
+      y
+    },
+    assigned = function(x) {
+      y <- 1
+      assign("y", x)
+      y
+    },
+    fresh = function(x) {
+      y <- function() 7
+      n <- list(1L, c(2L, 3L))
+      y
+    },
+    fresh_list = function(x) {
+      y <- list(f = function() 7, n = c(1L, 2L))
+      y
+    }
+  )
+  calls <- rlang::syms(c("logged", "wrapped", "assigned"))
+  forms <- lapply(calls, function(call) {
+    rlang::expr((function(prior) {
+      f <- function() sum(prior)
+      h <- (!!call)(f)
+      rm(prior)
+      h()
+    })(11))
+  })
+  expect_transfer_dependencies(
+    data, lapply(forms, rlang::new_quosure, env = caller)
+  )
+  fresh <- rlang::new_quosure(quote((function(prior) {
+    f <- function() sum(prior)
+    # `fresh` is bound in the quosure environment.
+    h <- fresh(f) # nolint: object_usage_linter.
+    rm(prior)
+    h()
+  })(11)), caller)
+  fresh_list <- rlang::new_quosure(quote((function(prior) {
+    f <- function() sum(prior)
+    # `fresh_list` is bound in the quosure environment.
+    h <- fresh_list(f) # nolint: object_usage_linter.
+    rm(prior)
+    h$f()
+  })(11)), caller)
+  expect_converter_values(data, list(fresh, fresh_list), 7)
+})

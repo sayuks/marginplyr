@@ -5647,7 +5647,10 @@ is_local_assignment <- function(statement) {
 }
 
 # Whether a returned expression is a new value, given the statements before
-# it in the definition's body.
+# it in the definition's body. A local is one only when each binding of it is
+# inert and the other statements call only base functions that cannot bind a
+# name in the frame, so neither a closure over an argument nor assign() can
+# stand behind it (#1670).
 is_fresh_result <- function(expr, earlier, formals) {
   expr <- unparenthesized_value(expr)
   if (is_name_part(expr)) {
@@ -5657,11 +5660,16 @@ is_fresh_result <- function(expr, earlier, formals) {
         identical(rlang::as_name(statement[[2L]]), name)
     }, logical(1))
     others <- c(earlier[!binds], lapply(earlier[binds], `[[`, 3L))
-    fresh <- vapply(earlier[binds], function(statement) {
-      is_fresh_result(statement[[3L]], list(), formals)
+    inert <- vapply(earlier[binds], function(statement) {
+      is_inert_value(statement[[3L]])
     }, logical(1))
-    return(!name %in% formals && any(binds) && all(fresh) &&
-             !name %in% all.names(as.call(c(quote(list), others))))
+    targets <- unlist(lapply(earlier, function(statement) {
+      if (is_local_assignment(statement)) rlang::as_name(statement[[2L]])
+    }))
+    return(!name %in% formals && any(binds) && all(inert) &&
+             !name %in% all.names(as.call(c(quote(list), others))) &&
+             all(vapply(others, calls_only_frame_inert_base, logical(1),
+                        rebound = c(formals, targets))))
   }
   if (!rlang::is_call(expr)) return(TRUE)
   name <- static_call_name(expr)
@@ -5673,6 +5681,50 @@ is_fresh_result <- function(expr, earlier, formals) {
   }
   !is.null(values) && all(vapply(values, is_fresh_result, logical(1),
                                  earlier = earlier, formals = formals))
+}
+
+# Whether every call in an expression has a head naming a base function the
+# definition does not rebind and that cannot bind a name in, or read, the
+# calling frame.
+calls_only_frame_inert_base <- function(expr, rebound) {
+  if (rlang::is_missing(expr) || !is.call(expr)) return(TRUE)
+  head <- expr[[1L]]
+  is.name(head) && !rlang::as_name(head) %in% c(rebound, frame_access_calls) &&
+    exists(rlang::as_name(head), envir = baseenv(), inherits = FALSE) &&
+    all(vapply(as.list(expr)[-1L], calls_only_frame_inert_base, logical(1),
+               rebound = rebound))
+}
+
+# Base functions that bind a name in an environment, reach the calling frame
+# or evaluate code in it.
+frame_access_calls <- c(
+  "<<-", "as.environment", "assign", "attach", "delayedAssign", "do.call",
+  "dynGet", "environment", "environment<-", "eval", "eval.parent", "evalq",
+  "get", "get0", "list2env", "local", "makeActiveBinding", "match.fun",
+  "mget", "parent.env", "parent.frame", "pos.to.env", "Recall", "sys.call",
+  "sys.frame", "sys.frames", "sys.function", "with", "within"
+)
+
+# Whether evaluating an expression runs no code and names nothing: a
+# constant, a function literal whose formals and body name nothing, or a
+# `list()` or `c()` of such values.
+is_inert_value <- function(expr) {
+  expr <- unparenthesized_value(expr)
+  if (!is.call(expr)) return(!is.name(expr))
+  if (is_closed_function_literal(expr)) return(TRUE)
+  name <- static_call_name(expr)
+  !is.null(name) && name %in% c("list", "c") &&
+    all(vapply(static_call_args(expr), is_inert_value, logical(1)))
+}
+
+# Whether an expression is function syntax whose formals' defaults and body
+# name nothing, so its closure cannot reach the frame that creates it.
+is_closed_function_literal <- function(expr) {
+  definition <- literal_function_definition(expr)
+  if (is.null(definition)) return(FALSE)
+  parts <- c(as.list(definition[[2L]]), list(definition[[3L]]))
+  names <- unlist(lapply(parts, all.names))
+  all(names %in% c("", "function"))
 }
 
 # Whether a call's unparenthesized head `name` is a base function this scope
