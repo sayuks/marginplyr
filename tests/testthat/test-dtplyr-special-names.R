@@ -714,3 +714,32 @@ test_that("dtplyr key reads retain lexical effects of base control calls", {
     forced = rep(8L, 3L), retained = rep(9L, 3L)
   ))
 })
+
+test_that("dtplyr key reads leave qualified and caller lookups alone", {
+  skip_if_suggest_absent("dtplyr")
+  input <- tibble::tibble(.N = c(10L, 10L, 20L), x = c(2L, 3L, 5L))
+  # The caller binding shares the special column's spelling.
+  .N <- 3L # nolint: object_name_linter.
+  # Injected, the subscripts reach dtplyr as written; inline, rlang would
+  # replace each with its value when the summary is captured.
+  read <- quote(.data[[paste0(".", "N")]])
+  other <- quote(.data[[paste0("x")]])
+  run <- function(data) {
+    summarize_with_margins(
+      data,
+      total = sum(!!read),
+      other = sum(!!other),
+      caller = .env$.N + sum(.N),
+      exported = is.null(data.table::.N),
+      .grouping = rollup(.N), .margin_label = NULL, .sort = "last"
+    )
+  }
+  expected <- tibble::tibble(
+    .N = c(10L, 20L, NA_integer_), total = c(20L, 20L, 40L),
+    other = c(5L, 5L, 10L), caller = c(23L, 23L, 43L), exported = rep(TRUE, 3L)
+  )
+  expect_identical(run(input), expected)
+  query <- run(dtplyr::lazy_dt(input))
+  expect_s3_class(query, "dtplyr_step")
+  expect_identical(dplyr::collect(query), expected)
+})

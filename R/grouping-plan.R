@@ -2994,7 +2994,9 @@ read_grouping_arg <- function(arg, data_vars, wrappers, data_proxy,
 }
 
 # Whether a recognized caller expression needs only the names selection
-# context. The caller supplies the input names and the expression's own scope.
+# context. The caller supplies the input names and the expression's own scope,
+# and asks only of an argument whose spelling through every pair of
+# parentheses is a constructor call, a name, or a value.
 is_name_only_grouping_arg <- function(arg, data_vars, allow_data_peek) {
   expr <- unparenthesized_value(rlang::quo_get_expr(arg), ns = "")
   env <- rlang::quo_get_env(arg)
@@ -3018,9 +3020,7 @@ is_name_only_grouping_arg <- function(arg, data_vars, allow_data_peek) {
     return(TRUE)
   }
   name <- static_spelling_name(expr, "grouping_constructor")
-  if (is.null(name)) {
-    return(FALSE)
-  }
+  stopifnot(!is.null(name))
   stock <- get(name, envir = asNamespace("marginplyr"), inherits = FALSE)
   selection_call_parens_safe(expr, env) &&
     identical(selection_argument_function(expr, env, character()), stock) &&
