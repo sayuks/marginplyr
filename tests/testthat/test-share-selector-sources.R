@@ -694,3 +694,53 @@ test_that("unresolved proxy dispatch refuses every share source it reaches", {
     }
   }
 })
+
+test_that("a constant dispatch environment resolves its literal target", {
+  # do.call() looks a string target up from `envir`, so a constant environment
+  # call names the function as a literal dispatch does (#1663).
+  data <- data.frame(g = c("a", "b"), value = c(1, 3), other = c(7, 9))
+  for (column in rlang::exprs(
+    base::do.call("paste0", list("val", "ue"), envir = baseenv()),
+    do.call("paste0", list("val", "ue"), envir = base::globalenv()),
+    base::do.call("paste0", list("val", "ue"), envir = base::baseenv())
+  )) {
+    result <- summarize_with_margins(
+      data, prior = sum(other),
+      source = sum(dplyr::pick(c(dplyr::all_of(!!column), -prior))),
+      parent = share_of_parent(source), total = share_of_total(source),
+      .grouping = rollup(g)
+    )
+    expect_identical(result$source, c(1, 3, 4))
+    expect_identical(result$parent, c(0.25, 0.75, 1))
+  }
+  # A global lookup reaching tidyselect's peek_data reads the proxy, and an
+  # environment or head the walk cannot name stays refused.
+  withr::local_package("tidyselect")
+  for (proxy in rlang::exprs(
+    base::do.call("peek_data", list(), envir = globalenv()),
+    base::do.call("peek_data", list(), envir = new.env()),
+    base::do.call("peek_data", list(), envir = (function() globalenv())()),
+    base::do.call("peek_data", list(), envir = base::emptyenv())
+  )) {
+    source <- rlang::expr(sum(dplyr::pick(c(dplyr::all_of(
+      if ((!!proxy)$prior[[1L]] < 2) "value" else "other"
+    ), -prior))))
+    for (helper in rlang::syms(c("share_of_parent", "share_of_total"))) {
+      expect_error(summarize_with_margins(
+        data, prior = sum(value), source = !!source,
+        ratio = (!!helper)(source), .grouping = rollup(g)
+      ), "depends on earlier summary alias `prior`",
+      class = "marginplyr_error")
+    }
+  }
+  # A literal dispatch through the global environment reads only `other`.
+  result <- summarize_with_margins(
+    data, prior = sum(value),
+    source = sum(dplyr::pick(c(dplyr::all_of(if (base::do.call(
+      "peek_data", list(), envir = globalenv()
+    )$other[[1L]] > 5) "value" else "other"), -prior))),
+    total = share_of_total(source), .grouping = rollup(g)
+  )
+  expect_identical(result$source, c(1, 3, 4))
+  expect_identical(result$total, c(0.25, 0.75, 1))
+})

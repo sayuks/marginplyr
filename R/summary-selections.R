@@ -2786,15 +2786,20 @@ selection_proxy_dispatch_args <- function(expr, scope) {
   }
 }
 
-# Read a literal, existing environment supplied to a dispatcher.
+# Read a literal, existing environment supplied to a dispatcher: an
+# environment value, a call of base's constant environment accessors, or a
+# loaded namespace named by a literal string.
 selection_proxy_dispatch_env <- function(expr, scope) {
   expr <- unparenthesized_value(expr)
   if (is.environment(expr)) return(expr)
-  if (!rlang::is_call(expr) ||
-        !identical(selection_proxy_function(static_call_head(expr), scope),
-                   base::asNamespace)) {
-    return(NULL)
+  if (!rlang::is_call(expr)) return(NULL)
+  fn <- selection_proxy_function(static_call_head(expr), scope)
+  if (length(expr) == 1L) {
+    for (accessor in list(base::baseenv, base::globalenv, base::emptyenv)) {
+      if (identical(fn, accessor)) return(accessor())
+    }
   }
+  if (!identical(fn, base::asNamespace)) return(NULL)
   args <- static_matched_arguments(expr, base::asNamespace)
   if (rlang::is_string(args[["ns"]]) && args[["ns"]] %in% loadedNamespaces()) {
     return(asNamespace(args[["ns"]]))
