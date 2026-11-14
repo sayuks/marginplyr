@@ -685,6 +685,11 @@ summarize_margin_branch <- function(.data,
   # Outputs matching all or part of `.data` must reach dynamic dots before
   # backend argument matching. Other calls keep early injection so Arrow can
   # recover the originating call when reporting an absorbing summary.
+  #
+  # Each quosure is spliced as `!!quosure`, not bare. Capturing a bare quosure
+  # literal walks into it and evaluates an injected `.data[[key]]` subscript in
+  # this frame rather than the quosure's environment; dplyr's own `!!` returns
+  # the quosure whole (ADR 0007, #1665).
   run_summary <- function() {
     if (any(names(summarize_dots) %in% c(".", ".d", ".da", ".dat", ".data"))) {
       return(dplyr::summarize(
@@ -693,9 +698,12 @@ summarize_margin_branch <- function(.data,
         .by = dplyr::all_of(.by)
       ))
     }
+    unquoted_dots <- lapply(summarize_dots, function(dot) {
+      call("!", call("!", dot))
+    })
     rlang::inject(dplyr::summarize(
       .data = .data,
-      !!!summarize_dots,
+      !!!unquoted_dots,
       .by = dplyr::all_of(.by)
     ))
   }

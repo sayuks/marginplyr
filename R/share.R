@@ -1425,10 +1425,18 @@ protect_dtplyr_share_measure <- function(step) {
     step$parent, measures,
     function(source, safe_name) {
       step$parent <- source
+      lookup <- list(
+        env = step$env,
+        rebound = if (dtplyr_expression_rebinds(step$j, "c")) "c"
+      )
+      is_concat <- function(part) {
+        identical(static_call_name(part), "c") &&
+          is_known_package_call(part, "c", character(), lookup)
+      }
       for (measure in measures) {
         step$j <- rebuild_static_call(step$j, lapply(
           static_call_args(step$j), rewrite_dtplyr_share_measure,
-          alias = safe_name(measure), measure = measure
+          alias = safe_name(measure), measure = measure, is_concat = is_concat
         ))
       }
       step
@@ -1439,26 +1447,52 @@ protect_dtplyr_share_measure <- function(step) {
 
 # Whether evaluated syntax may bind or remove the input name in its scope.
 # Function literals establish a separate scope; unresolved assignments count.
-dtplyr_share_binds_measure <- function(expr, measure = ".BY") {
+# `is_concat` decides whether a `c()` call in a literal name list concatenates;
+# without `assignments`, only a removal or an unnamed callee counts.
+dtplyr_share_binds_measure <- function(expr, measure = ".BY",
+                                       is_concat = function(part) FALSE,
+                                       assignments = TRUE) {
   expr <- unparenthesized_value(expr)
   if (!rlang::is_call(expr)) {
     return(FALSE)
   }
   if (is_generated_private_call(expr)) {
     return(any(vapply(static_call_args(expr), dtplyr_share_binds_measure,
-                      logical(1), measure = measure)))
+                      logical(1), measure = measure, is_concat = is_concat,
+                      assignments = assignments)))
   }
   name <- static_call_name(expr)
   if (identical(name, "function")) {
     return(FALSE)
   }
-  callee <- resolved_callee_name(expr, name)
+  if (dtplyr_call_binds(expr, if (assignments) measure, is_concat)) {
+    return(TRUE)
+  }
+  if (!is.null(name) && name %in% c("rm", "remove") &&
+        !measure %in% removal_retained_bound(expr, measure, is_concat)) {
+    return(TRUE)
+  }
+  parts <- searched_call_parts(expr)
+  parts <- parts[!vapply(parts, rlang::is_missing, logical(1))]
+  any(vapply(parts, dtplyr_share_binds_measure, logical(1),
+             measure = measure, is_concat = is_concat,
+             assignments = assignments))
+}
+
+# Whether this call itself may bind `name` in its evaluation scope. A callee
+# this walk cannot name may bind anything, and so may an unreadable target.
+# A `NULL` name asks only about the callee.
+dtplyr_call_binds <- function(expr, name, is_concat = NULL) {
+  callee <- resolved_callee_name(expr)
   head <- unparenthesized_value(static_call_head(expr))
   if (identical(callee, "do.call") ||
         (is.null(callee) && !identical(static_call_name(head), "function"))) {
     return(TRUE)
   }
-  assigned <- lookup_assignment_names(expr)
+  if (is.null(name)) {
+    return(FALSE)
+  }
+  assigned <- lookup_assignment_names(expr, is_concat = is_concat)
   mutation <- scope_mutation_call(expr, character(), NULL)
   if (!is.null(mutation) &&
         identical(static_call_name(mutation), "list2env")) {
@@ -1466,23 +1500,40 @@ dtplyr_share_binds_measure <- function(expr, measure = ".BY") {
     # key constructors cannot establish which names this setter replaces.
     assigned <- c(assigned, list2env_setter_names(mutation))
   }
-  if (any(c(measure, unresolved_lookup_name()) %in% assigned)) {
-    return(TRUE)
+  any(c(name, unresolved_lookup_name()) %in% assigned)
+}
+
+# Whether translated syntax may bind `name` in any scope it creates, including
+# a formal of a function literal or a binding inside a quoted capture. Where
+# nothing in it does, a spelled `c()` names the caller's `c` throughout, so the
+# scan reads `c()` targets by spelling.
+dtplyr_expression_rebinds <- function(expr, name) {
+  expr <- unparenthesized_value(expr)
+  if (!rlang::is_call(expr)) {
+    return(FALSE)
   }
-  if (!is.null(name) && name %in% c("rm", "remove") &&
-        !measure %in% removal_retained_bound(expr, measure)) {
+  if (is_generated_private_call(expr)) {
+    parts <- static_call_args(expr)
+  } else if (identical(static_call_name(expr), "function")) {
+    if (name %in% names(static_call_args(expr)[[1L]])) {
+      return(TRUE)
+    }
+    parts <- c(function_formal_defaults(expr), static_call_args(expr)[2L])
+  } else if (dtplyr_call_binds(expr, name)) {
     return(TRUE)
+  } else {
+    parts <- as.list(expr)
   }
-  parts <- searched_call_parts(expr)
   parts <- parts[!vapply(parts, rlang::is_missing, logical(1))]
-  any(vapply(parts, dtplyr_share_binds_measure, logical(1), measure = measure))
+  any(vapply(parts, dtplyr_expression_rebinds, logical(1), name = name))
 }
 
 # Replace translated special column reads, retaining lexical scopes, field names
 # and captures. Refuse scopes with unresolved input/lexical reads.
 # Freeze the generated across input-name read before aliasing so its
 # validation mapping continues to name the caller's selected column.
-rewrite_dtplyr_share_measure <- function(expr, alias, measure = ".BY") {
+rewrite_dtplyr_share_measure <- function(expr, alias, measure = ".BY",
+                                         is_concat = function(part) FALSE) {
   if (rlang::is_symbol(expr, measure)) {
     return(rlang::sym(alias))
   }
@@ -1496,7 +1547,7 @@ rewrite_dtplyr_share_measure <- function(expr, alias, measure = ".BY") {
       return(deparse(expr[[2L]]))
     }
     args <- lapply(static_call_args(expr), function(part) {
-      rewrite_dtplyr_share_measure(part, alias, measure)
+      rewrite_dtplyr_share_measure(part, alias, measure, is_concat)
     })
     return(rebuild_static_call(expr, args))
   }
@@ -1520,16 +1571,20 @@ rewrite_dtplyr_share_measure <- function(expr, alias, measure = ".BY") {
   }
   if (identical(name, "function")) {
     parts <- static_call_args(expr)
-    if (measure %in% names(parts[[1L]])) {
-      return(expr)
-    }
     values <- c(function_formal_defaults(expr), parts[2L])
     values <- values[!vapply(values, rlang::is_missing, logical(1))]
+    # A formal owns the name until a removal exposes the enclosing frame, whose
+    # `.BY` is data.table's rather than the input column.
+    formal <- measure %in% names(parts[[1L]])
     rebinds <- any(vapply(
-      values, dtplyr_share_binds_measure, logical(1), measure = measure
+      values, dtplyr_share_binds_measure, logical(1), measure = measure,
+      is_concat = is_concat, assignments = !formal
     ))
+    if (formal && !rebinds) {
+      return(expr)
+    }
   } else {
-    rebinds <- dtplyr_share_binds_measure(expr, measure)
+    rebinds <- dtplyr_share_binds_measure(expr, measure, is_concat)
   }
   if (rebinds) {
     reads <- expression_data_symbols(expr)
@@ -1546,11 +1601,13 @@ rewrite_dtplyr_share_measure <- function(expr, alias, measure = ".BY") {
   }
   if (!is.null(name) && name %in% c("$", "@")) {
     args <- static_call_args(expr)
-    args[1L] <- list(rewrite_dtplyr_share_measure(args[[1L]], alias, measure))
+    args[1L] <- list(rewrite_dtplyr_share_measure(
+      args[[1L]], alias, measure, is_concat
+    ))
     return(rebuild_static_call(expr, args))
   }
   rewrite_evaluated_call_parts(expr, function(part) {
-    rewrite_dtplyr_share_measure(part, alias, measure)
+    rewrite_dtplyr_share_measure(part, alias, measure, is_concat)
   })
 }
 
@@ -7415,13 +7472,12 @@ retain_scope_bindings <- function(frame, bound) {
   frame
 }
 
-# Translated dtplyr syntax has no frame information for named arguments.
-removal_retained_bound <- function(expr, bound) {
-  args <- static_call_args(expr)
-  if (any(nzchar(argument_names(args)))) {
-    return(character())
-  }
-  removed <- literal_removal_names(args)
+# Translated dtplyr syntax has no frame information for a removal target, so a
+# named target leaves the removal unreadable. The caller's `is_concat` admits a
+# `c()` in `list` only where nothing can rebind `c`; otherwise it is unreadable
+# (#130).
+removal_retained_bound <- function(expr, bound, is_concat) {
+  removed <- literal_removal_names(static_call_args(expr), is_concat)
   if (is.null(removed)) character() else setdiff(bound, removed)
 }
 
