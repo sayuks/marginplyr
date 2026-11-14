@@ -1303,7 +1303,12 @@ test_that("additional base return calls respect caller replacements", {
       expect_transfer_dependencies(known_closure_transfer_data(), list(read))
       expect_identical(probe$calls, 0L)
       caller[[callee]] <- fresh
-      expect_converter_values(known_closure_transfer_data(), list(read), 7)
+      if (identical(callee, "withVisible")) {
+        # A list() body may call a rebound `list` (#1670).
+        expect_transfer_dependencies(known_closure_transfer_data(), list(read))
+      } else {
+        expect_converter_values(known_closure_transfer_data(), list(read), 7)
+      }
     }
     caller[[callee]] <- 0L
     expect_transfer_dependencies(known_closure_transfer_data(), list(read))
@@ -1344,7 +1349,12 @@ test_that("additional qualified returns respect caller namespace operators", {
         quote(function(...) function() 7)
       }
       caller[["::"]] <- rlang::new_function(alist(package = , name = ), fresh)
-      expect_converter_values(known_closure_transfer_data(), list(read), 7)
+      if (identical(callee, "withVisible")) {
+        # A list() body may call a rebound `list` (#1670).
+        expect_transfer_dependencies(known_closure_transfer_data(), list(read))
+      } else {
+        expect_converter_values(known_closure_transfer_data(), list(read), 7)
+      }
     }
     caller[["::"]] <- 0L
     expect_transfer_dependencies(known_closure_transfer_data(), list(read))
@@ -1553,6 +1563,7 @@ test_that("a caller function returning its argument indirectly refuses", {
     via_get = function(x) get("x"),
     via_env = function(x) as.list(environment())[[1L]],
     fresh = function(x) function() 7,
+    # A list() body may call a rebound `list` (#1670).
     fresh_list = function(x) list(f = function() 7, n = 1L)
   )
   forms <- alist(
@@ -1576,6 +1587,13 @@ test_that("a caller function returning its argument indirectly refuses", {
       f <- via_env(f) # nolint: object_usage_linter.
       rm(prior)
       f()
+    })(11),
+    (function(prior) {
+      l <- list(f = function() sum(prior))
+      # `fresh_list` is bound in the quosure environment.
+      l <- fresh_list(l) # nolint: object_usage_linter.
+      rm(prior)
+      l$f()
     })(11)
   )
   expect_transfer_dependencies(
@@ -1588,13 +1606,6 @@ test_that("a caller function returning its argument indirectly refuses", {
       f <- fresh(f) # nolint: object_usage_linter.
       rm(prior)
       f()
-    })(11),
-    (function(prior) {
-      l <- list(f = function() sum(prior))
-      # `fresh_list` is bound in the quosure environment.
-      l <- fresh_list(l) # nolint: object_usage_linter.
-      rm(prior)
-      l$f()
     })(11)
   )
   expect_converter_values(
@@ -1959,12 +1970,15 @@ test_that("a caller function returns a fresh value only as one literal", {
   expect_transfer_dependencies(
     data, lapply(forms, rlang::new_quosure, env = caller)
   )
+  # A `{` or list() body may call a rebound callee (#1670); only a body that
+  # is exactly a constant or a closed function literal calls none.
   fresh <- rlang::env(
     rlang::global_env(),
     braced = function(x, n = 1L) {
       function() 7
     },
-    listed = function(x) list(f = function() 7, n = c(1L, 2L))
+    listed = function(x) list(f = function() 7, n = c(1L, 2L)),
+    literal = function(x, n = 1L) function() 7
   )
   kept <- alist(
     (function(prior) {
@@ -1982,11 +1996,21 @@ test_that("a caller function returns a fresh value only as one literal", {
       h$f()
     })(11)
   )
-  expect_converter_values(
-    data, lapply(kept, rlang::new_quosure, env = fresh), 7
+  expect_transfer_dependencies(
+    data, lapply(kept, rlang::new_quosure, env = fresh)
   )
-  # A caller `::` is read only when its whole body is the function literal,
-  # so that its formals are the only bindings around the returned function.
+  literal <- quote((function(prior) {
+    f <- function() sum(prior)
+    # `literal` is bound in the quosure environment.
+    h <- literal(f) # nolint: object_usage_linter.
+    rm(prior)
+    h()
+  })(11))
+  expect_converter_values(
+    data, list(rlang::new_quosure(literal, fresh)), 7
+  )
+  # A caller `::` is read only when its whole body is exactly the function
+  # literal, which calls nothing but `function` before returning it.
   # The call is built so that no undeclared package name is spelled in source.
   qualified_head <- call("::", as.name("pkg"), as.name("fresh"))
   qualified <- bquote((function(prior) {
@@ -2005,12 +2029,18 @@ test_that("a caller function returns a fresh value only as one literal", {
   expect_transfer_dependencies(data, lapply(operators, function(operator) {
     rlang::new_quosure(qualified, rlang::env(`::` = operator))
   }))
-  braced <- rlang::env(`::` = function(package, name) {
-    function(x) function() 7
-  })
-  expect_converter_values(
-    data, list(rlang::new_quosure(qualified, braced)), 7
+  operators <- list(
+    braced = function(package, name) {
+      function(x) function() 7
+    },
+    literal = function(package, name) function(x) function() 7
   )
+  expect_transfer_dependencies(data, list(rlang::new_quosure(
+    qualified, rlang::env(`::` = operators$braced)
+  )))
+  expect_converter_values(data, list(rlang::new_quosure(
+    qualified, rlang::env(`::` = operators$literal)
+  )), 7)
 })
 
 test_that("a caller function's callees rebound by the expression refuse", {
@@ -2021,10 +2051,21 @@ test_that("a caller function's callees rebound by the expression refuse", {
   rebinding <- quote(function(...) {
     .Primitive("list")(get("x", envir = parent.frame()))
   })
+  global <- as.name(".GlobalEnv")
   writes <- list(
     bquote(assign("list", .(rebinding), envir = environment(CALL))),
     bquote(assign("list", .(rebinding), envir = globalenv())),
-    bquote(assign("list", .(rebinding), pos = 1))
+    bquote(assign("list", .(rebinding), pos = 1)),
+    rlang::call2("<-", call("$", global, quote(list)), rebinding),
+    rlang::call2("<-", call("[[", global, "list"), rebinding),
+    bquote({
+      e <- environment(CALL)
+      e$list <- .(rebinding)
+    }),
+    bquote({
+      g <- CALL
+      environment(g)$list <- .(rebinding)
+    })
   )
   forms <- lapply(writes, function(write) {
     bquote((function(prior) {
@@ -2035,11 +2076,16 @@ test_that("a caller function's callees rebound by the expression refuse", {
       h()
     })(11))
   })
-  expressions <- lapply(forms, function(form) {
-    rlang::new_quosure(form, rlang::env(
-      rlang::global_env(), CALL = function(x) list(function() 7)
-    ))
-  })
+  # A global CALL runs its body where the global writes land.
+  callees <- list(
+    function(x) list(function() 7),
+    rlang::new_function(alist(x = ), quote(list(function() 7)), globalenv())
+  )
+  expressions <- unlist(lapply(callees, function(callee) {
+    lapply(forms, function(form) {
+      rlang::new_quosure(form, rlang::env(rlang::global_env(), CALL = callee))
+    })
+  }))
   # The call is built so that no undeclared package name is spelled in source.
   qualified_head <- call("::", as.name("pkg"), as.name("fresh"))
   qualified <- bquote((function(prior) {
@@ -2053,24 +2099,4 @@ test_that("a caller function's callees rebound by the expression refuse", {
     `::` = function(package, name) function(x) list(function() 7)
   ))))
   expect_transfer_dependencies(data, expressions)
-})
-
-test_that("a qualified list or c in a caller function's literal refuses", {
-  data <- known_closure_transfer_data()
-  # The call is built so that no undeclared package name is spelled in source,
-  # and refusing it needs no package installed.
-  qualified_c <- call("::", as.name("class"), as.name("c"))
-  caller <- rlang::env(rlang::global_env())
-  caller$CALL <- rlang::new_function(
-    alist(x = ), rlang::call2(qualified_c, quote(function() 7)), caller
-  )
-  expect_transfer_dependencies(data, list(rlang::new_quosure(
-    quote((function(prior) {
-      f <- function() sum(prior)
-      h <- CALL(f)[[1]]
-      rm(prior)
-      h()
-    })(11)),
-    caller
-  )))
 })
