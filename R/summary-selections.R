@@ -868,6 +868,31 @@ has_nested_summary_selection <- function(expr) {
   ))
 }
 
+# Has dplyr answer an `across()` whose `.names` is an injected empty quosure
+# before share planning reads that `.names`. The quosure is supplied (#350)
+# but carries R's empty argument, so no output names can be read from it,
+# and dplyr refuses it in the `across()` argument -- the condition the same
+# call raises without a share, where dplyr already answers it (#1664).
+refuse_empty_across_names <- function(dots, data_proxy, data_vars,
+                                      group_vars) {
+  if (!any(vapply(dots, function(dot) {
+    contains_share_helper(rlang::quo_get_expr(dot))
+  }, logical(1)))) {
+    return(invisible(NULL))
+  }
+  for (i in seq_along(dots)) {
+    expr <- rlang::quo_get_expr(dots[[i]])
+    if (is_across_call(expr) && !contains_share_helper(expr) &&
+          is_injected_empty_argument(parse_across_arguments(expr)$names)) {
+      selection_proxy <- summary_selection_proxy(
+        data_proxy, data_vars = data_vars, group_vars = group_vars
+      )
+      dplyr::summarise(vctrs::vec_slice(selection_proxy, 0L), !!!dots[i])
+    }
+  }
+  invisible(NULL)
+}
+
 plan_summary_expressions <- function(dots,
                                      data_proxy,
                                      data_vars,
@@ -878,6 +903,7 @@ plan_summary_expressions <- function(dots,
                                      local_data = NULL) {
   stopifnot(inherits(plan, "margin_grouping_plan"))
   group_vars <- c(plan$by, plan$dimensions)
+  refuse_empty_across_names(dots, data_proxy, data_vars, group_vars)
   if (!is.null(local_data) && first_across_needs_planning(dots)) {
     return(plan_first_local_across(
       dots, local_data, data_vars, group_vars, plan, call,
@@ -2608,9 +2634,17 @@ selection_proxy_value_symbols <- function(expr, columns, scope,
   }
   callable <- selection_proxy_callable(static_call_head(expr), scope)
   fn <- callable$fn
-  if (identical(fn, tidyselect::peek_data) ||
-        selection_proxy_dispatch_peek(expr, fn, scope)) {
+  dispatch <- selection_proxy_dispatch_peek(expr, fn, scope)
+  if (identical(fn, tidyselect::peek_data) || identical(dispatch, "literal")) {
     return(result_columns)
+  }
+  # A dispatch this walk cannot resolve may return the proxy, and which of
+  # its columns the caller then reads is not known here (#1663).
+  head <- unparenthesized_value(static_call_head(expr))
+  if (identical(dispatch, "unresolved") ||
+        (is.null(fn) && rlang::is_call(head) &&
+           !rlang::is_call(head, c("::", ":::")))) {
+    return(columns)
   }
   args <- static_call_args(expr)
   subset <- selection_proxy_read_columns(fn, args, columns)
@@ -2661,36 +2695,36 @@ selection_proxy_read_columns <- function(fn, args, columns) {
   NULL
 }
 
-# Whether a known dispatcher calls peek_data with no arguments or only its
-# literal diagnostic label. Neither the dispatch nor its arguments run here.
+# How a known dispatcher reaches peek_data: "literal" for a call with no
+# arguments or only its literal diagnostic label, "unresolved" when the target
+# or the dispatch arguments are not statically known, NULL when it does not
+# dispatch peek_data. Neither the dispatch nor its arguments run here.
 selection_proxy_dispatch_peek <- function(expr, fn, scope) {
   if (identical(fn, base::do.call)) {
     args <- static_matched_arguments(expr, fn)
-    if (!"args" %in% names(args) ||
-          ("quote" %in% names(args) && !rlang::is_bool(args[["quote"]]))) {
-      return(FALSE)
-    }
     forwarded <- selection_proxy_dispatch_args(args[["args"]], scope)
+    known <- "args" %in% names(args) && !is.null(forwarded) &&
+      (!"quote" %in% names(args) || rlang::is_bool(args[["quote"]]))
     target <- "what"
     env_arg <- "envir"
   } else if (identical(fn, rlang::exec)) {
     args <- static_matched_arguments(expr, fn, expand_dots = FALSE)
     forwarded <- as.list(args[["..."]])
+    known <- TRUE
     target <- ".fn"
     env_arg <- ".env"
   } else {
-    return(FALSE)
+    return(NULL)
   }
-  if (!target %in% names(args) || is.null(forwarded)) return(FALSE)
-  if (length(forwarded) > 0L &&
-        (!identical(names(forwarded), "fn") ||
-           !rlang::is_string(unparenthesized_value(forwarded[["fn"]])))) {
-    return(FALSE)
-  }
+  if (!target %in% names(args)) return(NULL)
+  known <- known && (length(forwarded) == 0L || (
+    identical(names(forwarded), "fn") &&
+      rlang::is_string(unparenthesized_value(forwarded[["fn"]]))
+  ))
   env <- if (env_arg %in% names(args)) {
     selection_proxy_dispatch_env(args[[env_arg]], scope)
   }
-  if (env_arg %in% names(args) && is.null(env)) return(FALSE)
+  if (env_arg %in% names(args) && is.null(env)) return("unresolved")
   if (rlang::is_string(unparenthesized_value(args[[target]]))) {
     if (!is.null(env)) scope <- list(list(env = env))
     fn <- selection_proxy_function(
@@ -2701,7 +2735,9 @@ selection_proxy_dispatch_peek <- function(expr, fn, scope) {
       args[[target]], scope, function_position = FALSE
     )
   }
-  identical(fn, tidyselect::peek_data)
+  if (is.null(fn)) return("unresolved")
+  if (!identical(fn, tidyselect::peek_data)) return(NULL)
+  if (known) "literal" else "unresolved"
 }
 
 # The supplied argument list from a literal list value, base list() syntax,
@@ -3439,6 +3475,14 @@ binds_to_helper_formals <- function(expr) {
     },
     error = function(e) FALSE
   )
+}
+
+# Whether an argument is a quosure carrying R's empty argument: what a
+# caller forwarding an argument their own caller omitted injects. It is
+# supplied, as `parse_across_arguments()` reads it (#350), yet evaluating it
+# yields the empty argument.
+is_injected_empty_argument <- function(arg) {
+  rlang::is_quosure(arg) && rlang::quo_is_missing(arg)
 }
 
 # The one place that knows an `across()` argument can be empty, so that no
