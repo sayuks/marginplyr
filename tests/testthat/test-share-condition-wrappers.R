@@ -149,20 +149,26 @@ condition_lookup_controls <- function() {
 test_that("condition wrappers preserve caller lookup and callable classes", {
   data <- condition_wrapper_data()
   expect_condition_values(data, condition_lookup_controls(), 7)
+  local_read <- quote((function(prior) {
+    copied <- base::local({
+      prior <- 7
+      function() sum(prior)
+    })
+    base::rm(prior)
+    copied()
+  })(11))
+  expect_condition_values(data, list(local_read), 7)
+})
+
+# Caller code the walk does not model returns the copy, so which closure it
+# holds is unknown after the removal and the source is refused (#130, #1666).
+test_that("caller methods and callbacks returning a closure refuse", {
   reads <- alist(
     (function(prior) {
       # The converter resolves this caller method through S3 dispatch.
       as.function.AsIs <- # nolint: object_usage_linter.
         function(x, ...) function() 7
       copied <- base::as.function(base::I(function() sum(prior)))
-      base::rm(prior)
-      copied()
-    })(11),
-    (function(prior) {
-      copied <- base::local({
-        prior <- 7
-        function() sum(prior)
-      })
       base::rm(prior)
       copied()
     })(11),
@@ -181,7 +187,7 @@ test_that("condition wrappers preserve caller lookup and callable classes", {
       copied()
     })(11)
   )
-  expect_condition_values(data, reads, 7)
+  expect_share_dependencies(condition_wrapper_data(), reads)
 })
 
 test_that("direct and previous closure carrier controls retain dependencies", {
@@ -258,7 +264,8 @@ test_that("I replaces an implicit function class before converter dispatch", {
       copied()
     })(11))
   })
-  expect_share_dependencies(condition_wrapper_data(), c(list(read), reads))
+  # The explicit class reaches the caller method, whose result the walk does
+  # not model, so it refuses as well (#1666).
   explicit <- quote((function(prior) {
     # The converter resolves this method from the explicit class on copied.
     as.function.function <- # nolint: object_usage_linter.
@@ -269,5 +276,7 @@ test_that("I replaces an implicit function class before converter dispatch", {
     base::rm(prior)
     copied()
   })(11))
-  expect_condition_values(condition_wrapper_data(), list(explicit), 7)
+  expect_share_dependencies(
+    condition_wrapper_data(), c(list(read), reads, list(explicit))
+  )
 })

@@ -73,7 +73,10 @@ mixed_outer_class_dependencies <- function(probe) {
     reads <- c(reads, lapply(writes, function(write) {
       mixed_outer_class_read(probe, write, copied)
     }))
-    reads <- c(reads, lapply(c("direct", "default"), function(kind) {
+    # A caller converter method returns a closure the walk does not model, so
+    # the inner and outer conversions refuse after the removal (#1666).
+    kinds <- c("direct", "default", "inner", "outer")
+    reads <- c(reads, lapply(kinds, function(kind) {
       mixed_outer_class_read(probe, copied = copied, kind = kind)
     }))
   }
@@ -119,17 +122,13 @@ test_that("mixed attributes preserve values and actual callback classes", {
   before <- serialize(data, NULL)
   probe <- rlang::env(factories = 0L, converters = 0L, closures = 0L)
   for (copied in c(FALSE, TRUE)) {
-    for (kind in c("independent", "retained", "inner", "outer")) {
+    for (kind in c("independent", "retained")) {
       read <- mixed_outer_class_read(probe, copied = copied, kind = kind)
       expected <- if (kind == "retained") 11 else 7
       expect_share_dependency_values(data, list(read), expected)
       expect_gt(probe$factories, 0L)
       expect_gt(probe$closures, 0L)
-      if (kind %in% c("inner", "outer")) {
-        expect_gt(probe$converters, 0L)
-      } else {
-        expect_identical(probe$converters, 0L)
-      }
+      expect_identical(probe$converters, 0L)
       probe$factories <- probe$converters <- probe$closures <- 0L
     }
   }
@@ -154,7 +153,7 @@ test_that("dtplyr mixed attribute values wait for explicit collection", {
   for (share in c("parent", "total")) {
     helper <- rlang::call2(paste0("share_of_", share), quote(value))
     for (copied in c(FALSE, TRUE)) {
-      for (kind in c("independent", "retained", "inner", "outer")) {
+      for (kind in c("independent", "retained")) {
         read <- mixed_outer_class_read(probe, copied = copied, kind = kind)
         expected <- if (kind == "retained") 11 else 7
         forward <- summarize_with_margins(
@@ -178,11 +177,7 @@ test_that("dtplyr mixed attribute values wait for explicit collection", {
         expect_gt(probe$factories, 0L)
         expect_gt(probe$closures, 0L)
         expect_gt(probe$reads, 0L)
-        if (kind %in% c("inner", "outer")) {
-          expect_gt(probe$converters, 0L)
-        } else {
-          expect_identical(probe$converters, 0L)
-        }
+        expect_identical(probe$converters, 0L)
         probe$factories <- probe$converters <- 0L
         probe$closures <- probe$reads <- 0L
       }
