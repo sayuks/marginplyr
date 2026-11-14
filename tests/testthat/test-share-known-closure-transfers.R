@@ -2043,6 +2043,79 @@ test_that("a caller function returns a fresh value only as one literal", {
   )), 7)
 })
 
+test_that("a `function` formal or a reference body is not fresh", {
+  data <- known_closure_transfer_data()
+  store <- new.env()
+  caller <- rlang::env(
+    rlang::global_env(),
+    rebinds = rlang::new_function(
+      rlang::pairlist2(x = , `function` = ), quote(function() 7)
+    ),
+    defaulted = rlang::new_function(
+      rlang::pairlist2(x = , `function` = 1), quote(function() 7)
+    ),
+    referenced = rlang::new_function(rlang::pairlist2(x = ), store),
+    callback = rlang::new_function(
+      rlang::pairlist2(i = , `function` = ), quote(function() 7)
+    ),
+    listed = function(i) list(function() 7)
+  )
+  forms <- alist(
+    (function(prior) {
+      f <- function() sum(prior)
+      # `rebinds` is bound in the quosure environment.
+      h <- rebinds(f, function(...) f) # nolint: object_usage_linter.
+      rm(prior)
+      h()
+    })(11),
+    (function(prior) {
+      f <- function() sum(prior)
+      # `defaulted` is bound in the quosure environment.
+      h <- defaulted(f, function(...) f) # nolint: object_usage_linter.
+      rm(prior)
+      h()
+    })(11),
+    (function(prior) {
+      f <- function() sum(prior)
+      # `referenced` is bound in the quosure environment.
+      s <- referenced(f) # nolint: object_usage_linter.
+      s$f <- f
+      rm(prior)
+      s$f()
+    })(11),
+    (function(prior) {
+      f <- function() sum(prior)
+      # `callback` is bound in the quosure environment.
+      h <- lapply( # nolint: object_usage_linter.
+        list(f), callback, function(...) f
+      )
+      rm(prior)
+      h[[1L]]()
+    })(11),
+    (function(prior) {
+      f <- function() sum(prior)
+      # `listed` is bound in the quosure environment.
+      h <- lapply(list(f), listed) # nolint: object_usage_linter.
+      rm(prior)
+      h[[1L]][[1L]]()
+    })(11)
+  )
+  expect_transfer_dependencies(
+    data, lapply(forms, rlang::new_quosure, env = caller)
+  )
+  shadowing <- function(package, name, `function`) function(x) function() 7
+  qualified_head <- call("::", as.name("pkg"), as.name("fresh"))
+  qualified <- bquote((function(prior) {
+    f <- function() sum(prior)
+    h <- .(qualified_head)(f)
+    rm(prior)
+    h()
+  })(11))
+  expect_transfer_dependencies(data, list(rlang::new_quosure(
+    qualified, rlang::env(`::` = shadowing)
+  )))
+})
+
 test_that("a caller function's callees rebound by the expression refuse", {
   data <- known_closure_transfer_data()
   withr::defer(

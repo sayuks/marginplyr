@@ -5550,7 +5550,11 @@ caller_callee_definition <- function(head, scope, lookup) {
   if (rlang::is_call(head, c("::", ":::"))) {
     operator <- caller_function_syntax(rlang::as_string(head[[1L]]), scope,
                                        lookup)
-    if (is.null(operator)) return(NULL)
+    # A formal named `function` would rebind the literal it returns.
+    if (is.null(operator) ||
+          "function" %in% names(as.list(operator[[2L]]))) {
+      return(NULL)
+    }
     result <- operator[[3L]]
     if (!rlang::is_call(result, "function") || length(result) < 3L) {
       return(NULL)
@@ -5628,16 +5632,19 @@ definition_result <- function(definition) {
 }
 
 # Whether a definition visibly returns a new value: no formal has a computed
-# default, and the body is exactly a constant or a function literal per
-# is_closed_function_literal(), so it calls no function but `function`.
-# Anything else may return what an argument carried (#130, #1670).
+# default or is named `function`, and the body is exactly an atomic constant
+# or a function literal per is_closed_function_literal(), so it calls no
+# function but base `function`. Anything else may return what an argument
+# carried (#130, #1670).
 definition_returns_fresh <- function(definition) {
   if (is.null(definition)) return(FALSE)
-  computed <- vapply(as.list(definition[[2L]]), function(default) {
+  formals <- as.list(definition[[2L]])
+  computed <- vapply(formals, function(default) {
     is.language(default) && !rlang::is_missing(default)
   }, logical(1))
   body <- definition[[3L]]
-  !any(computed) && (!is.language(body) || is_closed_function_literal(body))
+  !any(computed) && !"function" %in% names(formals) &&
+    (is.null(body) || is.atomic(body) || is_closed_function_literal(body))
 }
 
 # Whether an expression is, without parentheses, function syntax whose
