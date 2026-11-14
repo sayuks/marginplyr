@@ -742,7 +742,6 @@ new_summary_arguments <- function(dots,
                                   ),
                                   selection_state = NULL,
                                   sql_share_sources = character(),
-                                  label_schema = NULL,
                                   native_share_outputs = character()) {
   stopifnot(
     is.list(dots),
@@ -770,7 +769,6 @@ new_summary_arguments <- function(dots,
     selection_state = selection_state,
     frame_state = frame_state,
     sql_share_sources = sql_share_sources,
-    label_schema = label_schema,
     native_share_outputs = native_share_outputs
   )
 }
@@ -1162,7 +1160,6 @@ plan_summary_expressions <- function(dots,
       caller_labels,
       assigned_names,
       selection_state = selection_state,
-      label_schema = data_proxy,
       native_share_outputs = unlist(
         lapply(summary_plan$requests, `[[`, "outputs"), use.names = FALSE
       ),

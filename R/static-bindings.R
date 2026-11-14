@@ -158,7 +158,6 @@ ordinary_function_binding <- function(name, env, owners = character(),
         return(NULL)
       }
       binding <- get(name, envir = current, inherits = FALSE)
-      if (rlang::is_missing(binding)) return(NULL)
       if (is.function(binding)) {
         return(binding)
       }

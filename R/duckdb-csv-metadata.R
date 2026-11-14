@@ -658,8 +658,9 @@ validate_duckdb_view_metadata <- function(index, catalog, seen) {
   tokens <- duckdb_metadata_tokens(sql)
   quoted <- attr(tokens, "quoted")
   depth <- cumsum((tokens == "(" & !quoted) - (tokens == ")" & !quoted))
+  # A stored definition is DuckDB's own CREATE VIEW statement, whose header
+  # always ends at an unquoted top-level AS.
   start <- which(tokens == "as" & !quoted & depth == 0L)
-  if (!length(start)) abort_duckdb_view_metadata()
   range <- seq.int(start[[1L]] + 1L, length(tokens))
   body <- structure(tokens[range], quoted = quoted[range])
   namespace <- c(view$database_name[[1L]], view$schema_name[[1L]])
@@ -837,9 +838,6 @@ validate_duckdb_csv_metadata <- function(
 # Sent-query outcomes; sql_render.marginplyr_duckdb_selection() checks the
 # rendered statement there.
 validate_duckdb_csv_query <- function(query, catalog) {
-  if (rlang::is_missing(query)) {
-    return(invisible(NULL))
-  }
   if (inherits(query, "dbplyr_table_path")) {
     # dbplyr captures table paths as already quoted multipart SQL identifiers.
     validate_duckdb_csv_metadata(paste("TABLE", query), catalog)
@@ -847,8 +845,6 @@ validate_duckdb_csv_query <- function(query, catalog) {
     for (sql in as.character(query)) {
       validate_duckdb_csv_metadata(sql, catalog)
     }
-  } else if (rlang::is_quosure(query)) {
-    validate_duckdb_csv_query(rlang::quo_get_expr(query), catalog)
   } else if (is.list(query) || is.call(query)) {
     parts <- unclass(query)
     if (is.call(parts)) {

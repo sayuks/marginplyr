@@ -484,6 +484,54 @@ test_that("SQLite preserves a temporary input read through a PRAGMA", {
   expect_identical(dplyr::collect(out)$g, c("main", "Total"))
 })
 
+test_that("SQLite refuses a temporary overwrite it cannot inspect", {
+  skip_if_suggest_absent("RSQLite", "DBI")
+  con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")
+  on.exit(DBI::dbDisconnect(con), add = TRUE)
+  fts5 <- DBI::dbGetQuery(
+    con, "SELECT sqlite_compileoption_used('ENABLE_FTS5') AS enabled"
+  )
+  skip_if(fts5$enabled == 0L, "SQLite was built without FTS5")
+  DBI::dbExecute(con, paste(
+    "CREATE VIRTUAL TABLE temp.lookup USING fts5(content, detail = none)"
+  ))
+  DBI::dbExecute(con, "INSERT INTO temp.lookup VALUES ('keep')")
+  DBI::dbExecute(con, "CREATE TEMP TABLE facts AS SELECT 'old' AS g")
+  temp <- DBI::Id(schema = "temp", table = "facts")
+  query <- expand_with_margins(
+    dplyr::tbl(con, dbplyr::sql("SELECT content AS g FROM temp.lookup")),
+    .grouping = rollup(g), .sort = "last"
+  )
+  get_query <- DBI::dbGetQuery
+  # Each answer is what an SQLite without the PRAGMA, or a driver reporting
+  # no plan, returns: no columns to inspect.
+  for (unanswered in c("PRAGMA temp.table_list", "PRAGMA module_list",
+                       "plan")) {
+    local({
+      local_mocked_bindings(
+        dbGetQuery = function(conn, statement, ...) {
+          blank <- if (identical(unanswered, "plan")) {
+            startsWith(statement, "EXPLAIN") &&
+              !grepl("^EXPLAIN SELECT (1|\\*) FROM", statement)
+          } else {
+            identical(statement, unanswered)
+          }
+          if (blank) return(data.frame())
+          get_query(conn, statement, ...)
+        },
+        .package = "DBI"
+      )
+      expect_error(
+        dplyr::compute(query, name = temp, overwrite = TRUE),
+        "different destination name", class = "marginplyr_error"
+      )
+    })
+    expect_identical(DBI::dbGetQuery(con, "SELECT g FROM temp.facts")$g, "old")
+  }
+  out <- dplyr::compute(query, name = temp, overwrite = TRUE)
+  expect_identical(dplyr::collect(out)$g, c("keep", "Total"))
+})
+
 test_that("analysis failure rolls back the owned SQLite savepoint", {
   skip_if_suggest_absent("RSQLite", "DBI")
   con <- DBI::dbConnect(RSQLite::SQLite(), ":memory:")

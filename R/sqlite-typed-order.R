@@ -801,22 +801,16 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
     if (pronoun_output) {
       # dbplyr's compute() selects every column by symbol before creating the
       # table; tidyselect reads generated `.data` and `.env` as pronouns.
-      if (is.null(destination)) {
-        destination <- dbplyr::as_table_path(
-          basename(tempfile(pattern = "marginplyr_result_")), con
-        )
-      }
       anchor_sql <- dbplyr::sql_render(anchor, sql_options = sql_options)
-      created <- dbplyr::db_compute(
+      dbplyr::db_compute(
         con, destination, anchor_sql, temporary = create_temporary,
         overwrite = overwrite && !publish,
         unique_indexes = create_unique_indexes,
         indexes = create_indexes, analyze = FALSE, ...,
         in_transaction = FALSE
       )
-      result <- dplyr::tbl(con, created, vars = public)
     } else {
-      result <- dplyr::compute(
+      dplyr::compute(
         anchor, name = destination, temporary = create_temporary,
         overwrite = overwrite && !publish,
         unique_indexes = create_unique_indexes,
@@ -824,9 +818,6 @@ compute.marginplyr_sqlite_typed_result <- function(x, name = NULL,
         sql_options = sql_options,
         in_transaction = FALSE
       )
-    }
-    if (is.null(destination)) {
-      destination <- dbplyr::as_table_path(dbplyr::remote_name(result), con)
     }
     parts <- dbplyr::table_path_components(destination, con)[[1L]]
     if (length(parts) == 1L) {
