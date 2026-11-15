@@ -6576,7 +6576,7 @@ scope_readable_replacement <- function(expr, scope, lookup) {
 # Record the captures a readable `body<-` or `formals<-` call's written
 # definition makes in the frames its enclosure reaches, as a literal
 # records them where it is created.
-scope_record_replacement_captures <- function(expr, scope, lookup) {
+scope_replacement_captures <- function(expr, scope, lookup) {
   closure <- scope_readable_replacement(expr, scope, lookup)
   for (variant in scope_closure_variants(closure)) {
     live <- if (variant$enclosing <= length(scope)) {
@@ -7375,9 +7375,7 @@ statement_reads_and_scope <- function(expr, scope, lookup = NULL,
   }
   after <- scope_after_removals(expr[[2L]], retained, lookup)
   if (!is.null(replacement)) {
-    after <- scope_record_replacement_captures(
-      replacement$value, after, lookup
-    )
+    after <- scope_replacement_captures(replacement$value, after, lookup)
   }
   # Read a replacement target and the value in source order. Its eventual
   # binding depends on the shape of the target.
@@ -7529,7 +7527,7 @@ scope_after_removals <- function(expr, scope, lookup) {
   if (!is.null(mutation) && identical(static_call_name(mutation), "list2env")) {
     scope <- scope_forget_kinds(scope, list2env_setter_names(mutation, lookup))
   }
-  scope <- scope_record_replacement_captures(expr, scope, lookup)
+  scope <- scope_replacement_captures(expr, scope, lookup)
   scope
 }
 
