@@ -89,16 +89,12 @@ test_that("list value transfers preserve ordinary caller function lookup", {
       functions[[1L]]()
     })(1), list(transfer = rlang::call2(callee, quote(original))))
     read <- rlang::new_quosure(read, caller)
-    expect_share_dependency_values(data, list(read), expected = 7)
-    expect_identical(probe$calls, 12L)
-    expect_error(
-      summarize_with_margins(
-        data, value = sum(.data$x), prior = share_of_total(value),
-        observed = !!read, forbidden = prior, .grouping = rollup("g")
-      ),
-      "Ordinary summaries cannot use an earlier", class = "marginplyr_error"
-    )
-    expect_identical(probe$calls, 12L)
+    # A replacement body that calls a function may return its argument
+    # (#1670), so the share refuses without calling it.
+    expect_share_dependencies(data, list(read))
+    expect_identical(probe$calls, 0L)
+    caller[[callee]] <- function(x) list(function() 7)
+    expect_share_dependencies(data, list(read))
 
     read <- substitute((function(prior) {
       binding <- 0
@@ -269,12 +265,14 @@ test_that("plain list accessor planning leaves caller code unevaluated", {
   expect_share_dependencies(data, lapply(alist(
     getElement(callbacks, "dependent"), .subset2(callbacks, "dependent")
   ), list_accessor_read, body = body))
+  # A key caller code computes may select the alias-reading member, so the
+  # carrier's closures stay possible after the removal (#1666).
   reads <- lapply(alist(
     getElement(callbacks, key()), .subset2(callbacks, key())
   ), function(accessor) {
     rlang::new_quosure(list_accessor_read(accessor, body = body), caller)
   })
-  expect_share_dependency_values(data, reads, 7)
+  expect_share_dependencies(data, reads)
   expect_identical(probe$invoked, 0L)
-  expect_identical(probe$keys, 24L)
+  expect_identical(probe$keys, 0L)
 })

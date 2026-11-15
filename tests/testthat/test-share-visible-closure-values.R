@@ -255,8 +255,9 @@ test_that("closure list branch planning preserves ordinary switch lookup", {
   expect_share_dependencies(data, list(read))
   expect_identical(probe$calls, 0L)
 
+  # A list() body may call a rebound `list` (#1670).
   caller$switch <- function(...) list(function() 7)
-  expect_share_dependency_values(data, list(read), expected = 7)
+  expect_share_dependencies(data, list(read))
   expect_identical(probe$calls, 0L)
 })
 

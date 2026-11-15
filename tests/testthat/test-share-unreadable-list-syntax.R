@@ -125,16 +125,25 @@ test_that("list constructors the walk cannot read hold no members", {
       carrier[[1L]]()
     })(1),
     (function(prior) {
-      carrier <- Filter(is.numeric, list(function() sum(prior)))
-      rm(prior)
-      if (length(carrier) == 0L) 7 else carrier[[1L]]()
-    })(1),
-    (function(prior) {
       carrier <- Filter(is.function, list(function() 7, function() 8))
       rm(prior)
       carrier[[1L]]()
     })(1)
   ), 7)
+  # Which members a callback keeps is not read, so after the removal the
+  # result may hold the alias-reading closure (#1666).
+  expect_share_dependencies(unreadable_list_data(), alist(
+    (function(prior) {
+      carrier <- Filter(is.numeric, list(function() sum(prior)))
+      rm(prior)
+      if (length(carrier) == 0L) 7 else carrier[[1L]]()
+    })(1),
+    (function(prior) {
+      carrier <- Filter(length, list(function() sum(prior)))
+      rm(prior)
+      carrier[[1L]]()
+    })(1)
+  ))
   expect_share_evaluation_errors(unreadable_list_data(), alist(
     (function(prior) {
       carrier <- c(list(function() 7), )
@@ -342,10 +351,10 @@ test_that("list writes the walk applies keep the members they leave", {
   ))
 })
 
-test_that("unproven local member setters do not keep the carrier", {
-  # Each setter replaces the carrier, so the member the summary calls is the
-  # one the setter returned and not the one written before it.
-  expect_share_dependency_values(unreadable_list_data(), alist(
+test_that("unproven local member setters may keep the carrier", {
+  # The walk cannot prove either setter returns its input, so after the
+  # removal the carrier may still hold the alias-reading closure (#1666).
+  expect_share_dependencies(unreadable_list_data(), alist(
     (function(prior, choose) {
       setters <- new.env()
       setters$set <- function(x, name, value) x
@@ -370,5 +379,5 @@ test_that("unproven local member setters do not keep the carrier", {
       rm(prior)
       carrier$read()
     })(1)
-  ), 7)
+  ))
 })

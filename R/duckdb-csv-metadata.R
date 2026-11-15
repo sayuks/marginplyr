@@ -51,6 +51,12 @@ duckdb_metadata_unwrap <- function(tokens) {
   tokens
 }
 
+# The case-folded tokens a reader option counts as false or true, whether a
+# stored view holds it as a cast of a quoted string or a query spells it
+# directly (#1668).
+duckdb_false_literals <- c("false", "'false'", "'f'")
+duckdb_true_literals <- c("true", "'true'", "'t'")
+
 # Recognize stored-view literal reader arguments without evaluating them.
 # The caller has already ruled out macros in this view's function heads.
 duckdb_stored_reader_arg <- function(arg) {
@@ -61,8 +67,8 @@ duckdb_stored_reader_arg <- function(arg) {
         identical(value[c(1L, 2L, 4L, 5L, 6L)],
                   c("cast", "(", "as", "boolean", ")"))) {
     literal <- value[[3L]]
-    if (literal %in% c("false", "'false'", "'f'")) value <- "false"
-    if (literal %in% c("true", "'true'", "'t'")) value <- "true"
+    if (literal %in% duckdb_false_literals) value <- "false"
+    if (literal %in% duckdb_true_literals) value <- "true"
   }
   duckdb_reader_schema_arg(c(arg[1:2], value))
 }
@@ -797,8 +803,8 @@ validate_duckdb_csv_metadata <- function(
       }, character(1))
       repeated <- anyDuplicated(option_names[nzchar(option_names)]) > 0L
       disabled <- vapply(arguments, function(arg) {
-        identical(arg, c("auto_detect", "=", "false")) ||
-          identical(arg, c("auto_detect", ":=", "false"))
+        length(arg) == 3L && identical(arg[[1L]], "auto_detect") &&
+          arg[[2L]] %in% c("=", ":=") && arg[[3L]] %in% duckdb_false_literals
       }, logical(1))
       records <- vapply(arguments, function(arg) {
         length(arg) == 3L && identical(arg[[1L]], "records") &&
