@@ -5439,11 +5439,11 @@ scope_closure_carrier_path <- function(head, scope, lookup) {
 
 # Every closure a value may hold when it passes through a transfer the walk
 # cannot read: a base member selector, explicit local() environment or
-# collection callback spelled outside what the walk resolves, or a function
-# whose definition is not visible as returning a fresh value. Invoking it walks
-# each one, so a closure reading an earlier alias is refused while one that
-# reads none stays shareable (#130, #1666). Offsets are stack-relative; NULL
-# means no such possibility.
+# collection callback spelled outside what the walk resolves, or a call to a
+# function the walk does not read. Invoking it walks each one, so a closure
+# reading an earlier alias is refused while one that reads none stays
+# shareable (#130, #1666). Offsets are stack-relative; NULL means no such
+# possibility.
 scope_value_possible <- function(expr, scope, lookup) {
   expr <- unparenthesized_value(expr)
   if (is_name_part(expr)) return(scope_binding_possible(expr, scope))
@@ -5471,17 +5471,8 @@ scope_value_possible <- function(expr, scope, lookup) {
     return(list(definition = definition, enclosing = 1L))
   }
   if (operator %in% c("Filter", "lapply", "Map", "Reduce")) {
-    # lapply() and Map() return only what their callback returns. Filter()
-    # and Reduce() can return the collection's own elements, and any other
-    # callback may return a closure the call carries.
-    formal <- if (identical(operator, "lapply")) "FUN" else "f"
-    callback <- static_matched_arguments(
-      expr, get(operator, envir = baseenv())
-    )[[formal]]
-    if (operator %in% c("lapply", "Map") && !is.null(callback) &&
-          scope_callee_returns_fresh(rlang::call2(callback), scope, lookup)) {
-      return(NULL)
-    }
+    # The result can hold a collection element or whatever the callback
+    # returns, so it may hold any closure the arguments carry.
     return(scope_join_members(
       scope_carried_closures(static_call_args(expr), scope, lookup)
     ))
@@ -5507,16 +5498,14 @@ scope_value_possible <- function(expr, scope, lookup) {
   ))
 }
 
-# The closures a non-base call's arguments carry, unless its callee's visible
-# definition returns a fresh value.
+# The closures a non-base call's arguments carry.
 scope_unread_return_possible <- function(expr, scope, lookup) {
   returned <- caller_identity_argument(expr, scope, lookup)
   if (!is.null(returned)) {
     return(scope_value_closure(returned, scope, lookup) %||%
              scope_value_possible(returned, scope, lookup))
   }
-  if (scope_callee_returns_fresh(expr, scope, lookup) ||
-        caller_head_is_value(static_call_head(expr), scope, lookup)) {
+  if (caller_head_is_value(static_call_head(expr), scope, lookup)) {
     return(NULL)
   }
   scope_join_members(scope_carried_closures(static_call_args(expr), scope,
@@ -5532,20 +5521,6 @@ scope_carried_closures <- function(parts, scope, lookup) {
       scope_list_closures(scope_closure_list(part, scope, lookup)),
       scope_closure_variants(scope_value_possible(part, scope, lookup)))
   }), recursive = FALSE)
-}
-
-# Whether every definition the call may run -- a local closure, a caller
-# function read without forcing a binding, or the function a caller `::`
-# returns -- is visible and passes definition_returns_fresh().
-scope_callee_returns_fresh <- function(expr, scope, lookup) {
-  closure <- scope_call_closure(expr, scope, lookup)
-  definitions <- if (!is.null(closure)) {
-    lapply(scope_closure_variants(closure), `[[`, "definition")
-  } else {
-    list(caller_callee_definition(static_call_head(expr), scope, lookup))
-  }
-  length(definitions) > 0L &&
-    all(vapply(definitions, definition_returns_fresh, logical(1)))
 }
 
 # The definition of a caller function named by a call head, as function
@@ -5654,31 +5629,6 @@ definition_result <- function(definition) {
     result <- unparenthesized_value(result[[length(result)]])
   }
   result
-}
-
-# Whether a definition visibly returns a new value: no formal has a computed
-# default or is named `function`, and the body is exactly an atomic constant
-# or a function literal per is_closed_function_literal(), so it calls no
-# function but `function` (caller_function_syntax() checks a caller's is
-# base's). Anything else may return what an argument carried (#130, #1670).
-definition_returns_fresh <- function(definition) {
-  if (is.null(definition)) return(FALSE)
-  formals <- as.list(definition[[2L]])
-  computed <- vapply(formals, function(default) {
-    is.language(default) && !rlang::is_missing(default)
-  }, logical(1))
-  body <- definition[[3L]]
-  !any(computed) && !"function" %in% names(formals) &&
-    (is.null(body) || is.atomic(body) || is_closed_function_literal(body))
-}
-
-# Whether an expression is, without parentheses, function syntax whose
-# formals' defaults and body name nothing, so calling its closure calls no
-# function.
-is_closed_function_literal <- function(expr) {
-  if (!rlang::is_call(expr, "function") || length(expr) < 3L) return(FALSE)
-  parts <- c(as.list(expr[[2L]]), list(expr[[3L]]))
-  all(unlist(lapply(parts, all.names)) == "")
 }
 
 # Whether a call's unparenthesized head `name` is a base function this scope
@@ -6861,9 +6811,7 @@ scope_after_carrier_write <- function(scope, target, value, lookup,
       kept <- !carrier_changed && scope_replacement_keeps_input(
         replacement, target, value_scope, lookup
       )
-      unproven <- unproven || (!kept && !scope_callee_returns_fresh(
-        replacement, value_scope, lookup
-      ))
+      unproven <- unproven || !kept
       if (kept) parent
     } else if (operator %in% name_setters) {
       scope_list_write_names(target, parent, elements, lookup, value_scope)

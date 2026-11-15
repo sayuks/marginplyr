@@ -7,6 +7,41 @@ test_that("member body replacement refreshes share dependencies", {
   }))
 })
 
+# A body<- replacement is read where the closure is invoked (ADR 0010), so
+# each of these refuses by following the closure through the functional.
+stock_functional_body_cases <- function(body) {
+  list(
+    rlang::expr({
+      box <- lapply(list(function() 7), identity)
+      body(box[[1L]]) <- quote(!!body)
+      box[[1L]]()
+    }),
+    rlang::expr({
+      box <- Map(identity, list(function() 7))
+      body(box[[1L]]) <- quote(!!body)
+      box[[1L]]()
+    }),
+    rlang::expr({
+      box <- Filter(is.function, list(function() 7))
+      body(box[[1L]]) <- quote(!!body)
+      box[[1L]]()
+    }),
+    rlang::expr({
+      f <- Reduce(identity, list(function() 7))
+      body(f) <- quote(!!body)
+      f()
+    })
+  )
+}
+
+test_that("body replacement after a stock functional refreshes dependencies", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
+  expect_share_dependencies(
+    data, stock_functional_body_cases(quote(sum(prior)))
+  )
+  expect_share_dependency_values(data, stock_functional_body_cases(11), 11)
+})
+
 member_definition_cases <- function(definition, write) {
   containers <- list(
     rlang::expr(list(f = !!definition)),
