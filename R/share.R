@@ -7447,8 +7447,8 @@ scope_after_removals <- function(expr, scope, lookup) {
     scope <- apply_effects(parts[[index]], scope, lookup)
   }
   if (length(language) > 0L && length(scope) > 0L) {
-    # For any other callee, such as `rlang::eval_tidy()`, the current frame
-    # stands in.
+    # `rlang::eval_tidy()` removes from its mask's child, which no walked name
+    # is bound in, so the current frame standing in can only over-remove.
     scope <- scope_after_evaluated_language(
       language, evaluation_frame(expr, scope, lookup) %||% 1L, scope, lookup,
       apply_effects
@@ -8318,7 +8318,8 @@ evaluation_frame <- function(expr, scope, lookup) {
     parts <- static_matched_arguments(expr, base::eval)
     argument <- "envir"
   } else if (identical(name, "eval_bare") &&
-               is_known_namespace_frame_call(expr, "rlang", scope, lookup)) {
+               is_known_package_frame_call(expr, name, "rlang", scope,
+                                           lookup)) {
     parts <- static_matched_arguments(expr, rlang::eval_bare)
     argument <- "env"
   } else {
