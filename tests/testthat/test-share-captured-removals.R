@@ -403,3 +403,22 @@ test_that("a removal or setter held as a value is not followed (#1652)", {
     })(1)
   ), c(10, 20, 30), prior = sum(x))
 })
+
+test_that("a removal from the caller is followed through a stock functional", {
+  # The removal is attributed where the closure is invoked (ADR 0010).
+  expect_share_dependencies(captured_removal_data(), alist(
+    (function(prior) {
+      box <- lapply(list(function() rm("prior", envir = parent.frame())),
+                    identity)
+      box[[1L]]()
+      sum(prior)
+    })(1),
+    (function(prior) {
+      f <- Reduce(identity, list(function() {
+        rm("prior", envir = parent.frame())
+      }))
+      f()
+      sum(prior)
+    })(1)
+  ), reverse_message = "depends on earlier summary alias `prior`")
+})
