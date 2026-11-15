@@ -416,7 +416,8 @@ Config/testthat/start-first:
     share-unreadable-definitions,
     share-unrecognised-backend,
     share-unresolved-frames,
-    share-captured-removals
+    share-captured-removals,
+    share-evaluation-frames
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
