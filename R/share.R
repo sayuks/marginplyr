@@ -4603,7 +4603,7 @@ scoped_data_symbols <- function(expr, scope, lookup) {
       materialized_env_symbols(expr, scope, lookup)
     )))
   }
-  evaluation <- base_evalq_as_eval(expr, call_name, scope, lookup)
+  evaluation <- evaluator_as_eval(expr, call_name, scope, lookup)
   if (!is.null(evaluation)) {
     return(scoped_data_symbols(evaluation, scope, lookup))
   }
@@ -7432,7 +7432,7 @@ scope_after_removals <- function(expr, scope, lookup) {
       rlang::as_name(unparenthesized_value(expr[[2L]])), scope, lookup
     ))
   }
-  evaluation <- base_evalq_as_eval(expr, name, scope, lookup)
+  evaluation <- evaluator_as_eval(expr, name, scope, lookup)
   if (!is.null(evaluation)) {
     return(scope_after_removals(evaluation, scope, lookup))
   }
@@ -8435,17 +8435,76 @@ scope_after_evaluated_language <- function(language, frame, scope, lookup,
   Reduce(scope_possible_losses, lapply(seq_along(scope), run), scope)
 }
 
-# A known base `evalq()` as the `eval()` of its quoted expression, which is
-# what `evalq()` is defined to be.
-base_evalq_as_eval <- function(expr, name, scope, lookup) {
-  if (!identical(name, "evalq") ||
-        !is_known_base_frame_call(expr, name, scope, lookup)) {
+# A known evaluator as the `eval()` of the code it runs: base `evalq()`, which
+# is defined to be one, and base `with()`, `rlang::with_env()` and
+# `rlang::inject()` given the environment that code runs in. NULL where R runs
+# it in the current frame or in data enclosed by it, which the ordinary call
+# walk reads: `inject()` without `env`, and `with()` or `with_env()` on a known
+# base `list()` or `data.frame()`. Any other argument may hold a walked frame.
+# Injection operands run in the current frame before the code, so they precede
+# the `eval()` in a `list()` (ADR 0010).
+evaluator_as_eval <- function(expr, name, scope, lookup) {
+  evaluator <- switch(
+    name %||% "",
+    evalq = list("base", base::evalq, "envir"),
+    with = list("base", base::with, "data"),
+    with_env = list("rlang", rlang::with_env, "env"),
+    inject = list("rlang", rlang::inject, "env")
+  )
+  if (is.null(evaluator) ||
+        !is_known_package_frame_call(expr, name, evaluator[[1L]], scope,
+                                     lookup)) {
     return(NULL)
   }
-  parts <- static_matched_arguments(expr, base::evalq)
+  parts <- static_matched_arguments(expr, evaluator[[2L]])
   if (is.null(parts) || !"expr" %in% names(parts)) {
     return(NULL)
   }
-  parts$expr <- rlang::call2(quote(base::quote), parts$expr)
-  rlang::call2(quote(base::eval), !!!parts)
+  if (identical(name, "evalq")) {
+    parts$expr <- rlang::call2(quote(base::quote), parts$expr)
+    return(rlang::call2(quote(base::eval), !!!parts))
+  }
+  environment <- parts[[evaluator[[3L]]]]
+  if (is.null(environment) ||
+        is_known_data_constructor(environment, scope, lookup)) {
+    return(NULL)
+  }
+  evaluation <- rlang::call2(
+    quote(base::eval), rlang::call2(quote(base::quote), parts$expr),
+    environment
+  )
+  operands <- if (identical(name, "inject")) injection_operands(parts$expr)
+  if (length(operands) == 0L) {
+    return(evaluation)
+  }
+  rlang::call2(quote(base::list), !!!operands, evaluation)
+}
+
+# Whether an argument is a known base `list()` or `data.frame()` call, which
+# builds a data value and never an environment.
+is_known_data_constructor <- function(expr, scope, lookup) {
+  expr <- unparenthesized_value(expr)
+  name <- static_call_name(expr)
+  !is.null(name) && name %in% c("list", "data.frame") &&
+    is_known_base_frame_call(expr, name, scope, lookup)
+}
+
+# The operands of the injection operators rlang processes in `expr`.
+injection_operands <- function(expr) {
+  if (!is.call(expr)) {
+    return(list())
+  }
+  if (rlang::is_call(expr, "!", n = 1L) &&
+        rlang::is_call(expr[[2L]], "!", n = 1L)) {
+    operand <- expr[[2L]][[2L]]
+    if (rlang::is_call(operand, "!", n = 1L)) operand <- operand[[2L]]
+    return(list(operand))
+  }
+  if (rlang::is_call(expr, "{", n = 1L) &&
+        rlang::is_call(expr[[2L]], "{", n = 1L)) {
+    return(list(expr[[2L]][[2L]]))
+  }
+  parts <- as.list(expr)
+  present <- !vapply(parts, rlang::is_missing, logical(1))
+  unlist(lapply(parts[present], injection_operands), recursive = FALSE)
 }
