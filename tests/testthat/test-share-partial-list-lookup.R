@@ -119,13 +119,17 @@ test_that("list lookup distinguishes exact, ambiguous and nonmatching names", {
     list(quote(fs[["read", exact = TRUE]]),
          quote(list(reader = function() sum(prior))))
   )
-  reads <- lapply(cases, function(case) {
-    substitute((function(prior) {
-      fs <- MEMBERS
-      rm(prior)
-      selected <- LOOKUP
-      if (is.null(selected)) 7 else selected()
-    })(1), list(MEMBERS = case[[2L]], LOOKUP = case[[1L]]))
-  })
-  expect_partial_list_values(partial_list_lookup_data(), reads, expected = 7)
+  reads <- function(remove) {
+    lapply(cases, function(case) {
+      substitute((function(prior) {
+        fs <- MEMBERS
+        REMOVE
+        selected <- LOOKUP
+        if (is.null(selected)) 7 else selected()
+      })(1), list(MEMBERS = case[[2L]], REMOVE = remove, LOOKUP = case[[1L]]))
+    })
+  }
+  data <- partial_list_lookup_data()
+  expect_share_dependencies(data, reads(quote(rm(prior))))
+  expect_partial_list_values(data, reads(NULL), expected = 7)
 })

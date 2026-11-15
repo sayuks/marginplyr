@@ -61,7 +61,7 @@ test_that("explicit base definition setters retain replacement dependencies", {
   expect_share_dependencies(data, definition_explicit_reads())
 })
 
-definition_controls <- function() {
+definition_removal_reads <- function() {
   as.list(quote(alist(
     (function(prior) {
       f <- function() sum(prior)
@@ -92,7 +92,12 @@ definition_controls <- function() {
       f <- base::`formals<-`(f, value = list(prior = 11))
       rm(prior)
       f()
-    })(1),
+    })(1)
+  )))[-1L]
+}
+
+definition_controls <- function() {
+  as.list(quote(alist(
     {
       f <- function() 11
       f()
@@ -100,9 +105,11 @@ definition_controls <- function() {
   )))[-1L]
 }
 
-test_that("proven independent definitions replace obsolete dependencies", {
+test_that("replaced definitions compute values and refuse removed captures", {
   data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
-  expect_share_dependency_values(data, definition_controls(), 11)
+  retained <- lapply(definition_removal_reads(), without_removal)
+  expect_share_dependency_values(data, c(retained, definition_controls()), 11)
+  expect_share_dependencies(data, definition_removal_reads())
 })
 
 definition_replacement_reads <- function() {
@@ -116,7 +123,9 @@ expect_definition_replacements <- function(data) {
     f <- function() sum(prior)
     f()
   })))
-  expect_share_dependency_values(data, definition_controls(), 11)
+  expect_share_dependencies(data, definition_removal_reads())
+  retained <- lapply(definition_removal_reads(), without_removal)
+  expect_share_dependency_values(data, c(retained, definition_controls()), 11)
   for (read in definition_replacement_reads()) {
     ordinary <- summarize_with_margins(
       data, prior = sum(.data$x), observed = !!read, .grouping = rollup("g")
@@ -379,7 +388,7 @@ test_that("stock methods and base body setters preserve public controls", {
   data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
   before <- serialize(data, NULL)
   expect_share_dependencies(data, definition_stock_body_reads())
-  controls <- lapply(c(definition_controls(), alist(
+  removals <- lapply(c(definition_removal_reads(), alist(
     (function(prior) {
       f <- function(ignore) sum(prior)
       f <- methods::`body<-`(f, value = quote(11))
@@ -398,12 +407,6 @@ test_that("stock methods and base body setters preserve public controls", {
       rm(prior)
       lapply(list(NULL), f)[[1L]]
     })(1),
-    {
-      `body<-` <- function(fun, value) fun
-      f <- function(ignore) 11
-      body(f) <- quote(sum(prior))
-      vapply(1, f, numeric(1))
-    },
     (function(prior) {
       `body<-` <- 0
       f <- function(ignore) sum(prior)
@@ -412,7 +415,17 @@ test_that("stock methods and base body setters preserve public controls", {
       f(NULL)
     })(1)
   )), rlang::new_quosure, env = globalenv())
-  expect_share_dependency_values(data, controls, 11)
+  expect_share_dependencies(data, removals)
+  controls <- lapply(c(definition_controls(), alist(
+    {
+      `body<-` <- function(fun, value) fun
+      f <- function(ignore) 11
+      body(f) <- quote(sum(prior))
+      vapply(1, f, numeric(1))
+    }
+  )), rlang::new_quosure, env = globalenv())
+  retained <- lapply(removals, without_removal)
+  expect_share_dependency_values(data, c(retained, controls), 11)
   for (read in c(definition_stock_body_reads(), definition_callback_reads())) {
     ordinary <- summarize_with_margins(
       data, prior = sum(.data$x), observed = !!read, .grouping = rollup("g")

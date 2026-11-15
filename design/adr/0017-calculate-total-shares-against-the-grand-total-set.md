@@ -28,7 +28,8 @@ A Total share's denominator is the value of the same source summary on the
 Grand total set within the row's fixed `.by` partition. A row of the Grand
 total set has a Total share of one. Missing numerator, missing denominator,
 and zero denominator produce `NA_real_`; every other result is an unclamped
-double. Those are ADR 0010's rules and they are not restated here.
+double. Those are ADR 0010's rules and they are not restated here, and so is
+its rule for when a source reads an earlier summary alias.
 
 ### It is supported wherever the plan contains a Grand total set
 

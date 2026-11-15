@@ -89,8 +89,8 @@ test_that("list value transfers preserve ordinary caller function lookup", {
       functions[[1L]]()
     })(1), list(transfer = rlang::call2(callee, quote(original))))
     read <- rlang::new_quosure(read, caller)
-    # A replacement body that calls a function may return its argument
-    # (#1670), so the share refuses without calling it.
+    # The literal in `original` captured prior, so the removal refuses
+    # without calling the caller's function.
     expect_share_dependencies(data, list(read))
     expect_identical(probe$calls, 0L)
     caller[[callee]] <- function(x) list(function() 7)
@@ -130,8 +130,10 @@ test_that("static list subsets preserve retained closure dependencies", {
     })(1), list(SUBSET = subset))
   })
   data <- plain_list_transform_data()
-  expect_share_dependencies(data, reads[1:4])
-  expect_share_dependency_values(data, reads[5:7], expected = 7)
+  expect_share_dependencies(data, reads)
+  kept <- lapply(reads, without_removal)
+  expect_share_dependency_values(data, kept[1:4], expected = 1)
+  expect_share_dependency_values(data, kept[5:7], expected = 7)
 })
 
 test_that("logical and negative member indices select the same closure as R", {
@@ -144,8 +146,10 @@ test_that("logical and negative member indices select the same closure as R", {
     })(1), list(INDEX = index))
   })
   data <- plain_list_transform_data()
-  expect_share_dependencies(data, reads[1:3])
-  expect_share_dependency_values(data, reads[4L], expected = 7)
+  expect_share_dependencies(data, reads)
+  kept <- lapply(reads, without_removal)
+  expect_share_dependency_values(data, kept[1:3], expected = 1)
+  expect_share_dependency_values(data, kept[4L], expected = 7)
 })
 
 test_that("list selector code runs only when summaries evaluate", {
@@ -172,7 +176,10 @@ test_that("list selector code runs only when summaries evaluate", {
     })(1), list(SUBSET = subset))
     rlang::new_quosure(read, caller)
   })
-  expect_share_dependency_values(plain_list_transform_data(), reads, 7)
+  expect_share_dependencies(plain_list_transform_data(), reads)
+  expect_identical(probe$calls, 0L)
+  kept <- lapply(reads, without_removal)
+  expect_share_dependency_values(plain_list_transform_data(), kept, 7)
   expect_identical(probe$calls, 48L)
 })
 
@@ -199,9 +206,11 @@ test_that("literal getElement selects the same closure as exact brackets", {
   expect_share_dependency_values(data, lapply(
     dependent, list_accessor_read, remove = quote(NULL)
   ), 11)
-  expect_share_dependency_values(data, lapply(alist(
-    callbacks[["safe"]], getElement(callbacks, "safe")
-  ), list_accessor_read), 7)
+  safe <- alist(callbacks[["safe"]], getElement(callbacks, "safe"))
+  expect_share_dependencies(data, lapply(safe, list_accessor_read))
+  expect_share_dependency_values(data, lapply(
+    safe, list_accessor_read, remove = quote(NULL)
+  ), 7)
 })
 
 test_that("literal .subset2 selects the same closure as exact brackets", {
@@ -216,9 +225,11 @@ test_that("literal .subset2 selects the same closure as exact brackets", {
   expect_share_dependency_values(data, lapply(
     dependent, list_accessor_read, remove = quote(NULL)
   ), 11)
-  expect_share_dependency_values(data, lapply(alist(
-    callbacks[[2L]], .subset2(callbacks, 2L)
-  ), list_accessor_read), 7)
+  safe <- alist(callbacks[[2L]], .subset2(callbacks, 2L))
+  expect_share_dependencies(data, lapply(safe, list_accessor_read))
+  expect_share_dependency_values(data, lapply(
+    safe, list_accessor_read, remove = quote(NULL)
+  ), 7)
 })
 
 test_that("plain list accessors preserve ordinary function lookup", {
@@ -228,9 +239,11 @@ test_that("plain list accessors preserve ordinary function lookup", {
     caller[[name]] <- function(...) function() 7
     bare <- rlang::call2(name, quote(callbacks), "dependent")
     qualified <- rlang::call2(name, quote(callbacks), "dependent", .ns = "base")
-    read <- rlang::new_quosure(list_accessor_read(bare), caller)
+    read <- list_accessor_read(bare, remove = quote(NULL))
+    read <- rlang::new_quosure(read, caller)
     expect_share_dependency_values(data, list(read), 7)
     reads <- list(
+      rlang::new_quosure(list_accessor_read(bare), caller),
       rlang::new_quosure(list_accessor_read(qualified), caller),
       list_accessor_read(bare, before = rlang::call2("<-", rlang::sym(name), 0))
     )
@@ -239,7 +252,8 @@ test_that("plain list accessors preserve ordinary function lookup", {
     caller[[name]] <- 0L
     computed <- rlang::call2(rlang::call2("(", rlang::sym(name)),
                              quote(callbacks), "dependent")
-    read <- rlang::new_quosure(list_accessor_read(computed), caller)
+    read <- list_accessor_read(computed, remove = quote(NULL))
+    read <- rlang::new_quosure(read, caller)
     expect_error(
       summarize_with_margins(
         data, value = sum(.data$x), prior = share_of_total(value),
@@ -247,6 +261,8 @@ test_that("plain list accessors preserve ordinary function lookup", {
       ),
       "attempt to apply non-function"
     )
+    read <- rlang::new_quosure(list_accessor_read(computed), caller)
+    expect_share_dependencies(data, list(read))
   }
 })
 
@@ -265,8 +281,8 @@ test_that("plain list accessor planning leaves caller code unevaluated", {
   expect_share_dependencies(data, lapply(alist(
     getElement(callbacks, "dependent"), .subset2(callbacks, "dependent")
   ), list_accessor_read, body = body))
-  # A key caller code computes may select the alias-reading member, so the
-  # carrier's closures stay possible after the removal (#1666).
+  # The `dependent` literal captured prior, so the removal refuses without
+  # calling key().
   reads <- lapply(alist(
     getElement(callbacks, key()), .subset2(callbacks, key())
   ), function(accessor) {

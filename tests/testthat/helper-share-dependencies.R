@@ -43,3 +43,26 @@ expect_share_dependency_values <- function(data, reads, expected) {
     }
   }
 }
+
+# The same read with each `rm()` call replaced by `invisible(NULL)`, so a
+# closure reads the local binding instead of what a removal would expose. A
+# quosure keeps its environment.
+without_removal <- function(read) {
+  if (rlang::is_quosure(read)) {
+    expr <- without_removal(rlang::quo_get_expr(read))
+    return(rlang::quo_set_expr(read, expr))
+  }
+  if (!is.call(read)) {
+    return(read)
+  }
+  if (rlang::is_call(read, "rm")) {
+    return(quote(invisible(NULL)))
+  }
+  parts <- as.list(read)
+  for (index in seq_along(parts)) {
+    if (!rlang::is_missing(parts[[index]])) {
+      parts[index] <- list(without_removal(parts[[index]]))
+    }
+  }
+  as.call(parts)
+}

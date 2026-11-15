@@ -128,7 +128,7 @@ test_that("dtplyr legal condition wrappers execute only at collection", {
   expect_identical(serialize(data, NULL), before)
 })
 
-condition_lookup_controls <- function() {
+condition_lookup_reads <- function(remove = quote(base::rm(prior))) {
   lapply(condition_wrappers(), function(wrapper) {
     name <- as.character(wrapper[[1L]][[3L]])
     wrapper[[1L]] <- rlang::sym(name)
@@ -140,24 +140,44 @@ condition_lookup_controls <- function() {
       # The injected wrapper reads this binding.
       read <- function() sum(prior) # nolint: object_usage_linter.
       copied <- !!wrapper
-      base::rm(prior)
+      !!remove
       copied()
     })(11))
   })
 }
 
-test_that("condition wrappers preserve caller lookup and callable classes", {
-  data <- condition_wrapper_data()
-  expect_condition_values(data, condition_lookup_controls(), 7)
-  reads <- alist(
+caller_callable_reads <- function(remove) {
+  rlang::exprs(
     (function(prior) {
       # The converter resolves this caller method through S3 dispatch.
       as.function.AsIs <- # nolint: object_usage_linter.
         function(x, ...) function() 7
       copied <- base::as.function(base::I(function() sum(prior)))
-      base::rm(prior)
+      !!remove
       copied()
     })(11),
+    (function(prior) {
+      read <- function() sum(prior)
+      identity <- function(x) function() 7
+      copied <- base::lapply(base::list(read), identity)[[1L]]
+      !!remove
+      copied()
+    })(11),
+    (function(prior) {
+      read <- function() sum(prior)
+      identity <- function(x) function() 7
+      copied <- base::Map(identity, base::list(read))[[1L]]
+      !!remove
+      copied()
+    })(11)
+  )
+}
+
+test_that("condition wrappers preserve caller lookup and callable classes", {
+  data <- condition_wrapper_data()
+  expect_share_dependencies(data, condition_lookup_reads())
+  expect_condition_values(data, condition_lookup_reads(NULL), 7)
+  local_binding <- alist(
     (function(prior) {
       copied <- base::local({
         prior <- 7
@@ -165,23 +185,13 @@ test_that("condition wrappers preserve caller lookup and callable classes", {
       })
       base::rm(prior)
       copied()
-    })(11),
-    (function(prior) {
-      read <- function() sum(prior)
-      identity <- function(x) function() 7
-      copied <- base::lapply(base::list(read), identity)[[1L]]
-      base::rm(prior)
-      copied()
-    })(11),
-    (function(prior) {
-      read <- function() sum(prior)
-      identity <- function(x) function() 7
-      copied <- base::Map(identity, base::list(read))[[1L]]
-      base::rm(prior)
-      copied()
     })(11)
   )
-  expect_condition_values(data, reads, 7)
+  expect_condition_values(data, local_binding, 7)
+  expect_share_dependencies(
+    data, caller_callable_reads(quote(base::rm(prior)))
+  )
+  expect_condition_values(data, caller_callable_reads(NULL), 7)
 })
 
 test_that("direct and previous closure carrier controls retain dependencies", {
@@ -208,6 +218,13 @@ test_that("dtplyr condition planning does not invoke caller wrappers", {
     !!binding
     copied <- suppressWarnings(function() sum(prior))
     base::rm(prior)
+    copied()
+  })(11))
+  expect_share_dependencies(input, list(read))
+  expect_identical(probe$calls, 0L)
+  read <- rlang::quo((function(prior) {
+    !!binding
+    copied <- suppressWarnings(function() sum(prior))
     copied()
   })(11))
   for (kind in c("parent", "total")) {
@@ -237,16 +254,16 @@ test_that("bare stock callbacks retain the same callable proofs", {
   )
 })
 
-test_that("I replaces an implicit function class before converter dispatch", {
-  read <- quote((function(prior) {
+implicit_class_reads <- function(remove) {
+  first <- rlang::expr((function(prior) {
     # S3 lookup reaches this method only for the explicit function class.
     as.function.function <- # nolint: object_usage_linter.
       function(x, ...) function() 7
     copied <- base::as.function(base::I(function() sum(prior)))
-    base::rm(prior)
+    !!remove
     copied()
   })(11))
-  reads <- lapply(alist(NULL, base::class(read) <- NULL), function(reset) {
+  resets <- lapply(alist(NULL, base::class(read) <- NULL), function(reset) {
     rlang::expr((function(prior) {
       # The converter resolves this method only for an explicit function class.
       as.function.function <- # nolint: object_usage_linter.
@@ -254,20 +271,32 @@ test_that("I replaces an implicit function class before converter dispatch", {
       read <- function() sum(prior)
       !!reset
       copied <- base::as.function(base::I(read))
-      base::rm(prior)
+      !!remove
       copied()
     })(11))
   })
-  expect_share_dependencies(condition_wrapper_data(), c(list(read), reads))
-  explicit <- quote((function(prior) {
+  c(list(first), resets)
+}
+
+explicit_class_read <- function(remove) {
+  rlang::expr((function(prior) {
     # The converter resolves this method from the explicit class on copied.
     as.function.function <- # nolint: object_usage_linter.
       function(x, ...) function() 7
     read <- function() sum(prior)
     base::class(read) <- "function"
     copied <- base::as.function(base::I(read))
-    base::rm(prior)
+    !!remove
     copied()
   })(11))
-  expect_condition_values(condition_wrapper_data(), list(explicit), 7)
+}
+
+test_that("I replaces an implicit function class before converter dispatch", {
+  data <- condition_wrapper_data()
+  removal <- quote(base::rm(prior))
+  expect_share_dependencies(
+    data, c(implicit_class_reads(removal), list(explicit_class_read(removal)))
+  )
+  expect_condition_values(data, implicit_class_reads(NULL), 11)
+  expect_condition_values(data, list(explicit_class_read(NULL)), 7)
 })

@@ -89,10 +89,10 @@ test_that("member replacement paths preserve explicit setter controls", {
   expect_share_dependencies(data, c(member_definition_reads(), reads))
 })
 
-test_that("independent member replacements discard obsolete dependencies", {
+test_that("replaced members compute values and refuse removed captures", {
   data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
-  controls <- c(
-    member_definition_cases(quote(function() 11), quote(NULL)),
+  controls <- member_definition_cases(quote(function() 11), quote(NULL))
+  replacements <- c(
     member_definition_cases(quote(function() sum(prior)),
                             quote(body(member) <- quote(11))),
     member_definition_cases(quote(function() sum(prior)),
@@ -104,14 +104,19 @@ test_that("independent member replacements discard obsolete dependencies", {
       ))
     )
   )
-  controls <- lapply(controls, function(read) {
+  remove_prior <- function(read) {
     statements <- as.list(read)[-1L]
     invocation <- statements[[length(statements)]]
     read <- rlang::call2("{", !!!head(statements, -1L), quote(rm(prior)),
                          invocation)
     rlang::expr((function(prior) !!read)(7))
-  })
-  expect_share_dependency_values(data, controls, 11)
+  }
+  retain_prior <- function(read) rlang::expr((function(prior) !!read)(7))
+  expect_share_dependency_values(
+    data, c(lapply(controls, remove_prior), lapply(replacements, retain_prior)),
+    11
+  )
+  expect_share_dependencies(data, lapply(replacements, remove_prior))
 })
 
 test_that("member definition setters retain ordinary function lookup", {

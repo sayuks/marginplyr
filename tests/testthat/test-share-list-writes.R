@@ -68,7 +68,12 @@ list_write_controls <- function() {
       carrier <- list()
       carrier$read <- function() sum(prior)
       carrier$read()
-    })(1),
+    })(1)
+  )
+}
+
+list_write_replaced_reads <- function() {
+  alist(
     (function(prior) {
       carrier <- list(function() sum(prior))
       carrier[[1L]] <- function() 7
@@ -86,11 +91,9 @@ list_write_controls <- function() {
 
 expect_list_write_values <- function(data) {
   reads <- list_write_controls()
-  expected <- c(1, 1, 1, 7, 7)
   for (kind in c("parent", "total")) {
     helper <- rlang::call2(paste0("share_of_", kind), quote(value))
-    for (index in seq_along(reads)) {
-      read <- reads[[index]]
+    for (read in reads) {
       forward <- list_write_finish(summarize_with_margins(
         data, value = sum(.data$x), prior = !!helper, observed = !!read,
         .grouping = rollup("g")
@@ -99,9 +102,9 @@ expect_list_write_values <- function(data) {
         data, prior = sum(.data$x), value = !!read, ratio = !!helper,
         .grouping = rollup("g")
       ))
-      expect_equal(forward$observed, rep(expected[[index]], 3L))
+      expect_equal(forward$observed, rep(1, 3L))
       expect_equal(forward$prior, c(0.25, 0.75, 1))
-      expect_equal(reverse$value, rep(expected[[index]], 3L))
+      expect_equal(reverse$value, rep(1, 3L))
       expect_equal(reverse$ratio, c(1, 1, 1))
     }
   }
@@ -115,6 +118,7 @@ expect_list_writes <- function(data) {
     rm(prior)
     carrier[[1L]]()
   })(1)))
+  expect_list_write_refusals(data, list_write_replaced_reads())
   expect_list_write_values(data)
   expect_identical(serialize(data, NULL), before)
 }
@@ -163,16 +167,14 @@ test_that("a singleton loop retains invocation dependencies of list writes", {
       carrier$read()
     })(1), list(SEQUENCE = sequence))
   }
-  expect_share_dependencies(
-    list_write_data(), list(read(1L), read(quote((1L))))
-  )
-  expect_identical(probe$calls, 0L)
-
   caller <- rlang::env(`(` = function(value) {
     if (identical(value, 1L)) integer() else value
   })
   overridden <- rlang::new_quosure(read(quote((1L))), caller)
-  expect_share_dependency_values(list_write_data(), list(overridden), 7)
+  expect_share_dependencies(
+    list_write_data(), list(read(1L), read(quote((1L))), overridden)
+  )
+  expect_identical(probe$calls, 0L)
 })
 
 test_that("literal loops preserve legal closures and function lookup", {
@@ -184,6 +186,14 @@ test_that("literal loops preserve legal closures and function lookup", {
     })(7),
     (function(prior) {
       carrier <- list(read = function() sum(prior))
+      for (i in NULL) rm(prior)
+      carrier$read()
+    })(7)
+  )
+  expect_share_dependency_values(list_write_data(), reads, expected = 7)
+  expect_share_dependencies(list_write_data(), alist(
+    (function(prior) {
+      carrier <- list(read = function() sum(prior))
       for (i in 1L) {
         carrier$read <- function() 7
       }
@@ -191,19 +201,13 @@ test_that("literal loops preserve legal closures and function lookup", {
       carrier$read()
     })(1),
     (function(prior) {
-      carrier <- list(read = function() sum(prior))
-      for (i in NULL) rm(prior)
-      carrier$read()
-    })(7),
-    (function(prior) {
       `for` <- function(...) NULL
       carrier <- list(read = function() 7)
       for (i in 1L) carrier$read <- function() sum(prior)
       rm(prior)
       carrier$read()
     })(1)
-  )
-  expect_share_dependency_values(list_write_data(), reads, expected = 7)
+  ))
 
   for (sequence in alist(1L, NULL)) {
     read <- substitute((function(prior) {
@@ -218,7 +222,7 @@ test_that("literal loops preserve legal closures and function lookup", {
   }
 })
 
-test_that("literal loops leave writes after loop exits unreachable", {
+test_that("removal reads a literal written after a loop exit", {
   for (exit in alist(break, next, eval(parse(text = "break")))) {
     read <- substitute((function(prior) {
       carrier <- list(read = function() 7)
@@ -229,7 +233,7 @@ test_that("literal loops leave writes after loop exits unreachable", {
       rm(prior)
       carrier$read()
     })(1), list(EXIT = exit))
-    expect_share_dependency_values(list_write_data(), list(read), expected = 7)
+    expect_share_dependencies(list_write_data(), list(read))
   }
 })
 
@@ -294,11 +298,10 @@ expect_structural_list_writes <- function(data) {
                                         replacement = replacement),
       expected = 1
     )
-    expect_share_dependency_values(
+    expect_share_dependencies(
       data, structural_list_write_reads(body = quote(7),
                                         first = quote(sum(prior)),
-                                        replacement = replacement),
-      expected = 7
+                                        replacement = replacement)
     )
   }
   expect_identical(serialize(data, NULL), before)

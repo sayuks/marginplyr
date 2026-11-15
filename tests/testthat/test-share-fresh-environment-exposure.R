@@ -1,5 +1,6 @@
 mixed_outer_class_read <- function(probe, write = quote(class(made) <- "probe"),
-                                   copied = TRUE, kind = "dependent") {
+                                   copied = TRUE, kind = "dependent",
+                                   remove = kind != "retained") {
   force(probe)
   outer <- kind %in% c("outer", "default")
   method <- if (kind != "default") rlang::expr({
@@ -53,7 +54,7 @@ mixed_outer_class_read <- function(probe, write = quote(class(made) <- "probe"),
     !!if (copied) quote(copied <- made) else NULL
     !!inner
     h <- !!transfer
-    !!if (kind != "retained") quote(rm(prior)) else NULL
+    !!if (remove) quote(rm(prior)) else NULL
     h()
   })(11))
 }
@@ -119,8 +120,16 @@ test_that("mixed attributes preserve values and actual callback classes", {
   before <- serialize(data, NULL)
   probe <- rlang::env(factories = 0L, converters = 0L, closures = 0L)
   for (copied in c(FALSE, TRUE)) {
+    reads <- lapply(c("inner", "outer"), function(kind) {
+      mixed_outer_class_read(probe, copied = copied, kind = kind)
+    })
+    expect_share_dependencies(data, reads)
+    expect_identical(probe$factories, 0L)
+    expect_identical(probe$converters, 0L)
+    expect_identical(probe$closures, 0L)
     for (kind in c("independent", "retained", "inner", "outer")) {
-      read <- mixed_outer_class_read(probe, copied = copied, kind = kind)
+      read <- mixed_outer_class_read(probe, copied = copied, kind = kind,
+                                     remove = kind == "independent")
       expected <- if (kind == "retained") 11 else 7
       expect_share_dependency_values(data, list(read), expected)
       expect_gt(probe$factories, 0L)
@@ -151,11 +160,22 @@ test_that("dtplyr mixed attribute values wait for explicit collection", {
   }
   input <- dtplyr::lazy_dt(data, immutable = TRUE)
   input <- dplyr::filter(input, observe(x) > 0)
+  for (copied in c(FALSE, TRUE)) {
+    reads <- lapply(c("inner", "outer"), function(kind) {
+      mixed_outer_class_read(probe, copied = copied, kind = kind)
+    })
+    expect_share_dependencies(input, reads)
+    expect_identical(probe$factories, 0L)
+    expect_identical(probe$converters, 0L)
+    expect_identical(probe$closures, 0L)
+    expect_identical(probe$reads, 0L)
+  }
   for (share in c("parent", "total")) {
     helper <- rlang::call2(paste0("share_of_", share), quote(value))
     for (copied in c(FALSE, TRUE)) {
       for (kind in c("independent", "retained", "inner", "outer")) {
-        read <- mixed_outer_class_read(probe, copied = copied, kind = kind)
+        read <- mixed_outer_class_read(probe, copied = copied, kind = kind,
+                                       remove = kind == "independent")
         expected <- if (kind == "retained") 11 else 7
         forward <- summarize_with_margins(
           input, value = sum(.data$x), prior = !!helper, observed = !!read,
@@ -192,7 +212,8 @@ test_that("dtplyr mixed attribute values wait for explicit collection", {
 })
 
 mixed_factory_read <- function(dependent, probe, retained = FALSE,
-                               list_first = FALSE, invoke_callable = FALSE) {
+                               list_first = FALSE, invoke_callable = FALSE,
+                               remove = TRUE) {
   force(probe)
   callable_body <- if (xor(dependent, invoke_callable)) 7 else quote(sum(prior))
   callable <- rlang::expr(function() {
@@ -227,7 +248,7 @@ mixed_factory_read <- function(dependent, probe, retained = FALSE,
     if (!!predicate) alias <- list2env(list(make = !!second))
     # The injected invocation reads this factory result.
     made <- alias$make() # nolint: object_usage_linter.
-    rm(prior)
+    !!if (remove) quote(rm(prior)) else NULL
     !!invocation
   })(11))
 }
@@ -245,12 +266,25 @@ test_that("mixed factory result kinds retain list callback dependencies", {
   expect_identical(serialize(data, NULL), before)
 })
 
+unused_callable_factory_reads <- function(probe) {
+  reads <- list()
+  for (first in c(FALSE, TRUE)) {
+    for (retained in c(FALSE, TRUE)) {
+      reads <- c(reads, list(mixed_factory_read(FALSE, probe, retained, first)))
+    }
+  }
+  reads
+}
+
 test_that("mixed factories leave unused callable bodies deferred", {
   data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
   probe <- rlang::env(factories = 0L, closures = 0L)
+  expect_share_dependencies(data, unused_callable_factory_reads(probe))
+  expect_identical(probe$factories, 0L)
+  expect_identical(probe$closures, 0L)
   for (first in c(FALSE, TRUE)) {
     for (retained in c(FALSE, TRUE)) {
-      read <- mixed_factory_read(FALSE, probe, retained, first)
+      read <- mixed_factory_read(FALSE, probe, retained, first, remove = FALSE)
       expect_share_dependency_values(data, list(read), if (retained) 11 else 7)
     }
   }
@@ -271,11 +305,16 @@ test_that("dtplyr mixed factories preserve independent and captured values", {
   }
   input <- dtplyr::lazy_dt(data, immutable = TRUE)
   input <- dplyr::filter(input, observe(x) > 0)
+  expect_share_dependencies(input, unused_callable_factory_reads(probe))
+  expect_identical(probe$factories, 0L)
+  expect_identical(probe$closures, 0L)
+  expect_identical(probe$reads, 0L)
   for (kind in c("parent", "total")) {
     helper <- rlang::call2(paste0("share_of_", kind), quote(value))
     for (first in c(FALSE, TRUE)) {
       for (retained in c(FALSE, TRUE)) {
-        read <- mixed_factory_read(FALSE, probe, retained, first)
+        read <- mixed_factory_read(FALSE, probe, retained, first,
+                                   remove = FALSE)
         expected <- if (retained) 11 else 7
         forward <- summarize_with_margins(
           input, value = sum(.data$x), prior = !!helper, observed = !!read,
@@ -362,7 +401,7 @@ test_that("dtplyr invoked mixed callables retain dependencies without reads", {
 })
 
 partial_list_write_read <- function(dependent, probe, nested = FALSE,
-                                    overwrite = FALSE) {
+                                    overwrite = FALSE, remove = TRUE) {
   force(probe)
   body <- if (dependent) quote(sum(prior)) else 7
   small <- rlang::expr(list(read = function() {
@@ -389,7 +428,7 @@ partial_list_write_read <- function(dependent, probe, nested = FALSE,
     callbacks <- alias$cfg # nolint: object_usage_linter.
     !!write
     !!replacement
-    rm(prior)
+    !!if (remove) quote(rm(prior)) else NULL
     (!!selected)()
   })(11))
 }
@@ -432,8 +471,11 @@ test_that("partial list writes preserve independent replacement values", {
   data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
   probe <- rlang::env(closures = 0L)
   for (nested in c(FALSE, TRUE)) {
+    read <- partial_list_write_read(TRUE, probe, nested, overwrite = TRUE)
+    expect_share_dependencies(data, list(read))
     for (overwrite in c(FALSE, TRUE)) {
-      read <- partial_list_write_read(overwrite, probe, nested, overwrite)
+      read <- partial_list_write_read(overwrite, probe, nested, overwrite,
+                                      remove = !overwrite)
       expect_share_dependency_values(data, list(read), 7)
     }
   }
@@ -452,11 +494,18 @@ test_that("dtplyr partial list writes keep legal values until collection", {
   }
   input <- dtplyr::lazy_dt(data, immutable = TRUE)
   input <- dplyr::filter(input, observe(x) > 0)
+  reads <- lapply(c(FALSE, TRUE), function(nested) {
+    partial_list_write_read(TRUE, probe, nested, overwrite = TRUE)
+  })
+  expect_share_dependencies(input, reads)
+  expect_identical(probe$closures, 0L)
+  expect_identical(probe$reads, 0L)
   for (kind in c("parent", "total")) {
     helper <- rlang::call2(paste0("share_of_", kind), quote(value))
     for (nested in c(FALSE, TRUE)) {
       for (overwrite in c(FALSE, TRUE)) {
-        read <- partial_list_write_read(overwrite, probe, nested, overwrite)
+        read <- partial_list_write_read(overwrite, probe, nested, overwrite,
+                                        remove = !overwrite)
         forward <- summarize_with_margins(
           input, value = sum(.data$x), prior = !!helper, observed = !!read,
           .grouping = rollup("g")
@@ -563,8 +612,9 @@ test_that("exposed fresh environments preserve independent lexical reads", {
   expect_share_dependency_values(
     data, fresh_env_exposure_controls(), 11
   )
+  expect_share_dependencies(data, fresh_env_replacement_controls())
   expect_share_dependency_values(
-    data, fresh_env_replacement_controls(), 7
+    data, lapply(fresh_env_replacement_controls(), without_removal), 7
   )
 })
 
@@ -586,8 +636,9 @@ test_that("immutable dtplyr retains legal exposed environment values", {
   )
   before <- serialize(data, NULL)
   input <- dtplyr::lazy_dt(data, immutable = TRUE)
+  expect_share_dependencies(input, fresh_env_replacement_controls())
   controls <- c(fresh_env_exposure_controls(),
-                fresh_env_replacement_controls())
+                lapply(fresh_env_replacement_controls(), without_removal))
   expected <- c(11, 11, 7, 7, 7, 7)
   for (kind in c("parent", "total")) {
     helper <- rlang::call2(paste0("share_of_", kind), quote(value))
@@ -857,7 +908,8 @@ test_that("dtplyr factory alternatives defer captured and independent values", {
 
 list_alternative_read <- function(kind, selector, dependent, probe,
                                   choices = TRUE, retained = FALSE,
-                                  remap = FALSE, overwrite = FALSE) {
+                                  remap = FALSE, overwrite = FALSE,
+                                  remove = TRUE) {
   force(probe)
   member <- function(body) {
     rlang::expr(function() {
@@ -929,7 +981,7 @@ list_alternative_read <- function(kind, selector, dependent, probe,
     !!setup
     !!remapping
     selected <- !!selection
-    rm(prior)
+    !!if (remove) quote(rm(prior)) else NULL
     selected()
   })(11))
 }
@@ -972,6 +1024,10 @@ test_that("known list remaps and independent replacements retain values", {
     for (overwrite in c(FALSE, TRUE)) {
       read <- list_alternative_read(kind, "index", overwrite, probe,
                                     remap = TRUE, overwrite = overwrite)
+      expect_share_dependencies(data, list(read))
+      read <- list_alternative_read(kind, "index", overwrite, probe,
+                                    remap = TRUE, overwrite = overwrite,
+                                    remove = FALSE)
       expect_share_dependency_values(data, list(read), 7)
     }
   }
@@ -1003,6 +1059,9 @@ test_that("list choices preserve literal names, indices and captured formals", {
   for (kind in c("factory", "nested")) {
     for (selector in c("name", "index")) {
       read <- list_alternative_read(kind, selector, FALSE, probe)
+      expect_share_dependencies(data, list(read))
+      read <- list_alternative_read(kind, selector, FALSE, probe,
+                                    remove = FALSE)
       expect_share_dependency_values(data, list(read), 7)
       if (kind == "factory") {
         read <- list_alternative_read(kind, selector, FALSE, probe,
@@ -1023,9 +1082,13 @@ test_that("dtplyr list choices preserve independent values at collection", {
   probe <- rlang::env(factories = 0L, closures = 0L)
   for (kind in c("factory", "nested")) {
     for (selector in c("name", "index")) {
+      read <- list_alternative_read(kind, selector, FALSE, probe)
+      expect_share_dependencies(input, list(read))
+      expect_identical(probe$factories, 0L)
+      expect_identical(probe$closures, 0L)
       for (retained in if (kind == "factory") c(FALSE, TRUE) else FALSE) {
         read <- list_alternative_read(kind, selector, FALSE, probe,
-                                      retained = retained)
+                                      retained = retained, remove = retained)
         expected <- if (retained) 11 else 7
         for (share in c("parent", "total")) {
           helper <- rlang::call2(paste0("share_of_", share), quote(value))

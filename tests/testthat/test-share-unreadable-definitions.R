@@ -17,7 +17,7 @@ test_that("an empty block or explicit local() environment holds no closure", {
   ), 7)
 })
 
-test_that("closure transfers missing their input hold no closure", {
+test_that("transfers missing their input compute values and refuse removals", {
   # Each malformed transfer fails when R evaluates it; the handler supplies
   # the closure the summary calls.
   expect_share_dependency_values(unreadable_definition_data(), alist(
@@ -33,7 +33,9 @@ test_that("closure transfers missing their input hold no closure", {
       )
       rm(prior)
       held()
-    })(1),
+    })(1)
+  ), 7)
+  expect_share_dependencies(unreadable_definition_data(), alist(
     (function(prior) {
       held <- function() sum(prior)
       held <- tryCatch(
@@ -43,7 +45,7 @@ test_that("closure transfers missing their input hold no closure", {
       rm(prior)
       held()
     })(1)
-  ), 7)
+  ))
 })
 
 test_that("unreadable definition replacements leave the closure unresolved", {

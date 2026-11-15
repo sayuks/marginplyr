@@ -119,7 +119,7 @@ test_that("nested list planning never invokes or forces caller code", {
   expect_identical(serialize(data, NULL), before)
 })
 
-test_that("nested-list returns refuse and unselected closures remain legal", {
+test_that("nested-list returns and unselected closures refuse a removal", {
   probe <- rlang::env(calls = 0L)
   unknown <- function(x) {
     probe$calls <- probe$calls + 1L
@@ -130,8 +130,8 @@ test_that("nested-list returns refuse and unselected closures remain legal", {
     rm(prior)
     carrier$outer$read()
   })(1))
-  # A function body that calls a function may return its argument (#1670),
-  # so the share refuses without calling it.
+  # The literal passed to unknown() captured prior, so the removal refuses
+  # without calling unknown().
   expect_share_dependencies(nested_closure_list_data(), list(read))
   expect_identical(probe$calls, 0L)
   unknown <- function(x) list(outer = list(read = function() 7))
@@ -150,7 +150,10 @@ test_that("nested-list returns refuse and unselected closures remain legal", {
       carrier[[c(1L, 1L)]]()
     })(1)
   )
-  expect_share_dependency_values(nested_closure_list_data(), reads, 7)
+  expect_share_dependencies(nested_closure_list_data(), reads)
+  expect_share_dependency_values(
+    nested_closure_list_data(), lapply(reads, without_removal), 7
+  )
 })
 
 test_that("recursive list paths preserve ordinary caller function lookup", {
@@ -159,8 +162,8 @@ test_that("recursive list paths preserve ordinary caller function lookup", {
     probe$calls <- probe$calls + 1L
     base::c(1L, 2L)
   }
-  # The caller's `c` computes the path, which may select the alias-reading
-  # member, so the carrier's closures stay possible (#1666).
+  # The carrier's literal captured prior, so the removal refuses without
+  # calling the caller's `c`.
   read <- rlang::quo((function(prior) {
     carrier <- list(list(function() sum(prior), function() 7))
     rm(prior)
@@ -168,6 +171,10 @@ test_that("recursive list paths preserve ordinary caller function lookup", {
   })(1))
   expect_share_dependencies(nested_closure_list_data(), list(read))
   expect_identical(probe$calls, 0L)
+  expect_share_dependency_values(
+    nested_closure_list_data(), list(without_removal(read)), 7
+  )
+  expect_identical(probe$calls, 12L)
 })
 
 test_that("empty literal names do not select unnamed nested closures", {
@@ -177,7 +184,10 @@ test_that("empty literal names do not select unnamed nested closures", {
     selected <- carrier[[c("outer", "")]]
     if (is.null(selected)) 7 else selected()
   })(1))
-  expect_share_dependency_values(nested_closure_list_data(), list(read), 7)
+  expect_share_dependencies(nested_closure_list_data(), list(read))
+  expect_share_dependency_values(
+    nested_closure_list_data(), list(without_removal(read)), 7
+  )
 })
 
 test_that("dollar members preserve invalid subscript diagnostics", {
@@ -187,7 +197,6 @@ test_that("dollar members preserve invalid subscript diagnostics", {
       data, value = sum(.data$x), prior = share_of_total(value),
       observed = (function(prior) {
         carrier <- list(outer = list(read = function() sum(prior)))
-        rm(prior)
         base::`$`(carrier, c("outer"))$read()
       })(1),
       .grouping = rollup("g")
@@ -195,6 +204,13 @@ test_that("dollar members preserve invalid subscript diagnostics", {
     "invalid subscript type"
   )
   expect_false(inherits(error, "marginplyr_error"))
+  expect_share_dependencies(data, alist(
+    (function(prior) {
+      carrier <- list(outer = list(read = function() sum(prior)))
+      rm(prior)
+      base::`$`(carrier, c("outer"))$read()
+    })(1)
+  ))
 })
 
 test_that("nested closure dependency refusal leaves lazy input unread", {
@@ -272,30 +288,36 @@ test_that("nested deletion preserves surviving member dependencies", {
 
 test_that("nested names replacement changes which closure is invoked", {
   data <- nested_closure_list_data()
-  expect_share_dependencies(data, alist((function(prior) {
+  renamed <- alist((function(prior) {
     carrier <- list(outer = list(read = function() sum(prior)))
     names(carrier$outer) <- "renamed"
     rm(prior)
     carrier$outer$renamed()
-  })(1)))
-  expect_share_dependency_values(data, alist((function(prior) {
+  })(1))
+  expect_share_dependencies(data, renamed)
+  expect_share_dependency_values(data, lapply(renamed, without_removal), 1)
+  swapped <- alist((function(prior) {
     carrier <- list(outer = list(
       read = function() sum(prior), other = function() 7
     ))
     names(carrier$outer) <- c("other", "read")
     rm(prior)
     carrier$outer$read()
-  })(1)), 7)
+  })(1))
+  expect_share_dependencies(data, swapped)
+  expect_share_dependency_values(data, lapply(swapped, without_removal), 7)
 })
 
 test_that("nested replacement can discard a dependency or keep it local", {
   data <- nested_closure_list_data()
-  expect_share_dependency_values(data, alist((function(prior) {
+  discarded <- alist((function(prior) {
     carrier <- list(outer = list(read = function() sum(prior)))
     carrier$outer$read <- function() 7
     rm(prior)
     carrier$outer$read()
-  })(1)), 7)
+  })(1))
+  expect_share_dependencies(data, discarded)
+  expect_share_dependency_values(data, lapply(discarded, without_removal), 7)
   expect_share_dependency_values(data, alist((function(prior) {
     carrier <- list(outer = list(read = function() 7))
     carrier$outer$read <- function() sum(prior)
@@ -319,7 +341,7 @@ test_that("nested writes preserve list indexing and setter lookup", {
       carrier$read()
     })(1)
   ))
-  expect_share_dependency_values(data, alist(
+  unwritten <- alist(
     (function(prior) {
       carrier <- list(outer = list(read = function() 7))
       carrier$out$read <- function() sum(prior)
@@ -329,14 +351,18 @@ test_that("nested writes preserve list indexing and setter lookup", {
     (function(prior) {
       `$<-` <- function(x, name, value) x
       carrier <- list(outer = list(read = function() 7))
-      carrier$outer[[1L]] <- function() 3 + 4
+      carrier$outer$read <- function() sum(prior)
       rm(prior)
       carrier$outer$read()
-    })(1),
+    })(1)
+  )
+  expect_share_dependencies(data, unwritten)
+  expect_share_dependency_values(data, lapply(unwritten, without_removal), 7)
+  expect_share_dependency_values(data, alist(
     (function(prior) {
       `$<-` <- function(x, name, value) x
       carrier <- list(outer = list(read = function() 7))
-      carrier$outer$read <- function() sum(prior)
+      carrier$outer[[1L]] <- function() 3 + 4
       rm(prior)
       carrier$outer$read()
     })(1)
