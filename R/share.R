@@ -7788,8 +7788,10 @@ scope_setter_capture_reads <- function(target, value, scope, lookup) {
   }
   target <- unparenthesized_value(target)
   operator <- static_call_name(target)
+  replacements <- grep("<-$", names(rlang_scope_mutations()), value = TRUE)
   if (is.null(operator) ||
-        !operator %in% c("environment", "parent.env", "fn_env") ||
+        !operator %in% c("environment", "parent.env",
+                         sub("<-$", "", replacements)) ||
         length(target) < 2L) {
     return(character())
   }
