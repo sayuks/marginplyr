@@ -4808,7 +4808,10 @@ call_part_symbols <- function(expr, scope, lookup) {
     reads <- c(reads, read_symbols(parts[[index]], scope, parts_lookup))
     scope <- scope_after_possible_removals(parts[[index]], scope, lookup)
   }
-  unique(c(reads, scope_capture_loss_reads(expr, scope, lookup)))
+  unique(c(
+    reads, scope_capture_loss_reads(expr, scope, lookup),
+    scope_replacement_symbols(expr, scope, lookup)
+  ))
 }
 
 # Read evaluated leaves of a deferred selector in the caller's scope.
@@ -6524,22 +6527,7 @@ scope_promise_symbols <- function(name, scope, lookup,
       if (isTRUE(lookup$defer_definitions) && !is.null(closure$elements)) {
         return(character())
       }
-      variants <- scope_closure_variants(closure)
-      return(unique(unlist(lapply(variants, function(variant) {
-        if (length(variant$unknown_definition_parts) > 0L) {
-          return(unresolved_lookup_name())
-        }
-        if (scope_closure_is_active(variant, scope)) return(character())
-        enclosure <- if (variant$enclosing <= length(scope)) {
-          seq.int(variant$enclosing, length(scope))
-        } else {
-          integer()
-        }
-        definition_data_symbols(
-          variant$definition, c(variant$frames, scope[enclosure]), lookup,
-          closure_origin = 1L + length(variant$frames)
-        )
-      }), use.names = FALSE)))
+      return(scope_closure_value_symbols(closure, scope, lookup))
     }
   }
   promise <- scope_promise(name, scope, function_lookup,
@@ -6550,6 +6538,68 @@ scope_promise_symbols <- function(name, scope, lookup,
   scoped_data_symbols(
     promise$expression, promise$scope[promise$evaluation], lookup
   )
+}
+
+# The reads of a closure value, without invoking it, under the enclosure each
+# variant names. A variant with an unknown definition part reads anything.
+scope_closure_value_symbols <- function(closure, scope, lookup) {
+  unique(unlist(lapply(scope_closure_variants(closure), function(variant) {
+    if (length(variant$unknown_definition_parts) > 0L) {
+      return(unresolved_lookup_name())
+    }
+    if (scope_closure_is_active(variant, scope)) return(character())
+    enclosure <- if (variant$enclosing <= length(scope)) {
+      seq.int(variant$enclosing, length(scope))
+    } else {
+      integer()
+    }
+    definition_data_symbols(
+      variant$definition, c(variant$frames, scope[enclosure]), lookup,
+      closure_origin = 1L + length(variant$frames)
+    )
+  }), use.names = FALSE))
+}
+
+# The closure a `body<-` or `formals<-` call returns, keeping the variants
+# whose written definition the walk can read. NULL when none is readable.
+scope_readable_replacement <- function(expr, scope, lookup) {
+  operator <- static_call_name(expr)
+  if (is.null(operator) || !operator %in% c("body<-", "formals<-")) {
+    return(NULL)
+  }
+  scope_filter_closure(
+    scope_definition_replacement(expr, scope, lookup),
+    function(variant) length(variant$unknown_definition_parts) == 0L
+  )
+}
+
+# Record the captures a readable `body<-` or `formals<-` call's written
+# definition makes in the frames its enclosure reaches, as a literal
+# records them where it is created.
+scope_record_replacement_captures <- function(expr, scope, lookup) {
+  closure <- scope_readable_replacement(expr, scope, lookup)
+  for (variant in scope_closure_variants(closure)) {
+    live <- if (variant$enclosing <= length(scope)) {
+      seq.int(variant$enclosing, length(scope))
+    }
+    retained <- seq_along(variant$frames)
+    inner <- scope_record_captures(
+      variant$definition, c(variant$frames, scope[live]), lookup
+    )
+    scope[live] <- inner[length(retained) + seq_along(live)]
+    # A retained factory frame is off the walked stack, as a returned
+    # literal's frame is, so its captures escape into every walked frame.
+    scope <- scope_escape_captures(scope, inner[retained])
+  }
+  scope
+}
+
+# The reads a `body<-` or `formals<-` call makes by writing a definition the
+# walk can read, which it creates there as a literal is created (ADR 0010).
+# A variant it cannot read is left to the closure's invocation.
+scope_replacement_symbols <- function(expr, scope, lookup) {
+  closure <- scope_readable_replacement(expr, scope, lookup)
+  scope_closure_value_symbols(closure, scope, lookup)
 }
 
 # Effects of demanding a pending promise in its evaluation frame.
@@ -7309,18 +7359,32 @@ statement_reads_and_scope <- function(expr, scope, lookup = NULL,
                                lookup, value_scope = scope)
     ))
   }
+  # A readable definition write creates its definition here (ADR 0010).
+  replacement <- if (!rlang::is_missing(expr[[3L]])) {
+    scope_definition_write(expr[[2L]], expr[[3L]])
+  }
   if (!identical(read_symbols, no_scope_reads)) {
     value <- unique(c(value, scope_setter_capture_reads(
       expr[[2L]], expr[[3L]], scope, lookup
     )))
+    if (!is.null(replacement)) {
+      value <- unique(c(value, scope_replacement_symbols(
+        replacement$value, scope, lookup
+      )))
+    }
+  }
+  after <- scope_after_removals(expr[[2L]], retained, lookup)
+  if (!is.null(replacement)) {
+    after <- scope_record_replacement_captures(
+      replacement$value, after, lookup
+    )
   }
   # Read a replacement target and the value in source order. Its eventual
   # binding depends on the shape of the target.
   list(
     reads = unique(c(read_symbols(expr[[2L]], scope, lookup), value)),
     scope = scope_after_carrier_write(
-      scope_after_removals(expr[[2L]], retained, lookup),
-      expr[[2L]], expr[[3L]], lookup, value_scope = scope
+      after, expr[[2L]], expr[[3L]], lookup, value_scope = scope
     )
   )
 }
@@ -7465,6 +7529,7 @@ scope_after_removals <- function(expr, scope, lookup) {
   if (!is.null(mutation) && identical(static_call_name(mutation), "list2env")) {
     scope <- scope_forget_kinds(scope, list2env_setter_names(mutation, lookup))
   }
+  scope <- scope_record_replacement_captures(expr, scope, lookup)
   scope
 }
 

@@ -528,3 +528,86 @@ test_that("a dispatched methods body setter cannot claim a base replacement", {
   expect_equal(ordinary$observed, c(1, 3, 4))
   expect_identical(probe$calls, 3L)
 })
+
+# A readable replacement is read where it is written, as a literal is where it
+# is created (ADR 0010), so a closure extracted as a value still refuses.
+extracted_replacement_reads <- function() {
+  as.list(quote(alist(
+    {
+      f <- function() 7
+      body(f) <- quote(sum(prior))
+      h <- mget("f")[[1L]]
+      h()
+    },
+    {
+      f <- function() 7
+      body(f) <- quote(sum(prior))
+      h <- environment()$f
+      h()
+    }
+  )))[-1L]
+}
+
+test_that("a readable replacement refuses through an extracted closure", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
+  expect_share_dependencies(data, extracted_replacement_reads())
+})
+
+# The written definition captures what it reads from around the closure, so a
+# later removal of that name reads it, as it would for a literal's capture.
+extracted_replacement_removals <- function() {
+  as.list(quote(alist(
+    (function(prior) {
+      f <- function() 7
+      body(f) <- quote(sum(prior))
+      rm(prior)
+      h <- mget("f")[[1L]]
+      h()
+    })(11),
+    (function(prior) {
+      f <- function() 7
+      f <- base::`body<-`(f, value = quote(sum(prior)))
+      rm(prior)
+      h <- environment()$f
+      h()
+    })(11),
+    {
+      make <- function() {
+        prior <- 11
+        function() 7
+      }
+      f <- make()
+      body(f) <- quote(sum(prior))
+      rm("prior", envir = environment(f))
+      h <- mget("f")[[1L]]
+      h()
+    }
+  )))[-1L]
+}
+
+extracted_replacement_controls <- function() {
+  as.list(quote(alist(
+    {
+      f <- function() 7
+      body(f) <- quote(11)
+      h <- mget("f")[[1L]]
+      h()
+    },
+    {
+      f <- function() 7
+      formals(f) <- alist(arg = 11)
+      body(f) <- quote(arg)
+      h <- environment()$f
+      h()
+    }
+  )))[-1L]
+}
+
+test_that("a replacement's captures refuse a removal and keep values", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
+  expect_share_dependencies(data, extracted_replacement_removals())
+  retained <- lapply(extracted_replacement_removals(), without_removal)
+  expect_share_dependency_values(
+    data, c(retained, extracted_replacement_controls()), 11
+  )
+})
