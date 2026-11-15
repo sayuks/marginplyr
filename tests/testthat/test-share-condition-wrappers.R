@@ -128,7 +128,7 @@ test_that("dtplyr legal condition wrappers execute only at collection", {
   expect_identical(serialize(data, NULL), before)
 })
 
-condition_lookup_controls <- function(remove = quote(base::rm(prior))) {
+condition_lookup_reads <- function(remove = quote(base::rm(prior))) {
   lapply(condition_wrappers(), function(wrapper) {
     name <- as.character(wrapper[[1L]][[3L]])
     wrapper[[1L]] <- rlang::sym(name)
@@ -175,8 +175,8 @@ caller_callable_reads <- function(remove) {
 
 test_that("condition wrappers preserve caller lookup and callable classes", {
   data <- condition_wrapper_data()
-  expect_share_dependencies(data, condition_lookup_controls())
-  expect_condition_values(data, condition_lookup_controls(NULL), 7)
+  expect_share_dependencies(data, condition_lookup_reads())
+  expect_condition_values(data, condition_lookup_reads(NULL), 7)
   local_binding <- alist(
     (function(prior) {
       copied <- base::local({

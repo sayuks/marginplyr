@@ -175,6 +175,17 @@ test_that("unreadable removals and replaced enclosures read captured aliases", {
       f <- function() sum(prior)
       parent.env(environment()) <- baseenv()
       7
+    })(1),
+    (function(prior) {
+      f <- function() sum(prior)
+      f <- do.call("environment<-", list(f, parent.env(environment())))
+      f()
+    })(1),
+    (function(prior) {
+      f <- function() sum(prior)
+      h <- mget("f")[[1]]
+      local(rm("prior", envir = parent.frame(2)))
+      h()
     })(1)
   ), reverse_message = "depends on earlier summary alias `prior`")
 })
@@ -215,6 +226,12 @@ test_that("a local rm or independent reparenting keeps a capture shareable", {
       f <- function() sum(prior)
       rm <- function(...) NULL
       rm(prior)
+      f()
+    })(1)),
+    quote((function(prior) {
+      f <- function() sum(prior)
+      `environment<-` <- function(fun, value) fun
+      environment(f) <- emptyenv()
       f()
     })(1)),
     rlang::quo((function(prior) {

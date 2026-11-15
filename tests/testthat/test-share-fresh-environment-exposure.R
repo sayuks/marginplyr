@@ -569,8 +569,8 @@ fresh_env_exposure_controls <- function() {
   )
 }
 
-fresh_env_replacement_controls <- function(remove = TRUE) {
-  controls <- alist(
+fresh_env_replacement_controls <- function() {
+  alist(
     (function(prior) {
       box <- list2env(list(read = function() sum(prior)))
       invisible(box)
@@ -605,7 +605,6 @@ fresh_env_replacement_controls <- function(remove = TRUE) {
       other$read()
     })(11)
   )
-  if (remove) controls else lapply(controls, without_removal)
 }
 
 test_that("exposed fresh environments preserve independent lexical reads", {
@@ -615,7 +614,7 @@ test_that("exposed fresh environments preserve independent lexical reads", {
   )
   expect_share_dependencies(data, fresh_env_replacement_controls())
   expect_share_dependency_values(
-    data, fresh_env_replacement_controls(remove = FALSE), 7
+    data, lapply(fresh_env_replacement_controls(), without_removal), 7
   )
 })
 
@@ -639,7 +638,7 @@ test_that("immutable dtplyr retains legal exposed environment values", {
   input <- dtplyr::lazy_dt(data, immutable = TRUE)
   expect_share_dependencies(input, fresh_env_replacement_controls())
   controls <- c(fresh_env_exposure_controls(),
-                fresh_env_replacement_controls(remove = FALSE))
+                lapply(fresh_env_replacement_controls(), without_removal))
   expected <- c(11, 11, 7, 7, 7, 7)
   for (kind in c("parent", "total")) {
     helper <- rlang::call2(paste0("share_of_", kind), quote(value))

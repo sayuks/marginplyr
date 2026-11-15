@@ -136,8 +136,7 @@ test_that("list constructors the walk cannot read hold no members", {
       carrier[[1L]]()
     })(1)
   ), 7)
-  # Which members a callback keeps is not read, so after the removal the
-  # result may hold the alias-reading closure (#1666).
+  # These literals captured prior, so each removal refuses.
   expect_share_dependencies(unreadable_list_data(), alist(
     (function(prior) {
       carrier <- Filter(is.numeric, list(function() sum(prior)))
@@ -362,9 +361,8 @@ test_that("list writes the walk applies keep the members they leave", {
   )))
 })
 
-test_that("unproven local member setters may keep the carrier", {
-  # The walk cannot prove either setter returns its input, so after the
-  # removal the carrier may still hold the alias-reading closure (#1666).
+test_that("local setters refuse a removed capture whatever they return", {
+  # Each carrier's literal captured prior, so each removal refuses.
   expect_share_dependencies(unreadable_list_data(), alist(
     (function(prior, choose) {
       setters <- new.env()

@@ -462,13 +462,6 @@ test_that("inline scope changes preserve independent and shadowed bindings", {
         sum(prior)
       })()
     })(),
-    (function(prior = touch()) {
-      callback <- function() {
-        base::rm(prior, envir = parent.frame())
-        sum(prior)
-      }
-      if (is.function(callback)) sum(prior)
-    })(),
     (function(prior = {
       base::rm(prior)
       stop("An uninvoked definition cannot demand this default.")
@@ -526,6 +519,13 @@ test_that("inline scope changes preserve independent and shadowed bindings", {
     })()
   )
   removed <- alist(
+    (function(prior = touch()) {
+      callback <- function() {
+        base::rm(prior, envir = parent.frame())
+        sum(prior)
+      }
+      if (is.function(callback)) sum(prior)
+    })(),
     (function(prior = touch()) {
       (function(...) sum(prior))({
         base::rm("prior")

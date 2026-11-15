@@ -158,7 +158,7 @@ test_that("local closures are valid unless a removal follows their capture", {
         class = "marginplyr_error"
       )
     }
-    for (expr in expressions) {
+    for (expr in c(expressions, lapply(removed, without_removal))) {
       forward <- summarize_with_margins(
         data, value = sum(x), prior = !!share, derived = !!expr,
         .grouping = rollup(group)

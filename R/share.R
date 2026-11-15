@@ -4728,10 +4728,10 @@ pronoun_index_symbols <- function(expr, scope, lookup) {
 }
 
 # Reads of evaluated call arguments and the head, including syntax demanded
-# by a lexical promise in function position, and of the captured names the call
-# removes or whose enclosure it replaces. The supplied scope describes the
-# frames visible before the call. Reflective branches add resolved names to
-# these reads.
+# by a lexical promise in function position, and of the names the call removes
+# from, or whose enclosure it replaces under, a literal that read them. The
+# supplied scope describes the frames visible before the call. Reflective
+# branches add resolved names to these reads.
 #
 # An argument a call captures as language is not one of those parts, and this
 # is where `quote(share)` stops being read as the column `share`: the boundary
@@ -7638,10 +7638,10 @@ scope_possible_losses <- function(scope, after) {
 }
 
 # The frames a visible removal call searches and the names it requests.
-# `removed` is NULL for unreadable names. `outside` marks an existing
-# environment, or one the walk cannot resolve, which the scope treats as the
-# current frame. A caller beyond the walked frames is neither: `frames` is
-# empty and nothing a literal here captured is there.
+# `removed` is NULL for unreadable names. `outside` marks a target that is not
+# a walked frame: an existing environment or a caller the walk cannot place,
+# for which `frames` is empty, or an unresolved environment, which the scope
+# treats as the current frame.
 scope_removal_targets <- function(expr, scope, lookup) {
   target <- base_call_argument(expr, c("envir", "pos"))
   index <- 1L
@@ -7652,6 +7652,7 @@ scope_removal_targets <- function(expr, scope, lookup) {
     depth <- static_parent_frame_depth(envir, scope, lookup)
     if (!is.null(depth)) {
       index <- scope_caller_frame(depth, scope)
+      outside <- is.null(index)
     } else if (!is.null(lookup_environment_value(envir, bound, lookup))) {
       index <- NULL
       outside <- TRUE
@@ -7753,13 +7754,7 @@ scope_record_captures <- function(expr, scope, lookup) {
   }
   # Each frame keeps its offsets and binds nothing, so a read of an enclosing
   # binding is reported by name instead of resolved to what that binding holds.
-  unbound <- lapply(scope, function(frame) {
-    kept <- frame[intersect(
-      names(frame), c("enclosing", "closure_origin", "caller", "invoked")
-    )]
-    kept$bound <- character()
-    kept
-  })
+  unbound <- lapply(scope, retain_scope_bindings, bound = character())
   lookup$defer_definitions <- NULL
   free <- definition_data_symbols(expr, unbound, lookup)
   everything <- unresolved_lookup_name() %in% free
@@ -7829,10 +7824,10 @@ scope_setter_capture_reads <- function(target, value, scope, lookup) {
   )
 }
 
-# The scope mutation a call makes, where a local function named `rm` or
-# `remove` is not the base removal.
+# The scope mutation a call makes, where a local function named `rm`,
+# `remove` or `environment<-` is not the base callee.
 scope_call_mutation <- function(expr, name, scope, lookup) {
-  if (!is.null(name) && name %in% c("rm", "remove") &&
+  if (!is.null(name) && name %in% c("rm", "remove", "environment<-") &&
         scope_has_local_function(scope, name)) {
     lookup$local_functions <- name
   }
@@ -7854,9 +7849,8 @@ scope_capture_loss_reads <- function(expr, scope, lookup) {
   if (identical(operator, "parent.env<-")) {
     return(scope_reparent_capture_reads(mutation, scope, lookup))
   }
-  if (identical(name, "environment<-") &&
-        is_known_base_frame_call(expr, name, scope, lookup)) {
-    parts <- static_matched_arguments(expr, args(base::`environment<-`))
+  if (identical(operator, "environment<-")) {
+    parts <- static_matched_arguments(mutation, args(base::`environment<-`))
     if (!all(c("fun", "value") %in% names(parts))) {
       return(scope_captured_names(scope))
     }

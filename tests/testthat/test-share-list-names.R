@@ -42,11 +42,17 @@ swapped_list_name_reads <- function(lookup = quote(carrier$other)) {
   })
 }
 
-test_that("removal after swapped list names refuses either selected closure", {
-  expect_share_dependencies(
-    list_name_data(), swapped_list_name_reads(quote(carrier$read))
+test_that("swapped list names select the independent and dependent closures", {
+  independent <- swapped_list_name_reads(quote(carrier$read))
+  expect_share_dependencies(list_name_data(), independent)
+  expect_share_dependency_values(
+    list_name_data(), lapply(independent, without_removal), expected = 7
   )
-  expect_share_dependencies(list_name_data(), swapped_list_name_reads())
+  dependent <- swapped_list_name_reads()
+  expect_share_dependencies(list_name_data(), dependent)
+  expect_share_dependency_values(
+    list_name_data(), lapply(dependent, without_removal), expected = 1
+  )
 })
 
 expect_list_name_controls <- function(data) {
@@ -65,7 +71,11 @@ expect_list_name_controls <- function(data) {
   expect_share_dependency_values(
     data, list_name_reads(body = quote(7)), expected = 7
   )
-  expect_share_dependencies(data, swapped_list_name_reads(quote(carrier$read)))
+  independent <- swapped_list_name_reads(quote(carrier$read))
+  expect_share_dependencies(data, independent)
+  expect_share_dependency_values(
+    data, lapply(independent, without_removal), expected = 7
+  )
   expect_share_dependencies(data, swapped_list_name_reads())
   expect_identical(serialize(data, NULL), before)
 }
@@ -80,7 +90,7 @@ test_that("data.table renamed list lookup preserves controls and inputs", {
   expect_list_name_controls(data.table::as.data.table(list_name_data()))
 })
 
-test_that("removal after renaming refuses exact and missing name lookups", {
+test_that("renamed list lookup respects exact and missing names", {
   for (lookup in alist(carrier[["oth"]], carrier[["oth", exact = TRUE]],
                        carrier$read, carrier[["read", exact = FALSE]])) {
     reads <- list_name_reads(invoke = FALSE, lookup = rlang::expr({
@@ -88,6 +98,9 @@ test_that("removal after renaming refuses exact and missing name lookups", {
       if (is.null(selected)) 7 else selected()
     }))
     expect_share_dependencies(list_name_data(), reads)
+    expect_share_dependency_values(
+      list_name_data(), lapply(reads, without_removal), expected = 7
+    )
   }
 })
 
@@ -120,7 +133,7 @@ test_that("renamed list dependencies leave lazy input unread", {
   expect_identical(probe$calls, 1L)
 })
 
-test_that("classed attributes do not exempt a captured removal", {
+test_that("classed attributes leave list member dispatch to the caller", {
   registerS3method("$", "margin_share_named_carrier", function(x, name) {
     if (identical(name, "other")) function() 7 else .subset2(unclass(x), name)
   }, envir = asNamespace("base"))
@@ -133,6 +146,9 @@ test_that("classed attributes do not exempt a captured removal", {
   })(1))
   expect_identical(eval(read), 7)
   expect_share_dependencies(list_name_data(), list(read))
+  expect_share_dependency_values(
+    list_name_data(), list(without_removal(read)), expected = 7
+  )
 })
 
 test_that("incomplete attribute syntax reaches dplyr's error without removal", {

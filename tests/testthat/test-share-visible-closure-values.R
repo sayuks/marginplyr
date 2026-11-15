@@ -227,6 +227,9 @@ test_that("selected blocks and branches retain closure list members", {
   }
   data <- visible_closure_data()
   expect_share_dependency_values(data, reads(remove = NULL), expected = 1)
+  expect_share_dependency_values(
+    data, reads(remove = NULL, key = 2L), expected = 7
+  )
   expect_share_dependencies(data, c(reads(), reads(key = 2L)))
 })
 
@@ -250,13 +253,14 @@ test_that("closure list branch planning preserves ordinary switch lookup", {
   expect_share_dependencies(data, list(read))
   expect_identical(probe$calls, 0L)
 
-  # A list() body may call a rebound `list` (#1670).
+  # The literal captured prior, so the removal refuses whatever the caller's
+  # switch() returns.
   caller$switch <- function(...) list(function() 7)
   expect_share_dependencies(data, list(read))
   expect_identical(probe$calls, 0L)
 })
 
-test_that("a removal after a block's explicit return counts as a read", {
+test_that("an explicit return from a block bypasses the closure list binding", {
   read <- quote(length((function(prior) {
     functions <- {
       if (TRUE) return(list(function() sum(prior)))
@@ -266,6 +270,9 @@ test_that("a removal after a block's explicit return counts as a read", {
     functions[[1L]]()
   })(1)))
   expect_share_dependencies(visible_closure_data(), list(read))
+  expect_share_dependency_values(
+    visible_closure_data(), list(without_removal(read)), expected = 1
+  )
 })
 
 remapped_closure_read <- function(carrier, invoke, remove = quote(rm(prior)),
@@ -288,6 +295,7 @@ test_that("reversing a plain list preserves the selected closure", {
   }
   expect_share_dependencies(data, list(read(1L), read(2L)))
   expect_share_dependency_values(data, list(read(1L, NULL)), expected = 1)
+  expect_share_dependency_values(data, list(read(2L, NULL)), expected = 7)
 })
 
 test_that("plain list naming preserves the selected closure", {
@@ -306,6 +314,7 @@ test_that("plain list naming preserves the selected closure", {
     })
   }
   expect_share_dependency_values(data, reads(2L, remove = NULL), expected = 1)
+  expect_share_dependency_values(data, reads(3L, remove = NULL), expected = 7)
   expect_share_dependencies(data, c(reads(2L), reads(3L)))
 })
 
@@ -325,6 +334,7 @@ test_that("repeating, converting, and slicing a list preserves closures", {
     })
   }
   expect_share_dependency_values(data, reads(2L, remove = NULL), expected = 1)
+  expect_share_dependency_values(data, reads(3L, remove = NULL), expected = 7)
   independent <- reads(2L, callback = quote(function() 9))
   expect_share_dependency_values(data, independent, expected = 9)
   expect_share_dependencies(data, c(reads(2L), reads(3L)))

@@ -343,12 +343,17 @@ is_known_package_call <- function(expr, name, bound, lookup, owner = "base") {
   )
 }
 
+# The base callees `scope_mutation_call()` recognizes.
+scope_mutation_names <- function() {
+  c("rm", "remove", "parent.env<-", "environment<-", "list2env")
+}
+
 # A recognized scope mutation in direct-call form, without evaluating its head
 # or arguments. An unreadable do.call() argument list retains unknown targets.
 scope_mutation_call <- function(expr, bound, lookup) {
   name <- resolved_callee_name(expr)
   if (is.null(name) ||
-        !name %in% c("rm", "remove", "parent.env<-", "list2env", "do.call")) {
+        !name %in% c(scope_mutation_names(), "do.call")) {
     return(NULL)
   }
   head <- static_call_head(expr)
@@ -383,14 +388,15 @@ scope_mutation_call <- function(expr, bound, lookup) {
       static_call_args(arguments[[1L]])
     } else if (identical(name, "parent.env<-")) {
       alist(env = NULL, value = NULL)
+    } else if (identical(name, "environment<-")) {
+      list()
     } else {
       alist(list = NULL)
     }
   } else {
     parts <- static_call_args(expr)
   }
-  if (is.null(name) ||
-        !name %in% c("rm", "remove", "parent.env<-", "list2env")) {
+  if (is.null(name) || !name %in% scope_mutation_names()) {
     return(NULL)
   }
   if (scope_callee_is_shadowed(head, name, callee_bound, callee_lookup)) {

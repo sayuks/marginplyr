@@ -89,8 +89,8 @@ test_that("list value transfers preserve ordinary caller function lookup", {
       functions[[1L]]()
     })(1), list(transfer = rlang::call2(callee, quote(original))))
     read <- rlang::new_quosure(read, caller)
-    # A replacement body that calls a function may return its argument
-    # (#1670), so the share refuses without calling it.
+    # The literal in `original` captured prior, so the removal refuses
+    # without calling the caller's function.
     expect_share_dependencies(data, list(read))
     expect_identical(probe$calls, 0L)
     caller[[callee]] <- function(x) list(function() 7)
@@ -131,9 +131,12 @@ test_that("static list subsets preserve retained closure dependencies", {
   })
   data <- plain_list_transform_data()
   expect_share_dependencies(data, reads)
+  kept <- lapply(reads, without_removal)
+  expect_share_dependency_values(data, kept[1:4], expected = 1)
+  expect_share_dependency_values(data, kept[5:7], expected = 7)
 })
 
-test_that("logical and negative member indices do not exempt a removal", {
+test_that("logical and negative member indices select the same closure as R", {
   indices <- alist(TRUE, -2L, 1L, -1L)
   reads <- lapply(indices, function(index) {
     substitute((function(prior) {
@@ -144,9 +147,12 @@ test_that("logical and negative member indices do not exempt a removal", {
   })
   data <- plain_list_transform_data()
   expect_share_dependencies(data, reads)
+  kept <- lapply(reads, without_removal)
+  expect_share_dependency_values(data, kept[1:3], expected = 1)
+  expect_share_dependency_values(data, kept[4L], expected = 7)
 })
 
-test_that("list selector planning runs no caller code", {
+test_that("list selector code runs only when summaries evaluate", {
   probe <- rlang::env(calls = 0L)
   choose <- function() {
     probe$calls <- probe$calls + 1L
@@ -172,6 +178,9 @@ test_that("list selector planning runs no caller code", {
   })
   expect_share_dependencies(plain_list_transform_data(), reads)
   expect_identical(probe$calls, 0L)
+  kept <- lapply(reads, without_removal)
+  expect_share_dependency_values(plain_list_transform_data(), kept, 7)
+  expect_identical(probe$calls, 48L)
 })
 
 list_accessor_read <- function(accessor, body = quote(sum(prior)),
@@ -197,9 +206,11 @@ test_that("literal getElement selects the same closure as exact brackets", {
   expect_share_dependency_values(data, lapply(
     dependent, list_accessor_read, remove = quote(NULL)
   ), 11)
-  expect_share_dependencies(data, lapply(alist(
-    callbacks[["safe"]], getElement(callbacks, "safe")
-  ), list_accessor_read))
+  safe <- alist(callbacks[["safe"]], getElement(callbacks, "safe"))
+  expect_share_dependencies(data, lapply(safe, list_accessor_read))
+  expect_share_dependency_values(data, lapply(
+    safe, list_accessor_read, remove = quote(NULL)
+  ), 7)
 })
 
 test_that("literal .subset2 selects the same closure as exact brackets", {
@@ -214,9 +225,11 @@ test_that("literal .subset2 selects the same closure as exact brackets", {
   expect_share_dependency_values(data, lapply(
     dependent, list_accessor_read, remove = quote(NULL)
   ), 11)
-  expect_share_dependencies(data, lapply(alist(
-    callbacks[[2L]], .subset2(callbacks, 2L)
-  ), list_accessor_read))
+  safe <- alist(callbacks[[2L]], .subset2(callbacks, 2L))
+  expect_share_dependencies(data, lapply(safe, list_accessor_read))
+  expect_share_dependency_values(data, lapply(
+    safe, list_accessor_read, remove = quote(NULL)
+  ), 7)
 })
 
 test_that("plain list accessors preserve ordinary function lookup", {
@@ -268,8 +281,8 @@ test_that("plain list accessor planning leaves caller code unevaluated", {
   expect_share_dependencies(data, lapply(alist(
     getElement(callbacks, "dependent"), .subset2(callbacks, "dependent")
   ), list_accessor_read, body = body))
-  # A key caller code computes may select the alias-reading member, so the
-  # carrier's closures stay possible after the removal (#1666).
+  # The `dependent` literal captured prior, so the removal refuses without
+  # calling key().
   reads <- lapply(alist(
     getElement(callbacks, key()), .subset2(callbacks, key())
   ), function(accessor) {

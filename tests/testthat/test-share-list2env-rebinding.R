@@ -354,8 +354,9 @@ test_that("fresh environment proofs preserve caller constructor lookup", {
   )
   reads <- function(remove) {
     rlang::exprs(
-      # A caller constructor whose body calls list() may return the closure
-      # it was given, so reading it after a removal refuses (#1666, #1670).
+      # The caller's list2env() returns its own read(), so this gives 7
+      # without the removal; with it, the read refuses because the literal
+      # passed to list2env() captured prior.
       (function(prior) {
         carrier <- list2env(list(read = function() sum(prior)))
         !!remove

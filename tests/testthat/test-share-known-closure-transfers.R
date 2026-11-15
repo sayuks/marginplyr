@@ -1444,8 +1444,7 @@ test_that("dtplyr additional return construction stays lazy", {
 
 # Each form binds a closure reading `prior`, removes the formal, and invokes
 # it through a base selector, local() environment, stock callback, caller
-# function or local setter the walk reads only as a set of possible closures
-# (#1666).
+# function or local setter.
 unresolved_closure_transfers <- function(retain = FALSE) {
   forms <- alist(
     (function(prior) {
@@ -1582,17 +1581,15 @@ test_that("an unresolved closure invocation after a removal refuses", {
   }
 })
 
-# A caller function whose result does not spell a formal may still return its
-# argument through a lookup the walk does not read, so only a visibly fresh
-# result clears the closures its arguments carry (#1666).
-test_that("a caller function returning its argument indirectly refuses", {
+# Each form's literal captured prior, so each removal refuses whatever the
+# caller function returns.
+test_that("a removed capture refuses whatever a caller function returns", {
   data <- known_closure_transfer_data()
   caller <- rlang::env(
     rlang::global_env(),
     via_get = function(x) get("x"),
     via_env = function(x) as.list(environment())[[1L]],
     fresh = function(x) function() 7,
-    # A list() body may call a rebound `list` (#1670).
     fresh_list = function(x) list(f = function() 7, n = 1L)
   )
   forms <- alist(
@@ -1666,9 +1663,9 @@ test_that("caller calls R refuses or defaults stay with their caller", {
   expect_converter_values(
     data, lapply(omitted, rlang::new_quosure, env = caller), 7
   )
-  # R refuses to call a caller value that is not a function, so the call
-  # carries no closure and the share keeps the ordinary condition unless the
-  # form removes the formal its literal captured.
+  # The literal captured prior, so the removal refuses; without it, R's
+  # refusal to call a caller value that is not a function is the ordinary
+  # condition the share keeps.
   applied <- rlang::new_quosure(quote((function(prior) {
     f <- function() sum(prior)
     # `held` is bound in the quosure environment.
@@ -1691,9 +1688,9 @@ test_that("caller calls R refuses or defaults stay with their caller", {
   }
 })
 
-# A selector or callback that caller code computes may pick any closure its
-# carrier holds, as may a function literal passed through a caller function
-# or a caller function that rebinds a constructor (#1666).
+# Each form binds a closure reading `prior`, removes the formal, and invokes
+# it through a computed selector, a callback, a caller function that passes
+# it through, or one that rebinds a constructor.
 carried_closure_transfers <- function(retain = FALSE) {
   forms <- alist(
     (function(prior) {
@@ -1745,11 +1742,9 @@ test_that("computed selectors and callbacks keep the carrier's closures", {
   expect_converter_values(data, carried_closure_transfers(retain = TRUE), 11)
 })
 
-# A caller function that binds a local before returning it leaves the walk
-# unable to tell what the local holds: a closure over the argument, an
-# assign() or a value the body built returns what the argument may carry,
-# and the share refuses after a removal (#1670).
-test_that("a caller decorator returning a local refuses", {
+# Each form's literal captured prior, so each removal refuses whatever the
+# decorator returns.
+test_that("a removed capture refuses whatever a caller decorator returns", {
   data <- known_closure_transfer_data()
   caller <- rlang::env(
     rlang::global_env(),
@@ -1798,11 +1793,9 @@ test_that("a caller decorator returning a local refuses", {
   )
 })
 
-# A returned function literal is fresh only when it names nothing: one whose
-# body reaches the argument through get() or a local alias returns what the
-# argument carried, through a caller function or an lapply() or Map()
-# callback alike (#1670).
-test_that("a returned closure reaching its argument indirectly refuses", {
+# Each form's literal captured prior, so each removal refuses whatever the
+# callee returns.
+test_that("a removed capture refuses whatever a returned closure reaches", {
   data <- known_closure_transfer_data()
   caller <- rlang::env(
     rlang::global_env(),
@@ -1871,13 +1864,9 @@ test_that("a returned closure reaching its argument indirectly refuses", {
   expect_converter_values(data, lapply(fresh, without_removal), 7)
 })
 
-# Only a definition whose body is one expression -- a function literal naming
-# nothing, a constant, or a `list()` or `c()` of those, calling base functions
-# where it runs -- behind formals with no computed default returns a fresh
-# value. A local binding, an earlier statement, a computed default, an `if`
-# or a rebound `list`, `c` or `(` may leave what the argument carried in the
-# result through code the walk does not read (#1666, #1670).
-test_that("a caller function returns a fresh value only as one literal", {
+# Each form's literal captured prior, so each removal refuses whatever the
+# call returns.
+test_that("one-literal and other caller bodies refuse a removed capture", {
   data <- known_closure_transfer_data()
   bind_default <- function(x, z = (y <- x)) {
     y <- function() 7
@@ -2003,8 +1992,6 @@ test_that("a caller function returns a fresh value only as one literal", {
   expect_transfer_dependencies(
     data, lapply(forms, rlang::new_quosure, env = caller)
   )
-  # A `{` or list() body may call a rebound callee (#1670); only a body that
-  # is exactly a constant or a closed function literal calls none.
   fresh <- rlang::env(
     rlang::global_env(),
     braced = function(x, n = 1L) {
@@ -2042,8 +2029,6 @@ test_that("a caller function returns a fresh value only as one literal", {
   literal <- rlang::new_quosure(literal, fresh)
   expect_transfer_dependencies(data, list(literal))
   expect_converter_values(data, list(without_removal(literal)), 7)
-  # A caller `::` is read only when its whole body is exactly the function
-  # literal, which calls nothing but `function` before returning it.
   # The call is built so that no undeclared package name is spelled in source.
   qualified_head <- call("::", as.name("pkg"), as.name("fresh"))
   qualified <- bquote((function(prior) {
@@ -2076,7 +2061,7 @@ test_that("a caller function returns a fresh value only as one literal", {
   expect_converter_values(data, list(without_removal(literal)), 7)
 })
 
-test_that("a `function` formal or a reference body is not fresh", {
+test_that("rebound `function` and reference bodies refuse a removed capture", {
   data <- known_closure_transfer_data()
   store <- new.env()
   caller <- rlang::env(
@@ -2227,7 +2212,6 @@ test_that("a `function` formal or a reference body is not fresh", {
   # Planning reads neither binding's value.
   expect_identical(active_reads, 0L)
   expect_true(rlang::env_binding_are_lazy(lazy, "function"))
-  # A classed enclosure's `[[` method cannot hide its binding.
   assign("[[.marginplyr_trick_env", function(x, i, ...) base::`function`,
          envir = globalenv())
   withr::defer(rm("[[.marginplyr_trick_env", envir = globalenv()))
@@ -2272,7 +2256,7 @@ test_that("a `function` formal or a reference body is not fresh", {
   ), twice)), 7)
 })
 
-test_that("a caller function's callees rebound by the expression refuse", {
+test_that("a caller function's rebound callees refuse a removed capture", {
   data <- known_closure_transfer_data()
   withr::defer(
     rm(list = intersect("list", ls(globalenv())), envir = globalenv())

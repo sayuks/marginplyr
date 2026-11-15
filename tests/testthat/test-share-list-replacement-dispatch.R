@@ -38,10 +38,8 @@ test_that("local replacements keep removed captures in either list member", {
   )
 })
 
-# The walk cannot prove these setters return their input, so after the
-# removal the carrier may still hold the closure reading the earlier alias
-# and the source refuses (#1666).
-test_that("an unknown replacement leaves list dependencies unproven", {
+# Each carrier's literal captured prior, so each removal refuses.
+test_that("local replacements refuse a removed capture whatever they return", {
   data <- list_replacement_data()
   probe <- rlang::env(calls = 0L)
   read <- rlang::quo((function(prior) {
@@ -84,9 +82,8 @@ test_that("base list replacements follow function and namespace lookup", {
   ))
 })
 
-# Neither setter is proven to return its input, so the original member may
-# survive the removal and the source refuses (#1666).
-test_that("unproven member and name setters may keep the original member", {
+# Each carrier's literal captured prior, so each removal refuses.
+test_that("local member and name setters refuse a removed capture", {
   reads <- alist(
     (function(prior) {
       `[<-` <- function(x, i, ..., value) base::`[<-`(x, i, value = value)
