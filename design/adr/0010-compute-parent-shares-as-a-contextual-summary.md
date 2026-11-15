@@ -117,6 +117,11 @@ the closure is ever called. A removal whose names or target environment the
 analysis cannot read counts as removing every captured name, and replacing a
 closure's enclosure through `environment<-` or `parent.env<-` with an
 environment not proven to bind a captured name counts as removing that name.
+A caller frame or evaluation environment the analysis cannot place on a frame
+it walks, such as one counted past the frame `local()` or `eval()` evaluates
+in, is unreadable in the same way: a removal aimed at it may remove its names
+from any walked frame, and code evaluated in it reads an earlier alias from
+the data mask whatever local binding shadows that name (#1679).
 Soundness thus never depends on knowing which closure a value holds: tracking
 closures through calls only lets more sources be accepted. The same reading
 decides when an ordinary summary uses an earlier share.

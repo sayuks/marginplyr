@@ -4603,6 +4603,10 @@ scoped_data_symbols <- function(expr, scope, lookup) {
       materialized_env_symbols(expr, scope, lookup)
     )))
   }
+  evaluation <- base_evalq_as_eval(expr, call_name, scope, lookup)
+  if (!is.null(evaluation)) {
+    return(scoped_data_symbols(evaluation, scope, lookup))
+  }
   if (is_reflective_evaluation(callee_name)) {
     return(unique(c(
       call_part_symbols(expr, scope, lookup),
@@ -7371,14 +7375,15 @@ statement_reads_and_scope <- function(expr, scope, lookup = NULL,
 }
 
 # The body and child scope of a known base local() with its default environment.
-# Explicit environments continue through the ordinary call walk.
+# Explicit environments continue through the ordinary call walk. The body runs
+# under base `eval()`, so the child is an evaluated frame.
 implicit_local_parts <- function(expr, name, scope, lookup) {
   if (identical(name, "local") &&
         is_known_base_frame_call(expr, name, scope, lookup) &&
         length(base_call_argument(expr, "envir")) == 0L) {
     body <- base_call_argument(expr, "expr")
     if (length(body) > 0L) {
-      child <- list(bound = character())
+      child <- list(bound = character(), evaluated = TRUE)
       list(body = body[[1L]], scope = c(list(child), scope))
     }
   }
@@ -7413,6 +7418,10 @@ scope_after_removals <- function(expr, scope, lookup) {
     return(scope_after_promise(
       rlang::as_name(unparenthesized_value(expr[[2L]])), scope, lookup
     ))
+  }
+  evaluation <- base_evalq_as_eval(expr, name, scope, lookup)
+  if (!is.null(evaluation)) {
+    return(scope_after_removals(evaluation, scope, lookup))
   }
   if (identical(name, "do.call")) {
     invocation <- scope_empty_do_call(expr, scope, lookup)
@@ -7458,9 +7467,8 @@ scope_after_removals <- function(expr, scope, lookup) {
   mutation <- scope_call_mutation(expr, name, scope, lookup)
   head <- static_call_head(expr)
   closure <- scope_call_closure(expr, scope, lookup)
-  parts <- c(
-    scope_call_args(expr, name, bound, lookup), evaluated_language_parts(expr)
-  )
+  parts <- scope_call_args(expr, name, bound, lookup)
+  language <- evaluated_language_parts(expr)
   # A proven base accessor reads the field without exposing its carrier.
   if (length(expr) == 3L && !is.null(name) && name %in% c("$", "[[") &&
         !is.null(scope_fresh_env_binding(expr[[2L]], scope)) &&
@@ -7478,6 +7486,7 @@ scope_after_removals <- function(expr, scope, lookup) {
     after <- scope_after_closure_call(expr, closure, scope, lookup)
     scope <- after[-1L]
     parts <- c(after[[1L]]$arguments, after[[1L]]$dots, after[[1L]]$unmatched)
+    language <- list()
   }
   apply_effects <- scope_after_possible_removals
   if (length(literal_if_parts(expr, name, bound, lookup)) > 0L) {
@@ -7485,6 +7494,15 @@ scope_after_removals <- function(expr, scope, lookup) {
   }
   for (index in seq_along(parts)) {
     scope <- apply_effects(parts[[index]], scope, lookup)
+  }
+  # The current frame stands in for the environment the language runs in.
+  if (length(language) > 0L && length(scope) > 0L) {
+    evaluated <- scope[[1L]]$evaluated
+    scope[[1L]]$evaluated <- TRUE
+    for (index in seq_along(language)) {
+      scope <- apply_effects(language[[index]], scope, lookup)
+    }
+    scope[[1L]]$evaluated <- evaluated
   }
   if (!is.null(mutation) &&
         static_call_name(mutation) %in% c("rm", "remove")) {
@@ -7639,20 +7657,23 @@ scope_possible_losses <- function(scope, after) {
 
 # The frames a visible removal call searches and the names it requests.
 # `removed` is NULL for unreadable names. `outside` marks a target that is not
-# a walked frame: an existing environment or a caller the walk cannot place,
-# for which `frames` is empty, or an unresolved environment, which the scope
-# treats as the current frame.
+# a walked frame: an existing environment or a caller outside the walked
+# frames, for which `frames` is empty, an unresolved environment, which the
+# scope treats as the current frame, or a caller the walk cannot place
+# (`unplaced`), which may be any walked frame.
 scope_removal_targets <- function(expr, scope, lookup) {
   target <- base_call_argument(expr, c("envir", "pos"))
   index <- 1L
   outside <- FALSE
+  unplaced <- FALSE
   if (length(target) > 0L) {
     envir <- unparenthesized_value(target[[1L]])
     bound <- scope_bound_names(scope)
     depth <- static_parent_frame_depth(envir, scope, lookup)
     if (!is.null(depth)) {
       index <- scope_caller_frame(depth, scope)
-      outside <- is.null(index)
+      unplaced <- identical(index, NA_integer_)
+      outside <- is.null(index) || unplaced
     } else if (!is.null(lookup_environment_value(envir, bound, lookup))) {
       index <- NULL
       outside <- TRUE
@@ -7675,6 +7696,8 @@ scope_removal_targets <- function(expr, scope, lookup) {
   # Base removal coerces the first element of a literal inheritance flag.
   frames <- if (is.null(index)) {
     integer()
+  } else if (unplaced) {
+    seq_along(scope)
   } else if (is.atomic(inherits) && !is.object(inherits) &&
                length(inherits) > 0L &&
                isTRUE(as.logical(inherits[[1L]]))) {
@@ -7682,14 +7705,22 @@ scope_removal_targets <- function(expr, scope, lookup) {
   } else {
     index
   }
-  list(frames = frames, removed = removed, outside = outside)
+  list(frames = frames, removed = removed, outside = outside,
+       unplaced = unplaced)
 }
 
 # Apply a visible removal to its own frame or a statically visible caller.
-# Unresolved targets retain the conservative current-frame treatment.
+# Unresolved targets retain the conservative current-frame treatment. An
+# unplaced target may remove the names from any one walked frame.
 scope_after_removal_call <- function(expr, scope, lookup) {
   targets <- scope_removal_targets(expr, scope, lookup)
   removed <- targets$removed
+  if (targets$unplaced) {
+    return(scope_possible_losses(scope, lapply(scope, function(frame) {
+      retained <- if (!is.null(removed)) setdiff(frame$bound, removed)
+      retain_scope_bindings(frame, retained %||% character())
+    })))
+  }
   for (index in targets$frames) {
     bound <- scope[[index]]$bound
     retained <- if (is.null(removed)) character() else setdiff(bound, removed)
@@ -7889,10 +7920,18 @@ static_parent_frame_depth <- function(expr, scope, lookup) {
 # frames of a factory that has already returned. The caller's scope ends in an
 # uninvoked frame and places every invoked frame before the frames its caller
 # offset reaches, so the walk returns before stepping past its end.
+#
+# NULL is a frame the walk does not follow and that binds none of its names.
+# `NA` is a frame the walk cannot place, which may be any walked frame: the
+# first caller of code base `eval()` runs is `eval()`'s own frame, and which
+# frames lie past it depends on how base reached that `eval()` (ADR 0010).
 scope_caller_frame <- function(depth, scope) {
   index <- 1L
   while (depth > 0L) {
     frame <- scope[[index]]
+    if (isTRUE(frame$evaluated)) {
+      return(if (depth == 1L) NULL else NA_integer_)
+    }
     if (!isTRUE(frame$invoked)) {
       return(NULL)
     }
@@ -8110,7 +8149,7 @@ static_environment_frames <- function(expr, scope, lookup, definite = FALSE) {
   }
   depth <- static_parent_frame_depth(expr, scope, lookup)
   if (!is.null(depth)) {
-    return(scope_caller_frame(depth, scope))
+    return(setdiff(scope_caller_frame(depth, scope), NA_integer_))
   }
   if (identical(name, "as.environment") && length(expr) == 2L &&
         is_known_base_frame_call(expr, name, scope, lookup)) {
@@ -8176,7 +8215,8 @@ static_returned_caller_frame <- function(expr, scope, lookup) {
   }
   lookup$env <- environment(callee)
   depth <- static_parent_frame_depth(body(callee), list(), lookup)
-  if (!is.null(depth)) scope_caller_frame(depth - 1L, scope) else NULL
+  frame <- if (!is.null(depth)) scope_caller_frame(depth - 1L, scope)
+  if (!identical(frame, NA_integer_)) frame
 }
 
 # Converting a known mask to a list retains an unresolved dependency.
@@ -8307,8 +8347,48 @@ evaluated_language_symbols <- function(expr, scope, lookup) {
   if (is.null(values) || isTRUE(attr(values, "unresolved"))) {
     return(unresolved_lookup_name())
   }
+  scope <- evaluation_scope(expr, scope, lookup)
   unique(unlist(
     lapply(values, scoped_data_symbols, scope = scope, lookup = lookup),
     use.names = FALSE
   ))
+}
+
+# The frames the language a base `eval()` runs reads from: the walked frame
+# its `envir` names, which becomes an evaluated frame, or else a fresh one
+# that binds nothing, so free names read the mask (ADR 0010).
+evaluation_scope <- function(expr, scope, lookup) {
+  if (!identical(static_call_name(expr), "eval") ||
+        !is_known_base_frame_call(expr, "eval", scope, lookup)) {
+    return(scope)
+  }
+  parts <- static_matched_arguments(expr, base::eval)
+  frame <- if (is.null(parts)) {
+    NULL
+  } else if (!"envir" %in% names(parts)) {
+    1L
+  } else {
+    static_environment_frame(parts$envir, scope, lookup)
+  }
+  if (is.null(frame) || frame > length(scope)) {
+    return(list(list(bound = character(), evaluated = TRUE)))
+  }
+  scope <- scope[seq.int(frame, length(scope))]
+  scope[[1L]]$evaluated <- TRUE
+  scope
+}
+
+# A known base `evalq()` as the `eval()` of its quoted expression, which is
+# what `evalq()` is defined to be.
+base_evalq_as_eval <- function(expr, name, scope, lookup) {
+  if (!identical(name, "evalq") ||
+        !is_known_base_frame_call(expr, name, scope, lookup)) {
+    return(NULL)
+  }
+  parts <- static_matched_arguments(expr, base::evalq)
+  if (is.null(parts) || !"expr" %in% names(parts)) {
+    return(NULL)
+  }
+  parts$expr <- rlang::call2(quote(base::quote), parts$expr)
+  rlang::call2(quote(base::eval), !!!parts)
 }
