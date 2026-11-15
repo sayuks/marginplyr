@@ -352,6 +352,9 @@ scope_mutation_names <- function() {
 # or arguments. An unreadable do.call() argument list retains unknown targets.
 scope_mutation_call <- function(expr, bound, lookup) {
   name <- resolved_callee_name(expr)
+  if (!is.null(name) && name %in% names(rlang_scope_mutations())) {
+    return(rlang_scope_mutation_call(expr, name, bound, lookup))
+  }
   if (is.null(name) ||
         !name %in% c(scope_mutation_names(), "do.call")) {
     return(NULL)
@@ -403,6 +406,125 @@ scope_mutation_call <- function(expr, bound, lookup) {
     return(NULL)
   }
   rlang::call2(name, !!!parts)
+}
+
+# rlang's removals and enclosure setters, each translating its matched
+# arguments into the base call it performs, or NULL when the call removes or
+# replaces nothing (#1677): `env_unbind()`, and `env_bind()` or `env_poke()`
+# given `zap()`, are `rm()`; `fn_env<-` and `set_env()` are `environment<-`;
+# and `env_poke_parent()` is `parent.env<-`. A `zap()` that is not a named
+# argument's whole value removes names the walk cannot read.
+rlang_scope_mutations <- function() {
+  removal <- c("env", "inherit")
+  list(
+    env_unbind = function(parts, bound, lookup) {
+      if ("nms" %in% names(parts)) {
+        rlang::call2("rm", !!!rlang_renamed_parts(
+          parts, c("nms", removal), c("list", "envir", "inherits")
+        ))
+      }
+    },
+    env_poke = function(parts, bound, lookup) {
+      if ("nm" %in% names(parts) &&
+            holds_rlang_zap(parts[["value"]], bound, lookup)) {
+        rlang::call2("rm", !!!rlang_renamed_parts(
+          parts, c("nm", removal), c("list", "envir", "inherits")
+        ))
+      }
+    },
+    env_bind = function(parts, bound, lookup) {
+      dots <- parts[["..."]]
+      labels <- argument_names(dots)
+      removed <- unreadable <- list()
+      for (index in seq_along(dots)) {
+        part <- dots[[index]]
+        if (identical(part, quote(...))) {
+          removed <- c(removed, list(part))
+        } else if (is_rlang_zap(part, bound, lookup) &&
+                     nzchar(labels[[index]])) {
+          removed <- c(removed, list(labels[[index]]))
+        } else if (holds_rlang_zap(part, bound, lookup)) {
+          unreadable <- list(list = part)
+        }
+      }
+      removed <- c(removed, unreadable)
+      if (length(removed) > 0L && ".env" %in% names(parts)) {
+        rlang::call2("rm", !!!removed, envir = parts[[".env"]])
+      }
+    },
+    `fn_env<-` = function(parts, bound, lookup) {
+      rlang::call2("environment<-", !!!rlang_renamed_parts(
+        parts, c("x", "value"), c("fun", "value")
+      ))
+    },
+    # `set_env()`'s default is its caller's frame. It is read as
+    # `environment<-` whatever its first argument holds, as the base setter is.
+    set_env = function(parts, bound, lookup) {
+      rlang::call2("environment<-", !!!c(
+        rlang_renamed_parts(parts, "env", "fun"),
+        if ("new_env" %in% names(parts)) {
+          rlang_renamed_parts(parts, "new_env", "value")
+        } else {
+          list(value = quote(base::environment()))
+        }
+      ))
+    },
+    env_poke_parent = function(parts, bound, lookup) {
+      rlang::call2("parent.env<-", !!!rlang_renamed_parts(
+        parts, c("env", "new_env"), c("env", "value")
+      ))
+    }
+  )
+}
+
+# An rlang removal or enclosure setter named as the callee, as the base call
+# rlang_scope_mutations() reads it as. NULL when the callee is not rlang's
+# export or the call removes or replaces nothing.
+rlang_scope_mutation_call <- function(expr, name, bound, lookup) {
+  if (!is_known_package_call(expr, name, bound, lookup, owner = "rlang")) {
+    return(NULL)
+  }
+  # `match.call()` cannot match a forwarded `...` without its frame, so it is
+  # matched as a placeholder and restored: a formal it fills reads as unknown.
+  forwarded <- as.name("..marginplyr_forwarded..")
+  restore <- function(part) {
+    if (identical(part, forwarded)) quote(...) else part
+  }
+  call_args <- lapply(static_call_args(expr), function(part) {
+    if (identical(part, quote(...))) forwarded else part
+  })
+  matched <- static_matched_arguments(
+    rlang::call2(name, !!!call_args),
+    args(get(name, envir = asNamespace("rlang"))),
+    expand_dots = FALSE
+  )
+  parts <- Map(function(part, formal) {
+    if (identical(formal, "...")) lapply(part, restore) else restore(part)
+  }, matched, names(matched))
+  rlang_scope_mutations()[[name]](parts, bound, lookup)
+}
+
+# The supplied arguments among rlang's formals `from`, named as base's `to`.
+rlang_renamed_parts <- function(parts, from, to) {
+  present <- intersect(from, names(parts))
+  stats::setNames(parts[present], to[match(present, from)])
+}
+
+# Whether a part is a call to rlang's `zap()`, or the zap value an injected
+# `!!!list(name = zap())` embeds.
+is_rlang_zap <- function(part, bound, lookup) {
+  part <- unparenthesized_value(part)
+  rlang::is_zap(part) || (
+    identical(static_call_name(part), "zap") &&
+      is_known_package_call(part, "zap", bound, lookup, owner = "rlang")
+  )
+}
+
+# Whether a part is or contains a zap per is_rlang_zap().
+holds_rlang_zap <- function(part, bound, lookup) {
+  is_rlang_zap(part, bound, lookup) || (rlang::is_call(part) && any(vapply(
+    as.list(part), holds_rlang_zap, logical(1), bound = bound, lookup = lookup
+  )))
 }
 
 # Whether ordinary lookup proves a named scope callee is caller-defined.

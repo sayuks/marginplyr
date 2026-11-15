@@ -117,9 +117,18 @@ the closure is ever called. A removal whose names or target environment the
 analysis cannot read counts as removing every captured name, and replacing a
 closure's enclosure through `environment<-` or `parent.env<-` with an
 environment not proven to bind a captured name counts as removing that name.
-Soundness thus never depends on knowing which closure a value holds: tracking
-closures through calls only lets more sources be accepted. The same reading
-decides when an ordinary summary uses an earlier share.
+A caller frame or evaluation environment the analysis cannot place on a frame
+it walks, such as one counted past the frame `local()` or `eval()` evaluates
+in, is unreadable in the same way: a removal aimed at it may remove its names
+from any walked frame, and code evaluated in it reads an earlier alias from
+the data mask whatever local binding shadows that name (#1679).
+Two effects of a closure are attributed where it is invoked, not where it is
+created: a body or default that `body<-` or `formals<-` writes, and a removal
+its body makes from the frame that calls it. Tracking closures through calls
+is what refuses those (#1680). For everything else, soundness never depends on
+knowing which closure a value holds: tracking only lets more sources be
+accepted. The same reading decides when an ordinary summary uses an earlier
+share.
 
 A direct call must have an explicit output name distinct from its source
 summary. `across()` is supported when its selection resolves to preceding

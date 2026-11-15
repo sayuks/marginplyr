@@ -108,7 +108,8 @@ test_that("an earlier summary's write leaves a captured removal refused", {
           rm(prior)
           h()
         })(1),
-        total = !!share, .grouping = rollup(g)
+        total = !!share,
+        .grouping = rollup("g")
       ),
       "depends on earlier summary alias `prior`", class = "marginplyr_error"
     )
@@ -263,4 +264,163 @@ test_that("capture alone and removal alone leave a source shareable", {
     h <- call_value(f)
     h()
   })(1))), 7)
+})
+
+test_that("rlang removals and enclosure setters read as their base spellings", {
+  env_unbind <- rlang::env_unbind
+  zap <- rlang::zap
+  expect_share_dependencies(captured_removal_data(), list(
+    quote((function(prior) {
+      rlang::env_unbind(environment(), "prior")
+      sum(prior)
+    })(1)),
+    rlang::quo((function(prior) {
+      env_unbind(nms = "prior")
+      sum(prior)
+    })(1)),
+    quote((function(prior) {
+      key <- "prior"
+      rlang::env_unbind(environment(), key)
+      sum(prior)
+    })(1)),
+    quote((function(prior) {
+      rlang::env_bind(environment(), prior = rlang::zap())
+      sum(prior)
+    })(1)),
+    rlang::quo((function(prior) {
+      rlang::env_bind(environment(), prior = zap())
+      sum(prior)
+    })(1)),
+    quote((function(prior) {
+      rlang::env_bind(environment(), !!!list(prior = rlang::zap()))
+      sum(prior)
+    })(1)),
+    rlang::expr((function(prior) {
+      rlang::env_bind(environment(), !!!list(prior = rlang::zap()))
+      sum(prior)
+    })(1)),
+    rlang::expr((function(prior) {
+      rlang::env_poke(environment(), "prior", !!rlang::zap())
+      sum(prior)
+    })(1)),
+    quote((function(prior) {
+      rlang::env_bind(environment(), prior = if (TRUE) rlang::zap())
+      sum(prior)
+    })(1)),
+    quote((function(prior) {
+      rlang::env_poke(environment(), "prior", rlang::zap())
+      sum(prior)
+    })(1)),
+    quote((function(prior) {
+      f <- function() sum(prior)
+      drop <- function(...) rlang::env_bind(parent.frame(), ...)
+      drop(prior = rlang::zap())
+      7
+    })(1)),
+    quote((function(prior) {
+      f <- function() sum(prior)
+      rlang::env_unbind(environment(), "prior")
+      7
+    })(1)),
+    quote((function(prior) {
+      f <- function() sum(prior)
+      rlang::fn_env(f) <- parent.env(environment())
+      f()
+    })(1)),
+    quote((function(prior) {
+      f <- function() sum(prior)
+      f <- rlang::set_env(f, parent.env(environment()))
+      f()
+    })(1)),
+    quote((function(prior) {
+      f <- local(function() sum(prior))
+      rlang::env_poke_parent(environment(f), parent.env(environment()))
+      f()
+    })(1))
+  ), reverse_message = "depends on earlier summary alias `prior`")
+})
+
+# Each source, as `value` after any summaries in `...`, computes `expected`
+# under both share helpers.
+expect_share_source_values <- function(data, sources, expected, ...) {
+  for (kind in c("parent", "total")) {
+    share <- rlang::call2(paste0("share_of_", kind), quote(value))
+    for (source in sources) {
+      result <- summarize_with_margins(
+        data, ..., value = !!source, total = !!share,
+        .grouping = rollup("g")
+      )
+      expect_equal(result$value, expected)
+    }
+  }
+}
+
+test_that("rlang removals without a captured alias stay shareable", {
+  data <- data.frame(g = c("a", "b"), x = c(10, 20))
+  expect_share_source_values(data, alist(
+    (function(p) {
+      rlang::env_unbind(environment(), "p")
+      sum(x)
+    })(1)
+  ), c(10, 20, 30))
+  expect_share_dependency_values(captured_removal_data(), alist(
+    (function(prior) {
+      env_unbind <- function(...) NULL
+      env_unbind(environment(), "prior")
+      prior
+    })(1),
+    (function(prior) {
+      f <- function() sum(prior)
+      f <- rlang::set_env(f)
+      f()
+    })(1)
+  ), 1)
+  expect_share_dependency_values(captured_removal_data(), alist(
+    (function(prior) {
+      rlang::env_bind(environment(), prior = 2)
+      prior
+    })(1)
+  ), 2)
+})
+
+test_that("a removal or setter held as a value is not followed (#1652)", {
+  # The walk does not follow a function held as a value, so these sources
+  # stay accepted and read the earlier alias.
+  data <- data.frame(g = c("a", "b"), prior = c(1, 3), x = c(10, 20))
+  expect_share_source_values(data, alist(
+    (function(prior) {
+      r <- rm
+      r(prior)
+      sum(prior)
+    })(1),
+    (function(prior) {
+      Map(rm, list = "prior", envir = list(environment()))
+      sum(prior)
+    })(1),
+    (function(prior) {
+      f <- function() sum(prior)
+      se <- `environment<-`
+      f <- se(f, parent.env(environment()))
+      f()
+    })(1)
+  ), c(10, 20, 30), prior = sum(x))
+})
+
+test_that("a removal from the caller is followed through a stock functional", {
+  # The removal is attributed where the closure is invoked (ADR 0010).
+  expect_share_dependencies(captured_removal_data(), alist(
+    (function(prior) {
+      box <- lapply(list(function() rm("prior", envir = parent.frame())),
+                    identity)
+      box[[1L]]()
+      sum(prior)
+    })(1),
+    (function(prior) {
+      f <- Reduce(identity, list(function() {
+        rm("prior", envir = parent.frame())
+      }))
+      f()
+      sum(prior)
+    })(1)
+  ), reverse_message = "depends on earlier summary alias `prior`")
 })
