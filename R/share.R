@@ -4498,7 +4498,12 @@ scoped_data_symbols <- function(expr, scope, lookup) {
     bound <- scope_bound_names(scope)
     if (name %in% bound ||
           ("..." %in% bound && is_numbered_dot_reference(expr))) {
-      return(scope_promise_symbols(name, scope, lookup))
+      symbols <- scope_promise_symbols(name, scope, lookup)
+      # A closure that may remove the binding leaves the read reaching past it.
+      if (scope_may_have_removed(name, scope)) {
+        symbols <- unique(c(name, symbols))
+      }
+      return(symbols)
     }
     return(name)
   }
@@ -4765,7 +4770,7 @@ call_part_symbols <- function(expr, scope, lookup) {
     head_lookup <- lookup
     head_lookup$defer_definitions <- !is.null(closure)
     reads <- scoped_data_symbols(call_head, scope, head_lookup)
-    scope <- scope_after_removals(call_head, scope, lookup)
+    scope <- scope_after_computed_head(call_head, closure, scope, lookup)
   }
   if (!is.null(closure)) {
     for (variant in scope_closure_variants(closure)) {
@@ -7455,10 +7460,14 @@ scope_after_removals <- function(expr, scope, lookup) {
       expr[[2L]], scope, lookup, read_symbols = no_scope_reads
     )$scope)
   }
-  # With nothing bound, only a frame a literal here opens can hold a capture.
+  # With nothing bound, only a frame a literal here opens can hold a capture,
+  # unless a removal here is requested for the rest of a literal's lifetime.
   if (length(bound) == 0L &&
         !any(lengths(lapply(scope, "[[", "bound")) > 0L) &&
-        !"function" %in% all.names(expr)) {
+        !"function" %in% all.names(expr) &&
+        !any(vapply(scope, function(frame) {
+          isTRUE(frame$around_creation)
+        }, logical(1)))) {
     return(scope)
   }
   if (is_binding_statement(name, expr)) {
@@ -7468,7 +7477,8 @@ scope_after_removals <- function(expr, scope, lookup) {
     return(scope_possible_losses(scope, after))
   }
   if (identical(name, "function") && length(expr) >= 3L) {
-    return(scope_record_captures(expr, scope, lookup))
+    scope <- scope_record_captures(expr, scope, lookup)
+    return(scope_after_creation_removals(expr, scope, lookup))
   }
   local <- implicit_local_parts(expr, name, scope, lookup)
   if (!is.null(local)) {
@@ -7493,7 +7503,7 @@ scope_after_removals <- function(expr, scope, lookup) {
       rlang::as_name(head), scope, lookup, function_lookup = TRUE
     )
   } else if (rlang::is_call(head)) {
-    scope <- scope_after_removals(head, scope, lookup)
+    scope <- scope_after_computed_head(head, closure, scope, lookup)
   }
   if (!is.null(closure)) {
     after <- scope_after_closure_call(expr, closure, scope, lookup)
@@ -7615,6 +7625,7 @@ scope_possible_losses <- function(scope, after) {
     frame <- retain_scope_bindings(before, bound)
     frame$captured <- union(before$captured, reached$captured)
     frame$escaped <- union(before$escaped, reached$escaped)
+    frame$removable <- union(before$removable, reached$removable)
     for (name in intersect(names(reached$possible_closures), bound)) {
       frame$possible_closures[[name]] <- scope_join_members(list(
         frame$possible_closures[[name]], reached$possible_closures[[name]]
@@ -7724,10 +7735,18 @@ scope_removal_targets <- function(expr, scope, lookup) {
 
 # Apply a visible removal to its own frame or a statically visible caller.
 # Unresolved targets retain the conservative current-frame treatment. An
-# unplaced target may remove the names from any one walked frame.
+# unplaced target may remove the names from any one walked frame. A removal
+# that may reach a frame around a literal walked where it is created stays
+# possible for the rest of the walk.
 scope_after_removal_call <- function(expr, scope, lookup) {
   targets <- scope_removal_targets(expr, scope, lookup)
   removed <- targets$removed
+  reached <- if (targets$unplaced) seq_along(scope) else targets$frames
+  if (any(vapply(scope[reached], function(frame) {
+    isTRUE(frame$around_creation)
+  }, logical(1)))) {
+    scope <- scope_mark_removable(scope, removed %||% unresolved_lookup_name())
+  }
   if (targets$unplaced) {
     return(scope_possible_losses(scope, lapply(scope, function(frame) {
       retained <- if (!is.null(removed)) setdiff(frame$bound, removed)
@@ -7787,6 +7806,55 @@ scope_escape_captures <- function(scope, left) {
     frame$escaped <- union(frame$escaped, escaped)
     frame
   })
+}
+
+# A literal whose body removes from the frame calling it can be called, once it
+# exists, from any frame and through a value the walk does not follow
+# (ADR 0010). Its body runs here from a caller the walk cannot place. What it
+# may remove now is a possible loss, and each name it requests from a frame
+# around the literal stays removable for the rest of the walk.
+scope_after_creation_removals <- function(expr, scope, lookup) {
+  frame <- function_scope_frame(expr[[2L]], NULL)
+  frame$invoked <- TRUE
+  frame$unplaced_caller <- TRUE
+  frame$definition <- expr
+  # Creating the literal demands none of the promises around it.
+  around <- lapply(scope, function(frame) {
+    frame$defaults <- frame$arguments <- frame$dots <- NULL
+    frame$dot_closures <- NULL
+    frame$around_creation <- TRUE
+    frame
+  })
+  after <- statement_reads_and_scope(
+    expr[[3L]], c(list(frame), around), lookup, read_symbols = no_scope_reads
+  )$scope
+  scope_possible_losses(scope, after[-1L])
+}
+
+# The effects of evaluating a computed call head that resolves to `closure`. A
+# literal invoked where it is written is held by no value, so the invocation the
+# caller walks is where its caller removals take effect.
+scope_after_computed_head <- function(head, closure, scope, lookup) {
+  definition <- literal_function_definition(head)
+  if (!is.null(definition) && identical(closure$definition, definition)) {
+    return(scope_record_captures(definition, scope, lookup))
+  }
+  scope_after_removals(head, scope, lookup)
+}
+
+# Mark names a living closure may remove from any frame: every frame holds
+# them, so whichever frames a later walk keeps still do.
+scope_mark_removable <- function(scope, names) {
+  lapply(scope, function(frame) {
+    frame$removable <- union(frame$removable, names)
+    frame
+  })
+}
+
+# Whether a closure created earlier may have removed `name` since it was bound.
+scope_may_have_removed <- function(name, scope) {
+  removable <- unlist(lapply(scope, "[[", "removable"), use.names = FALSE)
+  any(c(name, unresolved_lookup_name()) %in% removable)
 }
 
 # Record what a literal created in this scope captures: each name its body or
@@ -7940,13 +8008,17 @@ static_parent_frame_depth <- function(expr, scope, lookup) {
 # NULL is a frame the walk does not follow and that binds none of its names.
 # `NA` is a frame the walk cannot place, which may be any walked frame. From an
 # evaluated frame, depth 1 is base `eval()`'s own frame and so NULL, and any
-# deeper depth is `NA` (ADR 0010).
+# deeper depth is `NA`. Past the frame of a literal walked where it is created,
+# any depth is `NA` (ADR 0010).
 scope_caller_frame <- function(depth, scope) {
   index <- 1L
   while (depth > 0L) {
     frame <- scope[[index]]
     if (isTRUE(frame$evaluated)) {
       return(if (depth == 1L) NULL else NA_integer_)
+    }
+    if (isTRUE(frame$unplaced_caller)) {
+      return(NA_integer_)
     }
     if (!isTRUE(frame$invoked)) {
       return(NULL)

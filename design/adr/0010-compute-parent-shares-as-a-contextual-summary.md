@@ -125,15 +125,21 @@ the data mask whatever local binding shadows that name (#1679). `with()`,
 `rlang::with_env()` and `rlang::inject()` place the environment they evaluate
 in as `eval()` places its own; to `with()` and `rlang::with_env()`, an argument
 the analysis cannot read as a data value counts as that environment (#1684).
+A removal a literal's body makes from the frame that calls it, directly or
+through any of those evaluators, is attributed where the literal is created,
+since from then it may be called from any frame: each name it requests, or
+every name when the analysis cannot read them, may be removed from any frame
+the analysis walks for the rest of the walk, so a later binding of that name
+still reads the earlier alias (#1683). A literal invoked where it is written is
+held by no value, so its removal takes effect where that call places it.
 A body or default that `body<-` or `formals<-` writes with a value the
 analysis can read is read where it is written, as a literal is where it is
-created (#1682). Two effects of a closure are attributed where it is invoked,
-not where it is created: such a write whose value the analysis cannot read,
-and a removal its body makes from the frame that calls it. Tracking closures
-through calls is what refuses those (#1680). For everything else, soundness
-never depends on knowing which closure a value holds: tracking only lets more
-sources be accepted. The same reading decides when an ordinary summary uses an
-earlier share.
+created (#1682). One effect of a closure is attributed where it is invoked,
+not where it is created: such a write whose value the analysis cannot read.
+Tracking closures through calls is what refuses it (#1680). For everything
+else, soundness never depends on knowing which closure a value holds:
+tracking only lets more sources be accepted. The same reading decides when an
+ordinary summary uses an earlier share.
 
 A direct call must have an explicit output name distinct from its source
 summary. `across()` is supported when its selection resolves to preceding
