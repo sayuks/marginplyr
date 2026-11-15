@@ -7465,9 +7465,7 @@ scope_after_removals <- function(expr, scope, lookup) {
   if (length(bound) == 0L &&
         !any(lengths(lapply(scope, "[[", "bound")) > 0L) &&
         !"function" %in% all.names(expr) &&
-        !any(vapply(scope, function(frame) {
-          isTRUE(frame$around_creation)
-        }, logical(1)))) {
+        !scope_around_creation(scope)) {
     return(scope)
   }
   if (is_binding_statement(name, expr)) {
@@ -7742,9 +7740,7 @@ scope_after_removal_call <- function(expr, scope, lookup) {
   targets <- scope_removal_targets(expr, scope, lookup)
   removed <- targets$removed
   reached <- if (targets$unplaced) seq_along(scope) else targets$frames
-  if (any(vapply(scope[reached], function(frame) {
-    isTRUE(frame$around_creation)
-  }, logical(1)))) {
+  if (scope_around_creation(scope[reached])) {
     scope <- scope_mark_removable(scope, removed %||% unresolved_lookup_name())
   }
   if (targets$unplaced) {
@@ -7840,6 +7836,13 @@ scope_after_computed_head <- function(head, closure, scope, lookup) {
     return(scope_record_captures(definition, scope, lookup))
   }
   scope_after_removals(head, scope, lookup)
+}
+
+# Whether any of these frames is around a literal walked where it is created.
+scope_around_creation <- function(frames) {
+  any(vapply(frames, function(frame) {
+    isTRUE(frame$around_creation)
+  }, logical(1)))
 }
 
 # Mark names a living closure may remove from any frame: every frame holds
