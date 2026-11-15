@@ -5498,7 +5498,10 @@ scope_value_possible <- function(expr, scope, lookup) {
   ))
 }
 
-# The closures a non-base call's arguments carry.
+# The closures a non-base call may return: only the possibilities of the
+# argument caller_identity_argument() finds it returning unchanged, NULL when
+# its head is a value R refuses to call (caller_head_is_value()), and
+# otherwise every closure its arguments carry.
 scope_unread_return_possible <- function(expr, scope, lookup) {
   returned <- caller_identity_argument(expr, scope, lookup)
   if (!is.null(returned)) {
