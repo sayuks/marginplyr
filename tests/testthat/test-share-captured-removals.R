@@ -339,20 +339,28 @@ test_that("rlang removals and enclosure setters read as their base spellings", {
   ), reverse_message = "depends on earlier summary alias `prior`")
 })
 
-test_that("rlang removals without a captured alias stay shareable", {
-  data <- data.frame(g = c("a", "b"), x = c(10, 20))
+# Each source, as `value` after any summaries in `...`, computes `expected`
+# under both share helpers.
+expect_share_source_values <- function(data, sources, expected, ...) {
   for (kind in c("parent", "total")) {
     share <- rlang::call2(paste0("share_of_", kind), quote(value))
-    result <- summarize_with_margins(
-      data,
-      value = (function(p) {
-        rlang::env_unbind(environment(), "p")
-        sum(x)
-      })(1),
-      total = !!share, .grouping = rollup(g)
-    )
-    expect_equal(result$value, c(10, 20, 30))
+    for (source in sources) {
+      result <- summarize_with_margins(
+        data, ..., value = !!source, total = !!share, .grouping = rollup(g)
+      )
+      expect_equal(result$value, expected)
+    }
   }
+}
+
+test_that("rlang removals without a captured alias stay shareable", {
+  data <- data.frame(g = c("a", "b"), x = c(10, 20))
+  expect_share_source_values(data, alist(
+    (function(p) {
+      rlang::env_unbind(environment(), "p")
+      sum(x)
+    })(1)
+  ), c(10, 20, 30))
   expect_share_dependency_values(captured_removal_data(), alist(
     (function(prior) {
       env_unbind <- function(...) NULL
@@ -377,7 +385,7 @@ test_that("a removal or setter held as a value is not followed (#1652)", {
   # The walk does not follow a function held as a value, so these sources
   # stay accepted and read the earlier alias.
   data <- data.frame(g = c("a", "b"), prior = c(1, 3), x = c(10, 20))
-  sources <- alist(
+  expect_share_source_values(data, alist(
     (function(prior) {
       r <- rm
       r(prior)
@@ -393,15 +401,5 @@ test_that("a removal or setter held as a value is not followed (#1652)", {
       f <- se(f, parent.env(environment()))
       f()
     })(1)
-  )
-  for (kind in c("parent", "total")) {
-    share <- rlang::call2(paste0("share_of_", kind), quote(value))
-    for (source in sources) {
-      result <- summarize_with_margins(
-        data, prior = sum(x), value = !!source, total = !!share,
-        .grouping = rollup(g)
-      )
-      expect_equal(result$value, c(10, 20, 30))
-    }
-  }
+  ), c(10, 20, 30), prior = sum(x))
 })
