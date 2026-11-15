@@ -343,14 +343,28 @@ test_that("planning does not execute caller closure transfer functions", {
         copied()
       })(1))
     }
-    result <- summarize_with_margins(
-      known_closure_transfer_data(), value = sum(.data$x),
-      prior = share_of_total(value),
-      observed = !!rlang::new_quosure(expr, caller),
-      .grouping = rollup("group")
-    )
-    expect_equal(result$observed, c(7, 7, 7))
-    expect_identical(probe$calls, 3L)
+    expr <- rlang::new_quosure(expr, caller)
+    if (callee %in% c("get", "assign", "delayedAssign")) {
+      result <- summarize_with_margins(
+        known_closure_transfer_data(), value = sum(.data$x),
+        prior = share_of_total(value), observed = !!expr,
+        .grouping = rollup("group")
+      )
+      expect_equal(result$observed, c(7, 7, 7))
+      expect_identical(probe$calls, 3L)
+    } else {
+      # A transfer body with more than one statement may return its argument
+      # (#1670), so the share refuses without calling it.
+      expect_transfer_dependencies(known_closure_transfer_data(), list(expr))
+      expect_identical(probe$calls, 0L)
+      caller[[callee]] <- function(x) function() 7
+      result <- summarize_with_margins(
+        known_closure_transfer_data(), value = sum(.data$x),
+        prior = share_of_total(value), observed = !!expr,
+        .grouping = rollup("group")
+      )
+      expect_equal(result$observed, c(7, 7, 7))
+    }
   }
 })
 
@@ -661,8 +675,10 @@ test_that("caller namespace converters follow ordinary lookup at execution", {
       }
     }
     read <- rlang::new_quosure(expr, caller)
+    expect_transfer_dependencies(known_closure_transfer_data(), list(read))
+    expect_identical(probe$calls, 0L)
+    caller[["::"]] <- function(package, name) function(x) function() 7
     expect_converter_values(known_closure_transfer_data(), list(read), 7)
-    expect_identical(probe$calls, 12L)
   }
 })
 
@@ -697,12 +713,13 @@ test_that("base closure converters follow ordinary function lookup", {
       copied()
     })(11))
     read <- rlang::new_quosure(read, caller)
+    expect_transfer_dependencies(data, list(read))
+    expect_identical(probe$calls, 0L)
+    caller[[converter]] <- function(x) function() 7
     expect_converter_values(data, list(read), 7)
-    expect_identical(probe$calls, 12L)
 
     caller[[converter]] <- 0L
     expect_transfer_dependencies(data, list(read))
-    expect_identical(probe$calls, 12L)
   }
 })
 
@@ -1258,6 +1275,11 @@ test_that("additional base return calls respect caller replacements", {
       value <- function() 7
       if (identical(callee, "withVisible")) list(value = value) else value
     }
+    fresh <- if (identical(callee, "withVisible")) {
+      function(...) list(value = function() 7)
+    } else {
+      function(...) function() 7
+    }
     transfer <- transfers[[callee]]
     if (identical(callee, "withVisible")) {
       transfer[[2L]][[1L]] <- rlang::sym(callee)
@@ -1273,11 +1295,23 @@ test_that("additional base return calls respect caller replacements", {
       copied()
     })(11))
     read <- rlang::new_quosure(read, caller)
-    expect_converter_values(known_closure_transfer_data(), list(read), 7)
-    expect_identical(probe$calls, 12L)
+    if (callee %in% c("eval", "get0")) {
+      # The replacement receives a quoted name or a string, never the closure.
+      expect_converter_values(known_closure_transfer_data(), list(read), 7)
+      expect_identical(probe$calls, 12L)
+    } else {
+      expect_transfer_dependencies(known_closure_transfer_data(), list(read))
+      expect_identical(probe$calls, 0L)
+      caller[[callee]] <- fresh
+      if (identical(callee, "withVisible")) {
+        # A list() body may call a rebound `list` (#1670).
+        expect_transfer_dependencies(known_closure_transfer_data(), list(read))
+      } else {
+        expect_converter_values(known_closure_transfer_data(), list(read), 7)
+      }
+    }
     caller[[callee]] <- 0L
     expect_transfer_dependencies(known_closure_transfer_data(), list(read))
-    expect_identical(probe$calls, 12L)
   }
 })
 
@@ -1302,11 +1336,28 @@ test_that("additional qualified returns respect caller namespace operators", {
       copied()
     })(11))
     read <- rlang::new_quosure(read, caller)
-    expect_converter_values(known_closure_transfer_data(), list(read), 7)
-    expect_identical(probe$calls, 12L)
+    if (identical(callee, "get0")) {
+      # The replacement receives a string, never the closure.
+      expect_converter_values(known_closure_transfer_data(), list(read), 7)
+      expect_identical(probe$calls, 12L)
+    } else {
+      expect_transfer_dependencies(known_closure_transfer_data(), list(read))
+      expect_identical(probe$calls, 0L)
+      fresh <- if (identical(callee, "withVisible")) {
+        quote(function(...) list(value = function() 7))
+      } else {
+        quote(function(...) function() 7)
+      }
+      caller[["::"]] <- rlang::new_function(alist(package = , name = ), fresh)
+      if (identical(callee, "withVisible")) {
+        # A list() body may call a rebound `list` (#1670).
+        expect_transfer_dependencies(known_closure_transfer_data(), list(read))
+      } else {
+        expect_converter_values(known_closure_transfer_data(), list(read), 7)
+      }
+    }
     caller[["::"]] <- 0L
     expect_transfer_dependencies(known_closure_transfer_data(), list(read))
-    expect_identical(probe$calls, 12L)
   }
 })
 
@@ -1347,4 +1398,901 @@ test_that("dtplyr additional return construction stays lazy", {
     }
   }
   expect_identical(serialize(data, NULL), before)
+})
+
+# Each form binds a closure reading `prior`, removes the formal, and invokes
+# it through a base selector, local() environment, stock callback, caller
+# function or local setter the walk reads only as a set of possible closures
+# (#1666).
+unresolved_closure_transfers <- function(retain = FALSE) {
+  forms <- alist(
+    (function(prior) {
+      l <- list(f = function() sum(prior))
+      g <- .subset2(l, exact = TRUE, "f")
+      rm(prior)
+      g()
+    })(11),
+    (function(prior) {
+      f <- local(function() sum(prior), envir = new.env())
+      rm(prior)
+      f()
+    })(11),
+    (function(prior) {
+      l <- list(f = function() sum(prior))
+      g <- l[["f", exact = NA]]
+      rm(prior)
+      g()
+    })(11),
+    (function(prior) {
+      l <- list(function() 7, function() sum(prior))
+      g <- l[[3 - 1]]
+      rm(prior)
+      g()
+    })(11),
+    (function(prior) {
+      l <- list(a = list(f = function() sum(prior)))
+      g <- l[[c("a", "f", recursive = TRUE)]]
+      rm(prior)
+      g()
+    })(11),
+    (function(prior) {
+      l <- Filter(is.function, list(function() sum(prior), function() 7))
+      g <- l[[1]]
+      rm(prior)
+      g()
+    })(11),
+    (function(prior) {
+      l <- list(f = function() sum(prior))
+      # `ident` is bound in the quosure environment.
+      l <- ident(l) # nolint: object_usage_linter.
+      rm(prior)
+      l$f()
+    })(11),
+    (function(prior) {
+      f <- function() sum(prior)
+      # `ident` is bound in the quosure environment.
+      f <- ident(f) # nolint: object_usage_linter.
+      rm(prior)
+      f()
+    })(11),
+    (function(prior) {
+      f <- function() sum(prior)
+      rm(prior)
+      # `ident` is bound in the quosure environment.
+      ident(f)() # nolint: object_usage_linter.
+    })(11),
+    (function(prior) {
+      l <- list(f = function() sum(prior))
+      # `ids` is bound in the quosure environment.
+      copied <- ids$f(l) # nolint: object_usage_linter.
+      rm(prior)
+      copied$f()
+    })(11),
+    (function(prior) {
+      l <- list(f = function() sum(prior))
+      # `touch` is bound in the quosure environment.
+      copied <- touch(l) # nolint: object_usage_linter.
+      rm(prior)
+      copied$f()
+    })(11),
+    (function(prior, k) {
+      e <- new.env()
+      # A local `$<-` makes codetools read these fields as globals.
+      e$s <- function(x, name, value) x # nolint: object_usage_linter.
+      if (k) e$s <- function(x, name, value) { # nolint: object_usage_linter.
+        x
+      }
+      `$<-` <- e$s
+      l <- list(f = function() sum(prior))
+      # The local `$<-` makes codetools read the field as a global.
+      l$g <- 1 # nolint: object_usage_linter.
+      rm(prior)
+      l$f()
+    })(11, TRUE),
+    (function(prior) {
+      `$<-` <- function(x, name, value, `{` = 1) {
+        x
+      }
+      l <- list(f = function() sum(prior))
+      # The local `$<-` makes codetools read the field as a global.
+      l$g <- 1 # nolint: object_usage_linter.
+      rm(prior)
+      l$f()
+    })(11)
+  )
+  if (retain) {
+    forms <- lapply(forms, remove_rm_statements)
+  }
+  caller <- rlang::env(
+    rlang::global_env(), ident = function(x) x,
+    ids = list(f = function(x) x), touch = function(x) {
+      force(x)
+      x
+    }
+  )
+  lapply(forms, rlang::new_quosure, env = caller)
+}
+
+# The same form with its `rm(prior)` statement dropped, so the closure reads
+# the formal rather than the mask.
+remove_rm_statements <- function(expr) {
+  if (!is.call(expr)) return(expr)
+  if (identical(expr[[1L]], quote(`{`))) {
+    keep <- !vapply(as.list(expr)[-1L], function(statement) {
+      rlang::is_call(statement, "rm")
+    }, logical(1))
+    expr <- as.call(c(list(expr[[1L]]), as.list(expr)[-1L][keep]))
+  }
+  as.call(lapply(as.list(expr), remove_rm_statements))
+}
+
+test_that("an unresolved closure invocation after a removal refuses", {
+  data <- known_closure_transfer_data()
+  expect_transfer_dependencies(data, unresolved_closure_transfers())
+  expect_converter_values(data, unresolved_closure_transfers(retain = TRUE), 11)
+  # A local() value that is not function syntax carries no closure, and a
+  # getElement() field of a fresh environment is not read as a list member.
+  expect_converter_values(data, alist(
+    (function(prior) {
+      held <- local(7)
+      rm(prior)
+      held
+    })(11),
+    (function(prior) {
+      fields <- new.env()
+      fields$read <- function() 7
+      held <- getElement(fields, "read")
+      rm(prior)
+      held()
+    })(11)
+  ), 7)
+  for (expr in unresolved_closure_transfers()) {
+    expect_equal(
+      dplyr::summarize(data, prior = sum(.data$x), value = !!expr)$value, 4
+    )
+  }
+})
+
+# A caller function whose result does not spell a formal may still return its
+# argument through a lookup the walk does not read, so only a visibly fresh
+# result clears the closures its arguments carry (#1666).
+test_that("a caller function returning its argument indirectly refuses", {
+  data <- known_closure_transfer_data()
+  caller <- rlang::env(
+    rlang::global_env(),
+    via_get = function(x) get("x"),
+    via_env = function(x) as.list(environment())[[1L]],
+    fresh = function(x) function() 7,
+    # A list() body may call a rebound `list` (#1670).
+    fresh_list = function(x) list(f = function() 7, n = 1L)
+  )
+  forms <- alist(
+    (function(prior) {
+      f <- function() sum(prior)
+      # `via_get` is bound in the quosure environment.
+      f <- via_get(f) # nolint: object_usage_linter.
+      rm(prior)
+      f()
+    })(11),
+    (function(prior) {
+      l <- list(f = function() sum(prior))
+      # `via_get` is bound in the quosure environment.
+      l <- via_get(l) # nolint: object_usage_linter.
+      rm(prior)
+      l$f()
+    })(11),
+    (function(prior) {
+      f <- function() sum(prior)
+      # `via_env` is bound in the quosure environment.
+      f <- via_env(f) # nolint: object_usage_linter.
+      rm(prior)
+      f()
+    })(11),
+    (function(prior) {
+      l <- list(f = function() sum(prior))
+      # `fresh_list` is bound in the quosure environment.
+      l <- fresh_list(l) # nolint: object_usage_linter.
+      rm(prior)
+      l$f()
+    })(11)
+  )
+  expect_transfer_dependencies(
+    data, lapply(forms, rlang::new_quosure, env = caller)
+  )
+  fresh <- alist(
+    (function(prior) {
+      f <- function() sum(prior)
+      # `fresh` is bound in the quosure environment.
+      f <- fresh(f) # nolint: object_usage_linter.
+      rm(prior)
+      f()
+    })(11)
+  )
+  expect_converter_values(
+    data, lapply(fresh, rlang::new_quosure, env = caller), 7
+  )
+})
+
+test_that("caller calls R refuses or defaults stay with their caller", {
+  data <- known_closure_transfer_data()
+  caller <- rlang::env(
+    rlang::global_env(), held = 1, ident = function(x = function() 7) x
+  )
+  # A default stands in for an omitted or empty argument, so no input
+  # closure passes through the call.
+  omitted <- alist(
+    (function(prior) {
+      # `ident` is bound in the quosure environment.
+      g <- ident() # nolint: object_usage_linter.
+      rm(prior)
+      g()
+    })(11),
+    (function(prior) {
+      # `ident` is bound in the quosure environment.
+      g <- ident(x = ) # nolint: object_usage_linter.
+      rm(prior)
+      g()
+    })(11)
+  )
+  expect_converter_values(
+    data, lapply(omitted, rlang::new_quosure, env = caller), 7
+  )
+  # R refuses to call a caller value that is not a function, so the call
+  # carries no closure and the share keeps the ordinary condition.
+  applied <- rlang::new_quosure(quote((function(prior) {
+    f <- function() sum(prior)
+    # `held` is bound in the quosure environment.
+    g <- (held)(f) # nolint: object_usage_linter.
+    rm(prior)
+    g()
+  })(11)), caller)
+  ordinary <- expect_error(summarize_with_margins(
+    data, prior = sum(.data$x), value = !!applied, .grouping = rollup("group")
+  ))
+  for (helper in rlang::syms(c("share_of_parent", "share_of_total"))) {
+    actual <- expect_error(summarize_with_margins(
+      data, prior = sum(.data$x), value = !!applied,
+      ratio = (!!helper)(value), .grouping = rollup("group")
+    ))
+    expect_identical(class(actual), class(ordinary))
+    expect_identical(conditionMessage(actual), conditionMessage(ordinary))
+  }
+})
+
+# A selector or callback that caller code computes may pick any closure its
+# carrier holds, as may a function literal passed through a caller function
+# or a caller function that rebinds a constructor (#1666).
+carried_closure_transfers <- function(retain = FALSE) {
+  forms <- alist(
+    (function(prior) {
+      l <- list(f = function() sum(prior))
+      # `key` is bound in the quosure environment.
+      g <- l[[key()]] # nolint: object_usage_linter.
+      rm(prior)
+      g()
+    })(11),
+    (function(prior) {
+      l <- Filter(function(f) is.function(f), list(function() sum(prior)))
+      rm(prior)
+      l[[1]]()
+    })(11),
+    (function(prior) {
+      # `touch` is bound in the quosure environment.
+      g <- touch(function() sum(prior)) # nolint: object_usage_linter.
+      rm(prior)
+      g()
+    })(11),
+    (function(prior) {
+      l <- list(f = function() sum(prior))
+      # `shadow` is bound in the quosure environment.
+      l <- shadow(l) # nolint: object_usage_linter.
+      rm(prior)
+      l$f()
+    })(11)
+  )
+  if (retain) {
+    forms <- lapply(forms, remove_rm_statements)
+  }
+  caller <- rlang::env(
+    rlang::global_env(), key = function() "f",
+    touch = function(x) {
+      force(x)
+      x
+    },
+    shadow = function(x) {
+      list <- function(...) x
+      list(f = function() 7)
+    }
+  )
+  lapply(forms, rlang::new_quosure, env = caller)
+}
+
+test_that("computed selectors and callbacks keep the carrier's closures", {
+  data <- known_closure_transfer_data()
+  expect_transfer_dependencies(data, carried_closure_transfers())
+  expect_converter_values(data, carried_closure_transfers(retain = TRUE), 11)
+})
+
+# A caller function that binds a local before returning it leaves the walk
+# unable to tell what the local holds: a closure over the argument, an
+# assign() or a value the body built returns what the argument may carry,
+# and the share refuses after a removal (#1670).
+test_that("a caller decorator returning a local refuses", {
+  data <- known_closure_transfer_data()
+  caller <- rlang::env(
+    rlang::global_env(),
+    logged = function(f) {
+      force(f)
+      g <- function(...) f(...)
+      g
+    },
+    wrapped = function(x) {
+      y <- function() x()
+      y
+    },
+    assigned = function(x) {
+      y <- 1
+      assign("y", x)
+      y
+    },
+    fresh = function(x) {
+      y <- function() 7
+      n <- list(1L, c(2L, 3L))
+      y
+    },
+    fresh_list = function(x) {
+      y <- list(f = function() 7, n = c(1L, 2L))
+      y
+    }
+  )
+  calls <- rlang::syms(c("logged", "wrapped", "assigned", "fresh"))
+  forms <- lapply(calls, function(call) {
+    rlang::expr((function(prior) {
+      f <- function() sum(prior)
+      h <- (!!call)(f)
+      rm(prior)
+      h()
+    })(11))
+  })
+  forms <- c(forms, list(quote((function(prior) {
+    f <- function() sum(prior)
+    # `fresh_list` is bound in the quosure environment.
+    h <- fresh_list(f) # nolint: object_usage_linter.
+    rm(prior)
+    h$f()
+  })(11))))
+  expect_transfer_dependencies(
+    data, lapply(forms, rlang::new_quosure, env = caller)
+  )
+})
+
+# A returned function literal is fresh only when it names nothing: one whose
+# body reaches the argument through get() or a local alias returns what the
+# argument carried, through a caller function or an lapply() or Map()
+# callback alike (#1670).
+test_that("a returned closure reaching its argument indirectly refuses", {
+  data <- known_closure_transfer_data()
+  caller <- rlang::env(
+    rlang::global_env(),
+    via_get = function(x) function() get("x")(),
+    via_list = function(x) list(f = function() get("x")()),
+    via_alias = function(x) {
+      g <- x
+      function() g()
+    }
+  )
+  forms <- c(
+    lapply(rlang::syms(c("via_get", "via_alias")), function(call) {
+      rlang::expr((function(prior) {
+        f <- function() sum(prior)
+        h <- (!!call)(f)
+        rm(prior)
+        h()
+      })(11))
+    }),
+    alist(
+      (function(prior) {
+        f <- function() sum(prior)
+        # `via_list` is bound in the quosure environment.
+        h <- via_list(f) # nolint: object_usage_linter.
+        rm(prior)
+        h$f()
+      })(11),
+      (function(prior) {
+        f <- function() sum(prior)
+        h <- lapply(list(f), function(x) {
+          g <- x
+          function() g()
+        })
+        rm(prior)
+        h[[1L]]()
+      })(11),
+      (function(prior) {
+        f <- function() sum(prior)
+        h <- Map(function(x) {
+          g <- x
+          function() g()
+        }, list(f))
+        rm(prior)
+        h[[1L]]()
+      })(11)
+    )
+  )
+  expect_transfer_dependencies(
+    data, lapply(forms, rlang::new_quosure, env = caller)
+  )
+  fresh <- alist(
+    (function(prior) {
+      f <- function() sum(prior)
+      h <- lapply(list(f), function(x) function() 7)
+      rm(prior)
+      h[[1L]]()
+    })(11),
+    (function(prior) {
+      f <- function() sum(prior)
+      h <- Map(function(x) function() 7, list(f))
+      rm(prior)
+      h[[1L]]()
+    })(11)
+  )
+  expect_converter_values(data, fresh, 7)
+})
+
+# Only a definition whose body is one expression -- a function literal naming
+# nothing, a constant, or a `list()` or `c()` of those, calling base functions
+# where it runs -- behind formals with no computed default returns a fresh
+# value. A local binding, an earlier statement, a computed default, an `if`
+# or a rebound `list`, `c` or `(` may leave what the argument carried in the
+# result through code the walk does not read (#1666, #1670).
+test_that("a caller function returns a fresh value only as one literal", {
+  data <- known_closure_transfer_data()
+  bind_default <- function(x, z = (y <- x)) {
+    y <- function() 7
+    z
+    y
+  }
+  caller <- rlang::env(
+    rlang::global_env(),
+    src = function(x) {
+      y <- 1
+      source(textConnection("y <- x"), local = TRUE)
+      y
+    },
+    src_exprs = function(x) {
+      y <- 1
+      source(exprs = parse(text = "y <- x"), local = TRUE)
+      y
+    },
+    status = function(x) {
+      y <- 1
+      e <- sys.status()$sys.frames
+      e[[length(e)]][["y"]] <- x
+      y
+    },
+    assign_default = function(x, z = assign("y", x)) {
+      y <- 1
+      z
+      y
+    },
+    bind_default = bind_default,
+    condition = function(x) {
+      y <- 1
+      if (is.null(assign("y", get("x")))) y else y
+    },
+    default_only = function(x, z = assign("y", x)) function() 7,
+    branch_only = function(x, flag = TRUE) if (flag) function() 7 else 8,
+    formal_list = function(x, list) list(function() 7)
+  )
+  rebound <- rlang::env(
+    caller,
+    list = function(...) get("x", envir = parent.frame()),
+    c = function(...) get("x", envir = parent.frame()),
+    `(` = function(...) get("x", envir = parent.frame())
+  )
+  caller$rebound_list <- rlang::new_function(
+    alist(x = ), quote(list(function() 7)), rebound
+  )
+  caller$rebound_c <- rlang::new_function(
+    alist(x = ), quote(c(function() 7)), rebound
+  )
+  caller$rebound_paren <- rlang::new_function(
+    alist(x = ), quote((function() 7)), rebound
+  )
+  calls <- c("src", "src_exprs", "status", "assign_default", "bind_default",
+             "condition", "default_only", "branch_only", "rebound_list",
+             "rebound_c", "rebound_paren")
+  forms <- lapply(rlang::syms(calls), function(call) {
+    rlang::expr((function(prior) {
+      f <- function() sum(prior)
+      h <- (!!call)(f)
+      rm(prior)
+      h()
+    })(11))
+  })
+  forms <- c(forms, alist(
+    (function(prior) {
+      f <- function() sum(prior)
+      y <- f
+      h <- lapply(list(1), function(x) {
+        y <- 1
+        rm(list = "y")
+        y
+      })
+      rm(prior)
+      h[[1L]]()
+    })(11),
+    (function(prior) {
+      f <- function() sum(prior)
+      y <- f
+      g <- function(x) {
+        y <- 1
+        rm(list = "y")
+        y
+      }
+      h <- g(f)
+      rm(prior)
+      h()
+    })(11),
+    (function(prior) {
+      f <- function() sum(prior)
+      nchar <- function() assign("y", f, envir = parent.frame())
+      h <- lapply(list(1), function(x) {
+        y <- 1
+        nchar()
+        y
+      })
+      rm(prior)
+      h[[1L]]()
+    })(11),
+    (function(prior) {
+      f <- function() sum(prior)
+      list <- function(...) get("x", envir = parent.frame())
+      h <- lapply(base::list(f), function(x) list(function() 7))
+      rm(prior)
+      h[[1L]]()
+    })(11),
+    (function(prior) {
+      f <- function() sum(prior)
+      h <- lapply(list(f), function(x) base::list(function() 7))
+      rm(prior)
+      h[[1L]][[1L]]()
+    })(11),
+    (function(prior) {
+      f <- function() sum(prior)
+      # `formal_list` is bound in the quosure environment.
+      h <- formal_list( # nolint: object_usage_linter.
+        f, function(...) get("x", envir = parent.frame())
+      )
+      rm(prior)
+      h()
+    })(11)
+  ))
+  expect_transfer_dependencies(
+    data, lapply(forms, rlang::new_quosure, env = caller)
+  )
+  # A `{` or list() body may call a rebound callee (#1670); only a body that
+  # is exactly a constant or a closed function literal calls none.
+  fresh <- rlang::env(
+    rlang::global_env(),
+    braced = function(x, n = 1L) {
+      function() 7
+    },
+    listed = function(x) list(f = function() 7, n = c(1L, 2L)),
+    literal = function(x, n = 1L) function() 7
+  )
+  kept <- alist(
+    (function(prior) {
+      f <- function() sum(prior)
+      # `braced` is bound in the quosure environment.
+      h <- braced(f) # nolint: object_usage_linter.
+      rm(prior)
+      h()
+    })(11),
+    (function(prior) {
+      f <- function() sum(prior)
+      # `listed` is bound in the quosure environment.
+      h <- listed(f) # nolint: object_usage_linter.
+      rm(prior)
+      h$f()
+    })(11)
+  )
+  expect_transfer_dependencies(
+    data, lapply(kept, rlang::new_quosure, env = fresh)
+  )
+  literal <- quote((function(prior) {
+    f <- function() sum(prior)
+    # `literal` is bound in the quosure environment.
+    h <- literal(f) # nolint: object_usage_linter.
+    rm(prior)
+    h()
+  })(11))
+  expect_converter_values(
+    data, list(rlang::new_quosure(literal, fresh)), 7
+  )
+  # A caller `::` is read only when its whole body is exactly the function
+  # literal, which calls nothing but `function` before returning it.
+  # The call is built so that no undeclared package name is spelled in source.
+  qualified_head <- call("::", as.name("pkg"), as.name("fresh"))
+  qualified <- bquote((function(prior) {
+    f <- function() sum(prior)
+    h <- .(qualified_head)(f)
+    rm(prior)
+    h()
+  })(11))
+  operators <- list(
+    staged = function(package, name) {
+      y <- 1
+      function(x) function() 7
+    },
+    shadowing = function(list, name) function(x) list(function() 7)
+  )
+  expect_transfer_dependencies(data, lapply(operators, function(operator) {
+    rlang::new_quosure(qualified, rlang::env(`::` = operator))
+  }))
+  operators <- list(
+    braced = function(package, name) {
+      function(x) function() 7
+    },
+    literal = function(package, name) function(x) function() 7
+  )
+  expect_transfer_dependencies(data, list(rlang::new_quosure(
+    qualified, rlang::env(`::` = operators$braced)
+  )))
+  expect_converter_values(data, list(rlang::new_quosure(
+    qualified, rlang::env(`::` = operators$literal)
+  )), 7)
+})
+
+test_that("a `function` formal or a reference body is not fresh", {
+  data <- known_closure_transfer_data()
+  store <- new.env()
+  caller <- rlang::env(
+    rlang::global_env(),
+    rebinds = rlang::new_function(
+      rlang::pairlist2(x = , `function` = ), quote(function() 7)
+    ),
+    defaulted = rlang::new_function(
+      rlang::pairlist2(x = , `function` = 1), quote(function() 7)
+    ),
+    referenced = rlang::new_function(rlang::pairlist2(x = ), store),
+    callback = rlang::new_function(
+      rlang::pairlist2(i = , `function` = ), quote(function() 7)
+    ),
+    listed = function(i) list(function() 7)
+  )
+  forms <- alist(
+    (function(prior) {
+      f <- function() sum(prior)
+      # `rebinds` is bound in the quosure environment.
+      h <- rebinds(f, function(...) f) # nolint: object_usage_linter.
+      rm(prior)
+      h()
+    })(11),
+    (function(prior) {
+      f <- function() sum(prior)
+      # `defaulted` is bound in the quosure environment.
+      h <- defaulted(f, function(...) f) # nolint: object_usage_linter.
+      rm(prior)
+      h()
+    })(11),
+    (function(prior) {
+      f <- function() sum(prior)
+      # `referenced` is bound in the quosure environment.
+      s <- referenced(f) # nolint: object_usage_linter.
+      s$f <- f
+      rm(prior)
+      s$f()
+    })(11),
+    (function(prior) {
+      f <- function() sum(prior)
+      # `callback` is bound in the quosure environment.
+      h <- lapply( # nolint: object_usage_linter.
+        list(f), callback, function(...) f
+      )
+      rm(prior)
+      h[[1L]]()
+    })(11),
+    (function(prior) {
+      f <- function() sum(prior)
+      # `listed` is bound in the quosure environment.
+      h <- lapply(list(f), listed) # nolint: object_usage_linter.
+      rm(prior)
+      h[[1L]][[1L]]()
+    })(11)
+  )
+  expect_transfer_dependencies(
+    data, lapply(forms, rlang::new_quosure, env = caller)
+  )
+  # A `function` that returns the calling frame's `x` when it has one, and
+  # otherwise builds the closure base `function` would.
+  rebinder <- function(formals, body, ...) {
+    frame <- parent.frame()
+    if (exists("x", envir = frame, inherits = FALSE)) {
+      return(get("x", envir = frame))
+    }
+    eval(rlang::call2(base::`function`, formals, substitute(body)), frame)
+  }
+  shadowing <- rlang::new_function(
+    rlang::pairlist2(package = , name = , `function` = rebinder),
+    quote(function(x) function() 7)
+  )
+  qualified_head <- call("::", as.name("pkg"), as.name("fresh"))
+  qualified <- bquote((function(prior) {
+    f <- function() sum(prior)
+    h <- .(qualified_head)(f)
+    rm(prior)
+    h()
+  })(11))
+  expect_transfer_dependencies(data, list(rlang::new_quosure(
+    qualified, rlang::env(`::` = shadowing)
+  )))
+  # An enclosure binding `function`, at any depth, rebinds the literal too.
+  rebinding <- rlang::env(rlang::global_env(), `function` = rebinder)
+  nested <- rlang::env(rebinding)
+  active <- rlang::env(rlang::global_env())
+  active_reads <- 0L
+  makeActiveBinding("function", function() {
+    active_reads <<- active_reads + 1L
+    rebinder
+  }, active)
+  lazy <- rlang::env(rlang::global_env())
+  delayedAssign("function", rebinder, assign.env = lazy)
+  enclosed <- rlang::env(
+    rlang::global_env(),
+    fresh = rlang::new_function(
+      alist(x = ), quote(function() 7), env = rebinding
+    ),
+    deep = rlang::new_function(alist(x = ), quote(function() 7), env = nested),
+    on_active = rlang::new_function(
+      alist(x = ), quote(function() 7), env = active
+    ),
+    on_lazy = rlang::new_function(alist(x = ), quote(function() 7), env = lazy),
+    callback = rlang::new_function(
+      alist(x = ), quote(function() 7), env = rebinding
+    )
+  )
+  enclosed_forms <- alist(
+    (function(prior) {
+      f <- function() sum(prior)
+      # `fresh` is bound in the quosure environment.
+      h <- fresh(f) # nolint: object_usage_linter.
+      rm(prior)
+      h()
+    })(11),
+    (function(prior) {
+      f <- function() sum(prior)
+      # `deep` is bound in the quosure environment.
+      h <- deep(f) # nolint: object_usage_linter.
+      rm(prior)
+      h()
+    })(11),
+    (function(prior) {
+      f <- function() sum(prior)
+      # `on_active` is bound in the quosure environment.
+      h <- on_active(f) # nolint: object_usage_linter.
+      rm(prior)
+      h()
+    })(11),
+    (function(prior) {
+      f <- function() sum(prior)
+      # `on_lazy` is bound in the quosure environment.
+      h <- on_lazy(f) # nolint: object_usage_linter.
+      rm(prior)
+      h()
+    })(11),
+    (function(prior) {
+      f <- function() sum(prior)
+      # `callback` is bound in the quosure environment.
+      h <- lapply(list(f), callback) # nolint: object_usage_linter.
+      rm(prior)
+      h[[1L]]()
+    })(11)
+  )
+  expect_transfer_dependencies(
+    data, lapply(enclosed_forms, rlang::new_quosure, env = enclosed)
+  )
+  # Planning reads neither binding's value.
+  expect_identical(active_reads, 0L)
+  expect_true(rlang::env_binding_are_lazy(lazy, "function"))
+  # A classed enclosure's `[[` method cannot hide its binding.
+  assign("[[.marginplyr_trick_env", function(x, i, ...) base::`function`,
+         envir = globalenv())
+  withr::defer(rm("[[.marginplyr_trick_env", envir = globalenv()))
+  classed <- rlang::env(rlang::global_env(), `function` = rebinder)
+  class(classed) <- "marginplyr_trick_env"
+  on_classed <- rlang::env(
+    rlang::global_env(),
+    on_classed = rlang::new_function(
+      alist(x = ), quote(function() 7), env = classed
+    )
+  )
+  expect_transfer_dependencies(data, list(rlang::new_quosure(quote(
+    (function(prior) {
+      f <- function() sum(prior)
+      # `on_classed` is bound in the quosure environment.
+      h <- on_classed(f) # nolint: object_usage_linter.
+      rm(prior)
+      h()
+    })(11)
+  ), on_classed)))
+  operator <- rlang::new_function(
+    alist(package = , name = ), quote(function(x) function() 7),
+    env = rebinding
+  )
+  expect_transfer_dependencies(data, list(rlang::new_quosure(
+    qualified, rlang::env(`::` = operator)
+  )))
+  # A missing `function` formal in an enclosure is read without forcing it,
+  # and an ordinary source through such a caller stays shareable.
+  missing_formal <- (function(`function`) environment())()
+  twice <- rlang::env(
+    rlang::global_env(),
+    twice = rlang::new_function(alist(x = ), quote(list(x)), missing_formal)
+  )
+  expect_converter_values(data, list(rlang::new_quosure(quote(
+    (function(prior) {
+      f <- function() 7
+      # `twice` is bound in the quosure environment.
+      h <- twice(f) # nolint: object_usage_linter.
+      h[[1L]]()
+    })(11)
+  ), twice)), 7)
+})
+
+test_that("a caller function's callees rebound by the expression refuse", {
+  data <- known_closure_transfer_data()
+  withr::defer(
+    rm(list = intersect("list", ls(globalenv())), envir = globalenv())
+  )
+  rebinding <- quote(function(...) {
+    .Primitive("list")(get("x", envir = parent.frame()))
+  })
+  global <- as.name(".GlobalEnv")
+  writes <- list(
+    bquote(assign("list", .(rebinding), envir = environment(CALL))),
+    bquote(assign("list", .(rebinding), envir = globalenv())),
+    bquote(assign("list", .(rebinding), pos = 1)),
+    rlang::call2("<-", call("$", global, quote(list)), rebinding),
+    rlang::call2("<-", call("[[", global, "list"), rebinding),
+    bquote({
+      e <- environment(CALL)
+      e$list <- .(rebinding)
+    }),
+    bquote({
+      g <- CALL
+      environment(g)$list <- .(rebinding)
+    })
+  )
+  forms <- lapply(writes, function(write) {
+    bquote((function(prior) {
+      f <- function() sum(prior)
+      .(write)
+      h <- CALL(f)[[1]]
+      rm(prior)
+      h()
+    })(11))
+  })
+  # A global CALL runs its body where the global writes land.
+  callees <- list(
+    function(x) list(function() 7),
+    rlang::new_function(alist(x = ), quote(list(function() 7)), globalenv())
+  )
+  expressions <- unlist(lapply(callees, function(callee) {
+    lapply(forms, function(form) {
+      rlang::new_quosure(form, rlang::env(rlang::global_env(), CALL = callee))
+    })
+  }))
+  # The call is built so that no undeclared package name is spelled in source.
+  qualified_head <- call("::", as.name("pkg"), as.name("fresh"))
+  qualified <- bquote((function(prior) {
+    f <- function() sum(prior)
+    assign("list", .(rebinding), envir = environment(`::`))
+    h <- .(qualified_head)(f)[[1]]
+    rm(prior)
+    h()
+  })(11))
+  expressions <- c(expressions, list(rlang::new_quosure(qualified, rlang::env(
+    `::` = function(package, name) function(x) list(function() 7)
+  ))))
+  expect_transfer_dependencies(data, expressions)
 })

@@ -459,6 +459,52 @@ test_that("stored reader options cast from boolean strings stay literal", {
   expect_duckdb_catalog_only()
 })
 
+test_that("a quoted false auto_detect disables CSV detection (#1668)", {
+  skip_if_suggest_absent("duckdb", "DBI")
+  con <- duckdb_test_connection()
+  on.exit(DBI::dbDisconnect(con, shutdown = TRUE), add = TRUE)
+  path <- tempfile(fileext = ".csv")
+  on.exit(unlink(path), add = TRUE)
+  writeLines(c("g,k", "a,101", "b,7"), path)
+  old <- options(marginplyr.audit_sql = TRUE)
+  on.exit(options(old), add = TRUE)
+  reader <- function(auto_detect) {
+    paste0(
+      "SELECT * FROM read_csv(", DBI::dbQuoteString(con, path),
+      ", columns = {'g': 'VARCHAR', 'k': 'BIGINT'}, auto_detect = ",
+      auto_detect, ", header = true)"
+    )
+  }
+  # A stored view keeps the quoted spelling in its definition.
+  for (auto_detect in c("'false'", "'f'", "'FALSE'")) {
+    DBI::dbExecute(con, paste(
+      "CREATE OR REPLACE VIEW stored_reader AS", reader(auto_detect)
+    ))
+    for (input in list(dplyr::tbl(con, dbplyr::sql(reader(auto_detect))),
+                       dplyr::tbl(con, "stored_reader"))) {
+      result <- summarize_with_margins(
+        input, k = sum(k, na.rm = TRUE), .grouping = rollup(g), .sort = "last"
+      )
+      expect_identical(last_sent_queries(details = TRUE)$purpose,
+                       c("relation_catalog", "selection_proxy", "result"))
+      result <- dplyr::collect(result)
+      expect_identical(result$g, c("a", "b", "Total"))
+      expect_equal(as.numeric(result$k), c(101, 7, 108))
+    }
+  }
+  # A non-boolean string fails at bind, so these inputs name their columns.
+  repeated <- sub("header = true", "auto_detect = 'true', header = true",
+                  reader("'false'"), fixed = TRUE)
+  for (sql in c(reader("'true'"), reader("'t'"), reader("'nope'"), repeated)) {
+    input <- dplyr::tbl(con, dbplyr::sql(sql), vars = c("g", "k"))
+    expect_error(
+      summarize_with_margins(input, n = dplyr::n(), .grouping = rollup(g)),
+      "DuckDB CSV input", fixed = TRUE, class = "marginplyr_error"
+    )
+    expect_equal(nrow(last_sent_queries()), 0L)
+  }
+})
+
 test_that("reader-like catalog relations and CTEs retain typed inspection", {
   skip_if_suggest_absent("duckdb", "DBI")
   con <- duckdb_test_connection()

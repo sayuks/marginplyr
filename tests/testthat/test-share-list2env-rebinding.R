@@ -349,12 +349,16 @@ test_that("fresh environment proofs preserve caller constructor lookup", {
     },
     `$<-.fresh_environment_control` = function(x, name, value) x
   )
-  reads <- alist(
+  # A caller constructor whose body calls list() may return the closure it
+  # was given, so reading it after a removal refuses (#1666, #1670).
+  expect_share_dependencies(data, list(rlang::as_quosure(quote(
     (function(prior) {
       carrier <- list2env(list(read = function() sum(prior)))
       rm(prior)
       carrier$read()
-    })(11),
+    })(11)
+  ), env = scope)))
+  reads <- alist(
     (function(prior) {
       carrier <- new.env()
       carrier$read <- function() sum(prior)

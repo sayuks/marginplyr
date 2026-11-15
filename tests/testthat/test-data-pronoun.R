@@ -184,3 +184,49 @@ test_that("the pronoun scan detects the shape it exists to reject", {
 
   expect_equal(unquoted_pronoun_sites(ns), "offender")
 })
+
+# An injected `.data[[key]]` reaches the Margin verb still holding the symbol,
+# and dplyr evaluates `key` in the summary's quosure environment (#1665). The
+# global `key` names another column, so a lookup that escaped that environment
+# would read it silently rather than fail.
+test_that("an injected .data subscript reads the quosure environment's key", {
+  data <- data.frame(g = c("a", "b"), v = c(1, 3), w = c(100, 300))
+  summarize_through <- function(data, grouping, with_share) {
+    key <- "v"
+    read <- quote(.data[[key]])
+    if (with_share) {
+      summarize_with_margins(
+        data, t = sum(!!read), s = share_of_total(t), .grouping = !!grouping
+      )
+    } else {
+      summarize_with_margins(data, t = sum(!!read), .grouping = !!grouping)
+    }
+  }
+  summarize_oracle <- function(data) {
+    key <- "v"
+    read <- quote(.data[[key]])
+    dplyr::summarize(data, t = sum(!!read), .by = g)$t
+  }
+  expect_reads_v <- function() {
+    expect_identical(summarize_oracle(data), c(1, 3))
+    groupings <- list(
+      quote(rollup(g)),
+      quote(grouping_sets(grouping_set(g), grouping_set()))
+    )
+    for (grouping in groupings) {
+      for (with_share in c(FALSE, TRUE)) {
+        result <- summarize_through(data, grouping, with_share)
+        expect_identical(result$t, c(1, 3, 4))
+      }
+    }
+    expect_identical(
+      summarize_through(data, quote(grouping_set(g)), FALSE)$t, c(1, 3)
+    )
+  }
+
+  expect_reads_v()
+  skip_if(exists("key", envir = globalenv(), inherits = FALSE))
+  assign("key", "w", envir = globalenv())
+  withr::defer(rm("key", envir = globalenv()))
+  expect_reads_v()
+})

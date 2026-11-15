@@ -119,7 +119,7 @@ test_that("nested list planning never invokes or forces caller code", {
   expect_identical(serialize(data, NULL), before)
 })
 
-test_that("unknown nested-list returns and unselected closures remain legal", {
+test_that("nested-list returns refuse and unselected closures remain legal", {
   probe <- rlang::env(calls = 0L)
   unknown <- function(x) {
     probe$calls <- probe$calls + 1L
@@ -130,8 +130,12 @@ test_that("unknown nested-list returns and unselected closures remain legal", {
     rm(prior)
     carrier$outer$read()
   })(1))
-  expect_share_dependency_values(nested_closure_list_data(), list(read), 7)
-  expect_identical(probe$calls, 12L)
+  # A function body that calls a function may return its argument (#1670),
+  # so the share refuses without calling it.
+  expect_share_dependencies(nested_closure_list_data(), list(read))
+  expect_identical(probe$calls, 0L)
+  unknown <- function(x) list(outer = list(read = function() 7))
+  expect_share_dependencies(nested_closure_list_data(), list(read))
   reads <- alist(
     (function(prior) {
       carrier <- list(outer = list(
@@ -155,13 +159,15 @@ test_that("recursive list paths preserve ordinary caller function lookup", {
     probe$calls <- probe$calls + 1L
     base::c(1L, 2L)
   }
+  # The caller's `c` computes the path, which may select the alias-reading
+  # member, so the carrier's closures stay possible (#1666).
   read <- rlang::quo((function(prior) {
     carrier <- list(list(function() sum(prior), function() 7))
     rm(prior)
     carrier[[c(1L, 1L)]]()
   })(1))
-  expect_share_dependency_values(nested_closure_list_data(), list(read), 7)
-  expect_identical(probe$calls, 12L)
+  expect_share_dependencies(nested_closure_list_data(), list(read))
+  expect_identical(probe$calls, 0L)
 })
 
 test_that("empty literal names do not select unnamed nested closures", {
