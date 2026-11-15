@@ -4728,7 +4728,8 @@ pronoun_index_symbols <- function(expr, scope, lookup) {
 }
 
 # Reads of evaluated call arguments and the head, including syntax demanded
-# by a lexical promise in function position. The supplied scope describes the
+# by a lexical promise in function position, and of the captured names the call
+# removes or whose enclosure it replaces. The supplied scope describes the
 # frames visible before the call. Reflective branches add resolved names to
 # these reads.
 #
@@ -7353,13 +7354,13 @@ statement_reads_and_scope <- function(expr, scope, lookup = NULL,
                                lookup, value_scope = scope)
     ))
   }
-  # Read a replacement target and the value in source order. Its eventual
-  # binding depends on the shape of the target.
   if (!identical(read_symbols, no_scope_reads)) {
     value <- unique(c(value, scope_setter_capture_reads(
       expr[[2L]], expr[[3L]], scope, lookup
     )))
   }
+  # Read a replacement target and the value in source order. Its eventual
+  # binding depends on the shape of the target.
   list(
     reads = unique(c(read_symbols(expr[[2L]], scope, lookup), value)),
     scope = scope_after_carrier_write(
@@ -7444,10 +7445,7 @@ scope_after_removals <- function(expr, scope, lookup) {
     )$scope
     return(scope_possible_losses(scope, after))
   }
-  if (identical(name, "function")) {
-    if (length(expr) < 3L) {
-      return(scope)
-    }
+  if (identical(name, "function") && length(expr) >= 3L) {
     return(scope_record_captures(expr, scope, lookup))
   }
   local <- implicit_local_parts(expr, name, scope, lookup)
@@ -7457,12 +7455,7 @@ scope_after_removals <- function(expr, scope, lookup) {
     )$scope
     return(scope_escape_captures(after[-1L], after[1L]))
   }
-  mutation_lookup <- lookup
-  if (!is.null(name) && name %in% c("rm", "remove") &&
-        scope_has_local_function(scope, name)) {
-    mutation_lookup$local_functions <- name
-  }
-  mutation <- scope_mutation_call(expr, bound, mutation_lookup)
+  mutation <- scope_call_mutation(expr, name, scope, lookup)
   head <- static_call_head(expr)
   closure <- scope_call_closure(expr, scope, lookup)
   parts <- c(
@@ -7645,9 +7638,10 @@ scope_possible_losses <- function(scope, after) {
 }
 
 # The frames a visible removal call searches and the names it requests.
-# `removed` is NULL for unreadable names. `outside` marks an environment that
-# is not a walked frame: an existing one, or one the walk cannot resolve, which
-# the scope treats as the current frame.
+# `removed` is NULL for unreadable names. `outside` marks an existing
+# environment, or one the walk cannot resolve, which the scope treats as the
+# current frame. A caller beyond the walked frames is neither: `frames` is
+# empty and nothing a literal here captured is there.
 scope_removal_targets <- function(expr, scope, lookup) {
   target <- base_call_argument(expr, c("envir", "pos"))
   index <- 1L
@@ -7835,6 +7829,16 @@ scope_setter_capture_reads <- function(target, value, scope, lookup) {
   )
 }
 
+# The scope mutation a call makes, where a local function named `rm` or
+# `remove` is not the base removal.
+scope_call_mutation <- function(expr, name, scope, lookup) {
+  if (!is.null(name) && name %in% c("rm", "remove") &&
+        scope_has_local_function(scope, name)) {
+    lookup$local_functions <- name
+  }
+  scope_mutation_call(expr, scope_bound_names(scope), lookup)
+}
+
 # Reads a call makes by removing a captured name or replacing the enclosure
 # that resolves it.
 scope_capture_loss_reads <- function(expr, scope, lookup) {
@@ -7842,13 +7846,7 @@ scope_capture_loss_reads <- function(expr, scope, lookup) {
     return(character())
   }
   name <- static_call_name(expr)
-  mutation_lookup <- lookup
-  if (!is.null(name) && name %in% c("rm", "remove") &&
-        scope_has_local_function(scope, name)) {
-    mutation_lookup$local_functions <- name
-  }
-  mutation <- scope_mutation_call(expr, scope_bound_names(scope),
-                                  mutation_lookup)
+  mutation <- scope_call_mutation(expr, name, scope, lookup)
   operator <- static_call_name(mutation)
   if (!is.null(operator) && operator %in% c("rm", "remove")) {
     return(scope_removal_capture_reads(mutation, scope, lookup))

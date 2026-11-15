@@ -1,5 +1,4 @@
-# Removing a name a function literal captured reads that name (ADR 0010), so
-# none of these sources depends on which closure the walk believes it calls.
+# Removing a name a function literal captured reads that name (ADR 0010).
 
 captured_removal_data <- function() {
   data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
