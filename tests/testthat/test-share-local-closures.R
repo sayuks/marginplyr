@@ -82,23 +82,14 @@ test_that("share dependencies follow a literal closure's invocation", {
   }
 })
 
-test_that("retained bindings and uncalled local closures are valid", {
+test_that("local closures are valid unless a removal follows their capture", {
   data <- data.frame(group = c("a", "b"), x = c(1, 3), prior = c(100, 300))
-  expressions <- alist(
+  removed <- alist(
     (function(prior) {
       read_prior <- function() sum(prior)
       observed <- read_prior()
       rm(prior)
       observed
-    })(1),
-    (function(prior) {
-      callbacks <- list(read = function() sum(prior))
-      base::do.call(args = base::list(), what = callbacks$read)
-    })(1),
-    (function(prior) {
-      callbacks <- list(read = function() 1)
-      rm(prior)
-      do.call(callbacks$read, list())
     })(1),
     (function(prior) {
       # The binding must use base's name to shadow its function lookup.
@@ -125,6 +116,17 @@ test_that("retained bindings and uncalled local closures are valid", {
       force(read_prior)
       rm(prior)
       1
+    })(1)
+  )
+  expressions <- alist(
+    (function(prior) {
+      callbacks <- list(read = function() sum(prior))
+      base::do.call(args = base::list(), what = callbacks$read)
+    })(1),
+    (function(prior) {
+      callbacks <- list(read = function() 1)
+      rm(prior)
+      do.call(callbacks$read, list())
     })(1),
     (function(prior) {
       remove_prior <- function() rm("prior", envir = parent.frame())
@@ -138,6 +140,24 @@ test_that("retained bindings and uncalled local closures are valid", {
   )
   for (kind in c("parent", "total")) {
     share <- rlang::call2(paste0("share_of_", kind), quote(value))
+    for (expr in removed) {
+      expect_error(
+        summarize_with_margins(
+          data, value = sum(x), prior = !!share, derived = !!expr,
+          .grouping = rollup(group)
+        ),
+        "Ordinary summaries cannot use an earlier .* share",
+        class = "marginplyr_error"
+      )
+      expect_error(
+        summarize_with_margins(
+          data, prior = sum(x), value = !!expr, ratio = !!share,
+          .grouping = rollup(group)
+        ),
+        "depends on earlier summary alias `prior`",
+        class = "marginplyr_error"
+      )
+    }
     for (expr in expressions) {
       forward <- summarize_with_margins(
         data, value = sum(x), prior = !!share, derived = !!expr,

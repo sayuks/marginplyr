@@ -105,6 +105,22 @@ expression contract. The error identifies the Parent share, its source, and
 the earlier alias dependency, and recommends combining the calculation into
 one ordinary summary expression.
 
+Whether a source refers to an earlier alias is decided without running it,
+and a shape the analysis cannot decide is refused (#130). A function literal
+that freely references an earlier alias `X` reads `X` unless `X` stays bound
+in the literal's defining scope for the literal's whole lifetime (#1676). A
+literal created where `X` is unbound therefore reads `X` whether or not it is
+ever called. A literal captures `X` when it is written in a scope, or in a
+scope nested inside it, and resolves `X` to that scope's binding; removing
+`X` from that scope reads `X` at the point of removal, again whether or not
+the closure is ever called. A removal whose names or target environment the
+analysis cannot read counts as removing every captured name, and replacing a
+closure's enclosure through `environment<-` or `parent.env<-` with an
+environment not proven to bind a captured name counts as removing that name.
+Soundness thus never depends on knowing which closure a value holds: tracking
+closures through calls only lets more sources be accepted. The same reading
+decides when an ordinary summary uses an earlier share.
+
 A direct call must have an explicit output name distinct from its source
 summary. `across()` is supported when its selection resolves to preceding
 ordinary summaries. It must supply `.names` explicitly, and the resulting

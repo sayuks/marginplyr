@@ -357,12 +357,6 @@ test_that("inline scope changes preserve independent and shadowed bindings", {
       sum(prior)
     })(touch()),
     (function(prior = touch()) {
-      (function(...) sum(prior))({
-        base::rm("prior")
-        stop("An undemanded dot must not run.")
-      })
-    })(),
-    (function(prior = touch()) {
       (function(prior) {
         (function() base::rm("prior", envir = sys.frame(sys.parent())))()
       })(0)
@@ -469,13 +463,6 @@ test_that("inline scope changes preserve independent and shadowed bindings", {
       })()
     })(),
     (function(prior = touch()) {
-      (function() {
-        base::rm(prior, envir = .env$outside)
-        assign("prior", 2, envir = .env$outside)
-        sum(prior)
-      })()
-    })(),
-    (function(prior = touch()) {
       callback <- function() {
         base::rm(prior, envir = parent.frame())
         sum(prior)
@@ -514,16 +501,6 @@ test_that("inline scope changes preserve independent and shadowed bindings", {
       sum(prior)
     })(),
     (function(prior = {
-      touch()
-      base::rm(prior)
-      1
-    }) {
-      (function() {
-        prior
-        get("prior", envir = .env$outside)
-      })()
-    })(),
-    (function(prior = {
       base::rm(prior)
       touch()
     }) {
@@ -548,6 +525,31 @@ test_that("inline scope changes preserve independent and shadowed bindings", {
       touch()
     })()
   )
+  removed <- alist(
+    (function(prior = touch()) {
+      (function(...) sum(prior))({
+        base::rm("prior")
+        stop("An undemanded dot must not run.")
+      })
+    })(),
+    (function(prior = touch()) {
+      (function() {
+        base::rm(prior, envir = .env$outside)
+        assign("prior", 2, envir = .env$outside)
+        sum(prior)
+      })()
+    })(),
+    (function(prior = {
+      touch()
+      base::rm(prior)
+      1
+    }) {
+      (function() {
+        prior
+        get("prior", envir = .env$outside)
+      })()
+    })()
+  )
   for (kind in c("parent", "total")) {
     helper <- rlang::call2(paste0("share_of_", kind), quote(value))
     counts$calls <- 0L
@@ -558,6 +560,26 @@ test_that("inline scope changes preserve independent and shadowed bindings", {
     control_calls <- counts$calls
     expect_equal(control$value, c(2, 2, 2))
     expect_identical(control_calls, 3L)
+    for (expression in removed) {
+      counts$calls <- 0L
+      expect_error(
+        summarize_with_margins(
+          data, prior = sum(x), value = !!expression, fraction = !!helper,
+          .grouping = rollup(group)
+        ),
+        "depends on earlier summary alias `prior`",
+        class = "marginplyr_error"
+      )
+      expect_error(
+        summarize_with_margins(
+          data, value = sum(x), prior = !!helper, derived = !!expression,
+          .grouping = rollup(group)
+        ),
+        "Ordinary summaries cannot use an earlier .* share",
+        class = "marginplyr_error"
+      )
+      expect_identical(counts$calls, 0L)
+    }
     for (expression in expressions) {
       counts$calls <- 0L
       result <- summarize_with_margins(

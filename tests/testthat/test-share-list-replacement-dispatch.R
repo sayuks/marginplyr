@@ -28,13 +28,13 @@ unchanged_list_replacements <- function(original, replacement) {
   })
 }
 
-test_that("local replacements can retain the original list member", {
+test_that("local replacements keep removed captures in either list member", {
   data <- list_replacement_data()
   expect_share_dependencies(
     data, unchanged_list_replacements(quote(sum(prior)), 7)
   )
-  expect_share_dependency_values(
-    data, unchanged_list_replacements(7, quote(sum(prior))), expected = 7
+  expect_share_dependencies(
+    data, unchanged_list_replacements(7, quote(sum(prior)))
   )
 })
 

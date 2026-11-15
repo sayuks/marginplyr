@@ -42,9 +42,9 @@ swapped_list_name_reads <- function(lookup = quote(carrier$other)) {
   })
 }
 
-test_that("swapped list names select the independent and dependent closures", {
-  expect_share_dependency_values(
-    list_name_data(), swapped_list_name_reads(quote(carrier$read)), expected = 7
+test_that("removal after swapped list names refuses either selected closure", {
+  expect_share_dependencies(
+    list_name_data(), swapped_list_name_reads(quote(carrier$read))
   )
   expect_share_dependencies(list_name_data(), swapped_list_name_reads())
 })
@@ -65,9 +65,7 @@ expect_list_name_controls <- function(data) {
   expect_share_dependency_values(
     data, list_name_reads(body = quote(7)), expected = 7
   )
-  expect_share_dependency_values(
-    data, swapped_list_name_reads(quote(carrier$read)), expected = 7
-  )
+  expect_share_dependencies(data, swapped_list_name_reads(quote(carrier$read)))
   expect_share_dependencies(data, swapped_list_name_reads())
   expect_identical(serialize(data, NULL), before)
 }
@@ -82,14 +80,14 @@ test_that("data.table renamed list lookup preserves controls and inputs", {
   expect_list_name_controls(data.table::as.data.table(list_name_data()))
 })
 
-test_that("renamed list lookup respects exact and missing names", {
+test_that("removal after renaming refuses exact and missing name lookups", {
   for (lookup in alist(carrier[["oth"]], carrier[["oth", exact = TRUE]],
                        carrier$read, carrier[["read", exact = FALSE]])) {
     reads <- list_name_reads(invoke = FALSE, lookup = rlang::expr({
       selected <- !!lookup
       if (is.null(selected)) 7 else selected()
     }))
-    expect_share_dependency_values(list_name_data(), reads, expected = 7)
+    expect_share_dependencies(list_name_data(), reads)
   }
 })
 
@@ -122,7 +120,7 @@ test_that("renamed list dependencies leave lazy input unread", {
   expect_identical(probe$calls, 1L)
 })
 
-test_that("classed attributes leave list member dispatch to the caller", {
+test_that("classed attributes do not exempt a captured removal", {
   registerS3method("$", "margin_share_named_carrier", function(x, name) {
     if (identical(name, "other")) function() 7 else .subset2(unclass(x), name)
   }, envir = asNamespace("base"))
@@ -134,10 +132,10 @@ test_that("classed attributes leave list member dispatch to the caller", {
     carrier$other()
   })(1))
   expect_identical(eval(read), 7)
-  expect_share_dependency_values(list_name_data(), list(read), expected = 7)
+  expect_share_dependencies(list_name_data(), list(read))
 })
 
-test_that("incomplete attribute syntax reaches dplyr's empty argument error", {
+test_that("incomplete attribute syntax reaches dplyr's error without removal", {
   read <- quote((function(prior) {
     carrier <- list(read = function() sum(prior))
     attributes(carrier) <- list(names = )
@@ -145,6 +143,15 @@ test_that("incomplete attribute syntax reaches dplyr's empty argument error", {
     carrier$other()
   })(1))
   data <- list_name_data()
+  direct <- expect_error(dplyr::summarise(data, observed = !!read))
+  expect_match(conditionMessage(direct$parent), "argument 1 is empty")
+  expect_share_dependencies(data, list(read))
+
+  read <- quote((function(prior) {
+    carrier <- list(read = function() sum(prior))
+    attributes(carrier) <- list(names = )
+    carrier$other()
+  })(1))
   direct <- expect_error(dplyr::summarise(data, observed = !!read))
   expect_match(conditionMessage(direct$parent), "argument 1 is empty")
   helpers <- list(quote(share_of_parent(value)), quote(share_of_total(value)))

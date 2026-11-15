@@ -344,23 +344,23 @@ test_that("planning does not execute caller closure transfer functions", {
       })(1))
     }
     expr <- rlang::new_quosure(expr, caller)
+    retained <- without_removal(expr)
+    expect_transfer_dependencies(known_closure_transfer_data(), list(expr))
+    expect_identical(probe$calls, 0L)
     if (callee %in% c("get", "assign", "delayedAssign")) {
       result <- summarize_with_margins(
         known_closure_transfer_data(), value = sum(.data$x),
-        prior = share_of_total(value), observed = !!expr,
+        prior = share_of_total(value), observed = !!retained,
         .grouping = rollup("group")
       )
       expect_equal(result$observed, c(7, 7, 7))
       expect_identical(probe$calls, 3L)
     } else {
-      # A transfer body with more than one statement may return its argument
-      # (#1670), so the share refuses without calling it.
-      expect_transfer_dependencies(known_closure_transfer_data(), list(expr))
-      expect_identical(probe$calls, 0L)
       caller[[callee]] <- function(x) function() 7
+      expect_transfer_dependencies(known_closure_transfer_data(), list(expr))
       result <- summarize_with_margins(
         known_closure_transfer_data(), value = sum(.data$x),
-        prior = share_of_total(value), observed = !!expr,
+        prior = share_of_total(value), observed = !!retained,
         .grouping = rollup("group")
       )
       expect_equal(result$observed, c(7, 7, 7))
@@ -385,15 +385,16 @@ test_that("known transfers never invoke a closure during planning", {
   expect_identical(probe$calls, 0L)
 })
 
-test_that("external get targets and independent closures stay legal", {
+test_that("retained external get targets and independent closures stay legal", {
   external <- rlang::env(read = function() 7)
-  expressions <- alist(
-    (function(prior) {
-      read <- function() sum(prior)
-      copied <- get("read", envir = external, inherits = FALSE)
-      rm(prior)
-      copied()
-    })(1),
+  removed <- rlang::quo((function(prior) {
+    read <- function() sum(prior)
+    copied <- get("read", envir = external, inherits = FALSE)
+    rm(prior)
+    copied()
+  })(1))
+  expect_transfer_dependencies(known_closure_transfer_data(), list(removed))
+  expressions <- c(list(without_removal(removed)), alist(
     (function(prior) {
       read <- function() 7
       copied <- force(read)
@@ -412,7 +413,7 @@ test_that("external get targets and independent closures stay legal", {
       rm(prior)
       copied()
     })(1)
-  )
+  ))
   for (kind in c("parent", "total")) {
     share <- rlang::call2(paste0("share_of_", kind), quote(value))
     for (expr in expressions) {
@@ -678,7 +679,10 @@ test_that("caller namespace converters follow ordinary lookup at execution", {
     expect_transfer_dependencies(known_closure_transfer_data(), list(read))
     expect_identical(probe$calls, 0L)
     caller[["::"]] <- function(package, name) function(x) function() 7
-    expect_converter_values(known_closure_transfer_data(), list(read), 7)
+    expect_transfer_dependencies(known_closure_transfer_data(), list(read))
+    expect_converter_values(
+      known_closure_transfer_data(), list(without_removal(read)), 7
+    )
   }
 })
 
@@ -691,7 +695,11 @@ test_that("base closure conversion preserves caller generic methods", {
       function() 7
     }
     read <- rlang::new_quosure(known_converter_transfers()[[1L]], caller)
-    expect_converter_values(known_closure_transfer_data(), list(read), 7)
+    expect_transfer_dependencies(known_closure_transfer_data(), list(read))
+    expect_identical(probe$calls, 0L)
+    expect_converter_values(
+      known_closure_transfer_data(), list(without_removal(read)), 7
+    )
     expect_identical(probe$calls, 12L)
   }
 })
@@ -716,10 +724,12 @@ test_that("base closure converters follow ordinary function lookup", {
     expect_transfer_dependencies(data, list(read))
     expect_identical(probe$calls, 0L)
     caller[[converter]] <- function(x) function() 7
-    expect_converter_values(data, list(read), 7)
+    expect_transfer_dependencies(data, list(read))
+    expect_converter_values(data, list(without_removal(read)), 7)
 
     caller[[converter]] <- 0L
     expect_transfer_dependencies(data, list(read))
+    expect_converter_values(data, list(without_removal(read)), 11)
   }
 })
 
@@ -736,7 +746,7 @@ test_that("as.function honors a class assigned to a local closure", {
     attr(read, "class") <- "margin_share_closure",
     attributes(read) <- list(class = "margin_share_closure")
   )
-  for (write in writes) {
+  reads <- lapply(writes, function(write) {
     read <- rlang::expr((function(prior) {
       read <- function() sum(prior)
       !!write
@@ -744,9 +754,13 @@ test_that("as.function honors a class assigned to a local closure", {
       rm(prior)
       copied()
     })(11))
-    read <- rlang::new_quosure(read, caller)
-    expect_converter_values(known_closure_transfer_data(), list(read), 7)
-  }
+    rlang::new_quosure(read, caller)
+  })
+  expect_transfer_dependencies(known_closure_transfer_data(), reads)
+  expect_identical(probe$calls, 0L)
+  expect_converter_values(
+    known_closure_transfer_data(), lapply(reads, without_removal), 7
+  )
   expect_identical(probe$calls, 48L)
 })
 
@@ -857,7 +871,8 @@ expect_attribute_controls <- function(data) {
       rm(prior)
       copied()
     })(11))
-    expect_converter_values(data, list(expr), 7)
+    expect_transfer_dependencies(data, list(expr))
+    expect_converter_values(data, list(without_removal(expr)), 7)
   }
 }
 
@@ -894,16 +909,21 @@ custom_attribute_closures <- function() {
 }
 
 test_that("caller attribute setters can return an independent closure", {
+  expect_transfer_dependencies(
+    known_closure_transfer_data(), custom_attribute_closures()
+  )
   expect_converter_values(
-    known_closure_transfer_data(), custom_attribute_closures(), 7
+    known_closure_transfer_data(),
+    lapply(custom_attribute_closures(), without_removal), 7
   )
 })
 
 test_that("dtplyr executes independent attribute-setter closures lazily", {
   skip_if_suggest_absent("dtplyr")
+  input <- dtplyr::lazy_dt(known_closure_transfer_data(), immutable = TRUE)
+  expect_transfer_dependencies(input, custom_attribute_closures())
   expect_converter_values(
-    dtplyr::lazy_dt(known_closure_transfer_data(), immutable = TRUE),
-    custom_attribute_closures(), 7
+    input, lapply(custom_attribute_closures(), without_removal), 7
   )
 })
 
@@ -976,9 +996,20 @@ test_that("attribute setter planning invokes neither setter nor closure", {
   })(11))
   for (kind in c("parent", "total")) {
     helper <- rlang::call2(paste0("share_of_", kind), quote(value))
+    expect_error(
+      summarize_with_margins(
+        input, prior = sum(.data$x), value = !!expr, ratio = !!helper,
+        .grouping = rollup("group")
+      ),
+      "depends on earlier summary alias `prior`",
+      class = "marginplyr_error"
+    )
+    expect_identical(probe$setters, 0L)
+    expect_identical(probe$closures, 0L)
+    expect_identical(probe$reads, 0L)
     result <- summarize_with_margins(
-      input, prior = sum(.data$x), value = !!expr, ratio = !!helper,
-      .grouping = rollup("group")
+      input, prior = sum(.data$x), value = !!without_removal(expr),
+      ratio = !!helper, .grouping = rollup("group")
     )
     expect_s3_class(result, "dtplyr_step")
     expect_identical(probe$setters, 0L)
@@ -1054,7 +1085,12 @@ test_that("mixed dispatch preserves independent conversion outcomes", {
   reads <- lapply(c(FALSE, TRUE), function(invoke) {
     mixed_converter_read(FALSE, invoke, probe)
   })
-  expect_converter_values(known_closure_transfer_data(), reads, 7)
+  expect_transfer_dependencies(known_closure_transfer_data(), reads)
+  expect_identical(probe$methods, 0L)
+  expect_identical(probe$closures, 0L)
+  expect_converter_values(
+    known_closure_transfer_data(), lapply(reads, without_removal), 7
+  )
   expect_gt(probe$methods, 0L)
   expect_gt(probe$closures, 0L)
 })
@@ -1068,9 +1104,12 @@ test_that("dtplyr mixed independent dispatch waits for explicit collection", {
   reads <- lapply(c(FALSE, TRUE), function(invoke) {
     mixed_converter_read(FALSE, invoke, probe)
   })
+  expect_transfer_dependencies(input, reads)
+  expect_identical(probe$methods, 0L)
+  expect_identical(probe$closures, 0L)
   for (kind in c("parent", "total")) {
     helper <- rlang::call2(paste0("share_of_", kind), quote(value))
-    for (read in reads) {
+    for (read in lapply(reads, without_removal)) {
       forward <- summarize_with_margins(
         input, value = sum(.data$x), prior = !!helper, observed = !!read,
         .grouping = rollup("group")
@@ -1140,20 +1179,27 @@ test_that("dtplyr Vectorize alternatives retain dependencies without reads", {
   expect_identical(serialize(data, NULL), before)
 })
 
-test_that("Vectorize leaves nonzero-formal alternative bodies opaque", {
+test_that("Vectorize nonzero-formal alternatives refuse only after a removal", {
   probe <- rlang::env(closures = 0L)
   read <- partial_vectorize_read(FALSE, probe)
-  expect_converter_values(known_closure_transfer_data(), list(read), 7)
+  expect_transfer_dependencies(known_closure_transfer_data(), list(read))
+  expect_identical(probe$closures, 0L)
+  expect_converter_values(
+    known_closure_transfer_data(), list(without_removal(read)), 7
+  )
   expect_gt(probe$closures, 0L)
 })
 
-test_that("dtplyr independent Vectorize alternatives remain lazy and legal", {
+test_that("dtplyr retained Vectorize alternatives remain lazy and legal", {
   skip_if_suggest_absent("dtplyr")
   data <- data.table::as.data.table(known_closure_transfer_data())
   before <- serialize(data, NULL)
   input <- dtplyr::lazy_dt(data, immutable = TRUE)
   probe <- rlang::env(closures = 0L)
   read <- partial_vectorize_read(FALSE, probe)
+  expect_transfer_dependencies(input, list(read))
+  expect_identical(probe$closures, 0L)
+  read <- without_removal(read)
   for (kind in c("parent", "total")) {
     helper <- rlang::call2(paste0("share_of_", kind), quote(value))
     forward <- summarize_with_margins(
@@ -1197,7 +1243,11 @@ test_that("base unname preserves caller attribute dispatch", {
     copied()
   })(11))
   read <- rlang::quo_set_env(read, caller)
-  expect_converter_values(known_closure_transfer_data(), list(read), 7)
+  expect_transfer_dependencies(known_closure_transfer_data(), list(read))
+  expect_identical(probe$calls, 0L)
+  expect_converter_values(
+    known_closure_transfer_data(), list(without_removal(read)), 7
+  )
   expect_identical(probe$calls, 12L)
 })
 
@@ -1295,23 +1345,19 @@ test_that("additional base return calls respect caller replacements", {
       copied()
     })(11))
     read <- rlang::new_quosure(read, caller)
-    if (callee %in% c("eval", "get0")) {
-      # The replacement receives a quoted name or a string, never the closure.
-      expect_converter_values(known_closure_transfer_data(), list(read), 7)
-      expect_identical(probe$calls, 12L)
-    } else {
-      expect_transfer_dependencies(known_closure_transfer_data(), list(read))
-      expect_identical(probe$calls, 0L)
+    retained <- without_removal(read)
+    expect_transfer_dependencies(known_closure_transfer_data(), list(read))
+    expect_identical(probe$calls, 0L)
+    expect_converter_values(known_closure_transfer_data(), list(retained), 7)
+    expect_identical(probe$calls, 12L)
+    if (!callee %in% c("eval", "get0")) {
       caller[[callee]] <- fresh
-      if (identical(callee, "withVisible")) {
-        # A list() body may call a rebound `list` (#1670).
-        expect_transfer_dependencies(known_closure_transfer_data(), list(read))
-      } else {
-        expect_converter_values(known_closure_transfer_data(), list(read), 7)
-      }
+      expect_transfer_dependencies(known_closure_transfer_data(), list(read))
+      expect_converter_values(known_closure_transfer_data(), list(retained), 7)
     }
     caller[[callee]] <- 0L
     expect_transfer_dependencies(known_closure_transfer_data(), list(read))
+    expect_converter_values(known_closure_transfer_data(), list(retained), 11)
   }
 })
 
@@ -1336,28 +1382,24 @@ test_that("additional qualified returns respect caller namespace operators", {
       copied()
     })(11))
     read <- rlang::new_quosure(read, caller)
-    if (identical(callee, "get0")) {
-      # The replacement receives a string, never the closure.
-      expect_converter_values(known_closure_transfer_data(), list(read), 7)
-      expect_identical(probe$calls, 12L)
-    } else {
-      expect_transfer_dependencies(known_closure_transfer_data(), list(read))
-      expect_identical(probe$calls, 0L)
+    retained <- without_removal(read)
+    expect_transfer_dependencies(known_closure_transfer_data(), list(read))
+    expect_identical(probe$calls, 0L)
+    expect_converter_values(known_closure_transfer_data(), list(retained), 7)
+    expect_identical(probe$calls, 12L)
+    if (!identical(callee, "get0")) {
       fresh <- if (identical(callee, "withVisible")) {
         quote(function(...) list(value = function() 7))
       } else {
         quote(function(...) function() 7)
       }
       caller[["::"]] <- rlang::new_function(alist(package = , name = ), fresh)
-      if (identical(callee, "withVisible")) {
-        # A list() body may call a rebound `list` (#1670).
-        expect_transfer_dependencies(known_closure_transfer_data(), list(read))
-      } else {
-        expect_converter_values(known_closure_transfer_data(), list(read), 7)
-      }
+      expect_transfer_dependencies(known_closure_transfer_data(), list(read))
+      expect_converter_values(known_closure_transfer_data(), list(retained), 7)
     }
     caller[["::"]] <- 0L
     expect_transfer_dependencies(known_closure_transfer_data(), list(read))
+    expect_converter_values(known_closure_transfer_data(), list(retained), 11)
   }
 })
 
@@ -1501,7 +1543,7 @@ unresolved_closure_transfers <- function(retain = FALSE) {
     })(11)
   )
   if (retain) {
-    forms <- lapply(forms, remove_rm_statements)
+    forms <- lapply(forms, without_removal)
   }
   caller <- rlang::env(
     rlang::global_env(), ident = function(x) x,
@@ -1511,19 +1553,6 @@ unresolved_closure_transfers <- function(retain = FALSE) {
     }
   )
   lapply(forms, rlang::new_quosure, env = caller)
-}
-
-# The same form with its `rm(prior)` statement dropped, so the closure reads
-# the formal rather than the mask.
-remove_rm_statements <- function(expr) {
-  if (!is.call(expr)) return(expr)
-  if (identical(expr[[1L]], quote(`{`))) {
-    keep <- !vapply(as.list(expr)[-1L], function(statement) {
-      rlang::is_call(statement, "rm")
-    }, logical(1))
-    expr <- as.call(c(list(expr[[1L]]), as.list(expr)[-1L][keep]))
-  }
-  as.call(lapply(as.list(expr), remove_rm_statements))
 }
 
 test_that("an unresolved closure invocation after a removal refuses", {
@@ -1608,9 +1637,9 @@ test_that("a caller function returning its argument indirectly refuses", {
       f()
     })(11)
   )
-  expect_converter_values(
-    data, lapply(fresh, rlang::new_quosure, env = caller), 7
-  )
+  fresh <- lapply(fresh, rlang::new_quosure, env = caller)
+  expect_transfer_dependencies(data, fresh)
+  expect_converter_values(data, lapply(fresh, without_removal), 7)
 })
 
 test_that("caller calls R refuses or defaults stay with their caller", {
@@ -1638,7 +1667,8 @@ test_that("caller calls R refuses or defaults stay with their caller", {
     data, lapply(omitted, rlang::new_quosure, env = caller), 7
   )
   # R refuses to call a caller value that is not a function, so the call
-  # carries no closure and the share keeps the ordinary condition.
+  # carries no closure and the share keeps the ordinary condition unless the
+  # form removes the formal its literal captured.
   applied <- rlang::new_quosure(quote((function(prior) {
     f <- function() sum(prior)
     # `held` is bound in the quosure environment.
@@ -1646,12 +1676,14 @@ test_that("caller calls R refuses or defaults stay with their caller", {
     rm(prior)
     g()
   })(11)), caller)
+  expect_transfer_dependencies(data, list(applied))
+  retained <- without_removal(applied)
   ordinary <- expect_error(summarize_with_margins(
-    data, prior = sum(.data$x), value = !!applied, .grouping = rollup("group")
+    data, prior = sum(.data$x), value = !!retained, .grouping = rollup("group")
   ))
   for (helper in rlang::syms(c("share_of_parent", "share_of_total"))) {
     actual <- expect_error(summarize_with_margins(
-      data, prior = sum(.data$x), value = !!applied,
+      data, prior = sum(.data$x), value = !!retained,
       ratio = (!!helper)(value), .grouping = rollup("group")
     ))
     expect_identical(class(actual), class(ordinary))
@@ -1691,7 +1723,7 @@ carried_closure_transfers <- function(retain = FALSE) {
     })(11)
   )
   if (retain) {
-    forms <- lapply(forms, remove_rm_statements)
+    forms <- lapply(forms, without_removal)
   }
   caller <- rlang::env(
     rlang::global_env(), key = function() "f",
@@ -1835,7 +1867,8 @@ test_that("a returned closure reaching its argument indirectly refuses", {
       h[[1L]]()
     })(11)
   )
-  expect_converter_values(data, fresh, 7)
+  expect_transfer_dependencies(data, fresh)
+  expect_converter_values(data, lapply(fresh, without_removal), 7)
 })
 
 # Only a definition whose body is one expression -- a function literal naming
@@ -2006,9 +2039,9 @@ test_that("a caller function returns a fresh value only as one literal", {
     rm(prior)
     h()
   })(11))
-  expect_converter_values(
-    data, list(rlang::new_quosure(literal, fresh)), 7
-  )
+  literal <- rlang::new_quosure(literal, fresh)
+  expect_transfer_dependencies(data, list(literal))
+  expect_converter_values(data, list(without_removal(literal)), 7)
   # A caller `::` is read only when its whole body is exactly the function
   # literal, which calls nothing but `function` before returning it.
   # The call is built so that no undeclared package name is spelled in source.
@@ -2038,9 +2071,9 @@ test_that("a caller function returns a fresh value only as one literal", {
   expect_transfer_dependencies(data, list(rlang::new_quosure(
     qualified, rlang::env(`::` = operators$braced)
   )))
-  expect_converter_values(data, list(rlang::new_quosure(
-    qualified, rlang::env(`::` = operators$literal)
-  )), 7)
+  literal <- rlang::new_quosure(qualified, rlang::env(`::` = operators$literal))
+  expect_transfer_dependencies(data, list(literal))
+  expect_converter_values(data, list(without_removal(literal)), 7)
 })
 
 test_that("a `function` formal or a reference body is not fresh", {

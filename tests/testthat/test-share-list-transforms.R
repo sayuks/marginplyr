@@ -130,11 +130,10 @@ test_that("static list subsets preserve retained closure dependencies", {
     })(1), list(SUBSET = subset))
   })
   data <- plain_list_transform_data()
-  expect_share_dependencies(data, reads[1:4])
-  expect_share_dependency_values(data, reads[5:7], expected = 7)
+  expect_share_dependencies(data, reads)
 })
 
-test_that("logical and negative member indices select the same closure as R", {
+test_that("logical and negative member indices do not exempt a removal", {
   indices <- alist(TRUE, -2L, 1L, -1L)
   reads <- lapply(indices, function(index) {
     substitute((function(prior) {
@@ -144,11 +143,10 @@ test_that("logical and negative member indices select the same closure as R", {
     })(1), list(INDEX = index))
   })
   data <- plain_list_transform_data()
-  expect_share_dependencies(data, reads[1:3])
-  expect_share_dependency_values(data, reads[4L], expected = 7)
+  expect_share_dependencies(data, reads)
 })
 
-test_that("list selector code runs only when summaries evaluate", {
+test_that("list selector planning runs no caller code", {
   probe <- rlang::env(calls = 0L)
   choose <- function() {
     probe$calls <- probe$calls + 1L
@@ -172,8 +170,8 @@ test_that("list selector code runs only when summaries evaluate", {
     })(1), list(SUBSET = subset))
     rlang::new_quosure(read, caller)
   })
-  expect_share_dependency_values(plain_list_transform_data(), reads, 7)
-  expect_identical(probe$calls, 48L)
+  expect_share_dependencies(plain_list_transform_data(), reads)
+  expect_identical(probe$calls, 0L)
 })
 
 list_accessor_read <- function(accessor, body = quote(sum(prior)),
@@ -199,9 +197,9 @@ test_that("literal getElement selects the same closure as exact brackets", {
   expect_share_dependency_values(data, lapply(
     dependent, list_accessor_read, remove = quote(NULL)
   ), 11)
-  expect_share_dependency_values(data, lapply(alist(
+  expect_share_dependencies(data, lapply(alist(
     callbacks[["safe"]], getElement(callbacks, "safe")
-  ), list_accessor_read), 7)
+  ), list_accessor_read))
 })
 
 test_that("literal .subset2 selects the same closure as exact brackets", {
@@ -216,9 +214,9 @@ test_that("literal .subset2 selects the same closure as exact brackets", {
   expect_share_dependency_values(data, lapply(
     dependent, list_accessor_read, remove = quote(NULL)
   ), 11)
-  expect_share_dependency_values(data, lapply(alist(
+  expect_share_dependencies(data, lapply(alist(
     callbacks[[2L]], .subset2(callbacks, 2L)
-  ), list_accessor_read), 7)
+  ), list_accessor_read))
 })
 
 test_that("plain list accessors preserve ordinary function lookup", {
@@ -228,9 +226,11 @@ test_that("plain list accessors preserve ordinary function lookup", {
     caller[[name]] <- function(...) function() 7
     bare <- rlang::call2(name, quote(callbacks), "dependent")
     qualified <- rlang::call2(name, quote(callbacks), "dependent", .ns = "base")
-    read <- rlang::new_quosure(list_accessor_read(bare), caller)
+    read <- list_accessor_read(bare, remove = quote(NULL))
+    read <- rlang::new_quosure(read, caller)
     expect_share_dependency_values(data, list(read), 7)
     reads <- list(
+      rlang::new_quosure(list_accessor_read(bare), caller),
       rlang::new_quosure(list_accessor_read(qualified), caller),
       list_accessor_read(bare, before = rlang::call2("<-", rlang::sym(name), 0))
     )
@@ -239,7 +239,8 @@ test_that("plain list accessors preserve ordinary function lookup", {
     caller[[name]] <- 0L
     computed <- rlang::call2(rlang::call2("(", rlang::sym(name)),
                              quote(callbacks), "dependent")
-    read <- rlang::new_quosure(list_accessor_read(computed), caller)
+    read <- list_accessor_read(computed, remove = quote(NULL))
+    read <- rlang::new_quosure(read, caller)
     expect_error(
       summarize_with_margins(
         data, value = sum(.data$x), prior = share_of_total(value),
@@ -247,6 +248,8 @@ test_that("plain list accessors preserve ordinary function lookup", {
       ),
       "attempt to apply non-function"
     )
+    read <- rlang::new_quosure(list_accessor_read(computed), caller)
+    expect_share_dependencies(data, list(read))
   }
 })
 

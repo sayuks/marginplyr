@@ -393,14 +393,14 @@ test_that("forced list formals preserve member identity after caller removal", {
   expect_carrier_dependencies(data, list(read))
 })
 
-test_that("inline list calls retain independent and local bindings", {
+test_that("inline list calls retain local bindings and removed captures", {
   data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(100, 300))
+  expect_share_dependencies(data, alist((function(prior) {
+    carrier <- list(read = function() sum(prior), safe = function() 1)
+    rm(prior)
+    (function(value) value$safe())(carrier)
+  })(1)))
   reads <- alist(
-    (function(prior) {
-      carrier <- list(read = function() sum(prior), safe = function() 1)
-      rm(prior)
-      (function(value) value$safe())(carrier)
-    })(1),
     (function(prior) {
       carrier <- list(read = function() sum(prior))
       (function(value) value$read())(carrier)
@@ -509,28 +509,36 @@ test_that("list factories respect lexical lookup and promise timing", {
       carrier <- (function(...) list(...))(read = callback)
       rm(prior)
       carrier$read()
-    })(11),
-    (function(prior) {
-      callback <- function() sum(prior)
-      list <- function(...) base::list(read = function() 11)
-      carrier <- (function(...) list(...))(read = callback)
-      rm(prior)
-      carrier$read()
-    })(11),
-    (function() {
-      callback <- function() 11
-      (function(prior) {
-        callback <- function() sum(prior)
-        carrier <- (function(value, unused) {
-          rm("callback", envir = parent.frame())
-          list(read = value)
-        })(callback, stop("unused argument forced"))
-        rm(prior)
-        carrier$read()
-      })(11)
-    })()
+    })(11)
   )
   expect_share_dependency_values(data, reads, expected = 11)
+  factory_reads <- function(remove, argument) {
+    rlang::exprs(
+      (function(prior) {
+        callback <- function() sum(prior)
+        list <- function(...) base::list(read = function() 11)
+        carrier <- (function(...) list(...))(read = callback)
+        !!remove
+        carrier$read()
+      })(!!argument),
+      (function() {
+        callback <- function() 11
+        (function(prior) {
+          callback <- function() sum(prior)
+          carrier <- (function(value, unused) {
+            rm("callback", envir = parent.frame())
+            list(read = value)
+          })(callback, stop("unused argument forced"))
+          !!remove
+          carrier$read()
+        })(!!argument)
+      })()
+    )
+  }
+  expect_share_dependencies(data, factory_reads(quote(rm(prior)), 11))
+  expect_share_dependency_values(
+    data, factory_reads(NULL, 1), expected = 11
+  )
 })
 
 test_that("closure argument analysis leaves caller promises unforced", {

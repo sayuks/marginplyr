@@ -263,7 +263,7 @@ test_that("fresh environment field writes keep the installed closure's scope", {
   expect_identical(probe$calls, 0L)
 })
 
-test_that("fresh environment fields honor exact reads and independent writes", {
+test_that("fresh environment fields honor exact reads and removed captures", {
   data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
   expect_share_dependency_values(data, alist(
     (function(prior) {
@@ -283,7 +283,7 @@ test_that("fresh environment fields honor exact reads and independent writes", {
     rm(prior)
     carrier[["read"]]()
   })(11)))
-  reads <- alist(
+  removed <- alist(
     (function(prior) {
       carrier <- list2env(list(read = function() sum(prior)))
       carrier$read <- function() 7
@@ -320,7 +320,10 @@ test_that("fresh environment fields honor exact reads and independent writes", {
       carrier[[key]] <- function() 7
       rm(prior)
       carrier$read()
-    })(11),
+    })(11)
+  )
+  expect_share_dependencies(data, removed)
+  reads <- alist(
     (function() {
       entries <- list(read = function() 7)
       carrier <- base::list2env(entries)
@@ -349,59 +352,67 @@ test_that("fresh environment proofs preserve caller constructor lookup", {
     },
     `$<-.fresh_environment_control` = function(x, name, value) x
   )
-  # A caller constructor whose body calls list() may return the closure it
-  # was given, so reading it after a removal refuses (#1666, #1670).
-  expect_share_dependencies(data, list(rlang::as_quosure(quote(
-    (function(prior) {
-      carrier <- list2env(list(read = function() sum(prior)))
-      rm(prior)
-      carrier$read()
-    })(11)
-  ), env = scope)))
-  reads <- alist(
-    (function(prior) {
-      carrier <- new.env()
-      carrier$read <- function() sum(prior)
-      rm(prior)
-      carrier$read()
-    })(11),
-    (function(prior) {
-      carrier <- base::list2env(list(read = function() sum(prior)),
-                                envir = base::new.env())
-      carrier$read <- function() 7
-      rm(prior)
-      carrier$read()
-    })(11),
-    (function(prior) {
-      `$<-` <- function(x, name, value) base::`$<-`(x, "read", function() 7)
-      carrier <- base::new.env()
-      carrier$read <- function() sum(prior)
-      rm(prior)
-      carrier$read()
-    })(11)
+  reads <- function(remove) {
+    rlang::exprs(
+      # A caller constructor whose body calls list() may return the closure
+      # it was given, so reading it after a removal refuses (#1666, #1670).
+      (function(prior) {
+        carrier <- list2env(list(read = function() sum(prior)))
+        !!remove
+        carrier$read()
+      })(11),
+      (function(prior) {
+        carrier <- new.env()
+        carrier$read <- function() sum(prior)
+        !!remove
+        carrier$read()
+      })(11),
+      (function(prior) {
+        carrier <- base::list2env(list(read = function() sum(prior)),
+                                  envir = base::new.env())
+        carrier$read <- function() 7
+        !!remove
+        carrier$read()
+      })(11),
+      (function(prior) {
+        `$<-` <- function(x, name, value) base::`$<-`(x, "read", function() 7)
+        carrier <- base::new.env()
+        carrier$read <- function() sum(prior)
+        !!remove
+        carrier$read()
+      })(11)
+    )
+  }
+  expect_share_dependencies(
+    data, lapply(reads(quote(rm(prior))), rlang::as_quosure, env = scope)
   )
   expect_share_dependency_values(
-    data, lapply(reads, rlang::as_quosure, env = scope), 7
+    data, lapply(reads(NULL), rlang::as_quosure, env = scope), 7
   )
 })
 
 test_that("computed constructors preserve ordinary value lookup", {
   data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
   scope <- rlang::env(new.env = 0, list = 0)
-  reads <- alist(
-    tryCatch((function(prior) {
-      carrier <- (new.env)()
-      carrier$read <- function() sum(prior)
-      rm(prior)
-      carrier$read()
-    })(11), error = function(cnd) 7),
-    tryCatch((function(prior) {
-      carrier <- list2env((list)(read = function() sum(prior)))
-      rm(prior)
-      carrier$read()
-    })(11), error = function(cnd) 7)
+  reads <- function(remove) {
+    rlang::exprs(
+      tryCatch((function(prior) {
+        carrier <- (new.env)()
+        carrier$read <- function() sum(prior)
+        !!remove
+        carrier$read()
+      })(11), error = function(cnd) 7),
+      tryCatch((function(prior) {
+        carrier <- list2env((list)(read = function() sum(prior)))
+        !!remove
+        carrier$read()
+      })(11), error = function(cnd) 7)
+    )
+  }
+  expect_share_dependencies(
+    data, lapply(reads(quote(rm(prior))), rlang::as_quosure, env = scope)
   )
   expect_share_dependency_values(
-    data, lapply(reads, rlang::as_quosure, env = scope), 7
+    data, lapply(reads(NULL), rlang::as_quosure, env = scope), 7
   )
 })

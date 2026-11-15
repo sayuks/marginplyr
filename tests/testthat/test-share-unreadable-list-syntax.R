@@ -26,10 +26,10 @@ expect_share_evaluation_errors <- function(data, reads) {
   }
 }
 
-test_that("malformed member selectors hold no closure", {
+test_that("malformed selectors compute values and refuse removed captures", {
   # Each selector fails when R evaluates it; the handler supplies the closure
   # the summary calls.
-  expect_share_dependency_values(unreadable_list_data(), alist(
+  reads <- alist(
     (function(prior) {
       carrier <- list(read = function() sum(prior))
       held <- tryCatch(getElement(carrier, ), error = function(cnd) {
@@ -68,10 +68,14 @@ test_that("malformed member selectors hold no closure", {
       rm(prior)
       held()
     })(1)
-  ), 7)
+  )
+  expect_share_dependency_values(
+    unreadable_list_data(), lapply(reads, without_removal), 7
+  )
+  expect_share_dependencies(unreadable_list_data(), reads)
 })
 
-test_that("member selectors the walk cannot read leave the member opaque", {
+test_that("unreadable selectors compute values and refuse removed captures", {
   expect_share_dependency_values(unreadable_list_data(), alist(
     (function(prior) {
       carrier <- list(read = function() 7)
@@ -86,12 +90,6 @@ test_that("member selectors the walk cannot read leave the member opaque", {
       held()
     })(1),
     (function(prior) {
-      carrier <- list(read = function() sum(prior))
-      held <- carrier[[NA_character_]]
-      rm(prior)
-      if (is.null(held)) 7 else held()
-    })(1),
-    (function(prior) {
       carrier <- list(function() 8, function() 7)
       held <- carrier[[3 - 1]]
       rm(prior)
@@ -104,6 +102,14 @@ test_that("member selectors the walk cannot read leave the member opaque", {
       held()
     })(1)
   ), 7)
+  expect_share_dependencies(unreadable_list_data(), alist(
+    (function(prior) {
+      carrier <- list(read = function() sum(prior))
+      held <- carrier[[NA_character_]]
+      rm(prior)
+      if (is.null(held)) 7 else held()
+    })(1)
+  ))
 })
 
 test_that("a quoted dollar name selects the written member", {
@@ -274,7 +280,7 @@ test_that("list writes the walk cannot apply leave R to report them", {
   ))
 })
 
-test_that("list writes with unreadable keys or names leave members opaque", {
+test_that("unreadable list writes compute values and refuse removed captures", {
   key <- factor("read")
   expect_share_dependency_values(unreadable_list_data(), c(
     rlang::exprs((function(prior) {
@@ -285,12 +291,6 @@ test_that("list writes with unreadable keys or names leave members opaque", {
     })(1)),
     alist(
       (function(prior) {
-        carrier <- list(function() 7)
-        carrier[NA] <- list(function() sum(prior))
-        rm(prior)
-        carrier[[1L]]()
-      })(1),
-      (function(prior) {
         carrier <- list(read = function() 7)
         attributes(carrier) <- list(names = "other", names = "read")
         rm(prior)
@@ -298,10 +298,18 @@ test_that("list writes with unreadable keys or names leave members opaque", {
       })(1)
     )
   ), 7)
+  expect_share_dependencies(unreadable_list_data(), alist(
+    (function(prior) {
+      carrier <- list(function() 7)
+      carrier[NA] <- list(function() sum(prior))
+      rm(prior)
+      carrier[[1L]]()
+    })(1)
+  ))
 })
 
 test_that("list writes the walk applies keep the members they leave", {
-  expect_share_dependency_values(unreadable_list_data(), alist(
+  overwritten <- alist(
     (function(prior) {
       carrier <- list(function() sum(prior), function() 7)
       carrier[1] <- NULL
@@ -319,8 +327,11 @@ test_that("list writes the walk applies keep the members they leave", {
       rm(prior)
       carrier$nested$read()
     })(1, TRUE)
-  ), 7)
-  expect_share_dependencies(unreadable_list_data(), alist(
+  )
+  expect_share_dependency_values(
+    unreadable_list_data(), lapply(overwritten, without_removal), 7
+  )
+  expect_share_dependencies(unreadable_list_data(), c(overwritten, alist(
     (function(prior) {
       carrier <- list(function() sum(prior))
       carrier[1] <- list()
@@ -348,7 +359,7 @@ test_that("list writes the walk applies keep the members they leave", {
       rm(prior)
       carrier$nested$read()
     })(1, TRUE)
-  ))
+  )))
 })
 
 test_that("unproven local member setters may keep the carrier", {

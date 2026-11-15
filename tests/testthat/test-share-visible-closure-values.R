@@ -81,12 +81,6 @@ visible_closure_reads <- function() {
   )
 }
 
-visible_closure_retained <- function(expr) {
-  if (!rlang::is_call(expr)) return(expr)
-  if (rlang::is_call(expr, "rm")) return(quote(invisible(NULL)))
-  as.call(lapply(as.list(expr), visible_closure_retained))
-}
-
 expect_visible_closure_values <- function(data, reads, expected = c(1, 1, 1)) {
   for (kind in c("parent", "total")) {
     helper <- rlang::call2(paste0("share_of_", kind), quote(value))
@@ -115,8 +109,21 @@ expect_visible_closures <- function(data) {
   before <- serialize(data, NULL)
   expect_share_dependencies(data, visible_closure_reads())
   expect_visible_closure_values(
-    data, lapply(visible_closure_reads(), visible_closure_retained)
+    data, lapply(visible_closure_reads(), without_removal)
   )
+  expect_share_dependencies(data, alist(
+    (function(prior) {
+      copied <- switch("safe", read = function() sum(prior), function() 7)
+      rm(prior)
+      copied()
+    })(1),
+    (function(prior) {
+      copied <- switch("safe", read = function() sum(prior),
+                       safe = function() 7)
+      rm(prior)
+      copied()
+    })(1)
+  ))
   expect_visible_closure_values(data, alist(
     (function(prior) {
       copied <- (function() {
@@ -126,17 +133,6 @@ expect_visible_closures <- function(data) {
           function() sum(prior)
         })
       })()
-      rm(prior)
-      copied()
-    })(1),
-    (function(prior) {
-      copied <- switch("safe", read = function() sum(prior), function() 7)
-      rm(prior)
-      copied()
-    })(1),
-    (function(prior) {
-      copied <- switch("safe", read = function() sum(prior),
-                       safe = function() 7)
       rm(prior)
       copied()
     })(1),
@@ -231,8 +227,7 @@ test_that("selected blocks and branches retain closure list members", {
   }
   data <- visible_closure_data()
   expect_share_dependency_values(data, reads(remove = NULL), expected = 1)
-  expect_share_dependency_values(data, reads(key = 2L), expected = 7)
-  expect_share_dependencies(data, reads())
+  expect_share_dependencies(data, c(reads(), reads(key = 2L)))
 })
 
 test_that("closure list branch planning preserves ordinary switch lookup", {
@@ -261,7 +256,7 @@ test_that("closure list branch planning preserves ordinary switch lookup", {
   expect_identical(probe$calls, 0L)
 })
 
-test_that("an explicit return from a block bypasses the closure list binding", {
+test_that("a removal after a block's explicit return counts as a read", {
   read <- quote(length((function(prior) {
     functions <- {
       if (TRUE) return(list(function() sum(prior)))
@@ -270,9 +265,7 @@ test_that("an explicit return from a block bypasses the closure list binding", {
     rm(prior)
     functions[[1L]]()
   })(1)))
-  expect_share_dependency_values(
-    visible_closure_data(), list(read), expected = 1
-  )
+  expect_share_dependencies(visible_closure_data(), list(read))
 })
 
 remapped_closure_read <- function(carrier, invoke, remove = quote(rm(prior)),
@@ -293,9 +286,8 @@ test_that("reversing a plain list preserves the selected closure", {
   read <- function(key, remove = quote(rm(prior))) {
     remapped_closure_read(carrier, bquote(functions[[.(key)]]()), remove)
   }
-  expect_share_dependencies(data, list(read(1L)))
+  expect_share_dependencies(data, list(read(1L), read(2L)))
   expect_share_dependency_values(data, list(read(1L, NULL)), expected = 1)
-  expect_share_dependency_values(data, list(read(2L)), expected = 7)
 })
 
 test_that("plain list naming preserves the selected closure", {
@@ -314,8 +306,7 @@ test_that("plain list naming preserves the selected closure", {
     })
   }
   expect_share_dependency_values(data, reads(2L, remove = NULL), expected = 1)
-  expect_share_dependency_values(data, reads(3L), expected = 7)
-  expect_share_dependencies(data, reads(2L))
+  expect_share_dependencies(data, c(reads(2L), reads(3L)))
 })
 
 test_that("repeating, converting, and slicing a list preserves closures", {
@@ -334,36 +325,41 @@ test_that("repeating, converting, and slicing a list preserves closures", {
     })
   }
   expect_share_dependency_values(data, reads(2L, remove = NULL), expected = 1)
-  expect_share_dependency_values(data, reads(3L), expected = 7)
   independent <- reads(2L, callback = quote(function() 9))
   expect_share_dependency_values(data, independent, expected = 9)
-  expect_share_dependencies(data, reads(2L))
+  expect_share_dependencies(data, c(reads(2L), reads(3L)))
 })
 
 test_that("plain list remapping preserves caller lookup and S3 dispatch", {
   caller <- rlang::env()
   data <- visible_closure_data()
-  bare <- rlang::new_quosure(remapped_closure_read(
-    quote(rev(list(safe, callback))), quote(functions[[1L]]())
-  ), caller)
-  qualified <- rlang::new_quosure(remapped_closure_read(
-    quote(base::rev(list(safe, callback))), quote(functions[[1L]]())
-  ), caller)
+  read <- function(carrier, remove = quote(rm(prior))) {
+    rlang::new_quosure(
+      remapped_closure_read(carrier, quote(functions[[1L]]()), remove), caller
+    )
+  }
+  bare <- quote(rev(list(safe, callback)))
+  qualified <- quote(base::rev(list(safe, callback)))
+  classed <- quote(base::rev(structure(list(safe, callback),
+                                       class = "marginplyr_test_list")))
+  expect_share_dependency_values(data, list(read(bare, NULL)), expected = 1)
 
   caller$rev <- function(x) x
-  expect_share_dependency_values(data, list(bare), expected = 7)
-  expect_share_dependencies(data, list(qualified))
+  expect_share_dependencies(data, list(read(bare), read(qualified)))
+  expect_share_dependency_values(data, list(read(bare, NULL)), expected = 7)
+  expect_share_dependency_values(
+    data, list(read(qualified, NULL)), expected = 1
+  )
 
   caller$rev.list <- function(x) x
-  expect_share_dependency_values(data, list(qualified), expected = 7)
+  expect_share_dependencies(data, list(read(qualified)))
+  expect_share_dependency_values(
+    data, list(read(qualified, NULL)), expected = 7
+  )
 
   caller$rev.marginplyr_test_list <- function(x) x
-  classed <- rlang::new_quosure(remapped_closure_read(
-    quote(base::rev(structure(list(safe, callback),
-                              class = "marginplyr_test_list"))),
-    quote(functions[[1L]]())
-  ), caller)
-  expect_share_dependency_values(data, list(classed), expected = 7)
+  expect_share_dependencies(data, list(read(classed)))
+  expect_share_dependency_values(data, list(read(classed, NULL)), expected = 7)
 })
 
 test_that("planning a list remapping leaves its elements unevaluated", {
@@ -401,25 +397,28 @@ test_that("partial names on list remapping do not warn during planning", {
 })
 
 test_that("computed list transfer heads use caller value lookup", {
-  remapping <- rlang::new_quosure(quote(tryCatch(
-    (function(prior) {
-      callback <- function() sum(prior)
-      callbacks <- (rev)(list(function() 7, callback))
-      rm(prior)
-      callbacks[[1L]]()
-    })(1),
-    error = function(cnd) 7
-  )), rlang::env(rev = 0L))
-  branch <- rlang::new_quosure(quote(tryCatch(
-    (function(prior) {
-      callback <- function() sum(prior)
-      callbacks <- (switch)("read", read = list(callback))
-      rm(prior)
-      callbacks[[1L]]()
-    })(1),
-    error = function(cnd) 7
-  )), rlang::env(switch = 0L))
-  expect_share_dependency_values(
-    visible_closure_data(), list(remapping, branch), expected = 7
-  )
+  read <- function(carrier, caller, remove = quote(rm(prior))) {
+    rlang::new_quosure(substitute(tryCatch(
+      (function(prior) {
+        callback <- function() sum(prior)
+        callbacks <- CARRIER
+        REMOVE
+        callbacks[[1L]]()
+      })(1),
+      error = function(cnd) 7
+    ), list(CARRIER = carrier, REMOVE = remove)), caller)
+  }
+  remapping <- quote((rev)(list(function() 7, callback)))
+  branch <- quote((switch)("read", read = list(callback)))
+  values <- list(rev = rlang::env(rev = 0L), switch = rlang::env(switch = 0L))
+  data <- visible_closure_data()
+  expect_share_dependencies(data, list(
+    read(remapping, values$rev), read(branch, values$switch)
+  ))
+  expect_share_dependency_values(data, list(
+    read(remapping, values$rev, NULL), read(branch, values$switch, NULL)
+  ), expected = 7)
+  expect_share_dependency_values(data, list(
+    read(remapping, rlang::env(), NULL), read(branch, rlang::env(), NULL)
+  ), expected = 1)
 })

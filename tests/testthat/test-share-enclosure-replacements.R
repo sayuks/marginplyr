@@ -33,21 +33,22 @@ test_that("unchanged closure enclosures preserve independent values", {
   })(7)), 7)
 })
 
-test_that("independent replacement discards the obsolete captured frame", {
+test_that("replaced enclosures compute values and refuse removed captures", {
   data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
   outside <- list2env(list(prior = 11), parent = baseenv())
-  expect_share_dependency_values(data, list(rlang::quo((function(prior) {
+  reads <- list(rlang::quo((function(prior) {
     f <- function() sum(prior)
     environment(f) <- outside
     rm(prior)
     f()
-  })(7))), 11)
-  expect_share_dependency_values(data, alist((function(prior) {
+  })(7)), quote((function(prior) {
     f <- function() sum(prior)
     environment(f) <- list2env(list(prior = 11), parent = baseenv())
     rm(prior)
     f()
-  })(7)), 11)
+  })(7)))
+  expect_share_dependency_values(data, lapply(reads, without_removal), 11)
+  expect_share_dependencies(data, reads)
 })
 
 enclosure_control_reads <- function() {
@@ -67,12 +68,7 @@ enclosure_control_reads <- function() {
     f <- function() 7
     environment(f) <- environment()
     f()
-  }, (function(prior) {
-    f <- function() sum(prior)
-    unchanged <- f
-    environment(f) <- parent.env(environment())
-    unchanged()
-  })(7))
+  })
 }
 
 test_that("enclosure setters preserve ordinary lookup and direct refusals", {
@@ -91,6 +87,11 @@ test_that("enclosure setters preserve ordinary lookup and direct refusals", {
     f <- function() sum(prior)
     f <- base::`environment<-`(f, value = parent.env(environment()))
     f()
+  })(7), (function(prior) {
+    f <- function() sum(prior)
+    unchanged <- f
+    environment(f) <- parent.env(environment())
+    unchanged()
   })(7)))
 })
 
@@ -147,7 +148,8 @@ test_that("lazy enclosure controls retain independent and ordinary values", {
     f()
   })(7))
   for (kind in c("parent", "total")) {
-    for (read in c(enclosure_control_reads()[1:3], list(independent, fresh))) {
+    for (read in c(enclosure_control_reads()[1:3],
+                   lapply(list(independent, fresh), without_removal))) {
       expected <- if (rlang::is_quosure(read)) 11 else 7
       share <- rlang::call2(paste0("share_of_", kind), quote(value))
       forward <- summarize_with_margins(
@@ -166,6 +168,7 @@ test_that("lazy enclosure controls retain independent and ordinary values", {
       expect_equal(reverse$ratio, c(1, 1, 1))
     }
   }
+  expect_share_dependencies(lazy, list(independent, fresh))
   for (read in enclosure_mask_reads()) {
     ordinary <- summarize_with_margins(
       lazy, prior = sum(.data$x), observed = !!read, .grouping = rollup("g")

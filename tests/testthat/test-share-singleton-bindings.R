@@ -18,6 +18,14 @@ singleton_binding_reads <- function() {
       }
       rm(prior)
       h()
+    })(11),
+    (function(prior) {
+      h <- function() sum(prior)
+      for (i in 1L) {
+        h <- function() 7
+      }
+      rm(prior)
+      h()
     })(11)
   )
 }
@@ -40,7 +48,6 @@ singleton_binding_controls <- function() {
       for (i in 1L) {
         h <- function() 7
       }
-      rm(prior)
       h()
     })(11),
     (function(prior) {
@@ -92,7 +99,7 @@ test_that("data.table singleton bindings preserve dependencies and values", {
   expect_identical(serialize(data, NULL), before)
 })
 
-test_that("singleton bindings preserve loop exits and caller lookup", {
+test_that("skipped singleton bindings keep values and refuse removals", {
   for (exit in alist(break, next, eval(parse(text = "break")))) {
     read <- substitute((function(prior) {
       h <- function() 7
@@ -103,7 +110,10 @@ test_that("singleton bindings preserve loop exits and caller lookup", {
       rm(prior)
       h()
     })(11), list(EXIT = exit))
-    expect_share_dependency_values(singleton_binding_data(), list(read), 7)
+    expect_share_dependency_values(
+      singleton_binding_data(), list(without_removal(read)), 7
+    )
+    expect_share_dependencies(singleton_binding_data(), list(read))
   }
   read <- quote((function(prior) {
     `for` <- function(...) NULL
@@ -112,7 +122,10 @@ test_that("singleton bindings preserve loop exits and caller lookup", {
     rm(prior)
     h()
   })(11))
-  expect_share_dependency_values(singleton_binding_data(), list(read), 7)
+  expect_share_dependency_values(
+    singleton_binding_data(), list(without_removal(read)), 7
+  )
+  expect_share_dependencies(singleton_binding_data(), list(read))
 
   caller <- rlang::env(`(` = function(value) {
     if (identical(value, 1L)) NULL else value
@@ -123,9 +136,11 @@ test_that("singleton bindings preserve loop exits and caller lookup", {
     rm(prior)
     h()
   })(11))
+  read <- rlang::new_quosure(read, caller)
   expect_share_dependency_values(
-    singleton_binding_data(), list(rlang::new_quosure(read, caller)), 7
+    singleton_binding_data(), list(without_removal(read)), 7
   )
+  expect_share_dependencies(singleton_binding_data(), list(read))
 })
 
 test_that("singleton binding planning never invokes caller closures", {
