@@ -7809,7 +7809,8 @@ scope_setter_capture_reads <- function(target, value, scope, lookup) {
   }
   target <- unparenthesized_value(target)
   operator <- static_call_name(target)
-  if (is.null(operator) || !operator %in% c("environment", "parent.env") ||
+  if (is.null(operator) ||
+        !operator %in% c("environment", "parent.env", "fn_env") ||
         length(target) < 2L) {
     return(character())
   }
