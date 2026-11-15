@@ -246,19 +246,12 @@ test_that("SQLite composite Parents preserve collated and missing keys", {
   DBI::dbAppendTable(con, "input", data)
   source <- dplyr::tbl(con, "input")
   dimensions <- c("parent", "included", "child")
-  # `testthat::test_env()` clones the namespace, and against an installed
-  # package the clone holds its own unforced lazy-load promise for each
-  # function. The nested `grouping_set()` is captured rather than called, so
-  # its binding stays a promise, which marginplyr treats as caller code it
-  # must not force. A user's session reaches the attached export, whose
-  # promise is the namespace's own, so build the grouping there.
-  user_env <- new.env(parent = globalenv())
   for (duplicates in c("drop", "keep")) {
-    grouping <- eval(if (duplicates == "keep") {
-      quote(rollup(grouping_set(parent, included), child, child))
+    grouping <- if (duplicates == "keep") {
+      rollup(grouping_set(parent, included), child, child)
     } else {
-      quote(rollup(grouping_set(parent, included), child))
-    }, user_env)
+      rollup(grouping_set(parent, included), child)
+    }
     sets <- list(dimensions, c("parent", "included"), character())
     if (duplicates == "keep") sets <- c(sets[1L], sets)
     oracle <- collation_rollup_oracle(source, sets, fixed = "fixed")
