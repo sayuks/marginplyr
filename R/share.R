@@ -7873,9 +7873,9 @@ static_parent_frame_depth <- function(expr, scope, lookup) {
 # offset reaches, so the walk returns before stepping past its end.
 #
 # NULL is a frame the walk does not follow and that binds none of its names.
-# `NA` is a frame the walk cannot place, which may be any walked frame: the
-# first caller of code base `eval()` runs is `eval()`'s own frame, and which
-# frames lie past it depends on how base reached that `eval()` (ADR 0010).
+# `NA` is a frame the walk cannot place, which may be any walked frame. From an
+# evaluated frame, depth 1 is base `eval()`'s own frame and so NULL, and any
+# deeper depth is `NA` (ADR 0010).
 scope_caller_frame <- function(depth, scope) {
   index <- 1L
   while (depth > 0L) {

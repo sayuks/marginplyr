@@ -1,6 +1,5 @@
-# Code that `local()`, `eval()` or `evalq()` evaluates runs one base frame
-# away from its caller, so a caller depth or an evaluation environment counted
-# from there may not land on a frame the walk follows (ADR 0010).
+# Caller frames and evaluation environments of code that `local()`, `eval()`
+# or `evalq()` evaluates (ADR 0010).
 
 evaluation_frame_data <- function() {
   data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
