@@ -457,7 +457,8 @@ rlang_scope_mutations <- function() {
         parts, c("x", "value"), c("fun", "value")
       ))
     },
-    # `set_env()`'s default is its caller's frame.
+    # `set_env()`'s default is its caller's frame. It is read as
+    # `environment<-` whatever its first argument holds, as the base setter is.
     set_env = function(parts, bound, lookup) {
       rlang::call2("environment<-", !!!c(
         rlang_renamed_parts(parts, "env", "fun"),
