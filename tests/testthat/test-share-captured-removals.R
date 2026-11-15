@@ -407,7 +407,7 @@ test_that("a removal or setter held as a value is not followed (#1652)", {
 })
 
 test_that("a removal from the caller is followed through a stock functional", {
-  # The removal is attributed where the closure is invoked (ADR 0010).
+  # The removal is attributed where the closure is created (ADR 0010).
   expect_share_dependencies(captured_removal_data(), alist(
     (function(prior) {
       box <- lapply(list(function() rm("prior", envir = parent.frame())),
@@ -423,4 +423,70 @@ test_that("a removal from the caller is followed through a stock functional", {
       sum(prior)
     })(1)
   ), reverse_message = "depends on earlier summary alias `prior`")
+})
+
+test_that("a caller removal counts where its closure is created", {
+  # Extracted as a value, the closure is never seen invoked (ADR 0010). From
+  # its creation it may remove `prior` from any frame, so a later binding or a
+  # call by name from another frame does not keep the formal (#130).
+  expect_share_dependencies(captured_removal_data(), alist(
+    (function(prior) {
+      r <- function() rm("prior", envir = parent.frame())
+      h <- mget("r")[[1L]]
+      h()
+      sum(prior)
+    })(1),
+    (function(prior) {
+      r <- function() rm("prior", envir = parent.frame())
+      h <- environment()$r
+      h()
+      sum(prior)
+    })(1),
+    (function(prior) {
+      r <- function() eval(quote(rm("prior")), parent.frame())
+      h <- mget("r")[[1L]]
+      h()
+      sum(prior)
+    })(1),
+    (function(prior) {
+      r <- function() {
+        q <- function() rm("prior", envir = parent.frame(2L))
+        q()
+      }
+      h <- environment()$r
+      h()
+      sum(prior)
+    })(1),
+    (function() {
+      r <- function() rm("prior", envir = parent.frame())
+      prior <- 2
+      h <- mget("r")[[1L]]
+      h()
+      sum(prior)
+    })(),
+    (function(prior) {
+      remove_prior <- function() rm("prior", envir = parent.frame())
+      (function(prior) remove_prior())(2)
+      sum(prior)
+    })(1)
+  ), reverse_message = "depends on earlier summary alias `prior`")
+  data <- data.frame(g = c("a", "b"), x = c(10, 20))
+  expect_share_source_values(data, alist(
+    (function(p) {
+      r <- function() rm("p", envir = parent.frame())
+      sum(x)
+    })(1)
+  ), c(10, 20, 30))
+})
+
+test_that("a closure removing only from its own frame keeps the caller's", {
+  data <- data.frame(g = c("a", "b"), prior = c(1, 3), x = c(10, 20))
+  expect_share_source_values(data, alist(
+    (function(prior) {
+      r <- function() rm(list = ls())
+      h <- mget("r")[[1L]]
+      h()
+      sum(prior)
+    })(1)
+  ), c(1, 1, 1), prior = sum(x))
 })
