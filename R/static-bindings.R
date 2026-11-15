@@ -519,9 +519,9 @@ is_rlang_zap <- function(part, bound, lookup) {
   )
 }
 
-# Whether a call is or contains a zap per is_rlang_zap().
+# Whether a part is or contains a zap per is_rlang_zap().
 holds_rlang_zap <- function(part, bound, lookup) {
-  rlang::is_call(part) && (is_rlang_zap(part, bound, lookup) || any(vapply(
+  is_rlang_zap(part, bound, lookup) || (rlang::is_call(part) && any(vapply(
     as.list(part), holds_rlang_zap, logical(1), bound = bound, lookup = lookup
   )))
 }

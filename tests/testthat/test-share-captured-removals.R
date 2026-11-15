@@ -294,6 +294,14 @@ test_that("rlang removals and enclosure setters read as their base spellings", {
       rlang::env_bind(environment(), !!!list(prior = rlang::zap()))
       sum(prior)
     })(1)),
+    rlang::expr((function(prior) {
+      rlang::env_bind(environment(), !!!list(prior = rlang::zap()))
+      sum(prior)
+    })(1)),
+    rlang::expr((function(prior) {
+      rlang::env_poke(environment(), "prior", !!rlang::zap())
+      sum(prior)
+    })(1)),
     quote((function(prior) {
       rlang::env_bind(environment(), prior = if (TRUE) rlang::zap())
       sum(prior)
