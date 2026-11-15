@@ -7447,6 +7447,8 @@ scope_after_removals <- function(expr, scope, lookup) {
     scope <- apply_effects(parts[[index]], scope, lookup)
   }
   if (length(language) > 0L && length(scope) > 0L) {
+    # For any other callee, such as `rlang::eval_tidy()`, the current frame
+    # stands in.
     scope <- scope_after_evaluated_language(
       language, evaluation_frame(expr, scope, lookup) %||% 1L, scope, lookup,
       apply_effects
@@ -8305,28 +8307,36 @@ evaluated_language_symbols <- function(expr, scope, lookup) {
   ))
 }
 
-# The walked frame a known base `eval()` runs its language in: the current
-# one without `envir`, else the one `envir` names, or `NA` when that is no
-# walked frame. NULL when the call is not a known base `eval()`.
+# The walked frame a known base `eval()` or `rlang::eval_bare()` runs its
+# language in: the current one without its environment argument, else the one
+# that argument names, or `NA` when that is no walked frame. NULL for any other
+# call.
 evaluation_frame <- function(expr, scope, lookup) {
-  if (!identical(static_call_name(expr), "eval") ||
-        !is_known_base_frame_call(expr, "eval", scope, lookup)) {
+  name <- static_call_name(expr)
+  if (identical(name, "eval") &&
+        is_known_base_frame_call(expr, name, scope, lookup)) {
+    parts <- static_matched_arguments(expr, base::eval)
+    argument <- "envir"
+  } else if (identical(name, "eval_bare") &&
+               is_known_namespace_frame_call(expr, "rlang", scope, lookup)) {
+    parts <- static_matched_arguments(expr, rlang::eval_bare)
+    argument <- "env"
+  } else {
     return(NULL)
   }
-  parts <- static_matched_arguments(expr, base::eval)
   frame <- if (is.null(parts)) {
     NULL
-  } else if (!"envir" %in% names(parts)) {
+  } else if (!argument %in% names(parts)) {
     1L
   } else {
-    static_environment_frame(parts$envir, scope, lookup)
+    static_environment_frame(parts[[argument]], scope, lookup)
   }
   if (is.null(frame) || frame > length(scope)) NA_integer_ else frame
 }
 
-# The frames the language a base `eval()` runs reads from: its
-# evaluation_frame(), which becomes an evaluated frame, or else a fresh one
-# that binds nothing, so free names read the mask (ADR 0010).
+# The frames the language a base `eval()` or `rlang::eval_bare()` runs reads
+# from: its evaluation_frame(), which becomes an evaluated frame, or else a
+# fresh one that binds nothing, so free names read the mask (ADR 0010).
 evaluation_scope <- function(expr, scope, lookup) {
   frame <- evaluation_frame(expr, scope, lookup)
   if (is.null(frame)) {

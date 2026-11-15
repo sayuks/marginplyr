@@ -65,3 +65,33 @@ test_that("a removal evaluated in a caller frame removes from that frame", {
     })(1)
   ))
 })
+
+test_that("rlang::eval_bare() removes from the frame its env names", {
+  expect_share_dependencies(evaluation_frame_data(), alist(
+    (function(prior) {
+      (function() rlang::eval_bare(quote(rm("prior")), parent.frame()))()
+      sum(prior)
+    })(1),
+    (function(prior) {
+      e <- environment()
+      (function() rlang::eval_bare(quote(rm("prior")), e))()
+      sum(prior)
+    })(1)
+  ))
+  expect_share_dependency_values(evaluation_frame_data(), alist(
+    (function(prior) {
+      other <- 1
+      (function() rlang::eval_bare(quote(rm("other")), parent.frame()))()
+      sum(prior)
+    })(1)
+  ), 1)
+})
+
+test_that("rlang::eval_tidy() removes from the mask's child, not its env", {
+  expect_share_dependency_values(evaluation_frame_data(), alist(
+    (function(prior) {
+      (function() rlang::eval_tidy(quote(rm("prior")), env = parent.frame()))()
+      sum(prior)
+    })(1)
+  ), 1)
+})
