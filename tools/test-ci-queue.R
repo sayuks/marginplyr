@@ -54,7 +54,7 @@ expect(identical(close$on$pull_request_target$types, "closed"), "Close events co
 expect(identical(close$permissions, list(actions = "write", `pull-requests` = "read")),
   "Only the handler receives cancellation permission")
 expect(length(close$jobs$retire$steps) == 1L &&
-  identical(close$jobs$retire$steps[[1L]]$uses, "actions/github-script@v8"),
+  identical(close$jobs$retire$steps[[1L]]$uses, "actions/github-script@v9"),
   "The handler runs API-only default-branch code without checkout, artifacts or caches")
 workspace <- tempfile("ci-queue-")
 dir.create(workspace)
