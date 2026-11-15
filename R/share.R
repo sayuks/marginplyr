@@ -7446,14 +7446,11 @@ scope_after_removals <- function(expr, scope, lookup) {
   for (index in seq_along(parts)) {
     scope <- apply_effects(parts[[index]], scope, lookup)
   }
-  # The current frame stands in for the environment the language runs in.
   if (length(language) > 0L && length(scope) > 0L) {
-    evaluated <- scope[[1L]]$evaluated
-    scope[[1L]]$evaluated <- TRUE
-    for (index in seq_along(language)) {
-      scope <- apply_effects(language[[index]], scope, lookup)
-    }
-    scope[[1L]]$evaluated <- evaluated
+    scope <- scope_after_evaluated_language(
+      language, evaluation_frame(expr, scope, lookup) %||% 1L, scope, lookup,
+      apply_effects
+    )
   }
   if (!is.null(mutation) &&
         static_call_name(mutation) %in% c("rm", "remove")) {
@@ -8306,13 +8303,13 @@ evaluated_language_symbols <- function(expr, scope, lookup) {
   ))
 }
 
-# The frames the language a base `eval()` runs reads from: the walked frame
-# its `envir` names, which becomes an evaluated frame, or else a fresh one
-# that binds nothing, so free names read the mask (ADR 0010).
-evaluation_scope <- function(expr, scope, lookup) {
+# The walked frame a known base `eval()` runs its language in: the current
+# one without `envir`, else the one `envir` names, or `NA` when that is no
+# walked frame. NULL when the call is not a known base `eval()`.
+evaluation_frame <- function(expr, scope, lookup) {
   if (!identical(static_call_name(expr), "eval") ||
         !is_known_base_frame_call(expr, "eval", scope, lookup)) {
-    return(scope)
+    return(NULL)
   }
   parts <- static_matched_arguments(expr, base::eval)
   frame <- if (is.null(parts)) {
@@ -8322,12 +8319,44 @@ evaluation_scope <- function(expr, scope, lookup) {
   } else {
     static_environment_frame(parts$envir, scope, lookup)
   }
-  if (is.null(frame) || frame > length(scope)) {
+  if (is.null(frame) || frame > length(scope)) NA_integer_ else frame
+}
+
+# The frames the language a base `eval()` runs reads from: its
+# evaluation_frame(), which becomes an evaluated frame, or else a fresh one
+# that binds nothing, so free names read the mask (ADR 0010).
+evaluation_scope <- function(expr, scope, lookup) {
+  frame <- evaluation_frame(expr, scope, lookup)
+  if (is.null(frame)) {
+    return(scope)
+  }
+  if (is.na(frame)) {
     return(list(list(bound = character(), evaluated = TRUE)))
   }
   scope <- scope[seq.int(frame, length(scope))]
   scope[[1L]]$evaluated <- TRUE
   scope
+}
+
+# The scope after evaluated language runs as an evaluated frame at walked
+# frame `frame`, or at any one walked frame when `frame` is `NA` (ADR 0010).
+scope_after_evaluated_language <- function(language, frame, scope, lookup,
+                                           apply_effects) {
+  run <- function(index) {
+    inner <- scope[seq_len(index - 1L)]
+    outer <- scope[seq.int(index, length(scope))]
+    evaluated <- outer[[1L]]$evaluated
+    outer[[1L]]$evaluated <- TRUE
+    for (part in language) {
+      outer <- apply_effects(part, outer, lookup)
+    }
+    outer[[1L]]$evaluated <- evaluated
+    c(inner, outer)
+  }
+  if (!is.na(frame)) {
+    return(run(frame))
+  }
+  Reduce(scope_possible_losses, lapply(seq_along(scope), run), scope)
 }
 
 # A known base `evalq()` as the `eval()` of its quoted expression, which is

@@ -53,3 +53,16 @@ test_that("code evaluated in a walked frame reads that frame's bindings", {
     })(1)
   ), 1)
 })
+
+test_that("a removal evaluated in a caller frame removes from that frame", {
+  expect_share_dependencies(evaluation_frame_data(), alist(
+    (function(prior) {
+      (function() eval(quote(rm("prior")), parent.frame()))()
+      sum(prior)
+    })(1),
+    (function(prior) {
+      (function() evalq(rm("prior"), parent.frame()))()
+      sum(prior)
+    })(1)
+  ))
+})
