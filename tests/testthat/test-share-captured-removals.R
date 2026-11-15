@@ -108,7 +108,8 @@ test_that("an earlier summary's write leaves a captured removal refused", {
           rm(prior)
           h()
         })(1),
-        total = !!share, .grouping = rollup(g)
+        total = !!share,
+        .grouping = rollup("g")
       ),
       "depends on earlier summary alias `prior`", class = "marginplyr_error"
     )
@@ -346,7 +347,8 @@ expect_share_source_values <- function(data, sources, expected, ...) {
     share <- rlang::call2(paste0("share_of_", kind), quote(value))
     for (source in sources) {
       result <- summarize_with_margins(
-        data, ..., value = !!source, total = !!share, .grouping = rollup(g)
+        data, ..., value = !!source, total = !!share,
+        .grouping = rollup("g")
       )
       expect_equal(result$value, expected)
     }
