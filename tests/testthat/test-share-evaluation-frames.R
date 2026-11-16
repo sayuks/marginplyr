@@ -105,7 +105,7 @@ test_that("rlang::eval_tidy() removes from the mask's child, not its env", {
       sum(prior)
     })(1)
   )
-  # `rm()` warns that `prior` is absent from the mask's child it reaches.
+  # `rm()` warns that `prior` is absent from the child it reaches.
   suppressWarnings(
     expect_share_dependency_values(evaluation_frame_data(), reads, 1)
   )
