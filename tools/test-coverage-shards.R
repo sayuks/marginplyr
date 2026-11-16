@@ -76,11 +76,12 @@ verdict <- function(output) {
 }
 
 line_hits <- function(path) {
-  document <- xml2::read_xml(path)
-  lines <- xml2::xml_find_all(document, "//class/lines/line")
-  classes <- xml2::xml_attr(xml2::xml_parent(xml2::xml_parent(lines)), "filename")
-  sort(paste(classes, xml2::xml_attr(lines, "number"),
-    xml2::xml_attr(lines, "hits"), sep = ":"))
+  classes <- xml2::xml_find_all(xml2::read_xml(path), "//class")
+  sort(unlist(lapply(classes, function(class) {
+    lines <- xml2::xml_find_all(class, "./lines/line")
+    paste(xml2::xml_attr(class, "filename"), xml2::xml_attr(lines, "number"),
+      xml2::xml_attr(lines, "hits"), sep = ":")
+  })))
 }
 
 main <- function() {
@@ -109,6 +110,9 @@ main <- function() {
     paste("Merged verdict differs:", merged$output, "Unsharded:", whole$output))
   expect(identical(line_hits(file.path(workspace, "merged.xml")),
     line_hits(file.path(workspace, "whole.xml"))), "Merged line hits differ")
+  # alpha() runs in three test files, which fall in two shards.
+  expect(all(c("R/alpha.R:2:3", "R/gamma.R:5:0") %in%
+    line_hits(file.path(workspace, "merged.xml"))), "Merged hits are not summed")
 
   for (bad in c("0/3", "4/3", "1/0", "1/5", "2")) {
     refused <- in_root(root, c("--shard", bad, "--output",
