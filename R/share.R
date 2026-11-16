@@ -6553,16 +6553,21 @@ scope_closure_value_symbols <- function(closure, scope, lookup) {
       return(unresolved_lookup_name())
     }
     if (scope_closure_is_active(variant, scope)) return(character())
-    enclosure <- if (variant$enclosing <= length(scope)) {
-      seq.int(variant$enclosing, length(scope))
-    } else {
-      integer()
-    }
+    enclosure <- scope_variant_enclosure(variant, scope)
     definition_data_symbols(
       variant$definition, c(variant$frames, scope[enclosure]), lookup,
       closure_origin = 1L + length(variant$frames)
     )
   }), use.names = FALSE))
+}
+
+# The indices of the walked frames a closure variant encloses, from its
+# enclosing frame outward; none when that frame is past the walked stack.
+scope_variant_enclosure <- function(variant, scope) {
+  if (variant$enclosing > length(scope)) {
+    return(integer())
+  }
+  seq.int(variant$enclosing, length(scope))
 }
 
 # The closure a `body<-` or `formals<-` call returns, keeping the variants
@@ -6584,9 +6589,7 @@ scope_readable_replacement <- function(expr, scope, lookup) {
 scope_replacement_captures <- function(expr, scope, lookup) {
   closure <- scope_readable_replacement(expr, scope, lookup)
   for (variant in scope_closure_variants(closure)) {
-    live <- if (variant$enclosing <= length(scope)) {
-      seq.int(variant$enclosing, length(scope))
-    }
+    live <- scope_variant_enclosure(variant, scope)
     retained <- seq_along(variant$frames)
     inner <- scope_record_captures(
       variant$definition, c(variant$frames, scope[live]), lookup
