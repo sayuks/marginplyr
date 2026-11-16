@@ -7816,11 +7816,11 @@ scope_after_creation_removals <- function(expr, scope, lookup) {
   frame$unplaced_caller <- TRUE
   frame$definition <- expr
   # Creating the literal demands none of the promises around it.
-  around <- lapply(scope, function(frame) {
-    frame$defaults <- frame$arguments <- frame$dots <- NULL
-    frame$dot_closures <- NULL
-    frame$around_creation <- TRUE
-    frame
+  around <- lapply(scope, function(outer) {
+    outer$defaults <- outer$arguments <- outer$dots <- NULL
+    outer$dot_closures <- NULL
+    outer$around_creation <- TRUE
+    outer
   })
   after <- statement_reads_and_scope(
     expr[[3L]], c(list(frame), around), lookup, read_symbols = no_scope_reads
