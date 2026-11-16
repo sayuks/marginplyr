@@ -32,6 +32,19 @@ test_that("code evaluated in an unwalked or caller frame reads the mask", {
   ))
 })
 
+test_that("an evaluator R cannot match reads and removes as written", {
+  # R refuses each of these calls when it runs; planning refuses it first.
+  expect_share_dependencies(evaluation_frame_data(), alist(
+    (function(prior) eval(quote(sum(prior)), environment(), baseenv(), 1))(1),
+    (function(prior) rlang::eval_bare(quote(sum(prior)), environment(), 1))(1),
+    evalq(sum(prior), bogus = 1),
+    (function(prior) {
+      evalq(rm("prior"), bogus = 1)
+      sum(prior)
+    })(1)
+  ))
+})
+
 test_that("the first caller of an evaluated frame is base's own frame", {
   # `rm()` warns that `prior` is absent from the frame it reaches.
   suppressWarnings(expect_share_dependency_values(
@@ -159,25 +172,30 @@ test_that("rlang::inject() removes from the frame its env names", {
 test_that("rlang::inject() runs its operands in the calling frame", {
   # `expect_error()` would inject the operand while capturing; a quosure
   # injected into a direct call reaches the walk with it intact.
-  read <- rlang::new_quosure(quote((function() {
-    (function(prior) {
-      rlang::inject(c(!!rm("prior")), parent.frame())
-      sum(prior)
-    })(1)
-  })()))
-  for (kind in c("parent", "total")) {
-    share <- rlang::call2(paste0("share_of_", kind), quote(value))
-    reverse <- rlang::catch_cnd(summarize_with_margins(
-      evaluation_frame_data(), prior = sum(.data$x), value = !!read,
-      ratio = !!share, .grouping = rollup("g")
-    ), "marginplyr_error")
-    expect_match(conditionMessage(reverse), "depends on earlier summary alias")
-    share <- rlang::call2(paste0("share_of_", kind), quote(source))
-    forward <- rlang::catch_cnd(summarize_with_margins(
-      evaluation_frame_data(), source = sum(.data$x), prior = !!share,
-      observed = !!read, .grouping = rollup("g")
-    ), "marginplyr_error")
-    expect_match(conditionMessage(forward), "Ordinary summaries cannot use")
+  injected <- alist(c(!!rm("prior")), c(!!!rm("prior")), c({{ rm("prior") }}))
+  for (operand in injected) {
+    read <- rlang::new_quosure(substitute((function() {
+      (function(prior) {
+        rlang::inject(operand, parent.frame())
+        sum(prior)
+      })(1)
+    })(), list(operand = operand)))
+    for (kind in c("parent", "total")) {
+      share <- rlang::call2(paste0("share_of_", kind), quote(value))
+      reverse <- rlang::catch_cnd(summarize_with_margins(
+        evaluation_frame_data(), prior = sum(.data$x), value = !!read,
+        ratio = !!share, .grouping = rollup("g")
+      ), "marginplyr_error")
+      expect_match(
+        conditionMessage(reverse), "depends on earlier summary alias"
+      )
+      share <- rlang::call2(paste0("share_of_", kind), quote(source))
+      forward <- rlang::catch_cnd(summarize_with_margins(
+        evaluation_frame_data(), source = sum(.data$x), prior = !!share,
+        observed = !!read, .grouping = rollup("g")
+      ), "marginplyr_error")
+      expect_match(conditionMessage(forward), "Ordinary summaries cannot use")
+    }
   }
 })
 
