@@ -8523,17 +8523,18 @@ scope_after_evaluated_language <- function(language, frame, scope, lookup,
 evaluator_as_eval <- function(expr, name, scope, lookup) {
   evaluator <- switch(
     name %||% "",
-    evalq = list("base", base::evalq, "envir"),
-    with = list("base", base::with, "data"),
-    with_env = list("rlang", rlang::with_env, "env"),
-    inject = list("rlang", rlang::inject, "env")
+    evalq = list(package = "base", fun = base::evalq),
+    with = list(package = "base", fun = base::with, environment = "data"),
+    with_env = list(package = "rlang", fun = rlang::with_env,
+                    environment = "env"),
+    inject = list(package = "rlang", fun = rlang::inject, environment = "env")
   )
   if (is.null(evaluator) ||
-        !is_known_package_frame_call(expr, name, evaluator[[1L]], scope,
+        !is_known_package_frame_call(expr, name, evaluator$package, scope,
                                      lookup)) {
     return(NULL)
   }
-  parts <- static_matched_arguments(expr, evaluator[[2L]])
+  parts <- static_matched_arguments(expr, evaluator$fun)
   if (is.null(parts) || !"expr" %in% names(parts)) {
     return(NULL)
   }
@@ -8541,7 +8542,7 @@ evaluator_as_eval <- function(expr, name, scope, lookup) {
     parts$expr <- rlang::call2(quote(base::quote), parts$expr)
     return(rlang::call2(quote(base::eval), !!!parts))
   }
-  environment <- parts[[evaluator[[3L]]]]
+  environment <- parts[[evaluator$environment]]
   if (is.null(environment) ||
         is_known_data_constructor(environment, scope, lookup)) {
     return(NULL)
