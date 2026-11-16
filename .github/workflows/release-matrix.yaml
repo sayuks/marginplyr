@@ -515,10 +515,10 @@ jobs:
       # needs, and keeps what a failure means unambiguous.
       MARGINPLYR_CHECK_ARGS: --as-cran --ignore-vignettes
       MARGINPLYR_CHECK_LABEL: Live ${{ matrix.backend.name }}
-      # The serial suite outgrew `timeout-minutes` here. These jobs prove
-      # behavior rather than emulate CRAN, so they run it on the runner's four
-      # cores as `R-CMD-check.yaml` does; `depends-only` and `tarball` keep
-      # CRAN's serial run.
+      # Run serially, the suite does not fit `timeout-minutes`. For the reason
+      # given for `NOT_CRAN`, these jobs use the runner's four cores as
+      # `R-CMD-check.yaml` does; `depends-only` and `tarball` keep CRAN's
+      # serial run.
       TESTTHAT_PARALLEL: "true"
       TESTTHAT_CPUS: 4
 
