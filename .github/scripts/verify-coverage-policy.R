@@ -39,7 +39,12 @@ writeLines(c("coverage: {}", "'ignore':", "  - R/f.R"),
   file.path(fixture, "codecov.yml"))
 expect_rejected(coverage_verify_policy(fixture), "Codecov ignore")
 
-gate <- paste(deparse(body(coverage_check)), collapse = "\n")
+source_of <- function(...) {
+  paste(unlist(lapply(list(...), function(f) deparse(body(f)))), collapse = "\n")
+}
+# The unsharded check and each shard measure through coverage_measure(); the
+# unsharded check and the merge of the shards reach coverage_verdict().
+gate <- source_of(coverage_measure, coverage_verdict)
 required <- c("coverage_verify_policy(root)", "coverage_verify_runtime()",
   "required_test_suggests(root)", "covr::package_coverage(",
   "covr::tally_coverage(cov, by = \"line\")", "lines$value == 0L")
@@ -48,6 +53,17 @@ for (part in required) {
     stop("Coverage gate is missing: ", part, call. = FALSE)
   }
 }
+routes <- list(coverage_check = c("coverage_measure(", "coverage_verdict("),
+  coverage_check_shard = "coverage_measure(")
+for (route in names(routes)) {
+  for (part in routes[[route]]) {
+    if (!grepl(part, source_of(get(route)), fixed = TRUE)) {
+      stop("Coverage gate is missing from ", route, ": ", part, call. = FALSE)
+    }
+  }
+}
+gate <- source_of(coverage_check, coverage_measure, coverage_verdict,
+  coverage_check_shard, coverage_merge)
 forbidden <- c("line_exclusions", "function_exclusions", "exclusions =")
 for (part in forbidden) {
   if (grepl(part, gate, fixed = TRUE)) {
