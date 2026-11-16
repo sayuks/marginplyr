@@ -69,7 +69,7 @@ coverage_check <- function(cobertura = NULL, root = ".") {
 
 # Measures the package at `path` under the test environment the verdict
 # assumes; `root` is the checkout whose policy and Suggests are checked, and
-# differs from `path` only for a shard's pruned copy of it.
+# differs from `path` only for a shard's filtered copy of it.
 coverage_measure <- function(root = ".", path = root) {
   coverage_verify_policy(root)
   if (!requireNamespace("covr", quietly = TRUE)) {
@@ -241,7 +241,8 @@ coverage_merge <- function(directory, root = ".") {
   keys <- relative_keys(merged)
   for (leg in legs[-1L]) {
     leg_keys <- relative_keys(leg)
-    if (!setequal(keys, leg_keys) || anyDuplicated(leg_keys)) {
+    if (!setequal(keys, leg_keys) || anyDuplicated(keys) ||
+        anyDuplicated(leg_keys)) {
       stop("Coverage shards instrumented different source expressions.",
         call. = FALSE)
     }
