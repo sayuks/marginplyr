@@ -99,12 +99,16 @@ test_that("an attached eval_bare() removes from the frame its env names", {
 })
 
 test_that("rlang::eval_tidy() removes from the mask's child, not its env", {
-  expect_share_dependency_values(evaluation_frame_data(), alist(
+  reads <- alist(
     (function(prior) {
       (function() rlang::eval_tidy(quote(rm("prior")), env = parent.frame()))()
       sum(prior)
     })(1)
-  ), 1)
+  )
+  # `rm()` warns that `prior` is absent from the child it reaches.
+  suppressWarnings(
+    expect_share_dependency_values(evaluation_frame_data(), reads, 1)
+  )
 })
 
 test_that("with() and rlang::with_env() remove from the frame they name", {
