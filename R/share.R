@@ -6570,15 +6570,22 @@ scope_variant_enclosure <- function(variant, scope) {
   seq.int(variant$enclosing, length(scope))
 }
 
-# The closure a `body<-` or `formals<-` call returns, keeping the variants
-# whose written definition the walk can read. NULL when none is readable.
-scope_readable_replacement <- function(expr, scope, lookup) {
+# The closure a `body<-` or `formals<-` call returns, as
+# `scope_definition_replacement()` resolves it. `environment<-` writes no
+# definition, so it is left out.
+scope_written_replacement <- function(expr, scope, lookup) {
   operator <- static_call_name(expr)
   if (is.null(operator) || !operator %in% c("body<-", "formals<-")) {
     return(NULL)
   }
+  scope_definition_replacement(expr, scope, lookup)
+}
+
+# The closure a `body<-` or `formals<-` call returns, keeping the variants
+# whose written definition the walk can read. NULL when none is readable.
+scope_readable_replacement <- function(expr, scope, lookup) {
   scope_filter_closure(
-    scope_definition_replacement(expr, scope, lookup),
+    scope_written_replacement(expr, scope, lookup),
     function(variant) length(variant$unknown_definition_parts) == 0L
   )
 }
@@ -6602,11 +6609,11 @@ scope_replacement_captures <- function(expr, scope, lookup) {
   scope
 }
 
-# The reads a `body<-` or `formals<-` call makes by writing a definition the
-# walk can read, which it creates there as a literal is created (ADR 0010).
-# A variant it cannot read is left to the closure's invocation.
+# The reads a `body<-` or `formals<-` call makes by writing a definition,
+# which it creates there as a literal is created (ADR 0010). A variant whose
+# definition the walk cannot read may read any name.
 scope_replacement_symbols <- function(expr, scope, lookup) {
-  closure <- scope_readable_replacement(expr, scope, lookup)
+  closure <- scope_written_replacement(expr, scope, lookup)
   scope_closure_value_symbols(closure, scope, lookup)
 }
 
@@ -7684,9 +7691,8 @@ scope_possible_losses <- function(scope, after) {
 # The frames a visible removal call searches and the names it requests.
 # `removed` is NULL for unreadable names. `outside` marks a target that is not
 # a walked frame: an existing environment or a caller outside the walked
-# frames, for which `frames` is empty, an unresolved environment, which the
-# scope treats as the current frame, or a caller the walk cannot place
-# (`unplaced`), which may be any walked frame.
+# frames, for which `frames` is empty, or an environment the walk cannot place
+# on one walked frame (`unplaced`), which may be any of them (ADR 0010).
 scope_removal_targets <- function(expr, scope, lookup) {
   target <- base_call_argument(expr, c("envir", "pos"))
   index <- 1L
@@ -7698,14 +7704,16 @@ scope_removal_targets <- function(expr, scope, lookup) {
     depth <- static_parent_frame_depth(envir, scope, lookup)
     if (!is.null(depth)) {
       index <- scope_caller_frame(depth, scope)
-      unplaced <- identical(index, NA_integer_)
-      outside <- is.null(index) || unplaced
     } else if (!is.null(lookup_environment_value(envir, bound, lookup))) {
       index <- NULL
-      outside <- TRUE
     } else {
-      outside <- TRUE
+      index <- static_environment_frame(envir, scope, lookup)
+      if (is.null(index) || index > length(scope)) {
+        index <- NA_integer_
+      }
     }
+    unplaced <- identical(index, NA_integer_)
+    outside <- is.null(index) || unplaced
   }
   args <- static_call_args(expr)
   removed <- literal_removal_names(
@@ -7736,8 +7744,7 @@ scope_removal_targets <- function(expr, scope, lookup) {
 }
 
 # Apply a visible removal to its own frame or a statically visible caller.
-# Unresolved targets retain the conservative current-frame treatment. An
-# unplaced target may remove the names from any one walked frame. A removal
+# An unplaced target may remove the names from any one walked frame. A removal
 # that may reach a frame around a literal walked where it is created stays
 # possible for the rest of the walk.
 scope_after_removal_call <- function(expr, scope, lookup) {
@@ -7983,12 +7990,15 @@ scope_capture_loss_reads <- function(expr, scope, lookup) {
   character()
 }
 
-# Literal depth of a recognized base caller-frame expression, or NULL
+# Literal depth of a recognized caller-frame expression, or NULL
 # when the target is unknown. No frame expression is evaluated.
+# `rlang::caller_env(n)` is the frame `parent.frame(n)` reaches from its caller.
 static_parent_frame_depth <- function(expr, scope, lookup) {
   name <- static_call_name(expr)
-  if (identical(name, "parent.frame") &&
-        is_known_base_frame_call(expr, name, scope, lookup)) {
+  if ((identical(name, "parent.frame") &&
+         is_known_base_frame_call(expr, name, scope, lookup)) ||
+        (identical(name, "caller_env") &&
+           is_known_namespace_frame_call(expr, "rlang", scope, lookup))) {
     return(static_frame_depth_argument(expr))
   }
   if (identical(name, "sys.frame") && length(expr) == 2L &&

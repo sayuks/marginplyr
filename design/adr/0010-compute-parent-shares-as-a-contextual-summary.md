@@ -121,7 +121,12 @@ A caller frame or evaluation environment the analysis cannot place on a frame
 it walks, such as one counted past the frame `local()` or `eval()` evaluates
 in, is unreadable in the same way: a removal aimed at it may remove its names
 from any walked frame, and code evaluated in it reads an earlier alias from
-the data mask whatever local binding shadows that name (#1679). `with()`,
+the data mask whatever local binding shadows that name (#1679). A removal's
+target is placed on a walked frame where the analysis can follow it there:
+`rlang::caller_env()` as `parent.frame()` is placed, `parent.env()` of a placed
+frame as its enclosing walked frame, and a local holding such an environment.
+Any other target that is not an existing environment, such as a formal, is one
+it cannot place, and is not taken to be the current frame (#1688). `with()`,
 `rlang::with_env()` and `rlang::inject()` place the environment they evaluate
 in as `eval()` places its own; to `with()` and `rlang::with_env()`, an argument
 the analysis cannot read as a data value counts as that environment (#1684).
@@ -134,14 +139,13 @@ of that name still reads the earlier alias (#1683). This adds to the removal a
 call to the literal by name places where that call puts it, and does not
 replace it. A literal invoked where it is written is held by no value, so its
 removal takes effect where that call places it.
-A body or default that `body<-` or `formals<-` writes with a value the
-analysis can read is read where it is written, as a literal is where it is
-created (#1682). One effect of a closure is attributed where it is invoked,
-not where it is created: such a write whose value the analysis cannot read.
-Tracking closures through calls is what refuses it (#1680). For everything
-else, soundness never depends on knowing which closure a value holds:
-tracking only lets more sources be accepted. The same reading decides when an
-ordinary summary uses an earlier share.
+A body or default that `body<-` or `formals<-` writes is read where it is
+written, as a literal is where it is created (#1682). A written value the
+analysis cannot read counts there as a possible read of every name the closure
+can reach, whether or not the closure is later called (#1687). Soundness
+therefore never depends on knowing which closure a value holds: tracking
+closures through calls only lets more sources be accepted. The same reading
+decides when an ordinary summary uses an earlier share.
 
 A direct call must have an explicit output name distinct from its source
 summary. `across()` is supported when its selection resolves to preceding

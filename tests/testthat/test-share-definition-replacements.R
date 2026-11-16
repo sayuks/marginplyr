@@ -611,3 +611,45 @@ test_that("a replacement's captures refuse a removal and keep values", {
     data, c(retained, extracted_replacement_controls()), 11
   )
 })
+
+# A replacement whose value the walk cannot read may write any definition, so
+# it reads what the closure can reach where it is written (ADR 0010), whether
+# the closure is later called by name, through an extracted value, or not at
+# all, which last over-reports (#130).
+unreadable_replacement_reads <- function() {
+  as.list(quote(alist(
+    {
+      f <- function() 7
+      body(f) <- identity(quote(sum(prior)))
+      h <- mget("f")[[1L]]
+      h()
+    },
+    {
+      f <- function() 7
+      body(f) <- identity(quote(sum(prior)))
+      h <- environment()$f
+      h()
+    },
+    {
+      f <- function() 7
+      f <- base::`body<-`(f, value = identity(quote(sum(prior))))
+      h <- mget("f")[[1L]]
+      h()
+    },
+    {
+      f <- function() 7
+      body(f) <- identity(quote(sum(prior)))
+      f()
+    },
+    {
+      f <- function() 7
+      body(f) <- identity(quote(sum(prior)))
+      11
+    }
+  )))[-1L]
+}
+
+test_that("an unreadable replacement refuses through an extracted closure", {
+  data <- data.frame(g = c("a", "b"), x = c(1, 3), prior = c(10, 20))
+  expect_share_dependencies(data, unreadable_replacement_reads())
+})
