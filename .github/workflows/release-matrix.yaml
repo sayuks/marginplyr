@@ -5,17 +5,21 @@
 # the Suggested packages genuinely optional, and does each supported backend
 # actually execute? This workflow answers both against one built tarball --
 # the artifact a submission would carry -- so that nothing here can pass
-# because of a file that exists only in the development tree. The one job that
-# reads the working tree instead is `structure`, and the reason it can is that
-# it asserts a property of the tests as written rather than of what ships.
+# because of a file that exists only in the development tree. The jobs that
+# read the working tree instead are `structure` and `structure-verdict`, and the
+# reason they can is that they assert a property of the tests as written rather
+# than of what ships.
 #
 # The jobs divide the work:
 #
-#   structure      runs the suite once per optional backend with the others
-#                  simulated absent, and fails unless every test executes in at
-#                  least one of those configurations.
-#   backend-matrix generates the `backend` matrix below from the one table in
-#                  `tests/testthat/helper-optional-backends.R`.
+#   structure      one generated job per optional backend, each running the
+#                  suite with the others simulated absent and uploading what
+#                  every test did.
+#   structure-verdict
+#                  fails unless every test executes in at least one of those
+#                  configurations.
+#   backend-matrix generates the matrix `structure` and `backend` share from
+#                  the one table in `tests/testthat/helper-optional-backends.R`.
 #   build          produces the single tarball every other job checks.
 #   checktor       on a manual pre-release run, checks that tarball for review
 #                  concerns outside R CMD check and records a human report.
@@ -39,8 +43,9 @@
 # executed by none of them and skips in all of them, unnoticed. Three layers
 # close that, and no one of them is enough:
 #
-#   Structure    `structure`, against the working tree. Every test executes in
-#                some single-backend configuration and asserts something there.
+#   Structure    `structure` and `structure-verdict`, against the working
+#                tree. Every test executes in some single-backend
+#                configuration and asserts something there.
 #   Environment  the `backend` jobs. The backend works when the others are
 #                genuinely absent, rather than merely hidden from the guards.
 #   Soundness    `verify-backend.R`, inside each `backend` job. The suite
@@ -56,13 +61,13 @@
 # tests as written, so a built tarball would add a build step and a `needs`
 # without changing the answer, and it is the one gate here an agent can run
 # before pushing: `Rscript .github/scripts/verify-suite-coverage.R` gives the
-# same verdict locally that the job gives in CI.
+# same verdict locally that `structure-verdict` gives in CI.
 #
 # Snapshot expectations run only where `NOT_CRAN` is set: testthat skips them
 # under CRAN semantics, so a snapshot never fails in a job that emulates CRAN.
 # That is the `backend` jobs, which set it in the workflow, and the `structure`
 # job, whose script sets it so a local run matches CI. The coverage workflow
-# also enables snapshots (ADR 0030). `structure` takes no `needs` and runs
+# also enables snapshots (ADR 0030). `structure` does not need `build` and runs
 # against the working tree; a `backend` job still proves the snapshot inside
 # `R CMD check`.
 #
@@ -138,16 +143,22 @@ jobs:
   # `backend` jobs cannot answer between them: each reports its own green, and
   # a test that skipped in every one of them leaves a green behind for each.
   #
-  # So this simulates every configuration in one job, through
-  # `MARGINPLYR_HIDE_SUGGESTS`. Simulated rather than aggregated from the real
-  # jobs' artifacts for one reason: an agent can run it before pushing. A guard
-  # is the only thing that decides whether a test skips and the hook drives the
-  # guards, so the structural answer is the one those jobs would give; what
-  # a simulation cannot answer -- whether a backend works when the others are
-  # genuinely gone -- is what those jobs remain for.
+  # So each leg here simulates one configuration through
+  # `MARGINPLYR_HIDE_SUGGESTS`, and `structure-verdict` concludes over all of
+  # them. Simulated rather than aggregated from the real jobs' artifacts for one
+  # reason: an agent can run it before pushing. A guard is the only thing that
+  # decides whether a test skips and the hook drives the guards, so the
+  # structural answer is the one those jobs would give; what a simulation
+  # cannot answer -- whether a backend works when the others are genuinely
+  # gone -- is what those jobs remain for.
   #
-  # It takes no `needs` and downloads no tarball, because the property is about
-  # the tests as written. Failing before `build` finishes is the point.
+  # One leg per configuration, because together they exceed the hosted-runner
+  # job limit. The legs are the `backend` jobs' matrix, so a backend added to
+  # the table gets a leg without an edit here.
+  #
+  # It needs only `backend-matrix` and downloads no tarball, because the
+  # property is about the tests as written. Failing before `build` finishes is
+  # the point.
   #
   # It shares `full-1` with `build` by making the identical dependency request.
   # That is consistent with the isolation scheme rather than an exemption to it:
@@ -156,10 +167,17 @@ jobs:
   # `verify-suite-coverage.R` stops if any is missing rather than reporting a
   # vacuous pass.
   structure:
-    name: Suite coverage by construction
+    name: Suite coverage with ${{ matrix.backend.name }}
+    needs: backend-matrix
     runs-on: ubuntu-latest
-    # Includes setup and a complete suite for every optional backend.
-    timeout-minutes: 360
+    # Includes setup and one complete suite.
+    timeout-minutes: 120
+
+    strategy:
+      fail-fast: false
+      matrix:
+        # One entry per member of `optional_backends()`; only `name` is read.
+        backend: ${{ fromJSON(needs.backend-matrix.outputs.backend) }}
 
     steps:
       - uses: actions/checkout@v7
@@ -180,8 +198,47 @@ jobs:
       - name: Verify DuckDB JSON provisioning command fixtures
         run: Rscript tools/test-duckdb-json-provision.R
 
+      - name: Observe the suite with only ${{ matrix.backend.name }} available
+        run: >-
+          Rscript .github/scripts/verify-suite-coverage.R
+          --observe=${{ matrix.backend.name }} --rows=suite-coverage
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: suite-coverage-${{ matrix.backend.name }}
+          path: suite-coverage
+          retention-days: 7
+          if-no-files-found: error
+
+  # Draws the verdict from every leg's rows. It runs after failed legs as well,
+  # because a leg that uploaded nothing is one of the things it reports, and
+  # it fails unless it holds exactly one result per member of
+  # `optional_backends()`. No library beyond R: it runs no suite.
+  structure-verdict:
+    name: Suite coverage by construction
+    needs: structure
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    # This includes R's system dependency downloads; the verdict reads files.
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: suite-coverage-*
+          path: suite-coverage
+          merge-multiple: true
+
       - name: Verify every test executes in some backend configuration
-        run: Rscript .github/scripts/verify-suite-coverage.R
+        run: >-
+          Rscript .github/scripts/verify-suite-coverage.R
+          --aggregate --rows=suite-coverage
 
   # The `backend` jobs below are one job body repeated per optional backend, and
   # every field that differed between them was a restatement of

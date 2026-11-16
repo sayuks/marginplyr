@@ -64,6 +64,13 @@ coverage_verify_runtime <- function() {
 # rounding. The Cobertura file, when requested, is written even on a miss so
 # Codecov can show the uncovered lines for a failed CI run.
 coverage_check <- function(cobertura = NULL, root = ".") {
+  coverage_verdict(coverage_measure(root), cobertura, root)
+}
+
+# Measures the package at `path` under the test environment the verdict
+# assumes; `root` is the checkout whose policy and Suggests are checked, and
+# differs from `path` only for a shard's filtered copy of it.
+coverage_measure <- function(root = ".", path = root) {
   coverage_verify_policy(root)
   if (!requireNamespace("covr", quietly = TRUE)) {
     stop("Coverage requires covr.", call. = FALSE)
@@ -89,8 +96,12 @@ coverage_check <- function(cobertura = NULL, root = ".") {
 
   temporary <- Sys.getenv("RUNNER_TEMP", unset = tempdir())
   install_path <- file.path(normalizePath(temporary, winslash = "/"), "package")
-  cov <- covr::package_coverage(path = root, type = "tests", quiet = FALSE,
+  covr::package_coverage(path = path, type = "tests", quiet = FALSE,
     clean = FALSE, install_path = install_path)
+}
+
+# Applies the complete-coverage verdict to a measured or merged result.
+coverage_verdict <- function(cov, cobertura = NULL, root = ".") {
   lines <- covr::tally_coverage(cov, by = "line")
   if (nrow(lines) == 0L || anyNA(lines$value)) {
     stop("Coverage has no valid measured source lines.", call. = FALSE)
@@ -122,4 +133,128 @@ coverage_check <- function(cobertura = NULL, root = ".") {
   }
   cat("Strict line coverage passed.\n")
   0L
+}
+
+# The test files shard `index` of `count` runs: every count-th file of the
+# sorted inventory, so the shards partition it. Helpers and setup files are
+# not test files and stay in every shard.
+coverage_shard_files <- function(index, count, root = ".") {
+  files <- sort(list.files(file.path(root, "tests/testthat"),
+    pattern = "^test.*[.][Rr]$"), method = "radix")
+  valid <- function(value) {
+    length(value) == 1L && !is.na(value) && value >= 1L
+  }
+  if (!valid(count) || !valid(index) || index > count) {
+    stop("Coverage shard must be <index>/<count> with 1 <= index <= count.",
+      call. = FALSE)
+  }
+  if (count > length(files)) {
+    stop("Coverage shard count ", count, " exceeds the ", length(files),
+      " test files.", call. = FALSE)
+  }
+  files[(seq_along(files) - 1L) %% count + 1L == index]
+}
+
+# Measures one shard and saves the raw covr result for coverage_merge(). The
+# shard runs from a copy of `root` whose tests/testthat.R passes test_check()
+# a filter naming the shard's files. Every test file stays in the copy, since
+# suite scans read test files they do not run.
+coverage_check_shard <- function(index, count, output, root = ".") {
+  files <- coverage_shard_files(index, count, root)
+  copy <- file.path(tempfile("coverage-shard-"), basename(normalizePath(root)))
+  dir.create(copy, recursive = TRUE)
+  on.exit(unlink(dirname(copy), recursive = TRUE), add = TRUE)
+  entries <- setdiff(list.files(root, all.files = TRUE, no.. = TRUE), ".git")
+  if (!all(file.copy(file.path(root, entries), copy, recursive = TRUE))) {
+    stop("Coverage shard could not copy ", root, call. = FALSE)
+  }
+  script <- file.path(copy, "tests", "testthat.R")
+  expressions <- as.list(parse(script, keep.source = FALSE))
+  check <- which(vapply(expressions, function(expression) {
+    is.call(expression) && identical(expression[[1L]], quote(test_check))
+  }, logical(1)))
+  if (length(check) != 1L) {
+    stop("Coverage shard needs one top-level test_check() call in ",
+      "tests/testthat.R.", call. = FALSE)
+  }
+  # testthat matches the filter against each file name without its `test-`
+  # prefix and extension.
+  names <- sub("^test[-_]?", "", sub("[.][Rr]$", "", files))
+  if (!all(grepl("^[A-Za-z0-9._-]+$", names))) {
+    stop("Coverage shard cannot filter test file names outside [A-Za-z0-9._-].",
+      call. = FALSE)
+  }
+  expressions[[check]]$filter <- paste0("^(",
+    paste(gsub(".", "[.]", names, fixed = TRUE), collapse = "|"), ")$")
+  writeLines(unlist(lapply(expressions, deparse)), script)
+  cov <- coverage_measure(root, copy)
+  attr(cov, "marginplyr_shard") <- list(index = index, count = count,
+    files = files)
+  saveRDS(cov, output)
+  cat("Coverage shard ", index, "/", count, " measured ", length(files),
+    " test files.\n", sep = "")
+  0L
+}
+
+# Sums the per-expression hits of every shard result under `directory` into
+# one covr result for coverage_verdict(). It refuses unless it holds exactly
+# the shards that partition this tree's test files, each instrumenting the
+# same expressions.
+coverage_merge <- function(directory, root = ".") {
+  paths <- list.files(directory, pattern = "[.]rds$", recursive = TRUE,
+    full.names = TRUE)
+  if (length(paths) == 0L) {
+    stop("Coverage merge found no shard results in ", directory, call. = FALSE)
+  }
+  legs <- lapply(paths, readRDS)
+  shards <- lapply(legs, attr, "marginplyr_shard")
+  if (any(vapply(shards, is.null, logical(1)))) {
+    stop("Coverage merge found a result that is not a shard.", call. = FALSE)
+  }
+  count <- shards[[1L]]$count
+  indices <- vapply(shards, `[[`, numeric(1), "index")
+  counts <- vapply(shards, `[[`, numeric(1), "count")
+  if (any(counts != count) || !identical(sort(as.integer(indices)), seq_len(count))) {
+    stop("Coverage merge requires exactly ", count, " shard results, one per ",
+      "index; found indices ", paste(sort(indices), collapse = ", "), " of ",
+      paste(unique(counts), collapse = ", "), ".", call. = FALSE)
+  }
+  legs <- legs[order(indices)]
+  shards <- shards[order(indices)]
+  for (index in seq_len(count)) {
+    if (!identical(shards[[index]]$files,
+                   coverage_shard_files(index, count, root))) {
+      stop("Coverage shard ", index, "/", count, " ran different test files ",
+        "than this tree assigns it.", call. = FALSE)
+    }
+  }
+  # Each shard instruments its own copy, so expressions are matched by their
+  # path below that copy and their source position.
+  relative_keys <- function(cov) {
+    prefix <- paste0(attr(cov, "root"), "/")
+    vapply(cov, function(entry) {
+      file <- utils::getSrcFilename(entry$srcref, full.names = TRUE)
+      paste(c(sub(prefix, "", file, fixed = TRUE), entry$srcref), collapse = ":")
+    }, character(1), USE.NAMES = FALSE)
+  }
+  merged <- legs[[1L]]
+  keys <- relative_keys(merged)
+  for (leg in legs[-1L]) {
+    leg_keys <- relative_keys(leg)
+    if (!setequal(keys, leg_keys) || anyDuplicated(keys) ||
+        anyDuplicated(leg_keys)) {
+      stop("Coverage shards instrumented different source expressions.",
+        call. = FALSE)
+    }
+    values <- vapply(leg, `[[`, numeric(1), "value")[match(keys, leg_keys)]
+    for (position in seq_along(merged)) {
+      merged[[position]]$value <- merged[[position]]$value + values[[position]]
+    }
+  }
+  attr(merged, "marginplyr_shard") <- NULL
+  # Cobertura names the checkout as its source, as an unsharded run does.
+  package <- attr(merged, "package")
+  package$path <- normalizePath(root)
+  attr(merged, "package") <- package
+  merged
 }

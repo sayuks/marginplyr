@@ -45,12 +45,52 @@
 #
 #     Rscript .github/scripts/verify-suite-coverage.R
 #
+# That observes every configuration in one process and then concludes. CI
+# splits the same work, because the configurations together exceed one job's
+# time limit: each `structure` leg runs
+#
+#     Rscript .github/scripts/verify-suite-coverage.R \
+#       --observe=<backend> --rows=<dir>
+#
+# which observes one configuration and saves its rows as `<dir>/<backend>.rds`,
+# and `structure-verdict` runs `--aggregate --rows=<dir>` over every leg's
+# rows. Both routes reach the same conclusion code through
+# `held_observations()`, so the local verdict is the one CI gives. It refuses
+# to conclude unless it holds exactly one result per member of
+# `optional_backends()`, observed against that same list: a missing leg would
+# otherwise drop its configuration from the count, and with every leg missing
+# there would be no tests to fail.
+#
 # This is the one script here that reads the working tree rather than a built
-# tarball, which is why it takes no `needs` in the workflow and downloads
-# nothing. The structural question is about the tests as written; a tarball
-# would add a build step without changing the answer.
+# tarball, which is why no leg needs `build`. The structural question is about
+# the tests as written; a tarball would add a build step without changing the
+# answer.
 
 source(".github/scripts/ci-helpers.R")
+
+# No argument observes every configuration and concludes. `--observe=<backend>`
+# and `--aggregate` each do one half of that, and both need `--rows=<dir>`.
+arguments <- commandArgs(trailingOnly = TRUE)
+flag_value <- function(flag) {
+  pattern <- sprintf("^--%s=", flag)
+  found <- sub(pattern, "", grep(pattern, arguments, value = TRUE))
+  if (length(found) == 0L) NULL else found
+}
+selected <- flag_value("observe")
+aggregating <- "--aggregate" %in% arguments
+rows_directory <- flag_value("rows")
+recognised <- grepl("^--(observe|rows)=.+$|^--aggregate$", arguments)
+if (
+  !all(recognised) || anyDuplicated(sub("=.*", "", arguments)) > 0L ||
+    (!is.null(selected) && aggregating) ||
+    (!is.null(selected) || aggregating) != !is.null(rows_directory)
+) {
+  stop(call. = FALSE, paste0(
+    "Usage: verify-suite-coverage.R [--observe=<backend> --rows=<dir> | ",
+    "--aggregate --rows=<dir>]. Received: ",
+    paste(arguments, collapse = " "), "."
+  ))
+}
 
 # testthat skips snapshot expectations under CRAN semantics. Without this the
 # five snapshot tests skip in every configuration and are reported as requiring
@@ -77,19 +117,24 @@ if (length(backends) == 0L) {
 # below its constraint now reports unavailable, so it would skip in every
 # configuration and be reported below as requiring two backends -- a violation
 # invented entirely by the environment this ran in (#123).
-status <- lapply(backends, suggest_status)
-unusable <- Filter(function(one) !one$available, status)
-if (length(unusable) > 0L) {
-  stop(call. = FALSE, sprintf(
-    paste0(
-      "This job simulates each backend's absence, so it needs all of them ",
-      "installed at the version DESCRIPTION requires. These are not: %s."
-    ),
-    paste(
-      vapply(unusable, function(one) one$reason, character(1)),
-      collapse = "; "
-    )
-  ))
+#
+# Each leg asks it of its own library; the aggregate runs no suite and installs
+# nothing to ask it of.
+if (!aggregating) {
+  status <- lapply(backends, suggest_status)
+  unusable <- Filter(function(one) !one$available, status)
+  if (length(unusable) > 0L) {
+    stop(call. = FALSE, sprintf(
+      paste0(
+        "This job simulates each backend's absence, so it needs all of them ",
+        "installed at the version DESCRIPTION requires. These are not: %s."
+      ),
+      paste(
+        vapply(unusable, function(one) one$reason, character(1)),
+        collapse = "; "
+      )
+    ))
+  }
 }
 
 skip_messages <- function(expectations) {
@@ -108,11 +153,12 @@ skipped_packages <- function(messages) {
   unique(gsub("[{}]", "", named))
 }
 
-# Runs the whole suite with every backend but `selected` hidden, and reports one
-# row per test. "Executed" means the test ran to its end and asserted something:
-# a test that passes three expectations and then skips has not executed, and
-# counting it as executed is precisely the mistake that would hide a test whose
-# second half never runs.
+# Runs the whole suite with every backend but `selected` hidden, and returns
+# the configuration, the list it hid from, and one row per test. "Executed"
+# means the test ran to its end and asserted something: a test that passes
+# three expectations and then skips has not executed, and counting it as
+# executed is precisely the mistake that would hide a test whose second half
+# never runs.
 observe <- function(selected) {
   withheld <- setdiff(backends, selected)
   Sys.setenv(MARGINPLYR_HIDE_SUGGESTS = paste(withheld, collapse = ","))
@@ -139,7 +185,7 @@ observe <- function(selected) {
     stop_on_failure = FALSE
   )
 
-  lapply(results, function(entry) {
+  rows <- lapply(results, function(entry) {
     outcomes <- vapply(
       entry$results,
       function(expectation) class(expectation)[[1]],
@@ -166,12 +212,108 @@ observe <- function(selected) {
       skips = messages
     )
   })
+  list(selected = selected, backends = backends, rows = rows)
 }
 
-observations <- unlist(
-  lapply(backends, observe),
-  recursive = FALSE,
-  use.names = FALSE
+# Every configuration's rows, in `optional_backends()` order, from `results` --
+# one `observe()` record each, whether held in memory or read back from the
+# legs' files. Refuses unless `results` covers each member exactly once and
+# each was observed against this same list.
+held_observations <- function(results) {
+  configurations <- vapply(
+    results,
+    function(record) as.character(record$selected)[1],
+    character(1)
+  )
+  repeated <- unique(configurations[duplicated(configurations)])
+  unobserved <- setdiff(backends, configurations)
+  unexpected <- setdiff(configurations, backends)
+  stale <- unique(configurations[!vapply(
+    results,
+    function(record) identical(record$backends, backends),
+    logical(1)
+  )])
+  problems <- c(
+    if (length(unobserved) > 0L) {
+      sprintf(
+        paste0(
+          "No result for the %s configuration(s), so a test executing only ",
+          "there would be reported as executing nowhere. Each member of ",
+          "`optional_backends()` needs a `structure` leg that ran and ",
+          "uploaded its rows; `generate-backend-matrix.R` derives those legs ",
+          "from the same table."
+        ),
+        paste(unobserved, collapse = ", ")
+      )
+    },
+    if (length(repeated) > 0L) {
+      sprintf(
+        "More than one result for the %s configuration(s).",
+        paste(repeated, collapse = ", ")
+      )
+    },
+    if (length(unexpected) > 0L) {
+      sprintf(
+        "Results for %s, which `optional_backends()` does not name.",
+        paste(unexpected, collapse = ", ")
+      )
+    },
+    if (length(stale) > 0L) {
+      sprintf(
+        paste0(
+          "The %s result(s) were observed against a different ",
+          "`optional_backends()`, so they hid a different set of packages."
+        ),
+        paste(stale, collapse = ", ")
+      )
+    }
+  )
+  if (length(problems) > 0L) {
+    stop(call. = FALSE, paste(problems, collapse = " "))
+  }
+  unlist(
+    lapply(results[match(backends, configurations)], function(record) {
+      record$rows
+    }),
+    recursive = FALSE,
+    use.names = FALSE
+  )
+}
+
+# Every `.rds` file the legs saved under `directory`.
+read_results <- function(directory) {
+  paths <- sort(list.files(directory, pattern = "[.]rds$", full.names = TRUE))
+  if (length(paths) == 0L) {
+    stop(call. = FALSE, sprintf(
+      "`%s` holds no configuration results, so there is nothing to conclude.",
+      directory
+    ))
+  }
+  lapply(paths, readRDS)
+}
+
+# A leg saves its rows and stops; the aggregate draws the verdict from them.
+if (!is.null(selected)) {
+  if (!selected %in% backends) {
+    stop(call. = FALSE, sprintf(
+      "`%s` is not a member of `optional_backends()` (%s).",
+      selected,
+      paste(backends, collapse = ", ")
+    ))
+  }
+  record <- observe(selected)
+  dir.create(rows_directory, recursive = TRUE, showWarnings = FALSE)
+  saveRDS(record, file.path(rows_directory, sprintf("%s.rds", selected)))
+  message(sprintf(
+    "Observed %d tests with %s selected; the aggregate draws the verdict.",
+    length(record$rows),
+    selected
+  ))
+  quit(save = "no")
+}
+
+observations <- held_observations(
+  if (aggregating) read_results(rows_directory) else lapply(backends, observe)
 )
 
 # The wording `skip_if_suggest_absent()` writes for a backend this run hid.
