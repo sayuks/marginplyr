@@ -687,9 +687,16 @@
     },
     "jobs": {
       "structure": {
-        "name": "Suite coverage by construction",
+        "name": "Suite coverage with ${{ matrix.backend.name }}",
+        "needs": "backend-matrix",
         "runs-on": "ubuntu-latest",
-        "timeout-minutes": "360",
+        "timeout-minutes": "120",
+        "strategy": {
+          "fail-fast": "false",
+          "matrix": {
+            "backend": "${{ fromJSON(needs.backend-matrix.outputs.backend) }}"
+          }
+        },
         "steps": [
           {
             "uses": "actions/checkout@v7"
@@ -717,8 +724,47 @@
             "run": "Rscript tools/test-duckdb-json-provision.R"
           },
           {
+            "name": "Observe the suite with only ${{ matrix.backend.name }} available",
+            "run": "Rscript .github/scripts/verify-suite-coverage.R --observe=${{ matrix.backend.name }} --rows=suite-coverage"
+          },
+          {
+            "uses": "actions/upload-artifact@v7",
+            "with": {
+              "name": "suite-coverage-${{ matrix.backend.name }}",
+              "path": "suite-coverage",
+              "retention-days": "7",
+              "if-no-files-found": "error"
+            }
+          }
+        ]
+      },
+      "structure-verdict": {
+        "name": "Suite coverage by construction",
+        "needs": "structure",
+        "if": "${{ !cancelled() }}",
+        "runs-on": "ubuntu-latest",
+        "timeout-minutes": "30",
+        "steps": [
+          {
+            "uses": "actions/checkout@v7"
+          },
+          {
+            "uses": "r-lib/actions/setup-r@v2",
+            "with": {
+              "use-public-rspm": "true"
+            }
+          },
+          {
+            "uses": "actions/download-artifact@v8",
+            "with": {
+              "pattern": "suite-coverage-*",
+              "path": "suite-coverage",
+              "merge-multiple": "true"
+            }
+          },
+          {
             "name": "Verify every test executes in some backend configuration",
-            "run": "Rscript .github/scripts/verify-suite-coverage.R"
+            "run": "Rscript .github/scripts/verify-suite-coverage.R --aggregate --rows=suite-coverage"
           }
         ]
       },
