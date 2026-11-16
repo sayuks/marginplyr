@@ -406,7 +406,7 @@ test_that("a removal or setter held as a value is not followed (#1652)", {
   ), c(10, 20, 30), prior = sum(x))
 })
 
-test_that("a removal from the caller is followed through a stock functional", {
+test_that("a caller removal passed through a stock functional counts", {
   # The removal is attributed where the closure is created (ADR 0010).
   expect_share_dependencies(captured_removal_data(), alist(
     (function(prior) {
