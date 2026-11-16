@@ -2,8 +2,9 @@
 
 # One line-coverage verdict for CI and explicit local measurements. An output path
 # writes the same measured result as Cobertura after the verdict is calculated.
-# A shard measures part of the test files and saves its raw result; a merge of
-# every shard's result reaches the verdict the unsharded run would.
+# A shard measures part of the test files and saves its raw result with each
+# test file's duration; a merge of every shard's result reports all of those
+# durations and reaches the verdict the unsharded run would.
 
 args <- commandArgs(trailingOnly = TRUE)
 usage <- paste0("Usage: coverage-check.R [--cobertura <output>]\n",
@@ -33,7 +34,14 @@ status <- switch(mode,
     shard <- as.integer(strsplit(option("--shard"), "/", fixed = TRUE)[[1L]])
     coverage_check_shard(shard[[1L]], shard[[2L]], option("--output"))
   },
-  merge = coverage_verdict(coverage_merge(option("--merge")),
-    option("--cobertura"))
+  merge = {
+    cov <- coverage_merge(option("--merge"))
+    durations <- attr(cov, "marginplyr_durations")
+    if (!is.null(durations)) {
+      coverage_report_durations(durations, paste0("All coverage shards: ",
+        nrow(durations), " test files"))
+    }
+    coverage_verdict(cov, option("--cobertura"))
+  }
 )
 quit(status = status, save = "no")
