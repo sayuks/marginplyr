@@ -156,8 +156,9 @@ coverage_shard_files <- function(index, count, root = ".") {
 }
 
 # Measures one shard and saves the raw covr result for coverage_merge(). The
-# shard runs from a copy of `root` without the other shards' test files, so
-# its tests/testthat.R and test environment are the unsharded run's.
+# shard runs from a copy of `root` whose tests/testthat.R passes test_check()
+# a filter naming the shard's files. Every test file stays in the copy, since
+# suite scans read test files they do not run.
 coverage_check_shard <- function(index, count, output, root = ".") {
   files <- coverage_shard_files(index, count, root)
   copy <- file.path(tempfile("coverage-shard-"), basename(normalizePath(root)))
@@ -167,8 +168,25 @@ coverage_check_shard <- function(index, count, output, root = ".") {
   if (!all(file.copy(file.path(root, entries), copy, recursive = TRUE))) {
     stop("Coverage shard could not copy ", root, call. = FALSE)
   }
-  tests <- file.path(copy, "tests/testthat")
-  unlink(file.path(tests, setdiff(coverage_shard_files(1L, 1L, copy), files)))
+  script <- file.path(copy, "tests", "testthat.R")
+  expressions <- as.list(parse(script, keep.source = FALSE))
+  check <- which(vapply(expressions, function(expression) {
+    is.call(expression) && identical(expression[[1L]], quote(test_check))
+  }, logical(1)))
+  if (length(check) != 1L) {
+    stop("Coverage shard needs one top-level test_check() call in ",
+      "tests/testthat.R.", call. = FALSE)
+  }
+  # testthat matches the filter against each file name without its `test-`
+  # prefix and extension.
+  names <- sub("^test[-_]?", "", sub("[.][Rr]$", "", files))
+  if (!all(grepl("^[A-Za-z0-9._-]+$", names))) {
+    stop("Coverage shard cannot filter test file names outside [A-Za-z0-9._-].",
+      call. = FALSE)
+  }
+  expressions[[check]]$filter <- paste0("^(",
+    paste(gsub(".", "[.]", names, fixed = TRUE), collapse = "|"), ")$")
+  writeLines(unlist(lapply(expressions, deparse)), script)
   cov <- coverage_measure(root, copy)
   attr(cov, "marginplyr_shard") <- list(index = index, count = count,
     files = files)

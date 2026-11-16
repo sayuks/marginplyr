@@ -33,7 +33,9 @@ write_fixture <- function(root) {
   tests <- list(
     `test-a.R` = "expect_equal(alpha(1), 2)",
     `test-b.R` = c("expect_equal(beta(1), \"positive\")", "expect_equal(alpha(2), 3)"),
-    `test-c.R` = "expect_equal(gamma(2), 4)",
+    # Suite scans read other test files, so a shard must keep every file.
+    `test-c.R` = c("expect_equal(gamma(2), 4)",
+      "expect_true(file.exists(test_path(\"test-b.R\")))"),
     `test-d.R` = "expect_equal(alpha(3), 4)"
   )
   for (name in names(tests)) {
