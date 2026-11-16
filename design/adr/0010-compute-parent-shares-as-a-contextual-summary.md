@@ -126,12 +126,14 @@ the data mask whatever local binding shadows that name (#1679). `with()`,
 in as `eval()` places its own; to `with()` and `rlang::with_env()`, an argument
 the analysis cannot read as a data value counts as that environment (#1684).
 A removal a literal's body makes from the frame that calls it, directly or
-through any evaluator placed as `eval()` is, is attributed where the literal is created,
-since from then it may be called from any frame: each name it requests, or
-every name when the analysis cannot read them, may be removed from any frame
-the analysis walks for the rest of the walk, so a later binding of that name
-still reads the earlier alias (#1683). A literal invoked where it is written is
-held by no value, so its removal takes effect where that call places it.
+through any evaluator placed as `eval()` is, is attributed where the literal
+is created, since from then it may be called from any frame: each name it
+requests, or every name when the analysis cannot read them, may be removed
+from any frame the analysis walks for the rest of the walk, so a later binding
+of that name still reads the earlier alias (#1683). This adds to the removal a
+call to the literal by name places where that call puts it, and does not
+replace it. A literal invoked where it is written is held by no value, so its
+removal takes effect where that call places it.
 A body or default that `body<-` or `formals<-` writes with a value the
 analysis can read is read where it is written, as a literal is where it is
 created (#1682). One effect of a closure is attributed where it is invoked,
@@ -614,9 +616,7 @@ local binding that shadows an earlier alias.
 `r(); prior <- 2; sum(prior)` stays shareable after a by-name call, is rejected
 (#1683). Whether a later call reaches the literal through a value is the
 question the walk does not follow functions held as values to answer (#1652),
-so the possible removal stays for the rest of the walk. A literal called by name
-still has its removal placed where that call puts it; the creation-time
-attribution adds to that result rather than replacing it.
+so the possible removal stays for the rest of the walk.
 
 ## Amendment: the eligible-type rule is established without reading a row
 
