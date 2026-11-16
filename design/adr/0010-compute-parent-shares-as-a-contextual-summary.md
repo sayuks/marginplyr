@@ -126,7 +126,7 @@ the data mask whatever local binding shadows that name (#1679). `with()`,
 in as `eval()` places its own; to `with()` and `rlang::with_env()`, an argument
 the analysis cannot read as a data value counts as that environment (#1684).
 A removal a literal's body makes from the frame that calls it, directly or
-through any of those evaluators, is attributed where the literal is created,
+through any evaluator placed as `eval()` is, is attributed where the literal is created,
 since from then it may be called from any frame: each name it requests, or
 every name when the analysis cannot read them, may be removed from any frame
 the analysis walks for the rest of the walk, so a later binding of that name
@@ -601,6 +601,22 @@ as a decision of its own rather than as this one's granularity: the refusal
 states that marginplyr will not produce a number nothing has checked, and an
 `NA` in its place discards that statement into a value that reads like missing
 data.
+
+*`with()` on an unreadable argument as a data value*, so that
+`with(dd, sum(prior))` on a data frame `dd` keeps reading the local `prior`, is
+rejected (#1684). `eval()` already counts such an argument as an environment
+it cannot place, and refuses the same read through `eval(quote(sum(prior)),
+dd)`; reading it as data for `with()` alone would accept a removal through a
+formal holding `environment()`. The cost is confined to a read or removal of a
+local binding that shadows an earlier alias.
+
+*Re-arming a caller removal only where the literal can escape*, so that
+`r(); prior <- 2; sum(prior)` stays shareable after a by-name call, is rejected
+(#1683). Whether a later call reaches the literal through a value is the
+question the walk does not follow functions held as values to answer (#1652),
+so the possible removal stays for the rest of the walk. A literal called by name
+still has its removal placed where that call puts it; the creation-time
+attribution adds to that result rather than replacing it.
 
 ## Amendment: the eligible-type rule is established without reading a row
 
