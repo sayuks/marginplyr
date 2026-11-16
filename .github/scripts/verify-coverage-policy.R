@@ -62,11 +62,11 @@ for (route in names(routes)) {
     }
   }
 }
-gate <- source_of(coverage_check, coverage_measure, coverage_verdict,
+every_route <- source_of(coverage_check, coverage_measure, coverage_verdict,
   coverage_check_shard, coverage_merge)
 forbidden <- c("line_exclusions", "function_exclusions", "exclusions =")
 for (part in forbidden) {
-  if (grepl(part, gate, fixed = TRUE)) {
+  if (grepl(part, every_route, fixed = TRUE)) {
     stop("Coverage gate contains an exclusion argument: ", part,
       call. = FALSE)
   }

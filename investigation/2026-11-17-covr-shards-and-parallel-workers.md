@@ -1,8 +1,9 @@
 # Merging sharded covr results, and covr under testthat's parallel workers
 
-Investigated: 2026-11-16
-Tested tree: package sources and tests of `8f1b7e5b` (`origin/main`);
-`tools/coverage-check*.R` from branch `t3/1694-shard-coverage`
+Investigated: 2026-11-17
+Tested tree: package sources and tests of `8f1b7e5b` (`origin/main`), with
+issue #1694's coverage tooling while it was being written; *Full suite* names
+its exact trees.
 
 Issue #1694 proposed sharding the coverage job and stated, for confirmation,
 that testthat's parallel workers run in callr subprocesses that covr's
@@ -86,8 +87,8 @@ below therefore kept every test file and selected each shard's through
 The same run's shard 2 failed in `test-duckdb-json-metadata.R` because the
 local run had no prepared DuckDB JSON extension; that was the local
 environment, not sharding, and the later runs set
-`MARGINPLYR_DUCKDB_JSON_EXTENSION` to the cached extension as CI's
-provisioning step does.
+`MARGINPLYR_DUCKDB_JSON_EXTENSION` to the cached extension, as
+`test-coverage.yaml`'s provisioning step did on that date.
 
 ## Shard balance
 
