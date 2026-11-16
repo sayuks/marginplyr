@@ -6570,7 +6570,9 @@ scope_variant_enclosure <- function(variant, scope) {
   seq.int(variant$enclosing, length(scope))
 }
 
-# The closure a `body<-` or `formals<-` call returns. NULL for any other call.
+# The closure a `body<-` or `formals<-` call returns, as
+# `scope_definition_replacement()` resolves it. `environment<-` writes no
+# definition, so it is left out.
 scope_written_replacement <- function(expr, scope, lookup) {
   operator <- static_call_name(expr)
   if (is.null(operator) || !operator %in% c("body<-", "formals<-")) {
@@ -7988,7 +7990,7 @@ scope_capture_loss_reads <- function(expr, scope, lookup) {
   character()
 }
 
-# Literal depth of a recognized base caller-frame expression, or NULL
+# Literal depth of a recognized caller-frame expression, or NULL
 # when the target is unknown. No frame expression is evaluated.
 # `rlang::caller_env(n)` is the frame `parent.frame(n)` reaches from its caller.
 static_parent_frame_depth <- function(expr, scope, lookup) {
