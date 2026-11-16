@@ -139,7 +139,7 @@ main <- function() {
                     c("release-matrix.yaml", "depends-only", "120", "119"),
                     c("release-matrix.yaml", "tarball", "150", "149"),
                     c("release-matrix.yaml", "backend", "180", "179"),
-                    c("test-coverage.yaml", "shard", "240", "239"),
+                    c("test-coverage.yaml", "shard", "180", "179"),
                     c("test-coverage.yaml", "test-coverage", "30", "29"))
   for (deadline in deadlines) {
     path <- file.path(dirname(workflow), deadline[[1L]])
