@@ -121,7 +121,12 @@ A caller frame or evaluation environment the analysis cannot place on a frame
 it walks, such as one counted past the frame `local()` or `eval()` evaluates
 in, is unreadable in the same way: a removal aimed at it may remove its names
 from any walked frame, and code evaluated in it reads an earlier alias from
-the data mask whatever local binding shadows that name (#1679). `with()`,
+the data mask whatever local binding shadows that name (#1679). A removal's
+target is placed on a walked frame where the analysis can follow it there:
+`rlang::caller_env()` as `parent.frame()` is placed, `parent.env()` of a placed
+frame as its enclosing walked frame, and a local holding such an environment.
+Any other target that is not an existing environment, such as a formal, is one
+it cannot place, and is not taken to be the current frame (#1688). `with()`,
 `rlang::with_env()` and `rlang::inject()` place the environment they evaluate
 in as `eval()` places its own; to `with()` and `rlang::with_env()`, an argument
 the analysis cannot read as a data value counts as that environment (#1684).

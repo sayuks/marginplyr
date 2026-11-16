@@ -363,13 +363,6 @@ test_that("inline scope changes preserve independent and shadowed bindings", {
       sum(prior)
     })(),
     (function(prior = touch()) {
-      # The formal shares the name of the base callee.
-      (function(prior, sys.parent) { # nolint: object_name_linter.
-        base::rm("prior", envir = sys.frame(sys.parent()))
-      })(0, function() base::sys.parent())
-      sum(prior)
-    })(),
-    (function(prior = touch()) {
       (function(prior) {
         (function() base::rm("prior", envir = parent.frame(2L)))()
         sum(prior)

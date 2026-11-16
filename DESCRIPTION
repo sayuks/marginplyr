@@ -417,7 +417,8 @@ Config/testthat/start-first:
     share-unrecognised-backend,
     share-unresolved-frames,
     share-captured-removals,
-    share-evaluation-frames
+    share-evaluation-frames,
+    share-removal-targets
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool
