@@ -1,13 +1,15 @@
 # Require complete test line coverage
 
 The package requires 100% of its measured R source lines to execute in the
-test suite, with no coverage exclusions. The CI coverage job owns this
-measurement; the local Review-ready check runs without coverage. The local
+test suite, with no coverage exclusions. The CI coverage workflow owns this
+measurement: its legs measure disjoint shards of the test files, and its one
+`test-coverage` job merges them into the verdict and the Codecov report. The
+local Review-ready check runs without coverage. The local
 check remains the required boundary before review, while coverage failures are
-discovered in CI. The pull-request coverage job remains a visible, optional
+discovered in CI. The pull-request coverage run remains a visible, optional
 signal and does not restrict merging. The `main` ruleset has no required CI
-status checks. The CRAN release process still requires the successful coverage
-job and Codecov report for the exact candidate SHA.
+status checks. The CRAN release process still requires the successful
+`test-coverage` job and its Codecov report for the exact candidate SHA.
 
 The Full local source-tarball `R CMD check --as-cran` sets `NOT_CRAN=true` and
 requires every optional Suggest registered by the test suite. It runs the full

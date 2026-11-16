@@ -512,9 +512,10 @@ gh run list --commit "$candidate_sha" \
 Require routine R CMD check, documentation, lint (including both release
 contract verifiers), site, coverage, and the release matrix's release/devel/
 oldrel, depends-only, suite-coverage, library-isolation, and live backend jobs.
-The coverage job must show strict 100% test line coverage for the candidate SHA,
-and Codecov must show its 100% project report for that same SHA. A missing or
-still-processing Codecov report is not release evidence; wait for it or diagnose
+The `test-coverage` job must show strict 100% test line coverage for the
+candidate SHA, and Codecov must show its 100% project report for that same
+SHA. A missing or still-processing Codecov report is not release evidence; wait
+for it or diagnose
 the upload before proceeding. [ADR 0030](../design/adr/0030-require-complete-test-line-coverage.md)
 owns the reason coverage is checked here rather than rerun in formal preflight.
 If no strict manual release-matrix result exists for this SHA, obtain approval
