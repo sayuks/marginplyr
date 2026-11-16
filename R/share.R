@@ -7805,11 +7805,11 @@ scope_escape_captures <- function(scope, left) {
   })
 }
 
-# A literal whose body removes from the frame calling it can be called, once it
-# exists, from any frame and through a value the walk does not follow
-# (ADR 0010). Its body runs here from a caller the walk cannot place. What it
-# may remove now is a possible loss, and each name it requests from a frame
-# around the literal stays removable for the rest of the walk.
+# The scope after the literal `expr` is created, where the removals its body
+# makes from the frame calling it are attributed (ADR 0010). Its body runs here
+# from a caller the walk cannot place. What it may remove now is a possible
+# loss, and each name it requests from a frame around the literal stays
+# removable for the rest of the walk.
 scope_after_creation_removals <- function(expr, scope, lookup) {
   frame <- function_scope_frame(expr[[2L]], NULL)
   frame$invoked <- TRUE
@@ -7829,8 +7829,9 @@ scope_after_creation_removals <- function(expr, scope, lookup) {
 }
 
 # The effects of evaluating a computed call head that resolves to `closure`. A
-# literal invoked where it is written is held by no value, so the invocation the
-# caller walks is where its caller removals take effect.
+# head that is the literal `closure` was created from records only its
+# captures: its caller removals take effect at the invocation the caller walks
+# (ADR 0010).
 scope_after_computed_head <- function(head, closure, scope, lookup) {
   definition <- literal_function_definition(head)
   if (!is.null(definition) && identical(closure$definition, definition)) {
