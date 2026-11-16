@@ -1,6 +1,7 @@
 # Exercise sharded coverage through tools/coverage-check.R on a small package:
 # merged shard results must reproduce the unsharded verdict, uncovered lines
-# and per-line hits, and the merge refuses an incomplete set of shards.
+# and per-line hits, the merge refuses an incomplete set of shards, and each leg
+# and the merge report every test file's duration.
 source_root <- normalizePath(".")
 rscript <- file.path(R.home("bin"), "Rscript")
 expect <- function(ok, detail) if (!isTRUE(ok)) stop(detail, call. = FALSE)
@@ -36,7 +37,8 @@ write_fixture <- function(root) {
     # Suite scans read other test files, so a shard must keep every file.
     `test-c.R` = c("expect_equal(gamma(2), 4)",
       "expect_true(file.exists(test_path(\"test-b.R\")))"),
-    `test-d.R` = "expect_equal(alpha(3), 4)"
+    # The slowest file by construction, so durations are wall-clock per file.
+    `test-d.R` = c("Sys.sleep(1)", "expect_equal(alpha(3), 4)")
   )
   for (name in names(tests)) {
     writeLines(c("test_that(\"fixture\", {", paste0("  ", tests[[name]]), "})"),
@@ -45,28 +47,29 @@ write_fixture <- function(root) {
   file.copy(file.path(source_root, "inst/suggests/guard.R"),
     file.path(root, "inst/suggests"))
   for (path in c("coverage-check.R", "coverage-check-lib.R",
-                 "required-test-suggests.R")) {
+                 "coverage-durations-reporter.R", "required-test-suggests.R")) {
     file.copy(file.path(source_root, "tools", path), file.path(root, "tools"))
   }
 }
 
 # Each invocation gets its own RUNNER_TEMP, as each CI leg has its own runner;
 # covr would otherwise reuse the previous install and its traces.
-run <- function(args) {
+run <- function(args, summary = NULL) {
   runner <- tempfile("runner-")
   dir.create(runner)
   on.exit(unlink(runner, recursive = TRUE), add = TRUE)
   output <- suppressWarnings(system2(rscript, c("tools/coverage-check.R", args),
-    stdout = TRUE, stderr = TRUE, env = paste0("RUNNER_TEMP=", runner)))
+    stdout = TRUE, stderr = TRUE, env = c(paste0("RUNNER_TEMP=", runner),
+      if (!is.null(summary)) paste0("GITHUB_STEP_SUMMARY=", summary))))
   status <- attr(output, "status")
   list(status = if (is.null(status)) 0L else status,
     output = paste(output, collapse = "\n"))
 }
 
-in_root <- function(root, args) {
+in_root <- function(root, args, summary = NULL) {
   previous <- setwd(root)
   on.exit(setwd(previous), add = TRUE)
-  run(args)
+  run(args, summary)
 }
 
 # The verdict lines a reader compares: the tally and the uncovered list.
@@ -100,13 +103,34 @@ main <- function() {
 
   shards <- file.path(workspace, "shards")
   dir.create(shards)
+  # Every 3rd file in radix order.
+  assigned <- list(c("test-a.R", "test-d.R"), "test-b.R", "test-c.R")
   for (index in 1:3) {
-    leg <- in_root(root, c("--shard", paste0(index, "/3"), "--output",
-      file.path(shards, paste0("coverage-shard-", index, ".rds"))))
+    result <- file.path(shards, paste0("coverage-shard-", index, ".rds"))
+    summary <- file.path(workspace, paste0("summary-", index, ".md"))
+    leg <- in_root(root, c("--shard", paste0(index, "/3"), "--output", result),
+      summary)
     expect(leg$status == 0L, leg$output)
+    durations <- attr(readRDS(result), "marginplyr_shard")$durations
+    expect(is.data.frame(durations) &&
+      setequal(durations$file, assigned[[index]]) &&
+      all(is.finite(durations$seconds) & durations$seconds >= 0),
+      paste("Shard", index, "durations:", paste(capture.output(durations),
+        collapse = "\n")))
+    if (index == 1L) {
+      expect(durations$seconds[durations$file == "test-d.R"] >= 1 &&
+        durations$seconds[durations$file == "test-a.R"] < 1,
+        "test-d.R's one-second sleep is not attributed to it")
+    }
+    table <- readLines(summary)
+    expect(all(vapply(assigned[[index]], function(file) {
+      any(grepl(paste0("| ", file, " |"), table, fixed = TRUE))
+    }, logical(1))), paste(c("Shard summary lacks a file row:", table),
+      collapse = "\n"))
   }
+  merged_summary <- file.path(workspace, "summary-merged.md")
   merged <- in_root(root, c("--merge", shards, "--cobertura",
-    file.path(workspace, "merged.xml")))
+    file.path(workspace, "merged.xml")), merged_summary)
   expect(merged$status == 1L, merged$output)
   expect(identical(verdict(merged$output), expected),
     paste("Merged verdict differs:", merged$output, "Unsharded:", whole$output))
@@ -115,6 +139,15 @@ main <- function() {
   # alpha() runs in three test files, which fall in two shards.
   expect(all(c("R/alpha.R:2:3", "R/gamma.R:5:0") %in%
     line_hits(file.path(workspace, "merged.xml"))), "Merged hits are not summed")
+  # The aggregate lists every leg's files with the leg that ran each.
+  table <- readLines(merged_summary)
+  for (index in 1:3) {
+    for (file in assigned[[index]]) {
+      expect(any(grepl(paste0("| ", index, " | ", file, " |"), table,
+        fixed = TRUE)), paste(c("Merged summary lacks", file, table),
+        collapse = "\n"))
+    }
+  }
 
   for (bad in c("0/3", "4/3", "1/0", "1/5", "2")) {
     refused <- in_root(root, c("--shard", bad, "--output",
