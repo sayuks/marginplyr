@@ -128,11 +128,6 @@ test_that("local closures are valid unless a removal follows their capture", {
       rm(prior)
       do.call(callbacks$read, list())
     })(1),
-    (function(prior) {
-      remove_prior <- function() rm("prior", envir = parent.frame())
-      (function(prior) remove_prior())(2)
-      sum(prior)
-    })(1),
     (function() {
       recurse <- function(n) if (n == 0) 1 else recurse(n - 1)
       recurse(2)

@@ -4498,7 +4498,12 @@ scoped_data_symbols <- function(expr, scope, lookup) {
     bound <- scope_bound_names(scope)
     if (name %in% bound ||
           ("..." %in% bound && is_numbered_dot_reference(expr))) {
-      return(scope_promise_symbols(name, scope, lookup))
+      symbols <- scope_promise_symbols(name, scope, lookup)
+      # A closure that may remove the binding leaves the read reaching past it.
+      if (scope_may_have_removed(name, scope)) {
+        symbols <- unique(c(name, symbols))
+      }
+      return(symbols)
     }
     return(name)
   }
@@ -4603,7 +4608,7 @@ scoped_data_symbols <- function(expr, scope, lookup) {
       materialized_env_symbols(expr, scope, lookup)
     )))
   }
-  evaluation <- base_evalq_as_eval(expr, call_name, scope, lookup)
+  evaluation <- evaluator_as_eval(expr, call_name, scope, lookup)
   if (!is.null(evaluation)) {
     return(scoped_data_symbols(evaluation, scope, lookup))
   }
@@ -4765,7 +4770,7 @@ call_part_symbols <- function(expr, scope, lookup) {
     head_lookup <- lookup
     head_lookup$defer_definitions <- !is.null(closure)
     reads <- scoped_data_symbols(call_head, scope, head_lookup)
-    scope <- scope_after_removals(call_head, scope, lookup)
+    scope <- scope_after_computed_head(call_head, closure, scope, lookup)
   }
   if (!is.null(closure)) {
     for (variant in scope_closure_variants(closure)) {
@@ -4808,7 +4813,10 @@ call_part_symbols <- function(expr, scope, lookup) {
     reads <- c(reads, read_symbols(parts[[index]], scope, parts_lookup))
     scope <- scope_after_possible_removals(parts[[index]], scope, lookup)
   }
-  unique(c(reads, scope_capture_loss_reads(expr, scope, lookup)))
+  unique(c(
+    reads, scope_capture_loss_reads(expr, scope, lookup),
+    scope_replacement_symbols(expr, scope, lookup)
+  ))
 }
 
 # Read evaluated leaves of a deferred selector in the caller's scope.
@@ -6524,22 +6532,7 @@ scope_promise_symbols <- function(name, scope, lookup,
       if (isTRUE(lookup$defer_definitions) && !is.null(closure$elements)) {
         return(character())
       }
-      variants <- scope_closure_variants(closure)
-      return(unique(unlist(lapply(variants, function(variant) {
-        if (length(variant$unknown_definition_parts) > 0L) {
-          return(unresolved_lookup_name())
-        }
-        if (scope_closure_is_active(variant, scope)) return(character())
-        enclosure <- if (variant$enclosing <= length(scope)) {
-          seq.int(variant$enclosing, length(scope))
-        } else {
-          integer()
-        }
-        definition_data_symbols(
-          variant$definition, c(variant$frames, scope[enclosure]), lookup,
-          closure_origin = 1L + length(variant$frames)
-        )
-      }), use.names = FALSE)))
+      return(scope_closure_value_symbols(closure, scope, lookup))
     }
   }
   promise <- scope_promise(name, scope, function_lookup,
@@ -6550,6 +6543,71 @@ scope_promise_symbols <- function(name, scope, lookup,
   scoped_data_symbols(
     promise$expression, promise$scope[promise$evaluation], lookup
   )
+}
+
+# The reads of a closure value, without invoking it, under the enclosure each
+# variant names. A variant with an unknown definition part reads anything.
+scope_closure_value_symbols <- function(closure, scope, lookup) {
+  unique(unlist(lapply(scope_closure_variants(closure), function(variant) {
+    if (length(variant$unknown_definition_parts) > 0L) {
+      return(unresolved_lookup_name())
+    }
+    if (scope_closure_is_active(variant, scope)) return(character())
+    enclosure <- scope_variant_enclosure(variant, scope)
+    definition_data_symbols(
+      variant$definition, c(variant$frames, scope[enclosure]), lookup,
+      closure_origin = 1L + length(variant$frames)
+    )
+  }), use.names = FALSE))
+}
+
+# The indices of the walked frames a closure variant encloses, from its
+# enclosing frame outward; none when that frame is past the walked stack.
+scope_variant_enclosure <- function(variant, scope) {
+  if (variant$enclosing > length(scope)) {
+    return(integer())
+  }
+  seq.int(variant$enclosing, length(scope))
+}
+
+# The closure a `body<-` or `formals<-` call returns, keeping the variants
+# whose written definition the walk can read. NULL when none is readable.
+scope_readable_replacement <- function(expr, scope, lookup) {
+  operator <- static_call_name(expr)
+  if (is.null(operator) || !operator %in% c("body<-", "formals<-")) {
+    return(NULL)
+  }
+  scope_filter_closure(
+    scope_definition_replacement(expr, scope, lookup),
+    function(variant) length(variant$unknown_definition_parts) == 0L
+  )
+}
+
+# Record the captures a readable `body<-` or `formals<-` call's written
+# definition makes in the frames its enclosure reaches, as a literal
+# records them where it is created.
+scope_replacement_captures <- function(expr, scope, lookup) {
+  closure <- scope_readable_replacement(expr, scope, lookup)
+  for (variant in scope_closure_variants(closure)) {
+    live <- scope_variant_enclosure(variant, scope)
+    retained <- seq_along(variant$frames)
+    inner <- scope_record_captures(
+      variant$definition, c(variant$frames, scope[live]), lookup
+    )
+    scope[live] <- inner[length(retained) + seq_along(live)]
+    # A retained factory frame is off the walked stack, as a returned
+    # literal's frame is, so its captures escape into every walked frame.
+    scope <- scope_escape_captures(scope, inner[retained])
+  }
+  scope
+}
+
+# The reads a `body<-` or `formals<-` call makes by writing a definition the
+# walk can read, which it creates there as a literal is created (ADR 0010).
+# A variant it cannot read is left to the closure's invocation.
+scope_replacement_symbols <- function(expr, scope, lookup) {
+  closure <- scope_readable_replacement(expr, scope, lookup)
+  scope_closure_value_symbols(closure, scope, lookup)
 }
 
 # Effects of demanding a pending promise in its evaluation frame.
@@ -7309,18 +7367,31 @@ statement_reads_and_scope <- function(expr, scope, lookup = NULL,
                                lookup, value_scope = scope)
     ))
   }
+  # A readable definition write creates its definition here (ADR 0010).
+  replacement <- if (!rlang::is_missing(expr[[2L]]) &&
+                       !rlang::is_missing(expr[[3L]])) {
+    scope_definition_write(expr[[2L]], expr[[3L]])
+  }
   if (!identical(read_symbols, no_scope_reads)) {
     value <- unique(c(value, scope_setter_capture_reads(
       expr[[2L]], expr[[3L]], scope, lookup
     )))
+    if (!is.null(replacement)) {
+      value <- unique(c(value, scope_replacement_symbols(
+        replacement$value, scope, lookup
+      )))
+    }
+  }
+  after <- scope_after_removals(expr[[2L]], retained, lookup)
+  if (!is.null(replacement)) {
+    after <- scope_replacement_captures(replacement$value, after, lookup)
   }
   # Read a replacement target and the value in source order. Its eventual
   # binding depends on the shape of the target.
   list(
     reads = unique(c(read_symbols(expr[[2L]], scope, lookup), value)),
     scope = scope_after_carrier_write(
-      scope_after_removals(expr[[2L]], retained, lookup),
-      expr[[2L]], expr[[3L]], lookup, value_scope = scope
+      after, expr[[2L]], expr[[3L]], lookup, value_scope = scope
     )
   )
 }
@@ -7370,7 +7441,7 @@ scope_after_removals <- function(expr, scope, lookup) {
       rlang::as_name(unparenthesized_value(expr[[2L]])), scope, lookup
     ))
   }
-  evaluation <- base_evalq_as_eval(expr, name, scope, lookup)
+  evaluation <- evaluator_as_eval(expr, name, scope, lookup)
   if (!is.null(evaluation)) {
     return(scope_after_removals(evaluation, scope, lookup))
   }
@@ -7393,10 +7464,12 @@ scope_after_removals <- function(expr, scope, lookup) {
       expr[[2L]], scope, lookup, read_symbols = no_scope_reads
     )$scope)
   }
-  # With nothing bound, only a frame a literal here opens can hold a capture.
+  # With nothing bound, only a frame a literal here opens can hold a capture,
+  # unless a removal here is requested for the rest of a literal's lifetime.
   if (length(bound) == 0L &&
         !any(lengths(lapply(scope, "[[", "bound")) > 0L) &&
-        !"function" %in% all.names(expr)) {
+        !"function" %in% all.names(expr) &&
+        !scope_around_creation(scope)) {
     return(scope)
   }
   if (is_binding_statement(name, expr)) {
@@ -7406,7 +7479,8 @@ scope_after_removals <- function(expr, scope, lookup) {
     return(scope_possible_losses(scope, after))
   }
   if (identical(name, "function") && length(expr) >= 3L) {
-    return(scope_record_captures(expr, scope, lookup))
+    scope <- scope_record_captures(expr, scope, lookup)
+    return(scope_after_creation_removals(expr, scope, lookup))
   }
   local <- implicit_local_parts(expr, name, scope, lookup)
   if (!is.null(local)) {
@@ -7431,7 +7505,7 @@ scope_after_removals <- function(expr, scope, lookup) {
       rlang::as_name(head), scope, lookup, function_lookup = TRUE
     )
   } else if (rlang::is_call(head)) {
-    scope <- scope_after_removals(head, scope, lookup)
+    scope <- scope_after_computed_head(head, closure, scope, lookup)
   }
   if (!is.null(closure)) {
     after <- scope_after_closure_call(expr, closure, scope, lookup)
@@ -7465,6 +7539,7 @@ scope_after_removals <- function(expr, scope, lookup) {
   if (!is.null(mutation) && identical(static_call_name(mutation), "list2env")) {
     scope <- scope_forget_kinds(scope, list2env_setter_names(mutation, lookup))
   }
+  scope <- scope_replacement_captures(expr, scope, lookup)
   scope
 }
 
@@ -7552,6 +7627,7 @@ scope_possible_losses <- function(scope, after) {
     frame <- retain_scope_bindings(before, bound)
     frame$captured <- union(before$captured, reached$captured)
     frame$escaped <- union(before$escaped, reached$escaped)
+    frame$removable <- union(before$removable, reached$removable)
     for (name in intersect(names(reached$possible_closures), bound)) {
       frame$possible_closures[[name]] <- scope_join_members(list(
         frame$possible_closures[[name]], reached$possible_closures[[name]]
@@ -7661,10 +7737,16 @@ scope_removal_targets <- function(expr, scope, lookup) {
 
 # Apply a visible removal to its own frame or a statically visible caller.
 # Unresolved targets retain the conservative current-frame treatment. An
-# unplaced target may remove the names from any one walked frame.
+# unplaced target may remove the names from any one walked frame. A removal
+# that may reach a frame around a literal walked where it is created stays
+# possible for the rest of the walk.
 scope_after_removal_call <- function(expr, scope, lookup) {
   targets <- scope_removal_targets(expr, scope, lookup)
   removed <- targets$removed
+  reached <- if (targets$unplaced) seq_along(scope) else targets$frames
+  if (scope_around_creation(scope[reached])) {
+    scope <- scope_mark_removable(scope, removed %||% unresolved_lookup_name())
+  }
   if (targets$unplaced) {
     return(scope_possible_losses(scope, lapply(scope, function(frame) {
       retained <- if (!is.null(removed)) setdiff(frame$bound, removed)
@@ -7724,6 +7806,63 @@ scope_escape_captures <- function(scope, left) {
     frame$escaped <- union(frame$escaped, escaped)
     frame
   })
+}
+
+# The scope after the literal `expr` is created, where the removals its body
+# makes from the frame calling it are attributed (ADR 0010). Its body runs here
+# from a caller the walk cannot place. What it may remove now is a possible
+# loss, and each name it requests from a frame around the literal stays
+# removable for the rest of the walk.
+scope_after_creation_removals <- function(expr, scope, lookup) {
+  frame <- function_scope_frame(expr[[2L]], NULL)
+  frame$invoked <- TRUE
+  frame$unplaced_caller <- TRUE
+  frame$definition <- expr
+  # Creating the literal demands none of the promises around it.
+  around <- lapply(scope, function(outer) {
+    outer$defaults <- outer$arguments <- outer$dots <- NULL
+    outer$dot_closures <- NULL
+    outer$around_creation <- TRUE
+    outer
+  })
+  after <- statement_reads_and_scope(
+    expr[[3L]], c(list(frame), around), lookup, read_symbols = no_scope_reads
+  )$scope
+  scope_possible_losses(scope, after[-1L])
+}
+
+# The effects of evaluating a computed call head that resolves to `closure`. A
+# head that is the literal `closure` was created from records only its
+# captures: its caller removals take effect at the invocation the caller walks
+# (ADR 0010).
+scope_after_computed_head <- function(head, closure, scope, lookup) {
+  definition <- literal_function_definition(head)
+  if (!is.null(definition) && identical(closure$definition, definition)) {
+    return(scope_record_captures(definition, scope, lookup))
+  }
+  scope_after_removals(head, scope, lookup)
+}
+
+# Whether any of these frames is around a literal walked where it is created.
+scope_around_creation <- function(frames) {
+  any(vapply(frames, function(frame) {
+    isTRUE(frame$around_creation)
+  }, logical(1)))
+}
+
+# Mark names a living closure may remove from any frame: every frame holds
+# them, so whichever frames a later walk keeps still do.
+scope_mark_removable <- function(scope, names) {
+  lapply(scope, function(frame) {
+    frame$removable <- union(frame$removable, names)
+    frame
+  })
+}
+
+# Whether a closure created earlier may have removed `name` since it was bound.
+scope_may_have_removed <- function(name, scope) {
+  removable <- unlist(lapply(scope, "[[", "removable"), use.names = FALSE)
+  any(c(name, unresolved_lookup_name()) %in% removable)
 }
 
 # Record what a literal created in this scope captures: each name its body or
@@ -7877,13 +8016,17 @@ static_parent_frame_depth <- function(expr, scope, lookup) {
 # NULL is a frame the walk does not follow and that binds none of its names.
 # `NA` is a frame the walk cannot place, which may be any walked frame. From an
 # evaluated frame, depth 1 is base `eval()`'s own frame and so NULL, and any
-# deeper depth is `NA` (ADR 0010).
+# deeper depth is `NA`. Past the frame of a literal walked where it is created,
+# any depth is `NA` (ADR 0010).
 scope_caller_frame <- function(depth, scope) {
   index <- 1L
   while (depth > 0L) {
     frame <- scope[[index]]
     if (isTRUE(frame$evaluated)) {
       return(if (depth == 1L) NULL else NA_integer_)
+    }
+    if (isTRUE(frame$unplaced_caller)) {
+      return(NA_integer_)
     }
     if (!isTRUE(frame$invoked)) {
       return(NULL)
@@ -8372,17 +8515,77 @@ scope_after_evaluated_language <- function(language, frame, scope, lookup,
   Reduce(scope_possible_losses, lapply(seq_along(scope), run), scope)
 }
 
-# A known base `evalq()` as the `eval()` of its quoted expression, which is
-# what `evalq()` is defined to be.
-base_evalq_as_eval <- function(expr, name, scope, lookup) {
-  if (!identical(name, "evalq") ||
-        !is_known_base_frame_call(expr, name, scope, lookup)) {
+# A known evaluator as the `eval()` of the code it runs: base `evalq()`, which
+# is defined to be one, and base `with()`, `rlang::with_env()` and
+# `rlang::inject()` given the environment that code runs in (ADR 0010). NULL
+# where R runs it in the current frame or in data enclosed by it, which the
+# ordinary call walk reads: `inject()` without `env`, and `with()` or
+# `with_env()` on a known base `list()` or `data.frame()`. Any other argument
+# may hold a walked frame. Injection operands run in the current frame before
+# the code, so they precede the `eval()` in a `list()`.
+evaluator_as_eval <- function(expr, name, scope, lookup) {
+  evaluator <- switch(
+    name %||% "",
+    evalq = list(package = "base", fun = base::evalq),
+    with = list(package = "base", fun = base::with, environment = "data"),
+    with_env = list(package = "rlang", fun = rlang::with_env,
+                    environment = "env"),
+    inject = list(package = "rlang", fun = rlang::inject, environment = "env")
+  )
+  if (is.null(evaluator) ||
+        !is_known_package_frame_call(expr, name, evaluator$package, scope,
+                                     lookup)) {
     return(NULL)
   }
-  parts <- static_matched_arguments(expr, base::evalq)
+  parts <- static_matched_arguments(expr, evaluator$fun)
   if (is.null(parts) || !"expr" %in% names(parts)) {
     return(NULL)
   }
-  parts$expr <- rlang::call2(quote(base::quote), parts$expr)
-  rlang::call2(quote(base::eval), !!!parts)
+  if (identical(name, "evalq")) {
+    parts$expr <- rlang::call2(quote(base::quote), parts$expr)
+    return(rlang::call2(quote(base::eval), !!!parts))
+  }
+  environment <- parts[[evaluator$environment]]
+  if (is.null(environment) ||
+        is_known_data_constructor(environment, scope, lookup)) {
+    return(NULL)
+  }
+  evaluation <- rlang::call2(
+    quote(base::eval), rlang::call2(quote(base::quote), parts$expr),
+    environment
+  )
+  operands <- if (identical(name, "inject")) injection_operands(parts$expr)
+  if (length(operands) == 0L) {
+    return(evaluation)
+  }
+  rlang::call2(quote(base::list), !!!operands, evaluation)
+}
+
+# Whether an argument is a known base `list()` or `data.frame()` call, which
+# builds a data value and never an environment.
+is_known_data_constructor <- function(expr, scope, lookup) {
+  expr <- unparenthesized_value(expr)
+  name <- static_call_name(expr)
+  !is.null(name) && name %in% c("list", "data.frame") &&
+    is_known_base_frame_call(expr, name, scope, lookup)
+}
+
+# The operands of the injection operators rlang processes in `expr`.
+injection_operands <- function(expr) {
+  if (!is.call(expr)) {
+    return(list())
+  }
+  if (rlang::is_call(expr, "!", n = 1L) &&
+        rlang::is_call(expr[[2L]], "!", n = 1L)) {
+    operand <- expr[[2L]][[2L]]
+    if (rlang::is_call(operand, "!", n = 1L)) operand <- operand[[2L]]
+    return(list(operand))
+  }
+  if (rlang::is_call(expr, "{", n = 1L) &&
+        rlang::is_call(expr[[2L]], "{", n = 1L)) {
+    return(list(expr[[2L]][[2L]]))
+  }
+  parts <- as.list(expr)
+  present <- !vapply(parts, rlang::is_missing, logical(1))
+  unlist(lapply(parts[present], injection_operands), recursive = FALSE)
 }

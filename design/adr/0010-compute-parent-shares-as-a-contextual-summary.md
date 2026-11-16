@@ -121,14 +121,27 @@ A caller frame or evaluation environment the analysis cannot place on a frame
 it walks, such as one counted past the frame `local()` or `eval()` evaluates
 in, is unreadable in the same way: a removal aimed at it may remove its names
 from any walked frame, and code evaluated in it reads an earlier alias from
-the data mask whatever local binding shadows that name (#1679).
-Two effects of a closure are attributed where it is invoked, not where it is
-created: a body or default that `body<-` or `formals<-` writes, and a removal
-its body makes from the frame that calls it. Tracking closures through calls
-is what refuses those (#1680). For everything else, soundness never depends on
-knowing which closure a value holds: tracking only lets more sources be
-accepted. The same reading decides when an ordinary summary uses an earlier
-share.
+the data mask whatever local binding shadows that name (#1679). `with()`,
+`rlang::with_env()` and `rlang::inject()` place the environment they evaluate
+in as `eval()` places its own; to `with()` and `rlang::with_env()`, an argument
+the analysis cannot read as a data value counts as that environment (#1684).
+A removal a literal's body makes from the frame that calls it, directly or
+through any evaluator placed as `eval()` is, is attributed where the literal
+is created, since from then it may be called from any frame: each name it
+requests, or every name when the analysis cannot read them, may be removed
+from any frame the analysis walks for the rest of the walk, so a later binding
+of that name still reads the earlier alias (#1683). This adds to the removal a
+call to the literal by name places where that call puts it, and does not
+replace it. A literal invoked where it is written is held by no value, so its
+removal takes effect where that call places it.
+A body or default that `body<-` or `formals<-` writes with a value the
+analysis can read is read where it is written, as a literal is where it is
+created (#1682). One effect of a closure is attributed where it is invoked,
+not where it is created: such a write whose value the analysis cannot read.
+Tracking closures through calls is what refuses it (#1680). For everything
+else, soundness never depends on knowing which closure a value holds:
+tracking only lets more sources be accepted. The same reading decides when an
+ordinary summary uses an earlier share.
 
 A direct call must have an explicit output name distinct from its source
 summary. `across()` is supported when its selection resolves to preceding
@@ -590,6 +603,20 @@ as a decision of its own rather than as this one's granularity: the refusal
 states that marginplyr will not produce a number nothing has checked, and an
 `NA` in its place discards that statement into a value that reads like missing
 data.
+
+*`with()` on an unreadable argument as a data value*, so that
+`with(dd, sum(prior))` on a data frame `dd` keeps reading the local `prior`, is
+rejected (#1684). `eval()` already counts such an argument as an environment
+it cannot place, and refuses the same read through `eval(quote(sum(prior)),
+dd)`; reading it as data for `with()` alone would accept a removal through a
+formal holding `environment()`. The cost is confined to a read or removal of a
+local binding that shadows an earlier alias.
+
+*Re-arming a caller removal only where the literal can escape*, so that
+`r(); prior <- 2; sum(prior)` stays shareable after a by-name call, is rejected
+(#1683). Whether a later call reaches the literal through a value is the
+question the walk does not follow functions held as values to answer (#1652),
+so the possible removal stays for the rest of the walk.
 
 ## Amendment: the eligible-type rule is established without reading a row
 

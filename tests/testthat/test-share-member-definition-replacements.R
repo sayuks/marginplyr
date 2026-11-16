@@ -7,8 +7,9 @@ test_that("member body replacement refreshes share dependencies", {
   }))
 })
 
-# A body<- replacement is read where the closure is invoked (ADR 0010), so
-# each of these refuses by following the closure through the functional.
+# A body<- replacement is read only once the walk knows which closure it
+# replaces (ADR 0010), so each of these refuses by following the closure
+# through the functional.
 stock_functional_body_cases <- function(body) {
   list(
     rlang::expr({
