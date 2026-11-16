@@ -6570,15 +6570,20 @@ scope_variant_enclosure <- function(variant, scope) {
   seq.int(variant$enclosing, length(scope))
 }
 
-# The closure a `body<-` or `formals<-` call returns, keeping the variants
-# whose written definition the walk can read. NULL when none is readable.
-scope_readable_replacement <- function(expr, scope, lookup) {
+# The closure a `body<-` or `formals<-` call returns. NULL for any other call.
+scope_written_replacement <- function(expr, scope, lookup) {
   operator <- static_call_name(expr)
   if (is.null(operator) || !operator %in% c("body<-", "formals<-")) {
     return(NULL)
   }
+  scope_definition_replacement(expr, scope, lookup)
+}
+
+# The closure a `body<-` or `formals<-` call returns, keeping the variants
+# whose written definition the walk can read. NULL when none is readable.
+scope_readable_replacement <- function(expr, scope, lookup) {
   scope_filter_closure(
-    scope_definition_replacement(expr, scope, lookup),
+    scope_written_replacement(expr, scope, lookup),
     function(variant) length(variant$unknown_definition_parts) == 0L
   )
 }
@@ -6602,11 +6607,11 @@ scope_replacement_captures <- function(expr, scope, lookup) {
   scope
 }
 
-# The reads a `body<-` or `formals<-` call makes by writing a definition the
-# walk can read, which it creates there as a literal is created (ADR 0010).
-# A variant it cannot read is left to the closure's invocation.
+# The reads a `body<-` or `formals<-` call makes by writing a definition,
+# which it creates there as a literal is created (ADR 0010). A variant whose
+# definition the walk cannot read may read any name.
 scope_replacement_symbols <- function(expr, scope, lookup) {
-  closure <- scope_readable_replacement(expr, scope, lookup)
+  closure <- scope_written_replacement(expr, scope, lookup)
   scope_closure_value_symbols(closure, scope, lookup)
 }
 

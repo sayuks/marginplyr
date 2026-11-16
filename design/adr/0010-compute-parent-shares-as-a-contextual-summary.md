@@ -139,14 +139,13 @@ of that name still reads the earlier alias (#1683). This adds to the removal a
 call to the literal by name places where that call puts it, and does not
 replace it. A literal invoked where it is written is held by no value, so its
 removal takes effect where that call places it.
-A body or default that `body<-` or `formals<-` writes with a value the
-analysis can read is read where it is written, as a literal is where it is
-created (#1682). One effect of a closure is attributed where it is invoked,
-not where it is created: such a write whose value the analysis cannot read.
-Tracking closures through calls is what refuses it (#1680). For everything
-else, soundness never depends on knowing which closure a value holds:
-tracking only lets more sources be accepted. The same reading decides when an
-ordinary summary uses an earlier share.
+A body or default that `body<-` or `formals<-` writes is read where it is
+written, as a literal is where it is created (#1682). A written value the
+analysis cannot read counts there as a possible read of every name the closure
+can reach, whether or not the closure is later called (#1687). Soundness
+therefore never depends on knowing which closure a value holds: tracking
+closures through calls only lets more sources be accepted. The same reading
+decides when an ordinary summary uses an earlier share.
 
 A direct call must have an explicit output name distinct from its source
 summary. `across()` is supported when its selection resolves to preceding
