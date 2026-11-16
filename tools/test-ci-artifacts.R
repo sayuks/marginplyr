@@ -134,11 +134,11 @@ main <- function() {
   write(sub(alias_step, "", postgres_original, fixed = TRUE), postgres)
   check(1L, "Workflow executable contract changed")
   write(postgres_original, postgres)
-  deadlines <- list(c("R-CMD-check.yaml", "R-CMD-check", "120", "119"),
+  deadlines <- list(c("R-CMD-check.yaml", "R-CMD-check", "180", "179"),
                     c("release-matrix.yaml", "structure", "360", "359"),
-                    c("release-matrix.yaml", "depends-only", "90", "89"),
-                    c("release-matrix.yaml", "tarball", "90", "89"),
-                    c("release-matrix.yaml", "backend", "120", "119"),
+                    c("release-matrix.yaml", "depends-only", "120", "119"),
+                    c("release-matrix.yaml", "tarball", "150", "149"),
+                    c("release-matrix.yaml", "backend", "180", "179"),
                     c("test-coverage.yaml", "test-coverage", "360", "359"))
   for (deadline in deadlines) {
     path <- file.path(dirname(workflow), deadline[[1L]])
