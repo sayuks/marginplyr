@@ -8514,12 +8514,12 @@ scope_after_evaluated_language <- function(language, frame, scope, lookup,
 
 # A known evaluator as the `eval()` of the code it runs: base `evalq()`, which
 # is defined to be one, and base `with()`, `rlang::with_env()` and
-# `rlang::inject()` given the environment that code runs in. NULL where R runs
-# it in the current frame or in data enclosed by it, which the ordinary call
-# walk reads: `inject()` without `env`, and `with()` or `with_env()` on a known
-# base `list()` or `data.frame()`. Any other argument may hold a walked frame.
-# Injection operands run in the current frame before the code, so they precede
-# the `eval()` in a `list()` (ADR 0010).
+# `rlang::inject()` given the environment that code runs in (ADR 0010). NULL
+# where R runs it in the current frame or in data enclosed by it, which the
+# ordinary call walk reads: `inject()` without `env`, and `with()` or
+# `with_env()` on a known base `list()` or `data.frame()`. Any other argument
+# may hold a walked frame. Injection operands run in the current frame before
+# the code, so they precede the `eval()` in a `list()`.
 evaluator_as_eval <- function(expr, name, scope, lookup) {
   evaluator <- switch(
     name %||% "",
