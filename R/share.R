@@ -7365,7 +7365,8 @@ statement_reads_and_scope <- function(expr, scope, lookup = NULL,
     ))
   }
   # A readable definition write creates its definition here (ADR 0010).
-  replacement <- if (!rlang::is_missing(expr[[3L]])) {
+  replacement <- if (!rlang::is_missing(expr[[2L]]) &&
+                       !rlang::is_missing(expr[[3L]])) {
     scope_definition_write(expr[[2L]], expr[[3L]])
   }
   if (!identical(read_symbols, no_scope_reads)) {
