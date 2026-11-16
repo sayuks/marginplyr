@@ -79,8 +79,9 @@ times at `test-diagnostic-pluralization.R:248`, which asserts that each
 pluralizing diagnostic's pinning test file exists under `test_path()`, for
 `test-grouping-backends.R`, `test-grouping-bare-column.R`,
 `test-assigned-summary-collisions.R`, `test-contextual-helpers.R` and
-`test-execution-conditions.R`, none of them in shard 4. Shards therefore keep
-every test file and select theirs through `test_check()`'s `filter`.
+`test-execution-conditions.R`, none of them in shard 4. The full-suite run
+below therefore kept every test file and selected each shard's through
+`test_check()`'s `filter`.
 
 The same run's shard 2 failed in `test-duckdb-json-metadata.R` because the
 local run had no prepared DuckDB JSON extension; that was the local
