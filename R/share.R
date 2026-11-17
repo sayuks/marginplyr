@@ -357,6 +357,11 @@
 #' | Arrow | Neither; shares are rejected outright |
 #' | General dbplyr | Type from the dialect, and cardinality as below |
 #'
+#' The *Backend support matrix* in the [database guide][db] sets each backend
+#' family's share support beside its other answers.
+#'
+#' [db]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html
+#'
 #' Arrow inputs reject both helpers after expression planning and common
 #' Margin-operation validation but before constructing a summary query. The
 #' reason belongs to the source summary they share, so it applies to both, and

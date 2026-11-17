@@ -196,8 +196,9 @@ such as \code{where(~ any(.x == "x"))} can silently select different columns on
 a lazy input than on a local one; marginplyr does not detect it. To select
 on values, call \code{\link[dplyr:collect]{dplyr::collect()}} first, and set \code{.check_margin_label}
 explicitly, since its default changes to \code{TRUE} for the collected data.
-Where a lazy backend cannot supply typed metadata without reading data, a
-predicate is refused; select the columns by name, or collect first.
+Where a lazy backend cannot supply those types without a query, a predicate
+is refused; \emph{\link[=summarize_with_margins]{Database backend coverage}} names
+which backends those are. Select the columns by name, or collect first.
 }
 
 \section{Grouped and row-wise inputs}{

@@ -132,9 +132,14 @@ see \emph{Result metadata}.
 With a character \code{.margin_label}, the default, a grouping dimension that
 is not a factor becomes character so that it can hold the label:
 \code{.grouping = rollup(year)} over an integer \code{year} returns \code{year} as
-character, with \code{"Total"} on the margin row. A factor dimension instead
-gains the label as a new level. \code{.margin_label = NULL} or \code{NA_character_}
-keeps every dimension's type and marks margin rows with a missing value.
+character, with \code{"Total"} on the margin row. On a lazy input the text is
+the backend's own cast, so a double \code{10} reads \code{"10.0"} on DuckDB and
+SQLite and a logical \code{TRUE} reads \code{"true"} or \code{"1"}; \emph{Converted
+dimension text} in the \href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html}{database guide} tabulates them. When the
+text matters, give the column the type you want with \code{\link[dplyr:mutate]{dplyr::mutate()}}
+first. A factor dimension instead gains the label as a new level.
+\code{.margin_label = NULL} or \code{NA_character_} keeps every dimension's type and
+marks margin rows with a missing value.
 }
 \description{
 \code{\link[=summarize_with_margins]{summarize_with_margins()}} extends \code{\link[dplyr:summarize]{dplyr::summarize()}} with grouping sets,
@@ -200,8 +205,9 @@ such as \code{where(~ any(.x == "x"))} can silently select different columns on
 a lazy input than on a local one; marginplyr does not detect it. To select
 on values, call \code{\link[dplyr:collect]{dplyr::collect()}} first, and set \code{.check_margin_label}
 explicitly, since its default changes to \code{TRUE} for the collected data.
-Where a lazy backend cannot supply typed metadata without reading data, a
-predicate is refused; select the columns by name, or collect first.
+Where a lazy backend cannot supply those types without a query, a predicate
+is refused; \emph{\link[=summarize_with_margins]{Database backend coverage}} names
+which backends those are. Select the columns by name, or collect first.
 }
 
 \section{Grouped and row-wise inputs}{
@@ -549,7 +555,10 @@ Most summaries on DuckDB and PostgreSQL use one native
 and the summaries listed under \emph{Portable fallback SQL} in the
 \href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html}{database guide} use a portable \verb{UNION ALL} query with one branch per
 grouping set and the same result. Asking for a Margin order never changes
-which of the two runs.
+which of the two runs. The text of a converted dimension is each backend's
+own cast, so it can differ from a local result's; see Value. The \emph{Backend
+support matrix} in the database guide sets each backend family's answers
+side by side, including what becomes of a factor dimension.
 
 Continuous integration executes Margin queries on these backends:
 \itemize{
@@ -566,14 +575,14 @@ SQL generation, not execution, is verified for Access, SAP HANA, Hive,
 Impala, MariaDB, MySQL, Oracle, Amazon Redshift, Snowflake, Spark SQL, and
 Teradata, and for generic DBI and ODBC connections.
 
+A \code{\link[tidyselect:where]{tidyselect::where()}} predicate, in \code{.by}, \code{.grouping}, or a summary, is
+answered on DuckDB, Arrow, and \code{dtplyr} inputs. SQLite, PostgreSQL, and
+every other SQL connection cannot report column types without a query, so
+they refuse one.
+
 On SQLite and DuckDB, identifiers differing only in ASCII letter case name
 the same column, so a result refuses two public columns that would collide
 under that rule and names both spellings.
-
-DuckDB stores a factor as an \code{ENUM}, which marginplyr rebuilds with its
-levels; an \code{ENUM} carries no ordered flag, so an ordered factor returns
-unordered. Other SQL backends store a factor as text before marginplyr
-reads it.
 
 A lazy result's Margin order is the outermost query's \verb{ORDER BY}, which
 \code{\link[dplyr:collect]{dplyr::collect()}} and \code{\link[dplyr:compute]{dplyr::compute()}} observe. Whether it survives

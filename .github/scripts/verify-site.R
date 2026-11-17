@@ -372,9 +372,15 @@ markers <- list(
     # an empty record.
     "share_dialect         errored",
     "1 invocation handled",
-    # The verification section, which states no scope of its own: the
-    # `summarize_with_margins()` reference owns that, so a marker naming a
-    # backend here would pin a restatement this section does not carry.
+    # The backend support matrix and the converted-dimension table, by their
+    # anchors and by one cell each. The verification paragraph beside them
+    # states no scope of its own: the `summarize_with_margins()` reference owns
+    # that, so a marker naming a backend there would pin a restatement the
+    # paragraph does not carry.
+    "id=\"backend-support-matrix\"",
+    "A catalog query and a zero-row read",
+    "id=\"converted-dimension-text\"",
+    "19723.0",
     "SQL simulation is useful evidence about rendering",
     "treat a simulator-only backend as SQL-generation support",
     "Which claim rests on which is stated in one place",

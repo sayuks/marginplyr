@@ -99,9 +99,16 @@
 #'   With a character `.margin_label`, the default, a grouping dimension that
 #'   is not a factor becomes character so that it can hold the label:
 #'   `.grouping = rollup(year)` over an integer `year` returns `year` as
-#'   character, with `"Total"` on the margin row. A factor dimension instead
-#'   gains the label as a new level. `.margin_label = NULL` or `NA_character_`
-#'   keeps every dimension's type and marks margin rows with a missing value.
+#'   character, with `"Total"` on the margin row. On a lazy input the text is
+#'   the backend's own cast, so a double `10` reads `"10.0"` on DuckDB and
+#'   SQLite and a logical `TRUE` reads `"true"` or `"1"`; *Converted
+#'   dimension text* in the [database guide][db] tabulates them. When the
+#'   text matters, give the column the type you want with [dplyr::mutate()]
+#'   first. A factor dimension instead gains the label as a new level.
+#'   `.margin_label = NULL` or `NA_character_` keeps every dimension's type and
+#'   marks margin rows with a missing value.
+#'
+#'   [db]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html
 #'
 #' @details
 #' [grouping_sets()] forms a union of grouping families. [grouping_spec()]
@@ -152,8 +159,9 @@
 #' a lazy input than on a local one; marginplyr does not detect it. To select
 #' on values, call [dplyr::collect()] first, and set `.check_margin_label`
 #' explicitly, since its default changes to `TRUE` for the collected data.
-#' Where a lazy backend cannot supply typed metadata without reading data, a
-#' predicate is refused; select the columns by name, or collect first.
+#' Where a lazy backend cannot supply those types without a query, a predicate
+#' is refused; *[Database backend coverage][summarize_with_margins]* names
+#' which backends those are. Select the columns by name, or collect first.
 #'
 #' @section Grouped and row-wise inputs:
 #' When `.data` has been grouped with [dplyr::group_by()] and `.by` is `NULL`,
@@ -485,7 +493,10 @@
 #' and the summaries listed under *Portable fallback SQL* in the
 #' [database guide][db] use a portable `UNION ALL` query with one branch per
 #' grouping set and the same result. Asking for a Margin order never changes
-#' which of the two runs.
+#' which of the two runs. The text of a converted dimension is each backend's
+#' own cast, so it can differ from a local result's; see Value. The *Backend
+#' support matrix* in the database guide sets each backend family's answers
+#' side by side, including what becomes of a factor dimension.
 #'
 #' Continuous integration executes Margin queries on these backends:
 #'
@@ -503,14 +514,14 @@
 #'
 #' [db]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html
 #'
+#' A [tidyselect::where()] predicate, in `.by`, `.grouping`, or a summary, is
+#' answered on DuckDB, Arrow, and `dtplyr` inputs. SQLite, PostgreSQL, and
+#' every other SQL connection cannot report column types without a query, so
+#' they refuse one.
+#'
 #' On SQLite and DuckDB, identifiers differing only in ASCII letter case name
 #' the same column, so a result refuses two public columns that would collide
 #' under that rule and names both spellings.
-#'
-#' DuckDB stores a factor as an `ENUM`, which marginplyr rebuilds with its
-#' levels; an `ENUM` carries no ordered flag, so an ordered factor returns
-#' unordered. Other SQL backends store a factor as text before marginplyr
-#' reads it.
 #'
 #' A lazy result's Margin order is the outermost query's `ORDER BY`, which
 #' [dplyr::collect()] and [dplyr::compute()] observe. Whether it survives
