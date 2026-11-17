@@ -2047,6 +2047,14 @@ test_that("a printed Grouping specification shows its arguments", {
     utils::capture.output(print(new_grouping_spec("nonesuch", list(quote(a))))),
     "<marginplyr Grouping specification: nonesuch>"
   )
+  # `grouping_set()` stores the kind `"set"`, so this kind is one no rule
+  # names even though it prints under a constructor's name.
+  expect_identical(
+    utils::capture.output(
+      print(new_grouping_spec("grouping_set", list(rlang::quo(a))))
+    ),
+    "<marginplyr Grouping specification: grouping_set>"
+  )
   unreadable <- rlang::new_environment(list(type = "rollup"))
   makeActiveBinding("args", function() stop("no arguments"), unreadable)
   expect_identical(

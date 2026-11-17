@@ -453,23 +453,18 @@ print.margin_grouping_spec <- function(x, ...) {
     ">\n",
     sep = ""
   )
-  call_lines <- grouping_spec_call_lines(x, printed)
+  call_lines <- grouping_spec_call_lines(x, kind)
   cat(paste0(call_lines, "\n", recycle0 = TRUE), sep = "")
   invisible(x)
 }
 
 # The constructor call a specification was written as, as the lines it
-# deparses to, so a stored specification reads back without data. `printed` is
-# the name the header printed; only a constructor the registry holds is
-# written as a call, so a kind no rule names keeps the header alone. An
-# argument list that cannot be read, or is empty, adds nothing the header does
-# not say, and is caught as the kind's read is, since a print method has no
-# refusal to reach.
-grouping_spec_call_lines <- function(x, printed) {
-  constructors <- vapply(
-    grouping_kind_rules(), function(rule) rule$constructor, character(1)
-  )
-  if (!printed %in% constructors) {
+# deparses to, or no lines. `kind` is the value the header's read returned.
+# Where the lines are written, and why the argument list is read inside a
+# catch, are ADR 0008's amendment for a printed specification's call.
+grouping_spec_call_lines <- function(x, kind) {
+  rule <- find_grouping_kind_rule(kind)
+  if (is.null(rule)) {
     return(character())
   }
   args <- tryCatch(x$args, error = function(cnd) NULL)
@@ -478,7 +473,7 @@ grouping_spec_call_lines <- function(x, printed) {
     return(character())
   }
   rlang::expr_deparse(
-    rlang::call2(printed, !!!lapply(args, rlang::quo_squash))
+    rlang::call2(rule$constructor, !!!lapply(args, rlang::quo_squash))
   )
 }
 

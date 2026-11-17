@@ -917,9 +917,11 @@ nested-specification refusals keep their Package conditions.
 
 The printed line the amendments above settle is unchanged and is now followed
 by the constructor call the specification was written as, so a stored
-specification reads back without data. The call is written only where the
-header names a constructor the registry holds and the argument list reads as a
-nonempty list of quosures; an empty list adds nothing the header does not say.
+specification reads back without data. The call is written only where a
+registry rule answers the kind the header read, and the argument list reads as
+a nonempty list of quosures; an empty list adds nothing the header does not
+say. A kind no rule answers keeps the header alone even when the name it prints
+under spells a constructor's, since no constructor wrote it.
 The argument list is read once, inside a catch of its own, for the reason the
 kind's read is: a print method has no refusal to reach, so a specification
 whose arguments cannot be read prints the header alone, as it did.
