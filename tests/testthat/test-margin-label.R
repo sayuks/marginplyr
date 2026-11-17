@@ -2144,6 +2144,45 @@ test_that("an observed-collision opt-out retains structural identity", {
   expect_setequal(result$set, c(1L, 2L))
 })
 
+# `grouping_bit()` and `grouping_id()` are summary helpers, so a verb with no
+# summaries offers `.id` alone as what keeps the rows apart (#1703).
+test_that("an observed-collision opt-out names only what the verb offers", {
+  data <- data.frame(group = c("All", "b"), value = 1:2)
+  verbs <- list(
+    expand_with_margins = function(.margin_label) {
+      expand_with_margins(
+        data, .grouping = rollup(group), .margin_label = .margin_label
+      )
+    },
+    nest_with_margins = function(.margin_label) {
+      nest_with_margins(
+        data, value, .grouping = rollup(group), .margin_label = .margin_label
+      )
+    },
+    nest_by_with_margins = function(.margin_label) {
+      nest_by_with_margins(
+        data, .grouping = rollup(group), .margin_label = .margin_label
+      )
+    }
+  )
+
+  for (verb in names(verbs)) {
+    for (label in list("All", list(group = "All"))) {
+      error <- expect_error(verbs[[verb]](label), class = "marginplyr_error")
+      expect_match(
+        conditionMessage(error),
+        paste0(
+          "Set `.check_margin_label = FALSE` only if you retain `.id` to ",
+          "distinguish source and Margin rows."
+        ),
+        fixed = TRUE,
+        info = verb
+      )
+      expect_no_match(conditionMessage(error), "grouping_", info = verb)
+    }
+  }
+})
+
 # The remedy has to be one. A bare `NULL` is the whole of `.margin_label`, so
 # it was a remedy only where there was a single dimension.
 test_that("the NA-level refusal names a remedy a caller can write", {

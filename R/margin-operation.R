@@ -428,7 +428,10 @@ drop_columnless_window_order <- function(data) {
   data
 }
 
-validate_margin_operation <- function(operation) {
+# `on_observed_collision` is the verb's own refusal of a Margin label found in
+# its grouping columns, since what can keep source and Margin rows apart is a
+# property of the verb.
+validate_margin_operation <- function(operation, on_observed_collision) {
   check_margin_operation(operation)
   with_margin_error_call(
     validate_margin_label(
@@ -444,7 +447,8 @@ validate_margin_operation <- function(operation) {
       .margin_label = operation$margin_label,
       margin_labels = operation$margin_labels,
       .check_margin_label = operation$check_margin_label,
-      column_info = operation$column_info
+      column_info = operation$column_info,
+      on_observed_collision = on_observed_collision
     ),
     call = operation$call
   )

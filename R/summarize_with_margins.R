@@ -809,7 +809,10 @@ execute_margin_summary <- function(operation, dots, check_share_source) {
       # ADR 0005 places them ahead of the label query below; staging rewrites
       # the same dots again, per branch.
       check_grouping_helper_calls(dots, plan)
-      validate_margin_operation(operation)
+      validate_margin_operation(
+        operation,
+        on_observed_collision = abort_summary_label_collision
+      )
 
       if (
         has_shares &&

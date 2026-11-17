@@ -161,7 +161,10 @@ expand_with_margins <- function(.data,
 
 execute_margin_expand <- function(operation) {
   check_margin_operation(operation)
-  validate_margin_operation(operation)
+  validate_margin_operation(
+    operation,
+    on_observed_collision = abort_observed_label_collision
+  )
   # Expansion always uses the portable adapter, so a Margin order always reads
   # its Grouping bits from a per-branch identifier literal.
   sort_id <- margin_sort_identifier(

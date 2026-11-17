@@ -364,7 +364,10 @@ execute_margin_nest <- function(operation, .key, .keep, rowwise = FALSE) {
       plan <- operation$plan
       group_cols <- c(plan$by, plan$dimensions)
       if (identical(operation$backend$kind, "local")) {
-        validate_margin_operation(operation)
+        validate_margin_operation(
+          operation,
+          on_observed_collision = abort_observed_label_collision
+        )
         sorting <- margin_sorting(operation)
         set_col <- operation$set_id_name %||% new_margin_internal_names(
           1L, c(operation$data_vars, .key), prefix = "..marginplyr_nest_"
@@ -525,7 +528,10 @@ execute_margin_nest <- function(operation, .key, .keep, rowwise = FALSE) {
       )
       names(identity_missing) <- plan$dimensions
 
-      validate_margin_operation(operation)
+      validate_margin_operation(
+        operation,
+        on_observed_collision = abort_observed_label_collision
+      )
 
       expanded <- expand_margin_union(
         data,
