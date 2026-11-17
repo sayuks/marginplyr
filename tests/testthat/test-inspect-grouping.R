@@ -448,9 +448,9 @@ renaming_grouping_data <- function() {
 
 renaming_grouping_message <- function() {
   paste0(
-    "Can't rename grouping dimension:\n",
+    "Can't rename Margin dimension:\n",
     "i `area = region`.\n",
-    "i Grouping dimensions must name existing columns."
+    "i Margin dimensions must name existing columns."
   )
 }
 

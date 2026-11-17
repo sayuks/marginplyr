@@ -122,8 +122,8 @@ test_that("classed arrays and their packed components accept missing labels", {
           expect_error(
             expand_with_margins(input, .grouping = rollup(key),
                                 .margin_label = "All", .sort = "none"),
-            if (packed) "packed grouping dimensions" else
-              "matrix or array grouping dimensions",
+            if (packed) "packed Margin dimensions" else
+              "matrix or array Margin dimensions",
             class = "marginplyr_error"
           )
         }

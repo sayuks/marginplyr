@@ -2015,9 +2015,9 @@ test_that("selectors and fixed .by columns are resolved once", {
 test_that("a renaming grouping selection is refused by every constructor", {
   data_vars <- c("region", "year", "value")
   renamed_message <- paste0(
-    "Can't rename grouping dimension:\n",
+    "Can't rename Margin dimension:\n",
     "i `area = region`.\n",
-    "i Grouping dimensions must name existing columns."
+    "i Margin dimensions must name existing columns."
   )
   renaming_calls <- list(
     quote(tidyselect::all_of(c(area = "region"))),
@@ -2065,9 +2065,9 @@ test_that("a renaming grouping selection is refused by every constructor", {
   expect_identical(
     conditionMessage(several),
     paste0(
-      "Can't rename grouping dimensions:\n",
+      "Can't rename Margin dimensions:\n",
       "i `area = region` and `when = year`.\n",
-      "i Grouping dimensions must name existing columns."
+      "i Margin dimensions must name existing columns."
     )
   )
 })

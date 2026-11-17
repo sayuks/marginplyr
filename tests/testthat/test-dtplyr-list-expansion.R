@@ -92,7 +92,7 @@ test_that("ordinary dtplyr list expansion controls retain their values", {
     expand_with_margins(
       source, .grouping = rollup(g), .margin_label = "Total", .id = "set"
     ),
-    "list-column grouping dimensions",
+    "list-column Margin dimensions",
     class = "marginplyr_error"
   )
   expect_identical(dplyr::collect(source), input)

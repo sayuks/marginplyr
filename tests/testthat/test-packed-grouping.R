@@ -200,7 +200,7 @@ test_that("a string label for a packed key names the dimension and remedy", {
   )
 
   for (operation in operations) {
-    error <- expect_error(operation(), "packed grouping dimensions")
+    error <- expect_error(operation(), "packed Margin dimensions")
     expect_s3_class(error, "marginplyr_error")
     expect_match(conditionMessage(error), "`key`")
     expect_match(conditionMessage(error), "NULL")
@@ -338,7 +338,7 @@ test_that("AsIs POSIXlt keys retain included-only and packed label rules", {
     }
     expect_error(
       nest(packed, .grouping = rollup(key), .margin_label = "All"),
-      "packed grouping dimensions", class = "marginplyr_error"
+      "packed Margin dimensions", class = "marginplyr_error"
     )
   }
 
@@ -348,7 +348,7 @@ test_that("AsIs POSIXlt keys retain included-only and packed label rules", {
   expect_identical(included, packed)
   expect_error(
     expand_with_margins(packed, .grouping = rollup(key), .margin_label = "All"),
-    "packed grouping dimensions", class = "marginplyr_error"
+    "packed Margin dimensions", class = "marginplyr_error"
   )
 })
 
@@ -420,6 +420,6 @@ test_that("packed AsIs POSIXlt fields expand with native typed missing rows", {
   }
   expect_error(
     expand_with_margins(input, .grouping = rollup(key), .margin_label = "All"),
-    "packed grouping dimensions", class = "marginplyr_error"
+    "packed Margin dimensions", class = "marginplyr_error"
   )
 })

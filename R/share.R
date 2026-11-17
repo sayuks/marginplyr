@@ -2537,7 +2537,7 @@ check_total_grouping_kind <- function(plan) {
     abort_marginplyr(c(
       paste0(
         "{.fun share_of_total} requires {.arg .grouping} to produce the Grand ",
-        "total set, in which every grouping dimension is omitted."
+        "total set, in which every Margin dimension is omitted."
       ),
       i = "{.fun rollup} and {.fun cube} always produce it.",
       i = paste0(
@@ -2551,7 +2551,7 @@ check_total_grouping_kind <- function(plan) {
     abort_marginplyr(c(
       paste0(
         "{.fun share_of_total} requires {.arg .grouping} to produce the Grand ",
-        "total set, in which every grouping dimension is omitted."
+        "total set, in which every Margin dimension is omitted."
       ),
       i = "{.fun rollup} and {.fun cube} always produce it.",
       i = paste0(
@@ -2565,7 +2565,7 @@ check_total_grouping_kind <- function(plan) {
   abort_marginplyr(c(
     paste0(
       "{.fun share_of_total} requires {.arg .grouping} to produce the Grand ",
-      "total set, in which every grouping dimension is omitted."
+      "total set, in which every Margin dimension is omitted."
     ),
     i = "{.fun rollup} and {.fun cube} always produce it.",
     i = paste0(

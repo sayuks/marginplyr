@@ -38,7 +38,7 @@ list_margin_operations <- function(data, label, check = TRUE) {
 expect_list_label_refusal <- function(operation, info) {
   error <- expect_error(operation(), class = "marginplyr_error", info = info)
   message <- conditionMessage(error)
-  expect_match(message, "list-column grouping dimensions", info = info)
+  expect_match(message, "list-column Margin dimensions", info = info)
   expect_match(message, "`l`", fixed = TRUE, info = info)
   expect_no_match(message, "`other`", fixed = TRUE, info = info)
   expect_match(message, "`.margin_label`", fixed = TRUE, info = info)

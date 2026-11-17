@@ -3714,9 +3714,9 @@ resolve_column_selection <- function(arg, data_proxy, on_rename) {
 # of them there are is the caller's decision.
 abort_grouping_rename <- function(selected_names, source_names) {
   abort_marginplyr(c(
-    "Can't rename {cli::qty(length(selected_names))}grouping dimension{?s}:",
+    "Can't rename {cli::qty(length(selected_names))}Margin dimension{?s}:",
     i = "{.code {selection_rename_pairs(selected_names, source_names)}}.",
-    i = "Grouping dimensions must name existing columns."
+    i = "Margin dimensions must name existing columns."
   ))
 }
 

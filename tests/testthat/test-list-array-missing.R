@@ -181,8 +181,8 @@ test_that("list-array admission retains structured-label and raw refusals", {
     expect_error(
       expand_with_margins(input, .grouping = rollup(key),
                           .margin_label = "All"),
-      if (depth == 0L) "matrix or array grouping dimensions" else
-        "packed grouping dimensions",
+      if (depth == 0L) "matrix or array Margin dimensions" else
+        "packed Margin dimensions",
       class = "marginplyr_error"
     )
     input$key <- tibble::tibble(list = key, raw = as.raw(c(0, 1)))

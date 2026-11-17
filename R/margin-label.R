@@ -244,7 +244,7 @@ validate_margin_label <- function(.data,
     abort_marginplyr(c(
       paste0(
         "A non-missing {.arg .margin_label} cannot label packed ",
-        "grouping dimensions:"
+        "Margin dimensions:"
       ),
       i = "{.var {labelled_packed}}.",
       i = paste0(
@@ -262,7 +262,7 @@ validate_margin_label <- function(.data,
     abort_marginplyr(c(
       paste0(
         "A non-missing {.arg .margin_label} cannot label matrix or array ",
-        "grouping dimensions:"
+        "Margin dimensions:"
       ),
       i = "{.var {labelled_arrays}}.",
       i = paste0(
@@ -281,7 +281,7 @@ validate_margin_label <- function(.data,
     abort_marginplyr(c(
       paste0(
         "A non-missing {.arg .margin_label} cannot label list-column ",
-        "grouping dimensions:"
+        "Margin dimensions:"
       ),
       i = "{.var {labelled_lists}}.",
       i = paste0(

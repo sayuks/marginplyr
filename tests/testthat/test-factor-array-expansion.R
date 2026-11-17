@@ -80,7 +80,7 @@ test_that("factor-array expansion obeys typed-missing label rules", {
     expect_error(
       expand_with_margins(input, .grouping = rollup(key),
                           .margin_label = "All", .sort = "none"),
-      "matrix or array grouping dimensions", class = "marginplyr_error"
+      "matrix or array Margin dimensions", class = "marginplyr_error"
     )
   }
 })
