@@ -244,9 +244,10 @@ assert_nest_possible <- function(x) {
   }
 }
 
-# Whether dplyr's S3 generic `generic` has a method registered for one of
-# `x`'s classes. dplyr registers no default for the generics this is asked
-# about, so `FALSE` means the generic cannot dispatch on `x`.
+# Whether dplyr's S3 generic `generic` has a method for one of `x`'s classes,
+# either registered or defined where dispatch from dplyr's namespace finds it.
+# dplyr registers no default for the generics this is asked about, so `FALSE`
+# means the generic cannot dispatch on `x`.
 dispatches_dplyr_generic <- function(x, generic) {
   # `getS3method()` finds the registration table through the generic's
   # environment, so a generic rebound in dplyr's namespace, as
@@ -260,9 +261,11 @@ dispatches_dplyr_generic <- function(x, generic) {
                  inherits = FALSE)) {
         return(TRUE)
       }
-      # `envir` names the namespace that owns the generic. The default is the
-      # caller's frame, where the generic is not visible from inside this
-      # package, so every class would look unsupported.
+      # A method defined but never registered, such as one in the global
+      # environment, is in no table. `envir` names the namespace that owns the
+      # generic. The default is the caller's frame, where the generic is not
+      # visible from inside this package, so every class would look
+      # unsupported.
       !is.null(utils::getS3method(
         generic, cls, optional = TRUE, envir = asNamespace("dplyr")
       ))
