@@ -258,6 +258,25 @@ validate_margin_label <- function(.data,
     ))
   }
 
+  lists <- column_info$lists
+  labelled_lists <- lists[!vapply(
+    margin_labels[lists], is_missing_margin_label, logical(1)
+  )]
+  if (length(labelled_lists) > 0L) {
+    abort_marginplyr(c(
+      paste0(
+        "A non-missing {.arg .margin_label} cannot label list-column ",
+        "grouping dimensions:"
+      ),
+      i = "{.var {labelled_lists}}.",
+      i = paste0(
+        "A non-missing scalar label cannot represent a list key. ",
+        "Use {.code NULL} or {.code NA_character_} for a typed-missing ",
+        "label, or split the key into separate columns."
+      )
+    ))
+  }
+
   factor_info <- column_info$factors
   na_label_cols <- names(Filter(
     function(label) !is.null(label) && is.na(label),

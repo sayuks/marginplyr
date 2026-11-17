@@ -296,6 +296,8 @@
 #' `NULL` or `NA_character_` as its Margin label, because no scalar string can
 #' represent such a key; split it into separate columns if it needs display
 #' text.
+#' The same holds for a list-column dimension, locally or under dtplyr, and
+#' for an Arrow list, large list, or fixed-size list dimension.
 #'
 #' Factor columns follow this contract:
 #'
