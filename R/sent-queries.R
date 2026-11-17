@@ -461,8 +461,8 @@ with_sent_query <- function(purpose, query, expr,
 #' utils::write.csv(all_calls, path, row.names = FALSE)
 #' ```
 #'
-#' @seealso *[When marginplyr queries your data][summarize_with_margins]* for
-#'   the queries a Margin verb sends without being asked,
+#' @seealso *[When marginplyr queries your data][margin_verbs]* in
+#'   [margin_verbs] for the queries a Margin verb sends without being asked,
 #'   [dplyr::show_query()] for the result query alone, and *Record the SQL
 #'   marginplyr prepares* in the [database-backends guide][guide] for the record
 #'   read against a live connection.

@@ -74,6 +74,12 @@
 #' result |> dplyr::mutate(revenue_percent = 100 * revenue_share)
 #' ```
 #'
+#' On a lazy input that `mutate()` wraps the result in a subquery, which drops
+#' an order `.sort` requested; [dplyr::collect()] first, or [dplyr::arrange()]
+#' afterwards, as *Execute in DuckDB* in the [database guide][db] shows.
+#'
+#' [db]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html
+#'
 #' A direct call cannot be unnamed, use a string, use a forward reference,
 #' redefine the source name, or use a share as another share's source.
 #'
@@ -334,7 +340,8 @@
 #' [dplyr::collect()] keeps a declared double share when the result is
 #' empty or a finite prefix contains only missing shares.
 #' For direct [dplyr::compute()], see
-#' *[SQLite materialization][summarize_with_margins]*.
+#' *[SQLite materialization][summarize_with_margins]* in
+#' [summarize_with_margins()].
 #'
 #' Syntax, source-name, written-order, and `across()` errors are always
 #' reported locally, before execution, on every backend. The eligible-type

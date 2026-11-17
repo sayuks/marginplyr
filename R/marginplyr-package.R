@@ -125,9 +125,10 @@
 #' locally or records literal SQL controls, adding no backend operation.
 #' A missing SQL value means diagnostic rendering failed, and a recorded
 #' representation does not prove database receipt or completion.
-#' *[When marginplyr queries your data][summarize_with_margins]* states which
-#' internal operations can run. Copy or export the record before the next call
-#' replaces it; a failed call leaves its own partial record readable.
+#' *[When marginplyr queries your data][margin_verbs]* in [margin_verbs]
+#' states which internal operations can run. Copy or export the record before
+#' the next call replaces it; a failed call leaves its own partial record
+#' readable.
 #'
 #' What the record holds, which calls keep one, and what an empty or incomplete
 #' read means are stated in [last_sent_queries()]'s own reference.

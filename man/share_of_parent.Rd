@@ -90,6 +90,10 @@ revenue_percent = 100 * share_of_parent(revenue)
 result |> dplyr::mutate(revenue_percent = 100 * revenue_share)
 }\if{html}{\out{</div>}}
 
+On a lazy input that \code{mutate()} wraps the result in a subquery, which drops
+an order \code{.sort} requested; \code{\link[dplyr:collect]{dplyr::collect()}} first, or \code{\link[dplyr:arrange]{dplyr::arrange()}}
+afterwards, as \emph{Execute in DuckDB} in the \href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html}{database guide} shows.
+
 A direct call cannot be unnamed, use a string, use a forward reference,
 redefine the source name, or use a share as another share's source.
 }
@@ -347,7 +351,8 @@ With \code{.check_share_source = FALSE} on live SQLite, direct
 \code{\link[dplyr:collect]{dplyr::collect()}} keeps a declared double share when the result is
 empty or a finite prefix contains only missing shares.
 For direct \code{\link[dplyr:compute]{dplyr::compute()}}, see
-\emph{\link[=summarize_with_margins]{SQLite materialization}}.
+\emph{\link[=summarize_with_margins]{SQLite materialization}} in
+\code{\link[=summarize_with_margins]{summarize_with_margins()}}.
 
 Syntax, source-name, written-order, and \code{across()} errors are always
 reported locally, before execution, on every backend. The eligible-type

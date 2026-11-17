@@ -134,9 +134,10 @@ audited call. Recording renders queries
 locally or records literal SQL controls, adding no backend operation.
 A missing SQL value means diagnostic rendering failed, and a recorded
 representation does not prove database receipt or completion.
-\emph{\link[=summarize_with_margins]{When marginplyr queries your data}} states which
-internal operations can run. Copy or export the record before the next call
-replaces it; a failed call leaves its own partial record readable.
+\emph{\link[=margin_verbs]{When marginplyr queries your data}} in \link{margin_verbs}
+states which internal operations can run. Copy or export the record before
+the next call replaces it; a failed call leaves its own partial record
+readable.
 
 What the record holds, which calls keep one, and what an empty or incomplete
 read means are stated in \code{\link[=last_sent_queries]{last_sent_queries()}}'s own reference.
