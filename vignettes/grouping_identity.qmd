@@ -267,7 +267,7 @@ factor_result |>
 
 The structural flag, rather than the printed value, distinguishes a source
 missing value from the typed-missing Margin value. See the
-[`summarize_with_margins()` reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html#display-labels-and-grouping-identity)
+[`margin_verbs` reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html#display-labels-and-grouping-identity)
 for the complete eight-case `NA_character_`/`NULL` factor table, ordered-factor
 preservation, unused-level checks, and label positioning.
 

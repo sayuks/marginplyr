@@ -152,7 +152,7 @@ margin_sort_choices <- c("none", "last", "first")
 # contract (#144): `CONTEXT.md`'s *Option argument*
 # entry holds the refusal and why an Option argument is the one kind with no
 # absent case for a `NULL` to name, and the *Option arguments* section on
-# `?summarize_with_margins` states the contract to the caller.
+# `?margin_verbs` states the contract to the caller.
 #
 # `rlang::arg_match()` and `rlang::arg_match0()` both accept a permutation of
 # the vocabulary and return the first supplied entry. The `identical()` guard

@@ -332,7 +332,8 @@
 #' [dplyr::collect()] keeps a declared double share when the result is
 #' empty or a finite prefix contains only missing shares.
 #' For direct [dplyr::compute()], see
-#' *[SQLite materialization][summarize_with_margins]*.
+#' *[SQLite materialization][summarize_with_margins]* in
+#' [summarize_with_margins()].
 #'
 #' Syntax, source-name, written-order, and `across()` errors are always
 #' reported locally, before execution, on every backend. The eligible-type

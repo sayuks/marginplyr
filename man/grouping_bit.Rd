@@ -79,8 +79,8 @@ Displayed Margin labels are not identity. A source value can equal its
 Margin label, and a source missing value can print exactly like a
 typed-missing Margin value, so retain one of these helpers or \code{.id} when
 structural identity matters. The complete label, factor, and missing-value
-contract is \emph{\link[=summarize_with_margins]{Display labels and grouping identity}}
-in \code{\link[=summarize_with_margins]{summarize_with_margins()}}.
+contract is \emph{\link[=margin_verbs]{Display labels and grouping identity}} in
+\link{margin_verbs}.
 
 The \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide} works through these values with
 executable examples.

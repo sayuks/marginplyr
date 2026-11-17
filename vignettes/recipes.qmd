@@ -296,9 +296,9 @@ get a report with no helper columns in it.
 DBI::dbDisconnect(con, shutdown = TRUE)
 ```
 
-The [`summarize_with_margins()`
-reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html)
-states the whole key under *Margin order*.
+*Margin order* in the [`margin_verbs`
+reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html)
+states the whole key.
 
 ## Lay the report out wide
 
