@@ -394,6 +394,22 @@ check_observed_label_collision <- function(data,
   if (length(read_cols) == 0L) {
     return(invisible(NULL))
   }
+  # A connection that executes nothing cannot be sent the read, and is asked
+  # first as a share's dialect question is, which sends no query.
+  if (inherits(data, "tbl_lazy") &&
+        !share_dialect_can_be_asked(dbplyr::remote_con(data))) {
+    abort_marginplyr(c(
+      paste0(
+        "Can't check Margin labels against the grouping columns, because ",
+        "this connection executes no query."
+      ),
+      i = paste0(
+        "A connection built with a {.code dbplyr::simulate_*()} constructor, ",
+        "or one that is closed, can't be read."
+      ),
+      i = "Set {.code .check_margin_label = FALSE}, or use a live connection."
+    ))
+  }
 
   aliases <- character()
   if (is.data.frame(data)) {

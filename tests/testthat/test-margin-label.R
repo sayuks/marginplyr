@@ -2242,3 +2242,45 @@ test_that("the NA-level refusal names a remedy a caller can write", {
   # Following the remedy has to work with more than one dimension in play.
   expect_no_error(operation(list(region = "All", status = NULL)))
 })
+
+# A simulated connection executes nothing, so the label read could not be sent
+# and base R's "no applicable method for 'collect'" was what arrived (#1703).
+test_that("an observed-label check on a simulated connection is refused", {
+  remote <- dbplyr::tbl_lazy(
+    data.frame(region = "a", v = 1),
+    con = dbplyr::simulate_postgres()
+  )
+  calls <- list(
+    summarize_with_margins = function(check) {
+      summarize_with_margins(
+        remote, n = sum(v), .grouping = rollup(region),
+        .check_margin_label = check
+      )
+    },
+    expand_with_margins = function(check) {
+      expand_with_margins(
+        remote, .grouping = rollup(region), .check_margin_label = check
+      )
+    }
+  )
+  for (verb in names(calls)) {
+    error <- expect_error(calls[[verb]](TRUE), class = "marginplyr_error")
+    lines <- strsplit(conditionMessage(error), "\n", fixed = TRUE)[[1L]]
+    expect_identical(
+      lines,
+      c(
+        paste0(
+          "Can't check Margin labels against the grouping columns, because ",
+          "this connection executes no query."
+        ),
+        paste0(
+          "i A connection built with a `dbplyr::simulate_*()` constructor, or ",
+          "one that is closed, can't be read."
+        ),
+        "i Set `.check_margin_label = FALSE`, or use a live connection."
+      ),
+      info = verb
+    )
+    expect_no_error(calls[[verb]](FALSE))
+  }
+})
