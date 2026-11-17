@@ -54,7 +54,8 @@ groups. A grouping column also cannot appear in \code{.grouping}, because one
 column cannot be both a fixed key and a dimension that can be rolled up.
 Grouped local data created with \code{.drop = FALSE} is rejected because empty
 groups cannot be preserved on every backend. To retain empty keys, complete
-the input before the Margin operation, as the \href{https://sayuks.github.io/marginplyr/vignettes/completing_keys.html}{Complete absent keys before margins} guide shows.
+the input before the Margin operation, as \emph{Keep unused factor levels} in the
+\href{https://sayuks.github.io/marginplyr/vignettes/completing_keys.html}{Complete absent keys before margins} guide shows.
 
 Row-wise input is rejected; to keep row-wise identifiers as fixed keys,
 ungroup first and select them with \code{.by}. Each verb's page states the
@@ -122,6 +123,17 @@ identifier \code{1L}, and a zero-row result retains an integer \code{.id} column
 durable business key: reordering or deduplicating the Grouping
 specification changes it. \code{\link[=grouping_bit]{grouping_bit()}} documents how \code{.id} compares
 with \code{\link[=inspect_grouping]{inspect_grouping()}}\verb{$set_id}, \code{\link[=grouping_bit]{grouping_bit()}}, and \code{\link[=grouping_id]{grouping_id()}}.
+
+\code{\link[=grouping_bit]{grouping_bit()}} and \code{\link[=grouping_id]{grouping_id()}} can be called only inside
+\code{\link[=summarize_with_margins]{summarize_with_margins()}}. To learn which grouping set a row of
+\code{\link[=expand_with_margins]{expand_with_margins()}}, \code{\link[=nest_with_margins]{nest_with_margins()}}, or \code{\link[=nest_by_with_margins]{nest_by_with_margins()}}
+came from, pass \code{.id} and join it to the \code{set_id} column of
+\code{\link[=inspect_grouping]{inspect_grouping()}} called with the same \code{.by} and \code{.grouping}, as
+\emph{Add a level column: detail, subtotal or total} in the
+\href{https://sayuks.github.io/marginplyr/vignettes/recipes.html}{recipes guide} does. Without \code{.id}, a typed-missing
+\code{.margin_label} leaves a margin row indistinguishable from a source row
+whose dimension is missing, so summarizing an expansion again by its
+grouping columns merges the two.
 }
 
 \section{Margin order}{

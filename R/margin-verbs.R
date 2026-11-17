@@ -47,8 +47,8 @@
 #' column cannot be both a fixed key and a dimension that can be rolled up.
 #' Grouped local data created with `.drop = FALSE` is rejected because empty
 #' groups cannot be preserved on every backend. To retain empty keys, complete
-#' the input before the Margin operation, as the [Complete absent keys before
-#' margins][keys] guide shows.
+#' the input before the Margin operation, as *Keep unused factor levels* in the
+#' [Complete absent keys before margins][keys] guide shows.
 #'
 #' Row-wise input is rejected; to keep row-wise identifiers as fixed keys,
 #' ungroup first and select them with `.by`. Each verb's page states the
@@ -112,6 +112,19 @@
 #' durable business key: reordering or deduplicating the Grouping
 #' specification changes it. [grouping_bit()] documents how `.id` compares
 #' with [inspect_grouping()]`$set_id`, [grouping_bit()], and [grouping_id()].
+#'
+#' [grouping_bit()] and [grouping_id()] can be called only inside
+#' [summarize_with_margins()]. To learn which grouping set a row of
+#' [expand_with_margins()], [nest_with_margins()], or [nest_by_with_margins()]
+#' came from, pass `.id` and join it to the `set_id` column of
+#' [inspect_grouping()] called with the same `.by` and `.grouping`, as
+#' *Add a level column: detail, subtotal or total* in the
+#' [recipes guide][recipes] does. Without `.id`, a typed-missing
+#' `.margin_label` leaves a margin row indistinguishable from a source row
+#' whose dimension is missing, so summarizing an expansion again by its
+#' grouping columns merges the two.
+#'
+#' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
 #'
 #' @section Margin order:
 #' `.sort` orders a result by the structure of its Grouping plan rather than by

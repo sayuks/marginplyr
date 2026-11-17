@@ -354,6 +354,10 @@ markers <- list(
     "Parent lookup is structural"
   ),
   "docs/vignettes/completing_keys.html" = c(
+    # The section `?margin_verbs` names for a rejected `.drop = FALSE` input,
+    # by its heading and by the diagnostic its rejected-call chunk renders.
+    "Keep unused factor levels",
+    "Grouped input created with",
     "Why completion is a separate operation",
     "tidyr::complete",
     "fact_id",
