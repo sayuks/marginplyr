@@ -373,6 +373,12 @@
 #' `.sotr = "last"`, is not caught and becomes a summary column; check option
 #' names when a result has an unexpected column.
 #'
+#' A Grouping specification written in `...` rather than in `.grouping` --
+#' `rollup(region)` passed unnamed, or as `grouping = rollup(region)` -- is
+#' refused with the `.grouping = rollup(region)` spelling to use, on a local
+#' and a lazy input alike. A constructor name is looked up as R looks it up, so
+#' a function of your own named `rollup()` still runs as a summary.
+#'
 #' @section Summaries a lazy backend cannot carry:
 #' Two lazy inputs cannot carry back a summary with no columns in it: asked
 #' for no summaries and given no fixed key or grouping dimension, the answer
@@ -838,6 +844,7 @@ summarize_with_margins <- function(.data,
       # one check that reads only names: an empty argument is refused rather
       # than bound to a local.
       check_empty_summaries(dots)
+      check_grouping_spec_summaries(dots, .data)
       check_summary_context_helpers(dots)
       preflight_shares(dots)
     },

@@ -428,6 +428,12 @@ and \code{.y = mean(v)} are refused, although \code{\link[dplyr:summarise]{dplyr
 them as columns. A name further away, such as \code{.margin_lable} or
 \code{.sotr = "last"}, is not caught and becomes a summary column; check option
 names when a result has an unexpected column.
+
+A Grouping specification written in \code{...} rather than in \code{.grouping} --
+\code{rollup(region)} passed unnamed, or as \code{grouping = rollup(region)} -- is
+refused with the \code{.grouping = rollup(region)} spelling to use, on a local
+and a lazy input alike. A constructor name is looked up as R looks it up, so
+a function of your own named \code{rollup()} still runs as a summary.
 }
 
 \section{Summaries a lazy backend cannot carry}{
