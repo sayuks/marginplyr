@@ -130,6 +130,51 @@ test_that("nest preflight precedes semantic Margin-label validation", {
   expect_identical(nest_proxy_capture$source_evaluations, 0L)
 })
 
+test_that("row-wise dtplyr nesting checks observed labels by default", {
+  skip_if_suggest_absent("dtplyr")
+  data <- data.frame(grp = c("x", "y"), v = 1:2)
+  local <- expect_error(
+    nest_by_with_margins(data, .grouping = rollup(grp), .margin_label = "x"),
+    class = "marginplyr_error"
+  )
+
+  lazy <- expect_error(
+    nest_by_with_margins(
+      dtplyr::lazy_dt(data),
+      .grouping = rollup(grp),
+      .margin_label = "x"
+    ),
+    class = "marginplyr_error"
+  )
+  expect_identical(conditionMessage(lazy), conditionMessage(local))
+
+  unchecked <- nest_by_with_margins(
+    dtplyr::lazy_dt(data),
+    .grouping = rollup(grp),
+    .margin_label = "x",
+    .check_margin_label = FALSE
+  )
+  expect_identical(unchecked$grp, c("x", "y", "x"))
+
+  # The ungrouped verb stays lazy, so it keeps the lazy default.
+  expect_no_error(nest_with_margins(
+    dtplyr::lazy_dt(data),
+    .grouping = rollup(grp),
+    .margin_label = "x"
+  ))
+
+  declared <- data.frame(grp = factor("x", levels = c("x", "Total")), v = 1L)
+  expect_error(
+    nest_by_with_margins(
+      dtplyr::lazy_dt(declared),
+      .grouping = rollup(grp),
+      .check_margin_label = FALSE
+    ),
+    "already a factor level in grouping column",
+    class = "marginplyr_error"
+  )
+})
+
 test_that("nesting option errors use the Package condition seam", {
   data <- data.frame(group = c("x", "y"), value = 1:2)
   cases <- list(

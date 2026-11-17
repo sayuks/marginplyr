@@ -35,7 +35,9 @@ Initial CRAN release.
 * `.margin_label` sets the display label of removed dimensions (`"Total"` by
   default, one label per dimension, or `NULL` for typed missing values),
   `.margin_label_position` places that label in a factor's levels, and
-  `.check_margin_label` refuses a label that collides with a source value.
+  `.check_margin_label` refuses a label that collides with a source value,
+  by default wherever the call reads the rows: a local data frame, or a
+  dtplyr step given to `nest_by_with_margins()`.
   `.sort` puts each subtotal next to the rows it summarizes, and
   `.duplicates` chooses whether repeated grouping sets are an error, dropped,
   or kept.
