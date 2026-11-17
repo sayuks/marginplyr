@@ -635,7 +635,9 @@ A share source must be a plain integer or double. On a database it is the
 dialect that applies that rule: *Lazy execution boundaries* in the
 [`share_of_parent()` reference][share-reference] states which dialects refuse
 an ineligible source, which convert one and are refused, and what
-`.check_share_source = FALSE` changes. DuckDB refuses one itself, so on a live
+`.check_share_source = FALSE` changes. marginplyr reads no row of your data to
+learn which a dialect does: it asks, with at most two queries referencing none
+of your tables. DuckDB refuses one itself, so on a live
 DuckDB table the diagnostic is DuckDB's own, and the column it names carries
 the name of the summary to rewrite. The remedy is an explicit conversion to a
 number in that ordinary summary:
@@ -676,8 +678,36 @@ sample_sales |>
 DBI::dbDisconnect(sample_con)
 ```
 
-The same reference states both helpers' supported sources, value rules,
-`across()` forms, and empty inputs.
+The dialect's answer settles the case once per R session and is reused for
+every later connection carrying that dialect. A question left unanswered — a
+dropped connection, a permissions failure, a dialect whose SQL scaffolding
+the question lacks, or a query that could not be built against the
+connection — refuses the share the same way, but nothing about it is
+remembered, so the next share request asks again. Inside a transaction begun
+through DBI with RPostgres, a savepoint isolates the two questions; up to four
+transaction control statements preserve earlier work, leave commit or
+rollback to you, read none of your tables, and are recorded by
+`last_sent_queries()` as `share_dialect_transaction` rows.
+
+Cardinality is not established this way at all: a SQL aggregate returns one
+value per grouping row by construction, so there is nothing for a dialect to
+convert. A non-scalar summary, and any other runtime-only incompatibility,
+therefore still surfaces from the database when the staged query executes. On
+DuckDB and PostgreSQL the result query also checks a bare, single-argument
+`UNNEST()` at the top level of a direct `dbplyr::sql()` share source, such as
+`SUM(amount) + UNNEST(ARRAY[10])`: an array of zero or more than one element
+causes a database error on execution. The check recognizes SQL expressions
+with standard quotes and without comments.
+
+With `.check_share_source = FALSE` on live SQLite, a direct `collect()` keeps
+a declared double share when the result is empty or a finite prefix contains
+only missing shares; *SQLite materialization* in the
+[`summarize_with_margins()`
+reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html#sqlite-materialization)
+covers direct `compute()`.
+
+The [`share_of_parent()` reference][share-reference] states both helpers'
+supported sources, value rules, `across()` forms, and empty inputs.
 
 ## Completion stays in the lazy input pipeline
 
@@ -706,6 +736,12 @@ dt_query <- january_sales |>
 
 collect(dt_query)
 ```
+
+Loading dtplyr does not attach data.table, but a session that also calls
+`library(data.table)` after marginplyr gets data.table's `rollup()` and
+`cube()` in place of marginplyr's. The call above is then refused with an
+error naming `data.table::rollup()`. Write `marginplyr::rollup()` and
+`marginplyr::cube()`, or attach marginplyr last.
 
 A derived dtplyr step can compute column types or factor levels from its source
 values. A request for zero output rows can still run that upstream calculation

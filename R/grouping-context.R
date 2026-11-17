@@ -4,6 +4,11 @@
 #' [summarize_with_margins()]. They distinguish values that are absent from a
 #' grouping set from ordinary missing values in the source data.
 #'
+#' Like every contextual helper, they are refused outside that verb, including
+#' in a later [dplyr::filter()] of its result. To keep or drop subtotal rows,
+#' store the helper as a summary column and filter on that column, as the
+#' first example does.
+#'
 #' [grouping_bit()] corresponds to SQL `GROUPING(x)`: it returns `1L` when
 #' `x` is absent from the grouping set and `0L` otherwise.
 #' [grouping_id()] combines those flags as a bit mask; its last argument is
@@ -40,12 +45,12 @@
 #' `.grouping`, and `.duplicates`. Reordering or deduplicating a Grouping
 #' specification changes both, so `.id` is not a durable business key.
 #'
-#' Grouping identifiers encode absence and need not be consecutive. A
-#' `rollup(region, store)` plan therefore has `.id` values `1L`, `2L`, and
-#' `3L` but [grouping_id()] values `0L`, `1L`, and `3L`: identifier `2` would
-#' mean `region` absent while `store` remains, which the declared hierarchy
-#' never produces. A `cube(region, store)` plan contains every mask, so its
-#' identifiers are `0L`, `1L`, `2L`, and `3L`.
+#' Grouping identifiers, the values [grouping_id()] returns, encode absence
+#' and need not be consecutive. A `rollup(region, store)` plan therefore has
+#' `.id` values `1L`, `2L`, and `3L` but [grouping_id()] values `0L`, `1L`,
+#' and `3L`: identifier `2` would mean `region` absent while `store` remains,
+#' which the declared hierarchy never produces. A `cube(region, store)` plan
+#' contains every mask, so its identifiers are `0L`, `1L`, `2L`, and `3L`.
 #'
 #' Neither value records physical row order. Pass `.sort` to a Margin verb for
 #' margins next to the rows they summarize; see *[Margin order][margin_verbs]*
@@ -64,13 +69,22 @@
 #'
 #' [guide]: https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html
 #'
-#' A function of your own may forward the column its caller wrote by injecting
-#' it: `!!rlang::enquo(col)` is accepted wherever a bare column is, and so is
-#' `!!rlang::ensym(col)`. Only the name is read. It is resolved against the
-#' Grouping plan, as every bare column here is, so the environment
-#' [rlang::enquo()] captured is not consulted and an injection carrying
+#' @section Forwarding a column from your own function:
+#' A function of your own forwards the column its caller wrote by embracing
+#' it, as it would for dplyr: `grouping_bit({{ col }})`. The spellings `{{ }}`
+#' abbreviates, `!!rlang::enquo(col)` and `!!rlang::ensym(col)`, are accepted
+#' too, and a column name held as a string is injected as
+#' `!!rlang::sym(name)`. Only the name is read. It is resolved against the
+#' Grouping plan, as every bare column here is, so the environment the
+#' caller's expression came from is not consulted and an injection carrying
 #' anything but a name is refused exactly where writing that expression out
 #' would be.
+#'
+#' *Call a Margin verb from your own function* in the [Recipes guide][recipes]
+#' forwards grouping columns, a measure, and a fixed key into a Margin verb by
+#' each of these routes, and passes a Grouping specification as an argument.
+#'
+#' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
 #'
 #' @param x A bare Margin dimension -- a column `.grouping` selects -- or a
 #'   fixed `.by` key, whose bit is always `0L`.
@@ -122,7 +136,7 @@
 #' @examples
 #' # Online-direct sales have a source NA store. grouping_bit(store) is 0 for
 #' # that detail row but 1 when ROLLUP removes store to create a subtotal.
-#' summarize_with_margins(
+#' by_store <- summarize_with_margins(
 #'   .data = dplyr::filter(retail_sales, year == 2026L, month == "Jan"),
 #'   revenue = sum(revenue),
 #'   # Always 0 for a `.by` column, which no grouping set removes.
@@ -132,6 +146,11 @@
 #'   .by = year,
 #'   .grouping = rollup(region, store)
 #' )
+#' by_store
+#'
+#' # Keep only the store rows by filtering on the stored column; the helper
+#' # itself is refused outside summarize_with_margins().
+#' dplyr::filter(by_store, store_is_total == 0L)
 #'
 #' # Keeping typed missing values makes the Grouping bits essential: a source
 #' # missing store and a generated store margin both print as NA even though

@@ -63,6 +63,8 @@ On this page:
 - [Report a weighted mean](#report-a-weighted-mean)
 - [Fix a nested-aggregate error on a
   database](#fix-a-nested-aggregate-error-on-a-database)
+- [Call a Margin verb from your own
+  function](#call-a-margin-verb-from-your-own-function)
 
 On other pages:
 
@@ -1474,3 +1476,115 @@ writing a summary.
 backends](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
 shows the SQL `expand_with_margins()` generates, which is the portable
 `UNION ALL` form on every backend.
+
+## Call a Margin verb from your own function
+
+A function such as `report(data, ...)` hands its caller's grouping columns, a
+measure and a fixed key to a Margin verb the way it would hand them to
+`dplyr::summarize()`. Every route below produces exactly what the direct call
+produces:
+
+```{r}
+direct <- retail_sales |>
+  summarize_with_margins(
+    revenue = sum(revenue),
+    .by = year,
+    .grouping = rollup(region, store),
+    .sort = "last"
+  )
+```
+
+Column names held as strings go through `all_of()` wherever the verb selects
+columns, inside a Grouping specification or in `.by`, and through
+`.data[[ ]]` inside a summary expression:
+
+```{r}
+report_by_name <- function(data, dims, by, measure) {
+  data |>
+    summarize_with_margins(
+      revenue = sum(.data[[measure]]),
+      .by = all_of(by),
+      .grouping = rollup(all_of(dims)),
+      .sort = "last"
+    )
+}
+
+report_by_name(retail_sales, c("region", "store"), "year", "revenue") |>
+  identical(direct)
+```
+
+A bare vector, `rollup(dims)`, selects the same columns but draws a
+deprecation warning from tidyselect for an external vector; `all_of()` is the
+spelling that does not.
+
+Dots forwarded into a specification constructor take what the caller wrote,
+bare names or strings:
+
+```{r}
+report_by_dots <- function(data, ...) {
+  data |>
+    summarize_with_margins(
+      revenue = sum(revenue),
+      .by = year,
+      .grouping = rollup(...),
+      .sort = "last"
+    )
+}
+
+report_by_dots(retail_sales, region, store) |>
+  identical(direct)
+report_by_dots(retail_sales, "region", "store") |>
+  identical(direct)
+```
+
+Embracing an argument with `{{ }}` forwards one bare column or name anywhere
+the verb takes one: a specification, `.by`, a summary expression, and the
+contextual helpers. Here the summary is named after the caller's measure, so
+`share_of_parent()` receives the same embraced name, and `grouping_bit()`
+flags the rows that total the inner level:
+
+```{r}
+report_embraced <- function(data, outer, inner, by, measure) {
+  data |>
+    summarize_with_margins(
+      {{ measure }} := sum({{ measure }}),
+      share = share_of_parent({{ measure }}),
+      inner_total = grouping_bit({{ inner }}),
+      .by = {{ by }},
+      .grouping = rollup({{ outer }}, {{ inner }}),
+      .sort = "last"
+    )
+}
+
+retail_sales |>
+  filter(year == 2026L) |>
+  report_embraced(region, store, year, revenue)
+```
+
+A whole Grouping specification is a value, so a caller can build one and pass
+it as an argument, which `.grouping` takes as it stands:
+
+```{r}
+report_by_spec <- function(data, spec) {
+  data |>
+    summarize_with_margins(
+      revenue = sum(revenue),
+      .by = year,
+      .grouping = spec,
+      .sort = "last"
+    )
+}
+
+store_hierarchy <- rollup(region, store)
+report_by_spec(retail_sales, store_hierarchy) |>
+  identical(direct)
+```
+
+`grouping_bit()`, `grouping_id()`, `share_of_parent()` and `share_of_total()`
+read a bare name rather than a `.data[[ ]]` subscript; a name held as a string
+reaches them as `!!rlang::sym(name)`. *Forwarding a column from your own
+function* in
+[`grouping_bit()`](https://sayuks.github.io/marginplyr/man/grouping_bit.html)
+and *Forwarding a name from your own function* in
+[`share_of_parent()`](https://sayuks.github.io/marginplyr/man/share_of_parent.html)
+say how a forwarded name is resolved.

@@ -293,9 +293,11 @@
 #'   DuckDB's own scalar macros, such as `nullif()`, are admitted only while
 #'   the database holds no macro you defined, since one could replace a name
 #'   inside their bodies.
-#' - **A table-free dialect question**, for a summary that requests a share,
-#'   until the SQL dialect answers; *[Lazy execution
-#'   boundaries][share_of_parent]* in [share_of_parent()] states what it asks.
+#' - **At most two queries per share request until the SQL dialect answers**,
+#'   for a summary that requests a share, referencing none of your tables;
+#'   see *Parent shares use a staged lazy query* in the [database guide][db].
+#'
+#' [db]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html
 #'
 #' A query is not safe merely because it returns no rows: some services bill
 #' by the bytes a query scans, and `LIMIT 0` is not exempt. marginplyr cannot
