@@ -537,3 +537,21 @@ the factory supplies a schema-only reader. For execution it calls
 so the input can itself run R callbacks. The runtime read gate covers
 construction and plan display. The reader-source refusal still applies at
 verb entry.
+
+## Amendment (#1701): the row-wise nest checks a dtplyr step by default
+
+The rule that sets every default is unchanged. What changed is the default it
+gives one verb: `nest_by_with_margins()` defaults `.check_margin_label` to
+`is.data.frame(.data) || inherits(.data, "dtplyr_step")`.
+
+The opening paragraph's exception is why. Calling that verb on a `dtplyr` step
+asks for the step's rows to be read, because the row-wise result is local and
+the verb is documented as collecting. Under `is.data.frame(.data)` the caller
+paid for that read and still received a result in which a source value equal
+to the label and the margin row carry the same key. The observed check
+evaluates the step's upstream operations once more, in memory, before the
+nesting does; no external system is involved.
+
+`nest_with_margins()` returns a lazy result on a `dtplyr` step and keeps
+`is.data.frame(.data)`, as do the other Margin verbs. The declared-level half
+of the collision check is unaffected.
