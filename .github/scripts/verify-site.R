@@ -266,8 +266,10 @@ markers <- list(
     "pkg_install",
     "SQL-style grouping sets",
     "A total is not the same thing as",
-    "Compare each summary with the whole",
     "Choose the tool for the job",
+    # The same section as its anchor, which Get started links in place of a
+    # comparison table of its own.
+    "id=\"choose-the-tool-for-the-job\"",
     "grouping_identity.html",
     "completing_keys.html",
     "database_backends.html"
@@ -277,7 +279,6 @@ markers <- list(
     "Optional Quarto tabsets with quartabs",
     "Union versus Cartesian product",
     "The manual version",
-    "When marginplyr fits",
     "Intentional differences from",
     "grouping_bit",
     "expand_with_margins",
@@ -353,6 +354,10 @@ markers <- list(
     "Parent lookup is structural"
   ),
   "docs/vignettes/completing_keys.html" = c(
+    # The section `?margin_verbs` names for a rejected `.drop = FALSE` input,
+    # by its heading and by the diagnostic its rejected-call chunk renders.
+    "Keep unused factor levels",
+    "Grouped input created with",
     "Why completion is a separate operation",
     "tidyr::complete",
     "fact_id",
@@ -429,15 +434,13 @@ markers <- list(
     "summarise_with_margins",
     "Relationship to dplyr summaries",
     "Contextual shares",
-    # The section holding the two summaries a lazy backend refuses, and one
-    # claim from each half of it. The heading alone would pass a section folded
-    # back into `@details`, where it stands ahead of the usage a first reader
-    # needs (#461). Neither claim survives a section reduced to a
-    # cross-reference, and the Arrow half is the one `R/share.R` points here
-    # for.
+    # The section holding the summaries a lazy backend cannot carry back, and
+    # the claim it owns. The heading alone would pass a section folded back
+    # into `@details`, where it stands ahead of the usage a first reader needs
+    # (#461), and the claim does not survive a section reduced to a
+    # cross-reference.
     "Summaries a lazy backend cannot carry",
     "cannot carry back a summary with no columns in it",
-    "before a row is read, and names the two rewrites that compute it",
     # The single home of the SQLite `compute()` contract, by its anchor: the
     # database guide links it with this fragment, so a heading change that
     # moved the id would leave that link landing at the top of the page.
@@ -456,6 +459,10 @@ markers <- list(
     # matches the words wherever they are written.
     "id=\"display-labels-and-grouping-identity\"",
     "NA is already a factor level",
+    # The Arrow fallback refusal, which `R/share.R` and the summary page link
+    # here for. The claim does not survive a section reduced to a
+    # cross-reference.
+    "before a row is read, and names the two rewrites that compute it",
     "Database backend coverage",
     "Microsoft SQL Server"
   ),

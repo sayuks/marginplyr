@@ -843,13 +843,10 @@ arrow::arrow_table(january_sales) |>
   )
 ```
 
-Selecting the columns the summary needs before collecting is the rewrite
-Arrow's own route cannot take for you. Which expressions this reaches is
-Arrow's to decide and changes with its version, so the shapes are described in
-one place rather than repeated here — see the [`summarize_with_margins()`
-reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html).
-An Arrow dataset answers the same expressions with Arrow's own error rather
-than this one, because a dataset never reads itself into R.
+*Arrow inputs* in the [`margin_verbs`
+reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html) states
+which expressions this reaches, the rewrites the diagnostic names, and what an
+Arrow dataset answers instead.
 
 The second is contextual shares. `share_of_parent()` and `share_of_total()` are
 both rejected outright, before any Arrow query is constructed: marginplyr

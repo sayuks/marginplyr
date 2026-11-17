@@ -213,6 +213,22 @@ test_that("a factor dimension orders by its restored levels", {
   expect_true(is.ordered(result$size))
 })
 
+test_that("a labelled numeric dimension orders as text", {
+  data <- data.frame(n = c(10, 9, 100, 2), units = 1:4)
+  order_of <- function(label) {
+    summarize_with_margins(
+      data,
+      units = sum(units),
+      .grouping = rollup(n),
+      .margin_label = label,
+      .sort = "last"
+    )$n
+  }
+
+  expect_identical(order_of("Total"), c("10", "100", "2", "9", "Total"))
+  expect_identical(order_of(NULL), c(2, 9, 10, 100, NA))
+})
+
 test_that("`.margin_label_position` moves levels and not rows", {
   data <- data.frame(
     size = factor(c("b", "a"), levels = c("a", "b")),

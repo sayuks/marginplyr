@@ -30,16 +30,15 @@ cannot rename it: \code{c(area = region)} is an error rather than a fixed key
 named \code{area}. Rename the result afterwards with \code{\link[dplyr:rename]{dplyr::rename()}}.}
 
 \item{.grouping}{A Grouping specification made with \code{\link[=grouping_set]{grouping_set()}},
-\code{\link[=grouping_sets]{grouping_sets()}}, \code{\link[=rollup]{rollup()}}, \code{\link[=cube]{cube()}}, or \code{\link[=grouping_spec]{grouping_spec()}}. \code{NULL}
-represents one empty grouping set. Any expression returning a
-specification can be written here, while a specification nested inside
-another must be a constructor call or a name bound to one, and a nested
-name the input also has a column for is refused rather than read either
-way; see \code{\link[=grouping_set]{grouping_set()}}. The specification expands to the call's
-Grouping plan: the ordered list of grouping sets it computes, which
-\code{\link[=inspect_grouping]{inspect_grouping()}} returns. The columns it selects are the call's
+\code{\link[=grouping_sets]{grouping_sets()}}, \code{\link[=rollup]{rollup()}}, \code{\link[=cube]{cube()}}, or \code{\link[=grouping_spec]{grouping_spec()}}. A bare
+column or a \code{c()} of columns is refused; wrap it in a constructor, as in
+\code{.grouping = rollup(region)}. \code{NULL} is one grouping set with no Margin
+dimension, so only the fixed \code{.by} keys group the result. The
+specification expands to the call's Grouping plan, which
+\code{\link[=inspect_grouping]{inspect_grouping()}} returns, and the columns it selects are the call's
 Margin dimensions; see
-\emph{\link[=margin_verbs]{Fixed columns and Margin dimensions}} in \link{margin_verbs}.}
+\emph{\link[=margin_verbs]{Fixed columns and Margin dimensions}} in \link{margin_verbs}.
+See \code{\link[=grouping_set]{grouping_set()}} for how one specification nests inside another.}
 
 \item{.margin_label}{A display label for dimensions omitted from a grouping
 set. An unnamed character scalar applies to every resolved Margin
@@ -58,25 +57,23 @@ This controls the position of a non-missing synthetic label in factor and
 ordered-factor levels. It does not sort result rows and has no effect for
 \code{NA_character_} or \code{NULL}.}
 
-\item{.check_margin_label}{A logical scalar controlling the half of the
-Margin label collision check that reads the data: whether any \emph{value} of a
-Margin dimension is equal to that dimension's display label. Each
-dimension is checked independently, and a typed-missing label opts its
-own dimension out -- \code{NULL} or \code{NA_character_}, chosen per dimension in a
-named-list \code{.margin_label}.
-The default is \code{TRUE} for local data frames and \code{FALSE} for lazy inputs,
-which are read only when the caller asks. \code{\link[=nest_by_with_margins]{nest_by_with_margins()}} reads
-a \code{dtplyr} step's rows when called, so it also checks one by default. A
-label check after collecting a lazy input therefore defaults to \code{TRUE}
-instead of \code{FALSE}; set \code{.check_margin_label} explicitly when following a
-collect-first remediation.
-A label equal to a declared factor \emph{level} is rejected wherever
-marginplyr holds the levels, whatever this argument says, because finding
-it reads no rows. Left unchecked, a colliding value gives the result a
-margin row and a source row that no key column tells apart; keeping
-\code{.id} in the result distinguishes them at no added cost. See
-\emph{\link[=margin_verbs]{Display labels and grouping identity}} in \link{margin_verbs}
-for the factor missing-value contract.}
+\item{.check_margin_label}{Whether to check that no value of a Margin
+dimension equals that dimension's display label. The default is \code{TRUE}
+for a local data frame and \code{FALSE} for a lazy input -- a database table,
+a \code{dtplyr} step, or an Arrow object -- because there the check runs a
+query that reads your data; see
+\emph{\link[=margin_verbs]{When marginplyr queries your data}} in \link{margin_verbs}.
+\code{\link[=nest_by_with_margins]{nest_by_with_margins()}} reads a \code{dtplyr} step's rows when called, so it
+also checks one by default. Collecting a lazy input therefore turns the
+check on, so set this explicitly when re-running a call on collected
+data.
+
+A label equal to a declared factor level is refused wherever marginplyr
+holds the levels, whatever this argument says, because finding it reads
+no rows. A typed-missing label, \code{NULL} or \code{NA_character_}, takes its
+dimension out of the check. Left unchecked, a colliding value gives the
+result a margin row and a source row that no key column tells apart;
+keeping \code{.id} in the result distinguishes them.}
 
 \item{.duplicates}{\code{"error"} or \code{"drop"}, and nothing else; see
 \emph{\link[=margin_verbs]{Option arguments}} in \link{margin_verbs}. A duplicate is a
@@ -98,8 +95,10 @@ collide with source columns, grouping keys, or other output columns. See
 nothing else; see \emph{\link[=margin_verbs]{Option arguments}} in \link{margin_verbs}.
 \code{"none"} leaves row order unspecified. \code{"last"} places each margin row
 after the rows it summarizes and \code{"first"} before them, within each fixed
-\code{.by} key, with missing values last. See \emph{\link[=margin_verbs]{Margin order}} in
-\link{margin_verbs}.}
+\code{.by} key, with missing values last. A non-missing \code{.margin_label} makes a
+non-factor dimension character, so a numeric one sorts as text; use
+\code{.margin_label = NULL} or a factor to keep numeric order. See
+\emph{\link[=margin_verbs]{Margin order}} in \link{margin_verbs}.}
 
 \item{.key}{A non-missing string naming the list column. Unlike
 \code{\link[=nest_with_margins]{nest_with_margins()}} and \code{\link[tidyr:nest]{tidyr::nest()}}, \code{NULL} is not converted to
@@ -123,16 +122,17 @@ label, while the nested columns keep their original types. A factor
 dimension instead gains the label as a new level.
 }
 \description{
-\code{\link[=nest_by_with_margins]{nest_by_with_margins()}} creates one row-wise nested data frame for every
-group in every grouping set. It is a margin-aware counterpart of
-\code{\link[dplyr:nest_by]{dplyr::nest_by()}}, and the row-wise counterpart of \code{\link[=nest_with_margins]{nest_with_margins()}};
-it works with local data frames and \code{dtplyr} steps.
-}
-\details{
-dplyr reserves \code{.rows} in row-wise grouping metadata. A fixed \code{.by}
-key, Margin dimension, or \code{.id} named \code{.rows} is therefore refused
-before nesting. Rename that outer key or use \code{\link[=nest_with_margins]{nest_with_margins()}} for an
-ungrouped result. A payload column or \code{.key} named \code{.rows} is supported.
+\code{\link[=nest_by_with_margins]{nest_by_with_margins()}} returns a row-wise data frame with one row for
+every group in every grouping set, holding that group's rows as a nested
+data frame. It is a margin-aware counterpart of \code{\link[dplyr:nest_by]{dplyr::nest_by()}}, and
+the row-wise counterpart of \code{\link[=nest_with_margins]{nest_with_margins()}}; it works with local
+data frames and \code{dtplyr} steps.
+
+Use it when the next step computes one value per nested table, because
+\code{\link[dplyr:mutate]{dplyr::mutate()}} on a row-wise result sees each row's table as \code{data}.
+Use \code{\link[=nest_with_margins]{nest_with_margins()}} to keep the result ungrouped or a \code{dtplyr} result
+lazy; \emph{\link[=nest_with_margins]{Choosing a nesting verb}} in
+\code{\link[=nest_with_margins]{nest_with_margins()}} compares the two.
 }
 \section{Differences from nest_by()}{
 
@@ -149,12 +149,25 @@ character in the outer columns; see Value. Use \code{.margin_label = NULL} or
 values of every outer key, so an outer \code{East / Total} subtotal keeps the
 original store values inside instead of \code{"Total"}. This is the closest
 margin-aware analogue of dplyr's rule that \code{.keep} retains grouping
-columns.
+columns. The kept keys come first in each nested data frame, in the
+order of the outer columns, followed by the other columns in input
+order; \code{\link[dplyr:nest_by]{dplyr::nest_by()}} keeps input order. Because the kept keys share
+their names with the outer columns, \code{\link[tidyr:unnest]{tidyr::unnest()}} needs \code{names_sep}
+for such a result.
+\item dplyr reserves \code{.rows} in row-wise grouping metadata, so a fixed \code{.by}
+key, Margin dimension, or \code{.id} named \code{.rows} is refused before
+nesting. Rename that outer key or use \code{\link[=nest_with_margins]{nest_with_margins()}} for an
+ungrouped result. A payload column or \code{.key} named \code{.rows} is supported.
 \item The list column is a regular list of data frames rather than the
 \code{vctrs::list_of} column \code{\link[dplyr:nest_by]{dplyr::nest_by()}} returns; see \emph{Nested data
 frames}.
-\item With no grouping keys, an empty input returns one row holding the empty
-input, as \code{\link[dplyr:nest_by]{dplyr::nest_by()}} does.
+\item An empty input returns one row holding the empty input only when the
+call names no key at all: no \code{.by} column, no group, and no Margin
+dimension. This is what \code{\link[dplyr:nest_by]{dplyr::nest_by()}} does without grouping
+columns. Any key gives zero rows, a Margin dimension included: on an
+empty input, \code{.grouping = rollup(region)} returns no rows, although its
+grand-total set omits \code{region} and \code{\link[=summarize_with_margins]{summarize_with_margins()}} returns
+one total row for it.
 }
 }
 
@@ -164,6 +177,8 @@ A row-wise data frame exists only locally, so a \code{dtplyr} input is expanded
 and nested lazily and then collected before it is made row-wise: unlike
 the other Margin verbs, \code{\link[=nest_by_with_margins]{nest_by_with_margins()}} processes a \code{dtplyr}
 step's rows when called. Use \code{\link[=nest_with_margins]{nest_with_margins()}} to keep the result lazy.
+For the same reason, \code{.check_margin_label} checks a \code{dtplyr} step's
+values by default.
 }
 
 \section{Behavior shared with the other Margin verbs}{
@@ -209,10 +224,11 @@ january_sales <- dplyr::filter(
 )
 
 # A row-wise result makes it natural to calculate one report summary from
-# every nested detail table.
+# every nested detail table. `.sort` puts each subtotal after its stores.
 nested_by <- january_sales |>
   nest_by_with_margins(
-    .grouping = rollup(region, store)
+    .grouping = rollup(region, store),
+    .sort = "last"
   )
 nested_by |>
   dplyr::mutate(
@@ -243,9 +259,11 @@ east_total <- dplyr::filter(
 )
 east_total$data[[1]][c("region", "store")]
 
-# With no grouping keys, nest_by semantics retain one empty nested table.
+# An empty input keeps one empty nested table only when the call names no
+# key; a Margin dimension gives zero rows.
 empty_sales <- january_sales[0, ]
 nrow(nest_by_with_margins(.data = empty_sales))
+nrow(nest_by_with_margins(.data = empty_sales, .grouping = rollup(region)))
 
 # A dtplyr input is nested lazily, then collected to make the local
 # row-wise result. Runs only when a recent enough dtplyr is installed.

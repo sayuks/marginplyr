@@ -375,10 +375,11 @@
 #' Margin-operation validation but before constructing a summary query. The
 #' reason belongs to the source summary they share, so it applies to both, and
 #' the diagnostic names whichever helpers the call used. Other Arrow Margin
-#' operations are not affected by this refusal. Explicitly collect an Arrow
-#' input first when local share execution is appropriate. Collection changes
-#' `.check_margin_label`'s default from `FALSE` to `TRUE`, so choose that
-#' policy explicitly on the re-run.
+#' operations are not affected by this refusal; *[Arrow inputs][margin_verbs]*
+#' in [margin_verbs] states what else Arrow refuses. Explicitly collect an
+#' Arrow input first when local share execution is appropriate. Collection
+#' changes `.check_margin_label`'s default from `FALSE` to `TRUE`, so choose
+#' that policy explicitly on the re-run.
 #'
 #' A `dtplyr` step remains a native lazy query: no validation-only query is
 #' added and nothing is collected on your behalf. Its execution-time

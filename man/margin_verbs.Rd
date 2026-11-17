@@ -34,8 +34,7 @@ proxy rather than the source values, so use one that depends only on the
 column type, such as \code{where(is.character)}. A value-dependent predicate
 such as \code{where(~ any(.x == "x"))} can silently select different columns on
 a lazy input than on a local one; marginplyr does not detect it. To select
-on values, call \code{\link[dplyr:collect]{dplyr::collect()}} first, and set \code{.check_margin_label}
-explicitly, since its default changes to \code{TRUE} for the collected data.
+on values, call \code{\link[dplyr:collect]{dplyr::collect()}} first.
 DuckDB, Arrow, and \code{dtplyr} inputs supply those types; SQLite, PostgreSQL,
 and every other SQL connection cannot without a query, so a predicate is
 refused there. Select the columns by name, or collect first.
@@ -54,11 +53,106 @@ groups. A grouping column also cannot appear in \code{.grouping}, because one
 column cannot be both a fixed key and a dimension that can be rolled up.
 Grouped local data created with \code{.drop = FALSE} is rejected because empty
 groups cannot be preserved on every backend. To retain empty keys, complete
-the input before the Margin operation, as the \href{https://sayuks.github.io/marginplyr/vignettes/completing_keys.html}{Complete absent keys before margins} guide shows.
+the input before the Margin operation, as \emph{Keep unused factor levels} in the
+\href{https://sayuks.github.io/marginplyr/vignettes/completing_keys.html}{Complete absent keys before margins} guide shows.
 
 Row-wise input is rejected; to keep row-wise identifiers as fixed keys,
 ungroup first and select them with \code{.by}. Each verb's page states the
 grouping of its result.
+}
+
+\section{Display labels and grouping identity}{
+
+\code{.margin_label} is a display value, not the identity of a grouping set;
+each verb's Value states the type a dimension takes to hold a label. A
+factor or ordered factor is rebuilt to hold a non-missing label, preserving
+ordered status and placing the new level last by default or first when
+\code{.margin_label_position = "first"}. A label equal to any declared level,
+used or unused, is rejected before any grouping set is built, whatever
+\code{.check_margin_label} says. Rebuilding preserves the distinction between an
+observation that uses a factor NA level and an actually missing factor
+code.
+
+\code{NA_character_} and \code{NULL} both create a typed missing Margin value and no
+factor level. What separates them is a factor NA level: \code{NA_character_} on
+a factor that has one is refused, because NA is already a factor level,
+even when \code{.check_margin_label = FALSE}, while \code{NULL} preserves the level.
+Every other combination of label and factor is allowed.
+
+A local packed data-frame, matrix, or array Margin dimension accepts only
+\code{NULL} or \code{NA_character_} as its Margin label, because no scalar string can
+represent such a key; split it into separate columns if it needs display
+text.
+The same holds for a list-column dimension, locally or under dtplyr, and
+for an Arrow list, large list, or fixed-size list dimension.
+
+A factor observation that uses an NA level can print as \verb{<NA>} while
+\code{is.na()} is false. A missing factor code has \code{is.na()} equal to true.
+Source missing values and typed-missing Margin values may display
+identically, so keep \code{.id} in the result when the difference matters.
+}
+
+\section{Margin order}{
+
+\code{.sort} orders a result by the structure of its Grouping plan rather than by
+displayed values. The key is the result's own leading key columns, left
+to right, with each Margin dimension preceded by its Grouping bit -- \code{1} on a
+row whose grouping set omits that dimension, \code{0} otherwise -- and by
+whether its value is missing:
+
+\if{html}{\out{<div class="sourceCode">}}\preformatted{is.na(by1), by1, ..., bit(d1), is.na(d1), d1, bit(d2), is.na(d2), d2, ...
+}\if{html}{\out{</div>}}
+
+A margin row therefore sits with the rows it summarizes instead of wherever
+its \code{.margin_label} falls among that dimension's values: the label's text
+never decides where a margin goes, and neither does the locale. Within a
+level, rows sort ascending by value, with a source \code{NA} after the named
+values. Fixed \code{.by} keys sort first, so each partition is one contiguous
+block, and \code{.id}, when it names a column, breaks the remaining ties.
+\code{"first"} reverses the Grouping bits alone: missing values come last
+wherever they appear, on every backend.
+
+Whether there is a label does decide how a non-factor dimension sorts: a
+non-missing \code{.margin_label} makes it character, so a numeric dimension sorts
+as text, \code{"10"} before \code{"9"}. Keep its type with \code{.margin_label = NULL},
+or make it a factor first. Factor dimensions sort by their levels, except on
+Arrow, which sorts a factor by value; see \emph{Arrow inputs}.
+\code{.margin_label_position} positions a synthetic factor level and never a
+row.
+
+A Margin order promises what \code{\link[dplyr:arrange]{dplyr::arrange()}} promises in the C locale,
+which it fixes: \code{options(dplyr.legacy_locale = TRUE)} does not redirect it.
+It is a property of the object the verb returns: the row order of a local
+data frame, or the ordering of a lazy result that \code{\link[dplyr:collect]{dplyr::collect()}}
+observes. Later verbs can change it. It composes with every \code{.duplicates}
+policy the verb accepts.
+
+The \href{https://sayuks.github.io/marginplyr/vignettes/recipes.html}{recipes guide} shows a Margin order before and after, and
+shows the key written as an \code{arrange()} you control.
+}
+
+\section{Grouping set identifiers}{
+
+When \code{.id} names an output column, each result row receives the one-based
+position of its grouping set occurrence after applying \code{.duplicates}.
+\code{"drop"} renumbers the occurrences it keeps. One grouping set has
+identifier \code{1L}, and a zero-row result retains an integer \code{.id} column.
+
+\code{.id} records plan occurrence, not physical result order, and is not a
+durable business key: reordering or deduplicating the Grouping
+specification changes it. \code{\link[=grouping_bit]{grouping_bit()}} documents how \code{.id} compares
+with \code{\link[=inspect_grouping]{inspect_grouping()}}\verb{$set_id}, \code{\link[=grouping_bit]{grouping_bit()}}, and \code{\link[=grouping_id]{grouping_id()}}.
+
+\code{\link[=grouping_bit]{grouping_bit()}} and \code{\link[=grouping_id]{grouping_id()}} can be called only inside
+\code{\link[=summarize_with_margins]{summarize_with_margins()}}. To learn which grouping set a row of
+\code{\link[=expand_with_margins]{expand_with_margins()}}, \code{\link[=nest_with_margins]{nest_with_margins()}}, or \code{\link[=nest_by_with_margins]{nest_by_with_margins()}}
+came from, pass \code{.id} and join it to the \code{set_id} column of
+\code{\link[=inspect_grouping]{inspect_grouping()}} called with the same \code{.by} and \code{.grouping}, as
+\emph{Add a level column: detail, subtotal or total} in the
+\href{https://sayuks.github.io/marginplyr/vignettes/recipes.html}{recipes guide} does. Without \code{.id}, a typed-missing
+\code{.margin_label} leaves a margin row indistinguishable from a source row
+whose dimension is missing, so summarizing an expansion again by its
+grouping columns merges the two.
 }
 
 \section{Option arguments}{
@@ -71,17 +165,8 @@ in full. An abbreviation is not shorthand for the value it begins, and
 the argument accepts.
 
 To ask for the default, leave the argument out, or pass the whole
-vocabulary exactly as the signature spells it. The second form lets a
-function of your own repeat the signature and hand the argument on:
-
-\if{html}{\out{<div class="sourceCode r">}}\preformatted{my_report <- function(data, .sort = c("none", "last", "first")) \{
-  summarize_with_margins(
-    data, revenue = sum(revenue),
-    .grouping = rollup(region), .sort = .sort
-  )
-\}
-}\if{html}{\out{</div>}}
-
+vocabulary exactly as the signature spells it, which lets a function of your
+own repeat \code{.sort = c("none", "last", "first")} and hand it on.
 Any other vector of more than one value is an error, a reordering of the
 vocabulary included. A wrapper that would rather not track the signature
 resolves the value itself and passes one string.
@@ -111,101 +196,6 @@ result uses the input schema captured when it was built, so rebuild it
 after changing column types, factor definitions, or labels.
 }
 
-\section{Grouping set identifiers}{
-
-When \code{.id} names an output column, each result row receives the one-based
-position of its grouping set occurrence after applying \code{.duplicates}.
-\code{"drop"} renumbers the occurrences it keeps. One grouping set has
-identifier \code{1L}, and a zero-row result retains an integer \code{.id} column.
-
-\code{.id} records plan occurrence, not physical result order, and is not a
-durable business key: reordering or deduplicating the Grouping
-specification changes it. \code{\link[=grouping_bit]{grouping_bit()}} documents how \code{.id} compares
-with \code{\link[=inspect_grouping]{inspect_grouping()}}\verb{$set_id}, \code{\link[=grouping_bit]{grouping_bit()}}, and \code{\link[=grouping_id]{grouping_id()}}.
-}
-
-\section{Margin order}{
-
-\code{.sort} orders a result by the structure of its Grouping plan rather than by
-displayed values. The key is the result's own leading key columns, left
-to right, with each Margin dimension preceded by its Grouping bit -- \code{1} on a
-row whose grouping set omits that dimension, \code{0} otherwise -- and by
-whether its value is missing:
-
-\if{html}{\out{<div class="sourceCode">}}\preformatted{is.na(by1), by1, ..., bit(d1), is.na(d1), d1, bit(d2), is.na(d2), d2, ...
-}\if{html}{\out{</div>}}
-
-A margin row therefore sits with the rows it summarizes instead of wherever
-its \code{.margin_label} falls among that dimension's values, so the order does
-not depend on the label or the locale. Fixed \code{.by} keys sort first, so each
-partition is one contiguous block, and \code{.id}, when it names a column, breaks
-the remaining ties. \code{"first"} reverses the Grouping bits alone: missing
-values come last wherever they appear, on every backend. Factor dimensions
-sort by their levels. \code{.margin_label_position} positions a synthetic factor
-level and never a row.
-
-A Margin order promises what \code{\link[dplyr:arrange]{dplyr::arrange()}} promises in the C locale,
-which it fixes: \code{options(dplyr.legacy_locale = TRUE)} does not redirect it.
-It is a property of the object the verb returns: the row order of a local
-data frame, or the ordering of a lazy result that \code{\link[dplyr:collect]{dplyr::collect()}}
-observes. Later verbs can change it. It composes with every \code{.duplicates}
-policy the verb accepts.
-
-The \href{https://sayuks.github.io/marginplyr/vignettes/recipes.html}{recipes guide} shows a Margin order before and after, and
-shows the key written as an \code{arrange()} you control.
-}
-
-\section{Display labels and grouping identity}{
-
-\code{.margin_label} is a display value, not the identity of a grouping set. An
-unnamed scalar labels every resolved Margin dimension. A named vector
-provides column-specific labels and must cover the resolved dimensions
-exactly once; missing, unknown, duplicate, and empty names are rejected, as
-are names from \code{.by}.
-
-Non-missing labels convert ordinary Margin dimensions to character. A
-factor or ordered factor is rebuilt instead, preserving ordered status and
-placing a new synthetic level last by default or first when
-\code{.margin_label_position = "first"}. A label equal to any declared level,
-used or unused, is rejected before any grouping set is built, whatever
-\code{.check_margin_label} says. Rebuilding preserves the distinction between an
-observation that uses a factor NA level and an actually missing factor
-code.
-
-\code{NA_character_} and \code{NULL} both create a typed missing Margin value and do
-not create a synthetic factor level, so \code{.margin_label_position} has no
-effect for either, and neither takes part in the observed half of collision
-validation. What separates them is a factor NA level: it conflicts with
-\code{NA_character_} even when \code{.check_margin_label = FALSE}, while \code{NULL}
-preserves it.
-
-A local packed data-frame, matrix, or array Margin dimension accepts only
-\code{NULL} or \code{NA_character_} as its Margin label, because no scalar string can
-represent such a key; split it into separate columns if it needs display
-text.
-The same holds for a list-column dimension, locally or under dtplyr, and
-for an Arrow list, large list, or fixed-size list dimension.
-
-Factor columns follow this contract:\tabular{lrrl}{
-   Margin label \tab NA level \tab Missing value \tab Result \cr
-   \code{NA_character_} \tab yes \tab yes \tab Error: NA is already a factor level \cr
-   \code{NA_character_} \tab yes \tab no \tab Error: NA is already a factor level \cr
-   \code{NA_character_} \tab no \tab yes \tab Allowed; source missing values and margins display alike, so tell them apart with \code{.id} \cr
-   \code{NA_character_} \tab no \tab no \tab Allowed; use typed missing \cr
-   \code{NULL} \tab yes \tab yes \tab Allowed; source missing values and margins display alike, so tell them apart with \code{.id} \cr
-   \code{NULL} \tab yes \tab no \tab Allowed; preserve the NA level and use typed missing \cr
-   \code{NULL} \tab no \tab yes \tab Allowed; source missing values and margins display alike, so tell them apart with \code{.id} \cr
-   \code{NULL} \tab no \tab no \tab Allowed; use typed missing \cr
-}
-
-
-A factor observation that uses an NA level can print as \verb{<NA>} while
-\code{is.na()} is false. A missing factor code has \code{is.na()} equal to true.
-Source missing values and typed-missing Margin values may display
-identically, so keep \code{.id} in the result when the difference matters.
-Every row above is decided whatever \code{.check_margin_label} says.
-}
-
 \section{Arrow inputs}{
 
 Arrow's tabular dplyr inputs are a \code{Table}, \code{RecordBatch}, \code{Dataset},
@@ -219,13 +209,27 @@ objects, such as a \code{Scanner} or an \code{Array}, are not dplyr inputs; a Sc
 materializes with \verb{$ToTable()}. \emph{Which Arrow inputs are supported} in the
 \href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html}{database guide} tabulates these answers per verb.
 
-A summary Arrow cannot evaluate is refused as \emph{\link[=summarize_with_margins]{Summaries a lazy backend cannot carry}} in \code{\link[=summarize_with_margins]{summarize_with_margins()}} states,
-and a generated Margin label transformation Arrow cannot translate is
-refused on the same terms.
+For a summary or generated Margin label transformation Arrow's own engine
+cannot evaluate, a \code{Table} and \code{RecordBatch} (and queries built on them)
+would fall back to R by reading every column of the input, not only the
+ones the expression names. marginplyr refuses such an expression instead,
+before a row is read, and names the two rewrites that compute it: collect
+the input first, and select the columns the summary needs before
+collecting, which is the narrowing Arrow's own route cannot do for you. A
+\code{Dataset} and a query built on one never read themselves into R, so they
+keep Arrow's own unsupported-expression error instead.
+
+Which expressions those are is Arrow's to decide and moves with its version,
+so they are not listed here. Among the summaries refused are a group
+collapsed into a single value, such as pasting one, a subset written inside
+an aggregate, and a statistic over two columns at once; ordinary numeric
+summaries, and arithmetic over them, are evaluated by Arrow and stay lazy.
 
 Arrow does not hold factor levels in the schema marginplyr reads, so a
-non-missing \code{.margin_label} converts a factor dimension to character, its
-levels and ordered status are lost, and a Margin order sorts it by value.
+non-missing \code{.margin_label} converts a factor dimension to character, and its
+levels and ordered status are lost. A Margin order sorts a factor by value on
+Arrow whatever the label, fixed \code{.by} keys included, even where the result
+column keeps its levels.
 For the same reason, a label equal to an unused declared level is allowed,
 and an observed collision is refused only when
 \code{.check_margin_label = TRUE}. \code{NA_character_} and \code{NULL} convert nothing.
