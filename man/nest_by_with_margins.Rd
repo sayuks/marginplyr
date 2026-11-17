@@ -59,20 +59,13 @@ ordered-factor levels. It does not sort result rows and has no effect for
 
 \item{.check_margin_label}{Whether to check that no value of a Margin
 dimension equals that dimension's display label. The default is \code{TRUE}
-for a local data frame and \code{FALSE} for a lazy input the verb accepts --
-a \code{dtplyr} step, and for a summary or expansion also a database table or
-an Arrow object -- because there the check runs a query that reads your
-data; see \emph{\link[=margin_verbs]{When marginplyr queries your data}} in
-\link{margin_verbs}, and \emph{\link[=nest_by_with_margins]{dtplyr inputs}} in
-\code{\link[=nest_by_with_margins]{nest_by_with_margins()}} for the one exception. A collected input is a
-local data frame, so collecting turns the check on; set this explicitly
-when re-running a call on collected data.
+for both inputs this verb accepts, a local data frame and a \code{dtplyr}
+step, whose rows it reads when called; see \emph{dtplyr inputs} below.
 
-A label equal to a declared factor level is refused wherever marginplyr
-holds the levels, whatever this argument says, because finding it reads
-no rows. A typed-missing label, \code{NULL} or \code{NA_character_}, takes its
-dimension out of the check. Left unchecked, a colliding value gives the
-result a margin row and a source row that no key column tells apart;
+A label equal to a declared factor level is refused whatever this
+argument says. A typed-missing label, \code{NULL} or \code{NA_character_}, takes
+its dimension out of the check. Left unchecked, a colliding value gives
+the result a margin row and a source row that no key column tells apart;
 keeping \code{.id} in the result distinguishes them.}
 
 \item{.duplicates}{\code{"error"} or \code{"drop"}, and nothing else; see

@@ -55,6 +55,16 @@
 #' values by default.
 #'
 #' @inheritParams nest_with_margins
+#' @param .check_margin_label Whether to check that no value of a Margin
+#'   dimension equals that dimension's display label. The default is `TRUE`
+#'   for both inputs this verb accepts, a local data frame and a `dtplyr`
+#'   step, whose rows it reads when called; see *dtplyr inputs* below.
+#'
+#'   A label equal to a declared factor level is refused whatever this
+#'   argument says. A typed-missing label, `NULL` or `NA_character_`, takes
+#'   its dimension out of the check. Left unchecked, a colliding value gives
+#'   the result a margin row and a source row that no key column tells apart;
+#'   keeping `.id` in the result distinguishes them.
 #' @inheritSection nest_with_margins Nested data frames
 #' @section Behavior shared with the other Margin verbs:
 #' These rules are stated once, in [margin_verbs], for every Margin verb:
