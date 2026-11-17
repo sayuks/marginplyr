@@ -279,14 +279,14 @@ assert_margin_input <- function(x) {
     return(invisible(NULL))
   }
 
-  # Two calls rather than the one clause an `if` used to choose between and
+  # Separate calls rather than one clause an `if` chooses between and
   # splice, because the structural gate reads `abort_marginplyr()`'s own
   # argument and refuses a computed template. What the branch picks is a whole
   # element, which is what ADR 0023's third amendment admits; the cost is the
   # refusal and the remedy, written out in each arm.
   #
-  # `NULL` is a spelling the caller typed, so it is `{.code}`; the other arm
-  # names the class the object supplied actually has, which is `{.cls}` --
+  # `NULL` is a spelling the caller typed, so it is `{.code}`; the other arms
+  # name the class the object supplied actually has, which is `{.cls}` --
   # rendering the `<matrix>` this refusal has always shown, and the reason the
   # style table has that row at all (ADR 0023's fourth amendment).
   if (is.null(x)) {
@@ -299,6 +299,21 @@ assert_margin_input <- function(x) {
       i = paste0(
         "Convert it to a data frame or a lazy table that supports dplyr ",
         "verbs first."
+      )
+    ))
+  }
+  # A specification here is the arguments written in the wrong order, which
+  # no conversion answers.
+  if (inherits(x, "margin_grouping_spec")) {
+    abort_marginplyr(c(
+      paste0(
+        "{.arg {nm}} must be a data frame or a lazy table that supports ",
+        "dplyr verbs."
+      ),
+      i = "A {.cls {class(x)[[1L]]}} was supplied.",
+      i = paste0(
+        "Pass the data first and the Grouping specification as ",
+        "{.arg .grouping}."
       )
     ))
   }

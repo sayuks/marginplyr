@@ -788,6 +788,37 @@ test_that("every entry point admits input the same way", {
   )
 })
 
+# A specification in the data's position is an argument order slip, which no
+# conversion answers (#1703).
+test_that("a Grouping specification as `.data` is sent to `.grouping`", {
+  spec <- rollup(g)
+  calls <- list(
+    summarize_with_margins = function() {
+      summarize_with_margins(spec, s = sum(v))
+    },
+    expand_with_margins = function() expand_with_margins(spec),
+    nest_with_margins = function() nest_with_margins(spec),
+    nest_by_with_margins = function() nest_by_with_margins(spec),
+    inspect_grouping = function() inspect_grouping(spec)
+  )
+
+  for (verb in names(calls)) {
+    raised <- expect_error(
+      calls[[verb]](),
+      "must be a data frame or a lazy table",
+      class = "marginplyr_error",
+      info = verb
+    )
+    expect_match(
+      conditionMessage(raised),
+      "Pass the data first and the Grouping specification as `.grouping`.",
+      fixed = TRUE,
+      info = verb
+    )
+    expect_no_match(conditionMessage(raised), "Convert it", info = verb)
+  }
+})
+
 test_that("non-tabular Arrow objects use the general admission refusal", {
   skip_if_suggest_absent("arrow")
 
