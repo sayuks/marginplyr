@@ -10,10 +10,11 @@ grouping_bit(x)
 grouping_id(...)
 }
 \arguments{
-\item{x}{A bare grouping column.}
+\item{x}{A bare Margin dimension -- a column \code{.grouping} selects -- or a
+fixed \code{.by} key, whose bit is always \code{0L}.}
 
-\item{...}{Bare grouping columns. Passing none reads every \code{.grouping}
-column of the resolved plan.}
+\item{...}{Bare Margin dimensions or fixed \code{.by} keys. Passing none reads
+every Margin dimension of the resolved plan.}
 }
 \value{
 Used inside \code{\link[=summarize_with_margins]{summarize_with_margins()}}, one value per result row.
@@ -31,13 +32,13 @@ grouping set from ordinary missing values in the source data.
 \code{\link[=grouping_bit]{grouping_bit()}} corresponds to SQL \code{GROUPING(x)}: it returns \code{1L} when
 \code{x} is absent from the grouping set and \code{0L} otherwise.
 \code{\link[=grouping_id]{grouping_id()}} combines those flags as a bit mask; its last argument is
-the least-significant bit. It accepts up to 31 distinct grouping columns.
+the least-significant bit. It accepts up to 31 distinct columns.
 
-Written with no columns, \code{\link[=grouping_id]{grouping_id()}} reads every \code{.grouping} column of
-the resolved plan, in plan order. That is the order \code{\link[=inspect_grouping]{inspect_grouping()}}
-reports, so a bare \code{\link[=grouping_id]{grouping_id()}} equals that function's \code{grouping_id} for
-the grouping set the row came from. Columns fixed by \code{.by} are not part of
-that default.
+Written with no columns, \code{\link[=grouping_id]{grouping_id()}} reads every Margin dimension --
+each column \code{.grouping} selects -- of the resolved plan, in plan order. That
+is the order \code{\link[=inspect_grouping]{inspect_grouping()}} reports, so a bare \code{\link[=grouping_id]{grouping_id()}} equals
+that function's \code{grouping_id} for the grouping set the row came from.
+Columns fixed by \code{.by} are not part of that default.
 
 The \verb{_bit} suffix emphasizes the \code{0}/\code{1} result and deliberately avoids
 masking \code{\link[base:grouping]{base::grouping()}}, an unrelated function that returns a permutation
@@ -78,9 +79,9 @@ presentation order matters.
 Displayed Margin labels are not identity. A source value can equal its
 Margin label, and a source missing value can print exactly like a
 typed-missing Margin value, so retain one of these helpers or \code{.id} when
-structural identity matters. The complete label, factor, and missing-value
-contract is \emph{\link[=summarize_with_margins]{Display labels and grouping identity}}
-in \code{\link[=summarize_with_margins]{summarize_with_margins()}}.
+the two must be told apart. The complete label, factor, and missing-value
+contract is \emph{\link[=margin_verbs]{Display labels and grouping identity}} in
+\link{margin_verbs}.
 
 The \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide} works through these values with
 executable examples.

@@ -31,11 +31,13 @@ may send queries of its own on the way. With
 \code{options(marginplyr.audit_sql = TRUE)} set, marginplyr keeps a record of
 the SQL of one call -- the most recent call to \code{\link[=summarize_with_margins]{summarize_with_margins()}},
 \code{\link[=expand_with_margins]{expand_with_margins()}}, \code{\link[=nest_with_margins]{nest_with_margins()}}, \code{\link[=nest_by_with_margins]{nest_by_with_margins()}},
-or \code{\link[=inspect_grouping]{inspect_grouping()}} -- and this function reads it back. The record is
-started afresh for every call, so what it holds belongs to that call
-alone. Piping one Margin verb into another is two calls, and the outer one
-is the most recent: the inner call is its input and records first, and the
-outer call then starts a fresh record holding only its own SQL.
+or \code{\link[=inspect_grouping]{inspect_grouping()}} -- and this function reads it back. A call to one
+of those five functions is what this page, and the errors it raises, call a
+\emph{tracked call}. The record is started afresh for every call, so what it
+holds belongs to that call alone. Piping one Margin verb into another is
+two calls, and the outer one is the most recent: the inner call is its input
+and records first, and the outer call then starts a fresh record holding
+only its own SQL.
 }
 \section{Diagnostic details}{
 
@@ -172,6 +174,16 @@ marginplyr keeps no accumulated history and writes no file automatically:
 utils::write.csv(internal, path, row.names = FALSE)
 }\if{html}{\out{</div>}}
 
+The \code{details = TRUE} view's \code{conditions} column is a list, which
+\code{write.csv()} cannot write. Drop that column first, or keep the whole view
+with \code{saveRDS()}:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{detailed <- last_sent_queries(details = TRUE)
+utils::write.csv(detailed[names(detailed) != "conditions"], path,
+                 row.names = FALSE)
+saveRDS(detailed, rds_path)
+}\if{html}{\out{</div>}}
+
 For a batch of calls, read the record after each one and bind the pieces:
 
 \if{html}{\out{<div class="sourceCode r">}}\preformatted{records <- lapply(specs, function(spec) \{
@@ -254,8 +266,8 @@ if (
 }
 }
 \seealso{
-\emph{\link[=summarize_with_margins]{When marginplyr queries your data}} for
-the queries a Margin verb sends without being asked,
+\emph{\link[=margin_verbs]{When marginplyr queries your data}} in
+\link{margin_verbs} for the queries a Margin verb sends without being asked,
 \code{\link[dplyr:show_query]{dplyr::show_query()}} for the result query alone, and \emph{Record the SQL
 marginplyr prepares} in the \href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html}{database-backends guide} for the record
 read against a live connection.

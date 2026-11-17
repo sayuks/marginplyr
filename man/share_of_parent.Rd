@@ -26,7 +26,7 @@ immediate rollup parent, and \code{share_of_total()} by the grand total.
 \tabular{lll}{
    Helper \tab Denominator \tab Accepted \code{.grouping} \cr
    \code{share_of_parent()} \tab The immediately less detailed \code{\link[=rollup]{rollup()}} level \tab One pure \code{\link[=rollup]{rollup()}} \cr
-   \code{share_of_total()} \tab The Grand total set, in which every grouping dimension is omitted \tab Any specification whose plan contains one \cr
+   \code{share_of_total()} \tab The Grand total set, in which every Margin dimension is omitted \tab Any specification whose plan contains one \cr
 }
 
 
@@ -207,7 +207,7 @@ reorder the public result.
 
 In \code{across(.cols, share_of_parent, .names = ...)} and its
 \code{share_of_total} counterpart, \code{.cols} sees only preceding eligible ordinary
-summaries. Source-data columns, fixed \code{.by} keys, variable grouping
+summaries. Source-data columns, fixed \code{.by} keys, Margin
 dimensions, and earlier shares are outside this selection context.
 \code{\link[dplyr:everything]{dplyr::everything()}} therefore means every preceding ordinary summary, not
 every input column.
@@ -351,7 +351,8 @@ With \code{.check_share_source = FALSE} on live SQLite, direct
 \code{\link[dplyr:collect]{dplyr::collect()}} keeps a declared double share when the result is
 empty or a finite prefix contains only missing shares.
 For direct \code{\link[dplyr:compute]{dplyr::compute()}}, see
-\emph{\link[=summarize_with_margins]{SQLite materialization}}.
+\emph{\link[=summarize_with_margins]{SQLite materialization}} in
+\code{\link[=summarize_with_margins]{summarize_with_margins()}}.
 
 Syntax, source-name, written-order, and \code{across()} errors are always
 reported locally, before execution, on every backend. The eligible-type
@@ -375,6 +376,9 @@ exactly-one-value cardinality rule is established with it:\tabular{ll}{
    General dbplyr \tab Type from the dialect, and cardinality as below \cr
 }
 
+
+The \emph{Backend support matrix} in the \href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html}{database guide} sets each backend
+family's share support beside its other answers.
 
 Arrow inputs reject both helpers after expression planning and common
 Margin-operation validation but before constructing a summary query. The

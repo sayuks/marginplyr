@@ -11,7 +11,7 @@
 #'   `.id` when supplied.
 #' - Row order is unspecified. Use `.sort` for margins next to the rows they
 #'   cover, or [dplyr::arrange()] for any other order.
-#' - A character `.margin_label` changes a non-factor grouping dimension to
+#' - A character `.margin_label` changes a non-factor Margin dimension to
 #'   character in the outer columns; see Value. Use `.margin_label = NULL` or
 #'   `NA_character_` to keep its type.
 #' - With `.keep = TRUE`, the nested data holds the original, pre-margin
@@ -25,7 +25,7 @@
 #' - With no grouping keys, an empty input returns one row holding the empty
 #'   input, as [dplyr::nest_by()] does.
 #'
-#' @section When marginplyr queries your data:
+#' @section dtplyr inputs:
 #' A row-wise data frame exists only locally, so a `dtplyr` input is expanded
 #' and nested lazily and then collected before it is made row-wise: unlike
 #' the other Margin verbs, [nest_by_with_margins()] processes a `dtplyr`
@@ -33,27 +33,32 @@
 #'
 #' @inheritParams nest_with_margins
 #' @inheritSection nest_with_margins Nested data frames
-#' @inheritSection summarize_with_margins Fixed columns and grouping dimensions
-#' @inheritSection summarize_with_margins Grouped and row-wise inputs
-#' @inheritSection summarize_with_margins Option arguments
-#' @inheritSection summarize_with_margins Result metadata
-#' @inheritSection summarize_with_margins Grouping set identifiers
-#' @inheritSection summarize_with_margins Margin order
-#' @inheritSection summarize_with_margins Display labels and grouping identity
+#' @section Behavior shared with the other Margin verbs:
+#' These rules are stated once, in [margin_verbs], for every Margin verb:
+#'
+#' - [Fixed columns and Margin dimensions][margin_verbs]
+#' - [Grouped and row-wise inputs][margin_verbs]
+#' - [Option arguments][margin_verbs]
+#' - [Result metadata][margin_verbs]
+#' - [Grouping set identifiers][margin_verbs]
+#' - [Margin order][margin_verbs]
+#' - [Display labels and grouping identity][margin_verbs]
+#'
 #' @param .key A non-missing string naming the list column. Unlike
 #'   [nest_with_margins()] and [tidyr::nest()], `NULL` is not converted to
 #'   `"data"`; this follows [dplyr::nest_by()].
 #' @details dplyr reserves `.rows` in row-wise grouping metadata. A fixed `.by`
-#'   key, grouping dimension, or `.id` named `.rows` is therefore refused
+#'   key, Margin dimension, or `.id` named `.rows` is therefore refused
 #'   before nesting. Rename that outer key or use [nest_with_margins()] for an
 #'   ungrouped result. A payload column or `.key` named `.rows` is supported.
 #' @return A row-wise data frame, a tibble subclass whatever the class of
 #'   `.data`, with one row per group per grouping set. Its columns are the
-#'   fixed `.by` keys, then the grouping dimensions, then `.id` when supplied,
+#'   fixed `.by` keys, then the Margin dimensions, then `.id` when supplied,
 #'   then the list column named by `.key`; it is grouped row-wise by all but
-#'   the list column. See *Result metadata*.
+#'   the list column. See *[Result metadata][margin_verbs]* in
+#'   [margin_verbs].
 #'
-#'   With a character `.margin_label`, the default, an outer grouping
+#'   With a character `.margin_label`, the default, an outer Margin
 #'   dimension that is not a factor becomes character so that it can hold the
 #'   label, while the nested columns keep their original types. A factor
 #'   dimension instead gains the label as a new level.

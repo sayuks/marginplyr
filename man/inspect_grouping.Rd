@@ -28,14 +28,16 @@ represents the empty grouping set. Any expression returning a
 specification can be written here, while a specification nested inside
 another must be a constructor call or a name bound to one, and a nested
 name the input also has a column for is refused rather than read either
-way; see \code{\link[=grouping_set]{grouping_set()}}.}
+way; see \code{\link[=grouping_set]{grouping_set()}}. The columns it selects are the plan's Margin
+dimensions, which a grouping set can omit; \code{.by} columns are fixed keys.}
 
 \item{.duplicates}{One of \code{"error"}, \code{"drop"}, or \code{"keep"}, and nothing
-else, controlling duplicate grouping-set occurrences; see \emph{Option
-arguments}.}
+else, controlling duplicate grouping-set occurrences; see
+\emph{\link[=margin_verbs]{Option arguments}} in \link{margin_verbs}.}
 
 \item{.format}{\code{"text"} for compact display values or \code{"list"} for exact
-character and integer vectors, and nothing else; see \emph{Option arguments}.
+character and integer vectors, and nothing else; see
+\emph{\link[=margin_verbs]{Option arguments}} in \link{margin_verbs}.
 Text values are display-only; use \code{"list"} when column names contain
 separators or other non-syntactic characters.}
 }
@@ -45,27 +47,20 @@ A local, ungrouped tibble with columns \code{set_id}, \code{fixed},
 }
 \description{
 \code{inspect_grouping()} returns the Grouping plan resolved from \code{.data},
-\code{.by}, and \code{.grouping} without executing a Margin operation. The result is
+\code{.by}, and \code{.grouping} without executing a Margin operation. A Grouping plan
+is the ordered list of grouping sets that the Grouping specification written
+in \code{.grouping} expands to, and this function returns one row per
+grouping-set occurrence in it. The result is
 always a local, ungrouped, ordinary tibble, including for lazy inputs.
 }
-\section{Option arguments}{
-
-\code{.duplicates} and \code{.format} each take one of their listed strings, spelled
-in full. An abbreviation is not shorthand for the value it begins, and
-\code{NULL} is not shorthand for the default: both are errors naming the values
-the argument accepts. For the default, leave the argument out or pass the
-whole vocabulary as the signature spells it, such as
-\code{.format = c("text", "list")}; any other vector of more than one value is
-an error.
-}
-
 \section{Grouping identity}{
 
-\code{set_id} is the one-based Grouping set identifier exposed by \code{.id} for the
-same resolved plan. \code{grouping_bits} instead describes whether each variable
-dimension is included (\code{0L}) or omitted (\code{1L}), and \code{grouping_id} encodes
+\code{set_id} is the one-based Grouping set identifier a Margin verb's
+\code{\link[=summarize_with_margins]{.id}} column holds for the same resolved plan.
+\code{grouping_bits} instead describes whether each Margin dimension is
+included (\code{0L}) or omitted (\code{1L}), and \code{grouping_id} encodes
 that absence pattern as a bit mask. \code{grouping_id} is \code{NA_integer_} beyond
-31 variable dimensions, while \code{grouping_bits} remains complete.
+31 Margin dimensions, while \code{grouping_bits} remains complete.
 
 \code{\link[=grouping_bit]{grouping_bit()}} is the canonical reference for how these four values
 relate and which of them distinguish duplicate grouping-set occurrences.
@@ -97,8 +92,8 @@ inspection uses captured column metadata and the backend-independent
 Grouping plan. Predicates in \code{.by} and \code{.grouping} use that metadata, not
 source values; collect explicitly before inspecting a plan whose selections
 depend on values. See
-\emph{\link[=summarize_with_margins]{Fixed columns and grouping dimensions}} for
-type-based and value-dependent examples.
+\emph{\link[=margin_verbs]{Fixed columns and Margin dimensions}} in \link{margin_verbs}
+for type-based and value-dependent examples.
 A derived dtplyr step whose typed metadata cannot be
 established without processing source rows is refused when inspection needs
 those types. Name-only inspection on dtplyr and DuckDB uses the input's
@@ -119,56 +114,23 @@ missing SQL denotes a failed diagnostic render, not proof of database
 receipt or completion. Add
 \code{details = TRUE} for each internal operation's outcome and conditions.
 
+Every tabular Arrow input is accepted, including a \code{RecordBatchReader},
+which inspection does not consume. Non-tabular Arrow objects are refused.
+
 Because inspection builds no grouping-set branch, it also accepts a dtplyr
 step with an input rooted at \code{dtplyr::lazy_dt(immutable = FALSE)} and leaves
-every caller \code{data.table} unchanged. Margin verbs refuse the same Mutable
-step before building a branch; rebuild it with \code{immutable = TRUE} before
-passing it to one of them.
+every caller \code{data.table} unchanged. Margin verbs refuse such a step before
+building a branch, because data.table may write to the caller's table by
+reference in any branch; rebuild it with \code{immutable = TRUE} before passing
+it to one of them.
 
 The \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide} walks through inspecting a plan and
 reading it back off a Margin result. The \href{https://sayuks.github.io/marginplyr/vignettes/recipes.html}{recipes guide} uses a
-plan to choose which grouping set to keep, and joins one against \code{.id} to
-name the set behind every row. Because the plan is local, that join needs a
+plan to choose which grouping set to keep, and joins one against a Margin
+result's \code{\link[=summarize_with_margins]{.id}} column to name the set behind
+every row. Because the plan is local, that join needs a
 \code{copy} argument when the Margin result is lazy, and it does not preserve a
 Margin order.
-}
-
-\section{Arrow inputs}{
-
-Arrow's tabular dplyr inputs are a \code{Table}, \code{RecordBatch}, \code{Dataset},
-\code{RecordBatchReader}, or an \code{arrow_dplyr_query} built from them. marginplyr's
-contract depends on both the verb and the query's sources:\tabular{llll}{
-   Input \tab Summary or expansion \tab Inspection \tab Nesting \cr
-   \code{Table}, \code{RecordBatch}, or \code{Dataset} \tab Accepted \tab Accepted \tab Refused; collect first \cr
-   Query with no reader source \tab Accepted \tab Accepted \tab Refused; collect first \cr
-   \code{RecordBatchReader} \tab Refused; materialize first \tab Accepted \tab Refused; collect first \cr
-   Query with any reader source \tab Refused; materialize first \tab Accepted \tab Refused; collect first \cr
-   Non-tabular Arrow object \tab General input refusal \tab General input refusal \tab General input refusal \cr
-}
-
-
-A translatable summary or expansion stays an Arrow query. For a summary or
-generated Margin label transformation Arrow cannot translate, a \code{Table} and
-\code{RecordBatch} (and queries built on them) would fall back to R, so marginplyr
-refuses it before a row is read. Collect the input first to perform that
-operation locally, selecting the columns you need before collecting. A
-\code{Dataset} and a query built on one instead keep Arrow's own
-unsupported-expression error.
-
-A \code{RecordBatchReader} is one-pass, while a Margin operation may build one
-branch per grouping set, so a reader and any query whose source graph
-contains one are refused. \code{\link[arrow:as_arrow_table]{arrow::as_arrow_table()}} consumes every batch
-once and materializes the reusable \code{Table} those branches require.
-\code{\link[=inspect_grouping]{inspect_grouping()}} executes no branch, so it accepts both without
-consuming either. Other Arrow objects, such as a \code{Scanner} or an \code{Array},
-are not dplyr inputs; a Scanner materializes with \verb{$ToTable()}.
-
-Arrow does not hold factor levels in the schema marginplyr reads, so a
-non-missing \code{.margin_label} converts a factor dimension to character, its
-levels and ordered status are lost, and a Margin order sorts it by value.
-For the same reason, a label equal to an unused declared level is allowed,
-and an observed collision is refused only when
-\code{.check_margin_label = TRUE}. \code{NA_character_} and \code{NULL} convert nothing.
 }
 
 \examples{

@@ -9,7 +9,7 @@
 #' | Helper | Denominator | Accepted `.grouping` |
 #' |---|---|---|
 #' | `share_of_parent()` | The immediately less detailed [rollup()] level | One pure [rollup()] | # nolint: line_length_linter
-#' | `share_of_total()` | The Grand total set, in which every grouping dimension is omitted | Any specification whose plan contains one | # nolint: line_length_linter
+#' | `share_of_total()` | The Grand total set, in which every Margin dimension is omitted | Any specification whose plan contains one | # nolint: line_length_linter
 #'
 #' Fixed `.by` columns partition both calculations, so a fixed key never
 #' contributes to another partition's denominator. Everything else on this
@@ -194,7 +194,7 @@
 #' @section Column-wise shares:
 #' In `across(.cols, share_of_parent, .names = ...)` and its
 #' `share_of_total` counterpart, `.cols` sees only preceding eligible ordinary
-#' summaries. Source-data columns, fixed `.by` keys, variable grouping
+#' summaries. Source-data columns, fixed `.by` keys, Margin
 #' dimensions, and earlier shares are outside this selection context.
 #' [dplyr::everything()] therefore means every preceding ordinary summary, not
 #' every input column.
@@ -340,7 +340,8 @@
 #' [dplyr::collect()] keeps a declared double share when the result is
 #' empty or a finite prefix contains only missing shares.
 #' For direct [dplyr::compute()], see
-#' *[SQLite materialization][summarize_with_margins]*.
+#' *[SQLite materialization][summarize_with_margins]* in
+#' [summarize_with_margins()].
 #'
 #' Syntax, source-name, written-order, and `across()` errors are always
 #' reported locally, before execution, on every backend. The eligible-type
@@ -364,6 +365,11 @@
 #' | `dtplyr` step | Both, at execution, before an invalid row |
 #' | Arrow | Neither; shares are rejected outright |
 #' | General dbplyr | Type from the dialect, and cardinality as below |
+#'
+#' The *Backend support matrix* in the [database guide][db] sets each backend
+#' family's share support beside its other answers.
+#'
+#' [db]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html
 #'
 #' Arrow inputs reject both helpers after expression planning and common
 #' Margin-operation validation but before constructing a summary query. The

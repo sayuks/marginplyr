@@ -60,7 +60,8 @@ grand total.
 \section{Errors and warnings}{
 
 Every error marginplyr raises for a call you can correct inherits the
-\code{"marginplyr_error"} class, so one handler catches them all:
+\code{"marginplyr_error"} class. A Margin verb raises it directly, so
+\code{tryCatch()} catches it:
 
 \if{html}{\out{<div class="sourceCode r">}}\preformatted{tryCatch(
   summarize_with_margins(
@@ -76,13 +77,28 @@ Every error marginplyr raises for a call you can correct inherits the
 \code{"marginplyr_error"} is the only package-specific class marginplyr promises.
 Narrower subclasses and the wording of any message are implementation details
 that can change without a deprecation cycle, so match on the class rather
-than on message text.
+than on message text. No field of the condition names the argument it
+refuses; only the message does.
 
-Other errors deliberately fall outside the class. Errors raised by
-your own summary expressions, by tidyselect, by dplyr, or by a database
-backend propagate with their original class, diagnostic, and cause intact.
-So do marginplyr's internal invariant checks, which report a defect no
-change to your call can avoid; please report those at
+Two kinds of error arrive as the \verb{$parent} of an error dplyr raises, so a
+\code{tryCatch()} handler for their class does not see them: a marginplyr helper
+such as \code{\link[=grouping_bit]{grouping_bit()}} used inside an ordinary dplyr verb, and an error
+your own summary expression raises, as it does in \code{\link[dplyr:summarize]{dplyr::summarize()}}.
+Match them
+with \code{\link[rlang:try_fetch]{rlang::try_fetch()}}, which also searches the parent chain and hands
+its handler the matching condition, test with \code{\link[rlang:cnd_inherits]{rlang::cnd_inherits()}}, or
+read \code{cnd$parent}:
+
+\if{html}{\out{<div class="sourceCode r">}}\preformatted{rlang::try_fetch(
+  dplyr::mutate(retail_sales, bit = grouping_bit(region)),
+  marginplyr_error = function(cnd) conditionMessage(cnd)
+)
+}\if{html}{\out{</div>}}
+
+Errors raised by tidyselect, by dplyr, or by a database backend fall outside
+the class and propagate with their original class, diagnostic, and cause
+intact. So do marginplyr's internal invariant checks, which report a defect
+no change to your call can avoid; please report those at
 \url{https://github.com/sayuks/marginplyr/issues}.
 
 marginplyr itself raises no warning: it states what it will not do by
@@ -118,9 +134,10 @@ audited call. Recording renders queries
 locally or records literal SQL controls, adding no backend operation.
 A missing SQL value means diagnostic rendering failed, and a recorded
 representation does not prove database receipt or completion.
-\emph{\link[=summarize_with_margins]{When marginplyr queries your data}} states which
-internal operations can run. Copy or export the record before the next call
-replaces it; a failed call leaves its own partial record readable.
+\emph{\link[=margin_verbs]{When marginplyr queries your data}} in \link{margin_verbs}
+states which internal operations can run. Copy or export the record before
+the next call replaces it; a failed call leaves its own partial record
+readable.
 
 What the record holds, which calls keep one, and what an empty or incomplete
 read means are stated in \code{\link[=last_sent_queries]{last_sent_queries()}}'s own reference.

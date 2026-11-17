@@ -42,7 +42,7 @@
 #'
 #' A column that belongs in every grouping set, such as a reporting month, is
 #' best passed as the Margin verb's `.by`. Written inside [grouping_spec()]
-#' it is a grouping dimension instead, so the plan has no Grand total set and
+#' it is a Margin dimension instead, so the plan has no Grand total set and
 #' [share_of_total()] and [share_of_parent()] are refused.
 #'
 #' A resolved Grouping plan can be read back in four ways: `.id`,
@@ -118,7 +118,7 @@
 #' under the same name makes `s` refer to the new specification itself.
 #' Reusing a specification in independent branches is allowed.
 #'
-#' A Grouping dimension keeps its input column name. Inside a selection,
+#' A Margin dimension keeps its input column name. Inside a selection,
 #' `c(region = region)` and `all_of(c(region = "region"))` both select `region`
 #' under its own name. A selection that changes the name, such as
 #' `c(area = region)`, is refused. Rename the result with [dplyr::rename()].

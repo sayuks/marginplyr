@@ -15,7 +15,8 @@ Initial CRAN release.
   product SQL forms from comma-separated items. Specifications nest, accept
   tidy-select expressions, and support composite dimensions and empty sets.
   `.grouping` takes one of these calls; a bare column or `c()` is refused with
-  the constructor call to write instead.
+  the constructor call to write instead, and a specification written among
+  the summaries is refused with the `.grouping =` spelling to use.
 
 * Columns in `.by`, or existing `group_by()` columns, stay fixed in every
   grouping set, so one call produces an independent report per partition.
@@ -56,10 +57,11 @@ Initial CRAN release.
   the SQL a Margin verb prepares or sends.
 
 * Every error marginplyr raises for a correctable call inherits the
-  `"marginplyr_error"` class; see `?marginplyr_conditions`.
+  `"marginplyr_error"` class; see *Errors and warnings* in `?marginplyr`.
 
 * Guides cover getting started, common reporting recipes, Grouping identity,
-  completing absent keys, and database and lazy backends.
+  completing absent keys, and database and lazy backends. `?margin_verbs`
+  states once the rules every Margin verb shares.
 
 * `retail_sales` is a small synthetic monthly sales data set used throughout
   the examples.

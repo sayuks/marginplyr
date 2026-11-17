@@ -6,7 +6,8 @@ Authors@R:
            role = c("aut", "cre", "cph"))
 Description: Provides 'dplyr'-compatible tools for 'SQL'-style 'GROUPING SETS',
     'ROLLUP', and 'CUBE' summaries, including arbitrary grouping sets, totals,
-    subtotals, Grouping identifiers, and Parent and Total shares.
+    subtotals, flags that tell a total row from a missing source value, and
+    each summary's share of its rollup parent or of the grand total.
     Rows can also be expanded or nested once per grouping set. Most summaries
     on 'DuckDB' and 'PostgreSQL' use native grouping sets; other database
     backends, and every expansion, use a 'UNION ALL' fallback. Local data
@@ -418,7 +419,9 @@ Config/testthat/start-first:
     share-unresolved-frames,
     share-captured-removals,
     share-evaluation-frames,
-    share-removal-targets
+    share-removal-targets,
+    grouping-spec-as-summary,
+    backend-matrix
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool

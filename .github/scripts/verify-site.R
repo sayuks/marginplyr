@@ -381,9 +381,15 @@ markers <- list(
     # an empty record.
     "share_dialect         errored",
     "1 invocation handled",
-    # The verification section, which states no scope of its own: the
-    # `summarize_with_margins()` reference owns that, so a marker naming a
-    # backend here would pin a restatement this section does not carry.
+    # The backend support matrix and the converted-dimension table, by their
+    # anchors and by one cell each. The verification paragraph beside them
+    # states no scope of its own: the `margin_verbs` reference owns that, so a
+    # marker naming a backend there would pin a restatement the paragraph does
+    # not carry.
+    "id=\"backend-support-matrix\"",
+    "A catalog query and a zero-row read",
+    "id=\"converted-dimension-text\"",
+    "19723.0",
     "SQL simulation is useful evidence about rendering",
     "treat a simulator-only backend as SQL-generation support",
     "Which claim rests on which is stated in one place",
@@ -423,14 +429,6 @@ markers <- list(
   "docs/man/summarize_with_margins.html" = c(
     "summarise_with_margins",
     "Relationship to dplyr summaries",
-    "Display labels and grouping identity",
-    # The same section again, as the anchor rather than as its heading text.
-    # `grouping_identity.qmd` is the one vignette that links a man page with a
-    # fragment, and a heading whose words survive a change to how quarto
-    # derives its `id` would leave that link landing at the top of this page
-    # with nothing failing. The heading marker above cannot stand for it: it
-    # matches the words wherever they are written.
-    "id=\"display-labels-and-grouping-identity\"",
     "Contextual shares",
     # The section holding the two summaries a lazy backend refuses, and one
     # claim from each half of it. The heading alone would pass a section folded
@@ -441,15 +439,26 @@ markers <- list(
     "Summaries a lazy backend cannot carry",
     "cannot carry back a summary with no columns in it",
     "before a row is read, and names the two rewrites that compute it",
-    "Database backend coverage",
-    "Microsoft SQL Server",
     # The single home of the SQLite `compute()` contract, by its anchor: the
     # database guide links it with this fragment, so a heading change that
     # moved the id would leave that link landing at the top of the page.
     "id=\"sqlite-materialization\"",
-    "NA is already a factor level",
     "cannot select any column named in the complete Grouping plan",
     "cur_group_id"
+  ),
+  # The one home of what the Margin verbs share, which every verb page links.
+  "docs/man/margin_verbs.html" = c(
+    "Display labels and grouping identity",
+    # The same section again, as the anchor rather than as its heading text.
+    # `grouping_identity.qmd` is the one vignette that links a man page with a
+    # fragment, and a heading whose words survive a change to how quarto
+    # derives its `id` would leave that link landing at the top of this page
+    # with nothing failing. The heading marker above cannot stand for it: it
+    # matches the words wherever they are written.
+    "id=\"display-labels-and-grouping-identity\"",
+    "NA is already a factor level",
+    "Database backend coverage",
+    "Microsoft SQL Server"
   ),
   # `@keywords internal` on the `"_PACKAGE"` topic takes it out of
   # `reference_sources` above, which requires no page and so fails nothing --
@@ -484,7 +493,7 @@ markers <- list(
   "docs/man/inspect_grouping.html" = c(
     "Formats and ordinary tibble behavior",
     "Positron",
-    "31 variable dimensions",
+    "31 Margin dimensions",
     "separate from a SQL execution plan"
   ),
   "docs/man/share_of_parent.html" = c(

@@ -57,9 +57,19 @@ read costs a caller.
 _Avoid_: Nested grouping, nested slot
 
 **Grouping plan**:
-The backend-independent grouping semantics obtained by fully expanding a
-Grouping specification.
+The ordered list of grouping sets obtained by fully expanding a Grouping
+specification. It is backend-independent, and `inspect_grouping()` returns it
+with one row per grouping-set occurrence.
 _Avoid_: Execution plan, backend plan
+
+**Margin dimension**:
+A column supplied through `.grouping`, which a grouping set can omit to form a
+margin — a subtotal or total row. It is one whether or not any grouping set in
+the plan omits it. A fixed `.by` column, or a grouping column of a grouped
+input, belongs to every grouping set and is not one. A Margin dimension is
+what holds the Margin label on a row of a grouping set that omits it, and so
+what the label's type conversion and collision checks apply to.
+_Avoid_: Grouping dimension, variable dimension, variable grouping dimension
 
 **Grouping set identifier**:
 The one-based position of a grouping-set occurrence in a Grouping plan. It
@@ -67,13 +77,13 @@ distinguishes repeated identical sets and changes when the plan order changes.
 _Avoid_: Grouping identifier, grouping mask
 
 **Grouping identifier**:
-A bit mask encoding which chosen grouping dimensions are absent from a
+A bit mask encoding which chosen Margin dimensions are absent from a
 grouping set. Identical absence patterns have the same identifier regardless
 of their position in a Grouping plan.
 _Avoid_: Grouping set identifier, set number, grouping mask
 
 **Grouping bit**:
-A zero-or-one flag indicating whether one chosen grouping dimension is absent
+A zero-or-one flag indicating whether one chosen Margin dimension is absent
 from a grouping set.
 _Avoid_: Missing-value flag, grouping set identifier
 
@@ -83,7 +93,7 @@ Grouping plan, from preparation through finalization.
 _Avoid_: Grouping plan, operation context
 
 **Margin label**:
-A display value inserted into a grouping dimension that is absent from a
+A display value inserted into a Margin dimension that is absent from a
 grouping set. For factor dimensions, it is a synthetic level placed last by
 default and may be placed first explicitly. `NA_character_` and an absent
 label represented by `NULL` use a typed missing value instead of a synthetic
@@ -91,7 +101,7 @@ factor level.
 _Avoid_: Total value, missing-value replacement
 
 **Margin label collision**:
-A grouping dimension holding, as one of its own values, the non-missing Margin
+A Margin dimension holding, as one of its own values, the non-missing Margin
 label chosen for it — so that a margin row and a row of the source data cannot
 be told apart by that column. A collision is *declared* when the colliding
 value is a factor level, which the column's type records, and *observed* when
@@ -102,7 +112,7 @@ _Avoid_: Duplicate label, ambiguous margin
 
 **Margin order**:
 The row order a Margin operation produces when it is asked to order its
-result. Within each fixed key, every grouping dimension contributes its
+result. Within each fixed key, every Margin dimension contributes its
 Grouping bit before its own value, so a margin row sits with the rows it
 summarizes rather than wherever its Margin label falls among the values. Every
 column in the key carries a missingness term, fixed keys included, so missing
@@ -113,7 +123,7 @@ distinct from Grouping-plan order, which numbers grouping-set occurrences.
 _Avoid_: Report order, result order, row order, sort order
 
 **Grand total set**:
-The grouping set in which every variable grouping dimension is omitted. A
+The grouping set in which every Margin dimension is omitted. A
 Grouping plan contains at most one, except when duplicate occurrences are
 retained; which one a calculation uses as its denominator is not specified.
 With fixed `.by`

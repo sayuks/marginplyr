@@ -294,11 +294,13 @@ with_sent_query <- function(purpose, query, expr,
 #' `options(marginplyr.audit_sql = TRUE)` set, marginplyr keeps a record of
 #' the SQL of one call -- the most recent call to [summarize_with_margins()],
 #' [expand_with_margins()], [nest_with_margins()], [nest_by_with_margins()],
-#' or [inspect_grouping()] -- and this function reads it back. The record is
-#' started afresh for every call, so what it holds belongs to that call
-#' alone. Piping one Margin verb into another is two calls, and the outer one
-#' is the most recent: the inner call is its input and records first, and the
-#' outer call then starts a fresh record holding only its own SQL.
+#' or [inspect_grouping()] -- and this function reads it back. A call to one
+#' of those five functions is what this page, and the errors it raises, call a
+#' *tracked call*. The record is started afresh for every call, so what it
+#' holds belongs to that call alone. Piping one Margin verb into another is
+#' two calls, and the outer one is the most recent: the inner call is its input
+#' and records first, and the outer call then starts a fresh record holding
+#' only its own SQL.
 #'
 #' @param include_result One nonmissing logical value. `TRUE` (the default)
 #'   includes the prepared, unexecuted result SQL. `FALSE` selects internal
@@ -438,6 +440,17 @@ with_sent_query <- function(purpose, query, expr,
 #' utils::write.csv(internal, path, row.names = FALSE)
 #' ```
 #'
+#' The `details = TRUE` view's `conditions` column is a list, which
+#' `write.csv()` cannot write. Drop that column first, or keep the whole view
+#' with `saveRDS()`:
+#'
+#' ```r
+#' detailed <- last_sent_queries(details = TRUE)
+#' utils::write.csv(detailed[names(detailed) != "conditions"], path,
+#'                  row.names = FALSE)
+#' saveRDS(detailed, rds_path)
+#' ```
+#'
 #' For a batch of calls, read the record after each one and bind the pieces:
 #'
 #' ```r
@@ -450,8 +463,8 @@ with_sent_query <- function(purpose, query, expr,
 #' utils::write.csv(all_calls, path, row.names = FALSE)
 #' ```
 #'
-#' @seealso *[When marginplyr queries your data][summarize_with_margins]* for
-#'   the queries a Margin verb sends without being asked,
+#' @seealso *[When marginplyr queries your data][margin_verbs]* in
+#'   [margin_verbs] for the queries a Margin verb sends without being asked,
 #'   [dplyr::show_query()] for the result query alone, and *Record the SQL
 #'   marginplyr prepares* in the [database-backends guide][guide] for the record
 #'   read against a live connection.

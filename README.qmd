@@ -69,7 +69,10 @@ january_sales |>
 ```
 
 The result is one regular data frame—not three reports that you have to build
-and combine yourself.
+and combine yourself. Its subtotal and total rows are the report's *margins*:
+in each, a column the level removed shows the Margin label, `"Total"` by
+default. The `<NA>` store is real data, as *A total is not the same thing as
+`NA`* below explains.
 
 Row order is unspecified: the same call on the same data in a different order
 can arrange the result differently. `.sort` asks for a Margin order, which puts
@@ -101,7 +104,8 @@ New to the idea? Start with [Get
 started](https://sayuks.github.io/marginplyr/vignettes/get_started.html).
 Know the task and want the call? See [Recipes for common reporting
 tasks](https://sayuks.github.io/marginplyr/vignettes/recipes.html).
-Need to compare `.id`, Grouping bits, and Grouping identifiers? See [Grouping
+Need to tell a margin from a source row, or one grouping set from another?
+See [Grouping
 identity](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html).
 Need absent dimension keys? See [Complete absent keys before
 margins](https://sayuks.github.io/marginplyr/vignettes/completing_keys.html).
@@ -192,6 +196,9 @@ january_sales |>
 `grouping_bit(store)` is `0` for the source `NA` row and `1` when the rollup
 removed `store`. This is the role of the SQL `GROUPING()` function; replacing
 every missing value with `"Total"` cannot preserve that distinction.
+`grouping_id(region, store)` packs the same flags into one number, with
+`store` as the lowest bit: `0` for store detail, `1` for a region subtotal,
+and `3` for the company total.
 
 ## Compare each summary with its rollup parent
 
@@ -244,7 +251,8 @@ Parent matching is structural, so display labels never choose the parent.
 `share_of_total()` is its sibling with a different denominator: the grand total
 of the same report, within each fixed `.by` group. There is never a
 question of *which* row that is, so it accepts any Grouping specification that
-produces one — including the `cube()` that `share_of_parent()` rejects:
+produces one — including a `cube()`, which `share_of_parent()` refuses
+because a cube gives a row more than one less detailed level to compare with:
 
 ```{r}
 january_sales |>
@@ -277,11 +285,14 @@ grammar, and backend boundaries.
 
 ## Use the same report with a database
 
-The Grouping plan becomes part of the lazy query. `show_query()` inspects the
-SQL without collecting the result. The call writes `na.rm = TRUE`, and a local
-call needs it too for the results to match: locally a missing measure makes
-every subtotal and total that includes it `NA`, while a SQL aggregate always
-drops missing values, and dbplyr warns when `na.rm = TRUE` is absent:
+The Grouping plan — the ordered list of grouping sets that the Grouping
+specification written in `.grouping` expands to, such as the three levels of
+`rollup(region, store)` — becomes part of the lazy query. `show_query()`
+inspects the SQL without collecting the result. The call writes
+`na.rm = TRUE`, and a local call needs it too for the results to match:
+locally a missing measure makes every subtotal and total that includes it
+`NA`, while a SQL aggregate always drops missing values, and dbplyr warns
+when `na.rm = TRUE` is absent:
 
 ```{r}
 postgres_sales <- dbplyr::tbl_lazy(
@@ -354,8 +365,8 @@ dplyr code may be easier.
 ## Backend verification
 
 What is verified on each backend, and how, is stated in one place: *Database
-backend coverage* in the [`summarize_with_margins()`
-reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html).
+backend coverage* in the [`margin_verbs`
+reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html).
 
 ## Code of Conduct
 
