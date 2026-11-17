@@ -9,7 +9,7 @@
 #' | Helper | Denominator | Accepted `.grouping` |
 #' |---|---|---|
 #' | `share_of_parent()` | The immediately less detailed [rollup()] level | One pure [rollup()] | # nolint: line_length_linter
-#' | `share_of_total()` | The Grand total set, in which every grouping dimension is omitted | Any specification whose plan contains one | # nolint: line_length_linter
+#' | `share_of_total()` | The Grand total set, in which every Margin dimension is omitted | Any specification whose plan contains one | # nolint: line_length_linter
 #'
 #' Fixed `.by` columns partition both calculations, so a fixed key never
 #' contributes to another partition's denominator. Everything else on this
@@ -186,7 +186,7 @@
 #' @section Column-wise shares:
 #' In `across(.cols, share_of_parent, .names = ...)` and its
 #' `share_of_total` counterpart, `.cols` sees only preceding eligible ordinary
-#' summaries. Source-data columns, fixed `.by` keys, variable grouping
+#' summaries. Source-data columns, fixed `.by` keys, Margin
 #' dimensions, and earlier shares are outside this selection context.
 #' [dplyr::everything()] therefore means every preceding ordinary summary, not
 #' every input column.

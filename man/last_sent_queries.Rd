@@ -31,11 +31,13 @@ may send queries of its own on the way. With
 \code{options(marginplyr.audit_sql = TRUE)} set, marginplyr keeps a record of
 the SQL of one call -- the most recent call to \code{\link[=summarize_with_margins]{summarize_with_margins()}},
 \code{\link[=expand_with_margins]{expand_with_margins()}}, \code{\link[=nest_with_margins]{nest_with_margins()}}, \code{\link[=nest_by_with_margins]{nest_by_with_margins()}},
-or \code{\link[=inspect_grouping]{inspect_grouping()}} -- and this function reads it back. The record is
-started afresh for every call, so what it holds belongs to that call
-alone. Piping one Margin verb into another is two calls, and the outer one
-is the most recent: the inner call is its input and records first, and the
-outer call then starts a fresh record holding only its own SQL.
+or \code{\link[=inspect_grouping]{inspect_grouping()}} -- and this function reads it back. A call to one
+of those five functions is what this page, and the errors it raises, call a
+\emph{tracked call}. The record is started afresh for every call, so what it
+holds belongs to that call alone. Piping one Margin verb into another is
+two calls, and the outer one is the most recent: the inner call is its input
+and records first, and the outer call then starts a fresh record holding
+only its own SQL.
 }
 \section{Diagnostic details}{
 

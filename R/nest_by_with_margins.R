@@ -11,7 +11,7 @@
 #'   `.id` when supplied.
 #' - Row order is unspecified. Use `.sort` for margins next to the rows they
 #'   cover, or [dplyr::arrange()] for any other order.
-#' - A character `.margin_label` changes a non-factor grouping dimension to
+#' - A character `.margin_label` changes a non-factor Margin dimension to
 #'   character in the outer columns; see Value. Use `.margin_label = NULL` or
 #'   `NA_character_` to keep its type.
 #' - With `.keep = TRUE`, the nested data holds the original, pre-margin
@@ -30,7 +30,7 @@
 #'
 #' @inheritParams nest_with_margins
 #' @inheritSection nest_with_margins Nested data frames
-#' @inheritSection summarize_with_margins Fixed columns and grouping dimensions
+#' @inheritSection summarize_with_margins Fixed columns and Margin dimensions
 #' @inheritSection summarize_with_margins Grouped and row-wise inputs
 #' @inheritSection summarize_with_margins Option arguments
 #' @inheritSection summarize_with_margins Result metadata
@@ -41,16 +41,16 @@
 #'   [nest_with_margins()] and [tidyr::nest()], `NULL` is not converted to
 #'   `"data"`; this follows [dplyr::nest_by()].
 #' @details dplyr reserves `.rows` in row-wise grouping metadata. A fixed `.by`
-#'   key, grouping dimension, or `.id` named `.rows` is therefore refused
+#'   key, Margin dimension, or `.id` named `.rows` is therefore refused
 #'   before nesting. Rename that outer key or use [nest_with_margins()] for an
 #'   ungrouped result. A payload column or `.key` named `.rows` is supported.
 #' @return A row-wise data frame, a tibble subclass whatever the class of
 #'   `.data`, with one row per group per grouping set. Its columns are the
-#'   fixed `.by` keys, then the grouping dimensions, then `.id` when supplied,
+#'   fixed `.by` keys, then the Margin dimensions, then `.id` when supplied,
 #'   then the list column named by `.key`; it is grouped row-wise by all but
 #'   the list column. See *Result metadata*.
 #'
-#'   With a character `.margin_label`, the default, an outer grouping
+#'   With a character `.margin_label`, the default, an outer Margin
 #'   dimension that is not a factor becomes character so that it can hold the
 #'   label, while the nested columns keep their original types. A factor
 #'   dimension instead gains the label as a new level.

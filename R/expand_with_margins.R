@@ -13,7 +13,7 @@
 #'   *Grouped and row-wise inputs*.
 #' - Row order is unspecified. Use `.sort` for margins next to the rows they
 #'   cover, or [dplyr::arrange()] for any other order.
-#' - A character `.margin_label` changes a non-factor grouping dimension to
+#' - A character `.margin_label` changes a non-factor Margin dimension to
 #'   character in every copy, detail rows included; see Value. Use
 #'   `.margin_label = NULL` or `NA_character_` to keep its type.
 #' - The result is one row per input row per grouping set, so it grows with
@@ -31,7 +31,7 @@
 #' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
 #'
 #' @inheritParams summarize_with_margins
-#' @inheritSection summarize_with_margins Fixed columns and grouping dimensions
+#' @inheritSection summarize_with_margins Fixed columns and Margin dimensions
 #' @inheritSection summarize_with_margins Grouped and row-wise inputs
 #' @inheritSection summarize_with_margins Option arguments
 #' @inheritSection summarize_with_margins Result metadata
@@ -43,12 +43,12 @@
 #' @inheritSection summarize_with_margins When marginplyr queries your data
 #' @return An ungrouped data frame, or a lazy table when `.data` is lazy,
 #'   with one row per input row per grouping set. Its columns are the fixed
-#'   `.by` keys, then the grouping dimensions, then `.id` when supplied, then
+#'   `.by` keys, then the Margin dimensions, then `.id` when supplied, then
 #'   the remaining input columns in input order. Its class follows
 #'   [dplyr::mutate()] combined with [dplyr::union_all()]; see *Result
 #'   metadata*.
 #'
-#'   With a character `.margin_label`, the default, a grouping dimension that
+#'   With a character `.margin_label`, the default, a Margin dimension that
 #'   is not a factor becomes character so that it can hold the label. A factor
 #'   dimension instead gains the label as a new level. `.margin_label = NULL`
 #'   or `NA_character_` keeps every dimension's type and marks margin copies

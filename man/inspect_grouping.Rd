@@ -45,7 +45,10 @@ A local, ungrouped tibble with columns \code{set_id}, \code{fixed},
 }
 \description{
 \code{inspect_grouping()} returns the Grouping plan resolved from \code{.data},
-\code{.by}, and \code{.grouping} without executing a Margin operation. The result is
+\code{.by}, and \code{.grouping} without executing a Margin operation. A Grouping plan
+is the ordered list of grouping sets that the Grouping specification written
+in \code{.grouping} expands to, and this function returns one row per
+grouping-set occurrence in it. The result is
 always a local, ungrouped, ordinary tibble, including for lazy inputs.
 }
 \section{Option arguments}{
@@ -62,10 +65,10 @@ an error.
 \section{Grouping identity}{
 
 \code{set_id} is the one-based Grouping set identifier exposed by \code{.id} for the
-same resolved plan. \code{grouping_bits} instead describes whether each variable
+same resolved plan. \code{grouping_bits} instead describes whether each Margin
 dimension is included (\code{0L}) or omitted (\code{1L}), and \code{grouping_id} encodes
 that absence pattern as a bit mask. \code{grouping_id} is \code{NA_integer_} beyond
-31 variable dimensions, while \code{grouping_bits} remains complete.
+31 Margin dimensions, while \code{grouping_bits} remains complete.
 
 \code{\link[=grouping_bit]{grouping_bit()}} is the canonical reference for how these four values
 relate and which of them distinguish duplicate grouping-set occurrences.
@@ -97,7 +100,7 @@ inspection uses captured column metadata and the backend-independent
 Grouping plan. Predicates in \code{.by} and \code{.grouping} use that metadata, not
 source values; collect explicitly before inspecting a plan whose selections
 depend on values. See
-\emph{\link[=summarize_with_margins]{Fixed columns and grouping dimensions}} for
+\emph{\link[=summarize_with_margins]{Fixed columns and Margin dimensions}} for
 type-based and value-dependent examples.
 A derived dtplyr step whose typed metadata cannot be
 established without processing source rows is refused when inspection needs
@@ -121,9 +124,10 @@ receipt or completion. Add
 
 Because inspection builds no grouping-set branch, it also accepts a dtplyr
 step with an input rooted at \code{dtplyr::lazy_dt(immutable = FALSE)} and leaves
-every caller \code{data.table} unchanged. Margin verbs refuse the same Mutable
-step before building a branch; rebuild it with \code{immutable = TRUE} before
-passing it to one of them.
+every caller \code{data.table} unchanged. Margin verbs refuse such a step before
+building a branch, because data.table may write to the caller's table by
+reference in any branch; rebuild it with \code{immutable = TRUE} before passing
+it to one of them.
 
 The \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide} walks through inspecting a plan and
 reading it back off a Margin result. The \href{https://sayuks.github.io/marginplyr/vignettes/recipes.html}{recipes guide} uses a

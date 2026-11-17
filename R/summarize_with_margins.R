@@ -28,7 +28,10 @@
 #'   specification can be written here, while a specification nested inside
 #'   another must be a constructor call or a name bound to one, and a nested
 #'   name the input also has a column for is refused rather than read either
-#'   way; see [grouping_set()].
+#'   way; see [grouping_set()]. The specification expands to the call's
+#'   Grouping plan: the ordered list of grouping sets it computes, which
+#'   [inspect_grouping()] returns. The columns it selects are the call's
+#'   Margin dimensions; see *Fixed columns and Margin dimensions*.
 #' @param .margin_label A display label for dimensions omitted from a grouping
 #'   set. An unnamed character scalar applies to every resolved Margin
 #'   dimension. A named character vector or named list must name every
@@ -56,7 +59,7 @@
 #'   A label equal to a declared factor *level* is rejected wherever
 #'   marginplyr holds the levels, whatever this argument says, because finding
 #'   it sends no query. Left unchecked, a colliding value gives the result a
-#'   margin row and a source row that no grouping column tells apart; keeping
+#'   margin row and a source row that no key column tells apart; keeping
 #'   `.id` in the result distinguishes them at no added cost. See *Display
 #'   labels and grouping identity* for the factor missing-value contract.
 #' @param .check_share_source A logical scalar, `TRUE` by default on every
@@ -92,11 +95,11 @@
 #'
 #' @return An ungrouped data frame, or a lazy table when `.data` is lazy,
 #'   with one row per group per grouping set. Its columns are the fixed `.by`
-#'   keys, then the grouping dimensions, then `.id` when supplied, then the
+#'   keys, then the Margin dimensions, then `.id` when supplied, then the
 #'   summaries in the order written. Its class follows [dplyr::summarize()];
 #'   see *Result metadata*.
 #'
-#'   With a character `.margin_label`, the default, a grouping dimension that
+#'   With a character `.margin_label`, the default, a Margin dimension that
 #'   is not a factor becomes character so that it can hold the label:
 #'   `.grouping = rollup(year)` over an integer `year` returns `year` as
 #'   character, with `"Total"` on the margin row. A factor dimension instead
@@ -120,21 +123,23 @@
 #'   *Grouped and row-wise inputs*.
 #' - Row order is unspecified. Use `.sort` for margins next to the rows they
 #'   summarize, or [dplyr::arrange()] for any other order.
-#' - A character `.margin_label` changes a non-factor grouping dimension to
+#' - A character `.margin_label` changes a non-factor Margin dimension to
 #'   character; see Value. Use `.margin_label = NULL` or `NA_character_` to
 #'   keep its type.
-#' - A summary cannot overwrite a fixed key or grouping dimension. Give it a
+#' - A summary cannot overwrite a fixed key or Margin dimension. Give it a
 #'   new name.
 #' - [dplyr::cur_group()], [dplyr::cur_group_id()], and
 #'   [dplyr::cur_group_rows()] are refused, because a result combining several
 #'   grouping sets has no single group for them to describe. Use
 #'   [grouping_bit()] or [grouping_id()] to identify margin rows.
 #'
-#' @section Fixed columns and grouping dimensions:
-#' `.by` marks columns that are present in every grouping set, while
-#' `.grouping` describes dimensions that can be omitted to form margins.
-#' Columns in `.by` retain their input types and never receive
-#' `.margin_label`.
+#' @section Fixed columns and Margin dimensions:
+#' `.by` marks fixed keys: columns present in every grouping set, which retain
+#' their input types and never receive `.margin_label`. Every column
+#' `.grouping` selects is a Margin dimension: one a grouping set can omit to
+#' form a margin -- a subtotal or total row -- where it then holds the Margin
+#' label. A grouped input's grouping columns are fixed keys, as `.by` columns
+#' are.
 #'
 #' `.by = year` with `.grouping = rollup(region, store)` produces the same
 #' grouping sets as
@@ -238,8 +243,9 @@
 #'
 #' @section Margin order:
 #' `.sort` orders a result by the structure of its Grouping plan rather than by
-#' displayed values. The key is the result's own leading grouping columns, left
-#' to right, with each grouping dimension preceded by its Grouping bit and by
+#' displayed values. The key is the result's own leading key columns, left
+#' to right, with each Margin dimension preceded by its Grouping bit -- `1` on a
+#' row whose grouping set omits that dimension, `0` otherwise -- and by
 #' whether its value is missing:
 #'
 #' ```
@@ -274,7 +280,7 @@
 #' exactly once; missing, unknown, duplicate, and empty names are rejected, as
 #' are names from `.by`.
 #'
-#' Non-missing labels convert ordinary grouping dimensions to character. A
+#' Non-missing labels convert ordinary Margin dimensions to character. A
 #' factor or ordered factor is rebuilt instead, preserving ordered status and
 #' placing a new synthetic level last by default or first when
 #' `.margin_label_position = "first"`. A label equal to any declared level,
@@ -290,7 +296,7 @@
 #' `NA_character_` even when `.check_margin_label = FALSE`, while `NULL`
 #' preserves it.
 #'
-#' A local packed data-frame, matrix, or array grouping dimension accepts only
+#' A local packed data-frame, matrix, or array Margin dimension accepts only
 #' `NULL` or `NA_character_` as its Margin label, because no scalar string can
 #' represent such a key; split it into separate columns if it needs display
 #' text.
@@ -301,11 +307,11 @@
 #' |---|---:|---:|---|
 #' | `NA_character_` | yes | yes | Error: NA is already a factor level |
 #' | `NA_character_` | yes | no | Error: NA is already a factor level |
-#' | `NA_character_` | no | yes | Allowed; source missing values and margins require structural identity | # nolint: line_length_linter
+#' | `NA_character_` | no | yes | Allowed; source missing values and margins display alike, so tell them apart with `.id` | # nolint: line_length_linter
 #' | `NA_character_` | no | no | Allowed; use typed missing |
-#' | `NULL` | yes | yes | Allowed; source missing values and margins require structural identity | # nolint: line_length_linter
+#' | `NULL` | yes | yes | Allowed; source missing values and margins display alike, so tell them apart with `.id` | # nolint: line_length_linter
 #' | `NULL` | yes | no | Allowed; preserve the NA level and use typed missing |
-#' | `NULL` | no | yes | Allowed; source missing values and margins require structural identity | # nolint: line_length_linter
+#' | `NULL` | no | yes | Allowed; source missing values and margins display alike, so tell them apart with `.id` | # nolint: line_length_linter
 #' | `NULL` | no | no | Allowed; use typed missing |
 #'
 #' A factor observation that uses an NA level can print as `<NA>` while
@@ -344,10 +350,10 @@
 #' [dplyr::summarize()] does. A lazy input gives whatever shape its backend
 #' gives.
 #'
-#' Summary results may not overwrite a fixed key or grouping dimension,
+#' Summary results may not overwrite a fixed key or Margin dimension,
 #' including through an unnamed data-frame-valued summary. Local dplyr allows
 #' it but other backends may not, so marginplyr refuses it everywhere. Use a
-#' new summary name, or rename the grouping column before this call.
+#' new summary name, or rename the key column before this call.
 #'
 #' [dplyr::cur_group()], [dplyr::cur_group_id()],
 #' [dplyr::cur_group_rows()], and the deprecated `cur_data*()` helpers are
@@ -375,14 +381,14 @@
 #'
 #' @section Summaries a lazy backend cannot carry:
 #' Two lazy inputs cannot carry back a summary with no columns in it: asked
-#' for no summaries and given no fixed key or grouping dimension, the answer
+#' for no summaries and given no fixed key or Margin dimension, the answer
 #' is one row holding nothing, whatever the input held. A `data.table` reads
 #' its row count from its first column, so a `dtplyr` input collects to zero
 #' rows where a local data frame returns one, and a SQL table of no columns
 #' cannot be written at all, so a database input raises the error dbplyr
 #' renders one with. Each is what [dplyr::summarize()] itself answers for that
 #' lazy input; an Arrow input answers as a local one does. Anything that puts
-#' a column in the result -- one summary, one fixed key, one grouping
+#' a column in the result -- one summary, one fixed key, one Margin
 #' dimension, or `.id` -- ends the difference.
 #'
 #' One summary an Arrow table or record batch cannot carry -- or a query built

@@ -1,7 +1,10 @@
 #' Inspect a backend-independent Grouping plan
 #'
 #' `inspect_grouping()` returns the Grouping plan resolved from `.data`,
-#' `.by`, and `.grouping` without executing a Margin operation. The result is
+#' `.by`, and `.grouping` without executing a Margin operation. A Grouping plan
+#' is the ordered list of grouping sets that the Grouping specification written
+#' in `.grouping` expands to, and this function returns one row per
+#' grouping-set occurrence in it. The result is
 #' always a local, ungrouped, ordinary tibble, including for lazy inputs.
 #'
 #' @param .data A data frame or lazy table.
@@ -40,10 +43,10 @@
 #'
 #' @section Grouping identity:
 #' `set_id` is the one-based Grouping set identifier exposed by `.id` for the
-#' same resolved plan. `grouping_bits` instead describes whether each variable
+#' same resolved plan. `grouping_bits` instead describes whether each Margin
 #' dimension is included (`0L`) or omitted (`1L`), and `grouping_id` encodes
 #' that absence pattern as a bit mask. `grouping_id` is `NA_integer_` beyond
-#' 31 variable dimensions, while `grouping_bits` remains complete.
+#' 31 Margin dimensions, while `grouping_bits` remains complete.
 #'
 #' [grouping_bit()] is the canonical reference for how these four values
 #' relate and which of them distinguish duplicate grouping-set occurrences.
@@ -71,7 +74,7 @@
 #' Grouping plan. Predicates in `.by` and `.grouping` use that metadata, not
 #' source values; collect explicitly before inspecting a plan whose selections
 #' depend on values. See
-#' *[Fixed columns and grouping dimensions][summarize_with_margins]* for
+#' *[Fixed columns and Margin dimensions][summarize_with_margins]* for
 #' type-based and value-dependent examples.
 #' A derived dtplyr step whose typed metadata cannot be
 #' established without processing source rows is refused when inspection needs
@@ -95,9 +98,10 @@
 #'
 #' Because inspection builds no grouping-set branch, it also accepts a dtplyr
 #' step with an input rooted at `dtplyr::lazy_dt(immutable = FALSE)` and leaves
-#' every caller `data.table` unchanged. Margin verbs refuse the same Mutable
-#' step before building a branch; rebuild it with `immutable = TRUE` before
-#' passing it to one of them.
+#' every caller `data.table` unchanged. Margin verbs refuse such a step before
+#' building a branch, because data.table may write to the caller's table by
+#' reference in any branch; rebuild it with `immutable = TRUE` before passing
+#' it to one of them.
 #'
 #' The [grouping identity guide][guide] walks through inspecting a plan and
 #' reading it back off a Margin result. The [recipes guide][recipes] uses a

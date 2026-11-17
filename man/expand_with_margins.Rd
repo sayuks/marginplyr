@@ -32,7 +32,10 @@ represents one empty grouping set. Any expression returning a
 specification can be written here, while a specification nested inside
 another must be a constructor call or a name bound to one, and a nested
 name the input also has a column for is refused rather than read either
-way; see \code{\link[=grouping_set]{grouping_set()}}.}
+way; see \code{\link[=grouping_set]{grouping_set()}}. The specification expands to the call's
+Grouping plan: the ordered list of grouping sets it computes, which
+\code{\link[=inspect_grouping]{inspect_grouping()}} returns. The columns it selects are the call's
+Margin dimensions; see \emph{Fixed columns and Margin dimensions}.}
 
 \item{.margin_label}{A display label for dimensions omitted from a grouping
 set. An unnamed character scalar applies to every resolved Margin
@@ -63,7 +66,7 @@ collect-first remediation.
 A label equal to a declared factor \emph{level} is rejected wherever
 marginplyr holds the levels, whatever this argument says, because finding
 it sends no query. Left unchecked, a colliding value gives the result a
-margin row and a source row that no grouping column tells apart; keeping
+margin row and a source row that no key column tells apart; keeping
 \code{.id} in the result distinguishes them at no added cost. See \emph{Display
 labels and grouping identity} for the factor missing-value contract.}
 
@@ -91,12 +94,12 @@ missing values last. See \emph{Margin order}.}
 \value{
 An ungrouped data frame, or a lazy table when \code{.data} is lazy,
 with one row per input row per grouping set. Its columns are the fixed
-\code{.by} keys, then the grouping dimensions, then \code{.id} when supplied, then
+\code{.by} keys, then the Margin dimensions, then \code{.id} when supplied, then
 the remaining input columns in input order. Its class follows
 \code{\link[dplyr:mutate]{dplyr::mutate()}} combined with \code{\link[dplyr:union_all]{dplyr::union_all()}}; see \emph{Result
 metadata}.
 
-With a character \code{.margin_label}, the default, a grouping dimension that
+With a character \code{.margin_label}, the default, a Margin dimension that
 is not a factor becomes character so that it can hold the label. A factor
 dimension instead gains the label as a new level. \code{.margin_label = NULL}
 or \code{NA_character_} keeps every dimension's type and marks margin copies
@@ -118,7 +121,7 @@ such as a window function over every copy.
 \emph{Grouped and row-wise inputs}.
 \item Row order is unspecified. Use \code{.sort} for margins next to the rows they
 cover, or \code{\link[dplyr:arrange]{dplyr::arrange()}} for any other order.
-\item A character \code{.margin_label} changes a non-factor grouping dimension to
+\item A character \code{.margin_label} changes a non-factor Margin dimension to
 character in every copy, detail rows included; see Value. Use
 \code{.margin_label = NULL} or \code{NA_character_} to keep its type.
 \item The result is one row per input row per grouping set, so it grows with
@@ -137,12 +140,14 @@ and stays lazy, at the cost of one copy of the input per grouping set. The
 \href{https://sayuks.github.io/marginplyr/vignettes/recipes.html}{recipes guide} works the case through.
 }
 
-\section{Fixed columns and grouping dimensions}{
+\section{Fixed columns and Margin dimensions}{
 
-\code{.by} marks columns that are present in every grouping set, while
-\code{.grouping} describes dimensions that can be omitted to form margins.
-Columns in \code{.by} retain their input types and never receive
-\code{.margin_label}.
+\code{.by} marks fixed keys: columns present in every grouping set, which retain
+their input types and never receive \code{.margin_label}. Every column
+\code{.grouping} selects is a Margin dimension: one a grouping set can omit to
+form a margin -- a subtotal or total row -- where it then holds the Margin
+label. A grouped input's grouping columns are fixed keys, as \code{.by} columns
+are.
 
 \code{.by = year} with \code{.grouping = rollup(region, store)} produces the same
 grouping sets as
@@ -253,8 +258,9 @@ with \code{\link[=inspect_grouping]{inspect_grouping()}}\verb{$set_id}, \code{\l
 \section{Margin order}{
 
 \code{.sort} orders a result by the structure of its Grouping plan rather than by
-displayed values. The key is the result's own leading grouping columns, left
-to right, with each grouping dimension preceded by its Grouping bit and by
+displayed values. The key is the result's own leading key columns, left
+to right, with each Margin dimension preceded by its Grouping bit -- \code{1} on a
+row whose grouping set omits that dimension, \code{0} otherwise -- and by
 whether its value is missing:
 
 \if{html}{\out{<div class="sourceCode">}}\preformatted{is.na(by1), by1, ..., bit(d1), is.na(d1), d1, bit(d2), is.na(d2), d2, ...
@@ -288,7 +294,7 @@ provides column-specific labels and must cover the resolved dimensions
 exactly once; missing, unknown, duplicate, and empty names are rejected, as
 are names from \code{.by}.
 
-Non-missing labels convert ordinary grouping dimensions to character. A
+Non-missing labels convert ordinary Margin dimensions to character. A
 factor or ordered factor is rebuilt instead, preserving ordered status and
 placing a new synthetic level last by default or first when
 \code{.margin_label_position = "first"}. A label equal to any declared level,
@@ -304,7 +310,7 @@ validation. What separates them is a factor NA level: it conflicts with
 \code{NA_character_} even when \code{.check_margin_label = FALSE}, while \code{NULL}
 preserves it.
 
-A local packed data-frame, matrix, or array grouping dimension accepts only
+A local packed data-frame, matrix, or array Margin dimension accepts only
 \code{NULL} or \code{NA_character_} as its Margin label, because no scalar string can
 represent such a key; split it into separate columns if it needs display
 text.
@@ -313,11 +319,11 @@ Factor columns follow this contract:\tabular{lrrl}{
    Margin label \tab NA level \tab Missing value \tab Result \cr
    \code{NA_character_} \tab yes \tab yes \tab Error: NA is already a factor level \cr
    \code{NA_character_} \tab yes \tab no \tab Error: NA is already a factor level \cr
-   \code{NA_character_} \tab no \tab yes \tab Allowed; source missing values and margins require structural identity \cr
+   \code{NA_character_} \tab no \tab yes \tab Allowed; source missing values and margins display alike, so tell them apart with \code{.id} \cr
    \code{NA_character_} \tab no \tab no \tab Allowed; use typed missing \cr
-   \code{NULL} \tab yes \tab yes \tab Allowed; source missing values and margins require structural identity \cr
+   \code{NULL} \tab yes \tab yes \tab Allowed; source missing values and margins display alike, so tell them apart with \code{.id} \cr
    \code{NULL} \tab yes \tab no \tab Allowed; preserve the NA level and use typed missing \cr
-   \code{NULL} \tab no \tab yes \tab Allowed; source missing values and margins require structural identity \cr
+   \code{NULL} \tab no \tab yes \tab Allowed; source missing values and margins display alike, so tell them apart with \code{.id} \cr
    \code{NULL} \tab no \tab no \tab Allowed; use typed missing \cr
 }
 

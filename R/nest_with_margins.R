@@ -9,7 +9,7 @@
 #'   *Grouped and row-wise inputs*.
 #' - Row order is unspecified. Use `.sort` for margins next to the rows they
 #'   cover, or [dplyr::arrange()] for any other order.
-#' - A character `.margin_label` changes a non-factor grouping dimension to
+#' - A character `.margin_label` changes a non-factor Margin dimension to
 #'   character in the outer columns; see Value. Use `.margin_label = NULL` or
 #'   `NA_character_` to keep its type.
 #' - Every non-key column goes into one list column. The full `...` column
@@ -53,7 +53,7 @@
 #' data frame.
 #'
 #' @inheritParams summarize_with_margins
-#' @inheritSection summarize_with_margins Fixed columns and grouping dimensions
+#' @inheritSection summarize_with_margins Fixed columns and Margin dimensions
 #' @inheritSection summarize_with_margins Grouped and row-wise inputs
 #' @inheritSection summarize_with_margins Option arguments
 #' @inheritSection summarize_with_margins Result metadata
@@ -64,7 +64,7 @@
 #'   not supported because nesting creates list columns.
 #' @param .key A string naming the list column. As in [tidyr::nest()],
 #'   `NULL` uses `"data"`.
-#' @param .keep Should fixed `.by` columns and grouping dimensions also be kept
+#' @param .keep Should fixed `.by` columns and Margin dimensions also be kept
 #'   inside each nested data frame? If `TRUE`, the nested columns contain their
 #'   original, pre-margin values rather than `.margin_label`.
 #' @param .duplicates `"error"` or `"drop"`, and nothing else; see *Option
@@ -77,13 +77,13 @@
 #'   [expand_with_margins()].
 #'
 #' @return For a local input, an ungrouped data frame with one row per group
-#'   per grouping set. Its columns are the fixed `.by` keys, then the grouping
+#'   per grouping set. Its columns are the fixed `.by` keys, then the Margin
 #'   dimensions, then `.id` when supplied, then the list column named by
 #'   `.key`. Its outer class follows [tidyr::nest()], so a plain data frame
 #'   nests to a tibble; see *Result metadata*. A `dtplyr` input returns a lazy
 #'   `dtplyr` step until collected.
 #'
-#'   With a character `.margin_label`, the default, an outer grouping
+#'   With a character `.margin_label`, the default, an outer Margin
 #'   dimension that is not a factor becomes character so that it can hold the
 #'   label, while the nested columns keep their original types. A factor
 #'   dimension instead gains the label as a new level.

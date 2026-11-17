@@ -26,7 +26,7 @@ immediate rollup parent, and \code{share_of_total()} by the grand total.
 \tabular{lll}{
    Helper \tab Denominator \tab Accepted \code{.grouping} \cr
    \code{share_of_parent()} \tab The immediately less detailed \code{\link[=rollup]{rollup()}} level \tab One pure \code{\link[=rollup]{rollup()}} \cr
-   \code{share_of_total()} \tab The Grand total set, in which every grouping dimension is omitted \tab Any specification whose plan contains one \cr
+   \code{share_of_total()} \tab The Grand total set, in which every Margin dimension is omitted \tab Any specification whose plan contains one \cr
 }
 
 
@@ -201,7 +201,7 @@ reorder the public result.
 
 In \code{across(.cols, share_of_parent, .names = ...)} and its
 \code{share_of_total} counterpart, \code{.cols} sees only preceding eligible ordinary
-summaries. Source-data columns, fixed \code{.by} keys, variable grouping
+summaries. Source-data columns, fixed \code{.by} keys, Margin
 dimensions, and earlier shares are outside this selection context.
 \code{\link[dplyr:everything]{dplyr::everything()}} therefore means every preceding ordinary summary, not
 every input column.
