@@ -1,8 +1,7 @@
-# A markdown reference definition in roxygen, `#' [label]: <url>`, holds a URL
-# that cannot wrap and a `# nolint` that roxygen would copy into the help page,
-# so a link to a section of a site page has no spelling within 80 characters.
-# Only a line that is nothing but such a definition leaves the limit, as ADR
-# 0023's amendment for a markdown reference definition decides.
+# A roxygen line that is nothing but a markdown reference definition,
+# `#' [label]: <url>`, leaves `line_length_linter()`'s limit; every other line,
+# and every other linter on that one, is measured as before. ADR 0023's
+# amendment *a markdown reference definition leaves the line limit* decides it.
 linters <- local({
   reference_definition <- "^\\s*#' +\\[[^]]+\\]: +https://\\S+$"
   line_length <- lintr::line_length_linter()
