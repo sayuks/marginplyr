@@ -47,7 +47,8 @@ coverage_verify_runtime <- function() {
     stop("COVR_COVRIGNORE must be unset for coverage.", call. = FALSE)
   }
   # covr >= 4.0.0 leaves this option unset and falls back to the environment
-  # variable refused above, then to the same default name.
+  # variable refused above, then to the same default name (covr's
+  # string_setting()).
   covrignore <- getOption("covr.covrignore")
   if (!is.null(covrignore) && !identical(unclass(covrignore), ".covrignore")) {
     stop("Nonstandard covr exclusion option: covr.covrignore", call. = FALSE)

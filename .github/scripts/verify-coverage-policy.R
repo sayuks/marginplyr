@@ -55,8 +55,8 @@ with_covr_runtime <- function(covrignore, envvar, expression) {
   }
   force(expression)
 }
+# Before the cases: covr < 4.0.0's .onLoad() would reset an unset option.
 invisible(loadNamespace("covr"))
-# covr >= 4.0.0 leaves the option unset; earlier releases set the default.
 with_covr_runtime(NULL, NA, coverage_verify_runtime())
 with_covr_runtime(".covrignore", NA, coverage_verify_runtime())
 expect_rejected(with_covr_runtime("other", NA, coverage_verify_runtime()),
