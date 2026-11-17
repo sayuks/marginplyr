@@ -286,8 +286,8 @@ A label equal to a *declared* factor level is rejected there, because the
 level is already known from the column's metadata and finding the collision
 reads nothing. The enum preservation above is what makes this visible on
 DuckDB: `region` below declares `"Total"` as an unused level, and
-`.margin_label = "Total"` is rejected before any query is built, even though
-`.check_margin_label` is left at its lazy default:
+`.margin_label = "Total"` is rejected before the result query is built, even
+though `.check_margin_label` is left at its lazy default:
 
 ```{r}
 #| eval: !expr has_duckdb
@@ -438,8 +438,8 @@ scans every input row of the checked columns and retrieves one row, with one
 collision count per checked column. Recording does not request the label check;
 `.check_margin_label = TRUE` does, and recording sends no query of its own.
 
-Each `purpose` names why a row was sent. Only `"result"` is stable; the other
-names describe today's internal work and may change:
+Each `purpose` names why a row was recorded. Only `"result"` is stable; the
+other names describe today's internal work and may change:
 
 - `"result"`: the query the verb returns, rendered but not executed.
 - `"relation_catalog"`: DuckDB's catalog query, checking that the input hides
@@ -489,8 +489,8 @@ The zero-row metadata and label-count collections normally have status
 `handling`; an operation with no observed conditions holds a typed empty tibble.
 The accessor reference defines all statuses and the condition-summary schema.
 `source = "render"` describes how SQL was obtained, independently of whether
-rendering or the backend invocation succeeded. The compatibility result row
-stays `"prepared"`.
+rendering or the backend invocation succeeded. The `"result"` row, which this
+call leaves out with `include_result = FALSE`, stays `"prepared"`.
 
 Copy or export the record before another tracked call replaces it. A tibble
 you already hold survives that replacement unchanged:
@@ -614,7 +614,7 @@ to run it. Native and portable grouping adapters both feed the same staged
 Parent-share contract. Parent matching uses internal Grouping identity and
 missing-safe keys rather than displayed Margin labels; [Parent lookup is
 structural](https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html#parent-lookup-is-structural)
-works that through, and defines the Grand total set the next section reads.
+works that through.
 
 `share_of_total()` stages the same way. Its denominator depends on the fixed
 `.by` keys and nothing else. Both helpers use window functions over the staged

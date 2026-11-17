@@ -41,10 +41,12 @@ Initial CRAN release.
   or kept.
 
 * Local data frames, dtplyr, dbplyr, and Arrow inputs are supported, and lazy
-  inputs stay lazy. DuckDB and PostgreSQL summaries use native
-  `GROUP BY GROUPING SETS`; other SQL backends, and every row expansion, use a
-  portable `UNION ALL` translation. The nesting verbs support local data frames
-  and dtplyr.
+  inputs stay lazy. Most DuckDB and PostgreSQL summaries use native
+  `GROUP BY GROUPING SETS`; other SQL backends, every row expansion, and the
+  summaries listed under [Portable fallback
+  SQL](https://sayuks.github.io/marginplyr/vignettes/database_backends.html#portable-fallback-sql)
+  use a portable `UNION ALL` translation. The nesting verbs support local data
+  frames and dtplyr.
 
 * `last_sent_queries()`, with `options(marginplyr.audit_sql = TRUE)`, records
   the SQL a Margin verb prepares or sends.
