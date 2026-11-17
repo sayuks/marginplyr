@@ -265,6 +265,22 @@ own last sentence is what has now happened. ADR 0024's "`abort_marginplyr_flat()
 is untouched" is left alone deliberately: that sentence bounds what ADR 0024
 changed on the day it was decided, and it was true.
 
+## Amendment (2026-11-17): a markdown reference definition leaves the line limit
+
+The second amendment's "this repository has no `.lintr`" stopped being true
+with #1725, and its finding that a `.lintr` is repository-wide is answered
+rather than overturned. A link to a section of a site page is a roxygen
+reference definition, `#' [label]: <url>`, whose URL cannot wrap and whose
+`# nolint` roxygen would copy into the help page, so it has no spelling within
+80 characters either.
+
+`.lintr.R` exempts only a line that is nothing but such a definition, matched
+by its shape, from `line_length_linter()`; every other line, and every other
+linter on that one, is measured as before. That is the narrowness the second
+amendment found a repository-wide setting could not have, so its reasons stand
+for diagnostics: a message element is not a reference definition, and the
+exemption does not reach one.
+
 ## The migration introduces wrapping, so a line is authored to survive it
 
 `rlang::abort()` wraps nothing. `cli_abort()` wraps at retrieval time, at
