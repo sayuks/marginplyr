@@ -402,7 +402,7 @@ markers <- list(
     "Which claim rests on which is stated in one place",
     # The dtplyr rejected-call chunk is guarded by `has_dtplyr`; this prose
     # carries the refusal even when that optional backend is absent.
-    "faithful metadata from isolated zero-row sources",
+    "refused before processing source rows, including an aggregate",
     # The unconditional half of the mutable-step refusal (ADR 0029). Its
     # rejected-call chunk is behind `has_dtplyr`, so the prose introducing it is
     # what a marker can reach, and this run of it holds no apostrophe and no
