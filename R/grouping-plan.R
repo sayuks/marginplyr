@@ -3792,7 +3792,7 @@ abort_computed_by <- function(computed) {
     "{.arg .by} selects existing columns, not computed expressions.",
     i = "{.code {label}} is computed from {.var {columns}}.",
     i = paste0(
-      "Create the column with {.fn dplyr::mutate} first, then select it by ",
+      "Create the column with {.fun dplyr::mutate} first, then select it by ",
       "name."
     )
   ))
@@ -3811,7 +3811,7 @@ abort_computed_grouping_arg <- function(computed) {
     ),
     i = "{.code {label}} is computed from {.var {columns}}.",
     i = paste0(
-      "Create the column with {.fn dplyr::mutate} first, then select it by ",
+      "Create the column with {.fun dplyr::mutate} first, then select it by ",
       "name."
     )
   ))

@@ -992,7 +992,7 @@ map_bquote_substitutions <- function(expr, visit, splice = FALSE) {
   head <- expr[[1L]]
   if (rlang::is_symbol(head, "..") && !identical(splice, FALSE)) {
     abort_marginplyr(c(
-      "Cannot analyze splicing inside a {.fn bquote} capture.",
+      "Cannot analyze splicing inside a {.fun bquote} capture.",
       "i" = "Use {.code .()} or build the language outside the Margin verb."
     ))
   }
