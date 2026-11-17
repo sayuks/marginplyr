@@ -3468,7 +3468,8 @@ test_that("a Parent share without a Grouping specification is refused", {
   for (call in calls) {
     error <- expect_error(
       rlang::eval_tidy(call),
-      "requires `.grouping` to be one pure `rollup\\(\\)`"
+      "requires `.grouping` to be one pure `rollup\\(\\)`",
+      info = rlang::expr_deparse(call)
     )
     expect_s3_class(error, "marginplyr_error")
   }

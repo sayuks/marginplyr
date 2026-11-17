@@ -370,11 +370,10 @@ separate_local_across_labels <- function(dots) {
 # spelling to. The arguments matching `.fns`, `.names` and `.unpack` are
 # hoisted, longest first, while the call still deparses onto several lines;
 # one reaching `...` stays as written, and a call that still overflows then
-# has its head bound as well. Each argument's
-# binding evaluates its argument in the frame dplyr calls the binding from,
-# which is the frame the argument itself was evaluated in, so a lambda it
-# returns has the environment dplyr's inlining requires of one written in the
-# call.
+# has its head bound as well. Each argument's binding evaluates its argument
+# in the frame dplyr calls the binding from, which is the frame the argument
+# itself was evaluated in, so a lambda it returns has the environment dplyr's
+# inlining requires of one written in the call.
 hoist_local_across_arguments <- function(dot, position) {
   expr <- rlang::quo_get_expr(dot)
   env <- rlang::quo_get_env(dot)

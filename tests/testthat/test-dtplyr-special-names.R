@@ -811,7 +811,8 @@ test_that("dtplyr key reads follow an unreadable removal to the column", {
   query <- summarize_with_margins(
     source,
     removed = base::local({
-      # A removal whose names are computed may drop the local binding.
+      # A removal whose names are computed may drop the local binding. The
+      # binding deliberately shadows the data.table special name.
       .N <- 9L # nolint: object_name_linter.
       name <- ".N"
       rm(list = name)
