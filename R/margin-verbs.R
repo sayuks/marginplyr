@@ -31,8 +31,9 @@
 #' a lazy input than on a local one; marginplyr does not detect it. To select
 #' on values, call [dplyr::collect()] first, and set `.check_margin_label`
 #' explicitly, since its default changes to `TRUE` for the collected data.
-#' Where a lazy backend cannot supply typed metadata without reading data, a
-#' predicate is refused; select the columns by name, or collect first.
+#' DuckDB, Arrow, and `dtplyr` inputs supply those types; SQLite, PostgreSQL,
+#' and every other SQL connection cannot without a query, so a predicate is
+#' refused there. Select the columns by name, or collect first.
 #'
 #' @section Grouped and row-wise inputs:
 #' When `.data` has been grouped with [dplyr::group_by()] and `.by` is `NULL`,
@@ -171,6 +172,8 @@
 #' `NULL` or `NA_character_` as its Margin label, because no scalar string can
 #' represent such a key; split it into separate columns if it needs display
 #' text.
+#' The same holds for a list-column dimension, locally or under dtplyr, and
+#' for an Arrow list, large list, or fixed-size list dimension.
 #'
 #' Factor columns follow this contract:
 #'
@@ -232,7 +235,11 @@
 #' and the summaries listed under *Portable fallback SQL* in the
 #' [database guide][db] use a portable `UNION ALL` query with one branch per
 #' grouping set and the same result. Asking for a Margin order never changes
-#' which of the two runs.
+#' which of the two runs. The text of a converted dimension is each backend's
+#' own cast, so it can differ from a local result's; *Converted dimension
+#' text* in the database guide tabulates it. The *Backend support matrix*
+#' there sets each backend family's answers side by side, including what
+#' becomes of a factor dimension.
 #'
 #' Continuous integration executes Margin queries on these backends:
 #'
@@ -253,11 +260,6 @@
 #' On SQLite and DuckDB, identifiers differing only in ASCII letter case name
 #' the same column, so a result refuses two public columns that would collide
 #' under that rule and names both spellings.
-#'
-#' DuckDB stores a factor as an `ENUM`, which marginplyr rebuilds with its
-#' levels; an `ENUM` carries no ordered flag, so an ordered factor returns
-#' unordered. Other SQL backends store a factor as text before marginplyr
-#' reads it.
 #'
 #' A lazy result's Margin order is the outermost query's `ORDER BY`, which
 #' [dplyr::collect()] and [dplyr::compute()] observe. Whether it survives
@@ -305,7 +307,9 @@
 #' A query is not safe merely because it returns no rows: some services bill
 #' by the bytes a query scans, and `LIMIT 0` is not exempt. marginplyr cannot
 #' tell a billed connection from a free one, so `.check_margin_label` defaults
-#' to `is.data.frame(.data)` and a lazy input is checked only when asked. The
+#' to `is.data.frame(.data)` and a lazy input is checked only when asked,
+#' except that [nest_by_with_margins()], which reads a `dtplyr` step's rows
+#' when called, also checks one by default. The
 #' observed check scans every input row of the checked columns and retrieves
 #' one row of collision counts.
 #'

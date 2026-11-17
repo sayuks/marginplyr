@@ -448,9 +448,6 @@ test_that("Margin verbs skip label checks for lazy inputs by default", {
     nest_with_margins(source, .grouping = rollup(group)) |>
       dplyr::collect()
   )
-  expect_no_error(
-    nest_by_with_margins(source, .grouping = rollup(group))
-  )
 })
 
 test_that("Margin label checks handle missing and non-syntactic columns", {
@@ -1185,7 +1182,7 @@ test_that("Margin verb formals expose only the supported common options", {
   expect_false(".groups" %in% names(formals(summarize_with_margins)))
   expect_false(".groups" %in% names(formals(summarise_with_margins)))
   expect_true(all(vapply(
-    verbs,
+    verbs[-4L],
     function(verb) {
       identical(
         formals(verb)$.check_margin_label,
@@ -1194,6 +1191,11 @@ test_that("Margin verb formals expose only the supported common options", {
     },
     logical(1)
   )))
+  # The row-wise verb reads a dtplyr step's rows when called.
+  expect_identical(
+    formals(nest_by_with_margins)$.check_margin_label,
+    quote(is.data.frame(.data) || inherits(.data, "dtplyr_step"))
+  )
   expect_true(all(vapply(
     verbs,
     function(verb) {

@@ -36,10 +36,11 @@ Initial CRAN release.
   running a Margin operation, for checking what a specification asks for.
 
 * `.margin_label` sets the display label of removed dimensions (`"Total"` by
-  default, one label per dimension, or `NULL` for typed missing values),
+  default, one label per dimension, or `NULL` for typed missing values, the
+  only kind a list-column, matrix, or packed dimension accepts),
   `.margin_label_position` places that label in a factor's levels, and
   `.check_margin_label` refuses a label that collides with a source value, by
-  default on local data only.
+  default on local data and on a dtplyr step given to `nest_by_with_margins()`.
   `.sort` puts each subtotal next to the rows it summarizes, and
   `.duplicates` chooses whether repeated grouping sets are an error, dropped,
   or kept.
@@ -57,7 +58,7 @@ Initial CRAN release.
   the SQL a Margin verb prepares or sends.
 
 * Every error marginplyr raises for a correctable call inherits the
-  `"marginplyr_error"` class; see `?marginplyr_conditions`.
+  `"marginplyr_error"` class; see *Errors and warnings* in `?marginplyr`.
 
 * Guides cover getting started, common reporting recipes, Grouping identity,
   completing absent keys, and database and lazy backends. `?margin_verbs`

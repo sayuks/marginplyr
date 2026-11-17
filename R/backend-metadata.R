@@ -701,8 +701,8 @@ postgres_margin_prototypes <- function(.data, dimensions) {
 # columns those are is settled by `prepare_margin_operation()`'s
 # `carried_columns`.
 #
-# `packed` and `arrays` retain the dimension names whose R shapes reject a
-# non-missing label, even when their omitted values use backend-native NULLs.
+# `packed`, `arrays` and `lists` retain the dimension names whose shapes reject
+# a non-missing label, even when their omitted values use backend-native NULLs.
 #
 # `prototypes` stays keyed to the dimensions alone. It stands for the value a
 # branch omitting a dimension writes, and only a dimension is ever omitted.
@@ -812,6 +812,10 @@ margin_column_info <- function(data_proxy,
   arrays <- dimensions[vapply(prototypes, function(x) {
     is.array(x) && length(dim(x)) > 1L
   }, logical(1))]
+  lists <- setdiff(
+    margin_list_dimensions(schema[dimensions], backend, arrow_schema),
+    arrays
+  )
   if (identical(backend$kind, "duckdb")) {
     # Retain R shapes for label validation before replacing omitted values.
     # DuckDB resolves SQL NULL against the included branch's SQL key type.
@@ -819,7 +823,26 @@ margin_column_info <- function(data_proxy,
   }
   list(
     factors = factors, prototypes = prototypes,
-    packed = packed, arrays = arrays,
+    packed = packed, arrays = arrays, lists = lists,
     labels = margin_variable_labels(schema)
   )
+}
+
+# The names of `columns`, the zero-row proxies of the dimensions, whose key is
+# a list on `backend`: an R list-column locally and under dtplyr, a list type
+# under Arrow. A DuckDB proxy delivers LIST and BLOB alike as an R list, so it
+# names none there; DuckDB's own cast to text keeps distinct LIST values apart.
+margin_list_dimensions <- function(columns, backend, arrow_schema = NULL) {
+  if (backend$kind %in% c("local", "dtplyr")) {
+    return(names(columns)[vapply(columns, vctrs::obj_is_list, logical(1))])
+  }
+  if (!is.null(arrow_schema)) {
+    return(names(columns)[vapply(names(columns), function(name) {
+      inherits(
+        arrow_schema$GetFieldByName(name)$type,
+        c("ListType", "LargeListType", "FixedSizeListType")
+      )
+    }, logical(1))])
+  }
+  character()
 }

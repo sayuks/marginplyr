@@ -420,7 +420,8 @@ Config/testthat/start-first:
     share-captured-removals,
     share-evaluation-frames,
     share-removal-targets,
-    grouping-spec-as-summary
+    grouping-spec-as-summary,
+    backend-matrix
 VignetteBuilder:
     quarto
 SystemRequirements: Quarto command line tool

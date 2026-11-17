@@ -14,6 +14,7 @@ Rollups
 Teradata
 Ungrouped
 altdoc
+backend's
 callr
 catchable
 crosstab
@@ -27,6 +28,7 @@ dplyr's
 dtplyr
 enum
 enums
+knitr
 marginplyr's
 nonlocal
 nonmissing

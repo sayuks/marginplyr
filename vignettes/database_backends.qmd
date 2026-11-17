@@ -75,6 +75,57 @@ has_dtplyr <- marginplyr_suggest_available("dtplyr")
 has_arrow <- marginplyr_suggest_available("arrow")
 ```
 
+## Backend support matrix
+
+One row per backend family; the sections below give each cell's detail.
+
+| Backend | Summary | Expansion | Shares | Nesting | `where()` in `.by` or `.grouping` | Factor dimension | Sent while a call is built |
+|---|---|---|---|---|---|---|---|
+| DuckDB | Native `GROUPING SETS`, except the calls listed under *Portable fallback SQL* | `UNION ALL` over one materialized read of the input | Computed | Refused | Accepted | Kept as an `ENUM`; an ordered factor returns unordered | A catalog query and a zero-row read; the share question once per R session |
+| PostgreSQL | Native `GROUPING SETS`, except the calls listed under *Portable fallback SQL* | `UNION ALL` over one read of the input | Computed | Refused | Refused | Text | The share question once per R session |
+| SQLite | Portable `UNION ALL` | `UNION ALL`; a live connection reads the input once into a materialized common table expression | Refused unless `.check_share_source = FALSE` | Refused | Refused | Text | The share question once per R session |
+| Other SQL dialects | Portable `UNION ALL` | `UNION ALL`, one read of the input per grouping set | Computed where the dialect refuses an ineligible source; otherwise refused unless `.check_share_source = FALSE` | Refused | Refused | Text | The share question once per R session on a live connection; nothing on a simulated one |
+| Arrow | Lazy, one read of the input per grouping set | Lazy, over one in-memory copy of the input | Refused | Refused | Accepted | Character under a non-missing label; kept under `NULL` or `NA_character_` | Nothing |
+| dtplyr | Lazy | Lazy | Computed; the source is checked at `collect()` | `nest_with_margins()` lazy; `nest_by_with_margins()` collects | Accepted | Kept | A zero-row evaluation of the input |
+
+*Shares* is `share_of_parent()` and `share_of_total()`. The share question
+is sent only for a call that requests a share; *Parent shares use a staged
+lazy query* below says what it asks. *Text* means the database stored the
+factor as text before marginplyr read it, so the dimension returns as
+character. Every backend also reads the input when
+`.check_margin_label = TRUE` asks for the observed label check. A converted
+dimension's text is the backend's own; see *Converted dimension text* below.
+
+Support is not one status. SQL simulation is useful evidence about rendering,
+but it is not the same as running a query on a live server, so treat a
+simulator-only backend as SQL-generation support, and report server-specific
+behavior with a minimal query and the backend version. Which claim rests on
+which is stated in one place: *Database backend coverage* in the
+[`margin_verbs` reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html).
+
+### Converted dimension text
+
+With a character `.margin_label`, the default, a Margin dimension that is
+not a factor becomes character so that it can hold the label. On a lazy input
+that text is the backend's own cast, so it is not always the text a local
+result holds:
+
+| Dimension | Local and dtplyr | DuckDB | SQLite | Arrow |
+|---|---|---|---|---|
+| double `10` | `"10"` | `"10.0"` | `"10.0"` | `"10"` |
+| logical `TRUE` | `"TRUE"` | `"true"` | `"1"` | `"true"` |
+| Date `2024-01-01` | `"2024-01-01"` | `"2024-01-01"` | `"19723.0"` | `"2024-01-01"` |
+| integer `10` | `"10"` | `"10"` | `"10"` | `"10"` |
+
+So `filter(year == "2024")` over a double `year` matches nothing on DuckDB,
+and a join on such a key between a local result and a database one matches
+nothing either. When the text matters, give the column the type or text you
+want with `mutate()` before the Margin verb; for a whole-number double,
+`as.integer()` is enough, since an integer's text is the same everywhere. To
+keep every dimension's type instead, set `.margin_label = NULL` or
+`NA_character_`, which marks margin rows with a missing value and converts
+nothing on any backend.
+
 ## One report, two execution locations
 
 The local report uses store detail, region subtotals, and a company total:
@@ -310,7 +361,8 @@ row for that value and one row for the margin, and neither the row itself nor
 code reading the result afterward can tell which is which. *When marginplyr
 queries your data* in the [`margin_verbs`
 reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html)
-states the rule this default follows.
+states the rule this default follows. `nest_by_with_margins()` reads a
+`dtplyr` step's rows when called, so it checks one by default.
 
 Two protections hold at no added query. The first applies wherever marginplyr
 holds factor-level metadata.
@@ -1009,16 +1061,6 @@ choose `$ToTable()` or `$ToRecordBatchReader()` first. Neither are `Scalar`, `Ar
 `ChunkedArray`, `Schema`, `Field`, `DataType`, or other non-tabular Arrow
 objects. Convert those to a data frame or lazy dplyr table appropriate to the
 data they represent.
-
-## Backend verification levels
-
-Support is not one status. SQL simulation is useful evidence about rendering,
-but it is not the same as running a query on a live server, so treat a
-simulator-only backend as SQL-generation support, and report server-specific
-behavior with a minimal query and the backend version.
-
-Which claim rests on which is stated in one place: *Database backend coverage*
-in the [`margin_verbs` reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html).
 
 ## Practical rules for remote analysis
 
