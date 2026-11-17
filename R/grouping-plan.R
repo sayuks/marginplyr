@@ -112,15 +112,15 @@ check_masked_constructor <- function(quo) {
   }
   # Read only from the cli template below, which codetools cannot see.
   name <- static_call_name(expr)
-  masked <- paste0(owner, "::", name, "()") # nolint: object_usage_linter.
-  qualified <- paste0("marginplyr::", name, "()") # nolint: object_usage_linter.
+  masked <- paste0(owner, "::", name) # nolint: object_usage_linter.
+  qualified <- paste0("marginplyr::", name) # nolint: object_usage_linter.
   abort_marginplyr(
     c(
       paste0(
-        "{.fun {name}} in {.arg .grouping} resolves to {.code {masked}}, ",
+        "{.fun {name}} in {.arg .grouping} resolves to {.fun {masked}}, ",
         "not to marginplyr's constructor."
       ),
-      i = "Write {.code {qualified}} to build a Grouping specification."
+      i = "Write {.fun {qualified}} to build a Grouping specification."
     )
   )
 }
