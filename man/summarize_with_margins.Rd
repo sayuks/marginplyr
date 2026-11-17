@@ -144,8 +144,8 @@ is not a factor becomes character so that it can hold the label:
 character, with \code{"Total"} on the margin row. On a lazy input the text is
 the backend's own cast, so a double \code{10} reads \code{"10.0"} on DuckDB and
 SQLite and a logical \code{TRUE} reads \code{"true"} or \code{"1"}; \emph{Converted
-dimension text} in the \href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html}{database guide} tabulates them. When the
-text matters, give the column the type you want with \code{\link[dplyr:mutate]{dplyr::mutate()}}
+dimension text} in \href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html#converted-dimension-text}{Database and lazy backends} tabulates them. When
+the text matters, give the column the type you want with \code{\link[dplyr:mutate]{dplyr::mutate()}}
 first. A factor dimension instead gains the label as a new level.
 \code{.margin_label = NULL} or \code{NA_character_} keeps every dimension's type and
 marks margin rows with a missing value.

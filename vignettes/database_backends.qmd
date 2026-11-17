@@ -99,7 +99,7 @@ but it is not the same as running a query on a live server, so treat a
 simulator-only backend as SQL-generation support, and report server-specific
 behavior with a minimal query and the backend version. Which claim rests on
 which is stated in one place: *Database backend coverage* in the
-[`margin_verbs` reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html).
+[`margin_verbs` reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html#database-backend-coverage).
 
 ### Converted dimension text
 
@@ -181,7 +181,7 @@ when you ask marginplyr, with `.check_margin_label = TRUE`, to look for an
 observed label: a source value equal to the Margin label. Building the query
 may still send internal queries that read no source values; *When marginplyr
 queries your data* in the
-[`margin_verbs` reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html)
+[`margin_verbs` reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html#when-marginplyr-queries-your-data)
 enumerates them, and *Record the SQL marginplyr prepares* below shows how to
 see them. The one exception is `nest_by_with_margins()` on dtplyr, described
 under *Other lazy backends*.
@@ -275,7 +275,7 @@ The `arrange()` above orders by the labels, so `"Total"` falls wherever that
 string does among a dimension's values. `.sort` orders by the structure of the
 Grouping plan instead, so each subtotal lands with the rows it summarizes. It
 is an argument of the verb rather than a step after it; *Margin order* in the
-[`margin_verbs` reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html)
+[`margin_verbs` reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html#margin-order)
 states the key it builds and what a later verb can do to it:
 
 ```{r}
@@ -332,7 +332,7 @@ never calls yours: your macro could replace a name inside their bodies, so
 marginplyr cannot rule out source work hidden in the input. Call
 `compute()` on the input first, and the Margin verb reads the stored table
 instead. *When marginplyr queries your data* in the [`margin_verbs`
-reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html)
+reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html#when-marginplyr-queries-your-data)
 states the full rule.
 
 ```{r}
@@ -355,7 +355,7 @@ data equal to `.margin_label` — goes undetected, so the result carries one
 row for that value and one row for the margin, and neither the row itself nor
 code reading the result afterward can tell which is which. *When marginplyr
 queries your data* in the [`margin_verbs`
-reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html)
+reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html#when-marginplyr-queries-your-data)
 states the rule this default follows. `nest_by_with_margins()` reads a
 `dtplyr` step's rows when called, so it checks one by default.
 
@@ -408,7 +408,7 @@ DBI::dbDisconnect(con)
 Arrow is different. A factor Margin dimension there returns as character,
 so Arrow does not expose its declared levels to this check; see *Arrow
 inputs* in the [`margin_verbs`
-reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html).
+reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html#arrow-inputs).
 An unused declared level therefore does not make two result rows look alike.
 An observed collision still does, and `.check_margin_label = TRUE` rejects it.
 
@@ -585,7 +585,7 @@ the [`margin_verbs` reference][shared-reference] enumerates the operations and
 applicable backends.
 
 [sent-queries]: https://sayuks.github.io/marginplyr/man/last_sent_queries.html
-[shared-reference]: https://sayuks.github.io/marginplyr/man/margin_verbs.html
+[shared-reference]: https://sayuks.github.io/marginplyr/man/margin_verbs.html#when-marginplyr-queries-your-data
 
 ```{r}
 #| eval: !expr has_duckdb
@@ -633,7 +633,7 @@ the query; explicitly collect its input first to request local shares.
 
 A share source must be a plain integer or double. On a database it is the
 dialect that applies that rule: *Lazy execution boundaries* in the
-[`share_of_parent()` reference][share-reference] states which dialects refuse
+[`share_of_parent()` reference][share-boundaries] states which dialects refuse
 an ineligible source, which convert one and are refused, and what
 `.check_share_source = FALSE` changes. marginplyr reads no row of your data to
 learn which a dialect does: it asks, with at most two queries referencing none
@@ -642,6 +642,7 @@ DuckDB table the diagnostic is DuckDB's own, and the column it names carries
 the name of the summary to rewrite. The remedy is an explicit conversion to a
 number in that ordinary summary:
 
+[share-boundaries]: https://sayuks.github.io/marginplyr/man/share_of_parent.html#lazy-execution-boundaries
 [share-reference]: https://sayuks.github.io/marginplyr/man/share_of_parent.html
 
 ```{r}
@@ -819,7 +820,7 @@ postgres_sales |>
 Margin verb that collects a lazy input without being asked: a row-wise data
 frame is a local object, so it has nothing lazy to return. Its own *dtplyr
 inputs* section in the [`nest_by_with_margins()`
-reference](https://sayuks.github.io/marginplyr/man/nest_by_with_margins.html)
+reference](https://sayuks.github.io/marginplyr/man/nest_by_with_margins.html#dtplyr-inputs)
 states this. Its detail tables are the ones dtplyr built, so each cell is a
 `data.table`:
 
@@ -880,7 +881,7 @@ arrow::arrow_table(january_sales) |>
 ```
 
 *Arrow inputs* in the [`margin_verbs`
-reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html) states
+reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html#arrow-inputs) states
 which expressions this reaches, the rewrites the diagnostic names, and what an
 Arrow dataset answers instead.
 

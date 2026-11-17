@@ -64,8 +64,8 @@
 #' contract is *[Display labels and grouping identity][margin_verbs]* in
 #' [margin_verbs].
 #'
-#' The [grouping identity guide][guide] works through these values with
-#' executable examples.
+#' [Grouping identity][guide] works through these values with executable
+#' examples.
 #'
 #' [guide]: https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html
 #'
@@ -80,11 +80,12 @@
 #' anything but a name is refused exactly where writing that expression out
 #' would be.
 #'
-#' *Call a Margin verb from your own function* in the [Recipes guide][recipes]
-#' forwards grouping columns, a measure, and a fixed key into a Margin verb by
-#' each of these routes, and passes a Grouping specification as an argument.
+#' *Call a Margin verb from your own function* in
+#' [Recipes for common reporting tasks][recipes] forwards grouping columns,
+#' a measure, and a fixed key into a Margin verb by each of these routes, and
+#' passes a Grouping specification as an argument.
 #'
-#' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
+#' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html#call-a-margin-verb-from-your-own-function
 #'
 #' @param x A bare Margin dimension -- a column `.grouping` selects -- or a
 #'   fixed `.by` key, whose bit is always `0L`.

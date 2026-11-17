@@ -90,8 +90,8 @@ the two must be told apart. The complete label, factor, and missing-value
 contract is \emph{\link[=margin_verbs]{Display labels and grouping identity}} in
 \link{margin_verbs}.
 
-The \href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{grouping identity guide} works through these values with
-executable examples.
+\href{https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html}{Grouping identity} works through these values with executable
+examples.
 }
 
 \section{Forwarding a column from your own function}{
@@ -106,9 +106,10 @@ caller's expression came from is not consulted and an injection carrying
 anything but a name is refused exactly where writing that expression out
 would be.
 
-\emph{Call a Margin verb from your own function} in the \href{https://sayuks.github.io/marginplyr/vignettes/recipes.html}{Recipes guide}
-forwards grouping columns, a measure, and a fixed key into a Margin verb by
-each of these routes, and passes a Grouping specification as an argument.
+\emph{Call a Margin verb from your own function} in
+\href{https://sayuks.github.io/marginplyr/vignettes/recipes.html#call-a-margin-verb-from-your-own-function}{Recipes for common reporting tasks} forwards grouping columns,
+a measure, and a fixed key into a Margin verb by each of these routes, and
+passes a Grouping specification as an argument.
 }
 
 \section{How the value is computed}{

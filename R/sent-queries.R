@@ -462,10 +462,10 @@ with_sent_query <- function(purpose, query, expr,
 #' @seealso *[When marginplyr queries your data][margin_verbs]* in
 #'   [margin_verbs] for the queries a Margin verb sends without being asked,
 #'   [dplyr::show_query()] for the result query alone, and *Record the SQL
-#'   marginplyr prepares* in the [database-backends guide][guide] for the record
-#'   read against a live connection.
+#'   marginplyr prepares* in [Database and lazy backends][guide] for the
+#'   record read against a live connection.
 #'
-#' [guide]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html
+#' [guide]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html#record-the-sql-marginplyr-prepares
 #' @export
 #' @examples
 #' # Recording uses the option's setting when the call begins. Restoring it

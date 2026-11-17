@@ -39,7 +39,7 @@
 #' Constructors select existing columns; they do not compute one, so
 #' `rollup(format(day, "%Y"))` fails even when `day` exists. Create a derived
 #' dimension with [dplyr::mutate()] first, as *Computed grouping columns* in
-#' the [Get started guide][start] shows.
+#' [Get started][computed] shows.
 #'
 #' Each form expands to these grouping sets. A [rollup()] of n dimensions
 #' gives n + 1 sets, a [cube()] gives 2^n, and a [grouping_spec()] the
@@ -57,8 +57,8 @@
 #'
 #' A [cube()] lists its sets from the most dimensions to the fewest.
 #' [inspect_grouping()] lists the sets any specification expands to, in the
-#' order `.id` numbers them, and *Choose the grouping operation* in the
-#' [Get started guide][start] works through each form.
+#' order `.id` numbers them, and *Choose the grouping operation* in
+#' [Get started][operations] works through each form.
 #'
 #' Combining forms can produce the same grouping set more than once. Every
 #' [rollup()] and [cube()] contains the empty set, so
@@ -76,11 +76,12 @@
 #'
 #' A resolved Grouping plan can be read back in four ways: `.id`,
 #' [inspect_grouping()]`$set_id`, [grouping_bit()], and [grouping_id()].
-#' [grouping_bit()] compares them; the [grouping identity guide][guide] works
+#' [grouping_bit()] compares them; [Grouping identity][guide] works
 #' through the same values with executable examples.
 #'
 #' [guide]: https://sayuks.github.io/marginplyr/vignettes/grouping_identity.html
-#' [start]: https://sayuks.github.io/marginplyr/vignettes/get_started.html
+#' [computed]: https://sayuks.github.io/marginplyr/vignettes/get_started.html#computed-grouping-columns
+#' [operations]: https://sayuks.github.io/marginplyr/vignettes/get_started.html#choose-the-grouping-operation
 #'
 #' @param ... <[`tidy-select`][dplyr::dplyr_tidy_select]> Column selections
 #'   and, where the constructor accepts them, nested Grouping specifications.

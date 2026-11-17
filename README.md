@@ -269,8 +269,8 @@ postgres_sales |>
 ```
 
 Simulation verifies generated SQL but does not claim live execution
-against every database server. The [database
-guide](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
+against every database server. [Database and lazy
+backends](https://sayuks.github.io/marginplyr/vignettes/database_backends.html)
 shows native SQL, which queries take the fallback, live DuckDB
 execution, and `collect()`.
 
@@ -310,9 +310,12 @@ simple local subtotal, explicit dplyr code may be easier.
 
 ## Backend verification
 
+Which backends marginplyr supports, and what each does, is the *Backend
+support matrix* in [Database and lazy
+backends](https://sayuks.github.io/marginplyr/vignettes/database_backends.html#backend-support-matrix).
 What is verified on each backend, and how, is stated in one place:
 *Database backend coverage* in the [`margin_verbs`
-reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html).
+reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html#database-backend-coverage).
 
 ## Code of Conduct
 

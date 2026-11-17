@@ -64,7 +64,8 @@ is rejected naming the change that gives it one.
 
 Neither helper reaches a level between the two. For a denominator at a
 named ancestor level, move that dimension into \code{.by} and use
-\code{share_of_total()}; the \href{https://sayuks.github.io/marginplyr/vignettes/recipes.html}{recipes guide} writes that out, and the
+\code{share_of_total()}; \emph{Show each row as a percent of a level further up} in
+\href{https://sayuks.github.io/marginplyr/vignettes/recipes.html#show-each-row-as-a-percent-of-a-level-further-up}{Recipes for common reporting tasks} writes that out, and the
 join for the case where the levels above the ancestor have to stay in the
 same result.
 }
@@ -107,8 +108,8 @@ column keeps its type either way:\tabular{lrl}{
 }
 
 
-Missing detail or subtotal combinations are not completed. The \href{https://sayuks.github.io/marginplyr/vignettes/completing_keys.html}{completing keys guide} shows how to complete the input facts before the summary,
-where synthetic facts are meant to reach every level.
+Missing detail or subtotal combinations are not completed. \href{https://sayuks.github.io/marginplyr/vignettes/completing_keys.html}{Complete absent keys before margins} shows how to complete the input facts before the
+summary, where synthetic facts are meant to reach every level.
 }
 
 \section{Direct shares}{
@@ -134,7 +135,8 @@ result |> dplyr::mutate(revenue_percent = 100 * revenue_share)
 
 On a lazy input that \code{mutate()} wraps the result in a subquery, which drops
 an order \code{.sort} requested; \code{\link[dplyr:collect]{dplyr::collect()}} first, or \code{\link[dplyr:arrange]{dplyr::arrange()}}
-afterwards, as \emph{Execute in DuckDB} in the \href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html}{database guide} shows.
+afterwards, as \emph{Execute in DuckDB} in \href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html#execute-in-duckdb}{Database and lazy backends}
+shows.
 }
 
 \section{Eligible source summaries}{
@@ -341,8 +343,8 @@ execution-time diagnostics name the share, its source summary, and the
 original call, as the local ones do.
 
 On dbplyr, a summary that is not one value per grouping row surfaces as a
-database error when the staged query executes. \emph{Parent shares use a
-staged lazy query} in the \href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html}{database guide} describes how a dialect is
+database error when the staged query executes. \emph{Parent shares use a staged
+lazy query} in \href{https://sayuks.github.io/marginplyr/vignettes/database_backends.html#parent-shares-use-a-staged-lazy-query}{Database and lazy backends} describes how a dialect is
 asked, which answers are reused, and what that sends; its \emph{Backend support
 matrix} sets each backend family's share support beside its other answers.
 }
@@ -359,8 +361,9 @@ caller's expression came from is not consulted and an injection carrying
 anything but a name is refused exactly where writing that expression out
 would be.
 
-\emph{Call a Margin verb from your own function} in the \href{https://sayuks.github.io/marginplyr/vignettes/recipes.html}{Recipes guide}
-names a summary after the caller's measure and forwards that name here.
+\emph{Call a Margin verb from your own function} in
+\href{https://sayuks.github.io/marginplyr/vignettes/recipes.html#call-a-margin-verb-from-your-own-function}{Recipes for common reporting tasks} names a summary after the
+caller's measure and forwards that name here.
 }
 
 \examples{
