@@ -692,7 +692,10 @@ fact markers for counts and means, same-connection dimension tables,
 
 The Grouping plan can be applied to a lazy table without first collecting its
 rows. This PostgreSQL simulation shows the native SQL without requiring a
-server:
+server. The call writes `na.rm = TRUE`, and a local call needs it too for the
+results to match: locally a missing measure makes every subtotal and total that
+includes it `NA`, while a SQL aggregate always drops missing values, and dbplyr
+warns when `na.rm = TRUE` is absent:
 
 ```{r}
 postgres_sales <- dbplyr::tbl_lazy(

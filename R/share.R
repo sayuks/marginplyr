@@ -72,6 +72,12 @@
 #' result |> dplyr::mutate(revenue_percent = 100 * revenue_share)
 #' ```
 #'
+#' On a lazy input that `mutate()` wraps the result in a subquery, which drops
+#' an order `.sort` requested; [dplyr::collect()] first, or [dplyr::arrange()]
+#' afterwards, as *Execute in DuckDB* in the [database guide][db] shows.
+#'
+#' [db]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html
+#'
 #' A direct call cannot be unnamed, use a string, use a forward reference,
 #' redefine the source name, or use a share as another share's source.
 #'

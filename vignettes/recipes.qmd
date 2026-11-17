@@ -252,7 +252,10 @@ longer in it.
 
 A Grouping bit usually survives, because the bits of a `rollup()` are computed
 in the query underneath the one the ordering sits in. The reversed-year recipe runs on
-a database unchanged:
+a database unchanged. It writes `na.rm = TRUE` in both places so that the
+results match: locally a missing measure makes every subtotal and total that
+includes it `NA`, while a SQL aggregate always drops missing values, and
+dbplyr warns when `na.rm = TRUE` is absent:
 
 ```{r}
 #| eval: !expr has_duckdb
@@ -450,6 +453,14 @@ retail_sales |>
 Now every row is a share of all four region-years together, and the year rows
 are subtotals rather than partitions. Both calls are correct; they answer
 different questions, and `.by` is what distinguishes them.
+
+**On SQLite and on a simulated connection, either call is refused until it sets
+`.check_share_source = FALSE`.** marginplyr establishes that a share's source
+is a number by asking the dialect, and SQLite answers `sum()` of text with a
+number while a simulator executes nothing to ask. [Parent shares use a staged
+lazy
+query](https://sayuks.github.io/marginplyr/vignettes/database_backends.html#parent-shares-use-a-staged-lazy-query)
+states the rule; DuckDB runs both calls unchanged.
 
 For a denominator one rollup level up rather than at the top, use
 `share_of_parent()`. The
