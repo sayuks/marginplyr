@@ -556,6 +556,33 @@ test_that("nesting keeps cardinality under both keep options", {
   }
 })
 
+test_that("kept keys lead each nested table in outer-column order", {
+  # Keys trail the payload here, so input order and key-first order differ:
+  # `tidyr::nest()` and `dplyr::nest_by()` would return `units, store, day,
+  # region`.
+  input <- data.frame(
+    units = c(10L, 20L, 30L),
+    store = c("A", "A", "B"),
+    day = c(1L, 2L, 3L),
+    region = c("East", "East", "West"),
+    stringsAsFactors = FALSE
+  )
+
+  for (verb in list(nest_with_margins, nest_by_with_margins)) {
+    kept <- verb(
+      input,
+      .by = day,
+      .grouping = rollup(region, store),
+      .keep = TRUE
+    )
+    expect_named(kept, c("day", "region", "store", "data"))
+    expect_identical(
+      unique(lapply(kept$data, names)),
+      list(c("day", "region", "store", "units"))
+    )
+  }
+})
+
 test_that("nesting keeps cardinality when duplicate sets are dropped", {
   # `.duplicates` is the other option the cardinality has to survive, and a
   # dropped repeat must leave the surviving set's cells the size they were.

@@ -29,8 +29,7 @@
 #' column type, such as `where(is.character)`. A value-dependent predicate
 #' such as `where(~ any(.x == "x"))` can silently select different columns on
 #' a lazy input than on a local one; marginplyr does not detect it. To select
-#' on values, call [dplyr::collect()] first, and set `.check_margin_label`
-#' explicitly, since its default changes to `TRUE` for the collected data.
+#' on values, call [dplyr::collect()] first.
 #' DuckDB, Arrow, and `dtplyr` inputs supply those types; SQLite, PostgreSQL,
 #' and every other SQL connection cannot without a query, so a predicate is
 #' refused there. Select the columns by name, or collect first.
@@ -47,14 +46,107 @@
 #' column cannot be both a fixed key and a dimension that can be rolled up.
 #' Grouped local data created with `.drop = FALSE` is rejected because empty
 #' groups cannot be preserved on every backend. To retain empty keys, complete
-#' the input before the Margin operation, as the [Complete absent keys before
-#' margins][keys] guide shows.
+#' the input before the Margin operation, as *Keep unused factor levels* in the
+#' [Complete absent keys before margins][keys] guide shows.
 #'
 #' Row-wise input is rejected; to keep row-wise identifiers as fixed keys,
 #' ungroup first and select them with `.by`. Each verb's page states the
 #' grouping of its result.
 #'
 #' [keys]: https://sayuks.github.io/marginplyr/vignettes/completing_keys.html
+#'
+#' @section Display labels and grouping identity:
+#' `.margin_label` is a display value, not the identity of a grouping set;
+#' each verb's Value states the type a dimension takes to hold a label. A
+#' factor or ordered factor is rebuilt to hold a non-missing label, preserving
+#' ordered status and placing the new level last by default or first when
+#' `.margin_label_position = "first"`. A label equal to any declared level,
+#' used or unused, is rejected before any grouping set is built, whatever
+#' `.check_margin_label` says. Rebuilding preserves the distinction between an
+#' observation that uses a factor NA level and an actually missing factor
+#' code.
+#'
+#' `NA_character_` and `NULL` both create a typed missing Margin value and no
+#' factor level. What separates them is a factor NA level: `NA_character_` on
+#' a factor that has one is refused, because NA is already a factor level,
+#' even when `.check_margin_label = FALSE`, while `NULL` preserves the level.
+#' Every other combination of label and factor is allowed.
+#'
+#' A local packed data-frame, matrix, or array Margin dimension accepts only
+#' `NULL` or `NA_character_` as its Margin label, because no scalar string can
+#' represent such a key; split it into separate columns if it needs display
+#' text.
+#' The same holds for a list-column dimension, locally or under dtplyr, and
+#' for an Arrow list, large list, or fixed-size list dimension.
+#'
+#' A factor observation that uses an NA level can print as `<NA>` while
+#' `is.na()` is false. A missing factor code has `is.na()` equal to true.
+#' Source missing values and typed-missing Margin values may display
+#' identically, so keep `.id` in the result when the difference matters.
+#'
+#' @section Margin order:
+#' `.sort` orders a result by the structure of its Grouping plan rather than by
+#' displayed values. The key is the result's own leading key columns, left
+#' to right, with each Margin dimension preceded by its Grouping bit -- `1` on a
+#' row whose grouping set omits that dimension, `0` otherwise -- and by
+#' whether its value is missing:
+#'
+#' ```
+#' is.na(by1), by1, ..., bit(d1), is.na(d1), d1, bit(d2), is.na(d2), d2, ...
+#' ```
+#'
+#' A margin row therefore sits with the rows it summarizes instead of wherever
+#' its `.margin_label` falls among that dimension's values: the label's text
+#' never decides where a margin goes, and neither does the locale. Within a
+#' level, rows sort ascending by value, with a source `NA` after the named
+#' values. Fixed `.by` keys sort first, so each partition is one contiguous
+#' block, and `.id`, when it names a column, breaks the remaining ties.
+#' `"first"` reverses the Grouping bits alone: missing values come last
+#' wherever they appear, on every backend.
+#'
+#' Whether there is a label does decide how a non-factor dimension sorts: a
+#' non-missing `.margin_label` makes it character, so a numeric dimension sorts
+#' as text, `"10"` before `"9"`. Keep its type with `.margin_label = NULL`,
+#' or make it a factor first. Factor dimensions sort by their levels, except on
+#' Arrow, which sorts a factor by value; see *Arrow inputs*.
+#' `.margin_label_position` positions a synthetic factor level and never a
+#' row.
+#'
+#' A Margin order promises what [dplyr::arrange()] promises in the C locale,
+#' which it fixes: `options(dplyr.legacy_locale = TRUE)` does not redirect it.
+#' It is a property of the object the verb returns: the row order of a local
+#' data frame, or the ordering of a lazy result that [dplyr::collect()]
+#' observes. Later verbs can change it. It composes with every `.duplicates`
+#' policy the verb accepts.
+#'
+#' The [recipes guide][recipes] shows a Margin order before and after, and
+#' shows the key written as an `arrange()` you control.
+#'
+#' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
+#'
+#' @section Grouping set identifiers:
+#' When `.id` names an output column, each result row receives the one-based
+#' position of its grouping set occurrence after applying `.duplicates`.
+#' `"drop"` renumbers the occurrences it keeps. One grouping set has
+#' identifier `1L`, and a zero-row result retains an integer `.id` column.
+#'
+#' `.id` records plan occurrence, not physical result order, and is not a
+#' durable business key: reordering or deduplicating the Grouping
+#' specification changes it. [grouping_bit()] documents how `.id` compares
+#' with [inspect_grouping()]`$set_id`, [grouping_bit()], and [grouping_id()].
+#'
+#' [grouping_bit()] and [grouping_id()] can be called only inside
+#' [summarize_with_margins()]. To learn which grouping set a row of
+#' [expand_with_margins()], [nest_with_margins()], or [nest_by_with_margins()]
+#' came from, pass `.id` and join it to the `set_id` column of
+#' [inspect_grouping()] called with the same `.by` and `.grouping`, as
+#' *Add a level column: detail, subtotal or total* in the
+#' [recipes guide][recipes] does. Without `.id`, a typed-missing
+#' `.margin_label` leaves a margin row indistinguishable from a source row
+#' whose dimension is missing, so summarizing an expansion again by its
+#' grouping columns merges the two.
+#'
+#' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
 #'
 #' @section Option arguments:
 #' An argument documented as taking one of a listed set of strings —
@@ -65,18 +157,8 @@
 #' the argument accepts.
 #'
 #' To ask for the default, leave the argument out, or pass the whole
-#' vocabulary exactly as the signature spells it. The second form lets a
-#' function of your own repeat the signature and hand the argument on:
-#'
-#' ```r
-#' my_report <- function(data, .sort = c("none", "last", "first")) {
-#'   summarize_with_margins(
-#'     data, revenue = sum(revenue),
-#'     .grouping = rollup(region), .sort = .sort
-#'   )
-#' }
-#' ```
-#'
+#' vocabulary exactly as the signature spells it, which lets a function of your
+#' own repeat `.sort = c("none", "last", "first")` and hand it on.
 #' Any other vector of more than one value is an error, a reordering of the
 #' vocabulary included. A wrapper that would rather not track the signature
 #' resolves the value itself and passes one string.
@@ -102,98 +184,6 @@
 #' result uses the input schema captured when it was built, so rebuild it
 #' after changing column types, factor definitions, or labels.
 #'
-#' @section Grouping set identifiers:
-#' When `.id` names an output column, each result row receives the one-based
-#' position of its grouping set occurrence after applying `.duplicates`.
-#' `"drop"` renumbers the occurrences it keeps. One grouping set has
-#' identifier `1L`, and a zero-row result retains an integer `.id` column.
-#'
-#' `.id` records plan occurrence, not physical result order, and is not a
-#' durable business key: reordering or deduplicating the Grouping
-#' specification changes it. [grouping_bit()] documents how `.id` compares
-#' with [inspect_grouping()]`$set_id`, [grouping_bit()], and [grouping_id()].
-#'
-#' @section Margin order:
-#' `.sort` orders a result by the structure of its Grouping plan rather than by
-#' displayed values. The key is the result's own leading key columns, left
-#' to right, with each Margin dimension preceded by its Grouping bit -- `1` on a
-#' row whose grouping set omits that dimension, `0` otherwise -- and by
-#' whether its value is missing:
-#'
-#' ```
-#' is.na(by1), by1, ..., bit(d1), is.na(d1), d1, bit(d2), is.na(d2), d2, ...
-#' ```
-#'
-#' A margin row therefore sits with the rows it summarizes instead of wherever
-#' its `.margin_label` falls among that dimension's values, so the order does
-#' not depend on the label or the locale. Fixed `.by` keys sort first, so each
-#' partition is one contiguous block, and `.id`, when it names a column, breaks
-#' the remaining ties. `"first"` reverses the Grouping bits alone: missing
-#' values come last wherever they appear, on every backend. Factor dimensions
-#' sort by their levels. `.margin_label_position` positions a synthetic factor
-#' level and never a row.
-#'
-#' A Margin order promises what [dplyr::arrange()] promises in the C locale,
-#' which it fixes: `options(dplyr.legacy_locale = TRUE)` does not redirect it.
-#' It is a property of the object the verb returns: the row order of a local
-#' data frame, or the ordering of a lazy result that [dplyr::collect()]
-#' observes. Later verbs can change it. It composes with every `.duplicates`
-#' policy the verb accepts.
-#'
-#' The [recipes guide][recipes] shows a Margin order before and after, and
-#' shows the key written as an `arrange()` you control.
-#'
-#' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
-#'
-#' @section Display labels and grouping identity:
-#' `.margin_label` is a display value, not the identity of a grouping set. An
-#' unnamed scalar labels every resolved Margin dimension. A named vector
-#' provides column-specific labels and must cover the resolved dimensions
-#' exactly once; missing, unknown, duplicate, and empty names are rejected, as
-#' are names from `.by`.
-#'
-#' Non-missing labels convert ordinary Margin dimensions to character. A
-#' factor or ordered factor is rebuilt instead, preserving ordered status and
-#' placing a new synthetic level last by default or first when
-#' `.margin_label_position = "first"`. A label equal to any declared level,
-#' used or unused, is rejected before any grouping set is built, whatever
-#' `.check_margin_label` says. Rebuilding preserves the distinction between an
-#' observation that uses a factor NA level and an actually missing factor
-#' code.
-#'
-#' `NA_character_` and `NULL` both create a typed missing Margin value and do
-#' not create a synthetic factor level, so `.margin_label_position` has no
-#' effect for either, and neither takes part in the observed half of collision
-#' validation. What separates them is a factor NA level: it conflicts with
-#' `NA_character_` even when `.check_margin_label = FALSE`, while `NULL`
-#' preserves it.
-#'
-#' A local packed data-frame, matrix, or array Margin dimension accepts only
-#' `NULL` or `NA_character_` as its Margin label, because no scalar string can
-#' represent such a key; split it into separate columns if it needs display
-#' text.
-#' The same holds for a list-column dimension, locally or under dtplyr, and
-#' for an Arrow list, large list, or fixed-size list dimension.
-#'
-#' Factor columns follow this contract:
-#'
-#' | Margin label | NA level | Missing value | Result |
-#' |---|---:|---:|---|
-#' | `NA_character_` | yes | yes | Error: NA is already a factor level |
-#' | `NA_character_` | yes | no | Error: NA is already a factor level |
-#' | `NA_character_` | no | yes | Allowed; source missing values and margins display alike, so tell them apart with `.id` | # nolint: line_length_linter
-#' | `NA_character_` | no | no | Allowed; use typed missing |
-#' | `NULL` | yes | yes | Allowed; source missing values and margins display alike, so tell them apart with `.id` | # nolint: line_length_linter
-#' | `NULL` | yes | no | Allowed; preserve the NA level and use typed missing |
-#' | `NULL` | no | yes | Allowed; source missing values and margins display alike, so tell them apart with `.id` | # nolint: line_length_linter
-#' | `NULL` | no | no | Allowed; use typed missing |
-#'
-#' A factor observation that uses an NA level can print as `<NA>` while
-#' `is.na()` is false. A missing factor code has `is.na()` equal to true.
-#' Source missing values and typed-missing Margin values may display
-#' identically, so keep `.id` in the result when the difference matters.
-#' Every row above is decided whatever `.check_margin_label` says.
-#'
 #' @section Arrow inputs:
 #' Arrow's tabular dplyr inputs are a `Table`, `RecordBatch`, `Dataset`,
 #' `RecordBatchReader`, or an `arrow_dplyr_query` built from them. marginplyr's
@@ -208,12 +198,21 @@
 #' | Non-tabular Arrow object | General input refusal | General input refusal |
 #'
 #' A translatable summary or expansion stays an Arrow query. For a summary or
-#' generated Margin label transformation Arrow cannot translate, a `Table` and
-#' `RecordBatch` (and queries built on them) would fall back to R, so marginplyr
-#' refuses it before a row is read. Collect the input first to perform that
-#' operation locally, selecting the columns you need before collecting. A
-#' `Dataset` and a query built on one instead keep Arrow's own
-#' unsupported-expression error.
+#' generated Margin label transformation Arrow's own engine cannot evaluate, a
+#' `Table` and `RecordBatch` (and queries built on them) would fall back to R
+#' by reading every column of the input, not only the ones the expression
+#' names. marginplyr refuses such an expression instead,
+#' before a row is read, and names the two rewrites that compute it: collect
+#' the input first, and select the columns the summary needs before
+#' collecting, which is the narrowing Arrow's own route cannot do for you. A
+#' `Dataset` and a query built on one never read themselves into R, so they
+#' keep Arrow's own unsupported-expression error instead.
+#'
+#' Which expressions those are is Arrow's to decide and moves with its version,
+#' so they are not listed here. Among the summaries refused are a group
+#' collapsed into a single value, such as pasting one, a subset written inside
+#' an aggregate, and a statistic over two columns at once; ordinary numeric
+#' summaries, and arithmetic over them, are evaluated by Arrow and stay lazy.
 #'
 #' A `RecordBatchReader` is one-pass, while a Margin operation may build one
 #' branch per grouping set, so a reader and any query whose source graph
@@ -223,8 +222,10 @@
 #' are not dplyr inputs; a Scanner materializes with `$ToTable()`.
 #'
 #' Arrow does not hold factor levels in the schema marginplyr reads, so a
-#' non-missing `.margin_label` converts a factor dimension to character, its
-#' levels and ordered status are lost, and a Margin order sorts it by value.
+#' non-missing `.margin_label` converts a factor dimension to character, and its
+#' levels and ordered status are lost. A Margin order sorts a factor by value on
+#' Arrow whatever the label, fixed `.by` keys included, even where the result
+#' column keeps its levels.
 #' For the same reason, a label equal to an unused declared level is allowed,
 #' and an observed collision is refused only when
 #' `.check_margin_label = TRUE`. `NA_character_` and `NULL` convert nothing.
@@ -301,8 +302,9 @@
 #'   inside their bodies.
 #' - **At most two queries per share request until the SQL dialect answers**,
 #'   for a summary that requests a share, referencing none of your tables;
-#'   see *[Contextual shares][summarize_with_margins]* in
-#'   [summarize_with_margins()].
+#'   see *Parent shares use a staged lazy query* in the [database guide][db].
+#'
+#' [db]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html
 #'
 #' A query is not safe merely because it returns no rows: some services bill
 #' by the bytes a query scans, and `LIMIT 0` is not exempt. marginplyr cannot

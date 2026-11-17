@@ -4,6 +4,11 @@
 #' [summarize_with_margins()]. They distinguish values that are absent from a
 #' grouping set from ordinary missing values in the source data.
 #'
+#' Like every contextual helper, they are refused outside that verb, including
+#' in a later [dplyr::filter()] of its result. To keep or drop subtotal rows,
+#' store the helper as a summary column and filter on that column, as the
+#' first example does.
+#'
 #' [grouping_bit()] corresponds to SQL `GROUPING(x)`: it returns `1L` when
 #' `x` is absent from the grouping set and `0L` otherwise.
 #' [grouping_id()] combines those flags as a bit mask; its last argument is
@@ -40,15 +45,17 @@
 #' `.grouping`, and `.duplicates`. Reordering or deduplicating a Grouping
 #' specification changes both, so `.id` is not a durable business key.
 #'
-#' Grouping identifiers encode absence and need not be consecutive. A
-#' `rollup(region, store)` plan therefore has `.id` values `1L`, `2L`, and
-#' `3L` but [grouping_id()] values `0L`, `1L`, and `3L`: identifier `2` would
-#' mean `region` absent while `store` remains, which the declared hierarchy
-#' never produces. A `cube(region, store)` plan contains every mask, so its
-#' identifiers are `0L`, `1L`, `2L`, and `3L`.
+#' Grouping identifiers, the values [grouping_id()] returns, encode absence
+#' and need not be consecutive. A `rollup(region, store)` plan therefore has
+#' `.id` values `1L`, `2L`, and `3L` but [grouping_id()] values `0L`, `1L`,
+#' and `3L`: identifier `2` would mean `region` absent while `store` remains,
+#' which the declared hierarchy never produces. A `cube(region, store)` plan
+#' contains every mask, so its identifiers are `0L`, `1L`, `2L`, and `3L`.
 #'
-#' Neither value records physical row order. Call [dplyr::arrange()] whenever
-#' presentation order matters.
+#' Neither value records physical row order. Pass `.sort` to a Margin verb for
+#' margins next to the rows they summarize; see *[Margin order][margin_verbs]*
+#' in [margin_verbs]. Call [dplyr::arrange()] for any order `.sort` does not
+#' express.
 #'
 #' Displayed Margin labels are not identity. A source value can equal its
 #' Margin label, and a source missing value can print exactly like a
@@ -120,7 +127,7 @@
 #' @examples
 #' # Online-direct sales have a source NA store. grouping_bit(store) is 0 for
 #' # that detail row but 1 when ROLLUP removes store to create a subtotal.
-#' summarize_with_margins(
+#' by_store <- summarize_with_margins(
 #'   .data = dplyr::filter(retail_sales, year == 2026L, month == "Jan"),
 #'   revenue = sum(revenue),
 #'   # Always 0 for a `.by` column, which no grouping set removes.
@@ -130,6 +137,11 @@
 #'   .by = year,
 #'   .grouping = rollup(region, store)
 #' )
+#' by_store
+#'
+#' # Keep only the store rows by filtering on the stored column; the helper
+#' # itself is refused outside summarize_with_margins().
+#' dplyr::filter(by_store, store_is_total == 0L)
 #'
 #' # Keeping typed missing values makes the Grouping bits essential: a source
 #' # missing store and a generated store margin both print as NA even though

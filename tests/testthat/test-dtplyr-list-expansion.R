@@ -88,13 +88,13 @@ test_that("ordinary dtplyr list expansion controls retain their values", {
     expect_identical(payload$g, list(1L, 2L, 1L, 2L))
     expect_identical(payload$value, c(1L, 2L, NA_integer_, NA_integer_))
   }
-  labelled <- expand_with_margins(
-    source, .grouping = rollup(g), .margin_label = "Total", .id = "set"
-  ) |>
-    dplyr::collect() |>
-    dplyr::arrange(set, value)
-  expect_identical(labelled$g, c("1", "2", "Total", "Total"))
-  expect_identical(labelled$value, c(1L, 2L, 1L, 2L))
+  expect_error(
+    expand_with_margins(
+      source, .grouping = rollup(g), .margin_label = "Total", .id = "set"
+    ),
+    "list-column grouping dimensions",
+    class = "marginplyr_error"
+  )
   expect_identical(dplyr::collect(source), input)
 })
 
