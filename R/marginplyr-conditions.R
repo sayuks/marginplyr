@@ -212,39 +212,39 @@
 #' )
 #' }
 #'
-#' \donttest{
 #' # An interrupt that arrives after an error keeps that error. The grand
 #' # total fails, then `warning.expression` simulates cancellation while the
 #' # regional warning is replayed. The simulation needs that warning to reach
-#' # R's default handling, so a caller that muffles warnings, such as a
-#' # knitr chunk with `warning = FALSE`, prevents it.
-#' old <- options(warning.expression = quote(rlang::interrupt()))
-#' enriched <- tryCatch(
-#'   summarize_with_margins(
-#'     retail_sales,
-#'     revenue = {
-#'       if (grouping_bit(region) == 1L) stop("The grand total failed")
-#'       warning("Check regional revenue")
-#'       sum(revenue)
-#'     },
-#'     .grouping = rollup(region)
-#'   ),
-#'   interrupt = function(cnd) {
-#'     list(interrupt = cnd$interrupt, earlier_error = cnd$parent)
-#'   }
-#' )
-#' options(old)
-#'
-#' conditionMessage(enriched$earlier_error)
-#' \dontshow{
-#' stopifnot(
-#'   inherits(enriched$interrupt, "interrupt"),
-#'   identical(
-#'     conditionMessage(enriched$earlier_error$parent),
-#'     "The grand total failed"
+#' # R's default handling, which a knitr chunk with `warning = FALSE`
+#' # prevents by muffling it, so it runs outside one.
+#' if (!isTRUE(getOption("knitr.in.progress"))) {
+#'   old <- options(warning.expression = quote(rlang::interrupt()))
+#'   enriched <- tryCatch(
+#'     summarize_with_margins(
+#'       retail_sales,
+#'       revenue = {
+#'         if (grouping_bit(region) == 1L) stop("The grand total failed")
+#'         warning("Check regional revenue")
+#'         sum(revenue)
+#'       },
+#'       .grouping = rollup(region)
+#'     ),
+#'     interrupt = function(cnd) {
+#'       list(interrupt = cnd$interrupt, earlier_error = cnd$parent)
+#'     }
 #'   )
-#' )
-#' }
+#'   options(old)
+#'
+#'   print(conditionMessage(enriched$earlier_error))
+#'   \dontshow{
+#'   stopifnot(
+#'     inherits(enriched$interrupt, "interrupt"),
+#'     identical(
+#'       conditionMessage(enriched$earlier_error$parent),
+#'       "The grand total failed"
+#'     )
+#'   )
+#'   }
 #' }
 #' @name marginplyr_conditions
 NULL
