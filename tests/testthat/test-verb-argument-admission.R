@@ -643,7 +643,7 @@ test_that("`NULL` is rejected by every option rather than taken as a default", {
   # `match.arg(NULL, choices)` returns `choices[1]`, so every Option argument
   # used to read a `NULL` as a request for its own default. #110 stopped that
   # along with the abbreviations above, and #144 settled it as a decision: the
-  # *Option arguments* section on `?summarize_with_margins` states that a
+  # *Option arguments* section on `?margin_verbs` states that a
   # `NULL` is an error rather than a request for the default. The untouched
   # formal is what selects a default, and it arrives as the whole vocabulary
   # rather than as a `NULL`.
