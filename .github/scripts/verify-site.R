@@ -266,8 +266,10 @@ markers <- list(
     "pkg_install",
     "SQL-style grouping sets",
     "A total is not the same thing as",
-    "Compare each summary with the whole",
     "Choose the tool for the job",
+    # The same section as its anchor, which Get started links in place of a
+    # comparison table of its own.
+    "id=\"choose-the-tool-for-the-job\"",
     "grouping_identity.html",
     "completing_keys.html",
     "database_backends.html"
@@ -277,7 +279,6 @@ markers <- list(
     "Optional Quarto tabsets with quartabs",
     "Union versus Cartesian product",
     "The manual version",
-    "When marginplyr fits",
     "Intentional differences from",
     "grouping_bit",
     "expand_with_margins",
@@ -318,15 +319,22 @@ markers <- list(
   "docs/vignettes/recipes.html" = c(
     "Task index",
     "Put each subtotal with the rows it summarizes",
+    "Put the totals above the rows they summarize",
     "Sort the newest year first",
     "Sort regions and stores by revenue",
+    "Show the top stores in each region with full totals",
+    "Report by year, quarter and month",
     "Show each row as a percent of the total",
     "Show each row as a percent of a level further up",
-    "Show only the subtotals of one level",
+    "Show only the subtotals, only the detail, or one level",
     "Add a level column: detail, subtotal or total",
     "The same join against a lazy table",
+    "Style the total rows in a printed table",
+    "Report a mean, a median or a distinct count",
+    "Report a weighted mean",
     "Fix a nested-aggregate error on a database",
     "Make a crosstab (pivot table) with totals on both edges",
+    "Show each crosstab cell as a percent of its row or column",
     "share_of_total",
     "expand_with_margins",
     # The guide's rejected-call chunks, by the diagnostics they render. Prose

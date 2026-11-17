@@ -55,10 +55,11 @@
 #'   dimension is checked independently, and a typed-missing label opts its
 #'   own dimension out -- `NULL` or `NA_character_`, chosen per dimension in a
 #'   named-list `.margin_label`.
-#'   Every Margin verb uses the same default: `TRUE` for local data frames and
-#'   `FALSE` for lazy inputs, which are read only when the caller asks. A label
-#'   check after collecting a lazy input therefore defaults to `TRUE` instead
-#'   of `FALSE`; set `.check_margin_label` explicitly when following a
+#'   The default is `TRUE` for local data frames and `FALSE` for lazy inputs,
+#'   which are read only when the caller asks. [nest_by_with_margins()] reads
+#'   a `dtplyr` step's rows when called, so it also checks one by default. A
+#'   label check after collecting a lazy input therefore defaults to `TRUE`
+#'   instead of `FALSE`; set `.check_margin_label` explicitly when following a
 #'   collect-first remediation.
 #'   A label equal to a declared factor *level* is rejected wherever
 #'   marginplyr holds the levels, whatever this argument says, because finding

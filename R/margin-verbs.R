@@ -172,6 +172,8 @@
 #' `NULL` or `NA_character_` as its Margin label, because no scalar string can
 #' represent such a key; split it into separate columns if it needs display
 #' text.
+#' The same holds for a list-column dimension, locally or under dtplyr, and
+#' for an Arrow list, large list, or fixed-size list dimension.
 #'
 #' Factor columns follow this contract:
 #'
@@ -305,7 +307,9 @@
 #' A query is not safe merely because it returns no rows: some services bill
 #' by the bytes a query scans, and `LIMIT 0` is not exempt. marginplyr cannot
 #' tell a billed connection from a free one, so `.check_margin_label` defaults
-#' to `is.data.frame(.data)` and a lazy input is checked only when asked. The
+#' to `is.data.frame(.data)` and a lazy input is checked only when asked,
+#' except that [nest_by_with_margins()], which reads a `dtplyr` step's rows
+#' when called, also checks one by default. The
 #' observed check scans every input row of the checked columns and retrieves
 #' one row of collision counts.
 #'

@@ -361,7 +361,8 @@ row for that value and one row for the margin, and neither the row itself nor
 code reading the result afterward can tell which is which. *When marginplyr
 queries your data* in the [`margin_verbs`
 reference](https://sayuks.github.io/marginplyr/man/margin_verbs.html)
-states the rule this default follows.
+states the rule this default follows. `nest_by_with_margins()` reads a
+`dtplyr` step's rows when called, so it checks one by default.
 
 Two protections hold at no added query. The first applies wherever marginplyr
 holds factor-level metadata.

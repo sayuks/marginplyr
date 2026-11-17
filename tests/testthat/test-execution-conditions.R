@@ -944,6 +944,31 @@ test_that("a propagated error keeps its class, diagnostic, and cause", {
   expect_match(conditionMessage(error), "Caused by error", fixed = TRUE)
 })
 
+# `?marginplyr`'s *Errors and warnings* promises these two arrive as the parent
+# of dplyr's error and names `rlang::try_fetch()` as the handler that sees them.
+test_that("a wrapped refusal and a caller error match through the parent", {
+  outside <- function() {
+    dplyr::mutate(retail_sales, bit = grouping_bit(region))
+  }
+  own <- function() {
+    summarize_with_margins(
+      retail_sales,
+      revenue = rlang::abort("Revenue is unavailable", class = "my_error"),
+      .grouping = rollup(region)
+    )
+  }
+
+  for (call in list(list(outside, "marginplyr_error"), list(own, "my_error"))) {
+    raised <- expect_error(call[[1L]]())
+    expect_false(inherits(raised, call[[2L]]))
+    expect_s3_class(raised$parent, call[[2L]])
+    handlers <- rlang::set_names(list(identity), call[[2L]])
+    caught <- rlang::inject(rlang::try_fetch(call[[1L]](), !!!handlers))
+    expect_s3_class(caught, call[[2L]])
+    expect_identical(conditionMessage(caught), conditionMessage(raised$parent))
+  }
+})
+
 # The hazard a fixed `gsub()` per key carries: replacing `..marginplyr_key_1`
 # before `..marginplyr_key_10` leaves the caller's first column name followed
 # by a stray `0`. Ten dimensions in one grouping set is the cheapest plan that
