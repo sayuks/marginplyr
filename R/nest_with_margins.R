@@ -1,8 +1,18 @@
 #' Nest data with SQL-style grouping margins
 #'
+#' @description
 #' [nest_with_margins()] creates one nested data frame for every group in every
 #' grouping set. It is a margin-aware counterpart of [tidyr::nest()] with
 #' `.by`, and works with local data frames and `dtplyr` steps.
+#'
+#' Use it to keep the source rows behind each detail, subtotal, and total
+#' row, for example to feed each to its own report section, or to keep a
+#' `dtplyr` result lazy. Use [nest_by_with_margins()] instead when the next
+#' step computes one value per nested table with ordinary [dplyr::mutate()]
+#' calls; *Choosing a nesting verb* compares the two. With the default
+#' `.keep = FALSE`, `tidyr::unnest(result, data)` on a local result gives the
+#' rows [expand_with_margins()] returns for the same other arguments, in some
+#' order.
 #'
 #' @section Differences from nest():
 #' - The result is always ungrouped, whatever groups the input had, because
@@ -20,9 +30,30 @@
 #'   which [tidyr::nest()] does when the keys are selected, as in
 #'   `nest(data = everything(), .by = region)`. It is a logical argument
 #'   because the Margin dimensions must stay outside to identify detail,
-#'   subtotal, and total rows.
-#' - An empty ungrouped input returns zero outer rows, as [tidyr::nest()]
-#'   does.
+#'   subtotal, and total rows. The kept keys come first in each nested data
+#'   frame, in the order of the outer columns, followed by the other columns
+#'   in input order; [tidyr::nest()] keeps input order. Because the kept
+#'   keys share their names with the outer columns, [tidyr::unnest()] needs
+#'   `names_sep` for such a result.
+#' - An empty input returns zero outer rows, as [tidyr::nest()] does.
+#'
+#' @section Choosing a nesting verb:
+#' | | `nest_with_margins()` | `nest_by_with_margins()` |
+#' |---|---|---|
+#' | Result | Ungrouped | Row-wise by every outer column |
+#' | `mutate(n = nrow(data))` | Adds nothing, no error | One value per row |
+#' | `dtplyr` input | Stays lazy until collected | Collected when called |
+#' | `.key = NULL` | Uses `"data"` | Error |
+#' | Empty input, no key in the call | Zero rows | One row |
+#' | Outer key named `.rows` | Allowed | Refused |
+#'
+#' On an ungrouped result, `data` in [dplyr::mutate()] is the whole list
+#' column and [nrow()] of a list is `NULL`, so compute over its elements
+#' with [lapply()], [vapply()], or `purrr::map()`, as the examples do.
+#' *Nest locally or with dtplyr* in [Get started][started] shows both verbs
+#' side by side.
+#'
+#' [started]: https://sayuks.github.io/marginplyr/vignettes/get_started.html
 #'
 #' @section Nested data frames:
 #' The list column is a regular list of data frames holding the input's
@@ -111,6 +142,19 @@
 #' # The result is a tibble, which prints each nested table as its dimensions.
 #' head(nested)
 #' nested$data[[1]]
+#'
+#' # Compute over the list column element by element. `.id` records each
+#' # row's grouping set and `.sort` puts each subtotal after its stores.
+#' january_sales |>
+#'   nest_with_margins(
+#'     .grouping = rollup(region, store),
+#'     .id = "set",
+#'     .sort = "last"
+#'   ) |>
+#'   dplyr::mutate(
+#'     records = vapply(data, nrow, integer(1)),
+#'     revenue = vapply(data, function(d) sum(d$revenue), numeric(1))
+#'   )
 #'
 #' # Keep original region and store values inside each nested table as well.
 #' # The outer columns still identify the margin level.

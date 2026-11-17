@@ -565,6 +565,26 @@ test_that("a helper reading a bare name accepts one forwarded by injection", {
   }
 })
 
+test_that("a helper reading a bare name accepts one forwarded by embracing", {
+  # `{{ }}` is what the helper pages tell a wrapper's author to write. The
+  # wrapper is a real function, so what reaches the helper is the caller's
+  # promise captured by the embrace rather than a quosure built by hand.
+  probes <- injection_probes()
+  for (helper in names(probes)) {
+    probe <- probes[[helper]]
+    wrapper <- rlang::new_function(
+      rlang::pairlist2(.probe_data = , x = ),
+      probe$call(quote({{ x }})),
+      env = rlang::current_env()
+    )
+    expect_identical(
+      rlang::inject(wrapper(contextual_probe_data(), !!probe$name)),
+      run_injection_probe(probe, probe$name),
+      info = helper
+    )
+  }
+})
+
 test_that("an injected quosure's environment does not decide the name", {
   # The environment is discarded, and that is the decision rather than an
   # oversight (#169): these helpers resolve a name against the Grouping plan by

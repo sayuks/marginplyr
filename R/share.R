@@ -1,47 +1,48 @@
 #' Calculate a summary's share of its rollup parent or of the grand total
 #'
 #' `share_of_parent()` and `share_of_total()` are contextual summary helpers
-#' for [summarize_with_margins()]. Each divides one preceding named numeric
-#' scalar summary by the same summary on another row of the same result. Only
-#' the denominator differs: `share_of_parent()` divides by the row's
-#' immediate rollup parent, and `share_of_total()` by the grand total.
+#' for [summarize_with_margins()]. Each divides one ordinary summary by the
+#' same summary on another row of the same result; only that row differs.
 #'
 #' | Helper | Denominator | Accepted `.grouping` |
 #' |---|---|---|
 #' | `share_of_parent()` | The immediately less detailed [rollup()] level | One pure [rollup()] | # nolint: line_length_linter
 #' | `share_of_total()` | The Grand total set, in which every Margin dimension is omitted | Any specification whose plan contains one | # nolint: line_length_linter
 #'
-#' Fixed `.by` columns partition both calculations, so a fixed key never
-#' contributes to another partition's denominator. Everything else on this
-#' page — eligible sources, the direct and `across()` grammar, output naming,
-#' the value rules, and the backend boundaries — is the same for both helpers,
-#' and both are written the same way:
+#' An *ordinary summary* is a named summary in the same call that is not a
+#' share, such as `total_revenue = sum(revenue)`. `x` names one written
+#' earlier in that call. It is never an input column: with only
+#' `total_revenue` defined, `share_of_parent(revenue)` refers to an unknown
+#' summary and is refused.
 #'
 #' ```
-#' revenue = sum(revenue)
-#' parent_share = share_of_parent(revenue)
-#' total_share = share_of_total(revenue)
+#' total_revenue = sum(revenue)
+#' parent_share = share_of_parent(total_revenue)
+#' total_share = share_of_total(total_revenue)
 #' ```
+#'
+#' Everything else on this page — the value rules, eligible sources, the
+#' direct and `across()` grammar, output naming, and the backend boundaries —
+#' is the same for both helpers.
 #'
 #' A helper is contextual because its denominator belongs to another
 #' grouping-set row, so it can be used only inside
 #' [summarize_with_margins()]. Direct calls, ordinary [dplyr::summarize()]
 #' calls, and [dplyr::mutate()] calls are rejected.
 #'
-#' `share_of_parent()` additionally requires one pure [rollup()];
-#' [grouping_sets()], [cube()], and [grouping_spec()] are rejected. A grouping
-#' set can have several strictly less detailed sets in the same plan, and
-#' nothing in the plan says which of them is *the* parent.
+#' `share_of_parent()` rejects [grouping_sets()], [cube()], and
+#' [grouping_spec()]: in those plans a grouping set can have several strictly
+#' less detailed sets, and nothing in the plan says which of them is *the*
+#' parent.
 #'
 #' `share_of_total()` has no such choice to make: a Grand total set is not
-#' selected, and a plan either contains one or does not. It therefore accepts
-#' any Grouping specification whose plan contains one. [rollup()] and [cube()]
-#' always produce one, and so does `.grouping = NULL`; [grouping_sets()]
-#' produces one only when some member produces the empty set, as an empty
-#' [grouping_set()] or a [rollup()] member does, a [grouping_spec()] product
-#' only when every factor produces an empty set, and a lone [grouping_set()]
-#' only when it is empty. A
-#' specification without one is rejected naming the change that gives it one.
+#' selected, and a plan either contains one or does not. [rollup()] and
+#' [cube()] always produce one, and so does `.grouping = NULL`;
+#' [grouping_sets()] produces one only when some member produces the empty
+#' set, as an empty [grouping_set()] or a [rollup()] member does, a
+#' [grouping_spec()] product only when every factor produces an empty set, and
+#' a lone [grouping_set()] only when it is empty. A specification without one
+#' is rejected naming the change that gives it one.
 #'
 #' Neither helper reaches a level between the two. For a denominator at a
 #' named ancestor level, move that dimension into `.by` and use
@@ -51,25 +52,67 @@
 #'
 #' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
 #'
+#' @section Value rules:
+#' Both helpers divide within each fixed `.by` partition, so a fixed key never
+#' contributes to another partition's denominator, and neither ever
+#' synthesizes or completes keys. A missing numerator, missing denominator, or
+#' zero denominator gives `NA_real_`; local `NaN` is missing. Other finite
+#' ratios are unclamped doubles, so negative values and values above one are
+#' retained. Denominator matching uses internal grouping set metadata rather
+#' than `.id` or displayed Margin labels, and missing fixed or variable keys
+#' are matched with missing-safe identity rather than ordinary SQL
+#' `NULL = NULL`.
+#'
+#' The portable guarantee covers finite numbers, missing values, and zero
+#' denominators. Infinite values and backend-specific `NaN` representations are
+#' outside it, because supported SQL dialects do not share one portable
+#' finite-value predicate; normalize such summaries explicitly with operations
+#' the backend supports.
+#'
+#' For a Parent share, composite dimensions are added or removed together.
+#' The Grand total set has no parent, so its Parent share is `1.0`, even when
+#' its source is zero or missing. Duplicate grouping set occurrences remain in
+#' the result but are skipped while finding the parent, because a parent must
+#' be strictly less detailed. For `rollup(region, store)`, a store's parent is
+#' its region subtotal and a region subtotal's parent is the grand total. In
+#' the first example below, Boston in January 2025 has `3600 / 7500 = 0.48`:
+#' its revenue over the East subtotal for that month.
+#'
+#' Every row of the Grand total set, duplicate occurrences included, has a
+#' Total share of `1.0`, even when its source is zero or missing. Which grand
+#' total occurrence supplies the denominator is not specified.
+#'
+#' Empty input gives one Grand total set row or no rows at all, and the share
+#' column keeps its type either way:
+#'
+#' | Empty input | Rows | Share value and type |
+#' |---|---:|---|
+#' | Without fixed `.by` keys | One row of the Grand total set | `1.0`, double |
+#' | With fixed `.by` keys | Zero rows | Empty double vector |
+#'
+#' Missing detail or subtotal combinations are not completed. The [completing
+#' keys guide][keys] shows how to complete the input facts before the summary,
+#' where synthetic facts are meant to reach every level.
+#'
+#' [keys]: https://sayuks.github.io/marginplyr/vignettes/completing_keys.html
+#'
 #' @section Direct shares:
 #' A direct call must be the complete right-hand side of an explicitly named
-#' summary. Its argument must be the bare name of one eligible ordinary summary
+#' summary, and its argument the bare name of one eligible ordinary summary
 #' written earlier in the same call:
 #'
 #' ```
 #' # Supported
-#' revenue = sum(revenue)
-#' revenue_share = share_of_parent(revenue)
+#' total_revenue = sum(revenue)
+#' revenue_share = share_of_parent(total_revenue)
 #'
-#' # Rejected: aggregate or calculated arguments
+#' # Rejected: aggregate or calculated arguments; rewrite as above
 #' revenue_share = share_of_parent(sum(revenue))
 #' revenue_share = share_of_parent(revenue + tax)
-#' # Rewrite: define one self-contained ordinary summary first
-#' revenue = sum(revenue)
-#' revenue_share = share_of_parent(revenue)
 #'
-#' # Rejected: wrapping or scaling the helper
-#' revenue_percent = 100 * share_of_parent(revenue)
+#' # Rejected: wrapping or scaling the helper, or a later summary using it
+#' revenue_percent = 100 * share_of_parent(total_revenue)
+#' revenue_percent = 100 * revenue_share
 #' # Rewrite: derive from the finished share afterwards
 #' result |> dplyr::mutate(revenue_percent = 100 * revenue_share)
 #' ```
@@ -80,20 +123,20 @@
 #'
 #' [db]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html
 #'
-#' A direct call cannot be unnamed, use a string, use a forward reference,
-#' redefine the source name, or use a share as another share's source.
-#'
 #' @section Eligible source summaries:
-#' The source must be defined exactly once before the share. It must be
-#' a top-level named summary or a statically named output from a preceding
-#' [dplyr::across()], return one plain integer or double per grouping row, and
-#' be self-contained. A source cannot depend on an earlier summary alias.
+#' A source summary must be:
 #'
-#' Integer, double, and the corresponding database numeric/decimal scalar
-#' summaries are eligible. A share is always a double. Logical,
-#' complex, date-time, duration, character, factor, list, data-frame, and other
-#' semantic classes are not converted implicitly. Convert intentionally in the
-#' ordinary summary:
+#' - defined exactly once, as a top-level named summary or a statically named
+#'   output of a preceding [dplyr::across()];
+#' - self-contained: it may aggregate input columns, but it cannot refer to an
+#'   earlier summary, which databases that cannot reuse a `SELECT` alias could
+#'   not evaluate;
+#' - one plain integer or double per grouping row, or the database's
+#'   numeric or decimal equivalent.
+#'
+#' Logical, complex, date, date-time, duration, character, factor, list,
+#' data-frame, and other classes are not converted implicitly. Convert
+#' intentionally in the ordinary summary:
 #'
 #' ```
 #' # Rejected: a Date summary is not a numeric measure
@@ -105,10 +148,9 @@
 #' day_share = share_of_parent(first_day)
 #' ```
 #'
-#' Scalar means exactly one value per grouping row. Zero-length and multi-value
-#' summaries cannot be matched to one denominator row. A quantile call with
-#' several probabilities is one common multi-value result. Define each
-#' statistic as a separate scalar summary column:
+#' A zero-length or multi-value summary cannot be matched to one denominator
+#' row. A quantile call with several probabilities is one common multi-value
+#' result; define each statistic as a separate summary:
 #'
 #' ```
 #' # Rejected
@@ -122,16 +164,26 @@
 #' q75_share = share_of_parent(revenue_q75)
 #' ```
 #'
-#' Forward references, overwritten names, aggregate or calculated arguments,
-#' strings, and columns expanded from unnamed data-frame-valued summaries are
-#' rejected. Move the source before the helper, define it exactly once, and
-#' give data-frame outputs top-level names or create them with a preceding
-#' `across()`.
+#' A redefined source and one built from an earlier summary have the same
+#' rewrite, one complete calculation:
 #'
-#' An unnamed data-frame-valued summary is an expression such as
-#' `tibble::tibble(revenue_total = sum(revenue))` supplied in `...` without a
-#' top-level output name. dplyr expands its columns into the result, but their
-#' static provenance is not portable enough for a share's dependency:
+#' ```
+#' # Rejected: `net` is defined twice
+#' net = sum(revenue)
+#' net = net - sum(discount)
+#'
+#' # Rejected: `net` refers to the earlier summary `gross`
+#' gross = sum(revenue)
+#' net = gross - sum(discount)
+#'
+#' # Supported
+#' net = sum(revenue) - sum(discount)
+#' net_share = share_of_parent(net)
+#' ```
+#'
+#' A column expanded from an unnamed data-frame-valued summary is not
+#' top-level named: dplyr expands its columns into the result, but their
+#' provenance is not static enough for a share's dependency:
 #'
 #' ```
 #' # Rejected
@@ -149,47 +201,8 @@
 #' the name to get one statically named column per selected column, or define
 #' each summary at top level.
 #'
-#' A source name must be defined exactly once. If a later calculation was
-#' intended to refine the earlier value, combine the complete calculation into
-#' one ordinary summary:
-#'
-#' ```
-#' # Rejected
-#' net = sum(revenue)
-#' net = net - sum(discount)
-#' net_share = share_of_parent(net)
-#'
-#' # Supported
-#' net = sum(revenue) - sum(discount)
-#' net_share = share_of_parent(net)
-#' ```
-#'
-#' A source expression may aggregate source-data columns, but it cannot depend
-#' on an earlier summary alias in the same call. Combine that calculation into
-#' one self-contained ordinary summary so it remains portable to databases
-#' that cannot reuse a `SELECT` alias:
-#'
-#' ```
-#' # Rejected
-#' gross = sum(revenue)
-#' net = gross - sum(discount)
-#' net_share = share_of_parent(net)
-#'
-#' # Supported
-#' net = sum(revenue) - sum(discount)
-#' net_share = share_of_parent(net)
-#' ```
-#'
-#' Later independent ordinary summaries are allowed. A later summary cannot
-#' use a share in the same call because many database backends cannot
-#' reuse aliases in one summary projection. Use a following [dplyr::mutate()]
-#' for percentages, rounding, labels, or other derived values.
-#'
-#' Dependency validation follows the expressions' written order even though
-#' the implementation can evaluate ordinary summaries in one internal stage.
-#' Final columns retain the user's written expression order, including the
-#' expansion position of each `across()` call; internal staging does not
-#' reorder the public result.
+#' Final columns keep the written expression order, including the expansion
+#' position of each `across()` call.
 #'
 #' @section Column-wise shares:
 #' In `across(.cols, share_of_parent, .names = ...)` and its
@@ -274,48 +287,6 @@
 #' across(revenue, share_of_parent, .names = "{.col}_share")
 #' ```
 #'
-#' @section Value rules:
-#' Both helpers divide within each fixed `.by` partition, and neither ever
-#' synthesizes or completes keys. A missing numerator, missing denominator, or
-#' zero denominator gives `NA_real_`; local `NaN` is missing. Other finite
-#' ratios are unclamped doubles, so negative values and values above one are
-#' retained. Denominator matching uses internal grouping set metadata rather
-#' than `.id` or displayed Margin labels, and missing fixed or variable keys
-#' are matched with missing-safe identity rather than ordinary SQL
-#' `NULL = NULL`.
-#'
-#' A Parent share's denominator is the immediate strictly less detailed
-#' [rollup()] level. Composite dimensions are added or removed together. The
-#' Grand total set has no parent, so its Parent share is `1.0`, even when its
-#' source is zero or missing. Duplicate grouping set occurrences remain in the
-#' result but are skipped while finding the next coarser parent, because a
-#' parent must be strictly less detailed.
-#'
-#' For `rollup(region, store)`, a store's parent is its region subtotal, a
-#' region subtotal's parent is the grand total, and the grand total's Parent
-#' share is `1.0` in each `.by` partition. In the first example below, Boston
-#' in January 2025 has `3600 / 7500 = 0.48`: its revenue over the East
-#' subtotal for that month.
-#'
-#' A Total share's denominator is the Grand total set. Every row of it,
-#' duplicate occurrences included, has a Total share of `1.0`, even when its
-#' source is zero or missing. Which grand total occurrence supplies the
-#' denominator is not specified.
-#'
-#' Empty input gives one Grand total set row or no rows at all, and the share
-#' column keeps its type either way:
-#'
-#' | Empty input | Rows | Share value and type |
-#' |---|---:|---|
-#' | Without fixed `.by` keys | One row of the Grand total set | `1.0`, double |
-#' | With fixed `.by` keys | Zero rows | Empty double vector |
-#'
-#' Missing detail or subtotal combinations are not completed. The [completing
-#' keys guide][keys] shows how to complete the input facts before the summary,
-#' where synthetic facts are meant to reach every level.
-#'
-#' [keys]: https://sayuks.github.io/marginplyr/vignettes/completing_keys.html
-#'
 #' @section Lazy execution boundaries:
 #' On a dbplyr input, what decides whether a share runs is how the SQL dialect
 #' treats a source summary of the wrong type:
@@ -328,33 +299,14 @@
 #'   `.check_share_source = FALSE` calculates it from sources you have
 #'   established yourself.
 #'
-#' The rest of this section says how that is established. Local data frames
-#' and dtplyr steps need neither, and composite dimensions are supported
-#' everywhere shares are. Lazy results remain lazy. Each
-#' share uses the source value displayed on its denominator row, including
-#' when the source summary is stateful or nondeterministic. SQL shares require
-#' window-function support. A dialect without it, such as Access, reports an
-#' unsupported window when rendering or executing the query. Explicitly
-#' collect that input first to calculate shares locally.
-#' With `.check_share_source = FALSE` on live SQLite, direct
-#' [dplyr::collect()] keeps a declared double share when the result is
-#' empty or a finite prefix contains only missing shares.
-#' For direct [dplyr::compute()], see
-#' *[SQLite materialization][summarize_with_margins]* in
-#' [summarize_with_margins()].
-#'
-#' Syntax, source-name, written-order, and `across()` errors are always
-#' reported locally, before execution, on every backend. The eligible-type
-#' rule is also enforced on every backend, and no backend calculates a share
-#' from a source it has shown to be ineligible. None of it reads a row of your
-#' data.
-#'
-#' The summary that rule judges is the one the backend computed, not the one
-#' the same expression would produce in R, so an aggregate whose result type
-#' differs across backends is eligible on some and refused on others. `max()`
-#' over a logical column is one: R coerces it to an integer, which the rule
-#' accepts, while a database whose `MAX` returns a boolean has produced an
-#' ineligible summary and refuses the share.
+#' Syntax, source-name, written-order, and `across()` errors are reported
+#' before execution on every backend, and no backend calculates a share from a
+#' source it has shown to be ineligible. None of it reads a row of your data.
+#' The summary judged is the one the backend computed, so an aggregate whose
+#' result type differs across backends is eligible on some and refused on
+#' others: `max()` over a logical column is an integer in R, which the rule
+#' accepts, and a boolean on a database whose `MAX` returns one, which it
+#' refuses.
 #'
 #' What differs is what establishes the rule, and whether the
 #' exactly-one-value cardinality rule is established with it:
@@ -366,86 +318,38 @@
 #' | Arrow | Neither; shares are rejected outright |
 #' | General dbplyr | Type from the dialect, and cardinality as below |
 #'
-#' The *Backend support matrix* in the [database guide][db] sets each backend
-#' family's share support beside its other answers.
+#' Arrow inputs refuse both helpers before any summary query is built; other
+#' Arrow Margin operations stay lazy, as *[Arrow inputs][margin_verbs]* in
+#' [margin_verbs] says. Collect an Arrow input first to calculate shares
+#' locally, and choose `.check_margin_label` explicitly on that re-run, since
+#' collection changes its default from `FALSE` to `TRUE`. A `dtplyr` step
+#' stays a lazy query, with nothing collected on your behalf, and its
+#' execution-time diagnostics name the share, its source summary, and the
+#' original call, as the local ones do.
+#'
+#' On dbplyr, a summary that is not one value per grouping row surfaces as a
+#' database error when the staged query executes. *Parent shares use a
+#' staged lazy query* in the [database guide][db] describes how a dialect is
+#' asked, which answers are reused, and what that sends; its *Backend support
+#' matrix* sets each backend family's share support beside its other answers.
 #'
 #' [db]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html
 #'
-#' Arrow inputs reject both helpers after expression planning and common
-#' Margin-operation validation but before constructing a summary query. The
-#' reason belongs to the source summary they share, so it applies to both, and
-#' the diagnostic names whichever helpers the call used. Other Arrow Margin
-#' operations remain supported and lazy, apart from a summary Arrow's own
-#' engine cannot evaluate, which is refused for its own reason and before any
-#' row is read; see [summarize_with_margins()]. Explicitly collect an Arrow
-#' input first when local share execution is appropriate. Collection changes
-#' `.check_margin_label`'s default from `FALSE` to `TRUE`, so choose that
-#' policy explicitly on the re-run.
-#'
-#' A `dtplyr` step remains a native lazy query: no validation-only query is
-#' added and nothing is collected on your behalf. Its execution-time
-#' diagnostics keep the share's output name, the source summary name, and
-#' the original public call, so they read like the local ones.
-#'
-#' A general dbplyr backend evaluates the source summary itself, so the rule
-#' is the dialect's to apply rather than marginplyr's to read. Nothing of
-#' yours is read to establish it: the staged query stays lazy,
-#' [dplyr::show_query()] remains non-executing, and no query is run over your
-#' data to improve an error.
-#'
-#' Which of two things a dialect does is what decides the case, and asking
-#' takes at most two queries referencing none of your tables: a probe, and —
-#' only when the probe is rejected — a control, which is what tells a dialect
-#' that genuinely refuses apart from one whose connection or SQL scaffolding
-#' failed and could not answer at all. An answer is a property of the dialect,
-#' so it settles the case once and is reused for every later connection
-#' carrying that dialect. Where it refuses an
-#' ineligible summary, that refusal is the answer
-#' and reaches you as the database's own diagnostic when [dplyr::collect()]
-#' executes the staged query; the internal denominator column is named after
-#' the summary to rewrite so that diagnostic is actionable. Where it converts
-#' a value of another type to a number instead, it applies no rule at all and
-#' no reading of your data would recover one, so the share is refused rather
-#' than calculated from values nothing has checked —
-#' `.check_share_source = FALSE` calculates it from sources you have
-#' established yourself. A backend that cannot be asked, such as a
-#' `dbplyr::simulate_*()` connection, is refused the same way.
-#'
-#' A question left unanswered refuses the share the same way, but nothing about
-#' it is remembered. Neither outcome was read there, which is where a dropped
-#' connection, a permissions failure, a dialect whose SQL scaffolding this
-#' question lacks, and a query that could not be built against the connection
-#' all end up — so nothing was established about the dialect, and the next
-#' share request there asks again rather than inheriting one attempt's failure.
-#' A connection that has recovered gets the verdict its dialect earns.
-#'
-#' Inside a transaction begun through DBI with RPostgres, the table-free
-#' questions are isolated by a savepoint. Up to four additional transaction
-#' control statements preserve earlier work and leave commit or rollback to
-#' you. They read none of your tables and are included in [last_sent_queries()]
-#' when auditing is enabled.
-#'
-#' Ordinary SQL aggregates return one value per grouping row. On DuckDB
-#' and PostgreSQL, the result query checks a bare, single-argument
-#' `UNNEST()` at the top level of a direct [dbplyr::sql()] share source, such
-#' as `SUM(amount) + UNNEST(ARRAY[10])`. An array of zero or more than one
-#' element causes a database error on execution. The check recognizes SQL
-#' expressions with standard quotes and without comments. Other SQL
-#' expressions must also return one value per grouping row.
-#'
-#' The portable value guarantee covers finite numbers, missing values, and
-#' zero denominators. Infinite values and backend-specific `NaN`
-#' representations are outside that guarantee because supported SQL dialects
-#' do not share one portable finite-value predicate. Normalize potentially
-#' non-finite summaries explicitly with operations supported by the backend.
-#'
-#' A function of your own may forward the name its caller wrote by injecting
-#' it: `!!rlang::enquo(name)` is accepted wherever a bare name is, and so is
-#' `!!rlang::ensym(name)`. Only the name is read. It is resolved among the
-#' preceding summaries, as every bare name here is, so the environment
-#' [rlang::enquo()] captured is not consulted and an injection carrying
+#' @section Forwarding a name from your own function:
+#' A function of your own forwards the name its caller wrote by embracing it,
+#' as it would for dplyr: `share_of_parent({{ name }})`. The spellings `{{ }}`
+#' abbreviates, `!!rlang::enquo(name)` and `!!rlang::ensym(name)`, are
+#' accepted too, and a name held as a string is injected as
+#' `!!rlang::sym(name)`. Only the name is read. It is resolved among the
+#' preceding summaries, as every bare name here is, so the environment the
+#' caller's expression came from is not consulted and an injection carrying
 #' anything but a name is refused exactly where writing that expression out
 #' would be.
+#'
+#' *Call a Margin verb from your own function* in the [Recipes guide][recipes]
+#' names a summary after the caller's measure and forwards that name here.
+#'
+#' [recipes]: https://sayuks.github.io/marginplyr/vignettes/recipes.html
 #'
 #' @param x The bare name of one preceding eligible ordinary summary.
 #'
@@ -457,13 +361,14 @@
 #'   also accepts whenever the plan contains a Grand total set.
 #' @export
 #' @examples
-#' # Both denominators in one call: the parent level, and the whole.
+#' # Both denominators in one call: the parent level, and the whole. Each
+#' # helper names the summary `total_revenue`, not the input column `revenue`.
 #' # Boston in January 2025 has a Parent share of 0.48 = 3600 / East 7500.
 #' summarize_with_margins(
 #'   .data = retail_sales,
-#'   revenue = sum(revenue),
-#'   revenue_share = share_of_parent(revenue),
-#'   revenue_of_total = share_of_total(revenue),
+#'   total_revenue = sum(revenue),
+#'   revenue_share = share_of_parent(total_revenue),
+#'   revenue_of_total = share_of_total(total_revenue),
 #'   .by = c(year, month),
 #'   .grouping = rollup(region, store)
 #' )

@@ -16,10 +16,11 @@ Initial CRAN release.
   tidy-select expressions, and support composite dimensions and empty sets.
   `.grouping` takes one of these calls; a bare column, `c()`, or a string is
   refused with the constructor call to write instead, a computed expression in
-  a constructor or `.by` with the `dplyr::mutate()` step to take first, and a
+  a constructor or `.by` with the `dplyr::mutate()` step to take first, a
   specification written among the summaries with the `.grouping =` spelling
-  to use. A printed specification shows the constructor call it was written
-  as.
+  to use, and a `rollup()` or `cube()` another package masks, as data.table
+  does, with the `marginplyr::rollup()` spelling. A printed specification
+  shows the constructor call it was written as.
 
 * Columns in `.by`, or existing `group_by()` columns, stay fixed in every
   grouping set, so one call produces an independent report per partition.

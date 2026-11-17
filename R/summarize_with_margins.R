@@ -24,16 +24,15 @@
 #'   cannot rename it: `c(area = region)` is an error rather than a fixed key
 #'   named `area`. Rename the result afterwards with [dplyr::rename()].
 #' @param .grouping A Grouping specification made with [grouping_set()],
-#'   [grouping_sets()], [rollup()], [cube()], or [grouping_spec()]. `NULL`
-#'   represents one empty grouping set. Any expression returning a
-#'   specification can be written here, while a specification nested inside
-#'   another must be a constructor call or a name bound to one, and a nested
-#'   name the input also has a column for is refused rather than read either
-#'   way; see [grouping_set()]. The specification expands to the call's
-#'   Grouping plan: the ordered list of grouping sets it computes, which
-#'   [inspect_grouping()] returns. The columns it selects are the call's
+#'   [grouping_sets()], [rollup()], [cube()], or [grouping_spec()]. A bare
+#'   column or a `c()` of columns is refused; wrap it in a constructor, as in
+#'   `.grouping = rollup(region)`. `NULL` is one grouping set with no Margin
+#'   dimension, so only the fixed `.by` keys group the result. The
+#'   specification expands to the call's Grouping plan, which
+#'   [inspect_grouping()] returns, and the columns it selects are the call's
 #'   Margin dimensions; see
 #'   *[Fixed columns and Margin dimensions][margin_verbs]* in [margin_verbs].
+#'   See [grouping_set()] for how one specification nests inside another.
 #' @param .margin_label A display label for dimensions omitted from a grouping
 #'   set. An unnamed character scalar applies to every resolved Margin
 #'   dimension. A named character vector or named list must name every
@@ -49,37 +48,31 @@
 #'   This controls the position of a non-missing synthetic label in factor and
 #'   ordered-factor levels. It does not sort result rows and has no effect for
 #'   `NA_character_` or `NULL`.
-#' @param .check_margin_label A logical scalar controlling the half of the
-#'   Margin label collision check that reads the data: whether any *value* of a
-#'   Margin dimension is equal to that dimension's display label. Each
-#'   dimension is checked independently, and a typed-missing label opts its
-#'   own dimension out -- `NULL` or `NA_character_`, chosen per dimension in a
-#'   named-list `.margin_label`.
-#'   The default is `TRUE` for local data frames and `FALSE` for lazy inputs,
-#'   which are read only when the caller asks. [nest_by_with_margins()] reads
-#'   a `dtplyr` step's rows when called, so it also checks one by default. A
-#'   label check after collecting a lazy input therefore defaults to `TRUE`
-#'   instead of `FALSE`; set `.check_margin_label` explicitly when following a
-#'   collect-first remediation.
-#'   A label equal to a declared factor *level* is rejected wherever
-#'   marginplyr holds the levels, whatever this argument says, because finding
-#'   it reads no rows. Left unchecked, a colliding value gives the result a
-#'   margin row and a source row that no key column tells apart; keeping
-#'   `.id` in the result distinguishes them at no added cost. See
-#'   *[Display labels and grouping identity][margin_verbs]* in [margin_verbs]
-#'   for the factor missing-value contract.
-#' @param .check_share_source A logical scalar, `TRUE` by default on every
-#'   backend, including lazy ones: establishing that a share's source summary
-#'   is an eligible type reads none of your data. `FALSE` calculates a
-#'   requested [share_of_parent()] or [share_of_total()] from a source whose
-#'   eligibility marginplyr could not establish, which is a SQL dialect that
-#'   converts a value of another type to a number rather than refusing it, and
-#'   a backend that could not be asked which of those it does. It changes
-#'   nothing where the rule can be applied — a local data frame, a `dtplyr`
-#'   step, and a database that refuses an ineligible summary itself all apply
-#'   it whatever this argument says. It is scoped to the call it is written in:
-#'   there is no session default and no connection default that records the
-#'   answer once. See *Contextual shares*.
+#' @param .check_margin_label Whether to check that no value of a Margin
+#'   dimension equals that dimension's display label. The default is `TRUE`
+#'   for a local data frame and `FALSE` for a lazy input -- a database table,
+#'   a `dtplyr` step, or an Arrow object -- because there the check runs a
+#'   query that reads your data; see
+#'   *[When marginplyr queries your data][margin_verbs]* in [margin_verbs].
+#'   [nest_by_with_margins()] reads a `dtplyr` step's rows when called, so it
+#'   also checks one by default. Collecting a lazy input therefore turns the
+#'   check on, so set this explicitly when re-running a call on collected
+#'   data.
+#'
+#'   A label equal to a declared factor level is refused wherever marginplyr
+#'   holds the levels, whatever this argument says, because finding it reads
+#'   no rows. A typed-missing label, `NULL` or `NA_character_`, takes its
+#'   dimension out of the check. Left unchecked, a colliding value gives the
+#'   result a margin row and a source row that no key column tells apart;
+#'   keeping `.id` in the result distinguishes them.
+#' @param .check_share_source Whether to refuse a [share_of_parent()] or
+#'   [share_of_total()] whose source summary marginplyr cannot establish is
+#'   an integer or double. It matters only on a backend that cannot refuse a
+#'   non-numeric source itself, such as SQLite and a `dbplyr::simulate_*()`
+#'   connection: there the default `TRUE` refuses the share, and `FALSE`
+#'   computes it anyway. Elsewhere it changes nothing. It applies only to the
+#'   call it is written in. See
+#'   *[Lazy execution boundaries][share_of_parent]* in [share_of_parent()].
 #' @param .duplicates One of `"error"`, `"drop"`, or `"keep"`, and nothing
 #'   else; see *[Option arguments][margin_verbs]* in [margin_verbs]. A
 #'   duplicate is a grouping set whose columns are the same as an earlier
@@ -93,8 +86,10 @@
 #'   nothing else; see *[Option arguments][margin_verbs]* in [margin_verbs].
 #'   `"none"` leaves row order unspecified. `"last"` places each margin row
 #'   after the rows it summarizes and `"first"` before them, within each fixed
-#'   `.by` key, with missing values last. See *[Margin order][margin_verbs]* in
-#'   [margin_verbs].
+#'   `.by` key, with missing values last. A non-missing `.margin_label` makes a
+#'   non-factor dimension character, so a numeric one sorts as text; use
+#'   `.margin_label = NULL` or a factor to keep numeric order. See
+#'   *[Margin order][margin_verbs]* in [margin_verbs].
 #' @param .id `NULL`, or one non-missing, non-empty character string naming an
 #'   integer output column of one-based Grouping set identifiers. Each value
 #'   identifies one occurrence in the resolved Grouping plan. The name must not
@@ -106,7 +101,10 @@
 #'   keys, then the Margin dimensions, then `.id` when supplied, then the
 #'   summaries in the order written. Its class follows [dplyr::summarize()],
 #'   except for the leading class described in *SQLite materialization*; see
-#'   *[Result metadata][margin_verbs]* in [margin_verbs].
+#'   *[Result metadata][margin_verbs]* in [margin_verbs]. On zero-row input,
+#'   the Grand total set still gives one row when there is no fixed `.by` key,
+#'   as [dplyr::summarize()] does without groups; every other grouping set,
+#'   and every set once a fixed key is given, gives none.
 #'
 #'   With a character `.margin_label`, the default, a Margin dimension that
 #'   is not a factor becomes character so that it can hold the label:
@@ -137,18 +135,25 @@
 #' @section Differences from summarize():
 #' - The result is always ungrouped, whatever groups the input had, because
 #'   a result combining several grouping sets has no single grouping to
-#'   retain.
+#'   retain. There is no `.groups` argument; passing one is an error.
 #' - Row order is unspecified. Use `.sort` for margins next to the rows they
 #'   summarize, or [dplyr::arrange()] for any other order.
-#' - A character `.margin_label` changes a non-factor Margin dimension to
-#'   character; see Value. Use `.margin_label = NULL` or `NA_character_` to
-#'   keep its type.
-#' - A summary cannot overwrite a fixed key or Margin dimension. Give it a
-#'   new name.
-#' - [dplyr::cur_group()], [dplyr::cur_group_id()], and
-#'   [dplyr::cur_group_rows()] are refused, because a result combining several
-#'   grouping sets has no single group for them to describe. Use
-#'   [grouping_bit()] or [grouping_id()] to identify margin rows.
+#' - A Margin dimension can change type to hold the Margin label; see
+#'   Value.
+#' - Each summary must return one value per group, and there is no
+#'   [dplyr::reframe()] counterpart. Return a list column, as in
+#'   `list(range(revenue))`, or call [expand_with_margins()] and then
+#'   [dplyr::reframe()] by `.id` and the key columns.
+#' - A summary cannot overwrite a fixed key or Margin dimension, including
+#'   through an unnamed data-frame-valued summary. Local dplyr allows it but
+#'   other backends may not, so marginplyr refuses it everywhere. Give the
+#'   summary a new name, or rename the key column before this call.
+#' - [dplyr::cur_group()], [dplyr::cur_group_id()],
+#'   [dplyr::cur_group_rows()], and the deprecated `cur_data*()` helpers are
+#'   refused by name, even when you have bound one to a function of your own,
+#'   because a result combining several grouping sets has no single group or
+#'   data mask for them to describe. Use [grouping_bit()] or [grouping_id()]
+#'   to identify margin rows.
 #'
 #' @section Relationship to dplyr summaries:
 #' The `...` expressions use [dplyr::summarize()] data-masking semantics.
@@ -165,6 +170,11 @@
 #' `mypkg::across()` is an ordinary call. Every other name follows ordinary
 #' lookup, [dplyr::n()] included.
 #'
+#' Those spellings are rewritten only where the summary writes them:
+#' `eval(quote(grouping_bit(region)))` is rewritten, while a capture made
+#' outside the call, or text parsed at run time as by [base::str2lang()], is
+#' not, so a `grouping_bit()` reached that way is refused.
+#'
 #' [dplyr::across()], [dplyr::pick()], and [dplyr::c_across()] cannot select
 #' any column named in the complete Grouping plan. This extends dplyr's
 #' grouping-column rule across every branch: a dimension remains excluded even
@@ -179,26 +189,6 @@
 #' on a local input, and a named one is packed into one column, as
 #' [dplyr::summarize()] does. A lazy input gives whatever shape its backend
 #' gives.
-#'
-#' Summary results may not overwrite a fixed key or Margin dimension,
-#' including through an unnamed data-frame-valued summary. Local dplyr allows
-#' it but other backends may not, so marginplyr refuses it everywhere. Use a
-#' new summary name, or rename the key column before this call.
-#'
-#' [dplyr::cur_group()], [dplyr::cur_group_id()],
-#' [dplyr::cur_group_rows()], and the deprecated `cur_data*()` helpers are
-#' rejected: each describes one branch's group or data mask, which has no
-#' meaning across the grouping sets the result combines. They are rejected by
-#' name, even when you have bound one to a function of your own.
-#'
-#' An expression captured as language -- the argument of [base::quote()],
-#' [base::substitute()], [base::expression()], `base::bquote()`,
-#' `rlang::expr()`, or `rlang::quo()` -- is a value the summary carries, and
-#' marginplyr does not analyze or rewrite what is inside it. Evaluating it
-#' with [base::eval()] or [rlang::eval_tidy()] runs it in the data mask, where
-#' a visibly written capture is analyzed as the code it becomes. Text parsed
-#' at run time, as by [base::str2lang()], is searched but not rewritten, so a
-#' parsed `grouping_bit()` reaches the helper's own context guard.
 #'
 #' A misspelled option such as `.margin_lable` reaches this verb through
 #' `...`, where it would become a summary column. A dot-prefixed summary name
@@ -227,63 +217,17 @@
 #' a column in the result -- one summary, one fixed key, one Margin
 #' dimension, or `.id` -- ends the difference.
 #'
-#' One summary an Arrow table or record batch cannot carry -- or a query built
-#' on either -- is one Arrow's own engine cannot evaluate. Arrow answers such an
-#' expression by reading the whole input -- every column of it, not only the
-#' ones the summary names -- and computing it in R. marginplyr refuses it
-#' instead, before a row is read, and names the two rewrites that compute it:
-#' collect the input first, and select the columns the summary needs before
-#' collecting, which is the narrowing Arrow's own route cannot do for you.
-#'
-#' Which expressions those are is Arrow's to decide and moves with its version,
-#' so they are not listed here. Among the shapes refused are a group collapsed
-#' into a single value, such as pasting one, a subset written inside an
-#' aggregate, and a statistic over two columns at once; ordinary numeric
-#' summaries, and arithmetic over them, are evaluated by Arrow and stay lazy.
-#' An Arrow dataset, and a query built on one, raise Arrow's own refusal for
-#' the same expressions instead, because a dataset never reads itself into R;
-#' they are otherwise unaffected.
+#' A summary Arrow's own engine cannot evaluate is refused on an Arrow table
+#' or record batch before a row is read; see *[Arrow inputs][margin_verbs]*
+#' in [margin_verbs].
 #'
 #' @section Contextual shares:
-#' [share_of_parent()] and [share_of_total()] calculate a preceding named
-#' numeric scalar summary's ratio to the same summary on another row of the
-#' result, for local data and supported lazy dbplyr and dtplyr inputs. Both
-#' support direct named expressions and a constrained [dplyr::across()] form
-#' for multiple preceding summaries, and both partition the calculation by the
-#' fixed `.by` keys.
-#'
-#' They differ only in the denominator. [share_of_parent()] divides by the
-#' immediate less detailed [rollup()] level, so it requires one pure
-#' [rollup()]; composite dimensions move together, and duplicate occurrences
-#' skip identical sets when choosing the parent. [share_of_total()] divides by
-#' the Grand total set, so it accepts any Grouping specification whose plan
-#' contains one, including [cube()].
-#'
-#' Arrow inputs reject both before a summary query is built; collect the
-#' input first when local share execution is appropriate, and set
-#' `.check_margin_label` explicitly on the re-run.
-#'
-#' A row that is its own denominator receives `1.0`. Missing numerators or
-#' denominators and zero denominators receive `NA_real_`; other finite ratios
-#' are not clamped. Matching is structural, so `.id`, missing grouping values,
-#' and displayed Margin labels do not determine the denominator.
-#'
-#' The source must be a unique, preceding, self-contained integer or double
-#' scalar summary. Local data frames reject an ineligible source before any
-#' share is calculated, and `dtplyr` steps when executed. A dbplyr backend is
-#' asked, without reading your data, whether its SQL dialect converts a value
-#' of another type to a number rather than refusing it; where it converts, or
-#' cannot be asked, the share is refused unless `.check_share_source = FALSE`.
-#' Asking takes at most two queries that reference none of your tables, sent
-#' once per dialect that answers and again on the next share request where it
-#' could not answer. A connection built with a `dbplyr::simulate_*()`
-#' constructor executes nothing and so cannot be asked. Within a transaction
-#' begun through DBI with RPostgres, up to four savepoint statements isolate
-#' these questions, leaving commit or rollback to you.
-#'
-#' [share_of_parent()] is the canonical reference for the complete
-#' direct-expression, source, ordering, value, empty-input, and `across()`
-#' contracts of both helpers.
+#' [share_of_parent()] divides a preceding summary by the same summary on its
+#' immediate [rollup()] parent, and [share_of_total()] by the Grand total set,
+#' within each fixed `.by` partition. Neither judges whether the ratio means
+#' anything: the share of a non-additive summary, such as a mean, is a ratio
+#' of two means and returns values near one without a warning. Share a sum or
+#' a count. [share_of_parent()] is the reference for both helpers.
 #'
 #' @section SQLite materialization:
 #' A result on a live SQLite connection can carry the leading class
@@ -322,11 +266,11 @@
 #'
 #' - [Fixed columns and Margin dimensions][margin_verbs]
 #' - [Grouped and row-wise inputs][margin_verbs]
+#' - [Display labels and grouping identity][margin_verbs]
+#' - [Margin order][margin_verbs]
+#' - [Grouping set identifiers][margin_verbs]
 #' - [Option arguments][margin_verbs]
 #' - [Result metadata][margin_verbs]
-#' - [Grouping set identifiers][margin_verbs]
-#' - [Margin order][margin_verbs]
-#' - [Display labels and grouping identity][margin_verbs]
 #' - [Arrow inputs][margin_verbs]
 #' - [Database backend coverage][margin_verbs]
 #' - [When marginplyr queries your data][margin_verbs]
@@ -452,52 +396,23 @@
 #'   .margin_label = list(region = "All regions", status = NULL)
 #' )
 #'
-#' # A direct Parent share, multiple measures through two ordered across()
-#' # expressions, and a post-summary calculation.
-#' direct_parent <- summarize_with_margins(
+#' # A cube() crosses every combination of its dimensions, so the result has
+#' # a total per region, a total per year, and a company total.
+#' summarize_with_margins(
 #'   .data = retail_sales,
 #'   revenue = sum(revenue),
-#'   revenue_share = share_of_parent(revenue),
-#'   .grouping = rollup(region, store)
-#' )
-#' multiple_parents <- summarize_with_margins(
-#'   .data = retail_sales,
-#'   dplyr::across(c(units, revenue), sum),
-#'   dplyr::across(
-#'     c(units, revenue),
-#'     share_of_parent,
-#'     .names = "{.col}_share"
-#'   ),
-#'   .grouping = rollup(region, store)
-#' )
-#' dplyr::mutate(
-#'   .data = direct_parent,
-#'   revenue_percent = 100 * revenue_share
+#'   .grouping = cube(region, year),
+#'   .sort = "last"
 #' )
 #'
-#' # Empty input without `.by` still has one row for the Grand total set, whose
-#' # share is one; with `.by` it has no rows. Both keep a double share column.
-#' empty_sales <- retail_sales[0, ]
-#' empty_grand_total <- summarize_with_margins(
-#'   .data = empty_sales,
+#' # grouping_sets() lists the grouping sets to compute. Region appears twice;
+#' # `.duplicates = "keep"` returns both copies, and `.id` tells them apart.
+#' summarize_with_margins(
+#'   .data = retail_sales,
 #'   revenue = sum(revenue),
-#'   revenue_share = share_of_parent(revenue),
-#'   .grouping = rollup(region)
-#' )
-#' c(
-#'   rows = nrow(empty_grand_total),
-#'   type = typeof(empty_grand_total$revenue_share)
-#' )
-#' empty_partitions <- summarize_with_margins(
-#'   .data = empty_sales,
-#'   revenue = sum(revenue),
-#'   revenue_share = share_of_parent(revenue),
-#'   .by = year,
-#'   .grouping = rollup(region)
-#' )
-#' c(
-#'   rows = nrow(empty_partitions),
-#'   type = typeof(empty_partitions$revenue_share)
+#'   .grouping = grouping_sets(region, year, region),
+#'   .duplicates = "keep",
+#'   .id = "set"
 #' )
 #'
 #' # across() and pick() treat every fixed key and Margin dimension as a

@@ -832,6 +832,16 @@ test_that("direct Parent-share syntax and dependency errors are targeted", {
     ),
     "forward reference"
   )
+  # `?share_of_parent` documents `x` as a summary name, never an input column.
+  expect_error(
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      share = share_of_parent(value),
+      .grouping = rollup(group)
+    ),
+    "unknown preceding ordinary summary `value`"
+  )
   # jarl-ignore duplicated_arguments: The collision is the failure under test.
   expect_error(
     summarize_with_margins(

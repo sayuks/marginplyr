@@ -177,6 +177,14 @@ Constructors take positional arguments, so \code{rollup(region = region)} and
 \code{rollup(area = region)} both raise errors. A call such as
 \code{rollup(region, .by = year)} reports \code{.by} as a named constructor argument.
 Pass \code{.by = year} to the Margin verb.
+
+data.table exports its own \code{rollup()} and \code{cube()}, so attaching it after
+marginplyr masks these two constructors. A \code{.grouping} that reaches
+data.table's function, directly or nested inside another constructor, is
+refused with an error naming \code{data.table::rollup()} or
+\code{data.table::cube()}. Write \code{marginplyr::rollup()} and
+\code{marginplyr::cube()}, or attach marginplyr after data.table and write
+\code{data.table::rollup()} for data.table's own.
 }
 
 \examples{
@@ -271,6 +279,17 @@ summarize_with_margins(
     dplyr::all_of(c("product", "channel"))
   )
 )
+
+# A function of your own forwards its caller's columns into a constructor,
+# here through `...`; `{{ }}` and `all_of()` work the same way.
+revenue_report <- function(data, ...) {
+  summarize_with_margins(
+    data,
+    revenue = sum(revenue),
+    .grouping = rollup(...)
+  )
+}
+revenue_report(retail_sales, region, store)
 
 # A simulated PostgreSQL table shows the native GROUPING SETS translation
 # without requiring a database server.
