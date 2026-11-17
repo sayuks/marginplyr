@@ -39,6 +39,31 @@ writeLines(c("coverage: {}", "'ignore':", "  - R/f.R"),
   file.path(fixture, "codecov.yml"))
 expect_rejected(coverage_verify_policy(fixture), "Codecov ignore")
 
+with_covr_runtime <- function(covrignore, envvar, expression) {
+  previous <- options(covr.covrignore = covrignore)
+  on.exit(options(previous), add = TRUE)
+  previous_envvar <- Sys.getenv("COVR_COVRIGNORE", unset = NA_character_)
+  on.exit(if (is.na(previous_envvar)) {
+    Sys.unsetenv("COVR_COVRIGNORE")
+  } else {
+    Sys.setenv(COVR_COVRIGNORE = previous_envvar)
+  }, add = TRUE)
+  if (is.na(envvar)) {
+    Sys.unsetenv("COVR_COVRIGNORE")
+  } else {
+    Sys.setenv(COVR_COVRIGNORE = envvar)
+  }
+  force(expression)
+}
+invisible(loadNamespace("covr"))
+# covr >= 4.0.0 leaves the option unset; earlier releases set the default.
+with_covr_runtime(NULL, NA, coverage_verify_runtime())
+with_covr_runtime(".covrignore", NA, coverage_verify_runtime())
+expect_rejected(with_covr_runtime("other", NA, coverage_verify_runtime()),
+  "Nonstandard covr exclusion option: covr.covrignore")
+expect_rejected(with_covr_runtime(NULL, "other", coverage_verify_runtime()),
+  "COVR_COVRIGNORE must be unset")
+
 source_of <- function(...) {
   paste(unlist(lapply(list(...), function(f) deparse(body(f)))), collapse = "\n")
 }
