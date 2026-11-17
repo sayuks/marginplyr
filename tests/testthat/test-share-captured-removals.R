@@ -184,6 +184,12 @@ test_that("unreadable removals and replaced enclosures read captured aliases", {
     })(1),
     (function(prior) {
       f <- function() sum(prior)
+      arguments <- list(f, parent.env(environment()))
+      f <- do.call("environment<-", arguments)
+      f()
+    })(1),
+    (function(prior) {
+      f <- function() sum(prior)
       h <- mget("f")[[1]]
       local(rm("prior", envir = parent.frame(2)))
       h()

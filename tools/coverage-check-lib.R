@@ -135,9 +135,48 @@ coverage_verdict <- function(cov, cobertura = NULL, root = ".") {
   0L
 }
 
-# The test files shard `index` of `count` runs: every count-th file of the
-# sorted inventory, so the shards partition it. Helpers and setup files are
-# not test files and stay in every shard.
+coverage_durations_path <- "tools/coverage-shard-durations.tsv"
+
+# Reads the committed per-test-file seconds under covr that shard assignment
+# balances on. Its format is the one coverage_write_durations() produces.
+coverage_shard_durations <- function(root = ".") {
+  path <- file.path(root, coverage_durations_path)
+  if (!file.exists(path)) {
+    stop("Coverage sharding needs ", coverage_durations_path, ".",
+      call. = FALSE)
+  }
+  table <- utils::read.delim(path, comment.char = "#",
+    colClasses = c("character", "numeric"))
+  if (!identical(names(table), c("file", "seconds")) ||
+      anyDuplicated(table$file) || !all(is.finite(table$seconds)) ||
+      any(table$seconds < 0)) {
+    stop(coverage_durations_path, " must hold unique file rows with finite, ",
+      "nonnegative seconds.", call. = FALSE)
+  }
+  table
+}
+
+# Writes per-file durations in the committed table's format, naming the CI
+# run and commit they came from when GitHub Actions sets them. A file whose
+# run never finished has no seconds and is left out.
+coverage_write_durations <- function(durations, path) {
+  durations <- durations[is.finite(durations$seconds), , drop = FALSE]
+  durations <- durations[order(durations$file, method = "radix"), ,
+    drop = FALSE]
+  run <- Sys.getenv("GITHUB_RUN_ID", "local")
+  sha <- Sys.getenv("GITHUB_SHA", "unknown")
+  writeLines(c(paste0("# Seconds each test file took under covr: ",
+    "test-coverage.yaml run ", run), paste0("# at ", sha, ", covr ",
+    as.character(utils::packageVersion("covr")), "."), "file\tseconds",
+    paste0(durations$file, "\t", sprintf("%.1f", durations$seconds))), path)
+  invisible(path)
+}
+
+# The test files shard `index` of `count` runs. Files are placed longest
+# first, each on the leg with the least seconds so far (the lowest index on a
+# tie), by the committed durations; a file the table lacks follows them in
+# radix order at the median known duration, so the shards still partition the
+# tree. Helpers and setup files are not test files and stay in every shard.
 coverage_shard_files <- function(index, count, root = ".") {
   files <- sort(list.files(file.path(root, "tests/testthat"),
     pattern = "^test.*[.][Rr]$"), method = "radix")
@@ -148,17 +187,32 @@ coverage_shard_files <- function(index, count, root = ".") {
     stop("Coverage shard must be <index>/<count> with 1 <= index <= count.",
       call. = FALSE)
   }
-  if (count > length(files)) {
-    stop("Coverage shard count ", count, " exceeds the ", length(files),
-      " test files.", call. = FALSE)
+  table <- coverage_shard_durations(root)
+  seconds <- table$seconds[match(files, table$file)]
+  known <- !is.na(seconds)
+  default <- if (any(known)) stats::median(seconds[known]) else 1
+  placement <- c(which(known)[order(-seconds[known], files[known],
+    method = "radix")], which(!known))
+  seconds[!known] <- default
+  load <- numeric(count)
+  shard <- integer(length(files))
+  for (position in placement) {
+    shard[[position]] <- which.min(load)
+    load[[shard[[position]]]] <- load[[shard[[position]]]] + seconds[[position]]
   }
-  files[(seq_along(files) - 1L) %% count + 1L == index]
+  empty <- setdiff(seq_len(count), shard)
+  if (length(empty) > 0L) {
+    stop("Coverage shard count ", count, " leaves shard ", empty[[1L]],
+      " without test files among the ", length(files), ".", call. = FALSE)
+  }
+  files[shard == index]
 }
 
 # Measures one shard and saves the raw covr result for coverage_merge(). The
 # shard runs from a copy of `root` whose tests/testthat.R passes test_check()
 # a filter naming the shard's files. Every test file stays in the copy, since
-# suite scans read test files they do not run.
+# suite scans read test files they do not run. The same rewrite wraps its
+# reporter so the result also records each test file's seconds.
 coverage_check_shard <- function(index, count, output, root = ".") {
   files <- coverage_shard_files(index, count, root)
   copy <- file.path(tempfile("coverage-shard-"), basename(normalizePath(root)))
@@ -186,14 +240,52 @@ coverage_check_shard <- function(index, count, output, root = ".") {
   }
   expressions[[check]]$filter <- paste0("^(",
     paste(gsub(".", "[.]", names, fixed = TRUE), collapse = "|"), ")$")
+  timing <- file.path(dirname(copy), "durations.tsv")
+  reporter <- as.list(expressions[[check]])[["reporter"]]
+  if (is.null(reporter)) reporter <- quote(testthat::check_reporter())
+  expressions[[check]]$reporter <- bquote(source(
+    .(normalizePath(file.path(root, "tools", "coverage-durations-reporter.R"))),
+    local = new.env())$value(.(reporter), .(timing)))
   writeLines(unlist(lapply(expressions, deparse)), script)
+  started <- proc.time()[["elapsed"]]
   cov <- coverage_measure(root, copy)
+  elapsed <- proc.time()[["elapsed"]] - started
+  recorded <- if (file.exists(timing)) {
+    utils::read.delim(timing, header = FALSE, col.names = c("file", "seconds"),
+      colClasses = c("character", "numeric"))
+  } else {
+    data.frame(file = character(), seconds = numeric())
+  }
+  # A file whose run never reached end_file() keeps its row with NA seconds.
+  durations <- data.frame(file = files,
+    seconds = recorded$seconds[match(files, recorded$file)])
   attr(cov, "marginplyr_shard") <- list(index = index, count = count,
-    files = files)
+    files = files, durations = durations)
   saveRDS(cov, output)
+  coverage_report_durations(cbind(shard = index, durations),
+    paste0("Coverage shard ", index, "/", count, ": ", length(files),
+      " test files, ", sprintf("%.0f", elapsed), " s under covr"))
   cat("Coverage shard ", index, "/", count, " measured ", length(files),
     " test files.\n", sep = "")
   0L
+}
+
+# Prints per-file durations, slowest first, as a markdown table and appends it
+# to the GitHub Actions job summary when one is set. It observes and never
+# changes a verdict.
+coverage_report_durations <- function(durations, title) {
+  durations <- durations[order(-durations$seconds, durations$file), ,
+    drop = FALSE]
+  summed <- sum(durations$seconds, na.rm = TRUE)
+  lines <- c(paste0("### ", title), "",
+    paste0("Test files: ", sprintf("%.0f", summed), " s summed."), "",
+    "| shard | file | seconds |", "|---:|---|---:|",
+    sprintf("| %d | %s | %.1f |", as.integer(durations$shard), durations$file,
+      durations$seconds), "")
+  writeLines(lines)
+  summary <- Sys.getenv("GITHUB_STEP_SUMMARY")
+  if (nzchar(summary)) cat(lines, file = summary, sep = "\n", append = TRUE)
+  invisible(durations)
 }
 
 # Sums the per-expression hits of every shard result under `directory` into
@@ -252,6 +344,8 @@ coverage_merge <- function(directory, root = ".") {
     }
   }
   attr(merged, "marginplyr_shard") <- NULL
+  attr(merged, "marginplyr_durations") <- do.call(rbind, lapply(shards,
+    function(shard) cbind(shard = shard$index, shard$durations)))
   # Cobertura names the checkout as its source, as an unsharded run does.
   package <- attr(merged, "package")
   package$path <- normalizePath(root)
