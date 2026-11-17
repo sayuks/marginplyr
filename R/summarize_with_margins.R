@@ -482,16 +482,28 @@
 #' `.check_margin_label = TRUE`. `NA_character_` and `NULL` convert nothing.
 #'
 #' @section Database backend coverage:
-#' Summaries on DuckDB and PostgreSQL use one native `GROUP BY GROUPING SETS`
-#' query. Other database backends, and every expansion, use a portable
-#' `UNION ALL` query with one branch per grouping set and the same result.
-#' Asking for a Margin order never changes which of the two runs.
+#' Most summaries on DuckDB and PostgreSQL use one native
+#' `GROUP BY GROUPING SETS` query. Other database backends, every expansion,
+#' and the summaries listed under *Portable fallback SQL* in the
+#' [database guide][db] use a portable `UNION ALL` query with one branch per
+#' grouping set and the same result. Asking for a Margin order never changes
+#' which of the two runs.
 #'
-#' Results are executed and compared with local ones on DuckDB, SQLite, and
-#' Microsoft SQL Server. SQL generation, not execution, is verified for
-#' PostgreSQL, Access, SAP HANA, Hive, Impala, MariaDB, MySQL, Oracle, Amazon
-#' Redshift, Snowflake, Spark SQL, and Teradata, and for generic DBI and ODBC
-#' connections. Arrow and `dtplyr` are also supported lazy backends.
+#' Continuous integration executes Margin queries on these backends:
+#'
+#' * DuckDB, SQLite, Arrow, and `dtplyr`: the test suite.
+#' * PostgreSQL, on a live server: Parent and Total shares, including inside
+#'   a transaction the caller holds, typed missing dimensions, the observed
+#'   label check, expansion input, and window-ordered input. The rest of its
+#'   coverage is SQL generation.
+#' * Microsoft SQL Server, on a live server: portable summaries, compared with
+#'   the local result. Its expansion coverage is SQL generation.
+#'
+#' SQL generation, not execution, is verified for Access, SAP HANA, Hive,
+#' Impala, MariaDB, MySQL, Oracle, Amazon Redshift, Snowflake, Spark SQL, and
+#' Teradata, and for generic DBI and ODBC connections.
+#'
+#' [db]: https://sayuks.github.io/marginplyr/vignettes/database_backends.html
 #'
 #' On SQLite and DuckDB, identifiers differing only in ASCII letter case name
 #' the same column, so a result refuses two public columns that would collide
