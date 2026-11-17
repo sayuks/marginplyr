@@ -3231,6 +3231,63 @@ test_that("a direct share names a source no summary in the call defines", {
   )
 })
 
+# A share reads a summary, so a source naming an input column is the caller
+# passing the column the summary was made from (#1703).
+test_that("a direct share naming an input column is sent to its summary", {
+  data <- data.frame(group = c("x", "y"), value = 1:2)
+
+  column <- expect_error(
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      share = share_of_parent(value),
+      .grouping = rollup(group)
+    ),
+    class = "marginplyr_error"
+  )
+  expect_match(
+    conditionMessage(column),
+    paste0(
+      "`value` is a column of the input, not a summary defined earlier in ",
+      "the call.\n",
+      "i Pass the name of an ordinary summary defined before it, such as ",
+      "`total`."
+    ),
+    fixed = TRUE
+  )
+
+  first <- expect_error(
+    summarize_with_margins(
+      data,
+      share = share_of_parent(value),
+      .grouping = rollup(group)
+    ),
+    class = "marginplyr_error"
+  )
+  expect_match(
+    conditionMessage(first),
+    "`value` is a column of the input, not a summary defined earlier",
+    fixed = TRUE
+  )
+  expect_match(
+    conditionMessage(first),
+    "Define an ordinary summary of it first and pass that summary's name.",
+    fixed = TRUE
+  )
+
+  # The unknown name keeps the refusal it had: nothing says it is a column.
+  absent <- expect_error(
+    summarize_with_margins(
+      data,
+      total = sum(value),
+      share = share_of_parent(absent),
+      .grouping = rollup(group)
+    ),
+    class = "marginplyr_error"
+  )
+  expect_no_match(conditionMessage(absent), "column of the input")
+})
+
 test_that("an unknown selection with nothing to offer names no example", {
   data <- data.frame(group = c("x", "y"), value = 1:2)
 

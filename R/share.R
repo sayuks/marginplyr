@@ -794,6 +794,7 @@ plan_share_expressions <- function(dots,
     all_records = ordinary_records,
     certain_records = certain_records,
     ordinary_counts = ordinary_counts,
+    data_vars = colnames(selection_proxy),
     conflicting_names = unique(c(
       plan$by,
       plan$dimensions,
@@ -2431,6 +2432,9 @@ validate_share_request <- function(outputs,
           i = "{.var {source}} is a forward reference."
         ))
       }
+      if (source %in% context$data_vars) {
+        abort_share_column_source(label, output, source, preceding)
+      }
       abort_marginplyr(paste0(
         "{label} {.var {output}} refers to unknown preceding ordinary ",
         "summary {.var {source}}."
@@ -2484,6 +2488,47 @@ validate_share_request <- function(outputs,
     ))
   }
   invisible(NULL)
+}
+
+# A share's source names a column of the input rather than a summary. The
+# example is the first eligible summary already defined, which is the name the
+# caller could pass instead.
+abort_share_column_source <- function(label, output, source, preceding) {
+  eligible <- Filter(
+    function(record) identical(record$eligibility, "eligible"),
+    preceding
+  )
+  # Read only from the cli template below, which codetools cannot see.
+  # nolint start: object_usage_linter.
+  candidates <- vapply(eligible, `[[`, character(1), "name")
+  # nolint end
+  if (length(eligible) > 0L) {
+    abort_marginplyr(c(
+      paste0(
+        "{label} {.var {output}} refers to unknown preceding ordinary ",
+        "summary {.var {source}}."
+      ),
+      i = paste0(
+        "{.var {source}} is a column of the input, not a summary defined ",
+        "earlier in the call."
+      ),
+      i = paste0(
+        "Pass the name of an ordinary summary defined before it, such as ",
+        "{.var {candidates[[1L]]}}."
+      )
+    ))
+  }
+  abort_marginplyr(c(
+    paste0(
+      "{label} {.var {output}} refers to unknown preceding ordinary ",
+      "summary {.var {source}}."
+    ),
+    i = paste0(
+      "{.var {source}} is a column of the input, not a summary defined ",
+      "earlier in the call."
+    ),
+    i = "Define an ordinary summary of it first and pass that summary's name."
+  ))
 }
 
 # Check dynamically expanded names against the reads of later share sources.
