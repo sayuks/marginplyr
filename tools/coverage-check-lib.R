@@ -135,14 +135,14 @@ coverage_verdict <- function(cov, cobertura = NULL, root = ".") {
   0L
 }
 
-coverage_durations_table <- "tools/coverage-shard-durations.tsv"
+coverage_durations_path <- "tools/coverage-shard-durations.tsv"
 
 # Reads the committed per-test-file seconds under covr that shard assignment
 # balances on. Its format is the one coverage_write_durations() produces.
 coverage_shard_durations <- function(root = ".") {
-  path <- file.path(root, coverage_durations_table)
+  path <- file.path(root, coverage_durations_path)
   if (!file.exists(path)) {
-    stop("Coverage sharding needs ", coverage_durations_table, ".",
+    stop("Coverage sharding needs ", coverage_durations_path, ".",
       call. = FALSE)
   }
   table <- utils::read.delim(path, comment.char = "#",
@@ -150,7 +150,7 @@ coverage_shard_durations <- function(root = ".") {
   if (!identical(names(table), c("file", "seconds")) ||
       anyDuplicated(table$file) || !all(is.finite(table$seconds)) ||
       any(table$seconds < 0)) {
-    stop(coverage_durations_table, " must hold unique file rows with finite, ",
+    stop(coverage_durations_path, " must hold unique file rows with finite, ",
       "nonnegative seconds.", call. = FALSE)
   }
   table
@@ -260,7 +260,7 @@ coverage_check_shard <- function(index, count, output, root = ".") {
   durations <- data.frame(file = files,
     seconds = recorded$seconds[match(files, recorded$file)])
   attr(cov, "marginplyr_shard") <- list(index = index, count = count,
-    files = files, durations = durations, elapsed = elapsed)
+    files = files, durations = durations)
   saveRDS(cov, output)
   coverage_report_durations(cbind(shard = index, durations),
     paste0("Coverage shard ", index, "/", count, ": ", length(files),
@@ -344,11 +344,8 @@ coverage_merge <- function(directory, root = ".") {
     }
   }
   attr(merged, "marginplyr_shard") <- NULL
-  # A shard result without durations contributes no rows.
   attr(merged, "marginplyr_durations") <- do.call(rbind, lapply(shards,
-    function(shard) {
-      if (!is.null(shard$durations)) cbind(shard = shard$index, shard$durations)
-    }))
+    function(shard) cbind(shard = shard$index, shard$durations)))
   # Cobertura names the checkout as its source, as an unsharded run does.
   package <- attr(merged, "package")
   package$path <- normalizePath(root)

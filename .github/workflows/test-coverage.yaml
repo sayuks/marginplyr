@@ -26,7 +26,8 @@ jobs:
   # Files go to legs by their measured seconds in
   # tools/coverage-shard-durations.tsv rather than by count, because one file
   # holds a large share of the time and leaves an every-N-th split uneven;
-  # no leg can finish sooner than that file, so more legs would not help.
+  # no leg can finish sooner than that file, so neither more legs nor parallel
+  # workers within a leg would help.
   # Refresh the table from test-coverage's coverage-shard-durations artifact.
   shard:
     name: test-coverage shard ${{ matrix.shard }}

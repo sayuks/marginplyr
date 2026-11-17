@@ -41,12 +41,10 @@ status <- switch(mode,
   merge = {
     cov <- coverage_merge(option("--merge"))
     durations <- attr(cov, "marginplyr_durations")
-    if (!is.null(durations)) {
-      coverage_report_durations(durations, paste0("All coverage shards: ",
-        nrow(durations), " test files"))
-      if (!is.null(option("--durations"))) {
-        coverage_write_durations(durations, option("--durations"))
-      }
+    coverage_report_durations(durations, paste0("All coverage shards: ",
+      nrow(durations), " test files"))
+    if (!is.null(option("--durations"))) {
+      coverage_write_durations(durations, option("--durations"))
     }
     coverage_verdict(cov, option("--cobertura"))
   }

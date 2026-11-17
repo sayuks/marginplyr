@@ -129,10 +129,10 @@ main <- function() {
         durations$seconds[durations$file == "test-a.R"] < 1,
         "test-d.R's one-second sleep is not attributed to it")
     }
-    table <- readLines(summary)
+    lines <- readLines(summary)
     expect(all(vapply(assigned[[index]], function(file) {
-      any(grepl(paste0("| ", file, " |"), table, fixed = TRUE))
-    }, logical(1))), paste(c("Shard summary lacks a file row:", table),
+      any(grepl(paste0("| ", file, " |"), lines, fixed = TRUE))
+    }, logical(1))), paste(c("Shard summary lacks a file row:", lines),
       collapse = "\n"))
   }
   merged_summary <- file.path(workspace, "summary-merged.md")
@@ -149,20 +149,20 @@ main <- function() {
   expect(all(c("R/alpha.R:2:3", "R/gamma.R:5:0") %in%
     line_hits(file.path(workspace, "merged.xml"))), "Merged hits are not summed")
   # The aggregate lists every leg's files with the leg that ran each.
-  table <- readLines(merged_summary)
+  lines <- readLines(merged_summary)
   for (index in 1:3) {
     for (file in assigned[[index]]) {
-      expect(any(grepl(paste0("| ", index, " | ", file, " |"), table,
-        fixed = TRUE)), paste(c("Merged summary lacks", file, table),
+      expect(any(grepl(paste0("| ", index, " | ", file, " |"), lines,
+        fixed = TRUE)), paste(c("Merged summary lacks", file, lines),
         collapse = "\n"))
     }
   }
 
   # The merge writes the committed table's format for the next refresh.
-  table <- utils::read.delim(refreshed, comment.char = "#")
-  expect(identical(names(table), c("file", "seconds")) &&
-    identical(table$file, c("test-a.R", "test-b.R", "test-c.R", "test-d.R")) &&
-    all(is.finite(table$seconds)) && grepl("^#", readLines(refreshed, 1L)),
+  refreshed_table <- utils::read.delim(refreshed, comment.char = "#")
+  expect(identical(names(refreshed_table), c("file", "seconds")) &&
+    identical(refreshed_table$file, c("test-a.R", "test-b.R", "test-c.R", "test-d.R")) &&
+    all(is.finite(refreshed_table$seconds)) && grepl("^#", readLines(refreshed, 1L)),
     paste(readLines(refreshed), collapse = "\n"))
 
   for (bad in c("0/3", "4/3", "1/0", "1/5", "2")) {
