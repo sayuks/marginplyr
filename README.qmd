@@ -278,7 +278,10 @@ grammar, and backend boundaries.
 ## Use the same report with a database
 
 The Grouping plan becomes part of the lazy query. `show_query()` inspects the
-SQL without collecting the result:
+SQL without collecting the result. The call writes `na.rm = TRUE`, and a local
+call needs it too for the results to match: locally a missing measure makes
+every subtotal and total that includes it `NA`, while a SQL aggregate always
+drops missing values, and dbplyr warns when `na.rm = TRUE` is absent:
 
 ```{r}
 postgres_sales <- dbplyr::tbl_lazy(

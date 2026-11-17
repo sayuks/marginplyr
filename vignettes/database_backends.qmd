@@ -46,7 +46,7 @@ Nothing beyond marginplyr's own dependencies is required. The DuckDB, SQLite,
 dtplyr, and Arrow sections below need optional packages, so their chunks
 evaluate only when those packages are installed at the versions marginplyr asks
 for. Where a package is missing or too old the code is still shown, but its
-output is absent. One dtplyr chunk calls `data.table::as.data.table()` and the
+output is absent. Two dtplyr chunks call `data.table::as.data.table()` and the
 list above does not name data.table, because dtplyr imports it: installing
 dtplyr installs it.
 
@@ -67,8 +67,8 @@ has_duckdb <- marginplyr_suggest_available("DBI") &&
 # dbplyr's SQLite simulator opens no connection, but rendering its SQL reads
 # the installed driver version through RSQLite.
 has_sqlite_simulator <- marginplyr_suggest_available("RSQLite")
-# The one dtplyr chunk that calls `data.table::as.data.table()` is behind this
-# guard and needs none of its own, dtplyr importing data.table.
+# The dtplyr chunks that call `data.table::as.data.table()` are behind this
+# guard and need none of their own, dtplyr importing data.table.
 has_dtplyr <- marginplyr_suggest_available("dtplyr")
 has_arrow <- marginplyr_suggest_available("arrow")
 ```
@@ -92,7 +92,11 @@ local_result <- january_sales |>
 local_result
 ```
 
-The Grouping specification does not change when the input becomes a lazy table:
+The Grouping specification does not change when the input becomes a lazy
+table. Both calls write `na.rm = TRUE` so that their results match: locally a
+missing measure makes every subtotal and total that includes it `NA`, while a
+SQL aggregate always drops missing values, and dbplyr warns when
+`na.rm = TRUE` is absent:
 
 ```{r}
 postgres_sales <- dbplyr::tbl_lazy(
@@ -240,6 +244,21 @@ sales_db |>
   collect()
 ```
 
+The order survives a later verb only when dbplyr folds that verb into the same
+query. On DuckDB it is kept through `filter()`, `head()`, `rename()`,
+`distinct()`, and a `select()` that keeps every grouping column. It is dropped
+by `mutate()`, `transmute()`, a `select()` that drops a grouping column, a
+join, `count()`, and `summarise()`, each of which reads the ordered query as a
+subquery; dbplyr then warns that *ORDER BY is ignored in subqueries without
+LIMIT*. So `collect()` first and continue locally, or call `arrange()` last
+with a key you write: [Write the sort key
+yourself](https://sayuks.github.io/marginplyr/vignettes/recipes.html#write-the-sort-key-yourself)
+gives the key, and [Lay the report out
+wide](https://sayuks.github.io/marginplyr/vignettes/recipes.html#lay-the-report-out-wide)
+and [The same join against a lazy
+table](https://sayuks.github.io/marginplyr/vignettes/recipes.html#the-same-join-against-a-lazy-table)
+work it through for a pivot and a join.
+
 Use `compute()` instead of `collect()` when the next stage should remain in the
 database. It executes the query and stores the result there as a remote table,
 so what reads it afterwards is still a lazy query against the connection:
@@ -259,6 +278,15 @@ On SQLite, direct `compute()` of a Margin result has a contract of its own,
 stated under [*SQLite
 materialization*](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html#sqlite-materialization)
 in the `summarize_with_margins()` reference.
+
+Once the database holds any macro you defined, an input that calls one of
+DuckDB's own scalar macros, such as `nullif()`, is refused too, even when it
+never calls yours: your macro could replace a name inside their bodies, so
+marginplyr cannot rule out source work hidden in the input. Call
+`compute()` on the input first, and the Margin verb reads the stored table
+instead. *When marginplyr queries your data* in the [`summarize_with_margins()`
+reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html)
+states the full rule.
 
 ```{r}
 #| eval: !expr has_duckdb
@@ -761,10 +789,13 @@ collect(dt_query)
 
 A derived dtplyr step can compute column types or factor levels from its source
 values. A request for zero output rows can still run that upstream calculation
-over every source row before discarding them. When marginplyr cannot establish
-faithful metadata from isolated zero-row sources, it refuses the call before
-processing source rows. Collect the step explicitly and pass the resulting data
-frame if you want its upstream operations to run now:
+over every source row before discarding them. marginplyr therefore reads the
+types only of steps whose output types follow from their input types alone:
+`filter()`, `select()`, `rename()`, `relocate()`, `arrange()`, `slice()`, a
+join, and a `transmute()` or a `mutate()` directly on `lazy_dt()` that adds
+constants, column copies, or arithmetic on numeric columns. Any other step is
+refused before processing source rows, including an aggregate such as
+`summarise()` or `count()` and a `mutate()` that calls another function:
 
 ```{r}
 #| label: dtplyr-unsafe-metadata
@@ -775,6 +806,22 @@ frame if you want its upstream operations to run now:
 january_sales |>
   dtplyr::lazy_dt() |>
   mutate(region = factor(region, levels = unique(region))) |>
+  inspect_grouping(.grouping = rollup(where(is.factor)))
+```
+
+Either remedy runs the step's upstream operations now. `collect()` it and pass
+the resulting data frame, or stay in data.table: materialize the step with
+`data.table::as.data.table()` and wrap the table in `lazy_dt()` again, which
+gives the Margin verb a root whose types it can read:
+
+```{r}
+#| eval: !expr has_dtplyr
+
+january_sales |>
+  dtplyr::lazy_dt() |>
+  mutate(region = factor(region, levels = unique(region))) |>
+  data.table::as.data.table() |>
+  dtplyr::lazy_dt() |>
   inspect_grouping(.grouping = rollup(where(is.factor)))
 ```
 
@@ -985,7 +1032,9 @@ reference](https://sayuks.github.io/marginplyr/man/summarize_with_margins.html).
 
 - Lazy results have no guaranteed order unless the query explicitly requests
   one. Ask for a Margin order with `.sort`, or call `arrange()` for any other
-  presentation order.
+  presentation order. A later `mutate()`, join, or aggregate drops a Margin
+  order, so `collect()` first or `arrange()` last; see *Execute in DuckDB*
+  above.
 
 - Lazy inputs default to `.check_margin_label = FALSE`; see
   *`.check_margin_label` on lazy inputs* above.
