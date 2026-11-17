@@ -2221,7 +2221,7 @@ grouping_set_key <- function(set, dimensions) {
 validate_unique_grouping_sets <- function(keys, duplicates_choices,
                                           set_ids = seq_along(keys),
                                           complete = TRUE,
-                                          key_label = function(key) NULL) {
+                                          key_label) {
   abort_plan_witness <- function(positions, key) {
     abort_duplicate_witness(
       list(family = "the grouping plan", positions = positions),
@@ -2242,7 +2242,10 @@ validate_unique_grouping_sets <- function(keys, duplicates_choices,
     return(invisible(NULL))
   }
   groups <- split(set_ids[duplicate_keys], keys[duplicate_keys])
-  if (!complete) {
+  sets <- lapply(names(groups), key_label)
+  # A partition holding a key no set names is reported as an incomplete pass's
+  # is, by one example, rather than with a gap in the sets it names.
+  if (!complete || !all(lengths(sets) == 1L)) {
     earliest <- which.min(vapply(groups, min, numeric(1)))
     abort_plan_witness(sort(groups[[earliest]]), names(groups)[[earliest]])
   }
@@ -2253,25 +2256,14 @@ validate_unique_grouping_sets <- function(keys, duplicates_choices,
     vapply(groups, paste, collapse = ", ", character(1)),
     collapse = "; "
   )
-  sets <- lapply(names(groups), key_label)
   # nolint end
-  if (all(lengths(sets) == 1L)) {
-    abort_marginplyr(c(
-      paste0(
-        "Duplicate grouping sets were produced at ",
-        "{cli::qty(length(groups))}{?positions/position groups}:"
-      ),
-      i = "{positions}.",
-      i = "{cli::qty(length(sets))}Repeated set{?s}: {.code {unlist(sets)}}.",
-      i = "Use {.or {.code {duplicate_alternatives(duplicates_choices)}}}."
-    ))
-  }
   abort_marginplyr(c(
     paste0(
       "Duplicate grouping sets were produced at ",
       "{cli::qty(length(groups))}{?positions/position groups}:"
     ),
     i = "{positions}.",
+    i = "{cli::qty(length(sets))}Repeated set{?s}: {.code {unlist(sets)}}.",
     i = "Use {.or {.code {duplicate_alternatives(duplicates_choices)}}}."
   ))
 }
